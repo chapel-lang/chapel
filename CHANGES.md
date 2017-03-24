@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-stopped at bbb1ea2
+stopped at 6294676
 
 TODO:
 * query-replace docs/latest to docs/master
@@ -65,6 +65,8 @@ Semantic Changes / Changes to Chapel Language
 * made the default intent for arrays be 'ref' if modified, else 'const ref'
 * extended return intent overloading to support 'const' vs. 'const ref'
   (see TODO)
+* made the default intent for 'this' on record methods be 'ref' if modified
+  (see TODO)
 
 Syntactic/Naming Changes
 ------------------------
@@ -83,6 +85,11 @@ New Features
 * added min() and max() overloads that accept and generate 'param' values
 * added support for deinit() as a replacement for destructors
 * added support for using 'const' and 'const ref' as 'this' intents
+* added support for 'forwarding' methods to fields of classes and records
+  (see TODO)
+* made 'void' a first-class type in the language and a way to fold variables
+  (see TODO)
+* added support for module deinit() functions
 
 Feature Improvements
 --------------------
@@ -92,6 +99,10 @@ Feature Improvements
   (see TODO)
 * improved array slice, rank change, and reindexing support across domain maps
 * added support for 'targetLocales' query to default rectangular arrays/domains
+
+Feature Slips
+-------------
+* domains of reindexed distributed arrays are not distributed as they should be
 
 Interoperability Improvements
 -----------------------------
@@ -107,7 +118,9 @@ Standard Modules/Library
 * improved the initializer argument list and order for RandomStream
 * made conjg() generate the same type as its argument
 * added support for a 'DateTime' module for operating on dates and times
-  (see )
+  (see TODO)
+* improved memory management for the 'List' module
+* made count() on arrays parallel by default
 
 Package Modules
 ---------------
@@ -118,6 +131,11 @@ Package Modules
 * added support for a new 'Futures' module supporting library-based futures
   (see TODO)
 * added support for choosing between FFT implementations in the FFTW module
+  (see TODO)
+* removed support for the 'ldA' argument in the BLAS module
+* added initial support for some class-owning record patterns, Owned and Shared
+  (see TODO and TODO)
+* added a early-draft LinearAlgebra module
   (see TODO)
   
 
@@ -136,11 +154,16 @@ Performance Optimizations/Improvements
 * optimized a costly temporary array out of the BlockCyclic distribution
 * added intra-locale parallelism for iterations over BlockCyclic distributions
 * improved the precision of the array access optimization introduced in 1.14
+* improved loop-invariant code motion for iterator expressions
+* optimized task spinning before sleeping for Crays
+* reduced the overhead of slicing, rank-change slicing, and reindexing arrays
+* optimized 1D strided iterations
 
 Memory Improvements
 -------------------
 * fixed most memory leaks caused by arrays, domains, and domain maps
 * fixed a memory leak in the push_back() routine
+* made the 'list' type reclaim its memory on destruction
 
 Example Codes
 -------------
@@ -150,6 +173,7 @@ Example Codes
 * made a number of speed and clarity improvements to the 'fasta' benchmark
 * added missing Makefiles and fixed support for 'make -j'
 * switched ISx's arrays to use anonymous domains for a performance boost
+* added a new 'regexdna-redux' benchmark
 
 Tool Changes
 ------------
@@ -170,6 +194,9 @@ Documentation
 * added new users guide sections on promotion, constants, type aliases, configs
 * fixed the documentation for string.strip()
 * updated documentation regarding reference counting of files and channels
+* removed $CHPL_HOME/STATUS in favor of GitHub issues
+* updated the "quick reference" document
+  (see TODO)
 
 Compiler Flags (see 'man chpl' for details)
 -------------------------------------------
@@ -188,11 +215,17 @@ Portability
   (see TODO)
 * added a locale model for KNL with support for different memory types
   (see TODO)
+* added support for multi-locale ARM executions
+  (see TODO)
 
 Cray-specific Changes
 ---------------------
 * removed extraneous/incorrect -On flags from cray-prgenv-cray command lines
 * enabled support for CHPL_COMM=ugni for the pgi compiler
+* tuned the amount of task spinning before sleeping for Crays
+* stopped limiting the number of ugni communication domains under slurm
+* make the heap used by CHPL_COMM=ugni 'numa'-localized when appropriate
+* fixed a bug in dynamic linking for gasnet-aries
 
 Platform-specific Changes
 -------------------------
@@ -214,10 +247,14 @@ Error Messages
 * added an error message for querying the 'IRV' of a non-sparse array
 * added error messages for applying vector ops to non-1D rectangular arrays
 * added an error message for trying to capture generic functions
+* added an error message for initializers that attempt to return a value
+* added an error message for missing copy initializers
+* improved 'const' checking in the compiler
 
 Runtime Error Checks
 --------------------
 * added a runtime check for divide-by-zero by default
+* added a runtime check for empty bounding boxes to the 'Block' distribution
 
 Bug Fixes
 ---------
@@ -245,6 +282,13 @@ Bug Fixes
 * fixed a buffer overrun problem in the parser for long function signatures
 * fixed a broken link to Quickstart.rst
 * fixed a bug in recursive iterator inlining
+* fixed a bug in which the LLVM back-end couldn't support multiple --ccflags
+* fixed a bug related to module-scoped 'ref' declarations
+* fixed a bug related to extern procedures returning 'void'
+* fixed an off-by-one bug in string.split()
+* fixed a bug in the order of module-scope variable deinitializations
+* fixed a bug in which the number of CPUs was sometimes reported to be 0
+* fixed bugs in the 'localSubdomain*' calls for local arrays/domains
 
 Launchers
 ---------
@@ -271,6 +315,8 @@ Third-Party Software Changes
 * made libunwind's optional LZMA dependency work better (TODO: ???)
 * made 'hwloc' always use libnuma for non-flat locale models when available
 * updated to qthreads 1.12
+* made GASNet build 'amudprun' using CHPL_HOST_COMPILER rather than ..TARGET..
+* limited the maximum size of qthreads memory pools to 65MB
 
 Testing System
 --------------
@@ -290,6 +336,7 @@ Removed Features
 * deprecated support for the '=>' operator to create array aliases
   (replace 'var A => B;' with 'ref A = B;' and
    and 'var A: [D] => B;' with 'ref A = B.reindex(D);')
+* deprecated support for using '=>' in constructors to create alias fields
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -299,6 +346,11 @@ Developer-oriented changes: Module changes
 * refactored rectangular I/O into a single helper routine
 * added a developer feature for specifying arrays' initialization approaches
 * removed an unnecessary argument from _bulkGrow
+* optimized out array fields used in numa configurations only using 'void'
+* simplified the 'dsi' interface for slicing, rank-change, and reindexing
+  (see TODO)
+* changed the 'dsi' interfaces for establishing new domains
+* cleaned up how the MPI module deinitializes/finalizes itself
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -306,6 +358,7 @@ Developer-oriented changes: Makefile improvements
 * cleaned up the runtime include paths
 * improved linking of libnuma when using the memkind library
 * improved the robustness of 'make check'
+* improved Makefile portability for Bourne and limited shells
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -359,6 +412,9 @@ Developer-oriented changes: Compiler improvements/changes
 * removed the old compiler-based optimization of array access inner multiplies
 * revised the code to generate default initializers for tuples
 * disabled deadStringLiteralElimination without inlining or copy-propagation
+* hoisted gdbShouldBreakHere() calls to get earlier compiler breakpoints
+* improved the precision of canRHSBeConstRef() in inferConstRefs
+* made isPrimitiveScalar() recognize bools of size BOOL_SIZE_SYS
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -572,6 +628,7 @@ Performance Optimizations/Improvements
 * made modest improvements to the performance of associative domains
 * optimized the implementation of .re and .im for complex values
 * optimized base**exp operations when 'base' is a param power of two
+* reduced the number of communications required for a number of idioms
 
 Memory Improvements
 -------------------
@@ -579,6 +636,7 @@ Memory Improvements
 * closed memory leaks caused by 'sync'/'single' variables
 * closed a memory leak relating to 'args' arguments sent to main()
 * closed a memory leak caused by module-scope detuple variable declarations
+* reduced the memory footprint of a non-stridable range slightly
 
 Example Codes
 -------------
@@ -806,6 +864,7 @@ Developer-oriented changes: Compiler improvements/changes
 * fixed the indentation of --html output when viewed within Google Chrome
 * added support for a simple 'ForallExpr' AST node, used only during parsing
 * implemented certain reduction expressions using forall expressions
+* have internal actual-formal argument count mismatches print function name
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -814,6 +873,7 @@ Developer-oriented changes: Runtime improvements
 * eliminated type punning and use of volatile in the implementation of atomics
 * refactored 'extern "C"' declarations to avoid crossing #include boundaries
 * changed uses of 'atomic_flag's to 'atomic_bool's to match C11's atomics
+* changed how and when the heap page size is computed
 
 Developer-oriented changes: Documentation
 -----------------------------------------
