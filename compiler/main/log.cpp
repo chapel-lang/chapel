@@ -112,7 +112,7 @@ void log_writeLog(const char* passName, int passNum, char logTag) {
 
   if (log_flags.set_in(logTag) != 0) {
     if (fUseIPE == false)
-      AstDump::view(passName, passNum);
+      AstDumpToNode::view(passName, passNum);
     else
       AstDumpToNode::view(passName, passNum);
   }

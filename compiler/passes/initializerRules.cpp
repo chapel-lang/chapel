@@ -390,15 +390,22 @@ bool IterState::startsInPhase1(BlockStmt* block) const {
 }
 
 DefExpr* IterState::firstField(FnSymbol* fn) const {
-  AggregateType* at   = toAggregateType(fn->_this->type);
-  Expr*          head = at->fields.head;
+  AggregateType* at     = toAggregateType(fn->_this->type);
+  DefExpr*       retval = toDefExpr(at->fields.head);
 
   // Skip the psuedo-field "super"
   if (::isClass(at) == true) {
-    head = head->next;
+    retval = toDefExpr(retval->next);
   }
 
-  return toDefExpr(head);
+  // Skip the psuedo-field "outer" (if present)
+  if (retval->exprType                   == NULL &&
+      retval->init                       == NULL &&
+      strcmp(retval->sym->name, "outer") ==    0) {
+    retval = toDefExpr(retval->next);
+  }
+
+  return retval;
 }
 
 Expr* IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
