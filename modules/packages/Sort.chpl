@@ -520,25 +520,25 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
  */
 
 proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-	use Search;  //DOES NOT WORK
+  use Search;
   chpl_check_comparator(comparator, eltType);
 	
   const low = Dom.low,
         high = Dom.high,
         stride = abs(Dom.stride);
   for i in low..high by stride {
-  	var ithVal = Data[i];
-  	var inserted=false;
-  	var found:bool;
-  	var loc:int;
+    var ithVal = Data[i];
+    var inserted=false;
+    var found:bool;
+    var loc:int;
   	var j:int = i-1;
-  	(found,loc)=binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
-  	while(j>=loc)
+    (found,loc)=binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
+    while(j>=loc)
   	{
-  		Data[j+stride]=Data[j];
-  		j-=stride;
-  	}
-  	Data[j+stride]=ithVal;  	
+  	  Data[j+stride]=Data[j];
+  	  j-=stride;
+    }
+    Data[j+stride]=ithVal;  	
   }        
 }
 
