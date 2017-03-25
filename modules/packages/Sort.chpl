@@ -509,6 +509,45 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
     compilerError("insertionSort() requires 1-D array");
 }
 
+/*
+   Sort the 1D array `Data` in-place using a binary insertion sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+
+proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+	use Search;  //DOES NOT WORK
+  chpl_check_comparator(comparator, eltType);
+	
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+  for i in low..high by stride {
+  	var ithVal = Data[i];
+  	var inserted=false;
+  	var found:bool;
+  	var loc:int;
+  	var j:int = i-1;
+  	(found,loc)=binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
+  	while(j>=loc)
+  	{
+  		Data[j+stride]=Data[j];
+  		j-=stride;
+  	}
+  	Data[j+stride]=ithVal;  	
+  }        
+}
+
+pragma "no doc"
+/*Error message for multi-dimension arrays */
+proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("insertionSort() requires 1-D array");
+}
 
 /*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
