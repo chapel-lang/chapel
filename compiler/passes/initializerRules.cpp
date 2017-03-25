@@ -533,6 +533,8 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
   } else if (isRecord(at) == true && fn->body->body.head == NULL) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
+    fn->body->insertAtHead(noop);
+
     state.initializeFieldsBefore(noop);
 
     noop->remove();
