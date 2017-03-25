@@ -312,12 +312,6 @@
     "doc/rst/primers/primers/learnChapelInYMinutes.rst",
     "test/release/examples/primers/learnChapelInYMinutes.chpl"
   ],
-  "c573f558-1e4a-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/studies/hpcc/RA.tex"
-  ],
-  "d76e2698-1e4a-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/studies/hpcc/appendix.tex"
-  ],
   "a78ba0d8-8220-11e6-b915-843835579daa": [
     "doc/rst/technotes/auxIO.rst"
   ],
