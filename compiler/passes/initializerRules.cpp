@@ -57,11 +57,15 @@ static void      preNormalizeGenericInit(FnSymbol* fn);
 *                                                                             *
 ************************************** | *************************************/
 
+static Type* typeForExpr(Expr* expr);
+
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
     if (DefExpr* defExpr = toDefExpr(field)) {
+      Type* type = NULL;
+
       if (Expr* typeExpr = defExpr->exprType) {
-        Type* type = typeForTypeSpecifier(typeExpr);
+        type = typeForTypeSpecifier(typeExpr);
 
         // var x, y : Foo
         //   =>
@@ -79,21 +83,40 @@ void preNormalizeFields(AggregateType* at) {
           }
         }
 
-        if (type != NULL) {
-          Symbol* sym = defExpr->sym;
+      } else if (defExpr->init != NULL) {
+        type = typeForExpr(defExpr->init);
+      }
 
-          if (sym->hasFlag(FLAG_CONST) == true) {
-            sym->qual = QUAL_CONST_VAL;
-            sym->type = type;
+      if (type != NULL) {
+        Symbol* sym = defExpr->sym;
 
-          } else {
-            sym->qual = QUAL_VAL;
-            sym->type = type;
-          }
+        if (sym->hasFlag(FLAG_CONST) == true) {
+          sym->qual = QUAL_CONST_VAL;
+          sym->type = type;
+
+        } else {
+          sym->qual = QUAL_VAL;
+          sym->type = type;
         }
       }
     }
   }
+}
+
+// Infer the type of an expression for simple cases.
+//   1) An immediate value for one of the primitive scalars
+static Type* typeForExpr(Expr* expr) {
+  Type* retval = NULL;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    Type* type = symExpr->symbol()->type;
+
+    if (isPrimitiveScalar(type) == true) {
+      retval = type;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -509,6 +532,8 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
   // 3) Remove the NO-OP
   } else if (isRecord(at) == true && fn->body->body.head == NULL) {
     Expr* noop = new CallExpr(PRIM_NOOP);
+
+    fn->body->insertAtHead(noop);
 
     state.initializeFieldsBefore(noop);
 
