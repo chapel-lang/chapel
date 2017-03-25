@@ -924,8 +924,9 @@ static void fieldInitTypeInference(Expr*      stmt,
 
     if (isPrimitiveScalar(type) == true) {
       SymExpr* fieldAccess = createFieldAccess(stmt, fn, field);
+      SymExpr* rhs         = normalizeExpr(stmt, state, initExpr);
 
-      stmt->insertBefore(new CallExpr("=", fieldAccess, initExpr));
+      stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
 
     } else {
       Symbol* _this = fn->_this;
@@ -968,10 +969,11 @@ static void fieldInitTypeInference(Expr*      stmt,
       INT_ASSERT(false);
 
     } else {
-      Symbol* _this = fn->_this;
-      Symbol* name  = new_CStringSymbol(field->sym->name);
+      Symbol*  _this = fn->_this;
+      Symbol*  name  = new_CStringSymbol(field->sym->name);
+      SymExpr* rhs   = normalizeExpr(stmt, state, initExpr);
 
-      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr));
+      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, rhs));
     }
 
   } else {
