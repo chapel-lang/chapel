@@ -364,7 +364,7 @@ module ArrayViewRankChange {
       // in the same dimension of 'dims', then this locale does not have a
       // local subdomain.
       for param d in 1..dims.size {
-        if collapsedDim(d) && !dims(d).member(idx(d)) then
+        if collapsedDim(d) && dims(d).isEmpty() then
           return empty;
       }
 
