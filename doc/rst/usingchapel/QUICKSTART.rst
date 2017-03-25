@@ -178,7 +178,7 @@ What's next?
 .. _doc/rst/usingchapel/prereqs.rst: prereqs.html
 .. _doc/rst/usingchapel/multilocale.rst: multilocale.html
 .. _doc/rst/platforms: ../platforms/index.html
-.. _chapel.cray.com/docs: ../../index.html
+.. _chapel.cray.com/docs: ../index.html
 .. _doc/rst/usingchapel/chplenv.rst: chplenv.html
 .. _doc/rst/usingchapel/building.rst: building.html
 .. _doc/rst/usingchapel/compiling.rst: compiling.html
