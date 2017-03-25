@@ -538,7 +538,7 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
       Data[j+stride]=Data[j];
       j-=stride;
     }
-    Data[j+stride]=ithVal;  	
+    Data[j+stride]=ithVal;
   }        
 }
 
