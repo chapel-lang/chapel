@@ -200,8 +200,9 @@ static bool     isCompoundAssignment(CallExpr* callExpr);
 class IterState {
 public:
                   IterState(FnSymbol* fn);
-                  IterState(CondStmt* cond, const IterState& curr);
-                  IterState(LoopStmt* loop, const IterState& curr);
+                  IterState(BlockStmt* block, const IterState& curr);
+                  IterState(LoopStmt*  loop,  const IterState& curr);
+                  IterState(CondStmt*  cond,  const IterState& curr);
 
   AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
@@ -217,6 +218,7 @@ public:
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            inLoopBody()                                           const;
   bool            inCondStmt()                                           const;
+  bool            inParallelStmt()                                       const;
 
   DefExpr*        currField()                                            const;
 
@@ -228,6 +230,8 @@ private:
     cBlockNormal,
     cBlockCond,
     cBlockLoop,
+    cBlockBegin,
+    cBlockCobegin
   };
 
                   IterState();
@@ -250,7 +254,27 @@ IterState::IterState(FnSymbol* fn) {
   mBlockType  = cBlockNormal;
 }
 
-// Only used to generate error messages
+IterState::IterState(BlockStmt* block, const IterState& curr) {
+  mFn         = curr.mFn;
+  mCurrField  = curr.mCurrField;
+  mIsPhase1   = curr.mIsPhase1;
+
+  if (CallExpr* blockInfo = block->blockInfoGet()) {
+    if (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)   == true) {
+      mBlockType = cBlockBegin;
+
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) == true) {
+      mBlockType = cBlockCobegin;
+
+    } else {
+      INT_ASSERT(false);
+    }
+
+  } else {
+    mBlockType = curr.mBlockType;
+  }
+}
+
 IterState::IterState(CondStmt* cond, const IterState& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
@@ -258,7 +282,6 @@ IterState::IterState(CondStmt* cond, const IterState& curr) {
   mBlockType  = cBlockCond;
 }
 
-// Only used to generate error messages
 IterState::IterState(LoopStmt* loop, const IterState& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
@@ -314,6 +337,11 @@ bool IterState::inLoopBody() const {
 
 bool IterState::inCondStmt() const {
   return mBlockType == cBlockCond;
+}
+
+bool IterState::inParallelStmt() const {
+  return mBlockType == cBlockBegin   ||
+         mBlockType == cBlockCobegin  ;
 }
 
 Expr* IterState::completePhase1(Expr* initStmt) {
@@ -399,7 +427,8 @@ DefExpr* IterState::firstField(FnSymbol* fn) const {
   }
 
   // Skip the psuedo-field "outer" (if present)
-  if (retval->exprType                   == NULL &&
+  if (retval                             != NULL &&
+      retval->exprType                   == NULL &&
       retval->init                       == NULL &&
       strcmp(retval->sym->name, "outer") ==    0) {
     retval = toDefExpr(retval->next);
@@ -537,6 +566,19 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
             INT_ASSERT(false);
           }
 
+        } else if (state.inParallelStmt() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in a parallel statement");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in a parallel statement");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
         } else {
           stmt = state.completePhase1(stmt);
         }
@@ -573,6 +615,12 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "conditional during phase 1 of initialization",
+                    field->sym->name);
+
+        } else if (state.inParallelStmt() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "parallel statement during phase 1 of initialization",
                     field->sym->name);
 
         } else {
@@ -612,7 +660,7 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      state = preNormalize(block, state);
+      state = preNormalize(block, IterState(block, state));
       stmt  = stmt->next;
 
     } else {
