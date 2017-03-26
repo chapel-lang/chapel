@@ -975,6 +975,8 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isNewExpr(Expr* expr);
+
 static void fieldInitTypeWithInit(Expr*        stmt,
                                   FnSymbol*    fn,
                                   InitVisitor& state,
@@ -1003,33 +1005,33 @@ static void fieldInitTypeWithInit(Expr*        stmt,
     stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-#if 0
     if (isNewExpr(initExpr) == true) {
-      Symbol*   var     = defExpr->sym;
-      Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
-      CallExpr* argExpr = toCallExpr(arg);
+      CallExpr* newExpr = toCallExpr(initExpr);
+      CallExpr* subExpr = toCallExpr(newExpr->get(1)->remove());
+      SymExpr*  access  = createFieldAccess(stmt, fn, field);
 
-      // Insert the arg portion of the initExpr back into tree
-      defExpr->insertAfter(argExpr);
+      stmt->insertBefore(subExpr);
 
       // Convert it in to a use of the init method
-      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+      subExpr->setUnresolvedFunction("init");
 
       // Add _mt and _this (insert at head in reverse order)
-      argExpr->insertAtHead(var);
-      argExpr->insertAtHead(gMethodToken);
+      subExpr->insertAtHead(access);
+      subExpr->insertAtHead(gMethodToken);
 
     } else {
+#if 0
       Symbol*   var    = defExpr->sym;
       CallExpr* init   = new CallExpr("init", gMethodToken, var);
       CallExpr* assign = new CallExpr("=",    var,          initExpr);
 
       defExpr->insertAfter(init);
       init->insertAfter(assign);
-    }
 #endif
 
-    INT_ASSERT(false);
+      INT_ASSERT(false);
+    }
+
 
   } else {
 #if 0
@@ -1049,6 +1051,16 @@ static void fieldInitTypeWithInit(Expr*        stmt,
 
     INT_ASSERT(false);
   }
+}
+
+static bool isNewExpr(Expr* expr) {
+  bool retval = false;
+
+  if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = callExpr->isPrimitive(PRIM_NEW);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
