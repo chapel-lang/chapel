@@ -137,6 +137,7 @@ module LinearAlgebra {
 
  use Norm; // TODO -- merge Norm into LinearAlgebra
  use BLAS;
+ use IO;
 // use LAPACK; // TODO -- Use LAPACK routines
 
 
@@ -268,6 +269,28 @@ proc Matrix(const Arrays...?n, type eltType) {
   return M;
 }
 
+proc readMatrix(filename){
+  /*
+     First line of the file should contain space separated two integers m(number of rows) and n(number of columns). 
+     Rest of the lines should contain elements of the matrix separated by spaces.
+     Returns a 2d array of reals
+  */
+  //Add support for more common file formats, Eg- csv
+  //Add support for other eltTypes
+  
+  var infile = open(filename, iomode.r);
+  var reader = infile.reader();
+
+  var m = reader.read(int),
+      n = reader.read(int);
+  var matrix: [1..m,1..n] real;
+  reader.read(matrix);
+  
+  reader.close();
+  infile.close();
+  
+  return matrix;
+}
 
 /* Return a square identity matrix over domain ``{0..#m, 0..m}`` */
 proc eye(m, type eltType=real) {
@@ -526,7 +549,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where !isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
-    compilerError("Rank sizes are not 2 and 1");
+    compilerError("Rank sizes are not 2 and 2");
 
   var C: [Adom.dim(1), Bdom.dim(2)] eltType;
 
@@ -541,7 +564,6 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 /* Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
    integral type. */
 proc matPow(A: [], b) where isNumeric(b) {
-  // TODO -- flatten recursion into while-loop
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
     compilerError("matPow only support powers of integers");
@@ -554,14 +576,27 @@ proc matPow(A: [], b) where isNumeric(b) {
 
 pragma "no doc"
 /* Exponentiate by squaring recursively */
-private proc _expBySquaring(x: ?t, n): t {
-    // TODO -- _expBySquaring(pinv(x), -n);
-    if n < 0  then halt("Negative powers not yet supported");
-    else if n == 0  then return eye(x.domain);
-    else if n == 1  then return x;
-    else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
-    else return dot(x, _expBySquaring(dot(x, x), (n - 1) / 2));
+private proc _expBySquaring(x: ?t, n): t{
+  // TODO -- _expBySquaring(pinv(x), -n);
+  if(n<0) then halt("Negative powers not yet supported");
+  else{
+    var product = eye(x.domain);
+    var basis = x;
+    var no = n;
+    while(no>0){
+      if(no%2==1)then{
+        product = dot(product,basis);
+      }
+      no = no/2;
+      if(no==0){
+        break;
+      }
+      basis = dot(basis,basis);
+    }
+    return product;
+  }
 }
+
 
 
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
