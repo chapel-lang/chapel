@@ -233,8 +233,10 @@ public:
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
 
+  bool            isPhase0()                                             const;
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
+
   Expr*           completePhase1(Expr* insertBefore);
   void            initializeFieldsBefore(Expr* insertBefore);
 
@@ -249,6 +251,12 @@ public:
                                         CallExpr* callExpr);
 
 private:
+  enum Phase {
+    cPhase0,
+    cPhase1,
+    cPhase2
+  };
+
   enum BlockType {
     cBlockNormal,
     cBlockCond,
@@ -259,28 +267,28 @@ private:
 
                   InitVisitor();
 
-  bool            startsInPhase1(FnSymbol*  fn)                          const;
-  bool            startsInPhase1(BlockStmt* block)                       const;
+  Phase           startPhase(FnSymbol*  fn)                              const;
+  Phase           startPhase(BlockStmt* block)                           const;
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
   FnSymbol*       mFn;
   DefExpr*        mCurrField;
-  bool            mIsPhase1;
+  Phase           mPhase;
   BlockType       mBlockType;
 };
 
 InitVisitor::InitVisitor(FnSymbol* fn) {
   mFn         = fn;
   mCurrField  = firstField(fn);
-  mIsPhase1   = startsInPhase1(fn);
+  mPhase      = startPhase(fn);
   mBlockType  = cBlockNormal;
 }
 
 InitVisitor::InitVisitor(BlockStmt* block, const InitVisitor& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
-  mIsPhase1   = curr.mIsPhase1;
+  mPhase      = curr.mPhase;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
     if (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)   == true) {
@@ -301,14 +309,14 @@ InitVisitor::InitVisitor(BlockStmt* block, const InitVisitor& curr) {
 InitVisitor::InitVisitor(CondStmt* cond, const InitVisitor& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
-  mIsPhase1   = curr.mIsPhase1;
+  mPhase      = curr.mPhase;
   mBlockType  = cBlockCond;
 }
 
 InitVisitor::InitVisitor(LoopStmt* loop, const InitVisitor& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
-  mIsPhase1   = curr.mIsPhase1;
+  mPhase      = curr.mPhase;
   mBlockType  = cBlockLoop;
 }
 
@@ -328,12 +336,16 @@ bool InitVisitor::isClass() const {
   return ::isClass(type());
 }
 
+bool InitVisitor::isPhase0() const {
+  return mPhase == cPhase0;
+}
+
 bool InitVisitor::isPhase1() const {
-  return mIsPhase1;
+  return mPhase == cPhase1;
 }
 
 bool InitVisitor::isPhase2() const {
-  return !mIsPhase1;
+  return mPhase == cPhase2;
 }
 
 bool InitVisitor::isFieldReinitialized(DefExpr* field) const {
@@ -376,7 +388,7 @@ Expr* InitVisitor::completePhase1(Expr* initStmt) {
     initStmt->remove();
   }
 
-  mIsPhase1 = false;
+  mPhase = cPhase2;
 
   return retval;
 }
@@ -393,41 +405,56 @@ DefExpr* InitVisitor::currField() const {
   return mCurrField;
 }
 
-bool InitVisitor::startsInPhase1(FnSymbol* fn) const {
-  return startsInPhase1(fn->body);
+InitVisitor::Phase InitVisitor::startPhase(FnSymbol* fn) const {
+  return startPhase(fn->body);
 }
 
-bool InitVisitor::startsInPhase1(BlockStmt* block) const {
+InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
   Expr* stmt   = block->body.head;
-  bool  retval = false;
+  Phase retval = cPhase2;
 
-  while (stmt != NULL && retval == false) {
+  while (stmt != NULL && retval == cPhase2) {
     if (isDefExpr(stmt) == true) {
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
       if (isInitStmt(callExpr) == true) {
-        retval = true;
+        retval = cPhase1;
 
       } else {
-        stmt = stmt->next;
+        stmt   = stmt->next;
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (startsInPhase1(cond->thenStmt) == true) {
-        retval = true;
+      if (cond->elseStmt == NULL) {
+        Phase thenPhase = startPhase(cond->thenStmt);
 
-      } else if (cond->elseStmt                 != NULL &&
-                 startsInPhase1(cond->elseStmt) == true) {
-        retval = true;
+        if (thenPhase != cPhase2) {
+          retval = cPhase1;
+        } else {
+          stmt   = stmt->next;
+        }
 
       } else {
-        stmt = stmt->next;
+        Phase thenPhase = startPhase(cond->thenStmt);
+        Phase elsePhase = startPhase(cond->elseStmt);
+
+        if        (thenPhase != cPhase2) {
+          retval = cPhase1;
+
+        } else if (elsePhase != cPhase2) {
+          retval = cPhase1;
+
+        } else {
+          stmt   = stmt->next;
+        }
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      if (startsInPhase1(block) == true) {
-        retval = true;
+      Phase phase = startPhase(block);
+
+      if (phase != cPhase2) {
+        retval = cPhase1;
       } else {
         stmt   = stmt->next;
       }
