@@ -1020,16 +1020,10 @@ static void fieldInitTypeWithInit(Expr*        stmt,
       subExpr->insertAtHead(gMethodToken);
 
     } else {
-#if 0
-      Symbol*   var    = defExpr->sym;
-      CallExpr* init   = new CallExpr("init", gMethodToken, var);
-      CallExpr* assign = new CallExpr("=",    var,          initExpr);
+      SymExpr* rhs    = normalizeExpr(stmt, state, initExpr);
+      SymExpr* access = createFieldAccess(stmt, fn, field);
 
-      defExpr->insertAfter(init);
-      init->insertAfter(assign);
-#endif
-
-      INT_ASSERT(false);
+      stmt->insertBefore(new CallExpr("init", gMethodToken, access, rhs));
     }
 
 
