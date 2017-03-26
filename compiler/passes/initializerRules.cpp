@@ -420,7 +420,10 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if (isInitStmt(callExpr) == true) {
+      if        (isThisInit(callExpr)  == true) {
+        retval = cPhase0;
+
+      } else if (isSuperInit(callExpr) == true) {
         retval = cPhase1;
 
       } else {
@@ -432,7 +435,7 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
         Phase thenPhase = startPhase(cond->thenStmt);
 
         if (thenPhase != cPhase2) {
-          retval = cPhase1;
+          retval = thenPhase;
         } else {
           stmt   = stmt->next;
         }
@@ -441,10 +444,10 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
         Phase thenPhase = startPhase(cond->thenStmt);
         Phase elsePhase = startPhase(cond->elseStmt);
 
-        if        (thenPhase != cPhase2) {
-          retval = cPhase1;
+        if        (thenPhase == cPhase0 || elsePhase == cPhase0) {
+          retval = cPhase0;
 
-        } else if (elsePhase != cPhase2) {
+        } else if (thenPhase == cPhase1 || elsePhase == cPhase1) {
           retval = cPhase1;
 
         } else {
@@ -456,7 +459,7 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
       Phase phase = startPhase(block);
 
       if (phase != cPhase2) {
-        retval = cPhase1;
+        retval = phase;
       } else {
         stmt   = stmt->next;
       }
