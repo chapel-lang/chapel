@@ -18,10 +18,42 @@ Eighteenth public release of Chapel, April 6, 2017
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* enabled GitHub issues to file and track Chapel bugs and feature requests
+* added prototype support for error-handling in Chapel
+* dramatically improved support for initializers
+* made 'void' a first-class type in the language and a way to fold variables
+  (see TODO)
+* added support for module deinit() functions
+* added support for 'forwarding' methods to fields of classes and records
+  (see TODO)
+* vastly improved the stability, generality, and precision of 'where' clauses
+  (see TODO)
+* improved array slice, rank change, and reindexing support across domain maps
+* added support for a 'DateTime' module for operating on dates and times
+  (see TODO)
+* added initial support for some class-owning record patterns, Owned and Shared
+  (see TODO and TODO)
+* added support for a new 'Futures' module supporting library-based futures
+  (see TODO)
+* added BLAS level 1 and 2 routines to the previous support for level 3
+  (see TODO)
+* significant performance improvements
+* fixed most memory leaks caused by arrays, domains, and domain maps
+* added new users guide sections on promotion, constants, type aliases, configs
+* added a locale model for KNL with support for different memory types
+  (see TODO)
+* added Chapel support for AWS EC2
+  (see TODO)
+* verified that Chapel works with the Windows 10 bash shell
+  (no platform-specific notes required... works like any other *nix)
+* added support for multi-locale ARM executions
+  (see TODO)
+* added the 'ugni' communication layer to the open-source repository
+* added support for numa-localization of array memory
 
 Deployment
 ----------
-* enabled GitHub issues as a means of filing Chapel bugs and feature requests
+* enabled GitHub issues to file and track Chapel bugs and feature requests
   (see TODO)
 * extended the Docker image to include a GASNet-based configuration
   (see TODO)
