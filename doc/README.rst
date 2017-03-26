@@ -11,14 +11,22 @@ viewed by pointing a web browser of your choice to ``html/index.html``.
 markup language. This documentation can be viewed with a text editor of your
 choice.
 
-=============================================== ==================================================
-**For more detailed information about:**        **refer to:**
------------------------------------------------ --------------------------------------------------
-    platform-specific notes                     ``{rst,html}/platforms/``
-    setting Chapel environment variables        ``{rst,html}/usingchapel/chplenv.{rst,html}``
-    building the compiler                       ``{rst,html}/usingchapel/building.{rst,html}``
-    compiling Chapel programs                   ``{rst,html}/usingchapel/compiling.{rst,html}``
-    executing Chapel programs                   ``{rst,html}/usingchapel/executing.{rst,html}``
-    debugging Chapel programs                   ``{rst,html}/usingchapel/debugging.{rst,html}``
-    reporting bugs                              ``{rst,html}/usingchapel/bugs.{rst,html}``
-=============================================== ==================================================
+Resources
+---------
+
+Here are some useful resources available in ``{rst,html}/``:
+
+====================================  ========================================
+Building from source                  ``usingchapel/QUICKSTART.{rst,html}``
+Platform-specific notes               ``platforms/``
+Setting Chapel environment variables  ``usingchapel/chplenv.{rst,html}``
+Building the compiler                 ``usingchapel/building.{rst,html}``
+Compiling Chapel programs             ``usingchapel/compiling.{rst,html}``
+Executing Chapel programs             ``usingchapel/executing.{rst,html}``
+Debugging Chapel programs             ``usingchapel/debugging.{rst,html}``
+Reporting bugs                        ``usingchapel/bugs.{rst,html}``
+Users guide                           ``users-guide/``
+Sample computations                   ``examples/``
+Sample of language features           ``primers/``
+====================================  ========================================
+

@@ -24,10 +24,14 @@ Resources
 ---------
 For more information about Chapel, please refer to the following resources:
 
+.. NOTE
+   If you are viewing this file locally, we recommend referring to
+   doc/README.rst for local references to documentation and resources.
+
 =====================  ========================================
 Project homepage:      http://chapel.cray.com
 Installing Chapel:     http://chapel.cray.com/download.html
-Building from source:  `QUICKSTART.rst <doc/usingchapel/QUICKSTART.rst>`_ 
+Building from source:  `QUICKSTART.rst <doc/usingchapel/QUICKSTART.rst>`_
 Sample computations:   http://chapel.cray.com/hellos.html
 Learning Chapel:       http://chapel.cray.com/learning.html
 Reporting bugs:        http://chapel.cray.com/bugs.html
