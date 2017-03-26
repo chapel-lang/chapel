@@ -37,7 +37,7 @@ enum InitStyle {
   STYLE_BOTH
 };
 
-class IterState;
+class InitVisitor;
 
 static bool      isInitStmt(Expr* stmt);
 
@@ -185,15 +185,15 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Expr*    fieldInitFromStmt(CallExpr*  stmt,
-                                  FnSymbol*  fn,
-                                  IterState& state,
-                                  DefExpr*   field);
+static Expr*    fieldInitFromStmt(CallExpr*    stmt,
+                                  FnSymbol*    fn,
+                                  InitVisitor& state,
+                                  DefExpr*     field);
 
-static void     fieldInitFromField(Expr*      insertBefore,
-                                   FnSymbol*  fn,
-                                   IterState& state,
-                                   DefExpr*   field);
+static void     fieldInitFromField(Expr*        insertBefore,
+                                   FnSymbol*    fn,
+                                   InitVisitor& state,
+                                   DefExpr*     field);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 
@@ -206,9 +206,9 @@ static SymExpr* createFieldAccess(Expr*     insertBefore,
                                   FnSymbol* fn,
                                   DefExpr*  field);
 
-static SymExpr* normalizeExpr(Expr*      insertBefore,
-                              IterState& state,
-                              Expr*      expr);
+static SymExpr* normalizeExpr(Expr*        insertBefore,
+                              InitVisitor& state,
+                              Expr*        expr);
 
 static bool     isAssignment(CallExpr* callExpr);
 static bool     isSimpleAssignment(CallExpr* callExpr);
@@ -220,12 +220,12 @@ static bool     isCompoundAssignment(CallExpr* callExpr);
 *                                                                             *
 ************************************** | *************************************/
 
-class IterState {
+class InitVisitor {
 public:
-                  IterState(FnSymbol*  fn);
-                  IterState(BlockStmt* block, const IterState& curr);
-                  IterState(LoopStmt*  loop,  const IterState& curr);
-                  IterState(CondStmt*  cond,  const IterState& curr);
+                  InitVisitor(FnSymbol*  fn);
+                  InitVisitor(BlockStmt* block, const InitVisitor& curr);
+                  InitVisitor(LoopStmt*  loop,  const InitVisitor& curr);
+                  InitVisitor(CondStmt*  cond,  const InitVisitor& curr);
 
   AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
@@ -257,7 +257,7 @@ private:
     cBlockCobegin
   };
 
-                  IterState();
+                  InitVisitor();
 
   bool            startsInPhase1(FnSymbol*  fn)                          const;
   bool            startsInPhase1(BlockStmt* block)                       const;
@@ -270,14 +270,14 @@ private:
   BlockType       mBlockType;
 };
 
-IterState::IterState(FnSymbol* fn) {
+InitVisitor::InitVisitor(FnSymbol* fn) {
   mFn         = fn;
   mCurrField  = firstField(fn);
   mIsPhase1   = startsInPhase1(fn);
   mBlockType  = cBlockNormal;
 }
 
-IterState::IterState(BlockStmt* block, const IterState& curr) {
+InitVisitor::InitVisitor(BlockStmt* block, const InitVisitor& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
   mIsPhase1   = curr.mIsPhase1;
@@ -298,45 +298,45 @@ IterState::IterState(BlockStmt* block, const IterState& curr) {
   }
 }
 
-IterState::IterState(CondStmt* cond, const IterState& curr) {
+InitVisitor::InitVisitor(CondStmt* cond, const InitVisitor& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
   mIsPhase1   = curr.mIsPhase1;
   mBlockType  = cBlockCond;
 }
 
-IterState::IterState(LoopStmt* loop, const IterState& curr) {
+InitVisitor::InitVisitor(LoopStmt* loop, const InitVisitor& curr) {
   mFn         = curr.mFn;
   mCurrField  = curr.mCurrField;
   mIsPhase1   = curr.mIsPhase1;
   mBlockType  = cBlockLoop;
 }
 
-AggregateType* IterState::type() const {
+AggregateType* InitVisitor::type() const {
   return mFn != NULL ? toAggregateType(mFn->_this->type) : NULL;
 }
 
-FnSymbol* IterState::theFn() const {
+FnSymbol* InitVisitor::theFn() const {
   return mFn;
 }
 
-bool IterState::isRecord() const {
+bool InitVisitor::isRecord() const {
   return ::isRecord(type());
 }
 
-bool IterState::isClass() const {
+bool InitVisitor::isClass() const {
   return ::isClass(type());
 }
 
-bool IterState::isPhase1() const {
+bool InitVisitor::isPhase1() const {
   return mIsPhase1;
 }
 
-bool IterState::isPhase2() const {
+bool InitVisitor::isPhase2() const {
   return !mIsPhase1;
 }
 
-bool IterState::isFieldReinitialized(DefExpr* field) const {
+bool InitVisitor::isFieldReinitialized(DefExpr* field) const {
   AggregateType* at     = toAggregateType(mFn->_this->type);
   Expr*          ptr    = at->fields.head;
   bool           retval = false;
@@ -354,20 +354,20 @@ bool IterState::isFieldReinitialized(DefExpr* field) const {
   return retval;
 }
 
-bool IterState::inLoopBody() const {
+bool InitVisitor::inLoopBody() const {
   return mBlockType == cBlockLoop;
 }
 
-bool IterState::inCondStmt() const {
+bool InitVisitor::inCondStmt() const {
   return mBlockType == cBlockCond;
 }
 
-bool IterState::inParallelStmt() const {
+bool InitVisitor::inParallelStmt() const {
   return mBlockType == cBlockBegin   ||
          mBlockType == cBlockCobegin  ;
 }
 
-Expr* IterState::completePhase1(Expr* initStmt) {
+Expr* InitVisitor::completePhase1(Expr* initStmt) {
   Expr* retval = initStmt->next;
 
   initializeFieldsBefore(initStmt);
@@ -381,7 +381,7 @@ Expr* IterState::completePhase1(Expr* initStmt) {
   return retval;
 }
 
-void IterState::initializeFieldsBefore(Expr* insertBefore) {
+void InitVisitor::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
     fieldInitFromField(insertBefore, mFn, *this, mCurrField);
 
@@ -389,15 +389,15 @@ void IterState::initializeFieldsBefore(Expr* insertBefore) {
   }
 }
 
-DefExpr* IterState::currField() const {
+DefExpr* InitVisitor::currField() const {
   return mCurrField;
 }
 
-bool IterState::startsInPhase1(FnSymbol* fn) const {
+bool InitVisitor::startsInPhase1(FnSymbol* fn) const {
   return startsInPhase1(fn->body);
 }
 
-bool IterState::startsInPhase1(BlockStmt* block) const {
+bool InitVisitor::startsInPhase1(BlockStmt* block) const {
   Expr* stmt   = block->body.head;
   bool  retval = false;
 
@@ -440,7 +440,7 @@ bool IterState::startsInPhase1(BlockStmt* block) const {
   return retval;
 }
 
-DefExpr* IterState::firstField(FnSymbol* fn) const {
+DefExpr* InitVisitor::firstField(FnSymbol* fn) const {
   AggregateType* at     = toAggregateType(fn->_this->type);
   DefExpr*       retval = toDefExpr(at->fields.head);
 
@@ -460,7 +460,7 @@ DefExpr* IterState::firstField(FnSymbol* fn) const {
   return retval;
 }
 
-Expr* IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
+Expr* InitVisitor::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
   Expr* retval = NULL;
 
   // Either a redefinition, fields out of order, or omitted fields
@@ -487,8 +487,12 @@ Expr* IterState::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static IterState preNormalize(BlockStmt* block, IterState state);
-static IterState preNormalize(BlockStmt* block, IterState state, Expr* start);
+static InitVisitor preNormalize(BlockStmt*  block,
+                                InitVisitor state);
+
+static InitVisitor preNormalize(BlockStmt*  block,
+                                InitVisitor state,
+                                Expr*       start);
 
 static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
@@ -497,7 +501,7 @@ static bool      isThisInit(Expr* stmt);
 
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
-  IterState      state(fn);
+  InitVisitor    state(fn);
 
   // This implies the body contains at least one instance of super.init()
   // and/or this.init() i.e. the body is not empty and we do not need to
@@ -552,11 +556,14 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
   }
 }
 
-static IterState preNormalize(BlockStmt* block, IterState state) {
+static InitVisitor preNormalize(BlockStmt*  block,
+                                InitVisitor state) {
   return preNormalize(block, state, block->body.head);
 }
 
-static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
+static InitVisitor preNormalize(BlockStmt*  block,
+                                InitVisitor state,
+                                Expr*       stmt) {
   while (stmt != NULL) {
     if (isDefExpr(stmt) == true) {
       stmt = stmt->next;
@@ -667,10 +674,10 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
     } else if (CondStmt* cond = toCondStmt(stmt)) {
       // Focus on phase 1
       if (state.isPhase1() == true) {
-        preNormalize(cond->thenStmt, IterState(cond, state));
+        preNormalize(cond->thenStmt, InitVisitor(cond, state));
 
         if (cond->elseStmt != NULL) {
-          preNormalize(cond->elseStmt, IterState(cond, state));
+          preNormalize(cond->elseStmt, InitVisitor(cond, state));
         }
       }
 
@@ -679,13 +686,13 @@ static IterState preNormalize(BlockStmt* block, IterState state, Expr* stmt) {
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
       // Focus on phase 1
       if (state.isPhase1() == true) {
-        preNormalize((BlockStmt*) stmt, IterState(loop, state));
+        preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
       }
 
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      state = preNormalize(block, IterState(block, state));
+      state = preNormalize(block, InitVisitor(block, state));
       stmt  = stmt->next;
 
     } else {
@@ -729,27 +736,27 @@ static bool isThisInit(Expr* stmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeWoutInit(Expr*      stmt,
-                                  FnSymbol*  fn,
-                                  IterState& state,
-                                  DefExpr*   field);
+static void fieldInitTypeWoutInit(Expr*        stmt,
+                                  FnSymbol*    fn,
+                                  InitVisitor& state,
+                                  DefExpr*     field);
 
-static void fieldInitTypeWithInit(Expr*      stmt,
-                                  FnSymbol*  fn,
-                                  IterState& state,
-                                  DefExpr*   field,
-                                  Expr*      initExpr);
+static void fieldInitTypeWithInit(Expr*        stmt,
+                                  FnSymbol*    fn,
+                                  InitVisitor& state,
+                                  DefExpr*     field,
+                                  Expr*        initExpr);
 
-static void fieldInitTypeInference(Expr*      insertBefore,
-                                   FnSymbol*  fn,
-                                   IterState& state,
-                                   DefExpr*   field,
-                                   Expr*      initExpr);
+static void fieldInitTypeInference(Expr*        insertBefore,
+                                   FnSymbol*    fn,
+                                   InitVisitor& state,
+                                   DefExpr*     field,
+                                   Expr*        initExpr);
 
-static Expr* fieldInitFromStmt(CallExpr*  stmt,
-                               FnSymbol*  fn,
-                               IterState& state,
-                               DefExpr*   field) {
+static Expr* fieldInitFromStmt(CallExpr*    stmt,
+                               FnSymbol*    fn,
+                               InitVisitor& state,
+                               DefExpr*     field) {
   Expr* insertBefore = stmt;
   Expr* initExpr     = stmt->get(2)->remove();
   Expr* retval       = stmt->next;
@@ -768,10 +775,10 @@ static Expr* fieldInitFromStmt(CallExpr*  stmt,
   return retval;
 }
 
-static void fieldInitFromField(Expr*      insertBefore,
-                               FnSymbol*  fn,
-                               IterState& state,
-                               DefExpr*   field) {
+static void fieldInitFromField(Expr*        insertBefore,
+                               FnSymbol*    fn,
+                               InitVisitor& state,
+                               DefExpr*     field) {
   if        (field->exprType == NULL && field->init == NULL) {
     INT_ASSERT(false);
 
@@ -799,10 +806,10 @@ static void fieldInitFromField(Expr*      insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeWoutInit(Expr*      stmt,
-                                  FnSymbol*  fn,
-                                  IterState& state,
-                                  DefExpr*   field) {
+static void fieldInitTypeWoutInit(Expr*        stmt,
+                                  FnSymbol*    fn,
+                                  InitVisitor& state,
+                                  DefExpr*     field) {
   SET_LINENO(stmt);
 
   Type* type = field->sym->type;
@@ -852,11 +859,11 @@ static void fieldInitTypeWoutInit(Expr*      stmt,
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeWithInit(Expr*      stmt,
-                                  FnSymbol*  fn,
-                                  IterState& state,
-                                  DefExpr*   field,
-                                  Expr*      initExpr) {
+static void fieldInitTypeWithInit(Expr*        stmt,
+                                  FnSymbol*    fn,
+                                  InitVisitor& state,
+                                  DefExpr*     field,
+                                  Expr*        initExpr) {
   SET_LINENO(stmt);
 
   Type* type = field->sym->type;
@@ -934,11 +941,11 @@ static void fieldInitTypeWithInit(Expr*      stmt,
 *                                                                             *
 ************************************** | *************************************/
 
-static void fieldInitTypeInference(Expr*      stmt,
-                                   FnSymbol*  fn,
-                                   IterState& state,
-                                   DefExpr*   field,
-                                   Expr*      initExpr) {
+static void fieldInitTypeInference(Expr*        stmt,
+                                   FnSymbol*    fn,
+                                   InitVisitor& state,
+                                   DefExpr*     field,
+                                   Expr*        initExpr) {
   SET_LINENO(stmt);
 
   // e.g.
@@ -1168,9 +1175,9 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
-static SymExpr* normalizeExpr(Expr*      insertBefore,
-                              IterState& state,
-                              Expr*      expr) {
+static SymExpr* normalizeExpr(Expr*        insertBefore,
+                              InitVisitor& state,
+                              Expr*        expr) {
   SymExpr* retval = NULL;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
