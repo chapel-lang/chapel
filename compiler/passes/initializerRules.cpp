@@ -606,7 +606,15 @@ static InitVisitor preNormalize(BlockStmt*  block,
       // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
-          INT_ASSERT(false);
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of super.init() call in phase 2");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of this.init() call in phase 2");
+
+          } else {
+            INT_ASSERT(false);
+          }
 
         } else if (state.inLoopBody() == true) {
           if (isSuperInit(callExpr) == true) {
