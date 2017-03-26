@@ -1,15 +1,20 @@
 Chapel Documentation
 ====================
 
-This directory contains Chapel's documentation in two forms:
+This directory contains Chapel's documentation in two formats:
 
-``html/`` contains a web-rendered form of the documentation, which reflects
+``html/`` contains a web-rendered format of the documentation, which reflects
 the online documentation hosted at ``http://chapel.cray.com/docs``. This can be
 viewed by pointing a web browser of your choice to ``html/index.html``.
 
-``rst/`` contains the documentation in the form of reStructuredText (rst), a
+``rst/`` contains the documentation in the format of reStructuredText (rst), a
 markup language. This documentation can be viewed with a text editor of your
 choice.
+
+Note that some files in ``rst/`` are written or generated for the purpose of
+being rendered as HTML, such as the ``modules/`` and ``builtins/`` directory,
+as well as the ``index.rst`` files. For this reason, we recommend browsing the
+documentation in the web format.
 
 Resources
 ---------
