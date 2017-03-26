@@ -47,4 +47,4 @@ X is:
 low element is: 1.2
 high element is: 0.2
 
-./arrayAPItest.chpl:51: error: halt reached - array index out of bounds: (6, 1)
+./arrayAPItest.chpl:n: error: halt reached - array index out of bounds: (n, n)
