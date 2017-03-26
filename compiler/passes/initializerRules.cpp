@@ -946,11 +946,9 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-#if 0
-    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
-#endif
+    SymExpr* access = createFieldAccess(stmt, fn, field);
 
-    INT_ASSERT(false);
+    stmt->insertBefore(new CallExpr("init", gMethodToken, access));
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
