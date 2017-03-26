@@ -372,6 +372,10 @@ module ArrayViewRankChange {
       }
     }
 
+    proc dsiLocalSlice(stridable, ranges) {
+      return dsiLocalSubdomain()[chpl_rankChangeConvertDom(ranges, rank, collapsedDim, idx)];
+    }
+
     proc dsiDestroyDom() {
       if upDom != nil then
         _delete_dom(upDom, false);
