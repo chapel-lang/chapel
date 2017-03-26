@@ -3,7 +3,7 @@ Tips On Debugging The Compiler
 ==============================
 
 See also: CompilerIRTricks.txt, GeneratedCode.txt.
-See also: compiler overview in $CHPL_HOME/doc/developer/compilerOverview.
+See also: compiler overview in $CHPL_HOME/doc/rst/developer/compilerOverview.
 
 With --print-passes, the compiler prints individual passes as they progress.
 

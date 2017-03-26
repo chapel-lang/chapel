@@ -1,7 +1,7 @@
 // chplvis: Tags
 
 // Example 2 of use of the VisualDebug module and chplvis tool.
-// Read the file doc/tools/chplvis/chplvis.rst for full
+// Read the file doc/rst/tools/chplvis/chplvis.rst for full
 // documentation on chplvis.
 
 use BlockDist;

@@ -79,4 +79,4 @@ project via the following steps:
   testing.  See TestSystem.rst in this directory for an introduction.
 
 * Get acquainted with the compiler architecture via the compiler
-  overview document in $CHPL_HOME/doc/developer/compilerOverview/
+  overview document in $CHPL_HOME/doc/rst/developer/compilerOverview/

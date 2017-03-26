@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,11 +18,11 @@
  */
 
 /* Functions for producing program help and usage.
-   
+
    Chapel programs can declare main to take arguments like this:
- 
+
    .. code-block:: chapel
- 
+
      proc main(args: [] string) {
        for a in args {
          // process arguments
@@ -30,12 +30,12 @@
        }
      }
 
-   See doc/technotes/main.rst in a Chapel release for more
-   information on this feature.
+   See :ref:`doc/rst/technotes/main.rst <readme-main>` in a Chapel release for
+   more information on this feature.
 
    Programs that use this feature might need to expand upon the usage message
    that explains which config variables are available. To do so, this module
-   includes the :proc:`printUsage` function. 
+   includes the :proc:`printUsage` function.
  */
 module Help {
 
