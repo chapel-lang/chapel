@@ -19,7 +19,7 @@ help-source:
 	@echo "  checkdocs      to invoke 'make check' in the virtualenv"
 	@echo "  module-docs    to invoke 'make documentation' in ../modules"
 	@echo "  primers        to generate primer docs in $(SOURCEDIR)/primers/"
-	@echo "  hellos         to generate hellos docs in $(SOURCEDIR)/primers/"
+	@echo "  hellos         to generate hellos docs in $(SOURCEDIR)/examples/"
 	@echo "  symlinks       to create symlinks from ../man and ../test"
 	@echo "  clean          to remove all generated files excluding ../build/doc"
 	@echo "  clean-build    to remove all generated files in ../build/doc"
@@ -40,14 +40,14 @@ source: module-docs primers hellos symlinks
 
 module-docs: clean-module-docs
 	@echo
-	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into "'$$CHPL_HOME'"/doc/$(SOURCEDIR)/"
+	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into $(SOURCEDIR)/modules"
 	(cd ../modules && make documentation)
 	cp -f $(SOURCEDIR)/meta/modules/* $(SOURCEDIR)/modules/
 	cp -f $(SOURCEDIR)/meta/builtins/* $(SOURCEDIR)/builtins/
 
 primers: clean-primers
 	@echo
-	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/primers/primers/$(SOURCEDIR)/"
+	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/primers"
 	@#Note - this assumes that we are not in a release tar ball
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
 	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
@@ -55,9 +55,8 @@ primers: clean-primers
 
 hellos: clean-hellos
 	@echo
-	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/$(CHPL_DOC_HELLO_DIR)"
-	@#Note - this assumes that we are not in a release tar ball
-	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../test/release/examples/hello*.chpl
+	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"
+	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../examples/hello*.chpl
 	cp -f $(SOURCEDIR)/meta/examples/* $(SOURCEDIR)/examples
 
 symlinks: clean-symlinks
