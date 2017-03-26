@@ -186,3 +186,5 @@ Current Limitations
     given construct, without propagation.
 
 * Errors may not be generic classes. 
+
+* Virtual methods cannot throw.
