@@ -538,7 +538,7 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
   // This implies the body contains at least one instance of super.init()
   // and/or this.init() i.e. the body is not empty and we do not need to
   // insert super.init()
-  if (state.isPhase1() == true) {
+  if (state.isPhase0() == true || state.isPhase1() == true) {
     preNormalize(fn->body, state);
 
   // 1) Insert super.init()
@@ -704,8 +704,8 @@ static InitVisitor preNormalize(BlockStmt*  block,
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      // Focus on phase 1
-      if (state.isPhase1() == true) {
+      // Focus on phase 0 or phase 1
+      if (state.isPhase0() == true || state.isPhase1() == true) {
         preNormalize(cond->thenStmt, InitVisitor(cond, state));
 
         if (cond->elseStmt != NULL) {
@@ -716,8 +716,8 @@ static InitVisitor preNormalize(BlockStmt*  block,
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      // Focus on phase 1
-      if (state.isPhase1() == true) {
+      // Focus on phase 0 or phase 1
+      if (state.isPhase0() == true || state.isPhase1() == true) {
         preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
       }
 
@@ -728,8 +728,8 @@ static InitVisitor preNormalize(BlockStmt*  block,
       stmt  = stmt->next;
 
     } else {
-      // Focus on phase 1
-      if (state.isPhase1() == true) {
+      // Focus on phase 0 or phase 1
+      if (state.isPhase0() == true || state.isPhase1() == true) {
         INT_ASSERT(false);
       }
 
