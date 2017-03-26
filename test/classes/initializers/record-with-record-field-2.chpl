@@ -3,7 +3,7 @@
 // Ensure MyRec is initialized correctly
 
 record MyRec {
-  var x : int = 10;
+  var x : int    = 10;
   var y : SubRec = new SubRec(20, 30);
 
   proc init() {
