@@ -239,7 +239,7 @@ public:
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
 
-  Expr*           completePhase1(Expr* insertBefore);
+  Expr*           completePhase1(CallExpr* insertBefore);
   void            initializeFieldsBefore(Expr* insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
@@ -381,13 +381,15 @@ bool InitVisitor::inParallelStmt() const {
          mBlockType == cBlockCobegin  ;
 }
 
-Expr* InitVisitor::completePhase1(Expr* initStmt) {
+Expr* InitVisitor::completePhase1(CallExpr* initStmt) {
   Expr* retval = initStmt->next;
 
-  initializeFieldsBefore(initStmt);
+  if (isSuperInit(initStmt) == true) {
+    initializeFieldsBefore(initStmt);
 
-  if (isRecord() == true) {
-    initStmt->remove();
+    if (isRecord() == true) {
+      initStmt->remove();
+    }
   }
 
   mPhase = cPhase2;
@@ -644,7 +646,7 @@ static InitVisitor preNormalize(BlockStmt*  block,
           }
 
         } else {
-          stmt = state.completePhase1(stmt);
+          stmt = state.completePhase1(callExpr);
         }
 
       // Stmt is simple/compound assignment to a local field
