@@ -1028,22 +1028,11 @@ static void fieldInitTypeWithInit(Expr*        stmt,
 
 
   } else {
-#if 0
-    Symbol*    var      = defExpr->sym;
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    Expr*      typeExpr = defExpr->exprType->remove();
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+    Symbol*  _this = fn->_this;
+    Symbol*  name  = new_CStringSymbol(field->sym->name);
+    SymExpr* rhs   = normalizeExpr(stmt, state, initExpr);
 
-    defExpr ->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
-#endif
-
-    INT_ASSERT(false);
+    stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, rhs));
   }
 }
 
