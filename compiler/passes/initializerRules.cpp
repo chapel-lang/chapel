@@ -39,7 +39,9 @@ enum InitStyle {
 
 class InitVisitor;
 
-static bool      isInitStmt(Expr* stmt);
+static bool      isInitStmt (Expr* stmt);
+static bool      isSuperInit(Expr* stmt);
+static bool      isThisInit (Expr* stmt);
 
 static InitStyle findInitStyle(FnSymbol* fn);
 static InitStyle findInitStyle(Expr*     expr);
@@ -745,16 +747,92 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
   return new CallExpr(new CallExpr(".", superCall, initSym));
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  Determine if the current stmt is one of                                    *
+*                                                                             *
+*     this.init(args);                                                        *
+*       => call(call(".", this,                     "init") .. args)          *
+*                                                                             *
+*     super.init(args)                                                        *
+*       => call(call(".", unresolved("super"),      "init") .. args)  or      *
+*       => call(call(".", call(".", this, "super"), "init") .. args)          *
+*                                                                             *
+************************************** | *************************************/
+
+static const char* initName(Expr*     stmt);
+static const char* initName(CallExpr* expr);
+static bool        isSymbolThis(Expr* expr);
+static bool        isStringLiteral(Expr* expr, const char* name);
+static bool        isUnresolvedSymbol(Expr* expr, const char* name);
+
 static bool isInitStmt(Expr* stmt) {
-  return findInitStyle(stmt) != STYLE_NONE       ? true : false;
+  return isSuperInit(stmt) == true || isThisInit(stmt) == true;
 }
 
 static bool isSuperInit(Expr* stmt) {
-  return findInitStyle(stmt) == STYLE_SUPER_INIT ? true : false;
+  const char* name = initName(stmt);
+
+  return name != NULL && strcmp(name, "super") == 0 ? true : false;
 }
 
 static bool isThisInit(Expr* stmt) {
-  return findInitStyle(stmt) == STYLE_THIS_INIT  ? true : false;
+  const char* name = initName(stmt);
+
+  return name != NULL && strcmp(name, "this")  == 0 ? true : false;
+}
+
+static const char* initName(Expr* stmt) {
+  const char* retval = NULL;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
+      retval = initName(inner);
+    }
+  }
+
+  return retval;
+}
+
+//
+// Extract init name for the inner part of the call i.e.
+//
+//    this.init(args);
+//      => call(".", this,                     "init")
+//
+//    super.init(args)
+//      => call(".", unresolved("super"),      "init")     // records
+//      => call(".", call(".", this, "super"), "init")     // classes
+//
+
+static const char* initName(CallExpr* expr) {
+  const char* retval = NULL;
+
+  if (expr->numActuals()                    ==    2 &&
+      expr->isNamed(".")                    == true &&
+      isStringLiteral(expr->get(2), "init") == true) {
+
+    if (isSymbolThis(expr->get(1)) == true) {
+      retval = "this";
+
+    } else {
+      // "super" is an unresolved symbol for records
+      if (isUnresolvedSymbol(expr->get(1), "super") == true) {
+        retval = "super";
+
+      // "super" is a expr to a field accessor for classes
+      } else if (CallExpr* subExpr = toCallExpr(expr->get(1))) {
+        if (subExpr->numActuals()                     == 2    &&
+            subExpr->isNamed(".")                     == true &&
+            isSymbolThis(subExpr->get(1))             == true &&
+            isStringLiteral(subExpr->get(2), "super") == true) {
+          retval = "super";
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
