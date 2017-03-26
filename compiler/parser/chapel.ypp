@@ -1476,6 +1476,9 @@ for_expr:
 cond_expr:
   TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+/* MPF: it would be nice to match TIF expr TTHEN expr but
+  the obvious solution there leads to shift-reduce conflicts.
+ */
 ;
 
 nil_expr:

@@ -227,7 +227,7 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   }
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_thread_cpubind(topology, pthread_self(), cpuset, flags)) {
+  if (hwloc_get_cpubind(topology, cpuset, flags)) {
     report_error("hwloc_get_cpubind()", errno);
   }
 
@@ -303,6 +303,58 @@ void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
       subchunkSizes[i] = (pgNext - pg) * pgSize;
     }
   }
+}
+
+
+void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
+                                  c_sublocid_t subloc) {
+  size_t pgSize;
+  unsigned char* pPgLo;
+  size_t nPages;
+  hwloc_cpuset_t cpuset;
+  int flags;
+
+  _DBG_P("chpl_topo_touchMemFromSubloc(%p, %#zx, onlyIn=%s, %d)\n",
+         p, size, (onlyInside ? "T" : "F"), (int) subloc);
+
+  if (!haveTopology
+      || !topoSupport->cpubind->get_thread_cpubind
+      || !topoSupport->cpubind->set_thread_cpubind) {
+    return;
+  }
+
+  alignAddrSize(p, size, onlyInside, &pgSize, &pPgLo, &nPages);
+
+  _DBG_P("    localize %p, %#zx bytes (%#zx pages)\n",
+         pPgLo, nPages * pgSize, nPages);
+
+  if (nPages == 0)
+    return;
+
+  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  flags = HWLOC_CPUBIND_THREAD;
+  if (hwloc_get_cpubind(topology, cpuset, flags)) {
+    report_error("hwloc_get_cpubind()", errno);
+  }
+
+  chpl_topo_setThreadLocality(subloc);
+
+  {
+    size_t pg;
+    for (pg = 0; pg < nPages; pg++) {
+      pPgLo[pg * pgSize] = 0;
+    }
+  }
+
+  flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
+  if (hwloc_set_cpubind(topology, cpuset, flags)) {
+    report_error("hwloc_set_cpubind()", errno);
+  }
+
+  hwloc_bitmap_free(cpuset);
 }
 
 
@@ -433,6 +485,8 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
 void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
                                       chpl_bool onlyInside,
                                       size_t* subchunkSizes) { }
+void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
+                                  c_sublocid_t subloc) { }
 c_sublocid_t chpl_topo_getMemLocality(void* p) { return c_sublocid_any; }
 
 #endif // if defined(CHPL_HAS_HWLOC)

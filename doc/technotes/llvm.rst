@@ -30,6 +30,8 @@ generation, but no support for ``--llvm-wide-opt``:
 
   source ./util/setchplenv.bash
   export CHPL_LLVM=llvm
+  # or, if you have already installed compatible LLVM libraries
+  # export CHPL_LLVM=system
 
   make # you might want to do e.g. make -j 16 for a parallel build
 

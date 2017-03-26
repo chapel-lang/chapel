@@ -32,6 +32,13 @@ The main files for these benchmarks are as follows:
      ptrans.chpl            : the global PTRANS benchmark
      hpl.chpl               : the High Performance Linpack benchmark
 
+Other files with the same base filenames as the Chapel test programs but
+different filename extensions, are for use by the automated test system.
+For example, file ra.execopts supports automated testing of ra.chpl.
+Files with all-uppercase filenames like NUMLOCALES (but not "README")
+are similar, except they are applied to all chpl tests in the
+directory. $CHPL_HOME/examples/README.testing contains more information.
+
 A subdirectory contains variants -- particularly more elegant
 implementations that do not yet perform as well as the ones in this
 directory.

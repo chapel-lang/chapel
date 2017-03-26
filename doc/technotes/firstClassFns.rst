@@ -41,6 +41,8 @@ To be captured, a function must not be any of the following:
 
 - An overloaded function
 
+- A function referring to outer variable, other than globals
+
 Rationale. Generic functions would require manipulating generic,
 uninstantiated types, which is currently not available in Chapel.
 Functions with compile-time return types like type and param would
@@ -51,7 +53,8 @@ similarly to the current implementation but respects the yielding that
 occurs inside an iterator. Method capture requires the currying of
 the object as the first argument to the first-class function.
 Operators and overloaded functions require a type-based multiple
-dispatch mechanism.
+dispatch mechanism. Functions referring to outer non-global variables
+are not currently supported in the implementation.
 
 
 .. _readme-lambdaFns:
@@ -77,33 +80,6 @@ For example:
 
   var f = lambda(x:int, y:int) { return x + y; };
   writeln(f(1,2));  // outputs: 3
-
-Lambdas can also "capture" variables that are defined outside of the
-lambda by referring to them in the body of the lambda. These form a
-"closure", a combination of a function and an associated execution
-environment.  This closure captures the variables in such a way that
-modifying them modifies the original variables (this is sometimes
-called "capturing the variables by reference").  Currently a lambda
-that captures variables can be used only while the activation records
-of the functions that define these variables, if any, still exist
-on the stack, i.e. while these functions are still executing.
-
-Example. For example the following is acceptable:
-
-.. code-block:: chapel
-
-  proc myfunc() {
-    var x = 3;
-    var f = lambda() { x = 4; };
-
-    f();
-
-    return x;
-  }
-
-  writeln(myfunc());  // outputs: 4
-
-whereas having ``myfunc()`` return its ``f`` variable is not supported.
 
 
 Specifying the type of a first-class function

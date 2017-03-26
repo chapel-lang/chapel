@@ -569,15 +569,35 @@ CHPL_LLVM
    :ref:`readme-llvm`) or to support extern blocks in Chapel code via
    the Clang compiler (see :ref:`readme-extern`).  Current options are:
 
-       ====== ======================================================
-       Value  Description
-       ====== ======================================================
-       llvm   use the llvm/clang distribution in third-party
-       none   do not support llvm-/clang-related features
-       ====== ======================================================
+       ============== ======================================================
+       Value          Description
+       ============== ======================================================
+       llvm           use the llvm/clang distribution in third-party
+       system         find a compatible LLVM in system libraries;
+                      note: the LLVM must be a version supported by Chapel
+       none           do not support llvm-/clang-related features
+       ============== ======================================================
+
+   .. (comment) -minimal can be used but is only interesting for developers
+       llvm-minimal   as above, but only build and link LLVM ADTs
+       system-minimal as above, but only link LLVM ADTs
 
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
+
+   Chapel currently supports LLVM 3.7.
+
+   .. note::
+
+       We have had success with these commands to install LLVM 3.7 dependencies
+
+        .. code-block:: sh
+
+            # Fedora 25
+            dnf install llvm3.7 llvm3.7-devel llvm3.7-static zlib-static
+
+            # Ubuntu 16.04
+            apt-get install llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
 
 
 .. _readme-chplenv.CHPL_WIDE_POINTERS:

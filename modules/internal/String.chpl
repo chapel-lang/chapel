@@ -831,7 +831,9 @@ module String {
     }
 
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      if S.size == 1 {
+      if S.size == 0 {
+        return '';
+      } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
         var ret = S[S.domain.low];
         return ret;
@@ -928,7 +930,7 @@ module String {
     // TODO: I could make this and other routines that use find faster by
     // making a version of search helper that only takes in local strings and
     // localizing in the calling function
-    proc partition(sep: string) : 3*string {
+    proc const partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
         return (this[..idx-1], sep, this[idx+sep.length..]);
