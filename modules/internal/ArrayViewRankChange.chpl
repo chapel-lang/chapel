@@ -384,7 +384,12 @@ module ArrayViewRankChange {
     }
 
     proc dsiLocalSlice(stridable, ranges) {
-      return dsiLocalSubdomain()[chpl_rankChangeConvertDom(ranges, rank, collapsedDim, idx)];
+      return dsiLocalSubdomain()[(...ranges)];
+    }
+
+    proc dsiClear() {
+      const empty : domain(rank, idxType, stridable);
+      dsiSetIndices(empty.dims());
     }
 
     proc dsiDestroyDom() {
