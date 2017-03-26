@@ -32,7 +32,6 @@ hierarchy with ``Error`` at its root.
     var i: int;
   }
 
-
 Chapel does not provide a standard set of ``Error`` classes.
 
 
@@ -76,8 +75,8 @@ calling function is as follows:
 Specified Policy
 ++++++++++++++++
 
-``try`` blocks and their associated ``catch`` clauses allow the user to specify
-an explicit error handling policy for a throwing call.
+``try``/``try!`` blocks and their associated ``catch`` clauses allow the user
+to specify an explicit error handling policy for a throwing call.
 
 * Statements that contain throwing calls should be enclosed in a ``try`` block.
   
@@ -113,7 +112,7 @@ an explicit error handling policy for a throwing call.
   }
 
 * If none of the type filters matches the error, the final policy will depend
-  on whether a ``try`` or ``try!`` was used for the ``try`` block.
+  on whether a ``try`` or ``try!`` was used.
  
   * If ``try`` was used, the error will be propagated. (More on this below.)
 
