@@ -14,9 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     make \
     mawk \
+    file \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHPL_VERSION 1.14.0
+ENV CHPL_VERSION 1.15.0
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
 
