@@ -223,6 +223,9 @@ static void     fieldInitFromField(Expr*        insertBefore,
                                    DefExpr*     field);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
+static DefExpr* toSuperField    (AggregateType* at, CallExpr* expr);
+
+static DefExpr* toSuperField    (AggregateType* at, SymExpr*  expr);
 
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalField    (AggregateType* at, CallExpr* expr);
@@ -1293,6 +1296,30 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
   return NULL;
 }
 
+static DefExpr* toSuperField(AggregateType* at, CallExpr* callExpr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    AggregateType* pt = toAggregateType(t);
+
+    if (DefExpr* field = toLocalField(pt, callExpr)) {
+      return field;
+    }
+  }
+
+  return NULL;
+}
+
+static DefExpr* toSuperField(AggregateType* at, SymExpr*  symExpr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    AggregateType* pt = toAggregateType(t);
+
+    if (DefExpr* field = toLocalField(pt, symExpr)) {
+      return field;
+    }
+  }
+
+  return NULL;
+}
+
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
   DefExpr* retval = NULL;
 
@@ -1451,13 +1478,37 @@ static SymExpr* normalizeExpr(Expr*        insertBefore,
                   field->sym->name);
       }
 
+    } else if (DefExpr* field = toSuperField(state.type(), symExpr)) {
+      if (state.isPhase2() == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "Cannot access parent field '%s' during phase 1",
+                  field->sym->name);
+      }
+
     } else {
       retval = symExpr;
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
     if (DefExpr* field = toLocalField(state.type(), callExpr)) {
-      retval = createFieldAccess(insertBefore, state.theFn(), field);
+      if (state.isPhase2() == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "Cannot access parent field '%s' during phase 1",
+                  field->sym->name);
+      }
+
+    } else if (DefExpr* field = toSuperField(state.type(), callExpr)) {
+      if (state.isPhase2() == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "Cannot access parent field '%s' during phase 1",
+                  field->sym->name);
+      }
 
     } else {
       VarSymbol*         tmp      = newTemp("call_tmp");
