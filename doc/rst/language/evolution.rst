@@ -53,10 +53,10 @@ Now the act of returning an array makes a copy:
 .. code-block:: chapel
 
   var A: [1..4] int;
-  proc f() {
+  proc returnsArray() {
     return A;
   }
-  ref B = f();
+  ref B = returnsArray();
   B = 1;
   writeln(a);
   // outputs 1 1 1 1 historically
@@ -71,7 +71,7 @@ return a local `int` variable by `ref`.
 
 .. code-block:: chapel
 
-  proc f() ref {
+  proc returnsArrayReference() ref {
     return A;
   }
 
@@ -140,23 +140,23 @@ argument `x` is `ref`:
 
 .. code-block:: chapel
 
-  proc f(x) {
+  proc setElementOne(x) {
     // x is modified, so as if formal was ref x
     x[1] = 1;
   }
   var A:[1..10] int;
-  f(A);
+  setElementOne(A);
 
 In contrast, in the following program, the default intent for the formal argument `y` is `const ref`:
 
 .. code-block:: chapel
 
-  proc g(y) {
+  proc getElementOne(y) {
     // y is not modified, so as if formal was const ref y
     var tmp = y[1];
   }
   const B:[1..10] int;
-  g(B);
+  getElementOne(B);
 
 
 record `this` default intent
