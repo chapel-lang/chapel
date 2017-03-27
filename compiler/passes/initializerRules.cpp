@@ -786,12 +786,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
                     "loop during phase 1 of initialization",
                     field->sym->name);
 
-        } else if (state.inCondStmt() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "conditional during phase 1 of initialization",
-                    field->sym->name);
-
         } else if (state.inParallelStmt() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
