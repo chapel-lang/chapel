@@ -8,13 +8,13 @@ a source distribution of Chapel.
 
 In the following instructions, note that building and using Chapel as
 described in steps 2-5 disables optional and advanced features in the
-interest of getting you a clean build as quickly as possible. Later 
+interest of getting you a clean build as quickly as possible. Later
 sections explain how to re-build in the preferred configuration and how to
 enable more features, such as distributed memory execution.
 
 
-0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system tools and
-   packages you may need to have installed to build and run Chapel.
+0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
+   tools and packages you may need to have installed to build and run Chapel.
 
 1) If you don't already have Chapel 1.15, see
    http://chapel.cray.com/download.html .
@@ -47,7 +47,8 @@ enable more features, such as distributed memory execution.
 
    d. Use GNU make to build Chapel.
       On some systems, you will have to use gmake.
-      See :ref:`building.rst <readme-building>` for more information about building Chapel.
+      See :ref:`building.rst <readme-building>` for more information about
+      building Chapel.
 
       .. code-block:: bash
 
@@ -129,7 +130,8 @@ Using Chapel in Multi-Locale Mode
 
 All of the instructions above describe how to run Chapel programs
 in a single-locale (shared-memory) mode. To run using multiple
-locales (distributed memory), please refer to :ref:`multilocale.rst <readme-multilocale>`.
+locales (distributed memory), please refer to
+:ref:`multilocale.rst <readme-multilocale>`.
 
 Performance
 -----------
@@ -157,20 +159,20 @@ the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 What's next?
 ------------
 
-=============================================== ===============================
-**For more detailed information about:**        **refer to:**
------------------------------------------------ -------------------------------
-    online Chapel Documentation                 :ref:`chapel.cray.com/docs <chapel-documentation>`
-    platform-specific notes                     :ref:`../platforms <platforms-index>`
-    example Chapel programs                     ``$CHPL_HOME/examples/README``
-    setting Chapel environment variables        :ref:`chplenv.rst <readme-chplenv>`
-    building the compiler                       :ref:`building.rst <readme-building>`
-    compiling Chapel programs                   :ref:`compiling.rst <readme-compiling>`
-    executing Chapel programs                   :ref:`executing.rst <readme-executing>`
-    debugging Chapel programs                   :ref:`debugging.rst <readme-debugging>`
-    reporting bugs                              :ref:`bugs.rst <readme-bugs>`
-    performance status                          ``$CHPL_HOME/PERFORMANCE.md``
-    Chapel modes for emacs and vim              ``$CHPL_HOME/highlight/README.md``
-    Chapel's file and directory structure       ``$CHPL_HOME/README.files``
-    changes since the last release              ``$CHPL_HOME/CHANGES.md``
-=============================================== ===============================
+For more information about Chapel, refer to the following resources:
+
+============================ ==================================================
+Online documentation:        :ref:`chapel.cray.com/docs <chapel-documentation>`
+Platform-specific notes:     :ref:`../platforms <platforms-index>`
+Example Chapel programs:     ``$CHPL_HOME/examples/README``
+Setting Chapel env vars:     :ref:`chplenv.rst <readme-chplenv>`
+Building the compiler:       :ref:`building.rst <readme-building>`
+Compiling Chapel programs:   :ref:`compiling.rst <readme-compiling>`
+Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
+Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
+Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
+Performance status:          ``$CHPL_HOME/PERFORMANCE.md``
+Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
+Chapel's file/dir structure: ``$CHPL_HOME/README.files``
+Changes since last release:  ``$CHPL_HOME/CHANGES.md``
+============================ ==================================================
