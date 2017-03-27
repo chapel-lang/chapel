@@ -835,8 +835,20 @@ static InitVisitor preNormalize(BlockStmt*  block,
         }
 
       } else {
-        preNormalize(cond->thenStmt, InitVisitor(cond, state));
-        preNormalize(cond->elseStmt, InitVisitor(cond, state));
+        InitVisitor stateThen = preNormalize(cond->thenStmt,
+                                             InitVisitor(cond, state));
+
+        InitVisitor stateElse = preNormalize(cond->elseStmt,
+                                             InitVisitor(cond, state));
+
+        if (state.isPhase2() == false) {
+          // Only one branch contained an init
+          if (stateThen.isPhase2() == stateElse.isPhase2()) {
+            state.merge(stateThen);
+          } else {
+            INT_ASSERT(false);
+          }
+        }
       }
 
       stmt = stmt->next;
