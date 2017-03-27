@@ -59,7 +59,8 @@ static void      preNormalizeGenericInit(FnSymbol* fn);
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* typeForExpr(Expr* expr);
+static Type*          typeForExpr(Expr* expr);
+static AggregateType* typeForNewExpr(CallExpr* newExpr);
 
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
@@ -107,6 +108,7 @@ void preNormalizeFields(AggregateType* at) {
 
 // Infer the type of an expression for simple cases.
 //   1) An immediate value for one of the primitive scalars
+//   2) A new expr
 static Type* typeForExpr(Expr* expr) {
   Type* retval = NULL;
 
@@ -115,6 +117,29 @@ static Type* typeForExpr(Expr* expr) {
 
     if (isPrimitiveScalar(type) == true) {
       retval = type;
+    }
+
+  } else if (CallExpr* initCall = toCallExpr(expr)) {
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+      retval = typeForNewExpr(initCall);
+    }
+  }
+
+  return retval;
+}
+
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  AggregateType* retval = NULL;
+
+  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
+      if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
+        if (AggregateType* type = toAggregateType(sym->type)) {
+          if (isClass(type) == true || isRecord(type) == true) {
+            retval = type;
+          }
+        }
+      }
     }
   }
 
@@ -606,7 +631,15 @@ static InitVisitor preNormalize(BlockStmt*  block,
       // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
-          INT_ASSERT(false);
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of super.init() call in phase 2");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of this.init() call in phase 2");
+
+          } else {
+            INT_ASSERT(false);
+          }
 
         } else if (state.inLoopBody() == true) {
           if (isSuperInit(callExpr) == true) {
@@ -938,11 +971,9 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-#if 0
-    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
-#endif
+    SymExpr* access = createFieldAccess(stmt, fn, field);
 
-    INT_ASSERT(false);
+    stmt->insertBefore(new CallExpr("init", gMethodToken, access));
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -968,6 +999,8 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+static bool isNewExpr(Expr* expr);
 
 static void fieldInitTypeWithInit(Expr*        stmt,
                                   FnSymbol*    fn,
@@ -997,52 +1030,44 @@ static void fieldInitTypeWithInit(Expr*        stmt,
     stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-#if 0
     if (isNewExpr(initExpr) == true) {
-      Symbol*   var     = defExpr->sym;
-      Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
-      CallExpr* argExpr = toCallExpr(arg);
+      CallExpr* newExpr = toCallExpr(initExpr);
+      CallExpr* subExpr = toCallExpr(newExpr->get(1)->remove());
+      SymExpr*  access  = createFieldAccess(stmt, fn, field);
 
-      // Insert the arg portion of the initExpr back into tree
-      defExpr->insertAfter(argExpr);
+      stmt->insertBefore(subExpr);
 
       // Convert it in to a use of the init method
-      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+      subExpr->setUnresolvedFunction("init");
 
       // Add _mt and _this (insert at head in reverse order)
-      argExpr->insertAtHead(var);
-      argExpr->insertAtHead(gMethodToken);
+      subExpr->insertAtHead(access);
+      subExpr->insertAtHead(gMethodToken);
 
     } else {
-      Symbol*   var    = defExpr->sym;
-      CallExpr* init   = new CallExpr("init", gMethodToken, var);
-      CallExpr* assign = new CallExpr("=",    var,          initExpr);
+      SymExpr* rhs    = normalizeExpr(stmt, state, initExpr);
+      SymExpr* access = createFieldAccess(stmt, fn, field);
 
-      defExpr->insertAfter(init);
-      init->insertAfter(assign);
+      stmt->insertBefore(new CallExpr("init", gMethodToken, access, rhs));
     }
-#endif
-
-    INT_ASSERT(false);
 
   } else {
-#if 0
-    Symbol*    var      = defExpr->sym;
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    Expr*      typeExpr = defExpr->exprType->remove();
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+    Symbol*  _this = fn->_this;
+    Symbol*  name  = new_CStringSymbol(field->sym->name);
+    SymExpr* rhs   = normalizeExpr(stmt, state, initExpr);
 
-    defExpr ->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
-#endif
-
-    INT_ASSERT(false);
+    stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, rhs));
   }
+}
+
+static bool isNewExpr(Expr* expr) {
+  bool retval = false;
+
+  if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = callExpr->isPrimitive(PRIM_NEW);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
