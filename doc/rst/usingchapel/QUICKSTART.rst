@@ -157,9 +157,9 @@ the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 What's next?
 ------------
 
-=============================================== ==================================================
+=============================================== ===============================
 **For more detailed information about:**        **refer to:**
------------------------------------------------ --------------------------------------------------
+----------------------------------------------- -------------------------------
     online Chapel Documentation                 :ref:`chapel.cray.com/docs <chapel-documentation>`
     platform-specific notes                     :ref:`../platforms <platforms-index>`
     example Chapel programs                     ``$CHPL_HOME/examples/README``
@@ -173,4 +173,4 @@ What's next?
     Chapel modes for emacs and vim              ``$CHPL_HOME/highlight/README.md``
     Chapel's file and directory structure       ``$CHPL_HOME/README.files``
     changes since the last release              ``$CHPL_HOME/CHANGES.md``
-=============================================== ==================================================
+=============================================== ===============================
