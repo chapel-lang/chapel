@@ -8,6 +8,183 @@ capture significant language changes that have the possibility of breaking
 existing user codes or code samples from old presentations or papers that
 predated the changes.
 
+version 1.15, April 2017
+------------------------
+
+Version 1.15 includes several language changes to improve array semantics.
+
+array lexical scoping
+*********************
+
+Continuing on the changes for 1.12 described below in
+:ref:`readme-evolution.lexical-scoping`, using arrays beyond
+their scope is now a user error:
+
+.. code-block:: chapel
+
+  proc badBegin() {
+    var A: [1..10000] int;
+    begin {
+      A += 1;
+    }
+    // Error: A destroyed here at function end, but the begin could still be using it!
+  }
+
+
+Similarly, using a slice after an array has been destroyed is an error:
+
+.. code-block:: chapel
+
+  proc badBeginSlice() {
+    var A: [1..10000] int;
+    var slice => A[1..1000];
+    begin {
+      slice += 1;
+    }
+    // Error: A destroyed here at function end, but the begin tries to use it through the slice!
+  }
+
+
+arrays return by value by default
+*********************************
+
+Now the act of returning an array makes a copy:
+
+.. code-block:: chapel
+
+  var A: [1..4] int;
+  proc returnsArray() {
+    return A;
+  }
+  ref B = returnsArray();
+  B = 1;
+  writeln(A);
+  // outputs 1 1 1 1 historically
+  // outputs 0 0 0 0 after this work
+
+
+This behavior applies to array slices as well.
+
+The old behavior is available with the `ref` return intent. Note though that
+returning a `ref` to a local array is an error just like it is an error to
+return a local `int` variable by `ref`.
+
+.. code-block:: chapel
+
+  proc returnsArrayReference() ref {
+    return A;
+  }
+
+
+array blank intent
+******************
+
+Before 1.15, the default intent for arrays was `ref`. The rationale for
+this feature was that it was a convenience for programmers who are used
+to modifying array formal arguments in their functions. Unfortunately, it
+interacted poorly with return intent overloading.
+Additionally, the implementation had several bugs in this area.
+
+The following example shows how it might be surprising that return intent
+overloading behaves very differently for arrays than for other types. As
+the example shows, this issue affects program behavior and not just
+const-checking error messages from the compiler.
+
+.. code-block:: chapel
+
+  // First, let's try some of these things with an
+  // associative array of ints:
+  {
+    var D:domain(int);
+    var A:[D] int;
+
+    // This adds index 1 to the domain, implicitly
+    A[1] = 10;
+    writeln(D.member(1)); // outputs `true`
+
+    // This will halt, because index 2 is not in the domain
+    //var tmp = A[2];
+
+    // This will also halt, for the same reason
+    //writeln(A[3]);
+  }
+
+  // Now, let's try the same things with an array of arrays:
+  {
+    var D:domain(int);
+    var AA:[D] [1..4] int;
+    var value:[1..4] int = [10,20,30,40];
+
+    // This adds index 4 to the domain, implicitly
+    AA[4] = value;
+    writeln(D.member(4)); // outputs `true`
+
+    // This will halt, because index 5 is not in the domain
+    //var tmp = AA[5];
+
+    // It seems that this *should* halt, but it does not (pre 1.15)
+    // Instead, it adds index 6 to the domain
+    writeln(AA[6]);
+    writeln(D.member(6)); // outputs `true` !
+  }
+
+See GitHub issue #5217 for more examples and discussion.
+
+In order to make such programs less surprising, version 1.15 changes the default
+intent for arrays to `ref` if the formal argument is modified in the function
+and `const ref` if not. As a result, the above example behaves similarly for an
+associative array of integers and an associative array of dense arrays.
+
+For example, in the following program, the default intent for the formal
+argument `x` is `ref`:
+
+.. code-block:: chapel
+
+  proc setElementOne(x) {
+    // x is modified, so x has ref intent
+    x[1] = 1;
+  }
+  var A:[1..10] int;
+  setElementOne(A);
+
+In contrast, in the following program, the default intent for the formal argument `y` is `const ref`:
+
+.. code-block:: chapel
+
+  proc getElementOne(y) {
+    // y is not modified, so y has const ref intent
+    var tmp = y[1];
+  }
+  const B:[1..10] int;
+  getElementOne(B);
+
+
+record `this` default intent
+****************************
+
+Before 1.15, the default intent for the implicit `this`
+argument for record methods was implemented as `ref` but specified as `const ref`. In 1.15, this changed to `ref` if the formal `this` argument is modified in the body of the function and `const ref` if not.
+
+See GitHub issue #5266 for more details and discussion.
+
+.. code-block:: chapel
+
+  record R {
+    var field: int;
+
+    proc setFieldToOne() {
+      // this is modified, so this-intent is ref
+      this.field = 1;
+    }
+
+    proc printField() {
+      // this is not modified, so this-intent is const ref
+      writeln(this.field);
+    }
+  }
+
+
+
 version 1.13, April 2016
 ------------------------
 
@@ -67,6 +244,8 @@ call that function from the getter or setter.
 
 version 1.12, October 2015
 --------------------------
+
+.. _readme-evolution.lexical-scoping:
 
 lexical scoping
 ***************
