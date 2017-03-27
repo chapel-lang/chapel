@@ -100,16 +100,15 @@ Performance Considerations
 Performance when using the NUMA locale model is currently somewhat
 hit-or-miss.
 
-Development in the 1.15 release improved NUMA-oriented array locality by
-providing for breaking the data storage for arrays into multiple blocks
-and distributing those blocks across NUMA domains.  Based on the
-internal term for array data storage, these are called *multi-ddata*
-arrays.  Although such multiple data blocks are only actually created
-for large arrays (2 MiB or more), the performance impacts affect all
-arrays when the NUMA locale model is used.
-
-This work caused large performance degradations in some cases but
-improved performance greatly in others.
+Development in the 1.15 release improved array data locality in the NUMA
+locale model by adding the ability to split array data storage into
+blocks and distribute those blocks across NUMA domains.  Based on the
+internal term for array data storage, such arrays are called
+*multi-ddata* arrays.  Although only large arrays (2 MiB or more) can
+have multiple data blocks, the array addressing code to support them is
+always present when the NUMA locale model is used.  This code has turned
+out to cause large performance degradations in some cases, but it has
+also improved performance quite a bit in others.
 
 On the downside, array access in the NUMA locale model in 1.15 is much
 slower when the program iterates over an array's domain or the domain's
@@ -127,25 +126,25 @@ performance is roughly the same as in previous releases:
     forall i in R do ... A[i] ...;  // slower than 1.14
     forall a in A do ... a ...;     // same performance as 1.14
 
-Generally, whether the iteration is zippered or not is orthogonal as far
-as these performance changes go.  In particular, zippered iteration over
-multiple arrays performs well, but if even the zippering is over the
-domain or range of even one multi-ddata array then performance will be
-poor.  Generally speaking serial iteration has slowed down in even more
-cases than has parallel iteration, with the exception that serial
-iteration over a 1-dimensional array (as opposed to its domain or range)
-remains as fast in 1.15 as it was in 1.14.
+Whether the iteration is zippered or not is largely immaterial with
+respect to these performance changes.  In particular, zippered iteration
+over multiple arrays performs well, but if even one component of the
+zippered iterator is a domain or range instead of an array then the
+performance will be poor.  Finally, serial iteration has slowed down in
+even more cases than has parallel iteration, with the exception that
+serial iteration over a 1-dimensional array (as opposed to its domain or
+range) remains as fast in 1.15 as it was in 1.14.
 
 Counteracting this to some extent, on Cray XE and XC systems with
-CHPL_COMM=ugni and a hugepage-resident heap, the heap itself and any
-large array (2 MiB or more) will have proper NUMA locality, potentially
-improving performance.  As an example, on a Cray XC system with the 1.15
-release, the stream-ep benchmark with the NUMA locale model and
-CHPL_COMM=ugni performs very nearly as well as it does with the flat
-locale model, CHPL_COMM=gasnet, and CHPL_COMM_SUBSTRATE=mpi, which has
-been the record-holder for some time on this test.
+``CHPL_COMM=ugni`` and a hugepage-resident heap, the heap itself and any
+multi-ddata array will have proper NUMA locality, potentially improving
+performance.  As an example, as of 1.15, on a Cray XC system, the
+stream-ep benchmark with the NUMA locale model and ``CHPL_COMM=ugni``
+performs nearly the same as it does with the flat locale model,
+``CHPL_COMM=gasnet``, and ``CHPL_COMM_SUBSTRATE=mpi``, which has been
+the highest-performing configuration for some time on this test.
 
-Over the course of the next release we plan to refine the NUMA locale
+Over the course of the next release we expect to refine the NUMA locale
 model implementation and resolve the array access problems that are
 causing the poor performance in the NUMA locale model.
 
