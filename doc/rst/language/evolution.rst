@@ -85,7 +85,7 @@ to modifying array formal arguments in their functions. Unfortunately, it
 interacted poorly with the `ref-pair` feature in the language.
 Additionally, the implementation had several bugs in this area.
 
-The following example shows how it might be suprising that the `ref-pair`
+The following example shows how it might be surprising that the `ref-pair`
 feature behaves very differently for arrays than for other types. As
 the example shows, this issue affects program behavior and not just
 const-checking error messages from the compiler.
@@ -130,7 +130,7 @@ const-checking error messages from the compiler.
 
 See GitHub issue #5217 for more examples and discussion.
 
-In order to make such programs less suprising, version 1.15 changes the default
+In order to make such programs less surprising, version 1.15 changes the default
 intent for arrays to `ref` if the formal argument is modified in the function
 and `const ref` if not. As a result, the above example behaves similarly for an
 associative array of integers and an associative array of dense arrays.
