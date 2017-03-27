@@ -56,6 +56,8 @@ locales have homogeneous processor cores and all cores are equidistant from
 memory.
 
 
+.. _readme-NUMAlm:
+
 -----------------
 NUMA Locale Model
 -----------------
@@ -91,6 +93,98 @@ To use the NUMA locale model:
 .. code-block:: sh
 
     chpl -o jacobi $CHPL_HOME/examples/programs/jacobi.chpl
+
+
+.. _readme-KNLlm:
+
+----------------
+KNL Locale Model
+----------------
+
+The KNL locale model has the same properties as the NUMA locale model,
+plus it allows access to the Xeon Phi processor's on-package
+high-bandwidth memory.
+
+The KNL locale model requires the Intel Memkind library, which can be
+obtained in source form, and is also available in the binary
+repositories of some Linux distributions.
+
+For more information on the Memkind library, please see:
+
+    https://memkind.github.io
+
+On a Cray system, Memkind can be loaded with the following command.
+Note that this makes dynamic linking the default, because Memkind is
+dynamically linked.
+
+.. code-block:: sh
+
+    module load cray-memkind
+
+Once the Memkind library is available, Chapel can be built using the
+instructions under :ref:`readme-NUMAlm`, except that
+``CHPL_LOCALE_MODEL`` must be set to ``knl``.
+
+On a Cray system, the KNL locale model is included in the Chapel
+module, so the following commands are sufficient.
+
+.. code-block:: sh
+
+    module load cray-memkind
+    module load chapel
+    export CHPL_LOCALE_MODEL=knl
+
+Please see :ref:`readme-cray` for more detailed information.
+
+New locale model member functions are provided for controlling which
+kind of memory is used for new allocations.  To allocate in high
+bandwidth memory, use the ``.highBandwidthMemory()`` member function.
+For example:
+
+.. code-block:: sh
+
+    on here.highBandwidthMemory() {
+      x = new MyObject();
+    }
+
+It is also possible to say "Use the same locale as variable ``y``, but
+use high bandwidth memory" as follows.
+
+.. code-block:: sh
+
+    on y.locale.highBandwidthMemory() {
+      // . . .
+    }
+
+In case one is nested inside ``on`` statements and desires to get back
+to the default externally-attached memory, a ``.defaultMemory()``
+member function is available.
+
+.. code-block:: sh
+
+    on x {
+      // . . .
+      on here.defaultMemory() {
+        // . . .
+      }
+    }
+
+In addition, ``.lowLatencyMemory()`` and ``.largeMemory()`` functions
+are provided for explicitly referencing the externally-attached
+memory.  In the KNL locale model, ``.defaultMemory()``,
+``.lowLatencyMemory()``, and ``.largeMemory()`` are all the same.
+
+If the KNL processor is booted in the ``cache`` configuration, where
+high-bandwidth memory is not exposed to the user, then the program
+will still run and ``.highBandwidthMemory()`` will use the default
+externally-attached memory.
+
+The four memory selection functions have also been added to the flat
+and NUMA locale models, so it is possible to write programs that take
+advantage of the KNL processor when it is present, and yet still run
+on other processors.
+
+Please see :ref:`readme-knl` for additional information.
 
 
 --------------------------
