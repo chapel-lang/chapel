@@ -110,7 +110,7 @@ always present when the NUMA locale model is used.  This code has turned
 out to cause large performance degradations in some cases, but it has
 also improved performance quite a bit in others.
 
-On the downside, array access in the NUMA locale model in 1.15 is much
+On the downside, array indexing in the NUMA locale model in 1.15 is much
 slower when the program iterates over an array's domain or the domain's
 range, as the first two cases below.  However, if the program iterates
 over array elements themselves as in the last case below, then
@@ -122,9 +122,9 @@ performance is roughly the same as in previous releases:
     var D = {R};
     var A: [D] int;
 
-    forall i in D do ... A[i] ...;  // slower than 1.14
-    forall i in R do ... A[i] ...;  // slower than 1.14
-    forall a in A do ... a ...;     // same performance as 1.14
+    forall i in D do ... A[i] ...; // slower than 1.14
+    forall i in R do ... A[i] ...; // slower than 1.14
+    forall a in A do ... a ...;    // same or better performance as 1.14
 
 Whether the iteration is zippered or not is largely immaterial with
 respect to these performance changes.  In particular, zippered iteration
@@ -140,9 +140,8 @@ Counteracting this to some extent, on Cray XE and XC systems with
 multi-ddata array will have proper NUMA locality, potentially improving
 performance.  As an example, as of 1.15, on a Cray XC system, the
 stream-ep benchmark with the NUMA locale model and ``CHPL_COMM=ugni``
-performs nearly the same as it does with the flat locale model,
-``CHPL_COMM=gasnet``, and ``CHPL_COMM_SUBSTRATE=mpi``, which has been
-the highest-performing configuration for some time on this test.
+sped up by over 2x and is now at performance parity with the reference
+version.
 
 Over the course of the next release we expect to refine the NUMA locale
 model implementation and resolve the array access problems that are
