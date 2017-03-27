@@ -1,2 +1,0 @@
-hasIfImplicit-preferred.chpl:5: In initializer:
-hasIfImplicit-preferred.chpl:8: error: cannot initialize fields in an if statement in phase 1
