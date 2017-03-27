@@ -846,7 +846,9 @@ static InitVisitor preNormalize(BlockStmt*  block,
           if (stateThen.isPhase2() == stateElse.isPhase2()) {
             state.merge(stateThen);
           } else {
-            INT_ASSERT(false);
+            USR_FATAL(cond,
+                      "Both arms of a conditional must use this.init() "
+                      "or super.init() in phase 1");
           }
         }
       }
