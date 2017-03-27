@@ -4,27 +4,21 @@
 Error Handling
 ==============
 
-This README describes the error handling feature as currently implemented.
+This README describes the early version of error handling implemented in Chapel
+1.15. For a complete explanation of the final design and rationale, refer to
+CHIP 8.
 
 
 Errors
 ------
 A base class ``Error`` is defined in the Chapel standard modules.
-
-::
-
-  class Error {
-    var msg: string;
-
-    proc Error(_msg: string) {
-      msg = _msg;
-    }
-  }
+It includes an initializer accepting a string argument, which is the error
+message to display if the error is not caught.
 
 Users may use the provided ``Error`` directly, or create their own error
 hierarchy with ``Error`` at its root.
 
-::
+.. code-block:: chapel
 
   class MyError: Error {}
 
@@ -32,24 +26,27 @@ hierarchy with ``Error`` at its root.
     var i: int;
   }
 
-Chapel does not provide a standard set of ``Error`` classes.
+While defining a standard set of ``Error`` subclasses is planned for the
+future, Chapel only provides ``Error`` at present.
 
 
 Throwing Errors
 ---------------
 ``throw`` statements throw errors from a function to its callee.
 
-::
+.. code-block:: chapel
 
-  throw new Error("with a message");
+  // throwing a newly created error:
+  throw new Error("error message here");
 
+  // throwing an error stored in a variable:
   var e: Error;
   // ... set e ...
   throw e;
 
 If a function may throw an error, it must be declared with ``throws``.
 
-::
+.. code-block:: chapel
 
   proc mayThrowErrors() throws { ... }
   proc mayThrowErrorsAlso(): A throws where ... { ... }
@@ -59,46 +56,46 @@ If a function may throw an error, it must be declared with ``throws``.
 Handling Errors
 ---------------
 
-Default Policy
-++++++++++++++
+Implicit Handler
+++++++++++++++++
 
-When a throwing function is called, the default error handling policy of the
-calling function is as follows:
+When a throwing function is called without an explicit handler (described
+below), an implicit handler is inserted as follows:
 
-* If the calling function is declared with ``throws``, any error encountered
-  will be thrown in turn.
+* If the caller is declared with ``throws``, any error encountered will be
+  thrown in turn.
 
-* If the calling function is not declared with ``throws``, the program will
-  ``halt()`` if any error is encountered.
+* If the caller is not declared with ``throws``, the program will ``halt()``
+  if any error is encountered.
 
 
-Specified Policy
+Explicit Handler
 ++++++++++++++++
 
 ``try``/``try!`` blocks and their associated ``catch`` clauses allow the user
-to specify an explicit error handling policy for a throwing call.
+to specify an explicit handler for a throwing call.
 
 * Statements that contain throwing calls should be enclosed in a ``try`` block.
   
   * If an error is raised by a call in a ``try`` block, the rest of the block
     is abandoned and control flow is passed to the list of ``catch`` clauses.
  
-* Each ``catch`` clause may contain an associated type filter. If the error's
-  type matches the type filter, the block associated with that ``catch`` clause
-  (and only that block) will be executed. 
+* Each ``catch`` clause may contain a type filter. If the error's type matches
+  the type filter, the block associated with that ``catch`` clause (and only
+  that block) will be executed. 
 
   * These filters will be evaluated in order of declaration, so even if a more
     exact filter is present in the list, it will not be selected if a matching
     general filter precedes it.
 
   * If no filter is included, or only an error variable name is provided, then
-    all errors will match. Combined with the rule above, a clause with such a
-    filter must be declared at the end of the list.
+    all errors will match. A clause with such a filter must be declared at the
+    end of the list, since clauses that follow it could never be executed.
 
   * Unless the ``catch`` clause block contains a throw, execution will resume
     after the ``try`` block.
 
-::
+.. code-block:: chapel
 
   try {
     mayThrowErrors();
@@ -111,8 +108,9 @@ to specify an explicit error handling policy for a throwing call.
     writeln("unexpected error");
   }
 
-* If none of the type filters matches the error, the final policy will depend
-  on whether a ``try`` or ``try!`` was used.
+* If none of the type filters matches the error, a catch-all block will be
+  inserted. Its functionality will depend on whether a ``try`` or ``try!``
+  was used.
  
   * If ``try`` was used, the error will be propagated. (More on this below.)
 
@@ -121,7 +119,7 @@ to specify an explicit error handling policy for a throwing call.
 * ``try`` blocks may be used without any ``catch`` clauses, or without brackets
   for single statements, using the same policy rules as above.
 
-::
+.. code-block:: chapel
 
   try {
     ioSourceOne();
@@ -140,7 +138,7 @@ beyond the current scope. This can be accomplished in two ways:
 
 1. Out of the enclosing function, if the function is declared with ``throws``.
 
-::
+.. code-block:: chapel
 
   proc ioSetup() throws {
     try {
@@ -152,7 +150,7 @@ beyond the current scope. This can be accomplished in two ways:
 
 2. To the catch blocks of an enclosing ``try``.
 
-::
+.. code-block:: chapel
 
   try {
     writeln("outer try");
@@ -170,9 +168,11 @@ beyond the current scope. This can be accomplished in two ways:
 Strict Error Mode
 +++++++++++++++++
 When the ``--strict-errors`` flag is passed to the Chapel compiler, it will
-disallow the *Default Policy* described above. As such, every throwing call
-must be handled by a *Specified Policy*. This forces throwing calls to be 
-explicitly marked and handled by the user.
+disable the insertion of *implicit handlers* as described above. As such, every
+throwing call must be handled by an *explicit handler*.
+
+By forcing users to explicitly mark throwing calls and handle errors, the
+program's control flow becomes clearer to the user and the reader.
 
 
 Current Limitations
@@ -187,4 +187,6 @@ Current Limitations
 
 * Errors may not be generic classes. 
 
-* Virtual methods cannot throw.
+* Virtual methods cannot throw. In practice, this means that while a typical
+  class may contain throwing methods, a class that is extended or a class
+  that is extending another class may not contain throwing methods.
