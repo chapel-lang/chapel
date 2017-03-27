@@ -389,8 +389,8 @@ CHPL_MEM
      Certain ``CHPL_COMM`` settings (e.g. ugni and gasnet segment fast/large)
      register the heap to improve communication performance.  Registering the
      heap requires special allocator support that not all allocators provide.
-     Currently ``jemalloc`` is required for configurations that require a
-     registered heap.
+     Currently only ``jemalloc`` is capable of supporting configurations that
+     require a registered heap.
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:
