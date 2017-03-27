@@ -59,7 +59,8 @@ static void      preNormalizeGenericInit(FnSymbol* fn);
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* typeForExpr(Expr* expr);
+static Type*          typeForExpr(Expr* expr);
+static AggregateType* typeForNewExpr(CallExpr* newExpr);
 
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
@@ -107,6 +108,7 @@ void preNormalizeFields(AggregateType* at) {
 
 // Infer the type of an expression for simple cases.
 //   1) An immediate value for one of the primitive scalars
+//   2) A new expr
 static Type* typeForExpr(Expr* expr) {
   Type* retval = NULL;
 
@@ -115,6 +117,29 @@ static Type* typeForExpr(Expr* expr) {
 
     if (isPrimitiveScalar(type) == true) {
       retval = type;
+    }
+
+  } else if (CallExpr* initCall = toCallExpr(expr)) {
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+      retval = typeForNewExpr(initCall);
+    }
+  }
+
+  return retval;
+}
+
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  AggregateType* retval = NULL;
+
+  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
+      if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
+        if (AggregateType* type = toAggregateType(sym->type)) {
+          if (isClass(type) == true || isRecord(type) == true) {
+            retval = type;
+          }
+        }
+      }
     }
   }
 
@@ -1025,7 +1050,6 @@ static void fieldInitTypeWithInit(Expr*        stmt,
 
       stmt->insertBefore(new CallExpr("init", gMethodToken, access, rhs));
     }
-
 
   } else {
     Symbol*  _this = fn->_this;
