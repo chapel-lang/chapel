@@ -274,6 +274,8 @@ public:
 
   DefExpr*        currField()                                            const;
 
+  bool            isFieldInitialized(const DefExpr* field)               const;
+
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
@@ -432,6 +434,22 @@ void InitVisitor::initializeFieldsBefore(Expr* insertBefore) {
 
 DefExpr* InitVisitor::currField() const {
   return mCurrField;
+}
+
+bool InitVisitor::isFieldInitialized(const DefExpr* field) const {
+  const DefExpr* ptr    = mCurrField;
+  bool           retval = true;
+
+  while (ptr != NULL && retval == true) {
+    if (ptr == field) {
+      retval = false;
+    } else {
+      ptr = toConstDefExpr(ptr->next);
+    }
+  }
+
+
+  return retval;
 }
 
 InitVisitor::Phase InitVisitor::startPhase(FnSymbol* fn) const {
@@ -1333,7 +1351,13 @@ static SymExpr* normalizeExpr(Expr*        insertBefore,
       retval = symExpr;
 
     } else if (DefExpr* field = toLocalField(state.type(), symExpr)) {
-      retval = createFieldAccess(insertBefore, state.theFn(), field);
+      if (state.isFieldInitialized(field) == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  field->sym->name);
+      }
 
     } else {
       retval = symExpr;
