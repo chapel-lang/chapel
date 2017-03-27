@@ -1,0 +1,2 @@
+if-this-init.chpl:10: In initializer:
+if-this-init.chpl:11: error: use of this.init() in a conditional stmt in phase 1
