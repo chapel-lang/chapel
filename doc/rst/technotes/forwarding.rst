@@ -17,7 +17,7 @@ method implementations, inheritance is not always appropriate. In
 particular, inheritance has the drawback that it affects the types
 of the classes and therefore changes what users can do with those
 classes. Due to some of these drawbacks, there is a well-known design
-pattern *composition over inheritance*. 
+pattern *composition over inheritance*.
 
 The basic strategy for using composition instead of inheritance is to
 declare a member field that stores the type that would be inherited from.
@@ -25,7 +25,7 @@ Then, declare methods that forward to the member field. This can allow
 the implementation to be more flexible and re-usable. In particular,
 changing how many classes participate in the implementation of a
 particular type need not change its public interface or impact the users
-of that type 
+of that type.
 
 Besides these issues, composition is a more general strategy in Chapel
 due to the following language design decisions:
@@ -62,7 +62,7 @@ Consider the following example:
       return 2.0*pi*radius;
     }
   }
-    
+
   record MyCircle {
     var impl: MyCircleImpl;
 
