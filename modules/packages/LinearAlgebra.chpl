@@ -303,6 +303,7 @@ inline proc transpose(D: domain(1)) {
   return D;
 }
 
+pragma "no doc"
 inline proc transpose(D: domain(2)) {
   return {D.dim(2), D.dim(1)};
 }
@@ -320,7 +321,7 @@ pragma "no doc"
 proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
 
-/* Transpose vector or matrix.
+/* Transpose vector, matrix, or domain.
 
    .. note::
 
