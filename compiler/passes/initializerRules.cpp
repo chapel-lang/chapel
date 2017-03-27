@@ -969,7 +969,6 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 
     stmt->insertBefore(new CallExpr("=",       access,   defVal));
 
-
   } else if (isNonGenericRecordWithInitializers(type) == true) {
     SymExpr* access = createFieldAccess(stmt, fn, field);
 
@@ -1031,18 +1030,30 @@ static void fieldInitTypeWithInit(Expr*        stmt,
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
     if (isNewExpr(initExpr) == true) {
-      CallExpr* newExpr = toCallExpr(initExpr);
-      CallExpr* subExpr = toCallExpr(newExpr->get(1)->remove());
-      SymExpr*  access  = createFieldAccess(stmt, fn, field);
+      CallExpr* newExpr    = toCallExpr(initExpr);
+      CallExpr* subExpr    = toCallExpr(newExpr->get(1)->remove());
+      SymExpr*  access     = createFieldAccess(stmt, fn, field);
+      int       numActuals = subExpr->numActuals();
 
       stmt->insertBefore(subExpr);
 
       // Convert it in to a use of the init method
       subExpr->setUnresolvedFunction("init");
 
+      // Ensure the arguments to the init expr are normalized
+      for (int i = 1; i <= numActuals; i++) {
+        Expr*    actual  = subExpr->get(i);
+        SymExpr* symExpr = normalizeExpr(subExpr, state, actual);
+
+        if (symExpr != actual) {
+          actual->replace(symExpr);
+        }
+      }
+
       // Add _mt and _this (insert at head in reverse order)
       subExpr->insertAtHead(access);
       subExpr->insertAtHead(gMethodToken);
+
 
     } else {
       SymExpr* rhs    = normalizeExpr(stmt, state, initExpr);
