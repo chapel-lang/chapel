@@ -8,7 +8,6 @@ TODO:
 * what else was wrapped up in array views?
 * check compiler flags
 * check examples/
-* reorder sections
 
 
 version 1.15.0
@@ -30,6 +29,7 @@ Highlights (see subsequent sections for further details)
 * added initial support for some class-owning record patterns, Owned and Shared
 * added support for a new 'Futures' module supporting library-based futures
 * added BLAS level 1 and 2 routines to the previous support for level 3
+* added a early-draft LinearAlgebra module
 * significant performance improvements
 * fixed most memory leaks caused by arrays, domains, and domain maps
 * added new users guide sections on promotion, constants, type aliases, configs
@@ -47,10 +47,23 @@ Deployment
 * extended the Docker image to include a GASNet-based configuration
   (see https://hub.docker.com/r/chapel/chapel/)
 
-File/Directory Structure
-------------------------
-* moved object files for the compiler and runtime into $CHPL_HOME/build
-* changed the naming/structure of directories used to store binary files
+New Features
+------------
+* added prototype support for error-handling in Chapel
+  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst)
+* dramatically improved support for initializers
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+* added support for deinit() as a replacement for class/record destructors
+  (see "Class Deinitializer" and "Record Deinitializer" sections in the spec
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+* added support for 'forwarding' methods to fields of classes and records
+  (see http://chapel.cray.com/docs/master/technotes/forwarding.html)
+* made 'void' a first-class type in the language and a way to fold variables
+  (see http://chapel.cray.com/docs/master/technotes/voidVariables.html
+   and $CHPL_HOME/examples/voidVariables.chpl)
+* added support for module deinit() functions
+  (see "Module Deinitialization" in the "Modules" chapter of the specification)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -70,24 +83,6 @@ Syntactic/Naming Changes
 ------------------------
 * renamed the 'Error' module to 'SysError'
   (see TODO)
-
-New Features
-------------
-* added prototype support for error-handling in Chapel
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst)
-* dramatically improved support for initializers
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
-* added support for deinit() as a replacement for class/record destructors
-  (see "Class Deinitializer" and "Record Deinitializer" sections in the spec
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
-* added support for 'forwarding' methods to fields of classes and records
-  (see http://chapel.cray.com/docs/master/technotes/forwarding.html)
-* made 'void' a first-class type in the language and a way to fold variables
-  (see http://chapel.cray.com/docs/master/technotes/voidVariables.html
-   and $CHPL_HOME/examples/voidVariables.chpl)
-* added support for module deinit() functions
-  (see "Module Deinitialization" in the "Modules" chapter of the specification)
 
 Feature Improvements
 --------------------
@@ -115,12 +110,11 @@ Feature Slips
 * domains of reindexed distributed arrays are not distributed as they should be
 * removed support for having first-class functions capture outer variables
 
-Interoperability Improvements
------------------------------
-* improved 'require' statements to accept 'param' strings
-  (see TODO)
-* only 'require' statements in resolved have any impact
-  (see TODO)
+Removed Features
+----------------
+* removed deprecated functions from the 'Sort' and 'Search' modules
+* removed the deprecated 'BigInt' class in favor of the 'bigint' value type
+* removed the 'noRefCount' config const which is no longer necessary
 
 Standard Modules/Library
 ------------------------
@@ -155,6 +149,13 @@ Package Modules
 * added support for choosing between FFT implementations in the FFTW module
   (see http://chapel.cray.com/docs/master/modules/packages/FFTW.html#FFTW.isFFTW_MKL))
 * improved support for the 'MatrixMarket' module
+
+Interoperability Improvements
+-----------------------------
+* improved 'require' statements to accept 'param' strings
+  (see TODO)
+* only 'require' statements in resolved have any impact
+  (see TODO)
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -325,6 +326,11 @@ Runtime Library Changes
 * changed our use of qthreads to initialize them in detached state
 * updated massivethreads to make use of stack-allocated task bundles
 
+File/Directory Structure
+------------------------
+* moved object files for the compiler and runtime into $CHPL_HOME/build
+* changed the naming/structure of directories used to store binary files
+
 Generated Code
 --------------
 * turned on --denormalize by default, resulting in shorter, cleaner code
@@ -350,12 +356,6 @@ Testing System
 * made the test system work even when CHPL_UNWIND is set
 * added a checker for the ANNOTATIONS.yaml file used by performance tracking
 * added overlays of the nightly performance graphs to the release-over-release
-
-Removed Features
-----------------
-* removed deprecated functions from the 'Sort' and 'Search' modules
-* removed the deprecated 'BigInt' class in favor of the 'bigint' value type
-* removed the 'noRefCount' config const which is no longer necessary
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
