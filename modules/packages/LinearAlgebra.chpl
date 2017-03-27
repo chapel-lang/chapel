@@ -161,7 +161,7 @@ proc Vector(Dom: domain(1), type eltType=real) {
 
 /* Return a vector (1D array) with domain and values of ``A`` */
 proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
-  var V: [Dom] eltType = A;
+  var V: [Dom] eltType = A: eltType;
   return V;
 }
 
@@ -216,8 +216,8 @@ proc Matrix(Dom: domain(2), type eltType=real) where Dom.rank == 2 {
 
 
 /* Return a matrix (2D array) with domain and values of ``A`` */
-proc Matrix(A: [?Dom] ?eltType) where Dom.rank == 2 {
-  var M: [Dom] eltType = A;
+proc Matrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 {
+  var M: [Dom] eltType = A: eltType;
   return M;
 }
 
