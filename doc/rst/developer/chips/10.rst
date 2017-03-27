@@ -4,7 +4,7 @@ Initializers
 ============
 
 Status:
-  Partially Implemented
+  Mostly Implemented
 
 Authors:
   Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady
@@ -14,12 +14,13 @@ Abstract
 --------
 
 In this document, we propose new syntax and rules for constructors, both in
-ordinary and more complex cases.
+ordinary and more complex cases.  Much of what is described here has been
+implemented as of the Chapel 1.15.0 release - see the `Status`_ section for
+more details.
 
 Outline
 -------
 
- * `Status`_
  * `Rationale`_: The Problems Associated With Constructors
  * `Compiler Generated Initializers`_
  * `Initializer Naming`_
@@ -38,67 +39,7 @@ Outline
  * `Copy Initializers`_
  * `Deinitialization`_
  * `Summary`_
-
-Status
-------
-
-As of the 1.15.0 release, support for initializers includes the following:
-
-- Methods named "init" on a type are utilized during the creation of an instance
-  of that type.
-- An error message is generated if both a constructor and an initializer is
-  defined on a type.
-- User-defined initializers whose body consists of only Phase 2 statements are
-  fully supported
-- User-defined initializers with Phase 1 statements that explicitly initialize
-  all fields are supported
-
-  - Some errors remain with omitted field initialization in Phase 1, notably
-    with utilizing ``param`` fields in the omitted initialization of another
-    field, and with utilizing some record fields.
-
-- Some ``param`` conditional statements are supported during Phase 1
-- Most checks against Phase 1 and Phase 2 rules are implemented, including:
-
-  - Forbidding the update of ``const`` fields during Phase 2
-  - Forbidding the initialization of fields in parallel statements during Phase
-    1
-  - Forbidding the initialization of fields in loops during Phase 1
-  - Forbidding ``super.init()`` and ``this.init()`` calls in parallel statements
-  - Forbidding ``super.init()`` and ``this.init()`` calls in loops
-  - Forbidding access to a field prior to its initialization in Phase 1
-  - Forbidding the initialization of fields prior to ``this.init()`` calls
-
-- Support for initializers on generic classes when instances infer their type
-  from the result of a ``new`` call or another instance.
-
-  - As a result, generic fields no longer require an argument sharing their name
-    in the initializer argument list.
-
-- Support for copy initializers
-- Support for deinitializers, as a replacement of destructors.
-
-  - Library types were converted to use deinitializers.
-
-Remaining todo items include:
-
-- Support for compiler generated initializers
-- Improve the error message for out of order field initialization during Phase
-  1
-- Forbid the access of parent fields during Phase 1 of initialization
-- Forbid the utilization of methods on the type during Phase 1 of
-  initialization, as well as the use of ``this`` as an argument to a function.
-- Support for the remaining ``param`` conditional situations
-- Resolve an issue with secondary initializers
-- Support for instance declarations of generic instantiations, i.e. ``var x:
-  Foo(t);``
-- Resolve an issue with generic initializers and records (relates to records
-  being passed by ``ref`` to the initializer method)
-- Convert library types to utilize initializers instead of constructors
-- Support ``noinit``
-- Limit the initializer candidates to only those on the type and its
-  instantiations, for compiler performance and improved error messages when
-  resolution fails for a particular call.
+ * `Status`_
 
 Rationale
 ---------
@@ -673,3 +614,64 @@ fields during the first phase of the initializer body.  If there are operations
 which must occur on a copy made by the compiler before it is operated on by
 other code, the type designer may supply a copy initializer to specify these
 operations.
+
+Status
+------
+
+As of the 1.15.0 release, support for initializers includes the following:
+
+- Methods named "init" on a type are utilized during the creation of an instance
+  of that type.
+- An error message is generated if both a constructor and an initializer is
+  defined on a type.
+- User-defined initializers whose body consists of only Phase 2 statements are
+  fully supported
+- User-defined initializers with Phase 1 statements that explicitly initialize
+  all fields are supported
+
+  - Some errors remain with omitted field initialization in Phase 1, notably
+    with utilizing ``param`` fields in the omitted initialization of another
+    field, and with utilizing some record fields.
+
+- Some ``param`` conditional statements are supported during Phase 1
+- Most checks against Phase 1 and Phase 2 rules are implemented, including:
+
+  - Forbidding the update of ``const`` fields during Phase 2
+  - Forbidding the initialization of fields in parallel statements during Phase
+    1
+  - Forbidding the initialization of fields in loops during Phase 1
+  - Forbidding ``super.init()`` and ``this.init()`` calls in parallel statements
+  - Forbidding ``super.init()`` and ``this.init()`` calls in loops
+  - Forbidding access to a field prior to its initialization in Phase 1
+  - Forbidding the initialization of fields prior to ``this.init()`` calls
+
+- Support for initializers on generic classes when instances infer their type
+  from the result of a ``new`` call or another instance.
+
+  - As a result, generic fields no longer require an argument sharing their name
+    in the initializer argument list.
+
+- Support for copy initializers
+- Support for deinitializers, as a replacement of destructors.
+
+  - Library types were converted to use deinitializers.
+
+Remaining todo items include:
+
+- Support for compiler generated initializers
+- Improve the error message for out of order field initialization during Phase
+  1
+- Forbid the access of parent fields during Phase 1 of initialization
+- Forbid the utilization of methods on the type during Phase 1 of
+  initialization, as well as the use of ``this`` as an argument to a function.
+- Support for the remaining ``param`` conditional situations
+- Resolve an issue with secondary initializers
+- Support for instance declarations of generic instantiations, i.e. ``var x:
+  Foo(t);``
+- Resolve an issue with generic initializers and records (relates to records
+  being passed by ``ref`` to the initializer method)
+- Convert library types to utilize initializers instead of constructors
+- Support ``noinit``
+- Limit the initializer candidates to only those on the type and its
+  instantiations, for compiler performance and improved error messages when
+  resolution fails for a particular call.
