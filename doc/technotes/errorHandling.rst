@@ -56,26 +56,23 @@ If a function may throw an error, it must be declared with ``throws``.
 Handling Errors
 ---------------
 
-Implicit Handler
-++++++++++++++++
+Chapel supports two modes for error handling: strict mode for production code,
+and default mode for drafting and iterating. Strict mode forces users to
+explicitly mark throwing calls and handle errors, clarifying the program's
+control flow to the user and the reader. Default mode loosens those
+requirements with implicit error handling.
 
-When a throwing function is called without an explicit handler (described
-below), an implicit handler is inserted as follows:
-
-* If the caller is declared with ``throws``, any error encountered will be
-  thrown in turn.
-
-* If the caller is not declared with ``throws``, the program will ``halt()``
-  if any error is encountered.
+Strict mode is enabled by passing ``--strict-errors`` to the Chapel compiler,
+otherwise the compiler will use default mode.
 
 
-Explicit Handler
-++++++++++++++++
+Strict Mode
++++++++++++
 
 ``try``/``try!`` blocks and their associated ``catch`` clauses allow the user
-to specify an explicit handler for a throwing call.
+to create a handler for a throwing call.
 
-* Statements that contain throwing calls should be enclosed in a ``try`` block.
+* Statements that contain throwing calls must be enclosed in a ``try`` block.
   
   * If an error is raised by a call in a ``try`` block, the rest of the block
     is abandoned and control flow is passed to the list of ``catch`` clauses.
@@ -92,8 +89,8 @@ to specify an explicit handler for a throwing call.
     all errors will match. A clause with such a filter must be declared at the
     end of the list, since clauses that follow it could never be executed.
 
-  * Unless the ``catch`` clause block contains a throw, execution will resume
-    after the ``try`` block.
+  * Unless the ``catch`` clause block contains a ``throw``, execution will
+    resume after the ``try`` block.
 
 .. code-block:: chapel
 
@@ -108,7 +105,7 @@ to specify an explicit handler for a throwing call.
     writeln("unexpected error");
   }
 
-* If none of the type filters matches the error, a catch-all block will be
+* If none of the type filters matches the error, a catchall block will be
   inserted. Its functionality will depend on whether a ``try`` or ``try!``
   was used.
  
@@ -117,7 +114,7 @@ to specify an explicit handler for a throwing call.
   * If ``try!`` was used, the program will ``halt()``.
 
 * ``try`` blocks may be used without any ``catch`` clauses, or without brackets
-  for single statements, using the same policy rules as above.
+  for single statements.
 
 .. code-block:: chapel
 
@@ -165,25 +162,29 @@ beyond the current scope. This can be accomplished in two ways:
   }
 
 
-Strict Error Mode
-+++++++++++++++++
-When the ``--strict-errors`` flag is passed to the Chapel compiler, it will
-disable the insertion of *implicit handlers* as described above. As such, every
-throwing call must be handled by an *explicit handler*.
+Default Mode
+++++++++++++
 
-By forcing users to explicitly mark throwing calls and handle errors, the
-program's control flow becomes clearer to the user and the reader.
+In addition to the features in the *Strict Mode* section, default mode allows
+throwing calls to be called without being enclosed by a ``try`` or ``try!``
+block. This is done by inserting an implicit handler after the call:
+
+* If the caller is declared with ``throws``, any error encountered will be
+  thrown in turn.
+
+* If the caller is not declared with ``throws``, the program will ``halt()``
+  if any error is encountered.
 
 
 Current Limitations
 -------------------
-* In general it is not possible to use error handling together with parallel or
+* In general it is not possible to use error handling with parallel or
   multilocale constructs.
   
   * ``forall``, ``begin``, ``on``, etc.
 
-  * One exception: throwing calls handled entirely within the scope of a
-    given construct, without propagation.
+  * However it is possible to use throwing calls handled entirely within the
+    scope of a given construct, without propagation.
 
 * Errors may not be generic classes. 
 
