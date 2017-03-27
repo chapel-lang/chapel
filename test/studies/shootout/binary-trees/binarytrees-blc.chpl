@@ -68,7 +68,7 @@ proc main() {
 //
 class Tree {
   const item: int;
-  const left, right: Tree;
+  var   left, right: Tree;
 
   //
   // Two initializers (constructors) for a Tree object
