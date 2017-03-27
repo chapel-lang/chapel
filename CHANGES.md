@@ -1,4 +1,3 @@
-====================
 Release Changes List
 ====================
 
@@ -10,7 +9,7 @@ TODO:
 * check compiler flags
 * check examples/
 
-==============
+
 version 1.15.0
 ==============
 
@@ -456,7 +455,7 @@ Developer-oriented changes: Third-party improvements
 * protected our jemalloc symbols to avoid conflicts with the memkind library
 
 
-==============
+
 version 1.14.0
 ==============
 
@@ -904,7 +903,7 @@ Developer-oriented changes: Third-party improvements
 * changed many third-party directory structures to avoid using version numbers
 
 
-==============
+
 version 1.13.1
 ==============
 
@@ -938,7 +937,7 @@ Memory Improvements
 * closed memory leaks within the 'RandomStream' class
 
 
-==============
+
 version 1.13.0
 ==============
 
@@ -1389,7 +1388,7 @@ Developer-oriented changes: Testing system improvements
 * renamed 'grepgoods' to 'greptestoutputs' and had it span .good and .bad files
 
 
-==============
+
 version 1.12.0
 ==============
 
@@ -1765,7 +1764,7 @@ Developer-oriented changes: Third-party improvements
 * updated third-party GMP/RE2 READMEs to refer to online module documentation
 
 
-==============
+
 version 1.11.0
 ==============
 
@@ -2175,7 +2174,7 @@ Developer-oriented changes: Generated Code improvements
 * improved the spacing when printing IDs via --gen-ids
 
 
-==============
+
 version 1.10.0
 ==============
 
@@ -2614,7 +2613,7 @@ Developer-oriented changes: Runtime improvements
 * made the runtime code more resilient to mixing C++/C compilers
 
 
-=============
+
 version 1.9.0
 =============
 
@@ -2907,7 +2906,7 @@ Internal/Developer-oriented
 * numerous refactorings of the compiler code for clarity and/or efficiency
 
 
-=============
+
 version 1.8.0
 =============
 
@@ -3169,7 +3168,7 @@ Changes In Support of Hierarchical Locales
 - made hierarchical locale model compilations use wide pointers and on-clauses
 
 
-=============
+
 version 1.7.0
 =============
 
@@ -3412,7 +3411,7 @@ Internal/Developer-oriented
 - protected some C identifiers introduced by PGI when compiling with -Kieee
 
 
-=============
+
 version 1.6.0
 =============
 
@@ -3644,7 +3643,7 @@ Internal/Developer-oriented
 - reduced reliance on primitives and locale internals in standard modules
 
 
-=============
+
 version 1.5.0
 =============
 
@@ -3838,7 +3837,7 @@ Internal/Developer-oriented
 - made third-party/*/Makefile rules more consistent
 
 
-=============
+
 version 1.4.0
 =============
 
@@ -4021,7 +4020,7 @@ Internal
 - added a compilerAssert() capability
 
 
-=============
+
 version 1.3.0
 =============
 
@@ -4302,7 +4301,8 @@ Internal
 - added external contributor agreements to the SVN tree (not in release)
 - added a notion of internal types used by the compiler but not the user
 
-=============
+
+
 version 1.2.0
 =============
 
@@ -4504,7 +4504,7 @@ Internal
 - changed the --gen-communicated-structures developer flag to --heterogeneous
 
 
-=============
+
 version 1.1.2
 =============
 
@@ -4517,7 +4517,7 @@ Platform-specific notes
   (see doc/platforms/README.xe-cle for details)
 
 
-=============
+
 version 1.1.1
 =============
 
@@ -4535,7 +4535,7 @@ Bug fixes
 - fixed a bug in fillRandom() in which using a clock-based seed did not do so
 
 
-===========
+
 version 1.1
 ===========
 
@@ -4861,7 +4861,7 @@ Internal
 - simplified the generation of BUILD_VERSION for non-developers
 
 
-============
+
 version 1.02
 ============
 
@@ -4929,7 +4929,7 @@ Internal
 - added Makefile.tau for experimental use of Chapel with Tau
 
 
-============
+
 version 1.01
 ============
 
@@ -4999,7 +4999,7 @@ Internal
 - added verification that gotos are in same functions as their labels
 
 
-===========
+
 version 1.0
 ===========
 
@@ -5220,7 +5220,7 @@ Internal
 - split chpl_comm_md.h into two files to permit platform- and comm- overrides
 
 
-===========
+
 version 0.9
 ===========
 
@@ -5356,7 +5356,7 @@ Internal
 - removed compiler support for (undocumented) anonymous record types
 
 
-===========
+
 version 0.8
 ===========
 
@@ -5605,7 +5605,7 @@ Internal
 - made all exits from the compiler use our clean exit routine
 
 
-===========
+
 version 0.7
 ===========
 
@@ -5785,7 +5785,7 @@ Internal
 - made --ccwarnings into --[no-]ccwarnings where the default is based on --devel
 
 
-===========
+
 version 0.6
 ===========
 
@@ -6006,7 +6006,7 @@ Internal
 - many refactorings and improvements to the compiler and runtime sources
 
 
-===========
+
 version 0.5
 ===========
 Second preliminary release of Chapel Compiler, June 29, 2007
@@ -6278,7 +6278,7 @@ Internal
 - added reference types
 
 
-===========
+
 version 0.4
 ===========
 Preliminary release of Chapel Compiler, December 15, 2006
