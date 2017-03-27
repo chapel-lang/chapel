@@ -8,13 +8,13 @@ a source distribution of Chapel.
 
 In the following instructions, note that building and using Chapel as
 described in steps 2-5 disables optional and advanced features in the
-interest of getting you a clean build as quickly as possible. Later 
+interest of getting you a clean build as quickly as possible. Later
 sections explain how to re-build in the preferred configuration and how to
 enable more features, such as distributed memory execution.
 
 
-0) See `doc/prereqs.rst`_ for more information about system tools and
-   packages you may need to have installed to build and run Chapel.
+0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
+   tools and packages you may need to have installed to build and run Chapel.
 
 1) If you don't already have Chapel 1.15, see
    http://chapel.cray.com/download.html .
@@ -47,7 +47,8 @@ enable more features, such as distributed memory execution.
 
    d. Use GNU make to build Chapel.
       On some systems, you will have to use gmake.
-      See `doc/building.rst`_ for more information about building Chapel.
+      See :ref:`building.rst <readme-building>` for more information about
+      building Chapel.
 
       .. code-block:: bash
 
@@ -95,7 +96,7 @@ you will need to rebuild Chapel from source in a different configuration.
    configuration.  Building this configuration involves compiling
    third-party packages, which will increase the overall build time.
    If you run into any portability issues, please let us know via
-   `doc/bugs.rst`_.
+   :ref:`bugs.rst <readme-bugs>`.
 
    .. code-block:: bash
 
@@ -119,7 +120,7 @@ you will need to rebuild Chapel from source in a different configuration.
    use a :ref:`chplconfig <readme-chplenv.chplconfig>` file or
    set environment variables your in dot files or your own script.
 
-   See `doc/chplenv.rst`_ for a complete description of
+   See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
    Chapel's configuration variables, what they mean, and how they
    can be set.
 
@@ -129,7 +130,8 @@ Using Chapel in Multi-Locale Mode
 
 All of the instructions above describe how to run Chapel programs
 in a single-locale (shared-memory) mode. To run using multiple
-locales (distributed memory), please refer to `doc/multilocale.rst`_.
+locales (distributed memory), please refer to
+:ref:`multilocale.rst <readme-multilocale>`.
 
 Performance
 -----------
@@ -157,31 +159,20 @@ the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 What's next?
 ------------
 
-=============================================== =========================
-**For more detailed information about:**        **refer to:**
------------------------------------------------ -------------------------
-    platform-specific notes                     `platforms`_
-    online Chapel Documentation                 `chapel.cray.com/docs`_
-    example Chapel programs                     ``examples/README``
-    setting Chapel environment variables        `doc/chplenv.rst`_
-    building the compiler                       `doc/building.rst`_
-    compiling Chapel programs                   `doc/compiling.rst`_
-    executing Chapel programs                   `doc/executing.rst`_
-    debugging Chapel programs                   `doc/debugging.rst`_
-    reporting bugs                              `doc/bugs.rst`_
-    performance status                          ``PERFORMANCE.md``
-    Chapel modes for emacs and vim              ``highlight/README.md``
-    Chapel's file and directory structure       ``README.files``
-    changes since the last release              ``CHANGES.md``
-=============================================== =========================
+For more information about Chapel, refer to the following resources:
 
-.. _doc/prereqs.rst: prereqs.html
-.. _doc/multilocale.rst: multilocale.html
-.. _platforms: ../platforms/index.html
-.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.15/
-.. _doc/chplenv.rst: chplenv.html
-.. _doc/building.rst: building.html
-.. _doc/compiling.rst: compiling.html
-.. _doc/executing.rst: executing.html
-.. _doc/debugging.rst: debugging.html
-.. _doc/bugs.rst: bugs.html
+============================ ==================================================
+Online documentation:        :ref:`chapel.cray.com/docs <chapel-documentation>`
+Platform-specific notes:     :ref:`../platforms <platforms-index>`
+Example Chapel programs:     ``$CHPL_HOME/examples/README``
+Setting Chapel env vars:     :ref:`chplenv.rst <readme-chplenv>`
+Building the compiler:       :ref:`building.rst <readme-building>`
+Compiling Chapel programs:   :ref:`compiling.rst <readme-compiling>`
+Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
+Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
+Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
+Performance status:          ``$CHPL_HOME/PERFORMANCE.md``
+Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
+Chapel's file/dir structure: ``$CHPL_HOME/README.files``
+Changes since last release:  ``$CHPL_HOME/CHANGES.md``
+============================ ==================================================

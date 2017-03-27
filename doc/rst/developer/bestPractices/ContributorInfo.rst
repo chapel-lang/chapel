@@ -61,7 +61,7 @@ similar, though the specific people involved are likely to change and grow).
   to your contact at Cray (ask for one at the chapel_admin _at_ cray.com list
   if you don't).
 
-  https://github.com/chapel-lang/chapel/tree/master/doc/developer/contributorAgreements/
+  https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
 * `Fork the repo`_.
 
@@ -149,7 +149,7 @@ writing or modifying tests.
     resources available to you, you can request that a member of the core
     Chapel team help.
 
-.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/developer/bestPractices/TestSystem.rst
+.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
 
 .. _Mail chapel-developers@ for review and merge:
 

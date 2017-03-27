@@ -16,7 +16,7 @@ ContributorInfo.rst
 Compiler documentation:
 
   The compiler overview document
-    in $CHPL_HOME/doc/developer/compilerOverview
+    in $CHPL_HOME/doc/rst/developer/compilerOverview
 
   CompilerDebugging.txt
     Tips on debugging the compiler.

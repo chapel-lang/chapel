@@ -100,7 +100,7 @@ the project dictionary or corrected, which make a good example:
 
      $ chplspell --report-only
 
-     doc/developer/bestPractices/README:50: 'chplspell' not found in dictionary (from token 'chplspell')
+     doc/rst/developer/bestPractices/README:50: 'chplspell' not found in dictionary (from token 'chplspell')
      CHANGES.md:445: 'chpldocumentation' not found in dictionary (from token 'chpldocumentation')
      CHANGES.md:2001: 'pshm' not found in dictionary (from token 'pshm')
      CHANGES.md:2341: 'pshm' not found in dictionary (from token 'pshm')
@@ -113,8 +113,8 @@ named on the command line.  For example, this file with one tyop:
 
   .. code-block:: text
 
-     $ chplspell --report-only doc/developer/bestPractices/SpellChecking.rst
-     doc/developer/bestPractices/SpellChecking.rst:109: 'tyop' not found in dictionary (from token 'tyop')
+     $ chplspell --report-only doc/rst/developer/bestPractices/SpellChecking.rst
+     doc/rst/developer/bestPractices/SpellChecking.rst:109: 'tyop' not found in dictionary (from token 'tyop')
      $
 
 (The project dictionary now includes the word "tyop" for this file, so
@@ -183,8 +183,8 @@ represented to ``scspell``:
 .. code-block:: text
 
   "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/hdfs_and_chapel/API.tex",
-    "doc/developer/hdfs_and_chapel/examples.tex",
+    "doc/rst/developer/hdfs_and_chapel/API.tex",
+    "doc/rst/developer/hdfs_and_chapel/examples.tex",
     "modules/packages/HDFSiterator.chpl"
   ],
 

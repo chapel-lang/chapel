@@ -4,7 +4,7 @@
 SPHINXOPTS    = -W
 SPHINXBUILD   = sphinx-build
 PAPER         =
-SOURCEDIR     = .
+SOURCEDIR     = rst
 BUILDDIR      = ../build/doc
 BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 
