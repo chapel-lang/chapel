@@ -54,23 +54,23 @@ As of the 1.15.0 release, support for initializers includes the following:
   all fields are supported
 
   - Some errors remain with omitted field initialization in Phase 1, notably
-    with utilizing `param` fields in the omitted initialization of another
+    with utilizing ``param`` fields in the omitted initialization of another
     field, and with utilizing some record fields.
 
-- Some `param` conditional statements are supported during Phase 1
+- Some ``param`` conditional statements are supported during Phase 1
 - Most checks against Phase 1 and Phase 2 rules are implemented, including:
 
-  - Forbidding the update of `const` fields during Phase 2
+  - Forbidding the update of ``const`` fields during Phase 2
   - Forbidding the initialization of fields in parallel statements during Phase
     1
   - Forbidding the initialization of fields in loops during Phase 1
-  - Forbidding `super.init()` and `this.init()` calls in parallel statements
-  - Forbidding `super.init()` and `this.init()` calls in loops
+  - Forbidding ``super.init()`` and ``this.init()`` calls in parallel statements
+  - Forbidding ``super.init()`` and ``this.init()`` calls in loops
   - Forbidding access to a field prior to its initialization in Phase 1
-  - Forbidding the initialization of fields prior to `this.init()` calls
+  - Forbidding the initialization of fields prior to ``this.init()`` calls
 
 - Support for initializers on generic classes when instances infer their type
-  from the result of a `new` call or another instance.
+  from the result of a ``new`` call or another instance.
 
   - As a result, generic fields no longer require an argument sharing their name
     in the initializer argument list.
@@ -87,15 +87,15 @@ Remaining todo items include:
   1
 - Forbid the access of parent fields during Phase 1 of initialization
 - Forbid the utilization of methods on the type during Phase 1 of
-  initialization, as well as the use of `this` as an argument to a function.
-- Support for the remaining `param` conditional situations
+  initialization, as well as the use of ``this`` as an argument to a function.
+- Support for the remaining ``param`` conditional situations
 - Resolve an issue with secondary initializers
-- Support for instance declarations of generic instantiations, i.e. `var x:
-  Foo(t);`
+- Support for instance declarations of generic instantiations, i.e. ``var x:
+  Foo(t);``
 - Resolve an issue with generic initializers and records (relates to records
-  being passed by `ref` to the initializer method)
+  being passed by ``ref`` to the initializer method)
 - Convert library types to utilize initializers instead of constructors
-- Support `noinit`
+- Support ``noinit``
 - Limit the initializer candidates to only those on the type and its
   instantiations, for compiler performance and improved error messages when
   resolution fails for a particular call.
