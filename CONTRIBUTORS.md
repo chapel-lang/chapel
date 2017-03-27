@@ -27,7 +27,7 @@ Contributors to the current release
 * Sriraj Paul, [Rice University]
 * Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
-* Sagar Sam, individual contributor
+* Sagar Khatri, individual contributor
 * Preston Sahabu, [Cray Inc.]
 * [Kenjiro Taura], [University of Tokyo]
 * Greg Titus, [Cray Inc.]
