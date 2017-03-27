@@ -274,6 +274,8 @@ public:
 
   DefExpr*        currField()                                            const;
 
+  bool            isFieldInitialized(const DefExpr* field)               const;
+
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
@@ -432,6 +434,22 @@ void InitVisitor::initializeFieldsBefore(Expr* insertBefore) {
 
 DefExpr* InitVisitor::currField() const {
   return mCurrField;
+}
+
+bool InitVisitor::isFieldInitialized(const DefExpr* field) const {
+  const DefExpr* ptr    = mCurrField;
+  bool           retval = true;
+
+  while (ptr != NULL && retval == true) {
+    if (ptr == field) {
+      retval = false;
+    } else {
+      ptr = toConstDefExpr(ptr->next);
+    }
+  }
+
+
+  return retval;
 }
 
 InitVisitor::Phase InitVisitor::startPhase(FnSymbol* fn) const {
@@ -684,7 +702,12 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        if (state.isPhase2() == true) {
+
+        if (state.isPhase0() == true) {
+          USR_FATAL(stmt,
+                    "field initialization not allowed with sibling initializer call");
+
+        } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", in phase 2",
@@ -1333,7 +1356,13 @@ static SymExpr* normalizeExpr(Expr*        insertBefore,
       retval = symExpr;
 
     } else if (DefExpr* field = toLocalField(state.type(), symExpr)) {
-      retval = createFieldAccess(insertBefore, state.theFn(), field);
+      if (state.isFieldInitialized(field) == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  field->sym->name);
+      }
 
     } else {
       retval = symExpr;
