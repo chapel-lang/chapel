@@ -944,6 +944,13 @@ two mechanisms.
 
        require "foo.h", "-lfoo";
 
+    Require statements accept ``param`` string expressions in addition
+    to the string literals shown in these examples.  Only ``require``
+    statements in code that the compiler considers executable will be
+    processed.  Thus, a ``require`` statement guarded by a ``param``
+    conditional that the compiler folds out, or in a module that is
+    never ``use``d will not be added to the program's requirements.
+
 
 Either approach has the following results:
 
