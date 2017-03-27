@@ -1,0 +1,1 @@
+parent-access.chpl:20: error: Cannot access parent field 'a' during phase 1
