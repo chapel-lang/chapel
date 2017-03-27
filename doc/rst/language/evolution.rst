@@ -58,7 +58,7 @@ Now the act of returning an array makes a copy:
   }
   ref B = returnsArray();
   B = 1;
-  writeln(a);
+  writeln(A);
   // outputs 1 1 1 1 historically
   // outputs 0 0 0 0 after this work
 
@@ -82,11 +82,11 @@ array blank intent
 Before 1.15, the default intent for arrays was `ref`. The rationale for
 this feature was that it was a convenience for programmers who are used
 to modifying array formal arguments in their functions. Unfortunately, it
-interacted poorly with the `ref-pair` feature in the language.
+interacted poorly with return intent overloading.
 Additionally, the implementation had several bugs in this area.
 
-The following example shows how it might be surprising that the `ref-pair`
-feature behaves very differently for arrays than for other types. As
+The following example shows how it might be surprising that return intent
+overloading behaves very differently for arrays than for other types. As
 the example shows, this issue affects program behavior and not just
 const-checking error messages from the compiler.
 
@@ -141,7 +141,7 @@ argument `x` is `ref`:
 .. code-block:: chapel
 
   proc setElementOne(x) {
-    // x is modified, so as if formal was ref x
+    // x is modified, so x has ref intent
     x[1] = 1;
   }
   var A:[1..10] int;
@@ -152,7 +152,7 @@ In contrast, in the following program, the default intent for the formal argumen
 .. code-block:: chapel
 
   proc getElementOne(y) {
-    // y is not modified, so as if formal was const ref y
+    // y is not modified, so y has const ref intent
     var tmp = y[1];
   }
   const B:[1..10] int;
@@ -173,14 +173,12 @@ See GitHub issue #5266 for more details and discussion.
     var field: int;
 
     proc setFieldToOne() {
-      // since this is not modified, as if
-      // this intent was ref
+      // this is modified, so this-intent is ref
       this.field = 1;
     }
 
     proc printField() {
-      // since this is not modified, as if
-      // this intent was const ref
+      // this is not modified, so this-intent is const ref
       writeln(this.field);
     }
   }
