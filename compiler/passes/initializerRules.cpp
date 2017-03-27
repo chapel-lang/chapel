@@ -760,20 +760,18 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-
         if (state.isPhase0() == true) {
           USR_FATAL(stmt,
-                    "field initialization not allowed with sibling "
-                    "initializer call");
+                    "field initialization not allowed before this.init()");
 
         } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", in phase 2",
                       field->sym->name);
+          } else {
+            stmt = stmt->next;
           }
-
-          stmt = stmt->next;
 
         } else if (isCompoundAssignment(callExpr) == true) {
           USR_FATAL(stmt,
@@ -821,7 +819,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
                                              InitVisitor(cond, state));
 
         if (state.isPhase2() == false) {
-
           if (stateThen.isPhase2() == true) {
             if (phaseThen == cPhase0) {
               USR_FATAL(cond,
@@ -873,11 +870,7 @@ static InitVisitor preNormalize(BlockStmt*  block,
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      // Focus on phase 0 or phase 1
-      if (state.isPhase0() == true || state.isPhase1() == true) {
-        preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
-      }
-
+      preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
@@ -885,11 +878,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
       stmt  = stmt->next;
 
     } else {
-      // Focus on phase 0 or phase 1
-      if (state.isPhase0() == true || state.isPhase1() == true) {
-        INT_ASSERT(false);
-      }
-
       stmt = stmt->next;
     }
   }
