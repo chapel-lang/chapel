@@ -9,13 +9,13 @@ Language Basics
 .. toctree::
    :maxdepth: 1
 
-   Variables <primers/variables>
-   Procedures <primers/procedures>
-   Classes <primers/classes>
-   Generic Classes <primers/genericClasses>
-   Variadic Arguments (var args) <primers/varargs>
-   Modules <primers/modules>
-   Void Variables <primers/voidVariables>
+   Variables <variables>
+   Procedures <procedures>
+   Classes <classes>
+   Generic Classes <genericClasses>
+   Variadic Arguments (var args) <varargs>
+   Modules <modules>
+   Void Variables <voidVariables>
 
 Iterators
 ---------
@@ -23,8 +23,8 @@ Iterators
 .. toctree::
    :maxdepth: 1
 
-   Iterators <primers/iterators>
-   Parallel Iterators <primers/parIters>
+   Iterators <iterators>
+   Parallel Iterators <parIters>
 
 
 Task Parallelism
@@ -33,9 +33,9 @@ Task Parallelism
 .. toctree::
    :maxdepth: 1
 
-   Task Parallelism <primers/taskParallel>
-   Sync / Singles <primers/syncsingle>
-   Atomics <primers/atomics>
+   Task Parallelism <taskParallel>
+   Sync / Singles <syncsingle>
+   Atomics <atomics>
 
 Locality
 --------
@@ -43,7 +43,7 @@ Locality
 .. toctree::
    :maxdepth: 1
 
-   Locales <primers/locales>
+   Locales <locales>
 
 Data Parallelism
 ----------------
@@ -51,16 +51,16 @@ Data Parallelism
 .. toctree::
    :maxdepth: 1
 
-   Ranges <primers/ranges>
-   Domains <primers/domains>
-   Arrays <primers/arrays>
-   Slices <primers/slices>
-   Array Vector Operations <primers/arrayVectorOps>
-   Sparse Domains and Arrays <primers/sparse>
-   Associative Domains and Arrays <primers/associative>
-   Opaque Domains and Arrays <primers/opaque>
-   Reductions <primers/reductions>
-   Distributions <primers/distributions>
+   Ranges <ranges>
+   Domains <domains>
+   Arrays <arrays>
+   Slices <slices>
+   Array Vector Operations <arrayVectorOps>
+   Sparse Domains and Arrays <sparse>
+   Associative Domains and Arrays <associative>
+   Opaque Domains and Arrays <opaque>
+   Reductions <reductions>
+   Distributions <distributions>
 
 Library Utilities
 -----------------
@@ -68,8 +68,8 @@ Library Utilities
 .. toctree::
    :maxdepth: 1
 
-   File I/O <primers/fileIO>
-   Timers <primers/timers>
+   File I/O <fileIO>
+   Timers <timers>
 
 Numerical Libraries
 -------------------
@@ -77,9 +77,9 @@ Numerical Libraries
 .. toctree::
    :maxdepth: 1
 
-   LAPACK <primers/LAPACKlib>
-   FFTW <primers/FFTWlib>
-   Random <primers/randomNumbers>
+   LAPACK <LAPACKlib>
+   FFTW <FFTWlib>
+   Random <randomNumbers>
 
 Tools
 -----
@@ -87,7 +87,7 @@ Tools
 .. toctree::
    :maxdepth: 1
 
-   chpldoc <primers/chpldoc.doc>
+   chpldoc <chpldoc.doc>
 
 Language Overview
 -----------------
@@ -95,5 +95,5 @@ Language Overview
 .. toctree::
    :maxdepth: 1
 
-   Learn Chapel in Y Minutes <primers/learnChapelInYMinutes>
+   Learn Chapel in Y Minutes <learnChapelInYMinutes>
 

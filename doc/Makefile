@@ -5,7 +5,7 @@ include Makefile.sphinx
 
 CHPL2RST     = ../util/run-in-venv.bash ./util/chpl2rst.py
 
-CHPL_DOC_PRIMERS_DIR = $(SOURCEDIR)/primers/primers
+CHPL_DOC_PRIMERS_DIR = $(SOURCEDIR)/primers
 CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_DIR) --link=master
 
 CHPL_DOC_HELLO_DIR = $(SOURCEDIR)/examples/hellos
