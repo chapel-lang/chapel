@@ -607,8 +607,8 @@ The default intent for arrays is \chpl{ref} or \chpl{const ref} - meaning
 that the array is not copied by default. The compiler will choose
 \chpl{ref} or \chpl{const ref} based upon whether or not the formal
 argument is modified inside of the function. The choice between
-\chpl{ref} and \chpl{const ref} is similar to and interacts with the
-ref-pair feature (see \rsec{Ref_Pair}).
+\chpl{ref} and \chpl{const ref} is similar to and interacts with
+return intent overloads (see \rsec{Return_Intent_Overloads}).
 
 The default intent for the implicit \chpl{this} argument for records is
 \chpl{ref} or \chpl{const ref} depending on whether the formal argument
