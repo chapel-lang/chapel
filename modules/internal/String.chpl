@@ -835,7 +835,7 @@ module String {
         return '';
       } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
-        var ret = S[S.domain.low];
+        var ret = S[S.domain.alignedLow];
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
