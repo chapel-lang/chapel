@@ -43,6 +43,7 @@ Status
 ------
 
 As of the 1.15.0 release, support for initializers includes the following:
+
 - Methods named "init" on a type are utilized during the creation of an instance
   of that type.
 - An error message is generated if both a constructor and an initializer is
@@ -51,11 +52,14 @@ As of the 1.15.0 release, support for initializers includes the following:
   fully supported
 - User-defined initializers with Phase 1 statements that explicitly initialize
   all fields are supported
+
   - Some errors remain with omitted field initialization in Phase 1, notably
     with utilizing `param` fields in the omitted initialization of another
     field, and with utilizing some record fields.
+
 - Some `param` conditional statements are supported during Phase 1
 - Most checks against Phase 1 and Phase 2 rules are implemented, including:
+
   - Forbidding the update of `const` fields during Phase 2
   - Forbidding the initialization of fields in parallel statements during Phase
     1
@@ -64,15 +68,20 @@ As of the 1.15.0 release, support for initializers includes the following:
   - Forbidding `super.init()` and `this.init()` calls in loops
   - Forbidding access to a field prior to its initialization in Phase 1
   - Forbidding the initialization of fields prior to `this.init()` calls
+
 - Support for initializers on generic classes when instances infer their type
   from the result of a `new` call or another instance.
+
   - As a result, generic fields no longer require an argument sharing their name
     in the initializer argument list.
+
 - Support for copy initializers
 - Support for deinitializers, as a replacement of destructors.
+
   - Library types were converted to use deinitializers.
 
 Remaining todo items include:
+
 - Support for compiler generated initializers
 - Improve the error message for out of order field initialization during Phase
   1
