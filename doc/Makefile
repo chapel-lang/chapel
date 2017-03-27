@@ -17,6 +17,7 @@ help-source:
 	@echo "Source Help:"
 	@echo "  docs           to invoke 'make html' in the virtualenv"
 	@echo "  checkdocs      to invoke 'make check' in the virtualenv"
+	@echo "  man-chapel     to invoke 'make man' in the virtualenv"
 	@echo "  module-docs    to invoke 'make documentation' in ../modules"
 	@echo "  primers        to generate primer docs in $(SOURCEDIR)/primers/"
 	@echo "  hellos         to generate hellos docs in $(SOURCEDIR)/examples/"
