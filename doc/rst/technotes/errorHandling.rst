@@ -36,10 +36,10 @@ Throwing Errors
 
 .. code-block:: chapel
 
-  // throwing a newly created error:
+  // throwing a newly created error
   throw new Error("error message here");
 
-  // throwing an error stored in a variable:
+  // throwing an error stored in a variable
   var e: Error;
   // ... set e ...
   throw e;
