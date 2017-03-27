@@ -4,7 +4,7 @@ Release Changes List
 stopped at 6294676
 
 TODO:
-* query-replace docs/latest to docs/master
+* query-replace docs/latest or docs/master to 1.15
 * what else was wrapped up in array views?
 * check compiler flags
 * check examples/
@@ -43,8 +43,7 @@ Highlights (see subsequent sections for further details)
   (see TODO)
 * added Chapel support for AWS EC2
   (see TODO)
-* verified that Chapel works with the Windows 10 bash shell
-  (no platform-specific notes required... works like any other *nix)
+* verified that Chapel works with the Windows 10 bash shell like Ubuntu Linux
 * added support for multi-locale ARM executions
   (see TODO)
 * added the 'ugni' communication layer to the open-source repository
@@ -169,7 +168,7 @@ Performance Optimizations/Improvements
 --------------------------------------
 * improved parallel tasking performance using a hybrid spin/condwait strategy
 * optimized the creation of tasks for certain coforalls with known trip counts
-* moved argument bundles for tasks an on-clauses from the heap to task stacks
+* moved argument bundles for tasks and on-clauses from the heap to task stacks
 * optimized 1D strided iterations
 * reduced the overhead of slicing, rank-change slicing, and reindexing arrays
 * reduced the number of communications required for a number of idioms
@@ -328,7 +327,7 @@ Runtime Library Changes
 
 Generated Code
 --------------
-* turned on --normalize by default, resulting in shorter, cleaner code
+* turned on --denormalize by default, resulting in shorter, cleaner code
 * improved formatting of formal arguments in generated code for --gen-ids
 
 Third-Party Software Changes
@@ -388,8 +387,8 @@ Developer-oriented changes: Compiler improvements/changes
 * made PRIM_GETCID return an int(32) rather than a bool
 * replaced four FnSymbol fields and a flag with a std::map
 * improved the compiler's opt-in verification pass
-* udpated the compiler's representation of 'ref' types to use qualified types
-* fiexd a segfault in list_ast() for type-less symbols
+* updated the compiler's representation of 'ref' types to use qualified types
+* fixed a segfault in list_ast() for type-less symbols
 * changed more compiler data structures over to their STL equivalents
 * made PRIM_WIDE_GET_ADDR return a c_void_ptr
 * each symbol now stores a list of associated SymExprs
