@@ -793,11 +793,12 @@ the \chpl{const ref} return intent are not lvalue expressions.
 In some situations, it is useful to choose the function called based upon
 how the returned value is used.  In particular, suppose that there are
 two functions that have the same formal arguments and differ only in
-their return intent. Normally, such a situation will cause an error since
-it is ambiguous which function is called. However, the Chapel language
-includes a special rule for determining which function to call when the
-candidate functions are otherwise ambiguous except for their return
-intent.  This rule enables data structures such as sparse arrays.
+their return intent. One might expect such a situation to result in an
+error indicating that it is ambiguous which function is called. However,
+the Chapel language includes a special rule for determining which
+function to call when the candidate functions are otherwise ambiguous
+except for their return intent.  This rule enables data structures such
+as sparse arrays.
 
 See \ref{Choosing_Return_Intent_Overload} for a detailed description of
 how return intent overloads are chosen based upon calling context.
