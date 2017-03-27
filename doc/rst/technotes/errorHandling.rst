@@ -6,7 +6,7 @@ Error Handling
 
 This README describes the early version of error handling implemented in Chapel
 1.15. For a complete explanation of the final design and rationale, refer to
-CHIP 8.
+`CHIP 8 <https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst>`_.
 
 
 Errors
