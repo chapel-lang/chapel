@@ -426,6 +426,12 @@ Expr* InitVisitor::completePhase1(CallExpr* initStmt) {
     if (isRecord() == true) {
       initStmt->remove();
     }
+
+  } else if (isThisInit(initStmt) == true) {
+    mCurrField = NULL;
+
+  } else {
+    INT_ASSERT(false);
   }
 
   mPhase = cPhase2;
@@ -814,17 +820,28 @@ static InitVisitor preNormalize(BlockStmt*  block,
         InitVisitor stateThen = preNormalize(cond->thenStmt,
                                              InitVisitor(cond, state));
 
-        if (state.isPhase2() == false && stateThen.isPhase2() == true) {
-          if (phaseThen == cPhase0) {
-            USR_FATAL(cond,
-                      "use of this.init() in a conditional stmt in phase 1");
+        if (state.isPhase2() == false) {
 
-          } else if (phaseThen == cPhase1) {
-            USR_FATAL(cond,
-                      "use of super.init() in a conditional stmt in phase 1");
+          if (stateThen.isPhase2() == true) {
+            if (phaseThen == cPhase0) {
+              USR_FATAL(cond,
+                        "use of this.init() in a conditional stmt "
+                        "in phase 1");
 
-          } else {
-            INT_ASSERT(false);
+            } else if (phaseThen == cPhase1) {
+              USR_FATAL(cond,
+                        "use of super.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else {
+              INT_ASSERT(false);
+            }
+          }
+
+          if (stateThen.currField() != state.currField()) {
+            USR_FATAL(cond,
+                      "cannot initialize fields in an if statement "
+                      "in phase 1");
           }
         }
 
@@ -837,12 +854,18 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
         if (state.isPhase2() == false) {
           // Only one branch contained an init
-          if (stateThen.isPhase2() == stateElse.isPhase2()) {
-            state.merge(stateThen);
-          } else {
+          if (stateThen.isPhase2() != stateElse.isPhase2()) {
             USR_FATAL(cond,
                       "Both arms of a conditional must use this.init() "
                       "or super.init() in phase 1");
+
+          } else if (stateThen.currField() != stateElse.currField()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must initialize the same "
+                      "fields in phase 1");
+
+          } else {
+            state.merge(stateThen);
           }
         }
       }
