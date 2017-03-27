@@ -644,6 +644,7 @@ As of the 1.15.0 release, support for initializers includes the following:
   - Forbidding ``super.init()`` and ``this.init()`` calls in loops
   - Forbidding access to a field prior to its initialization in Phase 1
   - Forbidding the initialization of fields prior to ``this.init()`` calls
+  - Forbidding the access of parent fields during Phase 1 of initialization
 
 - Support for initializers on generic classes when instances infer their type
   from the result of a ``new`` call or another instance.
@@ -661,7 +662,6 @@ Remaining todo items include:
 - Support for compiler generated initializers
 - Improve the error message for out of order field initialization during Phase
   1
-- Forbid the access of parent fields during Phase 1 of initialization
 - Forbid the utilization of methods on the type during Phase 1 of
   initialization, as well as the use of ``this`` as an argument to a function.
 - Support for the remaining ``param`` conditional situations
