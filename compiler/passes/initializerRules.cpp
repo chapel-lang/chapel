@@ -702,7 +702,12 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        if (state.isPhase2() == true) {
+
+        if (state.isPhase0() == true) {
+          USR_FATAL(stmt,
+                    "field initialization not allowed with sibling initializer call");
+
+        } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", in phase 2",
