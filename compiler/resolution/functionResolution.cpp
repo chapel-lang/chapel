@@ -8542,7 +8542,7 @@ resolveExpr(Expr* expr) {
               (ct->isGeneric() ||
                (isAggregateType(ct->instantiatedFrom) &&
                 toAggregateType(ct->instantiatedFrom)->isGeneric()))) {
-            USR_FATAL(ct, "Sorry, type constructors aren't generated properly for generic types that define initializers");
+            USR_FATAL(ct, "Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference");
           }
 
           resolveFormals(ct->defaultTypeConstructor);

@@ -247,6 +247,12 @@ static bool     isCompoundAssignment(CallExpr* callExpr);
 *                                                                             *
 ************************************** | *************************************/
 
+enum InitPhase {
+  cPhase0,
+  cPhase1,
+  cPhase2
+};
+
 class InitVisitor {
 public:
                   InitVisitor(FnSymbol*  fn);
@@ -254,12 +260,15 @@ public:
                   InitVisitor(LoopStmt*  loop,  const InitVisitor& curr);
                   InitVisitor(CondStmt*  cond,  const InitVisitor& curr);
 
+  void            merge(const InitVisitor& fork);
+
   AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
 
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
 
+  InitPhase       startPhase(BlockStmt* block)                           const;
   bool            isPhase0()                                             const;
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
@@ -279,13 +288,9 @@ public:
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
-private:
-  enum Phase {
-    cPhase0,
-    cPhase1,
-    cPhase2
-  };
+  void            describe(int offset = 0)                               const;
 
+private:
   enum BlockType {
     cBlockNormal,
     cBlockCond,
@@ -296,14 +301,13 @@ private:
 
                   InitVisitor();
 
-  Phase           startPhase(FnSymbol*  fn)                              const;
-  Phase           startPhase(BlockStmt* block)                           const;
+  InitPhase       startPhase(FnSymbol*  fn)                              const;
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
   FnSymbol*       mFn;
   DefExpr*        mCurrField;
-  Phase           mPhase;
+  InitPhase       mPhase;
   BlockType       mBlockType;
 };
 
@@ -347,6 +351,11 @@ InitVisitor::InitVisitor(LoopStmt* loop, const InitVisitor& curr) {
   mCurrField  = curr.mCurrField;
   mPhase      = curr.mPhase;
   mBlockType  = cBlockLoop;
+}
+
+void InitVisitor::merge(const InitVisitor& fork) {
+  mCurrField = fork.mCurrField;
+  mPhase     = fork.mPhase;
 }
 
 AggregateType* InitVisitor::type() const {
@@ -417,6 +426,12 @@ Expr* InitVisitor::completePhase1(CallExpr* initStmt) {
     if (isRecord() == true) {
       initStmt->remove();
     }
+
+  } else if (isThisInit(initStmt) == true) {
+    mCurrField = NULL;
+
+  } else {
+    INT_ASSERT(false);
   }
 
   mPhase = cPhase2;
@@ -452,13 +467,13 @@ bool InitVisitor::isFieldInitialized(const DefExpr* field) const {
   return retval;
 }
 
-InitVisitor::Phase InitVisitor::startPhase(FnSymbol* fn) const {
+InitPhase InitVisitor::startPhase(FnSymbol* fn) const {
   return startPhase(fn->body);
 }
 
-InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
-  Expr* stmt   = block->body.head;
-  Phase retval = cPhase2;
+InitPhase InitVisitor::startPhase(BlockStmt* block) const {
+  Expr*     stmt   = block->body.head;
+  InitPhase retval = cPhase2;
 
   while (stmt != NULL && retval == cPhase2) {
     if (isDefExpr(stmt) == true) {
@@ -477,7 +492,7 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
       if (cond->elseStmt == NULL) {
-        Phase thenPhase = startPhase(cond->thenStmt);
+        InitPhase thenPhase = startPhase(cond->thenStmt);
 
         if (thenPhase != cPhase2) {
           retval = thenPhase;
@@ -486,8 +501,8 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
         }
 
       } else {
-        Phase thenPhase = startPhase(cond->thenStmt);
-        Phase elsePhase = startPhase(cond->elseStmt);
+        InitPhase thenPhase = startPhase(cond->thenStmt);
+        InitPhase elsePhase = startPhase(cond->elseStmt);
 
         if        (thenPhase == cPhase0 || elsePhase == cPhase0) {
           retval = cPhase0;
@@ -501,7 +516,7 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      Phase phase = startPhase(block);
+      InitPhase phase = startPhase(block);
 
       if (phase != cPhase2) {
         retval = phase;
@@ -556,6 +571,62 @@ Expr* InitVisitor::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
   mCurrField = toDefExpr(mCurrField->next);
 
   return retval;
+}
+
+void InitVisitor::describe(int offset) const {
+  char pad[512];
+
+  for (int i = 0; i < offset; i++) {
+    pad[i] = ' ';
+  }
+
+  pad[offset] = '\0';
+
+  printf("%s#<InitVisitor\n", pad);
+
+  printf("%s  Phase: ",       pad);
+
+  switch (mPhase) {
+    case cPhase0:
+      printf("phase 0\n");
+      break;
+
+    case cPhase1:
+      printf("phase 1\n");
+      break;
+
+    case cPhase2:
+      printf("phase 2\n");
+      break;
+  }
+
+
+  printf("%s  Block: ",       pad);
+
+  switch (mBlockType) {
+    case cBlockNormal:
+      printf("normal\n");
+      break;
+
+    case cBlockCond:
+      printf("cond\n");
+      break;
+
+    case cBlockLoop:
+      printf("loop\n");
+      break;
+
+    case cBlockBegin:
+      printf("begin\n");
+      break;
+
+    case cBlockCobegin:
+      printf("cobegin\n");
+      break;
+
+  }
+
+  printf("%s>\n", pad);
 }
 
 /************************************* | **************************************
@@ -670,19 +741,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
             INT_ASSERT(false);
           }
 
-        } else if (state.inCondStmt() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() in a conditional stmt in phase 1");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() in a conditional stmt in phase 1");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
         } else if (state.inParallelStmt() == true) {
           if (isSuperInit(callExpr) == true) {
             USR_FATAL(stmt,
@@ -705,7 +763,8 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
         if (state.isPhase0() == true) {
           USR_FATAL(stmt,
-                    "field initialization not allowed with sibling initializer call");
+                    "field initialization not allowed with sibling "
+                    "initializer call");
 
         } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
@@ -733,12 +792,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
                     "loop during phase 1 of initialization",
                     field->sym->name);
 
-        } else if (state.inCondStmt() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "conditional during phase 1 of initialization",
-                    field->sym->name);
-
         } else if (state.inParallelStmt() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
@@ -762,12 +815,58 @@ static InitVisitor preNormalize(BlockStmt*  block,
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      // Focus on phase 0 or phase 1
-      if (state.isPhase0() == true || state.isPhase1() == true) {
-        preNormalize(cond->thenStmt, InitVisitor(cond, state));
+      if (cond->elseStmt == NULL) {
+        InitPhase   phaseThen = state.startPhase(cond->thenStmt);
+        InitVisitor stateThen = preNormalize(cond->thenStmt,
+                                             InitVisitor(cond, state));
 
-        if (cond->elseStmt != NULL) {
-          preNormalize(cond->elseStmt, InitVisitor(cond, state));
+        if (state.isPhase2() == false) {
+
+          if (stateThen.isPhase2() == true) {
+            if (phaseThen == cPhase0) {
+              USR_FATAL(cond,
+                        "use of this.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else if (phaseThen == cPhase1) {
+              USR_FATAL(cond,
+                        "use of super.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else {
+              INT_ASSERT(false);
+            }
+          }
+
+          if (stateThen.currField() != state.currField()) {
+            USR_FATAL(cond,
+                      "cannot initialize fields in an if statement "
+                      "in phase 1");
+          }
+        }
+
+      } else {
+        InitVisitor stateThen = preNormalize(cond->thenStmt,
+                                             InitVisitor(cond, state));
+
+        InitVisitor stateElse = preNormalize(cond->elseStmt,
+                                             InitVisitor(cond, state));
+
+        if (state.isPhase2() == false) {
+          // Only one branch contained an init
+          if (stateThen.isPhase2() != stateElse.isPhase2()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must use this.init() "
+                      "or super.init() in phase 1");
+
+          } else if (stateThen.currField() != stateElse.currField()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must initialize the same "
+                      "fields in phase 1");
+
+          } else {
+            state.merge(stateThen);
+          }
         }
       }
 
@@ -782,7 +881,7 @@ static InitVisitor preNormalize(BlockStmt*  block,
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      state = preNormalize(block, InitVisitor(block, state));
+      state.merge(preNormalize(block, InitVisitor(block, state)));
       stmt  = stmt->next;
 
     } else {
