@@ -114,6 +114,9 @@ is ``nil``:
     forwarding getImplOrFail();
   }
 
+  var empty = new MyCircle(nil);
+  empty.area(); // halts with "impl is nil"
+
 Another direction that a user of ``forwarding`` might go is that they
 might decide to only forward certain methods. For example, the following
 are equivalent ways to forward only the ``area()`` method, assuming that
