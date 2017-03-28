@@ -703,12 +703,12 @@ Successively higher levels of overflow checking are more likely both to
 catch overflow and to catch it earlier, but they also have more overhead
 and thus a greater impact on performance.
 
-Note: in some situations the check as to whether or not the task
-stacks are in hugepage memory gets the wrong answer, leading to
-internal errors when the tasking layer tries to use guard pages and
-cannot do so.  This issue and its workarounds are tracked here:
+.. note::
 
-  https://chapel.atlassian.net/browse/CHAPEL-117
+    In some situations the check as to whether or not the task
+    stacks are in hugepage memory gets the wrong answer, leading to
+    internal errors when the tasking layer tries to use guard pages and
+    cannot do so.
 
 
 Number of Threads per Locale
