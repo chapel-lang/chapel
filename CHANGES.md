@@ -72,7 +72,7 @@ New Features
   (see http://chapel.cray.com/docs/1.15/technotes/forwarding.html)
 * made 'void' a first-class type in the language and a way to fold variables
   (see http://chapel.cray.com/docs/1.15/technotes/voidVariables.html
-   and $CHPL_HOME/examples/voidVariables.chpl)
+   and $CHPL_HOME/examples/primers/voidVariables.chpl)
 * added support for module deinit() functions
   (see "Module Deinitialization" in the "Modules" chapter of the specification)
 
@@ -81,13 +81,12 @@ Semantic Changes / Changes to Chapel Language
 * functions that return array expressions now return by value by default
   (see http://chapel.cray.com/docs/1.15/language/evolution.html#arrays-return-by-value-by-default)
 * made the default intent for arrays be 'ref' if modified, else 'const ref'
-  (see http://chapel.cray.com/docs/1.15/language/evolution.html#array-blank-intent
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#array-default-intent
    and "Array Arguments to Functions" in the "Arrays" chapter of the spec)
 * made the default intent for 'this' on record methods be 'ref' if modified
   (see http://chapel.cray.com/docs/1.15/language/evolution.html#record-this-default-intent)
 * deprecated support for the '=>' operator to create array aliases
-  (e.g., replace 'var A => B;' with 'ref A = B;'
-   and 'var A: [D] => B;' with 'ref A = B.reindex(D);')
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#array-alias-operator-deprecated)
 * deprecated support for using '=>' in constructors to create alias fields
 
 Syntactic/Naming Changes
@@ -103,7 +102,7 @@ Feature Improvements
 * extended return intent overloading to improve its utility and flexibility
   (see "Return Intents" in the "Procedures" chapter of the specification)
 * added support for using 'const' and 'const ref' as 'this' intents
-  (see "The Method Receiver and the this Argument" section in the spec)
+  (see "The Method Receiver and the this Argument" sections in the spec)
 * added support for defining type aliases for generic classes
   (e.g., 'type Vec = Vector;' is now supported for a generic type 'Vector')
 * added the ability to define secondary methods on instantiated types
