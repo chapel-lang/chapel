@@ -70,7 +70,7 @@ Similarly, using a slice after an array has been destroyed is an error:
     // slice2 sets up a slice by creating a reference to it
     ref slice2 = A[1..1000];
     // either way, using the slice in a begin that can continue
-    // after the function declaring theh array exits is an error
+    // after the function declaring the array exits is an error
     begin {
       slice1 += 1;
       slice2 += 1;
