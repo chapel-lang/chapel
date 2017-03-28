@@ -1,5 +1,0 @@
-feature request: new initializer story
-
-This test currently generates an error message about using an
-initializer inside a conditional.  However this is a simpler
-case that could be made to "do the right thing".
