@@ -68,7 +68,7 @@ Similarly, using a slice after an array has been destroyed is an error:
     // note that the => operator is deprecated (see below)
     var slice1 => A[1..1000];
     // slice2 sets up a slice by creating a reference to it
-    ref slice2 A[1..1000];
+    ref slice2 = A[1..1000];
     // either way, using the slice in a begin that can continue
     // after the function declaring theh array exits is an error
     begin {
@@ -99,6 +99,8 @@ For example, before Chapel 1.15 you might have written:
   const alias => A;
   // set up a mutable slice of A
   var slice => A[2..5];
+  // set up a re-indexing slice of A
+  var reindex:[0..9] => A;
 
 In Chapel 1.15, use `ref` or `const ref` to create the same pattern:
 
@@ -109,6 +111,9 @@ In Chapel 1.15, use `ref` or `const ref` to create the same pattern:
   const ref alias = A;
   // set up a mutable slice of A
   ref slice = A[2..5];
+  // set up a re-indexing slice of A
+  ref reindex = A.reindex({0..9});
+
 
 .. _readme-evolution.arrays-return-by-value:
 
