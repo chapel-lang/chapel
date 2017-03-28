@@ -944,6 +944,27 @@ two mechanisms.
 
        require "foo.h", "-lfoo";
 
+    Require statements accept general ``param`` string expressions
+    beyond the string literals shown in these examples.  Only
+    ``require`` statements in code that the compiler considers
+    executable will be processed.  Thus, a ``require`` statement
+    guarded by a ``param`` conditional that the compiler folds out, or
+    in a module that does not appear in the program's ``use``
+    statements will not be added to the program's requirements.  For
+    example, the following code either requires ``foo.h`` or whatever
+    requirement is specified by *defaultHeader* (``bar.h`` by default)
+    depending on the value of *requireFoo*:
+
+    .. code-block:: chapel
+
+       config param requireFoo=true,
+                    defaultHeader="bar.h";
+
+       if requireFoo then
+         require "foo.h";
+       else
+         require defaultHeader;
+
 
 Either approach has the following results:
 
