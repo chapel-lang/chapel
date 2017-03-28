@@ -83,7 +83,7 @@ What is GASNet?
 
 GASNet is a one-sided communication and active message library being
 developed by Lawrence Berkeley National Laboratory and UC Berkeley.  For
-details, refer to the `GASNet website <http://gasnet.cs.berkeley.edu>`_.
+details, refer to the `GASNet website <http://gasnet.lbl.gov/>`_.
 
 .. _set-comm-conduit:
 
@@ -126,7 +126,7 @@ psm
 shmem
     SHMEM for SGI Altix
 
-See the `GASNet website <http://gasnet.cs.berkeley.edu>`_ for more
+See the `GASNet website <http://gasnet.lbl.gov/>`_ for more
 information on each of these conduits.
 
 Current defaults are:

@@ -1978,7 +1978,7 @@ module Random {
 
      The pseudorandom number generator (PRNG) implemented by
      this module uses the algorithm from the NAS Parallel Benchmarks
-     (NPB, available at: http://www.nas.nasa.gov/publications/npb.html),
+     (NPB, available at: https://www.nas.nasa.gov/publications/npb.html
      which can be used to generate random values of type `real(64)`,
      `imag(64)`, and `complex(128)`.
 

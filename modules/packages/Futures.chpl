@@ -48,7 +48,7 @@ A future that is initialized by a call to :proc:`async()` or
 :proc:`Future.andThen()` is created in a valid state.  Otherwise |---| for
 example, when a future is declared but not initialized |---| the future is in
 an invalid state and method calls other than :proc:`Future.isValid()` on an
-invalid future will :proc:`halt()`.  If such a future object is subsequently
+invalid future will :proc:`~ChapelIO.halt()`.  If such a future object is subsequently
 assigned to by a call to :proc:`async()` or :proc:`Future.andThen()`, then
 the future will become valid.
 
@@ -139,7 +139,7 @@ module Futures {
     /*
       Get the result of a future, blocking until it is available.
 
-      If the future is not valid, this call will :proc:`halt()`.
+      If the future is not valid, this call will :proc:`~ChapelIO.halt()`.
      */
     proc get(): retType {
       if !isValid() then halt("get() called on invalid future");
@@ -149,7 +149,7 @@ module Futures {
     /*
       Test whether the result of the future is available.
 
-      If the future is not valid, this call will :proc:`halt()`.
+      If the future is not valid, this call will :proc:`~ChapelIO.halt()`.
      */
     proc isReady(): bool {
       if !isValid() then halt("get() called on invalid future");
@@ -171,7 +171,7 @@ module Futures {
       `retType` (i.e., the return type of the parent future) and will be
       executed when the parent future's value is available.
 
-      If the parent future is not valid, this call will :proc:`halt()`.
+      If the parent future is not valid, this call will :proc:`~ChapelIO.halt()`.
 
       :arg taskFn: The function to invoke as a continuation.
       :returns: A future of the return type of `taskFn`
