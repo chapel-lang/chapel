@@ -27,7 +27,8 @@ their scope is now a user error:
     begin {
       A += 1;
     }
-    // Error: A destroyed here at function end, but the begin could still be using it!
+    // Error: A destroyed here at function end, but the begin could still
+    // be using it!
   }
 
 
@@ -37,11 +38,19 @@ Similarly, using a slice after an array has been destroyed is an error:
 
   proc badBeginSlice() {
     var A: [1..10000] int;
-    var slice => A[1..1000];
+    // slice1 sets up a slice using the => operator
+    // note that the => operator is deprecated (see below)
+    var slice1 => A[1..1000];
+    // slice2 sets up a slice by creating a reference to it
+    ref slice2 A[1..1000];
+    // either way, using the slice in a begin that can continue
+    // after the function declaring theh array exits is an error
     begin {
-      slice += 1;
+      slice1 += 1;
+      slice2 += 1;
     }
-    // Error: A destroyed here at function end, but the begin tries to use it through the slice!
+    // Error: A destroyed here at function end, but the begin tries to
+    // use it through the slices!
   }
 
 
@@ -76,8 +85,8 @@ return a local `int` variable by `ref`.
   }
 
 
-array blank intent
-******************
+array default intent
+********************
 
 Before 1.15, the default intent for arrays was `ref`. The rationale for
 this feature was that it was a convenience for programmers who are used
