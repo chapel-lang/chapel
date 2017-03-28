@@ -182,12 +182,12 @@ and may be cooperatively scheduled, a :record:`Socket` object should not be
 accessed concurrently by multiple Chapel tasks.
 
 The ZMQ module is designed to "play nicely" with the Chapel tasking layer.
-While the C-level call :proc:`zmq_send()` may be a blocking call (depending on
+While the C-level call ``zmq_send()`` may be a blocking call (depending on
 the socket type and flag arguments), it is desirable that a
 semantically-blocking call to :proc:`Socket.send()` allow other Chapel tasks
 to be scheduled on the OS thread as supported by the tasking layer.
-Internally, the ZMQ module uses non-blocking calls to :proc:`zmq_send()` and
-:proc:`zmq_recv()` to transfer data, and yields to the tasking layer via
+Internally, the ZMQ module uses non-blocking calls to ``zmq_send()`` and
+``zmq_recv()`` to transfer data, and yields to the tasking layer via
 `chpl_task_yield()` when the call would otherwise block.
 
 Limitations and Future Work
