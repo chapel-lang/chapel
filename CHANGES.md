@@ -5,8 +5,6 @@ stopped at 6294676
 
 TODO:
 * make sure nothing after commit above needs adding
-* tighten up Highlights section
-* query-replace docs/latest or docs/master to 1.15
 
 
 version 1.15.0
@@ -16,28 +14,46 @@ Eighteenth public release of Chapel, April 6, 2017
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* enabled GitHub issues to file and track Chapel bugs and feature requests
-* added prototype support for error-handling in Chapel
-* dramatically improved support for initializers
-* made 'void' a first-class type in the language and a way to fold variables
-* added support for module deinit() functions
-* added support for 'forwarding' methods to fields of classes and records
-* vastly improved the stability, generality, and precision of 'where' clauses
-* improved array slice, rank change, and reindexing support across domain maps
-* added support for a 'DateTime' module for operating on dates and times
-* added initial support for some class-owning record patterns, Owned and Shared
-* added support for a new 'Futures' module supporting library-based futures
-* added BLAS level 1 and 2 routines to the previous support for level 3
-* added an early-draft LinearAlgebra module
-* significant performance improvements
-* fixed most memory leaks caused by arrays, domains, and domain maps
-* added new users guide sections on promotion, constants, type aliases, configs
-* added a locale model for KNL with support for different memory types
-* added Chapel support for AWS EC2
-* verified that Chapel works with the Windows 10 bash shell as with Ubuntu
-* added support for multi-locale ARM executions
-* added the 'ugni' communication layer to the open-source repository
-* added support for numa-localization of array memory
+* performance optimization highlights:
+  - significantly improved the performance of many key idioms and benchmarks
+  - dramatically improved task creation speed
+  - reduced overheads related to array slicing, rank-change, and reindexing
+  - significantly improved the remote value forwarding optimization
+  - optimized the performance of latency-bound applications with CHPL_COMM=ugni
+  - improved qthreads tasking such that it outperforms 'muxed' on studied codes
+* standard library/package highlights:
+  - added a new 'DateTime' module for operating on dates and times
+  - added BLAS level 1 and 2 routines to the previous support for level 3
+  - added an early-draft 'LinearAlgebra' module
+  - added a new 'Futures' module supporting library-based futures
+  - added initial support for some class-owner patterns, 'Owned' and 'Shared'
+  - added support for choosing between implementations for the 'FFTW' module
+* language improvements:
+  - dramatically improved support for object initializers and deinitializers
+  - added prototype support for error-handling in Chapel
+  - significantly improved array semantics and memory management
+  - improved support for generic classes and records
+  - made 'void' a first-class type in the language and a way to fold variables
+  - added support for module deinit() functions
+  - added support for 'forwarding' methods to fields of classes and records
+  - vastly improved the stability, generality, and precision of 'where' clauses
+* portability highlights:
+  - added a locale model for KNL with support for different memory types
+  - added Chapel support for AWS EC2
+  - verified that Chapel works with the Windows 10 bash shell as with Ubuntu
+  - improved support for ARM processors including multi-locale support
+* implementation highlights:
+  - closed significant memory leaks caused by arrays, domains, and domain maps
+  - added support for numa-localization of array memory
+  - improved array slice, rank change, and reindexing support for domain maps
+  - streamlined several aspects of the domain map standard interface (dsi)
+* documentation and example code highlights:
+  TODO: remove?
+* additional highlights:
+  - added new users guide text for promotion, constants, type aliases, configs
+  - enabled GitHub issues to file and track Chapel bugs and feature requests
+  - added the 'ugni' communication layer to the open-source repository
+  - updated our cached versions of GASNet, Qthreads, jemalloc, and hwloc
 
 Deployment
 ----------
@@ -48,18 +64,19 @@ Deployment
 
 New Features
 ------------
-* added prototype support for error-handling in Chapel
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html
-   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst)
 * dramatically improved support for initializers
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+  (see http://chapel.cray.com/docs/1.15/technotes/initializers.html
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+* added prototype support for error-handling in Chapel
+  (see http://chapel.cray.com/docs/1.15/technotes/errorHandling.html
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst)
 * added support for deinit() as a replacement for class/record destructors
   (see "Class Deinitializer" and "Record Deinitializer" sections in the spec
    and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
 * added support for 'forwarding' methods to fields of classes and records
-  (see http://chapel.cray.com/docs/master/technotes/forwarding.html)
+  (see http://chapel.cray.com/docs/1.15/technotes/forwarding.html)
 * made 'void' a first-class type in the language and a way to fold variables
-  (see http://chapel.cray.com/docs/master/technotes/voidVariables.html
+  (see http://chapel.cray.com/docs/1.15/technotes/voidVariables.html
    and $CHPL_HOME/examples/voidVariables.chpl)
 * added support for module deinit() functions
   (see "Module Deinitialization" in the "Modules" chapter of the specification)
@@ -67,21 +84,21 @@ New Features
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * functions that return array expressions now return by value by default
-  (see http://chapel.cray.com/docs/master/language/evolution.html#arrays-return-by-value-by-default)
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#arrays-return-by-value-by-default)
 * made the default intent for arrays be 'ref' if modified, else 'const ref'
-  (see http://chapel.cray.com/docs/master/language/evolution.html#array-blank-intent
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#array-blank-intent
    and "Array Arguments to Functions" in the "Arrays" chapter of the spec)
 * made the default intent for 'this' on record methods be 'ref' if modified
-  (see http://chapel.cray.com/docs/master/language/evolution.html#record-this-default-intent)
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#record-this-default-intent)
 * deprecated support for the '=>' operator to create array aliases
-  (replace 'var A => B;' with 'ref A = B;'
+  (e.g., replace 'var A => B;' with 'ref A = B;'
    and 'var A: [D] => B;' with 'ref A = B.reindex(D);')
 * deprecated support for using '=>' in constructors to create alias fields
 
 Syntactic/Naming Changes
 ------------------------
 * renamed the 'Error' module to 'SysError'
-  (see TODO)
+  (see http://chapel.cray.com/docs/1.15/modules/standard/SysError.html)
 
 Feature Improvements
 --------------------
@@ -104,81 +121,82 @@ Feature Improvements
 * reduced opportunities for races on set operations for associative arrays
 * enabled 'param's and 'config param's to be specified without initializers
 
-Feature Slips
--------------
+Known Feature Slips
+-------------------
 * domains of reindexed distributed arrays are not distributed as they should be
 * removed support for having first-class functions capture outer variables
 
 Removed Features
 ----------------
+* removed the 'noRefCount' config const which is no longer necessary
 * removed deprecated functions from the 'Sort' and 'Search' modules
 * removed the deprecated 'BigInt' class in favor of the 'bigint' value type
-* removed the 'noRefCount' config const which is no longer necessary
 
 Standard Modules/Library
 ------------------------
 * added support for a 'DateTime' module for operating on dates and times
-  (see http://chapel.cray.com/docs/master/modules/standard/DateTime.html)
+  (see http://chapel.cray.com/docs/1.15/modules/standard/DateTime.html)
 * improved the initializer argument list and order for RandomStream
-  (see http://chapel.cray.com/docs/master/modules/standard/Random.html)
+  (see http://chapel.cray.com/docs/1.15/modules/standard/Random.html)
 * converted the 'barrier' type from a class into a record
-  (see http://chapel.cray.com/docs/master/modules/standard/Barrier.html)
+  (see http://chapel.cray.com/docs/1.15/modules/standard/Barrier.html)
 * added support for a .shape query on domains and arrays
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=shape#ChapelArray.shape)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=shape#ChapelArray.shape)
 * added support for 'targetLocales' query to default rectangular arrays/domains
 * made count() on arrays parallel by default
 * added support for passing comparators to the domain.sorted() iterator
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=sorted#ChapelArray.sorted)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=sorted#ChapelArray.sorted)
 * made conjg() generate the same type as its argument
-  (see http://chapel.cray.com/docs/master/modules/standard/Math.html#Math.conjg)
+  (see http://chapel.cray.com/docs/1.15/modules/standard/Math.html#Math.conjg)
 * improved memory management for the 'List' module
 
 Package Modules
 ---------------
-* added initial support for some class-owning record patterns, Owned and Shared
-  (see http://chapel.cray.com/docs/master/modules/packages/OwnedObject.html
-   and http://chapel.cray.com/docs/master/modules/packages/SharedObject.html)
+* added initial support for some class-owner record patterns, Owned and Shared
+  (see http://chapel.cray.com/docs/1.15/modules/packages/OwnedObject.html
+   and http://chapel.cray.com/docs/1.15/modules/packages/SharedObject.html)
 * added support for a new 'Futures' module supporting library-based futures
-  (see http://chapel.cray.com/docs/master/modules/packages/Futures.html)
+  (see http://chapel.cray.com/docs/1.15/modules/packages/Futures.html)
 * added BLAS level 1 and 2 routines to the previous support for level 3
-  (see http://chapel.cray.com/docs/master/modules/packages/BLAS.html)
+  (see http://chapel.cray.com/docs/1.15/modules/packages/BLAS.html)
 * removed support for the 'ldA' arguments in the BLAS module
-* added an early-draft LinearAlgebra module
-  (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html)
+* added an early-draft 'LinearAlgebra' module
+  (see http://chapel.cray.com/docs/1.15/modules/packages/LinearAlgebra.html)
 * added support for choosing between FFT implementations in the FFTW module
-  (see http://chapel.cray.com/docs/master/modules/packages/FFTW.html#FFTW.isFFTW_MKL)
+  (see http://chapel.cray.com/docs/1.15/modules/packages/FFTW.html#FFTW.isFFTW_MKL)
 * improved support for the 'MatrixMarket' module
 
 Interoperability Improvements
 -----------------------------
-* improved 'require' statements to accept 'param' strings
-  (see http://chapel.cray.com/docs/master/technotes/extern.html#expressing-dependencies)
-* only 'require' statements in resolved have any impact
-  (see http://chapel.cray.com/docs/master/technotes/extern.html#expressing-dependencies)
+* improved 'require' statements to accept 'param' string expressions
+  (see http://chapel.cray.com/docs/1.15/technotes/extern.html#expressing-dependencies)
+* now only 'require' statements in resolved code add requiremeents
+  (see http://chapel.cray.com/docs/1.15/technotes/extern.html#expressing-dependencies)
 
 Performance Optimizations/Improvements
 --------------------------------------
 * improved parallel tasking performance using a hybrid spin/condwait strategy
 * optimized the creation of tasks for certain coforalls with known trip counts
 * moved argument bundles for tasks and on-clauses from the heap to task stacks
+* switched qthreads to use Chapel's registered heap for its memory requirements
+* reduced array overhead by eliminating reference counting overheads
 * optimized 1D strided iterations
 * reduced the overhead of slicing, rank-change slicing, and reindexing arrays
 * reduced the number of communications required for a number of idioms
 * improved the precision of the array access optimization introduced in 1.14
+* stopped limiting the number of ugni communication domains with slurm on Crays
 * optimized a costly temporary array out of the BlockCyclic distribution
 * added intra-locale parallelism for iterations over BlockCyclic distributions
 * improved loop-invariant code motion for iterator expressions
 * improved the cases handled by, and accuracy of, remote value forwarding
-* improved the performance of casts from strings to numeric types
 * removed redundant field initializations in init() routines
+* improved the performance of casts from strings to numeric types
 * optimized '<~>' overloads to avoid unnecessary reference counting
-* stopped limiting the number of ugni communication domains under slurm ryon Crays
-* reduced array overhead by eliminating reference counting overheads
 
 Memory Improvements
 -------------------
-* fixed most memory leaks caused by arrays, domains, and domain maps
-* reduced the memory footprint of a non-stridable range slightly
+* closed significant memory leaks caused by arrays, domains, and domain maps
+* reduced the memory footprint of a non-stridable range
 * made the 'list' type reclaim its memory on destruction
 * fixed a memory leak in the push_back() routine
 
@@ -210,28 +228,28 @@ Example Codes
 Documentation
 -------------
 * added new users guide sections on promotion, constants, type aliases, configs
-  (see http://chapel.cray.com/docs/master/users-guide/index.html)
+  (see http://chapel.cray.com/docs/1.15/users-guide/index.html)
 * revised QUICKSTART instructions for clarity
-  (http://chapel.cray.com/docs/master/usingchapel/QUICKSTART.html)
+  (http://chapel.cray.com/docs/1.15/usingchapel/QUICKSTART.html)
 * reorganized the doc/ directory in the release tarball
   (see $CHPL_HOME/doc/README.md
    or https://github.com/chapel-lang/chapel/blob/master/doc/README.rst)
 * removed $CHPL_HOME/STATUS in favor of GitHub issues
 * updated bugs.rst to refer users to GitHub issues
-  (see http://chapel.cray.com/docs/master/usingchapel/bugs.html)
+  (see http://chapel.cray.com/docs/1.15/usingchapel/bugs.html)
 * improved the Docker README information
   (see https://hub.docker.com/r/chapel/chapel/)
 * reorganized the platform-specific documentation pages into categories
-  (see http://chapel.cray.com/docs/master/platforms/index.html)
+  (see http://chapel.cray.com/docs/1.15/platforms/index.html)
 * added documentation for dim() and dims() on arrays
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=dims#ChapelArray.dims)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=dims#ChapelArray.dims)
 * fixed the documentation for string.strip()
-  (see http://chapel.cray.com/docs/master/builtins/internal/String.html?highlight=strip#String.string.strip)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/String.html?highlight=strip#String.string.strip)
 * updated documentation regarding reference counting of files and channels
 * added an indication that IO is a module that is used by default
 * updated documents to refer to install.html rather than download.html
 * improved some entries in the "quick reference" document
-  (see http://chapel.cray.com/docs/master/_downloads/quickReference.pdf)
+  (see http://chapel.cray.com/docs/1.15/_downloads/quickReference.pdf)
 
 Compiler Flags (see 'man chpl' for details)
 -------------------------------------------
@@ -244,37 +262,38 @@ Compiler Flags (see 'man chpl' for details)
 Locale Models
 -------------
 * added a locale model for KNL with support for different memory types
-  (see http://chapel.cray.com/docs/master/technotes/localeModels.html#knl-locale-model
-   and http://chapel.cray.com/docs/master/platforms/knl.html)
+  (see http://chapel.cray.com/docs/1.15/technotes/localeModels.html#knl-locale-model
+   and http://chapel.cray.com/docs/1.15/platforms/knl.html)
 * for 'numa', arrays are now allocted using multiple per-numa-domain chunks
-  (see http://chapel.cray.com/docs/master/technotes/localeModels.html#numa-locale-model)
+  (see http://chapel.cray.com/docs/1.15/technotes/localeModels.html#numa-locale-model)
 
 Portability
 -----------
 * added Chapel support for AWS EC2
-  (see http://chapel.cray.com/docs/master/platforms/aws.html)
+  (see http://chapel.cray.com/docs/1.15/platforms/aws.html)
 * verified that Chapel works with the Windows 10 bash shell as with Ubuntu
 * improved support for ARM processors including multi-locale support
-  (see http://chapel.cray.com/docs/master/platforms/arm.html)
+  (see http://chapel.cray.com/docs/1.15/platforms/arm.html)
+
+Platform-specific Changes
+-------------------------
+* fixed an occasional cygwin failure caused by pthread_attr_init()
 
 Cray-specific Changes
 ---------------------
 * made Cray systems always default to CHPL_COMM=ugni
 * stopped limiting the number of ugni communication domains under slurm
 * tuned the amount of task spinning before sleeping for Crays
+* CHPL_TASKS=muxed is now deprecated and will be removed in future releases
 * removed extraneous/incorrect -O flags from cray-prgenv-cray command lines
 * make the heap used by CHPL_COMM=ugni 'numa'-localized when appropriate
 * fixed a problem when using 'muxed' tasking with 'gasnet' but no hugepages
 * enabled support for CHPL_COMM=ugni for the pgi compiler
 * fixed a bug in dynamic linking for gasnet-aries
 
-Platform-specific Changes
--------------------------
-* fixed an occasional cygwin failure caused by pthread_attr_init()
-
 Error Messages
 --------------
-* improved const-checking in the compiler
+* significantly improved const-checking in the compiler
 * added an error message for re-assigning a 'param' after its initialization
 * added a user error when 'inline' is applied to a recursive function
 * added an error message for trying to capture generic functions
@@ -375,21 +394,17 @@ Developer-oriented changes: Configuration changes
 -------------------------------------------------
 * extended CHPL_LLVM to support new modes: llvm-minimal and system[-minimal]
 
-Developer-oriented changes: Compiler Flags
-------------------------------------------
-* removed the --report-optimized-array-indexing flag, no longer required
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * refactored locale models code
-* optimized out array fields used in numa configurations only using 'void'
+* optimized out array fields used only in numa configurations using 'void'
 * added 'export' to locale model routines to avoid widening arguments
 * refactored rectangular I/O into a single helper routine
 * moved c_void_ptr comparisons from CPtr to ChapelBase
 * added a developer feature for specifying arrays' initialization approaches
 * removed an unnecessary argument from _bulkGrow
 * simplified the 'dsi' interface for slicing, rank-change, and reindexing
-  (see http://chapel.cray.com/docs/master/technotes/dsi.html)
+  (see http://chapel.cray.com/docs/1.15/technotes/dsi.html)
 * updated the 'dsi' interfaces for establishing new domains
 * cleaned up how the MPI module deinitializes/finalizes itself
 
@@ -403,6 +418,7 @@ Developer-oriented changes: Makefile improvements
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* removed the --report-optimized-array-indexing flag, no longer required
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
@@ -461,15 +477,12 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added an API for performing task ID comparisons
-* moved .c files out of runtime/include
+* moved stray .c files out of runtime/include
 * fixed some issues in how privatization works
 * updated some interfaces to use c_nodeid_t rather than int32_t
 * removed some dead code in the qthreads tasking layer
 * improved chpl_task_idToString()
 * changed how and when the heap page size is computed
-
-Developer-oriented changes: Documentation
------------------------------------------
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
