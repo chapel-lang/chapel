@@ -14,6 +14,7 @@ Major Platforms
    knl
    cygwin
    aws
+   arm
 
 
 Networks
