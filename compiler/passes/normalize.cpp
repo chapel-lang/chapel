@@ -1842,10 +1842,15 @@ static void normVarTypeInference(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   initExpr = defExpr->init->remove();
 
+  // Do not complain here.  Put this stub in to the AST and let
+  // checkUseBeforeDefs() generate a consistent error message.
+  if (isUnresolvedSymExpr(initExpr) == true) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
+
   // e.g.
   //   var x = <immediate>;
   //   var y = <identifier>;
-  if (SymExpr* initSym = toSymExpr(initExpr)) {
+  } else if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
     if (isPrimitiveScalar(type) == true) {
