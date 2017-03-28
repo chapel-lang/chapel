@@ -22,9 +22,8 @@
    This module helps handle system errors.
 
    This module defines the type ``syserr``, which can encode an error code or
-   error message and be returned from routines generating an error. It also
-   enables routines to return a ``syserr`` encoding an error state, with
-   additional routines to print a useful error message from a ``syserr``.
+   error message and be returned from routines generating an error. Additional
+   routines are provided to print a useful error message from a ``syserr``.
 
    The IO module uses these routines in a way that supports error inspection
    and rapid prototyping. Most routines in the IO module have two forms.
