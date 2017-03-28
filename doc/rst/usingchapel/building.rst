@@ -43,10 +43,8 @@ If everything works as intended, you ought to see:
 
 If you get an error or failure during the make process, first
 double-check that you have the required prerequisites (see
-:ref:`readme-prereqs`). If you do, please let us know about the failure
-at: chapel-bugs@lists.sourceforge.net (as well as information about your
-system as described in :ref:`readme-bugs` and any workaround that you
-come up with).
+:ref:`readme-prereqs`). If you do, please submit a bug report for the failure
+and any workaround that you come up with, through :ref:`readme-bugs`
 
 Note that each make command only builds the compiler and runtime for
 the current set of ``CHPL_`` environment variables defined by (and
