@@ -13,12 +13,37 @@ version 1.15, April 2017
 
 Version 1.15 includes several language changes to improve array semantics.
 
+In summary:
+
+ * arrays are always destroyed when they go out of scope and
+   in particular will not be preserved by use in `begin`.
+   See :ref:`readme-evolution.array-lexical-scoping`.
+ * the array alias operator `=>` has been deprecated in favor of creating
+   references to an array or a slice of an array with `ref` or `const ref`.
+   See :ref:`readme-evolution.alias-operator-deprecated`.
+ * arrays now return by value by default instead of by `ref`.
+   See :ref:`readme-evolution.arrays-return-by-value`.
+ * arrays now pass by `ref` or `const ref` by default, depending on
+   whether or not the formal argument is modified.
+   See :ref:`readme-evolution.array-default-intent`.
+
+Additionally, the default intent for record method receivers has changed:
+
+ * the method receiver for records is passed by `ref` or `const ref` by
+   default, depending on whether or not the formal argument is modified.
+   See :ref:`readme-evolution.record-this-default-intent`.
+
+.. _readme-evolution.array-lexical-scoping:
+
 array lexical scoping
 *********************
 
-Continuing on the changes for 1.12 described below in
-:ref:`readme-evolution.lexical-scoping`, using arrays beyond
-their scope is now a user error:
+As described in the language changes for 1.12 in
+:ref:`readme-evolution.lexical-scoping`, using arrays beyond their scope
+is a user error. While such a program was in error starting with Chapel
+1.12, such a pattern worked until Chapel 1.15.
+
+For example, this program will probably crash in Chapel 1.15:
 
 .. code-block:: chapel
 
@@ -30,6 +55,7 @@ their scope is now a user error:
     // Error: A destroyed here at function end, but the begin could still
     // be using it!
   }
+
 
 
 Similarly, using a slice after an array has been destroyed is an error:
@@ -53,11 +79,45 @@ Similarly, using a slice after an array has been destroyed is an error:
     // use it through the slices!
   }
 
+.. _readme-evolution.alias-operator-deprecated:
+
+array alias operator deprecated
+*******************************
+
+The array alias operator, `=>`, has been deprecated in Chapel 1.15.
+Previously, the supported way to declare one array that aliases another
+(or a slice of another) was to use `=>`. Now, the supported way to do
+that is to use a `ref` or `const ref` variable:
+
+For example, before Chapel 1.15 you might have written:
+
+.. code-block:: chapel
+
+  // pre-1.15
+  var A:[1..10] int;
+  // set up a const alias of A
+  const alias => A;
+  // set up a mutable slice of A
+  var slice => A[2..5];
+
+In Chapel 1.15, use `ref` or `const ref` to create the same pattern:
+
+.. code-block:: chapel
+
+  var A:[1..10] int;
+  // set up a const alias of A
+  const ref alias = A;
+  // set up a mutable slice of A
+  ref slice = A[2..5];
+
+.. _readme-evolution.arrays-return-by-value:
 
 arrays return by value by default
 *********************************
 
-Now the act of returning an array makes a copy:
+Before Chapel 1.15, returning an array would return the array by
+reference. Now arrays return by value by default. That is, the act of
+returning an array can makes a copy:
 
 .. code-block:: chapel
 
@@ -84,6 +144,8 @@ return a local `int` variable by `ref`.
     return A;
   }
 
+
+.. _readme-evolution.array-default-intent:
 
 array default intent
 ********************
@@ -168,11 +230,15 @@ In contrast, in the following program, the default intent for the formal argumen
   getElementOne(B);
 
 
+.. _readme-evolution.record-this-default-intent:
+
 record `this` default intent
 ****************************
 
-Before 1.15, the default intent for the implicit `this`
-argument for record methods was implemented as `ref` but specified as `const ref`. In 1.15, this changed to `ref` if the formal `this` argument is modified in the body of the function and `const ref` if not.
+Before 1.15, the default intent for the implicit `this` argument for
+record methods was implemented as `ref` but specified as `const ref`. In
+1.15, this changed to `ref` if the formal `this` argument is modified in
+the body of the function and `const ref` if not.
 
 See GitHub issue #5266 for more details and discussion.
 
