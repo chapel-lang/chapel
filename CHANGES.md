@@ -4,10 +4,9 @@ Release Changes List
 stopped at 6294676
 
 TODO:
+* make sure nothing after commit above needs adding
+* tighten up Highlights section
 * query-replace docs/latest or docs/master to 1.15
-* what else was wrapped up in array views?
-* check compiler flags
-* check examples/
 
 
 version 1.15.0
@@ -29,13 +28,13 @@ Highlights (see subsequent sections for further details)
 * added initial support for some class-owning record patterns, Owned and Shared
 * added support for a new 'Futures' module supporting library-based futures
 * added BLAS level 1 and 2 routines to the previous support for level 3
-* added a early-draft LinearAlgebra module
+* added an early-draft LinearAlgebra module
 * significant performance improvements
 * fixed most memory leaks caused by arrays, domains, and domain maps
 * added new users guide sections on promotion, constants, type aliases, configs
 * added a locale model for KNL with support for different memory types
 * added Chapel support for AWS EC2
-* verified that Chapel works with the Windows 10 bash shell like Ubuntu Linux
+* verified that Chapel works with the Windows 10 bash shell as with Ubuntu
 * added support for multi-locale ARM executions
 * added the 'ugni' communication layer to the open-source repository
 * added support for numa-localization of array memory
@@ -87,10 +86,10 @@ Syntactic/Naming Changes
 Feature Improvements
 --------------------
 * vastly improved the stability, generality, and precision of 'where' clauses
-  (see "Where Expressions" in the "Procedures" chapter of the specification))
+  (see "Where Expressions" in the "Procedures" chapter of the specification)
 * improved array slice, rank change, and reindexing support across domain maps
-* extended return intent overloading to select between 'const' and 'const ref'
-  (see "Return Intents" in the "Procedures" chapter of the specification))
+* extended return intent overloading to improve its utility and flexibility
+  (see "Return Intents" in the "Procedures" chapter of the specification)
 * added support for using 'const' and 'const ref' as 'this' intents
   (see "The Method Receiver and the this Argument" section in the spec)
 * added support for defining type aliases for generic classes
@@ -144,18 +143,18 @@ Package Modules
 * added BLAS level 1 and 2 routines to the previous support for level 3
   (see http://chapel.cray.com/docs/master/modules/packages/BLAS.html)
 * removed support for the 'ldA' arguments in the BLAS module
-* added a early-draft LinearAlgebra module
+* added an early-draft LinearAlgebra module
   (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html)
 * added support for choosing between FFT implementations in the FFTW module
-  (see http://chapel.cray.com/docs/master/modules/packages/FFTW.html#FFTW.isFFTW_MKL))
+  (see http://chapel.cray.com/docs/master/modules/packages/FFTW.html#FFTW.isFFTW_MKL)
 * improved support for the 'MatrixMarket' module
 
 Interoperability Improvements
 -----------------------------
 * improved 'require' statements to accept 'param' strings
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/technotes/extern.html#expressing-dependencies)
 * only 'require' statements in resolved have any impact
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/technotes/extern.html#expressing-dependencies)
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -186,14 +185,27 @@ Memory Improvements
 Example Codes
 -------------
 * added a new primer for 'void' variables and fields
+  (see $CHPL_HOME/examples/primers/voidVariables.chpl)
 * made style and content improvements to the 'learnChapelInYMinutes' primer
+  (see $CHPL_HOME/examples/primers/learnChapelInYMinutes.chpl)
 * made a number of LCALS cleanups and fixes including support for a SPMD mode
+  (see $CHPL_HOME/examples/benchmarks/lcals/)
 * switched ISx's arrays to use anonymous domains for a performance boost
+  (see $CHPL_HOME/examples/benchmarks/isx/)
 * added a new 'regexdna-redux' benchmark
+  (see $CHPL_HOME/examples/benchmarks/shootout/regexdna-redux.chpl)
 * made a number of speed and clarity improvements to the 'fasta' benchmark
+  (see $CHPL_HOME/examples/benchmarks/shootout/fasta.chpl)
 * made readability and correctness improvements to our 'pidigits' benchmark
+  (see $CHPL_HOME/examples/benchmarks/shootout/pidigits.chpl)
 * fixed an off-by-one error in our 'binarytrees' benchmark
+* fixed an assignment-to-const bug in binary-trees
 * added missing Makefiles and fixed support for 'make -j'
+* updated example codes to use new RandomStream() initializer
+* updated example codes to reflect better const-checking
+* updated example codes to use deinit() rather than destructors
+* updated example codes to reflect that barrier is now a record
+* removed the 'fastaredux' benchmark, which is no longer used by the CLBG
 
 Documentation
 -------------
@@ -232,7 +244,8 @@ Compiler Flags (see 'man chpl' for details)
 Locale Models
 -------------
 * added a locale model for KNL with support for different memory types
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/technotes/localeModels.html#knl-locale-model
+   and http://chapel.cray.com/docs/master/platforms/knl.html)
 * for 'numa', arrays are now allocted using multiple per-numa-domain chunks
   (see http://chapel.cray.com/docs/master/technotes/localeModels.html#numa-locale-model)
 
@@ -240,9 +253,9 @@ Portability
 -----------
 * added Chapel support for AWS EC2
   (see http://chapel.cray.com/docs/master/platforms/aws.html)
-* verified that Chapel works with the Windows 10 bash shell like Ubuntu Linux
-* added support for multi-locale ARM executions
-  (see TODO)
+* verified that Chapel works with the Windows 10 bash shell as with Ubuntu
+* improved support for ARM processors including multi-locale support
+  (see http://chapel.cray.com/docs/master/platforms/arm.html)
 
 Cray-specific Changes
 ---------------------
@@ -282,6 +295,7 @@ Runtime Error Checks
 
 Bug Fixes
 ---------
+* fixed a number of bugs relating to array-of-array and sparse-array semantics
 * fixed a bug in reading null bytes into strings when lengths are specified
 * fixed a bug in resetting size when clearing sparse block-distributed domains
 * fixed a bug in which 'uint **= uint' failed to resolve
