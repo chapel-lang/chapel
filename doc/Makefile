@@ -77,6 +77,14 @@ checkdocs: FORCE
 %.docs: FORCE
 	../util/run-in-venv.bash $(MAKE) $*.html
 
+prunedocs: FORCE
+	rm -f html/_downloads/quickReference.pdf
+	rm -f html/_downloads/chapelLanguageSpec.pdf
+	if [ -d "html" ]; then \
+	ln -s ../../$(SOURCEDIR)/language/quickReference.pdf html/_downloads/quickReference.pdf; \
+	ln -s ../../$(SOURCEDIR)/language/chapelLanguageSpec.pdf html/_downloads/chapelLanguageSpec.pdf; \
+	fi
+
 
 clean: clean-source
 
