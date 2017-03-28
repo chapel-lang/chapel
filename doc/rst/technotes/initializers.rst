@@ -27,7 +27,7 @@ initializer methods during this release.
 Stability
 ---------
 
-The functionality of initializer method has four major aspects
+The functionality of an initializer method has four major aspects
 
   - user-defined code that runs in phase 2
 
