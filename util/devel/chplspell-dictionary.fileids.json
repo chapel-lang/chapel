@@ -168,192 +168,179 @@
     "compiler/util/llvmUtil.cpp"
   ],
   "0c6ba076-814e-11e6-b915-843835579daa": [
-    "doc/builtins/internal/ChapelArray.rst"
+    "doc/rst/builtins/internal/ChapelArray.rst"
   ],
   "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/bestPractices/CompilerDebugging.txt"
+    "doc/rst/developer/bestPractices/CompilerDebugging.txt"
   ],
   "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/bestPractices/GitCheatsheet.rst"
+    "doc/rst/developer/bestPractices/GitCheatsheet.rst"
   ],
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/bestPractices/Potpourri.txt"
+    "doc/rst/developer/bestPractices/Potpourri.txt"
   ],
   "7b9a1e46-8ab8-11e6-b915-843835579daa": [
-    "doc/developer/bestPractices/README"
+    "doc/rst/developer/bestPractices/README"
   ],
   "b557a264-8ab5-11e6-b915-843835579daa": [
-    "doc/developer/bestPractices/SpellChecking.rst"
+    "doc/rst/developer/bestPractices/SpellChecking.rst"
   ],
   "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/chips/11.rst",
-    "doc/developer/chips/tmp/source/modules/11.rst"
+    "doc/rst/developer/chips/11.rst"
   ],
   "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
-    "doc/developer/chips/15.rst",
-    "doc/developer/chips/tmp/source/modules/15.rst"
+    "doc/rst/developer/chips/15.rst"
   ],
   "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "doc/developer/chips/17.rst"
+    "doc/rst/developer/chips/17.rst"
   ],
   "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "doc/developer/chips/18.rst"
+    "doc/rst/developer/chips/18.rst"
   ],
   "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/chips/2.rst",
-    "doc/developer/chips/tmp/source/modules/2.rst"
+    "doc/rst/developer/chips/2.rst"
   ],
   "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/chips/3.rst",
-    "doc/developer/chips/tmp/source/modules/3.rst"
+    "doc/rst/developer/chips/3.rst"
   ],
   "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/chips/4.rst",
-    "doc/developer/chips/tmp/source/modules/4.rst"
+    "doc/rst/developer/chips/4.rst"
   ],
   "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/chips/5.rst",
-    "doc/developer/chips/tmp/source/modules/5.rst"
+    "doc/rst/developer/chips/5.rst"
   ],
   "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/chips/9.rst",
-    "doc/developer/chips/tmp/source/modules/9.rst"
+    "doc/rst/developer/chips/9.rst"
   ],
   "6eb99dbc-1e45-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/compilerOverview/compiler.tex"
+    "doc/rst/developer/compilerOverview/compiler.tex"
   ],
   "396f9ef0-1e44-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/contributorAgreements/README.md"
+    "doc/rst/developer/contributorAgreements/README.md"
   ],
   "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/hdfs_and_chapel/API.tex",
-    "doc/developer/hdfs_and_chapel/examples.tex",
+    "doc/rst/developer/hdfs_and_chapel/API.tex",
+    "doc/rst/developer/hdfs_and_chapel/examples.tex",
     "modules/packages/HDFSiterator.chpl"
   ],
   "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/developer/hdfs_and_chapel/intro.tex"
+    "doc/rst/developer/hdfs_and_chapel/intro.tex"
   ],
   "610c0354-1f11-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/dists/BlockCycDist.rst",
+    "doc/rst/modules/dists/BlockCycDist.rst",
     "modules/dists/BlockCycDist.chpl",
     "modules/dists/DSIUtil.chpl"
   ],
   "854734a2-1f0f-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/dists/DimensionalDist2D.rst",
+    "doc/rst/modules/dists/DimensionalDist2D.rst",
     "modules/dists/DimensionalDist2D.chpl"
   ],
   "3efba760-1f11-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/dists/ReplicatedDist.rst",
+    "doc/rst/modules/dists/ReplicatedDist.rst",
     "modules/dists/ReplicatedDist.chpl"
   ],
   "347ba0d8-1f11-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/dists/dims/ReplicatedDim.rst",
+    "doc/rst/modules/dists/dims/ReplicatedDim.rst",
     "modules/dists/dims/ReplicatedDim.chpl"
   ],
   "71a525f2-43ff-11e6-907f-843835579daa": [
-    "doc/modules/packages/BLAS.rst",
-    "doc/modules/packages/BLAS/C_BLAS.rst",
+    "doc/rst/modules/packages/BLAS.rst",
+    "doc/rst/modules/packages/BLAS/C_BLAS.rst",
     "modules/packages/BLAS.chpl"
   ],
   "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/packages/Curl.rst",
+    "doc/rst/modules/packages/Curl.rst",
     "modules/packages/Curl.chpl"
   ],
   "7e50173a-814e-11e6-b915-843835579daa": [
-    "doc/modules/packages/FFTW.rst"
+    "doc/rst/modules/packages/FFTW.rst"
   ],
   "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
-    "doc/modules/packages/HDFS.rst",
+    "doc/rst/modules/packages/HDFS.rst",
     "modules/packages/HDFS.chpl"
   ],
   "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/packages/MPI.rst",
-    "doc/modules/packages/MPI/C_MPI.rst",
+    "doc/rst/modules/packages/MPI.rst",
+    "doc/rst/modules/packages/MPI/C_MPI.rst",
     "modules/packages/MPI.chpl"
   ],
   "058f379e-814f-11e6-b915-843835579daa": [
-    "doc/modules/packages/RecordParser.rst"
+    "doc/rst/modules/packages/RecordParser.rst"
   ],
   "24a5f32a-792f-11e6-807a-843835579daa": [
-    "doc/modules/packages/ZMQ.rst",
+    "doc/rst/modules/packages/ZMQ.rst",
     "modules/packages/ZMQ.chpl"
   ],
   "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/standard/FileSystem.rst",
+    "doc/rst/modules/standard/FileSystem.rst",
     "modules/standard/FileSystem.chpl"
   ],
   "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/standard/IO.rst",
+    "doc/rst/modules/standard/IO.rst",
     "modules/standard/IO.chpl"
   ],
   "e296667a-8222-11e6-b915-843835579daa": [
-    "doc/modules/standard/Random/NPBRandom.rst"
+    "doc/rst/modules/standard/Random/NPBRandom.rst"
   ],
   "9f42cc46-8223-11e6-b915-843835579daa": [
-    "doc/modules/standard/Random/PCGRandom.rst"
+    "doc/rst/modules/standard/Random/PCGRandom.rst"
   ],
   "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/standard/Regexp.rst",
+    "doc/rst/modules/standard/Regexp.rst",
     "modules/standard/Regexp.chpl"
   ],
   "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/modules/standard/SysBasic.rst",
+    "doc/rst/modules/standard/SysBasic.rst",
     "modules/standard/SysBasic.chpl"
   ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
-    "doc/platforms/aws.rst"
+    "doc/rst/platforms/aws.rst"
   ],
   "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/primers/primers/LAPACKlib.rst",
+    "doc/rst/primers/LAPACKlib.rst",
     "test/release/examples/primers/LAPACKlib.chpl"
   ],
   "57dcb2ce-31db-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/primers/primers/distributions.rst",
+    "doc/rst/primers/distributions.rst",
     "test/release/examples/primers/distributions.chpl"
   ],
   "5d456562-31db-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/primers/primers/domains.rst",
+    "doc/rst/primers/domains.rst",
     "test/release/examples/primers/domains.chpl"
   ],
   "9b2d18d4-31db-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/primers/primers/learnChapelInYMinutes.rst",
+    "doc/rst/primers/learnChapelInYMinutes.rst",
     "test/release/examples/primers/learnChapelInYMinutes.chpl"
   ],
-  "c573f558-1e4a-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/studies/hpcc/RA.tex"
-  ],
-  "d76e2698-1e4a-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/studies/hpcc/appendix.tex"
-  ],
   "a78ba0d8-8220-11e6-b915-843835579daa": [
-    "doc/technotes/auxIO.rst"
+    "doc/rst/technotes/auxIO.rst"
   ],
   "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/technotes/dsi.rst"
+    "doc/rst/technotes/dsi.rst"
   ],
   "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/technotes/extern.rst"
+    "doc/rst/technotes/extern.rst"
   ],
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/technotes/libraries.rst"
+    "doc/rst/technotes/libraries.rst"
   ],
   "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/tools/chpldoc/chpldoc.rst"
+    "doc/rst/tools/chpldoc/chpldoc.rst"
   ],
   "7ada2798-4027-11e6-907f-843835579daa": [
-    "doc/users-guide/base/forloops.rst"
+    "doc/rst/users-guide/base/forloops.rst"
   ],
   "7e15c372-4027-11e6-907f-843835579daa": [
-    "doc/users-guide/index.rst"
+    "doc/rst/users-guide/index.rst"
   ],
   "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/usingchapel/executing.rst"
+    "doc/rst/usingchapel/executing.rst"
   ],
   "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
-    "doc/usingchapel/multilocale.rst"
+    "doc/rst/usingchapel/multilocale.rst"
   ],
   "d634896c-70c9-11e6-8028-843835579daa": [
-    "doc/usingchapel/usingchapel.rst"
+    "doc/rst/usingchapel/usingchapel.rst"
   ],
   "1c692a6a-2add-11e6-a3a6-10ddb1d4c3d5": [
     "man/chpldoc.rst"

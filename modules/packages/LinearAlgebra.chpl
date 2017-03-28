@@ -161,7 +161,7 @@ proc Vector(Dom: domain(1), type eltType=real) {
 
 /* Return a vector (1D array) with domain and values of ``A`` */
 proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
-  var V: [Dom] eltType = A;
+  var V: [Dom] eltType = A: eltType;
   return V;
 }
 
@@ -216,8 +216,8 @@ proc Matrix(Dom: domain(2), type eltType=real) where Dom.rank == 2 {
 
 
 /* Return a matrix (2D array) with domain and values of ``A`` */
-proc Matrix(A: [?Dom] ?eltType) where Dom.rank == 2 {
-  var M: [Dom] eltType = A;
+proc Matrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 {
+  var M: [Dom] eltType = A: eltType;
   return M;
 }
 
@@ -303,6 +303,7 @@ inline proc transpose(D: domain(1)) {
   return D;
 }
 
+pragma "no doc"
 inline proc transpose(D: domain(2)) {
   return {D.dim(2), D.dim(1)};
 }
@@ -320,7 +321,7 @@ pragma "no doc"
 proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
 
-/* Transpose vector or matrix.
+/* Transpose vector, matrix, or domain.
 
    .. note::
 
@@ -447,7 +448,10 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   var op = if trans then BLAS.Op.T
            else BLAS.Op.N;
 
-  var Y: [Xdom] eltType;
+  var Ydom = if trans then {Adom.dim(2)}
+             else {Adom.dim(1)};
+
+  var Y: [Ydom] eltType;
   gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
   return Y;
 }
@@ -500,23 +504,25 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
 
-  var C: [Xdom] eltType;
+  var Ydom = if trans then {Adom.dim(2)}
+             else {Adom.dim(1)};
+
+  var Y: [Ydom] eltType;
 
   // naive algorithm
   if !trans {
     if Adom.shape(2) != Xdom.shape(1) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Xdom do
-      C[i] = + reduce (A[i,..]*X[..]);
+    forall i in Ydom do
+      Y[i] = + reduce (A[i,..]*X[..]);
   } else {
     if Adom.shape(1) != Xdom.shape(1) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Xdom do
-      C[i] = + reduce (A[.., i]*X[..]);
+    forall i in Ydom do
+      Y[i] = + reduce (A[.., i]*X[..]);
   }
 
-
-  return C;
+  return Y;
 }
 
 
@@ -526,7 +532,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where !isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
-    compilerError("Rank sizes are not 2 and 1");
+    compilerError("Rank sizes are not 2 and 2");
 
   var C: [Adom.dim(1), Bdom.dim(2)] eltType;
 

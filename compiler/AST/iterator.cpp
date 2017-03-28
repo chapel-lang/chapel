@@ -1149,8 +1149,11 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (VarSymbol* var = toVarSymbol(def->sym))
-        if (!var->type->symbol->hasFlag(FLAG_REF) || var->hasFlag(FLAG_INDEX_VAR))
+        if (!var->type->symbol->hasFlag(FLAG_REF) ||
+             var->hasFlag(FLAG_INDEX_VAR) ||
+             var->hasFlag(FLAG_REF_VAR)) {
           syms.add(var);
+        }
   }
 }
 

@@ -959,8 +959,8 @@ module DefaultRectangular {
       rad.mdParDim    = this.mdParDim;
       rad.mdNumChunks = this.mdNumChunks;
 
-      const thisStr   = abs(this.str(mdParDim));
-      const radStr    = abs(rad.str(mdParDim));
+      const thisStr   = abs(this.str(mdParDim)):idxType;
+      const radStr    = abs(rad.str(mdParDim)):idxType;
 
       rad.mdRLo       = rad.off(mdParDim) - (this.off(mdParDim) - this.mdRLo) / thisStr * radStr;
       rad.mdRHi       = rad.off(mdParDim) + (this.mdRLen - 1) * radStr;
@@ -995,6 +995,7 @@ module DefaultRectangular {
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
+    type idxSignedType = chpl__signedType(idxType);
 
     // Unconditionally sets 'blkChanged'
     //
@@ -1014,7 +1015,8 @@ module DefaultRectangular {
     for param j in 1..idx.size {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
-        rad.origin     += this.blk(j) * (rad.off(curDim) - this.off(j)) / this.str(j);
+        const off       = (rad.off(curDim) - this.off(j)):idxSignedType;
+        rad.origin     += ((this.blk(j):idxSignedType) * off / this.str(j)):idxType;
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
 
@@ -1025,7 +1027,8 @@ module DefaultRectangular {
 
         curDim += 1;
       } else {
-        rad.origin += this.blk(j) * (idx(j) - this.off(j)) / this.str(j);
+        const off   = (idx(j) - this.off(j)):idxSignedType;
+        rad.origin += (this.blk(j):idxSignedType *  off / this.str(j)):idxType;
 
         if !defRectSimpleDData && j == mdParDim {
           mdpdIsRange = false;
@@ -1443,11 +1446,12 @@ module DefaultRectangular {
                            minIndicesPerTask) do
           yield dsiAccess(i);
       } else {
+        // TODO: why does 'followThis' have a different idxType?
         const mdPDLow = dom.dsiDim(mdParDim).low;
-        const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low);
+        const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low:mdPDLow.type);
         if boundsChecking {
           // the code here assumes followThis spans but a single chunk
-          assert(mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high);
+          assert(mdPDLow + followThis(mdParDim).high:mdPDLow.type <= mData(chunk).pdr.high);
         }
 
         //

@@ -30,6 +30,8 @@ At present, this directory contains the following codes:
     fasta.chpl          : Generates DNA with different nucleotide distributions
                           and a random number generator
 
+Note that chameneosredux.chpl has non-deterministic output.
+
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
 that have not yet been promoted to the release can be found in our git
@@ -37,11 +39,13 @@ repository under the test/studies/shootout/ directory.
 
 The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
-system.  (See doc/developer/bestPractices/TestSystem.rst in the Chapel
+system.  (See doc/rst/developer/bestPractices/TestSystem.rst in the Chapel
 git repository: http://github.com/chapel-lang/chapel)
 
-Note that chameneosredux.chpl has non-deterministic output.
-
+Other files with the same base filenames as the Chapel test programs but
+different filename extensions, are for use by the automated test system.
+For example, file fasta.execopts supports automated testing of fasta.chpl.
+$CHPL_HOME/examples/README.testing contains more information.
 
 Future work / TODO
 ==================

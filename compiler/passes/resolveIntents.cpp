@@ -173,7 +173,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
   // the intent for this is INTENT_REF_MAYBE_CONST
   //
   // This applies to both arguments of type _ref(t) and t
-  if (isRecord(valType) ||
+  if (isRecord(valType) || isUnion(valType) ||
       valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
     return INTENT_REF_MAYBE_CONST;
 

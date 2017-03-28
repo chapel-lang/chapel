@@ -716,6 +716,9 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
 
+  // MPF: as of 2017-03 this error is never reached because
+  // it's a syntax error in the parser to not have an else clause
+  // on an if-expr.
   if (!e2)
     USR_FATAL("if-then expressions currently require an else-clause");
 

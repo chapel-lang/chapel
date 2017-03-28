@@ -656,16 +656,10 @@ Section~\ref{Rectangular_Array_Slicing}.
 \index{arrays!actual arguments}
 \index{arguments!array}
 
-Arrays are passed to functions by reference.  Formal arguments that
-receive arrays are aliases of the actual arguments.
-
-% Do we really need to say this?  Should it be said here -- seems like
-% there is no normal rule and that the cases should be described in
-% the function intents section.
-%
-%  The ordinary rule
-%that disallows assignment to formal arguments of default intent does not
-%apply to arrays.
+By default, arrays are passed to function by \chpl{ref} or \chpl{const
+ref} depending on whether or not the formal argument is modified. The
+\chpl{in}, \chpl{inout}, and \chpl{out} intent can create copies of
+arrays.
 
 When a formal argument has array type, the element type of the array
 can be omitted and/or the domain of the array can be queried or
@@ -678,6 +672,13 @@ index set.  If the formal array's domain was declared using an
 explicit domain map, the actual array's domain must use an equivalent
 domain map.
 
+\section{Returning Arrays from Functions}
+\label{Returning_Arrays_from_Functions}
+\index{arrays!returning}
+\index{returning!array}
+
+Arrays return by value by default. The \chpl{ref} and \chpl{const ref}
+return intents can be used to return a reference to an array.
 
 \subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}

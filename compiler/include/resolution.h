@@ -237,6 +237,7 @@ void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info);
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 void lvalueCheck(CallExpr* call);
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
+void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);

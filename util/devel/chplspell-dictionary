@@ -2813,21 +2813,6 @@ smessage
 FILEID: a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5
 fooy
 
-FILEID: c573f558-1e4a-11e6-a3a6-10ddb1d4c3d5
-randmpi
-ranvec
-streamparam
-stripsize
-vlparam
-
-FILEID: d76e2698-1e4a-11e6-a3a6-10ddb1d4c3d5
-inmsg
-inreq
-irecv
-isend
-outreq
-randmpi
-
 FILEID: f705d2b6-1f0e-11e6-a3a6-10ddb1d4c3d5
 inds
 locidtup

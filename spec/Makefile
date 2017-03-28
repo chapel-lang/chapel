@@ -17,7 +17,7 @@ usedvi:
 	./collect_syntax.pl # again to show errors
 
 publish:
-	cp spec.pdf ../doc/language/chapelLanguageSpec.pdf
+	cp spec.pdf ../doc/rst/language/chapelLanguageSpec.pdf
 
 clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log
