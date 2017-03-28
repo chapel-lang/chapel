@@ -3200,12 +3200,15 @@ umiacs
 univie
 
 FILEID: 515baeda-2ada-11e6-a3a6-10ddb1d4c3d5
+binarytrees
 chpldocumentation
 circularities
 desync
+getcid
 hepl
 illumos
 librt
+memkind
 nomail
 pshm
 stdinredirect
@@ -4666,8 +4669,10 @@ defs
 degli
 deinit
 deinitialization
+deinitializations
 deinitialized
 deinitializers
+deinitializes
 deitz
 delaney
 delims
