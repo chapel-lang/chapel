@@ -1286,10 +1286,10 @@ static DefExpr* fieldByName(AggregateType* at, const char* name);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
   forv_Vec(Type, t, at->dispatchParents) {
-    AggregateType* pt = toAggregateType(t);
-
-    if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
-      return field;
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
+        return field;
+      }
     }
   }
 
@@ -1298,10 +1298,10 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
 
 static DefExpr* toSuperField(AggregateType* at, CallExpr* callExpr) {
   forv_Vec(Type, t, at->dispatchParents) {
-    AggregateType* pt = toAggregateType(t);
-
-    if (DefExpr* field = toLocalField(pt, callExpr)) {
-      return field;
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, callExpr)) {
+        return field;
+      }
     }
   }
 
@@ -1310,10 +1310,10 @@ static DefExpr* toSuperField(AggregateType* at, CallExpr* callExpr) {
 
 static DefExpr* toSuperField(AggregateType* at, SymExpr*  symExpr) {
   forv_Vec(Type, t, at->dispatchParents) {
-    AggregateType* pt = toAggregateType(t);
-
-    if (DefExpr* field = toLocalField(pt, symExpr)) {
-      return field;
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, symExpr)) {
+        return field;
+      }
     }
   }
 
@@ -1493,11 +1493,11 @@ static SymExpr* normalizeExpr(Expr*        insertBefore,
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
     if (DefExpr* field = toLocalField(state.type(), callExpr)) {
-      if (state.isPhase2() == true) {
+      if (state.isFieldInitialized(field) == true) {
         retval = createFieldAccess(insertBefore, state.theFn(), field);
       } else {
         USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
+                  "'%s' used before defined (first used here)",
                   field->sym->name);
       }
 
