@@ -1,11 +1,6 @@
 Release Changes List
 ====================
 
-stopped at 6294676
-
-TODO:
-* make sure nothing after commit above needs adding
-
 
 version 1.15.0
 ==============
@@ -170,7 +165,7 @@ Interoperability Improvements
 -----------------------------
 * improved 'require' statements to accept 'param' string expressions
   (see http://chapel.cray.com/docs/1.15/technotes/extern.html#expressing-dependencies)
-* now only 'require' statements in resolved code add requiremeents
+* now only 'require' statements in resolved code add requirements
   (see http://chapel.cray.com/docs/1.15/technotes/extern.html#expressing-dependencies)
 
 Performance Optimizations/Improvements
@@ -264,7 +259,7 @@ Locale Models
 * added a locale model for KNL with support for different memory types
   (see http://chapel.cray.com/docs/1.15/technotes/localeModels.html#knl-locale-model
    and http://chapel.cray.com/docs/1.15/platforms/knl.html)
-* for 'numa', arrays are now allocted using multiple per-numa-domain chunks
+* for 'numa', arrays are now allocated using multiple per-numa-domain chunks
   (see http://chapel.cray.com/docs/1.15/technotes/localeModels.html#numa-locale-model)
 
 Portability
@@ -296,6 +291,7 @@ Error Messages
 * significantly improved const-checking in the compiler
 * added an error message for re-assigning a 'param' after its initialization
 * added a user error when 'inline' is applied to a recursive function
+* added an error when trying to cast to values rather than types
 * added an error message for trying to capture generic functions
 * added an error message for initializers that attempt to return a value
 * added an error message for missing copy initializers
