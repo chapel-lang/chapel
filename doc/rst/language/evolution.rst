@@ -122,7 +122,7 @@ arrays return by value by default
 
 Before Chapel 1.15, returning an array would return the array by
 reference. Now arrays return by value by default. That is, the act of
-returning an array can makes a copy:
+returning an array can make a copy:
 
 .. code-block:: chapel
 
@@ -134,7 +134,7 @@ returning an array can makes a copy:
   B = 1;
   writeln(A);
   // outputs 1 1 1 1 historically
-  // outputs 0 0 0 0 after this work
+  // outputs 0 0 0 0 after Chapel 1.15
 
 
 This behavior applies to array slices as well.
