@@ -19,9 +19,11 @@
 
 /*
 
-   This module helps handle system errors. In particular, it enables routines
-   to return a ``syserr`` - encoding an error state - and then contains
-   routines that can print out a useful error message from a ``syserr``.
+   This module helps handle system errors.
+
+   In particular, it enables routines to return a ``syserr`` - encoding an
+   error state - and then contains routines that can print out a useful error
+   message from a ``syserr``.
 
    This module defines the type ``syserr``, which can encode an error code or
    an error message. This type can be returned from routines generating an
@@ -33,8 +35,10 @@
    In the second form, no error is returned, and instead the task will halt
    with a fatal error if an error is encountered.
 
-   This module is unrelated to the implementation of error handling in Chapel
-   generally, and is being maintained for legacy reasons.
+   .. note::
+
+      This module is unrelated to the implementation of error handling in
+      Chapel generally, and is being maintained for legacy reasons.
 
  */
 module SysError {
