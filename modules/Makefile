@@ -74,7 +74,6 @@ MODULES_TO_DOCUMENT = \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
-	standard/Error.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/Help.chpl \
@@ -89,6 +88,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
+	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
