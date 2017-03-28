@@ -492,12 +492,12 @@ The receiver formal argument can be referred to within the method
 using the identifier \chpl{this}.
 
 The default intent for the implicit {\em this} formal argument is
-different for record methods than it is for class methods. The default
-intent for the receiver formal argument is \chpl{ref} or \chpl{const ref},
-depending on whether the formal argument is modified inside of the
-function. Programmers wishing to be explicit about whether or not record
-methods modify the receiver can explicitly use the \chpl{ref} or
-\chpl{const ref} {\em this-intent}.
+different for record methods than it is for class methods. For record
+methods, the intent for the receiver formal argument is \chpl{ref} or
+\chpl{const ref}, depending on whether the formal argument is modified
+inside of the method. Programmers wishing to be explicit about whether or
+not record methods modify the receiver can explicitly use the \chpl{ref}
+or \chpl{const ref} {\em this-intent}.
 
 \section{The {\em this} Method}
 \index{records!indexing}
