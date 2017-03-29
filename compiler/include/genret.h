@@ -131,6 +131,10 @@ public:
     *this = baseASTCodegenString(str);
   }
 
+  // Return true if this GenRet is empty
+  bool isEmpty() const {
+    return c.empty() && val == NULL && type == NULL;
+  }
 };
 
 
