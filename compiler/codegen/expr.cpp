@@ -100,7 +100,6 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-static GenRet codegenNullPointer();
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -496,6 +495,7 @@ GenRet codegenUseCid(Type* classType)
   ret.chplType = CLASS_ID_TYPE;
   return ret;
 }
+
 
 // A construct which gives the current node ID (int32_t).
 static
@@ -1416,6 +1416,40 @@ GenRet codegenNotEquals(GenRet a, GenRet b)
 }
 
 static
+GenRet codegenLessEquals(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  ret.chplType = dtBool;
+  if( info->cfile ) ret.c = "(" + av.c + " <= " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values = convertValuesToLarger(
+                                 a.val,
+                                 b.val,
+                                 is_signed(get(1)->typeInfo()),
+                                 is_signed(get(2)->typeInfo()));
+
+    if (values.a->getType()->isFPOrFPVectorTy()) {
+      ret.val = gGenInfo->builder->CreateFCmpOLE(values.a, values.b);
+
+    } else if (!values.isSigned) {
+      ret.val = gGenInfo->builder->CreateICmpULE(values.a, values.b);
+
+    } else {
+      ret.val = gGenInfo->builder->CreateICmpSLE(values.a, values.b);
+    }
+#endif
+  }
+  return ret;
+}
+
+
+static
 GenRet codegenLogicalOr(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
@@ -1912,12 +1946,49 @@ GenRet codegenIsNotZero(GenRet x)
 }
 
 static
-GenRet codegenDynamicCastCheck(GenRet cid, Type* type)
+GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
 {
-  GenRet ret = codegenEquals(cid, codegenUseCid(type));
-  forv_Vec(Type, child, type->dispatchChildren) {
-    ret = codegenLogicalOr(ret, codegenDynamicCastCheck(cid, child));
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (info->cfile) {
+    ret.c = table_name;
+    ret.c += "[";
+    ret.c += elt.c;
+    ret.c += "]";
+  } else {
+    INT_FATAL("not implemented");
   }
+  return ret;
+}
+
+// cid_Td is the class-id field value of the dynamic type
+// Type* C is the type to downcast to
+static
+GenRet codegenDynamicCastCheck(GenRet cid_Td, Type* C)
+{
+  // see genSubclassArrays in codegen.cpp
+  // currently using Schubert Numbering method
+  //
+  // Td is a subclass of C (or a C) iff
+  //   n1(C) <= n1(Td) && n1(Td) <= n2(C)
+  //
+  // but note, we n1(C) *is* C->classId
+
+  AggregateType* at = toAggregateType(C);
+  INT_ASSERT(at != NULL);
+
+
+  GenRet cid_C = codegenUseCid(C);
+  GenRet n1_C = cid_C;
+  // Since we use n1_Td twice, put it into a temp var
+  // other than that, n1_Td is cid_Td.
+  GenRet n1_Td = createTempVarWith(cid_Td);
+  GenRet n2_C  = codegenGlobalArrayElement("chpl_subclass_max_id", cid_C);
+
+  GenRet part1 = codegenLessEquals(n1_C, n1_Td);
+  GenRet part2 = codegenLessEquals(n1_Td, n2_C);
+
+  GenRet ret = codegenLogicalAnd(part1, part2);
   return ret;
 }
 
@@ -2485,7 +2556,6 @@ GenRet codegenOne()
 }
 */
 
-static
 GenRet codegenNullPointer()
 {
   GenInfo* info = gGenInfo;
@@ -4693,7 +4763,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       INT_ASSERT(gMaxVMT >= 0);
 
-      // indexExpr = maxVMT * i + j
+      // indexExpr = maxVMT * classId + fnId
       index = codegenAdd(codegenMul(maxVMTConst, i), j);
     }
 
