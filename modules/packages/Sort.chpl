@@ -546,9 +546,240 @@ pragma "no doc"
 /*Error message for multi-dimension arrays */
 proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 {
-    compilerError("insertionSort() requires 1-D array");
+    compilerError("binaryInsertionSort() requires 1-D array");
+}
+proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  use Search; 
+  chpl_check_comparator(comparator, eltType);
+  if(Dom.size<=64){
+    binaryInsertionSort(Data,comparator=comparator);
+    return;
+  }
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+  //pair for run(start,len)
+  type run = (int,int);
+  //calculate minrun length
+  proc getMinrun(in n: int) : int{
+    var r: int;
+    while(n>=64){
+      r|=n&1;
+      n>>=1;
+      
+    }
+    return n+r;
+  }
+  ///PROCEDURES FOR TIMSORT ONLY///
+  //find runs in the data
+  proc getRuns(minrun:int, Data:[?Dom] ?eltType, comparator:?rec=defaultComparator) {
+    //find length of a run
+    proc countRun(Data:[?Dom] ?eltype,lo:int=low, comparator:?rec=defaultComparator){
+      if(lo==high) {return 1;}
+      var runHi=lo+stride;
+      if(chpl_compare(Data[lo],Data[runHi],comparator) <0){ //ascending
+        while(runHi<=high && chpl_compare(Data[runHi-stride],Data[runHi],comparator)<0){
+          runHi+=stride;
+        }
+      }
+      else {//descending
+        while(runHi<=high && chpl_compare(Data[runHi-stride],Data[runHi],comparator)>0){
+          runHi+=stride;
+        }
+
+        var tmph = runHi-stride;
+        var tmpl = lo;
+        while(tmph>tmpl){
+          //reverse run
+          Data[tmpl]<=>Data[tmph];
+          tmph-=stride;
+          tmpl+=stride;
+        }
+      }
+      return runHi-lo;
+    }
+
+    
+    var runs:[1..((Dom.size)/minrun)+1]run;
+    var runCount=0;
+    var base=low;
+    var len=0;
+    do {
+     //writeln(Data);
+      len=countRun(Data,base);
+      
+      if (len<minrun){
+        //writeln(Data);
+        if(base+minrun>high)
+        {
+          binaryInsertionSort(Data[base..high],comparator=comparator);
+          len=high-base+1;
+          //writeln(high);
+          //writeln(base);
+        }
+        else
+        {          
+          binaryInsertionSort(Data[base..base+minrun],comparator=comparator);
+          len=minrun;
+        }       
+      }
+      runs[runCount+1]=(base,len);
+      runCount+=1;
+      base+=len;      
+    } while(base<high);
+    return (runs,runCount);
+  } 
+  proc _TimSortMerge(Data:[?Dom],run1,run2,comparator:?rec=defaultComparator) {
+  
+  var r1=run1[2],r2=run2[2]; 
+  var b1=run1[1],b2=run2[1]; 
+  if(r1<=r2)
+  {
+    var tmp:[1..r1] int = Data[b1..b1+r1-1];
+    var i=0,j,k:int;
+    while(i<r1 && j<r2){
+      if(chpl_compare(tmp[1+i],Data[b2+j],comparator)<=0) {
+        Data[b1+k]=tmp[1+i];
+        i+=Dom.stride;
+      }
+      else {
+        Data[b1+k]=Data[b2+j];
+        j+=Dom.stride;
+      }
+      k+=Dom.stride;
+    }
+    if(j==r2)
+    {
+      Data[b2+i..b2+r2-1]=tmp[1+i..r1];
+    }
+    
+  }
+  else
+  {
+    var last=b2+r2-1;
+    var tmp:[1..r2] int = Data[b2..last];
+    var i=r2,j=r1-1,k=0;
+    while(i>=1 && j>=0){
+      if(chpl_compare(tmp[i],Data[b1+j])>=0){
+        Data[last-k]=tmp[i];
+        i-=Dom.stride;
+      }
+      else{
+        Data[last-k]=Data[b1+j];
+        j-=Dom.stride;
+      }
+      k+=Dom.stride;
+    }
+    if(j<0){
+      Data[b1..b1+i-1]=tmp[1..i];
+    }    
+  }  
 }
 
+  ///END OF TIMSORT PROCEDURES///
+  
+  var (runs,count)=getRuns(getMinrun(Dom.size),Data); 
+  
+   
+  var top = min(3,count); //array stack. Add first 3 runs
+  var next = top+1;//not part of the stack. next run to be added
+
+  while(top>1){
+    if(top<3)
+    {
+      _TimSortMerge(Data,runs[1],runs[2]);
+      return;
+    }
+    var X=runs[top],Y=runs[top-1],Z=runs[top-2];
+    if(X[2]>Y[2]+Z[2] && Y[2]>Z[2])
+    {
+      if(next>count)
+      {        
+        _TimSortMerge(Data,Y,X);
+        top-=1;
+        runs[top]=(Y[1],X[2]+Y[2]);        
+      }
+      else
+      {
+        top=next;
+      }
+    }
+    else
+    {
+      if(X[2]<Z[2])
+      {
+        //merge X,Y;
+        _TimSortMerge(Data,Y,X);
+        top-=1;
+        runs[top]=(Y[1],X[2]+Y[2]);  
+        
+      }
+      else
+      {
+        //merge Y,Z;
+        _TimSortMerge(Data,Z,Y);
+        top-=1;
+        runs[top]=X;
+        runs[top-1]=(Z[1],Z[2]+Y[2]);
+      }      
+      
+    }
+  }
+}
+
+proc _TimSortMerge(Data:[?Dom],run1,run2,comparator:?rec=defaultComparator) {
+  
+  var r1=run1[2],r2=run2[2]; 
+  var b1=run1[1],b2=run2[1]; 
+  if(r1<=r2)
+  {
+    var tmp:[1..r1] int = Data[b1..b1+r1-1];
+    var i=0,j,k:int;
+    while(i<r1 && j<r2){
+      if(chpl_compare(tmp[1+i],Data[b2+j],comparator)<=0) {
+        Data[b1+k]=tmp[1+i];
+        i+=Dom.stride;
+      }
+      else {
+        Data[b1+k]=Data[b2+j];
+        j+=Dom.stride;
+      }
+      k+=Dom.stride;
+    }
+    if(j==r2)
+    {
+      Data[b2+i..b2+r2-1]=tmp[1+i..r1];
+    }
+    
+  }
+  else
+  {
+    var last=b2+r2-1;
+    var tmp:[1..r2] int = Data[b2..last];
+    var i=r2,j=r1-1,k=0;
+    while(i>=1 && j>=0){
+      if(chpl_compare(tmp[i],Data[b1+j])>=0){
+        Data[last-k]=tmp[i];
+        i-=Dom.stride;
+      }
+      else{
+        Data[last-k]=Data[b1+j];
+        j-=Dom.stride;
+      }
+      k+=Dom.stride;
+    }
+    if(j<0){
+      Data[b1..b1+i-1]=tmp[1..i];
+    }    
+  }  
+}
+
+pragma "no doc"
+/*Error message for multi-dimension arrays */
+proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("timSort() requires 1-D array");
+}
 /*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
