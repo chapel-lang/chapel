@@ -655,7 +655,24 @@ CHPL_UNWIND
        ========= =======================================================
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
-
+ 
+ .. _readme-chplenv.CHPL_RT_UNWIND_:
+ 
+ CHPL_RT_UNWIND 
+ ~~~~~~~~~~
+   Optionally, the ``CHPL_RT_UNWIND`` environment variable can be used to squash 
+   the output that would normally be generated on halt()s when CHPL_UNWIND is
+   set to something other than "none.". Current options are:
+   
+       ========= =======================================================
+       Value     Description
+       ========= =======================================================
+       0
+       false
+       no        squash the output generated on halt()
+       ========= =======================================================
+   
+   
 Compiler Command Line Option Defaults
 -------------------------------------
 
