@@ -269,29 +269,6 @@ proc Matrix(const Arrays...?n, type eltType) {
   return M;
 }
 
-proc readMatrix(filename){
-  /*
-     First line of the file should contain space separated two integers m(number of rows) and n(number of columns). 
-     Rest of the lines should contain elements of the matrix separated by spaces.
-     Returns a 2d array of reals
-  */
-  //Add support for more common file formats, Eg- csv
-  //Add support for other eltTypes
-  
-  var infile = open(filename, iomode.r);
-  var reader = infile.reader();
-
-  var m = reader.read(int),
-      n = reader.read(int);
-  var matrix: [1..m,1..n] real;
-  reader.read(matrix);
-  
-  reader.close();
-  infile.close();
-  
-  return matrix;
-}
-
 /* Return a square identity matrix over domain ``{0..#m, 0..m}`` */
 proc eye(m, type eltType=real) {
   var A: [{0..#m, 0..#m}] eltType;
