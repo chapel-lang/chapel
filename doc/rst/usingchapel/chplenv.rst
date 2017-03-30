@@ -659,7 +659,7 @@ CHPL_UNWIND
 .. tip::
 
    The ``CHPL_RT_UNWIND`` environment variable can be set to ``0``, ``false``, or
-   ``no`` to squash the output that would normally be generated on ``halt()`` s when
+   ``no`` to squash the output that would normally be generated on ``halt()`` when
    ``CHPL_UNWIND`` is set to something other than ``none``.
    
    
