@@ -848,7 +848,10 @@ module ArrayViewRankChange {
         j += 1;
       }
     }
-    return ind;
+    if rank == 1 then
+      return ind(1);
+    else
+      return ind;
   }
 
   inline proc chpl_rankChangeConvertDownToUp(dims, param uprank, collapsedDim) {
