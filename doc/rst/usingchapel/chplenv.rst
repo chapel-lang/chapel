@@ -656,11 +656,11 @@ CHPL_UNWIND
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
  
- CHPL_RT_UNWIND 
- ~~~~~~~~~~~~~~
+CHPL_RT_UNWIND 
+~~~~~~~~~~~~~~
    Optionally, the ``CHPL_RT_UNWIND`` environment variable can be used to squash 
    the output that would normally be generated on ``halt()`` s when ``CHPL_UNWIND`` is
-   set to something other than "none."
+   set to something other than ``none``.
    
    
 Compiler Command Line Option Defaults
