@@ -65,7 +65,7 @@ BLAS Implementations:
 
   * **MKL**
 
-    * Compile with :param:`-sisBLAS_MKL` if using MKL BLAS.
+    * Compile with :param:`isBLAS_MKL` if using MKL BLAS.
 
   * **OpenBLAS**
 

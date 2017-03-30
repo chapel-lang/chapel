@@ -131,8 +131,8 @@ See $CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
 SEE ALSO
 --------
 
-$CHPL\_HOME/QUICKSTART.rst for more information on how to get started with
-Chapel.
+$CHPL\_HOME/doc/rst/usingchapel/QUICKSTART.rst for more information on how to
+get started with Chapel.
 
 AUTHORS
 -------

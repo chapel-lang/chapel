@@ -835,7 +835,12 @@ module String {
         return '';
       } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
-        var ret = S[S.domain.low];
+        var ret: string;
+        if (isArray(S)) {
+          ret = S[S.domain.first];
+        } else {
+          ret = S[1];
+        }
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
