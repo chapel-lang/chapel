@@ -2878,6 +2878,12 @@ static bool considerParamMatches(Type* actualType,
                                   arg2Type);
     }
 
+    if (is_int_type(actualType)) {
+      return considerParamMatches(dtReal[FLOAT_SIZE_DEFAULT],
+                                  arg1Type,
+                                  arg2Type);
+    }
+
     if (is_enum_type(actualType)) {
       return considerParamMatches(dtInt[INT_SIZE_DEFAULT],
                                   arg1Type,
