@@ -1656,8 +1656,7 @@ bool canCoerce(Type*     actualType,
     return true;
 
   if (is_real_type(formalType)) {
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
+    if ((is_int_type(actualType) || is_uint_type(actualType)))
       return true;
     if (is_real_type(actualType) &&
         get_width(actualType) < get_width(formalType))
