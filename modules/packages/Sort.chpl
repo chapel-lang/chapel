@@ -522,7 +522,6 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   use Search;
   chpl_check_comparator(comparator, eltType);
-
   const low = Dom.low,
         high = Dom.high,
         stride = abs(Dom.stride);
@@ -531,12 +530,13 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
     var inserted=false;
     var (found,loc) = binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
     
-    while(found){
-      (found,loc) = binarySearch(Data,ithVal,comparator=comparator,loc+1,i);
+    while(found && loc!=i){      
+      (found,loc) = binarySearch(Data,ithVal,comparator=comparator,loc+stride,i);      
     }
-    var j:int = i-1;
+    var j:int = i-stride;
     while(j>=loc)
     {
+      
       Data[j+stride]=Data[j];
       j-=stride;
     }
@@ -730,7 +730,7 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1,run2,comparator:?rec=defaultCompara
   var b1=run1[1],b2=run2[1]; 
   if(r1<=r2)
   {
-    var tmp:[1..r1] int = Data[b1..b1+r1-1];
+    var tmp:[1..r1] eltType = Data[b1..b1+r1-1];
     var i=0,j,k:int;
     while(i<r1 && j<r2){
       if(chpl_compare(tmp[1+i],Data[b2+j],comparator)<=0) {
@@ -752,7 +752,7 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1,run2,comparator:?rec=defaultCompara
   else
   {
     var last=b2+r2-1;
-    var tmp:[1..r2] int = Data[b2..last];
+    var tmp:[1..r2] eltType = Data[b2..last];
     var i=r2,j=r1-1,k=0;
     while(i>=1 && j>=0){
       if(chpl_compare(tmp[i],Data[b1+j])>=0){
