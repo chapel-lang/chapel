@@ -529,10 +529,8 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
   for i in low..high by stride {
     var ithVal = Data[i];
     var inserted=false;
-    var found:bool;
-    var loc:int;
+    var (found,loc) = binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);;
     var j:int = i-1;
-    (found,loc)=binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
     while(j>=loc)
     {
       Data[j+stride]=Data[j];
@@ -548,6 +546,17 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
   where Dom.rank != 1 {
     compilerError("binaryInsertionSort() requires 1-D array");
 }
+
+/*
+   Sort the 1D array `Data` in-place using a timSort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+
 proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   use Search; 
   chpl_check_comparator(comparator, eltType);
@@ -558,127 +567,9 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   const low = Dom.low,
         high = Dom.high,
         stride = abs(Dom.stride);
-  //pair for run(start,len)
-  type run = (int,int);
-  //calculate minrun length
-  proc getMinrun(in n: int) : int{
-    var r: int;
-    while(n>=64){
-      r|=n&1;
-      n>>=1;
-      
-    }
-    return n+r;
-  }
-  ///PROCEDURES FOR TIMSORT ONLY///
-  //find runs in the data
-  proc getRuns(minrun:int, Data:[?Dom] ?eltType, comparator:?rec=defaultComparator) {
-    //find length of a run
-    proc countRun(Data:[?Dom] ?eltype,lo:int=low, comparator:?rec=defaultComparator){
-      if(lo==high) {return 1;}
-      var runHi=lo+stride;
-      if(chpl_compare(Data[lo],Data[runHi],comparator) <0){ //ascending
-        while(runHi<=high && chpl_compare(Data[runHi-stride],Data[runHi],comparator)<0){
-          runHi+=stride;
-        }
-      }
-      else {//descending
-        while(runHi<=high && chpl_compare(Data[runHi-stride],Data[runHi],comparator)>0){
-          runHi+=stride;
-        }
-
-        var tmph = runHi-stride;
-        var tmpl = lo;
-        while(tmph>tmpl){
-          //reverse run
-          Data[tmpl]<=>Data[tmph];
-          tmph-=stride;
-          tmpl+=stride;
-        }
-      }
-      return runHi-lo;
-    }
-
-    
-    var runs:[1..((Dom.size)/minrun)+1]run;
-    var runCount=0;
-    var base=low;
-    var len=0;
-    do {
-     //writeln(Data);
-      len=countRun(Data,base);
-      
-      if (len<minrun){
-        //writeln(Data);
-        if(base+minrun>high)
-        {
-          binaryInsertionSort(Data[base..high],comparator=comparator);
-          len=high-base+1;
-          //writeln(high);
-          //writeln(base);
-        }
-        else
-        {          
-          binaryInsertionSort(Data[base..base+minrun],comparator=comparator);
-          len=minrun;
-        }       
-      }
-      runs[runCount+1]=(base,len);
-      runCount+=1;
-      base+=len;      
-    } while(base<high);
-    return (runs,runCount);
-  } 
-  proc _TimSortMerge(Data:[?Dom],run1,run2,comparator:?rec=defaultComparator) {
   
-  var r1=run1[2],r2=run2[2]; 
-  var b1=run1[1],b2=run2[1]; 
-  if(r1<=r2)
-  {
-    var tmp:[1..r1] int = Data[b1..b1+r1-1];
-    var i=0,j,k:int;
-    while(i<r1 && j<r2){
-      if(chpl_compare(tmp[1+i],Data[b2+j],comparator)<=0) {
-        Data[b1+k]=tmp[1+i];
-        i+=Dom.stride;
-      }
-      else {
-        Data[b1+k]=Data[b2+j];
-        j+=Dom.stride;
-      }
-      k+=Dom.stride;
-    }
-    if(j==r2)
-    {
-      Data[b2+i..b2+r2-1]=tmp[1+i..r1];
-    }
-    
-  }
-  else
-  {
-    var last=b2+r2-1;
-    var tmp:[1..r2] int = Data[b2..last];
-    var i=r2,j=r1-1,k=0;
-    while(i>=1 && j>=0){
-      if(chpl_compare(tmp[i],Data[b1+j])>=0){
-        Data[last-k]=tmp[i];
-        i-=Dom.stride;
-      }
-      else{
-        Data[last-k]=Data[b1+j];
-        j-=Dom.stride;
-      }
-      k+=Dom.stride;
-    }
-    if(j<0){
-      Data[b1..b1+i-1]=tmp[1..i];
-    }    
-  }  
-}
 
-  ///END OF TIMSORT PROCEDURES///
-  
-  var (runs,count)=getRuns(getMinrun(Dom.size),Data); 
+  var (runs,count)=getRuns(Data,getMinrun(Dom.size)); 
   
    
   var top = min(3,count); //array stack. Add first 3 runs
@@ -727,7 +618,109 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   }
 }
 
-proc _TimSortMerge(Data:[?Dom],run1,run2,comparator:?rec=defaultComparator) {
+pragma "no doc"
+/*Error message for multi-dimension arrays */
+proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("timSort() requires 1-D array");
+}
+
+//calculate minrun length
+proc getMinrun(in n: int) : int{
+  var r: int;
+  while(n>=64){
+    r|=n&1;
+    n>>=1;
+    
+  }
+  return n+r;
+}
+/*
+  Tuple to store information about runs
+  Stored as (base_index, length)
+*/
+type _run = (int,int);
+ /*
+   Gets sorted sub-arrays present in the data.
+   Output is a tuple (array_of_runs,count).
+   Each run is a tuple in the form (start_index, length)
+   
+   
+   :arg Data: The array to be scanned
+   :type Data: [] `eltType`
+   :arg minrun: length of the smallest run. Default=0.
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+proc getRuns(Data:[?Dom] ?eltType, minrun:int=0, comparator:?rec=defaultComparator) {
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+  //find length of a run
+  proc countRun(Data:[?Dom] ?eltype,lo:int=low, comparator:?rec=defaultComparator){
+    if(lo==high) {return 1;}
+    var runHi=lo+stride;
+    if(chpl_compare(Data[lo],Data[runHi],comparator) <0){ //ascending
+      while(runHi<=high && chpl_compare(Data[runHi-stride],Data[runHi],comparator)<0){
+        runHi+=stride;
+      }
+    }
+    else {//descending
+      while(runHi<=high && chpl_compare(Data[runHi-stride],Data[runHi],comparator)>0){
+        runHi+=stride;
+      }
+
+      var tmph = runHi-stride;
+      var tmpl = lo;
+      while(tmph>tmpl){
+        //reverse run
+        Data[tmpl]<=>Data[tmph];
+        tmph-=stride;
+        tmpl+=stride;
+      }
+    }
+    return runHi-lo;
+  }
+
+  
+  var runs:[1..((Dom.size)/minrun)+1] _run;
+  var runCount=0;
+  var base=low;
+  var len=0;
+  do {
+    len=countRun(Data,base);
+    
+    if (len<minrun){
+      if(base+minrun>high)
+      {
+        binaryInsertionSort(Data[base..high],comparator=comparator);
+        len=high-base+1;
+      }
+      else
+      {          
+        binaryInsertionSort(Data[base..base+minrun],comparator=comparator);
+        len=minrun;
+      }       
+    }
+    runs[runCount+1]=(base,len);
+    runCount+=1;
+    base+=len;      
+  } while(base<high);
+  return (runs,runCount);
+} 
+ /*
+   Merging consecutive runs for timSort.
+   Note: This is meant to be used only with timSort.
+   
+   :arg Data: The data array being delt with
+   :type Data: [] `eltType`
+   :arg run1,run2: Run tuples that indicate the sub arrays to be merged. run1 must occur before run2 in the Data array.
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+proc _TimSortMerge(Data:[?Dom] ?eltType,run1,run2,comparator:?rec=defaultComparator) {
   
   var r1=run1[2],r2=run2[2]; 
   var b1=run1[1],b2=run2[1]; 
@@ -774,12 +767,7 @@ proc _TimSortMerge(Data:[?Dom],run1,run2,comparator:?rec=defaultComparator) {
   }  
 }
 
-pragma "no doc"
-/*Error message for multi-dimension arrays */
-proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("timSort() requires 1-D array");
-}
+
 /*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
