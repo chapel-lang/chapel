@@ -529,7 +529,11 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
   for i in low..high by stride {
     var ithVal = Data[i];
     var inserted=false;
-    var (found,loc) = binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);;
+    var (found,loc) = binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
+    
+    while(found){
+      (found,loc) = binarySearch(Data,ithVal,comparator=comparator,loc+1,i);
+    }
     var j:int = i-1;
     while(j>=loc)
     {
