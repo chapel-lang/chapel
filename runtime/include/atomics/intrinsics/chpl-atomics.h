@@ -31,13 +31,13 @@
 //
 // SIZE_ALIGN_TYPE:  Declare a version of a type aligned to at least its size.
 //
-// C11 syntax does not support using this on typedefs.  However,
+// C11 syntax does not support doing this to typedefs.  However,
 // all the compilers we support with the intrinsics version of atomics
 // also support the gcc alignment attribute syntax used here.
 //
 // This is needed for 64-bit atomic types on 32-bit machines,
 // to guarantee that the atomic objects will never straddle a
-// cache line boundary, which has a huge performance penalty.
+// cache line boundary, which has a severe performance penalty.
 //
 #define SIZE_ALIGN_TYPE(t) __attribute__ ((aligned (sizeof(t)))) t
 
