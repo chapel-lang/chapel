@@ -28,18 +28,32 @@
   #include <intrinsics.h>
 #endif
 
+//
+// SIZE_ALIGN_TYPE:  Declare a version of a type aligned to at least its size.
+//
+// All the compilers we support with the intrinsics version of atomics
+// also support the gcc alignment attribute syntax used here.
+//
+// This is needed for 64-bit atomic types on 32-bit machines,
+// to guarantee that the atomic objects will never straddle a
+// cache line boundary, which has a severe performance penalty.
+//
+#define SIZE_ALIGN_TYPE(t) __attribute__ ((aligned (sizeof(t)))) t
+
 typedef int_least8_t atomic_int_least8_t;
 typedef int_least16_t atomic_int_least16_t;
 typedef int_least32_t atomic_int_least32_t;
-typedef int_least64_t atomic_int_least64_t;
+typedef SIZE_ALIGN_TYPE(int_least64_t) atomic_int_least64_t;
 typedef uint_least8_t atomic_uint_least8_t;
 typedef uint_least16_t atomic_uint_least16_t;
 typedef uint_least32_t atomic_uint_least32_t;
-typedef uint_least64_t atomic_uint_least64_t;
+typedef SIZE_ALIGN_TYPE(uint_least64_t) atomic_uint_least64_t;
 typedef uintptr_t atomic_uintptr_t;
 typedef chpl_bool atomic_bool;
-typedef uint64_t atomic__real64;
+typedef SIZE_ALIGN_TYPE(uint64_t) atomic__real64;
 typedef uint32_t atomic__real32;
+
+#undef SIZE_ALIGN_TYPE
 
 typedef enum {
  memory_order_relaxed,
