@@ -9342,9 +9342,12 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             subs.put(arg, pfn->getFormal(i)->type->symbol);
           }
         }
+
         FnSymbol* fn = cfn;
+
         if (subs.n) {
-          fn = instantiate(fn, subs, NULL);
+          fn = instantiate(fn, subs);
+
           if (fn) {
             if (type->defaultTypeConstructor->instantiationPoint)
               fn->instantiationPoint = type->defaultTypeConstructor->instantiationPoint;
@@ -9353,10 +9356,13 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             INT_ASSERT(fn->instantiationPoint);
           }
         }
+
         if (fn) {
           resolveFormals(fn);
+
           if (signature_match(pfn, fn) && evaluateWhereClause(fn)) {
             resolveFns(fn);
+
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
               AggregateType* fnRetType = toAggregateType(fn->retType);
