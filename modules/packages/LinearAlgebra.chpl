@@ -165,7 +165,6 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
   return V;
 }
 
-
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
   type eltType = Scalars(1).type;
@@ -599,6 +598,34 @@ private inline proc _raw(D: domain(1), i) {
 // Matrix Structure
 //
 
+
+/*
+ Return a Vector containing the diagonal elements of A if the argument A is of rank 2.
+ Return a diagonal Matrix whose diagonal contains elements of A if argument A is of rank 1.
+ */
+proc diag(A: [?Adom] ?eltType){
+  if(Adom.rank == 2) then{
+    if(!isSquare(A)) then halt("diag supports only square matrices");
+      
+    var diagonal = Vector(Adom.dim(1).length);
+    forall i in Adom.dim(1) do{
+      diagonal[i] = A[i, i];
+    }
+    return diagonal;
+  }
+  else if(Adom.rank == 1) then {
+    var diagonal = Matrix(Adom.dim(1).length);
+    forall i in Adom.dim(1) do{
+      diagonal[i, i] = A[i];
+    }
+    return diagonal;
+  }
+  else{
+    compilerError("A must have rank 2 or less");
+  }
+
+}
+
 /*
    Return lower triangular part of matrix, below the diagonal + ``k``,
    where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
@@ -629,6 +656,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   return U;
 }
 
+  
 
 /* Return `true` if matrix is diagonal */
 proc isDiag(A: [?D] ?eltType) {
