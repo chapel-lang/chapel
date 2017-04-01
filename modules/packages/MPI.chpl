@@ -174,12 +174,7 @@ module MPI {
   use SysCTypes;
   require "mpi.h";
 
-
   use UtilReplicatedVar;
-
-  // TODO : This shouldn't need to be set by the user
-  // How do we query CHPL_COMM?
-  config param isUGNI=false;
 
   /*
      Automatically initializes MPI (if not already initialized by the runtime), and
@@ -268,7 +263,7 @@ module MPI {
     // If we are running using the uGNI layer, then the following hack
     // appears to be necessary in order to run MPI, as well as Chapel
     // See : https://hpcrdm.lbl.gov/pipermail/upc-users/2014-May/002061.html
-    if isUGNI {
+    if CHPL_COMM=="ugni" {
       coforall loc in Locales do on loc {
           // This must be done on all locales!
           var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
