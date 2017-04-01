@@ -174,7 +174,12 @@ module MPI {
   use SysCTypes;
   require "mpi.h";
 
+
   use UtilReplicatedVar;
+
+  // TODO : This shouldn't need to be set by the user
+  // How do we query CHPL_COMM?
+  config param isUGNI=false;
 
   /*
      Automatically initializes MPI (if not already initialized by the runtime), and
@@ -260,6 +265,20 @@ module MPI {
      processes (world size)
      */
   proc initialize() {
+    // If we are running using the uGNI layer, then the following hack
+    // appears to be necessary in order to run MPI, as well as Chapel
+    // See : https://hpcrdm.lbl.gov/pipermail/upc-users/2014-May/002061.html
+    if isUGNI {
+      coforall loc in Locales do on loc {
+          // This must be done on all locales!
+          var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
+          if !pmiGniCookie.isEmptyString() {
+            C_Env.setenv("PMI_GNI_COOKIE",("%i".format(pmiGniCookie:int+1)).c_str(),1);
+          }
+        }
+    }
+
+    // The actual MPI initialization goes here.
     coforall loc in Locales do on loc {
       // TODO : Need a gasnet barrier here???
       var provided : c_int;
@@ -627,4 +646,11 @@ module MPI {
   extern proc MPI_Graph_map (comm: MPI_Comm, nnodes: c_int, ref iindex: c_int, ref edges: c_int, ref newrank: c_int): c_int;
 
    } // End C_MPI
+
+
+  module C_Env {
+    // Helper routines to access the environment
+    extern proc getenv(name : c_string) : c_string;
+    extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
+  }
 }
