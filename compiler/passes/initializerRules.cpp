@@ -59,7 +59,8 @@ static void      preNormalizeGenericInit(FnSymbol* fn);
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* typeForExpr(Expr* expr);
+static Type*          typeForExpr(Expr* expr);
+static AggregateType* typeForNewExpr(CallExpr* newExpr);
 
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
@@ -107,6 +108,7 @@ void preNormalizeFields(AggregateType* at) {
 
 // Infer the type of an expression for simple cases.
 //   1) An immediate value for one of the primitive scalars
+//   2) A new expr
 static Type* typeForExpr(Expr* expr) {
   Type* retval = NULL;
 
@@ -115,6 +117,29 @@ static Type* typeForExpr(Expr* expr) {
 
     if (isPrimitiveScalar(type) == true) {
       retval = type;
+    }
+
+  } else if (CallExpr* initCall = toCallExpr(expr)) {
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+      retval = typeForNewExpr(initCall);
+    }
+  }
+
+  return retval;
+}
+
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  AggregateType* retval = NULL;
+
+  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
+      if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
+        if (AggregateType* type = toAggregateType(sym->type)) {
+          if (isClass(type) == true || isRecord(type) == true) {
+            retval = type;
+          }
+        }
+      }
     }
   }
 
@@ -198,6 +223,9 @@ static void     fieldInitFromField(Expr*        insertBefore,
                                    DefExpr*     field);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
+static DefExpr* toSuperField    (AggregateType* at, CallExpr* expr);
+
+static DefExpr* toSuperField    (AggregateType* at, SymExpr*  expr);
 
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalField    (AggregateType* at, CallExpr* expr);
@@ -222,6 +250,12 @@ static bool     isCompoundAssignment(CallExpr* callExpr);
 *                                                                             *
 ************************************** | *************************************/
 
+enum InitPhase {
+  cPhase0,
+  cPhase1,
+  cPhase2
+};
+
 class InitVisitor {
 public:
                   InitVisitor(FnSymbol*  fn);
@@ -229,12 +263,15 @@ public:
                   InitVisitor(LoopStmt*  loop,  const InitVisitor& curr);
                   InitVisitor(CondStmt*  cond,  const InitVisitor& curr);
 
+  void            merge(const InitVisitor& fork);
+
   AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
 
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
 
+  InitPhase       startPhase(BlockStmt* block)                           const;
   bool            isPhase0()                                             const;
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
@@ -249,16 +286,14 @@ public:
 
   DefExpr*        currField()                                            const;
 
+  bool            isFieldInitialized(const DefExpr* field)               const;
+
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
-private:
-  enum Phase {
-    cPhase0,
-    cPhase1,
-    cPhase2
-  };
+  void            describe(int offset = 0)                               const;
 
+private:
   enum BlockType {
     cBlockNormal,
     cBlockCond,
@@ -269,14 +304,13 @@ private:
 
                   InitVisitor();
 
-  Phase           startPhase(FnSymbol*  fn)                              const;
-  Phase           startPhase(BlockStmt* block)                           const;
+  InitPhase       startPhase(FnSymbol*  fn)                              const;
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
   FnSymbol*       mFn;
   DefExpr*        mCurrField;
-  Phase           mPhase;
+  InitPhase       mPhase;
   BlockType       mBlockType;
 };
 
@@ -320,6 +354,11 @@ InitVisitor::InitVisitor(LoopStmt* loop, const InitVisitor& curr) {
   mCurrField  = curr.mCurrField;
   mPhase      = curr.mPhase;
   mBlockType  = cBlockLoop;
+}
+
+void InitVisitor::merge(const InitVisitor& fork) {
+  mCurrField = fork.mCurrField;
+  mPhase     = fork.mPhase;
 }
 
 AggregateType* InitVisitor::type() const {
@@ -390,6 +429,12 @@ Expr* InitVisitor::completePhase1(CallExpr* initStmt) {
     if (isRecord() == true) {
       initStmt->remove();
     }
+
+  } else if (isThisInit(initStmt) == true) {
+    mCurrField = NULL;
+
+  } else {
+    INT_ASSERT(false);
   }
 
   mPhase = cPhase2;
@@ -409,13 +454,29 @@ DefExpr* InitVisitor::currField() const {
   return mCurrField;
 }
 
-InitVisitor::Phase InitVisitor::startPhase(FnSymbol* fn) const {
+bool InitVisitor::isFieldInitialized(const DefExpr* field) const {
+  const DefExpr* ptr    = mCurrField;
+  bool           retval = true;
+
+  while (ptr != NULL && retval == true) {
+    if (ptr == field) {
+      retval = false;
+    } else {
+      ptr = toConstDefExpr(ptr->next);
+    }
+  }
+
+
+  return retval;
+}
+
+InitPhase InitVisitor::startPhase(FnSymbol* fn) const {
   return startPhase(fn->body);
 }
 
-InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
-  Expr* stmt   = block->body.head;
-  Phase retval = cPhase2;
+InitPhase InitVisitor::startPhase(BlockStmt* block) const {
+  Expr*     stmt   = block->body.head;
+  InitPhase retval = cPhase2;
 
   while (stmt != NULL && retval == cPhase2) {
     if (isDefExpr(stmt) == true) {
@@ -434,7 +495,7 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
       if (cond->elseStmt == NULL) {
-        Phase thenPhase = startPhase(cond->thenStmt);
+        InitPhase thenPhase = startPhase(cond->thenStmt);
 
         if (thenPhase != cPhase2) {
           retval = thenPhase;
@@ -443,8 +504,8 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
         }
 
       } else {
-        Phase thenPhase = startPhase(cond->thenStmt);
-        Phase elsePhase = startPhase(cond->elseStmt);
+        InitPhase thenPhase = startPhase(cond->thenStmt);
+        InitPhase elsePhase = startPhase(cond->elseStmt);
 
         if        (thenPhase == cPhase0 || elsePhase == cPhase0) {
           retval = cPhase0;
@@ -458,7 +519,7 @@ InitVisitor::Phase InitVisitor::startPhase(BlockStmt* block) const {
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      Phase phase = startPhase(block);
+      InitPhase phase = startPhase(block);
 
       if (phase != cPhase2) {
         retval = phase;
@@ -513,6 +574,62 @@ Expr* InitVisitor::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
   mCurrField = toDefExpr(mCurrField->next);
 
   return retval;
+}
+
+void InitVisitor::describe(int offset) const {
+  char pad[512];
+
+  for (int i = 0; i < offset; i++) {
+    pad[i] = ' ';
+  }
+
+  pad[offset] = '\0';
+
+  printf("%s#<InitVisitor\n", pad);
+
+  printf("%s  Phase: ",       pad);
+
+  switch (mPhase) {
+    case cPhase0:
+      printf("phase 0\n");
+      break;
+
+    case cPhase1:
+      printf("phase 1\n");
+      break;
+
+    case cPhase2:
+      printf("phase 2\n");
+      break;
+  }
+
+
+  printf("%s  Block: ",       pad);
+
+  switch (mBlockType) {
+    case cBlockNormal:
+      printf("normal\n");
+      break;
+
+    case cBlockCond:
+      printf("cond\n");
+      break;
+
+    case cBlockLoop:
+      printf("loop\n");
+      break;
+
+    case cBlockBegin:
+      printf("begin\n");
+      break;
+
+    case cBlockCobegin:
+      printf("cobegin\n");
+      break;
+
+  }
+
+  printf("%s>\n", pad);
 }
 
 /************************************* | **************************************
@@ -606,7 +723,15 @@ static InitVisitor preNormalize(BlockStmt*  block,
       // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
-          INT_ASSERT(false);
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of super.init() call in phase 2");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of this.init() call in phase 2");
+
+          } else {
+            INT_ASSERT(false);
+          }
 
         } else if (state.inLoopBody() == true) {
           if (isSuperInit(callExpr) == true) {
@@ -614,19 +739,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
           } else if (isThisInit(callExpr) == true) {
             USR_FATAL(stmt, "use of this.init() call in loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inCondStmt() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() in a conditional stmt in phase 1");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() in a conditional stmt in phase 1");
 
           } else {
             INT_ASSERT(false);
@@ -651,14 +763,18 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        if (state.isPhase2() == true) {
+        if (state.isPhase0() == true) {
+          USR_FATAL(stmt,
+                    "field initialization not allowed before this.init()");
+
+        } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", in phase 2",
                       field->sym->name);
+          } else {
+            stmt = stmt->next;
           }
-
-          stmt = stmt->next;
 
         } else if (isCompoundAssignment(callExpr) == true) {
           USR_FATAL(stmt,
@@ -675,12 +791,6 @@ static InitVisitor preNormalize(BlockStmt*  block,
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "loop during phase 1 of initialization",
-                    field->sym->name);
-
-        } else if (state.inCondStmt() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "conditional during phase 1 of initialization",
                     field->sym->name);
 
         } else if (state.inParallelStmt() == true) {
@@ -706,35 +816,71 @@ static InitVisitor preNormalize(BlockStmt*  block,
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
-      // Focus on phase 0 or phase 1
-      if (state.isPhase0() == true || state.isPhase1() == true) {
-        preNormalize(cond->thenStmt, InitVisitor(cond, state));
+      if (cond->elseStmt == NULL) {
+        InitPhase   phaseThen = state.startPhase(cond->thenStmt);
+        InitVisitor stateThen = preNormalize(cond->thenStmt,
+                                             InitVisitor(cond, state));
 
-        if (cond->elseStmt != NULL) {
-          preNormalize(cond->elseStmt, InitVisitor(cond, state));
+        if (state.isPhase2() == false) {
+          if (stateThen.isPhase2() == true) {
+            if (phaseThen == cPhase0) {
+              USR_FATAL(cond,
+                        "use of this.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else if (phaseThen == cPhase1) {
+              USR_FATAL(cond,
+                        "use of super.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else {
+              INT_ASSERT(false);
+            }
+          }
+
+          if (stateThen.currField() != state.currField()) {
+            USR_FATAL(cond,
+                      "cannot initialize fields in an if statement "
+                      "in phase 1");
+          }
+        }
+
+      } else {
+        InitVisitor stateThen = preNormalize(cond->thenStmt,
+                                             InitVisitor(cond, state));
+
+        InitVisitor stateElse = preNormalize(cond->elseStmt,
+                                             InitVisitor(cond, state));
+
+        if (state.isPhase2() == false) {
+          // Only one branch contained an init
+          if (stateThen.isPhase2() != stateElse.isPhase2()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must use this.init() "
+                      "or super.init() in phase 1");
+
+          } else if (stateThen.currField() != stateElse.currField()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must initialize the same "
+                      "fields in phase 1");
+
+          } else {
+            state.merge(stateThen);
+          }
         }
       }
 
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      // Focus on phase 0 or phase 1
-      if (state.isPhase0() == true || state.isPhase1() == true) {
-        preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
-      }
-
+      preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      state = preNormalize(block, InitVisitor(block, state));
+      state.merge(preNormalize(block, InitVisitor(block, state)));
       stmt  = stmt->next;
 
     } else {
-      // Focus on phase 0 or phase 1
-      if (state.isPhase0() == true || state.isPhase1() == true) {
-        INT_ASSERT(false);
-      }
-
       stmt = stmt->next;
     }
   }
@@ -936,13 +1082,10 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 
     stmt->insertBefore(new CallExpr("=",       access,   defVal));
 
-
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-#if 0
-    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
-#endif
+    SymExpr* access = createFieldAccess(stmt, fn, field);
 
-    INT_ASSERT(false);
+    stmt->insertBefore(new CallExpr("init", gMethodToken, access));
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -968,6 +1111,8 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+static bool isNewExpr(Expr* expr);
 
 static void fieldInitTypeWithInit(Expr*        stmt,
                                   FnSymbol*    fn,
@@ -997,52 +1142,56 @@ static void fieldInitTypeWithInit(Expr*        stmt,
     stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-#if 0
     if (isNewExpr(initExpr) == true) {
-      Symbol*   var     = defExpr->sym;
-      Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
-      CallExpr* argExpr = toCallExpr(arg);
+      CallExpr* newExpr    = toCallExpr(initExpr);
+      CallExpr* subExpr    = toCallExpr(newExpr->get(1)->remove());
+      SymExpr*  access     = createFieldAccess(stmt, fn, field);
+      int       numActuals = subExpr->numActuals();
 
-      // Insert the arg portion of the initExpr back into tree
-      defExpr->insertAfter(argExpr);
+      stmt->insertBefore(subExpr);
 
       // Convert it in to a use of the init method
-      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+      subExpr->setUnresolvedFunction("init");
+
+      // Ensure the arguments to the init expr are normalized
+      for (int i = 1; i <= numActuals; i++) {
+        Expr*    actual  = subExpr->get(i);
+        SymExpr* symExpr = normalizeExpr(subExpr, state, actual);
+
+        if (symExpr != actual) {
+          actual->replace(symExpr);
+        }
+      }
 
       // Add _mt and _this (insert at head in reverse order)
-      argExpr->insertAtHead(var);
-      argExpr->insertAtHead(gMethodToken);
+      subExpr->insertAtHead(access);
+      subExpr->insertAtHead(gMethodToken);
+
 
     } else {
-      Symbol*   var    = defExpr->sym;
-      CallExpr* init   = new CallExpr("init", gMethodToken, var);
-      CallExpr* assign = new CallExpr("=",    var,          initExpr);
+      SymExpr* rhs    = normalizeExpr(stmt, state, initExpr);
+      SymExpr* access = createFieldAccess(stmt, fn, field);
 
-      defExpr->insertAfter(init);
-      init->insertAfter(assign);
+      stmt->insertBefore(new CallExpr("init", gMethodToken, access, rhs));
     }
-#endif
-
-    INT_ASSERT(false);
 
   } else {
-#if 0
-    Symbol*    var      = defExpr->sym;
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    Expr*      typeExpr = defExpr->exprType->remove();
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+    Symbol*  _this = fn->_this;
+    Symbol*  name  = new_CStringSymbol(field->sym->name);
+    SymExpr* rhs   = normalizeExpr(stmt, state, initExpr);
 
-    defExpr ->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
-#endif
-
-    INT_ASSERT(false);
+    stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, rhs));
   }
+}
+
+static bool isNewExpr(Expr* expr) {
+  bool retval = false;
+
+  if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = callExpr->isPrimitive(PRIM_NEW);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -1137,10 +1286,34 @@ static DefExpr* fieldByName(AggregateType* at, const char* name);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
   forv_Vec(Type, t, at->dispatchParents) {
-    AggregateType* pt = toAggregateType(t);
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
+        return field;
+      }
+    }
+  }
 
-    if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
-      return field;
+  return NULL;
+}
+
+static DefExpr* toSuperField(AggregateType* at, CallExpr* callExpr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, callExpr)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static DefExpr* toSuperField(AggregateType* at, SymExpr*  symExpr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, symExpr)) {
+        return field;
+      }
     }
   }
 
@@ -1297,7 +1470,22 @@ static SymExpr* normalizeExpr(Expr*        insertBefore,
       retval = symExpr;
 
     } else if (DefExpr* field = toLocalField(state.type(), symExpr)) {
-      retval = createFieldAccess(insertBefore, state.theFn(), field);
+      if (state.isFieldInitialized(field) == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  field->sym->name);
+      }
+
+    } else if (DefExpr* field = toSuperField(state.type(), symExpr)) {
+      if (state.isPhase2() == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "Cannot access parent field '%s' during phase 1",
+                  field->sym->name);
+      }
 
     } else {
       retval = symExpr;
@@ -1305,7 +1493,22 @@ static SymExpr* normalizeExpr(Expr*        insertBefore,
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
     if (DefExpr* field = toLocalField(state.type(), callExpr)) {
-      retval = createFieldAccess(insertBefore, state.theFn(), field);
+      if (state.isFieldInitialized(field) == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  field->sym->name);
+      }
+
+    } else if (DefExpr* field = toSuperField(state.type(), callExpr)) {
+      if (state.isPhase2() == true) {
+        retval = createFieldAccess(insertBefore, state.theFn(), field);
+      } else {
+        USR_FATAL(expr,
+                  "Cannot access parent field '%s' during phase 1",
+                  field->sym->name);
+      }
 
     } else {
       VarSymbol*         tmp      = newTemp("call_tmp");

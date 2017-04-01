@@ -926,7 +926,7 @@ module DefaultRectangular {
         high = if rad.stridable then strideAlignDown(high, newDom.dsiDim(mdParDim)) else high;
 
         const rng = low..high;
-        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride align newDom.dsiDim(mdParDim).alignment;
       }
 
     }
@@ -980,7 +980,7 @@ module DefaultRectangular {
         high += radLo;
 
         const rng = low..high;
-        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr align newDom.dsiDim(mdParDim).alignment;
       }
     }
 
@@ -1052,7 +1052,7 @@ module DefaultRectangular {
         for i in 1..#mdNumChunks {
           const rng = max(this.mData(i).pdr.low, newDom.dsiDim(rad.mdParDim).low)
                       ..min(this.mData(i).pdr.high, newDom.dsiDim(rad.mdParDim).high);
-          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride;
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride align newDom.dsiDim(rad.mdParDim).alignment;
         }
       } else {
         // If the mdParDim'th dimension is removed, then we switch to
@@ -1069,7 +1069,7 @@ module DefaultRectangular {
         for i in 1..#mdNumChunks {
           const (lo, hi) = rad.mdChunk2Ind(i-1);
           const rng = max(lo, newDom.dsiDim(1).low) .. min(hi, newDom.dsiDim(1).high);
-          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride;
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride align newDom.dsiDim(1).alignment;
         }
       }
     }
@@ -1575,7 +1575,7 @@ module DefaultRectangular {
         if mdNumChunks == 1 {
           if stridable then
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high
-                           by dom.dsiDim(mdParDim).stride;
+                           by dom.dsiDim(mdParDim).stride align dom.dsiDim(mdParDim).alignment;
           else
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           mData(0).data =
@@ -1589,7 +1589,7 @@ module DefaultRectangular {
             mData(i).dataOff  = dataOff;
             const (lo, hi) = mdChunk2Ind(i);
             if stridable then
-              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride;
+              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride align dom.dsiDim(mdParDim).alignment;
             else
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;

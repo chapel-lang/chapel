@@ -1,7 +1,7 @@
 // chplvis: Basic Usage
 
 //  Example 1 using visual debug
-//  Full primer is found in doc/tools/chplvis/chplvis.rst.
+//  Full primer is found in doc/rst/tools/chplvis/chplvis.rst.
 //  Please read that documentation for a better understanding of chplvis.
 
 //  The standard module "VisualDebug" is needed to generate data
@@ -27,5 +27,5 @@ stopVdebug();
 //  Now that the program has completed and generated data files,
 //  run "chplvis E1" to look at the results.
 //
-//  The chplvis.rst documentation in doc/tools/chplvis shows you
+//  The chplvis.rst documentation in doc/rst/tools/chplvis shows you
 //  what you should expect to see when running chplvis.
