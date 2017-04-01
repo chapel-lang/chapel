@@ -600,31 +600,57 @@ private inline proc _raw(D: domain(1), i) {
 
 
 /*
- Return a Vector containing the diagonal elements of A if the argument A is of rank 2.
- Return a diagonal Matrix whose diagonal contains elements of A if argument A is of rank 1.
+   Return a Vector containing the diagonal elements of ``A`` if the argument ``A`` is of rank 2.
+   Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
  */
 proc diag(A: [?Adom] ?eltType){
   if(Adom.rank == 2) then{
     if(!isSquare(A)) then halt("diag supports only square matrices");
-      
-    var diagonal = Vector(Adom.dim(1).length);
-    forall i in Adom.dim(1) do{
-      diagonal[i] = A[i, i];
-    }
-    return diagonal;
+    return _diag_vec(A);  
   }
   else if(Adom.rank == 1) then {
-    var diagonal = Matrix(Adom.dim(1).length);
-    forall i in Adom.dim(1) do{
-      diagonal[i, i] = A[i];
-    }
-    return diagonal;
+    return _diag_mat(A);
   }
   else{
     compilerError("A must have rank 2 or less");
   }
 
 }
+
+/*
+  Return a Vector containing the off diagonal elements of ``A``
+*/
+proc offdiag(A:[?Adom] ?eltType){
+  if(Adom.rank != 2) then halt("offdiag expects argument to be of rank 2");
+  if(!isSquare(A)) then halt ("offdiag supports only square matrices");
+  return _diag_vec(A,trans=true);
+}
+
+proc _diag_vec(A:[?Adom] ?eltType, trans=false){
+  var diagonal = Vector(Adom.dim(1).length);
+  if(!trans) then{
+    forall i in Adom.dim(1) do{
+      diagonal[i] = A[i, i];
+    }
+  }
+  else{
+    forall i in Adom.dim(1) do{
+      var n = Adom.dim(1).length;
+      diagonal[i] = A[i, n-1-i];
+    }
+  }
+  return diagonal;
+}
+
+proc _diag_mat(A:[?Adom] ?eltType){
+  var diagonal = Matrix(Adom.dim(1).length);
+  forall i in Adom.dim(1) do{
+    diagonal[i, i] = A[i];
+  }
+  return diagonal;
+}
+
+
 
 /*
    Return lower triangular part of matrix, below the diagonal + ``k``,
