@@ -118,7 +118,6 @@ proc main() {
       if !checkSort(arr, cmp) then
         writeln('  for selectionSort() function.\n');
     }
-
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
@@ -131,14 +130,14 @@ proc main() {
       resetArray(arr, cmp);
       binaryInsertionSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
-        writeln('  for mergeSort() function.\n');
+        writeln('  for binaryInsertionSort() function.\n');
     }
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       timSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
-        writeln('  for mergeSort() function.\n');
+        writeln('  for timSort() function.\n');
     }
   }
 }

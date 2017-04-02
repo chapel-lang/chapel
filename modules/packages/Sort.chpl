@@ -574,40 +574,31 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   
 
   var (runs,count)=getRuns(Data,getMinrun(Dom.size)); 
-  
-   
-  var top = min(3,count); //array stack. Add first 3 runs
-  var next = top+1;//not part of the stack. next run to be added
-
+  //reusing runs array for stack
+  var top = 2; //array stack. Add first 3 runs
+  var next = 3;//not part of the stack. next run to be added
+ 
   while(top>1){
-    if(top<3)
-    {
-      _TimSortMerge(Data,runs[1],runs[2]);
-      return;
-    }
-    var X=runs[top],Y=runs[top-1],Z=runs[top-2];
-    if(X[2]>Y[2]+Z[2] && Y[2]>Z[2])
-    {
-      if(next>count)
-      {        
+    var X=runs[top],Y=runs[top-1];
+    if(top<3 || (X[2]>Y[2]+runs[top-2][2] && Y[2]>runs[top-2][2]) ){
+      if(next>count){        
         _TimSortMerge(Data,Y,X);
         top-=1;
         runs[top]=(Y[1],X[2]+Y[2]);        
       }
-      else
-      {
-        top=next;
-      }
+      else{
+        top+=1;
+        runs[top]=runs[next];
+        next+=1;
+      }    
     }
-    else
-    {
-      if(X[2]<Z[2])
-      {
+    else{
+      var Z=runs[top-2];
+      if(X[2]<Z[2]){
         //merge X,Y;
         _TimSortMerge(Data,Y,X);
         top-=1;
         runs[top]=(Y[1],X[2]+Y[2]);  
-        
       }
       else
       {
@@ -616,8 +607,7 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         top-=1;
         runs[top]=X;
         runs[top-1]=(Z[1],Z[2]+Y[2]);
-      }      
-      
+      }           
     }
   }
 }
