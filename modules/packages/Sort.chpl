@@ -600,8 +600,7 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         top-=1;
         runs[top]=(Y[1],X[2]+Y[2]);  
       }
-      else
-      {
+      else{
         //merge Y,Z;
         _TimSortMerge(Data,Z,Y);
         top-=1;
@@ -619,7 +618,12 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
     compilerError("timSort() requires 1-D array");
 }
 
-//calculate minrun length
+/*
+  Calculates the minrun length.
+  
+  :arg n: Number of elements in the data in question.
+  :returns: The minrun length.
+*/
 proc getMinrun(in n: int) : int{
   var r: int;
   while(n>=64){
@@ -645,6 +649,7 @@ type _run = (int,int);
    :arg minrun: length of the smallest run. Default=0.
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
+   :returns: an array of _run
 
  */
 proc getRuns(Data:[?Dom] ?eltType, minrun:int=0, comparator:?rec=defaultComparator) {
@@ -686,13 +691,11 @@ proc getRuns(Data:[?Dom] ?eltType, minrun:int=0, comparator:?rec=defaultComparat
     len=countRun(Data,base);
     
     if (len<minrun){
-      if(base+minrun>high)
-      {
+      if(base+minrun>high){
         binaryInsertionSort(Data[base..high],comparator=comparator);
         len=high-base+1;
       }
-      else
-      {          
+      else{          
         binaryInsertionSort(Data[base..base+minrun],comparator=comparator);
         len=minrun;
       }       
@@ -704,8 +707,7 @@ proc getRuns(Data:[?Dom] ?eltType, minrun:int=0, comparator:?rec=defaultComparat
   return (runs,runCount);
 } 
  /*
-   Merging consecutive runs for timSort.
-   Note: This is meant to be used only with timSort.
+   Merging consecutive runs for timSort. This is meant to be used only within timSort.
    
    :arg Data: The data array being delt with
    :type Data: [] `eltType`
@@ -715,45 +717,43 @@ proc getRuns(Data:[?Dom] ?eltType, minrun:int=0, comparator:?rec=defaultComparat
 
  */
 proc _TimSortMerge(Data:[?Dom] ?eltType,run1,run2,comparator:?rec=defaultComparator) {
-  
+  const stride=abs(Dom.stride);
+  const MIN_GALLOP=7;
   var r1=run1[2],r2=run2[2]; 
   var b1=run1[1],b2=run2[1]; 
-  if(r1<=r2)
-  {
+  if(r1<=r2){
     var tmp:[1..r1] eltType = Data[b1..b1+r1-1];
     var i=0,j,k:int;
     while(i<r1 && j<r2){
       if(chpl_compare(tmp[1+i],Data[b2+j],comparator)<=0) {
         Data[b1+k]=tmp[1+i];
-        i+=Dom.stride;
+        i+=stride;
       }
       else {
+        
         Data[b1+k]=Data[b2+j];
-        j+=Dom.stride;
+        j+=stride;
       }
-      k+=Dom.stride;
+      k+=stride;
     }
-    if(j==r2)
-    {
+    if(j==r2){
       Data[b2+i..b2+r2-1]=tmp[1+i..r1];
-    }
-    
+    }    
   }
-  else
-  {
+  else{
     var last=b2+r2-1;
     var tmp:[1..r2] eltType = Data[b2..last];
     var i=r2,j=r1-1,k=0;
     while(i>=1 && j>=0){
       if(chpl_compare(tmp[i],Data[b1+j])>=0){
         Data[last-k]=tmp[i];
-        i-=Dom.stride;
+        i-=stride;
       }
       else{
         Data[last-k]=Data[b1+j];
-        j-=Dom.stride;
+        j-=stride;
       }
-      k+=Dom.stride;
+      k+=stride;
     }
     if(j<0){
       Data[b1..b1+i-1]=tmp[1..i];
