@@ -676,29 +676,37 @@ proc _diag_vec(A:[?Adom] ?eltType, skew=false){
 }
 
 proc _diag_vec(A:[?Adom] ?eltType, k){
-  if(Adom.dim(1).length<Adom.dim(2).length) then{
-    var diagonal = Vector(Adom.dim(1).length-abs(k), eltType);
-    forall i in Adom.dim(1)(..Adom.dim(1).length-abs(k)-1) do{
-      if(k>0) then{
-        diagonal[i] = A[i,i+k];
-      }
-      else{
-        diagonal[i] = A[i+abs(k),i];
-      }
+  if(k>0){
+    //Upper diagonal
+    if(Adom.dim(2).length<k) then halt("k is out of range");
+    var length:int;
+    if((Adom.dim(2).length-k)<Adom.dim(1).length) then{
+      length = Adom.dim(2).length - k;
     }
-      return diagonal;
+    else{
+      length = Adom.dim(1).length;
+    }
+    var diagonal = Vector(length, eltType);
+    forall i in Adom.dim(1)(..length-1) do{
+      diagonal[i] = A[i,i+k];
+    }
+    return diagonal;
   }
   else{
-    var diagonal = Vector(Adom.dim(2).length-abs(k), eltType);
-    forall i in Adom.dim(2)(..Adom.dim(2).length-abs(k)-1) do{
-      if(k>0) then{
-        diagonal[i] = A[i,i+k];
-      }
-      else{
-        diagonal[i] = A[i+abs(k),i];
-      }
+    //Lower diagonal
+    if(Adom.dim(1).length<abs(k)) then halt("k is out of range");
+    var length:int;
+    if((Adom.dim(1).length-abs(k))<Adom.dim(2).length) then {
+      length = Adom.dim(1).length - abs(k);
     }
-      return diagonal;
+    else{
+      length = Adom.dim(2).length;
+    }
+    var diagonal = Vector(length, eltType);
+    forall i in Adom.dim(1)(..length-1) do{
+      diagonal[i] = A[i+abs(k),i];
+    }
+    return diagonal;
   }
 }
 

@@ -321,6 +321,27 @@ config const verbose=false;
   assertEqual(Mtrace, t);
 }
 
+/* diag */
+{
+  var M = Matrix([1,2,3],
+                 [4,5,6],
+                 [7,8,9],
+                 eltType=real);
+  var v = Vector(1,5,9);
+  var M1 = Matrix([1,2,3,4],
+                  [5,6,7,8],
+                  [9,0,1,2],
+                  eltType=real);
+  var v11 = Vector(1,6,1);
+  var v12 = Vector(3,8);
+  var v13 = Vector([9]);
+
+  assertEqual(v, diag(M), "diag(M)");
+  assertEqual(v11,diag(M1),"diag(M1)");
+  assertEqual(v12,diag(M1,2),"diag(M1,2)");
+  assertEqual(v13,diag(M1,-2),"diag(M1,-2)");
+}
+
 /* tril & triu */
 {
   var M = eye(5,5);
