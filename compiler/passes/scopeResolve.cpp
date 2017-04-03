@@ -1690,42 +1690,42 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
 
   while (isModuleSymbol(parent) == false) {
     if (FnSymbol* method = toFnSymbol(parent)) {
-
       // stopgap bug fix: do not let methods shadow symbols
       // that are more specific than methods
-      if (sym && sym->defPoint->getFunction() == method) {
+      if (sym != NULL && sym->defPoint->getFunction() == method) {
         break;
-      }
 
-      if (method->_this && (!symExpr || symExpr->symbol() != method->_this)) {
-        Type*       type = method->_this->type;
-        TypeSymbol* cts  = NULL;
+      } else if (method->_this != NULL) {
+        if (symExpr == NULL || symExpr->symbol() != method->_this) {
+          Type*       type = method->_this->type;
+          TypeSymbol* cts  = NULL;
 
-        if (sym != NULL) {
-          cts = toTypeSymbol(sym->defPoint->parentSymbol);
-        }
-
-        if ((cts != NULL && isAggregateType(cts->type) == true) ||
-            isMethodName(name, type) == true) {
-          CallExpr* call = toCallExpr(expr->parentExpr);
-
-          if (call                              != NULL &&
-              call->baseExpr                    == expr &&
-              call->numActuals()                >= 2    &&
-              isSymExpr(call->get(1))           == true &&
-              toSymExpr(call->get(1))->symbol() == gMethodToken) {
-            UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
-
-            expr->replace(use);
-
-            skipSet.insert(use);
-
-          } else {
-            insertFieldAccess(method, usymExpr, sym, expr);
+          if (sym != NULL) {
+            cts = toTypeSymbol(sym->defPoint->parentSymbol);
           }
-        }
 
-        break;
+          if ((cts != NULL && isAggregateType(cts->type) == true) ||
+              isMethodName(name, type) == true) {
+            CallExpr* call = toCallExpr(expr->parentExpr);
+
+            if (call                              != NULL &&
+                call->baseExpr                    == expr &&
+                call->numActuals()                >= 2    &&
+                isSymExpr(call->get(1))           == true &&
+                toSymExpr(call->get(1))->symbol() == gMethodToken) {
+              UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
+
+              expr->replace(use);
+
+              skipSet.insert(use);
+
+            } else {
+              insertFieldAccess(method, usymExpr, sym, expr);
+            }
+          }
+
+          break;
+        }
       }
     }
 
