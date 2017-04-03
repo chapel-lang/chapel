@@ -1526,6 +1526,11 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
                          Symbol*                       sym,
                          SymExpr*                      symExpr);
 
+static void insertFieldAccess(FnSymbol*          method,
+                              UnresolvedSymExpr* usymExpr,
+                              Symbol*            sym,
+                              Expr*              expr);
+
 static int  computeNestedDepth(const char* name,
                                Type*       type);
 
@@ -1716,40 +1721,7 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
             skipSet.insert(use);
 
           } else {
-            int   nestDepth = computeNestedDepth(name, type);
-            Expr* dot       = NULL;
-
-            for (int i = 0; i <= nestDepth; i++) {
-              // Apply implicit this pointers and outer this pointers
-              if (i == 0) {
-                if (i < nestDepth) {
-                  dot = new CallExpr(".",
-                                     method->_this,
-                                     new_CStringSymbol("outer"));
-                } else {
-                  if (isTypeSymbol(sym))
-                    dot = new CallExpr(".", method->_this, sym);
-                  else
-                    dot = new CallExpr(".",
-                                       method->_this,
-                                       new_CStringSymbol(name));
-                }
-              } else {
-                if (i < nestDepth) {
-                  dot = new CallExpr(".",
-                                     dot, new_CStringSymbol("outer"));
-                } else {
-                  if (isTypeSymbol(sym))
-                    dot = new CallExpr(".", dot, sym);
-                  else
-                    dot = new CallExpr(".", dot, new_CStringSymbol(name));
-                }
-              }
-            }
-
-            checkIdInsideWithClause(expr, usymExpr);
-
-            expr->replace(dot);
+            insertFieldAccess(method, usymExpr, sym, expr);
           }
         }
 
@@ -1759,6 +1731,48 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
 
     parent = parent->defPoint->parentSymbol;
   }
+}
+
+static void insertFieldAccess(FnSymbol*          method,
+                              UnresolvedSymExpr* usymExpr,
+                              Symbol*            sym,
+                              Expr*              expr) {
+  const char* name      = usymExpr->unresolved;
+  Type*       type      = method->_this->type;
+  int         nestDepth = computeNestedDepth(name, type);
+  Expr*       dot       = NULL;
+
+  for (int i = 0; i <= nestDepth; i++) {
+    // Apply implicit this pointers and outer this pointers
+    if (i == 0) {
+      if (i < nestDepth) {
+        dot = new CallExpr(".",
+                           method->_this,
+                           new_CStringSymbol("outer"));
+      } else {
+        if (isTypeSymbol(sym))
+          dot = new CallExpr(".", method->_this, sym);
+        else
+          dot = new CallExpr(".",
+                             method->_this,
+                             new_CStringSymbol(name));
+      }
+    } else {
+      if (i < nestDepth) {
+        dot = new CallExpr(".",
+                           dot, new_CStringSymbol("outer"));
+      } else {
+        if (isTypeSymbol(sym))
+          dot = new CallExpr(".", dot, sym);
+        else
+          dot = new CallExpr(".", dot, new_CStringSymbol(name));
+      }
+    }
+  }
+
+  checkIdInsideWithClause(expr, usymExpr);
+
+  expr->replace(dot);
 }
 
 static int computeNestedDepth(const char* name, Type* type) {
