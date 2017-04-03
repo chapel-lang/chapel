@@ -1115,11 +1115,17 @@ module ChapelArray {
       //
       var collapsedDim: rank*bool;
       var idx: rank*idxType;
+      param uprank = chpl__countRanges((...args));
+      var upranges: uprank*range(idxType=_value.idxType,
+                                 stridable=chpl__anyRankChangeStridable(args));
+      var updim = 1;
 
       for param i in 1..rank {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
           idx(i) = dim(i).alignedLow;
+          upranges(updim) = this._value.dsiDim(i)[args(i)]; // intersect ranges
+          updim += 1;
         } else {
           collapsedDim(i) = true;
           idx(i) = args(i);
@@ -1128,16 +1134,15 @@ module ChapelArray {
 
       // Create distribution, domain, and array objects representing
       // the array view
-      var upranges = _getRankChangeRanges(args, this._value);
-      const emptyrange: upranges(1).type;
-      param uprank = upranges.size;
       //
       // If idx isn't in the original domain, we need to generate an
       // empty upward facing domain (intersection is empty)
       //
       if !member(idx) {
-        for param d in 1..uprank do
+        for param d in 1..uprank {
+          const emptyrange: upranges(d).type;
           upranges(d) = emptyrange;
+        }
       }
 
       const rcdist = new ArrayViewRankChangeDist(downDistPid=dist._pid,
@@ -3100,11 +3105,27 @@ module ChapelArray {
 
 
   // computes || reduction over stridable of ranges
-  proc chpl__anyStridable(ranges, param d: int = 1) param {
+  proc chpl__anyStridable(ranges) param {
     for param i in 1..ranges.size do
       if ranges(i).stridable then
         return true;
     return false;
+  }
+
+  proc chpl__anyRankChangeStridable(args) param {
+    for param i in 1..args.size do
+      if isRangeValue(args(i)) then
+        if args(i).stridable then
+          return true;
+    return false;
+  }
+
+  proc chpl__countRanges(arg) param {
+    return isRangeValue(arg):int;
+  }
+
+  proc chpl__countRanges(arg, args...) param {
+    return chpl__countRanges(arg):int + chpl__countRanges((...args));
   }
 
   // given a tuple args, returns true if the tuple contains only
@@ -3145,38 +3166,6 @@ module ChapelArray {
 
     return allValid() && oneRange();
     //return help(1);
-  }
-
-  proc _getRankChangeRanges(args, downdom) {
-    return collectRanges(1);
-
-    proc collectRanges(param dim: int) {
-      if isRange(args(dim)) {
-        const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-        return collectRanges(dim+1, (newRange,));
-      } else
-        return collectRanges(dim+1);
-    }
-
-    proc collectRanges(param dim: int, x: _tuple) {
-      if dim > args.size {
-        return x;
-      } else if dim < args.size {
-        if isRange(args(dim)) {
-          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-          return collectRanges(dim+1, ((...x), newRange));
-        } else {
-          return collectRanges(dim+1, x);
-        }
-      } else {
-        if isRange(args(dim)) {
-          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-          return ((...x), newRange);
-        } else {
-          return x;
-        }
-      }
-    }
   }
 
   //
