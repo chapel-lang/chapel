@@ -1608,14 +1608,12 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
     } else if (fn->hasFlag(FLAG_METHOD) == true) {
       updateMethod(usymExpr, skipSet, NULL, NULL);
 
-    } else {
-      // handle function call without parentheses
-      if (fn->hasFlag(FLAG_NO_PARENS) == true) {
-        checkIdInsideWithClause(usymExpr, usymExpr);
-        usymExpr->replace(new CallExpr(fn));
-        return;
-      }
+    // handle function call without parentheses
+    } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
+      checkIdInsideWithClause(usymExpr, usymExpr);
+      usymExpr->replace(new CallExpr(fn));
 
+    } else {
       if (sym) {
         if (Expr* parent = usymExpr->parentExpr) {
           CallExpr* call = toCallExpr(parent);
