@@ -1514,6 +1514,11 @@ static void resolveGotoLabels() {
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr*       unresolvedSymExpr,
                                      Vec<UnresolvedSymExpr*>& skipSet);
 
+static void updateMethod(UnresolvedSymExpr*       usymExpr,
+                         Vec<UnresolvedSymExpr*>& skipSet,
+                         Symbol*                  sym,
+                         SymExpr*                 symExpr);
+
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet);
 static bool isMethodName(const char* name, Type* type);
 static bool isMethodNameLocal(const char* name, Type* type);
@@ -1572,30 +1577,30 @@ static void resolveUnresolvedSymExprs()
   skipSet.clear();
 }
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                      Vec<UnresolvedSymExpr*>& skipSet) {
-  if (skipSet.set_in(unresolvedSymExpr))
+  if (skipSet.set_in(usymExpr))
     return;
 
-  const char* name = unresolvedSymExpr->unresolved;
+  const char* name = usymExpr->unresolved;
   if (!strcmp(name, "."))
     return;
 
   // Skip unresolveds that are not in the tree.
-  if (!unresolvedSymExpr->parentSymbol)
+  if (!usymExpr->parentSymbol)
     return;
 
-  SET_LINENO(unresolvedSymExpr);
+  SET_LINENO(usymExpr);
 
-  Symbol* sym = lookup(unresolvedSymExpr, name);
+  Symbol* sym = lookup(usymExpr, name);
 
   //
   // handle function call without parentheses
   //
   if (FnSymbol* fn = toFnSymbol(sym)) {
     if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
-      checkIdInsideWithClause(unresolvedSymExpr, unresolvedSymExpr);
-      unresolvedSymExpr->replace(new CallExpr(fn));
+      checkIdInsideWithClause(usymExpr, usymExpr);
+      usymExpr->replace(new CallExpr(fn));
       return;
     }
   }
@@ -1610,15 +1615,15 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
   if (sym) {
     if (!isFnSymbol(sym)) {
       symExpr = new SymExpr(sym);
-      unresolvedSymExpr->replace(symExpr);
+      usymExpr->replace(symExpr);
     }
     else if (isFnSymbol(sym)) {
-      Expr* parent = unresolvedSymExpr->parentExpr;
+      Expr* parent = usymExpr->parentExpr;
 
       if (parent) {
         CallExpr *call = toCallExpr(parent);
 
-        if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+        if (((call) && (call->baseExpr != usymExpr)) || (!call)) {
           //
           // If we detect that this function reference is within a
           // c_ptrTo() call then we only need a C pointer to the
@@ -1636,123 +1641,147 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                                                    PRIM_CAPTURE_FN_FOR_C :
                                                    PRIM_CAPTURE_FN_FOR_CHPL);
 
-          unresolvedSymExpr->replace(prim_capture_fn);
-          prim_capture_fn->insertAtTail(unresolvedSymExpr);
+          usymExpr->replace(prim_capture_fn);
+          prim_capture_fn->insertAtTail(usymExpr);
 
           // Don't do it again if for some reason we return
           // to trying to resolve this symbol.
-          skipSet.set_add(unresolvedSymExpr);
+          skipSet.set_add(usymExpr);
           return;
         }
       }
     }
-  } 
-
-  // Apply 'this' and 'outer' in methods where necessary
-  {
-    Expr* expr = symExpr;
-
-    if (!expr)
-      expr = unresolvedSymExpr;
-
-    Symbol* parent = expr->parentSymbol;
-
-    while (!toModuleSymbol(parent)) {
-      if (FnSymbol* method = toFnSymbol(parent)) {
-
-        // stopgap bug fix: do not let methods shadow symbols
-        // that are more specific than methods
-        if (sym && sym->defPoint->getFunction() == method)
-          break;
-
-        if (method->_this && (!symExpr || symExpr->symbol() != method->_this)) {
-          Type*       type = method->_this->type;
-          TypeSymbol* cts  =
-            (sym) ? toTypeSymbol(sym->defPoint->parentSymbol) : NULL;
-
-          if ((cts && isAggregateType(cts->type)) ||
-              isMethodName(name, type)) {
-            CallExpr* call = toCallExpr(expr->parentExpr);
-
-            if (call && call->baseExpr == expr &&
-                call->numActuals() >= 2 &&
-                toSymExpr(call->get(1)) &&
-                toSymExpr(call->get(1))->symbol() == gMethodToken) {
-              UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
-
-              expr->replace(use);
-
-              skipSet.set_add(use);
-            } else {
-              AggregateType* ct        = toAggregateType(type);
-              int            nestDepth = 0;
-
-              if (isMethodName(name, type)) {
-                while (ct && !isMethodNameLocal(name, ct)) {
-                  // count how many classes out from current depth that
-                  // this method is first defined in
-                  nestDepth += 1;
-                  ct = toAggregateType
-                    (ct->symbol->defPoint->parentSymbol->type);
-                }
-              } else {
-                while (ct && !ct->getField(name, false)) {
-                  // count how many classes out from current depth that
-                  // this symbol is first defined in
-                  nestDepth += 1;
-                  ct = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
-                }
-              }
-
-              Expr *dot = NULL;
-
-              for (int i=0; i<=nestDepth; i++) {
-                // Apply implicit this pointers and outer this pointers
-                if (i == 0) {
-                  if (i < nestDepth) {
-                    dot = new CallExpr(".",
-                                       method->_this,
-                                       new_CStringSymbol("outer"));
-                  } else {
-                    if (isTypeSymbol(sym))
-                      dot = new CallExpr(".", method->_this, sym);
-                    else
-                      dot = new CallExpr(".",
-                                         method->_this,
-                                         new_CStringSymbol(name));
-                  }
-                } else {
-                  if (i < nestDepth) {
-                    dot = new CallExpr(".",
-                                       dot, new_CStringSymbol("outer"));
-                  } else {
-                    if (isTypeSymbol(sym))
-                      dot = new CallExpr(".", dot, sym);
-                    else
-                      dot = new CallExpr(".", dot, new_CStringSymbol(name));
-                  }
-                }
-              }
-
-              checkIdInsideWithClause(expr, unresolvedSymExpr);
-              expr->replace(dot);
-            }
-          }
-          break;
-        }
-      }
-
-      parent = parent->defPoint->parentSymbol;
-    }
   }
 
+  updateMethod(usymExpr, skipSet, sym, symExpr);
+
 #ifdef HAVE_LLVM
-  if (!sym && externC && tryCResolve(unresolvedSymExpr->getModule(), name)) {
+  if (!sym && externC && tryCResolve(usymExpr->getModule(), name)) {
     //try resolution again since the symbol should exist now
-    resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
+    resolveUnresolvedSymExpr(usymExpr, skipSet);
   }
 #endif
 }
+
+// Apply 'this' and 'outer' in methods where necessary
+static void updateMethod(UnresolvedSymExpr*       usymExpr,
+                         Vec<UnresolvedSymExpr*>& skipSet,
+                         Symbol*                  sym,
+                         SymExpr*                 symExpr) {
+  const char* name = usymExpr->unresolved;
+  Expr*       expr = symExpr;
+
+  if (expr == NULL) {
+    expr = usymExpr;
+  }
+
+  Symbol* parent = expr->parentSymbol;
+
+  while (isModuleSymbol(parent) == false) {
+    if (FnSymbol* method = toFnSymbol(parent)) {
+
+      // stopgap bug fix: do not let methods shadow symbols
+      // that are more specific than methods
+      if (sym && sym->defPoint->getFunction() == method) {
+        break;
+      }
+
+      if (method->_this && (!symExpr || symExpr->symbol() != method->_this)) {
+        Type*       type = method->_this->type;
+        TypeSymbol* cts  = NULL;
+
+        if (sym != NULL) {
+          cts = toTypeSymbol(sym->defPoint->parentSymbol);
+        }
+
+        if ((cts != NULL && isAggregateType(cts->type) == true) ||
+            isMethodName(name, type) == true) {
+          CallExpr* call = toCallExpr(expr->parentExpr);
+
+          if (call                              != NULL &&
+              call->baseExpr                    == expr &&
+              call->numActuals()                >= 2    &&
+              isSymExpr(call->get(1))           == true &&
+              toSymExpr(call->get(1))->symbol() == gMethodToken) {
+            UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
+
+            expr->replace(use);
+
+            skipSet.set_add(use);
+
+          } else {
+            AggregateType* ct        = toAggregateType(type);
+            int            nestDepth = 0;
+
+            if (isMethodName(name, type) == true) {
+              while (ct != NULL && isMethodNameLocal(name, ct) == false) {
+                // count how many classes out from current depth that
+                // this method is first defined in
+                nestDepth += 1;
+                ct = toAggregateType
+                  (ct->symbol->defPoint->parentSymbol->type);
+              }
+
+            } else {
+              while (ct != NULL && ct->getField(name, false) == false) {
+                // count how many classes out from current depth that
+                // this symbol is first defined in
+                nestDepth += 1;
+                ct = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
+              }
+            }
+
+            Expr* dot = NULL;
+
+            for (int i = 0; i <= nestDepth; i++) {
+              // Apply implicit this pointers and outer this pointers
+              if (i == 0) {
+                if (i < nestDepth) {
+                  dot = new CallExpr(".",
+                                     method->_this,
+                                     new_CStringSymbol("outer"));
+                } else {
+                  if (isTypeSymbol(sym))
+                    dot = new CallExpr(".", method->_this, sym);
+                  else
+                    dot = new CallExpr(".",
+                                       method->_this,
+                                       new_CStringSymbol(name));
+                }
+              } else {
+                if (i < nestDepth) {
+                  dot = new CallExpr(".",
+                                     dot, new_CStringSymbol("outer"));
+                } else {
+                  if (isTypeSymbol(sym))
+                    dot = new CallExpr(".", dot, sym);
+                  else
+                    dot = new CallExpr(".", dot, new_CStringSymbol(name));
+                }
+              }
+            }
+
+            checkIdInsideWithClause(expr, usymExpr);
+
+            expr->replace(dot);
+          }
+        }
+
+        break;
+      }
+    }
+
+    parent = parent->defPoint->parentSymbol;
+  }
+}
+
+
+
+
+
+
+
+
 
 //
 // isMethodName returns true iff 'name' names a method of 'type'
