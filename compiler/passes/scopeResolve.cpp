@@ -1515,6 +1515,13 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
                                      std::set<UnresolvedSymExpr*>& skipSet);
 
 static void updateMethod(UnresolvedSymExpr*            usymExpr,
+                         std::set<UnresolvedSymExpr*>& skipSet);
+
+static void updateMethod(UnresolvedSymExpr*            usymExpr,
+                         std::set<UnresolvedSymExpr*>& skipSet,
+                         Symbol*                       sym);
+
+static void updateMethod(UnresolvedSymExpr*            usymExpr,
                          std::set<UnresolvedSymExpr*>& skipSet,
                          Symbol*                       sym,
                          SymExpr*                      symExpr);
@@ -1544,18 +1551,18 @@ static void resolveUnresolvedSymExprs() {
   // that is used to determine visible functions.
   //
 
-  int max_resolved = 0;
+  int maxResolved = 0;
+  int i           = 0;
 
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
-    max_resolved++;
+
+    maxResolved++;
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
     resolveModuleCall(call, skipSet);
   }
-
-  int i = 0;
 
   // Note that the extern C resolution might add new UnresolvedSymExprs, and it
   // might do that within resolveModuleCall, so we try resolving unresolved
@@ -1570,9 +1577,10 @@ static void resolveUnresolvedSymExprs() {
   //       and it might lead to extra naming conflicts).
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
-    if( i >= max_resolved ) {
+    if (i >= maxResolved ) {
       resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     }
+
     i++;
   }
 }
@@ -1606,7 +1614,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
     // sjd: stopgap to avoid shadowing variables or functions by methods
     } else if (fn->hasFlag(FLAG_METHOD) == true) {
-      updateMethod(usymExpr, skipSet, NULL, NULL);
+      updateMethod(usymExpr, skipSet);
 
     // handle function call without parentheses
     } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -1633,15 +1641,15 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
         skipSet.insert(usymExpr);
 
       } else {
-        updateMethod(usymExpr, skipSet, sym, NULL);
+        updateMethod(usymExpr, skipSet, sym);
       }
 
     } else {
-      updateMethod(usymExpr, skipSet, sym, NULL);
+      updateMethod(usymExpr, skipSet, sym);
     }
 
   } else {
-    updateMethod(usymExpr, skipSet, NULL, NULL);
+    updateMethod(usymExpr, skipSet);
 
 #ifdef HAVE_LLVM
     if (externC == true && tryCResolve(usymExpr->getModule(), name) == true) {
@@ -1653,6 +1661,17 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 }
 
 // Apply 'this' and 'outer' in methods where necessary
+static void updateMethod(UnresolvedSymExpr*            usymExpr,
+                         std::set<UnresolvedSymExpr*>& skipSet) {
+  updateMethod(usymExpr, skipSet, NULL);
+}
+
+static void updateMethod(UnresolvedSymExpr*            usymExpr,
+                         std::set<UnresolvedSymExpr*>& skipSet,
+                         Symbol*                       sym) {
+  updateMethod(usymExpr, skipSet, sym, NULL);
+}
+
 static void updateMethod(UnresolvedSymExpr*            usymExpr,
                          std::set<UnresolvedSymExpr*>& skipSet,
                          Symbol*                       sym,
