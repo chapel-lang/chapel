@@ -1585,7 +1585,7 @@ static void resolveUnresolvedSymExprs() {
   //       and it might lead to extra naming conflicts).
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
-    if (i >= maxResolved ) {
+    if (i >= maxResolved) {
       resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
     }
 
@@ -1599,18 +1599,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
   const char* name = usymExpr->unresolved;
 
-  if (skipSet.find(usymExpr) != skipSet.end()) {
-    return;
+  if (skipSet.find(usymExpr) != skipSet.end() ||
+      strcmp(name, ".")      == 0             ||
+      usymExpr->parentSymbol == NULL) {
 
-  } else if (strcmp(name, ".") == 0) {
-    return;
-
-  // Skip unresolveds that are not in the tree.
-  } else if (usymExpr->parentSymbol == NULL) {
-    return;
-  }
-
-  if (Symbol* sym = lookup(usymExpr, name)) {
+  } else if (Symbol* sym = lookup(usymExpr, name)) {
     FnSymbol* fn = toFnSymbol(sym);
 
     if (fn == NULL) {
@@ -1790,25 +1783,30 @@ static int computeNestedDepth(const char* name, Type* type) {
 // isMethodName returns true iff 'name' names a method of 'type'
 //
 static bool isMethodName(const char* name, Type* type) {
-  if (!strcmp(name, type->symbol->name))
+  if (strcmp(name, type->symbol->name) == 0) {
     return false;
+  }
 
   forv_Vec(Symbol, method, type->methods) {
-    if (method && !strcmp(name, method->name))
+    if (method != NULL && strcmp(name, method->name) == 0) {
       return true;
+    }
   }
 
   forv_Vec(Type, pt, type->dispatchParents) {
-    if (isMethodName(name, pt))
+    if (isMethodName(name, pt) == true) {
       return true;
+    }
   }
 
   if (AggregateType* ct = toAggregateType(type)) {
-    Type *outerType = ct->symbol->defPoint->parentSymbol->type;
+    Type* outerType = ct->symbol->defPoint->parentSymbol->type;
 
-    if (AggregateType* outer = toAggregateType(outerType))
-      if (isMethodName(name, outer))
+    if (AggregateType* outer = toAggregateType(outerType)) {
+      if (isMethodName(name, outer) == true) {
         return true;
+      }
+    }
   }
 
   return false;
@@ -1820,17 +1818,20 @@ static bool isMethodName(const char* name, Type* type) {
 // excluding methods of an outer type
 //
 static bool isMethodNameLocal(const char* name, Type* type) {
-  if (!strcmp(name, type->symbol->name))
+  if (strcmp(name, type->symbol->name) == 0) {
     return false;
+  }
 
   forv_Vec(Symbol, method, type->methods) {
-    if (method && !strcmp(name, method->name))
+    if (method != NULL && strcmp(name, method->name) == 0) {
       return true;
+    }
   }
 
   forv_Vec(Type, pt, type->dispatchParents) {
-    if (isMethodName(name, pt))
+    if (isMethodName(name, pt) == true) {
       return true;
+    }
   }
 
   return false;
@@ -1838,17 +1839,22 @@ static bool isMethodNameLocal(const char* name, Type* type) {
 
 
 static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
-                                     const char* construct)
-{
+                                     const char*        construct) {
   // As of this writing, a with-clause can be duplicated in the AST.
   // This code avoids multiple error messages for the same symbol.
 
-  std::pair<const char*,int> markLoc(origUSE->astloc.filename,
-                                     origUSE->astloc.lineno);
-  WFDIWmark mark(markLoc, origUSE->unresolved);
+  std::pair<const char*, int> markLoc(origUSE->astloc.filename,
+                                      origUSE->astloc.lineno);
 
-  if (!warnedForDotInsideWith.count(mark)) {
-    USR_FATAL_CONT(origUSE, "cannot reference a field or function '%s' in a with-clause of this %s", origUSE->unresolved, construct);
+  WFDIWmark                   mark(markLoc, origUSE->unresolved);
+
+  if (warnedForDotInsideWith.count(mark) == 0) {
+    USR_FATAL_CONT(origUSE,
+                   "cannot reference a field or function '%s' "
+                   "in a with-clause of this %s",
+                   origUSE->unresolved,
+                   construct);
+
     warnedForDotInsideWith.insert(mark);
   }
 }
@@ -1857,82 +1863,94 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 // 'expr' ended up being a field reference (or perhaps a method call).
 // If we are inside a 'with' clause, report an error.
 //
-static void checkIdInsideWithClause(Expr* exprInAst,
-                                    UnresolvedSymExpr* origUSE)
-{
+static void checkIdInsideWithClause(Expr*              exprInAst,
+                                    UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a forall loop.
-  if (BlockStmt* parent = toBlockStmt(exprInAst->parentExpr))
+  if (BlockStmt* parent = toBlockStmt(exprInAst->parentExpr)) {
     if (ForallIntents* fi = parent->forallIntents) {
-      for_vector(Expr, fiVar, fi->fiVars)
+      for_vector(Expr, fiVar, fi->fiVars) {
         if (exprInAst == fiVar) {
           errorDotInsideWithClause(origUSE, "forall loop");
           return;
         }
+      }
     }
+  }
 
   // A 'with' clause for a task construct.
-  if (Expr* parent1 = exprInAst->parentExpr)
-    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr))
+  if (Expr* parent1 = exprInAst->parentExpr) {
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
       if (parent1 == parent2->byrefVars) {
         CallExpr* blockInfo = parent2->blockInfoGet();
+
         // Ensure that an issue, indeed, occurred a task construct.
-        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) ||
+        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
                    blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) ||
                    blockInfo->isPrimitive(PRIM_BLOCK_BEGIN));
-        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
-        return;
-      }
-}
 
+        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
+      }
+    }
+  }
+}
 
 static void resolveModuleCall(CallExpr*                     call,
                               std::set<UnresolvedSymExpr*>& skipSet) {
-  if (call->isNamed(".")) {
+  if (call->isNamed(".") == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        ModuleSymbol* enclosingModule = call->getModule();
-
-        enclosingModule->moduleUseAdd(mod);
-
         SET_LINENO(call);
 
-        Symbol*           sym      = NULL;
-        const char*       mbr_name = get_string(call->get(2));
+        ModuleSymbol* enclosingModule = call->getModule();
+        Symbol*       sym             = NULL;
+        const char*   mbrName         = get_string(call->get(2));
+
+        enclosingModule->moduleUseAdd(mod);
 
         // Can the identifier be mapped to something at this scope?
         if (symbolTable.count(mod->block) != 0) {
           SymbolTableEntry* entry = symbolTable[mod->block];
 
-          if (entry->count(mbr_name) != 0) {
-            sym = (*entry)[mbr_name];
+          if (entry->count(mbrName) != 0) {
+            sym = (*entry)[mbrName];
           }
         }
 
-        if (sym) {
-          if (!sym->isVisible(call)) {
+        if (sym != NULL) {
+          if (sym->isVisible(call) == false) {
             // The symbol is not visible at this scope because it is
             // private to mod!  Error out
-            USR_FATAL(call, "Cannot access '%s', '%s' is private to '%s'", mbr_name, mbr_name, mod->name);
+            USR_FATAL(call,
+                      "Cannot access '%s', '%s' is private to '%s'",
+                      mbrName,
+                      mbrName,
+                      mod->name);
+
           } else if (FnSymbol* fn = toFnSymbol(sym)) {
-            if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
+            if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
               call->replace(new CallExpr(fn));
             } else {
-              UnresolvedSymExpr* se = new UnresolvedSymExpr(mbr_name);
+              UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
 
               skipSet.insert(se);
+
               call->replace(se);
 
               CallExpr* parent = toCallExpr(se->parentExpr);
+
               INT_ASSERT(parent);
 
               parent->insertAtHead(mod);
               parent->insertAtHead(gModuleToken);
             }
+
           } else {
             call->replace(new SymExpr(sym));
           }
+
 #ifdef HAVE_LLVM
-        } else if (!sym && externC && tryCResolve(call->getModule(),mbr_name)) {
+        } else if (externC                                 == true &&
+                   tryCResolve(call->getModule(), mbrName) == true) {
           // Try to resolve again now that the symbol should
           // be in the table
           resolveModuleCall(call, skipSet);
@@ -1941,7 +1959,7 @@ static void resolveModuleCall(CallExpr*                     call,
         } else {
           USR_FATAL_CONT(call,
                          "Symbol '%s' undeclared in module '%s'",
-                         mbr_name,
+                         mbrName,
                          mod->name);
         }
       }
@@ -1962,7 +1980,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
   if (! module) return false;
 
   if (llvm_small_set_insert(already_checked, module)) {
-   // already_checked.insert(module)) {
+    // already_checked.insert(module)) {
     // we added it to the set, so continue.
   } else {
     // It was already in the set.
