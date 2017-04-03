@@ -2,9 +2,8 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Preston Sahabu
-   derived from the Chapel fastaredux version by Casey Battaglino,
-               Kyle Brady, Preston Sahabu, and Brad Chamberlain
-   derived from the GNU C version by Paul Hsieh
+   derived from the Chapel fastaredux version by Casey Battaglino et al.
+            and the GNU C version by Paul Hsieh
 */
 
 config const n = 1000,   // controls the length of the generated strings
