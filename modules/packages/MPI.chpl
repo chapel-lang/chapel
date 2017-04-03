@@ -263,12 +263,15 @@ module MPI {
     // If we are running using the uGNI layer, then the following hack
     // appears to be necessary in order to run MPI, as well as Chapel
     // See : https://hpcrdm.lbl.gov/pipermail/upc-users/2014-May/002061.html
-    if CHPL_COMM=="ugni" {
+    if (CHPL_COMM=="ugni") || (CHPL_COMM=="gasnet" && CHPL_COMM_SUBSTRATE=="aries") {
       coforall loc in Locales do on loc {
           // This must be done on all locales!
           var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
           if !pmiGniCookie.isEmptyString() {
-            C_Env.setenv("PMI_GNI_COOKIE",("%i".format(pmiGniCookie:int+1)).c_str(),1);
+            // This may be a colon separated string.
+            var cookieJar = pmiGniCookie.split(":");
+            cookieJar[1] = ((cookieJar[1]):int + 1):string;
+            C_Env.setenv("PMI_GNI_COOKIE",("%s".format(":".join(cookieJar))).c_str(),1);
           }
         }
     }
