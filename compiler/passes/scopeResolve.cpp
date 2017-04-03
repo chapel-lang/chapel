@@ -1617,26 +1617,18 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
       CallExpr* call = toCallExpr(parent);
 
       if (call == NULL || call->baseExpr != usymExpr) {
-        //
-        // If we detect that this function reference is within a
-        // c_ptrTo() call then we only need a C pointer to the
-        // function, not a full Chapel first-class function (which
-        // can capture variables).
-        //
-        // TODO: Can we avoid strcmp or ensure it's "our" fn?
-        //
-        bool captureForC = (call && call->isNamed("c_ptrTo"));
+        CallExpr* primFn = NULL;
 
-        // If the function is being used as a first-class value, handle
-        // this with a primitive and unwrap the primitive later in
-        // functionResolution
-        CallExpr* prim_capture_fn = new CallExpr(captureForC ?
-                                                 PRIM_CAPTURE_FN_FOR_C :
-                                                 PRIM_CAPTURE_FN_FOR_CHPL);
+        // Wrap the FN in the appropriate way
+        if (call != NULL && call->isNamed("c_ptrTo") == true) {
+          primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
+        } else {
+          primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL);
+        }
 
-        usymExpr->replace(prim_capture_fn);
+        usymExpr->replace(primFn);
 
-        prim_capture_fn->insertAtTail(usymExpr);
+        primFn->insertAtTail(usymExpr);
 
         skipSet.insert(usymExpr);
 
