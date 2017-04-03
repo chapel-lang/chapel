@@ -3129,7 +3129,7 @@ module ChapelArray {
   }
 
   proc chpl__countRanges(arg, args...) param {
-    return chpl__countRanges(arg):int + chpl__countRanges((...args));
+    return chpl__countRanges(arg) + chpl__countRanges((...args));
   }
 
   // given a tuple args, returns true if the tuple contains only
