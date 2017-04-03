@@ -1112,6 +1112,7 @@ module ChapelArray {
       // Compute which dimensions are collapsed and what the index
       // (idx) is in the event that it is.  These will be stored in
       // the array view to convert from lower-D indices to higher-D.
+      // Also compute the upward-facing rank and tuple of ranges.
       //
       var collapsedDim: rank*bool;
       var idx: rank*idxType;
@@ -1134,15 +1135,14 @@ module ChapelArray {
 
       // Create distribution, domain, and array objects representing
       // the array view
+      const emptyrange: upranges(1).type;
       //
       // If idx isn't in the original domain, we need to generate an
       // empty upward facing domain (intersection is empty)
       //
       if !member(idx) {
-        for param d in 1..uprank {
-          const emptyrange: upranges(d).type;
+        for param d in 1..uprank do
           upranges(d) = emptyrange;
-        }
       }
 
       const rcdist = new ArrayViewRankChangeDist(downDistPid=dist._pid,
@@ -3112,6 +3112,8 @@ module ChapelArray {
     return false;
   }
 
+  // computes || reduction over stridable of ranges, but permits some
+  // elements not to be ranges (as in a rank-change slice)
   proc chpl__anyRankChangeStridable(args) param {
     for param i in 1..args.size do
       if isRangeValue(args(i)) then
@@ -3120,6 +3122,8 @@ module ChapelArray {
     return false;
   }
 
+  // the following pair of routines counts the number of ranges in its
+  // argument list and is used for rank-change slices
   proc chpl__countRanges(arg) param {
     return isRangeValue(arg):int;
   }
