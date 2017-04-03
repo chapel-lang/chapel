@@ -1740,22 +1740,21 @@ static void insertFieldAccess(FnSymbol*          method,
                               Symbol*            sym,
                               Expr*              expr) {
   const char* name      = usymExpr->unresolved;
-  Type*       type      = method->_this->type;
-  int         nestDepth = computeNestedDepth(name, type);
+  int         nestDepth = computeNestedDepth(name, method->_this->type);
   Expr*       dot       = new SymExpr(method->_this);
 
-  for (int i = 0; i <= nestDepth; i++) {
-    if (i < nestDepth) {
+  checkIdInsideWithClause(expr, usymExpr);
+
+  if (nestDepth > 0) {
+    for (int i = 0; i < nestDepth; i++) {
       dot = new CallExpr(".", dot, new_CStringSymbol("outer"));
-    } else {
-      if (isTypeSymbol(sym))
-        dot = new CallExpr(".", dot, sym);
-      else
-        dot = new CallExpr(".", dot, new_CStringSymbol(name));
     }
   }
 
-  checkIdInsideWithClause(expr, usymExpr);
+  if (isTypeSymbol(sym) == true)
+    dot = new CallExpr(".", dot, sym);
+  else
+    dot = new CallExpr(".", dot, new_CStringSymbol(name));
 
   expr->replace(dot);
 }
