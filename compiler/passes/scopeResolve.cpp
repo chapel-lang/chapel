@@ -1594,68 +1594,72 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
     return;
   }
 
-  Symbol*   sym     = lookup(usymExpr, name);
-  FnSymbol* fn      = toFnSymbol(sym);
-  SymExpr*  symExpr = NULL;
+  if (Symbol* sym = lookup(usymExpr, name)) {
+    FnSymbol* fn      = toFnSymbol(sym);
+    SymExpr*  symExpr = NULL;
 
-  // handle function call without parentheses
-  if (fn != NULL && fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
-    checkIdInsideWithClause(usymExpr, usymExpr);
-    usymExpr->replace(new CallExpr(fn));
-    return;
-  }
+    // handle function call without parentheses
+    if (fn != NULL && fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+      checkIdInsideWithClause(usymExpr, usymExpr);
+      usymExpr->replace(new CallExpr(fn));
+      return;
+    }
 
-  // sjd: stopgap to avoid shadowing variables or functions by methods
-  if (fn != NULL && fn->hasFlag(FLAG_METHOD) == true) {
-    sym = NULL;
-  }
+    // sjd: stopgap to avoid shadowing variables or functions by methods
+    if (fn != NULL && fn->hasFlag(FLAG_METHOD) == true) {
+      sym = NULL;
+    }
 
-  if (sym) {
-    if (fn == NULL) {
-      symExpr = new SymExpr(sym);
-      usymExpr->replace(symExpr);
+    if (sym) {
+      if (fn == NULL) {
+        symExpr = new SymExpr(sym);
+        usymExpr->replace(symExpr);
 
-    } else if (Expr* parent = usymExpr->parentExpr) {
-      CallExpr* call = toCallExpr(parent);
+      } else if (Expr* parent = usymExpr->parentExpr) {
+        CallExpr* call = toCallExpr(parent);
 
-      if (call == NULL || call->baseExpr != usymExpr) {
-        //
-        // If we detect that this function reference is within a
-        // c_ptrTo() call then we only need a C pointer to the
-        // function, not a full Chapel first-class function (which
-        // can capture variables).
-        //
-        // TODO: Can we avoid strcmp or ensure it's "our" fn?
-        //
-        bool captureForC = (call && call->isNamed("c_ptrTo"));
+        if (call == NULL || call->baseExpr != usymExpr) {
+          //
+          // If we detect that this function reference is within a
+          // c_ptrTo() call then we only need a C pointer to the
+          // function, not a full Chapel first-class function (which
+          // can capture variables).
+          //
+          // TODO: Can we avoid strcmp or ensure it's "our" fn?
+          //
+          bool captureForC = (call && call->isNamed("c_ptrTo"));
 
-        //If the function is being used as a first-class value, handle
-        // this with a primitive and unwrap the primitive later in
-        // functionResolution
-        CallExpr* prim_capture_fn = new CallExpr(captureForC ?
-                                                 PRIM_CAPTURE_FN_FOR_C :
-                                                 PRIM_CAPTURE_FN_FOR_CHPL);
+          //If the function is being used as a first-class value, handle
+          // this with a primitive and unwrap the primitive later in
+          // functionResolution
+          CallExpr* prim_capture_fn = new CallExpr(captureForC ?
+                                                   PRIM_CAPTURE_FN_FOR_C :
+                                                   PRIM_CAPTURE_FN_FOR_CHPL);
 
-        usymExpr->replace(prim_capture_fn);
+          usymExpr->replace(prim_capture_fn);
 
-        prim_capture_fn->insertAtTail(usymExpr);
+          prim_capture_fn->insertAtTail(usymExpr);
 
-        // Don't do it again if for some reason we return
-        // to trying to resolve this symbol.
-        skipSet.insert(usymExpr);
-        return;
+          // Don't do it again if for some reason we return
+          // to trying to resolve this symbol.
+          skipSet.insert(usymExpr);
+          return;
+        }
       }
     }
-  }
 
-  updateMethod(usymExpr, skipSet, sym, symExpr);
+    updateMethod(usymExpr, skipSet, sym, symExpr);
+
+  } else {
+    updateMethod(usymExpr, skipSet, NULL, NULL);
 
 #ifdef HAVE_LLVM
-  if (!sym && externC && tryCResolve(usymExpr->getModule(), name)) {
-    //try resolution again since the symbol should exist now
-    resolveUnresolvedSymExpr(usymExpr, skipSet);
-  }
+    if (externC == true && tryCResolve(usymExpr->getModule(), name) == true) {
+      // Try resolution again since the symbol should exist now
+      resolveUnresolvedSymExpr(usymExpr, skipSet);
+    }
 #endif
+  }
 }
 
 // Apply 'this' and 'outer' in methods where necessary
