@@ -1687,6 +1687,11 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
   const char* name   = usymExpr->unresolved;
   Expr*       expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
   Symbol*     parent = expr->parentSymbol;
+  TypeSymbol* cts    = NULL;
+
+  if (sym != NULL) {
+    cts = toTypeSymbol(sym->defPoint->parentSymbol);
+  }
 
   while (isModuleSymbol(parent) == false) {
     if (FnSymbol* method = toFnSymbol(parent)) {
@@ -1697,12 +1702,7 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
 
       } else if (method->_this != NULL) {
         if (symExpr == NULL || symExpr->symbol() != method->_this) {
-          Type*       type = method->_this->type;
-          TypeSymbol* cts  = NULL;
-
-          if (sym != NULL) {
-            cts = toTypeSymbol(sym->defPoint->parentSymbol);
-          }
+          Type* type = method->_this->type;
 
           if ((cts != NULL && isAggregateType(cts->type) == true) ||
               isMethodName(name, type) == true) {
