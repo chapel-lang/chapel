@@ -149,7 +149,6 @@ studies/shootout/submitted/revcomp-submitted.graph
 studies/shootout/submitted/spectralnorm-submitted.graph
 studies/shootout/submitted/threadring-submitted.graph
 # suite: Shootout extras
-studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/fasta/fastaredux.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
