@@ -1595,60 +1595,64 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
   }
 
   if (Symbol* sym = lookup(usymExpr, name)) {
-    FnSymbol* fn      = toFnSymbol(sym);
-    SymExpr*  symExpr = NULL;
+    FnSymbol* fn = toFnSymbol(sym);
 
-    // handle function call without parentheses
-    if (fn != NULL && fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
-      checkIdInsideWithClause(usymExpr, usymExpr);
-      usymExpr->replace(new CallExpr(fn));
-      return;
-    }
+    if (fn == NULL) {
+      SymExpr* symExpr = new SymExpr(sym);
 
-    // sjd: stopgap to avoid shadowing variables or functions by methods
-    if (fn != NULL && fn->hasFlag(FLAG_METHOD) == true) {
-      sym = NULL;
-    }
+      usymExpr->replace(symExpr);
 
-    if (sym) {
-      if (fn == NULL) {
-        symExpr = new SymExpr(sym);
-        usymExpr->replace(symExpr);
+      updateMethod(usymExpr, skipSet, sym, symExpr);
 
-      } else if (Expr* parent = usymExpr->parentExpr) {
-        CallExpr* call = toCallExpr(parent);
+    } else {
+      // handle function call without parentheses
+      if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+        checkIdInsideWithClause(usymExpr, usymExpr);
+        usymExpr->replace(new CallExpr(fn));
+        return;
+      }
 
-        if (call == NULL || call->baseExpr != usymExpr) {
-          //
-          // If we detect that this function reference is within a
-          // c_ptrTo() call then we only need a C pointer to the
-          // function, not a full Chapel first-class function (which
-          // can capture variables).
-          //
-          // TODO: Can we avoid strcmp or ensure it's "our" fn?
-          //
-          bool captureForC = (call && call->isNamed("c_ptrTo"));
+      // sjd: stopgap to avoid shadowing variables or functions by methods
+      if (fn->hasFlag(FLAG_METHOD) == true) {
+        sym = NULL;
+      }
 
-          //If the function is being used as a first-class value, handle
-          // this with a primitive and unwrap the primitive later in
-          // functionResolution
-          CallExpr* prim_capture_fn = new CallExpr(captureForC ?
-                                                   PRIM_CAPTURE_FN_FOR_C :
-                                                   PRIM_CAPTURE_FN_FOR_CHPL);
+      if (sym) {
+        if (Expr* parent = usymExpr->parentExpr) {
+          CallExpr* call = toCallExpr(parent);
 
-          usymExpr->replace(prim_capture_fn);
+          if (call == NULL || call->baseExpr != usymExpr) {
+            //
+            // If we detect that this function reference is within a
+            // c_ptrTo() call then we only need a C pointer to the
+            // function, not a full Chapel first-class function (which
+            // can capture variables).
+            //
+            // TODO: Can we avoid strcmp or ensure it's "our" fn?
+            //
+            bool captureForC = (call && call->isNamed("c_ptrTo"));
 
-          prim_capture_fn->insertAtTail(usymExpr);
+            //If the function is being used as a first-class value, handle
+            // this with a primitive and unwrap the primitive later in
+            // functionResolution
+            CallExpr* prim_capture_fn = new CallExpr(captureForC ?
+                                                     PRIM_CAPTURE_FN_FOR_C :
+                                                     PRIM_CAPTURE_FN_FOR_CHPL);
 
-          // Don't do it again if for some reason we return
-          // to trying to resolve this symbol.
-          skipSet.insert(usymExpr);
-          return;
+            usymExpr->replace(prim_capture_fn);
+
+            prim_capture_fn->insertAtTail(usymExpr);
+
+            // Don't do it again if for some reason we return
+            // to trying to resolve this symbol.
+            skipSet.insert(usymExpr);
+            return;
+          }
         }
       }
-    }
 
-    updateMethod(usymExpr, skipSet, sym, symExpr);
+      updateMethod(usymExpr, skipSet, sym, NULL);
+    }
 
   } else {
     updateMethod(usymExpr, skipSet, NULL, NULL);
