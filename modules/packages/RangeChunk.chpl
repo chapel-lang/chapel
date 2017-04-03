@@ -85,6 +85,23 @@ module RangeChunk {
   }
 
   /*
+     Iterates through blocks of size ``blockSize`` of ``idx`` chunk of range ``r``, in a round robin fashion.
+  */
+  iter roundRobinBasedChunkOfBlocks(r: range(?RT, bounded, ?S),  blockSize: integral,
+             idx:integral, numChunks: integral): range(RT, bounded, S) {
+
+    const nElems = r.length;
+    const start = idx*blockSize;
+    const stride = blockSize*numChunks;
+    const end = nElems - 1;
+    for chunkStartIdx in start..end by stride {
+      const chunkEndIdx = min(chunkStartIdx + blockSize, nElems) - 1;
+      yield chunkStartIdx..chunkEndIdx;
+    }
+    
+  }
+
+  /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */
