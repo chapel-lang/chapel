@@ -1604,17 +1604,16 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
       updateMethod(usymExpr, skipSet, sym, symExpr);
 
+    // sjd: stopgap to avoid shadowing variables or functions by methods
+    } else if (fn->hasFlag(FLAG_METHOD) == true) {
+      updateMethod(usymExpr, skipSet, NULL, NULL);
+
     } else {
       // handle function call without parentheses
-      if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+      if (fn->hasFlag(FLAG_NO_PARENS) == true) {
         checkIdInsideWithClause(usymExpr, usymExpr);
         usymExpr->replace(new CallExpr(fn));
         return;
-      }
-
-      // sjd: stopgap to avoid shadowing variables or functions by methods
-      if (fn->hasFlag(FLAG_METHOD) == true) {
-        sym = NULL;
       }
 
       if (sym) {
