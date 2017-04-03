@@ -1526,6 +1526,9 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
                          Symbol*                       sym,
                          SymExpr*                      symExpr);
 
+static int  computeNestedDepth(const char* name,
+                               Type*       type);
+
 static void resolveModuleCall(CallExpr*                     call,
                               std::set<UnresolvedSymExpr*>& skipSet);
 
@@ -1676,14 +1679,9 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
                          std::set<UnresolvedSymExpr*>& skipSet,
                          Symbol*                       sym,
                          SymExpr*                      symExpr) {
-  const char* name = usymExpr->unresolved;
-  Expr*       expr = symExpr;
-
-  if (expr == NULL) {
-    expr = usymExpr;
-  }
-
-  Symbol* parent = expr->parentSymbol;
+  const char* name   = usymExpr->unresolved;
+  Expr*       expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
+  Symbol*     parent = expr->parentSymbol;
 
   while (isModuleSymbol(parent) == false) {
     if (FnSymbol* method = toFnSymbol(parent)) {
@@ -1718,28 +1716,8 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
             skipSet.insert(use);
 
           } else {
-            AggregateType* ct        = toAggregateType(type);
-            int            nestDepth = 0;
-
-            if (isMethodName(name, type) == true) {
-              while (ct != NULL && isMethodNameLocal(name, ct) == false) {
-                // count how many classes out from current depth that
-                // this method is first defined in
-                nestDepth += 1;
-                ct = toAggregateType
-                  (ct->symbol->defPoint->parentSymbol->type);
-              }
-
-            } else {
-              while (ct != NULL && ct->getField(name, false) == false) {
-                // count how many classes out from current depth that
-                // this symbol is first defined in
-                nestDepth += 1;
-                ct = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
-              }
-            }
-
-            Expr* dot = NULL;
+            int   nestDepth = computeNestedDepth(name, type);
+            Expr* dot       = NULL;
 
             for (int i = 0; i <= nestDepth; i++) {
               // Apply implicit this pointers and outer this pointers
@@ -1783,13 +1761,32 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
   }
 }
 
+static int computeNestedDepth(const char* name, Type* type) {
+  int retval = 0;
 
+  if (isMethodName(name, type) == true) {
+    AggregateType* ct = toAggregateType(type);
 
+    // count how many classes out from current depth that
+    // this method is first defined in
+    while (ct != NULL && isMethodNameLocal(name, ct) == false) {
+      retval = retval + 1;
+      ct     = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
+    }
 
+  } else {
+    // count how many classes out from current depth that
+    // this symbol is first defined in
+    AggregateType* ct = toAggregateType(type);
 
+    while (ct != NULL && ct->getField(name, false) == false) {
+      retval = retval + 1;
+      ct     = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
+    }
+  }
 
-
-
+  return retval;
+}
 
 //
 // isMethodName returns true iff 'name' names a method of 'type'
