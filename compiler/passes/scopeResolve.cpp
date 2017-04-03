@@ -1614,37 +1614,35 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
       usymExpr->replace(new CallExpr(fn));
 
     } else {
-      if (sym) {
-        if (Expr* parent = usymExpr->parentExpr) {
-          CallExpr* call = toCallExpr(parent);
+      if (Expr* parent = usymExpr->parentExpr) {
+        CallExpr* call = toCallExpr(parent);
 
-          if (call == NULL || call->baseExpr != usymExpr) {
-            //
-            // If we detect that this function reference is within a
-            // c_ptrTo() call then we only need a C pointer to the
-            // function, not a full Chapel first-class function (which
-            // can capture variables).
-            //
-            // TODO: Can we avoid strcmp or ensure it's "our" fn?
-            //
-            bool captureForC = (call && call->isNamed("c_ptrTo"));
+        if (call == NULL || call->baseExpr != usymExpr) {
+          //
+          // If we detect that this function reference is within a
+          // c_ptrTo() call then we only need a C pointer to the
+          // function, not a full Chapel first-class function (which
+          // can capture variables).
+          //
+          // TODO: Can we avoid strcmp or ensure it's "our" fn?
+          //
+          bool captureForC = (call && call->isNamed("c_ptrTo"));
 
-            //If the function is being used as a first-class value, handle
-            // this with a primitive and unwrap the primitive later in
-            // functionResolution
-            CallExpr* prim_capture_fn = new CallExpr(captureForC ?
-                                                     PRIM_CAPTURE_FN_FOR_C :
-                                                     PRIM_CAPTURE_FN_FOR_CHPL);
+          //If the function is being used as a first-class value, handle
+          // this with a primitive and unwrap the primitive later in
+          // functionResolution
+          CallExpr* prim_capture_fn = new CallExpr(captureForC ?
+                                                   PRIM_CAPTURE_FN_FOR_C :
+                                                   PRIM_CAPTURE_FN_FOR_CHPL);
 
-            usymExpr->replace(prim_capture_fn);
+          usymExpr->replace(prim_capture_fn);
 
-            prim_capture_fn->insertAtTail(usymExpr);
+          prim_capture_fn->insertAtTail(usymExpr);
 
-            // Don't do it again if for some reason we return
-            // to trying to resolve this symbol.
-            skipSet.insert(usymExpr);
-            return;
-          }
+          // Don't do it again if for some reason we return
+          // to trying to resolve this symbol.
+          skipSet.insert(usymExpr);
+          return;
         }
       }
 
