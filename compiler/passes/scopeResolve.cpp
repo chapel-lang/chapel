@@ -1579,80 +1579,71 @@ static void resolveUnresolvedSymExprs() {
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
                                      std::set<UnresolvedSymExpr*>& skipSet) {
-  if (skipSet.find(usymExpr) != skipSet.end()) {
-    return;
-  }
+  SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
 
-  if (strcmp(name, ".") == 0) {
+  if (skipSet.find(usymExpr) != skipSet.end()) {
     return;
-  }
+
+  } else if (strcmp(name, ".") == 0) {
+    return;
 
   // Skip unresolveds that are not in the tree.
-  if (usymExpr->parentSymbol == NULL) {
+  } else if (usymExpr->parentSymbol == NULL) {
     return;
   }
 
-  SET_LINENO(usymExpr);
+  Symbol*   sym     = lookup(usymExpr, name);
+  FnSymbol* fn      = toFnSymbol(sym);
+  SymExpr*  symExpr = NULL;
 
-  Symbol* sym = lookup(usymExpr, name);
-
-  //
   // handle function call without parentheses
-  //
-  if (FnSymbol* fn = toFnSymbol(sym)) {
-    if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
-      checkIdInsideWithClause(usymExpr, usymExpr);
-      usymExpr->replace(new CallExpr(fn));
-      return;
-    }
+  if (fn != NULL && fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+    checkIdInsideWithClause(usymExpr, usymExpr);
+    usymExpr->replace(new CallExpr(fn));
+    return;
   }
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
-  if (FnSymbol* fn = toFnSymbol(sym))
-    if (fn->hasFlag(FLAG_METHOD))
-      sym = NULL;
-
-  SymExpr* symExpr = NULL;
+  if (fn != NULL && fn->hasFlag(FLAG_METHOD) == true) {
+    sym = NULL;
+  }
 
   if (sym) {
-    if (!isFnSymbol(sym)) {
+    if (fn == NULL) {
       symExpr = new SymExpr(sym);
       usymExpr->replace(symExpr);
-    }
-    else if (isFnSymbol(sym)) {
-      Expr* parent = usymExpr->parentExpr;
 
-      if (parent) {
-        CallExpr *call = toCallExpr(parent);
+    } else if (Expr* parent = usymExpr->parentExpr) {
+      CallExpr* call = toCallExpr(parent);
 
-        if (((call) && (call->baseExpr != usymExpr)) || (!call)) {
-          //
-          // If we detect that this function reference is within a
-          // c_ptrTo() call then we only need a C pointer to the
-          // function, not a full Chapel first-class function (which
-          // can capture variables).
-          //
-          // TODO: Can we avoid strcmp or ensure it's "our" fn?
-          //
-          bool captureForC = (call && call->isNamed("c_ptrTo"));
+      if (call == NULL || call->baseExpr != usymExpr) {
+        //
+        // If we detect that this function reference is within a
+        // c_ptrTo() call then we only need a C pointer to the
+        // function, not a full Chapel first-class function (which
+        // can capture variables).
+        //
+        // TODO: Can we avoid strcmp or ensure it's "our" fn?
+        //
+        bool captureForC = (call && call->isNamed("c_ptrTo"));
 
-          //If the function is being used as a first-class value, handle
-          // this with a primitive and unwrap the primitive later in
-          // functionResolution
-          CallExpr *prim_capture_fn = new CallExpr(captureForC ?
-                                                   PRIM_CAPTURE_FN_FOR_C :
-                                                   PRIM_CAPTURE_FN_FOR_CHPL);
+        //If the function is being used as a first-class value, handle
+        // this with a primitive and unwrap the primitive later in
+        // functionResolution
+        CallExpr* prim_capture_fn = new CallExpr(captureForC ?
+                                                 PRIM_CAPTURE_FN_FOR_C :
+                                                 PRIM_CAPTURE_FN_FOR_CHPL);
 
-          usymExpr->replace(prim_capture_fn);
-          prim_capture_fn->insertAtTail(usymExpr);
+        usymExpr->replace(prim_capture_fn);
 
-          // Don't do it again if for some reason we return
-          // to trying to resolve this symbol.
-          skipSet.insert(usymExpr);
-          return;
-        }
+        prim_capture_fn->insertAtTail(usymExpr);
+
+        // Don't do it again if for some reason we return
+        // to trying to resolve this symbol.
+        skipSet.insert(usymExpr);
+        return;
       }
     }
   }
