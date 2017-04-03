@@ -1117,8 +1117,9 @@ module ChapelArray {
       var collapsedDim: rank*bool;
       var idx: rank*idxType;
       param uprank = chpl__countRanges((...args));
+      param upstridable = this.stridable || chpl__anyRankChangeStridable(args);
       var upranges: uprank*range(idxType=_value.idxType,
-                                 stridable=chpl__anyRankChangeStridable(args));
+                                 stridable=upstridable);
       var updim = 1;
 
       for param i in 1..rank {
