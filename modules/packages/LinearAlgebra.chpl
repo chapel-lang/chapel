@@ -609,10 +609,14 @@ private inline proc _raw(D: domain(1), i) {
    Return a Vector containing the diagonal elements of ``A`` if the argument ``A`` is of rank 2.
    Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
  */
-proc diag(A: [?Adom] ?eltType){
+proc diag(A: [?Adom] ?eltType, k=0){
   if(Adom.rank == 2) then{
-    if(!isSquare(A)) then halt("diag supports only square matrices");
-    return _diag_vec(A);  
+    if(k==0) then{
+      return _diag_vec(A);  
+    }
+    else{
+      return _diag_vec(A, k);
+    }
   }
   else if(Adom.rank == 1) then {
     return _diag_mat(A);
@@ -626,30 +630,80 @@ proc diag(A: [?Adom] ?eltType){
 /*
   Return a Vector containing the off diagonal elements of ``A``
 */
-proc offdiag(A:[?Adom] ?eltType){
-  if(Adom.rank != 2) then halt("offdiag expects argument to be of rank 2");
-  if(!isSquare(A)) then halt ("offdiag supports only square matrices");
-  return _diag_vec(A,trans=true);
+proc skewdiag(A:[?Adom] ?eltType){
+  if(Adom.rank != 2) then compilerError("skewdiag expects argument to be of rank 2");
+  return _diag_vec(A,skew=true);
 }
 
-proc _diag_vec(A:[?Adom] ?eltType, trans=false){
-  var diagonal = Vector(Adom.dim(1).length);
-  if(!trans) then{
-    forall i in Adom.dim(1) do{
-      diagonal[i] = A[i, i];
+
+proc _diag_vec(A:[?Adom] ?eltType, skew=false){
+
+  //better way to do this if type of Adom.dim(1) and Adom.dim(2) can be determined
+  if(skew==true){
+    if(Adom.dim(1).length<Adom.dim(2).length) then{
+      var diagonal = Vector(Adom.dim(1).length, eltType);
+      forall i in Adom.dim(1) do{
+        var n = Adom.dim(1).length;
+        diagonal[i] = A[i,n-1-i];
+      }
+      return diagonal;
+    }
+    else{
+      var diagonal = Vector(Adom.dim(2).length, eltType);
+      forall i in Adom.dim(2) do{
+        var n = Adom.dim(2).length;
+        diagonal[i] = A[i,n-1-i];
+      }
+      return diagonal;
     }
   }
   else{
-    forall i in Adom.dim(1) do{
-      var n = Adom.dim(1).length;
-      diagonal[i] = A[i, n-1-i];
+    if(Adom.dim(1).length<Adom.dim(2).length) then{
+      var diagonal = Vector(Adom.dim(1).length, eltType);
+      forall i in Adom.dim(1) do{
+        diagonal[i] = A[i,i];
+      }
+      return diagonal;
+    }
+    else{
+      var diagonal = Vector(Adom.dim(2).length, eltType);
+      forall i in Adom.dim(2) do{
+        diagonal[i] = A[i,i];
+      }
+      return diagonal;
     }
   }
-  return diagonal;
+}
+
+proc _diag_vec(A:[?Adom] ?eltType, k){
+  if(Adom.dim(1).length<Adom.dim(2).length) then{
+    var diagonal = Vector(Adom.dim(1).length-abs(k), eltType);
+    forall i in Adom.dim(1)(..Adom.dim(1).length-abs(k)-1) do{
+      if(k>0) then{
+        diagonal[i] = A[i,i+k];
+      }
+      else{
+        diagonal[i] = A[i+abs(k),i];
+      }
+    }
+      return diagonal;
+  }
+  else{
+    var diagonal = Vector(Adom.dim(2).length-abs(k), eltType);
+    forall i in Adom.dim(2)(..Adom.dim(2).length-abs(k)-1) do{
+      if(k>0) then{
+        diagonal[i] = A[i,i+k];
+      }
+      else{
+        diagonal[i] = A[i+abs(k),i];
+      }
+    }
+      return diagonal;
+  }
 }
 
 proc _diag_mat(A:[?Adom] ?eltType){
-  var diagonal = Matrix(Adom.dim(1).length);
+  var diagonal = Matrix(Adom.dim(1).length, eltType);
   forall i in Adom.dim(1) do{
     diagonal[i, i] = A[i];
   }
