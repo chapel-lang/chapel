@@ -1734,6 +1734,7 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
   }
 }
 
+// Apply implicit this pointers and outer this pointers
 static void insertFieldAccess(FnSymbol*          method,
                               UnresolvedSymExpr* usymExpr,
                               Symbol*            sym,
@@ -1744,24 +1745,18 @@ static void insertFieldAccess(FnSymbol*          method,
   Expr*       dot       = NULL;
 
   for (int i = 0; i <= nestDepth; i++) {
-    // Apply implicit this pointers and outer this pointers
     if (i == 0) {
       if (i < nestDepth) {
-        dot = new CallExpr(".",
-                           method->_this,
-                           new_CStringSymbol("outer"));
+        dot = new CallExpr(".", method->_this, new_CStringSymbol("outer"));
       } else {
         if (isTypeSymbol(sym))
           dot = new CallExpr(".", method->_this, sym);
         else
-          dot = new CallExpr(".",
-                             method->_this,
-                             new_CStringSymbol(name));
+          dot = new CallExpr(".", method->_this, new_CStringSymbol(name));
       }
     } else {
       if (i < nestDepth) {
-        dot = new CallExpr(".",
-                           dot, new_CStringSymbol("outer"));
+        dot = new CallExpr(".", dot, new_CStringSymbol("outer"));
       } else {
         if (isTypeSymbol(sym))
           dot = new CallExpr(".", dot, sym);
