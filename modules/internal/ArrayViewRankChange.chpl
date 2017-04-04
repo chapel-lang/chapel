@@ -49,7 +49,8 @@ module ArrayViewRankChange {
   class ArrayViewRankChangeDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // lower-dimensional views of
-    const downdist;
+    var downDistPid:int;
+    var downDistInst;
 
     // These two fields represent whether or not each dimension was
     // collapsed as part of the rank-change; and if so, what the
@@ -61,6 +62,13 @@ module ArrayViewRankChange {
     // one.
     const collapsedDim;
     const idx;
+
+    inline proc downDist {
+      if _isPrivatized(downDistInst) then
+        return chpl_getPrivatizedCopy(downDistInst.type, downDistPid);
+      else
+        return downDistInst;
+    }
 
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       var newdom = new ArrayViewRankChangeDom(rank=rank,
@@ -74,7 +82,8 @@ module ArrayViewRankChange {
       return newdom;
     }
 
-    proc dsiClone() return new ArrayViewRankChangeDist(downdist=downdist,
+    proc dsiClone() return new ArrayViewRankChangeDist(downDistPid=this.downDistPid,
+                                                       downDistInst=this.downDistInst,
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
 
@@ -93,6 +102,8 @@ module ArrayViewRankChange {
                                          idx = privatizeData(3));
     }
 
+    proc dsiDestroyDist() {
+    }
   }
 
   //
@@ -136,8 +147,9 @@ module ArrayViewRankChange {
     // above, we get a memory leak.  File a future against this?
     //
     proc downDomType(param rank: int, type idxType, param stridable: bool) type {
-      var a = dist.downdist.newRectangularDom(rank=rank, idxType=idxType,
-                                              stridable=stridable);
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
+                                                 stridable=stridable, ranges);
       return a.type;
     }
 
@@ -217,14 +229,20 @@ module ArrayViewRankChange {
     }
 
     proc dsiSetIndices(inds) {
+      // Free underlying domains if necessary
+      this.dsiDestroyDom();
+
       pragma "no auto destroy"
       var upDomRec = {(...inds)};
       upDom = upDomRec._value;
-      var downDomclass = dist.downdist.newRectangularDom(rank=downrank,
-                                                         idxType=idxType,
-                                                         stridable=stridable);
+
+      var ranges: downrank*range(idxType, BoundedRangeType.bounded, stridable);
+      var downDomClass = dist.downDist.dsiNewRectangularDom(rank=downrank,
+                                                           idxType,
+                                                           stridable=stridable,
+                                                           ranges);
       pragma "no auto destroy"
-      var downDomLoc = _newDomain(downDomclass);
+      var downDomLoc = _newDomain(downDomClass);
       downDomLoc = chpl_rankChangeConvertDom(inds, inds.size, collapsedDim, idx);
       downDomLoc._value._free_when_no_arrs = true;
       downDomPid = downDomLoc._pid;
@@ -245,7 +263,7 @@ module ArrayViewRankChange {
       }
     }
 
-    iter these(param tag: iterKind) where tag == iterKind.standalone {
+    iter these(param tag: iterKind) where tag == iterKind.standalone && !localeModelHasSublocales {
       if chpl__isDROrDRView(downDom) {
         for i in upDom.these(tag) do
           yield i;
@@ -341,11 +359,18 @@ module ArrayViewRankChange {
 
     proc dsiTargetLocales() {
       //
-      // BLC: To tighten this up, we'd need to query the distribution to
-      // see what subset of target locales the rank-change slice hit vs.
-      // not.
+      // BLC: there's a bit of a question in my mind about whether
+      // rank-change slices (and regular slices for that matter) ought
+      // to be expected to list only the subset of locales that have
+      // non-empty subdomains for a given domain/array, or whether all
+      // locales in the domain's/distribution's target locale set
+      // should be listed since they are part of the target locale
+      // set.  Both seem like they could be useful, though the former
+      // seems as though it could be challenging to compute precisely
+      // for less regular distributions.  Here I've done the easy
+      // thing and simply returned all the locales that own the domain
+      // below us, as slicing does.
       //
-      //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
       return downDom.dsiTargetLocales();
     }
 
@@ -353,7 +378,18 @@ module ArrayViewRankChange {
       return downDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return downDom.dsiLocalSubdomain();
+      const dims = downDom.dsiLocalSubdomain().dims();
+      const empty : domain(rank, idxType, chpl__anyStridable(dims));
+
+      // If the rank-changed dimension's index is not a member of the range
+      // in the same dimension of 'dims', then this locale does not have a
+      // local subdomain.
+      for param d in 1..dims.size {
+        if collapsedDim(d) && dims(d).isEmpty() then
+          return empty;
+      }
+
+      return chpl_rankChangeConvertDownToUp(dims, rank, collapsedDim);
     }
 
     proc isRankChangeDomainView() param {
@@ -369,8 +405,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiDestroyDom() {
-      _delete_dom(upDom, false);
-      _delete_dom(downDomInst, _isPrivatized(downDomInst));
+      if upDom != nil then
+        _delete_dom(upDom, false);
+      if downDomInst != nil then
+        _delete_dom(downDomInst, _isPrivatized(downDomInst));
     }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
@@ -626,19 +664,16 @@ module ArrayViewRankChange {
 
     proc dsiTargetLocales() {
       //
-      // BLC: To tighten this up, we'd need to query the distribution to
-      // see what subset of target locales the rank-change slice hit vs.
-      // not.
+      // See commentary on ArrayViewRankChangeDom.dsiTargetLocales() above.
       //
-      //      compilerWarning("Calls to .targetLocales() on rank-change slices may currently return a superset of the locales targeted.");
       return arr.dsiTargetLocales();
     }
 
     proc dsiHasSingleLocalSubdomain() param
-      return privDom.upDom.dsiHasSingleLocalSubdomain();
+      return privDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return privDom.upDom.dsiLocalSubdomain();
+      return privDom.dsiLocalSubdomain();
     }
 
     proc dsiNoFluffView() {
@@ -870,10 +905,25 @@ module ArrayViewRankChange {
         j += 1;
       }
     }
-    return ind;
+    if rank == 1 then
+      return ind(1);
+    else
+      return ind;
   }
 
-    inline proc chpl_rankChangeConvertDom(dims, param uprank, collapsedDim, idx) {
+  inline proc chpl_rankChangeConvertDownToUp(dims, param uprank, collapsedDim) {
+    var ranges : uprank*dims(1).type;
+    var j = 1;
+    for param d in 1..dims.size {
+      if !collapsedDim(d) {
+        ranges(j) = dims(d);
+        j += 1;
+      }
+    }
+    return {(...ranges)};
+  }
+
+  inline proc chpl_rankChangeConvertDom(dims, param uprank, collapsedDim, idx) {
     param downrank = collapsedDim.size;
     if uprank != dims.size then
       compilerError("Called chpl_rankChangeConvertDom with incorrect rank. Got ", dims.size:string, ", expecting ", uprank:string);

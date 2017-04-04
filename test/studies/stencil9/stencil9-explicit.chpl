@@ -110,7 +110,7 @@ coforall (lr,lc) in LocaleGridDom {
     // we'll declare B to be private/local to this scope because
     // nobody else needs to refer to it.
     //
-    var A => MyDomArr.Arr;
+    ref A = MyDomArr.Arr;
     var B: [WithFluff] real;
 
     //

@@ -233,6 +233,10 @@ all:
   03/16/17:
     - text: Stop limiting the number of ugni communication domains under slurm (#5653)
       config: 16 node XC
+  03/17/17:
+    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
+  03/20/17:
+    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
 
 
 AllCompTime:
@@ -253,6 +257,8 @@ arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+  03/22/17:
+    - Inline DefaultRectangular 1D strided iter (#5771)
 
 arrayPerformance-2d:
   10/21/16:
@@ -301,6 +307,8 @@ binary-trees:
     - Brad's fix of off-by-one error in checksum (#4734)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
 
 binarytrees-submitted:
   09/21/16:
@@ -309,6 +317,8 @@ binarytrees-submitted:
     - simplify init()-based implementation (#4609)
   10/10/16:
     - Brad's fix of off-by-one error in checksum (#4734)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
 
 blackscholes:
   10/21/16:
@@ -435,6 +445,8 @@ ft-a:
 hpl:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
+  03/21/17:
+    - Rank change dom dist view (#5694)
 
 hpl_performance:
   12/11/15:
@@ -615,6 +627,10 @@ memleaks:
     - new test verifying the user's guide type aliases section (#5075)
   01/17/17:
     - new test of Sparse domain block clear functionality (#5173)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  03/23/17:
+    - Fix some memory leaks in ArrayViewRankChange (#5789)
 
 memleaksfull:
   07/08/14:
@@ -633,6 +649,10 @@ memleaksfull:
     - Fix gasnet config for recent memory leak updates (#4375)
   02/08/17:
     - Add Futures package module - lambda functions leaking (#5135)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  03/23/17:
+    - Fix some memory leaks in ArrayViewRankChange (#5789)
 
 meteor:
   12/18/13:
@@ -730,6 +750,8 @@ ra:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+  03/21/17:
+    - Rank change dom dist view (#5694)
 
 RBC:
   02/22/17:
@@ -801,6 +823,12 @@ stream-promoted.ml-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
       config: 16 node XC
+  03/17/17:
+    - text: Improve cullOverReferences and enable late const checking (#5624)
+      config: 16 node XC
+  03/21/17:
+    - text: Improve const inference for chpl__iterLF (#5736)
+      config: 16 node XC
 
 STREAM_study:
   10/21/16:
@@ -822,10 +850,15 @@ stream:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+  03/18/17:
+    - text: Improve inferConstRefs' canRHSBeConstRef helper function (#5710)
+      config: 16 node XC
 
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
+  03/21/17:
+    - Limit the maximum size of qthreads memory pools to 65MB (#5748)
 
 temporary-copies:
   01/14/17:
@@ -839,6 +872,8 @@ thread-ring:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+  03/21/17:
+    - Limit the maximum size of qthreads memory pools to 65MB (#5748)
 
 time_array_vs_ddata:
   05/31/14:

@@ -27,6 +27,9 @@ following files may also exist:
      foo.skipif         : conditions under which this test should be skipped
      foo.timeout        : kill the test if this much time passes
 
+     foo.ml-*           : files similar to those listed above, but used for
+                          multilocale performance testing
+
 
 ---------------------
 Using the test system
@@ -67,4 +70,4 @@ For more information
 --------------------
 
 See:
-https://github.com/chapel-lang/chapel/blob/release/1.14/doc/developer/bestPractices/TestSystem.rst
+https://github.com/chapel-lang/chapel/blob/release/1.15/doc/rst/developer/bestPractices/TestSystem.rst

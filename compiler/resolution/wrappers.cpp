@@ -583,7 +583,7 @@ void reorderActuals(FnSymbol* fn,
 static IntentTag getIntent(ArgSymbol* formal)
 {
   IntentTag intent = formal->intent;
-  if (intent == INTENT_BLANK &&
+  if ((intent == INTENT_BLANK || intent == INTENT_CONST) &&
       !formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     intent = concreteIntentForArg(formal);
   return intent;

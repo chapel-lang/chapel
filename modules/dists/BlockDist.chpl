@@ -1155,7 +1155,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // live on a different locale and require communication for reference
     // counting. Simply put: don't slice inside a local block.
     //
-    var chunk => arrSection.myElems(myFollowThisDom);
+    ref chunk = arrSection.myElems(myFollowThisDom);
     local {
       for i in chunk do yield i;
     }
@@ -1167,6 +1167,10 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       yield dsiAccess(i);
     }
   }
+}
+
+proc BlockArr.dsiSerialRead(f) {
+  chpl_serialReadWriteRectangular(f, this);
 }
 
 //

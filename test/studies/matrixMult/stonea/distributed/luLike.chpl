@@ -81,9 +81,9 @@ proc luLikeMultiply(
 
     // do local matrix-multiply
     forall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        var localA   => rowCopies[locRow,locCol].data;
-        var localB   => colCopies[locRow,locCol].data;
-        var localSol => A[locRow,locCol].data;
+        ref localA   = rowCopies[locRow,locCol].data;
+        ref localB   = colCopies[locRow,locCol].data;
+        ref localSol = A[locRow,locCol].data;
 
         forall i in localSol.domain.dim(1) {
             forall j in localSol.domain.dim(2) {

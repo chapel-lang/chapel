@@ -5082,6 +5082,14 @@ void lvalueCheck(CallExpr* call)
       if (SymExpr* aSE = toSymExpr(actual)) {
         Symbol* aVar = aSE->symbol();
         if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+          printTaskOrForallConstErrorNote(aVar);
+        }
+      }
+    }
+  }
+}
+
+void printTaskOrForallConstErrorNote(Symbol* aVar) {
           const char* varname = aVar->name;
           if (!strncmp(varname, "_formal_tmp_", 12))
             varname += 12;
@@ -5102,12 +5110,7 @@ void lvalueCheck(CallExpr* call)
             Expr* enclLoop = aVar->defPoint->parentExpr;
             USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
           }
-        }
-      }
-    }
-  }
 }
-
 
 // We do some const-related work upon PRIM_MOVE
 static void setConstFlagsAndCheckUponMove(Symbol* lhs, Expr* rhs) {
@@ -7143,15 +7146,21 @@ static Expr* preFold(Expr* expr) {
         }
       }
     } else if (call->isCast()) {
+      SymExpr* toSE = toSymExpr(call->castTo());
+      // TODO: we could just bail out aka 'return (result=call)' if !toSE.
+      if (toSE && !toSE->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        // TODO: here, also replace 'call' with toSE so it does not trigger
+        // the same USR_FATAL_CONT in printResolutionErrorUnresolved().
+        USR_FATAL_CONT(call, "illegal cast to non-type");
       result = dropUnnecessaryCast(call);
       if (result == call) {
         // The cast was not dropped.  Remove integer casts on immediate values.
         if (SymExpr* sym = toSymExpr(call->castFrom())) {
           if (VarSymbol* var = toVarSymbol(sym->symbol())) {
             if (var->immediate) {
-              if (SymExpr* sym = toSymExpr(call->castTo())) {
+              if (toSE) {
                 Type* oldType = var->type;
-                Type* newType = sym->symbol()->type;
+                Type* newType = toSE->symbol()->type;
                 if ((is_int_type(oldType) || is_uint_type(oldType) ||
                      is_bool_type(oldType)) &&
                     (is_int_type(newType) || is_uint_type(newType) ||
@@ -7208,8 +7217,8 @@ static Expr* preFold(Expr* expr) {
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->symbol())) {
-            if (SymExpr* sym = toSymExpr(call->castTo())) {
-              Type* newType = sym->symbol()->type;
+            if (toSE) {
+              Type* newType = toSE->symbol()->type;
               if (newType == dtString) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
                 call->replace(result);
@@ -8262,7 +8271,17 @@ postFold(Expr* expr) {
       }
 
       if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
-        CallExpr* cast = createCast(val, sym->symbol());
+        Symbol* toSym = sym->symbol();
+        if (!toSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // This assertion is here to ensure compatibility with old code.
+          // Todo: remove after 1.15 release.
+          Symbol* newToSym = toSym->type->symbol;
+          INT_ASSERT(toSym->type       // cast machinery used this previously
+                  == newToSym->type);  // now it will use this
+          toSym = newToSym;
+        }
+        INT_ASSERT(toSym->hasFlag(FLAG_TYPE_VARIABLE));
+        CallExpr* cast = createCast(val, toSym);
         sym->replace(cast);
 
         // see whether preFold will fold this _cast call
@@ -8519,6 +8538,13 @@ resolveExpr(Expr* expr) {
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             ct->defaultTypeConstructor) {
+          if (ct->initializerStyle == DEFINES_INITIALIZER &&
+              (ct->isGeneric() ||
+               (isAggregateType(ct->instantiatedFrom) &&
+                toAggregateType(ct->instantiatedFrom)->isGeneric()))) {
+            USR_FATAL(ct, "Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference");
+          }
+
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
             if (getPartialCopyInfo(ct->defaultTypeConstructor))
@@ -9316,9 +9342,12 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             subs.put(arg, pfn->getFormal(i)->type->symbol);
           }
         }
+
         FnSymbol* fn = cfn;
+
         if (subs.n) {
-          fn = instantiate(fn, subs, NULL);
+          fn = instantiate(fn, subs);
+
           if (fn) {
             if (type->defaultTypeConstructor->instantiationPoint)
               fn->instantiationPoint = type->defaultTypeConstructor->instantiationPoint;
@@ -9327,10 +9356,13 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             INT_ASSERT(fn->instantiationPoint);
           }
         }
+
         if (fn) {
           resolveFormals(fn);
+
           if (signature_match(pfn, fn) && evaluateWhereClause(fn)) {
             resolveFns(fn);
+
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
               AggregateType* fnRetType = toAggregateType(fn->retType);

@@ -630,11 +630,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _getDomain(this);
+      if (this.locale == here) {
+        return _getDomain(this);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _getDomain(this);
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -921,7 +926,7 @@ module DefaultRectangular {
         high = if rad.stridable then strideAlignDown(high, newDom.dsiDim(mdParDim)) else high;
 
         const rng = low..high;
-        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride align newDom.dsiDim(mdParDim).alignment;
       }
 
     }
@@ -954,8 +959,8 @@ module DefaultRectangular {
       rad.mdParDim    = this.mdParDim;
       rad.mdNumChunks = this.mdNumChunks;
 
-      const thisStr   = abs(this.str(mdParDim));
-      const radStr    = abs(rad.str(mdParDim));
+      const thisStr   = abs(this.str(mdParDim)):idxType;
+      const radStr    = abs(rad.str(mdParDim)):idxType;
 
       rad.mdRLo       = rad.off(mdParDim) - (this.off(mdParDim) - this.mdRLo) / thisStr * radStr;
       rad.mdRHi       = rad.off(mdParDim) + (this.mdRLen - 1) * radStr;
@@ -975,7 +980,7 @@ module DefaultRectangular {
         high += radLo;
 
         const rng = low..high;
-        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr align newDom.dsiDim(mdParDim).alignment;
       }
     }
 
@@ -990,6 +995,7 @@ module DefaultRectangular {
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
+    type idxSignedType = chpl__signedType(idxType);
 
     // Unconditionally sets 'blkChanged'
     //
@@ -1009,7 +1015,8 @@ module DefaultRectangular {
     for param j in 1..idx.size {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
-        rad.origin     += this.blk(j) * (rad.off(curDim) - this.off(j)) / this.str(j);
+        const off       = (rad.off(curDim) - this.off(j)):idxSignedType;
+        rad.origin     += ((this.blk(j):idxSignedType) * off / this.str(j)):idxType;
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
 
@@ -1020,7 +1027,8 @@ module DefaultRectangular {
 
         curDim += 1;
       } else {
-        rad.origin += this.blk(j) * (idx(j) - this.off(j)) / this.str(j);
+        const off   = (idx(j) - this.off(j)):idxSignedType;
+        rad.origin += (this.blk(j):idxSignedType *  off / this.str(j)):idxType;
 
         if !defRectSimpleDData && j == mdParDim {
           mdpdIsRange = false;
@@ -1044,7 +1052,7 @@ module DefaultRectangular {
         for i in 1..#mdNumChunks {
           const rng = max(this.mData(i).pdr.low, newDom.dsiDim(rad.mdParDim).low)
                       ..min(this.mData(i).pdr.high, newDom.dsiDim(rad.mdParDim).high);
-          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride;
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride align newDom.dsiDim(rad.mdParDim).alignment;
         }
       } else {
         // If the mdParDim'th dimension is removed, then we switch to
@@ -1061,7 +1069,7 @@ module DefaultRectangular {
         for i in 1..#mdNumChunks {
           const (lo, hi) = rad.mdChunk2Ind(i-1);
           const rng = max(lo, newDom.dsiDim(1).low) .. min(hi, newDom.dsiDim(1).high);
-          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride;
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride align newDom.dsiDim(1).alignment;
         }
       }
     }
@@ -1438,11 +1446,12 @@ module DefaultRectangular {
                            minIndicesPerTask) do
           yield dsiAccess(i);
       } else {
+        // TODO: why does 'followThis' have a different idxType?
         const mdPDLow = dom.dsiDim(mdParDim).low;
-        const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low);
+        const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low:mdPDLow.type);
         if boundsChecking {
           // the code here assumes followThis spans but a single chunk
-          assert(mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high);
+          assert(mdPDLow + followThis(mdParDim).high:mdPDLow.type <= mData(chunk).pdr.high);
         }
 
         //
@@ -1566,7 +1575,7 @@ module DefaultRectangular {
         if mdNumChunks == 1 {
           if stridable then
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high
-                           by dom.dsiDim(mdParDim).stride;
+                           by dom.dsiDim(mdParDim).stride align dom.dsiDim(mdParDim).alignment;
           else
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           mData(0).data =
@@ -1580,7 +1589,7 @@ module DefaultRectangular {
             mData(i).dataOff  = dataOff;
             const (lo, hi) = mdChunk2Ind(i);
             if stridable then
-              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride;
+              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride align dom.dsiDim(mdParDim).alignment;
             else
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;
@@ -1864,11 +1873,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _getDomain(dom);
+      if (this.data.locale == here) {
+        return _getDomain(dom);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _getDomain(dom);
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -1942,16 +1956,17 @@ module DefaultRectangular {
         const viewDomDim = viewDom.dsiDim(1),
               stride = viewDomDim.stride: viewDom.idxType,
               start  = viewDomDim.first,
-              first  = info.getDataIndex(start),
-              second = info.getDataIndex(start + stride),
-              step   = (second-first):chpl__signedType(viewDom.idxType),
-              last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
-        if step > 0 then
-          for i in first..last by step do
-            yield info.data(i);
-        else
-          for i in last..first by step do
-            yield info.data(i);
+              second = info.getDataIndex(start + stride);
+
+        var   first  = info.getDataIndex(start);
+        const step   = (second-first):chpl__signedType(viewDom.idxType);
+        var   last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
+
+        if step < 0 then
+          last <=> first;
+
+        for i in first..last by step do
+          yield info.data(i);
       }
     } else if useCache {
       for i in viewDom {

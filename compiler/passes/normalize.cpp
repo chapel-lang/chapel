@@ -1109,12 +1109,17 @@ static void call_constructor_for_class(CallExpr* call) {
       primNewToFix = parentParent;
       INT_ASSERT(primNewToFix->get(1) == parent);
     } else if (ct) {
-      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
         // Call chpl__buildDistType for syntactic distributions.
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
-      else
+      } else {
+        if (ct->initializerStyle == DEFINES_INITIALIZER && ct->isGeneric()) {
+          USR_FATAL_CONT(se, "Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference");
+        }
+
         // Transform C ( ... ) into _type_construct_C ( ... ) .
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+      }
     }
 
     if (primNewToFix) {
@@ -1837,10 +1842,15 @@ static void normVarTypeInference(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   initExpr = defExpr->init->remove();
 
+  // Do not complain here.  Put this stub in to the AST and let
+  // checkUseBeforeDefs() generate a consistent error message.
+  if (isUnresolvedSymExpr(initExpr) == true) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
+
   // e.g.
   //   var x = <immediate>;
   //   var y = <identifier>;
-  if (SymExpr* initSym = toSymExpr(initExpr)) {
+  } else if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
     if (isPrimitiveScalar(type) == true) {

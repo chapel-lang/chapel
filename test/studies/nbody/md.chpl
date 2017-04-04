@@ -61,9 +61,9 @@ proc try2() {
   coforall loc_i in 0..#numLocales do on Locales[loc_i] {
 
       // local indices and slices of A, B
-      const local_dom => B.localSubdomain();
-      var local_A => A.localSlice(local_dom);
-      var local_B => B.localSlice(local_dom);
+      const ref local_dom = B.localSubdomain();
+      ref local_A = A.localSlice(local_dom);
+      ref local_B = B.localSlice(local_dom);
 
       // local cache of a chunk of B used for computation
       // starting with the local portion
@@ -84,7 +84,7 @@ proc try2() {
 
           // Task 1: prefetch into 'next_array'
           if more_chunks then on Locales[next_loc] {
-            const local_subdom => B.localSubdomain();
+            const ref local_subdom = B.localSubdomain();
             next_dom = local_subdom;
             next_array = B.localSlice(local_subdom);
           }

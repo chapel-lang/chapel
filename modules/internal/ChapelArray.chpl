@@ -1112,14 +1112,22 @@ module ChapelArray {
       // Compute which dimensions are collapsed and what the index
       // (idx) is in the event that it is.  These will be stored in
       // the array view to convert from lower-D indices to higher-D.
+      // Also compute the upward-facing rank and tuple of ranges.
       //
       var collapsedDim: rank*bool;
       var idx: rank*idxType;
+      param uprank = chpl__countRanges((...args));
+      param upstridable = this.stridable || chpl__anyRankChangeStridable(args);
+      var upranges: uprank*range(idxType=_value.idxType,
+                                 stridable=upstridable);
+      var updim = 1;
 
       for param i in 1..rank {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
           idx(i) = dim(i).alignedLow;
+          upranges(updim) = this._value.dsiDim(i)[args(i)]; // intersect ranges
+          updim += 1;
         } else {
           collapsedDim(i) = true;
           idx(i) = args(i);
@@ -1128,9 +1136,7 @@ module ChapelArray {
 
       // Create distribution, domain, and array objects representing
       // the array view
-      var upranges = _getRankChangeRanges(args, this._value);
       const emptyrange: upranges(1).type;
-      param uprank = upranges.size;
       //
       // If idx isn't in the original domain, we need to generate an
       // empty upward facing domain (intersection is empty)
@@ -1140,9 +1146,13 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = new ArrayViewRankChangeDist(downdist = dist,
+      const rcdist = new ArrayViewRankChangeDist(downDistPid=dist._pid,
+                                                 downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
+      // TODO: Should this be set?
+      //rcdist._free_when_no_doms = true;
+
       const rcdistRec = _newDistribution(rcdist);
       const rcdomclass = rcdistRec.newRectangularDom(rank = uprank,
                                                      idxType = upranges(1).idxType,
@@ -1185,10 +1195,10 @@ module ChapelArray {
       for i in _value.dimIter(d, ind) do yield i;
     }
 
-   /* Returns a tuple of integers describing the size of each dimension.
+   /* Returns a tuple of ``idxType`` describing the size of each dimension.
       For a sparse domain, returns the shape of the parent domain.*/
     proc shape where isRectangularDom(this) || isSparseDom(this) {
-      var s: rank*(int);
+      var s: rank*(dim(1).idxType);
       for (i, r) in zip(1..s.size, dims()) do
         s(i) = r.size;
       return s;
@@ -1197,7 +1207,7 @@ module ChapelArray {
     pragma "no doc"
     /* Associative and Opaque domains assumed to be 1-D. */
     proc shape where isAssociativeDom(this) || isOpaqueDom(this) {
-      var s: (int,);
+      var s: (size.type,);
       s[1] = size;
       return s;
     }
@@ -3096,20 +3106,37 @@ module ChapelArray {
 
 
   // computes || reduction over stridable of ranges
-  proc chpl__anyStridable(ranges, param d: int = 1) param {
+  proc chpl__anyStridable(ranges) param {
     for param i in 1..ranges.size do
       if ranges(i).stridable then
         return true;
     return false;
   }
 
+  // computes || reduction over stridable of ranges, but permits some
+  // elements not to be ranges (as in a rank-change slice)
+  proc chpl__anyRankChangeStridable(args) param {
+    for param i in 1..args.size do
+      if isRangeValue(args(i)) then
+        if args(i).stridable then
+          return true;
+    return false;
+  }
+
+  // the following pair of routines counts the number of ranges in its
+  // argument list and is used for rank-change slices
+  proc chpl__countRanges(arg) param {
+    return isRangeValue(arg):int;
+  }
+
+  proc chpl__countRanges(arg, args...) param {
+    return chpl__countRanges(arg) + chpl__countRanges((...args));
+  }
+
   // given a tuple args, returns true if the tuple contains only
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
-    proc _isRange(type idxType, r: range(?)) param return true;
-    proc _isRange(type idxType, x) param return false;
-
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
     proc _validRankChangeArg(type idxType, x) param return false;
@@ -3133,7 +3160,7 @@ module ChapelArray {
     }
     proc oneRange() param {
       for param dim in 1.. args.size {
-        if _isRange(idxType, args(dim)) then
+        if isRange(args(dim)) then
           return true;
       }
       return false;
@@ -3141,38 +3168,6 @@ module ChapelArray {
 
     return allValid() && oneRange();
     //return help(1);
-  }
-
-  proc _getRankChangeRanges(args, downdom) {
-    return collectRanges(1);
-
-    proc collectRanges(param dim: int) {
-      if isRange(args(dim)) {
-        const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-        return collectRanges(dim+1, (newRange,));
-      } else
-        return collectRanges(dim+1);
-    }
-
-    proc collectRanges(param dim: int, x: _tuple) {
-      if dim > args.size {
-        return x;
-      } else if dim < args.size {
-        if isRange(args(dim)) {
-          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-          return collectRanges(dim+1, ((...x), newRange));
-        } else {
-          return collectRanges(dim+1, x);
-        }
-      } else {
-        if isRange(args(dim)) {
-          const newRange = downdom.dsiDim(dim)[args(dim)]; // intersect ranges
-          return ((...x), newRange);
-        } else {
-          return x;
-        }
-      }
-    }
   }
 
   //
@@ -3232,7 +3227,7 @@ module ChapelArray {
 
 //      disabled for testing for the same reason
 //      as the array version: it can be called from autoCopy/initCopy.
-//      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+//      compilerWarning("whole-domain assignment has been serialized (see issue #5760)");
       for i in a._value.dsiIndsIterSafeForRemoving() {
         if !b.member(i) {
           a.remove(i);
@@ -3481,7 +3476,7 @@ module ChapelArray {
 // commenting this out to remove testing noise.
 // this is always printed out if it's on, because chpl__transferArray
 // is now called from array auto-copy.
-//      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+//      compilerWarning("whole array assignment has been serialized (see issue #5760)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
     } else if chpl__tryToken { // try to parallelize using leader and follower iterators

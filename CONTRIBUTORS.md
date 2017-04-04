@@ -1,4 +1,3 @@
-===================
 Chapel Contributors
 ===================
 
@@ -8,37 +7,36 @@ Chapel release:
 Contributors to the current release
 -----------------------------------
 * Ben Albrecht, [Cray Inc.]
-* Matthew Baker, [ORNL]
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Sung-Eun Choi, [Cray Inc.]
-* Laura Delaney, [Whitworth University] / [Cray Inc.]
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
-* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * David Iten, [Cray Inc.]
 * David Keaton, [Cray Inc.]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
+* Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
-* Deepak Majeti, individual contributor
 * [Phil Nelson], [Western Washington University] / [Cray Inc.]
 * Michael Noakes, [Cray Inc.]
 * Nikhil Padmanabhan, [Yale University]
 * Nicholas Park, [DOD]
+* Sriraj Paul, [Rice University]
+* Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
+* Sagar Khatri, individual contributor
 * Preston Sahabu, [Cray Inc.]
-* Kushal Singh, [Int'l Institute of Information Technology, Hyderabad] /[GSoC]
 * [Kenjiro Taura], [University of Tokyo]
-* Chris Taylor, [DOD]
 * Greg Titus, [Cray Inc.]
+* Rob Upcraft, individual contributor
 * Tony Wallace, [Cray Inc.]
-* Hui Zhang, [University of Maryland]
 
 Contributors to previous releases
 ---------------------------------
 * Rafael Asenjo, [Universidad de Málaga (University of Malaga)]
+* Matthew Baker, [ORNL]
 * Steve Balensiefer, [University of Washington]
 * Casey Battaglino, [Cray Inc.] / [Georgia Tech]
 * Ian Bertolacci, [Cray Inc.] / [Colorado State University]
@@ -49,6 +47,7 @@ Contributors to previous releases
 * Daniel Buettner, [LTS]
 * David Callahan, [Cray Inc.]
 * Steve Deitz, [Cray Inc.]
+* Laura Delaney, [Whitworth University] / [Cray Inc.]
 * Joel Denny, [ETI]
 * Roxana Diaconescu, [CalTech]
 * James Dinan, [Cray Inc.] / [The Ohio State University]
@@ -64,15 +63,16 @@ Contributors to previous releases
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Mary Beth Hribar[*](#footnote), [Cray Inc.]
+* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * John Koenig, [Cray Inc.]
 * Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Matthew Lentz, [University of Maryland]
-* Przemysław Leśniak, individual contributor
 * John Lewis, [Cray Inc.]
 * Juan Lopez, [Universidad de Málaga (University of Malaga)]
 * Simon Lund, [Københavns Universitet (University of Copenhagen)]
+* Deepak Majeti, individual contributor
 * Cory McCartan, [Cray Inc.]
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
@@ -86,6 +86,7 @@ Contributors to previous releases
 * Sara Salem, [Cairo University]
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
 * Albert Sidelnik, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
+* Kushal Singh, [Int'l Institute of Information Technology, Hyderabad] /[GSoC]
 * Darren Smith, [University of Maryland]
 * Rachel Sobel, [Cray Inc.] / [University of Washington]
 * Francisco Souza, individual contributor
@@ -93,6 +94,7 @@ Contributors to previous releases
 * George Stelle, [Sandia National Laboratories]
 * Andy Stone, [Cray Inc.] / [Colorado State University]
 * Chris Swenson, individual contributor
+* Chris Taylor, [DOD]
 * Akash Thorat, individual contributor
 * Jonathan Turner, [Cray Inc.] / [CU Boulder]
 * Thomas Van Doren, [Cray Inc.]
@@ -100,6 +102,7 @@ Contributors to previous releases
 * Wayne Wong, [Cray Inc.]
 * Joe Yan, [University of Maryland]
 * Tim Zakian, [Cray Inc.] / [Indiana University]
+* Hui Zhang, [University of Maryland]
 
 [Logo Design](http://chapel.cray.com/logo.html)
 -----------------------------------------------

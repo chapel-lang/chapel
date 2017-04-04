@@ -1,0 +1,8 @@
+ifexpr4.chpl:9: error: const actual is passed to 'ref' formal 'b' of ifexpr()
+note: to formal of type [domain(1,int(64),false)] int(64)
+ifexpr4.chpl:1: note: to ref formal here
+ifexpr4.chpl:2: note: passed as ref here
+ifexpr4.chpl:9: error: const actual is passed to 'ref' formal 'c' of ifexpr()
+note: to formal of type [domain(1,int(64),false)] int(64)
+ifexpr4.chpl:1: note: to ref formal here
+ifexpr4.chpl:2: note: passed as ref here

@@ -1885,6 +1885,7 @@ bool isPrimitiveScalar(Type* type) {
       type == dtBools[BOOL_SIZE_16]        ||
       type == dtBools[BOOL_SIZE_32]        ||
       type == dtBools[BOOL_SIZE_64]        ||
+      type == dtBools[BOOL_SIZE_SYS]       ||
 
       type == dtInt[INT_SIZE_8]            ||
       type == dtInt[INT_SIZE_16]           ||
