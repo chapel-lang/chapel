@@ -32,7 +32,7 @@
 // - allow run-time change in locales
 
 // include locale information when printing out domains and arrays
-config param printReplicatedLocales = true;
+config param printReplicatedLocales = false;
 
 // trace certain DSI methods as they are being invoked
 config param traceReplicatedDist = false;
