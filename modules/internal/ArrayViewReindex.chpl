@@ -43,7 +43,6 @@ module ArrayViewReindex {
                                            idxType=idxType,
                                            //                                           stridable=true,
                                            stridable=stridable,
-                                           updom=updom,
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
                                            dist=this);
@@ -72,7 +71,7 @@ module ArrayViewReindex {
  class ArrayViewReindexDom: BaseRectangularDom {
     param rank;
     type idxType;
-    param stridable=true;  // TODO: relax this when possible?
+    param stridable;  // TODO: relax this when possible?
 
     // the lower-dimensional index set that we represent upwards
     var updom: DefaultRectangularDom(rank, idxType, stridable);
@@ -173,7 +172,9 @@ module ArrayViewReindex {
                                                          stridable=dist.downdomInst.stridable);
       pragma "no auto destroy"
       var downdomLoc = _newDomain(downdomclass);
-      downdomLoc = chpl_reindexConvertDom(inds, updom, downdom);
+      if updomRec.size > 0 {
+        downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
+      }
       //      writeln("downdom is: ", downdomLoc);
       downdomLoc._value._free_when_no_arrs = true;
       downdomPid = downdomLoc._pid;
@@ -266,7 +267,8 @@ module ArrayViewReindex {
       return downdom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
-      return downdom.dsiLocalSubdomain();
+      const dims = downdom.dsiLocalSubdomain().dims();
+      return chpl_reindexConvertDom(dims, downdom, updom);
     }
 
     proc isReindexDomainView() param {
@@ -705,7 +707,7 @@ module ArrayViewReindex {
     }
 
 
-    inline proc chpl_reindexConvertDom(dims, updom, downdom) {
+  inline proc chpl_reindexConvertDom(dims, updom, downdom) {
     if updom.rank != dims.size {
       compilerError("Called chpl_reindexConvertDom with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
@@ -723,10 +725,10 @@ module ArrayViewReindex {
     //    writeln("actuals = ", (actualLow, actualHigh));
 
     for param d in 1..updom.rank {
-      // TODO: What about stride?
-      ranges(d) = actualLow(d)..actualHigh(d);
+      // Slicing the ranges preserves the stride
+      ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
     }
-    //    writeln("ranges = ", ranges);
+        //writeln("ranges = ", ranges);
     return {(...ranges)};
   }
 }
