@@ -160,13 +160,14 @@ SystemOrDie("make -j docs");
 # TODO - make this more elegant / maintainable
 print "Pruning the docs directory...\n";
 SystemOrDie("cd doc && make clean-symlinks");
+SystemOrDie("cd doc && make prunedocs");
 SystemOrDie("cd doc && rm -f Makefile*");
-SystemOrDie("cd doc && rm -f conf.py");
-SystemOrDie("cd doc && rm -f index.rst");
-SystemOrDie("cd doc && rm -f */index.rst");
-SystemOrDie("cd doc && rm -rf developer");
 SystemOrDie("cd doc && rm -rf util");
-SystemOrDie("cd doc && rm -rf meta"); # Remove all dot files/directories
+SystemOrDie("cd doc && rm -f rst/conf.py");
+SystemOrDie("cd doc && rm -f rst/index.rst");
+SystemOrDie("cd doc && rm -f rst/*/index.rst");
+SystemOrDie("cd doc && rm -rf rst/developer"); # remove when dev-docs enabled
+SystemOrDie("cd doc && rm -rf rst/meta");
 
 print "Building the man pages...\n";
 SystemOrDie("make man");

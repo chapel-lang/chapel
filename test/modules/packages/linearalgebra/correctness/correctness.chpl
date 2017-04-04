@@ -7,6 +7,8 @@ use LinearAlgebra;
    Many of these tests are trivial and can be expanded upon in the future.
 */
 
+config const verbose=false;
+
 //
 // Initializers
 //
@@ -60,6 +62,12 @@ use LinearAlgebra;
     var A: [MDom] real;
     var M = Matrix(A);
     assertEqual(M.domain, MDom, "Matrix(A)");
+  }
+  {
+    var A: [MDom] real;
+    var M = Matrix(A, eltType=int);
+    assertEqual(M.domain, MDom, "Matrix(A)");
+    assertTrue(isIntType(M.eltType), "Matrix(A, eltType=int)");
   }
 
   /* Variadic arguments of vectors */
@@ -159,6 +167,8 @@ use LinearAlgebra;
 }
 
 /* dot - calls matMult && inner*/
+
+
 {
 
   proc test_dot(type t) {
@@ -187,6 +197,29 @@ use LinearAlgebra;
     var vv = dot(v, v);
     var R = + reduce(v[..]*v[..]);
     assertEqual(vI, v, "dot(v, I)");
+
+
+    var M34 = Matrix([1, 2, 3, 4],
+                     [5, 6, 7, 8],
+                     [9, 10,11,12],
+                     eltType=t);
+    var v4 = Vector([1,2,3,4], eltType=t);
+
+    var v3 = Vector([1,2,3], eltType=t);
+
+    // Sanity check
+    assertEqual(M34.shape, (3, 4), 'M34.shape');
+    assertEqual(v4.shape, (4,), 'v4.shape');
+    assertEqual(v3.shape, (3,), 'v3.shape');
+
+    assertEqual(dot(v3, M34).shape, (4,), 'dot(v3, M34).shape');
+    assertEqual(dot(M34.T, v3).shape, (4,), 'dot(M34.T, v3).shape');
+
+    assertEqual(dot(M34, v4).shape, (3,),'dot(M34, v4).shape');
+    assertEqual(dot(v4, M34.T).shape, (3,), 'dot(v4, M34.T)');
+
+    assertEqual(dot(M34, M34.T).shape, (3,3), 'dot(M34, M34.T)');
+    assertEqual(dot(M34.T, M34).shape, (4,4), 'dot(M34.T, M34)');
   }
 
   test_dot(real);
@@ -373,6 +406,7 @@ use LinearAlgebra;
 //
 
 proc assertEqual(X, Y, msg="") {
+  if verbose then writeln(msg);
   if X != Y {
     writeln("Test Failed: ", msg);
     writeln(X, ' != ', Y);
@@ -382,6 +416,7 @@ proc assertEqual(X, Y, msg="") {
 
 proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
 {
+  if verbose then writeln(msg);
   if X.shape != Y.shape {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -395,6 +430,7 @@ proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
 
 
 proc assertEqual(X: _tuple, Y: _tuple, msg="") {
+  if verbose then writeln(msg);
   if X.size != Y.size {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -411,6 +447,7 @@ proc assertEqual(X: _tuple, Y: _tuple, msg="") {
 }
 
 proc assertTrue(x: bool, msg="") {
+  if verbose then writeln(msg);
   if !x {
     writeln("Test Failed: ", msg);
     writeln("boolean is false");
@@ -418,6 +455,7 @@ proc assertTrue(x: bool, msg="") {
 }
 
 proc assertFalse(x: bool, msg="") {
+  if verbose then writeln(msg);
   if x {
     writeln("Test Failed: ", msg);
     writeln("boolean is true");

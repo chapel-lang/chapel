@@ -271,9 +271,9 @@ proc searchParallel(in board=0, in pos=0, used=0, placed=0, firstPiece=0) {
       if allMasks[currentMask] {
         const mask = allMasks[currentMask];
         currentMask += 1;
-        searchLinearHelper(board | (mask & maskBottom), pos,
-                           used | (mask & maskUsed), placed+1,
-                           firstPiece, mask);
+        begin searchLinearHelper(board | (mask & maskBottom), pos,
+                                 used | (mask & maskUsed), placed+1,
+                                 firstPiece, mask);
       }
     }
   }
@@ -341,7 +341,7 @@ proc searchLinearHelper(board, pos, used, placed, firstPiece, mask) {
   var currentSolution: [piecesDom] int;
   currentSolution[0] = firstPiece;
   currentSolution[1] = mask;
-  begin searchLinear(board, pos, used, placed, currentSolution);
+  searchLinear(board, pos, used, placed, currentSolution);
 }
 
 

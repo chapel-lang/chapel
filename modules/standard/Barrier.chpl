@@ -148,7 +148,7 @@ module Barrier {
     }
 
     /* Reset the barrier, setting it to work with `nTasks` tasks.  If some
-       (but not all) tasks had already called :proc:`barrier` or :proc:`try`
+       (but not all) tasks had already called :proc:`barrier` or :proc:`check`
        when :proc:`reset` is called, the behavior is undefined.
      */
     inline proc reset(nTasks: int) {

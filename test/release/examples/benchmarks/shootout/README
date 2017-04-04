@@ -39,7 +39,7 @@ repository under the test/studies/shootout/ directory.
 
 The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
-system.  (See doc/developer/bestPractices/TestSystem.rst in the Chapel
+system.  (See doc/rst/developer/bestPractices/TestSystem.rst in the Chapel
 git repository: http://github.com/chapel-lang/chapel)
 
 Other files with the same base filenames as the Chapel test programs but
