@@ -424,16 +424,16 @@ iter ReplicatedDom.these() {
   //---
   // ... so we simply do the same a few times
   var dom = redirectee();
-  for count in 1..#numReplicands do
-    for i in dom do
-      yield i;
+  //  for count in 1..#numReplicands do
+  for i in dom do
+    yield i;
 }
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
-  coforall locDom in localDoms do
-    on locDom do
+  //  coforall locDom in localDoms do
+  //    on locDom do
       // there, for simplicity, redirect to DefaultRectangular's leader
-      for follow in locDom.domLocalRep._value.these(tag) do
+      for follow in localDoms[here.id].domLocalRep._value.these(tag) do
         yield follow;
 }
 
@@ -478,7 +478,7 @@ proc ReplicatedDom.dsiStride
 
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
-  return redirectee().numIndices * numReplicands;
+  return redirectee().numIndices;
 
 proc ReplicatedDom.dsiMember(indexx)
   return redirectee().member(indexx);
@@ -594,28 +594,36 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  var neednl = false;
-  for idx in dom.dist.targetLocDom.sorted() {
-//  on locArr {  // may cause deadlock
+  if printReplicatedLocales {
+    var neednl = false;
+    for idx in dom.dist.targetLocDom.sorted() {
+      //  on locArr {  // may cause deadlock
       if neednl then f.write("\n"); neednl = true;
       if printReplicatedLocales then
         f.write(localArrs[idx].locale, ":\n");
       localArrs[idx].arrLocalRep._value.dsiSerialWrite(f);
-//  }
+      //  }
+    }
+  } else {
+    localArrs[here.id].arrLocalRep._value.dsiSerialWrite(f);
   }
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
-  var neednl = false;
-  const actual = chpl__getActualArray(arr);
-  for idx in actual.dom.dist.targetLocDom.sorted() {
-    on actual.localArrs[idx] {
-      if neednl then f.write("\n"); neednl = true;
-      if printReplicatedLocales then
-        f.write(actual.localArrs[idx].locale, ":\n");
-      chpl_serialReadWriteRectangularHelper(f, arr, dom);
+  if printReplicatedLocales {
+    var neednl = false;
+    const actual = chpl__getActualArray(arr);
+    for idx in actual.dom.dist.targetLocDom.sorted() {
+      on actual.localArrs[idx] {
+        if neednl then f.write("\n"); neednl = true;
+        if printReplicatedLocales then
+          f.write(actual.localArrs[idx].locale, ":\n");
+        chpl_serialReadWriteRectangularHelper(f, arr, dom);
+      }
     }
-  }
+  } else {
+    chpl_serialReadWriteRectangularHelper(f, arr, dom);
+  }    
 }
 
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
@@ -629,9 +637,9 @@ proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
 
 // completely serial
 iter ReplicatedArr.these() ref: eltType {
-  for idx in dom.dist.targetLocDom.sorted() do
+  //  for idx in dom.dist.targetLocDom.sorted() do
 //  on locArr do // compiler does not allow; see r16137 and nestedForall*
-      for a in localArrs[idx].arrLocalRep do
+      for a in localArrs[here.id].arrLocalRep do
         yield a;
 }
 
