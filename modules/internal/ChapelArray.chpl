@@ -3111,9 +3111,6 @@ module ChapelArray {
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
-    proc _isRange(type idxType, r: range(?)) param return true;
-    proc _isRange(type idxType, x) param return false;
-
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
     proc _validRankChangeArg(type idxType, x) param return false;
@@ -3137,7 +3134,7 @@ module ChapelArray {
     }
     proc oneRange() param {
       for param dim in 1.. args.size {
-        if _isRange(idxType, args(dim)) then
+        if isRange(args(dim)) then
           return true;
       }
       return false;
