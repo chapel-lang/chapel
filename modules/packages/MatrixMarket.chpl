@@ -38,7 +38,7 @@ module MatrixMarket {
       return d.high;
   }
 
-  proc initMMInfo(const headerfields:[] string) {
+  proc initMMInfo(ref headerfields:[] string) {
     assert(headerfields(1) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
     assert(headerfields(2) == "matrix", "Improperly formatted MatrixMarket file");
 
@@ -202,7 +202,7 @@ class MMReader {
      var header:string;
      assert(fin.readline(header) == true, "MMReader I/O error!");
 
-     const headerfields = [ s in header.split(" ") ] s;
+     var headerfields = [ s in header.split(" ") ] s;
      this.finfo = initMMInfo(headerfields);
 
      // test for files that have a % beneath the matrix market format header

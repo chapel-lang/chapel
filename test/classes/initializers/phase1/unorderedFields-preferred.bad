@@ -1,0 +1,2 @@
+unorderedFields-preferred.chpl:6: In initializer:
+unorderedFields-preferred.chpl:9: error: multiple initializations of field "f2"

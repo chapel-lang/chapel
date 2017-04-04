@@ -522,7 +522,7 @@ module ChapelLocale {
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
-      const origLocales => (origRootLocale:RootLocale).getDefaultLocaleArray();
+      const ref origLocales = (origRootLocale:RootLocale).getDefaultLocaleArray();
       assert(origLocales._value.oneDData
              && newRootLocale.getDefaultLocaleArray()._value.oneDData);
       var origRL = origLocales._value.theDataChunk(0);
@@ -542,7 +542,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      const tmp => (rootLocale:RootLocale).getDefaultLocaleArray();
+      const ref tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
   }

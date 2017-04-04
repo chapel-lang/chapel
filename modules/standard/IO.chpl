@@ -333,7 +333,7 @@ are described in :mod:`SysBasic`. Some of these error codes that are commonly us
    (e.g. reading 1000 into a `uint(8)`).
 
 An error code can be converted to a string using the function
-:proc:`Error.errorToString`.
+:proc:`~SysError.errorToString`.
 
 .. _about-io-ensuring-successful-io:
 
@@ -3712,7 +3712,9 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
   return err;
 }
 
-private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
+pragma "suppress lvalue error"
+private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
+    param kind:iokind, const x:?t):syserr {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)

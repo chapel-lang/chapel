@@ -716,6 +716,9 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
 
+  // MPF: as of 2017-03 this error is never reached because
+  // it's a syntax error in the parser to not have an else clause
+  // on an if-expr.
   if (!e2)
     USR_FATAL("if-then expressions currently require an else-clause");
 
@@ -2130,7 +2133,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
-  fn->insertAtTail("compilerWarning('scan has been serialized (see note in $CHPL_HOME/STATUS)')");
+  fn->insertAtTail("compilerWarning('scan has been serialized (see issue #5760)')");
 
   if( !zippered ) {
     fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);

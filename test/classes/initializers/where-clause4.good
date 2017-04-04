@@ -1,0 +1,2 @@
+where-clause4.chpl:12: error: unresolved call '_new(type Foo, 3.4)'
+where-clause4.chpl:2: note: candidates are: _new(type t, xVal)

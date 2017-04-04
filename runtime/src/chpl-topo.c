@@ -68,10 +68,11 @@ static int numaLevel;
 static int numNumaDomains;
 
 
+static hwloc_obj_t getNumaObj(c_sublocid_t);
 static void alignAddrSize(void*, size_t, chpl_bool,
                           size_t*, unsigned char**, size_t*);
 static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
-                                            hwloc_obj_t numaObj);
+                                            hwloc_obj_t);
 static void report_error(const char*, int);
 
 
@@ -148,12 +149,15 @@ void chpl_topo_init(void) {
   }
 
   //
-  // Note: This will find not only traditional CPU+memory NUMA nodes
-  //       but also memory-only nodes, so for example on KNL it may
-  //       not match chpl_task_getNumSublocales().  We will need to
-  //       revisit this in the future.
+  // Find the NUMA nodes, that is, the objects at numaLevel that also
+  // have CPUs.  This is as opposed to things like Xeon Phi HBM, which
+  // is memory-only, no CPUs.
   //
-  numNumaDomains = hwloc_get_nbobjs_by_depth(topology, numaLevel);
+  {
+    const hwloc_cpuset_t cpusetAll = hwloc_get_root_obj(topology)->cpuset;
+    numNumaDomains =
+      hwloc_get_nbobjs_inside_cpuset_by_depth(topology, cpusetAll, numaLevel);
+  }
 }
 
 
@@ -173,7 +177,6 @@ int chpl_topo_getNumNumaDomains(void) {
 
 void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   hwloc_cpuset_t cpuset;
-  hwloc_obj_t numaObj;
   int flags;
 
   _DBG_P("chpl_topo_setThreadLocality(%d)\n", (int) subloc);
@@ -189,8 +192,8 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
     report_error("hwloc_bitmap_alloc()", errno);
   }
 
-  numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
-  hwloc_cpuset_from_nodeset(topology, cpuset, numaObj->allowed_nodeset);
+  hwloc_cpuset_from_nodeset(topology, cpuset,
+                            getNumaObj(subloc)->allowed_nodeset);
 
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
   if (hwloc_set_cpubind(topology, cpuset, flags)) {
@@ -224,7 +227,7 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   }
 
   flags = HWLOC_CPUBIND_THREAD;
-  if (hwloc_get_thread_cpubind(topology, pthread_self(), cpuset, flags)) {
+  if (hwloc_get_cpubind(topology, cpuset, flags)) {
     report_error("hwloc_get_cpubind()", errno);
   }
 
@@ -244,9 +247,8 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   size_t pgSize;
   unsigned char* pPgLo;
   size_t nPages;
-  hwloc_obj_t numaObj;
 
-  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, doSub=%s, %d)\n",
+  _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, %d)\n",
          p, size, (onlyInside ? "T" : "F"), (int) subloc);
 
   if (!haveTopology) {
@@ -261,8 +263,7 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   if (nPages == 0)
     return;
 
-  numaObj = hwloc_get_obj_by_depth(topology, numaLevel, subloc);
-  chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, numaObj);
+  chpl_topo_setMemLocalityByPages(pPgLo, nPages * pgSize, getNumaObj(subloc));
 }
 
 
@@ -272,7 +273,6 @@ void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
   size_t pgSize;
   unsigned char* pPgLo;
   size_t nPages;
-  hwloc_obj_t numaObj;
   int i;
   size_t pg;
   size_t pgNext;
@@ -297,13 +297,75 @@ void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
       pgNext = nPages;
     else
       pgNext = 1 + (nPages * (i + 1) - 1) / numNumaDomains;
-    numaObj = hwloc_get_obj_by_depth(topology, numaLevel, i);
     chpl_topo_setMemLocalityByPages(pPgLo + pg * pgSize,
-                                    (pgNext - pg) * pgSize, numaObj);
+                                    (pgNext - pg) * pgSize, getNumaObj(i));
     if (subchunkSizes != NULL) {
       subchunkSizes[i] = (pgNext - pg) * pgSize;
     }
   }
+}
+
+
+void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
+                                  c_sublocid_t subloc) {
+  size_t pgSize;
+  unsigned char* pPgLo;
+  size_t nPages;
+  hwloc_cpuset_t cpuset;
+  int flags;
+
+  _DBG_P("chpl_topo_touchMemFromSubloc(%p, %#zx, onlyIn=%s, %d)\n",
+         p, size, (onlyInside ? "T" : "F"), (int) subloc);
+
+  if (!haveTopology
+      || !topoSupport->cpubind->get_thread_cpubind
+      || !topoSupport->cpubind->set_thread_cpubind) {
+    return;
+  }
+
+  alignAddrSize(p, size, onlyInside, &pgSize, &pPgLo, &nPages);
+
+  _DBG_P("    localize %p, %#zx bytes (%#zx pages)\n",
+         pPgLo, nPages * pgSize, nPages);
+
+  if (nPages == 0)
+    return;
+
+  if ((cpuset = hwloc_bitmap_alloc()) == NULL) {
+    report_error("hwloc_bitmap_alloc()", errno);
+  }
+
+  flags = HWLOC_CPUBIND_THREAD;
+  if (hwloc_get_cpubind(topology, cpuset, flags)) {
+    report_error("hwloc_get_cpubind()", errno);
+  }
+
+  chpl_topo_setThreadLocality(subloc);
+
+  {
+    size_t pg;
+    for (pg = 0; pg < nPages; pg++) {
+      pPgLo[pg * pgSize] = 0;
+    }
+  }
+
+  flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
+  if (hwloc_set_cpubind(topology, cpuset, flags)) {
+    report_error("hwloc_set_cpubind()", errno);
+  }
+
+  hwloc_bitmap_free(cpuset);
+}
+
+
+static inline
+hwloc_obj_t getNumaObj(c_sublocid_t subloc) {
+  // could easily imagine this being a bit slow, but it's okay for now
+  return
+    hwloc_get_obj_inside_cpuset_by_depth(topology,
+                                         hwloc_get_root_obj(topology)->cpuset,
+                                         numaLevel,
+                                         subloc);
 }
 
 
@@ -423,6 +485,8 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
 void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
                                       chpl_bool onlyInside,
                                       size_t* subchunkSizes) { }
+void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
+                                  c_sublocid_t subloc) { }
 c_sublocid_t chpl_topo_getMemLocality(void* p) { return c_sublocid_any; }
 
 #endif // if defined(CHPL_HAS_HWLOC)

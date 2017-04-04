@@ -93,8 +93,8 @@ on declLocale {
 
 // aliased arrays
 var DomSlice = {1..m/2, 1..n, 1..o};
-var Refa => Ref[DomSlice];
-var Ba => B[DomSlice];
+ref Refa = Ref[DomSlice];
+ref Ba = B[DomSlice];
 if initialize then {
   fillRandom(Ba, 31415);
   fillRandom(Refa, 31415);
@@ -102,7 +102,7 @@ if initialize then {
 on declLocale {
   var DomSlice = {1..m/2, 1..n, 1..o}; // this declaration is here due to a bug
   var A: [Dom] real;
-  var Aa => A[DomSlice];
+  ref Aa = A[DomSlice];
   A = 0;
   Aa = -1;
   var dt = assignMe(Aa, Ba);
@@ -115,7 +115,7 @@ on declLocale {
     writeln("whole array assignment (alias) ", (m,n,o), ": ", dt);
 }
 
-var Ca => C[DomSlice.translate(shift)];
+ref Ca = C[DomSlice.translate(shift)];
 if initialize {
   fillRandom(Ca, 92653);
   fillRandom(Refa, 92653);
@@ -123,7 +123,7 @@ if initialize {
 on declLocale {
   var DomSlice = {1..m/2, 1..n, 1..o}; // this declaration is here due to a bug
   var A: [Dom] real;
-  var Aa => A[DomSlice];
+  ref Aa = A[DomSlice];
   A = 0;
   Aa = -1;
   var dt = assignMe(Aa, Ca);
@@ -136,7 +136,7 @@ on declLocale {
     writeln("whole array assignment (alias, + offset) ", (m,n,o), ": ", dt);
 }
 
-var Da => D[DomSlice.translate(-shift)];
+ref Da = D[DomSlice.translate(-shift)];
 if initialize {
   fillRandom(Da, 58979);
   fillRandom(Refa, 58979);
@@ -144,7 +144,7 @@ if initialize {
 on declLocale {
   var DomSlice = {1..m/2, 1..n, 1..o}; // this declaration is here due to a bug
   var A: [Dom] real;
-  var Aa => A[DomSlice];
+  ref Aa = A[DomSlice];
   A = 0;
   Aa = -1;
   var dt = assignMe(Aa, Da);

@@ -1,1 +1,2 @@
-inLoop.chpl:13: error: use of super.init() call in loop body
+inLoop.chpl:4: In initializer:
+inLoop.chpl:7: error: Both arms of a conditional must use this.init() or super.init() in phase 1

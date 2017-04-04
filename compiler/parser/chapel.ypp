@@ -733,14 +733,13 @@ catch_stmt_ls:
 ;
 
 catch_stmt:
-  TCATCH catch_expr block_stmt { $$ = CatchStmt::build($2, $3); }
+  TCATCH                    block_stmt { $$ = CatchStmt::build($2); }
+| TCATCH     catch_expr     block_stmt { $$ = CatchStmt::build($2, $3); }
+| TCATCH TLP catch_expr TRP block_stmt { $$ = CatchStmt::build($3, $5); }
 ;
 
-
-/* TODO: would be nice to parenthesize a catch */
 catch_expr:
-                    { $$ = new DefExpr(newTemp(dtVoid)); } /* for catch { } */
-| ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
+  ident             { $$ = new DefExpr(new VarSymbol($1), NULL, new UnresolvedSymExpr("Error")); }
 | ident TCOLON expr { $$ = new DefExpr(new VarSymbol($1), NULL, $3);   }
 ;
 
@@ -1230,6 +1229,7 @@ var_decl_stmt_inner:
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_ARRAY_ALIAS);
+      USR_WARN(var, "support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.");
       $$ = buildChapelStmt(new DefExpr(var, $4, $2));
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
@@ -1476,6 +1476,9 @@ for_expr:
 cond_expr:
   TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+/* MPF: it would be nice to match TIF expr TTHEN expr but
+  the obvious solution there leads to shift-reduce conflicts.
+ */
 ;
 
 nil_expr:

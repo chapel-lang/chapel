@@ -1,5 +1,5 @@
 class Dummy: BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
     return new DummyDom(rank=rank, idxType=idxType, stridable=stridable);
   }
 }

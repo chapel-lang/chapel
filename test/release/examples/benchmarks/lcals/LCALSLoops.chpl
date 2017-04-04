@@ -355,7 +355,7 @@ module LCALSLoops {
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
     use LongDouble;
 
-    var data => ra;
+    ref data = ra;
     var len = ra.numElements;
 
     var tchk: longdouble = stat.loop_chksum[ilength];
@@ -369,7 +369,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] += val;
   }
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
-    var data => ca;
+    ref data = ca;
     var len = ca.numElements;
     var tchk = stat.loop_chksum[ilength];
     for (j,dat) in zip(0..#len,data) {
@@ -386,9 +386,9 @@ module LCALSLoops {
 
     loopInit(LoopKernelID.REF_LOOP, lstat);
 
-    var A => loop_data.RealArray_1D[0];
-    var B => loop_data.RealArray_1D[1];
-    var C => loop_data.RealArray_1D[2];
+    ref A = loop_data.RealArray_1D[0];
+    ref B = loop_data.RealArray_1D[1];
+    ref C = loop_data.RealArray_1D[2];
     ltimer.start();
     for isamp in 0..#num_samples {
       for i in 0..#len {
@@ -408,9 +408,9 @@ module LCALSLoops {
 
     loopInit(LoopKernelID.REF_LOOP, lstat);
 
-    var a => loop_data.RealArray_1D[0];
-    var b => loop_data.RealArray_1D[1];
-    var c => loop_data.RealArray_1D[2];
+    ref a = loop_data.RealArray_1D[0];
+    ref b = loop_data.RealArray_1D[1];
+    ref c = loop_data.RealArray_1D[2];
 
     var val = 0.0;
 

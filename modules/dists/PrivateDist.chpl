@@ -67,7 +67,10 @@ This distribution may perform unnecessary communication
 between locales.
 */
 class Private: BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+    for i in inds do
+      if i.size != 0 then
+        halt("Tried to create a privateDom with a specific index set");
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this);
   }
 

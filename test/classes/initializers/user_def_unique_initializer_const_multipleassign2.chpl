@@ -4,8 +4,9 @@ class C {
   const x: int;
 
   proc init(y, z) {
-    x = y+z;
-    x -= 1;
+    x = y + z;
+    x = 1;
+
     super.init();
   }
 }

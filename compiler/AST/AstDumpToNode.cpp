@@ -1825,7 +1825,7 @@ int AstDumpToNode::writeQual(QualifiedType qual) const
 {
   const char* name = qual.qualStr();
 
-  fprintf(mFP, "qual: %s", name);
+  fprintf(mFP, "qual: %-16s", name);
 
   return 6 + ((int) strlen(name));
 }

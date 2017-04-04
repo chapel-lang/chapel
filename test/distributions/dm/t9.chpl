@@ -24,8 +24,9 @@ hd("wrapping ddf in dmap");
 var ddfm = new dmap(ddf);
 tl();
 
-hd("wrapping ddf in another dmap, without assignment");
-new dmap(ddf);
+// Wrapping a second time would result in double-deletion of ddf.
+hd("skipping: wrapping ddf in another dmap, without assignment");
+//new dmap(ddf);
 tl();
 
 i2lTest(ddfm, (1,1));

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Make the comparison against .bad insensitive
+# to most of the specifics of the help message.
+
+# ... except if the output already matches the .good.
+cmp -s $1.good $2 && exit
+
+set -x
+grep -E 'CONFIG VARS|numLocales:|help|custom' $2 > $2.tmp
+mv $2.tmp $2

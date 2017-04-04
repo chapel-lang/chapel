@@ -412,7 +412,7 @@ OPTIONS
 **--[no-]llvm**
 
     Use LLVM as the code generation target rather than C. See
-    $CHPL\_HOME/doc/technotes/llvm.rst for details.
+    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 **--[no-]llvm-wide-opt**
 
@@ -422,7 +422,7 @@ OPTIONS
     also supply **--fast** to enable wide pointer optimizations. This flag
     allows existing LLVM optimizations to work with wide pointers - for
     example, they might be able to hoist a 'get' out of a loop. See
-    $CHPL\_HOME/doc/technotes/llvm.rst for details.
+    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 *Compilation Trace Options*
 
@@ -741,14 +741,13 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/rst/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------
 
-$CHPL\_HOME/QUICKSTART.rst for more information on how to get started with
-Chapel.
+$CHPL\_HOME/doc/rst/usingchapel/QUICKSTART.rst for more information on how to
+get started with Chapel.
 
 AUTHORS
 -------

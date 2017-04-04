@@ -134,18 +134,9 @@ static void setupLocalizedHeaps(void* heap_base, size_t heap_size) {
     // having the effect we desire, for reasons that are mostly but
     // not completely understood.  So for now, to get the locality
     // we want, touch the pages into existence while executing on
-    // the desired NUMA domains here.
+    // the desired NUMA domains.
     //
-    {
-      c_sublocid_t sublocWas = chpl_topo_getThreadLocality();
-      size_t off;
-      const size_t pgSize = chpl_getHeapPageSize();
-      chpl_topo_setThreadLocality(hpi);
-      for (off = 0; off < heaps[hpi].size; off += pgSize) {
-        ((char*) (heaps[hpi].base))[off] = 0;
-      }
-      chpl_topo_setThreadLocality(sublocWas);
-    }
+    chpl_topo_touchMemFromSubloc(heaps[hpi].base, heaps[hpi].size, true, hpi);
   }
 }
 
@@ -471,6 +462,6 @@ chpl_bool chpl_mem_impl_alloc_localizes(void) {
   // some virtual-memory, and we can't just go touching all the pages.
   //
   return (get_num_heaps() > 1
-          && strcmp(CHPL_LOCALE_MODEL, "numa") == 0
+          && strcmp(CHPL_LOCALE_MODEL, "flat") != 0
           && strcmp(CHPL_COMM, "ugni") == 0);
 }

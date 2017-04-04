@@ -37,7 +37,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
-DOC=${CHPL_MAKE_HOME}/doc
+DOC=${CHPL_MAKE_HOME}/doc/rst
 
 default: all
 
@@ -74,7 +74,6 @@ MODULES_TO_DOCUMENT = \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
-	standard/Error.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/Help.chpl \
@@ -89,6 +88,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
+	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
@@ -103,11 +103,14 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
+	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
+	packages/OwnedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
+	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl
