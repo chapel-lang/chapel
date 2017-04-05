@@ -124,10 +124,10 @@ follows:
 
 .. code-block:: sh
 
-  CHPL_TARGET_COMPILER=cray-prgenv-gnu
+  CHPL_TARGET_COMPILER=cray-prgenv-{gnu,intel}
   CHPL_TASKS=fifo
-  CHPL_COMM=gasnet
-  CHPL_COMM_SUBSTRATE=mpi           # or aries
+  CHPL_COMM={ugni, gasnet}
+  CHPL_COMM_SUBSTRATE={aries,mpi}   # if CHPL_COMM=gasnet 
   MPICH_MAX_THREAD_SAFETY=multiple
   AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
 
