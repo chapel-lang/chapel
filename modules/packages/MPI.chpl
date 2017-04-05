@@ -149,9 +149,8 @@ Communicators
 The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
 ranks will match the GASNet locales. This module creates a new MPI communicator
 :proc:`CHPL_COMM_WORLD` that ensures that this mapping is true.
-Note that this is only set in mixed Chapel-MPI mode. If numLocales is 1, then
-:proc:`CHPL_COMM_WORLD` is set to :const:`MPI_COMM_NULL`, and will cause an MPI
-error if used.
+Note that if numLocales is 1, :proc:`CHPL_COMM_WORLD` is identical to :const:`MPI_COMM_WORLD`,
+which is the desired behaviour for SPMD mode programs.
 
 .. note::
   #. Pointer arguments are written as ``ref`` arguments, so no casting to a ``c_ptr``
