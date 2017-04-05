@@ -190,10 +190,7 @@ buildDefaultWrapper(FnSymbol* fn,
 
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
 
-    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME) &&
-        (!isAggregateType(wrapper->_this->type) ||
-         toAggregateType(wrapper->_this->type)->initializerStyle !=
-         DEFINES_INITIALIZER)) {
+    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            wrapper->_this,
@@ -337,15 +334,6 @@ buildDefaultWrapper(FnSymbol* fn,
       // hack: why is the type of meme set to dtNil?
       //
       formal->type = wrapper->_this->type;
-
-      if (AggregateType* ct = toAggregateType(formal->type)) {
-        if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
-          wrapper->insertAtHead(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                             wrapper_formal));
-          wrapper->insertFormalAtTail(wrapper_formal);
-        }
-      }
 
       call->insertAtTail(wrapper->_this);
     } else {

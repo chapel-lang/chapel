@@ -154,12 +154,13 @@ an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Cla
 \index{records!methods}
 \index{methods!records}
 
-A record method is a function or iterator that is bound to a record.  Unlike
-functions that take a record as an argument, record methods access the record by
-reference, so that persistent field updates are possible.
+A record method is a function or iterator that is bound to a record.
 
 The syntax for record method declarations is identical to that for class method
 declarations (\rsec{Class_Methods}).
+
+The record is passed by \chpl{ref} or \chpl{const ref} be default. See
+\rsec{The_this_Reference}.
 
 \subsection{Nested Record Types}
 \label{Nested_Record_Types}
@@ -490,10 +491,13 @@ The type of the receiver is the record in which the method is defined.
 The receiver formal argument can be referred to within the method
 using the identifier \chpl{this}.
 
-The difference from a class method is that the receiver actual argument,
-which must be a record value, is passed to the record method by reference,
-rather than by copying. Therefore updates to the receiver made in the
-method, if any, are visible outside the method.
+The default intent for the implicit {\em this} formal argument is
+different for record methods than it is for class methods. For record
+methods, the intent for the receiver formal argument is \chpl{ref} or
+\chpl{const ref}, depending on whether the formal argument is modified
+inside of the method. Programmers wishing to be explicit about whether or
+not record methods modify the receiver can explicitly use the \chpl{ref}
+or \chpl{const ref} {\em this-intent}.
 
 \section{The {\em this} Method}
 \index{records!indexing}
@@ -686,9 +690,10 @@ be of that class type or of a type derived from that class type.  If the formal
 argument is of a record type, then it is only necessary for the fields in the
 actual argument to ``cover'' the fields in the formal argument type.
 
-The receiver argument is passed by value for class methods but is
-passed by reference for record methods. In both cases modifications to
-the receiver fields are visible outside the method.
+By default, the receiver argument is passed by value for class methods but is
+passed by \chpl{ref} or \chpl{const ref} for record methods.
+In both cases modifications to the receiver fields are visible
+outside the method.
 
 \subsection{Inheritance}
 \label{Inheritance_Differences}

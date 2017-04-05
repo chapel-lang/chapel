@@ -333,7 +333,7 @@ are described in :mod:`SysBasic`. Some of these error codes that are commonly us
    (e.g. reading 1000 into a `uint(8)`).
 
 An error code can be converted to a string using the function
-:proc:`Error.errorToString`.
+:proc:`~SysError.errorToString`.
 
 .. _about-io-ensuring-successful-io:
 
