@@ -1,0 +1,14 @@
+
+simple case
+
+initially
+0.0
+
+after rcReplicate
+5.0
+
+after 'on'
+33.0
+
+collected:
+33.0
