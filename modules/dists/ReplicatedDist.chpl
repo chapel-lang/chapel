@@ -592,38 +592,54 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
   return localArrs[here.id].arrLocalRep[indexx];
 }
 
-// Write the array out to the given Writer serially.
-proc ReplicatedArr.dsiSerialWrite(f): void {
-  if printReplicatedLocales {
+//
+// TODO: chpldoc me!
+//
+inline proc writeReplicands(arr: [], sorted=true) {
+  stdout.writeReplicands(arr, sorted);
+}
+
+//
+// TODO: chpldoc me!
+//
+proc channel.writeReplicands(arr: [], sorted=true) {
+  if sorted {
     var neednl = false;
-    for idx in dom.dist.targetLocDom.sorted() {
+    for idx in arr._value.dom.dist.targetLocDom.sorted() {
       //  on locArr {  // may cause deadlock
-      if neednl then f.write("\n"); neednl = true;
-      if printReplicatedLocales then
-        f.write(localArrs[idx].locale, ":\n");
-      localArrs[idx].arrLocalRep._value.dsiSerialWrite(f);
+      if neednl then this.write("\n"); neednl = true;
+      this.write(arr._value.localArrs[idx].locale, ":\n");
+      arr._value.localArrs[idx].arrLocalRep._value.dsiSerialWrite(this);
       //  }
     }
   } else {
-    localArrs[here.id].arrLocalRep._value.dsiSerialWrite(f);
+    var neednl = false;
+    for idx in arr._value.dom.dist.targetLocDom {
+      //  on locArr {  // may cause deadlock
+      if neednl then this.write("\n"); neednl = true;
+      this.write(arr._value.localArrs[idx].locale, ":\n");
+      arr._value.localArrs[idx].arrLocalRep._value.dsiSerialWrite(this);
+      //  }
+    }
   }
+  this.write("\n");
+}
+
+// Write the array out to the given Writer serially.
+proc ReplicatedArr.dsiSerialWrite(f): void {
+  var id = here.id;
+  if !dom.dist.targetLocDom.member(id) then
+    // grab an arbitrary locale that owns a replicand
+    for i in dom.dist.targetLocDom {
+      id = i;
+      break;
+    }
+
+  localArrs[id].arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
-  if printReplicatedLocales {
-    var neednl = false;
-    const actual = chpl__getActualArray(arr);
-    for idx in actual.dom.dist.targetLocDom.sorted() {
-      on actual.localArrs[idx] {
-        if neednl then f.write("\n"); neednl = true;
-        if printReplicatedLocales then
-          f.write(actual.localArrs[idx].locale, ":\n");
-        chpl_serialReadWriteRectangularHelper(f, arr, dom);
-      }
-    }
-  } else {
-    chpl_serialReadWriteRectangularHelper(f, arr, dom);
-  }    
+  chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
