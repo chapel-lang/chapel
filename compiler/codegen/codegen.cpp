@@ -231,14 +231,25 @@ static void genGlobalInt32(const char *cname, int value) {
   }
 }
 
+static bool
+isObjectOrSubclass(Type* t)
+{
+  if (AggregateType* ct = toAggregateType(t))
+    if (!isReferenceType(ct) && isClass(ct) &&
+        (ct == dtObject || ct->symbol->hasFlag(FLAG_OBJECT_CLASS) ||
+         !ct->symbol->hasFlag(FLAG_NO_OBJECT)))
+      return true;
+
+  return false;
+}
+
 static void
 genClassIDs(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
   genComment("Class Type Identification Numbers");
 
   forv_Vec(TypeSymbol, ts, typeSymbol) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (!isReferenceType(ct) && isClass(ct) &&
-          !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      if (isObjectOrSubclass(ct)) {
         int id = ct->classId;
         INT_ASSERT(id != 0);
         genGlobalDefClassId(ts->cname, id, isHeader);
@@ -633,7 +644,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   //    indexExpr = maxVMT * classId + fnId
   forv_Vec(TypeSymbol, ts, types) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (!isReferenceType(ct) && isClass(ct)) {
+      if (isObjectOrSubclass(ct)) {
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
           int i = 0;
           forv_Vec(FnSymbol, vfn, *vfns) {
