@@ -976,7 +976,9 @@ static void propagateVar(Symbol* sym) {
   // Actuals and formals have to have the same wideness of their _val field.
   // A ref_T can't be passed into a ref_wide_T, or vice versa, even with temps.
   // At least, this isn't possible today as far as I know.
-  if (isArgSymbol(sym) && sym->isRefOrWideRef() && valIsWideClass(sym)) {
+  ArgSymbol* argSym = toArgSymbol(sym);
+  if (argSym && sym->isRefOrWideRef() && valIsWideClass(sym) &&
+      argSym->intent != INTENT_CONST_REF) {
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
     DEBUG_PRINTF("\tFixing types for arg %s (%d) in %s\n", sym->cname, sym->id, fn->cname);
     forv_Vec(CallExpr, call, *fn->calledBy) {
