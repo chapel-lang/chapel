@@ -4,14 +4,14 @@ use ReplicatedDist, UtilReplicatedVar;
   writeln("\nsimple case");
   var x: [rcDomain] real;
   writeln("\ninitially");
-  x._value.writeReplicands(sorted=true);
+  writeReplicands(x);
   rcReplicate(x, 5);
   writeln("\nafter rcReplicate");
-  x._value.writeReplicands(sorted=true);
+  writeReplicands(x);
   on (if numLocales >= 3 then Locales[2] else Locales[0]) do
     x[1] = 33;
   writeln("\nafter 'on'");
-  x._value.writeReplicands(sorted=true);
+  writeReplicands(x);
   var c: [LocaleSpace] real;
   rcCollect(x, c);
   writeln("\ncollected:\n", c);
@@ -23,14 +23,14 @@ if numLocales >= 4 {
   writeln("\nadvanced case: ", myL);
   var x: [rcDomainBase dmapped ReplicatedDist(myL)] real;
   writeln("\ninitially");
-  x._value.writeReplicands(sorted=true);
+  writeReplicands(x);
   rcReplicate(x, 5);
   writeln("\nafter rcReplicate");
-  x._value.writeReplicands(sorted=true);
+  writeReplicands(x);
   on Locales[3] do
     x[1] = 33;
   writeln("\nafter 'on'");
-  x._value.writeReplicands(sorted=true);
+  writeReplicands(x);
   var c: [myL.domain] real;
   rcCollect(x, c);
   writeln("\ncollected:\n", c);
