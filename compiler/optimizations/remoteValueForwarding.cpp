@@ -486,6 +486,8 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     if (call && call->isPrimitive(PRIM_DEREF)) {
       call->replace(new SymExpr(arg));
 
+    } else if (call && isDerefMove(call)) {
+      use->replace(new SymExpr(arg));
     } else if (call && call->isPrimitive(PRIM_MOVE)) {
       use->replace(new CallExpr(PRIM_ADDR_OF, arg));
 
