@@ -91,12 +91,13 @@ module RangeChunk {
              idx:integral, numChunks: integral): range(RT, bounded, S) {
 
     const nElems = r.length;
-    const start = idx*blockSize;
-    const stride = blockSize*numChunks;
-    const end = nElems - 1;
+    const rangeStride = ((r.orderToIndex(nElems - 1) - r.orderToIndex(0))/nElems) + 1;
+    const start = r.orderToIndex(idx*blockSize);
+    const stride = blockSize*numChunks*rangeStride;
+    const end = r.orderToIndex(nElems - 1);
     for chunkStartIdx in start..end by stride {
-      const chunkEndIdx = min(chunkStartIdx + blockSize, nElems) - 1;
-      yield chunkStartIdx..chunkEndIdx;
+      const chunkEndIdx = min(chunkStartIdx + blockSize*rangeStride - 1, end);
+      yield chunkStartIdx..chunkEndIdx by rangeStride;
     }
     
   }
