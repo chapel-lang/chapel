@@ -366,6 +366,9 @@
   "37795eb0-1f11-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/dims/BlockDim.chpl"
   ],
+  "0e29860c-1a83-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/ArrayViewRankChange.chpl"
+  ],
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
   ],
