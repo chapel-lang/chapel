@@ -4299,6 +4299,17 @@ nmemb
 FILEID: edb63ad0-0c15-11e7-980e-10ddb1d4c3d5
 rview
 
+FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
+adom
+atype
+bdom
+gemm
+gemv
+matmat
+pinv
+xdom
+ydom
+
 NATURAL:
 abcd
 abcdefg
@@ -4929,6 +4940,7 @@ execopts
 executables
 exfull
 expm
+exponentiate
 exprs
 externs
 facebook
@@ -5723,6 +5735,7 @@ numcols
 numdims
 numerics
 numlocales
+numpy
 numranks
 numrows
 numtrials
@@ -6267,6 +6280,7 @@ swapoff
 swapon
 swenson
 syloti
+sylvester
 symboltable
 symexpr
 symlink

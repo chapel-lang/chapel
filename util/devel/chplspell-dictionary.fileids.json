@@ -399,6 +399,9 @@
   "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
     "modules/packages/Futures.chpl"
   ],
+  "40d00fe6-1a82-11e7-980e-10ddb1d4c3d5": [
+    "modules/packages/LinearAlgebra.chpl"
+  ],
   "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebraJama.chpl"
   ],
