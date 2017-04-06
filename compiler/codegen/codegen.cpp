@@ -480,6 +480,32 @@ GenRet codegenTypedNull(GenRet funcPtrType)
   return nullFn;
 }
 
+#ifdef HAVE_LLVM
+static
+llvm::Constant* codegenStringForTableLLVM(std::string s)
+{
+  llvm::Constant* ret;
+  GenRet str = new_CStringSymbol(s.c_str())->codegen();
+  ret = llvm::cast<llvm::GlobalVariable>(str.val)->getInitializer();
+  return ret;
+}
+#endif
+
+static
+GenRet codegenStringForTable(std::string s)
+{
+  GenInfo *info = gGenInfo;
+
+  GenRet ret;
+  if (info->cfile) {
+    ret.c = "\"" + s + "\"";
+  } else {
+    ret.val = codegenStringForTableLLVM(s);
+  }
+  return ret;
+}
+
+
 static void
 genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
@@ -583,8 +609,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     } else {
 #ifdef HAVE_LLVM
       llvm::Constant* fields[3];
-      fields[0] = llvm::cast<llvm::GlobalVariable>
-        (new_CStringSymbol(fn_name)->codegen().val)->getInitializer();
+      fields[0] = codegenStringForTableLLVM(fn_name);
       fields[1] = llvm::ConstantInt::get(int32Ty, fileno);
       fields[2] = llvm::ConstantInt::get(int32Ty, lineno);
       INT_ASSERT(structType.type);
@@ -697,57 +722,38 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 }
 
 static void genFilenameTable() {
-  GenInfo *info = gGenInfo;
-  const char *tableName = "chpl_filenameTable";
+  const char *name = "chpl_filenameTable";
   const char *sizeName = "chpl_filenameTableSize";
-  if (info->cfile) {
-    FILE *hdrfile = info->cfile;
+  const char *eltType = "c_string";
 
-    fprintf(hdrfile, "c_string %s[] = {\n", tableName);
+  // Compute the element type
+  GenRet cstringType = codegenTypeByName(eltType);
 
-    bool first = true;
-    for (std::vector<std::string>::iterator it = gFilenameLookup.begin();
-         it != gFilenameLookup.end(); it++) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      if(!strncmp(CHPL_HOME, (*it).c_str(), strlen(CHPL_HOME)))
-        fprintf(hdrfile, "    \"$CHPL_HOME%s\"", (*it).c_str()+strlen(CHPL_HOME));
-      else
-        fprintf(hdrfile, "    \"%s\"", (*it).c_str());
-      first = false;
+  // Construct the table elements
+  std::vector<GenRet> table;
+  table.reserve(gFilenameLookup.size());
+
+  for (std::vector<std::string>::iterator it = gFilenameLookup.begin();
+       it != gFilenameLookup.end(); it++) {
+    GenRet gen;
+    std::string & path = (*it);
+    std::string genPath;
+
+    if(!strncmp(CHPL_HOME, path.c_str(), strlen(CHPL_HOME))) {
+      genPath = "$CHPL_HOME";
+      genPath += (path.c_str()+strlen(CHPL_HOME));
+    } else {
+      genPath = path;
     }
 
-    fprintf(hdrfile, "\n};\n");
-  } else {
-#ifdef HAVE_LLVM
-    std::vector<llvm::Constant *> table(gFilenameLookup.size());
-
-    llvm::Type *c_stringType =
-        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
-
-    int idx = 0;
-    for (std::vector<std::string>::iterator it = gFilenameLookup.begin();
-         it != gFilenameLookup.end(); it++) {
-      table[idx++] = llvm::cast<llvm::GlobalVariable>(
-              new_CStringSymbol((*it).c_str())->codegen().val)->getInitializer();
-    }
-
-    llvm::ArrayType *filenameTableType =
-        llvm::ArrayType::get(c_stringType, table.size());
-
-    if (llvm::GlobalVariable *filenameTable =
-            info->module->getNamedGlobal(tableName)) {
-      filenameTable->eraseFromParent();
-    }
-
-    llvm::GlobalVariable *filenameTable = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(tableName, filenameTableType));
-    filenameTable->setInitializer(
-        llvm::ConstantArray::get(filenameTableType, table));
-    filenameTable->setConstant(true);
-    info->lvt->addGlobalValue(tableName, filenameTable, GEN_PTR, true);
-#endif
+    gen = codegenStringForTable(genPath);
+    table.push_back(gen);
   }
+
+  // Now emit the global array declaration
+  codegenGlobalConstArray(name, eltType, &table, false);
+
+  // Now emit the size
   genGlobalInt32(sizeName, gFilenameLookup.size());
 }
 
@@ -760,7 +766,6 @@ static void genFilenameTable() {
 // chpl_filenumSymTable = Chapel file name index, Chapel line number
 //
 static void genUnwindSymbolTable(){
-  GenInfo *info = gGenInfo;
   std::vector<FnSymbol*> symbols;
 
   //If CHPL_UNWIND is none we don't want any symbols in our tables
@@ -773,26 +778,56 @@ static void genUnwindSymbolTable(){
     }
   }
 
-  //TODO: Could have a native LLVM version, instead of relying on C to LLVM
-  if( info->cfile ) {
-    FILE* hdrfile = info->cfile;
+  // Generate the cname, Chapel name table
+  {
+    const char *name = "chpl_funSymTable";
+    const char *eltType = "c_string";
 
-    // Generate the cname, Chapel name table
-    fprintf(hdrfile,"\nc_string chpl_funSymTable[] = {\n");
-    forv_Vec(FnSymbol, fn, symbols) {
-      fprintf(hdrfile," \"%s\", \"%s\",\n", fn->cname, fn->name);
-    }
-    fprintf(hdrfile," \"\", \"\" };\n");
+    // Compute the element type
+    GenRet cstringType = codegenTypeByName(eltType);
 
-    // Generate the filename index, linenum table
-    fprintf(hdrfile,"\n\nint chpl_filenumSymTable[] = {\n");
+    // Construct the table elements
+    std::vector<GenRet> table;
+    table.reserve(symbols.size() * 2);
+
     forv_Vec(FnSymbol, fn, symbols) {
-      fprintf(hdrfile," %d, %d,\n",
-        getFilenameLookupPosition(fn->fname()), fn->linenum());
+      table.push_back(codegenStringForTable(fn->cname));
+      table.push_back(codegenStringForTable(fn->name));
     }
-    fprintf(hdrfile," 0, 0};\n");
+    table.push_back("");
+    table.push_back("");
+
+    // Now emit the global array declaration
+    codegenGlobalConstArray(name, eltType, &table, false);
   }
 
+  // Generate the filename index, linenum table
+  {
+    const char *name = "chpl_filenumSymTable";
+    const char *eltType = "c_int";
+
+    // Compute the element type
+    GenRet cintType = codegenTypeByName(eltType);
+
+    // Construct the table elements
+    std::vector<GenRet> table;
+    table.reserve(symbols.size() * 2);
+
+    forv_Vec(FnSymbol, fn, symbols) {
+      int fileno = getFilenameLookupPosition(fn->fname());
+      int lineno = fn->linenum();
+
+      table.push_back( new_IntSymbol(fileno, INT_SIZE_32)->codegen() );
+      table.push_back( new_IntSymbol(lineno, INT_SIZE_32)->codegen() );
+    }
+    table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
+    table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
+
+    // Now emit the global array declaration
+    codegenGlobalConstArray(name, eltType, &table, false);
+  }
+
+  // Now emit the size of the symbol table
   genGlobalInt32("chpl_sizeSymTable", symbols.size() * 2);
 }
 
