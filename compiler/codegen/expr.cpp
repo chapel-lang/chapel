@@ -1971,9 +1971,12 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     elementPtr = info->builder->CreateInBoundsGEP(table.val, GEPLocs);
 
     llvm::Instruction* element = info->builder->CreateLoad(elementPtr);
-    // Tell TBAA global array loads don't alias anything else, are constant
-    fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa,
-                        gGenInfo->tbaaVmtableNode);
+
+    // I don't think it matters, but we could provide TBAA metadata
+    // here to indicate global constant variable loads are constant...
+    // I'd expect LLVM to figure that out because the table loaded is
+    // constant.
+
     ret.val = element;
 #endif
   }
@@ -4707,9 +4710,6 @@ GenRet CallExpr::codegenPrimitive() {
       fnPtrPtr   = gGenInfo->builder->CreateInBoundsGEP(ftable.val, GEPLocs);
       fnPtr      = gGenInfo->builder->CreateLoad(fnPtrPtr);
 
-      // Tell TBAA ftable ptrs don't alias other things, are constant
-      fnPtr->setMetadata(llvm::LLVMContext::MD_tbaa, gGenInfo->tbaaFtableNode);
-
       // Generate an LLVM function type based upon the arguments.
       std::vector<llvm::Type*> argumentTypes;
       llvm::Type*              returnType;
@@ -4798,9 +4798,6 @@ GenRet CallExpr::codegenPrimitive() {
       GEPLocs[1] = index.val;
       fnPtrPtr = gGenInfo->builder->CreateInBoundsGEP(table.val, GEPLocs);
       llvm::Instruction* fnPtrV = gGenInfo->builder->CreateLoad(fnPtrPtr);
-      // Tell TBAA vmtable loads don't alias anything else, are constant
-      fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa,
-                          gGenInfo->tbaaVmtableNode);
       fnPtr.val = fnPtrV;
 #endif
     }

@@ -2059,7 +2059,7 @@ GenInfo::GenInfo(
            Clang(NULL), clangTargetOptions(), clangLangOptions(),
            moduleName("root"), llvmContext(), Ctx(NULL),
            targetData(NULL), cgBuilder(NULL), cgAction(NULL),
-           tbaaRootNode(NULL), tbaaFtableNode(NULL), tbaaVmtableNode(NULL),
+           tbaaRootNode(NULL),
            targetLayout(), globalToWideInfo(),
            FPM_postgen(NULL)
 {
