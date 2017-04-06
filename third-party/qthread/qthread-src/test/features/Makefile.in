@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# -*- Makefile -*-
+# -*- Makefile -*-VE
 #
 # Copyright (c)      2012  Sandia Corporation
 #
@@ -99,15 +99,17 @@ TESTS = qt_loop$(EXEEXT) qt_loop_simple$(EXEEXT) qt_loop_sinc$(EXEEXT) \
 	qloop_utils$(EXEEXT) qarray$(EXEEXT) qarray_accum$(EXEEXT) \
 	qpool$(EXEEXT) qlfqueue$(EXEEXT) qswsrqueue$(EXEEXT) \
 	qdqueue$(EXEEXT) allpairs$(EXEEXT) subteams$(EXEEXT) \
-	qt_dictionary$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+	qt_dictionary$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @COMPILE_EUREKAS_TRUE@am__append_1 = eureka
+@HAVE_GUARD_PAGES_TRUE@am__append_2 = guard_pages
 EXTRA_PROGRAMS = wavefront$(EXEEXT)
-@ENABLE_CXX_TESTS_TRUE@am__append_2 = cxx_qt_loop \
+@ENABLE_CXX_TESTS_TRUE@am__append_3 = cxx_qt_loop \
 @ENABLE_CXX_TESTS_TRUE@		 cxx_qt_loop_balance
 
-check_PROGRAMS = $(am__EXEEXT_3)
-@HAVE_PROG_TIMELIMIT_TRUE@am__append_3 = @timelimit_path@ -T 2
-@WANT_SINGLE_WORKER_SCHEDULER_TRUE@am__append_4 = env QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1
+check_PROGRAMS = $(am__EXEEXT_4)
+@HAVE_PROG_TIMELIMIT_TRUE@am__append_4 = @timelimit_path@ -T 2
+@WANT_SINGLE_WORKER_SCHEDULER_TRUE@am__append_5 = env QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1
 subdir = test/features
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/ax_c_restrict.m4 \
@@ -158,9 +160,10 @@ CONFIG_HEADER = $(top_builddir)/include/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @COMPILE_EUREKAS_TRUE@am__EXEEXT_1 = eureka$(EXEEXT)
-@ENABLE_CXX_TESTS_TRUE@am__EXEEXT_2 = cxx_qt_loop$(EXEEXT) \
+@HAVE_GUARD_PAGES_TRUE@am__EXEEXT_2 = guard_pages$(EXEEXT)
+@ENABLE_CXX_TESTS_TRUE@am__EXEEXT_3 = cxx_qt_loop$(EXEEXT) \
 @ENABLE_CXX_TESTS_TRUE@	cxx_qt_loop_balance$(EXEEXT)
-am__EXEEXT_3 = qt_loop$(EXEEXT) qt_loop_simple$(EXEEXT) \
+am__EXEEXT_4 = qt_loop$(EXEEXT) qt_loop_simple$(EXEEXT) \
 	qt_loop_sinc$(EXEEXT) qt_loop_balance$(EXEEXT) \
 	qt_loop_balance_simple$(EXEEXT) qt_loop_balance_sinc$(EXEEXT) \
 	qt_loop_queue$(EXEEXT) qutil$(EXEEXT) qutil_qsort$(EXEEXT) \
@@ -168,7 +171,7 @@ am__EXEEXT_3 = qt_loop$(EXEEXT) qt_loop_simple$(EXEEXT) \
 	qarray_accum$(EXEEXT) qpool$(EXEEXT) qlfqueue$(EXEEXT) \
 	qswsrqueue$(EXEEXT) qdqueue$(EXEEXT) allpairs$(EXEEXT) \
 	subteams$(EXEEXT) qt_dictionary$(EXEEXT) $(am__EXEEXT_1) \
-	$(am__EXEEXT_2)
+	$(am__EXEEXT_2) $(am__EXEEXT_3)
 am_allpairs_OBJECTS = allpairs.$(OBJEXT)
 allpairs_OBJECTS = $(am_allpairs_OBJECTS)
 allpairs_LDADD = $(LDADD)
@@ -193,6 +196,10 @@ am_eureka_OBJECTS = eureka.$(OBJEXT)
 eureka_OBJECTS = $(am_eureka_OBJECTS)
 eureka_LDADD = $(LDADD)
 eureka_DEPENDENCIES = $(qthreadlib)
+guard_pages_SOURCES = guard_pages.c
+guard_pages_OBJECTS = guard_pages.$(OBJEXT)
+guard_pages_LDADD = $(LDADD)
+guard_pages_DEPENDENCIES = $(qthreadlib)
 am_qarray_OBJECTS = qarray.$(OBJEXT)
 qarray_OBJECTS = $(am_qarray_OBJECTS)
 qarray_LDADD = $(LDADD)
@@ -323,10 +330,10 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(allpairs_SOURCES) $(barrier_SOURCES) \
 	$(cxx_qt_loop_SOURCES) $(cxx_qt_loop_balance_SOURCES) \
-	$(eureka_SOURCES) $(qarray_SOURCES) $(qarray_accum_SOURCES) \
-	$(qdqueue_SOURCES) $(qlfqueue_SOURCES) $(qloop_utils_SOURCES) \
-	$(qpool_SOURCES) $(qswsrqueue_SOURCES) qt_dictionary.c \
-	$(qt_loop_SOURCES) $(qt_loop_balance_SOURCES) \
+	$(eureka_SOURCES) guard_pages.c $(qarray_SOURCES) \
+	$(qarray_accum_SOURCES) $(qdqueue_SOURCES) $(qlfqueue_SOURCES) \
+	$(qloop_utils_SOURCES) $(qpool_SOURCES) $(qswsrqueue_SOURCES) \
+	qt_dictionary.c $(qt_loop_SOURCES) $(qt_loop_balance_SOURCES) \
 	qt_loop_balance_simple.c $(qt_loop_balance_sinc_SOURCES) \
 	$(qt_loop_queue_SOURCES) $(qt_loop_simple_SOURCES) \
 	$(qt_loop_sinc_SOURCES) $(qutil_SOURCES) \
@@ -334,10 +341,10 @@ SOURCES = $(allpairs_SOURCES) $(barrier_SOURCES) \
 	$(wavefront_SOURCES)
 DIST_SOURCES = $(allpairs_SOURCES) $(barrier_SOURCES) \
 	$(cxx_qt_loop_SOURCES) $(cxx_qt_loop_balance_SOURCES) \
-	$(eureka_SOURCES) $(qarray_SOURCES) $(qarray_accum_SOURCES) \
-	$(qdqueue_SOURCES) $(qlfqueue_SOURCES) $(qloop_utils_SOURCES) \
-	$(qpool_SOURCES) $(qswsrqueue_SOURCES) qt_dictionary.c \
-	$(qt_loop_SOURCES) $(qt_loop_balance_SOURCES) \
+	$(eureka_SOURCES) guard_pages.c $(qarray_SOURCES) \
+	$(qarray_accum_SOURCES) $(qdqueue_SOURCES) $(qlfqueue_SOURCES) \
+	$(qloop_utils_SOURCES) $(qpool_SOURCES) $(qswsrqueue_SOURCES) \
+	qt_dictionary.c $(qt_loop_SOURCES) $(qt_loop_balance_SOURCES) \
 	qt_loop_balance_simple.c $(qt_loop_balance_sinc_SOURCES) \
 	$(qt_loop_queue_SOURCES) $(qt_loop_simple_SOURCES) \
 	$(qt_loop_sinc_SOURCES) $(qutil_SOURCES) \
@@ -707,11 +714,12 @@ timelimit_path = @timelimit_path@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+with_alloc = @with_alloc@
 with_barrier = @with_barrier@
 with_dict = @with_dict@
 with_scheduler = @with_scheduler@
 with_sinc = @with_sinc@
-TESTS_ENVIRONMENT = $(am__append_3) $(am__append_4)
+TESTS_ENVIRONMENT = $(am__append_4) $(am__append_5)
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test/
 qthreadlib = $(top_builddir)/src/libqthread.la
 LDADD = $(qthreadlib)
@@ -800,6 +808,10 @@ eureka$(EXEEXT): $(eureka_OBJECTS) $(eureka_DEPENDENCIES) $(EXTRA_eureka_DEPENDE
 	@rm -f eureka$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(eureka_OBJECTS) $(eureka_LDADD) $(LIBS)
 
+guard_pages$(EXEEXT): $(guard_pages_OBJECTS) $(guard_pages_DEPENDENCIES) $(EXTRA_guard_pages_DEPENDENCIES) 
+	@rm -f guard_pages$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(guard_pages_OBJECTS) $(guard_pages_LDADD) $(LIBS)
+
 qarray$(EXEEXT): $(qarray_OBJECTS) $(qarray_DEPENDENCIES) $(EXTRA_qarray_DEPENDENCIES) 
 	@rm -f qarray$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(qarray_OBJECTS) $(qarray_LDADD) $(LIBS)
@@ -887,6 +899,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cxx_qt_loop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cxx_qt_loop_balance.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eureka.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/guard_pages.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qarray.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qarray_accum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qdqueue.Po@am__quote@
@@ -1297,6 +1310,13 @@ qt_dictionary.log: qt_dictionary$(EXEEXT)
 eureka.log: eureka$(EXEEXT)
 	@p='eureka$(EXEEXT)'; \
 	b='eureka'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+guard_pages.log: guard_pages$(EXEEXT)
+	@p='guard_pages$(EXEEXT)'; \
+	b='guard_pages'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

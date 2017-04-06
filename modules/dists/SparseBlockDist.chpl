@@ -386,7 +386,7 @@ class SparseBlockArr: BaseSparseArr {
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
         return myLocArr.dsiAccess(i);
@@ -410,7 +410,7 @@ class SparseBlockArr: BaseSparseArr {
   proc dsiAccess(i: idxType...rank) ref
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank)
-  where !shouldReturnRvalueByConstRef(eltType)
+  where shouldReturnRvalueByValue(eltType)
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank) const ref
   where shouldReturnRvalueByConstRef(eltType)
@@ -445,7 +445,7 @@ class LocSparseBlockArr {
     return myElems[i];
   }
   proc dsiAccess(i)
-  where !shouldReturnRvalueByConstRef(eltType) {
+  where shouldReturnRvalueByValue(eltType) {
     return myElems[i];
   }
   proc dsiAccess(i) const ref
@@ -496,38 +496,6 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 
-proc SparseBlock.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimLocs: rank*idxType;
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      collapsedDimLocs(i) = args(i);
-    } else {
-      collapsedDimLocs(i) = 0;
-    }
-  }
-  const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
-  var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
-  var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      // set indices that are out of bounds to the bounding box low or high.
-      collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
-      collapsedLocs(i) = collapsedLocInd(i);
-    } else {
-      collapsedBbox(i) = boundingBox.dim(i);
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-
-  const newBbox = boundingBox[(...collapsedBbox)];
-  const newTargetLocales = targetLocales((...collapsedLocs));
-  return new SparseBlock(newBbox, newTargetLocales,
-                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
-}
-
 proc SparseBlockDom.dsiLow return whole.low;
 proc SparseBlockDom.dsiHigh return whole.high;
 proc SparseBlockDom.dsiStride return whole.stride;
@@ -576,25 +544,6 @@ proc SparseBlockDom.dsiLocalSlice(param stridable: bool, ranges) {
 
 proc SparseBlockDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
-}
-
-//
-// build a new rectangular domain using the given range
-//
-proc SparseBlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
-                                   param stridable: bool,
-                                   ranges: rank*range(idxType,
-                                                      BoundedRangeType.bounded,
-                                                      stridable)) {
-  if idxType != dist.idxType then
-    compilerError("SparseBlock domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("SparseBlock domain rank does not match distribution's");
-
-  var dom = new SparseBlockDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
-  dom.dsiSetIndices(ranges);
-  return dom;
 }
 
 //

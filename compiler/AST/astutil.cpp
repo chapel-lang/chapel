@@ -19,6 +19,7 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "CatchStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "expr.h"
@@ -747,13 +748,18 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
 
-  // Mark exported symbols as visible.
-  // All module initialization functions should be exported,
-  // but for now we treat them as a separate class. <hilde>
+  // Mark exported symbols and module init/deinit functions as visible.
   forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT) ||
-        fn->hasFlag(FLAG_MODULE_INIT))
+    if (fn->hasFlag(FLAG_EXPORT))
       pruneVisit(fn, fns, types);
+
+  pruneVisitFn(gAddModuleFn, fns, types);
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->initFn)
+      pruneVisitFn(mod->initFn, fns, types);
+    if (mod->deinitFn)
+      pruneVisitFn(mod->deinitFn, fns, types);
+  }
 }
 
 
@@ -874,7 +880,14 @@ static void removeVoidMoves()
     if (se->symbol()->type != dtVoid)
       continue;
 
-    call->remove();
+    // the RHS of the move could be a function with side effects.
+    // So, if it is a call, just remove the move, but leave the call.
+    if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+      rhsCall->remove();
+      call->replace(rhsCall);
+    } else {
+      call->remove();
+    }
   }
 }
 

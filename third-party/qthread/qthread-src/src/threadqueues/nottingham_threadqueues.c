@@ -149,8 +149,8 @@ void INTERNAL qt_threadqueue_free(qt_threadqueue_t *q)
     /* while (q->head != q->tail) {
      *  qt_scheduler_get_thread(q, 1);
      * } */
-    free((void *)q->base);
-    free((void *)q);
+    qt_free((void *)q->base);
+    qt_free((void *)q);
 } /*}}}*/
 
 static QINLINE int qt_threadqueue_cas128(uint128_t *src,

@@ -128,11 +128,11 @@ class AList {
   Expr * actual = (call)->argList.head;                                 \
   if (_alist_fn) {                                                      \
     if (_alist_fn->numFormals() != (call)->argList.length)              \
-      INT_FATAL(call, "number of actuals does not match number of formals"); \
+      INT_FATAL(call, "number of actuals does not match number of formals in %s()", _alist_fn->name); \
   } else if ((call)->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {           \
     _alist_fn = toFnSymbol(toSymExpr(call->get(1))->symbol());          \
     if (_alist_fn->numFormals() != (call)->argList.length - 2)          \
-      INT_FATAL(call, "number of actuals does not match number of formals"); \
+      INT_FATAL(call, "number of actuals does not match number of formals in %s()", _alist_fn->name); \
     actual = actual->next->next;                                        \
   }                                                                     \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \

@@ -284,7 +284,7 @@ proc main() {
     LUFactorize(n, A, piv);
 
     // do back-substitution
-    var b => A[1..n, n+1];
+    ref b = A[1..n, n+1];
     x = backwardSub(n, A[1..n, 1..n], b);
 
     // end timed region

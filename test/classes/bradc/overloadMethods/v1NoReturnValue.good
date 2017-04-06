@@ -1,1 +1,2 @@
-v1NoReturnValue.chpl:22: error: illegal use of function that does not return a value: 'bbox'
+v1NoReturnValue.chpl:2: error: conflicting return type specified for 'C.bbox(x: int): void'
+v1NoReturnValue.chpl:16: error:   overridden by 'D.bbox(x: int(64)): range(int(64),bounded,false)'

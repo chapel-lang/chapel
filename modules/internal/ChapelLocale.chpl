@@ -247,6 +247,34 @@ module ChapelLocale {
       return "";
     }
 
+    //
+    // Support for different types of memory:
+    // large, low latency, and high bandwidth
+    //
+    pragma "no doc"
+    proc defaultMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
+    pragma "no doc"
+    proc largeMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
+    pragma "no doc"
+    proc lowLatencyMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
+    pragma "no doc"
+    proc highBandwidthMemory() : locale {
+      _throwPVFCError();
+      return this;
+    }
+
     // A useful default definition is provided (not pure virtual).
     pragma "no doc"
     proc writeThis(f) {
@@ -357,17 +385,14 @@ module ChapelLocale {
     // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
-    proc getDefaultLocaleSpace() {
+    proc getDefaultLocaleSpace() const ref {
       _throwPVFCError();
-      const emptyLocaleSpace: domain(1) = {1..0};
-      return emptyLocaleSpace;
+      return chpl_emptyLocaleSpace;
     }
 
-    proc getDefaultLocaleArray() {
+    proc getDefaultLocaleArray() const ref {
       _throwPVFCError();
-      const emptyLocaleSpace: domain(1) = {1..0};
-      const emptyLocales: [emptyLocaleSpace] locale;
-      return emptyLocales;
+      return chpl_emptyLocales;
     }
 
     proc localeIDtoLocale(id : chpl_localeID_t) : locale {
@@ -497,7 +522,7 @@ module ChapelLocale {
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
-      const origLocales => (origRootLocale:RootLocale).getDefaultLocaleArray();
+      const ref origLocales = (origRootLocale:RootLocale).getDefaultLocaleArray();
       assert(origLocales._value.oneDData
              && newRootLocale.getDefaultLocaleArray()._value.oneDData);
       var origRL = origLocales._value.theDataChunk(0);
@@ -517,7 +542,7 @@ module ChapelLocale {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      const tmp => (rootLocale:RootLocale).getDefaultLocaleArray();
+      const ref tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
   }
@@ -544,7 +569,7 @@ module ChapelLocale {
   // Return the locale ID of the current locale
   pragma "no doc"
   inline proc here_id {
-     if localeModelHasSublocales then
+    if localeModelHasSublocales then
       return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
     else
       return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);

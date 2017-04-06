@@ -33,7 +33,6 @@
 #include "type.h"
 #include "view.h"
 
-
 static
 void resolveInitializer(CallExpr* call);
 
@@ -56,6 +55,8 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
 
 static FnSymbol*
 instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+
+static bool isRefWrapperForNonGenericRecord(AggregateType* at);
 
 // Rewrite of instantiateSignature, for initializers.  Removed some bits,
 // modified others.
@@ -416,7 +417,7 @@ void resolveInitCall(CallExpr* call) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* best = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
+  ResolutionCandidate* best = disambiguateByMatch(candidates, DC, FIND_NOT_REF_OR_CONST_REF);
 
   if (best && best->fn) {
     /*
@@ -453,9 +454,10 @@ void resolveInitCall(CallExpr* call) {
     } else {
       printResolutionErrorUnresolved(visibleFns, &info);
     }
-  } else {
-    wrapAndCleanUpActuals(best, info, /*buildFastFollowerChecks=*/true);
   }
+  // removed the creation of wrappers and the lvalue check call, as resolving
+  // the _new call will handle all that stuff for us.
+  // NOTE: This is unlikely to work for generic records.
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
 
@@ -480,7 +482,6 @@ void resolveInitCall(CallExpr* call) {
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  lvalueCheck(call);
   checkForStoringIntoTuple(call, resolvedFn);
 
   resolveNormalCallCompilerWarningStuff(resolvedFn);
@@ -513,12 +514,10 @@ void resolveMatch(FnSymbol* fn) {
 
   resolveBlockStmt(fn->body);
 
-  if (wasGeneric) {
-    if (isClass(fn->_this->type) == true) {
-      FnSymbol* classAlloc = buildClassAllocator(fn,
-                                                 toAggregateType(fn->_this->type));
-      normalize(classAlloc);
-    }
+  if (wasGeneric == true && isClass(fn->_this->type) == true) {
+    FnSymbol* classAlloc = buildClassAllocator(fn);
+
+    normalize(classAlloc);
   }
 
   if (tryFailure) {
@@ -558,7 +557,9 @@ void temporaryInitializerFixup(CallExpr* call) {
       INT_ASSERT(sym != NULL);
 
       if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-        if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+
+        if (isRefWrapperForNonGenericRecord(ct) == false &&
+            ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
 
           // This code should be removed when the compiler generates
           // initializers as the default method of construction and
@@ -571,6 +572,52 @@ void temporaryInitializerFixup(CallExpr* call) {
     }
   }
 }
+
+
+//
+// Noakes 2017/03/26
+//   The function temporaryInitializerFixup is designed to update
+//   certain calls to init() while the initializer update matures.
+//
+//   Unfortunately this transformation is triggered incorrectly for uses of
+//           this.init(...);
+//
+//   inside initializers for non-generic records.
+//
+//   For those uses of init() the "this" argument has currently has type
+//   _ref(<Record>) rather than <Record>
+//
+//  This rather unfortunate function catches this case and enables the
+//  transformation to be skipped.
+//
+static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
+  bool retval = false;
+
+  if (isClass(at)                           == true &&
+      strncmp(at->symbol->name, "_ref(", 5) == 0    &&
+      at->fields.length                     == 1) {
+    Symbol* sym = toDefExpr(at->fields.head)->sym;
+
+    if (strcmp(sym->name, "_val") == 0) {
+      retval = isNonGenericRecordWithInitializers(sym->type);
+    }
+  }
+
+  return retval;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void removeAggTypeFieldInfo() {
   forv_Vec(AggregateType, at, gAggregateTypes) {

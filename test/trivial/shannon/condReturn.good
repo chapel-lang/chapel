@@ -1,1 +1,4 @@
-condReturn.chpl:19: error: illegal use of function that does not return a value: 'foo'
+In foo()
+{m = 2.3}
+In foo()
+condReturn.chpl:14: error: halt reached - not enough args

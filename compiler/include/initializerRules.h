@@ -20,10 +20,11 @@
 #ifndef _INITIALIZER_RULES_H_
 #define _INITIALIZER_RULES_H_
 
-class FnSymbol;
 class AggregateType;
+class FnSymbol;
 
-void handleInitializerRules(FnSymbol* fn, AggregateType* t);
-FnSymbol* buildClassAllocator(FnSymbol* initMethod, AggregateType* ct);
+void      preNormalizeFields(AggregateType* at);
+void      preNormalizeInitMethod(FnSymbol* fn);
+FnSymbol* buildClassAllocator(FnSymbol* initMethod);
 
 #endif

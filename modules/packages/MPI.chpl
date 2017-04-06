@@ -208,42 +208,37 @@ module MPI {
   }
 
   pragma "no doc"
-  record _initMPI {
-    var doinit : bool = false;
-    var freeChplComm : bool = false;
+  var _doinit : bool = false;
 
-    pragma "no doc"
-    proc deinit() {
-      if freeChplComm {
-        if numLocales > 1 {
-          coforall loc in Locales do on loc {
-            C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
-          }
-        } else {
+  pragma "no doc"
+  var _freeChplComm : bool = false;
+
+  pragma "no doc"
+  /* Module level deinit */
+  proc deinit() {
+    if _freeChplComm {
+      coforall loc in Locales do on loc {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
         }
-      }
-      if doinit {
-        coforall loc in Locales do
-          on loc {
-            // TODO : Need a gasnet barrier here???
-            if debugMPI then writeln("Calling MPI_Finalize....");
-            C_MPI.MPI_Finalize();
-          }
-      }
+    }
+    if _doinit {
+      coforall loc in Locales do
+        on loc {
+          // TODO : Need a gasnet barrier here???
+          if debugMPI then writeln("Calling MPI_Finalize....");
+          C_MPI.MPI_Finalize();
+        }
     }
   }
 
-  pragma "no doc"
-  var _mpi : _initMPI;
-
+  // Initialization routine
   if autoInitMPI {
     if debugMPI then writeln("Attempting to auto-initialize MPI.....");
     var flag : c_int;
     C_MPI.MPI_Initialized(flag);
     if flag==0 {
       if debugMPI then writeln("Initializing MPI....");
-      _mpi.doinit = true;
+      _doinit = true;
       initialize();
     } else {
       var provided : c_int;
@@ -295,7 +290,7 @@ module MPI {
     }
 
     // Set flag to free
-    _mpi.freeChplComm = true;
+    _freeChplComm = true;
   }
 
   /*

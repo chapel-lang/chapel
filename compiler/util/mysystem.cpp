@@ -21,8 +21,10 @@
 
 #include "misc.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 bool printSystemCommands = false;
 
@@ -37,7 +39,7 @@ int mysystem(const char* command,
   }
 
   if (status == -1) {
-    USR_FATAL("system() fork failed");
+    USR_FATAL("system() fork failed: %s", strerror(errno));
 
   } else if (status != 0 && ignoreStatus == false) {
     USR_FATAL(description);

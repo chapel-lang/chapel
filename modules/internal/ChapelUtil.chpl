@@ -128,4 +128,32 @@ module ChapelUtil {
   //
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
+
+  // Support for module deinit functions.
+  config param printModuleDeinitOrder = false;
+
+  proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) {
+    chpl_moduleDeinitFuns =
+      new chpl_ModuleDeinit(moduleName, deinitFun, chpl_moduleDeinitFuns);
+  }
+
+  proc chpl_deinitModules() {
+    extern proc printf(fmt:c_string);
+    extern proc printf(fmt:c_string, arg:c_string);
+    extern proc chpl_execute_module_deinit(deinitFun:c_fn_ptr);
+
+    if printModuleDeinitOrder then
+      printf(c"Deinitializing Modules:\n");
+    var prev = chpl_moduleDeinitFuns;
+    while prev {
+      const curr = prev;
+      if printModuleDeinitOrder then
+        printf(c"  %s\n", curr.moduleName);
+      chpl_execute_module_deinit(curr.deinitFun);
+      prev = curr.prevModule;
+      delete curr;
+    }
+
+    chpl_moduleDeinitFuns = nil;
+  }
 }

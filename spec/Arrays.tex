@@ -656,16 +656,10 @@ Section~\ref{Rectangular_Array_Slicing}.
 \index{arrays!actual arguments}
 \index{arguments!array}
 
-Arrays are passed to functions by reference.  Formal arguments that
-receive arrays are aliases of the actual arguments.
-
-% Do we really need to say this?  Should it be said here -- seems like
-% there is no normal rule and that the cases should be described in
-% the function intents section.
-%
-%  The ordinary rule
-%that disallows assignment to formal arguments of default intent does not
-%apply to arrays.
+By default, arrays are passed to function by \chpl{ref} or \chpl{const
+ref} depending on whether or not the formal argument is modified. The
+\chpl{in}, \chpl{inout}, and \chpl{out} intent can create copies of
+arrays.
 
 When a formal argument has array type, the element type of the array
 can be omitted and/or the domain of the array can be queried or
@@ -678,6 +672,13 @@ index set.  If the formal array's domain was declared using an
 explicit domain map, the actual array's domain must use an equivalent
 domain map.
 
+\section{Returning Arrays from Functions}
+\label{Returning_Arrays_from_Functions}
+\index{arrays!returning}
+\index{returning!array}
+
+Arrays return by value by default. The \chpl{ref} and \chpl{const ref}
+return intents can be used to return a reference to an array.
 
 \subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
@@ -720,76 +721,6 @@ and \chpl{C}.
 
 %
 % TODO: should have an example of promoting an actual function here
-%
-
-
-\section{Array Aliases}
-\label{Array_Aliases}
-\index{arrays!aliases}
-\index{=> (array)@\chpl{=>} (array)}
-\index{operators!=> (array)@\chpl{=>} (array)}
-
-Array slices alias the data in arrays rather than copying it.  Such
-array aliases can be captured and optionally reindexed with the array
-alias operator \chpl{=>}.  The syntax for capturing an alias to an
-array requires a new variable declaration:
-\begin{syntax}
-array-alias-declaration:
-  identifier reindexing-expression[OPT] => array-expression ;
-
-reindexing-expression:
-  : [ domain-expression ]
-
-array-expression:
-  expression
-\end{syntax}
-The identifier is an alias to the array specified in
-the \sntx{array-expression}.
-
-The optional \sntx{reindexing-expression} allows the domain of the
-array alias to be reindexed.  The shape of the domain in
-the \sntx{reindexing-expression} must match the shape of the domain of
-the \sntx{array-expression}.  Indexing via the alias is governed by
-the new indices.
-
-\begin{chapelexample}{reindexing.chpl}
-In the code
-\begin{chapel}
-var A: [1..5, 1..5] int;
-var AA: [0..2, 0..2] => A[2..4, 2..4];
-\end{chapel}
-\begin{chapelpost}
-A = -11;
-writeln(A);
-AA = -66;
-writeln(AA);
-writeln(A);
-\end{chapelpost}
-\begin{chapeloutput}
--11 -11 -11 -11 -11
--11 -11 -11 -11 -11
--11 -11 -11 -11 -11
--11 -11 -11 -11 -11
--11 -11 -11 -11 -11
--66 -66 -66
--66 -66 -66
--66 -66 -66
--11 -11 -11 -11 -11
--11 -66 -66 -66 -11
--11 -66 -66 -66 -11
--11 -66 -66 -66 -11
--11 -11 -11 -11 -11
-\end{chapeloutput}
-an array alias \chpl{AA} is created to alias the interior of
-array \chpl{A} given by the slice \chpl{A[2..4, 2..4]}.  The
-reindexing expression changes the indices defined by the domain of the
-alias to be zero-based in both dimensions.  Thus \chpl{AA(1,1)} is
-equivalent to \chpl{A(3,3)}.
-\end{chapelexample}
-
-%
-% TODO: need to insert something about using alias operator in
-% constructors as well.  Ran out of time for 1.1 release
 %
 
 

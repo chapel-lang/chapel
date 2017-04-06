@@ -197,7 +197,7 @@ if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chp
 else
     log_warning "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
     log_warning "This does not necessarily indicate that your Chapel installation is incorrect."
-    log_warning "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
+    log_warning "See \$CHPL_HOME/doc/rst/launcher.rst for information on manually launching Chapel programs."
     # This exit code should be recognized as a failure to complete check, but
     # not necessarily failure of build
     log_debug "Exit \"make check\" script with status code 10"
@@ -213,11 +213,11 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
     log_info "Running test job."
-    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT}
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
     log_info "Test job complete."
 
     # Check result
-    DIFF_OUTPUT=$(diff -q ${GOOD} ${TEST_EXEC_OUT})
+    DIFF_OUTPUT=$(diff ${GOOD} ${TEST_EXEC_OUT})
 
     # Return success code (0) if diff is good
     if [ -z "${DIFF_OUTPUT}" ]; then

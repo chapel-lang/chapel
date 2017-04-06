@@ -382,12 +382,32 @@ void CollapseBlocks::exitGotoStmt(GotoStmt* node)
 
 }
 
+bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
+{
+
+}
+
 bool CollapseBlocks::enterTryStmt(TryStmt* node)
 {
   return true;
 }
 
 void CollapseBlocks::exitTryStmt(TryStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterCatchStmt(CatchStmt* node)
+{
+  return true;
+}
+
+void CollapseBlocks::exitCatchStmt(CatchStmt* node)
 {
 
 }

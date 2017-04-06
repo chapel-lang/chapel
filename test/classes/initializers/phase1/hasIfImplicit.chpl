@@ -3,18 +3,22 @@ class IfInit {
   var f2: int;
 
   proc init(val: int) {
-    f1 = val < 10;
-    // Verifies that if statements can be used in Phase 1 of an initializer
+    f1 = val < 5;
+
     if (!f1) {
       f2 = val;
     }
-    // f2 set implicitly to 0 in else branch
+
+    // Error f2 is only initialized if f1 is false
+
     super.init();
   }
 }
 
 proc main() {
-  var c: IfInit = new IfInit(3);
-  writeln(c);
-  delete c;
+  var c1 : IfInit = new IfInit(3);
+
+  writeln(c1);
+
+  delete c1;
 }

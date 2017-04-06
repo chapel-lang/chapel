@@ -49,7 +49,7 @@ double qtimer_secs(qtimer_t q)
 
 qtimer_t qtimer_create()
 {
-    return calloc(1, sizeof(struct qtimer_s));
+    return qt_calloc(1, sizeof(struct qtimer_s));
 }
 
 void qtimer_destroy(qtimer_t q)

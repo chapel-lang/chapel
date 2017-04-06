@@ -123,22 +123,16 @@ module ArrayViewReindex {
     //
 
     iter these() ref {
-      for i in privDom {
-        if shouldUseIndexCache() {
-          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.shiftedDataElem(dataIdx);
-        } else {
-          yield arr.dsiAccess(chpl_reindexConvertIdx(i));
-        }
-      }
+      for elem in chpl__serialViewIter(this, privDom) do
+        yield elem;
     }
 
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales {
       for i in privDom.these(tag) {
         if shouldUseIndexCache() {
-          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.shiftedDataElem(dataIdx);
+          const dataIdx = indexCache.getDataIndex(i);
+          yield indexCache.getDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
         }
@@ -155,8 +149,8 @@ module ArrayViewReindex {
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {
         if shouldUseIndexCache() {
-          const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-          yield indexCache.shiftedDataElem(dataIdx);
+          const dataIdx = indexCache.getDataIndex(i);
+          yield indexCache.getDataElem(dataIdx);
         } else {
           yield arr.dsiAccess(chpl_reindexConvertIdx(i));
         }
@@ -196,7 +190,7 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i: idxType ...rank)
-      where !shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByValue(eltType) {
       return dsiAccess(i);
     }
 
@@ -208,19 +202,19 @@ module ArrayViewReindex {
     inline proc dsiAccess(i) ref {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        const dataIdx = indexCache.getDataIndex(i);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
       }
     }
 
     inline proc dsiAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType) {
+      where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        const dataIdx = indexCache.getDataIndex(i);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
       }
@@ -230,8 +224,8 @@ module ArrayViewReindex {
       where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
       if shouldUseIndexCache() {
-        const dataIdx = indexCache.getRADDataIndex(dom.stridable, i);
-        return indexCache.shiftedDataElem(dataIdx);
+        const dataIdx = indexCache.getDataIndex(i);
+        return indexCache.getDataElem(dataIdx);
       } else {
         return arr.dsiAccess(chpl_reindexConvertIdx(i));
       }
@@ -241,7 +235,7 @@ module ArrayViewReindex {
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc dsiLocalAccess(i)
-      where !shouldReturnRvalueByConstRef(eltType)
+      where shouldReturnRvalueByValue(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i));
 
     inline proc dsiLocalAccess(i) const ref
@@ -375,8 +369,7 @@ module ArrayViewReindex {
     //
 
     proc shouldUseIndexCache() param {
-      return _ArrInstance.isDefaultRectangular() &&
-             defRectSimpleDData;
+      return chpl__isDROrDRView(_ArrInstance);
     }
 
     proc buildIndexCache() {
@@ -422,8 +415,6 @@ module ArrayViewReindex {
     inline proc dsiGetBaseDom() {
       return dom;
     }
-
-    proc isDefaultRectangular() param return arr.isDefaultRectangular();
 
     proc _getActualArray() {
       if chpl__isArrayView(arr) {

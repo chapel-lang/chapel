@@ -1810,7 +1810,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 #endif
 
   if( info->cfile ) {
-    ret.c = "(" + cond.c + ")?(" + ifTrue.c + "):(" + ifFalse.c + ")";
+    ret.c = "( (" + cond.c + ")?(" + ifTrue.c + "):(" + ifFalse.c + ") )";
   } else {
 #ifdef HAVE_LLVM
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
@@ -3149,7 +3149,8 @@ GenRet CallExpr::codegen() {
       GenRet   arg        = actual;
 
       if (se && isFnSymbol(se->symbol())) {
-        if(this->theFnSymbol()->hasFlag(FLAG_EXTERN)) {
+        if(this->theFnSymbol()->hasFlag(FLAG_EXTERN) ||
+           formal->type == dtCFnPtr) {
           arg = codegenCast("c_fn_ptr", arg);
         }
         else {

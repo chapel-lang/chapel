@@ -447,8 +447,7 @@ checkBadAddrOf(CallExpr* call)
             if (rhs->symbol()->isImmediate()) {
               USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
             } else {
-              // This case should be handled elsewhere in the compiler
-              INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
+              USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
             }
           }
         }

@@ -75,7 +75,7 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
 void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
 bool isReduceOp(Type* type);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
@@ -146,7 +146,8 @@ void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
 typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
-  FIND_NOT_REF
+  FIND_CONST_REF,
+  FIND_NOT_REF_OR_CONST_REF, // !(ref || const_ref)
 } disambiguate_kind_t;
 
 
@@ -236,6 +237,7 @@ void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info);
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 void lvalueCheck(CallExpr* call);
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
+void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);

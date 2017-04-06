@@ -1,5 +1,4 @@
-============================================
-Chapel Public Release Goals (version 1.14.0)
+Chapel Public Release Goals (version 1.15.0)
 ============================================
 
 The goals of this release are as follows:
@@ -24,5 +23,6 @@ The goals of this release are as follows:
   (ii) a multi-threaded, multi-locale implementation of regular
        domains and arrays using some standard distributions.
 
-For more detailed notes on what is or is not supported in this
-release, refer to the STATUS file in this directory.
+For more detailed notes on what is or is not supported
+in this release, refer to the Issues list on GitHub
+(https://github.com/chapel-lang/chapel/issues).

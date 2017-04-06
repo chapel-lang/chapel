@@ -592,6 +592,7 @@ static void build_chpl_entry_points() {
   //
   if (fMinimalModules == false) {
     chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   }
 
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
@@ -1041,9 +1042,17 @@ static void build_union_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
-
 static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", 1, ct) != NULL) {
+    return;
+  }
+
+  if (isNonGenericClassWithInitializers(ct)  == true ||
+      isNonGenericRecordWithInitializers(ct) == true) {
+    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+      ct->symbol->addFlag(FLAG_NOT_POD);
+    }
+
     return;
   }
 
@@ -1234,9 +1243,15 @@ static void buildRecordQuery(AggregateType* ct,
                              PrimitiveTag   tag);
 
 static void buildDefaultOfFunction(AggregateType* ct) {
-  if (function_exists("_defaultOf", 1, ct)     == NULL  &&
-      ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
-      ct->defaultValue                         != gNil) {
+  if        (isNonGenericClassWithInitializers(ct)  == true) {
+
+
+  } else if (isNonGenericRecordWithInitializers(ct) == true) {
+
+
+  } else if (function_exists("_defaultOf", 1, ct)     == NULL  &&
+             ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
+             ct->defaultValue                         != gNil) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", ct);

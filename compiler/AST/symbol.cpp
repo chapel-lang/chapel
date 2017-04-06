@@ -86,11 +86,13 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
+VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 FnSymbol *gPrintModuleInitFn = NULL;
+FnSymbol* gAddModuleFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
@@ -101,6 +103,7 @@ FnSymbol *gBuildTupleType = NULL;
 FnSymbol *gBuildStarTupleType = NULL;
 FnSymbol *gBuildTupleTypeNoRef = NULL;
 FnSymbol *gBuildStarTupleTypeNoRef = NULL;
+FnSymbol* gChplDeleteError = NULL;
 
 
 
@@ -122,6 +125,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   qual(QUAL_UNKNOWN),
   type(init_type),
   flags(),
+  fieldQualifiers(NULL),
   defPoint(NULL),
   symExprsHead(NULL),
   symExprsTail(NULL)
@@ -136,6 +140,8 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 
 
 Symbol::~Symbol() {
+  if (fieldQualifiers)
+    delete [] fieldQualifiers;
 }
 
 static inline void verifyInTree(BaseAST* ast, const char* msg) {
@@ -1827,6 +1833,24 @@ bool FnSymbol::throwsError() const {
   return _throwsError;
 }
 
+bool FnSymbol::retExprDefinesNonVoid() const {
+  bool retval = true;
+
+  if (retExprType == NULL) {
+    retval = false;
+
+  } else if (retExprType->length() != 1) {
+    retval = true;
+
+  } else if (SymExpr* expr = toSymExpr(retExprType->body.get(1))) {
+    retval = expr->symbol()->type != dtVoid ? true : false;
+
+  } else {
+    retval = true;
+  }
+
+  return retval;
+}
 
 /******************************** | *********************************
 *                                                                   *
@@ -1886,6 +1910,7 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     modTag(iModTag),
     block(iBlock),
     initFn(NULL),
+    deinitFn(NULL),
     filename(NULL),
     doc(NULL),
     extern_info(NULL),
@@ -1910,11 +1935,19 @@ void ModuleSymbol::verify() {
   if (block && block->parentSymbol != this)
     INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
 
-  if (initFn && !toFnSymbol(initFn))
-    INT_FATAL(this, "Bad ModuleSymbol::initFn");
-
   verifyNotOnList(block);
-  verifyInTree(initFn, "ModuleSymbol::initFn");
+
+  if (initFn) {
+    verifyInTree(initFn, "ModuleSymbol::initFn");
+    INT_ASSERT(initFn->defPoint->parentSymbol == this);
+  }
+
+  if (deinitFn) {
+    verifyInTree(deinitFn, "ModuleSymbol::deinitFn");
+    INT_ASSERT(deinitFn->defPoint->parentSymbol == this);
+    // initFn must call chpl_addModule(deinitFn) if deinitFn is present.
+    INT_ASSERT(initFn);
+  }
 }
 
 

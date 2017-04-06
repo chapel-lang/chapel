@@ -271,6 +271,16 @@ OPTIONS
     Enable [disable] run-time bounds checking, e.g. during slicing and array
     indexing.
 
+**--[no-]cast-checks**
+
+    Enable [disable] run-time checks in safeCast calls for casts that
+    wouldn't preserve the logical value being cast.
+
+**--[no-]div-by-zero-checks**
+
+    Enable [disable] run-time checks in integer division routines to
+    guard against dividing by zero.
+
 **--[no-]formal-domain-checks**
 
     Enable [disable] run-time checks to ensure that an actual array
@@ -290,11 +300,6 @@ OPTIONS
 **--[no-]stack-checks**
 
     Enable [disable] run-time checking for stack overflow.
-
-**--[no-]cast-checks**
-
-    Enable [disable] run-time checks in safeCast calls for casts that
-    wouldn't preserve the logical value being cast.
 
 *C Code Generation Options* 
 
@@ -407,7 +412,7 @@ OPTIONS
 **--[no-]llvm**
 
     Use LLVM as the code generation target rather than C. See
-    $CHPL\_HOME/doc/technotes/llvm.rst for details.
+    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 **--[no-]llvm-wide-opt**
 
@@ -417,7 +422,7 @@ OPTIONS
     also supply **--fast** to enable wide pointer optimizations. This flag
     allows existing LLVM optimizations to work with wide pointers - for
     example, they might be able to hoist a 'get' out of a loop. See
-    $CHPL\_HOME/doc/technotes/llvm.rst for details.
+    $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 *Compilation Trace Options*
 
@@ -498,6 +503,10 @@ OPTIONS
     Overrides the default value of a configuration parameter in the code.
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
+
+**--strict-errors**
+
+    Enable strict mode for error handling.
 
 **--[no-]task-tracking**
 
@@ -732,14 +741,13 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/rst/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------
 
-$CHPL\_HOME/QUICKSTART.rst for more information on how to get started with
-Chapel.
+$CHPL\_HOME/doc/rst/usingchapel/QUICKSTART.rst for more information on how to
+get started with Chapel.
 
 AUTHORS
 -------

@@ -1,4 +1,4 @@
-config const verbose = false;
+config const myVerbose = false;
 
 config var skipCount = 0;
 
@@ -7,11 +7,11 @@ config const N = defRectArrMultiDDataSizeThreshold * 3;
 var A_1toN: [1..N] int = [i in 1..N] i;
 reportChunking('A[1..N]', A_1toN);
 
-var A_slice_2toNm1 => A_1toN[1+1..N-1];
+ref A_slice_2toNm1 = A_1toN[1+1..N-1];
 reportChunking('A[...] => A[1+1..N-1]',
                A_slice_2toNm1);
 
-var A_reindex_1toN: [1+5..N+5] => A_1toN;
+ref A_reindex_1toN = A_1toN.reindex({1+5..N+5});
 reportChunking('A[1+5..N+5] => A[1..N]',
                A_reindex_1toN);
 
@@ -21,15 +21,15 @@ reportChunking('A[1..N by 2]', A_1toNby2);
 var A_1toNby3: [1..N by 3] int = [i in 1..N by 3] i;
 reportChunking('A[1..N by 3]', A_1toNby3);
 
-var A_alias_1toNby2 => A_1toN[1..N by 2];
+ref A_alias_1toNby2 = A_1toN[1..N by 2];
 reportChunking('A => A[1..N] sliced [1..N by 2]',
                A_alias_1toNby2);
 
-var A_1toX_alias_1toNby2: [1..N/2] => A_1toN[1..N by 2];
+ref A_1toX_alias_1toNby2 = A_1toN[1..N by 2].reindex({1..N/2});
 reportChunking('A[1..N/2] => A[1..N] sliced [1..N by 2]',
                A_1toX_alias_1toNby2);
 
-var A_5to6_alias_1toN_2N3dd2N3p2by2: [5..6] => A_1toN[2*N/3..2*N/3+2 by 2];
+ref A_5to6_alias_1toN_2N3dd2N3p2by2 = A_1toN[2*N/3..2*N/3+2 by 2].reindex({5..6});
 reportChunking('A[5..6] => A[1..N] sliced [2*N/3..2*N/3+2 by 2]',
                A_5to6_alias_1toN_2N3dd2N3p2by2);
 
@@ -48,28 +48,31 @@ proc reportChunking(what, A) {
 
   writeln(what, ': ', A);
 
-  if verbose {
-    writeln('----');
+  var cache = if chpl__isArrayView(A) && !isBool(A._value.indexCache) then A._value.indexCache
+              else chpl__getActualArray(A).dsiGetRAD().toSlice(A._value.dom);
+
+  if myVerbose {
+    writeln('---- ');
     A.displayRepresentation();
-    writeln(' dom.dsiDims() ', A._value.dom.dsiDims(),
-            ', stridable ', chpl__getActualArray(A).stridable);
+    writeln(' dom.dsiDims() ', A.domain.dims(),
+            ', stridable ', cache.stridable);
     writeln('----');
   }
 
-  for i in A.domain.dim(chpl__getActualArray(A).mdParDim) do
-    write(' ', chpl__getActualArray(A).mdInd2Chunk(i));
+  for i in A.domain.dim(cache.mdParDim) do
+    write(' ', cache.mdInd2Chunk(i));
   writeln();
 
-  for iChunk in 0..#chpl__getActualArray(A).mdNumChunks do
-    write(if iChunk == 0 then ' ' else ', ', chpl__getActualArray(A).mData(iChunk).pdr);
+  for iChunk in 1..#cache.mdNumChunks do
+    write(if iChunk == 1 then ' ' else ', ', cache.mData(iChunk).pdr);
   writeln();
 
-  if verbose {
+  if myVerbose {
     write(' -->');
-    for iChunk in 0..#chpl__getActualArray(A).mdNumChunks do
+    for iChunk in 0..#cache.mdNumChunks do
       write(' ',
-            _computeBlock(chpl__getActualArray(A).mdRLen, chpl__getActualArray(A).mdNumChunks, iChunk,
-                          (chpl__getActualArray(A).mdRHi - chpl__getActualArray(A).mdRLo) / chpl__getActualArray(A).mdRStr,
+            _computeBlock(cache.mdRLen, cache.mdNumChunks, iChunk,
+                          (cache.mdRHi - cache.mdRLo) / cache.mdRStr,
                           0, 0));
     writeln();
   }

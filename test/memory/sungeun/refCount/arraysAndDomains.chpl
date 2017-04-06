@@ -117,7 +117,7 @@ proc do_local_array() {
   var A_domain: [A.domain] int; // add ref count and decrement in destructor
 
   if printProgress then writeln("Creating A_alias");
-  var A_alias => A;  // no need to ref count
+  ref A_alias = A;  // no need to ref count
 
   if printProgress then writeln("Creating A_slice");
   var A_slice = A[2..n-1];             // create new descriptor, ref count
@@ -134,7 +134,7 @@ proc do_array(A:[]) {
   var A_domain: [A.domain] int; // add ref count and decrement in destructor
 
   if printProgress then writeln("Creating A_alias");
-  var A_alias => A;  // no need to ref count
+  ref A_alias = A;  // no need to ref count
 
   if printProgress then writeln("Creating A_slice");
   var A_slice = A[2..n-1];             // create new descriptor, ref count

@@ -79,7 +79,6 @@ extern c_string chpl_funSymTable[];
 extern int chpl_filenumSymTable[];
 extern const int32_t chpl_sizeSymTable;
 
-/* defined in main.c */
 extern char* chpl_executionCommand;
 
 /* generated */

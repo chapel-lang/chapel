@@ -35,10 +35,20 @@
 #include "error.h"
 
 // System headers
+
+// We need this first so we can then decide based on the existence and
+// perhaps the value of _POSIX_VERSION what else to #include below.
+#ifdef __unix__
+#include <unistd.h>
+#endif
+
 #include <errno.h>
 
-#ifdef __linux__
+#ifdef _POSIX_VERSION
 #include <pthread.h>
+#endif
+
+#ifdef __linux__
 #include <sched.h>
 #endif
 
@@ -48,7 +58,7 @@
 #include <sys/mman.h>
 #include <sys/utsname.h>
 
-#if defined(__APPLE__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
 
@@ -87,11 +97,8 @@ size_t chpl_getSysPageSize(void) {
   return pageSize;
 }
 
-static size_t heapPageSize = 0;
 
-size_t chpl_getHeapPageSize(void) {
-  return heapPageSize;
-}
+static size_t heapPageSize = 0;
 
 static volatile unsigned char* check_page_size_ptr;
 static unsigned char* check_page_size_base;
@@ -299,40 +306,55 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
   }
 }
 
-void chpl_computeHeapPageSize(void) {
-  size_t pageSize = 0;
-
+static void computeHeapPageSize(void) {
 #if defined __linux__
-  char* ev;
-  if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
-    pageSize = chpl_getSysPageSize();
-  else {
+  //
+  // If we're using hugepages explicitly, just go with what it says.
+  // Otherwise, try to figure it out ourselves.
+  //
+  {
+    char* ev;
 
-    size_t tmpPageSize;
-    int  num_scanned;
-    char units;
+    if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) != NULL) {
+      int  num_scanned;
+      char units;
 
-    if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
-      if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+      if ((num_scanned = sscanf(ev, "%zi%c", &heapPageSize, &units)) != 1) {
+        if (num_scanned != 2 || strchr("kKmMgG", units) == NULL) {
+          chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+        }
+
         switch (units) {
-        case 'k': case 'K': tmpPageSize <<= 10; break;
-        case 'm': case 'M': tmpPageSize <<= 20; break;
-        case 'g': case 'G': tmpPageSize <<= 30; break;
+        case 'k': case 'K': heapPageSize <<= 10; break;
+        case 'm': case 'M': heapPageSize <<= 20; break;
+        case 'g': case 'G': heapPageSize <<= 30; break;
         }
       }
-      else {
-        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
-      }
-    }
 
-    pageSize = tmpPageSize;
+      return;
+    }
   }
-#else
-  pageSize = chpl_getSysPageSize();
 #endif
 
   // note: sets heapPageSize
-  computeHeapPageSizeByGuessing(pageSize);
+  computeHeapPageSizeByGuessing(chpl_getSysPageSize());
+}
+
+
+size_t chpl_getHeapPageSize(void) {
+#ifdef _POSIX_VERSION
+  {
+    static pthread_once_t onceCtl = PTHREAD_ONCE_INIT;
+
+    if (pthread_once(&onceCtl, computeHeapPageSize) != 0) {
+      chpl_internal_error("pthread_once() failed");
+    }
+
+    return heapPageSize;
+  }
+#else
+  return chpl_getSysPageSize();
+#endif
 }
 
 
@@ -464,8 +486,10 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
     cpuCores = 1;
   if (siblings == 0)
     siblings = 1;
-  *p_numPhysCpus = procs / (siblings / cpuCores);
-  *p_numLogCpus = procs;
+  if ((*p_numPhysCpus = procs / (siblings / cpuCores)) <= 0)
+    *p_numPhysCpus = 1;
+  if ((*p_numLogCpus = procs) <= 0)
+    *p_numLogCpus = 1;
 }
 #endif
 
@@ -497,6 +521,15 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = chpl_getNumLogicalCpus(true);
   return numCpus;
+#elif defined  __FreeBSD__
+  //
+  // FreeBSD
+  //
+  static int numCpus = 0;
+  if (numCpus == 0)
+    numCpus = chpl_getNumLogicalCpus(true);
+  return numCpus;
+
 #elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
@@ -532,6 +565,9 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
         numLogCpusAcc = 1;
       numCpus = (numPhysCpus * numLogCpusAcc) / numLogCpus;
 #endif
+
+      if (numCpus <= 0)
+        numCpus = 1;
     }
     return numCpus;
   }
@@ -577,6 +613,18 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = sysconf(_SC_NPROCESSORS_ONLN);
   return numCpus;
+#elif defined __FreeBSD__
+  //
+  // FreeBSD
+  //
+  static int32_t numCpus = 0;
+  if (numCpus == 0) {
+    size_t len = sizeof(numCpus);
+    if (sysctlbyname("hw.ncpu", &numCpus, &len, NULL, 0))
+      chpl_internal_error("query of number of PUs failed");
+  }
+  return (int) numCpus;
+
 #elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
@@ -603,6 +651,9 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
         numLogCpusAcc = 1;
       numCpus = (numLogCpusAcc < numLogCpus) ? numLogCpusAcc : numLogCpus;
 #endif
+
+      if (numCpus <= 0)
+        numCpus = 1;
     }
     return numCpus;
   }

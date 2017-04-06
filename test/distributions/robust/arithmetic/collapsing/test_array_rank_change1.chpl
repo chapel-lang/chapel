@@ -2,7 +2,7 @@ use driver_arrays;
 
 for e in A2D do e = next();
 
-var AA => A2D(Dom2D.dim(1), n2-2);
+ref AA = A2D(Dom2D.dim(1), n2-2);
 
 writeln(A2D);
 writeln(AA);

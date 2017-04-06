@@ -103,7 +103,6 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "PERFORMANCE.md",
        "README.rst",
        "README.files",
-       "STATUS",
        "compiler/codegen/reservedSymbolNames",
        "highlight/README.md",
        "util/README",
@@ -161,13 +160,14 @@ SystemOrDie("make -j docs");
 # TODO - make this more elegant / maintainable
 print "Pruning the docs directory...\n";
 SystemOrDie("cd doc && make clean-symlinks");
+SystemOrDie("cd doc && make prunedocs");
 SystemOrDie("cd doc && rm -f Makefile*");
-SystemOrDie("cd doc && rm -f conf.py");
-SystemOrDie("cd doc && rm -f index.rst");
-SystemOrDie("cd doc && rm -f */index.rst");
-SystemOrDie("cd doc && rm -rf developer");
 SystemOrDie("cd doc && rm -rf util");
-SystemOrDie("cd doc && rm -rf meta"); # Remove all dot files/directories
+SystemOrDie("cd doc && rm -f rst/conf.py");
+SystemOrDie("cd doc && rm -f rst/index.rst");
+SystemOrDie("cd doc && rm -f rst/*/index.rst");
+SystemOrDie("cd doc && rm -rf rst/developer"); # remove when dev-docs enabled
+SystemOrDie("cd doc && rm -rf rst/meta");
 
 print "Building the man pages...\n";
 SystemOrDie("make man");
@@ -179,10 +179,6 @@ SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
-
-print "Building the STATUS file...\n";
-SystemOrDie("make STATUS");
-
 
 print "Removing Makefiles that are not intended for release...\n";
 SystemOrDie("cd make/platform && rm Makefile.sunos_old");

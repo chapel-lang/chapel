@@ -646,8 +646,8 @@ static void setupCallStacks(int32_t hwpar) {
         // pages, so we thrown an extra MB.
         if (hwpar > 0) {
             const size_t oneMB = 1024 * 1024;
-            const size_t allocSizeLowerBound =  33 * oneMB;
-            const size_t allocSizeUpperBound = 513 * oneMB;
+            const size_t allocSizeLowerBound = 33 * oneMB;
+            const size_t allocSizeUpperBound = 65 * oneMB;
             size_t maxPoolAllocSize;
             char newenv_alloc[QT_ENV_S];
 
@@ -685,6 +685,13 @@ static void setupWorkStealing(void) {
     chpl_qt_setenv("STEAL_RATIO", "0", 0);
 }
 
+static void setupSpinWaiting(void) {
+  const char *crayPlatform = "cray-x";
+  if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
+    chpl_qt_setenv("SPINCOUNT", "3000000", 0);
+  }
+}
+
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
@@ -703,6 +710,7 @@ void chpl_task_init(void)
     setupCallStacks(hwpar);
     setupTasklocalStorage();
     setupWorkStealing();
+    setupSpinWaiting();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
@@ -882,7 +890,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 void chpl_task_addToTaskList(chpl_fn_int_t       fid,
                              chpl_task_bundle_t *arg,
                              size_t              arg_size,
-                             c_sublocid_t        subloc,
+                             c_sublocid_t        full_subloc,
                              void              **task_list,
                              int32_t             task_list_locale,
                              chpl_bool           is_begin_stmt,
@@ -892,7 +900,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
     chpl_bool serial_state = chpl_task_getSerial();
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
-    assert(subloc != c_sublocid_none);
+    assert(full_subloc != c_sublocid_none);
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
@@ -900,10 +908,13 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         // call the function directly.
         requested_fn(arg);
     } else {
+        c_sublocid_t execution_subloc =
+          chpl_localeModel_sublocToExecutionSubloc(full_subloc);
+
         arg->serial_state      = false;
         arg->countRunning      = false;
         arg->is_executeOn      = false;
-        arg->requestedSubloc   = subloc;
+        arg->requestedSubloc   = full_subloc;
         arg->requested_fid     = fid;
         arg->requested_fn      = requested_fn;
         arg->lineno            = lineno;
@@ -912,11 +923,11 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
 
         wrap_callbacks(chpl_task_cb_event_kind_create, arg);
 
-        if (subloc == c_sublocid_any) {
+        if (execution_subloc == c_sublocid_any) {
             qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
         } else {
-            qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size,
-                                     NULL, (qthread_shepherd_id_t) subloc);
+            qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
+                                     (qthread_shepherd_id_t) execution_subloc);
         }
     }
 }
@@ -928,15 +939,18 @@ void chpl_task_executeTasksInList(void **task_list)
 
 static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                                 void *arg, size_t arg_size,
-                                c_sublocid_t subloc,  chpl_bool serial_state,
+                                c_sublocid_t full_subloc,
+                                chpl_bool serial_state,
                                 int lineno, int32_t filename)
 {
     chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
+    c_sublocid_t execution_subloc =
+      chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
     bundle->serial_state       = serial_state;
     bundle->countRunning       = canCountRunningTasks;
     bundle->is_executeOn       = true;
-    bundle->requestedSubloc    = subloc;
+    bundle->requestedSubloc    = full_subloc;
     bundle->requested_fid      = fid;
     bundle->requested_fn       = fp;
     bundle->lineno             = lineno;
@@ -945,11 +959,11 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
 
     wrap_callbacks(chpl_task_cb_event_kind_create, bundle);
 
-    if (subloc < 0) {
+    if (execution_subloc < 0) {
         qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
     } else {
-        qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size,
-                                 NULL, (qthread_shepherd_id_t) subloc);
+        qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
+                                 (qthread_shepherd_id_t) execution_subloc);
     }
 }
 

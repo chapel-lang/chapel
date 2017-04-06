@@ -1,3 +1,1 @@
-CHPL_COMM!=none
-CHPL_HOST_PLATFORM!=linux64
-CHPL_TASKS!=qthreads
+CHPL_TEST_PERF == on

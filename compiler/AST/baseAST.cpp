@@ -25,6 +25,7 @@
 
 #include "astutil.h"
 #include "CForLoop.h"
+#include "CatchStmt.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
@@ -77,7 +78,7 @@ void printStatistics(const char* pass) {
   foreach_ast(decl_counters);
 
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt + nTryStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt + kForwardingStmt + kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -171,10 +172,10 @@ void trace_remove(BaseAST* ast, char flag) {
 static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
   forv_Vec(ModuleSymbol, mod, modvec) {
-    if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) { 
-      modvec.v[aliveMods++] = mod;            
-    }                                           
-  } 
+    if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) {
+      modvec.v[aliveMods++] = mod;
+    }
+  }
   modvec.n = aliveMods;
 }
 
@@ -205,10 +206,10 @@ void cleanAst() {
   copiedIterResumeGotos.clear();
 
   // clean the other module vectors, without deleting the ast instances (they
-  // will be deleted with the clean_gvec call for ModuleSymbols.) 
+  // will be deleted with the clean_gvec call for ModuleSymbols.)
   clean_modvec(allModules);
   clean_modvec(userModules);
- 
+
   //
   // clean global vectors and delete dead ast instances
   //
@@ -453,12 +454,20 @@ const char* BaseAST::astTagAsString() const {
       retval = "GotoStmt";
       break;
 
+    case E_ForwardingStmt:
+      retval = "ForwardingStmt";
+      break;
+
     case E_ExternBlockStmt:
       retval = "ExternBlockStmt";
       break;
 
     case E_TryStmt:
       retval = "TryStmt";
+      break;
+
+    case E_CatchStmt:
+      retval = "CatchStmt";
       break;
 
     case E_ModuleSymbol:
