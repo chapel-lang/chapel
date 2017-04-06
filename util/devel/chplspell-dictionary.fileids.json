@@ -293,6 +293,9 @@
     "doc/rst/modules/standard/SysBasic.rst",
     "modules/standard/SysBasic.chpl"
   ],
+  "59b9a50c-1a83-11e7-980e-10ddb1d4c3d5": [
+    "doc/rst/platforms/arm.rst"
+  ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
   ],

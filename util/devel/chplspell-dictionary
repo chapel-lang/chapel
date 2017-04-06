@@ -2802,6 +2802,7 @@ libfoo
 FILEID: e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5
 dsub
 dwhole
+inds
 rsub
 rwhole
 ssub
@@ -4315,6 +4316,9 @@ downarr
 downrank
 uprank
 
+FILEID: 59b9a50c-1a83-11e7-980e-10ddb1d4c3d5
+aarch
+
 NATURAL:
 abcd
 abcdefg
@@ -5397,7 +5401,9 @@ lgamma
 lgfortran
 lgmp
 lhdfs
+libclang
 libcurl
+libedit
 libexec
 libfabric
 libfftw
@@ -5533,6 +5539,7 @@ memalign
 membername
 membind
 memcpys
+memkind
 memleaks
 memleaksfull
 memlocation
@@ -6580,6 +6587,7 @@ zeromq
 zguide
 zhang
 zima
+zlib
 zolotov
 zypper
 
