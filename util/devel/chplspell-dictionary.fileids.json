@@ -633,8 +633,10 @@
     "test/studies/shootout/submitted/knucleotide.chpl"
   ],
   "4bfc193a-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/regexdna-redux.chpl",
     "test/release/examples/benchmarks/shootout/regexdna.chpl",
     "test/studies/shootout/regex-dna/bharshbarg/regexdna.chpl",
+    "test/studies/shootout/submitted/regexdna-redux.chpl",
     "test/studies/shootout/submitted/regexdna.chpl"
   ],
   "560979a4-4401-11e6-907f-843835579daa": [
