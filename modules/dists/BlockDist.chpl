@@ -420,25 +420,13 @@ class LocBlockArr {
   }
 }
 
-//
-// Block constructor for clients of the Block distribution.  The first
-// takes no bounding box and will grab it from the first domain
-// declared over this distribution; the second takes a bounding box.
-//
-proc Block.Block(param rank,
-                 type idxType = int,
-                 targetLocales: [] locale = Locales,
-                 dataParTasksPerLocale=getDataParTasksPerLocale(),
-                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
-                 dataParMinGranularity=getDataParMinGranularity(),
-                 type sparseLayoutType = DefaultDist) {
-
-  if rank != 2 && sparseLayoutType == CSR then 
+proc chpl_blockSetupCommon(this,
+                           targetLocales,
+                           type sparseLayoutType) {
+  if this.rank != 2 && sparseLayoutType == CSR then 
     compilerError("CSR layout is only supported for 2 dimensional domains");
 
-  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
-
-  deferredSetup = true;
+  setupTargetLocalesArray(this.targetLocDom, this.targetLocales, targetLocales);
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -453,6 +441,24 @@ proc Block.Block(param rank,
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+//
+// Block constructor for clients of the Block distribution.  The first
+// takes no bounding box and will grab it from the first domain
+// declared over this distribution; the second takes a bounding box.
+//
+proc Block.Block(param rank,
+                 type idxType = int,
+                 targetLocales: [] locale = Locales,
+                 dataParTasksPerLocale=getDataParTasksPerLocale(),
+                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                 dataParMinGranularity=getDataParMinGranularity(),
+                 type sparseLayoutType = DefaultDist) {
+
+
+  deferredSetup = true;
+  chpl_blockSetupCommon(this, targetLocales, sparseLayoutType);
 }
 
 //
@@ -471,31 +477,13 @@ proc Block.Block(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && sparseLayoutType == CSR then 
-    compilerError("CSR layout is only supported for 2 dimensional domains");
-
   if boundingBox.size == 0 then
     halt("Block() requires a non-empty boundingBox");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
-  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
-
   chpl__setupBoundingBoxLocalDescs();
-
-  // NOTE: When these knobs stop using the global defaults, we will need
-  // to add checks to make sure dataParTasksPerLocale<0 and
-  // dataParMinGranularity<0
-  this.dataParTasksPerLocale = if dataParTasksPerLocale==0
-                               then here.maxTaskPar
-                               else dataParTasksPerLocale;
-  this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
-  this.dataParMinGranularity = dataParMinGranularity;
-
-  if debugBlockDist {
-    writeln("Creating new Block distribution:");
-    dsiDisplayRepresentation();
-  }
+  chpl_blockSetupCommon(this, targetLocales, sparseLayoutType);
 }
 
 proc Block.chpl__setupBoundingBoxLocalDescs() {
