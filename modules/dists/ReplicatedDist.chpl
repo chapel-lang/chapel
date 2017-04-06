@@ -274,6 +274,14 @@ class ReplicatedDom : BaseRectangularDom {
   var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
+
+  proc chpl_myLocDom() {
+    if boundsChecking then
+      if (!dist.targetLocDom.member(here.id)) then
+        halt("locale ", here.id, " has no local replicand");
+    return localDoms[here.id];
+  }
+
 }
 
 //
@@ -418,7 +426,7 @@ iter ReplicatedDom.these() {
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
   // for simplicity, redirect to DefaultRectangular's leader
-  for follow in localDoms[here.id].domLocalRep._value.these(tag) do
+  for follow in chpl_myLocDom().domLocalRep._value.these(tag) do
     yield follow;
 }
 
@@ -486,6 +494,13 @@ class ReplicatedArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetLocDom]
               LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
+
+  proc chpl_myLocArr() {
+    if boundsChecking then
+      if (!dom.dist.targetLocDom.member(here.id)) then
+        halt("locale ", here.id, " has no local replicand");
+    return localArrs[here.id];
+  }
 }
 
 //
@@ -566,7 +581,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 
 // Return the array element corresponding to the index - on the current locale
 proc ReplicatedArr.dsiAccess(indexx) ref {
-  return localArrs[here.id].arrLocalRep[indexx];
+  return chpl_myLocArr().arrLocalRep[indexx];
 }
 
 //
@@ -604,15 +619,7 @@ proc channel.writeReplicands(arr: [], sorted=true) {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  var id = here.id;
-  if !dom.dist.targetLocDom.member(id) then
-    // grab an arbitrary locale that owns a replicand
-    for i in dom.dist.targetLocDom {
-      id = i;
-      break;
-    }
-
-  localArrs[id].arrLocalRep._value.dsiSerialWrite(f);
+  chpl_myLocArr().arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
@@ -630,7 +637,7 @@ proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
 
 // completely serial
 iter ReplicatedArr.these() ref: eltType {
-  for a in localArrs[here.id].arrLocalRep do
+  for a in chpl_myLocArr().arrLocalRep do
     yield a;
 }
 
@@ -642,7 +649,7 @@ iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for a in localArrs[here.id].arrLocalRep._value.these(tag, followThis) do
+  for a in chpl_myLocArr().arrLocalRep._value.these(tag, followThis) do
     yield a;
 }
 
@@ -670,7 +677,7 @@ proc ReplicatedArr.dsiTargetLocales() {
 proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
 proc ReplicatedArr.dsiLocalSubdomain() {
-  return localArrs[here.id].myDom.domLocalRep;
+  return chpl_myLocArr().myDom.domLocalRep;
 }
 
 // todo? these two seem to work (written by analogy with DefaultRectangular)
