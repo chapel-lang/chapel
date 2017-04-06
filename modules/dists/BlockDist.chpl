@@ -420,8 +420,16 @@ class LocBlockArr {
   }
 }
 
+//
+// Todo: Once we have initializers, the two Block.Block overloads should
+// really forward between themselves rather than relying on this helper
+// routine.
+//
 proc chpl_blockSetupCommon(this,
                            targetLocales,
+                           dataParTasksPerLocale,
+                           dataParIgnoreRunningTasks,
+                           dataParMinGranularity,
                            type sparseLayoutType) {
   if this.rank != 2 && sparseLayoutType == CSR then 
     compilerError("CSR layout is only supported for 2 dimensional domains");
@@ -458,13 +466,11 @@ proc Block.Block(param rank,
 
 
   deferredSetup = true;
-  chpl_blockSetupCommon(this, targetLocales, sparseLayoutType);
+  chpl_blockSetupCommon(this, targetLocales, dataParTasksPerLocale,
+                        dataParIgnoreRunningTasks, dataParMinGranularity,
+                        sparseLayoutType);
 }
 
-//
-// Todo: Once we have initializers, this one should really forward to
-// the one with no bounding box above...
-//
 proc Block.Block(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -483,7 +489,9 @@ proc Block.Block(boundingBox: domain,
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
   chpl__setupBoundingBoxLocalDescs();
-  chpl_blockSetupCommon(this, targetLocales, sparseLayoutType);
+  chpl_blockSetupCommon(this, targetLocales, dataParTasksPerLocale,
+                        dataParIgnoreRunningTasks, dataParMinGranularity,
+                        sparseLayoutType);
 }
 
 proc Block.chpl__setupBoundingBoxLocalDescs() {
