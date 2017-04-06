@@ -70,13 +70,13 @@ extern const int CHPL_CACHE_REMOTE;
 
 // Sorted lookup table of filenames used with insertLineNumbers for error
 // messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
-extern c_string chpl_filenameTable[];
+extern const c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
 
 // Lookup tables used as a symbol table by the stack unwinder for translating
 // C symbols into Chapel symbols. Defined in chpl_compilation_config.c
-extern c_string chpl_funSymTable[];
-extern int chpl_filenumSymTable[];
+extern const c_string chpl_funSymTable[];
+extern const int chpl_filenumSymTable[];
 extern const int32_t chpl_sizeSymTable;
 
 extern char* chpl_executionCommand;
