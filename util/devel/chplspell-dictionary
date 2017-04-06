@@ -3599,6 +3599,7 @@ synccls
 FILEID: 5655c140-644c-11e6-90f0-10ddb1d4c3d5
 binarytrees
 fastaredux
+regexredux
 threadring
 
 FILEID: 59041530-69c5-11e6-90f0-10ddb1d4c3d5
@@ -4168,6 +4169,7 @@ scspell
 ukacd
 
 FILEID: 726887c4-bc39-11e6-9740-843835579daa
+ncpu
 oldact
 
 FILEID: 847163aa-bc39-11e6-9740-843835579daa
@@ -4318,6 +4320,9 @@ uprank
 
 FILEID: 59b9a50c-1a83-11e7-980e-10ddb1d4c3d5
 aarch
+
+FILEID: 2c37162c-1a84-11e7-980e-10ddb1d4c3d5
+wout
 
 NATURAL:
 abcd
@@ -4701,6 +4706,8 @@ deinitializations
 deinitialized
 deinitializers
 deinitializes
+deinitializing
+deinits
 deitz
 delaney
 delims
@@ -5192,6 +5199,7 @@ inbox
 incrs
 indexx
 indiana
+indirecting
 inet
 infile
 infilesize
@@ -5422,6 +5430,7 @@ licensable
 licensor
 licm
 lifecycle
+lifo
 limbn
 limbu
 linefeeds
@@ -5988,6 +5997,7 @@ refvar
 regexdna
 regexp
 reindexed
+reindexes
 reindexing
 reindexings
 reinitializes

@@ -131,6 +131,9 @@
   "34a911f8-3901-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/filesToAST.cpp"
   ],
+  "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
+    "compiler/passes/initializerRules.cpp"
+  ],
   "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/normalize.cpp"
   ],
