@@ -1,1 +1,4 @@
 CHPL_COMM==none
+# Avoid maintenance burden for --cache-remote or --llvm-wide-opt configs
+COMPOPTS <= --cache-remote
+COMPOPTS <= --llvm-wide-opt
