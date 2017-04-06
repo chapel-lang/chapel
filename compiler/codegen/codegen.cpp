@@ -405,27 +405,6 @@ codegenGlobalConstArray(const char* name, const char* eltType, std::vector<GenRe
 
   }
 }
-static void
-genIntegerArray(const char* name, std::vector<int> * vals, bool isHeader)
-{
-  const char* eltType = "chpl__class_id";
-
-  // Just pass NULL when generating header
-  if(isHeader) {
-    codegenGlobalConstArray(name, eltType, NULL, true);
-    return;
-  }
-
-  INT_ASSERT(vals != NULL);
-  std::vector<int> & array = *vals;
-
-  // Construct the GenRet array of integers
-  std::vector<GenRet> tmp;
-  for(size_t i = 0; i < vals->size(); i++) {
-    tmp.push_back( new_IntSymbol(array[i], INT_SIZE_32)->codegen() );
-  }
-  codegenGlobalConstArray(name, eltType, &tmp, false);
-}
 
 // This uses Schubert Numbering but we could use Cohen's Display,
 // which can be computed more incrementally.
@@ -434,10 +413,12 @@ genIntegerArray(const char* name, std::vector<int> * vals, bool isHeader)
 // by Roland Ducournau
 static void
 genSubclassArray(bool isHeader) {
-  const char* n2_name = "chpl_subclass_max_id";
+  const char* eltType = "chpl__class_id";
+  const char* name = "chpl_subclass_max_id";
 
-  if (isHeader) {
-    genIntegerArray(n2_name, NULL, true);
+  if(isHeader) {
+    // Just pass NULL when generating header
+    codegenGlobalConstArray(name, eltType, NULL, true);
     return;
   }
 
@@ -450,8 +431,14 @@ genSubclassArray(bool isHeader) {
   if (n2.empty())
     n2.push_back(0);
 
-  // Now generate arrays
-  genIntegerArray(n2_name, &n2, false);
+  // Construct the GenRet array of integers
+  std::vector<GenRet> tmp;
+  for(size_t i = 0; i < n2.size(); i++) {
+    tmp.push_back( new_IntSymbol(n2[i], INT_SIZE_32)->codegen() );
+  }
+
+  // Now emit the global array declaration
+  codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
 static void
