@@ -452,7 +452,9 @@ GenRet codegenTypeByName(const char* type_name)
   if (info->cfile) {
     ret.c = type_name;
   } else {
+#ifdef HAVE_LLVM
     ret.type = getTypeLLVM(type_name);
+#endif
   }
   return ret;
 }
@@ -467,16 +469,16 @@ GenRet codegenTypedNull(GenRet funcPtrType)
   GenInfo* info = gGenInfo;
 
   GenRet nullFn;
-#ifdef HAVE_LLVM
   if (info->cfile) {
     // C doesn't really care about the type of NULL, so use existing routine.
     nullFn.c = "(" + funcPtrType.c + ")(NULL)";
   } else {
+#ifdef HAVE_LLVM
     // With LLVM, generate a NULL of the right type.
     INT_ASSERT(funcPtrType.type);
     nullFn.val = llvm::Constant::getNullValue(funcPtrType.type);
-  }
 #endif
+  }
   return nullFn;
 }
 
@@ -500,7 +502,9 @@ GenRet codegenStringForTable(std::string s)
   if (info->cfile) {
     ret.c = "\"" + s + "\"";
   } else {
+#ifdef HAVE_LLVM
     ret.val = codegenStringForTableLLVM(s);
+#endif
   }
   return ret;
 }
