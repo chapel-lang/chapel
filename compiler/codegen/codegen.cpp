@@ -371,56 +371,36 @@ codegenGlobalConstArray(const char* name, const char* eltType, std::vector<GenRe
     }
     fprintf(f, "\n};\n");
   } else {
-    // TODO
-    INT_FATAL("not implemented yet");
-
 #ifdef HAVE_LLVM
-    /*
-    if (!isHeader)
-      return;
 
-    const char* vmtData = "chpl_vmtable_data";
-    std::vector<llvm::Constant *> table;
-    llvm::Type *funcPtrType = getTypeLLVM("chpl_fn_p");
-    llvm::Type *vmTableEntryType = funcPtrType;
+  llvm::Type *llvmEltType = getTypeLLVM(eltType);
 
-    forv_Vec(TypeSymbol, ts, types) {
-      if (AggregateType* ct = toAggregateType(ts->type)) {
-        if (!isReferenceType(ct) && isClass(ct)) {
-          int n = 0;
-          if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
-            forv_Vec(FnSymbol, vfn, *vfns) {
-              llvm::Function *func = getFunctionLLVM(vfn->cname);
-              table.push_back(llvm::cast<llvm::Constant>(
-                    info->builder->CreatePointerCast(func, funcPtrType)));
-              n++;
-            }
-          }
-          for (int i = n; i < maxVMT; i++) {
-            table.push_back(llvm::Constant::getNullValue(funcPtrType));
-            n++;
-          }
-        }
-      }
-    }
+  INT_ASSERT(llvmEltType);
 
-    llvm::ArrayType *vmTableType =
-      llvm::ArrayType::get(vmTableEntryType, table.size());
+  std::vector<llvm::Constant *> table;
 
-    if(llvm::GlobalVariable *vmTable = info->module->getNamedGlobal(vmtData)) {
-      vmTable->eraseFromParent();
-    }
+  std::vector<GenRet> & array = *vals;
+  int n = array.size();
+  table.resize(n);
+  for(int i = 0; i < n; i++ ) {
+    llvm::Value* val = array[i].val;
+    INT_ASSERT(val);
+    table[i] = llvm::cast<llvm::Constant>(val);
+  }
 
-    llvm::GlobalVariable *vmTable =llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(vmtData, vmTableType));
-    vmTable->setInitializer(llvm::ConstantArray::get(vmTableType, table));
-    vmTable->setConstant(true);
+  llvm::ArrayType *tableType =
+    llvm::ArrayType::get(llvmEltType, table.size());
 
-    llvm::Value* vmtElmPtr =
-      info->builder->CreateConstInBoundsGEP2_64(vmTable, 0, 0);
+  if(llvm::GlobalVariable *globalTable = info->module->getNamedGlobal(name)) {
+    globalTable->eraseFromParent();
+  }
 
-    info->lvt->addGlobalValue(vmt, vmtElmPtr, GEN_VAL, true);
-     */
+  llvm::GlobalVariable *globalTable =llvm::cast<llvm::GlobalVariable>(
+      info->module->getOrInsertGlobal(name, tableType));
+  globalTable->setInitializer(llvm::ConstantArray::get(tableType, table));
+  globalTable->setConstant(true);
+
+  info->lvt->addGlobalValue(name, globalTable, GEN_VAL, true);
 #endif
 
   }
@@ -428,9 +408,11 @@ codegenGlobalConstArray(const char* name, const char* eltType, std::vector<GenRe
 static void
 genIntegerArray(const char* name, std::vector<int> * vals, bool isHeader)
 {
+  const char* eltType = "chpl__class_id";
+
   // Just pass NULL when generating header
   if(isHeader) {
-    codegenGlobalConstArray(name, "int", NULL, true);
+    codegenGlobalConstArray(name, eltType, NULL, true);
     return;
   }
 
@@ -440,9 +422,9 @@ genIntegerArray(const char* name, std::vector<int> * vals, bool isHeader)
   // Construct the GenRet array of integers
   std::vector<GenRet> tmp;
   for(size_t i = 0; i < vals->size(); i++) {
-    tmp.push_back( new_IntSymbol(array[i])->codegen() );
+    tmp.push_back( new_IntSymbol(array[i], INT_SIZE_32)->codegen() );
   }
-  codegenGlobalConstArray(name, "int", &tmp, false);
+  codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
 // This uses Schubert Numbering but we could use Cohen's Display,
@@ -626,13 +608,13 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   }
   gMaxVMT = maxVMT;
 
-
 #ifdef HAVE_LLVM
   // LLVM preliminaries
-  llvm::Type *funcPtrType = getTypeLLVM("chpl_fn_p");
-  llvm::Type *vmTableEntryType = funcPtrType;
+  llvm::Type *funcPtrType = NULL;
+  if (! info->cfile) {
+    funcPtrType = getTypeLLVM("chpl_fn_p");
+  }
 #endif
-
 
   std::vector<GenRet> vmt_elts;
 
@@ -681,7 +663,15 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   // Fill any elements not filled above with codegenNullPointer
   for (size_t i = 0; i < vmt_elts.size(); i++) {
     if (vmt_elts[i].isEmpty()) {
-      vmt_elts[i] = codegenNullPointer();
+      GenRet nullFn = codegenNullPointer();
+#ifdef HAVE_LLVM
+      // With LLVM, add a pointer cast to the function type
+      // C will tolerate casting NULL into something else.
+      if (! info->cfile) {
+        nullFn.val = info->builder->CreatePointerCast(nullFn.val, funcPtrType);
+      }
+#endif
+      vmt_elts[i] = nullFn;
     }
   }
 

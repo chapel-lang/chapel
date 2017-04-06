@@ -1429,10 +1429,10 @@ GenRet codegenLessEquals(GenRet a, GenRet b)
   else {
 #ifdef HAVE_LLVM
     PromotedPair values = convertValuesToLarger(
-                                 a.val,
-                                 b.val,
-                                 is_signed(get(1)->typeInfo()),
-                                 is_signed(get(2)->typeInfo()));
+                                 av.val,
+                                 bv.val,
+                                 is_signed(av.chplType),
+                                 is_signed(bv.chplType));
 
     if (values.a->getType()->isFPOrFPVectorTy()) {
       ret.val = gGenInfo->builder->CreateFCmpOLE(values.a, values.b);
@@ -1956,7 +1956,26 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     ret.c += elt.c;
     ret.c += "]";
   } else {
-    INT_FATAL("not implemented");
+#ifdef HAVE_LLVM
+    GenRet       table = info->lvt->getValue(table_name);
+
+    INT_ASSERT(table.val);
+    INT_ASSERT(elt.val);;
+
+    llvm::Value* GEPLocs[2];
+    GEPLocs[0] = llvm::Constant::getNullValue(
+        llvm::IntegerType::getInt64Ty(info->module->getContext()));
+    GEPLocs[1] = elt.val;
+
+    llvm::Value* elementPtr;
+    elementPtr = info->builder->CreateInBoundsGEP(table.val, GEPLocs);
+
+    llvm::Instruction* element = info->builder->CreateLoad(elementPtr);
+    // Tell TBAA global array loads don't alias anything else, are constant
+    fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa,
+                        gGenInfo->tbaaVmtableNode);
+    ret.val = element;
+#endif
   }
   return ret;
 }
@@ -4773,10 +4792,10 @@ GenRet CallExpr::codegenPrimitive() {
 #ifdef HAVE_LLVM
       GenRet       table = gGenInfo->lvt->getValue("chpl_vmtable");
       llvm::Value* fnPtrPtr;
-      llvm::Value* GEPLocs[1];
-      //GEPLocs[0] = llvm::Constant::getNullValue(
-      //    llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
-      GEPLocs[0] = index.val;
+      llvm::Value* GEPLocs[2];
+      GEPLocs[0] = llvm::Constant::getNullValue(
+          llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
+      GEPLocs[1] = index.val;
       fnPtrPtr = gGenInfo->builder->CreateInBoundsGEP(table.val, GEPLocs);
       llvm::Instruction* fnPtrV = gGenInfo->builder->CreateLoad(fnPtrPtr);
       // Tell TBAA vmtable loads don't alias anything else, are constant
