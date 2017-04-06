@@ -82,8 +82,8 @@ extern const int32_t chpl_sizeSymTable;
 extern char* chpl_executionCommand;
 
 /* generated */
-extern chpl_fn_p chpl_ftable[];
-extern chpl_fn_info chpl_finfo[];
+extern const chpl_fn_p chpl_ftable[];
+extern const chpl_fn_info chpl_finfo[];
 
 extern void chpl__initStringLiterals(void);
 

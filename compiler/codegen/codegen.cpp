@@ -402,7 +402,6 @@ codegenGlobalConstArray(const char* name, const char* eltType, std::vector<GenRe
 
   info->lvt->addGlobalValue(name, globalTable, GEN_VAL, true);
 #endif
-
   }
 }
 
@@ -441,134 +440,178 @@ genSubclassArray(bool isHeader) {
   codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
+
+// Returns the type, in .c or .type field, for the passed name.
+// The type_name typically refers to something defined in the runtime.
+static
+GenRet codegenTypeByName(const char* type_name)
+{
+  GenInfo* info = gGenInfo;
+
+  GenRet ret;
+  if (info->cfile) {
+    ret.c = type_name;
+  } else {
+    ret.type = getTypeLLVM(type_name);
+  }
+  return ret;
+}
+
+
+
+// codegenTypedNull takes in the pointer type
+// (.c string or .type for LLVM) and generates NULL of that type.
+static
+GenRet codegenTypedNull(GenRet funcPtrType)
+{
+  GenInfo* info = gGenInfo;
+
+  GenRet nullFn;
+#ifdef HAVE_LLVM
+  if (info->cfile) {
+    // C doesn't really care about the type of NULL, so use existing routine.
+    nullFn.c = "(" + funcPtrType.c + ")(NULL)";
+  } else {
+    // With LLVM, generate a NULL of the right type.
+    INT_ASSERT(funcPtrType.type);
+    nullFn.val = llvm::Constant::getNullValue(funcPtrType.type);
+  }
+#endif
+  return nullFn;
+}
+
 static void
 genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
-  const char* ftable_name = "chpl_ftable";
-  // TODO -- refactor this to use codegenGlobalConstArray.
-  if( info->cfile ) {
-    FILE* hdrfile = info->cfile;
-    if(isHeader) {
-      fprintf(hdrfile, "extern chpl_fn_p %s[];\n", ftable_name);
-      return;
-    }
-    fprintf(hdrfile, "chpl_fn_p %s[] = {\n", ftable_name);
-    bool first = true;
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "(chpl_fn_p)%s", fn->cname);
-      first = false;
-    }
 
-    if (fSymbols.size() == 0)
-      fprintf(hdrfile, "(chpl_fn_p)0");
-    fprintf(hdrfile, "\n};\n");
-  } else {
-#ifdef HAVE_LLVM
-    if (!isHeader)
-      return;
+  const char* eltType = "chpl_fn_p";
+  const char* name = "chpl_ftable";
 
-    std::vector<llvm::Constant *> table ((fSymbols.size() == 0) ? 1 : fSymbols.size());
-
-    llvm::Type *funcPtrType = info->lvt->getType("chpl_fn_p");
-
-    int fID = 0;
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      llvm::Function *func = getFunctionLLVM(fn->cname);
-      table[fID++] = llvm::cast<llvm::Constant>(
-          info->builder->CreatePointerCast(func, funcPtrType));
-    }
-    if (fSymbols.size() == 0) {
-      table[0] = llvm::Constant::getNullValue(funcPtrType);
-    }
-
-    llvm::ArrayType *funcPtrTableType =
-      llvm::ArrayType::get(funcPtrType, table.size());
-
-    if(llvm::GlobalVariable *ftable =
-        info->module->getNamedGlobal(ftable_name)) {
-      ftable->eraseFromParent();
-    }
-
-    llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(ftable_name, funcPtrTableType));
-    ftable->setInitializer(llvm::ConstantArray::get(funcPtrTableType, table));
-    ftable->setConstant(true);
-    info->lvt->addGlobalValue(ftable_name, ftable, GEN_PTR, true);
-#endif
+  if(isHeader) {
+    // Just pass NULL when generating header
+    codegenGlobalConstArray(name, eltType, NULL, true);
+    return;
   }
+
+  GenRet funcPtrType = codegenTypeByName(eltType);
+
+  // Construct the table elements
+  std::vector<GenRet> ftable;
+  ftable.reserve(fSymbols.size());
+
+  forv_Vec(FnSymbol, fn, fSymbols) {
+    GenRet gen;
+    if (info->cfile) {
+      gen.c = "(" + funcPtrType.c + ")";
+      gen.c += fn->cname;
+    } else {
+#ifdef HAVE_LLVM
+      INT_ASSERT(funcPtrType.type);
+      llvm::Function *func = getFunctionLLVM(fn->cname);
+      gen.val = info->builder->CreatePointerCast(func, funcPtrType.type);
+#endif
+    }
+    ftable.push_back(gen);
+  }
+
+  // make sure ftable always contains at least 1 element
+  if (ftable.empty()) {
+    GenRet nullFn = codegenTypedNull(funcPtrType);
+    ftable.push_back(nullFn);
+  }
+
+  // Now emit the global array declaration
+  codegenGlobalConstArray(name, eltType, &ftable, false);
 }
 
 static void
 genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
-  const char* finfo_name = "chpl_finfo";
-  if( info->cfile ) {
-    FILE* hdrfile = info->cfile;
-    if(isHeader) {
-      fprintf(hdrfile, "extern chpl_fn_info %s[];\n", finfo_name);
-      return;
-    }
-    // function information (names ...)
-    fprintf(hdrfile, "chpl_fn_info %s[] = {\n", finfo_name);
-    bool first = true;
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "{\"%s\", %d, %d}", fn->cname,
-              getFilenameLookupPosition(fn->astloc.filename),
-              fn->astloc.lineno);
-      first = false;
-    }
-    if (!first)
-      fprintf(hdrfile, ",\n");
-    fprintf(hdrfile, "{(char *)0, 0, 0}\n};\n");
-  } else {
-#ifdef HAVE_LLVM
-    if (!isHeader)
-      return;
 
-    // Types neede by this code
-    llvm::StructType *structType = (llvm::StructType *)info->lvt->getType("chpl_fn_info");
+  const char* eltType = "chpl_fn_info";
+  const char* name = "chpl_finfo";
 
-    llvm::Type *c_stringType =
-        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
-
-    llvm::Type *int32Ty = llvm::IntegerType::getInt32Ty(info->module->getContext());
-
-    std::vector<llvm::Constant *> table ((fSymbols.size() == 0) ? 1 : fSymbols.size()+1);
-
-    int fID = 0;
-    llvm::Constant* fields[3];
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      fields[0] = llvm::cast<llvm::GlobalVariable>
-        (new_CStringSymbol(fn->cname)->codegen().val)->getInitializer();
-      fields[1] = llvm::ConstantInt::get(int32Ty,
-                                         getFilenameLookupPosition(fn->astloc.filename));
-      fields[2] = llvm::ConstantInt::get(int32Ty, fn->astloc.lineno);
-      table[fID++] = llvm::ConstantStruct::get(structType, fields);
-    }
-    fields[0] = llvm::Constant::getNullValue(c_stringType);
-    fields[1] = llvm::ConstantInt::get(int32Ty, 0);
-    fields[2] = llvm::ConstantInt::get(int32Ty, 0);
-    table[fID] = llvm::ConstantStruct::get(structType, fields);
-
-    llvm::ArrayType *tableType =
-      llvm::ArrayType::get(structType, table.size());
-
-    if(llvm::GlobalVariable *ftable =
-        info->module->getNamedGlobal(finfo_name)) {
-      ftable->eraseFromParent();
-    }
-
-    llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(finfo_name, tableType));
-    ftable->setInitializer(llvm::ConstantArray::get(tableType, table));
-    ftable->setConstant(true);
-    info->lvt->addGlobalValue(finfo_name, ftable, GEN_PTR, true);
-#endif
+  if(isHeader) {
+    // Just pass NULL when generating header
+    codegenGlobalConstArray(name, eltType, NULL, true);
+    return;
   }
+
+  // Compute the element type
+  GenRet structType = codegenTypeByName(eltType);
+
+#ifdef HAVE_LLVM
+  llvm::Type *int32Ty = NULL;
+  if (!info->cfile) {
+    int32Ty = llvm::IntegerType::getInt32Ty(info->module->getContext());
+  }
+#endif
+
+
+  // Construct the table elements
+  std::vector<GenRet> finfo;
+  finfo.reserve(fSymbols.size());
+
+  // buf for creating C structures
+  char* buf = NULL;
+  int buf_len = 0;
+
+  if (info->cfile) {
+    // compute the maximum file name length
+    forv_Vec(FnSymbol, fn, fSymbols) {
+      int len = strlen(fn->cname);
+      if (len > buf_len)
+        buf_len = len;
+    }
+    // and then add 100 for two integers and punctiation
+    buf_len += 100;
+    buf = (char*) malloc(buf_len);
+  }
+
+  forv_Vec(FnSymbol, fn, fSymbols) {
+    const char* fn_name = fn->cname;
+    int fileno = getFilenameLookupPosition(fn->astloc.filename);
+    int lineno = fn->astloc.lineno;
+
+    GenRet gen;
+
+    if (info->cfile) {
+      int rc = snprintf(buf, buf_len,
+                        "{\"%s\", %d, %d}", fn_name, fileno, lineno);
+      INT_ASSERT( rc < buf_len ); // assert output not truncated
+      gen.c = buf;
+    } else {
+#ifdef HAVE_LLVM
+      llvm::Constant* fields[3];
+      fields[0] = llvm::cast<llvm::GlobalVariable>
+        (new_CStringSymbol(fn_name)->codegen().val)->getInitializer();
+      fields[1] = llvm::ConstantInt::get(int32Ty, fileno);
+      fields[2] = llvm::ConstantInt::get(int32Ty, lineno);
+      INT_ASSERT(structType.type);
+      llvm::StructType* st = llvm::cast<llvm::StructType>(structType.type);
+      gen.val = llvm::ConstantStruct::get(st, fields);
+#endif
+    }
+
+    finfo.push_back(gen);
+  }
+
+  // Free the buffer for C conversions.
+  if (buf) free(buf);
+
+  // make sure the table always contains at least 1 element
+  if (finfo.empty()) {
+    GenRet nullStruct;
+    if (info->cfile) {
+      nullStruct.c = "{(char *)0, 0, 0}";
+    } else {
+      nullStruct = codegenTypedNull(structType);
+    }
+    finfo.push_back(nullStruct);
+  }
+
+  // Now emit the global array declaration
+  codegenGlobalConstArray(name, eltType, &finfo, false);
 }
 
 static void
@@ -595,13 +638,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   }
   gMaxVMT = maxVMT;
 
-#ifdef HAVE_LLVM
-  // LLVM preliminaries
-  llvm::Type *funcPtrType = NULL;
-  if (! info->cfile) {
-    funcPtrType = getTypeLLVM("chpl_fn_p");
-  }
-#endif
+  GenRet funcPtrType = codegenTypeByName(eltType);
 
   std::vector<GenRet> vmt_elts;
 
@@ -626,12 +663,13 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
             GenRet fnAddress;
 
             if( info->cfile ) {
-              fnAddress.c = "(chpl_fn_p)";
+              fnAddress.c = "(" + funcPtrType.c + ")";
               fnAddress.c += vfn->cname;
             } else {
 #ifdef HAVE_LLVM
+              INT_ASSERT(funcPtrType.type);
               llvm::Function *func = getFunctionLLVM(vfn->cname);
-              fnAddress.val = info->builder->CreatePointerCast(func, funcPtrType);
+              fnAddress.val = info->builder->CreatePointerCast(func, funcPtrType.type);
 #endif
             }
 
@@ -650,15 +688,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
   // Fill any elements not filled above with codegenNullPointer
   for (size_t i = 0; i < vmt_elts.size(); i++) {
     if (vmt_elts[i].isEmpty()) {
-      GenRet nullFn = codegenNullPointer();
-#ifdef HAVE_LLVM
-      // With LLVM, add a pointer cast to the function type
-      // C will tolerate casting NULL into something else.
-      if (! info->cfile) {
-        nullFn.val = info->builder->CreatePointerCast(nullFn.val, funcPtrType);
-      }
-#endif
-      vmt_elts[i] = nullFn;
+      vmt_elts[i] = codegenTypedNull(funcPtrType);
     }
   }
 
