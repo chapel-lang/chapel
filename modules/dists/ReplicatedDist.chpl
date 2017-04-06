@@ -59,79 +59,29 @@ That is, changes to one replicand of an array are never propagated to
 the other replicands by the distribution implementation.
 If desired, consistency needs to be maintained by the user.
 
-Replication over locales is observable when:
+When accessing a replicated domain or array from a locale *not* in the
+set of target locales, an error is reported if bounds-checking is on;
+undefined behavior occurs if it is off.
 
-* iterating over a domain or array
-
-* printing with ``writeln()`` et al.
-
-* zippering, when the replicated domain/array is
-  the first among the zippered items
-
-* assigning into the replicated array
-  (each replicand gets a copy)
-
-* inquiring about the domain's ``numIndices``
-  or the array's ``numElements``
-
-* accessing array element(s) from a locale *not* in the set of desired locales,
-  i.e. from a locale which the array is not replicated onto.
-  Upon such an access, an out-of-bounds error is reported.
-
-Only the replicand *on the current locale* is accessed
-(i.e. existence of multiple replicands is not observable) when:
-
-* examining certain domain properties:
-  ``dim(d)``, ``dims()``, ``low``, ``high``, ``stride``
-  -- not ``numIndices``
-
-* indexing into an array
-
-* zippering, when the first zippered item is not replicated
-
-* assigning to a non-replicated array,
-  i.e. the replicated array is on the right-hand side of the assignment
-
-* there is only a single locale
-  (trivially: there is only one replicand in this case)
-
-.. when slicing an array?
-
-E.g. when iterating, the number of iterations will be (the number of
-locales involved) times (the number of iterations over this domain if
-it were distributed with the default distribution).
-
-Note that the above behavior may change in the future. In particular,
-we are considering changing it so that replication is never observable.
-For example, only the local replicand would be accessed in all cases.
-
+Otherwise, only the replicand on the current locale is accessed by
+default when performing operations on the domain or array.
 
 **Example**
 
   .. code-block:: chapel
 
     const Dbase = {1..5};  // a default-distributed domain
-    const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
+    const Drepl = Dbase dmapped ReplicatedDist();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
     // only the current locale's replicand is accessed
     Arepl[3] = 4;
 
-    // these iterate over Dbase;
     // only the current locale's replicand is accessed
     forall (b,r) in zip(Abase,Arepl) do b = r;
     Abase = Arepl;
 
-    // these iterate over Drepl; each replicand of Drepl
-    // will be zippered against (and copied from) the entire Abase
-    forall (r,b) in zip(Arepl,Abase) do r = b;
-    Arepl = Abase;
-
-    // sequential zippering will detect difference in sizes
-    // (if multiple locales)
-    for (b,r) in zip(Abase,Arepl) ... // error
-    for (r,b) in zip(Arepl,Abase) ... // error
 
 
 **Constructor Arguments**
@@ -153,9 +103,6 @@ when the constructor encounters an error.
 **Features/Limitations**
 
 * Only rectangular domains are presently supported.
-
-* Serial iteration over a replicated domain (or array) visits the indices
-  (or array elements) of all replicands *from the current locale*.
 
 * When replicating over user-provided array of locales, that array
   must be "consistent" (see below).
@@ -275,6 +222,10 @@ class ReplicatedDom : BaseRectangularDom {
 
   proc numReplicands return localDoms.numElements;
 
+  //
+  // helper function to get the local domain safely
+  //
+  pragma "no doc"
   proc chpl_myLocDom() {
     if boundsChecking then
       if (!dist.targetLocDom.member(here.id)) then
@@ -495,6 +446,10 @@ class ReplicatedArr : BaseArr {
   var localArrs: [dom.dist.targetLocDom]
               LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
 
+  //
+  // helper function to get the local array safely
+  //
+  pragma "no doc"
   proc chpl_myLocArr() {
     if boundsChecking then
       if (!dom.dist.targetLocDom.member(here.id)) then
