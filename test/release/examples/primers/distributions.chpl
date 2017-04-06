@@ -279,7 +279,7 @@ writeln();
 // Have each locale assign its local copy of RA:
 coforall loc in Locales do
   on loc do
-    RA = here.id;  // *** TODO *** internal error if this is a forall loop...?
+    RA = here.id;
 
 //
 // Only the local replicand is accessed when:
