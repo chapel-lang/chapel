@@ -1,0 +1,86 @@
+Non strided zero indexed range: 0..99 block_size: 5 num_tasks: 4
+for tid: 0
+got: 0..4
+got: 20..24
+got: 40..44
+got: 60..64
+got: 80..84
+for tid: 1
+got: 5..9
+got: 25..29
+got: 45..49
+got: 65..69
+got: 85..89
+for tid: 2
+got: 10..14
+got: 30..34
+got: 50..54
+got: 70..74
+got: 90..94
+for tid: 3
+got: 15..19
+got: 35..39
+got: 55..59
+got: 75..79
+got: 95..99
+Non strided one indexed range: 1..100 block_size: 5 num_tasks: 4
+for tid: 0
+got: 1..5
+got: 21..25
+got: 41..45
+got: 61..65
+got: 81..85
+for tid: 1
+got: 6..10
+got: 26..30
+got: 46..50
+got: 66..70
+got: 86..90
+for tid: 2
+got: 11..15
+got: 31..35
+got: 51..55
+got: 71..75
+got: 91..95
+for tid: 3
+got: 16..20
+got: 36..40
+got: 56..60
+got: 76..80
+got: 96..100
+Strided zero indexed range: 0..99 by 3 block_size: 5 num_tasks: 4 stride: 3
+for tid: 0
+got: 0..14 by 3
+got: 60..74 by 3
+for tid: 1
+got: 15..29 by 3
+got: 75..89 by 3
+for tid: 2
+got: 30..44 by 3
+got: 90..99 by 3
+for tid: 3
+got: 45..59 by 3
+Strided one indexed range: 1..100 by 3 block_size: 5 num_tasks: 4 stride: 3
+for tid: 0
+got: 1..15 by 3
+got: 61..75 by 3
+for tid: 1
+got: 16..30 by 3
+got: 76..90 by 3
+for tid: 2
+got: 31..45 by 3
+got: 91..100 by 3
+for tid: 3
+got: 46..60 by 3
+Strided negative indexed range: -4..95 by 3 block_size: 5 num_tasks: 4 stride: 3
+for tid: 0
+got: -4..10 by 3
+got: 56..70 by 3
+for tid: 1
+got: 11..25 by 3
+got: 71..85 by 3
+for tid: 2
+got: 26..40 by 3
+got: 86..95 by 3
+for tid: 3
+got: 41..55 by 3
