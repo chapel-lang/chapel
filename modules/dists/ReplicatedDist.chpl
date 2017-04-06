@@ -31,9 +31,6 @@
 // - support other kinds of domains
 // - allow run-time change in locales
 
-// include locale information when printing out domains and arrays
-config param printReplicatedLocales = false;
-
 // trace certain DSI methods as they are being invoked
 config param traceReplicatedDist = false;
 
@@ -410,31 +407,19 @@ proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
 }
 
 // Iterators over the domain's indices (serial, leader, follower).
-// Our semantics: yield each of the domain's indices once per each locale.
+// Our semantics: yield each of the local domain's indices.
 
-// Serial iterator: the compiler forces it to be completely serial
+// Serial iterator
 iter ReplicatedDom.these() {
-  // compiler does not allow 'on' here (see r16137 and nestedForall*)
-  // so instead of ...
-  //---
-  //for locDom in localDoms do
-  //  on locDom do
-  //    for i in locDom.domLocalRep do
-  //      yield i;
-  //---
-  // ... so we simply do the same a few times
   var dom = redirectee();
-  //  for count in 1..#numReplicands do
   for i in dom do
     yield i;
 }
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
-  //  coforall locDom in localDoms do
-  //    on locDom do
-      // there, for simplicity, redirect to DefaultRectangular's leader
-      for follow in localDoms[here.id].domLocalRep._value.these(tag) do
-        yield follow;
+  // for simplicity, redirect to DefaultRectangular's leader
+  for follow in localDoms[here.id].domLocalRep._value.these(tag) do
+    yield follow;
 }
 
 iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
@@ -447,14 +432,6 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
 proc ReplicatedDom.dsiSerialWrite(f): void {
   // redirect to DefaultRectangular
   redirectee()._value.dsiSerialWrite(f);
-  if printReplicatedLocales {
-    f.write(" replicated over ");
-    var temp : [1..0] locale;
-    for idx in dist.targetLocDom.sorted() {
-      temp.push_back(dist.targetLocales[idx]);
-    }
-    temp._value.dsiSerialWrite(f);
-  }
 }
 
 proc ReplicatedDom.dsiDims(): rank * range(idxType,
@@ -653,10 +630,8 @@ proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
 
 // completely serial
 iter ReplicatedArr.these() ref: eltType {
-  //  for idx in dom.dist.targetLocDom.sorted() do
-//  on locArr do // compiler does not allow; see r16137 and nestedForall*
-      for a in localArrs[here.id].arrLocalRep do
-        yield a;
+  for a in localArrs[here.id].arrLocalRep do
+    yield a;
 }
 
 iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
