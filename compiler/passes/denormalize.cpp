@@ -29,6 +29,8 @@
 #include "WhileStmt.h"
 #include "exprAnalysis.h"
 #include "optimizations.h"
+#include "view.h"
+
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
@@ -292,6 +294,11 @@ bool isDenormalizable(Symbol* sym,
                         if(defCe->isPrimitive() &&
                             isIntegerPromotionPrimitive(defCe->primitive->tag)) {
                           if(requiresCast(lhsType)) {
+                            //if(strcmp(defCe->fname(),
+                                  //"test/expressions/diten/sameExprDiffValue.chpl")
+                                //== 0) {
+                              //print_view(defCe);
+                            //}
                             *castTo = lhsType;
                           }
                         }
