@@ -709,6 +709,7 @@ static int processBlockComment(yyscan_t scanner) {
 
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
+  int         d            = 1;
 
   int         c            = 0;
   int         lastc        = 0;
@@ -746,9 +747,14 @@ static int processBlockComment(yyscan_t scanner) {
 
       addChar(c);
     }
+   if(c == fDocsCommentLabel[len - d])
+	d++;
+    else
+	d = 1;
 
-    if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
+    if (lastc == '*' && c == '/' && d == len + 1) { // close comment
       depth--;
+      d = 1;
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
