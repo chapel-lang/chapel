@@ -267,7 +267,6 @@ use.
 //
 // See chapel-developers thread "migrating tasks" from 9/25/2013.
 // FIFO: never moves a task from one pthread to another
-// muxed: may move a task
 // massivethreads: may move a task with sync/wait/yield/etc
 // Qthreads workaround: QT_NUM_WORKERS_PER_SHEPHERD=1
 //   (on 9/26/2013 Dylan mentioned perhaps adding 'pin to worker')

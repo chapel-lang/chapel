@@ -54,16 +54,6 @@ case $target in
         else
           echo Could not find hwloc lstopo utility > $1.good
         fi;;
-      flat-muxed)
-        launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
-        if [[ $launcher =~ slurm* ]] ; then
-          numPUs=$( sinfo --exact '--format=%c' '--sort=+=#c' --noheader \
-                    --responding |
-                    head -1 )
-        else
-          numPUs=$( cnselect -L numcores | head -1 )
-        fi
-        echo $(( $numPUs * 16 )) > $1.good;;
       *)
         cores_from_proc_cpuinfo
         echo $numCores > $1.good;;
