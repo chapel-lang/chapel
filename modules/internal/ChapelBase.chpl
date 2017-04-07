@@ -488,9 +488,9 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { return a; }
-  inline proc _statementLevelSymbol(a: sync)  { return a.readFE(); }
-  inline proc _statementLevelSymbol(a: single) { return a.readFF(); }
+  inline proc _statementLevelSymbol(a) { }
+  inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
+  inline proc _statementLevelSymbol(a: single) { a.readFF(); }
   inline proc _statementLevelSymbol(param a) param { return a; }
   inline proc _statementLevelSymbol(type a) type { return a; }
 
