@@ -422,7 +422,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 }
 
 inline bool requiresCast(Type* t) {
-  if(is_int_type(t) || is_uint_type(t)) {
+  if(is_int_type(t) || is_uint_type(t) || is_real_type(t)) {
     return true;
   }
   return false;
