@@ -42,6 +42,7 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
+inline bool isFloatComparisonPrimitive(CallExpr *ce);
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut,
     Type** castTo, SafeExprAnalysis& analysisData);
@@ -345,7 +346,8 @@ bool isDenormalizable(Symbol* sym,
                   (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
                   (ce->isPrimitive(PRIM_MOVE) &&
                    ce->get(1)->typeInfo() !=
-                   ce->get(2)->typeInfo()))) {
+                   ce->get(2)->typeInfo()) ||
+                  isFloatComparisonPrimitive(ce))) {
               use = se;
             }
           }
@@ -431,6 +433,24 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 inline bool requiresCast(Type* t) {
   if(is_int_type(t) || is_uint_type(t) || is_real_type(t)) {
     return true;
+  }
+  return false;
+}
+
+inline bool isFloatComparisonPrimitive(CallExpr *ce) {
+  if(ce->isPrimitive()) {
+    switch(ce->primitive->tag) {
+      case PRIM_EQUAL:
+      case PRIM_NOTEQUAL:
+      case PRIM_LESSOREQUAL:
+      case PRIM_GREATEROREQUAL:
+      case PRIM_LESS:
+      case PRIM_GREATER:
+        if(is_real_type(ce->get(1)->typeInfo()) ||
+           is_real_type(ce->get(2)->typeInfo())) {
+          return true;
+        }
+    }
   }
   return false;
 }
