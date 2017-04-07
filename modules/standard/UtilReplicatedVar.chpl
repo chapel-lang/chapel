@@ -193,7 +193,7 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   rcReplicate(myRepVar, initVal);
 
   writeln("\nafter initialization, myRepVar copies are:");
-  writeReplicands(myRepVar);
+  writeReplicands(myRepVar); // a helper function to print each locale's copy
 
   // go to 'newLocale' and update its copy to 'newVal'
   on newLocale {
@@ -215,6 +215,15 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   rcCollect(myRepVar, collected);
 
   writeln("\ncollected copies of myRepVar are:\n", collected);
+}
+
+// This is a helper function to print each locale's replicand, labeled
+//
+private proc writeReplicands(RV) {
+  for loc in Locales {
+    writeln(loc, ":");
+    writeln(RV);
+  }
 }
 
 // This is the same as 'rcExample', except the user can provide

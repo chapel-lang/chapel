@@ -262,9 +262,19 @@ on Locales[numLocales-1] do
 // In printing the array, only the local copy will be printed.
 writeln("Locale 0's copy of RA is:\n", RA);
 
-// A utility function can be used to print the other locales' copies:
+// So, we'll use a utility function can be used to print the other
+// locales' copies:
 writeReplicands(RA);
 writeln();
+
+proc writeReplicands(X) {
+  for loc in Locales {
+    on loc {
+      writeln(loc, ":");
+      writeln(X);
+    }
+  }
+}
 
 //
 // Whole-array assignment is similarly local only to the current

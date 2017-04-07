@@ -539,6 +539,7 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
   return chpl_myLocArr().arrLocalRep[indexx];
 }
 
+/*
 //
 // TODO: chpldoc me!
 //
@@ -571,13 +572,16 @@ proc channel.writeReplicands(arr: [], sorted=true) {
   }
   this.write("\n");
 }
+*/
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
+  writeln("in dsiSerialWrite() on locale ", here.id);
   chpl_myLocArr().arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
+  writeln("In chpl_serialReadWrite...");
   chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 

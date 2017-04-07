@@ -1,5 +1,14 @@
 use ReplicatedDist, UtilReplicatedVar;
 
+proc writeReplicands(x) {
+  for loc in Locales {
+    on loc {
+      writeln(loc, ":");
+      writeln(x);
+    }
+  }
+}
+
 {
   writeln("\nsimple case");
   var x: [rcDomain] real;
