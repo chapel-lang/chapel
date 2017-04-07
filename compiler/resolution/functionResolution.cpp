@@ -10784,7 +10784,37 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   }
 }
 
+// Avoid pruning arg types in removeUnusedTypes() by resolving their
+// type constructor. Be sure to do so before the latter is pruned.
+// Todo: in addition to args, do the same for VarSymbols? FnSymbols?
+static void ensureResolvedArgTypeConstructors() {
+  forv_Vec(ArgSymbol, arg, gArgSymbols)
+    if (arg->inTree())
+      if (AggregateType* ct = toAggregateType(arg->type))
+        if (ct->defaultTypeConstructor &&
+            // Is there a type constructor that needs to be resolved?
+            !ct->defaultTypeConstructor->isResolved() &&
+            // Do not interfer with these. See also isUnusedClass().
+            !isReferenceType(ct) &&
+            !ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) &&
+            !ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
+            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+            !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+          // Concern with args only in functions. (Can args happen elsewhere?)
+          if (FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol))
+            // Unresolved and generic functions will be pruned.
+            if (fn->isResolved() &&
+                !fn->hasFlag(FLAG_GENERIC))
+              {
+                INT_ASSERT(!ct->symbol->hasFlag(FLAG_GENERIC));
+                SET_LINENO(ct);
+                resolveFns(ct->defaultTypeConstructor);
+              }
+}
+
 static void removeUnusedFunctions() {
+  ensureResolvedArgTypeConstructors();
+
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
