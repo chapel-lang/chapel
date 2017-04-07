@@ -3508,14 +3508,18 @@ static int processBlockComment(yyscan_t scanner) {
 
       addChar(c);
     }
-   if(c == fDocsCommentLabel[len - d])
+   if(fDocs && c == fDocsCommentLabel[len - d])
      d++;
     else
      d = 1;
 
     if (lastc == '*' && c == '/' && d == len + 1) { // close comment
-      depth--;
-      d = 1;
+      if(fDocs && d == len + 1) {
+        depth--;
+        d = 1;
+      }
+      else if(lastlastc != '/')
+        depth--;
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
