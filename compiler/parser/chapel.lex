@@ -25,7 +25,6 @@
 
 /* These options create a re-entrant scanner that returns
      an integer to indicate the token type
-     a  bison-style YYSTYPE by reference. The value will always be in yylval->pch.
      a  bison-style YYLTYPE by reference.
 
      i.e. int yylex(YYSTYPE*, YYLTYPE*, yyscan_t yyscanner);
@@ -748,9 +747,9 @@ static int processBlockComment(yyscan_t scanner) {
       addChar(c);
     }
    if(c == fDocsCommentLabel[len - d])
-	d++;
+     d++;
     else
-	d = 1;
+     d = 1;
 
     if (lastc == '*' && c == '/' && d == len + 1) { // close comment
       depth--;
