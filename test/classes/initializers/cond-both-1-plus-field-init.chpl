@@ -1,5 +1,6 @@
 // Confirm that the compiler accepts simple conditional with init in
-// both branches
+// both branches, and allows field initialization before the
+// super.init() in phase1.
 
 record MyRec {
   var x : int = 10;
@@ -16,10 +17,13 @@ record MyRec {
   proc init(a : int) {
     writeln('Init(int) Enter');
 
-    if a < 10 then
+    if a < 10 then {
+      x = 22;
+      y = 33;
       super.init();
-    else
+    } else {
       this.init();
+    }
 
     writeln('Init(int) Done');
     writeln();
