@@ -290,7 +290,7 @@ bool isDenormalizable(Symbol* sym,
                       //at this point we now that def is fine
                       def = ce->get(2);
 
-                      //now check if we need to case it when we move it
+                      //now check if we need to cast it when we move it
                       if(CallExpr* defCe = toCallExpr(def)) {
                         if(defCe->isPrimitive() &&
                             isArithmeticPrimitive(defCe->primitive->tag)) {
