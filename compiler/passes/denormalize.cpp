@@ -29,7 +29,6 @@
 #include "WhileStmt.h"
 #include "exprAnalysis.h"
 #include "optimizations.h"
-#include "view.h"
 
 
 //helper datastructures/types
