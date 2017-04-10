@@ -751,8 +751,13 @@ static int processBlockComment(yyscan_t scanner) {
     else
      d = 1;
 
-    if (lastc == '*' && c == '/' && d == len + 1) { // close comment
-      if(fDocs && d == len + 1) {
+    if (lastc == '*' && c == '/') { // close comment
+      if(fDocsCommentLabel[0] == '/' && fDocsCommentLabel[1] == '*' && (d < len + 1 && d >= len - 3)) {
+        USR_WARN("chpldoc comment not closed, ignoring comment: %s This comment is not closed properly", fDocsCommentLabel);
+        depth--;
+        d = 1;
+      }
+      else if(fDocs && d == len + 1) {
         depth--;
         d = 1;
       }
