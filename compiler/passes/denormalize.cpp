@@ -41,7 +41,7 @@ bool primMoveGeneratesCommCall(CallExpr* ce);
 inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
-inline bool isArithmeticPrimitive(PrimitiveTag tag);
+inline bool isArithmeticPrimitive(CallExpr *ce);
 inline bool isFloatComparisonPrimitive(CallExpr *ce);
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut,
@@ -292,8 +292,7 @@ bool isDenormalizable(Symbol* sym,
 
                       //now check if we need to cast it when we move it
                       if(CallExpr* defCe = toCallExpr(def)) {
-                        if(defCe->isPrimitive() &&
-                            isArithmeticPrimitive(defCe->primitive->tag)) {
+                        if(isArithmeticPrimitive(defCe)) {
                           if(requiresCast(lhsType)) {
                             *castTo = lhsType;
                           }
@@ -450,20 +449,22 @@ inline bool isFloatComparisonPrimitive(CallExpr *ce) {
   return false;
 }
 
-inline bool isArithmeticPrimitive(PrimitiveTag tag) {
-  switch(tag) {
-    case PRIM_ADD:
-    case PRIM_SUBTRACT:
-    case PRIM_MULT:
-    case PRIM_DIV:
-    case PRIM_MOD:
-    case PRIM_LSH:
-    case PRIM_RSH:
-      return true;
-      break;
-    default:
-      return false;
-      break;
+inline bool isArithmeticPrimitive(CallExpr *ce) {
+  if(ce->isPrimitive()) {
+    switch(ce->primitive->tag) {
+      case PRIM_ADD:
+      case PRIM_SUBTRACT:
+      case PRIM_MULT:
+      case PRIM_DIV:
+      case PRIM_MOD:
+      case PRIM_LSH:
+      case PRIM_RSH:
+        return true;
+        break;
+      default:
+        return false;
+        break;
+    }
   }
   return false;
 }
