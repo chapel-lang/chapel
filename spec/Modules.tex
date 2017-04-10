@@ -11,7 +11,7 @@ relation between files and modules is described
 in~\rsec{Implicit_Modules}.  Nested modules are described
 in~\rsec{Nested_Modules}.  The visibility of a module's symbols by
 users of the module is described in~\rsec{Visibility_Of_Symbols}.  The execution
-of a program and module initialization is described
+of a program and module initialization/deinitialization are described
 in~\rsec{Program_Execution}.
 
 \section{Module Definitions}
@@ -329,6 +329,7 @@ cannot be specified in a \sntx{limitation-clause} on their own.
 \subsection{Module Initialization}
 \label{Module_Initialization}
 \index{modules!initialization}
+\index{initialization!modules}
 
 Module initialization occurs at program start-up.  All top-level
 statements in a module other than function and type declarations are
@@ -357,6 +358,32 @@ The function foo() will be invoked and its result assigned to x.  Then
 
 Module initialization order is discussed
 in~\rsec{Module_Initialization_Order}.
+
+
+\subsection{Module Deinitialization}
+\label{Module_Deinitialization}
+\index{modules!deinitialization}
+\index{deinitialization!modules}
+
+Module deinitialization occurs at program tear-down.
+During module deinitialization:
+
+\begin{itemize}
+
+\item If the module contains a deinitializer, which is a function
+named \chpl{deinit} that is declared at the module level,
+it is executed first.
+
+\item If the module declares global variables, they are deinitialized
+in the reverse declaration order.
+
+\end{itemize}
+
+% TODO: add examples. For example, adapt this test:
+%   test/modules/vass/deinit-order-modules.chpl
+
+Module deinitialization order is discussed
+in~\rsec{Module_Deinitialization_Order}.
 
 
 \section{Program Execution}
@@ -503,3 +530,15 @@ initialized.  Because M2.M3 is a nested module, M4 (which is used by
 M2) must be initialized first.  M2 itself is initialized, followed by
 M2.M3.  Finally M1 is initialized, and the main function is run.
 \end{chapelexample}
+
+
+\subsection{Module Deinitialization Order}
+\label{Module_Deinitialization_Order}
+\index{modules!deinitialization order}
+
+Module deinitialization is performed in the reverse order of
+module initialization, as specified in
+\rsec{Module_Initialization_Order}.
+
+% TODO: add examples. For example, adapt this test:
+%   test/modules/vass/deinit-order-modules.chpl

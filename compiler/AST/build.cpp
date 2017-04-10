@@ -716,6 +716,9 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
 
+  // MPF: as of 2017-03 this error is never reached because
+  // it's a syntax error in the parser to not have an else clause
+  // on an if-expr.
   if (!e2)
     USR_FATAL("if-then expressions currently require an else-clause");
 
@@ -2130,7 +2133,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
-  fn->insertAtTail("compilerWarning('scan has been serialized (see note in $CHPL_HOME/STATUS)')");
+  fn->insertAtTail("compilerWarning('scan has been serialized (see issue #5760)')");
 
   if( !zippered ) {
     fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);
@@ -2525,6 +2528,112 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
+static
+DefExpr* buildForwardingExprFnDef(Expr* expr) {
+  // Put expr into a method and return the DefExpr for that method.
+  // This way, we can work with the rest of the compiler that
+  // assumes that 'this' is an ArgSymbol.
+  static int delegate_counter = 0;
+  const char* name = astr("forwarding_expr", istr(++delegate_counter));
+  if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
+    name = astr(name, "_", usex->unresolved);
+  FnSymbol* fn = new FnSymbol(name);
+
+  fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_MAYBE_REF);
+
+  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+
+  DefExpr* def = new DefExpr(fn);
+
+  return def;
+}
+
+
+// handle syntax like
+//    var instance:someType;
+//    forwarding instance;
+BlockStmt* buildForwardingStmt(Expr* expr) {
+  return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
+}
+
+// handle syntax like
+//    var instance:someType;
+//    forwarding instance only foo;
+BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
+  std::set<const char*> namesSet;
+  std::map<const char*, const char*> renameMap;
+
+  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
+  // case will have a single UnresolvedSymExpr named "".
+  if (except && names->size() == 1) {
+    OnlyRename* listElem = (*names)[0];
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+      if (name->unresolved[0] == '\0') {
+        except = false;
+      }
+    }
+  }
+
+  // Iterate through the list of names to exclude when using mod
+  for_vector(OnlyRename, listElem, *names) {
+    switch (listElem->tag) {
+      case OnlyRename::SINGLE:
+        if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+          namesSet.insert(name->unresolved);
+        } else {
+          // Currently we expect only unresolved sym exprs
+          useListError(listElem->elem, except);
+        }
+        break;
+      case OnlyRename::DOUBLE:
+        std::pair<Expr*, Expr*>* elem = listElem->renamed;
+        // Need to check that we aren't renaming in an 'except' list
+        if (except) {
+          USR_FATAL(elem->first, "cannot rename in 'except' list");
+        }
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+        if (old_name != NULL && new_name != NULL) {
+          renameMap[new_name->unresolved] = old_name->unresolved;
+        } else {
+          useListError(elem->first, except);
+        }
+        break;
+    }
+
+  }
+
+  DefExpr* fnDef = buildForwardingExprFnDef(expr);
+  ForwardingStmt* ret = new ForwardingStmt(fnDef,
+                                       &namesSet,
+                                       except,
+                                       &renameMap);
+  return buildChapelStmt(ret);
+}
+
+
+// handle syntax like
+//    forwarding var instance:someType;
+// by translating it into
+//    var instance:someType;
+//    forwarding instance;
+BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
+  for_alist(stmt, stmts->body) {
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        // Append a ForwardingStmt
+        BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
+        for_alist(tmp, toAppend->body) {
+          stmts->insertAtTail(tmp->remove());
+        }
+      } else {
+        INT_FATAL("case not handled in buildForwardingDeclStmt");
+      }
+    }
+  }
+  return stmts;
+}
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {

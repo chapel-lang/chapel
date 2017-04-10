@@ -1,4 +1,0 @@
-unimplemented: matching errors to catch blocks
-
-If an error is caught by a try block then it should
-direct control flow to a matching catch block.

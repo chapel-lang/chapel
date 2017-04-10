@@ -335,13 +335,13 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Cyclic domain rank does not match distribution's");
   var dom = new CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable);
-  dom.setup();
+  dom.dsiSetIndices(inds);
   return dom;
 } 
 
@@ -387,34 +387,6 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
     }
   }
   return helper(1);
-}
-
-proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimInds: rank*idxType;
-  var collapsedLocs: _cyclic_matchArgsShape(range(int), int, args);
-  var newLow: newRank*idxType;
-
-  var j: int = 1;
-  for param i in 1..args.size {
-    if isCollapsedDimension(args(i)) then
-      collapsedDimInds(i) = args(i);
-    else {
-      newLow(j) = startIdx(i);
-      j += 1;
-    }
-  }
-  const partialLocIdx = targetLocsIdx(collapsedDimInds);
-
-
-  for param i in 1..args.size {
-    if isCollapsedDimension(args(i)) {
-      collapsedLocs(i) = partialLocIdx(i);
-} else {
-      collapsedLocs(i) = targetLocDom.dim(i);
-    }
-  }
-  var newTargetLocales = targetLocs[(...collapsedLocs)];
-  return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
 proc Cyclic.writeThis(x) {
@@ -676,23 +648,6 @@ proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
-                                    param stridable: bool,
-                                    ranges: rank*range(idxType,
-                                                       BoundedRangeType.bounded,
-                                                       stridable)) {
-  if idxType != dist.idxType then
-    compilerError("Cyclic domain index type does not match distribution's");
-  if rank != dist.rank then
-    compilerError("Cyclic domain rank does not match distribution's");
-
-  var dom = new CyclicDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
-  dom.dsiSetIndices(ranges);
-  return dom;
-
-}
-
 proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
@@ -934,7 +889,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     //
     // TODO: Can myLocArr be used here to simplify things?
     //
-    var chunk => arrSection.myElems(myFollowThis);
+    ref chunk = arrSection.myElems(myFollowThis);
     if arrSection.locale.id == here.id then local {
       for i in chunk do yield i;
     } else {

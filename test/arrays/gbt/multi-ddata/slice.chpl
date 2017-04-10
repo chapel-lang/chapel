@@ -31,9 +31,9 @@ proc testRank(rank, D, Ds) {
     iVal += 1;
   }
 
-  var A1s => A1[(...Ds.dims())];
-  var A2s => A2[(...Ds.dims())];
-  var Bs => B[(...Ds.dims())];
+  ref A1s = A1[(...Ds.dims())];
+  ref A2s = A2[(...Ds.dims())];
+  ref Bs = B[(...Ds.dims())];
 
   for (b, a1, a2) in zip(Bs, A1s, A2s) do b = a1 + a2;
 

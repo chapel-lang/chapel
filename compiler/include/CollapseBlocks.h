@@ -111,8 +111,14 @@ public:
   virtual bool   enterGotoStmt       (GotoStmt*          node);
   virtual void   exitGotoStmt        (GotoStmt*          node);
 
+  virtual bool   enterForwardingStmt (ForwardingStmt*    node);
+  virtual void   exitForwardingStmt  (ForwardingStmt*    node);
+
   virtual bool   enterTryStmt        (TryStmt*           node);
   virtual void   exitTryStmt         (TryStmt*           node);
+
+  virtual bool   enterCatchStmt      (CatchStmt*         node);
+  virtual void   exitCatchStmt       (CatchStmt*         node);
 };
 
 #endif

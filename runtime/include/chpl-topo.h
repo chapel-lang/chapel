@@ -39,6 +39,21 @@ void chpl_topo_init(void);
 void chpl_topo_exit(void);
 
 //
+// how many NUMA domains are there?
+//
+int chpl_topo_getNumNumaDomains(void);
+
+//
+// set the sublocale where the current thread is running
+//
+void chpl_topo_setThreadLocality(c_sublocid_t);
+
+//
+// get the sublocale where the current thread is running
+//
+c_sublocid_t chpl_topo_getThreadLocality(void);
+
+//
 // set the locality of a block of memory, to a specific NUMA domain
 //
 // args:
@@ -46,12 +61,34 @@ void chpl_topo_exit(void);
 //   size (bytes)
 //   onlyInside?  true: only localize pages strictly within the memory
 //                false: also localize partial pages at edges
-//   doSubchunks?  true: block-localize the subchunks
-//                 false: localize the entirety to the given sublocale
-//   desired sublocale (NUMA domain), if !doSubChunks
+//   desired sublocale (NUMA domain)
 //
-void chpl_topo_setMemLocality(void*, size_t, chpl_bool,
-                              chpl_bool, c_sublocid_t);
+void chpl_topo_setMemLocality(void*, size_t, chpl_bool, c_sublocid_t);
+
+//
+// set the locality of the sub-blocks of a block of memory, to each
+// of the NUMA domains in order
+//
+// args:
+//   base address
+//   size (bytes)
+//   onlyInside?  true: only localize pages strictly within the memory
+//                false: also localize partial pages at edges
+//   (optional) address of result vector of subchunk sizes
+//
+void chpl_topo_setMemSubchunkLocality(void*, size_t, chpl_bool, size_t*);
+
+//
+// touch a block of memory, while running on a given NUMA domain
+//
+// args:
+//   base address
+//   size (bytes)
+//   onlyInside?  true: only localize pages strictly within the memory
+//                false: also localize partial pages at edges
+//   desired sublocale (NUMA domain)
+//
+void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 
 //
 // get memory locality of (the page containing) an address

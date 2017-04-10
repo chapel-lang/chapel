@@ -91,6 +91,7 @@ module ChapelIteratorSupport {
       e = x;
   }
 
+  pragma "suppress lvalue error"
   inline proc _getIterator(x) {
     return _getIterator(x.these());
   }
@@ -158,6 +159,7 @@ module ChapelIteratorSupport {
     return leader;
   }
 
+  pragma "suppress lvalue error"
   inline proc _toLeader(x)
     return _toLeader(x.these());
 
@@ -178,6 +180,7 @@ module ChapelIteratorSupport {
     return standalone;
   }
 
+  pragma "suppress lvalue error"
   inline proc _toStandalone(x) {
     return _toStandalone(x.these());
   }
@@ -203,6 +206,7 @@ module ChapelIteratorSupport {
     return leader;
   }
 
+  pragma "suppress lvalue error"
   pragma "expand tuples with values"
   inline proc _toLeader(x, args...)
     return _toLeader(x.these(), (...args));
@@ -228,6 +232,7 @@ module ChapelIteratorSupport {
     return standalone;
   }
 
+  pragma "suppress lvalue error"
   pragma "expand tuples with values"
   inline proc _toStandalone(x, args...) {
     return _toStandalone(x.these(), (...args));
@@ -317,6 +322,7 @@ module ChapelIteratorSupport {
     return follower;
   }
 
+  pragma "suppress lvalue error"
   inline proc _toFollower(x, leaderIndex) {
     return _toFollower(x.these(), leaderIndex);
   }

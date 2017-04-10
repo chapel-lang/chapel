@@ -1552,7 +1552,7 @@ proc test_trsv_helper(type t){
         R : [X.domain] t; // Result
 
 
-    rng.fillRandom(A);
+    makeRandomInvertible(A);
     rng.fillRandom(X);
 
     // Make A a triangular matrix
@@ -1581,7 +1581,7 @@ proc test_trsv_helper(type t){
         R : [X.domain] t; // Result
 
 
-    rng.fillRandom(A);
+    makeRandomInvertible(A);
     rng.fillRandom(X);
 
     // Make A a triangular matrix
@@ -1610,7 +1610,7 @@ proc test_trsv_helper(type t){
         R : [X.domain] t; // Result
 
 
-    rng.fillRandom(A);
+    makeRandomInvertible(A);
     rng.fillRandom(X);
 
     // Make A a triangular matrix
@@ -1639,11 +1639,12 @@ proc test_trsv_helper(type t){
         R : [X.domain] t; // Result
 
 
-    rng.fillRandom(A);
+    makeRandomInvertible(A);
     rng.fillRandom(X);
 
     // Make A a triangular matrix
     zeroTri(A);
+
     // Make A unit triangular
     for (i, j) in A.domain do
       if i == j then A[i, j] = 1 :t;
@@ -1672,7 +1673,7 @@ proc test_trsv_helper(type t){
         R : [X.domain] t; // Result
 
 
-    rng.fillRandom(A);
+    makeRandomInvertible(A[.., 0..#m]);
     rng.fillRandom(X);
 
     // Make A a triangular matrix

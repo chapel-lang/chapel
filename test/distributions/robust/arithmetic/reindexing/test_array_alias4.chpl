@@ -6,7 +6,7 @@ const c3 = -987654321;
 const c4 = 123456789;
 const c2d32 = max(int(32));
 
-var AA => A1D;
+ref AA = A1D;
 AA = c1;
 var errs = 0;
 for i in Dom1D do
@@ -14,7 +14,7 @@ for i in Dom1D do
 if verbose then writeln(A1D);
 writeln("alias1: ", errs, " errors");
 
-var AA2 => A2D;
+ref AA2 = A2D;
 AA2 = c1;
 errs = 0;
 for i in Dom2D do
@@ -22,7 +22,7 @@ for i in Dom2D do
 if verbose then writeln(A2D);
 writeln("alias1 2D: ", errs, " errors");
 
-var AA3 => A3D;
+ref AA3 = A3D;
 AA3 = c3;
 errs = 0;
 for i in Dom3D do
@@ -30,7 +30,7 @@ for i in Dom3D do
 if verbose then writeln(A3D);
 writeln("alias1 3D: ", errs, " errors");
 
-var AA4 => A4D;
+ref AA4 = A4D;
 AA4 = c4;
 errs = 0;
 for i in Dom4D do
@@ -38,7 +38,7 @@ for i in Dom4D do
 if verbose then writeln(A4D);
 writeln("alias1 4D: ", errs, " errors");
 
-var AA2D32 => A2D32;
+ref AA2D32 = A2D32;
 AA2D32 = c2d32;
 errs = 0;
 for i in Dom2D32 do
@@ -49,7 +49,7 @@ writeln("alias1 2D32: ", errs, " errors");
 
 const TD1D: domain(1) dmapped Dist1D = Space1.translate(-o5);
 var TA1D: [TD1D] int;
-var AA11 => TA1D;
+ref AA11 = TA1D;
 AA11 = c1;
 errs = 0;
 for i in TD1D do
@@ -59,7 +59,7 @@ writeln("alias2: ", errs, " errors");
 
 const TD2D: domain(2) dmapped Dist2D = Space2.translate(-o5, -o5);
 var TA2D: [TD2D] int;
-var AA22 => TA2D;
+ref AA22 = TA2D;
 AA22 = c2;
 errs = 0;
 for i in TD2D do
@@ -69,7 +69,7 @@ writeln("alias2 2D: ", errs, " errors");
 
 const TD3D: domain(3) dmapped Dist3D = Space3.translate(-o5, -o5, -o5);
 var TA3D: [TD3D] int;
-var AA33 => TA3D;
+ref AA33 = TA3D;
 AA33 = c3;
 errs = 0;
 for i in TD3D do
@@ -79,7 +79,7 @@ writeln("alias2 3D: ", errs, " errors");
 
 const TD4D: domain(4) dmapped Dist4D = Space4.translate(-o5, -o5, -o5, -o5);
 var TA4D: [TD4D] int;
-var AA44 => TA4D;
+ref AA44 = TA4D;
 AA44 = c4;
 errs = 0;
 for i in TD4D do
@@ -89,7 +89,7 @@ writeln("alias2 4D: ", errs, " errors");
 
 const TD2D32: domain(2, int(32)) dmapped Dist2D32 = Space2D32.chpl__unTranslate(o5:int(32), o5:int(32));
 var TA2D32: [TD2D32] int;
-var AA22D32 => TA2D32;
+ref AA22D32 = TA2D32;
 AA22D32 = c2d32;
 errs = 0;
 for i in TD2D32 do

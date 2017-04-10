@@ -31,7 +31,7 @@ void chpl_rt_init(int argc, char* argv[]);
 void chpl_rt_finalize(int return_value);
 
 void chpl_executable_init(void);
-//   chpl_executable_finalize(...) equivalent is done by main.c:main(...)
+void chpl_execute_module_deinit(c_fn_ptr deinitFun);
 
 void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);

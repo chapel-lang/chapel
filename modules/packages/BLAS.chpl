@@ -65,7 +65,7 @@ BLAS Implementations:
 
   * **MKL**
 
-    * Compile with :param:`-sisBLAS_MKL` if using MKL BLAS.
+    * Compile with :param:`isBLAS_MKL` if using MKL BLAS.
 
   * **OpenBLAS**
 
@@ -189,6 +189,10 @@ module BLAS {
     require "cblas.h";
   }
 
+  /* Return `true` if type is supported by BLAS */
+  proc isBLASType(type t) param: bool{
+    return isRealType(t) || isComplexType(t);
+  }
 
   /* Define row or column order */
   enum Order {Row=101: c_int, Col};
@@ -2343,7 +2347,7 @@ module BLAS {
   //
 
   pragma "no doc"
-  private inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
+  inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
     if order==Order.Row then
       return Adom.dim(2).size : c_int;
     else
@@ -2351,7 +2355,7 @@ module BLAS {
   }
 
   pragma "no doc"
-  private inline proc getLeadingDim(Arr: [], order : Order) : c_int
+  inline proc getLeadingDim(Arr: [], order : Order) : c_int
   where chpl__isArrayView(Arr)
   {
     const dims = chpl__getActualArray(Arr).dom.dsiDims();

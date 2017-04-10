@@ -280,27 +280,6 @@ proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   return result;
 }
 
-proc BlockCyclic1dom.dsiBuildRectangularDom1d(DD,
-                                   param stridable:bool,
-                                   rangeArg: range(idxType,
-                                                   BoundedRangeType.bounded,
-                                                   stridable))
-{
-  // There does not seem to be any optimizations from merging the two calls.
-  const result = DD.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
-  result.dsiSetIndices1d(rangeArg);
-  return result;
-}
-
-proc BlockCyclic1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
-  assert(locId == this.locId);
-  // There does not seem to be any optimizations from merging the two calls.
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
-  return (newLocDD, newStoRng);
-}
-
-
 /////////////////////////////////
 
 /* The following comment:
@@ -685,7 +664,8 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
       halt("range with non-unit stride is cast to non-stridable range");
     r1._low       = r2._low: r1.idxType;
     r1._high      = r2._high: r1.idxType;
-    r1._stride    = r2._stride: r1.strType;
+    if r1.stridable then
+      r1._stride  = r2.stride: r1.strType;
     r1._alignment = r2._alignment: r1.idxType;
     r1._aligned = r2._aligned;
   }

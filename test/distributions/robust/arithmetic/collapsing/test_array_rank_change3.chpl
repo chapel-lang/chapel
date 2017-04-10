@@ -12,7 +12,7 @@ proc checkMe(i1, i2, i3, i4, A, j1, j2) {
 
 A4D = 1;
 
-var A212 => A4D(c, c, Dom4D.dim(3), Dom4D.dim(4));
+ref A212 = A4D(c, c, Dom4D.dim(3), Dom4D.dim(4));
 A212 += c;
 var errs = 0;
 for c3 in Dom4D.dim(3) {
@@ -22,7 +22,7 @@ for c3 in Dom4D.dim(3) {
 }
 writeln("A212: ", errs, " errors");
 
-var A213 => A4D(c, Dom4D.dim(2), c, Dom4D.dim(4));
+ref A213 = A4D(c, Dom4D.dim(2), c, Dom4D.dim(4));
 A213 += c;
 errs = 0;
 for c2 in Dom4D.dim(2) {
@@ -32,7 +32,7 @@ for c2 in Dom4D.dim(2) {
 }
 writeln("A213: ", errs, " errors");
 
-var A214 => A4D(c, Dom4D.dim(2), Dom4D.dim(3), c);
+ref A214 = A4D(c, Dom4D.dim(2), Dom4D.dim(3), c);
 A214 += c;
 errs = 0;
 for c2 in Dom4D.dim(2) {
@@ -42,7 +42,7 @@ for c2 in Dom4D.dim(2) {
 }
 writeln("A214: ", errs, " errors");
 
-var A223 => A4D(Dom4D.dim(1), c, c, Dom4D.dim(4));
+ref A223 = A4D(Dom4D.dim(1), c, c, Dom4D.dim(4));
 A223 += c;
 errs = 0;
 for c1 in Dom4D.dim(1) {
@@ -52,7 +52,7 @@ for c1 in Dom4D.dim(1) {
 }
 writeln("A223: ", errs, " errors");
 
-var A224 => A4D(Dom4D.dim(1), c, Dom4D.dim(3), c);
+ref A224 = A4D(Dom4D.dim(1), c, Dom4D.dim(3), c);
 A224 += c;
 errs = 0;
 for c1 in Dom4D.dim(1) {
@@ -62,7 +62,7 @@ for c1 in Dom4D.dim(1) {
 }
 writeln("A224: ", errs, " errors");
 
-var A234 => A4D(Dom4D.dim(1), Dom4D.dim(2), c, c);
+ref A234 = A4D(Dom4D.dim(1), Dom4D.dim(2), c, c);
 A234 += c;
 errs = 0;
 for c1 in Dom4D.dim(1) {

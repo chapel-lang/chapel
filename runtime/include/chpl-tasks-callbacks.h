@@ -21,6 +21,7 @@
 #define _chpl_tasks_callbacks_h_
 
 #include <stdint.h>
+#include "chpltypes.h"
 
 #ifdef __cplusplus
 extern "C" {

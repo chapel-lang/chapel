@@ -366,13 +366,6 @@ typedef struct mem_map_t_struct {
 static mem_map_t* mem_map_map;
 
 //
-// See chpl_comm_desired_shared_heap() and compute_comm_dom_cnt().
-// This is a conservative estimate of the total amount of memory we
-// can register with the NIC when running under slurm.
-//
-#define MAX_MEM_REG_UNDER_SLURM  (((size_t) 240) << 30)
-
-//
 // This is the memory region for the guaranteed NIC-registered memory
 // in which remote fork descriptors, their is-free flags, and the
 // temporary bounce buffers live.  It saves a little bit of time not
@@ -529,7 +522,7 @@ static __thread int cd_idx = -1;
 //     comm domain, so we don't need more pools than we have comm
 //     domains.  An Aries NIC supports 128 comm domains (FMA windows),
 //     so that is our maximum.
-//   - We cannot have more than CD_ACTIVE_TRANS_MAX NB transacations
+//   - We cannot have more than CD_ACTIVE_TRANS_MAX NB transactions
 //     outstanding at the same time, per comm domain, so we don't need
 //     more that per pool.
 //   - We emulate an unsigned mod by NB_DESC_NUM_POOLS by means of
@@ -786,7 +779,7 @@ typedef struct {
   // unlike xfer/large call, need comm_on_bundle here for two reasons:
   //  1) the generated code puts a comm_on_bundle_t as the first field
   //     in any argument bundle for an on-statement
-  //  2) we need somewehre to store information to indicate completion.
+  //  2) we need somewhere to store information to indicate completion.
   chpl_comm_on_bundle_t bundle;
   unsigned char buf[MAX_SMALL_CALL_PAYLOAD];
 } fork_small_call_task_t;
@@ -1804,24 +1797,6 @@ static void compute_comm_dom_cnt(void)
   comm_dom_cnt++;  // count the polling task's dedicated comm domain
 
   //
-  // Note, a wrinkle: under slurm we have limited resources, and we
-  // can't register more than MAX_MEM_REG_UNDER_SLURM bytes of memory,
-  // total.  But we still insist on having at least 2 comm domains; if
-  // this causes memory registration problems we'll just report those
-  // when they happen.  See chpl_comm_desired_shared_heap() for more
-  // info.
-  //
-  if (strstr(CHPL_LAUNCHER, "slurm") != NULL) {
-    assert(registered_heap_info_set);
-    if (registered_heap_size > 0
-        && comm_dom_cnt > MAX_MEM_REG_UNDER_SLURM / registered_heap_size) {
-      comm_dom_cnt = MAX_MEM_REG_UNDER_SLURM / registered_heap_size;
-      if (comm_dom_cnt < 2)
-        comm_dom_cnt = 2;
-    }
-  }
-
-  //
   // For now, limit us to 30 communication domains.  (The Gemini NIC
   // only supports up to 32 anyway.  Aries supports 128, but it isn't
   // clear that we can make use of more than about 30.)
@@ -2459,16 +2434,9 @@ static void make_shared_heap(void)
       //
       // The user didn't specify a size.  Start with 2/3 of the free
       // RAM quantity from sysinfo(2), but not more than can be
-      // mapped by the NIC.  Except: under slurm, which limits NIC
-      // resources in order to allow for node sharing, start with
-      // the lesser of 2/3 of the free RAM quantity and 16 gb.
-      //
-      // (The slurm limit is effectively on the total registered
-      // memory, and should be no less than MAX_MEM_REG_UNDER_SLURM.
-      // We will register our heap in each of several uGNI comm
-      // domains, so we default to a smaller heap to allow for
-      // enough comm domains to provide decent network concurrency.
-      // The comm domain computation is in compute_comm_dom_cnt().)
+      // mapped by the NIC.  Except: under slurm, which we limit to
+      // 16GB for historical reasons (slurm's node sharing used to
+      // place static limits on NIC resources)
       //
       struct sysinfo s;
 
@@ -4128,7 +4096,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0]= count[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = srcstrides[0] * elemSize;
@@ -4262,7 +4230,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0]=count[0] * elemSize;
   if(strlvls>0){
     srcstr[0] = srcstrides[0] * elemSize;

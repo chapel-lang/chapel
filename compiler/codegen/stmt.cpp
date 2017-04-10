@@ -319,6 +319,18 @@ GenRet GotoStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+GenRet ForwardingStmt::codegen() {
+  GenRet ret;
+  // Should be lowered in resolution
+  INT_FATAL(this, "ForwardingStmt codegen called");
+  return ret;
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 GenRet ExternBlockStmt::codegen() {
   GenRet ret;
   // Needs to be handled specially by creating a C

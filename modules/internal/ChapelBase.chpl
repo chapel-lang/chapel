@@ -103,6 +103,16 @@ module ChapelBase {
     __primitive("=", a, nil);
   }
 
+  inline proc =(ref a: void, b: ?t) where t != void {
+    compilerError("a void variable cannot be assigned");
+  }
+
+  inline proc =(ref a: ?t, b: void) where t != void {
+    compilerError("cannot assign void to a variable of non-void type");
+  }
+
+  // This needs to be param so calls to it are removed after they are resolved
+  inline proc =(ref a: void, b: void) param { }
 
   //
   // equality comparison on primitive types
@@ -478,9 +488,9 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { return a; }
-  inline proc _statementLevelSymbol(a: sync)  { return a.readFE(); }
-  inline proc _statementLevelSymbol(a: single) { return a.readFF(); }
+  inline proc _statementLevelSymbol(a) { }
+  inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
+  inline proc _statementLevelSymbol(a: single) { a.readFF(); }
   inline proc _statementLevelSymbol(param a) param { return a; }
   inline proc _statementLevelSymbol(type a) type { return a; }
 
@@ -1636,6 +1646,15 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_CHPL:int;
   extern const QIO_TUPLE_FORMAT_SPACE:int;
   extern const QIO_TUPLE_FORMAT_JSON:int;
+
+  // Support for module deinit functions.
+  class chpl_ModuleDeinit {
+    const moduleName: c_string;          // for debugging; non-null, not owned
+    const deinitFun:  c_fn_ptr;          // module deinit function
+    const prevModule: chpl_ModuleDeinit; // singly-linked list / LIFO queue
+    proc writeThis(ch) {ch.writef("chpl_ModuleDeinit(%s)",moduleName:string);}
+  }
+  var chpl_moduleDeinitFuns = nil: chpl_ModuleDeinit;
 
   // What follows are the type _defaultOf methods, used to initialize types
   // Booleans

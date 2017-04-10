@@ -1,0 +1,1 @@
+bug: late const checking does not work correctly with ref-if-modified args

@@ -123,7 +123,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
-  if (named.size() > 0) {
+  if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
     _this = new UseStmt(COPY_INT(src), &named, except, &renamed);
   } else {
     _this = new UseStmt(COPY_INT(src));
@@ -1169,4 +1169,109 @@ Expr* ExternBlockStmt::getFirstChild() {
 Expr* ExternBlockStmt::getFirstExpr() {
   INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
   return NULL;
+}
+
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+ForwardingStmt::ForwardingStmt(DefExpr* toFnDef) :
+  Stmt(E_ForwardingStmt),
+  toFnDef(toFnDef),
+  fnReturningForwarding(NULL),
+  type(NULL),
+  named(),
+  renamed(),
+  except(false)
+{
+  gForwardingStmts.add(this);
+
+  if (toFnDef)
+    if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
+      fnReturningForwarding = fn->name;
+}
+
+ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bool exclude, std::map<const char*, const char*>* renames) :
+  Stmt(E_ForwardingStmt),
+  toFnDef(toFnDef),
+  fnReturningForwarding(NULL),
+  type(NULL),
+  named(),
+  renamed(),
+  except(exclude)
+{
+  gForwardingStmts.add(this);
+
+  if (toFnDef)
+    if (FnSymbol* fn = toFnSymbol(toFnDef->sym))
+      fnReturningForwarding = fn->name;
+
+  if (args->size() > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    for_set(const char, str, *args) {
+      named.insert(str);
+    }
+  }
+
+  if (renames->size() > 0) {
+    // The new names of symbols in the module being used, to avoid conflicts
+    // for instance.
+    for (std::map<const char*, const char*>::iterator it = renames->begin();
+         it != renames->end(); ++it) {
+      renamed[it->first] = it->second;
+    }
+  }
+}
+
+
+void ForwardingStmt::verify() {
+  Expr::verify();
+  if (astTag != E_ForwardingStmt) {
+    INT_FATAL(this, "Bad ForwardingStmt::astTag");
+  }
+  if (!toFnDef && !fnReturningForwarding && !type) {
+    INT_FATAL(this, "ForwardingStmt is empty");
+  }
+}
+
+void ForwardingStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == toFnDef) {
+    toFnDef = toDefExpr(new_ast);
+  } else {
+    INT_FATAL(this, "Unexpected case in ForwardingStmt::replaceChild");
+  }
+}
+
+ForwardingStmt* ForwardingStmt::copyInner(SymbolMap* map) {
+  ForwardingStmt* ret = NULL;
+
+  if (named.size() > 0 || renamed.size() > 0) {
+    ret = new ForwardingStmt(COPY_INT(toFnDef), &named, except, &renamed);
+  } else {
+    ret = new ForwardingStmt(COPY_INT(toFnDef));
+  }
+  ret->fnReturningForwarding = fnReturningForwarding;
+
+  return ret;
+}
+
+void ForwardingStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterForwardingStmt(this) == true) {
+
+    if (toFnDef)
+      toFnDef->accept(visitor);
+
+    visitor->exitForwardingStmt(this);
+  }
+}
+
+Expr* ForwardingStmt::getFirstChild() {
+  return toFnDef;
+}
+
+Expr* ForwardingStmt::getFirstExpr() {
+  return (toFnDef != NULL) ? toFnDef->getFirstExpr() : this;
 }

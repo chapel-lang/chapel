@@ -593,15 +593,22 @@ type & default intent \\
 \chpl{sync}    & \chpl{ref}   \\
 \chpl{single}  & \chpl{ref}   \\
 \chpl{atomic}  & \chpl{ref}   \\
-\chpl{record}  & \chpl{const} \\
+\chpl{record}  & \chpl{const} (but see below) \\
 \chpl{class}   & \chpl{const} \\
 \chpl{union}   & \chpl{const} \\
 \chpl{dmap}    & \chpl{const} \\
 \chpl{domain}  & \chpl{const} \\
-array          & \chpl{ref}   \\
+array          & \chpl{ref} / \chpl{const ref} \\
 \hline
 \end{tabular}
 \end{center}
+
+The default intent for arrays is \chpl{ref} or \chpl{const ref} - meaning
+that the array is not copied by default. The compiler will choose
+\chpl{ref} or \chpl{const ref} based upon whether or not the formal
+argument is modified inside of the function. The choice between
+\chpl{ref} and \chpl{const ref} is similar to and interacts with
+return intent overloads (see \rsec{Return_Intent_Overloads}).
 
 \begin{openissue}
 How tuples should be handled under default intents is an open issue;
@@ -786,45 +793,27 @@ The \chpl{const ref} return intent is also available. It is a restricted
 form of the \chpl{ref} return intent. Calls to functions marked with
 the \chpl{const ref} return intent are not lvalue expressions.
 
-\subsection{Choosing a Ref Return Intent Function Based on Calling Context}
-\label{Ref_Pair}
-\index{functions!ref-pair}
+\subsection{Return Intent Overloads}
+\label{Return_Intent_Overloads}
+\index{functions!return intent overloads}
 
-In some situations, it is useful to distinguish between calls that are
-used in an lvalue setting and those that are not. In particular, suppose
-that there are two functions that have the same formal arguments and
-differ only in their return intent. Normally, such a situation will cause
-an error since it is ambiguous which function is called. However, the
-Chapel language includes a special rule for determining which function to
-call when one of the calls is an lvalue and the other is not.  This rule
-enables data structures such as sparse arrays.
+In some situations, it is useful to choose the function called based upon
+how the returned value is used.  In particular, suppose that there are
+two functions that have the same formal arguments and differ only in
+their return intent. One might expect such a situation to result in an
+error indicating that it is ambiguous which function is called. However,
+the Chapel language includes a special rule for determining which
+function to call when the candidate functions are otherwise ambiguous
+except for their return intent.  This rule enables data structures such
+as sparse arrays.
 
-This special rule is called the ref-pair rule. If, when resolving a call,
-there are two candidate functions where:
-
-\begin{itemize}
-\item
- one of them uses the \chpl{ref} return intent and the other uses
- \chpl{const}, \chpl{const ref}, or blank return intent
-\item
- either both use promotion or neither do
-\end{itemize}
-
-then this pair of candidate functions is called a ref-pair.
-
-When such a call appears on the left-hand side of an assignment
-statement, is returned in a function with \chpl{ref} return intent, or
-appears in a call and corresponds to a formal argument with \chpl{out},
-\chpl{inout}, or \chpl{ref} intent, the candidate with the \chpl{ref}
-return intent is used. Otherwise, the other candidate is used.
-
-% TODO - this section, or a significant portion of it,
-% should move to the function resolution section.
+See \ref{Choosing_Return_Intent_Overload} for a detailed description of
+how return intent overloads are chosen based upon calling context.
 
 \begin{chapelexample}{ref-return-intent-pair.chpl}
 
-\index{functions!ref-pair}
-A ref-pair can be used to ensure, for
+\index{functions!return intent overloads}
+Return intent overload can be used to ensure, for
 example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  The following is an
 example:
@@ -1144,12 +1133,19 @@ can be found, the compiler will issue an error stating that the call
 cannot be resolved.  If exactly one candidate function is found, this
 is determined to be the function.
 \item
-From the set of candidate functions, the most specific function is
-determined.  The most specific function is a candidate function that
-is \emph{more specific} than every other candidate function as defined
-in~\rsec{Determining_More_Specific_Functions}.  If there is no
-function that is more specific than every other candidate function,
-the compiler will issue an error stating that the call is ambiguous.
+From the set of candidate functions, determine the set of most specific
+functions. In most cases, there is one most specific function, but there
+can be several if they differ only in return intent. The set of most
+specific functions is the set of functions that are not \emph{more
+specific} than each other but that are \emph{more specific} than every
+other candidate function. The \emph{more specific} relationship is
+defined in ~\rsec{Determining_More_Specific_Functions}.
+\item
+From the set of most specific functions, if there is more than one
+function in the set with the same return intent, the compiler will issue
+an error stating that the call is ambiguous. Otherwise, it will choose
+which function to call based on the calling context as described
+in~\rsec{Choosing_Return_Intent_Overload}.
 \end{itemize}
 
 \subsection{Determining Visible Functions}
@@ -1298,3 +1294,70 @@ is determined by the following steps:
 \item
  Otherwise neither mapping is more specific.
 \end{itemize}
+
+
+\subsection{Choosing Return Intent Overloads Based on Calling Context}
+\label{Choosing_Return_Intent_Overload}
+\index{functions!return intent overloads}
+
+See also \ref{Return_Intent_Overloads}.
+
+Given a set of most specific functions, the compiler can choose between
+overloads with different return intents. Recall that the set of most
+specific functions contains only functions that are not \emph{more specific}
+than each other. That is, the call will be ambiguous if the compiler
+cannot choose between them based upon return intent.
+
+The compiler can choose a single function based upon its return intent
+when:
+
+\begin{itemize}
+
+\item each most specific function has a different return intent
+
+\item the return intents are only \chpl{ref}, \chpl{const ref},
+\chpl{const}, or the default (blank) return intent
+
+\end{itemize}
+
+The compiler is able to choose between \chpl{ref} return, \chpl{const
+ref} return, and value return functions based upon the context of the
+call. At present, the \chpl{ref} return version must be present but
+either or both of the \chpl{const ref} and value return versions can be
+present.
+
+The \chpl{ref} return version will be chosen when:
+
+\begin{itemize}
+
+\item the call appears on the left-hand side of a variable initialization
+or assignment statement
+
+\item the call is passed to another function as a formal argument with
+\chpl{out}, \chpl{inout}, or \chpl{ref} intent
+
+\item the call is captured into a \chpl{ref} variable
+
+\item the call is returned from a function with \chpl{ref} return intent
+
+\end{itemize}
+
+Otherwise, the \chpl{const ref} return or value return version will be
+chosen. If only one of these is in the set of most specific functions, it
+will be chosen. If both are present in the set, the choice will be made
+as follows:
+
+The \chpl{const ref} version will be chosen when:
+
+\begin{itemize}
+
+\item the call is passed to another function as a formal argument with
+\chpl{const ref} intent
+
+\item the call is captured into a \chpl{const ref} variable
+
+\item the call is returned from a function with \chpl{const ref} return intent
+
+\end{itemize}
+
+Otherwise, the value version will be chosen.

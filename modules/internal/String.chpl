@@ -728,15 +728,15 @@ module String {
         var yieldChunk : bool = false;
         var chunk : string;
 
-        var noSplits : bool = maxsplit == 0;
-        var limitSplits : bool = maxsplit > 0;
+        const noSplits : bool = maxsplit == 0;
+        const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        var iEnd = localThis.len - 1;
+        const iEnd = localThis.len - 1;
 
         var inChunk : bool = false;
         var chunkStart : int;
 
-        for i in 0..#localThis.len {
+        for i in 0..iEnd {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -751,6 +751,11 @@ module String {
             if !(inChunk || bSpace) {
               chunkStart = i + 1; // 0-based buff -> 1-based range
               inChunk = true;
+              if i == iEnd {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              }
             } else if inChunk {
               // first char out of a chunk
               if bSpace {
@@ -826,9 +831,16 @@ module String {
     }
 
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      if S.size == 1 {
+      if S.size == 0 {
+        return '';
+      } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
-        var ret = S[S.domain.low];
+        var ret: string;
+        if (isArray(S)) {
+          ret = S[S.domain.first];
+        } else {
+          ret = S[1];
+        }
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
@@ -923,7 +935,7 @@ module String {
     // TODO: I could make this and other routines that use find faster by
     // making a version of search helper that only takes in local strings and
     // localizing in the calling function
-    proc partition(sep: string) : 3*string {
+    proc const partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
         return (this[..idx-1], sep, this[idx+sep.length..]);

@@ -18,19 +18,39 @@
  */
 
 #include "TryStmt.h"
+
 #include "AstVisitor.h"
+#include "CatchStmt.h"
+
+BlockStmt* TryStmt::build(bool tryBang, Expr* expr) {
+  BlockStmt* body = new BlockStmt(expr);
+  return buildChplStmt(new TryStmt(tryBang, body, NULL));
+}
 
 BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body) {
-  return buildChplStmt(new TryStmt(tryBang, body));
+  return buildChplStmt(new TryStmt(tryBang, body, NULL));
+}
+
+BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body, BlockStmt* catches) {
+  return buildChplStmt(new TryStmt(tryBang, body, catches));
 }
 
 BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
-TryStmt::TryStmt(bool tryBang, BlockStmt* body) : Stmt(E_TryStmt) {
+// catches are stored in a BlockStmt for convenient parsing
+TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches) : Stmt(E_TryStmt) {
   _tryBang = tryBang;
   _body    = body;
+
+  _catches.parent = this;
+  if (catches) {
+    for_alist(c, catches->body) {
+      INT_ASSERT(isCatchStmt(c));
+      _catches.insertAtTail(c->remove());
+    }
+  }
 
   gTryStmts.add(this);
 }
@@ -52,20 +72,29 @@ void TryStmt::accept(AstVisitor* visitor) {
     if (_body) {
       _body->accept(visitor);
     }
+
+    for_alist(c, _catches) {
+      CatchStmt* catchStmt = toCatchStmt(c);
+      catchStmt->accept(visitor);
+    }
+
     visitor->exitTryStmt(this);
   }
 }
 
-Expr* TryStmt::copy(SymbolMap* map, bool internal) {
-  return NULL;
-}
-
-Expr* TryStmt::copyInner(SymbolMap* map) {
-  return NULL;
+TryStmt* TryStmt::copyInner(SymbolMap* map) {
+  TryStmt* copy = new TryStmt(_tryBang, COPY_INT(_body), NULL);
+  for_alist(c, _catches) {
+    copy->_catches.insertAtTail(COPY_INT(c));
+  }
+  return copy;
 }
 
 void TryStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-
+  if (old_ast == _body) {
+    _body = toBlockStmt(new_ast);
+  }
+  // catches are handled automatically (AList)
 }
 
 Expr* TryStmt::getFirstChild() {
@@ -73,9 +102,47 @@ Expr* TryStmt::getFirstChild() {
 }
 
 Expr* TryStmt::getFirstExpr() {
-  return _body->getFirstExpr();
+  if (_body) {
+    return _body->getFirstExpr();
+  }
+  return NULL;
 }
 
 Expr* TryStmt::getNextExpr(Expr* expr) {
-  return this;
+  Expr* retVal = this;
+
+  if (expr == _body) {
+    if (Expr* firstCatch = _catches.first()) {
+      retVal = firstCatch->getFirstExpr();
+    }
+  } else if (expr->list == &_catches) {
+    if (Expr* nextCatch = expr->next) {
+      retVal = nextCatch->getFirstExpr();
+    }
+  }
+
+  return retVal;
+}
+
+void TryStmt::verify() {
+  Stmt::verify();
+
+  if (astTag != E_TryStmt) {
+    INT_FATAL(this, "TryStmt::verify. Bad astTag");
+  }
+
+  if (!_body) {
+    INT_FATAL(this, "TryStmt::verify. _body is missing");
+  }
+
+  for_alist(c, _catches) {
+    if (!isCatchStmt(c))
+      INT_FATAL(this, "TryStmt::verify. _catches contains a non-CatchStmt");
+  }
+}
+
+GenRet TryStmt::codegen() {
+  INT_FATAL("TryStmt should be removed before codegen");
+  GenRet ret;
+  return ret;
 }

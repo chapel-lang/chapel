@@ -52,7 +52,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
       dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
 
     on ResultArr._value.locArr[l2].myElems {
-      var partialResult => ResultArr._value.locArr[l2].myElems;
+      ref partialResult = ResultArr._value.locArr[l2].myElems;
       // FIXME should be a coforall - doesn't work
       forall l1 in dist.targetLocDom.dim(onlyDim)
           with (+ reduce partialResult) {

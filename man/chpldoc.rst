@@ -126,14 +126,13 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/STATUS for a list of known bugs and
-$CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------
 
-$CHPL\_HOME/QUICKSTART.rst for more information on how to get started with
-Chapel.
+$CHPL\_HOME/doc/rst/usingchapel/QUICKSTART.rst for more information on how to
+get started with Chapel.
 
 AUTHORS
 -------

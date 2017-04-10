@@ -71,6 +71,8 @@
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
   macro(TryStmt) sep                               \
+  macro(ForwardingStmt) sep                        \
+  macro(CatchStmt) sep                             \
   macro(ExternBlockStmt)
 
 #define foreach_ast(macro)                         \
@@ -141,9 +143,11 @@ enum AstTag {
   E_CallExpr,
   E_ContextCallExpr,
   E_ForallExpr,
+  E_ForwardingStmt,
   E_NamedExpr,
   E_UseStmt,
   E_TryStmt,
+  E_CatchStmt,
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
@@ -338,6 +342,8 @@ def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
 def_is_ast(TryStmt)
+def_is_ast(ForwardingStmt)
+def_is_ast(CatchStmt)
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
@@ -380,6 +386,8 @@ def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
 def_to_ast(TryStmt)
+def_to_ast(ForwardingStmt)
+def_to_ast(CatchStmt)
 def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
@@ -540,8 +548,15 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_GotoStmt:                                                      \
     AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
     break;                                                              \
+  case E_ForwardingStmt:                                                \
+    AST_CALL_CHILD(_a, ForwardingStmt, toFnDef, call, __VA_ARGS__);     \
+    break;                                                              \
   case E_TryStmt:                                                       \
-    AST_CALL_CHILD(_a, TryStmt, body(), call, __VA_ARGS__);             \
+    AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);             \
+    AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);            \
+    break;                                                              \
+  case E_CatchStmt:                                                     \
+    AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);           \
     break;                                                              \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
@@ -566,6 +581,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_AggregateType:                                                 \
     AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
+    AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
     break;                                                              \
   default:                                                              \
     break;                                                              \

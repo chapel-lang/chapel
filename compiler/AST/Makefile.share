@@ -21,6 +21,7 @@ AST_SRCS =                                          \
            baseAST.cpp                              \
            bb.cpp                                   \
            build.cpp                                \
+           CatchStmt.cpp                            \
            checkAST.cpp                             \
            dominator.cpp                            \
            expr.cpp                                 \

@@ -47,9 +47,21 @@ module DefaultRectangular {
 
   inline proc defRectSimpleDData param return !localeModelHasSublocales;
 
+  // helper function to set the types of multi-ddata specific fields
+  // to 'void' when they are not needed
+  proc mdType(type baseType) type {
+    if defRectSimpleDData then
+      return void;
+    else
+      return baseType;
+  }
+
   class DefaultDist: BaseDist {
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
-      return new DefaultRectangularDom(rank, idxType, stridable, this);
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+      const dom = new DefaultRectangularDom(rank, idxType, stridable, this);
+      dom.dsiSetIndices(inds);
+      return dom;
+    }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
       return new DefaultAssociativeDom(idxType, parSafe, this);
@@ -69,7 +81,6 @@ module DefaultRectangular {
     proc dsiAssign(other: this.type) { }
 
     proc dsiCreateReindexDist(newSpace, oldSpace) return this;
-    proc dsiCreateRankChangeDist(param newRank, args) return this;
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
@@ -109,6 +120,8 @@ module DefaultRectangular {
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
+
+    proc isDefaultRectangular() param return true;
 
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
@@ -606,16 +619,6 @@ module DefaultRectangular {
                                       stridable=stridable, dom=this);
     }
 
-    proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
-                              ranges: rank*range(idxType,
-                                                 BoundedRangeType.bounded,
-                                                 stridable)) {
-      var dom = new DefaultRectangularDom(rank, idxType, stridable, dist);
-      for i in 1..rank do
-        dom.ranges(i) = ranges(i);
-      return dom;
-    }
-
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
@@ -627,11 +630,16 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(this);
+      if (this.locale == here) {
+        return _getDomain(this);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _newDomain(this);
+      yield dsiLocalSubdomain();
     }
   }
 
@@ -672,17 +680,17 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-    var mdParDim: int;
-    var mdNumChunks: int;
-    var mdRLo: idxType;
-    var mdRHi: idxType;
-    var mdRStr: idxType;
-    var mdRLen: idxType;
-    var mdBlk: idxType;
-    var mdAlias: bool;
+    var mdParDim: mdType(int);
+    var mdNumChunks: mdType(int);
+    var mdRLo: mdType(idxType);
+    var mdRHi: mdType(idxType);
+    var mdRStr: mdType(idxType);
+    var mdRLen: mdType(idxType);
+    var mdBlk: mdType(idxType);
+    var mdAlias: mdType(bool);
 
-    var mData : experimentalMaxSublocales*_multiData(eltType=eltType,
-                                                     idxType=idxType);
+    var mData : mdType(experimentalMaxSublocales*_multiData(eltType=eltType,
+                                                     idxType=idxType));
 
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
@@ -697,6 +705,14 @@ module DefaultRectangular {
         return shiftedData;
       else {
         return mData(i+1).shiftedData;
+      }
+    }
+
+    inline proc theDataChunk(i) ref {
+      if stridable {
+        return dataChunk(i);
+      } else {
+        return shiftedDataChunk(i);
       }
     }
 
@@ -747,15 +763,17 @@ module DefaultRectangular {
     }
   }
 
-  inline proc _remoteAccessData.getRADDataIndex(param stridable, ind : idxType) {
-    return this.getRADDataIndex(stridable, chpl__tuplify(ind));
+  inline proc _remoteAccessData.getDataIndex(ind : idxType,
+                                             param getChunked=!defRectSimpleDData) {
+    return this.getDataIndex(chpl__tuplify(ind), getChunked);
   }
 
   //
   // Copied from DefaultRectangularArr.getDataIndex
   //
-  inline proc _remoteAccessData.getRADDataIndex(param stridable, ind: rank*idxType) {
-      param chunkify = !defRectSimpleDData;
+  inline proc _remoteAccessData.getDataIndex(ind: rank*idxType,
+                                             param getChunked=!defRectSimpleDData) {
+      param chunkify = !defRectSimpleDData && getChunked;
 
       if stridable {
         inline proc chunked_dataIndex(sum, str) {
@@ -908,7 +926,7 @@ module DefaultRectangular {
         high = if rad.stridable then strideAlignDown(high, newDom.dsiDim(mdParDim)) else high;
 
         const rng = low..high;
-        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(mdParDim).stride align newDom.dsiDim(mdParDim).alignment;
       }
 
     }
@@ -941,8 +959,8 @@ module DefaultRectangular {
       rad.mdParDim    = this.mdParDim;
       rad.mdNumChunks = this.mdNumChunks;
 
-      const thisStr   = abs(this.str(mdParDim));
-      const radStr    = abs(rad.str(mdParDim));
+      const thisStr   = abs(this.str(mdParDim)):idxType;
+      const radStr    = abs(rad.str(mdParDim)):idxType;
 
       rad.mdRLo       = rad.off(mdParDim) - (this.off(mdParDim) - this.mdRLo) / thisStr * radStr;
       rad.mdRHi       = rad.off(mdParDim) + (this.mdRLen - 1) * radStr;
@@ -962,7 +980,7 @@ module DefaultRectangular {
         high += radLo;
 
         const rng = low..high;
-        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr;
+        rad.mData(i).pdr = if !rad.stridable then rng else rng by radStr align newDom.dsiDim(mdParDim).alignment;
       }
     }
 
@@ -977,6 +995,7 @@ module DefaultRectangular {
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
+    type idxSignedType = chpl__signedType(idxType);
 
     // Unconditionally sets 'blkChanged'
     //
@@ -996,7 +1015,8 @@ module DefaultRectangular {
     for param j in 1..idx.size {
       if !collapsedDims(j) {
         rad.off(curDim) = newDom.dsiDim(curDim).low;
-        rad.origin     += this.blk(j) * (rad.off(curDim) - this.off(j)) / this.str(j);
+        const off       = (rad.off(curDim) - this.off(j)):idxSignedType;
+        rad.origin     += ((this.blk(j):idxSignedType) * off / this.str(j)):idxType;
         rad.blk(curDim) = this.blk(j);
         rad.str(curDim) = this.str(j);
 
@@ -1007,7 +1027,8 @@ module DefaultRectangular {
 
         curDim += 1;
       } else {
-        rad.origin += this.blk(j) * (idx(j) - this.off(j)) / this.str(j);
+        const off   = (idx(j) - this.off(j)):idxSignedType;
+        rad.origin += (this.blk(j):idxSignedType *  off / this.str(j)):idxType;
 
         if !defRectSimpleDData && j == mdParDim {
           mdpdIsRange = false;
@@ -1031,7 +1052,7 @@ module DefaultRectangular {
         for i in 1..#mdNumChunks {
           const rng = max(this.mData(i).pdr.low, newDom.dsiDim(rad.mdParDim).low)
                       ..min(this.mData(i).pdr.high, newDom.dsiDim(rad.mdParDim).high);
-          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride;
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(rad.mdParDim).stride align newDom.dsiDim(rad.mdParDim).alignment;
         }
       } else {
         // If the mdParDim'th dimension is removed, then we switch to
@@ -1048,7 +1069,7 @@ module DefaultRectangular {
         for i in 1..#mdNumChunks {
           const (lo, hi) = rad.mdChunk2Ind(i-1);
           const rng = max(lo, newDom.dsiDim(1).low) .. min(hi, newDom.dsiDim(1).high);
-          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride;
+          rad.mData(i).pdr = if !rad.stridable then rng else rng by newDom.dsiDim(1).stride align newDom.dsiDim(1).alignment;
         }
       }
     }
@@ -1114,19 +1135,19 @@ module DefaultRectangular {
 
     inline proc oneDData return defRectSimpleDData || mdNumChunks < 2;
 
-                                 // these are only used if !defRectSimpleDData
-    var mdParDim: int;           //   array is chunked on this dimension
-    var mdNumChunks: int;        //   number of chunks
-    var mdRLo: idxType;          //   chunking dim .low
-    var mdRHi: idxType;          //       "     "  .high
-    var mdRStr: idxType;         //       "     "  .stride
-    var mdRLen: idxType;         //       "     "  .length
-    var mdBlk: idxType;          //       "     "  block factor when sliced
-    var mdAlias: bool;           //   is this an alias of another array?
+                                  // these are only used if !defRectSimpleDData
+    var mdParDim: mdType(int);    //   array is chunked on this dimension
+    var mdNumChunks: mdType(int); //   number of chunks
+    var mdRLo: mdType(idxType);   //   chunking dim .low
+    var mdRHi: mdType(idxType);   //       "     "  .high
+    var mdRStr: mdType(idxType);  //       "     "  .stride
+    var mdRLen: mdType(idxType);  //       "     "  .length
+    var mdBlk: mdType(idxType);   //       "     "  block factor when sliced
+    var mdAlias: mdType(bool);    //   is this an alias of another array?
 
     pragma "local field"
-      var mData : _ddata(_multiData(eltType=eltType,
-                                    idxType=idxType));
+      var mData : mdType(_ddata(_multiData(eltType=eltType,
+                                    idxType=idxType)));
 
     var noinit_data: bool = false;
 
@@ -1267,44 +1288,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd serial iterator");
       }
-      if rank == 1 {
-        // This is specialized to avoid overheads of calling dsiAccess()
-        if !dom.stridable {
-          // Ideally we would like to be able to do something like
-          // "for i in first..last by step". However, right now that would
-          // result in a strided iterator which isn't as optimized. It would
-          // also add a range constructor, which in tight loops is pretty
-          // expensive. Instead we use a direct range iterator that is
-          // optimized for positively strided ranges. It should be just as fast
-          // as directly using a "c for loop", but it contains code check for
-          // overflow and invalid strides as well as the ability to use a less
-          // optimized iteration method if users are concerned about range
-          // overflow.
-          const first = getDataIndex(dom.dsiLow);
-          const second = getDataIndex(dom.dsiLow+1);
-          const step = (second-first);
-          const last = first + (dom.dsiNumIndices-1) * step;
-          for i in chpl_direct_pos_stride_range_iter(first, last, step) {
-            yield theData(i);
-          }
-        } else {
-          const stride = dom.ranges(1).stride: idxType,
-                start  = dom.ranges(1).first,
-                first  = getDataIndex(start),
-                second = getDataIndex(start + stride),
-                step   = (second-first):idxSignedType,
-                last   = first + (dom.ranges(1).length-1) * step:idxType;
-          if step > 0 then
-            for i in first..last by step do
-              yield data(i);
-          else
-            for i in last..first by step do
-              yield data(i);
-        }
-      } else {
-        for i in dom do
-          yield dsiAccess(i);
-      }
+      for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
     iter these(param tag: iterKind,
@@ -1363,34 +1347,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr multi-dd serial iterator");
       }
-      if rank == 1 {
-        if !dom.stridable {
-          const first = getDataIndex(dom.dsiLow, getChunked=false);
-          const second = getDataIndex(dom.dsiLow+1, getChunked=false);
-          const step = (second-first);
-          const lo = dom.dsiDim(mdParDim).low;
-          const hi = dom.dsiDim(mdParDim).high;
-          var (chunk, idx) = getDataIndex(dom.dsiLow);
-          var dd = theDataChunk(chunk);
-          var lastChunkInd = mData(chunk).pdr.high;
-          for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:idxType) {
-            if ind > lastChunkInd { // traverse to next chunk
-              (chunk, idx) = getDataIndex(ind);
-              dd = theDataChunk(chunk);
-              lastChunkInd = mData(chunk).pdr.high;
-            }
-            yield dd(idx);
-            idx += step;
-          }
-        } else {
-          for i in dom do
-            yield dsiAccess(i);
-        }
-      } // if rank == 1 ...
-      else {
-        for i in dom do
-          yield dsiAccess(i);
-      }
+      for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
     iter these(param tag: iterKind,
@@ -1489,11 +1446,12 @@ module DefaultRectangular {
                            minIndicesPerTask) do
           yield dsiAccess(i);
       } else {
+        // TODO: why does 'followThis' have a different idxType?
         const mdPDLow = dom.dsiDim(mdParDim).low;
-        const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low);
+        const chunk = mdInd2Chunk(mdPDLow + followThis(mdParDim).low:mdPDLow.type);
         if boundsChecking {
           // the code here assumes followThis spans but a single chunk
-          assert(mdPDLow + followThis(mdParDim).high <= mData(chunk).pdr.high);
+          assert(mdPDLow + followThis(mdParDim).high:mdPDLow.type <= mData(chunk).pdr.high);
         }
 
         //
@@ -1617,7 +1575,7 @@ module DefaultRectangular {
         if mdNumChunks == 1 {
           if stridable then
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high
-                           by dom.dsiDim(mdParDim).stride;
+                           by dom.dsiDim(mdParDim).stride align dom.dsiDim(mdParDim).alignment;
           else
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           mData(0).data =
@@ -1631,7 +1589,7 @@ module DefaultRectangular {
             mData(i).dataOff  = dataOff;
             const (lo, hi) = mdChunk2Ind(i);
             if stridable then
-              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride;
+              mData(i).pdr = lo..hi by dom.dsiDim(mdParDim).stride align dom.dsiDim(mdParDim).alignment;
             else
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;
@@ -1915,11 +1873,122 @@ module DefaultRectangular {
     proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
-      return _newDomain(dom);
+      if (this.data.locale == here) {
+        return _getDomain(dom);
+      } else {
+        var a: domain(rank, idxType, stridable);
+        return a;
+      }
     }
 
     iter dsiLocalSubdomains() {
-      yield _newDomain(dom);
+      yield dsiLocalSubdomain();
+    }
+  }
+
+  iter chpl__serialViewIter(arr, viewDom) ref
+    where chpl__isDROrDRView(arr) && !defRectSimpleDData {
+    param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+
+    if arr.rank == 1 && !viewDom.stridable {
+      const first  = info.getDataIndex(viewDom.dsiLow, getChunked=false);
+      const second = info.getDataIndex(viewDom.dsiLow+1, getChunked=false);
+      const step   = (second-first);
+      const lo     = viewDom.dsiDim(info.mdParDim).low;
+      const hi     = viewDom.dsiDim(info.mdParDim).high;
+
+      param chunkOffset = if useCache then 1 else 0;
+      var (chunk, idx) = info.getDataIndex(viewDom.dsiLow);
+      var dd           = info.theDataChunk(chunk);
+      chunk += chunkOffset;
+      var lastChunkInd = info.mData(chunk).pdr.high;
+
+      for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:viewDom.idxType) {
+        if ind > lastChunkInd { // traverse to next chunk
+          (chunk, idx) = info.getDataIndex(ind);
+          dd           = info.theDataChunk(chunk);
+          chunk += chunkOffset;
+          lastChunkInd = info.mData(chunk).pdr.high;
+        }
+        yield dd(idx);
+        idx += step;
+      }
+    } else if useCache {
+      for i in viewDom {
+        const dataIdx = info.getDataIndex(i);
+        yield info.getDataElem(dataIdx);
+      }
+    } else {
+      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+    }
+  }
+
+  iter chpl__serialViewIter(arr, viewDom) ref
+    where chpl__isDROrDRView(arr) && defRectSimpleDData {
+    param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+    if arr.rank == 1 {
+      // This is specialized to avoid overheads of calling dsiAccess()
+      if !viewDom.stridable {
+        // Ideally we would like to be able to do something like
+        // "for i in first..last by step". However, right now that would
+        // result in a strided iterator which isn't as optimized. It would
+        // also add a range constructor, which in tight loops is pretty
+        // expensive. Instead we use a direct range iterator that is
+        // optimized for positively strided ranges. It should be just as fast
+        // as directly using a "c for loop", but it contains code check for
+        // overflow and invalid strides as well as the ability to use a less
+        // optimized iteration method if users are concerned about range
+        // overflow.
+        const first  = info.getDataIndex(viewDom.dsiLow);
+        const second = info.getDataIndex(viewDom.dsiLow+1);
+        const step   = (second-first);
+        const last   = first + (viewDom.dsiNumIndices-1) * step;
+        for i in chpl_direct_pos_stride_range_iter(first, last, step) {
+          yield info.theDataChunk(0)(i);
+        }
+      } else {
+        const viewDomDim = viewDom.dsiDim(1),
+              stride = viewDomDim.stride: viewDom.idxType,
+              start  = viewDomDim.first,
+              second = info.getDataIndex(start + stride);
+
+        var   first  = info.getDataIndex(start);
+        const step   = (second-first):chpl__signedType(viewDom.idxType);
+        var   last   = first + (viewDomDim.length-1) * step:viewDom.idxType;
+
+        if step < 0 then
+          last <=> first;
+
+        for i in first..last by step do
+          yield info.data(i);
+      }
+    } else if useCache {
+      for i in viewDom {
+        const dataIdx = info.getDataIndex(i);
+        yield info.getDataElem(dataIdx);
+      }
+    } else {
+      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+    }
+  }
+
+  iter chpl__serialViewIter(arr, viewDom) ref {
+    for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+  }
+
+  iter chpl__serialViewIterHelper(arr, viewDom) ref {
+    for i in viewDom {
+      const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
+                      else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
+                      else i;
+      const info = if chpl__isArrayView(arr) then arr.arr else arr;
+      yield info.dsiAccess(dataIdx);
     }
   }
 

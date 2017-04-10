@@ -182,12 +182,27 @@ bool AstLogger::enterGotoStmt(GotoStmt* node) {
 void AstLogger::exitGotoStmt(GotoStmt* node) {
 }
 
+bool AstLogger::enterForwardingStmt(ForwardingStmt* node) {
+  return true;
+}
+
+void AstLogger::exitForwardingStmt(ForwardingStmt* node) {
+}
+
 bool AstLogger::enterTryStmt(TryStmt* node) {
   return true;
 }
 
 void AstLogger::exitTryStmt(TryStmt* node) {
 }
+
+bool AstLogger::enterCatchStmt(CatchStmt* node) {
+  return true;
+}
+
+void AstLogger::exitCatchStmt(CatchStmt* node) {
+}
+
 
 bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
   bool first = true;

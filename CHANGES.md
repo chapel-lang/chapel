@@ -1,8 +1,487 @@
-====================
 Release Changes List
 ====================
 
+
+version 1.15.0
 ==============
+
+Eighteenth public release of Chapel, April 6, 2017
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+* performance optimization highlights:
+  - significantly improved the performance of many key idioms and benchmarks
+  - dramatically improved task creation speed
+  - reduced overheads related to array slicing, rank-change, and reindexing
+  - significantly improved the remote value forwarding optimization
+  - optimized the performance of latency-bound applications with CHPL_COMM=ugni
+  - improved qthreads tasking such that it outperforms 'muxed' on studied codes
+* standard library/package highlights:
+  - added a new 'DateTime' module for operating on dates and times
+  - added BLAS level 1 and 2 routines to the previous support for level 3
+  - added an early-draft 'LinearAlgebra' module
+  - added a new 'Futures' module supporting library-based futures
+  - added initial support for some class-owner patterns, 'Owned' and 'Shared'
+  - added support for choosing between implementations for the 'FFTW' module
+* language improvements:
+  - dramatically improved support for object initializers and deinitializers
+  - added prototype support for error-handling in Chapel
+  - significantly improved array semantics and memory management
+  - improved support for generic classes and records
+  - made 'void' a first-class type in the language and a way to fold variables
+  - added support for module deinit() functions
+  - added support for 'forwarding' methods to fields of classes and records
+  - vastly improved the stability, generality, and precision of 'where' clauses
+* portability highlights:
+  - added a locale model for KNL with support for different memory types
+  - added Chapel support for AWS EC2
+  - verified that Chapel works with the Windows 10 bash shell as with Ubuntu
+  - improved support for ARM processors including multi-locale support
+* implementation highlights:
+  - closed significant memory leaks caused by arrays, domains, and domain maps
+  - added support for numa-localization of array memory
+  - improved array slice, rank change, and reindexing support for domain maps
+  - streamlined several aspects of the domain map standard interface (dsi)
+* additional highlights:
+  - added new users guide text for promotion, constants, type aliases, configs
+  - enabled GitHub issues to file and track Chapel bugs and feature requests
+  - added the 'ugni' communication layer to the open-source repository
+  - updated our versions of GASNet, Qthreads, jemalloc, and hwloc
+
+Deployment
+----------
+* enabled GitHub issues to file and track Chapel bugs and feature requests
+  (see https://github.com/chapel-lang/chapel/issues)
+* extended the Docker image to include a GASNet-based configuration
+  (see https://hub.docker.com/r/chapel/chapel/)
+
+New Features
+------------
+* dramatically improved support for initializers
+  (see http://chapel.cray.com/docs/1.15/technotes/initializers.html
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+* added prototype support for error-handling in Chapel
+  (see http://chapel.cray.com/docs/1.15/technotes/errorHandling.html
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/8.rst)
+* added support for deinit() as a replacement for class/record destructors
+  (see "Class Deinitializer" and "Record Deinitializer" sections in the spec
+   and https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst)
+* added support for 'forwarding' methods to fields of classes and records
+  (see http://chapel.cray.com/docs/1.15/technotes/forwarding.html)
+* made 'void' a first-class type in the language and a way to fold variables
+  (see http://chapel.cray.com/docs/1.15/technotes/voidVariables.html
+   and $CHPL_HOME/examples/primers/voidVariables.chpl)
+* added support for module deinit() functions
+  (see "Module Deinitialization" in the "Modules" chapter of the specification)
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* functions that return array expressions now return by value by default
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#arrays-return-by-value-by-default)
+* made the default intent for arrays be 'ref' if modified, else 'const ref'
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#array-default-intent
+   and "Array Arguments to Functions" in the "Arrays" chapter of the spec)
+* made the default intent for 'this' on record methods be 'ref' if modified
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#record-this-default-intent)
+* deprecated support for the '=>' operator to create array aliases
+  (see http://chapel.cray.com/docs/1.15/language/evolution.html#array-alias-operator-deprecated)
+* deprecated support for using '=>' in constructors to create alias fields
+
+Syntactic/Naming Changes
+------------------------
+* renamed the 'Error' module to 'SysError'
+  (see http://chapel.cray.com/docs/1.15/modules/standard/SysError.html)
+
+Feature Improvements
+--------------------
+* vastly improved the stability, generality, and precision of 'where' clauses
+  (see "Where Expressions" in the "Procedures" chapter of the specification)
+* improved array slice, rank change, and reindexing support across domain maps
+* extended return intent overloading to improve its utility and flexibility
+  (see "Return Intents" in the "Procedures" chapter of the specification)
+* added support for using 'const' and 'const ref' as 'this' intents
+  (see "The Method Receiver and the this Argument" sections in the spec)
+* added support for defining type aliases for generic classes
+  (e.g., 'type Vec = Vector;' is now supported for a generic type 'Vector')
+* added the ability to define secondary methods on instantiated types
+  (e.g., 'proc (R(int)).foo() { ... }' defines foo on R(int) but not R(real)
+   see "Class Methods" section in the Classes chapter of the specification)
+* made tuple semantics more closely follow the behavior of their element types
+* added min() and max() overloads that accept and generate 'param' values
+* added support for casts between c_void_ptr and class objects/c_string
+* improved the default hash functions used by associative domains
+* reduced opportunities for races on set operations for associative arrays
+* enabled 'param's and 'config param's to be specified without initializers
+
+Known Feature Slips
+-------------------
+* domains of reindexed distributed arrays are not distributed as they should be
+* removed support for having first-class functions capture outer variables
+
+Removed Features
+----------------
+* removed the 'noRefCount' config const which is no longer necessary
+* removed deprecated functions from the 'Sort' and 'Search' modules
+* removed the deprecated 'BigInt' class in favor of the 'bigint' value type
+
+Standard Modules/Library
+------------------------
+* added support for a 'DateTime' module for operating on dates and times
+  (see http://chapel.cray.com/docs/1.15/modules/standard/DateTime.html)
+* improved the initializer argument list and order for RandomStream
+  (see http://chapel.cray.com/docs/1.15/modules/standard/Random.html)
+* converted the 'barrier' type from a class into a record
+  (see http://chapel.cray.com/docs/1.15/modules/standard/Barrier.html)
+* added support for a .shape query on domains and arrays
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=shape#ChapelArray.shape)
+* added support for 'targetLocales' query to default rectangular arrays/domains
+* made count() on arrays parallel by default
+* added support for passing comparators to the domain.sorted() iterator
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=sorted#ChapelArray.sorted)
+* made conjg() generate the same type as its argument
+  (see http://chapel.cray.com/docs/1.15/modules/standard/Math.html#Math.conjg)
+* improved memory management for the 'List' module
+
+Package Modules
+---------------
+* added initial support for some class-owner record patterns, Owned and Shared
+  (see http://chapel.cray.com/docs/1.15/modules/packages/OwnedObject.html
+   and http://chapel.cray.com/docs/1.15/modules/packages/SharedObject.html)
+* added support for a new 'Futures' module supporting library-based futures
+  (see http://chapel.cray.com/docs/1.15/modules/packages/Futures.html)
+* added BLAS level 1 and 2 routines to the previous support for level 3
+  (see http://chapel.cray.com/docs/1.15/modules/packages/BLAS.html)
+* removed support for the 'ldA' arguments in the BLAS module
+* added an early-draft 'LinearAlgebra' module
+  (see http://chapel.cray.com/docs/1.15/modules/packages/LinearAlgebra.html)
+* added support for choosing between FFT implementations in the FFTW module
+  (see http://chapel.cray.com/docs/1.15/modules/packages/FFTW.html#FFTW.isFFTW_MKL)
+* improved support for the 'MatrixMarket' module
+
+Interoperability Improvements
+-----------------------------
+* improved 'require' statements to accept 'param' string expressions
+  (see http://chapel.cray.com/docs/1.15/technotes/extern.html#expressing-dependencies)
+* now only 'require' statements in resolved code add requirements
+  (see http://chapel.cray.com/docs/1.15/technotes/extern.html#expressing-dependencies)
+
+Performance Optimizations/Improvements
+--------------------------------------
+* improved parallel tasking performance using a hybrid spin/condwait strategy
+* optimized the creation of tasks for certain coforalls with known trip counts
+* moved argument bundles for tasks and on-clauses from the heap to task stacks
+* switched qthreads to use Chapel's registered heap for its memory requirements
+* reduced array overhead by eliminating reference counting overheads
+* optimized 1D strided iterations
+* reduced the overhead of slicing, rank-change slicing, and reindexing arrays
+* reduced the amount of communication required for a number of idioms
+* improved the precision of the array index optimization introduced in 1.14
+* stopped limiting the number of ugni communication domains with slurm on Crays
+* optimized a costly temporary array out of the BlockCyclic distribution
+* added intra-locale parallelism for iterations over BlockCyclic distributions
+* improved loop-invariant code motion for iterator expressions
+* improved the cases handled by, and accuracy of, remote value forwarding
+* removed redundant field initializations in init() routines
+* improved the performance of casts from strings to numeric types
+* optimized '<~>' overloads to avoid unnecessary reference counting
+
+Memory Improvements
+-------------------
+* closed significant memory leaks caused by arrays, domains, and domain maps
+* reduced the memory footprint of a non-stridable range
+* made the 'list' type reclaim its memory on destruction
+* fixed a memory leak in the push_back() routine
+
+Example Codes
+-------------
+* added a new primer for 'void' variables and fields
+  (see $CHPL_HOME/examples/primers/voidVariables.chpl)
+* made style and content improvements to the 'learnChapelInYMinutes' primer
+  (see $CHPL_HOME/examples/primers/learnChapelInYMinutes.chpl)
+* made a number of LCALS cleanups and fixes including support for a SPMD mode
+  (see $CHPL_HOME/examples/benchmarks/lcals/)
+* switched ISx's arrays to use anonymous domains for a performance boost
+  (see $CHPL_HOME/examples/benchmarks/isx/)
+* added a new 'regexdna-redux' benchmark
+  (see $CHPL_HOME/examples/benchmarks/shootout/regexdna-redux.chpl)
+* made a number of speed and clarity improvements to the 'fasta' benchmark
+  (see $CHPL_HOME/examples/benchmarks/shootout/fasta.chpl)
+* made readability and correctness improvements to our 'pidigits' benchmark
+  (see $CHPL_HOME/examples/benchmarks/shootout/pidigits.chpl)
+* fixed an off-by-one error in our 'binarytrees' benchmark
+* fixed an assignment-to-const bug in binary-trees
+* added missing Makefiles and fixed support for 'make -j'
+* updated example codes to use new RandomStream() initializer
+* updated example codes to reflect better const-checking
+* updated example codes to use deinit() rather than destructors
+* updated example codes to reflect that barrier is now a record
+* removed the 'fastaredux' benchmark, which is no longer used by the CLBG
+
+Documentation
+-------------
+* added new users guide sections on promotion, constants, type aliases, configs
+  (see http://chapel.cray.com/docs/1.15/users-guide/index.html)
+* revised QUICKSTART instructions for clarity
+  (http://chapel.cray.com/docs/1.15/usingchapel/QUICKSTART.html)
+* reorganized the doc/ directory in the release tarball
+  (see $CHPL_HOME/doc/README.md
+   or https://github.com/chapel-lang/chapel/blob/master/doc/README.rst)
+* removed $CHPL_HOME/STATUS in favor of GitHub issues
+* updated bugs.rst to refer users to GitHub issues
+  (see http://chapel.cray.com/docs/1.15/usingchapel/bugs.html)
+* improved the Docker README information
+  (see https://hub.docker.com/r/chapel/chapel/)
+* reorganized the platform-specific documentation pages into categories
+  (see http://chapel.cray.com/docs/1.15/platforms/index.html)
+* added documentation for dim() and dims() on arrays
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=dims#ChapelArray.dims)
+* fixed the documentation for string.strip()
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/String.html?highlight=strip#String.string.strip)
+* updated documentation regarding reference counting of files and channels
+* added an indication that IO is a module that is used by default
+* updated documents to refer to install.html rather than download.html
+* improved some entries in the "quick reference" document
+  (see http://chapel.cray.com/docs/1.15/_downloads/quickReference.pdf)
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+* added a '--[no-]print-callgraph flag to print a Chapel program's callgraph
+* added a '--[no-]div-by-zero-checks' flag to disable divide-by-0 checks
+* added a '--strict-errors' flag for enabling strict error-checking
+* added a '--[no-]infer-local-fields' flag to control wide pointer optimization
+* removed the --[no-]optimize-array-indexing flag, now performed automatically
+
+Locale Models
+-------------
+* added a locale model for KNL with support for different memory types
+  (see http://chapel.cray.com/docs/1.15/technotes/localeModels.html#knl-locale-model
+   and http://chapel.cray.com/docs/1.15/platforms/knl.html)
+* for 'numa', arrays are now allocated using multiple per-numa-domain chunks
+  (see http://chapel.cray.com/docs/1.15/technotes/localeModels.html#numa-locale-model)
+
+Portability
+-----------
+* added Chapel support for AWS EC2
+  (see http://chapel.cray.com/docs/1.15/platforms/aws.html)
+* verified that Chapel works with the Windows 10 bash shell as with Ubuntu
+* improved support for ARM processors including multi-locale support
+  (see http://chapel.cray.com/docs/1.15/platforms/arm.html)
+
+Platform-specific Changes
+-------------------------
+* fixed an occasional cygwin failure caused by pthread_attr_init()
+
+Cray-specific Changes
+---------------------
+* made Cray systems always default to CHPL_COMM=ugni
+* stopped limiting the number of ugni communication domains under slurm
+* tuned the amount of task spinning before sleeping for Crays
+* CHPL_TASKS=muxed is now deprecated and will be removed in future releases
+* removed extraneous/incorrect -O flags from cray-prgenv-cray command lines
+* make the heap used by CHPL_COMM=ugni 'numa'-localized when appropriate
+* fixed a problem when using 'muxed' tasking with 'gasnet' but no hugepages
+* enabled support for CHPL_COMM=ugni for the pgi compiler
+* fixed a bug in dynamic linking for gasnet-aries
+
+Error Messages
+--------------
+* significantly improved const-checking in the compiler
+* added an error message for re-assigning a 'param' after its initialization
+* added an error when 'inline' is applied to a recursive function
+* added an error when trying to cast to values rather than types
+* added an error message for trying to capture generic functions
+* added an error message for initializers that attempt to return a value
+* added an error message for missing copy initializers
+* made the compiler indicate illegal 'param' types more clearly
+* added support for printing multiple 'param' errors before halting compilation
+* added an error when using domain queries in field declarations
+* added an error message for querying the 'IRV' of a non-sparse array
+* added error messages for applying vector ops to non-1D rectangular arrays
+* improved error messages for the $CHPL_HOME/util/chplenv/ scripts
+* removed warnings for serialized assignments in some cases
+
+Runtime Error Checks
+--------------------
+* added a runtime check for divide-by-zero by default
+* added a runtime check for empty bounding boxes to the 'Block' distribution
+
+Bug Fixes
+---------
+* fixed a number of bugs relating to array-of-array and sparse-array semantics
+* fixed a bug in reading null bytes into strings when lengths are specified
+* fixed a bug in resetting size when clearing sparse block-distributed domains
+* fixed a bug in which 'uint **= uint' failed to resolve
+* fixed a bug in the support of 'extern' blocks
+* fixed a bug in which the wrong LD was selected by our Makefiles
+* fixed a buffer overflow problem in the parser for long function signatures
+* fixed a broken link to Quickstart.rst
+* fixed a bug in which the LLVM back-end couldn't support multiple --ccflags
+* fixed an off-by-one bug in string.split()
+* fixed a bug related to extern procedures returning 'void'
+* fixed a bug with arrays of c_strings in --no-local compilation mode
+* fixed a bug in the order of module-scope variable deinitializations
+* fixed a bug in the find() routine on arrays generalizing it to non-1D arrays
+* fixed a bug in which type methods did not support default arguments well
+* fixed a bug in pop_front() which caused the array to grow
+* fixed a bug in which the --cpp-lines flag was sometimes ignored
+* fixed a bug in 'Spawn' when one sub-process consumes another's output
+* fixed a bug in BlockCyclic indexing
+* fixed a bug in which user-defined initializers wouldn't accept array fields
+* fixed a bug in creating virtual dispatch tables for generic class inheritance
+* fixed a bug in recursive iterator inlining
+* fixed a bug supporting 'stridable' queries on Replicated arrays
+* fixed a copy propagation bug related to array allocation
+* fixed a 'chplvis' bug that caused segmentation faults
+* fixed a bug in which type methods were overly generic w.r.t. their receiver
+* fixed a bug in casting reference expressions
+* fixed a race condition in initializing locale models
+* fixed bugs in the standalone parallel iterator for CSR domains
+* fixed a bug related to module-scoped 'ref' declarations
+* fixed a bug in which the number of CPUs was sometimes reported to be 0
+* fixed bugs in the 'localSubdomain*' calls for local arrays/domains
+
+Launchers
+---------
+* made the --spmd flag to the mpirun launcher default to '1'
+
+Runtime Library Changes
+-----------------------
+* added the 'ugni' communication layer to the open-source repository
+* added support for numa-localization of array memory
+* switched qthreads to use Chapel's memory allocator
+* changed our use of qthreads to initialize them in detached state
+* updated massivethreads to make use of stack-allocated task bundles
+
+File/Directory Structure
+------------------------
+* moved object files for the compiler and runtime into $CHPL_HOME/build
+* changed the naming/structure of directories used to store binary files
+
+Generated Code
+--------------
+* turned on --denormalize by default, resulting in shorter, cleaner code
+* improved formatting of formal arguments in generated code for --gen-ids
+
+Third-Party Software Changes
+----------------------------
+* updated to GASNet 1.28.0
+* updated to qthreads 1.12
+* updated to jemalloc 4.5.0
+* updated to hwloc 1.11.6
+* made GASNet build 'amudprun' using host compiler rather than target
+* limited the maximum size of qthreads memory pools
+* made 'hwloc' always use libnuma for non-flat locale models when available
+* improved the portability of our libunwind support
+
+Testing System
+--------------
+* added --multi-locale-only and --max-locales flags to 'start_test'
+* added a '-dirs' option to paratest.server to specify directories to test
+* added an '-env' flag to paratest.server for forwarding environment variables
+* added the ability to filter on graph names in the performance tracker
+* made the test system work even when CHPL_UNWIND is set
+* added a checker for the ANNOTATIONS.yaml file used by performance tracking
+* added overlays of the nightly performance graphs to the release-over-release
+
+Developer-oriented changes: Configuration changes
+-------------------------------------------------
+* extended CHPL_LLVM to support new modes: llvm-minimal and system[-minimal]
+
+Developer-oriented changes: Module changes
+------------------------------------------
+* refactored locale models code
+* optimized out array fields used only in non-flat configurations using 'void'
+* added 'export' to locale model routines to avoid widening arguments
+* refactored rectangular I/O into a single helper routine
+* moved c_void_ptr comparisons from CPtr to ChapelBase
+* added a developer feature for specifying arrays' initialization approaches
+* removed an unnecessary argument from _bulkGrow
+* simplified the 'dsi' interface for slicing, rank-change, and reindexing
+  (see http://chapel.cray.com/docs/1.15/technotes/dsi.html)
+* updated the 'dsi' interfaces for establishing new domains
+* cleaned up how the MPI module deinitializes/finalizes itself
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+* improved the robustness of 'make check'
+* worked around a race condition in GASNet's Makefiles
+* cleaned up the runtime include paths
+* improved linking of libnuma when using the memkind library
+* improved Makefile portability for Bourne and limited shells
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+* removed the --report-optimized-array-indexing flag, no longer required
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* made PRIM_GETCID return an int(32) rather than a bool
+* replaced four FnSymbol fields and a flag with a std::map
+* improved the compiler's opt-in verification checks
+* updated the compiler's representation of 'ref' types to use qualified types
+* fixed a segfault in list_ast() for type-less symbols
+* changed more compiler data structures over to their STL equivalents
+* made PRIM_WIDE_GET_ADDR return a c_void_ptr
+* each symbol now stores a list of associated SymExprs
+* made some fixes to for_vector, for_set, and for_queue
+* fixed a bug in getVisibleFunctions relating to forall intents
+* added an ADT for representing forall intents
+* removed unnecessary code from inlineFunctions
+* refactored codegen-related methods from AST/expr.cpp to codegen/expr.cpp
+* minor improvements to the AstDumpToNode debugging output
+* made compute_call_sites() re-entrant
+* refactored code implementing inlining
+* improved the implementation of destructors/deinitializers
+* rewrote buildDefUseMaps and compute_call_sites to use SymExpr info in Symbols
+* eliminated an unnecessary vector computed in flattenClasses
+* refactored FnSymbol::tag_generic(), renamed to tagIfGeneric() for clarity
+* cleaned up and simplified normalize, particularly w.r.t. initializers
+* improved ability to modify code around a function's epilogue label
+* fixed a minor bug in printResolutionErrorUnresolved()
+* unified the number of memory descriptors created for --devel vs. --no-devel
+* significantly refactored build_record_init_function()
+* fixed a bug in which copies of AggregateTypes lost their initializerStyles
+* reduced the degree to which init was implemented similar to constructors
+* added a type method to be used to initialize object init() methods
+* removed unused FLAG_SPECIFIED_RETURN_TYPE
+* replace uses of buildDefUseMaps with SymExpr information in Symbols
+* extended CallInfo to support generic initializers
+* refactored elements of resolution to better support initializers
+* refactored the initialization of configs away from traditional declarations
+* added AggregateType::isGeneric()
+* updated the logic for pruning unused module-scope variables
+* removed the complex but not very useful single-yield iterator optimization
+* removed Symbol::getFnSymbol()
+* streamlined the normalization of many variable declarations
+* removed a leak-based workaround in formalRequiresTemp()
+* added cast-related functions to the compiler
+* converted several parser buffers over to std::string
+* reduced number of cases where the compiler treats certain records specially
+* removed the wide-return optimization due to complexity and lack of impact
+* added a new primitive, PRIM_INIT_VAR, for variable initializations
+* removed the old compiler-based optimization of array access inner multiplies
+* revised the code to generate default initializers for tuples
+* disabled deadStringLiteralElimination without inlining or copy-propagation
+* hoisted gdbShouldBreakHere() calls to get earlier compiler breakpoints
+* improved the precision of canRHSBeConstRef() in inferConstRefs
+* made isPrimitiveScalar() recognize bools of size BOOL_SIZE_SYS
+* have internal actual-formal argument count mismatches print function name
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* added an API for performing task ID comparisons
+* moved stray .c files out of runtime/include
+* fixed some issues in how privatization works
+* updated some interfaces to use c_nodeid_t rather than int32_t
+* removed some dead code in the qthreads tasking layer
+* changed how and when the heap page size is computed
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+* protected our jemalloc symbols to avoid conflicts with the memkind library
+
+
+
 version 1.14.0
 ==============
 
@@ -450,7 +929,7 @@ Developer-oriented changes: Third-party improvements
 * changed many third-party directory structures to avoid using version numbers
 
 
-==============
+
 version 1.13.1
 ==============
 
@@ -484,7 +963,7 @@ Memory Improvements
 * closed memory leaks within the 'RandomStream' class
 
 
-==============
+
 version 1.13.0
 ==============
 
@@ -935,7 +1414,7 @@ Developer-oriented changes: Testing system improvements
 * renamed 'grepgoods' to 'greptestoutputs' and had it span .good and .bad files
 
 
-==============
+
 version 1.12.0
 ==============
 
@@ -1311,7 +1790,7 @@ Developer-oriented changes: Third-party improvements
 * updated third-party GMP/RE2 READMEs to refer to online module documentation
 
 
-==============
+
 version 1.11.0
 ==============
 
@@ -1721,7 +2200,7 @@ Developer-oriented changes: Generated Code improvements
 * improved the spacing when printing IDs via --gen-ids
 
 
-==============
+
 version 1.10.0
 ==============
 
@@ -2160,7 +2639,7 @@ Developer-oriented changes: Runtime improvements
 * made the runtime code more resilient to mixing C++/C compilers
 
 
-=============
+
 version 1.9.0
 =============
 
@@ -2453,7 +2932,7 @@ Internal/Developer-oriented
 * numerous refactorings of the compiler code for clarity and/or efficiency
 
 
-=============
+
 version 1.8.0
 =============
 
@@ -2715,7 +3194,7 @@ Changes In Support of Hierarchical Locales
 - made hierarchical locale model compilations use wide pointers and on-clauses
 
 
-=============
+
 version 1.7.0
 =============
 
@@ -2958,7 +3437,7 @@ Internal/Developer-oriented
 - protected some C identifiers introduced by PGI when compiling with -Kieee
 
 
-=============
+
 version 1.6.0
 =============
 
@@ -3190,7 +3669,7 @@ Internal/Developer-oriented
 - reduced reliance on primitives and locale internals in standard modules
 
 
-=============
+
 version 1.5.0
 =============
 
@@ -3384,7 +3863,7 @@ Internal/Developer-oriented
 - made third-party/*/Makefile rules more consistent
 
 
-=============
+
 version 1.4.0
 =============
 
@@ -3567,7 +4046,7 @@ Internal
 - added a compilerAssert() capability
 
 
-=============
+
 version 1.3.0
 =============
 
@@ -3848,7 +4327,8 @@ Internal
 - added external contributor agreements to the SVN tree (not in release)
 - added a notion of internal types used by the compiler but not the user
 
-=============
+
+
 version 1.2.0
 =============
 
@@ -4050,7 +4530,7 @@ Internal
 - changed the --gen-communicated-structures developer flag to --heterogeneous
 
 
-=============
+
 version 1.1.2
 =============
 
@@ -4063,7 +4543,7 @@ Platform-specific notes
   (see doc/platforms/README.xe-cle for details)
 
 
-=============
+
 version 1.1.1
 =============
 
@@ -4081,7 +4561,7 @@ Bug fixes
 - fixed a bug in fillRandom() in which using a clock-based seed did not do so
 
 
-===========
+
 version 1.1
 ===========
 
@@ -4407,7 +4887,7 @@ Internal
 - simplified the generation of BUILD_VERSION for non-developers
 
 
-============
+
 version 1.02
 ============
 
@@ -4475,7 +4955,7 @@ Internal
 - added Makefile.tau for experimental use of Chapel with Tau
 
 
-============
+
 version 1.01
 ============
 
@@ -4545,7 +5025,7 @@ Internal
 - added verification that gotos are in same functions as their labels
 
 
-===========
+
 version 1.0
 ===========
 
@@ -4766,7 +5246,7 @@ Internal
 - split chpl_comm_md.h into two files to permit platform- and comm- overrides
 
 
-===========
+
 version 0.9
 ===========
 
@@ -4902,7 +5382,7 @@ Internal
 - removed compiler support for (undocumented) anonymous record types
 
 
-===========
+
 version 0.8
 ===========
 
@@ -5151,7 +5631,7 @@ Internal
 - made all exits from the compiler use our clean exit routine
 
 
-===========
+
 version 0.7
 ===========
 
@@ -5331,7 +5811,7 @@ Internal
 - made --ccwarnings into --[no-]ccwarnings where the default is based on --devel
 
 
-===========
+
 version 0.6
 ===========
 
@@ -5552,7 +6032,7 @@ Internal
 - many refactorings and improvements to the compiler and runtime sources
 
 
-===========
+
 version 0.5
 ===========
 Second preliminary release of Chapel Compiler, June 29, 2007
@@ -5824,7 +6304,7 @@ Internal
 - added reference types
 
 
-===========
+
 version 0.4
 ===========
 Preliminary release of Chapel Compiler, December 15, 2006

@@ -90,6 +90,18 @@ module ChapelDistribution {
       return (count==0);
     }
 
+    //
+    // TODO: There may be some opportunities to optimize out the
+    // locking here, as in the add_arr() case.  For example, the
+    // construction of the distribution and domain used for rank change
+    // slicing could use an unlocked version because that operation
+    // creates a new distribution followed immediately by a domain
+    // over the distribution. It's unclear how important this
+    // optimization is, though, because rank change slices are
+    // arguably less common (and already more expensive in most cases
+    // due to the creation of distribution and domain objects) than
+    // rank-preserving slicing.
+    //
     inline proc add_dom(x:BaseDom) {
       on this {
         _lock_doms();
@@ -110,7 +122,7 @@ module ChapelDistribution {
       _domsLock.clear();
     }
   
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
   
@@ -316,6 +328,12 @@ module ChapelDistribution {
     //proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
+
+    proc isDefaultRectangular() param return false;
+
+    proc isSliceDomainView() param return false; // likely unnecessary?
+    proc isRankChangeDomainView() param return false;
+    proc isReindexDomainView() param return false;
   }
   
   class BaseRectangularDom : BaseDom {

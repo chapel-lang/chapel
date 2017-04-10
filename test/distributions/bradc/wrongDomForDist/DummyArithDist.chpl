@@ -1,6 +1,8 @@
 class MyDist : BaseDist {
-  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
-    return new MyDom(rank=rank, idxType=idxType);
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+    const dom = new MyDom(rank=rank, idxType=idxType);
+    dom.dsiSetIndices(inds);
+    return dom;
   }
 
   proc dsiClone() return new MyDist();

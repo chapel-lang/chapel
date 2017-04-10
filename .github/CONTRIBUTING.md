@@ -4,7 +4,8 @@ How to Contribute
 As an open-source project, Chapel welcomes source contributions from
 the community.  Contributors are asked to sign a contributor agreement
 in order to help us maintain Chapel's license terms.  The
-contributor's agreement can be found in [doc/developer/contributorsAgreements/][0].
+contributor's agreement can be found in
+[doc/rst/developer/contributorsAgreements/][0].
 
 The high-level steps for contributing code are:
 
@@ -17,5 +18,5 @@ The high-level steps for contributing code are:
 For more detailed instructions on committing code to Chapel, please refer to
 [ContributorInfo.rst][1].
 
-[0]: https://github.com/chapel-lang/chapel/tree/master/doc/developer/contributorAgreements/
-[1]: https://github.com/chapel-lang/chapel/tree/master/doc/developer/bestPractices/ContributorInfo.rst
+[0]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+[1]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/bestPractices/ContributorInfo.rst

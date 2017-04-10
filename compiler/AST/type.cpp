@@ -552,6 +552,10 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
     }
   }
 
+  for_alist(delegate, forwardingTo) {
+    copy_type->forwardingTo.insertAtTail(COPY_INT(delegate));
+  }
+
   return copy_type;
 }
 
@@ -583,6 +587,10 @@ void AggregateType::verify() {
     if (expr->parentSymbol != symbol) {
       INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
     }
+  }
+  for_alist(expr, forwardingTo) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
   }
 }
 
@@ -619,7 +627,14 @@ void AggregateType::addDeclarations(Expr* expr) {
     for_alist(stmt, block->body) {
       addDeclarations(stmt);
     }
-
+  } else if (ForwardingStmt* forwarding = toForwardingStmt(expr)) {
+    // forwarding expr is a def expr for a function that we should handle.
+    DefExpr* def = forwarding->toFnDef;
+    // Handle the function defining what we forwarding to
+    this->addDeclaration(def);
+    // Add the ForwardingStmt to the AST
+    forwarding->toFnDef = NULL;
+    this->forwardingTo.insertAtTail(forwarding);
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -715,6 +730,10 @@ void AggregateType::accept(AstVisitor* visitor) {
     }
 
     for_alist(next_ast, inherits) {
+      next_ast->accept(visitor);
+    }
+
+    for_alist(next_ast, forwardingTo) {
       next_ast->accept(visitor);
     }
 
@@ -1866,6 +1885,7 @@ bool isPrimitiveScalar(Type* type) {
       type == dtBools[BOOL_SIZE_16]        ||
       type == dtBools[BOOL_SIZE_32]        ||
       type == dtBools[BOOL_SIZE_64]        ||
+      type == dtBools[BOOL_SIZE_SYS]       ||
 
       type == dtInt[INT_SIZE_8]            ||
       type == dtInt[INT_SIZE_16]           ||
@@ -1896,8 +1916,8 @@ bool isNonGenericClass(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()                  == false &&
-        at->isClass()                    ==  true &&
+    if (at->isClass()                    ==  true &&
+        at->isGeneric()                  == false &&
         at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
@@ -1909,24 +1929,35 @@ bool isNonGenericClass(Type* type) {
 bool isNonGenericClassWithInitializers(Type* type) {
   bool retval = false;
 
+  if (isNonGenericClass(type) == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      retval = at->initializerStyle == DEFINES_INITIALIZER;
+    }
+  }
+
+  return retval;
+}
+
+bool isNonGenericRecord(Type* type) {
+  bool retval = false;
+
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()      == false &&
-        at->isClass()        == true  &&
-        at->initializerStyle == DEFINES_INITIALIZER) {
+    if (at->isRecord()                   == true  &&
+        at->isGeneric()                  == false &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
   }
 
   return retval;
 }
+
 bool isNonGenericRecordWithInitializers(Type* type) {
   bool retval = false;
 
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->isGeneric()      == false &&
-        at->isRecord()       == true  &&
-        at->initializerStyle == DEFINES_INITIALIZER) {
-      retval = true;
+  if (isNonGenericRecord(type) == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      retval = at->initializerStyle == DEFINES_INITIALIZER;
     }
   }
 

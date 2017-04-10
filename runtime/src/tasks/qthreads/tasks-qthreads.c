@@ -646,8 +646,8 @@ static void setupCallStacks(int32_t hwpar) {
         // pages, so we thrown an extra MB.
         if (hwpar > 0) {
             const size_t oneMB = 1024 * 1024;
-            const size_t allocSizeLowerBound =  33 * oneMB;
-            const size_t allocSizeUpperBound = 513 * oneMB;
+            const size_t allocSizeLowerBound = 33 * oneMB;
+            const size_t allocSizeUpperBound = 65 * oneMB;
             size_t maxPoolAllocSize;
             char newenv_alloc[QT_ENV_S];
 

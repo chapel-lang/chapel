@@ -147,6 +147,10 @@ public:
   Qualifier          qual;
   Type*              type;
   FlagSet            flags;
+  // Tuples can contain ref fields. In that event, a VarSymbol/ArgSymbol
+  // needs to be able to track whether the ref field is ref or
+  // const ref. It can depend on the variable for ref to arrays.
+  Qualifier*         fieldQualifiers;
 
   const char*        name;
   const char*        cname;    // Name of symbol for C code
@@ -598,6 +602,7 @@ public:
 
   BlockStmt*           block;
   FnSymbol*            initFn;
+  FnSymbol*            deinitFn;
 
   Vec<ModuleSymbol*>   modUseList;
 
@@ -776,12 +781,14 @@ extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
+extern FnSymbol *gAddModuleFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
 extern FnSymbol *gChplDoDirectExecuteOn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
+extern FnSymbol *gChplDeleteError;
 
 // These global symbols point to generic functions that
 // will be instantiated.
