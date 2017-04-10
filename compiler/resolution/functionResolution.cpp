@@ -10784,6 +10784,20 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   }
 }
 
+static void removeCopyFns(Type* t) {
+  // If they exist, remove the autoCopy and autoDestroy functions
+  // for type t, which is about to be removed itself.
+  if (FnSymbol* autoDestroy = autoDestroyMap.get(t)) {
+    autoDestroyMap.put(t, NULL);
+    autoDestroy->defPoint->remove();
+  }
+
+  if (FnSymbol* autoCopy = autoCopyMap[t]) {
+    autoCopyMap.erase(t);
+    autoCopy->defPoint->remove();
+  }
+}
+
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -10792,6 +10806,33 @@ static void removeUnusedFunctions() {
       if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
 
       if (! fn->isResolved() || fn->retTag == RET_PARAM) {
+        // Look for types defined within this unused function. If any
+        // types are defined, remove their autoCopy and autoDestroy
+        // functions. Also remove their reference types, and the reference
+        // type's defaultTypeConstructor, autoCopy and autoDestroy functions.
+        std::vector<DefExpr*> defExprs;
+        collectDefExprs(fn, defExprs);
+        forv_Vec(DefExpr, def, defExprs) {
+          if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
+            // Remove the autoCopy and autoDestroy functions for this type
+            removeCopyFns(typeSym->type);
+
+            AggregateType* refType = toAggregateType(typeSym->type->refType);
+            if (refType) {
+              // If the default type constructor for this ref type is in
+              // the tree, it should be removed.
+              if (refType->defaultTypeConstructor->defPoint->parentSymbol) {
+                refType->defaultTypeConstructor->defPoint->remove();
+              }
+
+              // Remove autoCopy and autoDestroy functions for this refType
+              removeCopyFns(refType);
+
+              // Now remove the refType
+              refType->symbol->defPoint->remove();
+            }
+          }
+        }
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
       }
