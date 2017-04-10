@@ -41,7 +41,7 @@ bool primMoveGeneratesCommCall(CallExpr* ce);
 inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
-inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
+inline bool isArithmeticPrimitive(PrimitiveTag tag);
 inline bool isFloatComparisonPrimitive(CallExpr *ce);
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut,
@@ -293,13 +293,8 @@ bool isDenormalizable(Symbol* sym,
                       //now check if we need to case it when we move it
                       if(CallExpr* defCe = toCallExpr(def)) {
                         if(defCe->isPrimitive() &&
-                            isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                            isArithmeticPrimitive(defCe->primitive->tag)) {
                           if(requiresCast(lhsType)) {
-                            //if(strcmp(defCe->fname(),
-                                  //"test/expressions/diten/sameExprDiffValue.chpl")
-                                //== 0) {
-                              //print_view(defCe);
-                            //}
                             *castTo = lhsType;
                           }
                         }
@@ -455,7 +450,7 @@ inline bool isFloatComparisonPrimitive(CallExpr *ce) {
   return false;
 }
 
-inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
+inline bool isArithmeticPrimitive(PrimitiveTag tag) {
   switch(tag) {
     case PRIM_ADD:
     case PRIM_SUBTRACT:
