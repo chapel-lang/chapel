@@ -1498,7 +1498,7 @@ GenRet codegenAdd(GenRet a, GenRet b)
       if(values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = info->builder->CreateFAdd(values.a, values.b);
       } else {
-        ret.val = info->builder->CreateAdd(values.a, values.b, "", false, true);
+        ret.val = info->builder->CreateAdd(values.a, values.b, "", false, a_signed or b_signed);
       }
       ret.isUnsigned = !values.isSigned;
     }
@@ -1542,7 +1542,7 @@ GenRet codegenSub(GenRet a, GenRet b)
       if(values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = info->builder->CreateFSub(values.a, values.b);
       } else {
-        ret.val = info->builder->CreateSub(values.a, values.b, "", false, true);
+        ret.val = info->builder->CreateSub(values.a, values.b);
       }
       ret.isUnsigned = !values.isSigned;
     }
