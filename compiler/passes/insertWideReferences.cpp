@@ -2220,7 +2220,7 @@ void handleIsWidePointer() {
 // the uses in 'myFunc', not based on the wideness of 'foobar'.
 //
 // It is not uncommon for 'foobar' to be re-used after the call to 'myFunc',
-// which sometimes involves the wideneing of 'foobar' unrelated to the _retArg
+// which sometimes involves the widening of 'foobar' unrelated to the _retArg
 // formal. This function creates a temporary for the _retArg's result so that
 // modifications to the destination do not impact the _retArg's wideness. The
 // AST above will be turned into something like this:

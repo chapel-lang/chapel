@@ -1271,7 +1271,7 @@ static void insertCallTemps(CallExpr* call) {
       newArg->insertAtHead(tmp);
       newArg->insertAtHead(gMethodToken);
 
-      // Move the tmp.init(args) expession to before the call
+      // Move the tmp.init(args) expression to before the call
       stmt->insertBefore(newArg->remove());
 
       // Replace the degenerate new-expression with a use of the tmp variable
@@ -1402,7 +1402,7 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 // 2017/03/14 This currently runs before new expressions have been
 // normalized.
 //
-// Before normalization, a new expression is ususally
+// Before normalization, a new expression is usually
 //
 //    prim_new(MyRec(a, b, c))
 //
