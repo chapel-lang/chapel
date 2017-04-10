@@ -44,7 +44,7 @@ module LocaleModel {
      * A locale is a representation of system resources.
      * The alternative ways of expressing that an allocation
        should go on a particular memory seem unfortunate.
-     * It is desireable e.g. to Block distribute over
+     * It is desirable e.g. to Block distribute over
        a particular kind of memory across nodes in the system.
   */
 
