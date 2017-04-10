@@ -443,6 +443,10 @@ inline bool isFloatComparisonPrimitive(CallExpr *ce) {
            is_real_type(ce->get(2)->typeInfo())) {
           return true;
         }
+        break;
+      default:
+        return false;
+        break;
     }
   }
   return false;
