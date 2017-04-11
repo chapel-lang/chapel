@@ -32,6 +32,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "view.h"
+#include "visibleCandidates.h"
 #include "visibleFunctions.h"
 
 static

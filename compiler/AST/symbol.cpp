@@ -35,10 +35,11 @@
 #include "misc.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "resolution.h"
+#include "visibleCandidates.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
