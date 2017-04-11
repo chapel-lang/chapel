@@ -24,8 +24,8 @@
 #define MINOR_VERSION "15"
 #define UPDATE_VERSION "0"
 
-static const char* BUILD_VERSION =
+static const char* BUILD_VERSION = "
 #include "BUILD_VERSION"
-;
+";
 
 #endif

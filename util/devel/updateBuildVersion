@@ -39,6 +39,6 @@ if ($build_version eq $last_build_version ||
 } else {
 #    print "Updating build version ($build_version != $last_build_version)\n";
     open BUILD_VERSION, ">$build_version_file" or die "can't open $build_version_file for writing $!";
-    print BUILD_VERSION "\"$build_version\"\n";
+    print BUILD_VERSION "$build_version\n";
     close BUILD_VERSION;
 }
