@@ -3508,20 +3508,24 @@ static int processBlockComment(yyscan_t scanner) {
 
       addChar(c);
     }
+   if(fDocs && labelIndex == -1)
+     USR_FATAL("improper comment style");
    if(fDocs && c == fDocsCommentLabel[len - d])
      d++;
-    else
+   else
      d = 1;
 
     if (lastc == '*' && c == '/') { // close comment
-      if(fDocsCommentLabel[0] == '/' && fDocsCommentLabel[1] == '*' && (d < len + 1 && d >= len - 3)) {
-        USR_WARN("chpldoc comment not closed, ignoring comment: %s in Line no: %s\nThis comment is not closed properly", fDocsCommentLabel, startLine);
-        depth--;
-        d = 1;
-      }
-      else if(fDocs && d == len + 1) {
-        depth--;
-        d = 1;
+      if(fDocs) {
+        if(d == len + 1) {
+          depth--;
+          d = 1;
+        }
+        else if(fDocsCommentLabel[0] == '/' && fDocsCommentLabel[1] == '*') {
+          depth--;
+          d = 1;
+          USR_WARN("chpldoc comment not closed, ignoring comment: %s in Line no: %d\nThis comment is not closed properly", fDocsCommentLabel, startLine);
+        }
       }
       else if(lastlastc != '/')
         depth--;

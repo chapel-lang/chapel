@@ -1,3 +1,5 @@
+warning: chpldoc comment not closed, ignoring comment: /** in Line no: 1
+This comment is not closed properly
 badClose.doc
 
 Usage:

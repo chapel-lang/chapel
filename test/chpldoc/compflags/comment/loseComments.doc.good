@@ -1,6 +1,2 @@
-loseComments.doc
-
-Usage:
-   use loseComments.doc;
-
-   proc found()
+error: improper comment style
+cat: docs/loseComments.doc.txt: No such file or directory
