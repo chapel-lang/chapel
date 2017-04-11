@@ -27,8 +27,15 @@
 
 class CallInfo;
 
-extern SymbolMap paramMap;
+extern SymbolMap      paramMap;
+
 extern Vec<CallExpr*> callStack;
+extern Vec<CondStmt*> tryStack;
+
+extern Vec<CallExpr*> inits;
+
+extern char           arrayUnrefName[];
+
 bool hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);
 void getAutoCopyTypeKeys(Vec<Type*> &keys); // type to chpl__autoCopy function
@@ -37,7 +44,24 @@ extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
-FnSymbol* expandVarArgs(FnSymbol* origFn, int numActuals);
+FnSymbol*  expandVarArgs(FnSymbol* origFn, int numActuals);
+
+bool       propagateNotPOD(Type* t);
+
+Expr*      resolvePrimInit(CallExpr* call);
+
+bool       isTupleContainingOnlyReferences(Type* t);
+
+void       ensureEnumTypeResolved(EnumType* etype);
+
+BlockStmt* getVisibleFunctions(BlockStmt*       block,
+                               const char*      name,
+                               Vec<FnSymbol*>&  visibleFns,
+                               Vec<BlockStmt*>& visited,
+                               CallExpr*        callOrigin);
+
+void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
+
 
 // explain call stuff
 extern int explainCallLine;

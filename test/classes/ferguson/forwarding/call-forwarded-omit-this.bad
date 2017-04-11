@@ -1,0 +1,4 @@
+call-forwarded-omit-this.chpl:27: In function 'bad':
+call-forwarded-omit-this.chpl:28: error: unresolved call 'area()'
+call-forwarded-omit-this.chpl:5: note: candidates are: MyCircleImpl.area()
+call-forwarded-omit-this.chpl:25: note:                 MyCircle.area()
