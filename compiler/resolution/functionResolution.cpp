@@ -206,7 +206,7 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
 static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
-static Expr* resolve_type_expr(Expr* expr);
+static Expr* resolveTypeExpr(Expr* expr);
 static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
 
 static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
@@ -1275,7 +1275,7 @@ void ensureEnumTypeResolved(EnumType* etype) {
     for_enums(def, etype) {
       if (def->init) {
         Expr* enumTypeExpr =
-        resolve_type_expr(def->init);
+        resolveTypeExpr(def->init);
 
         Type* enumtype = enumTypeExpr->typeInfo();
         if (enumtype == dtUnknown)
@@ -2689,27 +2689,41 @@ static void reissueCompilerWarning(const char* str, int offset) {
 }
 
 // Resolves a param or type expression
-static Expr*
-resolve_type_expr(Expr* expr) {
+static Expr* resolveTypeExpr(Expr* expr) {
   Expr* result = NULL;
+
   for_exprs_postorder(e, expr) {
-    result = preFold(e);
+    if (CallExpr* call = toCallExpr(e)) {
+      result = preFold(call);
+    } else {
+      result = e;
+    }
+
     if (CallExpr* call = toCallExpr(result)) {
       if (call->parentSymbol) {
         callStack.add(call);
+
         resolveCall(call);
-        FnSymbol* fn = call->isResolved();
-        if (fn && call->parentSymbol) {
-          resolveFormals(fn);
-          if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE ||
-              fn->retType == dtUnknown)
-            resolveFns(fn);
+
+        if (call->parentSymbol != NULL) {
+          if (FnSymbol* fn = call->resolvedFunction()) {
+            resolveFormals(fn);
+
+            if (fn->retTag  == RET_PARAM  ||
+                fn->retTag  == RET_TYPE   ||
+                fn->retType == dtUnknown) {
+              resolveFns(fn);
+            }
+          }
         }
+
         callStack.pop();
       }
     }
+
     result = postFold(result);
   }
+
   return result;
 }
 
@@ -4808,7 +4822,7 @@ Type* resolveTypeAlias(SymExpr* se)
 
   DefExpr* def = var->defPoint;
   SET_LINENO(def);
-  Expr* typeExpr = resolve_type_expr(def->init);
+  Expr* typeExpr = resolveTypeExpr(def->init);
   SymExpr* tse = toSymExpr(typeExpr);
 
   return resolveTypeAlias(tse);
@@ -5070,7 +5084,9 @@ resolveExpr(Expr* expr) {
     }
   }
 
-  expr = preFold(expr);
+  if (CallExpr* call = toCallExpr(expr)) {
+    expr = preFold(call);
+  }
 
   if (fn && fn->retTag == RET_PARAM) {
     if (is_param_resolved(fn, expr)) {
@@ -5079,11 +5095,15 @@ resolveExpr(Expr* expr) {
   }
 
   if (DefExpr* def = toDefExpr(expr)) {
+    // This section was added to handle type a = b
     if (def->init) {
-      // This section was added to handle type a = b
-      Expr* init = preFold(def->init);
-      init = resolveExpr(init);
-      // expr is unchanged, so is treated as "resolved".
+      Expr* init = def->init;
+
+      if (CallExpr* call = toCallExpr(init)) {
+        init = preFold(call);
+      }
+
+      resolveExpr(init);
     }
 
     if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
