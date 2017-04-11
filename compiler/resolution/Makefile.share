@@ -30,6 +30,7 @@ RESOLUTION_SRCS =                                              \
                   preFold.cpp                                  \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
+                  visibleFunctions.cpp                         \
                   wrappers.cpp
 
 SVN_SRCS        = $(RESOLUTION_SRCS)

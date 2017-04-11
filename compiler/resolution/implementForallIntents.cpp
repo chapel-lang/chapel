@@ -18,13 +18,14 @@
  */
 
 #include "resolution.h"
+
 #include "astutil.h"
 #include "ForLoop.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "resolveIntents.h"
-
+#include "visibleFunctions.h"
 
 //
 //-----------------------------------------------------------------------------
