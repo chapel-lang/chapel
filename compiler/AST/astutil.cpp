@@ -18,6 +18,7 @@
  */
 
 #include "astutil.h"
+
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
@@ -30,6 +31,7 @@
 #include "symbol.h"
 #include "TryStmt.h"
 #include "type.h"
+#include "virtualDispatch.h"
 #include "WhileStmt.h"
 
 #include "oldCollectors.h" // Deprecated. To be removed.

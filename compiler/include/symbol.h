@@ -800,18 +800,4 @@ extern Symbol *gSingleVarAuxFields;
 extern std::map<FnSymbol*,int> ftableMap;
 extern std::vector<FnSymbol*> ftableVec;
 
-//
-// The virtualMethodTable maps types to their arrays of methods.  The
-// virtualMethodMap maps methods to their indexes into these arrays.
-// The virtualChildrenMap maps methods to all of the methods that
-// could be called when they are called.  The virtualRootsMap maps
-// methods to the root methods that it overrides.  Note that multiple
-// inheritance will require more virtual method tables, one for each
-// path up the class hierarchy to each class root.
-//
-extern Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
-extern Map<FnSymbol*,int> virtualMethodMap;
-extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
-extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
-
 #endif

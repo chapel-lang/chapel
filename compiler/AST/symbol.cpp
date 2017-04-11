@@ -111,11 +111,6 @@ FnSymbol* gChplDeleteError = NULL;
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;
 
-Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
-Map<FnSymbol*,int> virtualMethodMap;
-Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
-Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

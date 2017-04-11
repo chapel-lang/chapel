@@ -58,6 +58,8 @@ void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
+bool       isInstantiation(Type* sub, Type* super);
+
 // explain call stuff
 extern int explainCallLine;
 bool explainCallMatch(CallExpr* call);
