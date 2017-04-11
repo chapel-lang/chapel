@@ -9,6 +9,7 @@ TARGETS = \
 	fannkuchredux \
 	knucleotide \
 	mandelbrot \
+	mandelbrot-fast \
 	meteor \
 	meteor-fast \
 	nbody \
@@ -49,6 +50,9 @@ knucleotide: knucleotide.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 mandelbrot: mandelbrot.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+mandelbrot-fast: mandelbrot-fast.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 meteor: meteor.chpl
