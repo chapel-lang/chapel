@@ -193,7 +193,7 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   rcReplicate(myRepVar, initVal);
 
   writeln("\nafter initialization, myRepVar copies are:");
-  writeReplicands(myRepVar); // a helper function to print each locale's copy
+  writeReplicands(myRepVar, Locales); // a helper function to print each locale's copy
 
   // go to 'newLocale' and update its copy to 'newVal'
   on newLocale {
@@ -208,7 +208,7 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   }
 
   writeln("\nafter update, myRepVar copies are:");
-  writeReplicands(myRepVar);
+  writeReplicands(myRepVar, Locales);
 
   // collect all copies of 'myRepVar' into an array
   var collected: [LocaleSpace] MyType;
@@ -219,10 +219,12 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
 
 // This is a helper function to print each locale's replicand, labeled
 //
-private proc writeReplicands(RV) {
-  for loc in Locales {
-    writeln(loc, ":");
-    writeln(RV);
+private proc writeReplicands(RV, locs) {
+  for loc in locs {
+    on loc {
+      writeln(loc, ":");
+      writeln(RV);
+    }
   }
 }
 
@@ -243,7 +245,7 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
   rcReplicate(myRepVar, initVal);
 
   writeln("\nafter initialization, myRepVar copies are:");
-  writeReplicands(myRepVar);
+  writeReplicands(myRepVar, localesToReplicateOver);
 
   // go to 'newLocale' and update its copy to 'newVal'
   on newLocale {
@@ -258,7 +260,7 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
   }
 
   writeln("\nafter update, myRepVar copies are:");
-  writeReplicands(myRepVar);
+  writeReplicands(myRepVar, localesToReplicateOver);
 
   // collect all copies of 'myRepVar' into an array
   // DIFFERENT from rcExample(): the domain in collected's type

@@ -1,12 +1,16 @@
 use ReplicatedDist, UtilReplicatedVar;
 
-proc writeReplicands(x) {
-  for loc in Locales {
+proc writeReplicands(x, locs) {
+  for loc in locs {
     on loc {
       writeln(loc, ":");
       writeln(x);
     }
   }
+}
+
+proc writeReplicands(x) {
+  writeReplicands(x, Locales);
 }
 
 {
@@ -32,14 +36,14 @@ if numLocales >= 4 {
   writeln("\nadvanced case: ", myL);
   var x: [rcDomainBase dmapped ReplicatedDist(myL)] real;
   writeln("\ninitially");
-  writeReplicands(x);
+  writeReplicands(x, myL);
   rcReplicate(x, 5);
   writeln("\nafter rcReplicate");
-  writeReplicands(x);
+  writeReplicands(x, myL);
   on Locales[3] do
     x[1] = 33;
   writeln("\nafter 'on'");
-  writeReplicands(x);
+  writeReplicands(x, myL);
   var c: [myL.domain] real;
   rcCollect(x, c);
   writeln("\ncollected:\n", c);
