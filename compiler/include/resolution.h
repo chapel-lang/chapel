@@ -30,6 +30,8 @@ class CallInfo;
 extern SymbolMap      paramMap;
 
 extern Vec<CallExpr*> callStack;
+extern Vec<CondStmt*> tryStack;
+
 extern Vec<CallExpr*> inits;
 
 extern char           arrayUnrefName[];
