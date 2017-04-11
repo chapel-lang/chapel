@@ -26,6 +26,7 @@ RESOLUTION_SRCS =                                              \
                   functionResolution.cpp                       \
                   initializerResolution.cpp                    \
                   lowerIterators.cpp                           \
+                  preFold.cpp                                  \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
                   wrappers.cpp
