@@ -24,5 +24,6 @@ module B {
     // Additionally, we expect the default constructor/initializer to not be
     // accessible from this scope. (Do we?)
     writeln(f); // expect 10, true
+    delete f;
   }
 }
