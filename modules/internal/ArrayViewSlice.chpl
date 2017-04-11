@@ -111,12 +111,12 @@ module ArrayViewSlice {
     // I/O
     //
 
-    proc dsiSerialWrite(f) {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+    proc dsiSerialWrite(f, loc) {
+      chpl_serialReadWriteRectangular(f, arr, privDom, loc);
     }
 
-    proc dsiSerialRead(f) {
-      chpl_serialReadWriteRectangular(f, arr, privDom);
+    proc dsiSerialRead(f, loc) {
+      chpl_serialReadWriteRectangular(f, arr, privDom, loc);
     }
 
     proc dsiDisplayRepresentation() {

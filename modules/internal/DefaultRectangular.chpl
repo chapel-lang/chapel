@@ -2013,10 +2013,10 @@ module DefaultRectangular {
   // stridable).
   //
   proc chpl_serialReadWriteRectangular(f, arr) {
-    chpl_serialReadWriteRectangular(f, arr, arr.dom);
+    chpl_serialReadWriteRectangular(f, arr, arr.dom, here.id);
   }
 
-  proc chpl_serialReadWriteRectangular(f, arr, dom) {
+  proc chpl_serialReadWriteRectangular(f, arr, dom, loc) {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 

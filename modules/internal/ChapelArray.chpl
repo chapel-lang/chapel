@@ -2353,13 +2353,21 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
-      _value.dsiSerialWrite(f);
+    proc writeThis(f, loc: locale) {
+      if Reflection.canResolveMethod(_value, "dsiSerialWrite", f, loc) {
+        _value.dsiSerialWrite(f, loc);
+      } else {
+        _value.dsiSerialWrite(f);
+      }
     }
 
     pragma "no doc"
-    proc readThis(f) {
-      _value.dsiSerialRead(f);
+    proc readThis(f, loc: locale) {
+      if Reflection.canResolveMethod(_value, "dsiSerialRead", f, loc) {
+        _value.dsiSerialRead(f, loc);
+      } else {
+        _value.dsiSerialRead(f);
+      }
     }
 
     proc IRV where !isSparseArr(this) {

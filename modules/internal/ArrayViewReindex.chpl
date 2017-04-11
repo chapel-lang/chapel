@@ -162,12 +162,12 @@ module ArrayViewReindex {
     // I/O
     //
 
-    proc dsiSerialWrite(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
+    proc dsiSerialWrite(f, loc) {
+      chpl_serialReadWriteRectangular(f, this, privDom, loc);
     }
 
-    proc dsiSerialRead(f) {
-      chpl_serialReadWriteRectangular(f, this, privDom);
+    proc dsiSerialRead(f, loc) {
+      chpl_serialReadWriteRectangular(f, this, privDom, loc);
     }
 
     proc dsiDisplayRepresentation() {

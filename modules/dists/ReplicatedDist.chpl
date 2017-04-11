@@ -575,14 +575,19 @@ proc channel.writeReplicands(arr: [], sorted=true) {
 */
 
 // Write the array out to the given Writer serially.
-proc ReplicatedArr.dsiSerialWrite(f): void {
-  writeln("in dsiSerialWrite() on locale ", here.id);
-  chpl_myLocArr().arrLocalRep._value.dsiSerialWrite(f);
+proc ReplicatedArr.dsiSerialWrite(f, loc): void {
+  //  writeln("in dsiSerialWrite() on locale ", here.id, " for ", loc.id);
+  localArrs[loc.id].arrLocalRep._value.dsiSerialWrite(f);
 }
 
-proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
-  writeln("In chpl_serialReadWrite...");
-  chpl_serialReadWriteRectangularHelper(f, arr, dom);
+proc ReplicatedArr.dsiSerialRead(f, loc): void {
+  localArrs[loc.id].arrLocalRep._value.dsiSerialRead(f);
+}
+
+proc chpl_serialReadWriteRectangular(f, arr, dom, loc) where chpl__getActualArray(arr) : ReplicatedArr {
+  const actual = chpl__getActualArray(arr);
+  on actual.localArrs[loc.id] do
+    chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
