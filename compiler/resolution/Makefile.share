@@ -30,6 +30,7 @@ RESOLUTION_SRCS =                                              \
                   preFold.cpp                                  \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
+                  visibleCandidates.cpp                        \
                   visibleFunctions.cpp                         \
                   wrappers.cpp
 

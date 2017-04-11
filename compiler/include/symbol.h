@@ -733,9 +733,6 @@ void clearPartialCopyInfo(FnSymbol* fn);
 void clearPartialCopyFnMap();
 void checkEmptyPartialCopyFnMap();
 
-void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
-                               std::vector<ArgSymbol*>& varargFormals);
-
 // Parser support.
 class ForallIntents;
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);

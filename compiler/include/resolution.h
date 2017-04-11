@@ -46,8 +46,6 @@ extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
-FnSymbol*  expandVarArgs(FnSymbol* origFn, int numActuals);
-
 bool       propagateNotPOD(Type* t);
 
 Expr*      resolvePrimInit(CallExpr* call);
@@ -58,6 +56,7 @@ void       ensureEnumTypeResolved(EnumType* etype);
 
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 
+bool       canInstantiate(Type* actualType, Type* formalType);
 
 // explain call stuff
 extern int explainCallLine;
@@ -152,8 +151,6 @@ public:
   void computeSubstitutions(bool inInitRes = false);
 };
 
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
-bool checkGenericFormals(ResolutionCandidate* currCandidate);
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call);
 void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
@@ -218,16 +215,17 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
                    bool onlyConsiderPromotion);
 
 // Regular resolve functions
-void resolveFormals(FnSymbol* fn);
-void resolveBlockStmt(BlockStmt* blockStmt);
-void resolveCall(CallExpr* call);
-void resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
-void makeRefType(Type* type);
+void      resolveFormals(FnSymbol* fn);
+void      resolveBlockStmt(BlockStmt* blockStmt);
+void      resolveCall(CallExpr* call);
+void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+void      resolveFns(FnSymbol* fn);
+void      resolveDefaultGenericType(CallExpr* call);
+void      resolveReturnType(FnSymbol* fn);
+Type*     resolveTypeAlias(SymExpr* se);
+
 FnSymbol* tryResolveCall(CallExpr* call);
-void resolveFns(FnSymbol* fn);
-void resolveDefaultGenericType(CallExpr* call);
-void resolveTypedefedArgTypes(FnSymbol* fn);
-void resolveReturnType(FnSymbol* fn);
+void      makeRefType(Type* type);
 
 // FnSymbol changes
 extern bool tryFailure;
