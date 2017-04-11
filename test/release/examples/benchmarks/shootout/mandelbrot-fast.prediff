@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 testname=$1
 outputfile=$2
@@ -6,11 +6,6 @@ outputfile=$2
 clbg_good=$testname-clbg.good
 alt_good=$testname-alt.good
 real_good=$testname.good
-
-#
-# remove .good file which should not be stored in git
-#
-rm -f $real_good
 
 #
 # There's a numerical instability in this test which makes the output
