@@ -1,6 +1,12 @@
 Release Changes List
 ====================
 
+version 1.16.0 pre-release
+==========================
+
+*UNDER CONSTRUCTION: Chapel 1.16.0 is scheduled for release in October 2017.*
+
+
 
 version 1.15.0
 ==============
