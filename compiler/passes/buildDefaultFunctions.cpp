@@ -263,7 +263,7 @@ static FnSymbol* function_exists(const char* name,
                          formalType1, formalType2, formalType3, NULL, kind);
 }
 
-/*static FnSymbol* function_exists(const char* name,
+static FnSymbol* function_exists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
@@ -273,7 +273,7 @@ static FnSymbol* function_exists(const char* name,
   return function_exists(name, 4, formalType1, formalType2,
                          formalType3, formalType4, kind);
 }
-*/
+
 
 
 static void fixup_accessor(AggregateType* ct, Symbol *field,
@@ -1431,6 +1431,7 @@ static void buildRecordQuery(AggregateType* ct,
 
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasReadWriteThis = false;
+  bool readWriteThisHasLocale = false;
   bool hasReadThis = false;
   bool hasWriteThis = false;
   bool makeReadThisAndWriteThis = true;
@@ -1444,15 +1445,20 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (function_exists("readWriteThis", dtMethodToken, ct, dtAny)) {
+  if (function_exists("readWriteThis", dtMethodToken, ct, dtAny, dtLocale)) {
+    hasReadWriteThis = true;
+    readWriteThisHasLocale = true;
+  } else if (function_exists("readWriteThis", dtMethodToken, ct, dtAny)) {
     hasReadWriteThis = true;
   }
 
-  if (function_exists("writeThis", dtMethodToken, ct, dtAny)) {
+  if (function_exists("writeThis", dtMethodToken, ct, dtAny, dtLocale) ||
+      function_exists("writeThis", dtMethodToken, ct, dtAny)) {
     hasWriteThis = true;
   }
 
-  if (function_exists("readThis", dtMethodToken, ct, dtAny)) {
+  if (function_exists("readThis", dtMethodToken, ct, dtAny, dtLocale) ||
+      function_exists("readThis", dtMethodToken, ct, dtAny)) {
     hasReadThis = true;
   }
 
@@ -1481,7 +1487,14 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     if( hasReadWriteThis ) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
-      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+      if (readWriteThisHasLocale) {
+        // Add locale argument if readWriteThis takes in one
+        ArgSymbol* localeArg = new ArgSymbol(INTENT_BLANK, "loc", dtLocale);
+        fn->insertFormalAtTail(localeArg);
+        fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg, localeArg));
+      } else {
+        fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+      }
     } else {
       fn->insertAtTail(new CallExpr("writeThisDefaultImpl", fileArg, fn->_this));
     }
@@ -1513,7 +1526,14 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     if( hasReadWriteThis ) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
-      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+      if (readWriteThisHasLocale) {
+        // Add locale argument if readWriteThis takes in one
+        ArgSymbol* localeArg = new ArgSymbol(INTENT_BLANK, "loc", dtLocale);
+        fn->insertFormalAtTail(localeArg);
+        fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg, localeArg));
+      } else {
+        fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+      }
     } else {
       fn->insertAtTail(new CallExpr("readThisDefaultImpl", fileArg, fn->_this));
     }
