@@ -27,14 +27,16 @@
 
 class CallInfo;
 
-extern SymbolMap      paramMap;
+extern SymbolMap       paramMap;
 
-extern Vec<CallExpr*> callStack;
-extern Vec<CondStmt*> tryStack;
+extern Vec<CallExpr*>  callStack;
+extern Vec<CondStmt*>  tryStack;
 
-extern Vec<CallExpr*> inits;
+extern Vec<CallExpr*>  inits;
 
-extern char           arrayUnrefName[];
+extern Vec<BlockStmt*> standardModuleSet;
+
+extern char            arrayUnrefName[];
 
 bool hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);
@@ -53,12 +55,6 @@ Expr*      resolvePrimInit(CallExpr* call);
 bool       isTupleContainingOnlyReferences(Type* t);
 
 void       ensureEnumTypeResolved(EnumType* etype);
-
-BlockStmt* getVisibleFunctions(BlockStmt*       block,
-                               const char*      name,
-                               Vec<FnSymbol*>&  visibleFns,
-                               Vec<BlockStmt*>& visited,
-                               CallExpr*        callOrigin);
 
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 
@@ -113,10 +109,6 @@ void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
 FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
                               CallExpr* call, SymbolMap& subs, SymbolMap& map);
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
-
-// visible functions
-void fillVisibleFuncVec(CallExpr* call, CallInfo &info,
-                        Vec<FnSymbol*> &visibleFns);
 
 // disambiguation
 /** A wrapper for candidates for function call resolution.

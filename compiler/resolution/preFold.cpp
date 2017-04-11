@@ -31,6 +31,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+#include "visibleFunctions.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
