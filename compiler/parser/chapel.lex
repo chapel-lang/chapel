@@ -709,6 +709,7 @@ static int processBlockComment(yyscan_t scanner) {
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
   int         d            = 1;
+  bool        warning      =  false;
 
   int         c            = 0;
   int         lastc        = 0;
@@ -746,8 +747,7 @@ static int processBlockComment(yyscan_t scanner) {
 
       addChar(c);
     }
-   if(fDocs && labelIndex == -1)
-     USR_FATAL("improper comment style");
+
    if(fDocs && c == fDocsCommentLabel[len - d])
      d++;
    else
@@ -762,7 +762,8 @@ static int processBlockComment(yyscan_t scanner) {
         else if(fDocsCommentLabel[0] == '/' && fDocsCommentLabel[1] == '*') {
           depth--;
           d = 1;
-          USR_WARN("chpldoc comment not closed, ignoring comment: %s in Line no: %d\nThis comment is not closed properly", fDocsCommentLabel, startLine);
+          warning = true;
+          //USR_WARN("Bad comment: %s\nLine no: %d\nThis comment is not closed properly", stringBuffer.c_str(), startLine);
         }
       }
       else if(lastlastc != '/')
@@ -788,6 +789,7 @@ static int processBlockComment(yyscan_t scanner) {
   // back up two to not print */ again.
   if (stringBuffer.size() >= 2)
     stringBuffer.resize(stringBuffer.size()-2);
+
 
   // back up further if the user has specified a special form of commenting
   if (len > 2 && labelIndex == len)
@@ -819,6 +821,9 @@ static int processBlockComment(yyscan_t scanner) {
   } else {
     yyLval->pch = NULL;
   }
+
+  if(warning)
+    USR_WARN("chpldoc comment not closed, ignoring comment: %s\nLine no: %d\nThis comment is not closed properly", stringBuffer.c_str(), startLine);
 
   countMultiLineComment(stringBuffer.c_str());
 

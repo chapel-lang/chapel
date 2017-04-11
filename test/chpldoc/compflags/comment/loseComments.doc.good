@@ -1,2 +1,10 @@
-error: improper comment style
-cat: docs/loseComments.doc.txt: No such file or directory
+warning: chpldoc comment not closed, ignoring comment: * This comment is not closed properly */ in Line no: 1
+This comment is not closed properly
+badClose.doc
+
+Usage:
+   use badClose.doc;
+
+   proc bad()
+      This comment is not closed properly
+
