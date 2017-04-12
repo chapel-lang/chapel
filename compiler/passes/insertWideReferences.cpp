@@ -1884,9 +1884,8 @@ static void insertWideTemp(Type* type, SymExpr* src) {
   if (type->isRefOrWideRef() &&
       !src->isRefOrWideRef()) {
     needsAddrOf = true;
-  }
-  else if (src->isRefOrWideRef() &&
-      !type->isRefOrWideRef()) {
+  } else if (src->isRefOrWideRef() &&
+             !type->isRefOrWideRef()) {
     needsDeref = true;
   } else if (type->isRef() && src->isRef() &&
              type->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
