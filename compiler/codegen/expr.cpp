@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
-
 #include "expr.h"
 
 #include "alist.h"
@@ -35,13 +31,19 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "virtualDispatch.h"
 #include "WhileStmt.h"
 
+
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <inttypes.h>
 #include <ostream>
 #include <stack>
 
