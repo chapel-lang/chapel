@@ -3,12 +3,8 @@
 Chapel Quickstart Instructions
 ==============================
 
-*UNDER CONSTRUCTION: Chapel 1.16.0 is scheduled for release in October 2017.*
-
 These instructions are designed to help you get started with
-a source distribution of Chapel 1.16.0.
-
-
+a source distribution of the latest Chapel release.
 
 In the following instructions, note that building and using Chapel as
 described in steps 2-5 disables optional and advanced features in the
@@ -20,7 +16,7 @@ enable more features, such as distributed memory execution.
 0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
    tools and packages you may need to have installed to build and run Chapel.
 
-1) If you don't already have Chapel 1.16, see
+1) If you don't already have Chapel 1.15, see
    http://chapel.cray.com/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
@@ -32,14 +28,14 @@ enable more features, such as distributed memory execution.
 
       .. code-block:: bash
 
-         tar xzf chapel-1.16.0.tar.gz
+         tar xzf chapel-1.15.0.tar.gz
 
    b. Make sure that your shell is in the directory containing
       QUICKSTART.rst, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.16.0
+         cd chapel-1.15.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
