@@ -176,6 +176,7 @@ static void filterCandidate(CallInfo&                  info,
 }
 
 
+
 /** Candidate filtering logic specific to concrete functions.
  *
  * \param info          The CallInfo object for the call site.
@@ -187,46 +188,36 @@ static void filterConcrete(CallInfo&                  info,
                            Vec<ResolutionCandidate*>& candidates) {
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
 
-  if (!currCandidate->fn) return;
+  if (currCandidate->fn != NULL) {
+    resolveTypedefedArgTypes(currCandidate->fn);
 
-  resolveTypedefedArgTypes(currCandidate->fn);
+    if (currCandidate->computeAlignment(info) == true) {
+      // Ensure that type constructor is resolved before other constructors.
+      if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+        resolveTypeConstructor(info, currCandidate->fn);
+      }
 
-  if (!currCandidate->computeAlignment(info)) {
-    return;
+      if (checkResolveFormalsWhereClauses(currCandidate) == true) {
+        candidates.add(currCandidate);
+      }
+    }
   }
-
-  /*
-   * Make sure that type constructor is resolved before other constructors.
-   */
-  if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-    resolveTypeConstructor(info, currCandidate->fn);
-  }
-
-  // We should reject this candidate if any of the situations handled by this
-  // function are violated.
-  if (checkResolveFormalsWhereClauses(currCandidate) == false) {
-    return;
-  }
-
-  candidates.add(currCandidate);
 }
 
 void resolveTypedefedArgTypes(FnSymbol* fn) {
   for_formals(formal, fn) {
     INT_ASSERT(formal->type); // Should be *something*.
 
-    if (formal->type != dtUnknown) {
-      continue;
-    }
+    if (formal->type == dtUnknown) {
+      if (BlockStmt* block = formal->typeExpr) {
+        if (SymExpr* se = toSymExpr(block->body.first())) {
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            Type* type = resolveTypeAlias(se);
 
-    if (BlockStmt* block = formal->typeExpr) {
-      if (SymExpr* se = toSymExpr(block->body.first())) {
-        if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-          Type* type = resolveTypeAlias(se);
+            INT_ASSERT(type);
 
-          INT_ASSERT(type);
-
-          formal->type = type;
+            formal->type = type;
+          }
         }
       }
     }
@@ -236,94 +227,89 @@ void resolveTypedefedArgTypes(FnSymbol* fn) {
 static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
   SET_LINENO(fn);
 
-  // Don't bother with tuple constructors since we generated
-  // them along with their type constructors.
-  if( fn->hasFlag(FLAG_PARTIAL_TUPLE) )
-    return;
+  // Ignore tuple constructors; they were generated
+  // with their type constructors.
+  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
 
-  CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+    for_formals(formal, fn) {
+      if (!formal->hasFlag(FLAG_IS_MEME)) {
+        if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
+          if (formal->instantiatedFrom) {
+            typeConstructorCall->insertAtTail(formal->type->symbol);
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            typeConstructorCall->insertAtTail(paramMap.get(formal));
+          }
 
-  for_formals(formal, fn) {
-    if (!formal->hasFlag(FLAG_IS_MEME)) {
-      if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-        if (formal->instantiatedFrom) {
-          typeConstructorCall->insertAtTail(formal->type->symbol);
-        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-          typeConstructorCall->insertAtTail(paramMap.get(formal));
-        }
+        } else {
+          if (strcmp(formal->name, "outer") == 0 ||
+              formal->type                  == dtMethodToken) {
+            typeConstructorCall->insertAtTail(formal);
 
-      } else {
-        if (!strcmp(formal->name, "outer") || formal->type == dtMethodToken) {
-          typeConstructorCall->insertAtTail(formal);
-        } else if (formal->instantiatedFrom) {
-          typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal->type->symbol)));
-        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-          typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
+          } else if (formal->instantiatedFrom) {
+            SymExpr*   se = new SymExpr(formal->type->symbol);
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            SymExpr*   se = new SymExpr(paramMap.get(formal));
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+          }
         }
       }
     }
+
+    info.call->insertBefore(typeConstructorCall);
+
+    // If instead we call resolveCallAndCallee(typeConstructorCall)
+    // then the line number reported in an error would change
+    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
+    // or:   classes/diten/multipledestructor
+    resolveCall(typeConstructorCall);
+
+    INT_ASSERT(typeConstructorCall->isResolved());
+
+    resolveFns(typeConstructorCall->resolvedFunction());
+
+    fn->_this->type = typeConstructorCall->isResolved()->retType;
+
+    typeConstructorCall->remove();
   }
-  info.call->insertBefore(typeConstructorCall);
-
-  // If instead we call resolveCallAndCallee(typeConstructorCall)
-  // then the line number reported in an error would change
-  // e.g.: domains/deitz/test_generic_class_of_sparse_domain
-  // or:   classes/diten/multipledestructor
-
-  resolveCall(typeConstructorCall);
-
-  INT_ASSERT(typeConstructorCall->isResolved());
-
-  resolveFns(typeConstructorCall->isResolved());
-
-  fn->_this->type = typeConstructorCall->isResolved()->retType;
-
-  typeConstructorCall->remove();
 }
 
 
 /** Candidate filtering logic specific to generic functions.
  *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
+ * \param currCandidate The current candidate to consider.
+ * \param candidates    The list to add possible candidates to.
  */
 static void filterGeneric(CallInfo&                  info,
                           ResolutionCandidate*       currCandidate,
                           Vec<ResolutionCandidate*>& candidates) {
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
 
-  if (!currCandidate->fn) {
-    return;
-  }
+  if (currCandidate->fn                     != NULL &&
+      currCandidate->computeAlignment(info) == true &&
+      checkGenericFormals(currCandidate)    == true) {
+    // Compute the param/type substitutions for generic arguments.
+    currCandidate->computeSubstitutions();
 
-  if (!currCandidate->computeAlignment(info)) {
-    return;
-  }
+    if (currCandidate->substitutions.n > 0) {
+      /*
+       * Instantiate enough of the generic to get through the rest of the
+       * filtering and disambiguation processes.
+       */
+      currCandidate->fn = instantiateSignature(currCandidate->fn,
+                                               currCandidate->substitutions,
+                                               info.call);
 
-  if (checkGenericFormals(currCandidate) == false) {
-    return;
-  }
-
-
-  // Compute the param/type substitutions for generic arguments.
-  currCandidate->computeSubstitutions();
-
-  /*
-   * If no substitutions were made we can't instantiate this generic, and must
-   * reject it.
-   */
-  if (currCandidate->substitutions.n > 0) {
-    /*
-     * Instantiate just enough of the generic to get through the rest of the
-     * filtering and disambiguation processes.
-     */
-    currCandidate->fn = instantiateSignature(currCandidate->fn,
-                                             currCandidate->substitutions,
-                                             info.call);
-
-    if (currCandidate->fn != NULL) {
-      filterCandidate(info, currCandidate, candidates);
+      if (currCandidate->fn != NULL) {
+        filterCandidate(info, currCandidate, candidates);
+      }
     }
   }
 }
