@@ -36,8 +36,8 @@ void      findVisibleCandidates(CallInfo&                  info,
 
 void      resolveTypedefedArgTypes(FnSymbol* fn);
 
-FnSymbol* expandVarArgs(FnSymbol* origFn,
-                        int       numActuals);
+FnSymbol* expandIfVarArgs(FnSymbol* origFn,
+                          int       numActuals);
 
 void      substituteVarargTupleRefs(BlockStmt*               ast,
                                     int                      numArgs,
