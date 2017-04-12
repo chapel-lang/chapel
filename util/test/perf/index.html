@@ -22,8 +22,6 @@
 
   </head>
   <body onload="perfGraphInit()">
-    <center><h2 id="titleElem"></h2></center>
-    <center><h4 id="dateElem"></h4></center>
     <script>
       <!-- hide
            function jumpto(x){
@@ -34,32 +32,40 @@
            }
            // end hide -->
     </script>
-    <table>
-      <tr>
-        <td id="graphSelectionPane" class="graphSelectionPane">
-            <p id='toggleConf'><em>Toggle configurations</em></p>
-            <p><em>Select a test suite</em></p>
-            <div id="suiteMenu"></div>
-            <p><strong>OR</strong></p>
-            <p><em>Select and display specific tests</em></p>
-            <input type="button" onclick="displaySelectedGraphs()"
-            value="Display">
-             <input type="button" onclick="clearDates()"
-            value="Clear Dates">
-            <br>
-            <input type="button" onclick="selectAllGraphs()"
-            value="Select All">
-            <input type="button" onclick="unselectAllGraphs()"
-            value="Unselect All">
-            <p>Filter: <input type="text" name="filterBox"></p>
-            <div id="graphlist" class="graphList"></div>
-          <td valign="top">
-            <div id="graphdisplay" class=graphdisplay></div>
-          </td>
-          <td id="legenddisplay" valign="top">
-        </td>
-      </tr>
-    </table>
+    <div id="graphSelectionPane">
+      <a id="homeLink"
+         class="grayButton simpleLink"
+         href="http://chapel.sourceforge.net/perf/">Home</a>
+
+      <p id='toggleConf'><em>Toggle configurations</em></p>
+      <p><em>Select a test suite</em></p>
+      <div id="suiteMenu"></div>
+
+      <p><em>Select and display specific tests</em></p>
+
+      <div id="buttonMenu">
+        <button class="grayButton" onclick="displaySelectedGraphs()">Display</button>
+        <button class="grayButton" onclick="clearDates()">Clear Dates</button>
+
+        <button class="grayButton" onclick="selectAllGraphs()">Select All</button>
+        <button class="grayButton" onclick="unselectAllGraphs()">Unselect All</button>
+      </div>
+
+      <p>Filter: <input type="text" name="filterBox"></p>
+
+      <div id="graphlist">
+        <!-- populated with checkboxes by javascript -->
+      </div>
+    </div> <!-- End of graph selection pane -->
+
+    <div id="titleDiv">
+      <center><h2 id="titleElem"></h2></center>
+      <center><h4 id="dateElem"></h4></center>
+    </div>
+
+    <div id="graphdisplay">
+      <!-- populated with graphs by javascript -->
+    </div>
 
     <script src="perfgraph.js"></script>
   </body>
