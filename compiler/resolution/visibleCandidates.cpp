@@ -186,7 +186,7 @@ static void filterCandidate(CallInfo&                  info,
 static void filterConcrete(CallInfo&                  info,
                            ResolutionCandidate*       currCandidate,
                            Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn != NULL) {
     resolveTypedefedArgTypes(currCandidate->fn);
@@ -290,7 +290,7 @@ static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
 static void filterGeneric(CallInfo&                  info,
                           ResolutionCandidate*       currCandidate,
                           Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn                     != NULL &&
       currCandidate->computeAlignment(info) == true &&
@@ -328,7 +328,8 @@ static bool needVarArgTupleAsWhole(BlockStmt* ast,
                                    int        numArgs,
                                    ArgSymbol* formal);
 
-FnSymbol* expandIfVarArgs(FnSymbol* origFn, int numActuals) {
+FnSymbol* expandIfVarArgs(FnSymbol* origFn, CallInfo& info) {
+  int       numActuals     = info.actuals.n;
   bool      genericArgSeen = false;
   FnSymbol* workingFn      = origFn;
 

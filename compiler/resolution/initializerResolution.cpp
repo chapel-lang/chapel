@@ -158,7 +158,7 @@ static void
 filterInitConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                             ResolutionCandidate* currCandidate,
                             CallInfo& info) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) return;
 
@@ -187,7 +187,7 @@ static void
 filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* currCandidate,
                            CallInfo& info) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) return;
 
