@@ -32,6 +32,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 #include <cstdlib>
 #include <inttypes.h>

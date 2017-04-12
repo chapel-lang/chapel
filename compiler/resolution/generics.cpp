@@ -17,24 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
-
 #include "resolution.h"
 
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
 #include "expr.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
-#include "resolveIntents.h"
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
 
 #include <cstdlib>
-#include <inttypes.h>
 
 static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;

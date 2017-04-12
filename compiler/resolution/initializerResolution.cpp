@@ -32,6 +32,8 @@
 #include "symbol.h"
 #include "type.h"
 #include "view.h"
+#include "visibleCandidates.h"
+#include "visibleFunctions.h"
 
 static
 void resolveInitializer(CallExpr* call);
@@ -395,7 +397,7 @@ void resolveInitCall(CallExpr* call) {
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
-  fillVisibleFuncVec(call, info, visibleFns);
+  findVisibleFunctions(call, info, visibleFns);
 
 
   // Modified narrowing down the candidates to operate in an

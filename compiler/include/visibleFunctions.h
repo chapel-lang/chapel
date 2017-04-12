@@ -17,12 +17,29 @@
  * limitations under the License.
  */
 
-#ifndef _PRE_FOLD_H_
-#define _PRE_FOLD_H_
+#ifndef _VISIBILE_FUNCTIONS_H_
+#define _VISIBILE_FUNCTIONS_H_
 
+#include "vec.h"
+
+class BlockStmt;
 class CallExpr;
+class CallInfo;
 class Expr;
+class FnSymbol;
 
-Expr* preFold(CallExpr* expr);
+void       findVisibleFunctions(CallExpr*       call,
+                                CallInfo&       info,
+                                Vec<FnSymbol*>& visibleFns);
+
+BlockStmt* getVisibleFunctions(BlockStmt*       block,
+                               const char*      name,
+                               Vec<FnSymbol*>&  visibleFns,
+                               Vec<BlockStmt*>& visited,
+                               CallExpr*        callOrigin);
+
+BlockStmt* getVisibilityBlock(Expr* expr);
+
+void       visibleFunctionsClear();
 
 #endif
