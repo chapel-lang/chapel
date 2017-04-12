@@ -258,6 +258,12 @@ function getNextDivs(afterDiv, afterLDiv) {
 }
 
 
+
+// Format of the date when hovering over a series
+function xAxisFormatter(val, opts, series_name, graph) {
+  return dateFormatter(new Date(val), '/');
+}
+
 // Gen a new dygraph, if an existing graph is being expanded then expandInfo
 // will contain the expansion information, else it is null
 function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
@@ -273,7 +279,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     ylabel: graphInfo.ylabel,
     axes: {
       x: {
-        drawGrid: false
+        drawGrid: false,
+        valueFormatter: xAxisFormatter,
       },
       y: {
         drawGrid: true,
@@ -636,6 +643,45 @@ function genPerSeriesStrokePattern(graphSeries, configs) {
   return seriesOptions;
 }
 
+//
+// Dygraphs 1.x used to export this function, but 2.0 does not.
+// TODO: consider using another JS library to do this for us.
+//
+function hsvToRGB(hue, saturation, value) {
+  var red;
+  var green;
+  var blue;
+  if (saturation === 0) {
+    red = value;
+    green = value;
+    blue = value;
+  } else {
+    var i = Math.floor(hue * 6);
+    var f = hue * 6 - i;
+    var p = value * (1 - saturation);
+    var q = value * (1 - saturation * f);
+    var t = value * (1 - saturation * (1 - f));
+    switch (i) {
+      case 1:
+        red = q;green = value;blue = p;break;
+      case 2:
+        red = p;green = value;blue = t;break;
+      case 3:
+        red = p;green = q;blue = value;break;
+      case 4:
+        red = t;green = p;blue = value;break;
+      case 5:
+        red = value;green = p;blue = q;break;
+      case 6: // fall through
+      case 0:
+        red = value;green = t;blue = p;break;
+    }
+  }
+  red = Math.floor(255 * red + 0.5);
+  green = Math.floor(255 * green + 0.5);
+  blue = Math.floor(255 * blue + 0.5);
+  return 'rgb(' + red + ',' + green + ',' + blue + ')';
+}
 
 // generate a list of colors to use for multi-conf graphs. Takes graphsSeries
 // which is the list of series for the graph and should not contain the 'Date'.
@@ -656,7 +702,7 @@ function genSeriesColors(graphSeries) {
     var hue = (1.0 * idx / (1 + numSeries));
 
     // convert to an rgb value
-    var colorStr = Dygraph.hsvToRGB(hue, sat, val);
+    var colorStr = hsvToRGB(hue, sat, val);
     return colorStr;
   }
 
@@ -732,7 +778,15 @@ function customValueFormatter(val, opts, series_name, dygraph) {
 
   // update digits, but do NOT redraw. Then use the default value formatter
   dygraph.updateOptions({digitsAfterDecimal: digits}, true);
-  return Dygraph.numberValueFormatter(val, opts);
+  var maxWidth = dygraph.getOption('maxNumberWidth');
+
+  if (val != 0.0 && (Math.abs(val) >= Math.pow(10, maxWidth) || Math.abs(val) < Math.pow(10, -digits))) {
+    return val.toExponential(digits);
+  } else {
+    // "3" should display as "3" and not "3.00"
+    var shift = Math.pow(10, digits);
+    return Math.round(val * shift) / shift;
+  }
 }
 
 // custom formatter for the y axis labels, calls the legend value formatter
@@ -833,7 +887,7 @@ function perfGraphInit() {
   var dateElem= document.getElementById('dateElem');
   if(parseDate(runDate) < parseDate(todayDate)) {
     dateElem.innerHTML = 'Graphs Last Updated on ' + runDate;
-    dateElem.style.color = "RED";
+    dateElem.style.color = "red";
   }
 
   // generate the multi configuration menu and toggle options
@@ -1243,7 +1297,7 @@ function displaySelectedGraphs() {
   }
 
   $.when.apply($, jsons).done(function() {
-      console.log("done with all json");
+      console.log("done generating graphs");
       doFilter();
       disableFilterBox(false);
   });
@@ -1492,21 +1546,28 @@ function roundDate(date, roundUp) {
 
 // helper function to parse a date (either use dygraph date parser, or do
 // nothing for numericX)
+//
+// numericX may be set from graphdata.js
 function parseDate(date) {
   if (numericX) {
     return date;
   } else {
-    return Dygraph.dateParser(date);
+    return Date.parse(date);
   }
 }
 
+function dateFormatter(d, delimiter) {
+  var month = ("0" + (d.getMonth() + 1)).slice(-2); // only keep last two characters
+  var day   = ("0" + d.getDate()).slice(-2);
+  return  d.getFullYear() + delimiter + month + delimiter + day;
+}
 
 // returns todays date formatted as 'YYYY<delimiter>MM<delimiter>DD'. Defaults
 // to 'YYYY-MM-DD' if a delimiter isn't specified.
 function getTodaysDate(delimiter) {
   delimiter = defaultFor(delimiter, '-');
   var d = new Date();
-  return  d.getFullYear() + delimiter + (d.getMonth()+1) + delimiter + d.getDate();
+  return dateFormatter(d, delimiter);
 }
 
 
@@ -1591,7 +1652,7 @@ function addExperimentalButtons(toggleConf) {
   if (configurations.length >= 3) {
     var strokePatternToggle = document.createElement('input');
     strokePatternToggle.type = 'button';
-    strokePatternToggle.value = 'Reset Stoke Patterns';
+    strokePatternToggle.value = 'Reset Stroke Patterns';
     toggleConf.appendChild(strokePatternToggle);
     strokePatternToggle.onclick = function() {
       resetStrokePattern();
