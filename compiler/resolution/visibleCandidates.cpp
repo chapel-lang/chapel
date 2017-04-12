@@ -28,37 +28,33 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static void doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
+static void doGatherCandidates(CallInfo&                  info,
                                Vec<FnSymbol*>&            visibleFns,
-                               CallInfo&                  info,
-                               bool                       compilerGenerated);
+                               bool                       compilerGenerated,
+                               Vec<ResolutionCandidate*>& candidates);
 
-static void filterCandidate(Vec<ResolutionCandidate*>& candidates,
+static void filterCandidate(CallInfo&                  info,
                             FnSymbol*                  fn,
-                            CallInfo&                  info);
+                            Vec<ResolutionCandidate*>& candidates);
 
-static void filterCandidate(Vec<ResolutionCandidate*>& candidates,
+static void filterCandidate(CallInfo&                  info,
                             ResolutionCandidate*       currCandidate,
-                            CallInfo&                  info);
+                            Vec<ResolutionCandidate*>& candidates);
 
-
-static void filterConcrete(Vec<ResolutionCandidate*>& candidates,
+static void filterConcrete(CallInfo&                  info,
                            ResolutionCandidate*       currCandidate,
-                           CallInfo&                  info);
+                           Vec<ResolutionCandidate*>& candidates);
 
-static void resolveTypeConstructor(FnSymbol* fn, CallInfo& info);
+static void resolveTypeConstructor(CallInfo& info,
+                                   FnSymbol* fn);
 
-static void filterGeneric(Vec<ResolutionCandidate*>& candidates,
+static void filterGeneric(CallInfo&                  info,
                           ResolutionCandidate*       currCandidate,
-                          CallInfo&                  info);
+                          Vec<ResolutionCandidate*>& candidates);
 
 static int  varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs);
 
 static bool isVarargSizeExpr (SymExpr* se, CallExpr* parent);
-
-
-
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -70,46 +66,59 @@ void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
                            Vec<ResolutionCandidate*>& candidates) {
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  doGatherCandidates(candidates, visibleFns, info, false);
+  doGatherCandidates(info, visibleFns, false, candidates);
 
   // If no results, try again with any compiler-generated candidates.
   if (candidates.n == 0) {
-    doGatherCandidates(candidates, visibleFns, info, true);
+    doGatherCandidates(info, visibleFns, true, candidates);
   }
 }
 
-static void doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
+
+static void doGatherCandidates(CallInfo&                  info,
                                Vec<FnSymbol*>&            visibleFns,
-                               CallInfo&                  info,
-                               bool                       compilerGenerated) {
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    // Only consider user functions or compiler-generated functions
-    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
+                               bool                       compilerGenerated,
+                               Vec<ResolutionCandidate*>& candidates) {
+  forv_Vec(FnSymbol, fn, visibleFns) {
+    // Consider either the user-defined functions or the compiler-generated
+    // functions based on the input 'compilerGenerated'.
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
 
-      // Some expressions might resolve to methods without parenthesis.
-      // If the call is marked with methodTag, it indicates the called
-      // function should be a no-parens function or a type constructor.
-      // (a type constructor call without parens uses default arguments)
-      if (info.call->methodTag) {
-        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
-          // OK
-        } else {
-          // Skip this candidate
-          continue;
+      // Consider
+      //
+      //   c1.foo(10, 20);
+      //
+      // where foo() is a simple method on some class/record
+      //
+      // Normalize currently converts this to
+      //
+      //   #<Call     #<Call "foo" _mt c1>    10    20>
+      //
+      // Resolution performs a post-order traversal of this expression
+      // and so the inner call is visited before the outer call.
+      //
+      // In this context, the inner "call" is effectively a field access
+      // rather than a true function call.  Normalize sets the methodTag
+      // property to true to indicate this, and this form of call can only
+      // be matched to parentheses-less methods and type constructors.
+      //
+      // Later steps will convert the outer call to become
+      //
+      //   #<Call "foo" _mt c1  10    20>
+      //
+      // This outer call has methodTag set to false and this call
+      // should be filtered against the available visibleFunctions.
+      //
+
+      if (info.call->methodTag == false) {
+        filterCandidate(info, fn, candidates);
+
+      } else {
+        if (fn->hasFlag(FLAG_NO_PARENS)        == true ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          filterCandidate(info, fn, candidates);
         }
       }
-
-      if (fExplainVerbose &&
-          ((explainCallLine && explainCallMatch(info.call)) ||
-           info.call->id == explainCallID)) {
-        USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
-
-        if (info.call->id == breakOnResolveID) {
-          gdbShouldBreakHere();
-        }
-      }
-
-      filterCandidate(candidates, visibleFn, info);
     }
   }
 }
@@ -118,20 +127,29 @@ static void doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
 /** Tests to see if a function is a candidate for resolving a specific call.
  *  If it is a candidate, we add it to the candidate lists.
  *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
+ * \param currCandidate The current candidate to consider.
+ * \param candidates    The list to add possible candidates to.
  */
 
-static void filterCandidate(Vec<ResolutionCandidate*>& candidates,
+static void filterCandidate(CallInfo&                  info,
                             FnSymbol*                  fn,
-                            CallInfo&                  info) {
+                            Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
 
-  filterCandidate(candidates, currCandidate, info);
+  if (fExplainVerbose &&
+      ((explainCallLine && explainCallMatch(info.call)) ||
+       info.call->id == explainCallID)) {
+    USR_PRINT(fn, "Considering function: %s", toString(fn));
+
+    if (info.call->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
+  }
+
+  filterCandidate(info, currCandidate, candidates);
 
   if (candidates.tail() != currCandidate) {
-    // The candidate was not accepted.  Time to clean it up.
     delete currCandidate;
   }
 }
@@ -143,165 +161,155 @@ static void filterCandidate(Vec<ResolutionCandidate*>& candidates,
  * This version of filterCandidate is called by other versions of
  * filterCandidate, and shouldn't be called outside this family of functions.
  *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
+ * \param currCandidate The current candidate to consider.
+ * \param candidates    The list to add possible candidates to.
  */
-static void filterCandidate(Vec<ResolutionCandidate*>& candidates,
+static void filterCandidate(CallInfo&                  info,
                             ResolutionCandidate*       currCandidate,
-                            CallInfo&                  info) {
-
+                            Vec<ResolutionCandidate*>& candidates) {
   if (currCandidate->fn->hasFlag(FLAG_GENERIC) == false) {
-    filterConcrete(candidates, currCandidate, info);
+    filterConcrete(info, currCandidate, candidates);
   } else {
-    filterGeneric(candidates, currCandidate, info);
+    filterGeneric (info, currCandidate, candidates);
   }
 }
 
 
+
 /** Candidate filtering logic specific to concrete functions.
  *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
+ * \param currCandidate The current candidate to consider.
+ * \param candidates    The list to add possible candidates to.
  */
-static void filterConcrete(Vec<ResolutionCandidate*>& candidates,
+static void filterConcrete(CallInfo&                  info,
                            ResolutionCandidate*       currCandidate,
-                           CallInfo&                  info) {
+                           Vec<ResolutionCandidate*>& candidates) {
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
 
-  currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
+  if (currCandidate->fn != NULL) {
+    resolveTypedefedArgTypes(currCandidate->fn);
 
-  if (!currCandidate->fn) return;
+    if (currCandidate->computeAlignment(info) == true) {
+      // Ensure that type constructor is resolved before other constructors.
+      if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+        resolveTypeConstructor(info, currCandidate->fn);
+      }
 
-  resolveTypedefedArgTypes(currCandidate->fn);
-
-  if (!currCandidate->computeAlignment(info)) {
-    return;
+      if (checkResolveFormalsWhereClauses(currCandidate) == true) {
+        candidates.add(currCandidate);
+      }
+    }
   }
-
-  /*
-   * Make sure that type constructor is resolved before other constructors.
-   */
-  if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-    resolveTypeConstructor(currCandidate->fn, info);
-  }
-
-  // We should reject this candidate if any of the situations handled by this
-  // function are violated.
-  if (checkResolveFormalsWhereClauses(currCandidate) == false) {
-    return;
-  }
-
-  candidates.add(currCandidate);
 }
 
 void resolveTypedefedArgTypes(FnSymbol* fn) {
   for_formals(formal, fn) {
     INT_ASSERT(formal->type); // Should be *something*.
 
-    if (formal->type != dtUnknown) {
-      continue;
-    }
+    if (formal->type == dtUnknown) {
+      if (BlockStmt* block = formal->typeExpr) {
+        if (SymExpr* se = toSymExpr(block->body.first())) {
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            Type* type = resolveTypeAlias(se);
 
-    if (BlockStmt* block = formal->typeExpr) {
-      if (SymExpr* se = toSymExpr(block->body.first())) {
-        if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-          Type* type = resolveTypeAlias(se);
+            INT_ASSERT(type);
 
-          INT_ASSERT(type);
-
-          formal->type = type;
+            formal->type = type;
+          }
         }
       }
     }
   }
 }
 
-static void resolveTypeConstructor(FnSymbol* fn, CallInfo& info) {
+static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
   SET_LINENO(fn);
 
-  // Don't bother with tuple constructors since we generated
-  // them along with their type constructors.
-  if( fn->hasFlag(FLAG_PARTIAL_TUPLE) )
-    return;
+  // Ignore tuple constructors; they were generated
+  // with their type constructors.
+  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
 
-  CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+    for_formals(formal, fn) {
+      if (!formal->hasFlag(FLAG_IS_MEME)) {
+        if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
+          if (formal->instantiatedFrom) {
+            typeConstructorCall->insertAtTail(formal->type->symbol);
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            typeConstructorCall->insertAtTail(paramMap.get(formal));
+          }
 
-  for_formals(formal, fn) {
-    if (!formal->hasFlag(FLAG_IS_MEME)) {
-      if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-        if (formal->instantiatedFrom) {
-          typeConstructorCall->insertAtTail(formal->type->symbol);
-        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-          typeConstructorCall->insertAtTail(paramMap.get(formal));
-        }
+        } else {
+          if (strcmp(formal->name, "outer") == 0 ||
+              formal->type                  == dtMethodToken) {
+            typeConstructorCall->insertAtTail(formal);
 
-      } else {
-        if (!strcmp(formal->name, "outer") || formal->type == dtMethodToken) {
-          typeConstructorCall->insertAtTail(formal);
-        } else if (formal->instantiatedFrom) {
-          typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal->type->symbol)));
-        } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-          typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
+          } else if (formal->instantiatedFrom) {
+            SymExpr*   se = new SymExpr(formal->type->symbol);
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            SymExpr*   se = new SymExpr(paramMap.get(formal));
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+          }
         }
       }
     }
+
+    info.call->insertBefore(typeConstructorCall);
+
+    // If instead we call resolveCallAndCallee(typeConstructorCall)
+    // then the line number reported in an error would change
+    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
+    // or:   classes/diten/multipledestructor
+    resolveCall(typeConstructorCall);
+
+    INT_ASSERT(typeConstructorCall->isResolved());
+
+    resolveFns(typeConstructorCall->resolvedFunction());
+
+    fn->_this->type = typeConstructorCall->isResolved()->retType;
+
+    typeConstructorCall->remove();
   }
-  info.call->insertBefore(typeConstructorCall);
-  // If instead we call resolveCallAndCallee(typeConstructorCall)
-  // then the line number reported in an error would change
-  // e.g.: domains/deitz/test_generic_class_of_sparse_domain
-  // or:   classes/diten/multipledestructor
-  resolveCall(typeConstructorCall);
-  INT_ASSERT(typeConstructorCall->isResolved());
-  resolveFns(typeConstructorCall->isResolved());
-  fn->_this->type = typeConstructorCall->isResolved()->retType;
-  typeConstructorCall->remove();
 }
 
 
 /** Candidate filtering logic specific to generic functions.
  *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
+ * \param currCandidate The current candidate to consider.
+ * \param candidates    The list to add possible candidates to.
  */
-static void filterGeneric(Vec<ResolutionCandidate*>& candidates,
+static void filterGeneric(CallInfo&                  info,
                           ResolutionCandidate*       currCandidate,
-                          CallInfo&                  info) {
-  currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
+                          Vec<ResolutionCandidate*>& candidates) {
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
 
-  if (!currCandidate->fn) {
-    return;
-  }
+  if (currCandidate->fn                     != NULL &&
+      currCandidate->computeAlignment(info) == true &&
+      checkGenericFormals(currCandidate)    == true) {
+    // Compute the param/type substitutions for generic arguments.
+    currCandidate->computeSubstitutions();
 
-  if (!currCandidate->computeAlignment(info)) {
-    return;
-  }
+    if (currCandidate->substitutions.n > 0) {
+      /*
+       * Instantiate enough of the generic to get through the rest of the
+       * filtering and disambiguation processes.
+       */
+      currCandidate->fn = instantiateSignature(currCandidate->fn,
+                                               currCandidate->substitutions,
+                                               info.call);
 
-  if (checkGenericFormals(currCandidate) == false) {
-    return;
-  }
-
-
-  // Compute the param/type substitutions for generic arguments.
-  currCandidate->computeSubstitutions();
-
-  /*
-   * If no substitutions were made we can't instantiate this generic, and must
-   * reject it.
-   */
-  if (currCandidate->substitutions.n > 0) {
-    /*
-     * Instantiate just enough of the generic to get through the rest of the
-     * filtering and disambiguation processes.
-     */
-    currCandidate->fn = instantiateSignature(currCandidate->fn,
-                                             currCandidate->substitutions,
-                                             info.call);
-
-    if (currCandidate->fn != NULL) {
-      filterCandidate(candidates, currCandidate, info);
+      if (currCandidate->fn != NULL) {
+        filterCandidate(info, currCandidate, candidates);
+      }
     }
   }
 }
@@ -320,7 +328,7 @@ static bool needVarArgTupleAsWhole(BlockStmt* ast,
                                    int        numArgs,
                                    ArgSymbol* formal);
 
-FnSymbol* expandVarArgs(FnSymbol* origFn, int numActuals) {
+FnSymbol* expandIfVarArgs(FnSymbol* origFn, int numActuals) {
   bool      genericArgSeen = false;
   FnSymbol* workingFn      = origFn;
 
