@@ -3,4 +3,3 @@ files: p2p-serial-fast.dat
 graphkeys: serial-fast
 graphtitle: PRK synch_p2p time
 ylabel: Time (seconds)
-graphname: prk-synch_p2p-time
