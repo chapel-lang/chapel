@@ -976,7 +976,9 @@ static void propagateVar(Symbol* sym) {
   // Actuals and formals have to have the same wideness of their _val field.
   // A ref_T can't be passed into a ref_wide_T, or vice versa, even with temps.
   // At least, this isn't possible today as far as I know.
-  if (isArgSymbol(sym) && sym->isRefOrWideRef() && valIsWideClass(sym)) {
+  ArgSymbol* argSym = toArgSymbol(sym);
+  if (argSym && sym->isRefOrWideRef() && valIsWideClass(sym) &&
+      argSym->intent != INTENT_CONST_REF) {
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
     DEBUG_PRINTF("\tFixing types for arg %s (%d) in %s\n", sym->cname, sym->id, fn->cname);
     forv_Vec(CallExpr, call, *fn->calledBy) {
@@ -1876,15 +1878,20 @@ static void insertWideTemp(Type* type, SymExpr* src) {
   Type* srcType = src->symbol()->type;
 
   bool needsAddrOf = false;
-  bool needsDeref = false;
+  bool needsDeref  = false;
+  bool widenVal    = false;
 
   if (type->isRefOrWideRef() &&
-      !src->isRefOrWideRef())
+      !src->isRefOrWideRef()) {
     needsAddrOf = true;
-
-  if (src->isRefOrWideRef() &&
-      !type->isRefOrWideRef())
+  } else if (src->isRefOrWideRef() &&
+             !type->isRefOrWideRef()) {
     needsDeref = true;
+  } else if (type->isRef() && src->isRef() &&
+             type->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+             src->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false) {
+    widenVal = true;
+  }
 
   SET_LINENO(src);
   Expr* stmt = src->getStmtExpr();
@@ -1893,7 +1900,7 @@ static void insertWideTemp(Type* type, SymExpr* src) {
   Expr* rhs = src->copy();
   if (needsAddrOf)
     rhs = new CallExpr(PRIM_ADDR_OF, rhs);
-  if (needsDeref) {
+  else if (needsDeref) {
     // Need to handle case of passing a _ref_T to a wide_T
     // Easiest way seems to be having codegen handle the 'wide = narrow'
     // temp creation, and to just create that narrow temp here.
@@ -1901,6 +1908,25 @@ static void insertWideTemp(Type* type, SymExpr* src) {
     stmt->insertBefore(new DefExpr(derefTmp));
     stmt->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, rhs)));
     rhs = new SymExpr(derefTmp);
+  } else if (widenVal) {
+    // transform something like this:
+    //   (move refToWide refToLocal)
+    // into this:
+    //   def localTemp
+    //   (move localTemp (deref refToLocal))
+    //   def wideTemp
+    //   (move wideTemp localTemp)
+    //   (move refToWide (addrof wideTemp))
+
+    VarSymbol* localTemp = newTemp(src->getValType());
+    stmt->insertBefore(new DefExpr(localTemp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, localTemp, src->copy()));
+
+    VarSymbol* wideTemp = newTemp(wideClassMap.get(localTemp->type));
+    stmt->insertBefore(new DefExpr(wideTemp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, wideTemp, localTemp));
+
+    rhs = new CallExpr(PRIM_ADDR_OF, wideTemp);
   }
 
   DEBUG_PRINTF("Created wide temp %d\n", tmp->id);
