@@ -25,16 +25,19 @@ const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 proc main() {
   printColorEquations();
 
-  const group1 = new Population(popSize1);
-  const group2 = new Population(popSize2);
+  const group1 = [i in 1..popSize1] new Chameneos(i, ((i-1)%3):Color);
+  const group2 = [i in 1..popSize2] new Chameneos(i, colors10[i]);
 
   cobegin {
-    group1.holdMeetings(n);
-    group2.holdMeetings(n);
+    holdMeetings(group1, n);
+    holdMeetings(group2, n);
   }
 
-  group1.print();
-  group2.print();
+  print(group1);
+  print(group2);
+
+  for c in group1 do delete c;
+  for c in group2 do delete c;
 }
 
 
@@ -50,57 +53,35 @@ proc printColorEquations() {
 
 
 //
-// a chameneos population
+// Hold meetings among the population by creating a shared meeting
+// place, and then creating per-chameneos tasks to have meetings.
 //
-record Population {
-  const size = 0;   // the size of the population
+proc holdMeetings(chameneos, numMeetings) {
+  const place = new MeetingPlace(numMeetings);
 
-  //
-  // an array of chameneos objects representing the population
-  //
-  var chameneos = [i in 1..size]
-                    new Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+  coforall c in chameneos do           // create a task per chameneos
+    c.haveMeetings(place, chameneos);
 
-  //
-  // Hold meetings among the population by creating a shared meeting
-  // place, and then creating per-chameneos tasks to have meetings.
-  //
-  proc holdMeetings(numMeetings) {
-    const place = new MeetingPlace(numMeetings);
+  delete place;
+}
 
-    coforall c in chameneos do           // create a task per chameneos
-      c.haveMeetings(place, chameneos);
-
-    delete place;
+//
+// Print the chameneos' initial colors, the number of meetings each
+// had, and the number of self-meetings each had (spelled out).
+// Then spell out the total number of meetings for the population
+//
+proc print(chameneos) {
+  for c in chameneos do
+    write(" ", c.initialColor);
+  writeln();
+  
+  for c in chameneos {
+    write(c.meetings);
+    spellInt(c.meetingsWithSelf);
   }
-
-  //
-  // Print the chameneos' initial colors, the number of meetings each
-  // had, and the number of self-meetings each had (spelled out).
-  // Then spell out the total number of meetings for the population
-  //
-  proc print() {
-    for c in chameneos do
-      write(" ", c.initialColor);
-    writeln();
-
-    for c in chameneos {
-      write(c.meetings);
-      spellInt(c.meetingsWithSelf);
-    }
     
-    spellInt(+ reduce chameneos.meetings);
-    writeln();
-  }
-
-  //
-  // Delete the chameneos objects.
-  //
-  proc deinit() {
-    for c in chameneos do
-      delete c;
-  }
+  spellInt(+ reduce chameneos.meetings);
+  writeln();
 }
 
 
