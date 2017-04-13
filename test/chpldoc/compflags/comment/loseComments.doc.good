@@ -1,10 +1,6 @@
-warning: chpldoc comment not closed, ignoring comment: * This comment is not closed properly */ in Line no: 1
-This comment is not closed properly
-badClose.doc
+loseComments.doc
 
 Usage:
-   use badClose.doc;
+   use loseComments.doc;
 
-   proc bad()
-      This comment is not closed properly
-
+   proc found()

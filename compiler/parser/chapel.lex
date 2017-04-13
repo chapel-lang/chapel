@@ -25,6 +25,7 @@
 
 /* These options create a re-entrant scanner that returns
      an integer to indicate the token type
+     a  bison-style YYSTYPE by reference. The value will always be in yylval->pch.
      a  bison-style YYLTYPE by reference.
 
      i.e. int yylex(YYSTYPE*, YYLTYPE*, yyscan_t yyscanner);
@@ -293,6 +294,7 @@ zip              return processToken(yyscanner, TZIP);
 #include <cstring>
 #include <cctype>
 #include <string>
+#include <algorithm>
 
 static void  newString();
 static void  addString(const char* str);
@@ -708,10 +710,10 @@ static int processBlockComment(yyscan_t scanner) {
 
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
-  int         d            = 1;
-  bool        warning      =  false;
 
   int         c            = 0;
+  int         d            = 0;
+  bool        startSignifier = false;
   int         lastc        = 0;
   int         depth        = 1;
   std::string wholeComment = "";
@@ -748,26 +750,32 @@ static int processBlockComment(yyscan_t scanner) {
       addChar(c);
     }
 
-   if(fDocs && c == fDocsCommentLabel[len - d])
-     d++;
-   else
-     d = 1;
+    if(c == fDocsCommentLabel[d])
+      d++;
+    if(d == len && len != 0)
+      startSignifier = true;
 
     if (lastc == '*' && c == '/') { // close comment
-      if(fDocs) {
-        if(d == len + 1) {
-          depth--;
-          d = 1;
-        }
-        else if(fDocsCommentLabel[0] == '/' && fDocsCommentLabel[1] == '*') {
-          depth--;
-          d = 1;
-          warning = true;
-          //USR_WARN("Bad comment: %s\nLine no: %d\nThis comment is not closed properly", stringBuffer.c_str(), startLine);
+      bool match = true;
+      if(len != 0 && startSignifier) {
+        std::string endSignifier = stringBuffer.substr(stringBuffer.length() - len);
+        std::reverse(endSignifier.begin(), endSignifier.end());
+        for(int i = 0 ; i < len ; ++i) {
+          if( endSignifier[i] != fDocsCommentLabel[i] )
+            match = false;
         }
       }
-      else if(lastlastc != '/')
+      if(len == 0 && lastlastc != '/')
         depth--;
+      else if(startSignifier && match) {
+        depth--;
+      }
+      //else if(match && len != 0)
+      //  depth--;
+      //else if(len == 0 && lastlastc != '/')
+      //  depth--;
+      else if(!startSignifier && lastlastc != '/')
+        depth--;        
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
@@ -789,7 +797,6 @@ static int processBlockComment(yyscan_t scanner) {
   // back up two to not print */ again.
   if (stringBuffer.size() >= 2)
     stringBuffer.resize(stringBuffer.size()-2);
-
 
   // back up further if the user has specified a special form of commenting
   if (len > 2 && labelIndex == len)
@@ -821,9 +828,6 @@ static int processBlockComment(yyscan_t scanner) {
   } else {
     yyLval->pch = NULL;
   }
-
-  if(warning)
-    USR_WARN("chpldoc comment not closed, ignoring comment: %s\nLine no: %d\nThis comment is not closed properly", stringBuffer.c_str(), startLine);
 
   countMultiLineComment(stringBuffer.c_str());
 
@@ -911,3 +915,4 @@ static bool yy_has_state(yyscan_t yyscanner)
 
   return yyg->yy_start_stack_ptr > 0;
 }
+
