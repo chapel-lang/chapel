@@ -14,11 +14,14 @@ config const n = 600,              // number of meetings (must be >= 0)
 enum Color {blue=0, red, yellow};  // the chameneos colors
 use Color;                         // permit unqualified references to them
 
+//
 // special colors to use for a chameneos population of size 10
+//
 const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 
-
+//
 // Print the color equations and simulate the two population sizes.
+//
 proc main() {
   printColorEquations();
 
