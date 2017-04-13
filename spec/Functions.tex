@@ -1305,7 +1305,7 @@ See also \ref{Return_Intent_Overloads}.
 Given a set of most specific functions, the compiler can choose between
 overloads with different return intents. Recall that the set of most
 specific functions contains only functions that are not \emph{more specific}
-than each other. That is, the call will be ambigous if the compiler
+than each other. That is, the call will be ambiguous if the compiler
 cannot choose between them based upon return intent.
 
 The compiler can choose a single function based upon its return intent
@@ -1342,7 +1342,7 @@ or assignment statement
 
 \end{itemize}
 
-Otherwise, the \chpl{const ref} return or value return verion will be
+Otherwise, the \chpl{const ref} return or value return version will be
 chosen. If only one of these is in the set of most specific functions, it
 will be chosen. If both are present in the set, the choice will be made
 as follows:

@@ -1,0 +1,45 @@
+/*
+ * Copyright 2004-2017 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef _VISIBILE_FUNCTIONS_H_
+#define _VISIBILE_FUNCTIONS_H_
+
+#include "vec.h"
+
+class BlockStmt;
+class CallExpr;
+class CallInfo;
+class Expr;
+class FnSymbol;
+
+void       findVisibleFunctions(CallExpr*       call,
+                                CallInfo&       info,
+                                Vec<FnSymbol*>& visibleFns);
+
+BlockStmt* getVisibleFunctions(BlockStmt*       block,
+                               const char*      name,
+                               Vec<FnSymbol*>&  visibleFns,
+                               Vec<BlockStmt*>& visited,
+                               CallExpr*        callOrigin);
+
+BlockStmt* getVisibilityBlock(Expr* expr);
+
+void       visibleFunctionsClear();
+
+#endif

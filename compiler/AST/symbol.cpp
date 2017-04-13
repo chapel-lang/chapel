@@ -35,10 +35,11 @@
 #include "misc.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "resolution.h"
+#include "visibleCandidates.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -109,11 +110,6 @@ FnSymbol* gChplDeleteError = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;
-
-Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
-Map<FnSymbol*,int> virtualMethodMap;
-Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
-Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 /******************************** | *********************************
 *                                                                   *

@@ -3,4 +3,3 @@ files: stencil-blockdist.dat, stencil-stencildist.dat
 graphkeys: blockdist, stencildist
 graphtitle: PRK stencil
 ylabel: Rate (MFlops/s)
-graphname: prk-stencil

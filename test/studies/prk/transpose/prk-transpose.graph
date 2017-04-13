@@ -3,4 +3,3 @@ files: ./transpose-serial.dat, ./transpose-defaultdist.dat
 graphkeys: Serial, DefaultDist
 graphtitle: PRK transpose
 ylabel: Rate (MB/s)
-graphname: prk-stencil
