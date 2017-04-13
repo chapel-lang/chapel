@@ -415,7 +415,7 @@ static bool hasVariableArgs(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* expandVarArgsFixed(FnSymbol* origFn, CallInfo& info);
+static void      expandVarArgsFixed(FnSymbol* origFn, CallInfo& info);
 
 static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info);
 
@@ -448,7 +448,9 @@ static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   } else if (numVarArgs == 1) {
 
     if (isQueryVariable == false) {
-      retval = expandVarArgsFixed(fn, info);
+      expandVarArgsFixed(fn, info);
+
+      retval = fn;
 
     } else {
       retval = expandVarArgsQuery(fn, info);
@@ -463,7 +465,7 @@ static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
 
 // No query variable e.g. proc foo(x, y, z ... 5)
 //                   or   proc foo(x, y, z ... paramValue)
-static FnSymbol* expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
+static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
   bool genericArgSeen = false;
 
   for_formals(formal, fn) {
@@ -488,8 +490,6 @@ static FnSymbol* expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
       }
     }
   }
-
-  return fn;
 }
 
 
