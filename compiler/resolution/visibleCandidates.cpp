@@ -318,6 +318,49 @@ static void filterGeneric(CallInfo&                  info,
 
 /************************************* | **************************************
 *                                                                             *
+* Maintain a cache from a vargArgs function to the function with the required *
+* number of formals.                                                          *
+*                                                                             *
+************************************** | *************************************/
+
+typedef std::map<FnSymbol*, std::vector<FnSymbol*>*> ExpandVarArgsMap;
+
+static ExpandVarArgsMap sCache;
+
+static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
+  ExpandVarArgsMap::iterator it     = sCache.find(fn);
+  FnSymbol*                  retval = NULL;
+
+  if (it != sCache.end()) {
+    std::vector<FnSymbol*>* fns = it->second;
+
+    for (size_t i = 0; i < (*fns).size() && retval == NULL; i++) {
+      if ((*fns)[i]->numFormals() == numActuals) {
+        retval = (*fns)[i];
+      }
+    }
+  }
+
+  return retval;
+}
+
+static void cacheExtend(FnSymbol* fn, FnSymbol* expansion) {
+  ExpandVarArgsMap::iterator it = sCache.find(fn);
+
+  if (it != sCache.end()) {
+    it->second->push_back(expansion);
+
+  } else {
+    std::vector<FnSymbol*>* fns = new std::vector<FnSymbol*>();
+
+    fns->push_back(expansion);
+
+    sCache[fn] = fns;
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * If the function accepts a variable number of args, map it to a function     *
 * with the necessary number of formals.                                       *
 *                                                                             *
@@ -332,28 +375,15 @@ FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
   FnSymbol* retval = fn;
 
   if (hasVariableArgs(fn) == true) {
-    static Map<FnSymbol*, Vec<FnSymbol*>*> cache;
+    retval = cacheLookup(fn, info.actuals.n);
 
-    // check for cached stamped out function
-    if (Vec<FnSymbol*>* cfns = cache.get(fn)) {
-      forv_Vec(FnSymbol, cfn, *cfns) {
-        if (cfn->numFormals() == info.actuals.n) {
-          return cfn;
-        }
+    // No substitution found
+    if (retval == NULL) {
+      retval = expandVarArgs(fn, info);
+
+      if (retval != NULL) {
+        cacheExtend(fn, retval);
       }
-    }
-
-    retval = expandVarArgs(fn, info);
-
-    if (retval != NULL) {
-      Vec<FnSymbol*>* cfns = cache.get(fn);
-
-      if (cfns == NULL) {
-        cfns = new Vec<FnSymbol*>();
-        cache.put(fn, cfns);
-      }
-
-      cfns->add(retval);
     }
   }
 
