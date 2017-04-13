@@ -1,17 +1,16 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Hannah Hemmaplardh, Lydia Duncan, and Brad Chamberlain
+   contributed by Hannah Hemmaplardh, Lydia Duncan, Brad Chamberlain,
+     and Elliot Ronaghan
    derived in part from the GNU C version by Dmitry Vyukov
 */
 
 config const n = 600,              // number of meetings (must be >= 0)
-             popSize1 = 3,         // size of population 1 (must be > 1)
-             popSize2 = 10;        // size of population 2 (must be > 1)
+             spinLimit = 15;       // number of times to spin before yielding
 
 enum Color {blue=0, red, yellow};  // the chameneos colors
 use Color;                         // permit unqualified references to them
-
 
 //
 // Print the color equations and simulate the two population sizes.
@@ -19,20 +18,17 @@ use Color;                         // permit unqualified references to them
 proc main() {
   printColorEquations();
 
-  const group1 = new Population(popSize1);
-  const group2 = new Population(popSize2);
+  const group1 = new Population([blue, red, yellow]);
+  const group2 = new Population([blue, red, yellow, red, yellow,
+                                 blue, red, yellow, red, blue]);
 
   cobegin {
     group1.holdMeetings(n);
     group2.holdMeetings(n);
   }
 
-  group1.printColors();
-  group1.printNotes();
-
-  group2.printColors();
-  group2.printNotes();
-
+  group1.print();
+  group2.print();
 }
 
 
@@ -48,31 +44,15 @@ proc printColorEquations() {
 
 
 //
-// special colors to use for a chameneos population of size 10
-//
-const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
-
-//
 // a chameneos population
 //
 record Population {
-  const size = 0;   // the size of the population
+  var colors;  // the colors of the chameneos in the population
 
   //
   // an array of chameneos objects representing the population
   //
-  var chameneos = [i in 1..size]
-                    new Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
-
-  //
-  // Print the initial colors of the population.
-  //
-  proc printColors() {
-    for c in chameneos do
-      write(" ", c.initialColor);
-    writeln();
-  }
+  var chameneos = [i in colors.domain] new Chameneos(i, colors[i]);
 
   //
   // Hold meetings among the population by creating a shared meeting
@@ -88,17 +68,20 @@ record Population {
   }
 
   //
-  // Print notes about the meetings by having each chameneos print the
-  // number of meetings it had and spell out the number of
-  // self-meetings it had.  Then spell out the total number of
-  // meetings for the population.
+  // Print the chameneos' initial colors, the number of meetings each
+  // had, and the number of self-meetings each had (spelled out).
+  // Then spell out the total number of meetings for the population
   //
-  proc printNotes() {
+  proc print() {
+    for c in chameneos do
+      write(" ", c.initialColor);
+    writeln();
+
     for c in chameneos {
       write(c.meetings);
       spellInt(c.meetingsWithSelf);
     }
-    
+
     spellInt(+ reduce chameneos.meetings);
     writeln();
   }
@@ -145,7 +128,7 @@ class Chameneos {
         // participant:
         // - If we're the first to arrive, leave the number of
         //   meetings unchanged and store our ID
-        // - Otherwise, we're the second to arrive, so decrement 
+        // - Otherwise, we're the second to arrive, so decrement
         //   the number of meetings and reset the ID to zero.
         //
         if place.attemptToStore(currentState,
@@ -169,13 +152,12 @@ class Chameneos {
   // to become 'true' and then resetting it to 'false'.
   //
   proc waitForMeetingToEnd() {
-    var spin_count = 15;
+    var spinCount = spinLimit;
     while meetingCompleted.read() == false {
-      if spin_count {
-        spin_count -= 1;
-      } else {
+      if spinCount then
+        spinCount -= 1;
+      else
         chpl_task_yield();
-      }
     }
     meetingCompleted.write(false);
   }
