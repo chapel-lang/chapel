@@ -404,19 +404,66 @@ static bool hasVariableArgs(FnSymbol* fn) {
 
 /************************************* | **************************************
 *                                                                             *
+* The function is known to have at least one var-args set.                    *
 *                                                                             *
+* Portions of the current implementation assume that there is exactly one     *
+* var-args set.  Handling multiple sets is complex for both the user and      *
+* the implementation.                                                         *
+*                                                                             *
+* This constraint is enforced by expandVarArgs() and is then implicitly       *
+* assumed by the helper functions.                                            *
 *                                                                             *
 ************************************** | *************************************/
 
-static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
-                                         ArgSymbol* formal,
-                                         SymExpr*   sym);
+static FnSymbol* expandVarArgsFixed(FnSymbol* origFn, CallInfo& info);
 
-static bool needVarArgTupleAsWhole(BlockStmt* ast,
-                                   int        numArgs,
-                                   ArgSymbol* formal);
+static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info);
 
-static FnSymbol* expandVarArgs(FnSymbol* origFn, CallInfo& info) {
+static void      handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
+                                              ArgSymbol* formal,
+                                              SymExpr*   sym);
+
+static bool      needVarArgTupleAsWhole(BlockStmt* ast,
+                                        int        numArgs,
+                                        ArgSymbol* formal);
+
+static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
+  int       numVarArgs      = 0;
+  bool      isQueryVariable = false;
+  FnSymbol* retval          = NULL;
+
+  for_formals(formal, fn) {
+    if (formal->variableExpr != NULL) {
+      if (isDefExpr(formal->variableExpr->body.tail) == true) {
+        isQueryVariable = true;
+      }
+
+      numVarArgs = numVarArgs + 1;
+    }
+  }
+
+  if (numVarArgs == 0) {
+    INT_ASSERT(false);
+
+  } else if (numVarArgs == 1) {
+
+    if (isQueryVariable == false) {
+      retval = expandVarArgsFixed(fn, info);
+
+    } else {
+      retval = expandVarArgsQuery(fn, info);
+    }
+
+  } else {
+    INT_FATAL(fn, "No support for function with multiple vararg sets");
+  }
+
+  return retval;
+}
+
+// No query variable e.g. proc foo(x, y, z ... 5)
+//                   or   proc foo(x, y, z ... paramValue)
+static FnSymbol* expandVarArgsFixed(FnSymbol* origFn, CallInfo& info) {
   int       numActuals     = info.actuals.n;
   bool      genericArgSeen = false;
   FnSymbol* workingFn      = origFn;
@@ -434,20 +481,76 @@ static FnSymbol* expandVarArgs(FnSymbol* origFn, CallInfo& info) {
       resolveBlockStmt(formal->variableExpr);
     }
 
-    /*
-     * Set genericArgSeen to true if a generic argument appears before the
-     * argument with the variable expression.
-     */
+    if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      genericArgSeen = true;
+    }
 
-    // INT_ASSERT(arg->type);
-    // Adding 'ref' intent to the "ret" arg of
-    //  inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
-    // in SysBasic.chpl:150 causes a segfault.
-    // The addition of the arg->type test in the following conditional is a
-    // workaround.
-    // A better approach would be to add a check that each formal of a
-    // function has a type (if that can be expected) and then fix the
-    // fault where it occurs.
+    if (!formal->variableExpr) {
+      continue;
+    }
+
+    // Handle unspecified variable number of arguments.
+    if (DefExpr* def = toDefExpr(formal->variableExpr->body.tail)) {
+      // This assumes a single set of varargs.
+      int numCopies = numActuals - workingFn->numFormals() + 1;
+      if (numCopies <= 0) {
+        if (workingFn != origFn) delete workingFn;
+        return NULL;
+      }
+
+      if (workingFn == origFn) {
+        workingFn = origFn->copy(&substitutions);
+        INT_ASSERT(! workingFn->hasFlag(FLAG_RESOLVED));
+        workingFn->addFlag(FLAG_INVISIBLE_FN);
+
+        origFn->defPoint->insertBefore(new DefExpr(workingFn));
+
+        formal = static_cast<ArgSymbol*>(substitutions.get(formal));
+      }
+
+      // newSym queries the number of varargs. Replace it with int literal.
+      Symbol*  newSym     = substitutions.get(def->sym);
+      SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
+      newSymExpr->astloc = newSym->astloc;
+      newSym->defPoint->replace(newSymExpr);
+
+      subSymbol(workingFn, newSym, new_IntSymbol(numCopies));
+
+      handleSymExprInExpandVarArgs(workingFn, formal, newSymExpr);
+      genericArgSeen = false;
+
+    } else if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
+
+      handleSymExprInExpandVarArgs(workingFn, formal, sym);
+
+    } else if (!workingFn->hasFlag(FLAG_GENERIC)) {
+      INT_FATAL("bad variableExpr");
+    }
+  }
+
+  return workingFn;
+}
+
+
+// A  query variable e.g. proc foo(x, y, z ... ?N)
+static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info) {
+  int       numActuals     = info.actuals.n;
+  bool      genericArgSeen = false;
+  FnSymbol* workingFn      = origFn;
+
+  SymbolMap substitutions;
+
+  for_formals(formal, origFn) {
+    if (workingFn != origFn) {
+      formal = toArgSymbol(substitutions.get(formal));
+    }
+
+    if (!genericArgSeen &&
+        formal->variableExpr &&
+        !isDefExpr(formal->variableExpr->body.tail)) {
+      resolveBlockStmt(formal->variableExpr);
+    }
+
     if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
       genericArgSeen = true;
     }
