@@ -463,21 +463,12 @@ static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
 
 // No query variable e.g. proc foo(x, y, z ... 5)
 //                   or   proc foo(x, y, z ... paramValue)
-static FnSymbol* expandVarArgsFixed(FnSymbol* origFn, CallInfo& info) {
-  int       numActuals     = info.actuals.n;
-  bool      genericArgSeen = false;
-  FnSymbol* workingFn      = origFn;
+static FnSymbol* expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
+  bool genericArgSeen = false;
 
-  SymbolMap substitutions;
-
-  for_formals(formal, origFn) {
-    if (workingFn != origFn) {
-      formal = toArgSymbol(substitutions.get(formal));
-    }
-
-    if (!genericArgSeen &&
-        formal->variableExpr &&
-        !isDefExpr(formal->variableExpr->body.tail)) {
+  for_formals(formal, fn) {
+    if (genericArgSeen       == false &&
+        formal->variableExpr != NULL) {
       resolveBlockStmt(formal->variableExpr);
     }
 
@@ -485,120 +476,67 @@ static FnSymbol* expandVarArgsFixed(FnSymbol* origFn, CallInfo& info) {
       genericArgSeen = true;
     }
 
-    if (!formal->variableExpr) {
-      continue;
-    }
+    if (formal->variableExpr != NULL) {
+      if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
+        handleSymExprInExpandVarArgs(fn, formal, sym);
 
-    // Handle unspecified variable number of arguments.
-    if (DefExpr* def = toDefExpr(formal->variableExpr->body.tail)) {
-      // This assumes a single set of varargs.
-      int numCopies = numActuals - workingFn->numFormals() + 1;
-      if (numCopies <= 0) {
-        if (workingFn != origFn) delete workingFn;
-        return NULL;
+      } else if (fn->hasFlag(FLAG_GENERIC) == false) {
+        INT_FATAL("bad variableExpr");
       }
-
-      if (workingFn == origFn) {
-        workingFn = origFn->copy(&substitutions);
-        INT_ASSERT(! workingFn->hasFlag(FLAG_RESOLVED));
-        workingFn->addFlag(FLAG_INVISIBLE_FN);
-
-        origFn->defPoint->insertBefore(new DefExpr(workingFn));
-
-        formal = static_cast<ArgSymbol*>(substitutions.get(formal));
-      }
-
-      // newSym queries the number of varargs. Replace it with int literal.
-      Symbol*  newSym     = substitutions.get(def->sym);
-      SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
-      newSymExpr->astloc = newSym->astloc;
-      newSym->defPoint->replace(newSymExpr);
-
-      subSymbol(workingFn, newSym, new_IntSymbol(numCopies));
-
-      handleSymExprInExpandVarArgs(workingFn, formal, newSymExpr);
-      genericArgSeen = false;
-
-    } else if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
-
-      handleSymExprInExpandVarArgs(workingFn, formal, sym);
-
-    } else if (!workingFn->hasFlag(FLAG_GENERIC)) {
-      INT_FATAL("bad variableExpr");
     }
   }
 
-  return workingFn;
+  return fn;
 }
 
 
 // A  query variable e.g. proc foo(x, y, z ... ?N)
 static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info) {
-  int       numActuals     = info.actuals.n;
-  bool      genericArgSeen = false;
-  FnSymbol* workingFn      = origFn;
-
   SymbolMap substitutions;
+  FnSymbol* fn             = origFn;
 
   for_formals(formal, origFn) {
-    if (workingFn != origFn) {
+    if (fn != origFn) {
       formal = toArgSymbol(substitutions.get(formal));
     }
 
-    if (!genericArgSeen &&
-        formal->variableExpr &&
-        !isDefExpr(formal->variableExpr->body.tail)) {
-      resolveBlockStmt(formal->variableExpr);
-    }
+    if (formal->variableExpr != NULL) {
+      DefExpr* def       = toDefExpr(formal->variableExpr->body.tail);
+      int      numCopies = info.actuals.n - fn->numFormals() + 1;
 
-    if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-      genericArgSeen = true;
-    }
-
-    if (!formal->variableExpr) {
-      continue;
-    }
-
-    // Handle unspecified variable number of arguments.
-    if (DefExpr* def = toDefExpr(formal->variableExpr->body.tail)) {
-      // This assumes a single set of varargs.
-      int numCopies = numActuals - workingFn->numFormals() + 1;
       if (numCopies <= 0) {
-        if (workingFn != origFn) delete workingFn;
+        if (fn != origFn) {
+          delete fn;
+        }
+
         return NULL;
+      } else {
+        if (fn == origFn) {
+          fn = origFn->copy(&substitutions);
+
+          fn->addFlag(FLAG_INVISIBLE_FN);
+
+          origFn->defPoint->insertBefore(new DefExpr(fn));
+
+          formal = static_cast<ArgSymbol*>(substitutions.get(formal));
+        }
+
+        // newSym queries the number of varargs. Replace it with int literal.
+        Symbol*  newSym     = substitutions.get(def->sym);
+        SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
+
+        newSymExpr->astloc = newSym->astloc;
+
+        newSym->defPoint->replace(newSymExpr);
+
+        subSymbol(fn, newSym, new_IntSymbol(numCopies));
+
+        handleSymExprInExpandVarArgs(fn, formal, newSymExpr);
       }
-
-      if (workingFn == origFn) {
-        workingFn = origFn->copy(&substitutions);
-        INT_ASSERT(! workingFn->hasFlag(FLAG_RESOLVED));
-        workingFn->addFlag(FLAG_INVISIBLE_FN);
-
-        origFn->defPoint->insertBefore(new DefExpr(workingFn));
-
-        formal = static_cast<ArgSymbol*>(substitutions.get(formal));
-      }
-
-      // newSym queries the number of varargs. Replace it with int literal.
-      Symbol*  newSym     = substitutions.get(def->sym);
-      SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
-      newSymExpr->astloc = newSym->astloc;
-      newSym->defPoint->replace(newSymExpr);
-
-      subSymbol(workingFn, newSym, new_IntSymbol(numCopies));
-
-      handleSymExprInExpandVarArgs(workingFn, formal, newSymExpr);
-      genericArgSeen = false;
-
-    } else if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
-
-      handleSymExprInExpandVarArgs(workingFn, formal, sym);
-
-    } else if (!workingFn->hasFlag(FLAG_GENERIC)) {
-      INT_FATAL("bad variableExpr");
     }
   }
 
-  return workingFn;
+  return fn;
 }
 
 
