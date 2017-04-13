@@ -326,32 +326,50 @@ static void filterGeneric(CallInfo&                  info,
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
-  static Map<FnSymbol*, Vec<FnSymbol*>*> cache;
+static bool hasVariableArgs(FnSymbol* fn);
 
-  // check for cached stamped out function
-  if (Vec<FnSymbol*>* cfns = cache.get(fn)) {
-    forv_Vec(FnSymbol, cfn, *cfns) {
-      if (cfn->numFormals() == info.actuals.n) {
-        return cfn;
+FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
+  FnSymbol* retval = fn;
+
+  if (hasVariableArgs(fn) == true) {
+    static Map<FnSymbol*, Vec<FnSymbol*>*> cache;
+
+    // check for cached stamped out function
+    if (Vec<FnSymbol*>* cfns = cache.get(fn)) {
+      forv_Vec(FnSymbol, cfn, *cfns) {
+        if (cfn->numFormals() == info.actuals.n) {
+          return cfn;
+        }
       }
     }
-  }
 
-  FnSymbol* workingFn = expandVarArgs(fn, info);
+    retval = expandVarArgs(fn, info);
 
-  if (workingFn != NULL) {
-    Vec<FnSymbol*>* cfns = cache.get(fn);
+    if (retval != NULL) {
+      Vec<FnSymbol*>* cfns = cache.get(fn);
 
-    if (cfns == NULL) {
-      cfns = new Vec<FnSymbol*>();
-      cache.put(fn, cfns);
+      if (cfns == NULL) {
+        cfns = new Vec<FnSymbol*>();
+        cache.put(fn, cfns);
+      }
+
+      cfns->add(retval);
     }
-
-    cfns->add(workingFn);
   }
 
-  return workingFn;
+  return retval;
+}
+
+static bool hasVariableArgs(FnSymbol* fn) {
+  bool retval = false;
+
+  for_formals(formal, fn) {
+    if (formal->variableExpr != NULL) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
