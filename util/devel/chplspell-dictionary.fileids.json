@@ -644,12 +644,16 @@
     "test/studies/shootout/k-nucleotide/bradc/knucleotide-blc.chpl",
     "test/studies/shootout/submitted/knucleotide.chpl"
   ],
+  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "test/release/examples/benchmarks/shootout/mandelbrot-fast.chpl",
+    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl"
+  ],
   "4bfc193a-4401-11e6-907f-843835579daa": [
     "test/release/examples/benchmarks/shootout/regexdna-redux.chpl",
     "test/release/examples/benchmarks/shootout/regexdna.chpl",
     "test/studies/shootout/regex-dna/bharshbarg/regexdna.chpl",
-    "test/studies/shootout/submitted/regexdna-redux.chpl",
-    "test/studies/shootout/submitted/regexdna.chpl"
+    "test/studies/shootout/submitted/regexdna.chpl",
+    "test/studies/shootout/submitted/regexredux.chpl"
   ],
   "560979a4-4401-11e6-907f-843835579daa": [
     "test/release/examples/benchmarks/shootout/revcomp.chpl",
@@ -722,9 +726,6 @@
   ],
   "a70ca160-4400-11e6-907f-843835579daa": [
     "test/studies/shootout/fasta/kbrady/fasta-enum.chpl"
-  ],
-  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
-    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl"
   ],
   "dfd55fc8-4400-11e6-907f-843835579daa": [
     "test/studies/shootout/mandelbrot/jacobnelson/mandelbrot-fancy.chpl"
