@@ -28,33 +28,35 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static void doGatherCandidates(CallInfo&                  info,
-                               Vec<FnSymbol*>&            visibleFns,
-                               bool                       compilerGenerated,
+static void       doGatherCandidates(CallInfo&                  info,
+                                     Vec<FnSymbol*>&            visibleFns,
+                                     bool                       generated,
+                                     Vec<ResolutionCandidate*>& candidates);
+
+static void       filterCandidate(CallInfo&                  info,
+                                  FnSymbol*                  fn,
+                                  Vec<ResolutionCandidate*>& candidates);
+
+static void      filterCandidate(CallInfo&                  info,
+                                 ResolutionCandidate*       currCandidate,
+                                 Vec<ResolutionCandidate*>& candidates);
+
+static void      filterConcrete(CallInfo&                  info,
+                                ResolutionCandidate*       currCandidate,
+                                Vec<ResolutionCandidate*>& candidates);
+
+static void      resolveTypeConstructor(CallInfo& info,
+                                        FnSymbol* fn);
+
+static void      filterGeneric(CallInfo&                  info,
+                               ResolutionCandidate*       currCandidate,
                                Vec<ResolutionCandidate*>& candidates);
 
-static void filterCandidate(CallInfo&                  info,
-                            FnSymbol*                  fn,
-                            Vec<ResolutionCandidate*>& candidates);
+static int       varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs);
 
-static void filterCandidate(CallInfo&                  info,
-                            ResolutionCandidate*       currCandidate,
-                            Vec<ResolutionCandidate*>& candidates);
+static bool      isVarargSizeExpr (SymExpr* se, CallExpr* parent);
 
-static void filterConcrete(CallInfo&                  info,
-                           ResolutionCandidate*       currCandidate,
-                           Vec<ResolutionCandidate*>& candidates);
-
-static void resolveTypeConstructor(CallInfo& info,
-                                   FnSymbol* fn);
-
-static void filterGeneric(CallInfo&                  info,
-                          ResolutionCandidate*       currCandidate,
-                          Vec<ResolutionCandidate*>& candidates);
-
-static int  varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs);
-
-static bool isVarargSizeExpr (SymExpr* se, CallExpr* parent);
+static FnSymbol* expandVarArgs(FnSymbol* origFn, CallInfo& info);
 
 /************************************* | **************************************
 *                                                                             *
@@ -186,7 +188,7 @@ static void filterCandidate(CallInfo&                  info,
 static void filterConcrete(CallInfo&                  info,
                            ResolutionCandidate*       currCandidate,
                            Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn != NULL) {
     resolveTypedefedArgTypes(currCandidate->fn);
@@ -290,7 +292,7 @@ static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
 static void filterGeneric(CallInfo&                  info,
                           ResolutionCandidate*       currCandidate,
                           Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn                     != NULL &&
       currCandidate->computeAlignment(info) == true &&
@@ -316,6 +318,92 @@ static void filterGeneric(CallInfo&                  info,
 
 /************************************* | **************************************
 *                                                                             *
+* Maintain a cache from a vargArgs function to the function with the required *
+* number of formals.                                                          *
+*                                                                             *
+************************************** | *************************************/
+
+typedef std::map<FnSymbol*, std::vector<FnSymbol*>*> ExpandVarArgsMap;
+
+static ExpandVarArgsMap sCache;
+
+static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
+  ExpandVarArgsMap::iterator it     = sCache.find(fn);
+  FnSymbol*                  retval = NULL;
+
+  if (it != sCache.end()) {
+    std::vector<FnSymbol*>* fns = it->second;
+
+    for (size_t i = 0; i < (*fns).size() && retval == NULL; i++) {
+      if ((*fns)[i]->numFormals() == numActuals) {
+        retval = (*fns)[i];
+      }
+    }
+  }
+
+  return retval;
+}
+
+static void cacheExtend(FnSymbol* fn, FnSymbol* expansion) {
+  ExpandVarArgsMap::iterator it = sCache.find(fn);
+
+  if (it != sCache.end()) {
+    it->second->push_back(expansion);
+
+  } else {
+    std::vector<FnSymbol*>* fns = new std::vector<FnSymbol*>();
+
+    fns->push_back(expansion);
+
+    sCache[fn] = fns;
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* If the function accepts a variable number of args, map it to a function     *
+* with the necessary number of formals.                                       *
+*                                                                             *
+* 2017/04/05 There are several points at which this implementation assumes    *
+* there is only one set of varargs.                                           *
+*                                                                             *
+************************************** | *************************************/
+
+static bool hasVariableArgs(FnSymbol* fn);
+
+FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
+  FnSymbol* retval = fn;
+
+  if (hasVariableArgs(fn) == true) {
+    retval = cacheLookup(fn, info.actuals.n);
+
+    // No substitution found
+    if (retval == NULL) {
+      retval = expandVarArgs(fn, info);
+
+      if (retval != NULL) {
+        cacheExtend(fn, retval);
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool hasVariableArgs(FnSymbol* fn) {
+  bool retval = false;
+
+  for_formals(formal, fn) {
+    if (formal->variableExpr != NULL) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -328,23 +416,14 @@ static bool needVarArgTupleAsWhole(BlockStmt* ast,
                                    int        numArgs,
                                    ArgSymbol* formal);
 
-FnSymbol* expandIfVarArgs(FnSymbol* origFn, int numActuals) {
+static FnSymbol* expandVarArgs(FnSymbol* origFn, CallInfo& info) {
+  int       numActuals     = info.actuals.n;
   bool      genericArgSeen = false;
   FnSymbol* workingFn      = origFn;
 
   SymbolMap substitutions;
 
-  static Map<FnSymbol*,Vec<FnSymbol*>*> cache;
-
-  // check for cached stamped out function
-  if (Vec<FnSymbol*>* cfns = cache.get(origFn)) {
-    forv_Vec(FnSymbol, cfn, *cfns) {
-      if (cfn->numFormals() == numActuals) return cfn;
-    }
-  }
-
   for_formals(formal, origFn) {
-
     if (workingFn != origFn) {
       formal = toArgSymbol(substitutions.get(formal));
     }
@@ -415,13 +494,6 @@ FnSymbol* expandIfVarArgs(FnSymbol* origFn, int numActuals) {
       INT_FATAL("bad variableExpr");
     }
   }
-
-  Vec<FnSymbol*>* cfns = cache.get(origFn);
-  if (cfns == NULL) {
-    cfns = new Vec<FnSymbol*>();
-  }
-  cfns->add(workingFn);
-  cache.put(origFn, cfns);
 
   return workingFn;
 }
