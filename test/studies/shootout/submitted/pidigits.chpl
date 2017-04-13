@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org
+   http://benchmarksgame.alioth.debian.org/
 
    contributed by Tom Hildebrandt, Brad Chamberlain, and Lydia Duncan
    derived from the GNU C version by Mr Ledrug
