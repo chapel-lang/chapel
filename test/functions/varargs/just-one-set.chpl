@@ -27,7 +27,7 @@ proc test2(t2 : real ... ?N2) {
   writeln();
 }
 
-proc test2(t1 : int ... ?N1, t2 : real ... ?N2) {
+proc test3(t1 : int ... ?N1, t2 : real ... ?N2) {
   writeln('t1: ', t1);
   writeln('t2: ', t2);
 }
