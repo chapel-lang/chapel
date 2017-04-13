@@ -778,13 +778,8 @@ function customValueFormatter(val, opts, series_name, dygraph) {
 
   // update digits, but do NOT redraw. Then use the default value formatter
   dygraph.updateOptions({digitsAfterDecimal: digits}, true);
-  var maxWidth = dygraph.getOption('maxNumberWidth');
 
-  if (val != 0.0 && (Math.abs(val) >= Math.pow(10, maxWidth) || Math.abs(val) < Math.pow(10, -digits))) {
-    return val.toExponential(digits);
-  } else {
-    return val.toFixed(digits);
-  }
+  return val.toFixed(digits);
 }
 
 // custom formatter for the y axis labels, calls the legend value formatter
