@@ -467,21 +467,24 @@ static FnSymbol* expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
   bool genericArgSeen = false;
 
   for_formals(formal, fn) {
-    if (genericArgSeen       == false &&
-        formal->variableExpr != NULL) {
-      resolveBlockStmt(formal->variableExpr);
-    }
+    if (BlockStmt* block = formal->variableExpr) {
+      if (genericArgSeen == false) {
+        resolveBlockStmt(block);
+      }
 
-    if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-      genericArgSeen = true;
-    }
-
-    if (formal->variableExpr != NULL) {
-      if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
+      if (SymExpr* sym = toSymExpr(block->body.tail)) {
         handleSymExprInExpandVarArgs(fn, formal, sym);
 
       } else if (fn->hasFlag(FLAG_GENERIC) == false) {
         INT_FATAL("bad variableExpr");
+      }
+
+      // It is certain that there is just one var-arg set to handle
+      break;
+
+    } else {
+      if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+        genericArgSeen = true;
       }
     }
   }
@@ -491,52 +494,43 @@ static FnSymbol* expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
 
 
 // A  query variable e.g. proc foo(x, y, z ... ?N)
-static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info) {
-  SymbolMap substitutions;
-  FnSymbol* fn             = origFn;
+static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
+  FnSymbol* retval = NULL;
 
-  for_formals(formal, origFn) {
-    if (fn != origFn) {
-      formal = toArgSymbol(substitutions.get(formal));
-    }
+  for_formals(formal, fn) {
+    if (BlockStmt* block = formal->variableExpr) {
+      int numCopies = info.actuals.n - fn->numFormals() + 1;
 
-    if (formal->variableExpr != NULL) {
-      DefExpr* def       = toDefExpr(formal->variableExpr->body.tail);
-      int      numCopies = info.actuals.n - fn->numFormals() + 1;
+      if (numCopies > 0) {
+        SymbolMap substitutions;
 
-      if (numCopies <= 0) {
-        if (fn != origFn) {
-          delete fn;
-        }
+        retval = fn->copy(&substitutions);
+        retval->addFlag(FLAG_INVISIBLE_FN);
 
-        return NULL;
-      } else {
-        if (fn == origFn) {
-          fn = origFn->copy(&substitutions);
+        fn->defPoint->insertBefore(new DefExpr(retval));
 
-          fn->addFlag(FLAG_INVISIBLE_FN);
-
-          origFn->defPoint->insertBefore(new DefExpr(fn));
-
-          formal = static_cast<ArgSymbol*>(substitutions.get(formal));
-        }
+        formal = toArgSymbol(substitutions.get(formal));
 
         // newSym queries the number of varargs. Replace it with int literal.
-        Symbol*  newSym     = substitutions.get(def->sym);
+        Symbol*  defSym     = toDefExpr(block->body.tail)->sym;
+        Symbol*  newSym     = substitutions.get(defSym);
         SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
 
         newSymExpr->astloc = newSym->astloc;
 
         newSym->defPoint->replace(newSymExpr);
 
-        subSymbol(fn, newSym, new_IntSymbol(numCopies));
+        subSymbol(retval, newSym, new_IntSymbol(numCopies));
 
-        handleSymExprInExpandVarArgs(fn, formal, newSymExpr);
+        handleSymExprInExpandVarArgs(retval, formal, newSymExpr);
       }
+
+      // It is certain that there is just one var-arg set to handle
+      break;
     }
   }
 
-  return fn;
+  return retval;
 }
 
 
