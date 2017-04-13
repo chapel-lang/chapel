@@ -74,12 +74,12 @@ proc print(population) {
   for c in population do
     write(" ", c.initialColor);
   writeln();
-  
+
   for c in population {
     write(c.meetings);
     spellInt(c.meetingsWithSelf);
   }
-    
+
   spellInt(+ reduce population.meetings);
   writeln();
 }
@@ -117,7 +117,7 @@ class Chameneos {
         // participant:
         // - If we're the first to arrive, leave the number of
         //   meetings unchanged and store our ID
-        // - Otherwise, we're the second to arrive, so decrement 
+        // - Otherwise, we're the second to arrive, so decrement
         //   the number of meetings and reset the ID to zero.
         //
         if place.attemptToStore(currentState,
