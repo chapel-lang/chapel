@@ -7,17 +7,10 @@
 */
 
 config const n = 600,              // number of meetings (must be >= 0)
-             popSize1 = 3,         // size of population 1 (must be > 1)
-             popSize2 = 10,        // size of population 2 (must be > 1)
              spinLimit = 15;       // number of times to spin before yielding
 
 enum Color {blue=0, red, yellow};  // the chameneos colors
 use Color;                         // permit unqualified references to them
-
-//
-// special colors to use for a chameneos population of size 10
-//
-const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 
 //
 // Print the color equations and simulate the two population sizes.
@@ -25,8 +18,9 @@ const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 proc main() {
   printColorEquations();
 
-  const group1 = new Population(popSize1);
-  const group2 = new Population(popSize2);
+  const group1 = new Population([blue, red, yellow]);
+  const group2 = new Population([blue, red, yellow, red, yellow,
+                                 blue, red, yellow, red, blue]);
 
   cobegin {
     group1.holdMeetings(n);
@@ -53,14 +47,12 @@ proc printColorEquations() {
 // a chameneos population
 //
 record Population {
-  const size = 0;   // the size of the population
+  var colors;
 
   //
   // an array of chameneos objects representing the population
   //
-  var chameneos = [i in 1..size]
-                    new Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+  var chameneos = [i in colors.domain] new Chameneos(i, colors[i]);
 
   //
   // Hold meetings among the population by creating a shared meeting
@@ -89,7 +81,7 @@ record Population {
       write(c.meetings);
       spellInt(c.meetingsWithSelf);
     }
-    
+
     spellInt(+ reduce chameneos.meetings);
     writeln();
   }
@@ -136,7 +128,7 @@ class Chameneos {
         // participant:
         // - If we're the first to arrive, leave the number of
         //   meetings unchanged and store our ID
-        // - Otherwise, we're the second to arrive, so decrement 
+        // - Otherwise, we're the second to arrive, so decrement
         //   the number of meetings and reset the ID to zero.
         //
         if place.attemptToStore(currentState,
