@@ -56,11 +56,11 @@ proc printColorEquations() {
 // Hold meetings among the population by creating a shared meeting
 // place, and then creating per-chameneos tasks to have meetings.
 //
-proc holdMeetings(chameneos, numMeetings) {
+proc holdMeetings(population, numMeetings) {
   const place = new MeetingPlace(numMeetings);
 
-  coforall c in chameneos do           // create a task per chameneos
-    c.haveMeetings(place, chameneos);
+  coforall c in population do           // create a task per chameneos
+    c.haveMeetings(place, population);
 
   delete place;
 }
@@ -70,17 +70,17 @@ proc holdMeetings(chameneos, numMeetings) {
 // had, and the number of self-meetings each had (spelled out).
 // Then spell out the total number of meetings for the population
 //
-proc print(chameneos) {
-  for c in chameneos do
+proc print(population) {
+  for c in population do
     write(" ", c.initialColor);
   writeln();
   
-  for c in chameneos {
+  for c in population {
     write(c.meetings);
     spellInt(c.meetingsWithSelf);
   }
     
-  spellInt(+ reduce chameneos.meetings);
+  spellInt(+ reduce population.meetings);
   writeln();
 }
 
