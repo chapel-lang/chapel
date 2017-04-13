@@ -457,7 +457,7 @@ static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
     }
 
   } else {
-    INT_FATAL(fn, "No support for function with multiple vararg sets");
+    USR_FATAL(fn, "No support for a function with multiple vararg sets");
   }
 
   return retval;
