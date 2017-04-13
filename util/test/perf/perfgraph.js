@@ -783,9 +783,7 @@ function customValueFormatter(val, opts, series_name, dygraph) {
   if (val != 0.0 && (Math.abs(val) >= Math.pow(10, maxWidth) || Math.abs(val) < Math.pow(10, -digits))) {
     return val.toExponential(digits);
   } else {
-    // "3" should display as "3" and not "3.00"
-    var shift = Math.pow(10, digits);
-    return Math.round(val * shift) / shift;
+    return val.toFixed(digits);
   }
 }
 
