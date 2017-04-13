@@ -1,4 +1,4 @@
-bug: Tuples can't be assigned with non-default-sized types
+feature request: Tuples can't be assigned with non-default-sized types
 
 This is due to not supporting param tuples and so param-coercion is not applied.
 See Github issue #6000 for more details on why this is not supported today.
