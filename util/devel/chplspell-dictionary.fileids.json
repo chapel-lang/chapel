@@ -155,6 +155,18 @@
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
   ],
+  "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/postFold.cpp"
+  ],
+  "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/virtualDispatch.cpp"
+  ],
+  "f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/visibleCandidates.cpp"
+  ],
+  "01f4f6a8-2016-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/visibleFunctions.cpp"
+  ],
   "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
     "compiler/resolution/wrappers.cpp"
   ],

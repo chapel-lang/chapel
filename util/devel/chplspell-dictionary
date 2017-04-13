@@ -4328,6 +4328,21 @@ aarch
 FILEID: 2c37162c-1a84-11e7-980e-10ddb1d4c3d5
 wout
 
+FILEID: e44e8ee8-2015-11e7-980e-10ddb1d4c3d5
+rhsv
+
+FILEID: e95fef8a-2015-11e7-980e-10ddb1d4c3d5
+icts
+
+FILEID: f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5
+cfns
+multipledestructor
+replmt
+
+FILEID: 01f4f6a8-2016-11e7-980e-10ddb1d4c3d5
+fock
+iact
+
 NATURAL:
 abcd
 abcdefg
@@ -6127,6 +6142,7 @@ shavian
 shellarg
 shenker
 sherwood
+shetag
 shmem
 shortlog
 showplus
