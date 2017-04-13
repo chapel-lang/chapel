@@ -47,7 +47,7 @@ proc printColorEquations() {
 // a chameneos population
 //
 record Population {
-  var colors;
+  var colors;  // the colors of the chameneos in the population
 
   //
   // an array of chameneos objects representing the population
