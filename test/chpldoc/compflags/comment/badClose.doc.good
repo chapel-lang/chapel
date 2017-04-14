@@ -1,2 +1,2 @@
 Warning: chpldoc comment not closed, ignoring comment: "This comment is not closed properly"
-cat: docs/badClose.txt: No such file or directory
+cat: docs/source/modules/badClose.rst: No such file or directory
