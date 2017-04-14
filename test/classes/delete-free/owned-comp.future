@@ -1,0 +1,8 @@
+bug: Should the comparison method within the owned class "work"?
+
+I can see why this doesn't simply work, but it seems like it would
+be attractive/productive/convenient if it did.
+
+This was motivated by trying to make a variation on chameneos-blc.chpl
+that used owned Chameneos to avoid the need for the deletes at the end
+of main().

@@ -1,0 +1,4 @@
+bug: can't seem to create arrays of owned objects
+
+I haven't been able to figure out a way to create an array of owned
+objects.

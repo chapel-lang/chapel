@@ -1,0 +1,2 @@
+owned-init2.chpl:14: In function 'main':
+owned-init2.chpl:17: error: illegal lvalue in assignment
