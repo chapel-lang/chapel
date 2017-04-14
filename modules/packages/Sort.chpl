@@ -737,11 +737,13 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1:domain,run2:domain,comparator:?rec=
           var d=stride,t=tmp[i],b=j-stride;
           while(b+d<run1.last && chpl_compare(t,Data[b+d],comparator=comparator)>=0){
             d<<=1;
+            
           }
           if(d>stride){
             d>>=1;
+            d-=stride;
             //serial Data[k..k+d by stride] = Data[j..j+d by stride];
-            for (x,y) in zip({k..k+d by stride},{j..j+d by stride}){
+            for (x,y) in zip(k..k+d by stride,j..j+d by stride){
               Data[x]=Data[y];
             }
             j+=d;
@@ -783,7 +785,7 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1:domain,run2:domain,comparator:?rec=
         Data[k]=Data[j];
         j-=stride;
         k-=stride;
-        /*s2+=1;
+        s2+=1;
         s1=0;
         if(s2>=MIN_GALLOP){
           
@@ -794,17 +796,17 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1:domain,run2:domain,comparator:?rec=
           if(d>stride){
              
             d>>=1;
-            writeln('D: ',d);
-            writeln('K: ',k);
-            writeln('j: ',j);
-            for (x,y) in zip({k-d..k by stride},{j-d..j by stride}){
+            d-=stride;
+            //d-=stride;
+            
+            for (x,y) in zip(k-d..k by -stride,j-d..j by -stride){
               Data[x]=Data[y];
             }
             j-=d;
             k-=d;
           }
           s2=0;
-        }*/ 
+        }
       }
       
     }
