@@ -8,16 +8,16 @@
 */
 
 config const n = 1000,            // the length of the generated strings
-             lineLength = 60,     // the number of columns in the output
-             blockSize = 1024,    // the parallelization granularity
-             numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
+    lineLength = 60,     // the number of columns in the output
+    blockSize = 1024,    // the parallelization granularity
+    numTasks = min(4, here.maxTaskPar);  // how many tasks to use?
 
 config type randType = uint(32);  // type to use for random numbers
 
 config param IM = 139968,         // parameters for random number generation
-             IA = 3877,
-             IC = 29573,
-             seed: randType = 42;
+    IA = 3877,
+    IC = 29573,
+    seed: randType = 42;
 
 //
 // Nucleotide definitions
@@ -62,14 +62,14 @@ param nucl = 1,
 // Probability tables for sequences to be randomly generated
 //
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
-             (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
-             (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
-             (V, 0.02), (W, 0.02), (Y, 0.02)];
+    (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
+    (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
+    (V, 0.02), (W, 0.02), (Y, 0.02)];
 
 const HomoSapiens = [(a, 0.3029549426680),
-                     (c, 0.1979883004921),
-                     (g, 0.1975473066391),
-                     (t, 0.3015094502008)];
+            (c, 0.1979883004921),
+            (g, 0.1975473066391),
+            (t, 0.3015094502008)];
 
 proc main() {
   repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
@@ -180,3 +180,4 @@ proc getRands(n, arr) {
     arr[i] = lastRand;
   }
 }
+
