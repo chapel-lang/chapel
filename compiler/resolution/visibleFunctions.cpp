@@ -29,6 +29,7 @@
 #include "symbol.h"
 
 #include <map>
+#include <set>
 
 class VisibleFunctionBlock {
 public:
@@ -378,26 +379,28 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static BlockStmt* getVisibleFunctions(const char*      name,
-                                      CallExpr*        call,
-                                      BlockStmt*       block,
-                                      Vec<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>&  visibleFns);
+static BlockStmt* getVisibleFunctions(const char*           name,
+                                      CallExpr*             call,
+                                      BlockStmt*            block,
+                                      std::set<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>&       visibleFns);
 
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
                          Vec<FnSymbol*>&  visibleFns) {
-  BlockStmt*      block    = getVisibilityBlock(call);
-  Vec<BlockStmt*> visited;
+  BlockStmt*           block    = getVisibilityBlock(call);
+  std::set<BlockStmt*> visited;
 
   getVisibleFunctions(name, call, block, visited, visibleFns);
 }
 
-static BlockStmt* getVisibleFunctions(const char*      name,
-                                      CallExpr*        call,
-                                      BlockStmt*       block,
-                                      Vec<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>&  visibleFns) {
+static BlockStmt* getVisibleFunctions(const char*           name,
+                                      CallExpr*             call,
+                                      BlockStmt*            block,
+                                      std::set<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>&       visibleFns) {
+  BlockStmt* retval = NULL;
+
   //
   // all functions in standard modules are stored in a single block
   //
@@ -415,97 +418,91 @@ static BlockStmt* getVisibleFunctions(const char*      name,
   //
   // avoid infinite recursion due to modules with mutual uses
   //
-  if (visited.set_in(block)) {
-    return NULL;
-  }
+  if (visited.find(block) == visited.end()) {
+    bool canSkipThisBlock = true;
 
-  if (isModuleSymbol(block->parentSymbol)) {
-    visited.set_add(block);
-  }
-
-  bool canSkipThisBlock = true;
-
-  VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-
-  if (vfb) {
-    canSkipThisBlock = false; // cannot skip if this block defines functions
-
-    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
-      forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->isVisible(call)) {
-          // isVisible checks if the function is private to its defining
-          // module (and in that case, if we are under its defining module)
-          // This ensures that private functions will not be used outside
-          // of their proper scope.
-          visibleFns.add(fn);
-        }
-      }
+    if (isModuleSymbol(block->parentSymbol)) {
+      visited.insert(block);
     }
-  }
 
-  if (block->modUses) {
-    for_actuals(expr, block->modUses) {
-      UseStmt* use = toUseStmt(expr);
+    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+      canSkipThisBlock = false; // cannot skip if this block defines functions
 
-      INT_ASSERT(use);
-
-      if (use->skipSymbolSearch(name)) {
-        continue;
-      }
-
-      SymExpr* se = toSymExpr(use->src);
-
-      INT_ASSERT(se);
-
-      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        // The use statement could be of an enum instead of a module, but only
-        // modules can define functions.
-        canSkipThisBlock = false; // cannot skip if this block uses modules
-
-        if (mod->isVisible(call)) {
-          if (use->isARename(name)) {
-            getVisibleFunctions(use->getRename(name),
-                                call,
-                                mod->block,
-                                visited,
-                                visibleFns);
-          } else {
-            getVisibleFunctions(name,
-                                call,
-                                mod->block,
-                                visited,
-                                visibleFns);
+      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+        forv_Vec(FnSymbol, fn, *fns) {
+          if (fn->isVisible(call) == true) {
+            // isVisible checks if the function is private to its defining
+            // module (and in that case, if we are under its defining module)
+            // This ensures that private functions will not be used outside
+            // of their proper scope.
+            visibleFns.add(fn);
           }
         }
       }
     }
-  }
 
-  //
-  // visibilityBlockCache contains blocks that can be skipped
-  //
-  if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(name, call, next, visited, visibleFns);
+    if (block->modUses != NULL) {
+      for_actuals(expr, block->modUses) {
+        UseStmt* use = toUseStmt(expr);
 
-    return (canSkipThisBlock) ? next : block;
-  }
+        INT_ASSERT(use);
 
-  if (block != rootModule->block) {
-    BlockStmt* next  = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(name,
-                                           call,
-                                           next,
-                                           visited,
-                                           visibleFns);
+        if (use->skipSymbolSearch(name) == false) {
+          SymExpr* se = toSymExpr(use->src);
 
-    if (cache) {
-      visibilityBlockCache.put(block, cache);
+          INT_ASSERT(se);
+
+          if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+            // The use statement could be of an enum instead of a module,
+            // but only modules can define functions.
+            // cannot skip if this block uses modules
+            canSkipThisBlock = false;
+
+            if (mod->isVisible(call) == true) {
+              if (use->isARename(name) == true) {
+                getVisibleFunctions(use->getRename(name),
+                                    call,
+                                    mod->block,
+                                    visited,
+                                    visibleFns);
+              } else {
+                getVisibleFunctions(name,
+                                    call,
+                                    mod->block,
+                                    visited,
+                                    visibleFns);
+              }
+            }
+          }
+        }
+      }
     }
 
-    return (canSkipThisBlock) ? cache : block;
+    //
+    // visibilityBlockCache contains blocks that can be skipped
+    //
+    if (BlockStmt* next = visibilityBlockCache.get(block)) {
+      getVisibleFunctions(name, call, next, visited, visibleFns);
+
+      retval = (canSkipThisBlock) ? next : block;
+
+    } else if (block != rootModule->block) {
+      BlockStmt* next  = getVisibilityBlock(block);
+      BlockStmt* cache = getVisibleFunctions(name,
+                                             call,
+                                             next,
+                                             visited,
+                                             visibleFns);
+
+      if (cache) {
+        visibilityBlockCache.put(block, cache);
+      }
+
+      retval = (canSkipThisBlock) ? cache : block;
+    }
   }
 
-  return NULL;
+  return retval;
 }
 
 /************************************* | **************************************
