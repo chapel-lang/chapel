@@ -1738,9 +1738,11 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       }
     }
   }
+  // TODO: Is it OK to just have an 'otherwise' ?
+  if (!condStmt) {
+    USR_FATAL(selectCond, "Select has no when clauses");
+  }
   if (otherwise) {
-    if (!condStmt)
-      USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
 
