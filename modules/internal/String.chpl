@@ -1749,7 +1749,8 @@ module String {
   inline proc asciiToString(i: uint(8)) {
     var buffer: [0..1] uint(8);
     buffer[0] = i;
-    return new string(c_ptrTo(buffer), 2, 1);
+    buffer[1] = 0;
+    return new string(c_ptrTo(buffer), 1, 2);
   }
 
 
