@@ -21,13 +21,14 @@
 
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
-#include "stringutil.h"
 #include "expr.h"
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
+#include "virtualDispatch.h"
 
 /************************************* | **************************************
 *                                                                             *

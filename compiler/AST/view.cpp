@@ -37,6 +37,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "virtualDispatch.h"
 #include "WhileStmt.h"
 
 #include <inttypes.h>

@@ -522,7 +522,7 @@ static __thread int cd_idx = -1;
 //     comm domain, so we don't need more pools than we have comm
 //     domains.  An Aries NIC supports 128 comm domains (FMA windows),
 //     so that is our maximum.
-//   - We cannot have more than CD_ACTIVE_TRANS_MAX NB transacations
+//   - We cannot have more than CD_ACTIVE_TRANS_MAX NB transactions
 //     outstanding at the same time, per comm domain, so we don't need
 //     more that per pool.
 //   - We emulate an unsigned mod by NB_DESC_NUM_POOLS by means of
@@ -779,7 +779,7 @@ typedef struct {
   // unlike xfer/large call, need comm_on_bundle here for two reasons:
   //  1) the generated code puts a comm_on_bundle_t as the first field
   //     in any argument bundle for an on-statement
-  //  2) we need somewehre to store information to indicate completion.
+  //  2) we need somewhere to store information to indicate completion.
   chpl_comm_on_bundle_t bundle;
   unsigned char buf[MAX_SMALL_CALL_PAYLOAD];
 } fork_small_call_task_t;
@@ -4096,7 +4096,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0]= count[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = srcstrides[0] * elemSize;
@@ -4230,7 +4230,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
     chpl_comm_do_callbacks (&cb_data);
   }
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0]=count[0] * elemSize;
   if(strlvls>0){
     srcstr[0] = srcstrides[0] * elemSize;

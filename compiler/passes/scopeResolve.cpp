@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 #include <algorithm>
 #include <map>

@@ -15,3 +15,4 @@ class Foo {
 
 var a: Foo = new Foo(7);
 writeln(a);
+delete a;

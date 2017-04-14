@@ -67,7 +67,7 @@ operator in future releases.
 
 Row and column vectors are both represented as 1D arrays and are
 indistinguishable in Chapel. In the :proc:`dot` function, matrix-vector
-multiplication assumes a column vector, vector-matrix multiplcation assumes a
+multiplication assumes a column vector, vector-matrix multiplication assumes a
 row vector, vector-vector multiplication is always treated as an inner-product,
 as the function name implies.
 An outer product can be computed with the :proc:`outer` function.

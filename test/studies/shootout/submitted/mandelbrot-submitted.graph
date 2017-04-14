@@ -1,5 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: mandelbrot.dat, mandelbrot-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, release (fast), submitted
+files: mandelbrot.dat, mandelbrot-fast.dat, mandelbrot-submitted.dat
 graphtitle: Submitted Mandelbrot Shootout Benchmark
 ylabel: Time (seconds)

@@ -504,9 +504,9 @@ OPTIONS
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
 
-**--strict-errors**
+**--[no-]strict-errors**
 
-    Enable strict mode for error handling.
+    Enable [disable] strict mode for error handling.
 
 **--[no-]task-tracking**
 

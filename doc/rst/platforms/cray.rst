@@ -389,8 +389,7 @@ less some amount to allow for demands from other (system) programs
 running there.  With ``CHPL_COMM=ugni`` when a craype-hugepages module is
 loaded, by default the heap will occupy 2/3 of the free memory on each
 locale.  With the ugni comm layer and slurm job placement, however, this
-default is reduced to 16 GiB if that is less.  See `Communication Layer
-Concurrency and Slurm`_, below, for more information.
+default is reduced to 16 GiB if that is less.
 
 Advanced users may want to make the heap smaller than this.  Programs
 start more quickly with a smaller heap, and in the unfortunate event
@@ -558,25 +557,6 @@ that do a lot of remote references, increasing it may help the
 performance.  Useful values for ``CHPL_RT_COMM_CONCURRENCY`` are in
 the range 1 to 30.  Values specified outside this range are
 silently increased or reduced so as to fall within it.
-
-
-Communication Layer Concurrency and Slurm
-_________________________________________
-
-When slurm is used for job placement on Cray systems, it limits the
-total NIC memory registration in order to allow for job sharing on
-the compute nodes.  In our experience this limit is approximately
-240 GiB.  The product of ``CHPL_RT_MAX_HEAP_SIZE`` and the communication
-layer concurrency discussed above must be less than this.  The ugni
-communication layer adjusts its heap size and concurrency defaults
-to reflect this limit when slurm is used for job placement.  The
-default heap size is reduced to 16 GiB.  The concurrency is computed
-such that the product of heap size and concurrency is below 240 GiB.
-Thus under slurm, the ugni communication layer can support programs
-with very large heaps or programs that need a lot of communication
-concurrency, but not programs that need both simultaneously.  Such
-programs need to be run on a system that uses ALPS instead of slurm
-for job placement.
 
 
 Using the muxed Tasking Layer
