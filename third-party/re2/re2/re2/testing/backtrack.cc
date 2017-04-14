@@ -4,7 +4,7 @@
 
 // Tested by search_test.cc, exhaustive_test.cc, tester.cc
 //
-// Prog::BadSearchBacktrack is a backtracking regular expression search,
+// Prog::UnsafeSearchBacktrack is a backtracking regular expression search,
 // except that it remembers where it has been, trading a lot of
 // memory for a lot of time. It exists only for testing purposes.
 //
@@ -23,7 +23,12 @@
 // not the main library, in order to make it harder to pick up
 // accidentally.
 
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
 #include "util/util.h"
+#include "util/logging.h"
 #include "re2/prog.h"
 #include "re2/regexp.h"
 
@@ -55,9 +60,13 @@ class Backtracker {
               StringPiece* submatch, int nsubmatch);
 
  private:
-  // Explores from instruction ip at string position p looking for a match.
+  // Explores from instruction id at string position p looking for a match.
   // Returns true if found (so that caller can stop trying other possibilities).
   bool Visit(int id, const char* p);
+
+  // Tries instruction id at string position p.
+  // Returns true if a match is found.
+  bool Try(int id, const char* p);
 
   // Search parameters
   Prog* prog_;              // program being run
@@ -71,8 +80,8 @@ class Backtracker {
 
   // Search state
   const char* cap_[64];     // capture registers
-  uint32 *visited_;         // bitmap: (Inst*, char*) pairs already backtracked
-  int nvisited_;            //   # of words in bitmap
+  uint32_t *visited_;       // bitmap: (Inst*, char*) pairs already backtracked
+  size_t nvisited_;         //   # of words in bitmap
 };
 
 Backtracker::Backtracker(Prog* prog)
@@ -117,13 +126,13 @@ bool Backtracker::Search(const StringPiece& text, const StringPiece& context,
     submatch_ = &sp0;
     nsubmatch_ = 1;
   }
-  submatch_[0] = NULL;
+  submatch_[0] = StringPiece();
 
   // Allocate new visited_ bitmap -- size is proportional
   // to text, so have to reallocate on each call to Search.
   delete[] visited_;
   nvisited_ = (prog_->size()*(text.size()+1) + 31)/32;
-  visited_ = new uint32[nvisited_];
+  visited_ = new uint32_t[nvisited_];
   memset(visited_, 0, nvisited_*sizeof visited_[0]);
 
   // Anchored search must start at text.begin().
@@ -143,19 +152,33 @@ bool Backtracker::Search(const StringPiece& text, const StringPiece& context,
   return false;
 }
 
-// Explores from instruction ip at string position p looking for a match.
+// Explores from instruction id at string position p looking for a match.
 // Return true if found (so that caller can stop trying other possibilities).
 bool Backtracker::Visit(int id, const char* p) {
   // Check bitmap.  If we've already explored from here,
   // either it didn't match or it did but we're hoping for a better match.
   // Either way, don't go down that road again.
   CHECK(p <= text_.end());
-  int n = id*(text_.size()+1) + (p - text_.begin());
+  size_t n = id*(text_.size()+1) + (p - text_.begin());
   CHECK_LT(n/32, nvisited_);
   if (visited_[n/32] & (1 << (n&31)))
     return false;
   visited_[n/32] |= 1 << (n&31);
 
+  Prog::Inst* ip = prog_->inst(id);
+  if (Try(id, p)) {
+    if (longest_ && !ip->last())
+      Visit(id+1, p);
+    return true;
+  }
+  if (!ip->last())
+    return Visit(id+1, p);
+  return false;
+}
+
+// Tries instruction id at string position p.
+// Returns true if a match is found.
+bool Backtracker::Try(int id, const char* p) {
   // Pick out byte at current position.  If at end of string,
   // have to explore in hope of finishing a match.  Use impossible byte -1.
   int c = -1;
@@ -168,15 +191,9 @@ bool Backtracker::Visit(int id, const char* p) {
       LOG(FATAL) << "Unexpected opcode: " << (int)ip->opcode();
       return false;  // not reached
 
-    case kInstAlt:
     case kInstAltMatch:
-      // Try both possible next states: out is preferred to out1.
-      if (Visit(ip->out(), p)) {
-        if (longest_)
-          Visit(ip->out1(), p);
-        return true;
-      }
-      return Visit(ip->out1(), p);
+      // Ignored.
+      return false;
 
     case kInstByteRange:
       if (ip->Matches(c))
@@ -212,7 +229,8 @@ bool Backtracker::Visit(int id, const char* p) {
       if (submatch_[0].data() == NULL ||           // First match so far ...
           (longest_ && p > submatch_[0].end())) {  // ... or better match
         for (int i = 0; i < nsubmatch_; i++)
-          submatch_[i] = StringPiece(cap_[2*i], cap_[2*i+1] - cap_[2*i]);
+          submatch_[i] = StringPiece(
+              cap_[2 * i], static_cast<size_t>(cap_[2 * i + 1] - cap_[2 * i]));
       }
       return true;
 

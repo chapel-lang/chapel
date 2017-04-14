@@ -2,13 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <stdlib.h>
-#include <vector>
 #include "util/test.h"
 #include "re2/prog.h"
 #include "re2/regexp.h"
 #include "re2/testing/tester.h"
 #include "re2/testing/exhaustive_tester.h"
+
+// For target `log' in the Makefile.
+#ifndef LOGGING
+#define LOGGING 0
+#endif
 
 namespace re2 {
 
@@ -264,7 +267,7 @@ RegexpTest simple_tests[] = {
   { "[A-Z]+", "aAzZ" },
   { "[^\\\\]+", "Aa\\" },
   { "[acegikmoqsuwy]+", "acegikmoqsuwyACEGIKMOQSUWY" },
-  
+
   // Anchoring.  (^abc in aabcdef was a former bug)
   // The tester checks for a match in the text and
   // subpieces of the text with a byte removed on either side.
@@ -297,7 +300,12 @@ RegexpTest simple_tests[] = {
   { "a", "a" },
   { "ab*", "a" },
   { "a\\C*", "a" },
-  
+  { "a\\C+", "a" },
+  { "a\\C?", "a" },
+  { "a\\C*?", "a" },
+  { "a\\C+?", "a" },
+  { "a\\C??", "a" },
+
   // Former bugs.
   { "a\\C*|ba\\C", "baba" },
 };
@@ -309,15 +317,14 @@ TEST(Regexp, SearchTests) {
     if (!TestRegexpOnText(t.regexp, t.text))
       failures++;
 
-#ifdef LOGGING
-    // Build a dummy ExhaustiveTest call that will trigger just
-    // this one test, so that we log the test case.
-    vector<string> atom, alpha, ops;
-    atom.push_back(StringPiece(t.regexp).as_string());
-    alpha.push_back(StringPiece(t.text).as_string());
-    ExhaustiveTest(1, 0, atom, ops, 1, alpha, "", "");
-#endif
-
+    if (LOGGING) {
+      // Build a dummy ExhaustiveTest call that will trigger just
+      // this one test, so that we log the test case.
+      std::vector<string> atom, alpha, ops;
+      atom.push_back(StringPiece(t.regexp).ToString());
+      alpha.push_back(StringPiece(t.text).ToString());
+      ExhaustiveTest(1, 0, atom, ops, 1, alpha, "", "");
+    }
   }
   EXPECT_EQ(failures, 0);
 }

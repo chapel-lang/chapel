@@ -14,8 +14,6 @@
 		# re2::FilteredRE2*
 		_ZN3re211FilteredRE2*;
 		_ZNK3re211FilteredRE2*;
-		# flags
-		_ZN3re2*FLAGS_*;
 	local:
 		*;
 };

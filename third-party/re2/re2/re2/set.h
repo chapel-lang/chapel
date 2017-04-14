@@ -2,16 +2,20 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#ifndef RE2_SET_H
-#define RE2_SET_H
+#ifndef RE2_SET_H_
+#define RE2_SET_H_
 
-#include <utility>
+#include <string>
 #include <vector>
 
 #include "re2/re2.h"
 
 namespace re2 {
-using std::vector;
+class Prog;
+class Regexp;
+}  // namespace re2
+
+namespace re2 {
 
 // An RE2::Set represents a collection of regexps that can
 // be searched for simultaneously.
@@ -31,25 +35,26 @@ class RE2::Set {
 
   // Compile prepares the Set for matching.
   // Add must not be called again after Compile.
-  // Compile must be called before FullMatch or PartialMatch.
+  // Compile must be called before Match.
   // Compile may return false if it runs out of memory.
   bool Compile();
 
   // Match returns true if text matches any of the regexps in the set.
-  // If so, it fills v with the indices of the matching regexps.
-  bool Match(const StringPiece& text, vector<int>* v) const;
+  // If so, it fills v (if not NULL) with the indices of the matching regexps.
+  // Callers must not expect v to be sorted.
+  bool Match(const StringPiece& text, std::vector<int>* v) const;
 
  private:
   RE2::Options options_;
   RE2::Anchor anchor_;
-  vector<re2::Regexp*> re_;
+  std::vector<re2::Regexp*> re_;
   re2::Prog* prog_;
   bool compiled_;
-  //DISALLOW_COPY_AND_ASSIGN(Set);
-  Set(const Set&);
-  void operator=(const Set&);
+
+  Set(const Set&) = delete;
+  Set& operator=(const Set&) = delete;
 };
 
 }  // namespace re2
 
-#endif  // RE2_SET_H
+#endif  // RE2_SET_H_

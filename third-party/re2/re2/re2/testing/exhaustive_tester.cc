@@ -11,16 +11,18 @@
 // the NFA, DFA, and a trivial backtracking implementation agree about
 // the location of the match.
 
-#include <stdlib.h>
 #include <stdio.h>
 
+#include "util/test.h"
+#include "util/logging.h"
+#include "util/strutil.h"
+#include "re2/testing/exhaustive_tester.h"
+#include "re2/testing/tester.h"
+
+// For target `log' in the Makefile.
 #ifndef LOGGING
 #define LOGGING 0
 #endif
-
-#include "util/test.h"
-#include "re2/testing/exhaustive_tester.h"
-#include "re2/testing/tester.h"
 
 DEFINE_bool(show_regexps, false, "show regexps during testing");
 
@@ -28,17 +30,13 @@ DEFINE_int32(max_bad_regexp_inputs, 1,
              "Stop testing a regular expression after finding this many "
              "strings that break it.");
 
-// Compiled in debug mode, the usual tests run for over an hour.
-// Have to cut it down to make the unit test machines happy.
-DEFINE_bool(quick_debug_mode, true, "Run fewer tests in debug mode.");
-
 namespace re2 {
 
 static char* escape(const StringPiece& sp) {
   static char buf[512];
   char* p = buf;
   *p++ = '\"';
-  for (int i = 0; i < sp.size(); i++) {
+  for (size_t i = 0; i < sp.size(); i++) {
     if(p+5 >= buf+sizeof buf)
       LOG(FATAL) << "ExhaustiveTester escape: too long";
     if(sp[i] == '\\' || sp[i] == '\"') {
@@ -67,10 +65,11 @@ static void PrintResult(const RE2& re, const StringPiece& input, RE2::Anchor anc
     if (m[i].begin() == NULL)
       printf("-");
     else
-      printf("%d-%d", static_cast<int>(m[i].begin() - input.begin()), static_cast<int>(m[i].end() - input.begin()));
+      printf("%td-%td",
+             m[i].begin() - input.begin(), m[i].end() - input.begin());
   }
 }
-	
+
 // Processes a single generated regexp.
 // Compiles it using Regexp interface and PCRE, and then
 // checks that NFA, DFA, and PCRE all return the same results.
@@ -143,12 +142,13 @@ void ExhaustiveTester::HandleRegexp(const string& const_regexp) {
 
 // Runs an exhaustive test on the given parameters.
 void ExhaustiveTest(int maxatoms, int maxops,
-                    const vector<string>& alphabet,
-                    const vector<string>& ops,
-                    int maxstrlen, const vector<string>& stralphabet,
+                    const std::vector<string>& alphabet,
+                    const std::vector<string>& ops,
+                    int maxstrlen,
+                    const std::vector<string>& stralphabet,
                     const string& wrapper,
                     const string& topwrapper) {
-  if (RE2_DEBUG_MODE && FLAGS_quick_debug_mode) {
+  if (RE2_DEBUG_MODE) {
     if (maxatoms > 1)
       maxatoms--;
     if (maxops > 1)

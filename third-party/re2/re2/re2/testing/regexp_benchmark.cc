@@ -4,7 +4,15 @@
 
 // Benchmarks for regular expression implementations.
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <utility>
+
 #include "util/test.h"
+#include "util/logging.h"
+#include "util/strutil.h"
 #include "re2/prog.h"
 #include "re2/re2.h"
 #include "re2/regexp.h"
@@ -91,11 +99,8 @@ void MemoryUsage() {
     fprintf(stderr, "RE2:    %7lld bytes (peak=%lld)\n", mc.HeapGrowth(), mc.PeakHeapGrowth());
   }
 
-  fprintf(stderr, "sizeof: PCRE=%d RE2=%d Prog=%d Inst=%d\n",
-          static_cast<int>(sizeof(PCRE)),
-          static_cast<int>(sizeof(RE2)),
-          static_cast<int>(sizeof(Prog)),
-          static_cast<int>(sizeof(Prog::Inst)));
+  fprintf(stderr, "sizeof: PCRE=%zd RE2=%zd Prog=%zd Inst=%zd\n",
+          sizeof(PCRE), sizeof(RE2), sizeof(Prog), sizeof(Prog::Inst));
 }
 
 // Regular expression implementation wrappers.
@@ -135,13 +140,15 @@ ParseImpl SearchParse1CachedPCRE, SearchParse1CachedRE2;
 // Generate random text that won't contain the search string,
 // to test worst-case search behavior.
 void MakeText(string* text, int nbytes) {
+  srand(1);
   text->resize(nbytes);
-  srand(0);
   for (int i = 0; i < nbytes; i++) {
-    if (!rand()%30)
-      (*text)[i] = '\n';
-    else
-      (*text)[i] = rand()%(0x7E + 1 - 0x20)+0x20;
+    // Generate a one-byte rune that isn't a control character (e.g. '\n').
+    // Clipping to 0x20 introduces some bias, but we don't need uniformity.
+    int byte = rand() & 0x7F;
+    if (byte < 0x20)
+      byte = 0x20;
+    (*text)[i] = byte;
   }
 }
 
@@ -154,7 +161,7 @@ void Search(int iters, int nbytes, const char* regexp, SearchImpl* search) {
   BenchmarkMemoryUsage();
   StartBenchmarkTiming();
   search(iters, regexp, s, Prog::kUnanchored, false);
-  SetBenchmarkBytesProcessed(static_cast<int64>(iters)*nbytes);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*nbytes);
 }
 
 // These two are easy because they start with an A,
@@ -171,6 +178,10 @@ void Search(int iters, int nbytes, const char* regexp, SearchImpl* search) {
 // A bad backtracking implementation will take O(text^2) time to
 // figure out there's no match.
 #define HARD       "[ -~]*ABCDEFGHIJKLMNOPQRSTUVWXYZ$"
+
+// This has quite a high degree of fanout.
+// NFA execution will be particularly slow.
+#define FANOUT     "(?:[\\x{80}-\\x{10FFFF}]?){100}[\\x{80}-\\x{10FFFF}]"
 
 // This stresses engines that are trying to track parentheses.
 #define PARENS     "([ -~])*(A)(B)(C)(D)(E)(F)(G)(H)(I)(J)(K)(L)(M)" \
@@ -224,6 +235,18 @@ BENCHMARK_RANGE(Search_Hard_CachedPCRE,    8, 4<<10)->ThreadRange(1, NumCPUs());
 #endif
 BENCHMARK_RANGE(Search_Hard_CachedRE2,     8, 16<<20)->ThreadRange(1, NumCPUs());
 
+void Search_Fanout_CachedDFA(int i, int n)     { Search(i, n, FANOUT, SearchCachedDFA); }
+void Search_Fanout_CachedNFA(int i, int n)     { Search(i, n, FANOUT, SearchCachedNFA); }
+void Search_Fanout_CachedPCRE(int i, int n)    { Search(i, n, FANOUT, SearchCachedPCRE); }
+void Search_Fanout_CachedRE2(int i, int n)     { Search(i, n, FANOUT, SearchCachedRE2); }
+
+BENCHMARK_RANGE(Search_Fanout_CachedDFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Fanout_CachedNFA,     8, 256<<10)->ThreadRange(1, NumCPUs());
+#ifdef USEPCRE
+BENCHMARK_RANGE(Search_Fanout_CachedPCRE,    8, 4<<10)->ThreadRange(1, NumCPUs());
+#endif
+BENCHMARK_RANGE(Search_Fanout_CachedRE2,     8, 16<<20)->ThreadRange(1, NumCPUs());
+
 void Search_Parens_CachedDFA(int i, int n)     { Search(i, n, PARENS, SearchCachedDFA); }
 void Search_Parens_CachedNFA(int i, int n)     { Search(i, n, PARENS, SearchCachedNFA); }
 void Search_Parens_CachedPCRE(int i, int n)    { Search(i, n, PARENS, SearchCachedPCRE); }
@@ -247,7 +270,7 @@ void SearchBigFixed(int iters, int nbytes, SearchImpl* search) {
   BenchmarkMemoryUsage();
   StartBenchmarkTiming();
   search(iters, regexp.c_str(), s, Prog::kUnanchored, true);
-  SetBenchmarkBytesProcessed(static_cast<int64>(iters)*nbytes);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*nbytes);
 }
 
 void Search_BigFixed_CachedDFA(int i, int n)     { SearchBigFixed(i, n, SearchCachedDFA); }
@@ -263,6 +286,7 @@ BENCHMARK_RANGE(Search_BigFixed_CachedPCRE,    8, 32<<10)->ThreadRange(1, NumCPU
 BENCHMARK_RANGE(Search_BigFixed_CachedRE2,     8, 1<<20)->ThreadRange(1, NumCPUs());
 
 // Benchmark: FindAndConsume
+
 void FindAndConsume(int iters, int nbytes) {
   StopBenchmarkTiming();
   string s;
@@ -276,7 +300,7 @@ void FindAndConsume(int iters, int nbytes) {
     CHECK(RE2::FindAndConsume(&t, re, &u));
     CHECK_EQ(u, "Hello World");
   }
-  SetBenchmarkBytesProcessed(static_cast<int64>(iters)*nbytes);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*nbytes);
 }
 
 BENCHMARK_RANGE(FindAndConsume, 8, 16<<20)->ThreadRange(1, NumCPUs());
@@ -284,21 +308,25 @@ BENCHMARK_RANGE(FindAndConsume, 8, 16<<20)->ThreadRange(1, NumCPUs());
 // Benchmark: successful anchored search.
 
 void SearchSuccess(int iters, int nbytes, const char* regexp, SearchImpl* search) {
+  StopBenchmarkTiming();
   string s;
   MakeText(&s, nbytes);
   BenchmarkMemoryUsage();
+  StartBenchmarkTiming();
   search(iters, regexp, s, Prog::kAnchored, true);
-  SetBenchmarkBytesProcessed(static_cast<int64>(iters)*nbytes);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*nbytes);
 }
 
 // Unambiguous search (RE2 can use OnePass).
 
 void Search_Success_DFA(int i, int n)     { SearchSuccess(i, n, ".*$", SearchDFA); }
-void Search_Success_OnePass(int i, int n) { SearchSuccess(i, n, ".*$", SearchOnePass); }
+void Search_Success_NFA(int i, int n)     { SearchSuccess(i, n, ".*$", SearchNFA); }
 void Search_Success_PCRE(int i, int n)    { SearchSuccess(i, n, ".*$", SearchPCRE); }
 void Search_Success_RE2(int i, int n)     { SearchSuccess(i, n, ".*$", SearchRE2); }
+void Search_Success_OnePass(int i, int n) { SearchSuccess(i, n, ".*$", SearchOnePass); }
 
 BENCHMARK_RANGE(Search_Success_DFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success_NFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
 #ifdef USEPCRE
 BENCHMARK_RANGE(Search_Success_PCRE,    8, 16<<20)->ThreadRange(1, NumCPUs());
 #endif
@@ -306,11 +334,13 @@ BENCHMARK_RANGE(Search_Success_RE2,     8, 16<<20)->ThreadRange(1, NumCPUs());
 BENCHMARK_RANGE(Search_Success_OnePass, 8, 2<<20)->ThreadRange(1, NumCPUs());
 
 void Search_Success_CachedDFA(int i, int n)     { SearchSuccess(i, n, ".*$", SearchCachedDFA); }
-void Search_Success_CachedOnePass(int i, int n) { SearchSuccess(i, n, ".*$", SearchCachedOnePass); }
+void Search_Success_CachedNFA(int i, int n)     { SearchSuccess(i, n, ".*$", SearchCachedNFA); }
 void Search_Success_CachedPCRE(int i, int n)    { SearchSuccess(i, n, ".*$", SearchCachedPCRE); }
 void Search_Success_CachedRE2(int i, int n)     { SearchSuccess(i, n, ".*$", SearchCachedRE2); }
+void Search_Success_CachedOnePass(int i, int n) { SearchSuccess(i, n, ".*$", SearchCachedOnePass); }
 
 BENCHMARK_RANGE(Search_Success_CachedDFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success_CachedNFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
 #ifdef USEPCRE
 BENCHMARK_RANGE(Search_Success_CachedPCRE,    8, 16<<20)->ThreadRange(1, NumCPUs());
 #endif
@@ -318,37 +348,87 @@ BENCHMARK_RANGE(Search_Success_CachedRE2,     8, 16<<20)->ThreadRange(1, NumCPUs
 BENCHMARK_RANGE(Search_Success_CachedOnePass, 8, 2<<20)->ThreadRange(1, NumCPUs());
 
 // Ambiguous search (RE2 cannot use OnePass).
+// Used to be ".*.$", but that is coalesced to ".+$" these days.
 
-void Search_Success1_DFA(int i, int n)     { SearchSuccess(i, n, ".*.$", SearchDFA); }
-void Search_Success1_PCRE(int i, int n)    { SearchSuccess(i, n, ".*.$", SearchPCRE); }
-void Search_Success1_RE2(int i, int n)     { SearchSuccess(i, n, ".*.$", SearchRE2); }
-void Search_Success1_BitState(int i, int n)     { SearchSuccess(i, n, ".*.$", SearchBitState); }
+void Search_Success1_DFA(int i, int n)      { SearchSuccess(i, n, ".*\\C$", SearchDFA); }
+void Search_Success1_NFA(int i, int n)      { SearchSuccess(i, n, ".*\\C$", SearchNFA); }
+void Search_Success1_PCRE(int i, int n)     { SearchSuccess(i, n, ".*\\C$", SearchPCRE); }
+void Search_Success1_RE2(int i, int n)      { SearchSuccess(i, n, ".*\\C$", SearchRE2); }
+void Search_Success1_BitState(int i, int n) { SearchSuccess(i, n, ".*\\C$", SearchBitState); }
 
-BENCHMARK_RANGE(Search_Success1_DFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_DFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_NFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
 #ifdef USEPCRE
-BENCHMARK_RANGE(Search_Success1_PCRE,    8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_PCRE,     8, 16<<20)->ThreadRange(1, NumCPUs());
 #endif
-BENCHMARK_RANGE(Search_Success1_RE2,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_RE2,      8, 16<<20)->ThreadRange(1, NumCPUs());
 BENCHMARK_RANGE(Search_Success1_BitState, 8, 2<<20)->ThreadRange(1, NumCPUs());
 
-void Search_Success1_Cached_DFA(int i, int n)     { SearchSuccess(i, n, ".*.$", SearchCachedDFA); }
-void Search_Success1_Cached_PCRE(int i, int n)    { SearchSuccess(i, n, ".*.$", SearchCachedPCRE); }
-void Search_Success1_Cached_RE2(int i, int n)     { SearchSuccess(i, n, ".*.$", SearchCachedRE2); }
+void Search_Success1_CachedDFA(int i, int n)      { SearchSuccess(i, n, ".*\\C$", SearchCachedDFA); }
+void Search_Success1_CachedNFA(int i, int n)      { SearchSuccess(i, n, ".*\\C$", SearchCachedNFA); }
+void Search_Success1_CachedPCRE(int i, int n)     { SearchSuccess(i, n, ".*\\C$", SearchCachedPCRE); }
+void Search_Success1_CachedRE2(int i, int n)      { SearchSuccess(i, n, ".*\\C$", SearchCachedRE2); }
+void Search_Success1_CachedBitState(int i, int n) { SearchSuccess(i, n, ".*\\C$", SearchCachedBitState); }
 
-BENCHMARK_RANGE(Search_Success1_Cached_DFA,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_CachedDFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_CachedNFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
 #ifdef USEPCRE
-BENCHMARK_RANGE(Search_Success1_Cached_PCRE,    8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_CachedPCRE,     8, 16<<20)->ThreadRange(1, NumCPUs());
 #endif
-BENCHMARK_RANGE(Search_Success1_Cached_RE2,     8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_CachedRE2,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_Success1_CachedBitState, 8, 2<<20)->ThreadRange(1, NumCPUs());
+
+// Benchmark: AltMatch optimisation (just to verify that it works)
+// Note that OnePass doesn't implement it!
+
+void SearchAltMatch(int iters, int nbytes, SearchImpl* search) {
+  StopBenchmarkTiming();
+  string s;
+  MakeText(&s, nbytes);
+  BenchmarkMemoryUsage();
+  StartBenchmarkTiming();
+  search(iters, "\\C*", s, Prog::kAnchored, true);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*nbytes);
+}
+
+void Search_AltMatch_DFA(int i, int n)      { SearchAltMatch(i, n, SearchDFA); }
+void Search_AltMatch_NFA(int i, int n)      { SearchAltMatch(i, n, SearchNFA); }
+void Search_AltMatch_OnePass(int i, int n)  { SearchAltMatch(i, n, SearchOnePass); }
+void Search_AltMatch_BitState(int i, int n) { SearchAltMatch(i, n, SearchBitState); }
+void Search_AltMatch_PCRE(int i, int n)     { SearchAltMatch(i, n, SearchPCRE); }
+void Search_AltMatch_RE2(int i, int n)      { SearchAltMatch(i, n, SearchRE2); }
+
+BENCHMARK_RANGE(Search_AltMatch_DFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_AltMatch_NFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_AltMatch_OnePass,  8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_AltMatch_BitState, 8, 16<<20)->ThreadRange(1, NumCPUs());
+#ifdef USEPCRE
+BENCHMARK_RANGE(Search_AltMatch_PCRE,     8, 16<<20)->ThreadRange(1, NumCPUs());
+#endif
+BENCHMARK_RANGE(Search_AltMatch_RE2,      8, 16<<20)->ThreadRange(1, NumCPUs());
+
+void Search_AltMatch_CachedDFA(int i, int n)      { SearchAltMatch(i, n, SearchCachedDFA); }
+void Search_AltMatch_CachedNFA(int i, int n)      { SearchAltMatch(i, n, SearchCachedNFA); }
+void Search_AltMatch_CachedOnePass(int i, int n)  { SearchAltMatch(i, n, SearchCachedOnePass); }
+void Search_AltMatch_CachedBitState(int i, int n) { SearchAltMatch(i, n, SearchCachedBitState); }
+void Search_AltMatch_CachedPCRE(int i, int n)     { SearchAltMatch(i, n, SearchCachedPCRE); }
+void Search_AltMatch_CachedRE2(int i, int n)      { SearchAltMatch(i, n, SearchCachedRE2); }
+
+BENCHMARK_RANGE(Search_AltMatch_CachedDFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_AltMatch_CachedNFA,      8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_AltMatch_CachedOnePass,  8, 16<<20)->ThreadRange(1, NumCPUs());
+BENCHMARK_RANGE(Search_AltMatch_CachedBitState, 8, 16<<20)->ThreadRange(1, NumCPUs());
+#ifdef USEPCRE
+BENCHMARK_RANGE(Search_AltMatch_CachedPCRE,     8, 16<<20)->ThreadRange(1, NumCPUs());
+#endif
+BENCHMARK_RANGE(Search_AltMatch_CachedRE2,      8, 16<<20)->ThreadRange(1, NumCPUs());
 
 // Benchmark: use regexp to find phone number.
 
 void SearchDigits(int iters, SearchImpl* search) {
-  const char *text = "650-253-0001";
-  int len = strlen(text);
+  StringPiece s("650-253-0001");
   BenchmarkMemoryUsage();
-  search(iters, "([0-9]+)-([0-9]+)-([0-9]+)",
-         StringPiece(text, len), Prog::kAnchored, true);
+  search(iters, "([0-9]+)-([0-9]+)-([0-9]+)", s, Prog::kAnchored, true);
   SetBenchmarkItemsProcessed(iters);
 }
 
@@ -686,7 +766,6 @@ BENCHMARK(BM_Regexp_SimplifyCompile)->ThreadRange(1, NumCPUs());
 BENCHMARK(BM_Regexp_NullWalk)->ThreadRange(1, NumCPUs());
 BENCHMARK(BM_RE2_Compile)->ThreadRange(1, NumCPUs());
 
-
 // Makes text of size nbytes, then calls run to search
 // the text for regexp iters times.
 void SearchPhone(int iters, int nbytes, ParseImpl* search) {
@@ -697,7 +776,7 @@ void SearchPhone(int iters, int nbytes, ParseImpl* search) {
   BenchmarkMemoryUsage();
   StartBenchmarkTiming();
   search(iters, "(\\d{3}-|\\(\\d{3}\\)\\s+)(\\d{3}-\\d{4})", s);
-  SetBenchmarkBytesProcessed(static_cast<int64>(iters)*nbytes);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*nbytes);
 }
 
 void SearchPhone_CachedPCRE(int i, int n) {
@@ -724,7 +803,7 @@ static string DeBruijnString(int n) {
   CHECK_LT(n, 8*sizeof(int));
   CHECK_GT(n, 0);
 
-  vector<bool> did(1<<n);
+  std::vector<bool> did(1<<n);
   for (int i = 0; i < 1<<n; i++)
     did[i] = false;
 
@@ -753,11 +832,12 @@ void CacheFill(int iters, int n, SearchImpl *srch) {
   string t;
   for (int i = n+1; i < 20; i++) {
     t = s + s;
+    using std::swap;
     swap(s, t);
   }
   srch(iters, StringPrintf("0[01]{%d}$", n).c_str(), s,
        Prog::kUnanchored, true);
-  SetBenchmarkBytesProcessed(static_cast<int64>(iters)*s.size());
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iters)*s.size());
 }
 
 void CacheFillPCRE(int i, int n) { CacheFill(i, n, SearchCachedPCRE); }
@@ -806,7 +886,7 @@ void SearchDFA(int iters, const char* regexp, const StringPiece& text,
     Prog* prog = re->CompileToProg(0);
     CHECK(prog);
     bool failed = false;
-    CHECK_EQ(prog->SearchDFA(text, NULL, anchor, Prog::kFirstMatch,
+    CHECK_EQ(prog->SearchDFA(text, StringPiece(), anchor, Prog::kFirstMatch,
                              NULL, &failed, NULL),
              expect_match);
     CHECK(!failed);
@@ -822,7 +902,8 @@ void SearchNFA(int iters, const char* regexp, const StringPiece& text,
     CHECK(re);
     Prog* prog = re->CompileToProg(0);
     CHECK(prog);
-    CHECK_EQ(prog->SearchNFA(text, NULL, anchor, Prog::kFirstMatch, NULL, 0),
+    CHECK_EQ(prog->SearchNFA(text, StringPiece(), anchor, Prog::kFirstMatch,
+                             NULL, 0),
              expect_match);
     delete prog;
     re->Decref();
@@ -894,8 +975,8 @@ void SearchCachedDFA(int iters, const char* regexp, const StringPiece& text,
   CHECK(prog);
   for (int i = 0; i < iters; i++) {
     bool failed = false;
-    CHECK_EQ(prog->SearchDFA(text, NULL, anchor,
-                             Prog::kFirstMatch, NULL, &failed, NULL),
+    CHECK_EQ(prog->SearchDFA(text, StringPiece(), anchor, Prog::kFirstMatch,
+                             NULL, &failed, NULL),
              expect_match);
     CHECK(!failed);
   }
@@ -910,7 +991,8 @@ void SearchCachedNFA(int iters, const char* regexp, const StringPiece& text,
   Prog* prog = re->CompileToProg(0);
   CHECK(prog);
   for (int i = 0; i < iters; i++) {
-    CHECK_EQ(prog->SearchNFA(text, NULL, anchor, Prog::kFirstMatch, NULL, 0),
+    CHECK_EQ(prog->SearchNFA(text, StringPiece(), anchor, Prog::kFirstMatch,
+                             NULL, 0),
              expect_match);
   }
   delete prog;
@@ -979,7 +1061,8 @@ void Parse3NFA(int iters, const char* regexp, const StringPiece& text) {
     Prog* prog = re->CompileToProg(0);
     CHECK(prog);
     StringPiece sp[4];  // 4 because sp[0] is whole match.
-    CHECK(prog->SearchNFA(text, NULL, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
+                          Prog::kFullMatch, sp, 4));
     delete prog;
     re->Decref();
   }
@@ -1050,7 +1133,8 @@ void Parse3CachedNFA(int iters, const char* regexp, const StringPiece& text) {
   CHECK(prog);
   StringPiece sp[4];  // 4 because sp[0] is whole match.
   for (int i = 0; i < iters; i++) {
-    CHECK(prog->SearchNFA(text, NULL, Prog::kAnchored, Prog::kFullMatch, sp, 4));
+    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
+                          Prog::kFullMatch, sp, 4));
   }
   delete prog;
   re->Decref();
@@ -1122,7 +1206,8 @@ void Parse1NFA(int iters, const char* regexp, const StringPiece& text) {
     Prog* prog = re->CompileToProg(0);
     CHECK(prog);
     StringPiece sp[2];  // 2 because sp[0] is whole match.
-    CHECK(prog->SearchNFA(text, NULL, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
+                          Prog::kFullMatch, sp, 2));
     delete prog;
     re->Decref();
   }
@@ -1180,7 +1265,8 @@ void Parse1CachedNFA(int iters, const char* regexp, const StringPiece& text) {
   CHECK(prog);
   StringPiece sp[2];  // 2 because sp[0] is whole match.
   for (int i = 0; i < iters; i++) {
-    CHECK(prog->SearchNFA(text, NULL, Prog::kAnchored, Prog::kFullMatch, sp, 2));
+    CHECK(prog->SearchNFA(text, StringPiece(), Prog::kAnchored,
+                          Prog::kFullMatch, sp, 2));
   }
   delete prog;
   re->Decref();
@@ -1342,14 +1428,14 @@ BENCHMARK(HTTPPartialMatchPCRE)->ThreadRange(1, NumCPUs());
 #endif
 BENCHMARK(HTTPPartialMatchRE2)->ThreadRange(1, NumCPUs());
 
-static string http_smalltext =
+static string smallhttp_text =
   "GET /abc HTTP/1.1";
 
 void SmallHTTPPartialMatchPCRE(int n) {
   StringPiece a;
   PCRE re("(?-s)^(?:GET|POST) +([^ ]+) HTTP");
   for (int i = 0; i < n; i++) {
-    PCRE::PartialMatch(http_text, re, &a);
+    PCRE::PartialMatch(smallhttp_text, re, &a);
   }
 }
 
@@ -1357,7 +1443,7 @@ void SmallHTTPPartialMatchRE2(int n) {
   StringPiece a;
   RE2 re("(?-s)^(?:GET|POST) +([^ ]+) HTTP");
   for (int i = 0; i < n; i++) {
-    RE2::PartialMatch(http_text, re, &a);
+    RE2::PartialMatch(smallhttp_text, re, &a);
   }
 }
 
@@ -1418,7 +1504,7 @@ void FullMatchPCRE(int iter, int n, const char *regexp) {
   StartBenchmarkTiming();
   for (int i = 0; i < iter; i++)
     CHECK(PCRE::FullMatch(s, re));
-  SetBenchmarkBytesProcessed(static_cast<int64>(iter)*n);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iter)*n);
 }
 
 void FullMatchRE2(int iter, int n, const char *regexp) {
@@ -1431,7 +1517,7 @@ void FullMatchRE2(int iter, int n, const char *regexp) {
   StartBenchmarkTiming();
   for (int i = 0; i < iter; i++)
     CHECK(RE2::FullMatch(s, re));
-  SetBenchmarkBytesProcessed(static_cast<int64>(iter)*n);
+  SetBenchmarkBytesProcessed(static_cast<int64_t>(iter)*n);
 }
 
 void FullMatch_DotStar_CachedPCRE(int i, int n) { FullMatchPCRE(i, n, "(?s).*"); }

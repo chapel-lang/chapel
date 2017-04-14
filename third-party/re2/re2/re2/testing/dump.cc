@@ -17,8 +17,11 @@
 // library (see BUILD).
 
 #include <string>
-#include <vector>
+
 #include "util/test.h"
+#include "util/logging.h"
+#include "util/strutil.h"
+#include "util/utf.h"
 #include "re2/stringpiece.h"
 #include "re2/regexp.h"
 
@@ -120,6 +123,8 @@ static void DumpRegexpAppending(Regexp* re, string* s) {
       DumpRegexpAppending(re->sub()[0], s);
       break;
     case kRegexpCapture:
+      if (re->cap() == 0)
+        LOG(DFATAL) << "kRegexpCapture cap() == 0";
       if (re->name()) {
         s->append(*re->name());
         s->append(":");

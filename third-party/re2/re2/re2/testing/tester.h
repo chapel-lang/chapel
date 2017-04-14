@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#ifndef RE2_TESTING_TESTER_H_
+#define RE2_TESTING_TESTER_H_
+
 // Comparative tester for regular expression matching.
 // Checks all implementations against each other.
 
-#ifndef RE2_TESTING_TESTER_H__
-#define RE2_TESTING_TESTER_H__
+#include <vector>
 
 #include "re2/stringpiece.h"
 #include "re2/prog.h"
@@ -16,11 +18,9 @@
 
 namespace re2 {
 
-class Regexp;
-
 // All the supported regexp engines.
 enum Engine {
-  kEngineBacktrack = 0,    // Prog::BadSearchBacktrack
+  kEngineBacktrack = 0,    // Prog::UnsafeSearchBacktrack
   kEngineNFA,              // Prog::SearchNFA
   kEngineDFA,              // Prog::SearchDFA, only ask whether it matched
   kEngineDFA1,             // Prog::SearchDFA, ask for match[0]
@@ -72,7 +72,7 @@ class TestInstance {
   void LogMatch(const char* prefix, Engine e, const StringPiece& text,
                 const StringPiece& context, Prog::Anchor anchor);
 
-  const StringPiece& regexp_str_;   // regexp being tested
+  const StringPiece regexp_str_;    // regexp being tested
   Prog::MatchKind kind_;            // kind of match
   Regexp::ParseFlags flags_;        // flags for parsing regexp_str_
   bool error_;                      // error during constructor?
@@ -84,7 +84,8 @@ class TestInstance {
   PCRE* re_;                        // PCRE implementation
   RE2* re2_;                        // RE2 implementation
 
-  DISALLOW_COPY_AND_ASSIGN(TestInstance);
+  TestInstance(const TestInstance&) = delete;
+  TestInstance& operator=(const TestInstance&) = delete;
 };
 
 // A group of TestInstances for all possible configurations.
@@ -108,9 +109,10 @@ class Tester {
 
  private:
   bool error_;
-  vector<TestInstance*> v_;
+  std::vector<TestInstance*> v_;
 
-  DISALLOW_COPY_AND_ASSIGN(Tester);
+  Tester(const Tester&) = delete;
+  Tester& operator=(const Tester&) = delete;
 };
 
 // Run all possible tests using regexp and text.
@@ -118,4 +120,4 @@ bool TestRegexpOnText(const StringPiece& regexp, const StringPiece& text);
 
 }  // namespace re2
 
-#endif  // RE2_TESTING_TESTER_H__
+#endif  // RE2_TESTING_TESTER_H_

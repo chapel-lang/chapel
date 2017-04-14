@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#ifndef RE2_REGEXP_H_
+#define RE2_REGEXP_H_
+
 // --- SPONSORED LINK --------------------------------------------------
 // If you want to use this library for regular expression matching,
 // you should use re2/re2.h, which provides a class RE2 that
@@ -83,10 +86,14 @@
 // form accessible to clients, so that client code can analyze the
 // parsed regular expressions.
 
-#ifndef RE2_REGEXP_H__
-#define RE2_REGEXP_H__
+#include <stdint.h>
+#include <map>
+#include <set>
+#include <string>
 
 #include "util/util.h"
+#include "util/logging.h"
+#include "util/utf.h"
 #include "re2/stringpiece.h"
 
 namespace re2 {
@@ -185,10 +192,10 @@ class RegexpStatus {
   RegexpStatus() : code_(kRegexpSuccess), tmp_(NULL) {}
   ~RegexpStatus() { delete tmp_; }
 
-  void set_code(enum RegexpStatusCode code) { code_ = code; }
+  void set_code(RegexpStatusCode code) { code_ = code; }
   void set_error_arg(const StringPiece& error_arg) { error_arg_ = error_arg; }
   void set_tmp(string* tmp) { delete tmp_; tmp_ = tmp; }
-  enum RegexpStatusCode code() const { return code_; }
+  RegexpStatusCode code() const { return code_; }
   const StringPiece& error_arg() const { return error_arg_; }
   bool ok() const { return code() == kRegexpSuccess; }
 
@@ -197,22 +204,20 @@ class RegexpStatus {
 
   // Returns text equivalent of code, e.g.:
   //   "Bad character class"
-  static string CodeText(enum RegexpStatusCode code);
+  static string CodeText(RegexpStatusCode code);
 
   // Returns text describing error, e.g.:
   //   "Bad character class: [z-a]"
   string Text() const;
 
  private:
-  enum RegexpStatusCode code_;  // Kind of error
+  RegexpStatusCode code_;  // Kind of error
   StringPiece error_arg_;       // Piece of regexp containing syntax error.
   string* tmp_;                 // Temporary storage, possibly where error_arg_ is.
 
-  DISALLOW_COPY_AND_ASSIGN(RegexpStatus);
+  RegexpStatus(const RegexpStatus&) = delete;
+  RegexpStatus& operator=(const RegexpStatus&) = delete;
 };
-
-// Walker to implement Simplify.
-class SimplifyWalker;
 
 // Compiled form; see prog.h
 class Prog;
@@ -261,7 +266,9 @@ class CharClass {
   int nrunes_;
   RuneRange *ranges_;
   int nranges_;
-  DISALLOW_COPY_AND_ASSIGN(CharClass);
+
+  CharClass(const CharClass&) = delete;
+  CharClass& operator=(const CharClass&) = delete;
 };
 
 class Regexp {
@@ -312,8 +319,8 @@ class Regexp {
   // Get.  No set, Regexps are logically immutable once created.
   RegexpOp op() { return static_cast<RegexpOp>(op_); }
   int nsub() { return nsub_; }
-  bool simple() { return simple_; }
-  enum ParseFlags parse_flags() { return static_cast<ParseFlags>(parse_flags_); }
+  bool simple() { return simple_ != 0; }
+  ParseFlags parse_flags() { return static_cast<ParseFlags>(parse_flags_); }
   int Ref();  // For testing.
 
   Regexp** sub() {
@@ -353,6 +360,7 @@ class Regexp {
   // removed.  The result will capture exactly the same
   // subexpressions the original did, unless formatted with ToString.
   Regexp* Simplify();
+  friend class CoalesceWalker;
   friend class SimplifyWalker;
 
   // Parses the regexp src and then simplifies it and sets *dst to the
@@ -369,12 +377,12 @@ class Regexp {
   // Returns a map from names to capturing group indices,
   // or NULL if the regexp contains no named capture groups.
   // The caller is responsible for deleting the map.
-  map<string, int>* NamedCaptures();
+  std::map<string, int>* NamedCaptures();
 
   // Returns a map from capturing group indices to capturing group
   // names or NULL if the regexp contains no named capture groups. The
   // caller is responsible for deleting the map.
-  map<int, string>* CaptureNames();
+  std::map<int, string>* CaptureNames();
 
   // Returns a string representation of the current regexp,
   // using as few parentheses as possible.
@@ -410,8 +418,8 @@ class Regexp {
   // Construction and execution of prog will
   // stay within approximately max_mem bytes of memory.
   // If max_mem <= 0, a reasonable default is used.
-  Prog* CompileToProg(int64 max_mem);
-  Prog* CompileToReverseProg(int64 max_mem);
+  Prog* CompileToProg(int64_t max_mem);
+  Prog* CompileToReverseProg(int64_t max_mem);
 
   // Whether to expect this library to find exactly the same answer as PCRE
   // when running this regexp.  Most regexps do mimic PCRE exactly, but a few
@@ -444,6 +452,7 @@ class Regexp {
 
   // Helpers for Parse.  Listed here so they can edit Regexps.
   class ParseState;
+
   friend class ParseState;
   friend bool ParseCharClass(StringPiece* s, Regexp** out_re,
                              RegexpStatus* status);
@@ -453,6 +462,10 @@ class Regexp {
 
   // Computes whether Regexp is already simple.
   bool ComputeSimple();
+
+  // Constructor that generates a Star, Plus or Quest,
+  // squashing the pair if sub is also a Star, Plus or Quest.
+  static Regexp* StarPlusOrQuest(RegexpOp op, Regexp* sub, ParseFlags flags);
 
   // Constructor that generates a concatenation or alternation,
   // enforcing the limit on the number of subexpressions for
@@ -491,8 +504,7 @@ class Regexp {
 
   // Allocate space for n sub-regexps.
   void AllocSub(int n) {
-    if (n < 0 || static_cast<uint16>(n) != n)
-      LOG(FATAL) << "Cannot AllocSub " << n;
+    DCHECK(n >= 0 && static_cast<uint16_t>(n) == n);
     if (n > 1)
       submany_ = new Regexp*[n];
     nsub_ = n;
@@ -505,38 +517,38 @@ class Regexp {
   void Swap(Regexp *that);
 
   // Operator.  See description of operators above.
-  // uint8 instead of RegexpOp to control space usage.
-  uint8 op_;
+  // uint8_t instead of RegexpOp to control space usage.
+  uint8_t op_;
 
   // Is this regexp structure already simple
   // (has it been returned by Simplify)?
-  // uint8 instead of bool to control space usage.
-  uint8 simple_;
+  // uint8_t instead of bool to control space usage.
+  uint8_t simple_;
 
   // Flags saved from parsing and used during execution.
   // (Only FoldCase is used.)
-  // uint16 instead of ParseFlags to control space usage.
-  uint16 parse_flags_;
+  // uint16_t instead of ParseFlags to control space usage.
+  uint16_t parse_flags_;
 
   // Reference count.  Exists so that SimplifyRegexp can build
   // regexp structures that are dags rather than trees to avoid
   // exponential blowup in space requirements.
-  // uint16 to control space usage.
+  // uint16_t to control space usage.
   // The standard regexp routines will never generate a
-  // ref greater than the maximum repeat count (100),
+  // ref greater than the maximum repeat count (kMaxRepeat),
   // but even so, Incref and Decref consult an overflow map
   // when ref_ reaches kMaxRef.
-  uint16 ref_;
-  static const uint16 kMaxRef = 0xffff;
+  uint16_t ref_;
+  static const uint16_t kMaxRef = 0xffff;
 
   // Subexpressions.
-  // uint16 to control space usage.
+  // uint16_t to control space usage.
   // Concat and Alternate handle larger numbers of subexpressions
   // by building concatenation or alternation trees.
   // Other routines should call Concat or Alternate instead of
   // filling in sub() by hand.
-  uint16 nsub_;
-  static const uint16 kMaxNsub = 0xffff;
+  uint16_t nsub_;
+  static const uint16_t kMaxNsub = 0xffff;
   union {
     Regexp** submany_;  // if nsub_ > 1
     Regexp* subone_;  // if nsub_ == 1
@@ -571,11 +583,12 @@ class Regexp {
     void *the_union_[2];  // as big as any other element, for memset
   };
 
-  DISALLOW_COPY_AND_ASSIGN(Regexp);
+  Regexp(const Regexp&) = delete;
+  Regexp& operator=(const Regexp&) = delete;
 };
 
 // Character class set: contains non-overlapping, non-abutting RuneRanges.
-typedef set<RuneRange, RuneRangeLess> RuneRangeSet;
+typedef std::set<RuneRange, RuneRangeLess> RuneRangeSet;
 
 class CharClassBuilder {
  public:
@@ -600,12 +613,14 @@ class CharClassBuilder {
   void AddRangeFlags(Rune lo, Rune hi, Regexp::ParseFlags parse_flags);
 
  private:
-  static const uint32 AlphaMask = (1<<26) - 1;
-  uint32 upper_;  // bitmap of A-Z
-  uint32 lower_;  // bitmap of a-z
+  static const uint32_t AlphaMask = (1<<26) - 1;
+  uint32_t upper_;  // bitmap of A-Z
+  uint32_t lower_;  // bitmap of a-z
   int nrunes_;
   RuneRangeSet ranges_;
-  DISALLOW_COPY_AND_ASSIGN(CharClassBuilder);
+
+  CharClassBuilder(const CharClassBuilder&) = delete;
+  CharClassBuilder& operator=(const CharClassBuilder&) = delete;
 };
 
 // Tell g++ that bitwise ops on ParseFlags produce ParseFlags.
@@ -629,8 +644,6 @@ inline Regexp::ParseFlags operator~(Regexp::ParseFlags a)
   return static_cast<Regexp::ParseFlags>(~static_cast<int>(a));
 }
 
-
-
 }  // namespace re2
 
-#endif  // RE2_REGEXP_H__
+#endif  // RE2_REGEXP_H_

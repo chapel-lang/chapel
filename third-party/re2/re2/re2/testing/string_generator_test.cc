@@ -4,18 +4,19 @@
 
 // Test StringGenerator.
 
-#include <stdlib.h>
+#include <stdint.h>
 #include <string>
-#include <vector>
+
 #include "util/test.h"
+#include "util/utf.h"
 #include "re2/testing/string_generator.h"
 #include "re2/testing/regexp_generator.h"
 
 namespace re2 {
 
 // Returns i to the e.
-static int64 IntegerPower(int i, int e) {
-  int64 p = 1;
+static int64_t IntegerPower(int i, int e) {
+  int64_t p = 1;
   while (e-- > 0)
     p *= i;
   return p;
@@ -46,7 +47,7 @@ static void RunTest(int len, string alphabet, bool donull) {
   }
 
   while (g.HasNext()) {
-    string s = g.Next().as_string();
+    string s = g.Next().ToString();
     n++;
 
     // Check that all characters in s appear in alphabet.
@@ -69,7 +70,7 @@ static void RunTest(int len, string alphabet, bool donull) {
   }
 
   // Check total string count.
-  int64 m = 0;
+  int64_t m = 0;
   int alpha = utflen(alphabet.c_str());
   if (alpha == 0)  // Degenerate case.
     len = 0;

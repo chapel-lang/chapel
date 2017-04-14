@@ -56,7 +56,7 @@ int64_t advance_file_to(FileSearchInfo* fi,
   if( diff == 0 ) {
     goto done;
   }
-  
+
   if( diff == 1 ) {
     // advance by one byte by reading a byte!
     read_byte(fi);
@@ -123,7 +123,7 @@ void FilePiece::discard(bool match, ptr_type match_start, ptr_type match_end, pt
     //  is false and nmatch == 1, or if nmatch == 0).
   } else {
     // There is a match
-   
+
     // If keep_whole_pattern is set, we can't discard to the left
     // of a match start
     if( fi->keep_whole_pattern ) target = match_start.offset;
@@ -196,7 +196,7 @@ FileSearchPtr FilePiece::find_c(ReadingFileSearchPtr s, FileSearchPtr end, int c
     if( ( (*s) & 0xff ) == c ) return s;
     if( this->can_discard(s - begin) ) {
       this->discard(false, s, s, s);
-    } 
+    }
   }
   return FileSearchPtr();
 }

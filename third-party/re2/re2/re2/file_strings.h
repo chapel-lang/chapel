@@ -390,6 +390,10 @@ struct FilePiece {
   std::string as_string() const {
     return std::string();
   }
+  std::string ToString() const {
+    return std::string();
+  }
+
 
   static int discard_check_mask();
   static int allow_buffer_search();

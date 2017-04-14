@@ -2,17 +2,23 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-all: obj/libre2.a obj/so/libre2.so
+# To build against ICU for full Unicode properties support,
+# uncomment the next two lines:
+# CCICU=$(shell pkg-config icu-uc --cflags) -DRE2_USE_ICU
+# LDICU=$(shell pkg-config icu-uc --libs)
 
-# to build against PCRE for testing or benchmarking,
-# uncomment the next two lines
+# To build against PCRE for testing or benchmarking,
+# uncomment the next two lines:
 # CCPCRE=-I/usr/local/include -DUSEPCRE
 # LDPCRE=-L/usr/local/lib -lpcre
 
 CXX?=g++
-CXXFLAGS?=-Wall -O3 -g -pthread # can override
-RE2_CXXFLAGS?=-Wsign-compare -c -I. $(CCPCRE)  # required
-LDFLAGS?=-pthread
+# can override
+CXXFLAGS?=-O3 -g
+LDFLAGS?=
+# required
+RE2_CXXFLAGS?=-std=c++11 -pthread -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -I. $(CCICU) $(CCPCRE)
+RE2_LDFLAGS?=-pthread $(LDICU) $(LDPCRE)
 AR?=ar
 ARFLAGS?=rsc
 NM?=nm
@@ -22,12 +28,19 @@ NMFLAGS?=-p
 # http://www.gnu.org/prep/standards/standards.html
 prefix=/usr/local
 exec_prefix=$(prefix)
-bindir=$(exec_prefix)/bin
 includedir=$(prefix)/include
 libdir=$(exec_prefix)/lib
 INSTALL=install
-INSTALL_PROGRAM=$(INSTALL)
 INSTALL_DATA=$(INSTALL) -m 644
+
+# Work around the weirdness of sed(1) on Darwin. :/
+ifeq ($(shell uname),Darwin)
+SED_INPLACE=sed -i ''
+else ifeq ($(shell uname),SunOS)
+SED_INPLACE=sed -i
+else
+SED_INPLACE=sed -i
+endif
 
 # ABI version
 # http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
@@ -37,35 +50,48 @@ SONAME=0
 # access for Unicode data), uncomment the following line:
 # REBUILD_TABLES=1
 
+# The SunOS linker does not support wildcards. :(
 ifeq ($(shell uname),Darwin)
-MAKE_SHARED_LIBRARY=$(CXX) -dynamiclib $(LDFLAGS) -exported_symbols_list libre2.symbols.darwin
+SOEXT=dylib
+SOEXTVER=$(SONAME).$(SOEXT)
+SOEXTVER00=$(SONAME).0.0.$(SOEXT)
+MAKE_SHARED_LIBRARY=$(CXX) -dynamiclib -Wl,-install_name,@rpath/libre2.$(SOEXTVER),-exported_symbols_list,libre2.symbols.darwin $(RE2_LDFLAGS) $(LDFLAGS)
+else ifeq ($(shell uname),SunOS)
+SOEXT=so
+SOEXTVER=$(SOEXT).$(SONAME)
+SOEXTVER00=$(SOEXT).$(SONAME).0.0
+MAKE_SHARED_LIBRARY=$(CXX) -shared -Wl,-soname,libre2.$(SOEXTVER) $(RE2_LDFLAGS) $(LDFLAGS)
 else
-MAKE_SHARED_LIBRARY=$(CXX) -shared -Wl,-soname,libre2.so.$(SONAME),--version-script=libre2.symbols $(LDFLAGS)
+SOEXT=so
+SOEXTVER=$(SOEXT).$(SONAME)
+SOEXTVER00=$(SOEXT).$(SONAME).0.0
+MAKE_SHARED_LIBRARY=$(CXX) -shared -Wl,-soname,libre2.$(SOEXTVER),--version-script,libre2.symbols $(RE2_LDFLAGS) $(LDFLAGS)
 endif
 
+all: obj/libre2.a obj/so/libre2.$(SOEXT)
+
 INSTALL_HFILES=\
+	re2/file_strings.h\
 	re2/filtered_re2.h\
 	re2/re2.h\
 	re2/set.h\
 	re2/stringpiece.h\
-	re2/variadic_function.h\
-	re2/file_strings.h\
 
 HFILES=\
-	util/atomicops.h\
 	util/benchmark.h\
 	util/flags.h\
 	util/logging.h\
+	util/mix.h\
 	util/mutex.h\
 	util/pcre.h\
-	util/random.h\
 	util/sparse_array.h\
 	util/sparse_set.h\
+	util/strutil.h\
 	util/test.h\
-	util/thread.h\
 	util/utf.h\
 	util/util.h\
-	util/valgrind.h\
+	re2/bitmap256.h\
+	re2/file_strings.h\
 	re2/filtered_re2.h\
 	re2/prefilter.h\
 	re2/prefilter_tree.h\
@@ -80,16 +106,11 @@ HFILES=\
 	re2/testing/tester.h\
 	re2/unicode_casefold.h\
 	re2/unicode_groups.h\
-	re2/variadic_function.h\
 	re2/walker-inl.h\
-	re2/file_strings.h\
 
 OFILES=\
-	obj/util/hash.o\
 	obj/util/rune.o\
-	obj/util/stringprintf.o\
 	obj/util/strutil.o\
-	obj/util/valgrind.o\
 	obj/re2/bitstate.o\
 	obj/re2/compile.o\
 	obj/re2/dfa.o\
@@ -114,8 +135,6 @@ OFILES=\
 
 TESTOFILES=\
 	obj/util/pcre.o\
-	obj/util/random.o\
-	obj/util/thread.o\
 	obj/re2/testing/backtrack.o\
 	obj/re2/testing/dump.o\
 	obj/re2/testing/exhaustive_tester.o\
@@ -149,7 +168,7 @@ BIGTESTS=\
 	obj/test/random_test\
 
 SOFILES=$(patsubst obj/%,obj/so/%,$(OFILES))
-STESTOFILES=$(patsubst obj/%,obj/so/%,$(TESTOFILES))
+# We use TESTOFILES for testing the shared lib, only it is built differently.
 STESTS=$(patsubst obj/%,obj/so/%,$(TESTS))
 SBIGTESTS=$(patsubst obj/%,obj/so/%,$(BIGTESTS))
 
@@ -160,15 +179,15 @@ DBIGTESTS=$(patsubst obj/%,obj/dbg/%,$(BIGTESTS))
 
 obj/%.o: %.cc $(HFILES)
 	@mkdir -p $$(dirname $@)
-	$(CXX) -o $@ $(CPPFLAGS) $(CXXFLAGS) $(RE2_CXXFLAGS) -DNDEBUG $*.cc
+	$(CXX) -c -o $@ $(CPPFLAGS) $(RE2_CXXFLAGS) $(CXXFLAGS) -DNDEBUG $*.cc
 
 obj/dbg/%.o: %.cc $(HFILES)
 	@mkdir -p $$(dirname $@)
-	$(CXX) -o $@ -fPIC $(CPPFLAGS) $(CXXFLAGS) $(RE2_CXXFLAGS) $*.cc
+	$(CXX) -c -o $@ $(CPPFLAGS) $(RE2_CXXFLAGS) $(CXXFLAGS) $*.cc
 
 obj/so/%.o: %.cc $(HFILES)
 	@mkdir -p $$(dirname $@)
-	$(CXX) -o $@ -fPIC $(CPPFLAGS) $(CXXFLAGS) $(RE2_CXXFLAGS) -DNDEBUG $*.cc
+	$(CXX) -c -o $@ -fPIC $(CPPFLAGS) $(RE2_CXXFLAGS) $(CXXFLAGS) -DNDEBUG $*.cc
 
 obj/libre2.a: $(OFILES)
 	@mkdir -p obj
@@ -178,26 +197,35 @@ obj/dbg/libre2.a: $(DOFILES)
 	@mkdir -p obj/dbg
 	$(AR) $(ARFLAGS) obj/dbg/libre2.a $(DOFILES)
 
-obj/so/libre2.so: $(SOFILES)
+obj/so/libre2.$(SOEXT): $(SOFILES)
 	@mkdir -p obj/so
-	$(MAKE_SHARED_LIBRARY) -o $@.$(SONAME) $(SOFILES)
-	ln -sf libre2.so.$(SONAME) $@
-
-obj/test/%: obj/libre2.a obj/re2/testing/%.o $(TESTOFILES) obj/util/test.o
-	@mkdir -p obj/test
-	$(CXX) -o $@ obj/re2/testing/$*.o $(TESTOFILES) obj/util/test.o obj/libre2.a $(LDFLAGS) $(LDPCRE)
+	$(MAKE_SHARED_LIBRARY) -o obj/so/libre2.$(SOEXTVER) $(SOFILES)
+	ln -sf libre2.$(SOEXTVER) $@
 
 obj/dbg/test/%: obj/dbg/libre2.a obj/dbg/re2/testing/%.o $(DTESTOFILES) obj/dbg/util/test.o
 	@mkdir -p obj/dbg/test
-	$(CXX) -o $@ obj/dbg/re2/testing/$*.o $(DTESTOFILES) obj/dbg/util/test.o obj/dbg/libre2.a $(LDFLAGS) $(LDPCRE)
+	$(CXX) -o $@ obj/dbg/re2/testing/$*.o $(DTESTOFILES) obj/dbg/util/test.o obj/dbg/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
 
-obj/so/test/%: obj/so/libre2.so obj/libre2.a obj/so/re2/testing/%.o $(STESTOFILES) obj/so/util/test.o
+obj/test/%: obj/libre2.a obj/re2/testing/%.o $(TESTOFILES) obj/util/test.o
+	@mkdir -p obj/test
+	$(CXX) -o $@ obj/re2/testing/$*.o $(TESTOFILES) obj/util/test.o obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
+
+# Test the shared lib, falling back to the static lib for private symbols
+obj/so/test/%: obj/so/libre2.$(SOEXT) obj/libre2.a obj/re2/testing/%.o $(TESTOFILES) obj/util/test.o
 	@mkdir -p obj/so/test
-	$(CXX) -o $@ obj/so/re2/testing/$*.o $(STESTOFILES) obj/so/util/test.o -Lobj/so -lre2 obj/libre2.a $(LDFLAGS) $(LDPCRE)
+	$(CXX) -o $@ obj/re2/testing/$*.o $(TESTOFILES) obj/util/test.o -Lobj/so -lre2 obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
 
 obj/test/regexp_benchmark: obj/libre2.a obj/re2/testing/regexp_benchmark.o $(TESTOFILES) obj/util/benchmark.o
 	@mkdir -p obj/test
-	$(CXX) -o $@ obj/re2/testing/regexp_benchmark.o $(TESTOFILES) obj/util/benchmark.o obj/libre2.a $(LDFLAGS) $(LDPCRE)
+	$(CXX) -o $@ obj/re2/testing/regexp_benchmark.o $(TESTOFILES) obj/util/benchmark.o obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
+
+# re2_fuzzer is a target for fuzzers like libFuzzer and AFL. This fake fuzzing
+# is simply a way to check that the target builds and then to run it against a
+# fixed set of inputs. To perform real fuzzing, refer to the documentation for
+# libFuzzer (llvm.org/docs/LibFuzzer.html) and AFL (lcamtuf.coredump.cx/afl/).
+obj/test/re2_fuzzer: obj/libre2.a obj/re2/fuzzing/re2_fuzzer.o obj/util/fuzz.o
+	@mkdir -p obj/test
+	$(CXX) -o $@ obj/re2/fuzzing/re2_fuzzer.o obj/util/fuzz.o obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
 
 ifdef REBUILD_TABLES
 re2/perl_groups.cc: re2/make_perl_groups.pl
@@ -205,6 +233,8 @@ re2/perl_groups.cc: re2/make_perl_groups.pl
 
 re2/unicode_%.cc: re2/make_unicode_%.py
 	python $< > $@
+
+.PRECIOUS: re2/perl_groups.cc re2/unicode_casefold.cc re2/unicode_groups.cc
 endif
 
 distclean: clean
@@ -247,29 +277,52 @@ shared-bigtest: $(STESTS) $(SBIGTESTS)
 
 benchmark: obj/test/regexp_benchmark
 
-install: obj/libre2.a obj/so/libre2.so
+fuzz: obj/test/re2_fuzzer
+
+install: obj/libre2.a obj/so/libre2.$(SOEXT)
 	mkdir -p $(DESTDIR)$(includedir)/re2 $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
 	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a
-	$(INSTALL) obj/so/libre2.so $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0
-	if [ -n "`command -v install_name_tool`" ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0; fi
-	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME)
-	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so
-	sed -e "s#@prefix@#${prefix}#" re2.pc >$(DESTDIR)$(libdir)/pkgconfig/re2.pc
+	$(INSTALL) obj/so/libre2.$(SOEXT) $(DESTDIR)$(libdir)/libre2.$(SOEXTVER00)
+	if [ -n "`command -v install_name_tool`" ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.so.$(SOEXTVER00); fi
+	ln -sf libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.$(SOEXTVER)
+	ln -sf libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.$(SOEXT)
+	$(INSTALL_DATA) re2.pc $(DESTDIR)$(libdir)/pkgconfig/re2.pc
+	$(SED_INPLACE) -e "s#@prefix@#${prefix}#" $(DESTDIR)$(libdir)/pkgconfig/re2.pc
+	$(SED_INPLACE) -e "s#@exec_prefix@#${exec_prefix}#" $(DESTDIR)$(libdir)/pkgconfig/re2.pc
+	$(SED_INPLACE) -e "s#@includedir@#${includedir}#" $(DESTDIR)$(libdir)/pkgconfig/re2.pc
+	$(SED_INPLACE) -e "s#@libdir@#${libdir}#" $(DESTDIR)$(libdir)/pkgconfig/re2.pc
 
-testinstall:
+testinstall: static-testinstall shared-testinstall
+	@echo
+	@echo Install tests passed.
+	@echo
+
+static-testinstall: CXXFLAGS:=-std=c++11 -pthread -I$(DESTDIR)$(includedir) $(CXXFLAGS)
+static-testinstall: LDFLAGS:=-pthread -L$(DESTDIR)$(libdir) -l:libre2.a $(LDICU) $(LDFLAGS)
+static-testinstall:
 	@mkdir -p obj
-	cp testinstall.cc obj
-ifneq ($(shell uname),Darwin)
-	(cd obj && $(CXX) -I$(DESTDIR)$(includedir) -L$(DESTDIR)$(libdir) testinstall.cc -lre2 -pthread -static -o testinstall)
+	@cp testinstall.cc obj
+ifeq ($(shell uname),Darwin)
+	@echo Skipping test for libre2.a on Darwin.
+else ifeq ($(shell uname),SunOS)
+	@echo Skipping test for libre2.a on SunOS.
+else
+	(cd obj && $(CXX) testinstall.cc -o testinstall $(CXXFLAGS) $(LDFLAGS))
 	obj/testinstall
 endif
-	(cd obj && $(CXX) -I$(DESTDIR)$(includedir) -L$(DESTDIR)$(libdir) testinstall.cc -lre2 -pthread -o testinstall)
+
+shared-testinstall: CXXFLAGS:=-std=c++11 -pthread -I$(DESTDIR)$(includedir) $(CXXFLAGS)
+shared-testinstall: LDFLAGS:=-pthread -L$(DESTDIR)$(libdir) -lre2 $(LDICU) $(LDFLAGS)
+shared-testinstall:
+	@mkdir -p obj
+	@cp testinstall.cc obj
+	(cd obj && $(CXX) testinstall.cc -o testinstall $(CXXFLAGS) $(LDFLAGS))
 	LD_LIBRARY_PATH=$(DESTDIR)$(libdir) obj/testinstall
 
 benchlog: obj/test/regexp_benchmark
 	(echo '==BENCHMARK==' `hostname` `date`; \
-	  (uname -a; $(CXX) --version; hg identify; file obj/test/regexp_benchmark) | sed 's/^/# /'; \
+	  (uname -a; $(CXX) --version; git rev-parse --short HEAD; file obj/test/regexp_benchmark) | sed 's/^/# /'; \
 	  echo; \
 	  ./obj/test/regexp_benchmark 'PCRE|RE2') | tee -a benchlog.$$(hostname | sed 's/\..*//')
 
@@ -281,8 +334,9 @@ benchlog: obj/test/regexp_benchmark
 	obj/test/% obj/so/test/% obj/dbg/test/%
 
 log:
-	make clean
-	make CXXFLAGS="$(CXXFLAGS) -DLOGGING=1" obj/test/exhaustive{,1,2,3}_test
+	$(MAKE) clean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -DLOGGING=1" \
+		$(filter obj/test/exhaustive%_test,$(BIGTESTS))
 	echo '#' RE2 exhaustive tests built by make log >re2-exhaustive.txt
 	echo '#' $$(date) >>re2-exhaustive.txt
 	obj/test/exhaustive_test |grep -v '^PASS$$' >>re2-exhaustive.txt
@@ -290,7 +344,7 @@ log:
 	obj/test/exhaustive2_test |grep -v '^PASS$$' >>re2-exhaustive.txt
 	obj/test/exhaustive3_test |grep -v '^PASS$$' >>re2-exhaustive.txt
 
-	make CXXFLAGS="$(CXXFLAGS) -DLOGGING=1" obj/test/search_test
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -DLOGGING=1" obj/test/search_test
 	echo '#' RE2 basic search tests built by make $@ >re2-search.txt
 	echo '#' $$(date) >>re2-search.txt
 	obj/test/search_test |grep -v '^PASS$$' >>re2-search.txt
