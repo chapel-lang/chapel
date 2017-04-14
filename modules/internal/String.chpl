@@ -1743,6 +1743,15 @@ module String {
     }
   }
 
+  /*
+     :returns: A string with the single character with the ASCII value `i`.
+  */
+  inline proc asciiToString(i: uint(8)) {
+    var buffer: [0..1] uint(8);
+    buffer[0] = i;
+    return new string(c_ptrTo(buffer), 2, 1);
+  }
+
 
   //
   // Casts (casts to & from other primitive types are in StringCasts)
