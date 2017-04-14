@@ -47,12 +47,14 @@ proc printColorEquations() {
 // a chameneos population
 //
 record Population {
-  var colors;  // the colors of the chameneos in the population
+  var chamSpace: domain(1);
+  var chameneos: [chamSpace] Chameneos;
 
-  //
-  // an array of chameneos objects representing the population
-  //
-  var chameneos = [i in colors.domain] new Chameneos(i, colors[i]);
+  proc Population(colors) {
+    chamSpace = colors.domain;
+    forall i in chamSpace do
+      chameneos[i] = new Chameneos(i, colors[i]);
+  }
 
   //
   // Hold meetings among the population by creating a shared meeting
@@ -89,7 +91,7 @@ record Population {
   //
   // Delete the chameneos objects.
   //
-  proc deinit {
+  proc ~Population {
     for c in chameneos do
       delete c;
   }
