@@ -47,8 +47,8 @@ proc printColorEquations() {
 // a chameneos population
 //
 record Population {
-  var chamSpace: domain(1);
-  var chameneos: [chamSpace] Chameneos;
+  const chamSpace: domain(1),
+        chameneos: [chamSpace] Chameneos;
 
   proc Population(colors) {
     chamSpace = colors.domain;
