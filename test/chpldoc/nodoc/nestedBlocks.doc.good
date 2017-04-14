@@ -1,7 +1,16 @@
-looksEmpty
+.. default-domain:: chpl
 
-Usage:
+.. module:: looksEmpty
+   :synopsis: This module should have no contents, as all of its code lives under nested
+
+looksEmpty
+==========
+**Usage**
+
+.. code-block:: chapel
+
    use looksEmpty;
 
-   This module should have no contents, as all of its code lives under nested
-   blocks instead of at the top level 
+This module should have no contents, as all of its code lives under nested
+blocks instead of at the top level 
+
