@@ -1,0 +1,18 @@
+In 'test_ints' function
+First arg  = 1
+Second arg = -42
+
+In 'test_ints' function
+First arg  = 1
+Second arg = 42
+
+In 'test_strings' function
+Arg = hello world
+
+x before = 42
+x after = 100
+In 'test_array' function
+1 2 3 4 5 6 7 8 9 10 
+
+test_return(4)  == 5
+test_return(-1) == 0
