@@ -47,9 +47,15 @@ proc printColorEquations() {
 // a chameneos population
 //
 record Population {
+  //
+  // a domain and array representing the chameneos in this population
+  //
   const chamSpace: domain(1),
         chameneos: [chamSpace] Chameneos;
 
+  //
+  // construct the population in terms of an array of colors passed in
+  //
   proc Population(colors) {
     chamSpace = colors.domain;
     forall i in chamSpace do
