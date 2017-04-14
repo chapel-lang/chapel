@@ -340,7 +340,7 @@ bool isDenormalizable(Symbol* sym,
                   (ce->isPrimitive(PRIM_MOVE) &&
                    ce->get(1)->typeInfo() !=
                    ce->get(2)->typeInfo()) ||
-                  isFloatComparisonPrimitive(ce))) {
+                   isFloatComparisonPrimitive(ce))) {
               use = se;
             }
           }
