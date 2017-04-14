@@ -397,7 +397,7 @@ void resolveInitCall(CallExpr* call) {
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
-  findVisibleFunctions(call, info, visibleFns);
+  findVisibleFunctions(info, visibleFns);
 
 
   // Modified narrowing down the candidates to operate in an
