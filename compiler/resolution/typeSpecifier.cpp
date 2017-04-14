@@ -62,7 +62,7 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL(call, "illegal size %d for bool", size);
+                      USR_FATAL_CONT(call, "illegal size %d for bool", size);
                       break;
                     }
 
@@ -88,7 +88,7 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL(call, "illegal size %d for int", size);
+                      USR_FATAL_CONT(call, "illegal size %d for int", size);
                       break;
                     }
 
@@ -114,7 +114,7 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL(call, "illegal size %d for uint", size);
+                      USR_FATAL_CONT(call, "illegal size %d for uint", size);
                       break;
                     }
 
@@ -132,7 +132,7 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL(call, "illegal size %d for real", size);
+                      USR_FATAL_CONT(call, "illegal size %d for real", size);
                       break;
                     }
 
@@ -150,7 +150,7 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL(call, "illegal size %d for imag", size);
+                      USR_FATAL_CONT(call, "illegal size %d for imag", size);
                       break;
                     }
 
@@ -168,7 +168,7 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL(call, "illegal size %d for complex", size);
+                      USR_FATAL_CONT(call, "illegal size %d for complex", size);
                       break;
                     }
                   }
