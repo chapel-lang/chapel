@@ -6,7 +6,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform
-from chpl_home_utils import get_chpl_home, using_chapel_module
+from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command
 
 
@@ -25,7 +25,7 @@ def default_uniq_cfg_path():
 #
 @memoize
 def get_cfg_install_path(pkg, ucp=default_uniq_cfg_path()):
-    return os.path.join(get_chpl_home(), 'third-party', pkg, 'install', ucp)
+    return os.path.join(get_chpl_third_party(), pkg, 'install', ucp)
 
 #
 # Return libraries and other options mentioned in the old_library and
@@ -49,7 +49,7 @@ def handle_la(la_path):
                     for tok in line.split('\'')[1].split():
                         # paths reflect built env; replace with $CHPL_HOME
                         pat = re.compile(r'^((-L\s*)?).*(/third-party/)')
-                        repl = r'\1' + get_chpl_home() + r'\3'
+                        repl = r'\1' + get_chpl_third_party() + '/'
                         tok = pat.sub(repl, tok)
                         if tok.endswith('.la'):
                             args.extend(handle_la(tok))

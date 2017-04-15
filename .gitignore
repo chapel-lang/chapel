@@ -17,6 +17,8 @@ tags
 # Top level ignores.
 /BUILD_VERSION
 /Chapel.xcodeproj
+/configured-chplconfig
+/configured-prefix
 /SVNLOG
 /.SVNLOG-revnum
 /bin
@@ -33,6 +35,7 @@ tags
 /compiler/ifa/make_prims/make_prims
 /compiler/ifa/make_prims/cygwin
 /compiler/main/BUILD_VERSION
+/compiler/main/CONFIGURED_PREFIX
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
 /compiler/parser/bison-chapel.output

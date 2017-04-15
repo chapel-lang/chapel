@@ -168,6 +168,7 @@ clobber: FORCE
 	rm -rf lib
 	rm -rf build
 	rm -f util/chplenv/*.pyc
+	rm -f compiler/main/CONFIGURED_PREFIX
 
 depend:
 	@echo "make depend has been deprecated for the time being"
@@ -177,6 +178,9 @@ check:
 
 check-chpldoc: chpldoc third-party-test-venv
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplDoc
+
+install: comprt
+	@bash $(CHPL_MAKE_HOME)/util/buildRelease/install.sh --stage=${DESTDIR}
 
 -include Makefile.devel
 

@@ -53,6 +53,12 @@ std::map<std::string, const char*> envMap;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
 
+// These are more specific that CHPL_HOME, to work in
+// settings where Chapel is installed.
+char CHPL_RUNTIME_LIB[FILENAME_MAX+1] = "";
+char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
+char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
+
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
@@ -237,6 +243,11 @@ static bool isMaybeChplHome(const char* path)
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
+  bool        installed = false;
+  char        majMinorVers[64];
+
+  // Get major.minor version string (used below)
+  get_major_minor_version(majMinorVers);
 
   // Get the executable path.
   guess = findProgramPath(argv0);
@@ -270,7 +281,7 @@ static void setupChplHome(const char* argv0) {
   }
 
   if( chpl_home ) {
-    if( strlen(chpl_home) > FILENAME_MAX )
+    if( strlen(chpl_home) >= FILENAME_MAX )
       USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
 
     if( guess == NULL ) {
@@ -289,6 +300,27 @@ static void setupChplHome(const char* argv0) {
       strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     }
   } else {
+
+    // Check in a default location too
+    if( guess == NULL ) {
+      char TEST_HOME[FILENAME_MAX+1] = "";
+
+      // Check for Chapel libraries at installed prefix
+      // e.g. /usr/share/chapel/<vers>
+      int rc;
+      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
+                  get_configured_prefix(), // e.g. /usr
+                  "/share/chapel",
+                  majMinorVers);
+      if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
+
+      if( isMaybeChplHome(TEST_HOME) ) {
+        guess = strdup(TEST_HOME);
+
+        installed = true;
+      }
+    }
+
     if( guess == NULL ) {
       // Could not find enviro var, and could not
       // guess at exe's path name.
@@ -315,6 +347,70 @@ static void setupChplHome(const char* argv0) {
 
   if( guess )
     free(guess);
+
+
+
+  if( installed ) {
+    int rc;
+    // E.g. /usr/lib/chapel/1.16/runtime/lib
+    rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
+                  get_configured_prefix(), // e.g. /usr
+                  "/lib/chapel",
+                  majMinorVers,
+                  "runtime/lib");
+    if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
+    rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s/%s/%s",
+                  get_configured_prefix(), // e.g. /usr
+                  "/lib/chapel",
+                  majMinorVers,
+                  "runtime/include");
+    if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
+    rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s/%s/%s",
+                  get_configured_prefix(), // e.g. /usr
+                  "/lib/chapel",
+                  majMinorVers,
+                  "third-party");
+    if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
+
+  } else {
+    int rc;
+    rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
+                  CHPL_HOME, "lib");
+    if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+    rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s",
+                  CHPL_HOME, "runtime/include");
+    if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+    rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s",
+                  CHPL_HOME, "third-party");
+    if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+
+  }
+
+  // and setenv the derived enviro vars for use by called scripts/Makefiles
+  {
+    int rc;
+    rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
+    if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
+    rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
+    if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
+    rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
+    if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
+
+    if (installed) {
+      char CHPL_CONFIG[FILENAME_MAX+1] = "";
+      // Set an extra default CHPL_CONFIG directory
+      rc = snprintf(CHPL_CONFIG, FILENAME_MAX, "%s/%s/%s",
+                    get_configured_prefix(), // e.g. /usr
+                    "/lib/chapel",
+                    majMinorVers);
+      if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
+
+      // Don't overwrite CHPL_CONFIG so that a user-specified
+      // one would be left alone.
+      rc = setenv("CHPL_CONFIG", CHPL_CONFIG, 0);
+      if( rc ) USR_FATAL("Could not setenv CHPL_CONFIG");
+    }
+  }
 }
 
 // NOTE: We are leaking memory here by dropping astr() results on the ground.
@@ -860,6 +956,9 @@ static void printStuff(const char* argv0) {
     char* guess = findProgramPath(argv0);
 
     printf("%s\t%s\n", CHPL_HOME, guess);
+    const char* prefix = get_configured_prefix();
+    if (prefix != NULL && prefix[0] != '\0' )
+      printf("# configured prefix  %s\n", prefix);
 
     free(guess);
 

@@ -17,29 +17,11 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include "driver.h"
-#include "version.h"
+#ifndef _configured_prefix_H_
+#define _configured_prefix_H_
 
-// this include sets BUILD_VERSION
-#include "version_num.h"
+static const char* CONFIGURED_PREFIX =
+#include "CONFIGURED_PREFIX"
+;
 
-// this include sets CONFIGURED_PREFIX
-#include "configured_prefix.h"
-
-void
-get_version(char *v) {
-  v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (strcmp(BUILD_VERSION, "0") != 0 || developer)
-    sprintf(v, ".%s", BUILD_VERSION);
-}
-
-void
-get_major_minor_version(char *v) {
-  sprintf(v, "%d.%s", MAJOR_VERSION, MINOR_VERSION);
-}
-
-const char*
-get_configured_prefix() {
-  return CONFIGURED_PREFIX;
-}
+#endif
