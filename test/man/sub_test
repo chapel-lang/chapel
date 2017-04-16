@@ -7,6 +7,11 @@ if [ $# -lt 1 ]; then
     exit -1
 fi
 
+if [ ! -x ${1}doc ]; then
+    echo "[Error (sub_test): chpldoc not found at ${1}doc]"
+    exit -1
+fi
+
 $CWD/checkManPages $1
 if [ $? != 0 ]; then
     echo '[Error matching man page(s) with compiler environment]'
