@@ -1,0 +1,13 @@
+# This test exposes a bug in the Intel compiler that appears only when debugging
+# is disabled (hard to debug).
+# I has to do with the result of the modulus operator having the wrong sign, and
+# appears only in the context of chpl__mod (instantiated for int64_t operands).
+# A separate test (expressions/hilde/divByNeg) shows that normally the sign of
+# the result of '%' tracks the sign of the first argument (if the second
+# argument is positive).  But the Intel compiler changes its mind for this
+# particular test case.
+CHPL_TARGET_COMPILER<=intel
+# The PGI compiler exhibits the same behavior.  Both are apparently GCC
+# derivatives, so the similar behavior is not too surprising.
+CHPL_TARGET_COMPILER<=pgi
+
