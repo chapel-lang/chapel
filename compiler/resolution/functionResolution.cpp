@@ -710,10 +710,20 @@ const char* toString(CallInfo* info) {
 
 const char* toString(FnSymbol* fn) {
   if (fn->userString) {
-    if (developer)
-      return astr(fn->userString, " [", istr(fn->id), "]");
-    else
+    if (developer) {
+      const char* devStr;
+      devStr = astr(fn->userString);
+      if (fn->where) {
+        std::ostringstream oss;
+        oss << devStr << " where ";
+        fn->where->body.head->prettyPrint(&oss);
+        devStr = astr(oss.str().c_str());
+      }
+      devStr = astr(devStr, " [", istr(fn->id), "]");
+      return devStr;
+    } else {
       return fn->userString;
+    }
   }
   const char* str;
   int start = 0;
