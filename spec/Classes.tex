@@ -953,10 +953,10 @@ to \chpl{4}.
 \index{this@\chpl{this}}
 \index{classes!this@\chpl{this}}
 
-A procedure method declared with the name \chpl{this} allows a class to be
-``indexed'' similarly to how an array is indexed.  Indexing into a
-class instance has the semantics of calling a method
-named \chpl{this}.  There is no other way to call a method
+Declaring a procedure method with the name \chpl{this} allows the
+class's objects to be ``called'' or ``indexed,'' similarly to how
+arrays are indexed.  Such expressions have the semantics of calling
+the method named \chpl{this}.  There is no other way to call a method
 called \chpl{this}.  The \chpl{this} method must be declared with
 parentheses even if the argument list is empty.
 
