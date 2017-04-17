@@ -30,6 +30,7 @@
 #include "exprAnalysis.h"
 #include "optimizations.h"
 
+
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
 typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
@@ -39,7 +40,8 @@ bool primMoveGeneratesCommCall(CallExpr* ce);
 inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
-inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
+inline bool isArithmeticPrimitive(CallExpr *ce);
+inline bool isFloatComparisonPrimitive(CallExpr *ce);
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut,
     Type** castTo, SafeExprAnalysis& analysisData);
@@ -287,10 +289,9 @@ bool isDenormalizable(Symbol* sym,
                       //at this point we now that def is fine
                       def = ce->get(2);
 
-                      //now check if we need to case it when we move it
+                      //now check if we need to cast it when we move it
                       if(CallExpr* defCe = toCallExpr(def)) {
-                        if(defCe->isPrimitive() &&
-                            isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                        if(isArithmeticPrimitive(defCe)) {
                           if(requiresCast(lhsType)) {
                             *castTo = lhsType;
                           }
@@ -338,7 +339,8 @@ bool isDenormalizable(Symbol* sym,
                   (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
                   (ce->isPrimitive(PRIM_MOVE) &&
                    ce->get(1)->typeInfo() !=
-                   ce->get(2)->typeInfo()))) {
+                   ce->get(2)->typeInfo()) ||
+                   isFloatComparisonPrimitive(ce))) {
               use = se;
             }
           }
@@ -422,26 +424,50 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 }
 
 inline bool requiresCast(Type* t) {
-  if(is_int_type(t) || is_uint_type(t)) {
+  if(is_int_type(t) || is_uint_type(t) || is_real_type(t)) {
     return true;
   }
   return false;
 }
 
-inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
-  switch(tag) {
-    case PRIM_ADD:
-    case PRIM_SUBTRACT:
-    case PRIM_MULT:
-    case PRIM_DIV:
-    case PRIM_MOD:
-    case PRIM_LSH:
-    case PRIM_RSH:
-      return true;
-      break;
-    default:
-      return false;
-      break;
+inline bool isFloatComparisonPrimitive(CallExpr *ce) {
+  if(ce->isPrimitive()) {
+    switch(ce->primitive->tag) {
+      case PRIM_EQUAL:
+      case PRIM_NOTEQUAL:
+      case PRIM_LESSOREQUAL:
+      case PRIM_GREATEROREQUAL:
+      case PRIM_LESS:
+      case PRIM_GREATER:
+        if(is_real_type(ce->get(1)->typeInfo()) ||
+           is_real_type(ce->get(2)->typeInfo())) {
+          return true;
+        }
+        break;
+      default:
+        return false;
+        break;
+    }
+  }
+  return false;
+}
+
+inline bool isArithmeticPrimitive(CallExpr *ce) {
+  if(ce->isPrimitive()) {
+    switch(ce->primitive->tag) {
+      case PRIM_ADD:
+      case PRIM_SUBTRACT:
+      case PRIM_MULT:
+      case PRIM_DIV:
+      case PRIM_MOD:
+      case PRIM_LSH:
+      case PRIM_RSH:
+        return true;
+        break;
+      default:
+        return false;
+        break;
+    }
   }
   return false;
 }

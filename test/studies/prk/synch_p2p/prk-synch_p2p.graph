@@ -1,8 +1,5 @@
 perfkeys: Rate (MFlops/s): 
 files: p2p-serial-fast.dat
 graphkeys: serial-fast
-graphtitle: synch_p2p
+graphtitle: PRK synch_p2p
 ylabel: Rate (MFlops/s)
-graphname: prk-synch_p2p
-
-

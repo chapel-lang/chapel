@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
-
 #include "expr.h"
 
 #include "alist.h"
@@ -35,13 +31,19 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "virtualDispatch.h"
 #include "WhileStmt.h"
 
+
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <inttypes.h>
 #include <ostream>
 #include <stack>
 
@@ -4416,7 +4418,8 @@ GenRet CallExpr::codegenPrimitive() {
       // be enough to cast integers that are smaller than standard C int for
       // target architecture. However, there was no easy way of obtaining that
       // at the time of writing this piece. Engin
-      if (dst == src && !(is_int_type(dst) || is_uint_type(dst)) ) {
+      if (dst == src && !(is_int_type(dst) || is_uint_type(dst) ||
+                          is_real_type(dst)) ) {
         ret = srcGen;
 
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {

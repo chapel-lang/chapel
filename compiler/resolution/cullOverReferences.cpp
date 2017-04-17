@@ -935,7 +935,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       Expr* iterable = move->get(2);
 
-      // If the preceeding statement is a PRIM_MOVE setting
+      // If the preceding statement is a PRIM_MOVE setting
       // moveAddr, use its argument as the iterable.
       if (SymExpr* iterableSe = toSymExpr(iterable)) {
         CallExpr* prev = toCallExpr(move->prev);
@@ -1008,7 +1008,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       INT_ASSERT(followerFor);
       followerForLoop = followerFor;
 
-      // Set the detailsVector based uppon the follower loop
+      // Set the detailsVector based upon the follower loop
       Symbol* followerIndex = followerFor->indexGet()->symbol();
       Symbol* followerIterator = followerFor->iteratorGet()->symbol();
 

@@ -25,7 +25,7 @@ proc main() {
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
+  forall ((y, xelt), pix) in zip(dynamic(image.domain, chunkSize), image) {
 
     // TODO: split x/y dimensions in forall loop and hoist the following?
     const ci = yvals[y];
@@ -46,13 +46,10 @@ proc main() {
         break;
     }
 
-    var buff: eltType;
     for param i in 1..bitsPerElt {
       if (Tr(i) + Ti(i) <= limit) then       // if 'C' is within the limit,
-        buff |= 0x1 << (8-i);                //   turn the low pixel on
+        pix |= 0x1 << (8-i);                //   turn the low pixel on
     }
-
-    image[y, xelt] = buff;                   // store the pixel buffer
   }
 
   //

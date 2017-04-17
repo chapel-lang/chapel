@@ -1,0 +1,8 @@
+internal error: ReplicatedDist / insertWideReferences / task intents
+
+Something about this code is triggering an internal error in
+insertWideReferences seemingly related to task intents.
+
+If I convert the forall loop into a whole-array assignment, the
+problem goes away (which probably isn't surprising given the lack of
+task-intent support in that context?)

@@ -659,7 +659,7 @@ module ChapelArray {
 
   //
   // Returns true if 'arr' is a DefaultRectangular array or is an ArrayView
-  // over a DefaultRetangular array.
+  // over a DefaultRectangular array.
   //
   // 'arr' can be a full-fledged array type or a class that inherits from
   // BaseArr

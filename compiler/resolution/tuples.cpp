@@ -32,6 +32,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 #include <cstdlib>
 #include <inttypes.h>
@@ -507,7 +508,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 * so that it implements the required specialized default initialization.      *
 *                                                                             *
 * Noakes 2017/03/08: This function should be revisited when records with      *
-* initializers are complete to avoid unncessary copying i.e. it should be     *
+* initializers are complete to avoid unnecessary copying i.e. it should be    *
 * possible to invoke the initializer directly on the appropriate element.     *
 *                                                                             *
 ************************************** | *************************************/
@@ -541,7 +542,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
     Symbol*     elem    = new VarSymbol(astr("elt_", name), type);
     Symbol*     symName = new_CStringSymbol(name);
 
-    // Ensure normalize doensn't try to auto destroy this
+    // Ensure normalize doesn't try to auto destroy this
     elem->addFlag(FLAG_NO_AUTO_DESTROY);
 
     fn->body->insertAtTail(new DefExpr(elem, NULL, type->symbol));

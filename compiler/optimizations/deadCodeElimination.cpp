@@ -351,7 +351,7 @@ static void deadStringLiteralElimination() {
     // There is not a principled way to determine if other passes
     // have changed in a way that would confuse this pass.
     //
-    // A quick review of a portion of test/release/examles shows that
+    // A quick review of a portion of test/release/examples shows that
     // this pass removes 85 - 95% of the string literals.  Signal an
     // error if this pass doesn't reclaim at least 10% of all string
     // literals unless this is minimal modules

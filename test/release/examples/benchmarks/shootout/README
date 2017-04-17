@@ -13,9 +13,11 @@ At present, this directory contains the following codes:
 
     binarytrees.chpl    : Allocates and deallocates many, many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
+    chameneosredux-fast.chpl : A tuned version of chaneneosredux.chpl
     fannkuchredux.chpl  : Performs many operations on small arrays
     knucleotide.chpl    : Count the frequencies of specific nucleotide sequences
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
+    mandelbrot-fast.chpl: An uglier but faster version of mandelbrot.chpl
     meteor.chpl         : Performs a parallel search for all solutions to a
                           puzzle
     meteor-fast.chpl    : A less readable, but much faster version of meteor.
