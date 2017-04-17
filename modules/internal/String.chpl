@@ -1747,10 +1747,12 @@ module String {
      :returns: A string with the single character with the ASCII value `i`.
   */
   inline proc asciiToString(i: uint(8)) {
-    var buffer: [0..1] uint(8);
+    var buffer = chpl_here_alloc(2, CHPL_RT_MD_STR_COPY_DATA): bufferType;
     buffer[0] = i;
     buffer[1] = 0;
-    return new string(c_ptrTo(buffer), 1, 2);
+    var s = new string(buffer, 1, 2);
+    chpl_here_free(buffer);
+    return s;
   }
 
 
