@@ -155,12 +155,9 @@ As an example for specifying an I/O style, the code below specifies the minimum 
 
 I/O facilities in Chapel also include several other ways to control I/O
 formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
-with :proc:`channel.readf` and :proc:`channel.writef`.  It is possible to write
-data to strings (see "The write and writeln Methods on Strings" in the Chapel
-language specification) which can then be further modified or combined
-programmatically. Lastly, record or class implementations can provide custom
-functions implementing read or write operations for that type (see
-:ref:`readThis-writeThis-readWriteThis`).
+with :proc:`channel.readf` and :proc:`channel.writef`. Also note that record or
+class implementations can provide custom functions implementing read or write
+operations for that type (see :ref:`readThis-writeThis-readWriteThis`).
 
 .. _about-io-files:
 

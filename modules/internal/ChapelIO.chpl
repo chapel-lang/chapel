@@ -163,15 +163,15 @@ Default ``readThis`` methods are created for all types for which a user-defined
 ``readThis`` method is not provided.  The default ``readThis`` methods are
 defined to read in the output of the default ``writeThis`` method.
 
-Additionally, the Chapel implementation includes ``writeThis`` or methods for
+Additionally, the Chapel implementation includes ``writeThis`` methods for
 built-in types as follows:
 
 * for an array: outputs the elements of the array in row-major order
   where rows are separated by line-feeds and blank lines are used to separate
   other dimensions.
-* for a `domain`: outputs the dimensions of the domain enclosed by
+* for a domain: outputs the dimensions of the domain enclosed by
   ``{`` and ``}``.
-* for a `range`: output the lower bound of the range, output ``..``,
+* for a range: output the lower bound of the range, output ``..``,
   then output the upper bound of the range.  If the stride of the range
   is not ``1``, output the word ``by`` and then the stride of the range.
   If the range has special alignment, output the word ``align`` and then the
