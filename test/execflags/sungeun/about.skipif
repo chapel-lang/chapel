@@ -6,3 +6,4 @@ COMPOPTS <= --verify
 COMPOPTS <= --llvm
 COMPOPTS <= --incremental
 COMPOPTS <= --denormalize
+COMPOPTS <= --cache-remote
