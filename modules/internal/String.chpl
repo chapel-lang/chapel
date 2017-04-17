@@ -1750,8 +1750,7 @@ module String {
     var buffer = chpl_here_alloc(2, CHPL_RT_MD_STR_COPY_DATA): bufferType;
     buffer[0] = i;
     buffer[1] = 0;
-    var s = new string(buffer, 1, 2);
-    chpl_here_free(buffer);
+    var s = new string(buffer, 1, 2, owned=true, needToCopy=false);
     return s;
   }
 
