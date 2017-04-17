@@ -49,7 +49,7 @@ $(RE2_BUILD_SUBDIR):
 	mkdir -p $@
 
 $(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
-	cd re2-src && \
+	cd $(RE2_SUBDIR) && \
 	$(MAKE) clean && \
 	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) obj/libre2.a && \
 	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) prefix=$(RE2_INSTALL_DIR) install-static && \
