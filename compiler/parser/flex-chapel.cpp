@@ -3474,7 +3474,7 @@ static int processBlockComment(yyscan_t scanner) {
   int         labelIndex   = (len >= 2) ? 2 : 0;
 
   int         c            = 0;
-  int         d            = 0;
+  int         d            = 1;
   bool        startSignifier = false;
   int         lastc        = 0;
   int         depth        = 1;
@@ -3512,32 +3512,18 @@ static int processBlockComment(yyscan_t scanner) {
       addChar(c);
     }
 
-    if(c == fDocsCommentLabel[d])
+    if(c == fDocsCommentLabel[len - d])
       d++;
-    if(d == len && len != 0)
-      startSignifier = true;
+    else
+      d = 1;
 
     if (lastc == '*' && c == '/') { // close comment
-      bool match = true;
-      if(len != 0 && startSignifier) {
-        std::string endSignifier = stringBuffer.substr(stringBuffer.length() - len);
-        std::reverse(endSignifier.begin(), endSignifier.end());
-        for(int i = 0 ; i < len ; ++i) {
-          if( endSignifier[i] != fDocsCommentLabel[i] )
-            match = false;
-        }
-      }
-      if(len == 0 && lastlastc != '/')
-        depth--;
-      else if(startSignifier && match) {
-        depth--;
-      }
-      //else if(match && len != 0)
-      //  depth--;
-      //else if(len == 0 && lastlastc != '/')
-      //  depth--;
-      else if(!startSignifier && lastlastc != '/')
-        depth--;        
+      if(d == len + 1 && labelIndex == len)
+       depth--;
+      else if(labelIndex == -1  && lastlastc != '/')
+       depth--;
+      else if(labelIndex == 0 && lastlastc != '/')
+       depth--;
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
