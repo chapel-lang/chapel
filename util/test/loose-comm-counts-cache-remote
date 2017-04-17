@@ -18,15 +18,15 @@ $HALF_ABS_TOLERANCE=$ABS_TOLERANCE/2.0;
 @out_lines = ( );
 @good_lines = ( );
 
-print STDERR "IN PREDIFF $testname $execout $goodfile\n";
-for my $arg (@ARGV) {
-  print STDERR $arg . "\n";
-}
+#print STDERR "IN PREDIFF $testname $execout $goodfile\n";
+#for my $arg (@ARGV) {
+#  print STDERR $arg . "\n";
+#}
 
 # Do nothing if .good file doesn't have .cache-remote in it.
 if ($goodfile =~ /cache-remote/) {
 
-print STDERR "GOOD OK\n";
+#print STDERR "GOOD OK\n";
 
   open TMPFILE, "$execout" or die "can't open $execout $!";
   @out_lines = <TMPFILE>;
