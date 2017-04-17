@@ -1,3 +1,7 @@
-badClose.doc.chpl:1: unterminated comment started here
-badClose.doc.chpl:5: EOF in comment
-cat: docs/badClose.doc.txt: No such file or directory
+Warning:1:chpldoc comment not closed, ignoring comment: This comment is not closed properly
+badClose.doc
+
+Usage:
+   use badClose.doc;
+
+   proc bad()

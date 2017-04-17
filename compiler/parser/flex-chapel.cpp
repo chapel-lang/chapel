@@ -3475,7 +3475,7 @@ static int processBlockComment(yyscan_t scanner) {
 
   int         c            = 0;
   int         d            = 1;
-  bool        startSignifier = false;
+  bool        badComment = false;
   int         lastc        = 0;
   int         depth        = 1;
   std::string wholeComment = "";
@@ -3517,14 +3517,15 @@ static int processBlockComment(yyscan_t scanner) {
     else
       d = 1;
 
-    if (lastc == '*' && c == '/') { // close comment
-      if(d == len + 1 && labelIndex == len)
-       depth--;
-      else if(labelIndex == -1  && lastlastc != '/')
-       depth--;
-      else if(labelIndex == 0 && lastlastc != '/')
-       depth--;
-
+    if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
+      if(labelIndex == len && d != len + 1) {
+        depth--;
+        badComment = true;
+      }
+      else
+        depth--;
+      
+      d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
       // keep track of the start of the last nested comment
@@ -3570,9 +3571,16 @@ static int processBlockComment(yyscan_t scanner) {
 
       location = wholeComment.find("\\x09");
     }
+    if(!badComment)
+      yyLval->pch = astr(wholeComment.c_str());
+    else {
+      
+      ParserContext context(scanner);
 
-    yyLval->pch = astr(wholeComment.c_str());
-
+      fprintf(stderr, "Warning:%d:chpldoc comment not closed, ignoring comment:%s\n",
+              startLine, wholeComment.c_str());
+      yyLval->pch = NULL;
+    }
   } else {
     yyLval->pch = NULL;
   }
