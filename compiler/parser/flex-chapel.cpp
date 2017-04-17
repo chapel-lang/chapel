@@ -3574,10 +3574,8 @@ static int processBlockComment(yyscan_t scanner) {
     if(!badComment)
       yyLval->pch = astr(wholeComment.c_str());
     else {
-      
-      ParserContext context(scanner);
 
-      fprintf(stderr, "Warning:%d:chpldoc comment not closed, ignoring comment:%s\n",
+      fprintf(stderr, "Warning:%d: chpldoc comment not closed, ignoring comment:%s\n",
               startLine, wholeComment.c_str());
       yyLval->pch = NULL;
     }

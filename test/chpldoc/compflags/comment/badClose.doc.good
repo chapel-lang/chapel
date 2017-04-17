@@ -1,4 +1,4 @@
-Warning:1:chpldoc comment not closed, ignoring comment: This comment is not closed properly
+Warning:1: chpldoc comment not closed, ignoring comment: This comment is not closed properly
 badClose.doc
 
 Usage:
