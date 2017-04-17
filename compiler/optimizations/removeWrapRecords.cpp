@@ -190,6 +190,15 @@ removeWrapRecords() {
           }
         }
       }
+    } else if(call->isPrimitive(PRIM_CAST)) {
+      // Replace PRIM_CAST ref(_array(ArrayType)) tmp
+      // with PRIM_CAST ref(ArrayType) tmp
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        Type* type = getWrapRecordBaseType(se->var->type);
+        if (type) {
+          se->var = type->symbol;
+        }
+      }
     }
   }
 
