@@ -281,14 +281,18 @@ checkFunction(FnSymbol* fn) {
       if (notInAFunction)
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");
       else {
-        SymExpr* sym = toSymExpr(call->get(1));
-        if (sym && sym->symbol() == gVoid)
+        if (call->numActuals() == 0) {
           numVoidReturns++;
-        else {
-          if (isIterator)
-            USR_FATAL_CONT(call, "returning a value in an iterator");
-          else
-            numNonVoidReturns++;
+        } else {
+          SymExpr* sym = toSymExpr(call->get(1));
+          if (sym && sym->symbol() == gVoid)
+            numVoidReturns++;
+          else {
+            if (isIterator)
+              USR_FATAL_CONT(call, "returning a value in an iterator");
+            else
+              numNonVoidReturns++;
+          }
         }
       }
     }

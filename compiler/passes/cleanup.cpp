@@ -149,6 +149,19 @@ destructureTupleAssignment(CallExpr* call) {
   }
 }
 
+
+static void insertVoidReturnSymbols(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+
+  if (call->numActuals() == 0) {
+    FnSymbol* fn = call->getFunction();
+    INT_ASSERT(fn);
+    call->insertAtTail(gVoid);
+    fn->addFlag(FLAG_NO_RETURN_VALUE);
+  }
+}
+
+
 static void flatten_primary_methods(FnSymbol* fn) {
   if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
     Expr* insertPoint = ts->defPoint;
@@ -238,6 +251,8 @@ void cleanup() {
     } else if (CallExpr* call = toCallExpr(ast1)) {
       if (call->isNamed("_build_tuple")) {
         destructureTupleAssignment(call);
+      } else if (call->isPrimitive(PRIM_RETURN)) {
+        insertVoidReturnSymbols(call);
       }
 
     } else if (DefExpr* def = toDefExpr(ast1)) {
