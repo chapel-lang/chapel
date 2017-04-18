@@ -256,7 +256,7 @@ Expr* preFold(CallExpr* call) {
     if (field && (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))) {
       result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
       call->replace(result);
-    } else if (isInstantiatedField(field)) {
+    } else if (field && isInstantiatedField(field)) {
       VarSymbol* tmp = newTemp("_instantiated_field_tmp_");
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) && field->name[0] == 'x')
@@ -265,8 +265,10 @@ Expr* preFold(CallExpr* call) {
         result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
       call->replace(new CallExpr(PRIM_TYPEOF, tmp));
-    } else
+    } else {
+      // Possibly indicated by 'determineQueriedField' returning NULL
       USR_FATAL(call, "invalid query -- queried field must be a type or parameter");
+    }
   } else if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) ||
              call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
     result = createFunctionAsValue(call);
@@ -1031,13 +1033,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   const char*        flname = use->unresolved;
 
   Vec<FnSymbol*>     visibleFns;
-  Vec<BlockStmt*>    visited;
 
-  getVisibleFunctions(getVisibilityBlock(call),
-                      flname,
-                      visibleFns,
-                      visited,
-                      call);
+  getVisibleFunctions(flname, call, visibleFns);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",

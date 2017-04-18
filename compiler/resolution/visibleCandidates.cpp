@@ -28,33 +28,35 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static void doGatherCandidates(CallInfo&                  info,
-                               Vec<FnSymbol*>&            visibleFns,
-                               bool                       compilerGenerated,
+static void       doGatherCandidates(CallInfo&                  info,
+                                     Vec<FnSymbol*>&            visibleFns,
+                                     bool                       generated,
+                                     Vec<ResolutionCandidate*>& candidates);
+
+static void       filterCandidate(CallInfo&                  info,
+                                  FnSymbol*                  fn,
+                                  Vec<ResolutionCandidate*>& candidates);
+
+static void      filterCandidate(CallInfo&                  info,
+                                 ResolutionCandidate*       currCandidate,
+                                 Vec<ResolutionCandidate*>& candidates);
+
+static void      filterConcrete(CallInfo&                  info,
+                                ResolutionCandidate*       currCandidate,
+                                Vec<ResolutionCandidate*>& candidates);
+
+static void      resolveTypeConstructor(CallInfo& info,
+                                        FnSymbol* fn);
+
+static void      filterGeneric(CallInfo&                  info,
+                               ResolutionCandidate*       currCandidate,
                                Vec<ResolutionCandidate*>& candidates);
 
-static void filterCandidate(CallInfo&                  info,
-                            FnSymbol*                  fn,
-                            Vec<ResolutionCandidate*>& candidates);
+static int       varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs);
 
-static void filterCandidate(CallInfo&                  info,
-                            ResolutionCandidate*       currCandidate,
-                            Vec<ResolutionCandidate*>& candidates);
+static bool      isVarargSizeExpr (SymExpr* se, CallExpr* parent);
 
-static void filterConcrete(CallInfo&                  info,
-                           ResolutionCandidate*       currCandidate,
-                           Vec<ResolutionCandidate*>& candidates);
-
-static void resolveTypeConstructor(CallInfo& info,
-                                   FnSymbol* fn);
-
-static void filterGeneric(CallInfo&                  info,
-                          ResolutionCandidate*       currCandidate,
-                          Vec<ResolutionCandidate*>& candidates);
-
-static int  varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs);
-
-static bool isVarargSizeExpr (SymExpr* se, CallExpr* parent);
+static FnSymbol* expandVarArgs(FnSymbol* origFn, CallInfo& info);
 
 /************************************* | **************************************
 *                                                                             *
@@ -186,7 +188,7 @@ static void filterCandidate(CallInfo&                  info,
 static void filterConcrete(CallInfo&                  info,
                            ResolutionCandidate*       currCandidate,
                            Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn != NULL) {
     resolveTypedefedArgTypes(currCandidate->fn);
@@ -290,7 +292,7 @@ static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
 static void filterGeneric(CallInfo&                  info,
                           ResolutionCandidate*       currCandidate,
                           Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn                     != NULL &&
       currCandidate->computeAlignment(info) == true &&
@@ -316,114 +318,219 @@ static void filterGeneric(CallInfo&                  info,
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* Maintain a cache from a vargArgs function to the function with the required *
+* number of formals.                                                          *
 *                                                                             *
 ************************************** | *************************************/
 
-static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
-                                         ArgSymbol* formal,
-                                         SymExpr*   sym);
+typedef std::map<FnSymbol*, std::vector<FnSymbol*>*> ExpandVarArgsMap;
 
-static bool needVarArgTupleAsWhole(BlockStmt* ast,
-                                   int        numArgs,
-                                   ArgSymbol* formal);
+static ExpandVarArgsMap sCache;
 
-FnSymbol* expandIfVarArgs(FnSymbol* origFn, int numActuals) {
-  bool      genericArgSeen = false;
-  FnSymbol* workingFn      = origFn;
+static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
+  ExpandVarArgsMap::iterator it     = sCache.find(fn);
+  FnSymbol*                  retval = NULL;
 
-  SymbolMap substitutions;
+  if (it != sCache.end()) {
+    std::vector<FnSymbol*>* fns = it->second;
 
-  static Map<FnSymbol*,Vec<FnSymbol*>*> cache;
-
-  // check for cached stamped out function
-  if (Vec<FnSymbol*>* cfns = cache.get(origFn)) {
-    forv_Vec(FnSymbol, cfn, *cfns) {
-      if (cfn->numFormals() == numActuals) return cfn;
+    for (size_t i = 0; i < (*fns).size() && retval == NULL; i++) {
+      if ((*fns)[i]->numFormals() == numActuals) {
+        retval = (*fns)[i];
+      }
     }
   }
 
-  for_formals(formal, origFn) {
+  return retval;
+}
 
-    if (workingFn != origFn) {
-      formal = toArgSymbol(substitutions.get(formal));
+static void cacheExtend(FnSymbol* fn, FnSymbol* expansion) {
+  ExpandVarArgsMap::iterator it = sCache.find(fn);
+
+  if (it != sCache.end()) {
+    it->second->push_back(expansion);
+
+  } else {
+    std::vector<FnSymbol*>* fns = new std::vector<FnSymbol*>();
+
+    fns->push_back(expansion);
+
+    sCache[fn] = fns;
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* If the function accepts a variable number of args, map it to a function     *
+* with the necessary number of formals.                                       *
+*                                                                             *
+* 2017/04/05 There are several points at which this implementation assumes    *
+* there is only one set of varargs.                                           *
+*                                                                             *
+************************************** | *************************************/
+
+static bool hasVariableArgs(FnSymbol* fn);
+
+FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
+  FnSymbol* retval = fn;
+
+  if (hasVariableArgs(fn) == true) {
+    retval = cacheLookup(fn, info.actuals.n);
+
+    // No substitution found
+    if (retval == NULL) {
+      retval = expandVarArgs(fn, info);
+
+      if (retval != NULL) {
+        cacheExtend(fn, retval);
+      }
     }
+  }
 
-    if (!genericArgSeen &&
-        formal->variableExpr &&
-        !isDefExpr(formal->variableExpr->body.tail)) {
-      resolveBlockStmt(formal->variableExpr);
+  return retval;
+}
+
+static bool hasVariableArgs(FnSymbol* fn) {
+  bool retval = false;
+
+  for_formals(formal, fn) {
+    if (formal->variableExpr != NULL) {
+      retval = true;
     }
+  }
 
-    /*
-     * Set genericArgSeen to true if a generic argument appears before the
-     * argument with the variable expression.
-     */
+  return retval;
+}
 
-    // INT_ASSERT(arg->type);
-    // Adding 'ref' intent to the "ret" arg of
-    //  inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
-    // in SysBasic.chpl:150 causes a segfault.
-    // The addition of the arg->type test in the following conditional is a
-    // workaround.
-    // A better approach would be to add a check that each formal of a
-    // function has a type (if that can be expected) and then fix the
-    // fault where it occurs.
-    if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-      genericArgSeen = true;
-    }
+/************************************* | **************************************
+*                                                                             *
+* The function is known to have at least one var-args set.                    *
+*                                                                             *
+* Portions of the current implementation assume that there is exactly one     *
+* var-args set.  Handling multiple sets is complex for both the user and      *
+* the implementation.                                                         *
+*                                                                             *
+* This constraint is enforced by expandVarArgs() and is then implicitly       *
+* assumed by the helper functions.                                            *
+*                                                                             *
+************************************** | *************************************/
 
-    if (!formal->variableExpr) {
-      continue;
-    }
+static void      expandVarArgsFixed(FnSymbol* origFn, CallInfo& info);
 
-    // Handle unspecified variable number of arguments.
-    if (DefExpr* def = toDefExpr(formal->variableExpr->body.tail)) {
-      // This assumes a single set of varargs.
-      int numCopies = numActuals - workingFn->numFormals() + 1;
-      if (numCopies <= 0) {
-        if (workingFn != origFn) delete workingFn;
-        return NULL;
+static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info);
+
+static void      handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
+                                              ArgSymbol* formal,
+                                              SymExpr*   sym);
+
+static bool      needVarArgTupleAsWhole(BlockStmt* ast,
+                                        int        numArgs,
+                                        ArgSymbol* formal);
+
+static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
+  int       numVarArgs      = 0;
+  bool      isQueryVariable = false;
+  FnSymbol* retval          = NULL;
+
+  for_formals(formal, fn) {
+    if (formal->variableExpr != NULL) {
+      if (isDefExpr(formal->variableExpr->body.tail) == true) {
+        isQueryVariable = true;
       }
 
-      if (workingFn == origFn) {
-        workingFn = origFn->copy(&substitutions);
-        INT_ASSERT(! workingFn->hasFlag(FLAG_RESOLVED));
-        workingFn->addFlag(FLAG_INVISIBLE_FN);
-
-        origFn->defPoint->insertBefore(new DefExpr(workingFn));
-
-        formal = static_cast<ArgSymbol*>(substitutions.get(formal));
-      }
-
-      // newSym queries the number of varargs. Replace it with int literal.
-      Symbol*  newSym     = substitutions.get(def->sym);
-      SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
-      newSymExpr->astloc = newSym->astloc;
-      newSym->defPoint->replace(newSymExpr);
-
-      subSymbol(workingFn, newSym, new_IntSymbol(numCopies));
-
-      handleSymExprInExpandVarArgs(workingFn, formal, newSymExpr);
-      genericArgSeen = false;
-
-    } else if (SymExpr* sym = toSymExpr(formal->variableExpr->body.tail)) {
-
-      handleSymExprInExpandVarArgs(workingFn, formal, sym);
-
-    } else if (!workingFn->hasFlag(FLAG_GENERIC)) {
-      INT_FATAL("bad variableExpr");
+      numVarArgs = numVarArgs + 1;
     }
   }
 
-  Vec<FnSymbol*>* cfns = cache.get(origFn);
-  if (cfns == NULL) {
-    cfns = new Vec<FnSymbol*>();
-  }
-  cfns->add(workingFn);
-  cache.put(origFn, cfns);
+  if (numVarArgs == 0) {
+    INT_ASSERT(false);
 
-  return workingFn;
+  } else if (numVarArgs == 1) {
+
+    if (isQueryVariable == false) {
+      expandVarArgsFixed(fn, info);
+
+      retval = fn;
+
+    } else {
+      retval = expandVarArgsQuery(fn, info);
+    }
+
+  } else {
+    USR_FATAL(fn, "No support for a function with multiple vararg sets");
+  }
+
+  return retval;
+}
+
+// No query variable e.g. proc foo(x, y, z ... 5)
+//                   or   proc foo(x, y, z ... paramValue)
+static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
+  bool genericArgSeen = false;
+
+  for_formals(formal, fn) {
+    if (BlockStmt* block = formal->variableExpr) {
+      if (genericArgSeen == false) {
+        resolveBlockStmt(block);
+      }
+
+      if (SymExpr* sym = toSymExpr(block->body.tail)) {
+        handleSymExprInExpandVarArgs(fn, formal, sym);
+
+      } else if (fn->hasFlag(FLAG_GENERIC) == false) {
+        INT_FATAL("bad variableExpr");
+      }
+
+      // It is certain that there is just one var-arg set to handle
+      break;
+
+    } else {
+      if (formal->type && formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+        genericArgSeen = true;
+      }
+    }
+  }
+}
+
+
+// A  query variable e.g. proc foo(x, y, z ... ?N)
+static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
+  FnSymbol* retval = NULL;
+
+  for_formals(formal, fn) {
+    if (BlockStmt* block = formal->variableExpr) {
+      int numCopies = info.actuals.n - fn->numFormals() + 1;
+
+      if (numCopies > 0) {
+        SymbolMap substitutions;
+
+        retval = fn->copy(&substitutions);
+        retval->addFlag(FLAG_INVISIBLE_FN);
+
+        fn->defPoint->insertBefore(new DefExpr(retval));
+
+        formal = toArgSymbol(substitutions.get(formal));
+
+        // newSym queries the number of varargs. Replace it with int literal.
+        Symbol*  defSym     = toDefExpr(block->body.tail)->sym;
+        Symbol*  newSym     = substitutions.get(defSym);
+        SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
+
+        newSymExpr->astloc = newSym->astloc;
+
+        newSym->defPoint->replace(newSymExpr);
+
+        subSymbol(retval, newSym, new_IntSymbol(numCopies));
+
+        handleSymExprInExpandVarArgs(retval, formal, newSymExpr);
+      }
+
+      // It is certain that there is just one var-arg set to handle
+      break;
+    }
+  }
+
+  return retval;
 }
 
 

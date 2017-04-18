@@ -28,15 +28,12 @@ class CallInfo;
 class Expr;
 class FnSymbol;
 
-void       findVisibleFunctions(CallExpr*       call,
-                                CallInfo&       info,
+void       findVisibleFunctions(CallInfo&       info,
                                 Vec<FnSymbol*>& visibleFns);
 
-BlockStmt* getVisibleFunctions(BlockStmt*       block,
-                               const char*      name,
-                               Vec<FnSymbol*>&  visibleFns,
-                               Vec<BlockStmt*>& visited,
-                               CallExpr*        callOrigin);
+void       getVisibleFunctions(const char*      name,
+                               CallExpr*        call,
+                               Vec<FnSymbol*>&  visibleFns);
 
 BlockStmt* getVisibilityBlock(Expr* expr);
 

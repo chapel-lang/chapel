@@ -4418,7 +4418,8 @@ GenRet CallExpr::codegenPrimitive() {
       // be enough to cast integers that are smaller than standard C int for
       // target architecture. However, there was no easy way of obtaining that
       // at the time of writing this piece. Engin
-      if (dst == src && !(is_int_type(dst) || is_uint_type(dst)) ) {
+      if (dst == src && !(is_int_type(dst) || is_uint_type(dst) ||
+                          is_real_type(dst)) ) {
         ret = srcGen;
 
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {

@@ -3341,7 +3341,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   Vec<ResolutionCandidate*> candidates;
 
   // First, try finding candidates without delegation
-  findVisibleFunctions(call, info, visibleFns);
+  findVisibleFunctions (info, visibleFns);
   findVisibleCandidates(info, visibleFns, candidates);
 
   bool retry_find = false;
@@ -3367,7 +3367,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     candidates.clear();
 
     // try again to include forwarded functions
-    findVisibleFunctions(call, info, visibleFns);
+    findVisibleFunctions (info, visibleFns);
     findVisibleCandidates(info, visibleFns, candidates);
   }
 

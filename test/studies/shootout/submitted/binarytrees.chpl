@@ -3,7 +3,6 @@
 
    contributed by Casey Battaglino, Ben Harshbarger, and Brad Chamberlain
    derived from the GNU C version by Jeremy Zerfas
-   *reset*
 */
 
 
@@ -21,14 +20,14 @@ proc main() {
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
   //
-  const strTree = Tree.build(strDepth);
+  const strTree = new Tree(strDepth);
   writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   delete strTree;
 
   //
   // Build the long-lived tree.
   //
-  const llTree = Tree.build(maxDepth);
+  const llTree = new Tree(maxDepth);
 
   //
   // Iterate over the depths in parallel, dynamically assigning them
@@ -36,11 +35,11 @@ proc main() {
   // their sums, and free them.
   //
   forall depth in dynamic(depths, chunkSize=1) {
-    const iterations = 1 << (maxDepth - depth + minDepth);
+    const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
-
+			
     for i in 1..iterations {
-      const t = Tree.build(depth);
+      const t = new Tree(depth);
       sum += t.sum();
       delete t;
     }
@@ -66,14 +65,16 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  const left, right: Tree;
+  var left, right: Tree;
 
-  proc type build(depth): Tree {
-    if depth <= 0 then
-      return new Tree();
-    else
-      return new Tree(Tree.build(depth-1),
-                      Tree.build(depth-1));
+  //
+  // A Tree-building initializer
+  //
+  proc init(depth) {
+    if depth > 0 {
+      left  = new Tree(depth-1);
+      right = new Tree(depth-1);
+    }
   }
 
   //
