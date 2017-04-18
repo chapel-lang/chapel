@@ -698,6 +698,18 @@ proc getRuns(Data:[?Dom] ?eltType, minrun:int=1, comparator:?rec=defaultComparat
   }while(base<high);  
   return (runs,n);   
 }
+
+/*
+   Merges consecutive runs for timSort
+   
+   :arg Data: The array to be scanned
+   :type Data: [] `eltType`
+   :arg run1: domain of first run
+   :arg run2: domain of second run
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+ */
+ 
 proc _TimSortMerge(Data:[?Dom] ?eltType,run1:domain,run2:domain,comparator:?rec=defaultComparator) {
   const stride=Dom.stride;
   var s1,s2:int;
@@ -775,6 +787,7 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1:domain,run2:domain,comparator:?rec=
           }
           if(d>stride){
             d>>=1;
+            d-=stride;
             Data[k-d..k by stride] = tmp[i-d..i by stride];
             i-=d;
             k-=d;
@@ -796,9 +809,7 @@ proc _TimSortMerge(Data:[?Dom] ?eltType,run1:domain,run2:domain,comparator:?rec=
           if(d>stride){
              
             d>>=1;
-            d-=stride;
-            //d-=stride;
-            
+            d-=stride;            
             for (x,y) in zip(k-d..k by -stride,j-d..j by -stride){
               Data[x]=Data[y];
             }
