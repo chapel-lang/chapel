@@ -1498,7 +1498,7 @@ GenRet codegenAdd(GenRet a, GenRet b)
       if(values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = info->builder->CreateFAdd(values.a, values.b);
       } else {
-        ret.val = info->builder->CreateAdd(values.a, values.b);
+        ret.val = info->builder->CreateAdd(values.a, values.b, "", false, values.isSigned);
       }
       ret.isUnsigned = !values.isSigned;
     }
