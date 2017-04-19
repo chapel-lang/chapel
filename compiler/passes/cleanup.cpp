@@ -150,6 +150,11 @@ destructureTupleAssignment(CallExpr* call) {
 }
 
 
+//
+// If call is an empty return statement, e.g. "return;"
+// then change it into a return of the 'void' symbol: "return _void;"
+// and mark the function it is in with FLAG_NO_RETURN_VALUE.
+//
 static void insertVoidReturnSymbols(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_RETURN));
 
@@ -157,6 +162,27 @@ static void insertVoidReturnSymbols(CallExpr* call) {
     FnSymbol* fn = call->getFunction();
     INT_ASSERT(fn);
     call->insertAtTail(gVoid);
+    fn->addFlag(FLAG_NO_RETURN_VALUE);
+  }
+}
+
+//
+// Mark functions with no return statements and functions with only empty
+// return statements with FLAG_NO_RETURN_VALUE. Change empty return
+// statements to return the value '_void'.
+//
+static void fixup_void_return_fn(FnSymbol* fn) {
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn, callExprs);
+  bool foundReturn = false;
+
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_RETURN)) {
+      foundReturn = true;
+      insertVoidReturnSymbols(call);
+    }
+  }
+  if (!foundReturn) {
     fn->addFlag(FLAG_NO_RETURN_VALUE);
   }
 }
@@ -251,8 +277,6 @@ void cleanup() {
     } else if (CallExpr* call = toCallExpr(ast1)) {
       if (call->isNamed("_build_tuple")) {
         destructureTupleAssignment(call);
-      } else if (call->isPrimitive(PRIM_RETURN)) {
-        insertVoidReturnSymbols(call);
       }
 
     } else if (DefExpr* def = toDefExpr(ast1)) {
@@ -260,6 +284,7 @@ void cleanup() {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);
         add_parens_to_deinit_fns(fn);
+        fixup_void_return_fn(fn);
       }
     }
   }
