@@ -187,7 +187,7 @@ static bool isReturnVoid(FnSymbol* fn) {
   } else {
     std::vector<CallExpr*> calls;
 
-    collectCallExprs(fn->body, calls);
+    collectMyCallExprs(fn->body, calls, fn);
 
     for (size_t i = 0; i < calls.size() && retval == true; i++) {
       if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
