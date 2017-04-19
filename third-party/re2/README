@@ -39,13 +39,20 @@ follows, assuming the CWD is $CHPL_HOME/third-party/re2/:
 
   # create a tarball storing Chapel+RE2 changes
   tar cvzf re2-src.tgz re2-src
+
   # Replace re2-src with a new checkout of RE2's repository
   mv re2-src re2-orig
+
   git clone https://github.com/google/re2 re2-src
   cd re2-src
+
   # Use the previously updated version
   git checkout <version> # <version> is the version last updated to
   cd ..
+
   tar xvzf re2-src.tgz
+
   # Now, re2-src is a git repository with Chapel changes staged.
   # Use the usual git techniques to update, e.g. git commit/git stash, git pull
+  # Be sure to update to a version listed in
+  #   https://github.com/google/re2/releases
