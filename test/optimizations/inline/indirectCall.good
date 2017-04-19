@@ -1,0 +1,1 @@
+indirectCall.chpl:11: error: Detected a cycle back to inlined function 'bar' while inlining 'foo'

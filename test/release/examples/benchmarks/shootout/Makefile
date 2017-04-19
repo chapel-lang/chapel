@@ -5,6 +5,7 @@ CHPL_FLAGS = --fast
 TARGETS = \
 	binarytrees \
 	chameneosredux \
+	chameneosredux-fast \
 	fasta \
 	fannkuchredux \
 	knucleotide \
@@ -38,6 +39,9 @@ binarytrees: binarytrees.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 chameneosredux: chameneosredux.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+chameneosredux-fast: chameneosredux-fast.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 fasta: fasta.chpl

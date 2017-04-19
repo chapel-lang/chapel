@@ -1,44 +1,80 @@
-sparselyCommented.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: sparselyCommented.doc
+
+sparselyCommented.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
    use sparselyCommented.doc;
 
-Submodules for this module are located in the sparselyCommented.doc/ directory
+**Submodules**
 
-   proc method1()
-      Comment for method1 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc method1Commentless()
-   proc body()
-      Comment for method with a body 
+   sparselyCommented.doc/*
 
-   proc bodyCommentless()
-   proc hasArg(val: int)
-      Comment for method with an argument 
+.. function:: proc method1()
 
-   proc hasArgCommentless(val: int)
-   proc argAndBody(val: int)
-      Comment for method with argument and body 
+   Comment for method1 
 
-   proc argAndBodyCommentless(val: int)
+.. function:: proc method1Commentless()
+
+.. function:: proc body()
+
+   Comment for method with a body 
+
+.. function:: proc bodyCommentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for method with argument and body 
+
+.. function:: proc argAndBodyCommentless(val: int)
+
+.. default-domain:: chpl
+
+.. module:: Other
+
 Other
+=====
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use sparselyCommented.doc.Other;
 
-   proc inside()
-      Comment for method inside module 
+.. function:: proc inside()
 
-   proc insideCommentless()
-   proc body()
-      Comment for method with a body inside module 
+   Comment for method inside module 
 
-   proc bodyCommentless()
-   proc hasArg(val: int)
-      Comment for method with an argument inside module 
+.. function:: proc insideCommentless()
 
-   proc hasArgCommentless(val: int)
-   proc argAndBody(val: int)
-      Comment for method with argument and body inside module 
+.. function:: proc body()
 
-   proc argAndBodyCommentless(val: int)
+   Comment for method with a body inside module 
+
+.. function:: proc bodyCommentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for method with argument and body inside module 
+
+.. function:: proc argAndBodyCommentless(val: int)
+

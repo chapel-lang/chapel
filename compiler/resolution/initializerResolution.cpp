@@ -158,7 +158,7 @@ static void
 filterInitConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                             ResolutionCandidate* currCandidate,
                             CallInfo& info) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) return;
 
@@ -187,7 +187,7 @@ static void
 filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* currCandidate,
                            CallInfo& info) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) return;
 
@@ -397,7 +397,7 @@ void resolveInitCall(CallExpr* call) {
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
-  findVisibleFunctions(call, info, visibleFns);
+  findVisibleFunctions(info, visibleFns);
 
 
   // Modified narrowing down the candidates to operate in an

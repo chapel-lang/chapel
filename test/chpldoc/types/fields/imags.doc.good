@@ -1,15 +1,32 @@
-imags.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: imags.doc
+
+imags.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
    use imags.doc;
 
-   Record: Foo
-      var anImag: imag = 2.0i
-      const bar = 1.0i
-      param baz: imag
-      var anImag2: imag = 2.0i
-         This one has a comment 
-      const bar2 = 1.0i
-         So does this one 
-      param baz2: imag
-         And this one 
+.. record:: Foo
+
+   .. attribute:: var anImag: imag = 2.0i
+
+   .. attribute:: const bar = 1.0i
+
+   .. attribute:: param baz: imag
+
+   .. attribute:: var anImag2: imag = 2.0i
+
+      This one has a comment 
+
+   .. attribute:: const bar2 = 1.0i
+
+      So does this one 
+
+   .. attribute:: param baz2: imag
+
+      And this one 
+

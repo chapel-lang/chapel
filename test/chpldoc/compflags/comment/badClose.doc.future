@@ -1,6 +1,0 @@
-bug: does not complain about improperly closed chpldoc comment
-
-chpldoc should recognize when a comment has not been closed according
-to the specified opening sequence it began with and thus would result
-in erroneous behavior.  Such comments should be skipped and the user
-should be warned that it was skipped.

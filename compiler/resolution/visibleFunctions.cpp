@@ -29,6 +29,7 @@
 #include "symbol.h"
 
 #include <map>
+#include <set>
 
 class VisibleFunctionBlock {
 public:
@@ -73,9 +74,10 @@ static void  verifyTaskFnCall(BlockStmt* parent, CallExpr* call);
 
 static Expr* parentToMarker(BlockStmt* parent, CallExpr* call);
 
-void findVisibleFunctions(CallExpr*       call,
-                          CallInfo&       info,
+void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
+  CallExpr* call = info.call;
+
   //
   // update visible function map as necessary
   //
@@ -85,9 +87,7 @@ void findVisibleFunctions(CallExpr*       call,
 
   if (!call->isResolved()) {
     if (!info.scope) {
-      Vec<BlockStmt*> visited;
-
-      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited, call);
+      getVisibleFunctions(info.name, call, visibleFns);
     } else {
       if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
@@ -379,11 +379,28 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-BlockStmt* getVisibleFunctions(BlockStmt*       block,
-                               const char*      name,
-                               Vec<FnSymbol*>&  visibleFns,
-                               Vec<BlockStmt*>& visited,
-                               CallExpr*        callOrigin) {
+static BlockStmt* getVisibleFunctions(const char*           name,
+                                      CallExpr*             call,
+                                      BlockStmt*            block,
+                                      std::set<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>&       visibleFns);
+
+void getVisibleFunctions(const char*      name,
+                         CallExpr*        call,
+                         Vec<FnSymbol*>&  visibleFns) {
+  BlockStmt*           block    = getVisibilityBlock(call);
+  std::set<BlockStmt*> visited;
+
+  getVisibleFunctions(name, call, block, visited, visibleFns);
+}
+
+static BlockStmt* getVisibleFunctions(const char*           name,
+                                      CallExpr*             call,
+                                      BlockStmt*            block,
+                                      std::set<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>&       visibleFns) {
+  BlockStmt* retval = NULL;
+
   //
   // all functions in standard modules are stored in a single block
   //
@@ -394,78 +411,98 @@ BlockStmt* getVisibleFunctions(BlockStmt*       block,
   // modules like List and Sort.  This implementation needs to be linked
   // to the computation of the standardModuleSet.
   //
-  if (standardModuleSet.set_in(block))
+  if (standardModuleSet.set_in(block)) {
     block = theProgram->block;
+  }
 
   //
   // avoid infinite recursion due to modules with mutual uses
   //
-  if (visited.set_in(block))
-    return NULL;
+  if (visited.find(block) == visited.end()) {
+    bool canSkipThisBlock = true;
 
-  if (isModuleSymbol(block->parentSymbol))
-    visited.set_add(block);
-
-  bool canSkipThisBlock = true;
-
-  VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-  if (vfb) {
-    canSkipThisBlock = false; // cannot skip if this block defines functions
-    Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
-    if (fns) {
-      forv_Vec(FnSymbol, fn, *fns) {
-        if (fn->isVisible(callOrigin)) {
-          // isVisible checks if the function is private to its defining
-          // module (and in that case, if we are under its defining module)
-          // This ensures that private functions will not be used outside
-          // of their proper scope.
-          visibleFns.add(fn);
-        }
-      }
+    if (isModuleSymbol(block->parentSymbol)) {
+      visited.insert(block);
     }
-  }
 
-  if (block->modUses) {
-    for_actuals(expr, block->modUses) {
-      UseStmt* use = toUseStmt(expr);
-      INT_ASSERT(use);
-      if (use->skipSymbolSearch(name)) {
-        continue;
-      }
-      SymExpr* se = toSymExpr(use->src);
-      INT_ASSERT(se);
-      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        // The use statement could be of an enum instead of a module, but only
-        // modules can define functions.
-        canSkipThisBlock = false; // cannot skip if this block uses modules
-        if (mod->isVisible(callOrigin)) {
-          if (use->isARename(name)) {
-            getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
-          } else {
-            getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+      canSkipThisBlock = false; // cannot skip if this block defines functions
+
+      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+        forv_Vec(FnSymbol, fn, *fns) {
+          if (fn->isVisible(call) == true) {
+            // isVisible checks if the function is private to its defining
+            // module (and in that case, if we are under its defining module)
+            // This ensures that private functions will not be used outside
+            // of their proper scope.
+            visibleFns.add(fn);
           }
         }
       }
     }
+
+    if (block->modUses != NULL) {
+      for_actuals(expr, block->modUses) {
+        UseStmt* use = toUseStmt(expr);
+
+        INT_ASSERT(use);
+
+        if (use->skipSymbolSearch(name) == false) {
+          SymExpr* se = toSymExpr(use->src);
+
+          INT_ASSERT(se);
+
+          if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+            // The use statement could be of an enum instead of a module,
+            // but only modules can define functions.
+            // cannot skip if this block uses modules
+            canSkipThisBlock = false;
+
+            if (mod->isVisible(call) == true) {
+              if (use->isARename(name) == true) {
+                getVisibleFunctions(use->getRename(name),
+                                    call,
+                                    mod->block,
+                                    visited,
+                                    visibleFns);
+              } else {
+                getVisibleFunctions(name,
+                                    call,
+                                    mod->block,
+                                    visited,
+                                    visibleFns);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //
+    // visibilityBlockCache contains blocks that can be skipped
+    //
+    if (BlockStmt* next = visibilityBlockCache.get(block)) {
+      getVisibleFunctions(name, call, next, visited, visibleFns);
+
+      retval = (canSkipThisBlock) ? next : block;
+
+    } else if (block != rootModule->block) {
+      BlockStmt* next  = getVisibilityBlock(block);
+      BlockStmt* cache = getVisibleFunctions(name,
+                                             call,
+                                             next,
+                                             visited,
+                                             visibleFns);
+
+      if (cache) {
+        visibilityBlockCache.put(block, cache);
+      }
+
+      retval = (canSkipThisBlock) ? cache : block;
+    }
   }
 
-  //
-  // visibilityBlockCache contains blocks that can be skipped
-  //
-  if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
-    return (canSkipThisBlock) ? next : block;
-  }
-
-  if (block != rootModule->block) {
-    BlockStmt* next = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
-    if (cache)
-      visibilityBlockCache.put(block, cache);
-    return (canSkipThisBlock) ? cache : block;
-  }
-
-  return NULL;
+  return retval;
 }
 
 /************************************* | **************************************
