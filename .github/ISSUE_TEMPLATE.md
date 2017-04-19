@@ -27,15 +27,15 @@ What behavior did you expect to observe?
 ```
 
 **Compile command:**
-<!-- e.g. ``chpl foo.chpl`` -->
+<!-- e.g. `chpl foo.chpl` -->
 
 **Execution command:**
-<!-- e.g. ``./foo -nl 4``
+<!-- e.g. `./foo -nl 4`
 If an input file is required, include it as well. -->
 
 **Associated Future Test(s):**
 <!-- Are there any tests in Chapel's test system that demonstrate this issue?
-     e.g. ``test/path/to/foo.future`` #1234 -->
+     e.g. `test/path/to/foo.future` #1234 -->
 
 ### Configuration Information
 
