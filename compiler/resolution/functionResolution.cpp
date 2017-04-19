@@ -5062,24 +5062,11 @@ resolveExpr(Expr* expr) {
     expr = preFold(call);
   }
 
-  if (fn && fn->retTag == RET_PARAM) {
-    if (is_param_resolved(fn, expr)) {
-      return expr;
-    }
+  if (fn && fn->retTag == RET_PARAM && is_param_resolved(fn, expr)) {
+    return expr;
   }
 
   if (DefExpr* def = toDefExpr(expr)) {
-    // This section was added to handle type a = b
-    if (def->init) {
-      Expr* init = def->init;
-
-      if (CallExpr* call = toCallExpr(init)) {
-        init = preFold(call);
-      }
-
-      resolveExpr(init);
-    }
-
     if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
       implementForallIntents1(def);
     }
