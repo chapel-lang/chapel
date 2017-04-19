@@ -84,7 +84,7 @@ symbolFlag( FLAG_CONST , npr, "const" , "constant" )
 symbolFlag( FLAG_CONST_DUE_TO_TASK_FORALL_INTENT , npr, "const due to task or forall intent", ncm )
 symbolFlag( FLAG_C_PTR_CLASS , ypr, "c_ptr class" , "marks c_ptr class" )
 symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type constructor); loosely defined to include constructor wrappers" )
-symbolFlag( FLAG_COPY_MUTATES , ypr, "copy mutates" , "the initCopy funciton / copy initializer takes its argument by ref")
+symbolFlag( FLAG_COPY_MUTATES , ypr, "copy mutates" , "the initCopy function / copy initializer takes its argument by ref")
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 
 // Enable override for default-intent for types defined in terms of record/class
@@ -247,7 +247,7 @@ symbolFlag( FLAG_REF , ypr, "ref" , ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
 // Does FLAG_REF_TO_CONST means reference to immutable?
-// maybe it is intented to, but that is not true in
+// maybe it is intended to, but that is not true in
 // setFlagsAndCheckForConstAccess
 symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result" )
 symbolFlag( FLAG_REF_TO_CONST_WHEN_CONST_THIS , ypr, "reference to const when const this" , "a function that returns a reference to a Chapel const when 'this' is const" )

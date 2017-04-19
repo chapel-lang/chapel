@@ -307,6 +307,8 @@ binary-trees:
     - Brad's fix of off-by-one error in checksum (#4734)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
 
 binarytrees-submitted:
   09/21/16:
@@ -315,6 +317,8 @@ binarytrees-submitted:
     - simplify init()-based implementation (#4609)
   10/10/16:
     - Brad's fix of off-by-one error in checksum (#4734)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
 
 blackscholes:
   10/21/16:

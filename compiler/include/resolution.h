@@ -27,8 +27,17 @@
 
 class CallInfo;
 
-extern SymbolMap paramMap;
-extern Vec<CallExpr*> callStack;
+extern SymbolMap       paramMap;
+
+extern Vec<CallExpr*>  callStack;
+extern Vec<CondStmt*>  tryStack;
+
+extern Vec<CallExpr*>  inits;
+
+extern Vec<BlockStmt*> standardModuleSet;
+
+extern char            arrayUnrefName[];
+
 bool hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);
 void getAutoCopyTypeKeys(Vec<Type*> &keys); // type to chpl__autoCopy function
@@ -37,7 +46,19 @@ extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
-FnSymbol* expandVarArgs(FnSymbol* origFn, int numActuals);
+bool       propagateNotPOD(Type* t);
+
+Expr*      resolvePrimInit(CallExpr* call);
+
+bool       isTupleContainingOnlyReferences(Type* t);
+
+void       ensureEnumTypeResolved(EnumType* etype);
+
+void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
+
+bool       canInstantiate(Type* actualType, Type* formalType);
+
+bool       isInstantiation(Type* sub, Type* super);
 
 // explain call stuff
 extern int explainCallLine;
@@ -75,7 +96,7 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
 void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
 bool isReduceOp(Type* type);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
@@ -89,10 +110,6 @@ void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
 FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
                               CallExpr* call, SymbolMap& subs, SymbolMap& map);
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
-
-// visible functions
-void fillVisibleFuncVec(CallExpr* call, CallInfo &info,
-                        Vec<FnSymbol*> &visibleFns);
 
 // disambiguation
 /** A wrapper for candidates for function call resolution.
@@ -136,8 +153,6 @@ public:
   void computeSubstitutions(bool inInitRes = false);
 };
 
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
-bool checkGenericFormals(ResolutionCandidate* currCandidate);
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call);
 void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
@@ -202,16 +217,17 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
                    bool onlyConsiderPromotion);
 
 // Regular resolve functions
-void resolveFormals(FnSymbol* fn);
-void resolveBlockStmt(BlockStmt* blockStmt);
-void resolveCall(CallExpr* call);
-void resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
-void makeRefType(Type* type);
+void      resolveFormals(FnSymbol* fn);
+void      resolveBlockStmt(BlockStmt* blockStmt);
+void      resolveCall(CallExpr* call);
+void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+void      resolveFns(FnSymbol* fn);
+void      resolveDefaultGenericType(CallExpr* call);
+void      resolveReturnType(FnSymbol* fn);
+Type*     resolveTypeAlias(SymExpr* se);
+
 FnSymbol* tryResolveCall(CallExpr* call);
-void resolveFns(FnSymbol* fn);
-void resolveDefaultGenericType(CallExpr* call);
-void resolveTypedefedArgTypes(FnSymbol* fn);
-void resolveReturnType(FnSymbol* fn);
+void      makeRefType(Type* type);
 
 // FnSymbol changes
 extern bool tryFailure;

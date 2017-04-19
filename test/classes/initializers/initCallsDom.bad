@@ -1,0 +1,3 @@
+initCallsDom.chpl:7: In initializer:
+initCallsDom.chpl:8: error: unresolved call 'R._dom'
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1991: note: candidates are: _array._domreturn

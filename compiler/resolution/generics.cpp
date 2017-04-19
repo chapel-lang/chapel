@@ -17,24 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
-
 #include "resolution.h"
 
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
 #include "expr.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
-#include "resolveIntents.h"
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
 
 #include <cstdlib>
-#include <inttypes.h>
 
 static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
@@ -365,6 +366,36 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
   return newType;
 }
 
+/** Fully instantiate a generic function given a map of substitutions and a
+ *  call site.
+ *
+ * \param fn   Generic function to instantiate
+ * \param subs Type substitutions to be made during instantiation
+ * \param call Call that is being resolved
+ */
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs) {
+  FnSymbol* newFn = instantiateSignature(fn, subs, NULL);
+
+  if (newFn != NULL) {
+    instantiateBody(newFn);
+  }
+
+  return newFn;
+}
+
+/** Finish copying and instantiating the partially instantiated function.
+ *
+ * TODO: See if more code from instantiateSignature can be moved into this
+ *       function.
+ *
+ * \param fn   Generic function to finish instantiating
+ */
+void instantiateBody(FnSymbol* fn) {
+  if (getPartialCopyInfo(fn)) {
+    fn->finalizeCopy();
+  }
+}
+
 /** Instantiate enough of the function for it to make it through the candidate
  *  filtering and disambiguation process.
  *
@@ -375,101 +406,115 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
                                CallExpr*  call) {
+  FnSymbol* retval = NULL;
 
   //
   // Handle tuples explicitly
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
   if (FnSymbol* tupleFn = createTupleSignature(fn, subs, call)) {
-    return tupleFn;
-  }
+    retval = tupleFn;
 
-  form_Map(SymbolMapElem, e, subs) {
-    if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-      if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
-        INT_FATAL(fn, "illegal instantiation with a generic type");
-      }
+  } else {
+    form_Map(SymbolMapElem, e, subs) {
+      if (TypeSymbol* ts = toTypeSymbol(e->value)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
+          INT_FATAL(fn, "illegal instantiation with a generic type");
+        }
 
-      TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+        TypeSymbol* nts = getNewSubType(fn, e->key, ts);
 
-      if (ts != nts) {
-        e->value = nts;
+        if (ts != nts) {
+          e->value = nts;
+        }
       }
     }
-  }
 
-  //
-  // determine root function in the case of partial instantiation
-  //
-  FnSymbol* root = determineRootFunc(fn);
+    //
+    // determine root function in the case of partial instantiation
+    //
+    FnSymbol* root = determineRootFunc(fn);
 
-  //
-  // determine all substitutions (past substitutions in a partial
-  // instantiation plus the current substitutions) and change the
-  // substitutions to refer to the root function's formal arguments
-  //
-  SymbolMap all_subs;
-  determineAllSubs(fn, root, subs, all_subs);
+    //
+    // determine all substitutions (past substitutions in a partial
+    // instantiation plus the current substitutions) and change the
+    // substitutions to refer to the root function's formal arguments
+    //
+    SymbolMap allSubs;
 
-  //
-  // use cached instantiation if possible
-  //
-  if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
-    if (cached != (FnSymbol*)gVoid) {
-      checkInfiniteWhereInstantiation(cached);
+    determineAllSubs(fn, root, subs, allSubs);
 
-      return cached;
+    //
+    // use cached instantiation if possible
+    //
+    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+      if (cached != (FnSymbol*) gVoid) {
+        checkInfiniteWhereInstantiation(cached);
+
+        retval = cached;
+      } else {
+        retval = NULL;
+      }
     } else {
-      return NULL;
+      SET_LINENO(fn);
+
+      //
+      // copy generic class type if this function is a type constructor
+      //
+      Type* newType = NULL;
+
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+        newType = instantiateTypeForTypeConstructor(fn,
+                                                    subs,
+                                                    call,
+                                                    fn->retType);
+      }
+
+      //
+      // instantiate function
+      //
+      SymbolMap map;
+
+      if (newType) {
+        map.put(fn->retType->symbol, newType->symbol);
+      }
+
+      FnSymbol* newFn = instantiateFunction(fn,
+                                            root,
+                                            allSubs,
+                                            call,
+                                            subs,
+                                            map);
+
+      if (newType) {
+        newType->defaultTypeConstructor = newFn;
+        newFn->retType                  = newType;
+      }
+
+      bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
+
+      // Fix up chpl__initCopy for user-defined records
+      if (fixedTuple                           == false &&
+          fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
+          fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
+        // Generate the initCopy function based upon initializer
+        fixupDefaultInitCopy(fn, newFn, call);
+      }
+
+      if (newFn->numFormals()       >  1 &&
+          newFn->getFormal(1)->type == dtMethodToken) {
+        newFn->getFormal(2)->type->methods.add(newFn);
+      }
+
+      newFn->tagIfGeneric();
+
+      explainAndCheckInstantiation(newFn, fn);
+
+      retval = newFn;
     }
   }
 
-  SET_LINENO(fn);
-
-  //
-  // copy generic class type if this function is a type constructor
-  //
-  Type* newType = NULL;
-
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    newType = instantiateTypeForTypeConstructor(fn, subs, call, fn->retType);
-  }
-
-  //
-  // instantiate function
-  //
-  SymbolMap map;
-
-  if (newType) {
-    map.put(fn->retType->symbol, newType->symbol);
-  }
-
-  FnSymbol* newFn = instantiateFunction(fn, root, all_subs, call, subs, map);
-
-  if (newType) {
-    newType->defaultTypeConstructor = newFn;
-    newFn->retType                  = newType;
-  }
-  
-  bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
-  // Fix up chpl__initCopy for user-defined records
-  if (!fixedTuple &&
-      fn->hasFlag(FLAG_INIT_COPY_FN) &&
-      fn->hasFlag(FLAG_COMPILER_GENERATED) ) {
-    // Generate the initCopy function based upon initializer
-    fixupDefaultInitCopy(fn, newFn, call);
-  }
-
-  if (newFn->numFormals()       >  1 &&
-      newFn->getFormal(1)->type == dtMethodToken) {
-    newFn->getFormal(2)->type->methods.add(newFn);
-  }
-
-  newFn->tagIfGeneric();
-
-  explainAndCheckInstantiation(newFn, fn);
-
-  return newFn;
+  return retval;
 }
 
 //
@@ -482,6 +527,7 @@ FnSymbol* determineRootFunc(FnSymbol* fn) {
          root->numFormals()     == root->instantiatedFrom->numFormals()) {
     root = root->instantiatedFrom;
   }
+
   return root;
 }
 
@@ -490,32 +536,38 @@ FnSymbol* determineRootFunc(FnSymbol* fn) {
   // instantiation plus the current substitutions) and change the
   // substitutions to refer to the root function's formal arguments
   //
-void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
-                      SymbolMap& all_subs) {
+void determineAllSubs(FnSymbol*  fn,
+                      FnSymbol*  root,
+                      SymbolMap& subs,
+                      SymbolMap& allSubs) {
   if (fn->instantiatedFrom) {
     form_Map(SymbolMapElem, e, fn->substitutions) {
-      all_subs.put(e->key, e->value);
+      allSubs.put(e->key, e->value);
     }
   }
 
   form_Map(SymbolMapElem, e, subs) {
-    copyGenericSub(all_subs, root, fn, e->key, e->value);
+    copyGenericSub(allSubs, root, fn, e->key, e->value);
   }
 }
 
 //
 // instantiate function
 //
-FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
-                              CallExpr* call, SymbolMap& subs, SymbolMap& map) {
+FnSymbol* instantiateFunction(FnSymbol*  fn,
+                              FnSymbol*  root,
+                              SymbolMap& allSubs,
+                              CallExpr*  call,
+                              SymbolMap& subs,
+                              SymbolMap& map) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
-  addCache(genericsCache, root, newFn, &all_subs);
+  addCache(genericsCache, root, newFn, &allSubs);
 
   newFn->removeFlag(FLAG_GENERIC);
   newFn->addFlag(FLAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
-  newFn->substitutions.map_union(all_subs);
+  newFn->substitutions.map_union(allSubs);
 
   if (call) {
     newFn->instantiationPoint = getVisibilityBlock(call);
@@ -651,51 +703,4 @@ bool evaluateWhereClause(FnSymbol* fn) {
   }
 
   return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/** Finish copying and instantiating the partially instantiated function.
- *
- * TODO: See if more code from instantiateSignature can be moved into this
- *       function.
- *
- * \param fn   Generic function to finish instantiating
- */
-void
-instantiateBody(FnSymbol* fn) {
-  if (getPartialCopyInfo(fn)) {
-    fn->finalizeCopy();
-  }
-}
-
-/** Fully instantiate a generic function given a map of substitutions and a
- *  call site.
- *
- * \param fn   Generic function to instantiate
- * \param subs Type substitutions to be made during instantiation
- * \param call Call that is being resolved
- */
-FnSymbol*
-instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
-  FnSymbol* newFn;
-
-  newFn = instantiateSignature(fn, subs, call);
-
-  if (newFn != NULL) {
-    instantiateBody(newFn);
-  }
-
-  return newFn;
 }

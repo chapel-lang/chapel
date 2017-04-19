@@ -1,8 +1,16 @@
-hello.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: hello.doc
+
+hello.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
    use hello.doc;
 
-   proc hello()
-      This method prints out a greeting.
+.. function:: proc hello()
+
+   This method prints out a greeting.
 

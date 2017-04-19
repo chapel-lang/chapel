@@ -1,49 +1,86 @@
-externTest.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: externTest.doc
+
+externTest.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
    use externTest.doc;
 
-Submodules for this module are located in the externTest.doc/ directory
+**Submodules**
 
-   proc method1()
-      Comment for method1 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc commentless()
-   proc hasArg(val: int)
-      Comment for method with an argument 
+   externTest.doc/*
 
-   proc hasArgCommentless(val: int)
-   proc longComment()
-      This comment is rather long
-      And spans for
-      Multiple lines 
+.. function:: proc method1()
 
-   proc hasReturnType(): int
-      This method has a return type 
+   Comment for method1 
 
-   proc hasReturnTypeCommentless(): int
-   proc hasReturnTypeAndArg(val: int): int
-      This method has a return type and an argument 
+.. function:: proc commentless()
 
-   proc hasReturnTypeAndArgCommentless(val: int): int
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc longComment()
+
+   This comment is rather long
+   And spans for
+   Multiple lines 
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+
+.. default-domain:: chpl
+
+.. module:: Other
+
 Other
+=====
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use externTest.doc.Other;
 
-   proc inside
-      Comment for method inside module 
+.. function:: proc inside
 
-   proc commentless
-   proc hasArg(val: int)
-      Comment for method with an argument inside module 
+   Comment for method inside module 
 
-   proc hasArgCommentless(val: int)
-   proc hasReturnType(): int
-      This method has a return type 
+.. function:: proc commentless
 
-   proc hasReturnTypeCommentless(): int
-   proc hasReturnTypeAndArg(val: int): int
-      This method has a return type and an argument 
+.. function:: proc hasArg(val: int)
 
-   proc hasReturnTypeAndArgCommentless(val: int): int
+   Comment for method with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+

@@ -1,48 +1,93 @@
-basic
+.. default-domain:: chpl
 
-Usage:
+.. module:: basic
+   :synopsis: This is the module that Lydia built 
+
+basic
+=====
+**Usage**
+
+.. code-block:: chapel
+
    use basic;
 
-Submodules for this module are located in the basic/ directory
+**Submodules**
 
-   This is the module that Lydia built 
-   proc inner()
-      This is the proc that lies in the module that Lydia built 
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   basic/*
+
+This is the module that Lydia built 
+
+.. function:: proc inner()
+
+   This is the proc that lies in the module that Lydia built 
+
+.. default-domain:: chpl
+
+.. module:: sadAndAlone
+   :synopsis: This is the module all sad and alone, listed behind the proc
 
 sadAndAlone
+===========
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use basic.sadAndAlone;
 
-Submodules for this module are located in the sadAndAlone/ directory
+**Submodules**
 
-   This is the module all sad and alone, listed behind the proc
-   that lies in the module that Lydia built 
-   Class: naryATone
-      This is the class with nary a tone, declared in the module all
-      sad and alone, listed behind the proc that lies in the module
-      that Lydia built 
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   sadAndAlone/*
+
+This is the module all sad and alone, listed behind the proc
+that lies in the module that Lydia built 
+
+.. class:: naryATone
+
+   This is the class with nary a tone, declared in the module all
+   sad and alone, listed behind the proc that lies in the module
+   that Lydia built 
+
+
+.. default-domain:: chpl
+
+.. module:: classesAreGrown
+   :synopsis: This is the module whose classes are grown, sister of the
 
 classesAreGrown
+===============
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use basic.sadAndAlone.classesAreGrown;
 
-   This is the module whose classes are grown, sister of the
-   class with nary a tone, declared in the module all sad and
-   alone, listed behind the proc that lies in the module that
-   Lydia built 
-   Class: agedAndStiff
-      This is the classes all aged and stiff, aware of the proc
-      that is thoroughly miffed, raised in the module whose 
-      classes are grown, sister of the class with nary a tone,
-      declared in the module all sad and alone, listed behind 
-      the proc that lies in the module that Lydia built. 
+This is the module whose classes are grown, sister of the
+class with nary a tone, declared in the module all sad and
+alone, listed behind the proc that lies in the module that
+Lydia built 
 
-   proc thoroughlyMiffed()
-      This is the proc that is thoroughly miffed, raised in 
-      the module whose classes are grown, sister of the class
-      with nary a tone, declared in the module all sad and
-      alone, listed behind the proc that lies in the module that
-      Lydia built. 
+.. class:: agedAndStiff
+
+   This is the classes all aged and stiff, aware of the proc
+   that is thoroughly miffed, raised in the module whose 
+   classes are grown, sister of the class with nary a tone,
+   declared in the module all sad and alone, listed behind 
+   the proc that lies in the module that Lydia built. 
+
+
+.. function:: proc thoroughlyMiffed()
+
+   This is the proc that is thoroughly miffed, raised in 
+   the module whose classes are grown, sister of the class
+   with nary a tone, declared in the module all sad and
+   alone, listed behind the proc that lies in the module that
+   Lydia built. 
 

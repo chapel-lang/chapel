@@ -1,0 +1,4 @@
+bug: can't use conditional expressions within an initializer
+
+My wild guess is that the check for returns within an initializer is
+looking into nested functions?

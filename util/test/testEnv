@@ -28,7 +28,8 @@ if (-x "$envfile") {
   $envfile = abs_path($envfile);
   $execskiptest = `$envfile`;
   print "$execskiptest";
-  exit("$?");
+# exit with the return code that the envfile gave us
+  exit($?>>8);
 }
 
 #

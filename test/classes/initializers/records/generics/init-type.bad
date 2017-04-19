@@ -1,0 +1,1 @@
+init-type.chpl:16: error: Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference

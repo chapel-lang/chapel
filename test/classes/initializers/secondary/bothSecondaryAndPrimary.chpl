@@ -26,4 +26,7 @@ proc main() {
   writeln(f); // expect 10, true
   var f2 = new Foo(false);
   writeln(f2); // expect 3, false
+
+  delete f;
+  delete f2;
 }
