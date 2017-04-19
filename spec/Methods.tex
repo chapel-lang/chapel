@@ -85,7 +85,12 @@ The receiver-clause (or its absence) specifies the method's receiver
 A method to output information about an instance of the \chpl{Actor}
 class can be defined as follows:
 \begin{chapelpre}
-use useActor1;
+class Actor {
+  var name: string;
+  var age: uint;
+}
+var anActor = new Actor(name="Tommy", age=27);
+writeln(anActor);
 \end{chapelpre}
 \begin{chapel}
 proc Actor.print() {
@@ -97,7 +102,7 @@ anActor.print();
 delete anActor;
 \end{chapelpost}
 \begin{chapeloutput}
-(Tommy, {name = Tommy, age = 27})
+{name = Tommy, age = 27}
 Actor Tommy is 27 years old
 \end{chapeloutput}
 This method can be called on an instance of the \chpl{Actor}
