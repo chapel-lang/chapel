@@ -31,7 +31,7 @@
 #include "symbol.h"
 #include "virtualDispatch.h"
 
-#include <vector>
+#include <queue>
 
 //
 // insertLineNumbers() inserts line numbers and filenames into
@@ -82,7 +82,7 @@ static void moveLinenoInsideArgBundle();
 // filename arguments have been added so that calls to these functions
 // can be updated with new actual arguments.
 //
-static std::vector<FnSymbol*> queue;
+static std::queue<FnSymbol*> queue;
 
 static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
@@ -107,7 +107,7 @@ static ArgSymbol* newFile(FnSymbol* fn) {
   ArgSymbol* file = new ArgSymbol(INTENT_IN, "_fn", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
-  queue.push_back(fn);
+  queue.push(fn);
   if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
     forv_Vec(FnSymbol, rootFn, *rootFns)
       if (!filenameMap.get(rootFn))
@@ -298,7 +298,11 @@ void insertLineNumbers() {
 
   // loop over all functions in the queue and all calls to these
   // functions, and pass the calls an actual line number and filename
-  for_vector(FnSymbol, fn, queue) {
+  // Note: 'queue' may be appended to during this loop
+  while (queue.empty() == false) {
+    FnSymbol* fn = queue.front();
+    queue.pop();
+
     forv_Vec(CallExpr, call, *fn->calledBy) {
       insertLineNumber(call);
     }
