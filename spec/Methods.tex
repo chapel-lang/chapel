@@ -272,7 +272,7 @@ to \chpl{4}.
 
 A procedure method declared with the name \chpl{this} allows the receiver to be
 ``indexed'' similarly to how an array is indexed.  Indexing (as with
-\chpl{A[1]} has the semantics of calling a method
+\chpl{A[1]}) has the semantics of calling a method
 named \chpl{this}.  There is no other way to call a method
 called \chpl{this}.  The \chpl{this} method must be declared with
 parentheses even if the argument list is empty.
@@ -318,11 +318,10 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \index{methods!these@\chpl{these}}
 
 An iterator method declared with the name \chpl{these} allows the
-receiver to be
-``iterated over'' similarly to how a domain or array supports iteration.
-Using a value in the context of a loop where
-an \sntx{iteratable-expression} is expected has the semantics of calling
-a method on the value named \chpl{these}.
+receiver to be ``iterated over'' similarly to how a domain or array
+supports iteration.  Using a value in the context of a loop where an
+\sntx{iteratable-expression} is expected has the semantics of calling a
+method on the value named \chpl{these}.
 
 \begin{chapelexample}{theseIterator.chpl}
 In the following code, the \chpl{these} method is used to create a
