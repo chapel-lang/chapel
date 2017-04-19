@@ -21,17 +21,21 @@ What behavior did you expect to observe?
 // Otherwise, you can attach it as a file or provide a URL to it.
 // To the extent possible, providing simplified programs demonstrating the
 // problem will be appreciated.
+// If you're able to commit a '.future' test to our test system that
+// illustrates the issue, feel free to replace this section with the
+// "Associated Future Test(s)" section below.
 ```
 
 **Compile command:**
-<!-- e.g. `chpl foo.chpl -o foo` -->
+<!-- e.g. ``chpl foo.chpl`` -->
 
 **Execution command:**
-<!-- e.g. `./foo -nl 4`. If an input file is required, include it as well. -->
+<!-- e.g. ``./foo -nl 4``
+If an input file is required, include it as well. -->
 
 **Associated Future Test(s):**
 <!-- Are there any tests in Chapel's test system that demonstrate this issue?
-     e.g. test/path/to/foo.future #1234 -->
+     e.g. ``test/path/to/foo.future`` #1234 -->
 
 ### Configuration Information
 
