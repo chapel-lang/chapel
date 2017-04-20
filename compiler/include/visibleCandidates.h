@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _VISIBILE_CANDIDATES_H_
-#define _VISIBILE_CANDIDATES_H_
+#ifndef _VISIBLE_CANDIDATES_H_
+#define _VISIBLE_CANDIDATES_H_
 
 #include "vec.h"
 

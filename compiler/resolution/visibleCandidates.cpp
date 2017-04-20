@@ -318,7 +318,7 @@ static void filterGeneric(CallInfo&                  info,
 
 /************************************* | **************************************
 *                                                                             *
-* Maintain a cache from a vargArgs function to the function with the required *
+* Maintain a cache from a varArgs function to the function with the required  *
 * number of formals.                                                          *
 *                                                                             *
 ************************************** | *************************************/
