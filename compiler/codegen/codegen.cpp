@@ -594,7 +594,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
       if (len > buf_len)
         buf_len = len;
     }
-    // and then add 100 for two integers and punctiation
+    // and then add 100 for two integers and punctuation
     buf_len += 100;
     buf = (char*) malloc(buf_len);
   }
