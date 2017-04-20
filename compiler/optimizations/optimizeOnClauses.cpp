@@ -406,10 +406,10 @@ inLocalBlock(CallExpr *call) {
 }
 
 static int
-markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
+markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
 
   // First, handle functions we've already visited.
-  if (visited->in(fn)) {
+  if (visited.count(fn) != 0) {
     if (fn->hasFlag(FLAG_FAST_ON))
       return FAST_AND_LOCAL;
     if (fn->hasFlag(FLAG_LOCAL_FN))
@@ -419,7 +419,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
   // Now, add fn to the set of visited functions,
   // since we will categorize it now.
-  visited->add_exclusive(fn);
+  visited.insert(fn);
 
   // Next, classify extern functions
   if (fn->hasFlag(FLAG_EXTERN)) {
@@ -565,9 +565,9 @@ optimizeOnClauses(void) {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Vec<FnSymbol*> visited;
+    std::set<FnSymbol*> visited;
 
-    int is = markFastSafeFn(fn, optimize_on_clause_limit, &visited);
+    int is = markFastSafeFn(fn, optimize_on_clause_limit, visited);
 
     bool fastFork = isFast(is);
     bool removeRmemFences = isLocal(is);

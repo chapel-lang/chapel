@@ -249,6 +249,15 @@ void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet) {
   AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
 }
 
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (isLcnSymbol(def->sym)) {
+      symSet.insert(def->sym);
+    }
+  }
+  AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
+}
+
 
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'

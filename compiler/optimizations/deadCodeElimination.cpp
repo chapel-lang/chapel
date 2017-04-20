@@ -79,10 +79,10 @@ static bool isDeadVariable(Symbol* var) {
 }
 
 void deadVariableElimination(FnSymbol* fn) {
-  Vec<Symbol*> symSet;
+  std::set<Symbol*> symSet;
   collectSymbolSet(fn, symSet);
 
-  forv_Vec(Symbol, sym, symSet)
+  for_set(Symbol, sym, symSet)
   {
     // We're interested only in VarSymbols.
     if (!isVarSymbol(sym))
