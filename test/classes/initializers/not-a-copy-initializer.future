@@ -1,0 +1,9 @@
+bug: can't call method on generic record arg in record initializer
+
+This is a generalized version of initCallsDom.future.  The issue is that
+the compiler tries to use generic single argument record initializers in
+initCopy calls as copy initializers, but the initializers defined in these
+tests were not intended as copy initializers.  Work has been done to allow
+records that don't define copy initializers to not trigger this error message,
+but that examination depends on the argument list, not the resolution of the
+function itself.
