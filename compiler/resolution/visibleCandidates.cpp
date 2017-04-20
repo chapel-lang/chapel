@@ -751,15 +751,16 @@ static bool handleCopyData(PartialCopyData* pci,
                            VarSymbol*       var,
                            ArgSymbol*       formal,
                            const Formals&   varargs) {
-  int  n         = static_cast<int>(varargs.size());
-  int  index     = pci->partialCopyMap.n - 1;
+  int  maxIndex  = pci->partialCopyMap.n - 1;
   bool gotFormal = false;
   bool retval    = false;
 
-  while (index >= 0 && gotFormal == false) {
+  for (int index = maxIndex; index >= 0 && gotFormal == false; index--) {
     SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
 
     if (mapElem.value == formal) {
+      int n = static_cast<int>(varargs.size());
+
       retval = needVarArgTupleAsWhole(pci->partialCopySource->body,
                                       n,
                                       toArgSymbol(mapElem.key));
@@ -774,8 +775,6 @@ static bool handleCopyData(PartialCopyData* pci,
       }
 
       gotFormal = true;
-    } else {
-      index     = index - 1;
     }
   }
 
@@ -806,7 +805,7 @@ static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
     retval = new CallExpr("_construct__tuple");
   }
 
-  retval ->insertAtTail(new_IntSymbol(n));
+  retval->insertAtTail(new_IntSymbol(n));
 
   for (int i = 0; i < n; i++) {
     retval->insertAtTail(formals[i]);
