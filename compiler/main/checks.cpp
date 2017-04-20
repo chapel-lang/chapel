@@ -21,11 +21,12 @@
 
 #include "checks.h"
 
+#include "docsDriver.h"
 #include "expr.h"
+#include "PartialCopyData.h"
 #include "passes.h"
 #include "primitive.h"
 #include "resolution.h"
-#include "docsDriver.h" // for fDocs
 #include "TryStmt.h"
 
 //
@@ -436,7 +437,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
-    checkEmptyPartialCopyFnMap();
+    checkEmptyPartialCopyDataFnMap();
   }
 }
 

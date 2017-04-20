@@ -709,30 +709,6 @@ const char* intentDescrString(IntentTag intent);
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
 
-//
-// Used to pass information from partialCopy() to finalizeCopy().
-//
-class PartialCopyData {
- public:
-  // Used to keep track of symbol substitutions during partial copying.
-  SymbolMap partialCopyMap;
-  // Source of a partially copied function.
-  FnSymbol* partialCopySource;
-  // Vararg formal to be replaced with individual formals, or NULL.
-  ArgSymbol* varargOldFormal;
-  // Individual formals to replace varargOldFormal.
-  std::vector<ArgSymbol*> varargNewFormals;
-
-  PartialCopyData() : partialCopySource(NULL), varargOldFormal(NULL) { }
-  ~PartialCopyData() { partialCopyMap.clear(); varargNewFormals.clear(); }
-};
-
-PartialCopyData* getPartialCopyInfo(FnSymbol* fn);
-PartialCopyData& addPartialCopyInfo(FnSymbol* fn);
-void clearPartialCopyInfo(FnSymbol* fn);
-void clearPartialCopyFnMap();
-void checkEmptyPartialCopyFnMap();
-
 // Parser support.
 class ForallIntents;
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
