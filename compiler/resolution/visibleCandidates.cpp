@@ -415,6 +415,8 @@ static bool hasVariableArgs(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+typedef std::vector<ArgSymbol*> Formals;
+
 static void      expandVarArgsFixed (FnSymbol*  fn, CallInfo& info);
 
 static FnSymbol* expandVarArgsQuery (FnSymbol*  fn, CallInfo& info);
@@ -426,6 +428,10 @@ static void      expandVarArgsFormal(FnSymbol*  fn,
 static bool      needVarArgTupleAsWhole(BlockStmt* block,
                                         int        numArgs,
                                         ArgSymbol* formal);
+
+static void      substituteVarargTupleRefs(BlockStmt*     block,
+                                           ArgSymbol*     formal,
+                                           const Formals& varargs);
 
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   int       numVarArgs      = 0;
@@ -717,8 +723,7 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
       }
 
     } else {
-      // !needTupleInBody
-      substituteVarargTupleRefs(workingFn->body, n, formal, varargFormals);
+      substituteVarargTupleRefs(workingFn->body, formal, varargFormals);
     }
 
     if (workingFn->where) {
@@ -735,9 +740,7 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
 
         subSymbol(workingFn->where, formal, var);
       } else {
-        // !needVarArgTupleAsWhole()
         substituteVarargTupleRefs(workingFn->where,
-                                  n,
                                   formal,
                                   varargFormals);
       }
@@ -798,6 +801,12 @@ static void replaceVarargAccess(CallExpr*  parent,
                                 ArgSymbol* replFormal,
                                 SymbolMap& tempReps);
 
+void substituteVarargTupleRefs(FnSymbol* fn, const PartialCopyData* pci) {
+  substituteVarargTupleRefs(fn->body,
+                            pci->varargOldFormal,
+                            pci->varargNewFormals);
+}
+
 //
 // Replace, in 'ast', uses of the vararg tuple 'formal'
 // with references to individual formals.
@@ -805,47 +814,49 @@ static void replaceVarargAccess(CallExpr*  parent,
 // needVarArgTupleAsWhole() and substituteVarargTupleRefs() should handle
 // the exact same set of SymExprs.
 //
-void substituteVarargTupleRefs(BlockStmt*               ast,
-                               int                      numArgs,
-                               ArgSymbol*               formal,
-                               std::vector<ArgSymbol*>& varargFormals) {
+static void substituteVarargTupleRefs(BlockStmt*     block,
+                                      ArgSymbol*     formal,
+                                      const Formals& varargs) {
   std::vector<SymExpr*> symExprs;
   SymbolMap             tempReps;
+  int                   numArgs    = static_cast<int>(varargs.size());
 
-  collectSymExprs(ast, symExprs);
+  collectSymExprs(block, symExprs);
 
   for_vector(SymExpr, se, symExprs) {
     if (se->symbol() == formal) {
       if (CallExpr* parent = toCallExpr(se->parentExpr)) {
         SET_LINENO(parent);
 
-        if (parent->isPrimitive(PRIM_TUPLE_EXPAND)) {
+        if (parent->isPrimitive(PRIM_TUPLE_EXPAND) == true) {
           // Replace 'parent' with a sequence of individual args.
-          for_vector(ArgSymbol, arg, varargFormals)
+          for_vector(ArgSymbol, arg, varargs) {
             parent->insertBefore(new SymExpr(arg));
+          }
+
           parent->remove();
-          continue;
-        }
 
-        if (int idxNum = varargAccessIndex(se, parent, numArgs)) {
+        } else if (int idxNum = varargAccessIndex(se, parent, numArgs)) {
           INT_ASSERT(1 <= idxNum && idxNum <= numArgs);
-          ArgSymbol* replFormal = varargFormals[idxNum-1];
+
+          ArgSymbol* replFormal = varargs[idxNum - 1];
+
           replaceVarargAccess(parent, se, replFormal, tempReps);
-          continue;
-        }
 
-        if (isVarargSizeExpr(se, parent)) {
+        } else if (isVarargSizeExpr(se, parent) == true) {
           parent->replace(new SymExpr(new_IntSymbol(numArgs)));
-          continue;
+
+        } else {
+          INT_ASSERT(false);
         }
 
+      } else {
+        INT_ASSERT(false);
       }
-      // Cases not "continue"-ed above should have been ruled out
-      // by needVarArgTupleAsWhole().
-      INT_ASSERT(false);
 
     } else if (Symbol* replmt = tempReps.get(se->symbol())) {
       SET_LINENO(se);
+
       se->replace(new SymExpr(replmt));
     }
   }
