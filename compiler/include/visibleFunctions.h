@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _VISIBILE_FUNCTIONS_H_
-#define _VISIBILE_FUNCTIONS_H_
+#ifndef _VISIBLE_FUNCTIONS_H_
+#define _VISIBLE_FUNCTIONS_H_
 
 #include "vec.h"
 
