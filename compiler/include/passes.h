@@ -38,6 +38,7 @@ void callDestructors();
 void checkNormalized();
 void checkParsed();
 void checkResolved();
+void checkUseAfterLexScope();
 void cleanup();
 void codegen();
 void copyPropagation();

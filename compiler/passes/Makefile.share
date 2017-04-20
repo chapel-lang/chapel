@@ -21,6 +21,7 @@ GEN_HEADERS = \
 PASSES_SRCS = \
         addInitGuards.cpp \
         buildDefaultFunctions.cpp \
+        checkUseAfterLexScope.cpp \
         checkNormalized.cpp \
         checkParsed.cpp \
         checkResolved.cpp \

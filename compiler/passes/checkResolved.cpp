@@ -43,7 +43,6 @@ static void checkReturnPaths(FnSymbol* fn);
 static void checkCalls();
 static void checkExternProcs();
 
-
 static void
 checkConstLoops() {
   if (fWarnConstLoops == true) {
@@ -84,6 +83,7 @@ checkResolved() {
   checkCalls();
   checkConstLoops();
   checkExternProcs();
+  checkUseAfterLexScope();
 }
 
 
