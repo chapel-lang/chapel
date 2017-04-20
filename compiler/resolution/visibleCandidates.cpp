@@ -561,25 +561,14 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
   SET_LINENO(formal);
 
   if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
-    VarSymbol*              var             = new VarSymbol(formal->name);
     int                     n               = nVar->immediate->int_value();
-    CallExpr*               tupleCall       = NULL;
-    bool                    needTupleInBody = true;
-
     std::vector<ArgSymbol*> varargFormals(n);
 
+    VarSymbol*              var             = new VarSymbol(formal->name);
+    bool                    needTupleInBody = true;
+    CallExpr*               tupleCall       = NULL;
+
     workingFn->addFlag(FLAG_EXPANDED_VARARGS);
-
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      tupleCall = new CallExpr("_type_construct__tuple");
-    } else {
-      tupleCall = new CallExpr("_construct__tuple");
-
-      // _construct__tuple calls initCopy, so var needs to be auto-destroyed.
-      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-    }
-
-    tupleCall->insertAtTail(new_IntSymbol(n));
 
     for (int i = 0; i < n; i++) {
       DefExpr*   newArgDef = formal->defPoint->copy();
@@ -589,11 +578,27 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
       newFormal->name         = astr("_e", istr(i), "_", formal->name);
       newFormal->cname        = astr("_e", istr(i), "_", formal->cname);
 
-      tupleCall->insertAtTail(new SymExpr(newFormal));
-
       formal->defPoint->insertBefore(newArgDef);
 
       varargFormals[i] = newFormal;
+    }
+
+
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      tupleCall = new CallExpr("_type_construct__tuple");
+
+      var->addFlag(FLAG_TYPE_VARIABLE);
+
+    } else {
+      tupleCall = new CallExpr("_construct__tuple");
+
+      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
+
+    tupleCall->insertAtTail(new_IntSymbol(n));
+
+    for (int i = 0; i < n; i++) {
+      tupleCall->insertAtTail(varargFormals[i]);
     }
 
     // Replace mappings to the old formal with mappings to the new variable.
@@ -629,10 +634,6 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
 
     } else {
       needTupleInBody = needVarArgTupleAsWhole(workingFn->body, n, formal);
-    }
-
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-      var->addFlag(FLAG_TYPE_VARIABLE);
     }
 
     // This is needed regardless of needTupleInBody...
@@ -678,7 +679,6 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
     formal->defPoint->remove();
 
   } else {
-    // Just documenting the current status.
     INT_FATAL(formal, "unexpected non-VarSymbol");
   }
 }
