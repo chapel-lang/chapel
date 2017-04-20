@@ -515,14 +515,15 @@
   "cd92e998-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Expressions.tex"
   ],
-  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Functions.tex"
-  ],
   "e1d71c80-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Interoperation.tex"
   ],
   "f72f3d38-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Memory_Consistency.tex"
+  ],
+  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Methods.tex",
+    "spec/Procedures.tex"
   ],
   "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Modules.tex"
@@ -658,7 +659,8 @@
   ],
   "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
     "test/release/examples/benchmarks/shootout/mandelbrot-fast.chpl",
-    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl"
+    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl",
+    "test/studies/shootout/submitted/mandelbrot2.chpl"
   ],
   "4bfc193a-4401-11e6-907f-843835579daa": [
     "test/release/examples/benchmarks/shootout/regexdna-redux.chpl",
