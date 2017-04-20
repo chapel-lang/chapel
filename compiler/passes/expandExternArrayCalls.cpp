@@ -129,11 +129,7 @@ void expandExternArrayCalls() {
         current_formal++;
       }
 
-      if (fcopy->retType == dtVoid) {
-        INT_FATAL("unexpected void retType");
-      } else {
-        fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
-      }
+      fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
     }
   }
 }
