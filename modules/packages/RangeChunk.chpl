@@ -89,15 +89,31 @@ module RangeChunk {
   */
   iter roundRobinBasedChunkOfBlocks(r: range(?RT, bounded, ?S),  blockSize: integral,
              idx:integral, numChunks: integral): range(RT, bounded, S) {
-
     const nElems = r.length;
-    const rangeStride = ((r.orderToIndex(nElems - 1) - r.orderToIndex(0))/nElems) + 1;
-    const start = r.orderToIndex(idx*blockSize);
+    if(nElems == 0) {
+      return;
+    }
+    const first = r.orderToIndex(0);
+    const last = r.orderToIndex(nElems - 1);
+    const rangeStride = ((abs(last - first)/nElems) + 1)*sgn(last - first);
+    const ordinalStartIndex = idx*blockSize;
+    if(ordinalStartIndex >= nElems) {
+      return;
+    }
+    var start = r.orderToIndex(ordinalStartIndex);
     const stride = blockSize*numChunks*rangeStride;
-    const end = r.orderToIndex(nElems - 1);
-    for chunkStartIdx in start..end by stride {
-      const chunkEndIdx = min(chunkStartIdx + blockSize*rangeStride - 1, end);
-      yield chunkStartIdx..chunkEndIdx by rangeStride;
+    var end = r.orderToIndex(nElems - 1);
+    if(rangeStride >= 0) {
+      for chunkStartIdx in start..end by stride {
+        const chunkEndIdx = min(chunkStartIdx + blockSize*rangeStride - 1, end);
+        yield chunkStartIdx..chunkEndIdx by rangeStride;
+      }
+    }
+    else {
+      for chunkStartIdx in end..start by stride {    
+        const chunkEndIdx = max(chunkStartIdx + blockSize*rangeStride + 1, end);
+        yield chunkEndIdx..chunkStartIdx by rangeStride;
+      }
     }
     
   }

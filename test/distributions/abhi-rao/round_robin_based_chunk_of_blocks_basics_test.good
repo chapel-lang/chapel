@@ -84,3 +84,21 @@ got: 26..40 by 3
 got: 86..95 by 3
 for tid: 3
 got: 41..55 by 3
+Positive Indexed Negative Strided range: 3..90 by -3 block_size: 5 num_tasks: 4 stride: -3
+for tid: 0
+got: 76..90 by -3
+got: 16..30 by -3
+for tid: 1
+got: 61..75 by -3
+got: 3..15 by -3
+for tid: 2
+got: 46..60 by -3
+for tid: 3
+got: 31..45 by -3
+Negative Indexed Negative Strided range: -6..19 by -3 block_size: 5 num_tasks: 4 stride: -3
+for tid: 0
+got: 5..19 by -3
+for tid: 1
+got: -5..4 by -3
+for tid: 2
+for tid: 3
