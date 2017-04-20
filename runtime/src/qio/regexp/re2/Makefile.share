@@ -25,9 +25,15 @@ REGEXP_OBJS = \
 
 RUNTIME_INCLS += -I$(RE2_INCLUDE_DIR) -I$(RE2_INCLUDE_DIR2)
 
-# Note: passing -std=c++11 in addition to RUNTIME_CXXFLAGS below
+# RE2 2017-04-01 uses C++11 features
+
+ifeq (,$(CXX11_STD))
+  $(error CXX11_STD is not set for this compiler - update make/compiler/...)
+endif
+
+# Note: passing CXX11_STD in addition to RUNTIME_CXXFLAGS below
 # Hopefully RUNTIME_CXXFLAGS includes a C++ standard version. If not,
-# the preceeding -std=c++11 will apply.
+# the preceeding CXX11_STD will apply.
 $(RUNTIME_OBJ_DIR)/re2-interface.o: re2-interface.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
-	$(CXX) -c -std=c++11 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
