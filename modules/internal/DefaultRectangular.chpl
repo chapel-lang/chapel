@@ -1142,7 +1142,6 @@ module DefaultRectangular {
     var mdRHi: mdType(idxType);   //       "     "  .high
     var mdRStr: mdType(idxType);  //       "     "  .stride
     var mdRLen: mdType(idxType);  //       "     "  .length
-    var mdBlk: mdType(idxType);   //       "     "  block factor when sliced
     var mdAlias: mdType(bool);    //   is this an alias of another array?
 
     pragma "local field"
@@ -1174,7 +1173,6 @@ module DefaultRectangular {
         writeln("mdRHi=", mdRHi);
         writeln("mdRStr=", mdRStr);
         writeln("mdRLen=", mdRLen);
-        writeln("mdBlk=", mdBlk);
         for i in 0..#mdNumChunks {
           writeln("chunk (", mData(i).pdr, ') @', mData(i).dataOff);
         }
@@ -1564,7 +1562,6 @@ module DefaultRectangular {
         mdRHi = dom.dsiDim(mdParDim).alignedHigh;
         mdRStr = abs(dom.dsiDim(mdParDim).stride):idxType;
         mdRLen = dom.dsiDim(mdParDim).length;
-        mdBlk = 1;
         mData = _ddata_allocate(_multiData(eltType=eltType,
                                            idxType=idxType),
                                 mdNumChunks);
@@ -1612,10 +1609,10 @@ module DefaultRectangular {
     inline proc mdInd2Chunk(ind)
       where !defRectSimpleDData {
       if stridable then
-        return (((ind - mdRLo) / mdRStr * mdBlk * mdNumChunks:idxType)
+        return (((ind - mdRLo) / mdRStr * mdNumChunks:idxType)
                 / mdRLen):int;
       else
-        return (((ind - mdRLo) * mdBlk * mdNumChunks:idxType) / mdRLen):int;
+        return (((ind - mdRLo) * mdNumChunks:idxType) / mdRLen):int;
     }
 
     inline proc mdChunk2Ind(chunk)
@@ -1807,7 +1804,6 @@ module DefaultRectangular {
           mdRHi = copy.mdRHi;
           mdRStr = copy.mdRStr;
           mdRLen = copy.mdRLen;
-          mdBlk = copy.mdBlk;
           mData = copy.mData;
         }
         // We can't call initShiftedData here because the new domain
@@ -1857,7 +1853,7 @@ module DefaultRectangular {
         rad.mdRHi = mdRHi;
         rad.mdRStr = mdRStr;
         rad.mdRLen = mdRLen;
-        rad.mdBlk = mdBlk;
+        rad.mdBlk = 1;
         for i in 1..#mdNumChunks {
           rad.mData(i).data        = mData(i - 1).data;
           rad.mData(i).shiftedData = mData(i - 1).shiftedData;
