@@ -739,7 +739,8 @@ module DefaultRectangular {
       return mData(i(1) + 1).shiftedData(i(2));
     }
 
-    // duplicates DefaultRectangularArr.mdInd2Chunk
+    // duplicates DefaultRectangularArr.mdInd2Chunk except for mdBlk,
+    // handling alias with different mdParDim'th stride than original 
     inline proc mdInd2Chunk(ind)
       where !defRectSimpleDData {
       if stridable then
