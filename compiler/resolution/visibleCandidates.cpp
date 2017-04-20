@@ -29,14 +29,14 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static void       doGatherCandidates(CallInfo&                  info,
-                                     Vec<FnSymbol*>&            visibleFns,
-                                     bool                       generated,
-                                     Vec<ResolutionCandidate*>& candidates);
+static void      doGatherCandidates(CallInfo&                  info,
+                                    Vec<FnSymbol*>&            visibleFns,
+                                    bool                       generated,
+                                    Vec<ResolutionCandidate*>& candidates);
 
-static void       filterCandidate(CallInfo&                  info,
-                                  FnSymbol*                  fn,
-                                  Vec<ResolutionCandidate*>& candidates);
+static void      filterCandidate(CallInfo&                  info,
+                                 FnSymbol*                  fn,
+                                 Vec<ResolutionCandidate*>& candidates);
 
 static void      filterCandidate(CallInfo&                  info,
                                  ResolutionCandidate*       currCandidate,
@@ -177,7 +177,6 @@ static void filterCandidate(CallInfo&                  info,
     filterGeneric (info, currCandidate, candidates);
   }
 }
-
 
 
 /** Candidate filtering logic specific to concrete functions.
@@ -416,15 +415,15 @@ static bool hasVariableArgs(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void      expandVarArgsFixed(FnSymbol* origFn, CallInfo& info);
+static void      expandVarArgsFixed (FnSymbol*  fn, CallInfo& info);
 
-static FnSymbol* expandVarArgsQuery(FnSymbol* origFn, CallInfo& info);
+static FnSymbol* expandVarArgsQuery (FnSymbol*  fn, CallInfo& info);
 
-static void      handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
-                                              ArgSymbol* formal,
-                                              SymExpr*   sym);
+static void      expandVarArgsFormal(FnSymbol*  fn,
+                                     ArgSymbol* formal,
+                                     SymExpr*   sym);
 
-static bool      needVarArgTupleAsWhole(BlockStmt* ast,
+static bool      needVarArgTupleAsWhole(BlockStmt* block,
                                         int        numArgs,
                                         ArgSymbol* formal);
 
@@ -476,7 +475,7 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
       }
 
       if (SymExpr* sym = toSymExpr(block->body.tail)) {
-        handleSymExprInExpandVarArgs(fn, formal, sym);
+        expandVarArgsFormal(fn, formal, sym);
 
       } else if (fn->hasFlag(FLAG_GENERIC) == false) {
         INT_FATAL("bad variableExpr");
@@ -510,20 +509,21 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
 
         fn->defPoint->insertBefore(new DefExpr(retval));
 
-        formal = toArgSymbol(substitutions.get(formal));
-
         // newSym queries the number of varargs. Replace it with int literal.
-        Symbol*  defSym     = toDefExpr(block->body.tail)->sym;
-        Symbol*  newSym     = substitutions.get(defSym);
-        SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
+        Symbol*    defSym     = toDefExpr(block->body.tail)->sym;
+        Symbol*    newSym     = substitutions.get(defSym);
+        VarSymbol* nVar       = new_IntSymbol(numCopies);
+        SymExpr*   newSymExpr = new SymExpr(nVar);
 
         newSymExpr->astloc = newSym->astloc;
 
         newSym->defPoint->replace(newSymExpr);
 
-        subSymbol(retval, newSym, new_IntSymbol(numCopies));
+        subSymbol(retval, newSym, nVar);
 
-        handleSymExprInExpandVarArgs(retval, formal, newSymExpr);
+        formal = toArgSymbol(substitutions.get(formal));
+
+        expandVarArgsFormal(retval, formal, newSymExpr);
       }
 
       // It is certain that there is just one var-arg set to handle
@@ -535,35 +535,27 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
 }
 
 
-/** Common code for multiple paths through expandVarArgs.
- *
- * This code handles the case where the number of varargs are known at compile
- * time.  It inserts the necessary code to copy the values into and out of the
- * varargs tuple.
- */
-static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
-                                         ArgSymbol* formal,
-                                         SymExpr*   sym) {
+static void expandVarArgsFormal(FnSymbol*  workingFn,
+                                ArgSymbol* formal,
+                                SymExpr*   symExpr) {
+  SET_LINENO(formal);
+
   // Handle specified number of variable arguments.
   // sym->symbol() is not a VarSymbol e.g. in: proc f(param n, v...n)
-  if (VarSymbol* nVar = toVarSymbol(sym->symbol())) {
-    if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
+  if (VarSymbol* nVar = toVarSymbol(symExpr->symbol())) {
+    if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
       workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
-      SET_LINENO(formal);
-      VarSymbol* var       = new VarSymbol(formal->name);
-      int        n         = nVar->immediate->int_value();
-      CallExpr*  tupleCall = NULL;
-
-      // MPF 2016-10-02
-      // This code used to be run for _build_tuple
-      // and _build_tuple_always_allow_ref but now
-      // only runs for var-args functions.
+      VarSymbol*              var             = new VarSymbol(formal->name);
+      int                     n               = nVar->immediate->int_value();
+      CallExpr*               tupleCall       = NULL;
+      bool                    needTupleInBody = true;
 
       std::vector<ArgSymbol*> varargFormals(n);
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true)
+
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         tupleCall = new CallExpr("_type_construct__tuple");
-      else {
+      } else {
         tupleCall = new CallExpr("_construct__tuple");
         // _construct__tuple now calls initCopy, so var
         // needs to be auto-destroyed.
@@ -581,11 +573,11 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         newFormal->cname        = astr("_e", istr(i), "_", formal->cname);
 
         tupleCall->insertAtTail(new SymExpr(newFormal));
+
         formal->defPoint->insertBefore(newArgDef);
+
         varargFormals[i] = newFormal;
       }
-
-      bool needTupleInBody = true; //avoid "may be used uninitialized" warning
 
       // Replace mappings to the old formal with mappings to the new variable.
       if (PartialCopyData* pci = getPartialCopyData(workingFn)) {
@@ -595,26 +587,29 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
           SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
 
           if (mapElem.value == formal) {
-            gotFormal = true;
-            needTupleInBody =
-              needVarArgTupleAsWhole(pci->partialCopySource->body, n,
-                                     toArgSymbol(mapElem.key));
+            BlockStmt* body = pci->partialCopySource->body;
+            ArgSymbol* arg  = toArgSymbol(mapElem.key);
 
-            if (needTupleInBody) {
+            gotFormal       = true;
+            needTupleInBody = needVarArgTupleAsWhole(body, n, arg);
+
+            if (needTupleInBody == true) {
               mapElem.value = var;
             } else {
               // We will rely on mapElem.value==formal to replace it away
               // in finalizeCopy().  This assumes a single set of varargs.
-              pci->varargOldFormal = formal;
+              pci->varargOldFormal  = formal;
               pci->varargNewFormals = varargFormals;
             }
 
             break;
           }
         }
+
         // If !gotFormal, still need to compute needTupleInBody.
         // What to pass for 'formal' argument? Or maybe doesn't matter?
         INT_ASSERT(gotFormal);
+
       } else {
         needTupleInBody = needVarArgTupleAsWhole(workingFn->body, n, formal);
       }
@@ -625,13 +620,13 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
 
       // This is needed regardless of needTupleInBody...
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+        int i = 0;
+
         // ... however, we need temporaries even if !needTupleInBody.
         // Creating one temporary per formal is left as future work.
         // A challenge is whether varargFormals should contain these
         // per-formal temporaries instead of the formals, in this case.
         needTupleInBody = true;
-
-        int i = 0;
 
         for_actuals(actual, tupleCall) {
           // Skip the tuple count
@@ -652,8 +647,7 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         }
       }
 
-      if (needTupleInBody) {
-
+      if (needTupleInBody == true) {
         // Noakes 2016/02/01.
         // Enable special handling for strings with blank intent
 
@@ -676,10 +670,11 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
             VarSymbol*  local     = newTemp(localName, formal->type);
             DefExpr*    defn      = new DefExpr(local);
 
-            if (tail == NULL)
+            if (tail == NULL) {
               workingFn->insertAtHead(defn);
-            else
+            } else {
               tail->insertAfter(defn);
+            }
 
             tail = defn;
           }
@@ -765,38 +760,33 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
 // needVarArgTupleAsWhole() and substituteVarargTupleRefs() should handle
 // the exact same set of SymExprs.
 //
-static bool needVarArgTupleAsWhole(BlockStmt* ast,
+static bool needVarArgTupleAsWhole(BlockStmt* block,
                                    int        numArgs,
                                    ArgSymbol* formal) {
   std::vector<SymExpr*> symExprs;
+  bool                  retval = false;
 
-  collectSymExprs(ast, symExprs);
+  collectSymExprs(block, symExprs);
 
-  for_vector(SymExpr, se, symExprs) {
+  for (size_t i = 0; i < symExprs.size() && retval == false; i++) {
+    SymExpr* se = symExprs[i];
+
     if (se->symbol() == formal) {
       if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-        if (parent->isPrimitive(PRIM_TUPLE_EXPAND)) {
-          // (...formal) -- does not require
-          continue;
+        if (parent->isPrimitive(PRIM_TUPLE_EXPAND) == false &&
+            varargAccessIndex(se, parent, numArgs) == 0     &&
+            isVarargSizeExpr (se, parent)          == false) {
+          retval =  true;
         }
 
-        if (varargAccessIndex(se, parent, numArgs) > 0) {
-          // formal(i) -- does not require
-          continue;
-        }
-
-        if (isVarargSizeExpr(se, parent)) {
-          // formal.size -- does not require
-          continue;
-        }
+      } else {
+        retval = true;
       }
-      // Something else ==> may require.
-      return true;
     }
   }
 
   // The 'formal' is used only in "does not require" cases.
-  return false;
+  return retval;
 }
 
 /************************************* | **************************************
