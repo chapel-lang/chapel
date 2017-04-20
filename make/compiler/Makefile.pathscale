@@ -51,6 +51,7 @@ GEN_DYNAMIC_FLAG =
 FAST_FLOAT_GEN_CFLAGS = -ffast-math
 IEEE_FLOAT_GEN_CFLAGS = --fno-fast-math
 
+CXX11_STD := unknown
 
 #
 # Flags for turning on warnings for C++/C code

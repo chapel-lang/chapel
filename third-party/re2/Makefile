@@ -31,7 +31,7 @@ CHPL_RE2_CFG_OPTIONS += $(CHPL_RE2_MORE_CFG_OPTIONS)
 
 # RE2 2017-04-01 uses C++11 features
 
-ifeq (,$(CXX11_STD))
+ifeq ($(CXX11_STD),unknown)
   $(error CXX11_STD is not set for this compiler - update make/compiler/...)
 endif
 

@@ -56,6 +56,8 @@ LIB_DYNAMIC_FLAG = -shared
 
 # TODO: set target architecture for optimization
 
+CXX11_STD := -std=c++11
+
 #
 # Flags for turning on warnings for C++/C code
 #
