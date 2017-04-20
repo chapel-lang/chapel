@@ -2,6 +2,7 @@ compile-time-messages.chpl:3: warning: TEST_CLASS(param)
 compile-time-messages.chpl:3: warning: true
 compile-time-messages.chpl:3: warning: true
 compile-time-messages.chpl:3: warning: CLASS_PARAM(true)
+compile-time-messages.chpl:3: warning: CLASS_PARAM(true)
 compile-time-messages.chpl:3: warning: true
 compile-time-messages.chpl:3: warning: complex(128)
 compile-time-messages.chpl:3: warning: true
@@ -9,6 +10,7 @@ compile-time-messages.chpl:3: warning: complex(128)
 compile-time-messages.chpl:4: warning: TEST_CLASS(param)
 compile-time-messages.chpl:4: warning: 555
 compile-time-messages.chpl:4: warning: 555
+compile-time-messages.chpl:4: warning: CLASS_PARAM(555)
 compile-time-messages.chpl:4: warning: CLASS_PARAM(555)
 compile-time-messages.chpl:4: warning: 555
 compile-time-messages.chpl:4: warning: complex(128)
