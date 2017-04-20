@@ -1,8 +1,16 @@
-iterators.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: iterators.doc
+
+iterators.doc
+=============
+**Usage**
+
+.. code-block:: chapel
+
    use iterators.doc;
 
-   iter body()
-      This iterator should output its comment 
+.. iterfunction:: iter body()
+
+   This iterator should output its comment 
 

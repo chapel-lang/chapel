@@ -21,8 +21,8 @@ proc main(args: [] string) {
   ];
 
   var subst = [
-    ("tHa[Nt]", "<4>"), ("aND|caN|Ha[DS]|WaS", "<3>"), ("a[NSt]|BY", "<2>"),
-    ("<[^>]*>", "|"), ("[^|][^|]*", "")
+    ("tHa[Nt]", "<4>"), ("aND|caN|Ha[DS]|WaS", "<3>"), ("a[NSt]|BY", "<2>"), 
+    ("<[^>]*>", "|"), ("\\|[^|][^|]*\\|", "-")
   ];
 
   var data: string;

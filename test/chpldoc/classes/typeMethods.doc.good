@@ -1,19 +1,32 @@
-typeMethods.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: typeMethods.doc
+
+typeMethods.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
    use typeMethods.doc;
 
-   Class: Foo
-      proc type biff()
-         A type method declared inside the class Foo 
+.. class:: Foo
 
-   proc type Foo.blah()
-      A type method declared outside the class Foo 
+   .. method:: proc type biff()
 
-   Record: Bar
-      proc type biff()
-         A type method declared inside the record Bar 
+      A type method declared inside the class Foo 
 
-   proc type Bar.blah()
-      A type method declared outside the record Bar 
+.. method:: proc type Foo.blah()
+
+   A type method declared outside the class Foo 
+
+.. record:: Bar
+
+   .. method:: proc type biff()
+
+      A type method declared inside the record Bar 
+
+.. method:: proc type Bar.blah()
+
+   A type method declared outside the record Bar 
 

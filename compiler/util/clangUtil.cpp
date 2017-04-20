@@ -196,28 +196,6 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
       Ops[0] = llvm::MDString::get(cx, "Chapel types");
       info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
     }
-    // Create type for ftable
-    {
-      LLVM_METADATA_OPERAND_TYPE* Ops[3];
-      Ops[0] = llvm::MDString::get(cx, "Chapel ftable");
-      Ops[1] = info->tbaaRootNode;
-      // and mark it as constant
-      Ops[2] = llvm_constant_as_metadata(
-          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
-
-      info->tbaaFtableNode = llvm::MDNode::get(cx, Ops);
-    }
-    {
-      LLVM_METADATA_OPERAND_TYPE* Ops[3];
-      Ops[0] = llvm::MDString::get(cx, "Chapel vmtable");
-      Ops[1] = info->tbaaRootNode;
-      // and mark it as constant
-      Ops[2] = llvm_constant_as_metadata(
-          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
-
-      info->tbaaVmtableNode = llvm::MDNode::get(cx, Ops);
-    }
-
   }
 
   info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();

@@ -477,5 +477,6 @@ GenRet createTempVarWith(GenRet v);
 
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
+GenRet codegenNullPointer();
 
 #endif

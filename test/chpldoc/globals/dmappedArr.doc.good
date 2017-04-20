@@ -1,9 +1,20 @@
-dmappedArr.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: dmappedArr.doc
+
+dmappedArr.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
    use dmappedArr.doc;
 
-   var domBase = {1..10}
-   var domMap = new Block(domBase)
-   var dom1 = domBase dmapped new dmap(domMap)
-   var dom2: domain(1) dmapped new dmap(domMap)
+.. data:: var domBase = {1..10}
+
+.. data:: var domMap = new Block(domBase)
+
+.. data:: var dom1 = domBase dmapped new dmap(domMap)
+
+.. data:: var dom2: domain(1) dmapped new dmap(domMap)
+

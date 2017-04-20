@@ -102,7 +102,6 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-static GenRet codegenNullPointer();
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -498,6 +497,7 @@ GenRet codegenUseCid(Type* classType)
   ret.chplType = CLASS_ID_TYPE;
   return ret;
 }
+
 
 // A construct which gives the current node ID (int32_t).
 static
@@ -1418,6 +1418,40 @@ GenRet codegenNotEquals(GenRet a, GenRet b)
 }
 
 static
+GenRet codegenLessEquals(GenRet a, GenRet b)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  ret.chplType = dtBool;
+  if( info->cfile ) ret.c = "(" + av.c + " <= " + bv.c + ")";
+  else {
+#ifdef HAVE_LLVM
+    PromotedPair values = convertValuesToLarger(
+                                 av.val,
+                                 bv.val,
+                                 is_signed(av.chplType),
+                                 is_signed(bv.chplType));
+
+    if (values.a->getType()->isFPOrFPVectorTy()) {
+      ret.val = gGenInfo->builder->CreateFCmpOLE(values.a, values.b);
+
+    } else if (!values.isSigned) {
+      ret.val = gGenInfo->builder->CreateICmpULE(values.a, values.b);
+
+    } else {
+      ret.val = gGenInfo->builder->CreateICmpSLE(values.a, values.b);
+    }
+#endif
+  }
+  return ret;
+}
+
+
+static
 GenRet codegenLogicalOr(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
@@ -1914,12 +1948,71 @@ GenRet codegenIsNotZero(GenRet x)
 }
 
 static
-GenRet codegenDynamicCastCheck(GenRet cid, Type* type)
+GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
 {
-  GenRet ret = codegenEquals(cid, codegenUseCid(type));
-  forv_Vec(Type, child, type->dispatchChildren) {
-    ret = codegenLogicalOr(ret, codegenDynamicCastCheck(cid, child));
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (info->cfile) {
+    ret.c = table_name;
+    ret.c += "[";
+    ret.c += elt.c;
+    ret.c += "]";
+  } else {
+#ifdef HAVE_LLVM
+    GenRet       table = info->lvt->getValue(table_name);
+
+    INT_ASSERT(table.val);
+    INT_ASSERT(elt.val);;
+
+    llvm::Value* GEPLocs[2];
+    GEPLocs[0] = llvm::Constant::getNullValue(
+        llvm::IntegerType::getInt64Ty(info->module->getContext()));
+    GEPLocs[1] = elt.val;
+
+    llvm::Value* elementPtr;
+    elementPtr = info->builder->CreateInBoundsGEP(table.val, GEPLocs);
+
+    llvm::Instruction* element = info->builder->CreateLoad(elementPtr);
+
+    // I don't think it matters, but we could provide TBAA metadata
+    // here to indicate global constant variable loads are constant...
+    // I'd expect LLVM to figure that out because the table loaded is
+    // constant.
+
+    ret.val = element;
+#endif
   }
+  return ret;
+}
+
+// cid_Td is the class-id field value of the dynamic type
+// Type* C is the type to downcast to
+static
+GenRet codegenDynamicCastCheck(GenRet cid_Td, Type* C)
+{
+  // see genSubclassArrays in codegen.cpp
+  // currently using Schubert Numbering method
+  //
+  // Td is a subclass of C (or a C) iff
+  //   n1(C) <= n1(Td) && n1(Td) <= n2(C)
+  //
+  // but note, we n1(C) *is* C->classId
+
+  AggregateType* at = toAggregateType(C);
+  INT_ASSERT(at != NULL);
+
+
+  GenRet cid_C = codegenUseCid(C);
+  GenRet n1_C = cid_C;
+  // Since we use n1_Td twice, put it into a temp var
+  // other than that, n1_Td is cid_Td.
+  GenRet n1_Td = createTempVarWith(cid_Td);
+  GenRet n2_C  = codegenGlobalArrayElement("chpl_subclass_max_id", cid_C);
+
+  GenRet part1 = codegenLessEquals(n1_C, n1_Td);
+  GenRet part2 = codegenLessEquals(n1_Td, n2_C);
+
+  GenRet ret = codegenLogicalAnd(part1, part2);
   return ret;
 }
 
@@ -2487,7 +2580,6 @@ GenRet codegenOne()
 }
 */
 
-static
 GenRet codegenNullPointer()
 {
   GenInfo* info = gGenInfo;
@@ -4418,7 +4510,8 @@ GenRet CallExpr::codegenPrimitive() {
       // be enough to cast integers that are smaller than standard C int for
       // target architecture. However, there was no easy way of obtaining that
       // at the time of writing this piece. Engin
-      if (dst == src && !(is_int_type(dst) || is_uint_type(dst)) ) {
+      if (dst == src && !(is_int_type(dst) || is_uint_type(dst) ||
+                          is_real_type(dst)) ) {
         ret = srcGen;
 
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
@@ -4620,9 +4713,6 @@ GenRet CallExpr::codegenPrimitive() {
       fnPtrPtr   = gGenInfo->builder->CreateInBoundsGEP(ftable.val, GEPLocs);
       fnPtr      = gGenInfo->builder->CreateLoad(fnPtrPtr);
 
-      // Tell TBAA ftable ptrs don't alias other things, are constant
-      fnPtr->setMetadata(llvm::LLVMContext::MD_tbaa, gGenInfo->tbaaFtableNode);
-
       // Generate an LLVM function type based upon the arguments.
       std::vector<llvm::Type*> argumentTypes;
       llvm::Type*              returnType;
@@ -4695,7 +4785,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       INT_ASSERT(gMaxVMT >= 0);
 
-      // indexExpr = maxVMT * i + j
+      // indexExpr = maxVMT * classId + fnId
       index = codegenAdd(codegenMul(maxVMTConst, i), j);
     }
 
@@ -4705,15 +4795,12 @@ GenRet CallExpr::codegenPrimitive() {
 #ifdef HAVE_LLVM
       GenRet       table = gGenInfo->lvt->getValue("chpl_vmtable");
       llvm::Value* fnPtrPtr;
-      llvm::Value* GEPLocs[1];
-      //GEPLocs[0] = llvm::Constant::getNullValue(
-      //    llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
-      GEPLocs[0] = index.val;
+      llvm::Value* GEPLocs[2];
+      GEPLocs[0] = llvm::Constant::getNullValue(
+          llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
+      GEPLocs[1] = index.val;
       fnPtrPtr = gGenInfo->builder->CreateInBoundsGEP(table.val, GEPLocs);
       llvm::Instruction* fnPtrV = gGenInfo->builder->CreateLoad(fnPtrPtr);
-      // Tell TBAA vmtable loads don't alias anything else, are constant
-      fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa,
-                          gGenInfo->tbaaVmtableNode);
       fnPtr.val = fnPtrV;
 #endif
     }

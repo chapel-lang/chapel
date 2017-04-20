@@ -54,15 +54,17 @@ master_doc = 'index'
 # built documents.
 #
 # The short X.Y version.
-# version = '1.15'
+# version = '1.16'
 
 # We use a custom version variable (shortversion) instead, because setting
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
-shortversion = 1.15
+
+chplversion = '1.16 pre-release'    # TODO -- parse from `chpl --version`
+shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen
 
 # The full version, including alpha/beta/rc tags.
-release = '1.15.0'
+release = '1.16.0 pre-release'
 
 # General information about the project.
 project = u'Chapel Documentation {0}'.format(shortversion)
@@ -145,7 +147,7 @@ if not on_rtd:
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 # We set this because the default title is repetitive
-html_title = 'Chapel Documentation {0}'.format(shortversion)
+html_title = 'Chapel Documentation {0}'.format(chplversion)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None

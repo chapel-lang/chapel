@@ -23,6 +23,7 @@
 #include "caches.h"
 #include "chpl.h"
 #include "expr.h"
+#include "PartialCopyData.h"
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -391,7 +392,7 @@ FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs) {
  * \param fn   Generic function to finish instantiating
  */
 void instantiateBody(FnSymbol* fn) {
-  if (getPartialCopyInfo(fn)) {
+  if (getPartialCopyData(fn)) {
     fn->finalizeCopy();
   }
 }

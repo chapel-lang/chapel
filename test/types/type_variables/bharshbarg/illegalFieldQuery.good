@@ -1,0 +1,2 @@
+illegalFieldQuery.chpl:8: In function 'foo':
+illegalFieldQuery.chpl:8: error: invalid query -- queried field must be a type or parameter

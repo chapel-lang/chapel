@@ -1,20 +1,32 @@
-tuples.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: tuples.doc
+
+tuples.doc
+==========
+**Usage**
+
+.. code-block:: chapel
+
    use tuples.doc;
 
-   proc smallTuple(): (bool, bool)
-      This method returns a tuple of bools as an argument 
+.. function:: proc smallTuple(): (bool, bool)
 
-   proc difTypes(): (real, int, imag)
-      This method returns a heterogeneous tuple as an argument 
+   This method returns a tuple of bools as an argument 
 
-   proc difDecl(): 3*(string)
-      This method returns a tuple of strings as an argument 
+.. function:: proc difTypes(): (real, int, imag)
 
-   proc multiDimension(): 3*(4*(complex))
-      This method returns a tuple of tuples of complex numbers 
+   This method returns a heterogeneous tuple as an argument 
 
-   proc singleDimension(): (uint)
-      This method returns a one dimensional tuple 
+.. function:: proc difDecl(): 3*(string)
+
+   This method returns a tuple of strings as an argument 
+
+.. function:: proc multiDimension(): 3*(4*(complex))
+
+   This method returns a tuple of tuples of complex numbers 
+
+.. function:: proc singleDimension(): (uint)
+
+   This method returns a one dimensional tuple 
 

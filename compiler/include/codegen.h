@@ -107,8 +107,6 @@ struct GenInfo {
   CCodeGenAction *cgAction;
 
   llvm::MDNode* tbaaRootNode;
-  llvm::MDNode* tbaaFtableNode;
-  llvm::MDNode* tbaaVmtableNode;
 
   // We stash the layout that Clang would like to use here.
   // With fLLVMWideOpt, this will be the layout that we

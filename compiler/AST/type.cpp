@@ -509,6 +509,8 @@ AggregateType::AggregateType(AggregateTag initTag)
   genericField        = 0;
   mIsGeneric          = false;
 
+  classId = 0;
+
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
     defaultValue = gNil;
