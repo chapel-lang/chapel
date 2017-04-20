@@ -425,6 +425,8 @@ static void      expandVarArgsFormal(FnSymbol*  fn,
                                      ArgSymbol* formal,
                                      VarSymbol* nVar);
 
+static Formals   insertFormalsForVarArg(ArgSymbol* varArg, int n);
+
 static void      expandVarArgsWhere(FnSymbol*      fn,
                                     ArgSymbol*     formal,
                                     CallExpr*      tupleCall,
@@ -561,28 +563,14 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
   SET_LINENO(formal);
 
   if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
-    int                     n               = nVar->immediate->int_value();
-    std::vector<ArgSymbol*> varargFormals(n);
+    int        n               = nVar->immediate->int_value();
+    Formals    formals         = insertFormalsForVarArg(formal, n);
 
-    VarSymbol*              var             = new VarSymbol(formal->name);
-    bool                    needTupleInBody = true;
-    CallExpr*               tupleCall       = NULL;
+    VarSymbol* var             = new VarSymbol(formal->name);
+    bool       needTupleInBody = true;
+    CallExpr*  tupleCall       = NULL;
 
     workingFn->addFlag(FLAG_EXPANDED_VARARGS);
-
-    for (int i = 0; i < n; i++) {
-      DefExpr*   newArgDef = formal->defPoint->copy();
-      ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
-
-      newFormal->variableExpr = NULL;
-      newFormal->name         = astr("_e", istr(i), "_", formal->name);
-      newFormal->cname        = astr("_e", istr(i), "_", formal->cname);
-
-      formal->defPoint->insertBefore(newArgDef);
-
-      varargFormals[i] = newFormal;
-    }
-
 
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       tupleCall = new CallExpr("_type_construct__tuple");
@@ -598,7 +586,7 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
     tupleCall->insertAtTail(new_IntSymbol(n));
 
     for (int i = 0; i < n; i++) {
-      tupleCall->insertAtTail(varargFormals[i]);
+      tupleCall->insertAtTail(formals[i]);
     }
 
     // Replace mappings to the old formal with mappings to the new variable.
@@ -621,7 +609,7 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
             // We will rely on mapElem.value==formal to replace it away
             // in finalizeCopy().  This assumes a single set of varargs.
             pci->varargOldFormal  = formal;
-            pci->varargNewFormals = varargFormals;
+            pci->varargNewFormals = formals;
           }
 
           break;
@@ -666,7 +654,7 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
     }
 
     if (workingFn->where != NULL) {
-      expandVarArgsWhere(workingFn, formal, tupleCall, varargFormals);
+      expandVarArgsWhere(workingFn, formal, tupleCall, formals);
     }
 
     expandVarArgsBody(workingFn,
@@ -674,13 +662,32 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
                       var,
                       formal,
                       tupleCall,
-                      varargFormals);
+                      formals);
 
     formal->defPoint->remove();
 
   } else {
     INT_FATAL(formal, "unexpected non-VarSymbol");
   }
+}
+
+static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
+  Formals retval(n);
+
+  for (int i = 0; i < n; i++) {
+    DefExpr*   newArgDef = varArg->defPoint->copy();
+    ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
+
+    newFormal->variableExpr = NULL;
+    newFormal->name         = astr("_e", istr(i), "_", varArg->name);
+    newFormal->cname        = astr("_e", istr(i), "_", varArg->cname);
+
+    varArg->defPoint->insertBefore(newArgDef);
+
+    retval[i] = newFormal;
+  }
+
+  return retval;
 }
 
 static void expandVarArgsWhere(FnSymbol*      fn,
