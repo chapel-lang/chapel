@@ -29,8 +29,10 @@ endif
 
 CHPL_RE2_CFG_OPTIONS += $(CHPL_RE2_MORE_CFG_OPTIONS)
 
-
-CHPL_RE2_CXXFLAGS += $(CFLAGS) $(CXXFLAGS)
+# RE2 2017-04-01 uses C++11 features
+# Pass -std=c++11 first, override it with RUNTIME_CXXFLAGS if possible
+# That way, if RUNTIME_CXXFLAGS is empty, we still pass -std=c++11
+CHPL_RE2_CXXFLAGS += $(CFLAGS) -std=c++11 $(RUNTIME_CXXFLAGS)
 
 default: all
 
