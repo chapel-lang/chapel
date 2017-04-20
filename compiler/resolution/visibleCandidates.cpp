@@ -429,7 +429,6 @@ static Formals   insertFormalsForVarArg(ArgSymbol* varArg, int n);
 
 static void      expandVarArgsWhere(FnSymbol*      fn,
                                     ArgSymbol*     formal,
-                                    CallExpr*      tupleCall,
                                     const Formals& formals);
 
 static void      expandVarArgsBody(FnSymbol*      fn,
@@ -568,11 +567,18 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
     int        n               = nVar->immediate->int_value();
     Formals    formals         = insertFormalsForVarArg(formal, n);
 
+    workingFn->addFlag(FLAG_EXPANDED_VARARGS);
+
+    if (workingFn->where != NULL) {
+      expandVarArgsWhere(workingFn, formal, formals);
+    }
+
+
+
+
     VarSymbol* var             = new VarSymbol(formal->name);
     bool       needTupleInBody = true;
     CallExpr*  tupleCall       = buildTupleCall(formal, formals);
-
-    workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       var->addFlag(FLAG_TYPE_VARIABLE);
@@ -645,10 +651,6 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
       }
     }
 
-    if (workingFn->where != NULL) {
-      expandVarArgsWhere(workingFn, formal, tupleCall, formals);
-    }
-
     expandVarArgsBody(workingFn,
                       needTupleInBody,
                       var,
@@ -684,19 +686,20 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
 
 static void expandVarArgsWhere(FnSymbol*      fn,
                                ArgSymbol*     formal,
-                               CallExpr*      tupleCall,
                                const Formals& formals) {
   int n = static_cast<int>(formals.size());
 
   if (needVarArgTupleAsWhole(fn->where, n, formal)) {
-    VarSymbol* var  = new VarSymbol(formal->name);
-    CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
+    VarSymbol* var        = new VarSymbol(formal->name);
+    CallExpr*  buildTuple = buildTupleCall(formal, formals);
 
     if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       var->addFlag(FLAG_TYPE_VARIABLE);
+    } else {
+      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
-    fn->where->insertAtHead(move);
+    fn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, buildTuple));
     fn->where->insertAtHead(new DefExpr(var));
 
     subSymbol(fn->where, formal, var);
