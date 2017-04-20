@@ -417,33 +417,35 @@ static bool hasVariableArgs(FnSymbol* fn) {
 
 typedef std::vector<ArgSymbol*> Formals;
 
-static void      expandVarArgsFixed (FnSymbol*  fn, CallInfo& info);
+static void       expandVarArgsFixed (FnSymbol*  fn, CallInfo& info);
 
-static FnSymbol* expandVarArgsQuery (FnSymbol*  fn, CallInfo& info);
+static FnSymbol*  expandVarArgsQuery (FnSymbol*  fn, CallInfo& info);
 
-static void      expandVarArgsFormal(FnSymbol*  fn,
-                                     ArgSymbol* formal,
-                                     VarSymbol* nVar);
+static void       expandVarArgsFormal(FnSymbol*  fn,
+                                      ArgSymbol* formal,
+                                      VarSymbol* nVar);
 
-static Formals   insertFormalsForVarArg(ArgSymbol* varArg, int n);
+static Formals    insertFormalsForVarArg(ArgSymbol* varArg, int n);
 
-static void      expandVarArgsWhere(FnSymbol*      fn,
+static void       expandVarArgsWhere(FnSymbol*      fn,
+                                     ArgSymbol*     formal,
+                                     const Formals& formals);
+
+static void       expandVarArgsBody(FnSymbol*      fn,
                                     ArgSymbol*     formal,
                                     const Formals& formals);
 
-static void      expandVarArgsBody(FnSymbol*      fn,
-                                   ArgSymbol*     formal,
-                                   const Formals& formals);
+static VarSymbol* buildTupleVariable(ArgSymbol* formal);
 
-static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals);
+static CallExpr*  buildTupleCall(ArgSymbol* formal, const Formals& formals);
 
-static bool      needVarArgTupleAsWhole(BlockStmt* block,
-                                        int        numArgs,
-                                        ArgSymbol* formal);
+static bool       needVarArgTupleAsWhole(BlockStmt* block,
+                                         int        numArgs,
+                                         ArgSymbol* formal);
 
-static void      substituteVarargTupleRefs(BlockStmt*     block,
-                                           ArgSymbol*     formal,
-                                           const Formals& varargs);
+static void       substituteVarargTupleRefs(BlockStmt*     block,
+                                            ArgSymbol*     formal,
+                                            const Formals& varargs);
 
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info) {
   int       numVarArgs      = 0;
@@ -603,14 +605,8 @@ static void expandVarArgsWhere(FnSymbol*      fn,
   int n = static_cast<int>(formals.size());
 
   if (needVarArgTupleAsWhole(fn->where, n, formal) == true) {
-    VarSymbol* var        = new VarSymbol(formal->name);
+    VarSymbol* var        = buildTupleVariable(formal);
     CallExpr*  buildTuple = buildTupleCall(formal, formals);
-
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      var->addFlag(FLAG_TYPE_VARIABLE);
-    } else {
-      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-    }
 
     fn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, buildTuple));
     fn->where->insertAtHead(new DefExpr(var));
@@ -625,16 +621,9 @@ static void expandVarArgsBody(FnSymbol*      fn,
                               ArgSymbol*     formal,
                               const Formals& formals) {
   int        n               = static_cast<int>(formals.size());
-  VarSymbol* var             = new VarSymbol(formal->name);
-  bool       needTupleInBody = true;
+  VarSymbol* var             = buildTupleVariable(formal);
   CallExpr*  tupleCall       = buildTupleCall(formal, formals);
-
-  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    var->addFlag(FLAG_TYPE_VARIABLE);
-
-  } else {
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  }
+  bool       needTupleInBody = true;
 
   // Replace mappings to the old formal with mappings to the new variable.
   if (PartialCopyData* pci = getPartialCopyData(fn)) {
@@ -773,6 +762,18 @@ static void expandVarArgsBody(FnSymbol*      fn,
   } else {
     substituteVarargTupleRefs(fn->body, formal, formals);
   }
+}
+
+static VarSymbol* buildTupleVariable(ArgSymbol* formal) {
+  VarSymbol* retval = new VarSymbol(formal->name);
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    retval->addFlag(FLAG_TYPE_VARIABLE);
+  } else {
+    retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
+
+  return retval;
 }
 
 static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
