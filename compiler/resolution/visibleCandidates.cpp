@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "callInfo.h"
 #include "expr.h"
+#include "PartialCopyData.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -587,8 +588,9 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       bool needTupleInBody = true; //avoid "may be used uninitialized" warning
 
       // Replace mappings to the old formal with mappings to the new variable.
-      if (PartialCopyData* pci = getPartialCopyInfo(workingFn)) {
+      if (PartialCopyData* pci = getPartialCopyData(workingFn)) {
         bool gotFormal = false; // for assertion only
+
         for (int index = pci->partialCopyMap.n; --index >= 0;) {
           SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
 
@@ -710,7 +712,7 @@ static void handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
           workingFn->insertAtHead(new DefExpr(var));
         }
 
-        if (PartialCopyData* pci = getPartialCopyInfo(workingFn)) {
+        if (PartialCopyData* pci = getPartialCopyData(workingFn)) {
           // If this is a partial copy,
           // store the mapping for substitution later.
           pci->partialCopyMap.put(formal, var);

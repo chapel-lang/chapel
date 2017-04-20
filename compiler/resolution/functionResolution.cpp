@@ -38,6 +38,7 @@
 #include "initializerResolution.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
+#include "PartialCopyData.h"
 #include "passes.h"
 #include "postFold.h"
 #include "preFold.h"
@@ -5190,25 +5191,34 @@ resolveExpr(Expr* expr) {
 
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
         // Don't try to resolve the defaultTypeConstructor for string literals
-        // (resolution ordering issue, string literals are encountered too early
-        // on and we don't know enough to be able to resolve them at that point)
-        if (!(ct == dtString && (sym->symbol()->isParameter() ||
-                                 sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
+        // (resolution ordering issue, string literals are encountered too
+        // early on and we don't know enough to be able to resolve them at
+        // that point)
+        if (!(ct == dtString &&
+              (sym->symbol()->isParameter() ||
+               sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
             !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             ct->defaultTypeConstructor) {
+
           if (ct->initializerStyle == DEFINES_INITIALIZER &&
               (ct->isGeneric() ||
                (isAggregateType(ct->instantiatedFrom) &&
                 toAggregateType(ct->instantiatedFrom)->isGeneric()))) {
-            USR_FATAL(ct, "Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference");
+            USR_FATAL(ct,
+                      "Type constructors are not yet supported for "
+                      "generic types that define initializers.  "
+                      "As a workaround, try relying on type inference");
           }
 
           resolveFormals(ct->defaultTypeConstructor);
+
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (getPartialCopyInfo(ct->defaultTypeConstructor))
+            if (getPartialCopyData(ct->defaultTypeConstructor)) {
               instantiateBody(ct->defaultTypeConstructor);
+            }
+
             resolveFns(ct->defaultTypeConstructor);
           }
         }
@@ -6018,7 +6028,7 @@ void resolve() {
 
   visibleFunctionsClear();
 
-  clearPartialCopyFnMap();
+  clearPartialCopyDataFnMap();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->moduleUseClear();
