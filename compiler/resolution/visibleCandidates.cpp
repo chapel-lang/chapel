@@ -439,6 +439,8 @@ static void      expandVarArgsBody(FnSymbol*      fn,
                                    CallExpr*      tupleCall,
                                    const Formals& formals);
 
+static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals);
+
 static bool      needVarArgTupleAsWhole(BlockStmt* block,
                                         int        numArgs,
                                         ArgSymbol* formal);
@@ -568,25 +570,15 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
 
     VarSymbol* var             = new VarSymbol(formal->name);
     bool       needTupleInBody = true;
-    CallExpr*  tupleCall       = NULL;
+    CallExpr*  tupleCall       = buildTupleCall(formal, formals);
 
     workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      tupleCall = new CallExpr("_type_construct__tuple");
-
       var->addFlag(FLAG_TYPE_VARIABLE);
 
     } else {
-      tupleCall = new CallExpr("_construct__tuple");
-
       var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-    }
-
-    tupleCall->insertAtTail(new_IntSymbol(n));
-
-    for (int i = 0; i < n; i++) {
-      tupleCall->insertAtTail(formals[i]);
     }
 
     // Replace mappings to the old formal with mappings to the new variable.
@@ -796,8 +788,27 @@ static void expandVarArgsBody(FnSymbol*      fn,
   }
 }
 
+static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
+  int       n      = static_cast<int>(formals.size());
+  CallExpr* retval = NULL;
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    retval = new CallExpr("_type_construct__tuple");
+  } else {
+    retval = new CallExpr("_construct__tuple");
+  }
+
+  retval ->insertAtTail(new_IntSymbol(n));
+
+  for (int i = 0; i < n; i++) {
+    retval->insertAtTail(formals[i]);
+  }
+
+  return retval;
+}
+
 //
-// Does 'ast' contain use(s) of the vararg tuple 'formal'
+// Does 'block' contain use(s) of the vararg tuple 'formal'
 // that require 'formal' as a whole tuple?
 //
 // needVarArgTupleAsWhole() and substituteVarargTupleRefs() should handle
