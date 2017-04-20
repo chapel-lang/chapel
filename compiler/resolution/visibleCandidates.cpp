@@ -425,6 +425,11 @@ static void      expandVarArgsFormal(FnSymbol*  fn,
                                      ArgSymbol* formal,
                                      VarSymbol* nVar);
 
+static void      expandVarArgsWhere(FnSymbol*      fn,
+                                    ArgSymbol*     formal,
+                                    CallExpr*      tupleCall,
+                                    const Formals& formals);
+
 static bool      needVarArgTupleAsWhole(BlockStmt* block,
                                         int        numArgs,
                                         ArgSymbol* formal);
@@ -726,24 +731,8 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
       substituteVarargTupleRefs(workingFn->body, formal, varargFormals);
     }
 
-    if (workingFn->where) {
-      if (needVarArgTupleAsWhole(workingFn->where, n, formal)) {
-        VarSymbol* var  = new VarSymbol(formal->name);
-        CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
-
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          var->addFlag(FLAG_TYPE_VARIABLE);
-        }
-
-        workingFn->where->insertAtHead(move);
-        workingFn->where->insertAtHead(new DefExpr(var));
-
-        subSymbol(workingFn->where, formal, var);
-      } else {
-        substituteVarargTupleRefs(workingFn->where,
-                                  formal,
-                                  varargFormals);
-      }
+    if (workingFn->where != NULL) {
+      expandVarArgsWhere(workingFn, formal, tupleCall, varargFormals);
     }
 
     formal->defPoint->remove();
@@ -751,6 +740,29 @@ static void expandVarArgsFormal(FnSymbol*  workingFn,
   } else {
     // Just documenting the current status.
     INT_FATAL(formal, "unexpected non-VarSymbol");
+  }
+}
+
+static void expandVarArgsWhere(FnSymbol*      fn,
+                               ArgSymbol*     formal,
+                               CallExpr*      tupleCall,
+                               const Formals& formals) {
+  int n = static_cast<int>(formals.size());
+
+  if (needVarArgTupleAsWhole(fn->where, n, formal)) {
+    VarSymbol* var  = new VarSymbol(formal->name);
+    CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
+
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+      var->addFlag(FLAG_TYPE_VARIABLE);
+    }
+
+    fn->where->insertAtHead(move);
+    fn->where->insertAtHead(new DefExpr(var));
+
+    subSymbol(fn->where, formal, var);
+  } else {
+    substituteVarargTupleRefs(fn->where, formal, formals);
   }
 }
 
