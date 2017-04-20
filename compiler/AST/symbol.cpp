@@ -1326,10 +1326,7 @@ void FnSymbol::finalizeCopy() {
 
     // Replace vararg formal if appropriate.
     if (pci->varargOldFormal) {
-      substituteVarargTupleRefs(this->body,
-                                pci->varargNewFormals.size(),
-                                pci->varargOldFormal,
-                                pci->varargNewFormals);
+      substituteVarargTupleRefs(this, pci);
     }
 
     // Clean up book keeping information.

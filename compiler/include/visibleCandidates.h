@@ -25,9 +25,9 @@
 #include <vector>
 
 class ArgSymbol;
-class BlockStmt;
 class CallInfo;
 class FnSymbol;
+class PartialCopyData;
 class ResolutionCandidate;
 
 void      findVisibleCandidates(CallInfo&                  info,
@@ -39,10 +39,8 @@ void      resolveTypedefedArgTypes(FnSymbol* fn);
 FnSymbol* expandIfVarArgs(FnSymbol* fn,
                           CallInfo& info);
 
-void      substituteVarargTupleRefs(BlockStmt*               ast,
-                                    int                      numArgs,
-                                    ArgSymbol*               formal,
-                                    std::vector<ArgSymbol*>& varargFormals);
+void      substituteVarargTupleRefs(FnSymbol*              fn,
+                                    const PartialCopyData* pci);
 
 bool      checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
 
