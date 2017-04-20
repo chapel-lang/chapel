@@ -419,11 +419,13 @@ typedef std::vector<ArgSymbol*> Formals;
 
 static void       expandVarArgsFixed (FnSymbol*  fn, CallInfo& info);
 
+static int        varArgsCount(ArgSymbol* formal, VarSymbol* nVar);
+
 static FnSymbol*  expandVarArgsQuery (FnSymbol*  fn, CallInfo& info);
 
 static void       expandVarArgsFormal(FnSymbol*  fn,
                                       ArgSymbol* formal,
-                                      VarSymbol* nVar);
+                                      int        n);
 
 static Formals    insertFormalsForVarArg(ArgSymbol* varArg, int n);
 
@@ -496,7 +498,7 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
 
       if (SymExpr* sym = toSymExpr(block->body.tail)) {
         if (VarSymbol* nVar = toVarSymbol(sym->symbol())) {
-          expandVarArgsFormal(fn, formal, nVar);
+          expandVarArgsFormal(fn, formal, varArgsCount(formal, nVar));
         }
 
       } else if (fn->hasFlag(FLAG_GENERIC) == false) {
@@ -514,6 +516,18 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
   }
 }
 
+static int varArgsCount(ArgSymbol* formal, VarSymbol* nVar) {
+  int retval = 0;
+
+  if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
+    retval = nVar->immediate->int_value();
+
+  } else {
+    INT_FATAL(formal, "unexpected non-VarSymbol");
+  }
+
+  return retval;
+}
 
 // A  query variable e.g. proc foo(x, y, z ... ?N)
 static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
@@ -545,7 +559,7 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
 
         formal = toArgSymbol(substitutions.get(formal));
 
-        expandVarArgsFormal(retval, formal, nVar);
+        expandVarArgsFormal(retval, formal, numCopies);
       }
 
       // It is certain that there is just one var-arg set to handle
@@ -556,28 +570,20 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
   return retval;
 }
 
-static void expandVarArgsFormal(FnSymbol*  fn,
-                                ArgSymbol* formal,
-                                VarSymbol* nVar) {
+static void expandVarArgsFormal(FnSymbol*  fn, ArgSymbol* formal, int n) {
   SET_LINENO(formal);
 
-  if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
-    int     n       = nVar->immediate->int_value();
-    Formals formals = insertFormalsForVarArg(formal, n);
+  Formals formals = insertFormalsForVarArg(formal, n);
 
-    fn->addFlag(FLAG_EXPANDED_VARARGS);
+  fn->addFlag(FLAG_EXPANDED_VARARGS);
 
-    if (fn->where != NULL) {
-      expandVarArgsWhere(fn, formal, formals);
-    }
-
-    expandVarArgsBody(fn, formal, formals);
-
-    formal->defPoint->remove();
-
-  } else {
-    INT_FATAL(formal, "unexpected non-VarSymbol");
+  if (fn->where != NULL) {
+    expandVarArgsWhere(fn, formal, formals);
   }
+
+  expandVarArgsBody(fn, formal, formals);
+
+  formal->defPoint->remove();
 }
 
 static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
