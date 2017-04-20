@@ -112,25 +112,6 @@ and return a new array:
   // Works as expected
   C += A;
 
-Promotion flattening is not expected to be an issue in future releases.
-
-
-.. LinearAlgebra Module Future TODOs:
-  - Support non-matching domains and eltTypes in matOperations
-    - check that eltTypes are coercible
-    - check domain shapes are equal
-  - Add LinearAlgebra primer
-  - Add feature table, comparing to numpy and matlab
-  - performance testing
-  - Domain maps
-    - Distributed array support
-    - Sparse support
-    - GPU support
-  - Support fully native implementations
-    - Only use the BLAS/LAPACK version when the libraries are installed
-  - Provide MKL BLAS/LAPACK with Chapel installation
-    - install with something like: CHPL_EXTRAS=MKL
-
 */
 
 module LinearAlgebra {
