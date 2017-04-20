@@ -633,10 +633,8 @@ static void expandVarArgsBody(FnSymbol*      fn,
                               const Formals& formals) {
   int        n         = static_cast<int>(formals.size());
   VarSymbol* var       = buildTupleVariable(formal);
-  CallExpr*  tupleCall = buildTupleCall(formal, formals);
   bool       needTuple = true;
 
-  // Replace mappings to the old formal with mappings to the new variable.
   if (PartialCopyData* pci = getPartialCopyData(fn)) {
     needTuple = handleCopyData(pci, var, formal, formals);
 
@@ -644,36 +642,13 @@ static void expandVarArgsBody(FnSymbol*      fn,
     needTuple = needVarArgTupleAsWhole(fn->body, n, formal);
   }
 
-  // This is needed regardless of needTuple...
   if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-    int i = 0;
-
-    // ... however, we need temporaries even if !needTuple.
-    // Creating one temporary per formal is left as future work.
-    // A challenge is whether varargFormals should contain these
-    // per-formal temporaries instead of the formals, in this case.
     needTuple = true;
-
-    for_actuals(actual, tupleCall) {
-      // Skip the tuple count
-      if (i > 0) {
-        VarSymbol* tmp    = newTemp("_varargs_tmp_");
-
-        CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
-        CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
-
-        CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
-
-        fn->insertIntoEpilogue(new DefExpr(tmp));
-        fn->insertIntoEpilogue(move);
-        fn->insertIntoEpilogue(assign);
-      }
-
-      i++;
-    }
   }
 
   if (needTuple == true) {
+    CallExpr*  tupleCall = buildTupleCall(formal, formals);
+
     // Noakes 2016/02/01.
     // Enable special handling for strings with blank intent
 
@@ -686,7 +661,7 @@ static void expandVarArgsBody(FnSymbol*      fn,
     //
     // Insert local copies that can be used for the tuple
 
-    if (isString(formal->type) && formal->intent == INTENT_BLANK) {
+    if (isString(formal->type) == true && formal->intent == INTENT_BLANK) {
       DefExpr* varDefn = new DefExpr(var);
       Expr*    tail    = NULL;
 
@@ -728,6 +703,7 @@ static void expandVarArgsBody(FnSymbol*      fn,
       }
 
       tail->insertAfter(new CallExpr(PRIM_MOVE, var, tupleCall));
+
     } else {
       fn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
       fn->insertAtHead(new DefExpr(var));
@@ -741,6 +717,29 @@ static void expandVarArgsBody(FnSymbol*      fn,
     } else {
       // Otherwise, do the substitution now.
       subSymbol(fn->body, formal, var);
+    }
+
+    // Insert epilogue temps
+    if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+      int i = 0;
+
+      for_actuals(actual, tupleCall) {
+        // Skip the tuple count
+        if (i > 0) {
+          VarSymbol* tmp    = newTemp("_varargs_tmp_");
+
+          CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+          CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
+
+          CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
+
+          fn->insertIntoEpilogue(new DefExpr(tmp));
+          fn->insertIntoEpilogue(move);
+          fn->insertIntoEpilogue(assign);
+        }
+
+        i++;
+      }
     }
 
   } else {
