@@ -63,6 +63,7 @@ WARN_CXXFLAGS =
 WARN_CFLAGS =
 WARN_GEN_CFLAGS = 
 
+CXX11_STD := -std=c++11
 
 #
 # compiler warnings settings
