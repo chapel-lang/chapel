@@ -700,8 +700,8 @@ bool NFA<StrPiece>::Search(const StrPiece& text, const StrPiece& const_context,
     for (int i = 0; i < nsubmatch; i++)
       submatch[i].set_ptr_end(match_[2 * i], match_[2 * i + 1]);
     if (ExtraDebug)
-      fprintf(stderr, "match (%td,%td)\n",
-              match_[0] - btext_, match_[1] - btext_);
+      fprintf(stderr, "match (%td,%ld)\n",
+              (long)(match_[0] - btext_), (long)(match_[1] - btext_));
     return true;
   }
   return false;
