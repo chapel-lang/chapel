@@ -112,6 +112,8 @@ and return a new array:
   // Works as expected
   C += A;
 
+Promotion flattening is not expected to be an issue in future releases.
+
 */
 
 module LinearAlgebra {
