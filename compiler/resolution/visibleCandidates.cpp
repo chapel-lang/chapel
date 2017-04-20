@@ -432,10 +432,7 @@ static void      expandVarArgsWhere(FnSymbol*      fn,
                                     const Formals& formals);
 
 static void      expandVarArgsBody(FnSymbol*      fn,
-                                   bool           needTupleInBody,
-                                   VarSymbol*     var,
                                    ArgSymbol*     formal,
-                                   CallExpr*      tupleCall,
                                    const Formals& formals);
 
 static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals);
@@ -557,106 +554,22 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
   return retval;
 }
 
-
-static void expandVarArgsFormal(FnSymbol*  workingFn,
+static void expandVarArgsFormal(FnSymbol*  fn,
                                 ArgSymbol* formal,
                                 VarSymbol* nVar) {
   SET_LINENO(formal);
 
   if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
-    int        n               = nVar->immediate->int_value();
-    Formals    formals         = insertFormalsForVarArg(formal, n);
+    int     n       = nVar->immediate->int_value();
+    Formals formals = insertFormalsForVarArg(formal, n);
 
-    workingFn->addFlag(FLAG_EXPANDED_VARARGS);
+    fn->addFlag(FLAG_EXPANDED_VARARGS);
 
-    if (workingFn->where != NULL) {
-      expandVarArgsWhere(workingFn, formal, formals);
+    if (fn->where != NULL) {
+      expandVarArgsWhere(fn, formal, formals);
     }
 
-
-
-
-    VarSymbol* var             = new VarSymbol(formal->name);
-    bool       needTupleInBody = true;
-    CallExpr*  tupleCall       = buildTupleCall(formal, formals);
-
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      var->addFlag(FLAG_TYPE_VARIABLE);
-
-    } else {
-      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-    }
-
-    // Replace mappings to the old formal with mappings to the new variable.
-    if (PartialCopyData* pci = getPartialCopyData(workingFn)) {
-      bool gotFormal = false; // for assertion only
-
-      for (int index = pci->partialCopyMap.n; --index >= 0;) {
-        SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
-
-        if (mapElem.value == formal) {
-          BlockStmt* body = pci->partialCopySource->body;
-          ArgSymbol* arg  = toArgSymbol(mapElem.key);
-
-          gotFormal       = true;
-          needTupleInBody = needVarArgTupleAsWhole(body, n, arg);
-
-          if (needTupleInBody == true) {
-            mapElem.value = var;
-          } else {
-            // We will rely on mapElem.value==formal to replace it away
-            // in finalizeCopy().  This assumes a single set of varargs.
-            pci->varargOldFormal  = formal;
-            pci->varargNewFormals = formals;
-          }
-
-          break;
-        }
-      }
-
-      // If !gotFormal, still need to compute needTupleInBody.
-      // What to pass for 'formal' argument? Or maybe doesn't matter?
-      INT_ASSERT(gotFormal);
-
-    } else {
-      needTupleInBody = needVarArgTupleAsWhole(workingFn->body, n, formal);
-    }
-
-    // This is needed regardless of needTupleInBody...
-    if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-      int i = 0;
-
-      // ... however, we need temporaries even if !needTupleInBody.
-      // Creating one temporary per formal is left as future work.
-      // A challenge is whether varargFormals should contain these
-      // per-formal temporaries instead of the formals, in this case.
-      needTupleInBody = true;
-
-      for_actuals(actual, tupleCall) {
-        // Skip the tuple count
-        if (i > 0) {
-          VarSymbol* tmp    = newTemp("_varargs_tmp_");
-
-          CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
-          CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
-
-          CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
-
-          workingFn->insertIntoEpilogue(new DefExpr(tmp));
-          workingFn->insertIntoEpilogue(move);
-          workingFn->insertIntoEpilogue(assign);
-        }
-
-        i++;
-      }
-    }
-
-    expandVarArgsBody(workingFn,
-                      needTupleInBody,
-                      var,
-                      formal,
-                      tupleCall,
-                      formals);
+    expandVarArgsBody(fn, formal, formals);
 
     formal->defPoint->remove();
 
@@ -689,11 +602,11 @@ static void expandVarArgsWhere(FnSymbol*      fn,
                                const Formals& formals) {
   int n = static_cast<int>(formals.size());
 
-  if (needVarArgTupleAsWhole(fn->where, n, formal)) {
+  if (needVarArgTupleAsWhole(fn->where, n, formal) == true) {
     VarSymbol* var        = new VarSymbol(formal->name);
     CallExpr*  buildTuple = buildTupleCall(formal, formals);
 
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       var->addFlag(FLAG_TYPE_VARIABLE);
     } else {
       var->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -709,12 +622,83 @@ static void expandVarArgsWhere(FnSymbol*      fn,
 }
 
 static void expandVarArgsBody(FnSymbol*      fn,
-                              bool           needTupleInBody,
-                              VarSymbol*     var,
                               ArgSymbol*     formal,
-                              CallExpr*      tupleCall,
                               const Formals& formals) {
-  int n = static_cast<int>(formals.size());
+  int        n               = static_cast<int>(formals.size());
+  VarSymbol* var             = new VarSymbol(formal->name);
+  bool       needTupleInBody = true;
+  CallExpr*  tupleCall       = buildTupleCall(formal, formals);
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    var->addFlag(FLAG_TYPE_VARIABLE);
+
+  } else {
+    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
+
+  // Replace mappings to the old formal with mappings to the new variable.
+  if (PartialCopyData* pci = getPartialCopyData(fn)) {
+    bool gotFormal = false; // for assertion only
+
+    for (int index = pci->partialCopyMap.n; --index >= 0;) {
+      SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
+
+      if (mapElem.value == formal) {
+        BlockStmt* body = pci->partialCopySource->body;
+        ArgSymbol* arg  = toArgSymbol(mapElem.key);
+
+        gotFormal       = true;
+        needTupleInBody = needVarArgTupleAsWhole(body, n, arg);
+
+        if (needTupleInBody == true) {
+          mapElem.value = var;
+        } else {
+          // We will rely on mapElem.value==formal to replace it away
+          // in finalizeCopy().  This assumes a single set of varargs.
+          pci->varargOldFormal  = formal;
+          pci->varargNewFormals = formals;
+        }
+
+        break;
+      }
+    }
+
+    // If !gotFormal, still need to compute needTupleInBody.
+    // What to pass for 'formal' argument? Or maybe doesn't matter?
+    INT_ASSERT(gotFormal);
+
+  } else {
+    needTupleInBody = needVarArgTupleAsWhole(fn->body, n, formal);
+  }
+
+  // This is needed regardless of needTupleInBody...
+  if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+    int i = 0;
+
+    // ... however, we need temporaries even if !needTupleInBody.
+    // Creating one temporary per formal is left as future work.
+    // A challenge is whether varargFormals should contain these
+    // per-formal temporaries instead of the formals, in this case.
+    needTupleInBody = true;
+
+    for_actuals(actual, tupleCall) {
+      // Skip the tuple count
+      if (i > 0) {
+        VarSymbol* tmp    = newTemp("_varargs_tmp_");
+
+        CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+        CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
+
+        CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
+
+        fn->insertIntoEpilogue(new DefExpr(tmp));
+        fn->insertIntoEpilogue(move);
+        fn->insertIntoEpilogue(assign);
+      }
+
+      i++;
+    }
+  }
 
   if (needTupleInBody == true) {
     // Noakes 2016/02/01.
