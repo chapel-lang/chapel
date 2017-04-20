@@ -153,7 +153,7 @@ destructureTupleAssignment(CallExpr* call) {
 //
 // If call is an empty return statement, e.g. "return;"
 // then change it into a return of the 'void' symbol: "return _void;"
-// and mark the function it is in with FLAG_NO_RETURN_VALUE.
+// and mark the function it is in with FLAG_VOID_NO_RETURN_VALUE.
 //
 static void insertVoidReturnSymbols(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_RETURN));
@@ -162,19 +162,28 @@ static void insertVoidReturnSymbols(CallExpr* call) {
     FnSymbol* fn = call->getFunction();
     INT_ASSERT(fn);
     call->insertAtTail(gVoid);
-    fn->addFlag(FLAG_NO_RETURN_VALUE);
+    fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
   }
 }
 
 //
 // Mark functions with no return statements and functions with only empty
-// return statements with FLAG_NO_RETURN_VALUE. Change empty return
+// return statements with FLAG_VOID_NO_RETURN_VALUE. Change empty return
 // statements to return the value '_void'.
 //
 static void fixup_void_return_fn(FnSymbol* fn) {
   std::vector<CallExpr*> callExprs;
   collectCallExprs(fn, callExprs);
   bool foundReturn = false;
+  // Pass expandExternArrayCalls builds a wrapper for the extern function
+  // and returns the value the extern function returned.  It marks the
+  // extern function with FLAG_EXTERN_FN_WITH_ARRAY_ARG, which tells us
+  // that we need to be able to handle the wrapper returning the result
+  // of a call to it.  If the extern function had a 'void' return, treat
+  // it as a void value.
+  if (fn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG)) {
+    return;
+  }
 
   for_vector(CallExpr, call, callExprs) {
     if (call->isPrimitive(PRIM_RETURN)) {
@@ -183,7 +192,7 @@ static void fixup_void_return_fn(FnSymbol* fn) {
     }
   }
   if (!foundReturn) {
-    fn->addFlag(FLAG_NO_RETURN_VALUE);
+    fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
   }
 }
 

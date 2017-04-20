@@ -4242,7 +4242,7 @@ static void resolveMove(CallExpr* call) {
   if (rhsType == dtVoid) {
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
       if (FnSymbol* rhsFn = rhsCall->isResolved()) {
-        if (rhsFn->hasFlag(FLAG_NO_RETURN_VALUE)) {
+        if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
           USR_FATAL(userCall(call),
                     "illegal use of function that does not "
                     "return a value: '%s'",

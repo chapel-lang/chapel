@@ -97,8 +97,11 @@ void expandExternArrayCalls() {
     if (fcopy) {
       SET_LINENO(fn);
       fn->defPoint->insertAfter(new DefExpr(fcopy));
+      fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
       fcopy->removeFlag(FLAG_EXTERN);
       fcopy->addFlag(FLAG_INLINE);
+      fcopy->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+
       fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);
       fn->name = astr("chpl__extern_array_", fn->name);
 
@@ -127,7 +130,7 @@ void expandExternArrayCalls() {
       }
 
       if (fcopy->retType == dtVoid) {
-        fcopy->body->replace(new BlockStmt(externCall));
+        INT_FATAL("unexpected void retType");
       } else {
         fcopy->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, externCall)));
       }

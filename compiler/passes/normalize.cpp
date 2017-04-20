@@ -884,7 +884,6 @@ static void normalizeReturns(FnSymbol* fn) {
 
   // Add a void return if needed.
   if (rets.size() == 0 && fn->retExprType == NULL) {
-    fn->addFlag(FLAG_NO_RETURN_VALUE);
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
