@@ -447,6 +447,10 @@ static CallExpr*  expandVarArgString(FnSymbol*      fn,
                                      ArgSymbol*     formal,
                                      const Formals& formals);
 
+static void       insertEpilogueTemps(FnSymbol*  fn,
+                                      VarSymbol* var,
+                                      CallExpr*  tupleCall);
+
 static VarSymbol* buildTupleVariable(ArgSymbol* formal);
 
 static CallExpr*  buildTupleCall(ArgSymbol* formal, const Formals& formals);
@@ -674,27 +678,8 @@ static void expandVarArgsBody(FnSymbol*      fn,
       subSymbol(fn->body, formal, var);
     }
 
-    // Insert epilogue temps
     if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-      int i = 0;
-
-      for_actuals(actual, tupleCall) {
-        // Skip the tuple count
-        if (i > 0) {
-          VarSymbol* tmp    = newTemp("_varargs_tmp_");
-
-          CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
-          CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
-
-          CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
-
-          fn->insertIntoEpilogue(new DefExpr(tmp));
-          fn->insertIntoEpilogue(move);
-          fn->insertIntoEpilogue(assign);
-        }
-
-        i++;
-      }
+      insertEpilogueTemps(fn, var, tupleCall);
     }
 
   } else {
@@ -793,6 +778,30 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
   defn->insertAfter(new CallExpr(PRIM_MOVE, var, retval));
 
   return retval;
+}
+
+static void insertEpilogueTemps(FnSymbol*  fn,
+                                VarSymbol* var,
+                                CallExpr*  tupleCall) {
+  int i = 0;
+
+  for_actuals(actual, tupleCall) {
+    // Skip the tuple count
+    if (i > 0) {
+      VarSymbol* tmp    = newTemp("_varargs_tmp_");
+
+      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+      CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
+
+      CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
+
+      fn->insertIntoEpilogue(new DefExpr(tmp));
+      fn->insertIntoEpilogue(move);
+      fn->insertIntoEpilogue(assign);
+    }
+
+    i++;
+  }
 }
 
 static VarSymbol* buildTupleVariable(ArgSymbol* formal) {
