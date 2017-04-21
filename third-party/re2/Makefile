@@ -35,9 +35,11 @@ ifeq ($(CXX11_STD),unknown)
   $(error CXX11_STD is not set for this compiler - update make/compiler/...)
 endif
 
-# Pass -std=c++11 first, override it with RUNTIME_CXXFLAGS if possible
-# That way, even if RUNTIME_CXXFLAGS is empty, we still pass -std=c++11
-CHPL_RE2_CXXFLAGS += $(CFLAGS) $(CXX11_STD) $(RUNTIME_CXXFLAGS)
+# CXX11_STD will be blank for compilers that default to C++11,
+# or it will use e.g. gnu++11 or c++11 if not.
+# Note that RE2 itself sometimes throws -std=c++11, but this is
+# not done for some compilers that Chapel supports.
+CHPL_RE2_CXXFLAGS += $(CFLAGS) $(CXXFLAGS) $(CXX11_STD)
 
 default: all
 
