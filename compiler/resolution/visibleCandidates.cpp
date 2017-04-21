@@ -442,6 +442,11 @@ static bool       handleCopyData(PartialCopyData* pci,
                                  ArgSymbol*       formal,
                                  const Formals&   varargs);
 
+static CallExpr*  expandVarArgString(FnSymbol*      fn,
+                                     VarSymbol*     var,
+                                     ArgSymbol*     formal,
+                                     const Formals& formals);
+
 static VarSymbol* buildTupleVariable(ArgSymbol* formal);
 
 static CallExpr*  buildTupleCall(ArgSymbol* formal, const Formals& formals);
@@ -599,8 +604,8 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
     ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
 
     newFormal->variableExpr = NULL;
-    newFormal->name         = astr("_e", istr(i), "_", varArg->name);
-    newFormal->cname        = astr("_e", istr(i), "_", varArg->cname);
+    newFormal->name         = astr("_e", istr(i + 1), "_", varArg->name);
+    newFormal->cname        = astr("_e", istr(i + 1), "_", varArg->cname);
 
     varArg->defPoint->insertBefore(newArgDef);
 
@@ -647,64 +652,14 @@ static void expandVarArgsBody(FnSymbol*      fn,
   }
 
   if (needTuple == true) {
-    CallExpr*  tupleCall = buildTupleCall(formal, formals);
-
-    // Noakes 2016/02/01.
-    // Enable special handling for strings with blank intent
-
-    // If the original formal is a string with blank intent then the
-    // new formals appear to be strings with blank intent.  However
-    // the resolver is about to update these to be const ref intent.
-    //
-    // Currently this will cause the tuple to appear to be a tuple
-    // ref(String) which is not supported.
-    //
-    // Insert local copies that can be used for the tuple
+    CallExpr* tupleCall = NULL;
 
     if (isString(formal->type) == true && formal->intent == INTENT_BLANK) {
-      DefExpr* varDefn = new DefExpr(var);
-      Expr*    tail    = NULL;
-
-      // Insert the new locals
-      for (int i = 0; i < n; i++) {
-        const char* localName = astr("_e", istr(i + n), "_", formal->name);
-        VarSymbol*  local     = newTemp(localName, formal->type);
-        DefExpr*    defn      = new DefExpr(local);
-
-        if (tail == NULL) {
-          fn->insertAtHead(defn);
-        } else {
-          tail->insertAfter(defn);
-        }
-
-        tail = defn;
-      }
-
-      // Insert the definition for the tuple
-      tail->insertAfter(varDefn);
-      tail = varDefn;
-
-      // Insert the copies from the blank-intent strings to the locals
-      // Update the arguments to the tuple call
-      for (int i = 1; i <= n; i++) {
-        DefExpr*  localDefn = toDefExpr(fn->body->body.get(i));
-        Symbol*   local     = localDefn->sym;
-        SymExpr*  localExpr = new SymExpr(local);
-
-        SymExpr*  tupleArg  = toSymExpr(tupleCall->get(i + 1));
-        SymExpr*  copyArg   = tupleArg->copy();
-
-        CallExpr* moveExpr  = new CallExpr(PRIM_MOVE, localExpr, copyArg);
-
-        tupleArg->setSymbol(local);
-
-        tail->insertAfter(moveExpr);
-        tail = moveExpr;
-      }
-
-      tail->insertAfter(new CallExpr(PRIM_MOVE, var, tupleCall));
+      tupleCall = expandVarArgString(fn, var, formal, formals);
 
     } else {
+      tupleCall = buildTupleCall(formal, formals);
+
       fn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
       fn->insertAtHead(new DefExpr(var));
     }
@@ -779,6 +734,63 @@ static bool handleCopyData(PartialCopyData* pci,
   }
 
   INT_ASSERT(gotFormal == true);
+
+  return retval;
+}
+
+// Noakes 2016/02/01.
+// Enable special handling for strings with blank intent
+
+// If the original formal is a string with blank intent then the
+// new formals appear to be strings with blank intent.  However
+// the resolver is about to update these to be const ref intent.
+//
+// Currently this will cause the tuple to appear to be a tuple
+// ref(String) which is not supported.
+//
+// Insert local copies that can be used for the tuple
+
+static CallExpr* expandVarArgString(FnSymbol*      fn,
+                                    VarSymbol*     var,
+                                    ArgSymbol*     formal,
+                                    const Formals& varargs) {
+  int       n      = static_cast<int>(varargs.size());
+  DefExpr*  defn   = new DefExpr(var);
+  Expr*     tail   = NULL;
+  CallExpr* retval = NULL;
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    retval = new CallExpr("_type_construct__tuple");
+  } else {
+    retval = new CallExpr("_construct__tuple");
+  }
+
+  retval->insertAtTail(new_IntSymbol(n));
+
+  // Create a local for every blank string
+  for (int i = 0; i < n; i++) {
+    const char* localName = astr("_e", istr(i + 1 + n), "_", formal->name);
+    VarSymbol*  local     = newTemp(localName, formal->type);
+    DefExpr*    localDefn = new DefExpr(local);
+    CallExpr*   move      = new CallExpr(PRIM_MOVE, local, varargs[i]);
+
+    // Collect the local in to the tuple
+    retval->insertAtTail(local);
+
+    // Define the local and initialize the value
+    if (tail == NULL) {
+      fn->insertAtHead(localDefn);
+    } else {
+      tail->insertAfter(localDefn);
+    }
+
+    localDefn->insertAfter(move);
+
+    tail = move;
+  }
+
+  tail->insertAfter(defn);
+  defn->insertAfter(new CallExpr(PRIM_MOVE, var, retval));
 
   return retval;
 }
