@@ -46,10 +46,25 @@ endif
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CFLAGS = $(CFLAGS)
+# User can provide:
+#   CPPFLAGS - C PreProcessor flags
+#   CFLAGS   - C flags
+#   CXXFLAGS - C++ flags
+#   LDFLAGS  - ld (linker) flags
+#
+# We set
+#  COMP_CFLAGS, COMP_CXXFLAGS,       (compiling C/C++ code in compiler/)
+#  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
+# in a way that respects the above user-provide-able variables.
+COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
+COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+# Appended after COMP_CXXFLAGS when compiling parser/lexer
 COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = $(CFLAGS)
-RUNTIME_CXXFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS = $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+# For compiling the generated code
+# Note, user-provided CPPFLAGS / CFLAGS are not provided to generated code.
+# Instead, such flags would be provided on the chpl command line.
 GEN_CFLAGS =
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =

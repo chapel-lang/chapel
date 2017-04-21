@@ -19,6 +19,7 @@
 
 CRAYPE_GEN_CFLAGS =
 CRAYPE_COMP_CFLAGS =
+CRAYPE_COMP_CXXFLAGS =
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 
