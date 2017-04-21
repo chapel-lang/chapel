@@ -53,13 +53,12 @@ endif
 #   LDFLAGS  - ld (linker) flags
 #
 # We set
-#  COMP_CFLAGS, COMP_CXXFLAGS,       (compiling C/C++ code in compiler/)
+#  COMP_CXXFLAGS,                    (compiling C++ code in compiler/)
 #  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
 # in a way that respects the above user-provide-able variables.
-COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
 # Appended after COMP_CXXFLAGS when compiling parser/lexer
-COMP_CFLAGS_NONCHPL = -Wno-error
+COMP_CXXFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
 # For compiling the generated code
@@ -173,7 +172,7 @@ endif
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
-COMP_CFLAGS += -fno-tree-vrp
+COMP_CXXFLAGS += -fno-tree-vrp
 endif
 
 endif
@@ -198,9 +197,8 @@ endif
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile

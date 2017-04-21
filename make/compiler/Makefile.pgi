@@ -40,9 +40,8 @@ OPT_CFLAGS = -O3
 # Flags for compiler, runtime, and generated code
 #
 
-COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
-COMP_CFLAGS_NONCHPL =
+COMP_CXXFLAGS_NONCHPL =
 RUNTIME_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
 
@@ -73,7 +72,7 @@ CXX11_STD := -std=c++11
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif

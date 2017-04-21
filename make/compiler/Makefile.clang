@@ -70,9 +70,8 @@ CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
-COMP_CFLAGS_NONCHPL = -Wno-error
+COMP_CXXFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
 GEN_CFLAGS = $(C_STD)
@@ -138,9 +137,8 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
