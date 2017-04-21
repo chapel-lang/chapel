@@ -17,23 +17,17 @@
  * limitations under the License.
  */
 
-#ifndef _VISIBLE_CANDIDATES_H_
-#define _VISIBLE_CANDIDATES_H_
-
-#include "vec.h"
+#ifndef _EXPAND_VAR_ARGS_H_
+#define _EXPAND_VAR_ARGS_H_
 
 class CallInfo;
 class FnSymbol;
-class ResolutionCandidate;
+class PartialCopyData;
 
-void findVisibleCandidates(CallInfo&                  info,
-                           Vec<FnSymbol*>&            visibleFns,
-                           Vec<ResolutionCandidate*>& candidates);
+FnSymbol* expandIfVarArgs(FnSymbol* fn,
+                          CallInfo& info);
 
-void resolveTypedefedArgTypes(FnSymbol* fn);
-
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
-
-bool checkGenericFormals(ResolutionCandidate* currCandidate);
+void      substituteVarargTupleRefs(FnSymbol*              fn,
+                                    const PartialCopyData* pci);
 
 #endif

@@ -28,6 +28,7 @@
 #include "bb.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
