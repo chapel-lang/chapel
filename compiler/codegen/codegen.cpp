@@ -629,8 +629,8 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   // Free the buffer for C conversions.
   if (buf) free(buf);
 
-  // make sure the table always contains at least 1 element
-  if (finfo.empty()) {
+  // make sure the table always contains at trailing NULL element
+  {
     GenRet nullStruct;
     if (info->cfile) {
       nullStruct.c = "{(char *)0, 0, 0}";
@@ -656,15 +656,18 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 
   // compute max # methods per type
   int maxVMT = 0;
-  typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
 
-  form_Map(VmtMapElem, el, virtualMethodTable) {
-    AggregateType* t = toAggregateType(el->key);
-    Vec<FnSymbol*>* val = el->value;
-    if (t && val) {
-      if (val->n > maxVMT)
-        maxVMT = val->n;
-    }
+  // note: the virtual method table can contain keys
+  // that point to deallocated memory (e.g. for classes that
+  // have been removed). So it is important to only 'get'
+  // live AST elements from the VMT rather than traversing it
+  // directly.
+  forv_Vec(TypeSymbol, ts, types) {
+    if (AggregateType* ct = toAggregateType(ts->type))
+      if (isObjectOrSubclass(ct))
+        if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct))
+          if (vfns->n > maxVMT)
+            maxVMT = vfns->n;
   }
   gMaxVMT = maxVMT;
 
@@ -799,8 +802,8 @@ static void genUnwindSymbolTable(){
       table.push_back(codegenStringForTable(fn->cname));
       table.push_back(codegenStringForTable(fn->name));
     }
-    table.push_back("");
-    table.push_back("");
+    table.push_back(codegenStringForTable(""));
+    table.push_back(codegenStringForTable(""));
 
     // Now emit the global array declaration
     codegenGlobalConstArray(name, eltType, &table, false);
