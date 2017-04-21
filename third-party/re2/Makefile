@@ -39,7 +39,7 @@ endif
 # or it will use e.g. gnu++11 or c++11 if not.
 # Note that RE2 itself sometimes throws -std=c++11, but this is
 # not done for some compilers that Chapel supports.
-CHPL_RE2_CXXFLAGS += $(CFLAGS) $(CXXFLAGS) $(CXX11_STD)
+CHPL_RE2_CXXFLAGS += $(CXXFLAGS) $(CXX11_STD)
 
 default: all
 
@@ -60,8 +60,8 @@ $(RE2_BUILD_SUBDIR):
 $(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	cd $(RE2_SUBDIR) && \
 	$(MAKE) clean && \
-	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) obj/libre2.a && \
-	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) prefix=$(RE2_INSTALL_DIR) install-static && \
+	$(MAKE) CXX='$(CXX)' NODEBUG= CPPFLAGS='$(CPPFLAGS)' CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) obj/libre2.a && \
+	$(MAKE) CXX='$(CXX)' NODEBUG= CPPFLAGS='$(CPPFLAGS)' CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) prefix=$(RE2_INSTALL_DIR) install-static && \
 	mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && \
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)
