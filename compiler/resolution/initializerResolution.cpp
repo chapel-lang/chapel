@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "initializerRules.h"
 #include "passes.h"
