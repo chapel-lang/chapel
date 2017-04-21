@@ -666,8 +666,8 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     if (AggregateType* ct = toAggregateType(ts->type))
       if (isObjectOrSubclass(ct))
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct))
-	  if (vfns->n > maxVMT)
-	    maxVMT = vfns->n;
+          if (vfns->n > maxVMT)
+            maxVMT = vfns->n;
   }
   gMaxVMT = maxVMT;
 
