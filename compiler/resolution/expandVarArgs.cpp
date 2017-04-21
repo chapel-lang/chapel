@@ -48,8 +48,40 @@ static void      cacheExtend(FnSymbol* fn, FnSymbol* expansion);
 
 /************************************* | **************************************
 *                                                                             *
-* If the function accepts a variable number of args, map it to a function     *
-* with the necessary number of formals.                                       *
+* Consider a function that accepts a variable number of formals e.g.          *
+*                                                                             *
+*    proc myWriteln(x ...?k) {                                                *
+*      for param i in 1 .. k do writeln(x(i));                                *
+*    }                                                                        *
+*                                                                             *
+*    proc sum(x : int ... N) return x(1) + x(2) + . + x(N);                   *
+*                                                                             *
+* where N is a param.                                                         *
+*                                                                             *
+*                                                                             *
+* Within the body of the function the vararg formal is referenced as if       *
+* it is a tuple.  This suggests two broad implementation strategies:          *
+*                                                                             *
+*    1) Implement the formal as a tuple and build the required tuple at       *
+*       the call site.                                                        *
+*                                                                             *
+*    2) Instantiate the function with individual formals based on existing    *
+*       call sites.                                                           *
+*                                                                             *
+* The current implementation follows the second strategy.                     *
+*                                                                             *
+*                                                                             *
+* An accommodation must be made for the uses of the varArg within the body.   *
+* Yet again there are two strategies:                                         *
+*                                                                             *
+*    1) Construct the required tuple within the body of the procedure         *
+*                                                                             *
+*    2) Convert the references to the typle to references to the formals      *
+*                                                                             *
+* The current implementation selects between these strategies based on the    *
+* way in which the varArg is used.                                            *
+*                                                                             *
+*                                                                             *
 *                                                                             *
 * 2017/04/05 There are several points at which this implementation assumes    *
 * there is only one set of varargs. This has historically been implicit but   *
@@ -61,6 +93,7 @@ static void      cacheExtend(FnSymbol* fn, FnSymbol* expansion);
 ************************************** | *************************************/
 
 static bool hasVariableArgs(FnSymbol* fn);
+
 
 FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
   FnSymbol* retval = fn;
