@@ -76,7 +76,7 @@ ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
 # Evaluate all of the definitions in CHPL_MAKE_ALL_VARS before running
 # printchplenv in order to pass the existing values from the compiler forward
 
-export CHPL_MAKE_SETTINGS_NO_NEWLINES = $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
+export CHPL_MAKE_SETTINGS_NO_NEWLINES := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
 endif
 
 # This really needs TWO newlines!
