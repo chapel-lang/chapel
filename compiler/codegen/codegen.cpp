@@ -629,8 +629,8 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   // Free the buffer for C conversions.
   if (buf) free(buf);
 
-  // make sure the table always contains at least 1 element
-  if (finfo.empty()) {
+  // make sure the table always contains at trailing NULL element
+  {
     GenRet nullStruct;
     if (info->cfile) {
       nullStruct.c = "{(char *)0, 0, 0}";
