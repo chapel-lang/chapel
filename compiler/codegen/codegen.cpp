@@ -802,8 +802,8 @@ static void genUnwindSymbolTable(){
       table.push_back(codegenStringForTable(fn->cname));
       table.push_back(codegenStringForTable(fn->name));
     }
-    table.push_back("");
-    table.push_back("");
+    table.push_back(codegenStringForTable(""));
+    table.push_back(codegenStringForTable(""));
 
     // Now emit the global array declaration
     codegenGlobalConstArray(name, eltType, &table, false);
