@@ -1,0 +1,5 @@
+bug: BlockCycDist: halt reached - array index out of bounds
+
+Certain combinations of dimensions, blocksize, and numLocales result
+in an array index out of bounds error indexing into a
+BlockCyclic-distributed domain.
