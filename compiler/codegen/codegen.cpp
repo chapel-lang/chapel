@@ -656,15 +656,18 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 
   // compute max # methods per type
   int maxVMT = 0;
-  typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
 
-  form_Map(VmtMapElem, el, virtualMethodTable) {
-    AggregateType* t = toAggregateType(el->key);
-    Vec<FnSymbol*>* val = el->value;
-    if (t && val) {
-      if (val->n > maxVMT)
-        maxVMT = val->n;
-    }
+  // note: the virtual method table can contain keys
+  // that point to deallocated memory (e.g. for classes that
+  // have been removed). So it is important to only 'get'
+  // live AST elements from the VMT rather than traversing it
+  // directly.
+  forv_Vec(TypeSymbol, ts, types) {
+    if (AggregateType* ct = toAggregateType(ts->type))
+      if (isObjectOrSubclass(ct))
+        if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct))
+	  if (vfns->n > maxVMT)
+	    maxVMT = vfns->n;
   }
   gMaxVMT = maxVMT;
 
