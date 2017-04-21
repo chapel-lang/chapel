@@ -119,20 +119,32 @@ endif
 #
 # default CFLAGS, based on other settings
 #
+# Two notes about this section:
+#  1. It relies on the variables being defined with '=' vs ':='
+#     since DEPEND_CFLAGS etc is declared in the compiler
+#     section below. (But we could probably move this down...)
+#  2. CFLAGS, CXXFLAGS, and LDFLAGS can be set on the command line, like
+#        make CFLAGS=-g
+#     In that event, these append operations are ignored and the
+#     command line variable has precedence.
 ifeq ($(DEPEND), 1)
 CFLAGS += $(DEPEND_CFLAGS)
+CXXFLAGS += $(DEPEND_CFLAGS)
 endif
 
 ifeq ($(DEBUG), 1)
 CFLAGS += $(DEBUG_CFLAGS)
+CXXFLAGS += $(DEBUG_CFLAGS)
 endif
 
 ifeq ($(OPTIMIZE), 1)
 CFLAGS += $(OPT_CFLAGS)
+CXXFLAGS += $(OPT_CFLAGS)
 endif
 
 ifeq ($(PROFILE), 1)
 CFLAGS += $(PROFILE_CFLAGS)
+CXXFLAGS += $(PROFILE_CFLAGS)
 LDFLAGS += $(PROFILE_LFLAGS)
 endif
 
