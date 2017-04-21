@@ -419,21 +419,37 @@ typedef std::vector<ArgSymbol*> Formals;
 
 static void       expandVarArgsFixed (FnSymbol*  fn, CallInfo& info);
 
+static int        varArgsCount(ArgSymbol* formal, VarSymbol* nVar);
+
 static FnSymbol*  expandVarArgsQuery (FnSymbol*  fn, CallInfo& info);
 
 static void       expandVarArgsFormal(FnSymbol*  fn,
                                       ArgSymbol* formal,
-                                      VarSymbol* nVar);
+                                      int        n);
 
 static Formals    insertFormalsForVarArg(ArgSymbol* varArg, int n);
 
 static void       expandVarArgsWhere(FnSymbol*      fn,
                                      ArgSymbol*     formal,
-                                     const Formals& formals);
+                                     const Formals& varargs);
 
 static void       expandVarArgsBody(FnSymbol*      fn,
                                     ArgSymbol*     formal,
-                                    const Formals& formals);
+                                    const Formals& varargs);
+
+static bool       handleCopyData(PartialCopyData* pci,
+                                 VarSymbol*       var,
+                                 ArgSymbol*       formal,
+                                 const Formals&   varargs);
+
+static CallExpr*  expandVarArgString(FnSymbol*      fn,
+                                     VarSymbol*     var,
+                                     ArgSymbol*     formal,
+                                     const Formals& formals);
+
+static void       insertEpilogueTemps(FnSymbol*  fn,
+                                      VarSymbol* var,
+                                      CallExpr*  tupleCall);
 
 static VarSymbol* buildTupleVariable(ArgSymbol* formal);
 
@@ -496,7 +512,7 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
 
       if (SymExpr* sym = toSymExpr(block->body.tail)) {
         if (VarSymbol* nVar = toVarSymbol(sym->symbol())) {
-          expandVarArgsFormal(fn, formal, nVar);
+          expandVarArgsFormal(fn, formal, varArgsCount(formal, nVar));
         }
 
       } else if (fn->hasFlag(FLAG_GENERIC) == false) {
@@ -514,6 +530,18 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
   }
 }
 
+static int varArgsCount(ArgSymbol* formal, VarSymbol* nVar) {
+  int retval = 0;
+
+  if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
+    retval = nVar->immediate->int_value();
+
+  } else {
+    INT_FATAL(formal, "unexpected non-VarSymbol");
+  }
+
+  return retval;
+}
 
 // A  query variable e.g. proc foo(x, y, z ... ?N)
 static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
@@ -545,7 +573,7 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
 
         formal = toArgSymbol(substitutions.get(formal));
 
-        expandVarArgsFormal(retval, formal, nVar);
+        expandVarArgsFormal(retval, formal, numCopies);
       }
 
       // It is certain that there is just one var-arg set to handle
@@ -556,28 +584,20 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
   return retval;
 }
 
-static void expandVarArgsFormal(FnSymbol*  fn,
-                                ArgSymbol* formal,
-                                VarSymbol* nVar) {
+static void expandVarArgsFormal(FnSymbol*  fn, ArgSymbol* formal, int n) {
   SET_LINENO(formal);
 
-  if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate != NULL) {
-    int     n       = nVar->immediate->int_value();
-    Formals formals = insertFormalsForVarArg(formal, n);
+  Formals formals = insertFormalsForVarArg(formal, n);
 
-    fn->addFlag(FLAG_EXPANDED_VARARGS);
+  fn->addFlag(FLAG_EXPANDED_VARARGS);
 
-    if (fn->where != NULL) {
-      expandVarArgsWhere(fn, formal, formals);
-    }
-
-    expandVarArgsBody(fn, formal, formals);
-
-    formal->defPoint->remove();
-
-  } else {
-    INT_FATAL(formal, "unexpected non-VarSymbol");
+  if (fn->where != NULL) {
+    expandVarArgsWhere(fn, formal, formals);
   }
+
+  expandVarArgsBody(fn, formal, formals);
+
+  formal->defPoint->remove();
 }
 
 static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
@@ -588,8 +608,8 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
     ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
 
     newFormal->variableExpr = NULL;
-    newFormal->name         = astr("_e", istr(i), "_", varArg->name);
-    newFormal->cname        = astr("_e", istr(i), "_", varArg->cname);
+    newFormal->name         = astr("_e", istr(i + 1), "_", varArg->name);
+    newFormal->cname        = astr("_e", istr(i + 1), "_", varArg->cname);
 
     varArg->defPoint->insertBefore(newArgDef);
 
@@ -601,150 +621,49 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
 
 static void expandVarArgsWhere(FnSymbol*      fn,
                                ArgSymbol*     formal,
-                               const Formals& formals) {
-  int n = static_cast<int>(formals.size());
+                               const Formals& varargs) {
+  int n = static_cast<int>(varargs.size());
 
   if (needVarArgTupleAsWhole(fn->where, n, formal) == true) {
     VarSymbol* var        = buildTupleVariable(formal);
-    CallExpr*  buildTuple = buildTupleCall(formal, formals);
+    CallExpr*  buildTuple = buildTupleCall(formal, varargs);
 
     fn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, buildTuple));
     fn->where->insertAtHead(new DefExpr(var));
 
     subSymbol(fn->where, formal, var);
   } else {
-    substituteVarargTupleRefs(fn->where, formal, formals);
+    substituteVarargTupleRefs(fn->where, formal, varargs);
   }
 }
 
 static void expandVarArgsBody(FnSymbol*      fn,
                               ArgSymbol*     formal,
                               const Formals& formals) {
-  int        n               = static_cast<int>(formals.size());
-  VarSymbol* var             = buildTupleVariable(formal);
-  CallExpr*  tupleCall       = buildTupleCall(formal, formals);
-  bool       needTupleInBody = true;
+  int        n         = static_cast<int>(formals.size());
+  VarSymbol* var       = buildTupleVariable(formal);
+  bool       needTuple = true;
 
-  // Replace mappings to the old formal with mappings to the new variable.
   if (PartialCopyData* pci = getPartialCopyData(fn)) {
-    bool gotFormal = false; // for assertion only
-
-    for (int index = pci->partialCopyMap.n; --index >= 0;) {
-      SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
-
-      if (mapElem.value == formal) {
-        BlockStmt* body = pci->partialCopySource->body;
-        ArgSymbol* arg  = toArgSymbol(mapElem.key);
-
-        gotFormal       = true;
-        needTupleInBody = needVarArgTupleAsWhole(body, n, arg);
-
-        if (needTupleInBody == true) {
-          mapElem.value = var;
-        } else {
-          // We will rely on mapElem.value==formal to replace it away
-          // in finalizeCopy().  This assumes a single set of varargs.
-          pci->varargOldFormal  = formal;
-          pci->varargNewFormals = formals;
-        }
-
-        break;
-      }
-    }
-
-    // If !gotFormal, still need to compute needTupleInBody.
-    // What to pass for 'formal' argument? Or maybe doesn't matter?
-    INT_ASSERT(gotFormal);
+    needTuple = handleCopyData(pci, var, formal, formals);
 
   } else {
-    needTupleInBody = needVarArgTupleAsWhole(fn->body, n, formal);
+    needTuple = needVarArgTupleAsWhole(fn->body, n, formal);
   }
 
-  // This is needed regardless of needTupleInBody...
   if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-    int i = 0;
-
-    // ... however, we need temporaries even if !needTupleInBody.
-    // Creating one temporary per formal is left as future work.
-    // A challenge is whether varargFormals should contain these
-    // per-formal temporaries instead of the formals, in this case.
-    needTupleInBody = true;
-
-    for_actuals(actual, tupleCall) {
-      // Skip the tuple count
-      if (i > 0) {
-        VarSymbol* tmp    = newTemp("_varargs_tmp_");
-
-        CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
-        CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
-
-        CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
-
-        fn->insertIntoEpilogue(new DefExpr(tmp));
-        fn->insertIntoEpilogue(move);
-        fn->insertIntoEpilogue(assign);
-      }
-
-      i++;
-    }
+    needTuple = true;
   }
 
-  if (needTupleInBody == true) {
-    // Noakes 2016/02/01.
-    // Enable special handling for strings with blank intent
+  if (needTuple == true) {
+    CallExpr* tupleCall = NULL;
 
-    // If the original formal is a string with blank intent then the
-    // new formals appear to be strings with blank intent.  However
-    // the resolver is about to update these to be const ref intent.
-    //
-    // Currently this will cause the tuple to appear to be a tuple
-    // ref(String) which is not supported.
-    //
-    // Insert local copies that can be used for the tuple
+    if (isString(formal->type) == true && formal->intent == INTENT_BLANK) {
+      tupleCall = expandVarArgString(fn, var, formal, formals);
 
-    if (isString(formal->type) && formal->intent == INTENT_BLANK) {
-      DefExpr* varDefn = new DefExpr(var);
-      Expr*    tail    = NULL;
-
-      // Insert the new locals
-      for (int i = 0; i < n; i++) {
-        const char* localName = astr("_e", istr(i + n), "_", formal->name);
-        VarSymbol*  local     = newTemp(localName, formal->type);
-        DefExpr*    defn      = new DefExpr(local);
-
-        if (tail == NULL) {
-          fn->insertAtHead(defn);
-        } else {
-          tail->insertAfter(defn);
-        }
-
-        tail = defn;
-      }
-
-      // Insert the definition for the tuple
-      tail->insertAfter(varDefn);
-      tail = varDefn;
-
-      // Insert the copies from the blank-intent strings to the locals
-      // Update the arguments to the tuple call
-      for (int i = 1; i <= n; i++) {
-        DefExpr*  localDefn = toDefExpr(fn->body->body.get(i));
-        Symbol*   local     = localDefn->sym;
-        SymExpr*  localExpr = new SymExpr(local);
-
-        SymExpr*  tupleArg  = toSymExpr(tupleCall->get(i + 1));
-        SymExpr*  copyArg   = tupleArg->copy();
-
-        CallExpr* moveExpr  = new CallExpr(PRIM_MOVE, localExpr, copyArg);
-
-        tupleArg->setSymbol(local);
-
-        tail->insertAfter(moveExpr);
-        tail = moveExpr;
-      }
-
-      tail->insertAfter(new CallExpr(PRIM_MOVE, var, tupleCall));
     } else {
+      tupleCall = buildTupleCall(formal, formals);
+
       fn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
       fn->insertAtHead(new DefExpr(var));
     }
@@ -759,8 +678,129 @@ static void expandVarArgsBody(FnSymbol*      fn,
       subSymbol(fn->body, formal, var);
     }
 
+    if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+      insertEpilogueTemps(fn, var, tupleCall);
+    }
+
   } else {
     substituteVarargTupleRefs(fn->body, formal, formals);
+  }
+}
+
+static bool handleCopyData(PartialCopyData* pci,
+                           VarSymbol*       var,
+                           ArgSymbol*       formal,
+                           const Formals&   varargs) {
+  int  maxIndex  = pci->partialCopyMap.n - 1;
+  bool gotFormal = false;
+  bool retval    = false;
+
+  for (int index = maxIndex; index >= 0 && gotFormal == false; index--) {
+    SymbolMapElem& mapElem = pci->partialCopyMap.v[index];
+
+    if (mapElem.value == formal) {
+      int n = static_cast<int>(varargs.size());
+
+      retval = needVarArgTupleAsWhole(pci->partialCopySource->body,
+                                      n,
+                                      toArgSymbol(mapElem.key));
+
+      if (retval == true) {
+        mapElem.value = var;
+      } else {
+        // Rely on mapElem.value==formal to replace it away
+        // in finalizeCopy().  This assumes a single set of varargs.
+        pci->varargOldFormal  = formal;
+        pci->varargNewFormals = varargs;
+      }
+
+      gotFormal = true;
+    }
+  }
+
+  INT_ASSERT(gotFormal == true);
+
+  return retval;
+}
+
+// Noakes 2016/02/01.
+// Enable special handling for strings with blank intent
+
+// If the original formal is a string with blank intent then the
+// new formals appear to be strings with blank intent.  However
+// the resolver is about to update these to be const ref intent.
+//
+// Currently this will cause the tuple to appear to be a tuple
+// ref(String) which is not supported.
+//
+// Insert local copies that can be used for the tuple
+
+static CallExpr* expandVarArgString(FnSymbol*      fn,
+                                    VarSymbol*     var,
+                                    ArgSymbol*     formal,
+                                    const Formals& varargs) {
+  int       n      = static_cast<int>(varargs.size());
+  DefExpr*  defn   = new DefExpr(var);
+  Expr*     tail   = NULL;
+  CallExpr* retval = NULL;
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    retval = new CallExpr("_type_construct__tuple");
+  } else {
+    retval = new CallExpr("_construct__tuple");
+  }
+
+  retval->insertAtTail(new_IntSymbol(n));
+
+  // Create a local for every blank string
+  for (int i = 0; i < n; i++) {
+    const char* localName = astr("_e", istr(i + 1 + n), "_", formal->name);
+    VarSymbol*  local     = newTemp(localName, formal->type);
+    DefExpr*    localDefn = new DefExpr(local);
+    CallExpr*   move      = new CallExpr(PRIM_MOVE, local, varargs[i]);
+
+    // Collect the local in to the tuple
+    retval->insertAtTail(local);
+
+    // Define the local and initialize the value
+    if (tail == NULL) {
+      fn->insertAtHead(localDefn);
+    } else {
+      tail->insertAfter(localDefn);
+    }
+
+    localDefn->insertAfter(move);
+
+    tail = move;
+  }
+
+  tail->insertAfter(defn);
+  defn->insertAfter(new CallExpr(PRIM_MOVE, var, retval));
+
+  return retval;
+}
+
+static void insertEpilogueTemps(FnSymbol*  fn,
+                                VarSymbol* var,
+                                CallExpr*  tupleCall) {
+  int i = 0;
+
+  for_actuals(actual, tupleCall) {
+    // Skip the tuple count
+    if (i > 0) {
+      VarSymbol* tmp    = newTemp("_varargs_tmp_");
+
+      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+      CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
+
+      CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
+
+      fn->insertIntoEpilogue(new DefExpr(tmp));
+      fn->insertIntoEpilogue(move);
+      fn->insertIntoEpilogue(assign);
+    }
+
+    i++;
   }
 }
 
@@ -786,7 +826,7 @@ static CallExpr* buildTupleCall(ArgSymbol* formal, const Formals& formals) {
     retval = new CallExpr("_construct__tuple");
   }
 
-  retval ->insertAtTail(new_IntSymbol(n));
+  retval->insertAtTail(new_IntSymbol(n));
 
   for (int i = 0; i < n; i++) {
     retval->insertAtTail(formals[i]);
