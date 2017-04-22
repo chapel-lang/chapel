@@ -1176,7 +1176,7 @@ static void propagateVar(Symbol* sym) {
       else if (call->primitive) {
         DEBUG_PRINTF("Unhandled primitive %s (call %d in %s)\n", call->primitive->name, call->id, call->getModule()->cname);
       }
-      else if (FnSymbol* fn = call->isResolved()) {
+      else if (FnSymbol* fn = call->resolvedFunction()) {
         debug(sym, "passed to fn %s (%d)\n", fn->cname, fn->id);
 
         // TODO: Duplicate functions here.
@@ -1235,9 +1235,9 @@ static void propagateVar(Symbol* sym) {
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved() && rhs->isResolved()->getReturnSymbol()->isRefOrWideRef()) {
+            else if (rhs->isResolved() && rhs->resolvedFunction()->getReturnSymbol()->isRefOrWideRef()) {
               debug(sym, "return symbol must be wide\n");
-              matchWide(sym, rhs->isResolved()->getReturnSymbol());
+              matchWide(sym, rhs->resolvedFunction()->getReturnSymbol());
             }
           }
         }
@@ -1345,7 +1345,7 @@ static void insertStringLiteralTemps()
             SET_LINENO(se);
             if (call->isResolved())
             {
-              if (!call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
+              if (!call->resolvedFunction()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
                 if (Type* type = actual_to_formal(se)->typeInfo()) {
                   VarSymbol* tmp = newTemp(type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1424,7 +1424,7 @@ static void narrowWideClassesThroughCalls()
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Find calls to functions expecting local arguments.
-    if (call->isResolved() && call->isResolved()->hasFlag(FLAG_LOCAL_ARGS)) {
+    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
       Expr* stmt = call->getStmtExpr();
 
@@ -1769,7 +1769,7 @@ static void handleLocalBlocks() {
     collectCallExprs(block, calls);
     for_vector(CallExpr, call, calls) {
       localizeCall(call);
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         SET_LINENO(fn);
         if (FnSymbol* alreadyLocal = cache.get(fn)) {
           call->baseExpr->replace(new SymExpr(alreadyLocal));
@@ -2267,7 +2267,7 @@ void handleIsWidePointer() {
 //
 static void createRetargTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* fn = call->isResolved();
+    FnSymbol* fn = call->resolvedFunction();
     if (fn != NULL && fn->hasFlag(FLAG_FN_RETARG)) {
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG) && isArrayRec(formal->getValType())) {
@@ -2451,7 +2451,7 @@ insertWideReferences(void) {
   // Track functions downstream in the call-chain from a wrapon_fn
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
         std::set<FnSymbol*> downstream;
         collectUsedFnSymbols(call, downstream);

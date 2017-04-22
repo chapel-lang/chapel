@@ -279,31 +279,47 @@ static void computeRefMap(FnSymbol* fn, RefMap& refs)
 // To be conservative, the routine should return true by default and then
 // select the cases where we are sure nothing has changed.
 static bool isDef(SymExpr* se)
-{ 
-  if (toGotoStmt(se->parentExpr))
+{
+  if (toGotoStmt(se->parentExpr)) {
     return false;
-  if (toCondStmt(se->parentExpr))
+  }
+
+  if (toCondStmt(se->parentExpr)) {
     return false;
-  if (toBlockStmt(se->parentExpr))
+  }
+
+  if (toBlockStmt(se->parentExpr)) {
     return false;
-  if (isDefExpr(se->parentExpr))
+  }
+
+  if (isDefExpr(se->parentExpr)) {
     return false;
+  }
 
   CallExpr* call = toCallExpr(se->parentExpr);
-  if (FnSymbol* fn = call->isResolved())
+
+  if (FnSymbol* fn = call->resolvedFunction())
   {
     // Skip the "base" symbol.
     if (se->symbol() == fn)
+    {
       return false;
+    }
 
     ArgSymbol* arg = actual_to_formal(se);
-    if (arg->intent == INTENT_OUT ||    // TODO: Try removing this
+
+    if (arg->intent == INTENT_OUT   ||  // TODO: Try removing this
         arg->intent == INTENT_INOUT ||  // and this
-        arg->intent == INTENT_REF ||    // and this.
+        arg->intent == INTENT_REF   ||  // and this.
         arg->hasFlag(FLAG_ARG_THIS))    // We need this case.
+    {
       return true;
+    }
+
     if (isRecordWrappedType(arg->type))
+    {
       return true;
+    }
 
     return false;
   }
@@ -318,26 +334,41 @@ static bool isDef(SymExpr* se)
       if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
       {
         if (! call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
+        {
           // This is the version of move that applies the deref on the lhs
           // As a result the value of the lhs is not updated.  To be precise,
           // the value of the contents of the lhs is updated.
           return false;
+        }
+
         // This is a ref <- ref assignment, so the value of the lhs changes.
         return true;
       }
+
       return true;
     }
+
     if (isOpEqualPrim(call) && call->get(1) == se)
+    {
       return true;
+    }
+
     if (call->isPrimitive(PRIM_SET_MEMBER) && se == call->get(1))
+    {
       return true;
-    if (call->isPrimitive(PRIM_ARRAY_SET) || 
+    }
+
+    if (call->isPrimitive(PRIM_ARRAY_SET) ||
         call->isPrimitive(PRIM_ARRAY_SET_FIRST))
     {
       if (se == call->get(1))
+      {
         return true;
+      }
+
       return false;
     }
+
     if (call->isPrimitive(PRIM_GET_MEMBER))
     {
       // This creates an alias to a portion of the first arg.
@@ -353,54 +384,82 @@ static bool isDef(SymExpr* se)
       // to the symbol itself, and use that fact to remove it from
       // consideration in copy propagation.
       if (se == call->get(1))
+      {
         if (!se->typeInfo()->symbol->hasFlag(FLAG_REF))
+        {
           // We select just the case where the referent is passed by value,
           // because in the other case, the address of the object is not
           // returned, so that means that the address (i.e. the value of the
           // reference variable) does not change.
           return true;
+        }
+      }
+
       return false;
     }
+
     return false;
   }
+
   INT_ASSERT(0); // Should never get here.
+
   return true;
 }
 
 
-// Returns true if the symbol is read in the containing expression, false
-// otherwise.  If the operand is used as an address, that does not count as a
-// 'read', so false is returned in that case.
+// Returns true if the symbol is read in the containing expression,
+// false otherwise.  If the operand is used as an address,
+// that does not count as a 'read', so false is returned in that case.
 static bool isUse(SymExpr* se)
 {
   if (toGotoStmt(se->parentExpr))
+  {
     return false;
+  }
+
   if (toCondStmt(se->parentExpr))
+  {
     return true;
+  }
+
   if (toBlockStmt(se->parentExpr))
+  {
     return true;
+  }
+
   if (isDefExpr(se->parentExpr))
+  {
     return false;
+  }
 
   CallExpr* call = toCallExpr(se->parentExpr);
-  if (FnSymbol* fn = call->isResolved())
+
+  if (FnSymbol* fn = call->resolvedFunction())
   {
     // Skip the "base" symbol.
     if (se->symbol() == fn)
+    {
       return false;
+    }
 
     // A "normal" call.
     ArgSymbol* arg = actual_to_formal(se);
+
     if (arg->intent == INTENT_OUT)
+    {
       return false;
+    }
   }
+
   else
   {
     INT_ASSERT(call->primitive);
+
     switch(call->primitive->tag)
     {
      default:
       return true;
+
      case PRIM_MOVE:
      case PRIM_ASSIGN:
      case PRIM_ADD_ASSIGN:
@@ -414,15 +473,20 @@ static bool isUse(SymExpr* se)
      case PRIM_OR_ASSIGN:
      case PRIM_XOR_ASSIGN:
       if (se == call->get(1))
+      {
         return false;
+      }
       return true;
+
      case PRIM_ARRAY_ALLOC:
      case PRIM_ADDR_OF:
       return false; // See Note #2.
+
      case PRIM_PRIVATE_BROADCAST:
       // The operand is used by name (it must be a manifest constant).
       // Thus it acts more like an address than a value.
       return false;
+
      case PRIM_CHPL_COMM_GET:
      case PRIM_CHPL_COMM_PUT:
      case PRIM_CHPL_COMM_ARRAY_GET:
@@ -433,46 +497,66 @@ static bool isUse(SymExpr* se)
       // The first and third operands are treated as addresses.
       // The second and fourth are values
       if (se == call->get(2) || se == call->get(4))
+      {
         return true;
+      }
       return false;
+
      case PRIM_CHPL_COMM_REMOTE_PREFETCH:
       // comm prefetch locale widePtr len
       // second argument is an address
       // first and third are values.
       if (se == call->get(1) || se == call->get(3))
+      {
         return true;
+      }
       return false;
+
      case PRIM_SET_MEMBER:
       // The first operand works like a reference, and the second is a field
       // name.  Only the third is a replaceable use.
       if (se == call->get(3))
+      {
         return true;
+      }
       return false;
+
      case PRIM_GET_MEMBER:
      case PRIM_GET_MEMBER_VALUE:
       if (se == call->get(1))
       {
         if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
+        {
           // If two refs are equal, then one may substitute for the other.
           return true;
+        }
+
         return false;
       }
       return true;
+
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
       // The first operand is treated like a reference.
       if (se == call->get(1))
+      {
         return false;
+      }
       return true;
+
      case PRIM_SET_UNION_ID:
       // The first operand is treated like a reference.
       if (se == call->get(1))
+      {
         return false;
+      }
+
       return true;
     }
   }
+
   return true;
 }
 
@@ -482,40 +566,64 @@ static bool isUse(SymExpr* se)
 static bool isRefUse(SymExpr* se)
 {
   if (toGotoStmt(se->parentExpr))
+  {
     return false;
+  }
+
   // Conditionals should only read their arg expressions.
   if (toCondStmt(se->parentExpr))
+  {
     return false;
+  }
+
   if (toBlockStmt(se->parentExpr))
+  {
     return false;
+  }
+
   if (isDefExpr(se->parentExpr))
+  {
     return false;
+  }
 
   CallExpr* call = toCallExpr(se->parentExpr);
-  if (FnSymbol* fn = call->isResolved())
+
+  if (FnSymbol* fn = call->resolvedFunction())
   { // A "normal" call.
     // Skip the "base" symbol.
     if (se->symbol() == fn)
+    {
       return false;
+    }
 
     if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
+    {
       return true;
+    }
 
-    // TODO: If the FLAG_EXTERN test is removed above, these may become dead code.
+    // TODO:
+    //  If the FLAG_EXTERN test is removed above, these may become dead code.
     ArgSymbol* arg = actual_to_formal(se);
-    if (arg->intent == INTENT_REF ||
+
+    if (arg->intent == INTENT_REF   ||
         arg->intent == INTENT_INOUT ||
-        arg->intent == INTENT_OUT ||
+        arg->intent == INTENT_OUT   ||
         // The 'this' arg is implicitly passed by reference.
         // TODO: Decorate this args with INTENT_REF and then remove this and
         // similar flag tests.  Then retire the FLAG_ARG_THIS flag.
         arg->hasFlag(FLAG_ARG_THIS))
+    {
       return true;
+    }
+
     if (isRecordWrappedType(arg->type))
+    {
       return true;
+    }
 
     return false;
   }
+
   else // A primitive.
   {
     if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
@@ -542,23 +650,34 @@ static bool isRefUse(SymExpr* se)
        case PRIM_XOR_ASSIGN:
         // Only the left argument is updated.
         if (call->get(1) == se)
+        {
           return true;
+        }
         break;
 
        case PRIM_SET_MEMBER:
         // A reference at the third position is copied into some structure
         // (through which the value it references may later be updated).
         if (se == call->get(3))
+        {
           return true;
+        }
+
         if (se == call->get(1) && se->typeInfo()->symbol->hasFlag(FLAG_REF))
+        {
           return true;
+        }
+
         break;
 
        case PRIM_CHPL_COMM_GET:
         // The first argument is the local address.
         if (call->get(1) == se)
+        {
           return true;
+        }
         break;
+
         // Probably we have to add a case for PRIM_CHPL_COMM_PUT as well,
         // analogous to PRIM_SET_MEMBER.
         // Strided versions as well.
@@ -566,6 +685,7 @@ static bool isRefUse(SymExpr* se)
       }
     }
   }
+
   return false;
 }
 
