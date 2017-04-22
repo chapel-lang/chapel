@@ -419,7 +419,7 @@ static inline bool isTaskFun(FnSymbol* fn) {
 
 static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
   INT_ASSERT(call);
-  if (FnSymbol* cfn = call->isResolved()) {
+  if (FnSymbol* cfn = call->resolvedFunction()) {
     if (isTaskFun(cfn))
       return cfn;
   }
