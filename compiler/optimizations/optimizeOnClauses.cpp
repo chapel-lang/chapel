@@ -456,38 +456,48 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
 
     if (call->primitive) {
       int is = classifyPrimitive(call, inLocal);
+
       if (!isLocal(is)) {
         // FAST_NOT_LOCAL or NOT_FAST_NOT_LOCAL
         return NOT_FAST_NOT_LOCAL;
       }
+
       // is == FAST_AND_LOCAL requires no action
-      if (is == LOCAL_NOT_FAST)
+      if (is == LOCAL_NOT_FAST) {
         maybefast = false;
+      }
+
     } else {
       if (recurse<=0 || !call->isResolved()) {
         // didn't resolve or past too much recursion.
         // No function calls allowed
         return NOT_FAST_NOT_LOCAL;
+
       } else {
         // Handle nested 'on' statements
-        if (call->isResolved()->hasFlag(FLAG_ON_BLOCK)) {
-          if (inLocal)
+        if (call->resolvedFunction()->hasFlag(FLAG_ON_BLOCK)) {
+          if (inLocal) {
             maybefast = false;
-          else
+          } else {
             return NOT_FAST_NOT_LOCAL;
+          }
         }
 
         // is the call to a fast/local function?
-        int is = markFastSafeFn(call->isResolved(), recurse-1, visited);
+        int is = markFastSafeFn(call->resolvedFunction(),
+                                recurse - 1,
+                                visited);
 
         // Remove NOT_LOCAL parts if it's in a local block
         is = setLocal(is, inLocal);
 
-        if (!isLocal(is))
+        if (!isLocal(is)) {
           return NOT_FAST_NOT_LOCAL;
+        }
 
-        if (is == LOCAL_NOT_FAST)
+        if (is == LOCAL_NOT_FAST) {
           maybefast = false;
+        }
         // otherwise, possibly still fast.
       }
     }
@@ -499,8 +509,10 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
   // We only get to this point if the function is local
   // (otherwise we would return above)
   fn->addFlag(FLAG_LOCAL_FN);
+
   if (maybefast) {
     fn->addFlag(FLAG_FAST_ON);
+
     return FAST_AND_LOCAL;
   } else {
     return LOCAL_NOT_FAST;
