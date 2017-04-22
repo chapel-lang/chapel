@@ -141,52 +141,58 @@ bool WhileStmt::deadBlockCleanup()
   return retval;
 }
 
-/************************************ | *************************************
-*                                                                           *
-* Additional Validation                                                     *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+* Additional Validation                                                       *
+*                                                                             *
+************************************** | *************************************/
 
 // This routine looks for loops in which the condition variable is *not*
-// updated within the body of the loop, and issues a warning for places in the
-// code where that occurs.
+// updated within the body of the loop, and issues a warning for places
+// in the code where that occurs.
 void WhileStmt::checkConstLoops()
 {
   SymExpr* tmpVar  = condExprForTmpVariableGet();
-  // This gets set to 'true' if an update of the loop condition is found.
 
   // Get the loop condition variable.
   if (VarSymbol* condSym = toVarSymbol(tmpVar->symbol()))
   {
-    // Look for definitions of the loop condition variable within the body of
-    // the loop.
+    // Look for definitions of the loop condition variable
+    // within the body of the loop.
     if (SymExpr* condDef = getWhileCondDef(condSym))
     {
-      // Get the call expression (we assume) that updates the condition variable.
+      // Get the call expression that updates the condition variable.
       if (CallExpr* outerCall = toCallExpr(condDef->parentExpr))
       {
-        // We assume the outer call is a move expression and that its LHS is
+        // Assume the outer call is a move expression and that its LHS is
         // the (SymExpr that contains the) loop condition variable.
         if (outerCall->get(1) == condDef)
         {
           if (outerCall->isPrimitive(PRIM_MOVE))
           {
-            // We expect the update to be the result of a call to _cond_test.
+            // Expect the update to be the result of a call to _cond_test.
             if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
             {
-              if (innerCall->numActuals()          == 1 &&
-                  strcmp(innerCall->isResolved()->name, "_cond_test") == 0)
+              FnSymbol* fn = innerCall->resolvedFunction();
+
+              if (innerCall->numActuals()        == 1 &&
+                  strcmp(fn->name, "_cond_test") == 0)
               {
                 checkWhileLoopCondition(innerCall->get(1));
               }
               else
-                INT_FATAL(innerCall, "Expected the update of a loop conditional to be piped through _cond_test().");
+              {
+                INT_FATAL(innerCall,
+                          "Expected the update of a loop conditional "
+                          "to be piped through _cond_test().");
+              }
             }
+
             // The RHS of the move can also be a SymExpr as the result of param
             // folding ...
             else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
             {
-              // ... in which case, we expect it to be a literal 'true' or 'false'.
+              // ... in which case, the literal should be 'true' or 'false'.
               if (moveSrc->symbol() == gTrue)
               {
                 // while true do ... ;  -- probably OK.
@@ -202,35 +208,63 @@ void WhileStmt::checkConstLoops()
 
               else
               {
-                // What else can it be?
-                INT_FATAL(moveSrc, "Expected const loop condition variable to be true or false.");
+                INT_FATAL(moveSrc,
+                          "Expected const loop condition variable to be "
+                          "true or false.");
               }
             }
+
             else
+            {
               // The RHS was neither a CallExpr nor a SymExpr.
-              INT_FATAL(outerCall, "Invalid RHS in a loop condition variable update expression.");
+              INT_FATAL(outerCall,
+                        "Invalid RHS in a loop condition variable update "
+                        "expression.");
+            }
           }
+
           else
-            INT_FATAL(outerCall, "Expected a loop condition variable update to be a MOVE.");
+          {
+            INT_FATAL(outerCall,
+                      "Expected a loop condition variable update to "
+                      "be a MOVE.");
+          }
         }
         else
+        {
           // Note that this being true depends on the compiler inserting a temp
           // that is the result of applying _cond_test to a more-general loop
           // conditional expression.
           // Copy propagation could potentially make this false again....
-          INT_FATAL(condDef, "Expected loop condition variable to be only updated (not read).");
+          INT_FATAL(condDef,
+                    "Expected loop condition variable to be only "
+                    "updated (not read).");
+        }
       }
+
       else
-        INT_FATAL(condDef, "The update of a loop condition variable could not be converted to a call.");
+      {
+        INT_FATAL(condDef,
+                  "The update of a loop condition variable could not "
+                  "be converted to a call.");
+      }
     }
     else
     {
-      // There was no update of the loop condition variable in the body of the loop.
-      USR_WARN(condSym, "Infinite loop? The loop condition variable is never updated within the loop.");
+      // There was no update of the loop condition variable in the
+      // body of the loop.
+      USR_WARN(condSym,
+               "Infinite loop? The loop condition variable is never "
+               "updated within the loop.");
     }
   }
+
   else
-    INT_FATAL(tmpVar, "The loop condition variable could not be converted to a VarSymbol.");
+  {
+    INT_FATAL(tmpVar,
+              "The loop condition variable could not be converted "
+              "to a VarSymbol.");
+  }
 }
 
 // Find a definition of the condition variable in the body of the loop.

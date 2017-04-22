@@ -211,8 +211,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       // Set up goto map, so this block's successor can be back-patched later.
       std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
 
-      if (!vbb)
+      if (vbb == NULL) {
         vbb = new std::vector<BasicBlock*>();
+      }
 
       vbb->push_back(basicBlock);
 
@@ -235,19 +236,20 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         // mark function calls as essential
-        if (call->isResolved() != NULL)
+        if (call->resolvedFunction() != NULL) {
           mark = true;
 
         // mark essential primitives as essential
-        else if (call->primitive && call->primitive->isEssential)
+        } else if (call->primitive && call->primitive->isEssential) {
           mark = true;
 
         // mark assignments to global variables as essential
-        else if (call->isPrimitive(PRIM_MOVE) ||
+        } else if (call->isPrimitive(PRIM_MOVE) ||
                  call->isPrimitive(PRIM_ASSIGN)) {
           if (SymExpr* se = toSymExpr(call->get(1))) {
-            if (se->symbol()->type->refType == NULL)
+            if (se->symbol()->type->refType == NULL) {
               mark = true;
+            }
           }
         }
       }
