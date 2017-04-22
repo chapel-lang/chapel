@@ -708,7 +708,7 @@ checkFormalActualBaseTypesMatch()
     if (! call->parentSymbol->hasFlag(FLAG_RESOLVED))
       continue;
 
-    if (FnSymbol* fn = call->isResolved())
+    if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
@@ -768,7 +768,7 @@ checkFormalActualTypesMatch()
 {
   for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
-    if (FnSymbol* fn = call->isResolved())
+    if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
