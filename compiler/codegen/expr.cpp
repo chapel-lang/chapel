@@ -3211,7 +3211,7 @@ static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
 GenRet CallExpr::codegen() {
   SET_LINENO(this);
 
-  FnSymbol* fn = isResolved();
+  FnSymbol* fn = resolvedFunction();
   GenRet    ret;
 
   // Note (for debugging), function name is in parentSymbol->cname.
@@ -5285,7 +5285,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 }
 
 void CallExpr::codegenInvokeOnFun() {
-  FnSymbol*           fn       = isResolved();
+  FnSymbol*           fn       = resolvedFunction();
   GenRet              localeId = get(1);
   const char*         fname    = NULL;
   GenRet              argBundle;
@@ -5322,7 +5322,7 @@ void CallExpr::codegenInvokeOnFun() {
 }
 
 void CallExpr::codegenInvokeTaskFun(const char* name) {
-  FnSymbol*           fn            = isResolved();
+  FnSymbol*           fn            = resolvedFunction();
   GenRet              taskList      = codegenValue(get(1));
   GenRet              taskListNode;
   GenRet              taskBundle;
