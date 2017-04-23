@@ -383,6 +383,15 @@ module ArrayViewRankChange {
       }
     }
 
+    proc dsiLocalSlice(stridable, ranges) {
+      return dsiLocalSubdomain()[(...ranges)];
+    }
+
+    proc dsiClear() {
+      const empty : domain(rank, idxType, stridable);
+      dsiSetIndices(empty.dims());
+    }
+
     proc dsiDestroyDom() {
       if upDom != nil then
         _delete_dom(upDom, false);
