@@ -267,6 +267,7 @@ module ChapelDistribution {
         _arrs_containing_dom -= 1;
         count = _arrs.size;
         count += _arrs_containing_dom;
+        _free_when_no_arrs = true;
         _unlock_arrs();
       }
       return count;
