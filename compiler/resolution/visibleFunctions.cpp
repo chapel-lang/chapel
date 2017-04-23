@@ -96,13 +96,12 @@ void findVisibleFunctions(CallInfo&       info,
       }
     }
   } else {
-    visibleFns.add(call->isResolved());
-    handleTaskIntentArgs(call, call->isResolved(), info);
+    visibleFns.add(call->resolvedFunction());
+    handleTaskIntentArgs(call, call->resolvedFunction(), info);
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
-      call->id == explainCallID)
-  {
+      call->id == explainCallID) {
     USR_PRINT(call, "call: %s", toString(&info));
 
     if (visibleFns.n == 0)

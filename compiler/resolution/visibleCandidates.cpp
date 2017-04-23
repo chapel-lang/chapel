@@ -246,7 +246,7 @@ static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
 
     resolveFns(typeConstructorCall->resolvedFunction());
 
-    fn->_this->type = typeConstructorCall->isResolved()->retType;
+    fn->_this->type = typeConstructorCall->resolvedFunction()->retType;
 
     typeConstructorCall->remove();
   }

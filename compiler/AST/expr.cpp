@@ -1126,9 +1126,8 @@ void CallExpr::setUnresolvedFunction(const char* name) {
   }
 }
 
-// MDN 2016/01/29: This will become a predicate
-FnSymbol* CallExpr::isResolved() const {
-  return resolvedFunction();
+bool CallExpr::isResolved() const {
+  return (resolvedFunction() != NULL) ? true : false;
 }
 
 FnSymbol* CallExpr::resolvedFunction() const {

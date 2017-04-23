@@ -281,23 +281,29 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         // Set the type of super to be the instantiated
         // parent with substitutions.
 
-        CallExpr* parentTyCall = new CallExpr(astr("_type_construct_", parentTy->symbol->name));
+        CallExpr* parentTyCall = new CallExpr(astr("_type_construct_",
+                                                   parentTy->symbol->name));
+
         // Pass the special formals to the superclass type constructor.
         for_formals(arg, fn) {
           if (arg->hasFlag(FLAG_PARENT_FIELD)) {
             Symbol* value = subs.get(arg);
+
             if (!value) {
               value = arg;
               // Or error?
             }
+
             parentTyCall->insertAtTail(value);
           }
         }
+
         call->insertBefore(parentTyCall);
         resolveCallAndCallee(parentTyCall);
 
         oldParentTy = parentTy;
-        newParentTy = parentTyCall->isResolved()->retType;
+        newParentTy = parentTyCall->resolvedFunction()->retType;
+
         parentTyCall->remove();
 
         // Now adjust the super field's type.
@@ -308,6 +314,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         for_alist(tmp, newCt->fields) {
           DefExpr* def = toDefExpr(tmp);
           INT_ASSERT(def);
+
           if (VarSymbol* field = toVarSymbol(def->sym)) {
             if (field->hasFlag(FLAG_SUPER_CLASS)) {
               superDef = def;

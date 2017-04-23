@@ -345,7 +345,7 @@ resolveUninsertedCall(BlockStmt* insideBlock,
   }
   block->remove();
 
-  return call->isResolved();
+  return call->resolvedFunction();
 }
 
 // Resolve a call to do with a particular type.
@@ -397,7 +397,7 @@ void resolveFnForCall(FnSymbol* fn, CallExpr* call)
 void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
   resolveCall(call);
 
-  if (FnSymbol* callee = call->isResolved()) {
+  if (FnSymbol* callee = call->resolvedFunction()) {
     resolveFnForCall(callee, call);
   } else if (!allowUnresolved) {
     INT_ASSERT(false);
@@ -2645,9 +2645,9 @@ static void issueCompilerError(CallExpr* call) {
   } else {
     USR_WARN(from, "%s", str);
   }
-  if (FnSymbol* fn = toFnSymbol(callStack.tail()->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.tail()->resolvedFunction()))
     innerCompilerWarningMap.put(fn, str);
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->resolvedFunction()))
     outerCompilerWarningMap.put(fn, str);
 }
 
@@ -3643,7 +3643,7 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
     if (callStack.n >= 2)
-      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->resolvedFunction()))
         outerCompilerWarningMap.put(fn, str);
   }
 
@@ -3705,7 +3705,7 @@ void lvalueCheck(CallExpr* call)
       if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
         // we are asked to ignore errors here
         return;
-      FnSymbol* calleeFn = call->isResolved();
+      FnSymbol* calleeFn = call->resolvedFunction();
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
@@ -3798,7 +3798,7 @@ static void setConstFlagsAndCheckUponMove(Symbol* lhs, Expr* rhs) {
       } else {
         INT_ASSERT(false); // PRIM_GET_MEMBER of a non-SymExpr??
       }
-    } else if (FnSymbol* resolvedFn = rhsCall->isResolved()) {
+    } else if (FnSymbol* resolvedFn = rhsCall->resolvedFunction()) {
         setFlagsAndCheckForConstAccess(lhs, rhsCall, resolvedFn);
     }
   }
@@ -4279,7 +4279,7 @@ static void resolveMove(CallExpr* call) {
   setConstFlagsAndCheckUponMove(lhs, rhs);
 
   if (CallExpr* call = toCallExpr(rhs)) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       if (rhsType == dtUnknown) {
         USR_FATAL_CONT(fn, "unable to resolve return type of function '%s'", fn->name);
         USR_FATAL(rhs, "called recursively at this point");
@@ -4325,7 +4325,7 @@ static void resolveMove(CallExpr* call) {
         rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR,
                                       new SymExpr(derefTmp)));
       }
-    } else if (rhsCall->isResolved() == gChplHereAlloc) {
+    } else if (rhsCall->resolvedFunction() == gChplHereAlloc) {
       // Insert cast below for calls to chpl_here_*alloc()
       isChplHereAlloc = true;
     }
@@ -4470,7 +4470,7 @@ static void resolveNew(CallExpr* call) {
         return;
 
       } else if (CallExpr* subCall = toCallExpr(arg)) {
-        if (FnSymbol* fn = subCall->isResolved()) {
+        if (FnSymbol* fn = subCall->resolvedFunction()) {
           USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
           return;
         }
@@ -4966,7 +4966,7 @@ bool isInstantiation(Type* sub, Type* super) {
 //
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
-  if (FnSymbol* fn = call->isResolved()) {
+  if (FnSymbol* fn = call->resolvedFunction()) {
     FnSymbol* parent = call->getFunction();
     INT_ASSERT(parent);
 
@@ -5101,9 +5101,9 @@ resolveExpr(Expr* expr) {
 
         cc->getCalls(refCall, valueCall, constRefCall);
 
-        FnSymbol* refFn = refCall->isResolved();
-        FnSymbol* valueFn = valueCall?valueCall->isResolved():NULL;
-        FnSymbol* constRefFn = constRefCall?constRefCall->isResolved():NULL;
+        FnSymbol* refFn = refCall->resolvedFunction();
+        FnSymbol* valueFn = valueCall?valueCall->resolvedFunction():NULL;
+        FnSymbol* constRefFn = constRefCall?constRefCall->resolvedFunction():NULL;
 
         INT_ASSERT(refFn && (valueFn || constRefFn));
         resolveFns(refFn);
@@ -5142,7 +5142,7 @@ resolveExpr(Expr* expr) {
         expr = getDesignatedCall(cc);
       } else {
         INT_ASSERT(call->isResolved());
-        resolveFns(call->isResolved());
+        resolveFns(call->resolvedFunction());
       }
     }
 
@@ -5155,7 +5155,7 @@ resolveExpr(Expr* expr) {
         // it.  If the 'true' branch did fully resolve, we would replace the
         // conditional with the 'true' branch instead.
         while (callStack.n > 0 &&
-               callStack.tail()->isResolved() !=
+               callStack.tail()->resolvedFunction() !=
                tryStack.tail()->elseStmt->parentSymbol) {
           callStack.pop();
         }
@@ -5477,7 +5477,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     }
     fn->insertBeforeEpilogue(call);
     resolveCall(call);
-    fn->retType->defaultInitializer = call->isResolved();
+    fn->retType->defaultInitializer = call->resolvedFunction();
     INT_ASSERT(fn->retType->defaultInitializer);
     //      resolveFns(fn->retType->defaultInitializer);
     call->remove();
@@ -5820,7 +5820,7 @@ resolveFns(FnSymbol* fn) {
 
         resolveCallAndCallee(call);
 
-        ct->destructor = call->isResolved();
+        ct->destructor = call->resolvedFunction();
 
         block->remove();
 
@@ -6124,7 +6124,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
   CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
   resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
-  gAddModuleFn = addModule->isResolved();
+  gAddModuleFn = addModule->resolvedFunction();
   resolveFns(gAddModuleFn);
   // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
@@ -6168,7 +6168,7 @@ static void insertRuntimeTypeTemps() {
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
       ts->type->defaultInitializer->insertBeforeEpilogue(call);
       resolveCallAndCallee(call);
-      valueToRuntimeTypeMap.put(ts->type, call->isResolved());
+      valueToRuntimeTypeMap.put(ts->type, call->resolvedFunction());
       call->remove();
       tmp->defPoint->remove();
     }
@@ -6444,7 +6444,7 @@ static void insertReturnTemps() {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType != dtVoid) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
@@ -6616,7 +6616,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
 
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->getModule()->modTag == MOD_USER &&
             !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {

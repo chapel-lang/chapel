@@ -95,7 +95,7 @@ Expr* postFold(Expr* expr) {
   SET_LINENO(expr);
 
   if (CallExpr* call = toCallExpr(expr)) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->immediate) {
@@ -216,7 +216,7 @@ Expr* postFold(Expr* expr) {
               if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
                 lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
             } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
-              if (FnSymbol* fn = rhs->isResolved()) {
+              if (FnSymbol* fn = rhs->resolvedFunction()) {
                 if (fn->retTag == RET_TYPE)
                   lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
               } else if (rhs->isPrimitive(PRIM_DEREF)) {
@@ -229,7 +229,7 @@ Expr* postFold(Expr* expr) {
             if (rhs->isPrimitive(PRIM_TYPEOF)) {
               lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
             }
-            if (FnSymbol* fn = rhs->isResolved()) {
+            if (FnSymbol* fn = rhs->resolvedFunction()) {
               if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
                 call->replace(rhs->remove());
                 result = rhs;
