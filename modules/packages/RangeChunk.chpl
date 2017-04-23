@@ -95,7 +95,14 @@ module RangeChunk {
     }
     const first = r.orderToIndex(0);
     const last = r.orderToIndex(nElems - 1);
-    const rangeStride = ((abs(last - first)/nElems) + 1)*sgn(last - first);
+
+    var rangeStride = 0;
+    if(nElems > 1) {
+      rangeStride = (abs(last - first)/(nElems - 1))*sgn(last - first + 1);
+    }
+    if(rangeStride == 0) {
+      rangeStride = abs(last - first + 1);
+    }
     const ordinalStartIndex = idx*blockSize;
     if(ordinalStartIndex >= nElems) {
       return;
