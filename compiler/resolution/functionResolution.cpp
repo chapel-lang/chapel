@@ -3719,7 +3719,7 @@ void lvalueCheck(CallExpr* call)
                          " using the default assignment operator"
                          " because it has 'const' field(s)", recordName);
         else
-          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
+          USR_FATAL_CONT(actual, "illegal assignment");
       }
       else
       {
