@@ -261,7 +261,7 @@ public:
 
   void            setUnresolvedFunction(const char* name);
 
-  FnSymbol*       isResolved()                                           const;
+  bool            isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
 

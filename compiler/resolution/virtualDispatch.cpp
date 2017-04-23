@@ -629,10 +629,12 @@ void insertDynamicDispatchCalls() {
     if (!call->parentSymbol) continue;
     if (!call->getStmtExpr()) continue;
 
-    FnSymbol* key = call->isResolved();
+    FnSymbol* key = call->resolvedFunction();
+
     if (!key) continue;
 
     Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
+
     if (!fns) continue;
 
     SET_LINENO(call);
