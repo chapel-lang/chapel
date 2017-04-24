@@ -1,0 +1,4 @@
+unimplemented feature: Iterators with no yields
+
+Calling an iterator with no yields in a for loop should execute the body
+of the iterator, but not the body of the for loop.
