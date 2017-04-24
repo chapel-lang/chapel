@@ -174,7 +174,6 @@ static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
                                        bool checkonly=false);
 static bool hasUserAssign(Type* type);
-static void resolveAutoCopyEtc(Type* type);
 static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
@@ -545,77 +544,6 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
     }
   }
   return false;
-}
-
-
-static void
-resolveAutoCopyEtc(Type* type) {
-
-  // resolve autoCopy
-  if (!hasAutoCopyForType(type)) {
-
-    const char* copyFnToCall = "chpl__autoCopy";
-
-    if (isUserDefinedRecord(type) &&
-        !type->symbol->hasFlag(FLAG_TUPLE) &&
-        !isRecordWrappedType(type) &&
-        !isSyncType(type) &&
-        !isSingleType(type) &&
-        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
-      // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
-      // for user-defined records. This way, if the type does not
-      // support copying, the autoCopyMap will store a function
-      // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
-      // records shouldn't be defining chpl__initCopy or chpl__autoCopy
-      // and certainly shouldn't rely on the differences between the two.
-
-      copyFnToCall = "chpl__initCopy";
-    }
-
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr(copyFnToCall, tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoCopyMap[type] = fn;
-
-    tmp->defPoint->remove();
-  }
-
-  // resolve autoDestroy
-  if (autoDestroyMap.get(type) == NULL) {
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    // Adding the flag here isn't sufficient for checks
-    // to auto destroy fn during resolution, so
-    // I added it with a pragma in the modules.
-    fn->addFlag(FLAG_AUTO_DESTROY_FN);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoDestroyMap.put(type, fn);
-    tmp->defPoint->remove();
-  }
-
-  // resolve unalias
-  // We make the 'unalias' hook available to all user records,
-  // but for now it only applies to array/domain/distribution
-  // in order to minimize the changes.
-  if (isRecordWrappedType(type) && unaliasMap.get(type) == NULL) {
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__unalias", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    unaliasMap.put(type, fn);
-    tmp->defPoint->remove();
-  }
 }
 
 
@@ -3975,8 +3903,6 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
   }
 }
 
-
-
 /************************************* | **************************************
 *                                                                             *
 * Resolves calls inserted into initializers during Phase 1,                   *
@@ -5964,7 +5890,6 @@ void resolve() {
 
   resolveExternVarSymbols();
 
-
   // --ipe does not build a mainModule
   if (mainModule)
     resolveUses(mainModule);
@@ -5982,12 +5907,15 @@ void resolve() {
   USR_STOP();
 
   resolveExports();
+
   resolveEnumTypes();
 
   insertRuntimeTypeTemps();
 
   resolveAutoCopies();
+
   resolveRecordInitializers();
+
   resolveOther();
 
   resolveDynamicDispatches();
@@ -6001,13 +5929,12 @@ void resolve() {
   resolveAutoCopies();
 
   insertDynamicDispatchCalls();
+
   insertReturnTemps();
 
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
   ensureAndResolveInitStringLiterals();
-
-
 
   handleRuntimeTypes();
 
@@ -6175,6 +6102,14 @@ static void insertRuntimeTypeTemps() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveAutoCopyEtc(Type* type);
+
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!ts->defPoint->parentSymbol)
@@ -6197,26 +6132,98 @@ static void resolveAutoCopies() {
   }
 }
 
-/* In order to correctly initialize records or tuples in which
-   a component has FLAG_IGNORE_NOINIT, we need to propagate that
-   flag to the parent types as well. While doing so, we also
-   propagate whether or not that type is not Plain-old-Data
-   (which would mean it does not need auto copies or auto
-    destroys - bit copies will do).
+static void resolveAutoCopyEtc(Type* type) {
+  // resolve autoCopy
+  if (!hasAutoCopyForType(type)) {
 
-   After this function is called on an aggregate type, that type
-   will be marked FLAG_POD and FLAG_NOT_POD, and this function
-   will be called recursively to also mark any aggregate type
-   fields with FLAG_POD or FLAG_NOT_POD.
+    const char* copyFnToCall = "chpl__autoCopy";
 
-   After setting either FLAG_POD or FLAG_NOT_POD if necessary,
-   returns true if FLAG_NOT_POD is set, false otherwise.
+    if (isUserDefinedRecord(type) &&
+        !type->symbol->hasFlag(FLAG_TUPLE) &&
+        !isRecordWrappedType(type) &&
+        !isSyncType(type) &&
+        !isSingleType(type) &&
+        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
+      // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
+      // for user-defined records. This way, if the type does not
+      // support copying, the autoCopyMap will store a function
+      // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
+      // records shouldn't be defining chpl__initCopy or chpl__autoCopy
+      // and certainly shouldn't rely on the differences between the two.
 
-   This function should only be called during resolution.
-   Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.
- */
+      copyFnToCall = "chpl__initCopy";
+    }
+
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr(copyFnToCall, tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    resolveFns(fn);
+    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+    autoCopyMap[type] = fn;
+
+    tmp->defPoint->remove();
+  }
+
+  // resolve autoDestroy
+  if (autoDestroyMap.get(type) == NULL) {
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    // Adding the flag here isn't sufficient for checks
+    // to auto destroy fn during resolution, so
+    // I added it with a pragma in the modules.
+    fn->addFlag(FLAG_AUTO_DESTROY_FN);
+    resolveFns(fn);
+    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+    autoDestroyMap.put(type, fn);
+    tmp->defPoint->remove();
+  }
+
+  // resolve unalias
+  // We make the 'unalias' hook available to all user records,
+  // but for now it only applies to array/domain/distribution
+  // in order to minimize the changes.
+  if (isRecordWrappedType(type) && unaliasMap.get(type) == NULL) {
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__unalias", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    resolveFns(fn);
+    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+    unaliasMap.put(type, fn);
+    tmp->defPoint->remove();
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* In order to correctly initialize records or tuples in which a component     *
+* has FLAG_IGNORE_NOINIT, we need to propagate that flag to the parent types  *
+* as well.                                                                    *
+*                                                                             *
+* While doing so, we also propagate whether or not that type is not POD       *
+* (Plain-Old-Data which would mean it does not need auto copies or auto       *
+* destroys - bit copies will do).                                             *
+*                                                                             *
+* After this function is called on an aggregate type, that type will be       *
+* marked FLAG_POD and FLAG_NOT_POD, and this function will be called          *
+* recursively to also mark any aggregate type fields with FLAG_POD or         *
+* FLAG_NOT_POD.                                                               *
+*                                                                             *
+* After setting either FLAG_POD or FLAG_NOT_POD if necessary, returns true    *
+* if FLAG_NOT_POD is set, false otherwise.                                    *
+*                                                                             *
+* This function should only be called during resolution.                      *
+* Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.               *
+*                                                                             *
+************************************** | *************************************/
+
 bool propagateNotPOD(Type* t) {
-
   // non-aggregate types (e.g. int, bool) are POD
   // but we don't run this function on all of them,
   // so we don't mark them with FLAG_POD.
@@ -6305,6 +6312,12 @@ bool propagateNotPOD(Type* t) {
 
   return notPOD;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void resolveRecordInitializers() {
   //
