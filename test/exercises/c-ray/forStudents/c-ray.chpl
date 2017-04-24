@@ -144,9 +144,8 @@ proc main() {
 
   //
   // STEP 0: Compile and run the code as it is.  You should get a
-  // small black rectangular image in the resulting image.ppm file.
-  // View the image file in gimp, or your favorite image viewer, or a
-  // modern version of emacs running with its own window.
+  // small black rectangular image in the resulting image.bmp file.
+  // View the image file in your favorite image viewer.
   //
   // STEP 1: Declare an array (and optionally a domain for it) here to
   // describe the image of pixels to render.  The array should store
@@ -167,9 +166,9 @@ proc main() {
 
   //
   // STEP 3: Within these timer calls, fill in your array's values via
-  // calls to 'computePixel()' (defined below).  Start by trying a
+  // calls to 'computePixel()' (pre-defined below).  Start by trying a
   // serial loop.  Do you get a reasonable image?  Try the 'sphfract'
-  // scene file as well...
+  // input scene file as well using the --scene config const.
   //
   // Step 4: Try experimenting with setting other configuration
   // options on the command-line to see if things work as expected.
@@ -178,7 +177,7 @@ proc main() {
   //
   // Step 5: Time how long the rendering takes.  Recompile with the
   // --fast flag (intended for performance runs, once a program is
-  // working) and retime.  Note these timings for future reference.
+  // working) and re-time.  Note these timings for future reference.
   //
   // STEP 6: Now try switching to a parallel loop and make sure your
   // code still produces the right image.  What kind of speed
@@ -194,7 +193,7 @@ proc main() {
   // dynamic() iterator from the DynamicIters module:
   // http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html
   // Do you need to create a more load-imbalanced scene (or increase
-  // the value of 'maxRayDepth' in order to see a noticeable
+  // the value of 'maxRayDepth') in order to see a noticeable
   // difference?
   //
   // STEP 9 (intended for the afternoon session): Make your array a
