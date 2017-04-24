@@ -31,7 +31,7 @@ use Image;    // use helper module related to writing out images
 //
 config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
-             scene = "scene",             // input scene filename, or stdin
+             scene = "built-in",          // input scene filename, or stdin
              image = "image.bmp",         // output image filename, or stdout
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
@@ -64,7 +64,7 @@ const rcpSamples = 1.0 / samples;  // the reciprocal of the # of samples
 //
 // the input and output file channels
 //
-const infile = if scene == "stdin" then stdin
+const infile = if (scene == "stdin" || scene == "built-in") then stdin
                                    else open(scene, iomode.r).reader(),
       outfile = if image == "stdout" then stdout
                                      else open(image, iomode.cw).writer();
@@ -171,7 +171,7 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  writeImage(outfile, imgType, pixels);
+  writeImage(image, outfile, imgType, pixels);
 
   for obj in objects do
     delete obj;
@@ -415,6 +415,28 @@ proc printUsage() {
 // Load the scene from an extremely simple scene description file
 //
 proc loadScene() {
+  //
+  // This permits a built-in scene to be used in order to avoid file
+  // input, in case it is problematic in some way.
+  //
+  if scene == "built-in" {
+    objects.push_back(new sphere((-1.5, -0.3, -1), 0.7,
+                                 new material((1.0, 0.2, 0.05), 50.0, 0.3)));
+    objects.push_back(new sphere((1.5, -0.4, 0), 0.6,
+                                 new material((0.1, 0.85, 1.0), 50.0, 0.4)));
+    objects.push_back(new sphere((0, -1000, 2), 999,
+                                 new material((0.1, 0.2, 0.6), 80.0, 0.8)));
+    objects.push_back(new sphere((0, 0, 2), 1,
+                                 new material((1.0, 0.5, 0.1), 60.0, 0.7)));
+    lights.push_back((-50, 100, -50));
+    lights.push_back((40, 40, 150));
+    cam = new camera((0, 6, -17), (0, -1, 0), 45);
+    return;
+  }
+
+  //
+  // Otherwise, read the scene from 'infile'
+  //
   const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
 
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
@@ -528,6 +550,6 @@ inline proc crossProduct(v1, v2) {
 iter channel.readlines() {
   var line: string;
 
-  while (infile.readline(line)) do
+  while (this.readline(line)) do
     yield line;
 }
