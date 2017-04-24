@@ -1,3 +1,0 @@
-not-a-copy-initializer.chpl:16: In initializer:
-not-a-copy-initializer.chpl:17: error: unresolved call 'Foo.someMethod()'
-not-a-copy-initializer.chpl:7: note: candidates are: OtherRecord.someMethod()
