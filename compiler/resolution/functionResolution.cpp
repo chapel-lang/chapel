@@ -6110,6 +6110,7 @@ static void insertRuntimeTypeTemps() {
 
 static void        resolveAutoCopyEtc(Type* type);
 static const char* autoCopyFnForType(Type* type);
+static FnSymbol*   autoMemoryFunction(Type* type, const char* fnName);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -6132,43 +6133,18 @@ static void resolveAutoCopyEtc(Type* type) {
 
   // resolve autoCopy
   if (hasAutoCopyForType(type) == false) {
-    VarSymbol*  tmp  = newTemp(type);
-    const char* name = autoCopyFnForType(type);
-    CallExpr*   call = new CallExpr(name, tmp);
-    FnSymbol*   fn   = NULL;
-
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-
-    fn = resolveUninsertedCall(type, call);
-
-    resolveFns(fn);
-
-    INT_ASSERT(fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+    FnSymbol* fn = autoMemoryFunction(type, autoCopyFnForType(type));
 
     autoCopyMap[type] = fn;
-
-    tmp->defPoint->remove();
   }
 
   // resolve autoDestroy
   if (autoDestroyMap.get(type) == NULL) {
-    VarSymbol*  tmp  = newTemp(type);
-    CallExpr*   call = new CallExpr("chpl__autoDestroy", tmp);
-    FnSymbol*   fn   = NULL;
-
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-
-    fn = resolveUninsertedCall(type, call);
+    FnSymbol* fn = autoMemoryFunction(type, "chpl__autoDestroy");
 
     fn->addFlag(FLAG_AUTO_DESTROY_FN);
 
-    resolveFns(fn);
-
-    INT_ASSERT(fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
-
     autoDestroyMap.put(type, fn);
-
-    tmp->defPoint->remove();
   }
 
   // resolve unalias
@@ -6176,21 +6152,9 @@ static void resolveAutoCopyEtc(Type* type) {
   // but for now it only applies to array/domain/distribution
   // in order to minimize the changes.
   if (unaliasMap.get(type) == NULL && isRecordWrappedType(type) == true) {
-    VarSymbol*  tmp  = newTemp(type);
-    CallExpr*   call = new CallExpr("chpl__unalias", tmp);
-    FnSymbol*   fn   = NULL;
-
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-
-    fn = resolveUninsertedCall(type, call);
-
-    resolveFns(fn);
-
-    INT_ASSERT(fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+    FnSymbol* fn = autoMemoryFunction(type, "chpl__unalias");
 
     unaliasMap.put(type, fn);
-
-    tmp->defPoint->remove();
   }
 }
 
@@ -6212,6 +6176,24 @@ static const char* autoCopyFnForType(Type* type) {
       type->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
     retval = "chpl__initCopy";
   }
+
+  return retval;
+}
+
+static FnSymbol* autoMemoryFunction(Type* type, const char* fnName) {
+  VarSymbol*  tmp    = newTemp(type);
+  CallExpr*   call   = new CallExpr(fnName, tmp);
+  FnSymbol*   retval = NULL;
+
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+
+  retval = resolveUninsertedCall(type, call);
+
+  resolveFns(retval);
+
+  INT_ASSERT(retval->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+
+  tmp->defPoint->remove();
 
   return retval;
 }
