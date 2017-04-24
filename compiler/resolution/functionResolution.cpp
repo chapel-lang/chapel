@@ -6112,22 +6112,16 @@ static void resolveAutoCopyEtc(Type* type);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!ts->defPoint->parentSymbol)
-      continue; // Type is not in tree
+    if (ts->defPoint->parentSymbol               != NULL   &&
+        ts->hasFlag(FLAG_GENERIC)                == false  &&
+        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+      if (isRecord(ts->type) == true) {
+        resolveAutoCopyEtc(ts->type);
+        propagateNotPOD(ts->type);
 
-    if (ts->hasFlag(FLAG_GENERIC))
-      continue; // Consider only concrete types.
-
-    if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
-      continue; // Skip the "dmapped" pseudo-type.
-
-    if (isRecord(ts->type)) {
-      resolveAutoCopyEtc(ts->type);
-    }
-
-    if (isAggregateType(ts->type) ) {
-      // Mark record/tuple/class types as POD or NOT_POD
-      propagateNotPOD(ts->type);
+      } else if (isAggregateType(ts->type) == true) {
+        propagateNotPOD(ts->type);
+      }
     }
   }
 }
