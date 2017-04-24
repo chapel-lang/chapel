@@ -6131,11 +6131,13 @@ static void resolveAutoCopies() {
 static void resolveAutoCopyEtc(Type* type) {
   SET_LINENO(type->symbol);
 
-  // resolve autoCopy
-  if (hasAutoCopyForType(type) == false) {
-    FnSymbol* fn = autoMemoryFunction(type, autoCopyFnForType(type));
+  if (isNonGenericRecordWithInitializers(type) == false) {
+    // resolve autoCopy
+    if (hasAutoCopyForType(type) == false) {
+      FnSymbol* fn = autoMemoryFunction(type, autoCopyFnForType(type));
 
-    autoCopyMap[type] = fn;
+      autoCopyMap[type] = fn;
+    }
   }
 
   // resolve autoDestroy
