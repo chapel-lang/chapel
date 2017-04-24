@@ -6108,7 +6108,8 @@ static void insertRuntimeTypeTemps() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveAutoCopyEtc(Type* type);
+static void        resolveAutoCopyEtc(Type* type);
+static const char* autoCopyFnForType(Type* type);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -6127,34 +6128,23 @@ static void resolveAutoCopies() {
 }
 
 static void resolveAutoCopyEtc(Type* type) {
+  SET_LINENO(type->symbol);
+
   // resolve autoCopy
-  if (!hasAutoCopyForType(type)) {
+  if (hasAutoCopyForType(type) == false) {
+    VarSymbol*  tmp  = newTemp(type);
+    const char* name = autoCopyFnForType(type);
+    CallExpr*   call = new CallExpr(name, tmp);
+    FnSymbol*   fn   = NULL;
 
-    const char* copyFnToCall = "chpl__autoCopy";
-
-    if (isUserDefinedRecord(type) &&
-        !type->symbol->hasFlag(FLAG_TUPLE) &&
-        !isRecordWrappedType(type) &&
-        !isSyncType(type) &&
-        !isSingleType(type) &&
-        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
-      // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
-      // for user-defined records. This way, if the type does not
-      // support copying, the autoCopyMap will store a function
-      // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
-      // records shouldn't be defining chpl__initCopy or chpl__autoCopy
-      // and certainly shouldn't rely on the differences between the two.
-
-      copyFnToCall = "chpl__initCopy";
-    }
-
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr(copyFnToCall, tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
+
+    fn = resolveUninsertedCall(type, call);
+
     resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+
+    INT_ASSERT(fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+
     autoCopyMap[type] = fn;
 
     tmp->defPoint->remove();
@@ -6162,18 +6152,22 @@ static void resolveAutoCopyEtc(Type* type) {
 
   // resolve autoDestroy
   if (autoDestroyMap.get(type) == NULL) {
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
+    VarSymbol*  tmp  = newTemp(type);
+    CallExpr*   call = new CallExpr("chpl__autoDestroy", tmp);
+    FnSymbol*   fn   = NULL;
+
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    // Adding the flag here isn't sufficient for checks
-    // to auto destroy fn during resolution, so
-    // I added it with a pragma in the modules.
+
+    fn = resolveUninsertedCall(type, call);
+
     fn->addFlag(FLAG_AUTO_DESTROY_FN);
+
     resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+
+    INT_ASSERT(fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+
     autoDestroyMap.put(type, fn);
+
     tmp->defPoint->remove();
   }
 
@@ -6181,17 +6175,45 @@ static void resolveAutoCopyEtc(Type* type) {
   // We make the 'unalias' hook available to all user records,
   // but for now it only applies to array/domain/distribution
   // in order to minimize the changes.
-  if (isRecordWrappedType(type) && unaliasMap.get(type) == NULL) {
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
+  if (unaliasMap.get(type) == NULL && isRecordWrappedType(type) == true) {
+    VarSymbol*  tmp  = newTemp(type);
+    CallExpr*   call = new CallExpr("chpl__unalias", tmp);
+    FnSymbol*   fn   = NULL;
+
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__unalias", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
+
+    fn = resolveUninsertedCall(type, call);
+
     resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+
+    INT_ASSERT(fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+
     unaliasMap.put(type, fn);
+
     tmp->defPoint->remove();
   }
+}
+
+// Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
+// for user-defined records. This way, if the type does not
+// support copying, the autoCopyMap will store a function
+// marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
+// records shouldn't be defining chpl__initCopy or chpl__autoCopy
+// and certainly shouldn't rely on the differences between the two.
+static const char* autoCopyFnForType(Type* type) {
+  const char* retval = "chpl__autoCopy";
+
+  if (isUserDefinedRecord(type)                == true  &&
+
+      type->symbol->hasFlag(FLAG_TUPLE)        == false &&
+      isRecordWrappedType(type)                == false &&
+      isSyncType(type)                         == false &&
+      isSingleType(type)                       == false &&
+      type->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
+    retval = "chpl__initCopy";
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
