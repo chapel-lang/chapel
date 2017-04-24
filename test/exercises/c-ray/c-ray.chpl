@@ -56,20 +56,11 @@ const ssize = size.partition("x");        // split size string into components
 if (ssize.size != 3 || ssize(2) != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize(1):int,         // x- and y-resolutions of the image
+const xres = ssize(1):int,                // x- and y-resolutions of the image
       yres = ssize(3):int;
 
-const rcpSamples = 1.0 / samples;  // the reciprocal of the # of samples
-
-//
-// the input and output file channels
-//
-const infile = if (scene == "stdin" || scene == "built-in") then stdin
-                                   else open(scene, iomode.r).reader(),
-      outfile = if image == "stdout" then stdout
-                                     else open(image, iomode.cw).writer();
-
-const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
+const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
+      halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
 // set params for dimensions
@@ -171,7 +162,7 @@ proc main() {
     stderr.writef("Rendering took: %r seconds (%r milliseconds)\n",
                   rendTime, rendTime*1000);
 
-  writeImage(image, outfile, imgType, pixels);
+  writeImage(image, imgType, pixels);
 
   for obj in objects do
     delete obj;
@@ -416,8 +407,8 @@ proc printUsage() {
 //
 proc loadScene() {
   //
-  // This permits a built-in scene to be used in order to avoid file
-  // input, in case it is problematic in some way.
+  // Support a built-in scene in order to avoid file input, should it
+  // be problematic in any way.
   //
   if scene == "built-in" {
     objects.push_back(new sphere((-1.5, -0.3, -1), 0.7,
@@ -437,8 +428,16 @@ proc loadScene() {
   //
   // Otherwise, read the scene from 'infile'
   //
+
+  // the input file channel
+  const infile = if scene == "stdin" then stdin
+                                     else open(scene, iomode.r).reader();
+
+  // a map (associative array) from the supported input file argument
+  // types to the number of columns of input they expect
   const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
 
+  // loop over the lines from the input file, counting them
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
