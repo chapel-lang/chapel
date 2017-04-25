@@ -1,1 +1,1 @@
-hasMain.chpl:2: error: 'main' found when compiling a library
+hasMain.chpl:2: error: 'main()' not permitted when compiling in --library mode
