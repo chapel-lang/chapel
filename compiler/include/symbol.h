@@ -43,6 +43,10 @@ namespace llvm
 //
 extern FnSymbol* chpl_gen_main;
 
+#define FUNC_NAME_MAX 256
+extern char llvmFuncDump[FUNC_NAME_MAX+1];
+extern bool llvmFuncOptDump;
+
 class BasicBlock;
 class BlockStmt;
 class DefExpr;

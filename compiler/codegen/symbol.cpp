@@ -60,6 +60,14 @@
 *                                                                   *
 ********************************* | ********************************/
 
+char llvmFuncDump[FUNC_NAME_MAX+1] = "";
+bool llvmFuncOptDump;
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -74,6 +82,7 @@ void Symbol::codegenDef() {
 
 
 void Symbol::codegenPrototype() { }
+
 
 /******************************** | *********************************
 *                                                                   *
@@ -1261,6 +1270,13 @@ void FnSymbol::codegenDef() {
   body->codegen();
   flushStatements();
 
+#ifdef HAVE_LLVM
+  std::string llvmName = std::string(llvmFuncDump) + "_chpl";
+  if(!llvmFuncOptDump && llvmName == cname) {
+    func->dump();
+  }
+#endif
+
   if( outfile ) {
     fprintf(outfile, "}\n\n");
   } else {
@@ -1286,6 +1302,9 @@ void FnSymbol::codegenDef() {
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
     info->FPM_postgen->run(*func);
+    if(llvmFuncOptDump && llvmName == cname) {
+      func->dump();
+    }
 #endif
   }
 
