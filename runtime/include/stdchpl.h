@@ -48,6 +48,7 @@
 #include <chplfp.h>
 #include "chplglob.h"
 #include "chplio.h"
+#include "chpl-libdivide.h"
 #include "chplmath.h"
 #include "chpl-init.h"
 #include "chpl-linefile-support.h"

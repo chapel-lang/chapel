@@ -28,7 +28,8 @@ module DefaultRectangular {
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
-  use DSIUtil, ChapelArray;
+  use DSIUtil, ChapelArray, FastIntDivide;
+
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
   config param debugDataPar = false;
@@ -1143,6 +1144,7 @@ module DefaultRectangular {
     var mdRHi: mdType(idxType);   //       "     "  .high
     var mdRStr: mdType(idxType);  //       "     "  .stride
     var mdRLen: mdType(idxType);  //       "     "  .length
+    var mdRLenRecip: mdType(chpl_divTok_t(idxType));
     var mdAlias: mdType(bool);    //   is this an alias of another array?
 
     pragma "local field"
@@ -1563,6 +1565,7 @@ module DefaultRectangular {
         mdRHi = dom.dsiDim(mdParDim).alignedHigh;
         mdRStr = abs(dom.dsiDim(mdParDim).stride):idxType;
         mdRLen = dom.dsiDim(mdParDim).length;
+        chpl_libdiv_gen(mdRLenRecip, mdRLen);
         mData = _ddata_allocate(_multiData(eltType=eltType,
                                            idxType=idxType),
                                 mdNumChunks);
@@ -1613,7 +1616,8 @@ module DefaultRectangular {
         return (((ind - mdRLo) / mdRStr * mdNumChunks:idxType)
                 / mdRLen):int;
       else
-        return (((ind - mdRLo) * mdNumChunks:idxType) / mdRLen):int;
+        return chpl_libdiv_do((ind - mdRLo) * mdNumChunks:idxType,
+                              mdRLenRecip):int;
     }
 
     inline proc mdChunk2Ind(chunk)

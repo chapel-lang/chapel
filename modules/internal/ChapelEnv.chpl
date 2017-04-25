@@ -100,6 +100,9 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_WIDE_POINTERS` for more information. */
   param CHPL_WIDE_POINTERS:string   = __primitive("get compiler variable", "CHPL_WIDE_POINTERS");
 
+  /* See :ref:`????` for more information. */
+  param CHPL_LIBDIVIDE:string   = __primitive("get compiler variable", "CHPL_LIBDIVIDE");
+
   /* See :ref:`readme-chplenv.CHPL_LLVM` for more information. */
   param CHPL_LLVM:string            = __primitive("get compiler variable", "CHPL_LLVM");
 }

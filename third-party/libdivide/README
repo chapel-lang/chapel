@@ -1,0 +1,27 @@
+===========================
+libdivide README for Chapel
+===========================
+
+Chapel runtime support for using libdivide can be built by setting
+CHPL_LIBDIVIDE=libdivide.
+
+For more information about libdivide itself, please refer to the
+website: http://libdivide.com/
+
+libdivide has been tested with clang, gcc, and Visual C++.
+
+Instructions
+
+To use Chapel's third-party build support for libdivide, change
+directory to $CHPL_HOME/third-party/libdivide and type 'make'.
+
+When the build completes the libdivide.h header file (which is all it
+consists of) will be in $CHPL_HOME/third-party/libdivide/libdivide.
+
+To use libdivide to improve multi-ddata performance, set the following
+environment variable when you compile Chapel programs:
+
+export CHPL_LIBDIVIDE=libdivide
+
+Note that this setting does not affect building the runtime or
+compiler.  It only affects user program compilation.

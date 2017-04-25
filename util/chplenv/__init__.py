@@ -11,6 +11,7 @@ __all__ = [
     'chpl_gmp',
     'chpl_hwloc',
     'chpl_launcher',
+    'chpl_libdivide',
     'chpl_llvm',
     'chpl_locale_model',
     'chpl_mem',

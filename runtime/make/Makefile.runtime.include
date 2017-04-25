@@ -69,6 +69,7 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/qio \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
+        -I$(RUNTIME_INCLUDE_ROOT)/libdivide/$(CHPL_MAKE_LIBDIVIDE) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
         -I$(RUNTIME_BUILD)/include \
 
@@ -102,6 +103,10 @@ UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
 # Add any further includes for HWLOC.
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
+
+# Add any further includes for libdivide.
+LIBDIVIDE_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.libdivide-$(CHPL_MAKE_LIBDIVIDE)
+-include $(LIBDIVIDE_INCLUDE)
 
 #
 # For use with pyChapel / library-mode.

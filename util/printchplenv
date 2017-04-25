@@ -131,6 +131,10 @@ def print_mode(mode='list', anonymize=False):
         aux_filesys = "_".join(tmp)
     print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
 
+    if mode == 'make' or mode == 'simple':
+        libdivide = chpl_libdivide.get()
+        print_var('CHPL_LIBDIVIDE', libdivide, mode, 'libdivide')
+
     # NOT using `m` here, 'simple' does not need these values
     if mode == 'make':
         stdout.write('CHPL_MAKE_COMPILER_SUBDIR=')
