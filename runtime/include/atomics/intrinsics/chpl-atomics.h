@@ -64,11 +64,10 @@ static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
 
-// cce < 8.4 is missing __sync_synchronize and __sync_bool_compare_and_swap.
-// Use __builtin_ia32_mfence and __sync_val_compare_and_swap instead.
-#if RT_COMP_CC == RT_COMP_CRAY && \
-    (RT_COMP_CRAY_VERSION_MAJOR < 8 || \
-    (RT_COMP_CRAY_VERSION_MAJOR == 8 && RT_COMP_CRAY_VERSION_MINOR < 4))
+// __sync_synchronize/__sync_bool_compare_and_swap are missing for cce < 8.4
+// and __sync_bool_compare_and_swap is broken in newer versions. Use
+// __builtin_ia32_mfence and __sync_val_compare_and_swap instead.
+#if RT_COMP_CC == RT_COMP_CRAY
   #include <intrinsics.h>
   #define full_memory_barrier __builtin_ia32_mfence
   
