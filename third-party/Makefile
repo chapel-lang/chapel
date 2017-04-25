@@ -16,7 +16,7 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv amudprun gasnet gmp hwloc jemalloc libunwind qthread llvm
+all: test-venv chpldoc-venv amudprun gasnet gmp hwloc jemalloc libdivide libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -25,6 +25,7 @@ clean: FORCE
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
 	cd jemalloc && $(MAKE) clean
+	cd libdivide && $(MAKE) clean
 	cd libunwind && $(MAKE) clean
 	cd llvm && $(MAKE) clean
 	cd massivethreads && $(MAKE) clean
@@ -39,6 +40,7 @@ cleanall: FORCE
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
 	cd jemalloc && $(MAKE) cleanall
+	cd libdivide && $(MAKE) cleanall
 	cd libunwind && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
 	cd massivethreads && $(MAKE) cleanall
@@ -53,6 +55,7 @@ clobber: FORCE
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
 	cd jemalloc && $(MAKE) clobber
+	cd libdivide && $(MAKE) clobber
 	cd libunwind && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
 	cd massivethreads && $(MAKE) clobber
@@ -98,6 +101,10 @@ $(HWLOC_INSTALL_DIR):
 jemalloc: $(JEMALLOC_INSTALL_DIR)
 $(JEMALLOC_INSTALL_DIR):
 	cd jemalloc && $(MAKE)
+
+libdivide: $(LIBDIVIDE_INSTALL_DIR)
+$(LIBDIVIDE_INSTALL_DIR):
+	cd libdivide && $(MAKE)
 
 libunwind: $(LIBUNWIND_INSTALL_DIR)
 $(LIBUNWIND_INSTALL_DIR):
