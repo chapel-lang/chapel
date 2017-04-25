@@ -1361,8 +1361,6 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 ************************************** | *************************************/
 
 DefExpr* defineObjectClass() {
-  DefExpr* retval = 0;
-
   // The base object class looks like this:
   //
   //   class object {
@@ -1377,25 +1375,30 @@ DefExpr* defineObjectClass() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  dtObject = new AggregateType(AGGREGATE_CLASS);
-
-  retval   = buildClassDefExpr("object",
-                               NULL,
-                               dtObject,
-                               NULL,
-                               new BlockStmt(),
-                               FLAG_UNKNOWN,
-                               NULL);
+  DefExpr* retval = buildClassDefExpr("object",
+                                      NULL,
+                                      AGGREGATE_CLASS,
+                                      NULL,
+                                      new BlockStmt(),
+                                      FLAG_UNKNOWN,
+                                      NULL);
 
   retval->sym->addFlag(FLAG_OBJECT_CLASS);
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResolvedTree().
+
+  // Prevents removal in pruneResolvedTree().
+  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
   retval->sym->addFlag(FLAG_NO_OBJECT);
+
+  dtObject = retval->sym->type;
 
   return retval;
 }
 
 void initChplProgram(DefExpr* objectDef) {
-  theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
+  theProgram           = new ModuleSymbol("chpl__Program",
+                                          MOD_INTERNAL,
+                                          new BlockStmt());
+
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
