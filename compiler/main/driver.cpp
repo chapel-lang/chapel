@@ -35,6 +35,7 @@
 #include "log.h"
 #include "misc.h"
 #include "mysystem.h"
+#include "parser.h"
 #include "PhaseTracker.h"
 #include "primitive.h"
 #include "runpasses.h"

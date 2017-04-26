@@ -51,15 +51,13 @@ static bool          sHandlingInternalModulesNow   = false;
 
 static void          countTokensInCmdLineFiles();
 
-
+static void          addDashMsToUserPath();
 
 static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
 
 static void          parseDependentModules(ModTag modtype);
-
-static void          ensureRequiredStandardModulesAreParsed();
 
 static ModuleSymbol* parseMod(const char* modname, ModTag modType);
 
@@ -68,6 +66,8 @@ static ModuleSymbol* parseFile(const char* filename,
                                bool        namedOnCommandLine);
 
 static void          addModulePaths();
+
+static void          printModuleSearchPath();
 
 /************************************* | **************************************
 *                                                                             *
@@ -109,10 +109,110 @@ void parse() {
 *                                                                             *
 ************************************** | *************************************/
 
+static Vec<const char*> sModPathSet;
+
+static Vec<const char*> sIntModPath;
+static Vec<const char*> sStdModPath;
+static Vec<const char*> sUsrModPath;
+static Vec<const char*> sFlagModPath;
+
 static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<UseStmt*>    sModReqdByInt;
+
+static void        helpPrintPath(Vec<const char*> path);
+
+static const char* searchPath(Vec<const char*> path,
+                              const char*      fileName,
+                              const char*      foundFile = NULL,
+                              bool             noWarn    = false);
+
+static void        addUsrDirToModulePath(const char* dir);
+
+static void        addModulePathFromFileName(const char* origFileName);
+
+void setupModulePaths() {
+  const char* modulesRoot = NULL;
+
+  if (fMinimalModules == true) {
+    modulesRoot = "modules/minimal";
+
+  } else if (fUseIPE == true) {
+    modulesRoot = "modules/ipe";
+
+  } else {
+    modulesRoot = "modules";
+  }
+
+  sIntModPath.add(astr(CHPL_HOME,
+                      "/",
+                      modulesRoot,
+                      "/internal/localeModels/",
+                      CHPL_LOCALE_MODEL));
+
+  sIntModPath.add(astr(CHPL_HOME,
+                      "/",
+                      modulesRoot,
+                      "/internal/tasktable/",
+                      fEnableTaskTracking ? "on" : "off"));
+
+  sIntModPath.add(astr(CHPL_HOME,
+                      "/",
+                      modulesRoot,
+                      "/internal/tasks/",
+                      CHPL_TASKS));
+
+  sIntModPath.add(astr(CHPL_HOME,
+                      "/",
+                      modulesRoot,
+                      "/internal/comm/",
+                      CHPL_COMM));
+
+  sIntModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
+
+  sStdModPath.add(astr(CHPL_HOME,
+                      "/",
+                      modulesRoot,
+                      "/standard/gen/",
+                      CHPL_TARGET_PLATFORM,
+                      "-",
+                      CHPL_TARGET_COMPILER));
+
+  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
+
+  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
+
+  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
+
+  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
+
+  sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
+
+  if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
+    char  path[FILENAME_MAX + 1];
+    char* colon = NULL;
+
+    strncpy(path, envvarpath, FILENAME_MAX);
+
+    do {
+      char* start = colon ? colon+1 : path;
+
+      colon = strchr(start, ':');
+
+      if (colon != NULL) {
+        *colon = '\0';
+      }
+
+      addFlagModulePath(start);
+    } while (colon);
+  }
+}
+
+// track directories specified via -M and CHPL_MODULE_PATH.
+void addFlagModulePath(const char* newPath) {
+  sFlagModPath.add(astr(newPath));
+}
 
 void addModuleToParseList(const char* name, UseStmt* useExpr) {
   const char* modName = astr(name);
@@ -129,14 +229,107 @@ void addModuleToParseList(const char* name, UseStmt* useExpr) {
   }
 }
 
+// Return a fully qualified path name for the internal file
+// with the specified baseName
+const char* pathNameForInternalFile(const char* baseName) {
+  const char* fileName = astr(baseName, ".chpl");
+
+  return searchPath(sIntModPath, fileName, NULL, true);
+}
+
+// Return a fully qualified path name for the standard file
+// with the specified baseName
+// Generate a warning if there is a user file that might define the same module
+const char* pathNameForStandardFile(const char* baseName) {
+  const char* fileName     = astr(baseName, ".chpl");
+  const char* userFileName = searchPath(sUsrModPath, fileName, NULL, false);
+
+  return searchPath(sStdModPath, fileName, userFileName, false);
+}
+
+static void printModuleSearchPath() {
+  fprintf(stderr, "module search dirs:\n");
+
+  if (developer == true) {
+    helpPrintPath(sIntModPath);
+  }
+
+  helpPrintPath(sUsrModPath);
+
+  helpPrintPath(sStdModPath);
+
+  fprintf(stderr, "end of module search dirs\n");
+}
+
+static void helpPrintPath(Vec<const char*> path) {
+  forv_Vec(const char*, dirName, path) {
+    fprintf(stderr, "  %s\n", cleanFilename(dirName));
+  }
+}
+
+static void addDashMsToUserPath() {
+  forv_Vec(const char*, dirName, sFlagModPath) {
+    addUsrDirToModulePath(dirName);
+  }
+}
+
+static void addUsrDirToModulePath(const char* dir) {
+  const char* uniqueDir = astr(dir);
+
+  if (sModPathSet.set_in(uniqueDir) == NULL) {
+    sUsrModPath.add(uniqueDir);
+    sModPathSet.set_add(uniqueDir);
+  }
+}
+
+static const char* searchPath(Vec<const char*> path,
+                              const char*      fileName,
+                              const char*      foundFile,
+                              bool             noWarn) {
+  forv_Vec(const char*, dirname, path) {
+    const char* fullFileName = astr(dirname, "/", fileName);
+
+    if (FILE* file = openfile(fullFileName, "r", false)) {
+      closefile(file);
+
+      if (foundFile == NULL) {
+        foundFile = fullFileName;
+      } else if (!noWarn) {
+        USR_WARN("Ambiguous module source file -- using %s over %s",
+                 cleanFilename(foundFile),
+                 cleanFilename(fullFileName));
+      }
+    }
+  }
+
+  return foundFile;
+}
+
 static void addModulePaths() {
   int         fileNum       = 0;
-  const char* inputFilename = 0;
+  const char* inputFileName = 0;
 
-  while ((inputFilename = nthFilename(fileNum++))) {
-    if (isChplSource(inputFilename) == true) {
-      addModulePathFromFilename(inputFilename);
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isChplSource(inputFileName) == true) {
+      addModulePathFromFileName(inputFileName);
     }
+  }
+}
+
+static void addModulePathFromFileName(const char* origFileName) {
+  char dirName[FILENAME_MAX + 1];
+
+  strncpy(dirName, origFileName, FILENAME_MAX);
+
+  if (char* lastSlash = strrchr(dirName, '/')) {
+    *lastSlash = '\0';
+
+    addUsrDirToModulePath(dirName);
+
+    *lastSlash = '/';
+
+  } else {
+    addUsrDirToModulePath(".");
   }
 }
 
@@ -418,6 +611,9 @@ static void gatherWellKnownFns() {
 *                                                                             *
 ************************************** | *************************************/
 
+static void        ensureRequiredStandardModulesAreParsed();
+static const char* stdModNameToFilename(const char* modName);
+
 static void parseCommandLineFiles() {
   int         fileNum       = 0;
   const char* inputFilename = 0;
@@ -430,6 +626,7 @@ static void parseCommandLineFiles() {
 
   if (fDocs == false || fDocsProcessUsedModules == true) {
     parseDependentModules(MOD_USER);
+
     ensureRequiredStandardModulesAreParsed();
 
     forv_Vec(ModuleSymbol, mod, allModules) {
@@ -437,36 +634,6 @@ static void parseCommandLineFiles() {
     }
   }
 }
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void parseDependentModules(ModTag modtype) {
-  forv_Vec(const char*, modName, sModNameList) {
-    if (sModDoneSet.set_in(modName) == NULL &&
-        parseMod(modName, modtype)  != NULL) {
-      sModDoneSet.set_add(modName);
-    }
-  }
-
-  // Clear the list of things we need.  On the first pass, this
-  // will be the standard modules used by the internal modules which
-  // are already captured in the modReqdByInt vector and will be dealt
-  // with by the conditional below.  On the second pass, we're done
-  // with these data structures, so clearing them out is just fine.
-  sModNameList.clear();
-  sModNameSet.clear();
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Ensure all of the standard modules that are required for internal modules   *
-* have been parsed.                                                           *
-*                                                                             *
-************************************** | *************************************/
 
 static void ensureRequiredStandardModulesAreParsed() {
   do {
@@ -531,26 +698,79 @@ static void ensureRequiredStandardModulesAreParsed() {
   } while (sModReqdByInt.n != 0);
 }
 
+// Returns either a file name or NULL if no such file was found
+// (which could happen if there's a use of an enum within the library files)
+static const char* stdModNameToFilename(const char* modName) {
+  return searchPath(sStdModPath, astr(modName, ".chpl"), NULL);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-static ModuleSymbol* parseMod(const char* modName, ModTag modType) {
-  bool          isInternal = (modType == MOD_INTERNAL) ? true : false;
+static void parseDependentModules(ModTag modTag) {
+  forv_Vec(const char*, modName, sModNameList) {
+    if (sModDoneSet.set_in(modName) == NULL &&
+        parseMod(modName, modTag)   != NULL) {
+      sModDoneSet.set_add(modName);
+    }
+  }
+
+  // Clear the list of things we need.  On the first pass, this
+  // will be the standard modules used by the internal modules which
+  // are already captured in the modReqdByInt vector and will be dealt
+  // with by the conditional below.  On the second pass, we're done
+  // with these data structures, so clearing them out is just fine.
+  sModNameList.clear();
+  sModNameSet.clear();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static const char* modNameToFilename(const char* modName,
+                                     bool        isInternal,
+                                     bool*       isStandard);
+
+static ModuleSymbol* parseMod(const char* modName, ModTag modTag) {
+  bool          isInternal = (modTag == MOD_INTERNAL) ? true : false;
   bool          isStandard = false;
   ModuleSymbol* retval     = NULL;
 
   if (const char* path = modNameToFilename(modName, isInternal, &isStandard)) {
     if (isInternal == false && isStandard == true) {
-      modType = MOD_STANDARD;
+      modTag = MOD_STANDARD;
     }
 
-    retval = parseFile(path, modType, false);
+    retval = parseFile(path, modTag, false);
   }
 
   return retval;
+}
+
+static const char* modNameToFilename(const char* modName,
+                                     bool        isInternal,
+                                     bool*       isStandard) {
+  const char* fileName     = astr(modName, ".chpl");
+  const char* fullFileName = NULL;
+
+  if (isInternal) {
+    fullFileName = searchPath(sIntModPath, fileName, NULL, true);
+
+  } else {
+    fullFileName = searchPath(sUsrModPath, fileName);
+
+    *isStandard = (fullFileName == NULL);
+
+    fullFileName = searchPath(sStdModPath, fileName, fullFileName);
+  }
+
+  return  fullFileName;
 }
 
 /************************************* | **************************************
@@ -566,9 +786,6 @@ static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modType,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
-
-
-
 
   if (FILE* fp = openInputFile(fileName)) {
     gFilenameLookup.push_back(fileName);
@@ -702,8 +919,6 @@ static ModuleSymbol* parseFile(const char* fileName,
             fileName);
   }
 
-
-
   return retval;
 }
 
@@ -711,50 +926,53 @@ static void addModuleToDoneList(ModuleSymbol* module) {
   sModDoneSet.set_add(astr(module->name));
 }
 
-static bool containsOnlyModules(BlockStmt* block, const char* filename) {
+static bool containsOnlyModules(BlockStmt* block, const char* fileName) {
   int           moduleDefs     =     0;
   bool          hasUses        = false;
   bool          hasOther       = false;
-  ModuleSymbol* lastmodsym     =  NULL;
-  BaseAST*      lastmodsymstmt =  NULL;
+  ModuleSymbol* lastModSym     =  NULL;
+  BaseAST*      lastModSymStmt =  NULL;
 
   for_alist(stmt, block->body) {
     if (BlockStmt* block = toBlockStmt(stmt))
       stmt = block->body.first();
 
     if (DefExpr* defExpr = toDefExpr(stmt)) {
-      ModuleSymbol* modsym = toModuleSymbol(defExpr->sym);
+      ModuleSymbol* modSym = toModuleSymbol(defExpr->sym);
 
-      if (modsym != NULL) {
-        lastmodsym     = modsym;
-        lastmodsymstmt = stmt;
+      if (modSym != NULL) {
+        lastModSym     = modSym;
+        lastModSymStmt = stmt;
+
         moduleDefs++;
       } else {
         hasOther = true;
       }
 
-    } else if (toCallExpr(stmt)) {
+    } else if (isCallExpr(stmt) == true) {
       hasOther = true;
-    } else if (toUseStmt(stmt)) {
+
+    } else if (isUseStmt(stmt)  == true) {
       hasUses = true;
+
     } else {
       hasOther = true;
     }
   }
 
-  if (hasUses && !hasOther && moduleDefs == 1) {
-    USR_WARN(lastmodsymstmt,
+  if (hasUses == true && hasOther == false && moduleDefs == 1) {
+    USR_WARN(lastModSymStmt,
              "as written, '%s' is a sub-module of the module created for "
              "file '%s' due to the file-level 'use' statements.  If you "
              "meant for '%s' to be a top-level module, move the 'use' "
              "statements into its scope.",
-             lastmodsym->name,
-             filename,
-             lastmodsym->name);
+             lastModSym->name,
+             fileName,
+             lastModSym->name);
 
   }
 
-  return !hasUses && !hasOther && moduleDefs > 0;
+  return hasUses == false && hasOther == false && moduleDefs > 0;
 }
 
 /************************************* | **************************************
@@ -764,7 +982,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* filename) {
 ************************************** | *************************************/
 
 BlockStmt* parseString(const char* string,
-                       const char* filename,
+                       const char* fileName,
                        const char* msg) {
   // State for the lexer
   YY_BUFFER_STATE handle       =   0;
@@ -783,7 +1001,7 @@ BlockStmt* parseString(const char* string,
   handle              = yy_scan_string(string, context.scanner);
 
   yyblock             = NULL;
-  yyfilename          = filename;
+  yyfilename          = fileName;
 
   chplParseString     = true;
   chplParseStringMsg  = msg;
