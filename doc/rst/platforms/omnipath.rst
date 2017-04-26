@@ -16,6 +16,7 @@ Compiling Chapel
 Used the following environment variables:
 
    .. code-block:: bash
+
    export CHPL_COMM='gasnet'
    export CHPL_LAUNCHER='gasnetrun_psm'
    export CHPL_COMM_SUBSTRATE='psm'
@@ -27,7 +28,7 @@ Using Slurm for Job Launch
 
 1. Source the Chapel environment script
 
-2. Define the variables give in the above section
+2. Define the variables given in the above section
 
 3. Set ``HFI_NO_CPUAFFINITY=1`` otherwise no parallelism on each locale will be
    used.
