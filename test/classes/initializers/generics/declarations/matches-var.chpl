@@ -10,5 +10,5 @@ class Foo {
   }
 }
 
-var foo: Foo(int); // Semantic question: how to declare instantiation?
+var foo: Foo(int);
 writeln(foo.type:string);
