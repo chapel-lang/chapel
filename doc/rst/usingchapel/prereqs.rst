@@ -29,6 +29,10 @@ about your environment for using Chapel:
     relatively recent versions of gcc/g++, clang, and compilers from
     Cray, Intel, and PGI.
 
+    * Note that you will need a C++11 compiler to build LLVM or regular
+      expression support (i.e.  CHPL_LLVM=llvm or CHPL_REGEXP=re2). If
+      GCC is used, we recommend GCC version 5 or newer for this purpose.
+
   * If you wish to use Chapel's test system, python-setuptools and
     python-devel (or equivalent packages for your platform) are required.
 
