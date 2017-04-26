@@ -1,0 +1,1 @@
+same_type_function_equally_good.chpl:26: error: cannot determine type instantiation based on initializers provided
