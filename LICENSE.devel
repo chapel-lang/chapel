@@ -8,7 +8,6 @@ code that doesn't appear in the release.
 
    directory/package  use                                          license
    -----------------  -------------------------------------------  -------
-
    third-party/
        scspell        Spell-checking utility                       GPL 2
        scspell SCOWL word lists
@@ -16,5 +15,3 @@ code that doesn't appear in the release.
                                                                    BSD
                                                                    other (UKACD)
                                                                    public domain
-   -----------------  -------------------------------------------  -------
-
