@@ -47,12 +47,12 @@ bool isDenormalizable(Symbol* sym,
     Type** castTo, SafeExprAnalysis& analysisData);
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates,
     SafeExprAnalysis& analysisData);
-void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
+void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
     UseDefCastMap& udcMap, SafeExprAnalysis& analysisData);
 void denormalize(void);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
-    Vec<Symbol*>& deferredSyms);
+    std::set<Symbol*>& deferredSyms);
 
 /*
  * This function tries to remove temporary variables in function `fn`
@@ -74,7 +74,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
 void denormalize(void) {
 
   UseDefCastMap candidates;
-  Vec<Symbol*> deferredSyms;
+  std::set<Symbol*> deferredSyms;
   SafeExprAnalysis analysisData;
 
   if(fDenormalize) {
@@ -101,7 +101,7 @@ void denormalize(void) {
         denormalizeOrDeferCandidates(candidates, deferredSyms);
 
         isFirstRound = false;
-      } while(deferredSyms.count() > 0);
+      } while(deferredSyms.size() > 0);
     }
   }
 }
@@ -150,7 +150,7 @@ void denormalize(void) {
  *   denormalize(void)
  */
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
-    Vec<Symbol*>& deferredSyms) {
+    std::set<Symbol*>& deferredSyms) {
 
   for(UseDefCastMap::iterator it = candidates.begin() ;
       it != candidates.end() ; ++it) {
@@ -161,20 +161,20 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Type* castTo = defCastPair.second;
 
     if(def->parentExpr == NULL) {
-      deferredSyms.add(use->symbol());
+      deferredSyms.insert(use->symbol());
       continue;
     }
     denormalize(def, use, castTo);
   }
 }
 
-void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
+void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
     UseDefCastMap& udcMap, SafeExprAnalysis& analysisData) {
 
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
   bool cachedExternManip = analysisData.isRegisteredExternManip(fn);
 
-  forv_Vec(Symbol, sym, symVec) {
+  for_set(Symbol, sym, symVec) {
 
     SymExpr *use = NULL;
     Expr *def = NULL;
@@ -237,7 +237,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
     SafeExprAnalysis& analysisData) {
 
-  Vec<Symbol*> symSet;
+  std::set<Symbol*> symSet;
 
   collectSymbolSet(fn, symSet);
 

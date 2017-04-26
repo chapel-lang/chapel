@@ -182,6 +182,7 @@ void AstDumpToNode::enterNode(BaseAST* node) const
     if (FnSymbol* fn = toFnSymbol(node))
     {
       fprintf(mFP, "%s%-10s", delimitEnter, node->astTagAsString());
+
       writeNodeID(node, true, false);
 
       if (fn->hasFlag(FLAG_GENERIC) == true)
@@ -189,6 +190,13 @@ void AstDumpToNode::enterNode(BaseAST* node) const
         fprintf(mFP, " (Generic)");
       }
     }
+
+    else if (isUnresolvedSymExpr(node) == true)
+    {
+      fprintf(mFP, "%s%-10s", delimitEnter, "UsymExpr");
+      writeNodeID(node, true, false);
+    }
+
     else
     {
       fprintf(mFP, "%s%-10s", delimitEnter, node->astTagAsString());

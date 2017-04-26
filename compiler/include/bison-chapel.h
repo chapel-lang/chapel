@@ -103,29 +103,30 @@ extern int yydebug;
   // The lexer only uses pch.
   // The remaining types are for parser productions
   union  YYSTYPE {
-    const char*       pch;
+    const char*               pch;
 
-    Vec<const char*>* vpch;
-    RetTag            retTag;
-    bool              b;
-    IntentTag         pt;
-    Expr*             pexpr;
-    DefExpr*          pdefexpr;
-    CallExpr*         pcallexpr;
-    BlockStmt*        pblockstmt;
-    Type*             ptype;
-    EnumType*         penumtype;
-    FnSymbol*         pfnsymbol;
-    Flag              flag;
-    ProcIter          procIter;
-    FlagSet*          flagSet;
-    IntentExpr        pIntentExpr;
-    ForallIntents*    pForallIntents;
+    Vec<const char*>*         vpch;
+    RetTag                    retTag;
+    AggregateTag              aggrTag;
+    bool                      b;
+    IntentTag                 pt;
+    Expr*                     pexpr;
+    DefExpr*                  pdefexpr;
+    CallExpr*                 pcallexpr;
+    BlockStmt*                pblockstmt;
+    Type*                     ptype;
+    EnumType*                 penumtype;
+    FnSymbol*                 pfnsymbol;
+    Flag                      flag;
+    ProcIter                  procIter;
+    FlagSet*                  flagSet;
+    IntentExpr                pIntentExpr;
+    ForallIntents*            pForallIntents;
     std::vector<OnlyRename*>* ponlylist;
   };
 
   #endif
-#line 135 "chapel.ypp" /* yacc.c:1915  */
+#line 136 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -142,7 +143,7 @@ extern int yydebug;
   #define YYLTYPE_IS_TRIVIAL  1
 
   #endif
-#line 157 "chapel.ypp" /* yacc.c:1915  */
+#line 158 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -170,7 +171,7 @@ extern int yydebug;
 
   #endif
 
-#line 174 "../include/bison-chapel.h" /* yacc.c:1915  */
+#line 175 "../include/bison-chapel.h" /* yacc.c:1915  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -352,7 +353,7 @@ int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLT
 yypstate * yypstate_new (void);
 void yypstate_delete (yypstate *ps);
 /* "%code provides" blocks.  */
-#line 188 "chapel.ypp" /* yacc.c:1915  */
+#line 189 "chapel.ypp" /* yacc.c:1915  */
 
   extern int yydebug;
 
@@ -360,6 +361,6 @@ void yypstate_delete (yypstate *ps);
                ParserContext* context,
                const char*    str);
 
-#line 364 "../include/bison-chapel.h" /* yacc.c:1915  */
+#line 365 "../include/bison-chapel.h" /* yacc.c:1915  */
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

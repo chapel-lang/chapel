@@ -1,5 +1,0 @@
-bug: if() with this.init() in one arm and field init + super.init() in other...
-
-...fails to compile.
-
-This is recorded in issue #5960

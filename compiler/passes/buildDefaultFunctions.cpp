@@ -466,7 +466,7 @@ static void build_chpl_entry_points() {
 
   if (fLibraryCompile) {
     if (chpl_user_main)
-      INT_FATAL(chpl_user_main, "'main' found when compiling a library");
+      USR_FATAL(chpl_user_main, "'main()' not permitted when compiling in --library mode");
   }
 
   if (!chpl_user_main) {

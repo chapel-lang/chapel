@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,10 +39,12 @@
 //For naming of variadic function variables (and temporary names for void *'s).
 static int query_uid = 1;
 
-static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results);
+static const char* convertTypedef(ModuleSymbol*           module,
+                                  clang::TypedefNameDecl* tdn,
+                                  Vec<Expr*>&             results);
 
 
-//Given a clang type, returns the corresponding chapel type (usually as 
+//Given a clang type, returns the corresponding chapel type (usually as
 //  an UnresolvedSymExpr to be resolved by scopeResolve).
 static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL) {
 
@@ -65,7 +67,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     // but only if they are const char*.
     if ( pointeeType.isConstQualified() &&
          pointeeType.getTypePtr()->isCharType() ) {
-      return new UnresolvedSymExpr("c_string"); 
+      return new UnresolvedSymExpr("c_string");
     }
 
     // Pointers to C functions become c_fn_ptr
@@ -92,7 +94,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       const char* tmp_name = astr(rd->getNameAsString().c_str());
       const char* cname = tmp_name;
 
-      if (!llvmCodegen) { 
+      if (!llvmCodegen) {
         cname = astr("struct ", cname);
       }
 
@@ -121,12 +123,16 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
           fields->insertAtTail(buildVarDecls(stmt, flags, NULL));
         }
 
-        DefExpr* strct = buildClassDefExpr(tmp_name, NULL,
-                                           new AggregateType(AGGREGATE_RECORD),
-                                           NULL, fields, FLAG_EXTERN, NULL);
+        DefExpr* strct = buildClassDefExpr(tmp_name,
+                                           NULL,
+                                           AGGREGATE_RECORD,
+                                           NULL,
+                                           fields,
+                                           FLAG_EXTERN,
+                                           NULL);
 
         //...and patch up the resulting struct so that its cname is
-        //  correct and codegen can find it.       
+        //  correct and codegen can find it.
         if (strct) {
           strct->sym->cname = cname;
           results.add(strct);
@@ -150,7 +156,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     }
 
     // handle numeric types
-    
+
     //Unsigned types
     if (type->isSpecificBuiltinType(clang::BuiltinType::Bool))
       return new UnresolvedSymExpr("bool");
@@ -186,19 +192,26 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 
     if (type->isVoidType()) return NULL;
 
-  } 
+  }
+
   //give up...
   INT_FATAL("Unsupported type in extern \"C\" block.");
   return NULL;
 }
 
-static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chplType, Vec<Expr*> & results) {
+static void convertMacroToChpl(ModuleSymbol* module,
+                               const char*   name,
+                               Type*         chplType,
+                               Vec<Expr*>&   results) {
   if( ! module->extern_info ) return;
 
   VarSymbol* v = new VarSymbol(name, chplType);
+
   v->addFlag(FLAG_EXTERN);
   v->addFlag(FLAG_CONST);
+
   results.add(new DefExpr(v));
+
   forv_Vec(Expr*, result, results) {
     if (!result->inTree()) {
       SET_LINENO(result);
@@ -208,7 +221,9 @@ static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chp
   setAlreadyConvertedExtern(module, name);
 }
 
-static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results) {
+static const char* convertTypedef(ModuleSymbol*           module,
+                                  clang::TypedefNameDecl* tdn,
+                                  Vec<Expr*>&             results) {
 
   //handle typedefs
 
@@ -247,7 +262,13 @@ static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *
     VarSymbol* v = new VarSymbol(typedef_name);
     v->addFlag(FLAG_TYPE_VARIABLE);
 
-    DefExpr* type_expr = new DefExpr(v, convertToChplType(module, contents_type, results, typedef_name), NULL);
+    DefExpr* type_expr = new DefExpr(v,
+                                     convertToChplType(module,
+                                                       contents_type,
+                                                       results,
+                                                       typedef_name),
+                                     NULL);
+
     results.add(convertTypesToExtern(buildChapelStmt(type_expr)));
   }
 
@@ -258,7 +279,9 @@ static const char* convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *
 
 
 
-void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & results) {
+void convertDeclToChpl(ModuleSymbol* module,
+                       const char*   name,
+                       Vec<Expr*>&   results) {
   if (name == NULL || !externC || !strcmp(".", name) || !strcmp("", name))
    return;
 
@@ -289,12 +312,16 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   }
 
   //enum constant
-  if (clang::EnumConstantDecl *ed = 
+  if (clang::EnumConstantDecl *ed =
       llvm::dyn_cast_or_null<clang::EnumConstantDecl>(cValue)) {
     VarSymbol* v = new VarSymbol(name);
     v->addFlag(FLAG_EXTERN);
     v->addFlag(FLAG_CONST);
-    results.add(new DefExpr(v, NULL, convertToChplType(module, ed->getType().getTypePtr(), results)));
+    results.add(new DefExpr(v,
+                            NULL,
+                            convertToChplType(module,
+                                              ed->getType().getTypePtr(),
+                                              results)));
   }
 
 

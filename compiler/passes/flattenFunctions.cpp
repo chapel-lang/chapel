@@ -245,59 +245,76 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (vars->n == 0) return;
+
   std::vector<SymExpr*> symExprs;
+
   collectSymExprs(fn->body, symExprs);
+
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
-      ArgSymbol* arg = toArgSymbol(e->value);
-      Type* type = arg->type;
-      for_vector(SymExpr, se, symExprs) {
-          if (se->symbol() == sym) {
-            if (type == sym->type) {
-              se->setSymbol(arg);
-            } else {
-              CallExpr* call = toCallExpr(se->parentExpr);
-              INT_ASSERT(call);
-              FnSymbol* fnc = call->isResolved();
-              bool canPassToFn = false;
-              if (fnc) {
-                ArgSymbol* form = actual_to_formal(se);
-                if (arg->isRef() && form->isRef() &&
-                    arg->getValType() == form->getValType() &&
-                    // BHARSH TODO: Can we remove that now that removeWrapRecords is gone?
-                    // I observed some increase comm-counts with stream, but
-                    // maybe we shouldn't have deref'd before
-                    !isRecordWrappedType(form->getValType())) {
-                  // removeWrapRecords can modify the formal to have the
-                  // 'const in' intent. For now it's easier to insert the
-                  // DEREF here.
-                  canPassToFn = true;
-                } else if (arg->type == form->type) {
-                  canPassToFn = true;
-                }
-              }
+      ArgSymbol* arg  = toArgSymbol(e->value);
+      Type*      type = arg->type;
 
-              if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_GET_MEMBER)) ||
-                  (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
-                  (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
-                  (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
-                  canPassToFn) {
-                se->setSymbol(arg); // do not dereference argument in these cases
-              } else if (call->isPrimitive(PRIM_ADDR_OF)) {
-                SET_LINENO(se);
-                call->replace(new SymExpr(arg));
-              } else {
-                SET_LINENO(se);
-                VarSymbol* tmp = newTemp(sym->type);
-                se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
-                se->setSymbol(tmp);
+      for_vector(SymExpr, se, symExprs) {
+        if (se->symbol() == sym) {
+          if (type == sym->type) {
+            se->setSymbol(arg);
+
+          } else {
+            CallExpr* call        = toCallExpr(se->parentExpr);
+            INT_ASSERT(call);
+
+            FnSymbol* fnc         = call->resolvedFunction();
+            bool      canPassToFn = false;
+
+            if (fnc) {
+              ArgSymbol* form = actual_to_formal(se);
+
+              if (arg->isRef()                            &&
+                  form->isRef()                           &&
+                  arg->getValType() == form->getValType() &&
+                  // BHARSH TODO: Can we remove that now that
+                  // removeWrapRecords is gone?
+                  // I observed some increase comm-counts with stream, but
+                  // maybe we shouldn't have deref'd before
+                  !isRecordWrappedType(form->getValType())) {
+                // removeWrapRecords can modify the formal to have the
+                // 'const in' intent. For now it's easier to insert the
+                // DEREF here.
+                canPassToFn = true;
+              } else if (arg->type == form->type) {
+                canPassToFn = true;
               }
             }
+
+            if ((call->isPrimitive(PRIM_MOVE)       && call->get(1) == se) ||
+                (call->isPrimitive(PRIM_ASSIGN)     && call->get(1) == se) ||
+                (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
+                (call->isPrimitive(PRIM_GET_MEMBER))                       ||
+                (call->isPrimitive(PRIM_GET_MEMBER_VALUE))                 ||
+                (call->isPrimitive(PRIM_WIDE_GET_LOCALE))                  ||
+                (call->isPrimitive(PRIM_WIDE_GET_NODE))                    ||
+                canPassToFn) {
+              se->setSymbol(arg); // do not dereference argument in these cases
+
+            } else if (call->isPrimitive(PRIM_ADDR_OF)) {
+              SET_LINENO(se);
+              call->replace(new SymExpr(arg));
+
+            } else {
+              SET_LINENO(se);
+
+              VarSymbol* tmp   = newTemp(sym->type);
+              CallExpr*  deref = new CallExpr(PRIM_DEREF, arg);
+              CallExpr*  move  = new CallExpr(PRIM_MOVE,  tmp, deref);
+
+              se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+              se->getStmtExpr()->insertBefore(move);
+
+              se->setSymbol(tmp);
+            }
           }
+        }
       }
     }
   }

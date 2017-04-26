@@ -215,70 +215,87 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
 
   // Scan each basic block in turn.
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    // We only match up and remove autoCopy/autoDestroy pairs within one basic block.
+    // We only match up and remove autoCopy/autoDestroy pairs
+    // within one basic block.
     AutoTrack track;
+
     // Scan the expressions in this basic block.
     for_vector(Expr, expr, bb->exprs) {
       if (CallExpr* call = toCallExpr(expr)) {
-        // If it is a call expression, then we want to see if it is either an
-        // autocopy call or a straight copy of one variable to another.  Both of
-        // these have a 'move' primitive as the outer call.
+        // If it is a call expression, then we want to see if it is either
+        // an  autocopy call or a straight copy of one variable to another.
+        // Both of these have a 'move' primitive as the outer call.
         if (isMoveOrAssign(call)) {
 
-          // If the RHS is a SymExpr, then this is a straight move. Record the alias.
-          if (toSymExpr(call->get(2)))
+          // If the RHS is a SymExpr, then this is a straight move.
+          // Record the alias.
+          if (toSymExpr(call->get(2))) {
             track.move(call);
+          }
 
-          // If the RHS is a CallExpr, then check to see if it is an autoCopy call.
+          // If the RHS is a CallExpr,
+          // then check to see if it is an autoCopy call.
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
-            if (FnSymbol* ac = rhs->isResolved()) {
+            if (FnSymbol* ac = rhs->resolvedFunction()) {
               if (ac->hasFlag(FLAG_REMOVABLE_AUTO_COPY)) {
                 // Yup.  So track the autoCopy
                 INT_ASSERT(rhs->argList.head);
+
                 SymExpr* se = toSymExpr(call->get(1));
+
                 // Do not remove necessary autoCopies!
-                if (!se->symbol()->hasFlag(FLAG_NECESSARY_AUTO_COPY))
+                if (!se->symbol()->hasFlag(FLAG_NECESSARY_AUTO_COPY)) {
                   track.autoCopy(call);
+                }
               }
             }
           }
         }
 
         // Check if the call is a removable autoDestroy call.
-        if (FnSymbol* ad = call->isResolved()) {
+        if (FnSymbol* ad = call->resolvedFunction()) {
           if (ad->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY)) {
             INT_ASSERT(call->argList.head);
+
             SymExpr* se = toSymExpr(call->get(1));
+
             // Global/module-level symbols have lifetimes larger than function
             // scope, so we ignore them here.
-            if (se->symbol()->defPoint->parentSymbol == fn)
+            if (se->symbol()->defPoint->parentSymbol == fn) {
               track.autoDestroy(call);
+            }
           }
         }
       }
     }
 
-    // Now, look for and delete autoCopy/autoDestroy pairs, and set "changed" if
-    // any were removed.
-    if (track.update())
+    // Now, look for and delete autoCopy/autoDestroy pairs,
+    // and set "changed" if any were removed.
+    if (track.update()) {
       changed = true;
+    }
   }
 
 #if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
-  // Re-run some other optimizations if progress was made.  
+  // Re-run some other optimizations if progress was made.
   if (changed) {
     if (!fNoCopyPropagation) {
       localCopyPropagation(fn);
-      if (!fNoDeadCodeElimination)
+
+      if (!fNoDeadCodeElimination) {
         deadVariableElimination(fn);
+      }
+
       globalCopyPropagation(fn);
       singleAssignmentRefPropagation(fn);
-    }  
-    if (!fNoDeadCodeElimination)
+    }
+
+    if (!fNoDeadCodeElimination) {
       deadCodeElimination(fn);
+    }
   }
 #endif
-} 
+}
 
 // We can remove the calls to chpl__initCopy (should actually be chpl__autoCopy)
 // and corresponding calls to chpl__autoDestroy for Plain-Old-Data (POD) types.

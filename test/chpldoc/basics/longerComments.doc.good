@@ -1,46 +1,74 @@
-longerComments.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: longerComments.doc
+
+longerComments.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
    use longerComments.doc;
 
-Submodules for this module are located in the longerComments.doc/ directory
+**Submodules**
 
-   proc method1()
-      This is a comment for method1, which lies
-      outside of a defined module 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc body()
-      This is a comment for method with a body 
-      which lies outside of a defined module 
+   longerComments.doc/*
 
-   proc hasArg(val: int)
-      This is a comment for method with an 
-      argument which lies outside of a defined
-      module 
+.. function:: proc method1()
 
-   proc argAndBody(val: int)
-      This is a comment for method with an
-      argument and body which lies outside of a
-      defined module 
+   This is a comment for method1, which lies
+   outside of a defined module 
+
+.. function:: proc body()
+
+   This is a comment for method with a body 
+   which lies outside of a defined module 
+
+.. function:: proc hasArg(val: int)
+
+   This is a comment for method with an 
+   argument which lies outside of a defined
+   module 
+
+.. function:: proc argAndBody(val: int)
+
+   This is a comment for method with an
+   argument and body which lies outside of a
+   defined module 
+
+.. default-domain:: chpl
+
+.. module:: Other
 
 Other
+=====
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use longerComments.doc.Other;
 
-   proc inside
-      This is a comment for a method inside of
-      a module 
+.. function:: proc inside
 
-   proc body()
-      This is a comment for a method with a body 
-      inside of a module 
+   This is a comment for a method inside of
+   a module 
 
-   proc hasArg(val: int)
-      This is a comment for a method with an 
-      argument inside of a module 
+.. function:: proc body()
 
-   proc argAndBody(val: int)
-      This is a comment for a method with an 
-      argument and body inside of a module 
+   This is a comment for a method with a body 
+   inside of a module 
+
+.. function:: proc hasArg(val: int)
+
+   This is a comment for a method with an 
+   argument inside of a module 
+
+.. function:: proc argAndBody(val: int)
+
+   This is a comment for a method with an 
+   argument and body inside of a module 
 

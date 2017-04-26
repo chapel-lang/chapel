@@ -1176,7 +1176,7 @@ static void propagateVar(Symbol* sym) {
       else if (call->primitive) {
         DEBUG_PRINTF("Unhandled primitive %s (call %d in %s)\n", call->primitive->name, call->id, call->getModule()->cname);
       }
-      else if (FnSymbol* fn = call->isResolved()) {
+      else if (FnSymbol* fn = call->resolvedFunction()) {
         debug(sym, "passed to fn %s (%d)\n", fn->cname, fn->id);
 
         // TODO: Duplicate functions here.
@@ -1235,9 +1235,9 @@ static void propagateVar(Symbol* sym) {
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved() && rhs->isResolved()->getReturnSymbol()->isRefOrWideRef()) {
+            else if (rhs->isResolved() && rhs->resolvedFunction()->getReturnSymbol()->isRefOrWideRef()) {
               debug(sym, "return symbol must be wide\n");
-              matchWide(sym, rhs->isResolved()->getReturnSymbol());
+              matchWide(sym, rhs->resolvedFunction()->getReturnSymbol());
             }
           }
         }
@@ -1345,7 +1345,7 @@ static void insertStringLiteralTemps()
             SET_LINENO(se);
             if (call->isResolved())
             {
-              if (!call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
+              if (!call->resolvedFunction()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
                 if (Type* type = actual_to_formal(se)->typeInfo()) {
                   VarSymbol* tmp = newTemp(type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1424,7 +1424,7 @@ static void narrowWideClassesThroughCalls()
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Find calls to functions expecting local arguments.
-    if (call->isResolved() && call->isResolved()->hasFlag(FLAG_LOCAL_ARGS)) {
+    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
       Expr* stmt = call->getStmtExpr();
 
@@ -1749,24 +1749,27 @@ static void localizeCall(CallExpr* call) {
 //
 static void handleLocalBlocks() {
   Map<FnSymbol*,FnSymbol*> cache; // cache of localized functions
-  Vec<BlockStmt*> queue; // queue of blocks to localize
+  std::queue<BlockStmt*> queue; // queue of blocks to localize
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (isLocalBlock(block)) {
       if (block->length() == 0) {
         block->remove();
       } else {
-        queue.add(block);
+        queue.push(block);
       }
     }
   }
 
-  forv_Vec(BlockStmt, block, queue) {
+  while (queue.empty() == false) {
+    BlockStmt* block = queue.front();
+    queue.pop();
+
     std::vector<CallExpr*> calls;
     collectCallExprs(block, calls);
     for_vector(CallExpr, call, calls) {
       localizeCall(call);
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         SET_LINENO(fn);
         if (FnSymbol* alreadyLocal = cache.get(fn)) {
           call->baseExpr->replace(new SymExpr(alreadyLocal));
@@ -1778,7 +1781,7 @@ static void handleLocalBlocks() {
             local->cname = astr("_local_", fn->cname);
             fn->defPoint->insertBefore(new DefExpr(local));
             call->baseExpr->replace(new SymExpr(local));
-            queue.add(local->body);
+            queue.push(local->body);
             cache.put(fn, local);
             cache.put(local, local); // to handle recursion
             if (local->retType->symbol->hasFlag(FLAG_WIDE_REF)) {
@@ -1797,7 +1800,7 @@ static void handleLocalBlocks() {
 
 
 // Add symbols bearing the FLAG_HEAP flag to a list of heapVars.
-static void getHeapVars(Vec<Symbol*>& heapVars)
+static void getHeapVars(std::vector<Symbol*>& heapVars)
 {
   // Look at all def expressions.
   forv_Vec(DefExpr, def, gDefExprs)
@@ -1816,7 +1819,7 @@ static void getHeapVars(Vec<Symbol*>& heapVars)
 
     // Okey-dokey.  List up those heap variables.
     if (def->sym->type->symbol->hasFlag(FLAG_HEAP))
-      heapVars.add(def->sym);
+      heapVars.push_back(def->sym);
   }
 }
 
@@ -1843,7 +1846,7 @@ static FnSymbol* heapAllocateGlobalsHead()
 }
 
 static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
-                                    Vec<Symbol*> heapVars)
+                                    std::vector<Symbol*> heapVars)
 {
   SET_LINENO(baseModule);
 
@@ -1858,7 +1861,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   BlockStmt* block = new BlockStmt();
   DefExpr *dummy = new DefExpr(newTemp());
   block->insertAtTail(dummy);
-  forv_Vec(Symbol, sym, heapVars) {
+  for_vector(Symbol, sym, heapVars) {
     insertChplHereAlloc(dummy, false /*insertAfter*/, sym,
                         getNarrowType(sym).type(),
                         newMemDesc("global heap-converted data"));
@@ -1866,7 +1869,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   dummy->remove();
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;
-  forv_Vec(Symbol, sym, heapVars) {
+  for_vector(Symbol, sym, heapVars) {
     heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
   }
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
@@ -2264,7 +2267,7 @@ void handleIsWidePointer() {
 //
 static void createRetargTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* fn = call->isResolved();
+    FnSymbol* fn = call->resolvedFunction();
     if (fn != NULL && fn->hasFlag(FLAG_FN_RETARG)) {
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG) && isArrayRec(formal->getValType())) {
@@ -2418,7 +2421,7 @@ insertWideReferences(void) {
     }
   }
 
-  Vec<Symbol*> heapVars;
+  std::vector<Symbol*> heapVars;
   getHeapVars(heapVars);
 
   convertNilToObject();
@@ -2448,7 +2451,7 @@ insertWideReferences(void) {
   // Track functions downstream in the call-chain from a wrapon_fn
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
         std::set<FnSymbol*> downstream;
         collectUsedFnSymbols(call, downstream);

@@ -1,38 +1,70 @@
-variableArguments.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: variableArguments.doc
+
+variableArguments.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
    use variableArguments.doc;
 
-Submodules for this module are located in the variableArguments.doc/ directory
+**Submodules**
 
-   proc variable(x ...)
-      This method has a variable number of arguments 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc variableCommentless(c ...)
-   proc limited(x ...5)
-      This method requires a specific number of arguments, w/o limiting type 
+   variableArguments.doc/*
 
-   proc limitedCommentless(x ...5)
-   proc specifyMe(q ...?k)
-      This methods can take any number of arguments, but that number must 
-      be specified by the caller 
+.. function:: proc variable(x ...)
 
-   proc specifyMeCommentless(q ...?p)
+   This method has a variable number of arguments 
+
+.. function:: proc variableCommentless(c ...)
+
+.. function:: proc limited(x ...5)
+
+   This method requires a specific number of arguments, w/o limiting type 
+
+.. function:: proc limitedCommentless(x ...5)
+
+.. function:: proc specifyMe(q ...?k)
+
+   This methods can take any number of arguments, but that number must 
+   be specified by the caller 
+
+.. function:: proc specifyMeCommentless(q ...?p)
+
+.. default-domain:: chpl
+
+.. module:: Other
+
 Other
+=====
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use variableArguments.doc.Other;
 
-   proc variable(x ...)
-      This method has a variable number of arguments 
+.. function:: proc variable(x ...)
 
-   proc variableCommentless(c ...)
-   proc limited(x ...5)
-      This method requires a specific number of arguments, w/o limiting type 
+   This method has a variable number of arguments 
 
-   proc limitedCommentless(x ...5)
-   proc specifyMe(q ...?k)
-      This methods can take any number of arguments, but that number must 
-      be specified by the caller 
+.. function:: proc variableCommentless(c ...)
 
-   proc specifyMeCommentless(q ...?p)
+.. function:: proc limited(x ...5)
+
+   This method requires a specific number of arguments, w/o limiting type 
+
+.. function:: proc limitedCommentless(x ...5)
+
+.. function:: proc specifyMe(q ...?k)
+
+   This methods can take any number of arguments, but that number must 
+   be specified by the caller 
+
+.. function:: proc specifyMeCommentless(q ...?p)
+

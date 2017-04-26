@@ -1,2 +1,0 @@
-cond-both-1-plus-field-init.chpl:17: In initializer:
-cond-both-1-plus-field-init.chpl:21: error: field initialization not allowed before this.init()

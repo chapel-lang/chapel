@@ -36,20 +36,11 @@ extern int         yystartlineno;
 extern const char* yyfilename;
 extern BlockStmt*  yyblock;
 
-ModuleSymbol*      parseFile(const char* filename,
-                             ModTag      modtype,
-                             bool        namedOnCommandLine = false);
-
-ModuleSymbol*      parseMod(const char* modname,
-                            ModTag      modtype);
-
 BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
 
 void               addModuleToParseList(const char* name,
                                         UseStmt*   newUse);
-
-void               parseDependentModules(ModTag modtype);
 
 #endif

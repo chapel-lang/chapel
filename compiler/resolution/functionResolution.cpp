@@ -38,6 +38,7 @@
 #include "initializerResolution.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
+#include "PartialCopyData.h"
 #include "passes.h"
 #include "postFold.h"
 #include "preFold.h"
@@ -173,7 +174,6 @@ static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
                                        bool checkonly=false);
 static bool hasUserAssign(Type* type);
-static void resolveAutoCopyEtc(Type* type);
 static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
@@ -344,7 +344,7 @@ resolveUninsertedCall(BlockStmt* insideBlock,
   }
   block->remove();
 
-  return call->isResolved();
+  return call->resolvedFunction();
 }
 
 // Resolve a call to do with a particular type.
@@ -396,7 +396,7 @@ void resolveFnForCall(FnSymbol* fn, CallExpr* call)
 void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
   resolveCall(call);
 
-  if (FnSymbol* callee = call->isResolved()) {
+  if (FnSymbol* callee = call->resolvedFunction()) {
     resolveFnForCall(callee, call);
   } else if (!allowUnresolved) {
     INT_ASSERT(false);
@@ -544,77 +544,6 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
     }
   }
   return false;
-}
-
-
-static void
-resolveAutoCopyEtc(Type* type) {
-
-  // resolve autoCopy
-  if (!hasAutoCopyForType(type)) {
-
-    const char* copyFnToCall = "chpl__autoCopy";
-
-    if (isUserDefinedRecord(type) &&
-        !type->symbol->hasFlag(FLAG_TUPLE) &&
-        !isRecordWrappedType(type) &&
-        !isSyncType(type) &&
-        !isSingleType(type) &&
-        !type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
-      // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
-      // for user-defined records. This way, if the type does not
-      // support copying, the autoCopyMap will store a function
-      // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
-      // records shouldn't be defining chpl__initCopy or chpl__autoCopy
-      // and certainly shouldn't rely on the differences between the two.
-
-      copyFnToCall = "chpl__initCopy";
-    }
-
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr(copyFnToCall, tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoCopyMap[type] = fn;
-
-    tmp->defPoint->remove();
-  }
-
-  // resolve autoDestroy
-  if (autoDestroyMap.get(type) == NULL) {
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    // Adding the flag here isn't sufficient for checks
-    // to auto destroy fn during resolution, so
-    // I added it with a pragma in the modules.
-    fn->addFlag(FLAG_AUTO_DESTROY_FN);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    autoDestroyMap.put(type, fn);
-    tmp->defPoint->remove();
-  }
-
-  // resolve unalias
-  // We make the 'unalias' hook available to all user records,
-  // but for now it only applies to array/domain/distribution
-  // in order to minimize the changes.
-  if (isRecordWrappedType(type) && unaliasMap.get(type) == NULL) {
-    SET_LINENO(type->symbol);
-    Symbol* tmp = newTemp(type);
-    chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__unalias", tmp);
-    FnSymbol* fn = resolveUninsertedCall(type, call);
-    resolveFns(fn);
-    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
-    unaliasMap.put(type, fn);
-    tmp->defPoint->remove();
-  }
 }
 
 
@@ -2644,9 +2573,9 @@ static void issueCompilerError(CallExpr* call) {
   } else {
     USR_WARN(from, "%s", str);
   }
-  if (FnSymbol* fn = toFnSymbol(callStack.tail()->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.tail()->resolvedFunction()))
     innerCompilerWarningMap.put(fn, str);
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->resolvedFunction()))
     outerCompilerWarningMap.put(fn, str);
 }
 
@@ -3642,7 +3571,7 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
     if (callStack.n >= 2)
-      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->resolvedFunction()))
         outerCompilerWarningMap.put(fn, str);
   }
 
@@ -3704,7 +3633,7 @@ void lvalueCheck(CallExpr* call)
       if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
         // we are asked to ignore errors here
         return;
-      FnSymbol* calleeFn = call->isResolved();
+      FnSymbol* calleeFn = call->resolvedFunction();
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
@@ -3797,7 +3726,7 @@ static void setConstFlagsAndCheckUponMove(Symbol* lhs, Expr* rhs) {
       } else {
         INT_ASSERT(false); // PRIM_GET_MEMBER of a non-SymExpr??
       }
-    } else if (FnSymbol* resolvedFn = rhsCall->isResolved()) {
+    } else if (FnSymbol* resolvedFn = rhsCall->resolvedFunction()) {
         setFlagsAndCheckForConstAccess(lhs, rhsCall, resolvedFn);
     }
   }
@@ -3973,8 +3902,6 @@ static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
     }
   }
 }
-
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -4241,7 +4168,7 @@ static void resolveMove(CallExpr* call) {
 
   if (rhsType == dtVoid) {
     if (CallExpr* rhsCall = toCallExpr(rhs)) {
-      if (FnSymbol* rhsFn = rhsCall->isResolved()) {
+      if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
         if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
           USR_FATAL(userCall(call),
                     "illegal use of function that does not "
@@ -4291,7 +4218,7 @@ static void resolveMove(CallExpr* call) {
   setConstFlagsAndCheckUponMove(lhs, rhs);
 
   if (CallExpr* call = toCallExpr(rhs)) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       if (rhsType == dtUnknown) {
         USR_FATAL_CONT(fn, "unable to resolve return type of function '%s'", fn->name);
         USR_FATAL(rhs, "called recursively at this point");
@@ -4337,7 +4264,7 @@ static void resolveMove(CallExpr* call) {
         rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR,
                                       new SymExpr(derefTmp)));
       }
-    } else if (rhsCall->isResolved() == gChplHereAlloc) {
+    } else if (rhsCall->resolvedFunction() == gChplHereAlloc) {
       // Insert cast below for calls to chpl_here_*alloc()
       isChplHereAlloc = true;
     }
@@ -4482,7 +4409,7 @@ static void resolveNew(CallExpr* call) {
         return;
 
       } else if (CallExpr* subCall = toCallExpr(arg)) {
-        if (FnSymbol* fn = subCall->isResolved()) {
+        if (FnSymbol* fn = subCall->resolvedFunction()) {
           USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
           return;
         }
@@ -4978,7 +4905,7 @@ bool isInstantiation(Type* sub, Type* super) {
 //
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
-  if (FnSymbol* fn = call->isResolved()) {
+  if (FnSymbol* fn = call->resolvedFunction()) {
     FnSymbol* parent = call->getFunction();
     INT_ASSERT(parent);
 
@@ -5075,24 +5002,11 @@ resolveExpr(Expr* expr) {
     expr = preFold(call);
   }
 
-  if (fn && fn->retTag == RET_PARAM) {
-    if (is_param_resolved(fn, expr)) {
-      return expr;
-    }
+  if (fn && fn->retTag == RET_PARAM && is_param_resolved(fn, expr)) {
+    return expr;
   }
 
   if (DefExpr* def = toDefExpr(expr)) {
-    // This section was added to handle type a = b
-    if (def->init) {
-      Expr* init = def->init;
-
-      if (CallExpr* call = toCallExpr(init)) {
-        init = preFold(call);
-      }
-
-      resolveExpr(init);
-    }
-
     if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
       implementForallIntents1(def);
     }
@@ -5126,9 +5040,9 @@ resolveExpr(Expr* expr) {
 
         cc->getCalls(refCall, valueCall, constRefCall);
 
-        FnSymbol* refFn = refCall->isResolved();
-        FnSymbol* valueFn = valueCall?valueCall->isResolved():NULL;
-        FnSymbol* constRefFn = constRefCall?constRefCall->isResolved():NULL;
+        FnSymbol* refFn = refCall->resolvedFunction();
+        FnSymbol* valueFn = valueCall?valueCall->resolvedFunction():NULL;
+        FnSymbol* constRefFn = constRefCall?constRefCall->resolvedFunction():NULL;
 
         INT_ASSERT(refFn && (valueFn || constRefFn));
         resolveFns(refFn);
@@ -5167,7 +5081,7 @@ resolveExpr(Expr* expr) {
         expr = getDesignatedCall(cc);
       } else {
         INT_ASSERT(call->isResolved());
-        resolveFns(call->isResolved());
+        resolveFns(call->resolvedFunction());
       }
     }
 
@@ -5180,7 +5094,7 @@ resolveExpr(Expr* expr) {
         // it.  If the 'true' branch did fully resolve, we would replace the
         // conditional with the 'true' branch instead.
         while (callStack.n > 0 &&
-               callStack.tail()->isResolved() !=
+               callStack.tail()->resolvedFunction() !=
                tryStack.tail()->elseStmt->parentSymbol) {
           callStack.pop();
         }
@@ -5216,25 +5130,34 @@ resolveExpr(Expr* expr) {
 
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
         // Don't try to resolve the defaultTypeConstructor for string literals
-        // (resolution ordering issue, string literals are encountered too early
-        // on and we don't know enough to be able to resolve them at that point)
-        if (!(ct == dtString && (sym->symbol()->isParameter() ||
-                                 sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
+        // (resolution ordering issue, string literals are encountered too
+        // early on and we don't know enough to be able to resolve them at
+        // that point)
+        if (!(ct == dtString &&
+              (sym->symbol()->isParameter() ||
+               sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
             !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             ct->defaultTypeConstructor) {
+
           if (ct->initializerStyle == DEFINES_INITIALIZER &&
               (ct->isGeneric() ||
                (isAggregateType(ct->instantiatedFrom) &&
                 toAggregateType(ct->instantiatedFrom)->isGeneric()))) {
-            USR_FATAL(ct, "Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference");
+            USR_FATAL(ct,
+                      "Type constructors are not yet supported for "
+                      "generic types that define initializers.  "
+                      "As a workaround, try relying on type inference");
           }
 
           resolveFormals(ct->defaultTypeConstructor);
+
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (getPartialCopyInfo(ct->defaultTypeConstructor))
+            if (getPartialCopyData(ct->defaultTypeConstructor)) {
               instantiateBody(ct->defaultTypeConstructor);
+            }
+
             resolveFns(ct->defaultTypeConstructor);
           }
         }
@@ -5493,7 +5416,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     }
     fn->insertBeforeEpilogue(call);
     resolveCall(call);
-    fn->retType->defaultInitializer = call->isResolved();
+    fn->retType->defaultInitializer = call->resolvedFunction();
     INT_ASSERT(fn->retType->defaultInitializer);
     //      resolveFns(fn->retType->defaultInitializer);
     call->remove();
@@ -5836,7 +5759,7 @@ resolveFns(FnSymbol* fn) {
 
         resolveCallAndCallee(call);
 
-        ct->destructor = call->isResolved();
+        ct->destructor = call->resolvedFunction();
 
         block->remove();
 
@@ -5980,7 +5903,6 @@ void resolve() {
 
   resolveExternVarSymbols();
 
-
   // --ipe does not build a mainModule
   if (mainModule)
     resolveUses(mainModule);
@@ -5998,12 +5920,15 @@ void resolve() {
   USR_STOP();
 
   resolveExports();
+
   resolveEnumTypes();
 
   insertRuntimeTypeTemps();
 
   resolveAutoCopies();
+
   resolveRecordInitializers();
+
   resolveOther();
 
   resolveDynamicDispatches();
@@ -6017,13 +5942,12 @@ void resolve() {
   resolveAutoCopies();
 
   insertDynamicDispatchCalls();
+
   insertReturnTemps();
 
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
   ensureAndResolveInitStringLiterals();
-
-
 
   handleRuntimeTypes();
 
@@ -6044,7 +5968,7 @@ void resolve() {
 
   visibleFunctionsClear();
 
-  clearPartialCopyFnMap();
+  clearPartialCopyDataFnMap();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->moduleUseClear();
@@ -6140,7 +6064,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
   CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
   resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
-  gAddModuleFn = addModule->isResolved();
+  gAddModuleFn = addModule->resolvedFunction();
   resolveFns(gAddModuleFn);
   // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
@@ -6184,143 +6108,203 @@ static void insertRuntimeTypeTemps() {
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
       ts->type->defaultInitializer->insertBeforeEpilogue(call);
       resolveCallAndCallee(call);
-      valueToRuntimeTypeMap.put(ts->type, call->isResolved());
+      valueToRuntimeTypeMap.put(ts->type, call->resolvedFunction());
       call->remove();
       tmp->defPoint->remove();
     }
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void        resolveAutoCopyEtc(Type* type);
+static const char* autoCopyFnForType(Type* type);
+static FnSymbol*   autoMemoryFunction(Type* type, const char* fnName);
+
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!ts->defPoint->parentSymbol)
-      continue; // Type is not in tree
+    if (ts->defPoint->parentSymbol               != NULL   &&
+        ts->hasFlag(FLAG_GENERIC)                == false  &&
+        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+      if (isRecord(ts->type) == true) {
+        resolveAutoCopyEtc(ts->type);
+        propagateNotPOD(ts->type);
 
-    if (ts->hasFlag(FLAG_GENERIC))
-      continue; // Consider only concrete types.
-
-    if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
-      continue; // Skip the "dmapped" pseudo-type.
-
-    if (isRecord(ts->type)) {
-      resolveAutoCopyEtc(ts->type);
-    }
-
-    if (isAggregateType(ts->type) ) {
-      // Mark record/tuple/class types as POD or NOT_POD
-      propagateNotPOD(ts->type);
+      } else if (isAggregateType(ts->type) == true) {
+        propagateNotPOD(ts->type);
+      }
     }
   }
 }
 
-/* In order to correctly initialize records or tuples in which
-   a component has FLAG_IGNORE_NOINIT, we need to propagate that
-   flag to the parent types as well. While doing so, we also
-   propagate whether or not that type is not Plain-old-Data
-   (which would mean it does not need auto copies or auto
-    destroys - bit copies will do).
+static void resolveAutoCopyEtc(Type* type) {
+  SET_LINENO(type->symbol);
 
-   After this function is called on an aggregate type, that type
-   will be marked FLAG_POD and FLAG_NOT_POD, and this function
-   will be called recursively to also mark any aggregate type
-   fields with FLAG_POD or FLAG_NOT_POD.
+  if (isNonGenericRecordWithInitializers(type) == false) {
+    // resolve autoCopy
+    if (hasAutoCopyForType(type) == false) {
+      FnSymbol* fn = autoMemoryFunction(type, autoCopyFnForType(type));
 
-   After setting either FLAG_POD or FLAG_NOT_POD if necessary,
-   returns true if FLAG_NOT_POD is set, false otherwise.
+      autoCopyMap[type] = fn;
+    }
+  }
 
-   This function should only be called during resolution.
-   Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.
- */
+  // resolve autoDestroy
+  if (autoDestroyMap.get(type) == NULL) {
+    FnSymbol* fn = autoMemoryFunction(type, "chpl__autoDestroy");
+
+    fn->addFlag(FLAG_AUTO_DESTROY_FN);
+
+    autoDestroyMap.put(type, fn);
+  }
+
+  // resolve unalias
+  // We make the 'unalias' hook available to all user records,
+  // but for now it only applies to array/domain/distribution
+  // in order to minimize the changes.
+  if (unaliasMap.get(type) == NULL && isRecordWrappedType(type) == true) {
+    FnSymbol* fn = autoMemoryFunction(type, "chpl__unalias");
+
+    unaliasMap.put(type, fn);
+  }
+}
+
+// Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
+// for user-defined records. This way, if the type does not
+// support copying, the autoCopyMap will store a function
+// marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
+// records shouldn't be defining chpl__initCopy or chpl__autoCopy
+// and certainly shouldn't rely on the differences between the two.
+static const char* autoCopyFnForType(Type* type) {
+  const char* retval = "chpl__autoCopy";
+
+  if (isUserDefinedRecord(type)                == true  &&
+
+      type->symbol->hasFlag(FLAG_TUPLE)        == false &&
+      isRecordWrappedType(type)                == false &&
+      isSyncType(type)                         == false &&
+      isSingleType(type)                       == false &&
+      type->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
+    retval = "chpl__initCopy";
+  }
+
+  return retval;
+}
+
+static FnSymbol* autoMemoryFunction(Type* type, const char* fnName) {
+  VarSymbol*  tmp    = newTemp(type);
+  CallExpr*   call   = new CallExpr(fnName, tmp);
+  FnSymbol*   retval = NULL;
+
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+
+  retval = resolveUninsertedCall(type, call);
+
+  resolveFns(retval);
+
+  INT_ASSERT(retval->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+
+  tmp->defPoint->remove();
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* In order to correctly initialize records or tuples in which a component     *
+* has FLAG_IGNORE_NOINIT, we need to propagate that flag to the parent types  *
+* as well.                                                                    *
+*                                                                             *
+* While doing so, we also propagate whether or not that type is not POD       *
+* (Plain-Old-Data which would mean it does not need auto copies or auto       *
+* destroys - bit copies will do).                                             *
+*                                                                             *
+* After this function is called on an aggregate type, that type will be       *
+* marked FLAG_POD and FLAG_NOT_POD, and this function will be called          *
+* recursively to also mark any aggregate type fields with FLAG_POD or         *
+* FLAG_NOT_POD.                                                               *
+*                                                                             *
+* After setting either FLAG_POD or FLAG_NOT_POD if necessary, returns true    *
+* if FLAG_NOT_POD is set, false otherwise.                                    *
+*                                                                             *
+* This function should only be called during resolution.                      *
+* Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.               *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isCompilerGenerated(FnSymbol* fn);
+
 bool propagateNotPOD(Type* t) {
+  bool retval = false;
 
-  // non-aggregate types (e.g. int, bool) are POD
-  // but we don't run this function on all of them,
-  // so we don't mark them with FLAG_POD.
-  if (!isAggregateType(t))
-    return false;
+  if (AggregateType* at = toAggregateType(t)) {
+    if        (at->symbol->hasFlag(FLAG_POD)     == true) {
+      retval = false;
 
-  // Move past any types that we've already handled
-  if (t->symbol->hasFlag(FLAG_POD))
-    return false;
+    } else if (at->symbol->hasFlag(FLAG_NOT_POD) == true) {
+      retval =  true;
 
-  if (t->symbol->hasFlag(FLAG_NOT_POD))
-    return true;
+    } else {
+      // Some special rules for special things.
+      if (isSyncType(at)                        == true ||
+          isSingleType(at)                      == true ||
+          at->symbol->hasFlag(FLAG_ATOMIC_TYPE) == true) {
+        retval = true;
+      }
 
-  AggregateType* at     = (AggregateType*) t;
-  bool           notPOD = false;
+      // Most class types are POD (user classes, _ddata, c_ptr)
+      // Also, there is no need to check the fields of a class type
+      // since a variable of that type is a pointer to the instance.
+      if (isClass(at) == true) {
+        // don't enumerate sub-fields or check for autoCopy etc
 
-  // Some special rules for special things.
-  if (isSyncType(t)   ||
-      isSingleType(t) ||
-      t->symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
-    notPOD = true;
-  }
+      } else {
+        // If any field in a record/tuple is not POD, the aggregate is not POD.
+        for_fields(field, at) {
+          retval = retval | propagateNotPOD(field->typeInfo());
+        }
 
-  // Most class types are POD (user classes, _ddata, c_ptr)
-  // Also, there is no need to check the fields of a class type
-  // since a variable of that type is a pointer to the instance.
-  if ( isClass(t) ) {
-    // don't enumerate sub-fields or check for autoCopy etc
+        // Make sure we have resolved auto copy/auto destroy.
+        // Except not for runtime types, because that causes
+        // some sort of fatal resolution error. This is a workaround.
+        if (at->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+          resolveAutoCopyEtc(at);
+        }
 
-  } else {
-    // If any field in a record/tuple is not POD, the
-    // aggregate is not POD.
-    for_fields(field, at) {
-      Type* ft = field->typeInfo();
+        if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
+            isCompilerGenerated(autoCopyMap[at])         == false ||
+            isCompilerGenerated(autoDestroyMap.get(at))  == false ||
+            isCompilerGenerated(at->destructor)          == false) {
+          retval = true;
+        }
 
-      notPOD |= propagateNotPOD(ft);
-    }
+        // Since hasUserAssign tries to resolve =, we only
+        // check it if we think we have a POD type.
+        if (retval == false && hasUserAssign(at) == true) {
+          retval = true;
+        }
+      }
 
-    // Make sure we have resolved auto copy/auto destroy.
-    // Except not for runtime types, because that causes
-    // some sort of fatal resolution error. This is a workaround.
-    if (! t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-      resolveAutoCopyEtc(t);
-    }
-
-    // Also check for a non-compiler generated autocopy/autodestroy.
-    FnSymbol* autoCopyFn    = autoCopyMap[t];
-    FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
-    FnSymbol* destructor    = t->destructor;
-
-    // Ignore invisible (compiler-defined) functions.
-    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      autoCopyFn = NULL;
-    }
-
-    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      autoDestroyFn = NULL;
-    }
-
-    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED)) {
-      destructor = NULL;
-    }
-
-    // if it has flag ignore no-init, it's not pod
-    // if it has a user-specified auto copy / auto destroy, it's not pod
-    // if it has a user-specified destructor, it's not pod
-    if (t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
-        autoCopyFn                             ||
-        autoDestroyFn                          ||
-        destructor) {
-      notPOD = true;
-    }
-
-    // Since hasUserAssign tries to resolve =, we only
-    // check it if we think we have a POD type.
-    if (!notPOD && hasUserAssign(t)) {
-      notPOD = true;
+      at->symbol->addFlag((retval == true) ? FLAG_NOT_POD : FLAG_POD);
     }
   }
 
-  if (notPOD) {
-    t->symbol->addFlag(FLAG_NOT_POD);
-  } else {
-    t->symbol->addFlag(FLAG_POD);
-  }
-
-  return notPOD;
+  return retval;
 }
+
+static bool isCompilerGenerated(FnSymbol* fn) {
+  return fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == true;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void resolveRecordInitializers() {
   //
@@ -6460,7 +6444,7 @@ static void insertReturnTemps() {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType != dtVoid) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
@@ -6632,7 +6616,7 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
 
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->getModule()->modTag == MOD_USER &&
             !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {

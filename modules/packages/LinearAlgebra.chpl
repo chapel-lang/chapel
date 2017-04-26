@@ -89,7 +89,7 @@ programs such as this:
   // This code would then result in an error due to rank mismatch:
   C += A;
 
-To get avoid this, you can avoid relying on inferred-types for new arrays:
+To avoid this, you can avoid relying on inferred-types for new arrays:
 
 .. code-block:: chapel
 
@@ -113,23 +113,6 @@ and return a new array:
   C += A;
 
 Promotion flattening is not expected to be an issue in future releases.
-
-
-.. LinearAlgebra Module Future TODOs:
-  - Support non-matching domains and eltTypes in matOperations
-    - check that eltTypes are coercible
-    - check domain shapes are equal
-  - Add LinearAlgebra primer
-  - Add feature table, comparing to numpy and matlab
-  - performance testing
-  - Domain maps
-    - Distributed array support
-    - Sparse support
-    - GPU support
-  - Support fully native implementations
-    - Only use the BLAS/LAPACK version when the libraries are installed
-  - Provide MKL BLAS/LAPACK with Chapel installation
-    - install with something like: CHPL_EXTRAS=MKL
 
 */
 
@@ -269,7 +252,7 @@ proc Matrix(const Arrays...?n, type eltType) {
 }
 
 
-/* Return a square identity matrix over domain ``{0..#m, 0..m}`` */
+/* Return a square identity matrix over domain ``{0..#m, 0..#m}`` */
 proc eye(m, type eltType=real) {
   var A: [{0..#m, 0..#m}] eltType;
   for i in 0..#m do A[i, i] = 1: eltType;

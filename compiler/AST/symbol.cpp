@@ -28,12 +28,14 @@
 #include "bb.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
 #include "optimizations.h"
+#include "PartialCopyData.h"
 #include "passes.h"
 #include "resolution.h"
 #include "stmt.h"
@@ -1107,43 +1109,6 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
 }
 
 
-// FnSymbol id -> PartialCopyData
-// Todo: this really should be a hashtable, as it accumulates lots of entries.
-static std::map<int,PartialCopyData> partialCopyFnMap;
-
-// Return the entry for 'fn' in partialCopyFnMap or NULL if it does not exist.
-PartialCopyData* getPartialCopyInfo(FnSymbol* fn) {
-  std::map<int,PartialCopyData>::iterator it = partialCopyFnMap.find(fn->id);
-  if (it == partialCopyFnMap.end()) return NULL;
-  else                              return &(it->second);
-}
-
-// Add 'fn' to partialCopyFnMap; remove the corresponding entry.
-PartialCopyData& addPartialCopyInfo(FnSymbol* fn) {
-  // A duplicate addition does not make sense, although technically possible.
-  INT_ASSERT(!partialCopyFnMap.count(fn->id));
-  return partialCopyFnMap[fn->id];
-}
-
-// Remove 'fn' from partialCopyFnMap.
-void clearPartialCopyInfo(FnSymbol* fn) {
-  size_t cnt = partialCopyFnMap.erase(fn->id);
-  INT_ASSERT(cnt == 1); // Convention: clear only what was added before.
-}
-
-void clearPartialCopyFnMap() {
-  partialCopyFnMap.clear();
-}
-
-// Since FnSymbols can get removed at pass boundaries, leaving them
-// in here may result in useless entries.
-// As of this writing, PartialCopyData is used only within resolution.
-void checkEmptyPartialCopyFnMap() {
-  if (partialCopyFnMap.size())
-    INT_FATAL("partialCopyFnMap is not empty");
-}
-
-
 /** Copy just enough of the AST to get through filter candidate and
  *  disambiguate-by-match.
  *
@@ -1157,10 +1122,11 @@ void checkEmptyPartialCopyFnMap() {
  * \param map Map from symbols in the old function to symbols in the new one
  */
 FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
-  FnSymbol* newFn = this->copyInnerCore(map);
+  FnSymbol*        newFn = this->copyInnerCore(map);
 
   // Indicate that we need to instantiate its body later.
-  PartialCopyData& pci = addPartialCopyInfo(newFn);
+  PartialCopyData& pci   = addPartialCopyData(newFn);
+
   pci.partialCopySource  = this;
 
   if (this->_this == NULL) {
@@ -1173,25 +1139,31 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
 
   } else {
     /*
-     * Case 3: _this symbol is defined in the function's body.  A new symbol is
-     * created.  This symbol will have to be used to replace some of the symbols
-     * generated from copying the function's body during finalizeCopy.
+     * Case 3: _this symbol is defined in the function's body.
+     * A new symbol is created.  This symbol will have to be used
+     * to replace some of the symbols generated from copying the
+     * function's body during finalizeCopy.
      */
+
+    DefExpr* defPoint = this->_this->defPoint;
+
     newFn->_this           = this->_this->copy(map);
     newFn->_this->defPoint = new DefExpr(newFn->_this,
-                                         COPY_INT(this->_this->defPoint->init),
-                                         COPY_INT(this->_this->defPoint->exprType));
+                                         COPY_INT(defPoint->init),
+                                         COPY_INT(defPoint->exprType));
   }
 
   // Copy and insert the where clause if it is present.
   if (this->where != NULL) {
     newFn->where = COPY_INT(this->where);
+
     insert_help(newFn->where, NULL, newFn);
   }
 
   // Copy and insert the retExprType if it is present.
   if (this->retExprType != NULL) {
     newFn->retExprType = COPY_INT(this->retExprType);
+
     insert_help(newFn->retExprType, NULL, newFn);
   }
 
@@ -1218,17 +1190,20 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
 
   } else {
     // Case 4: Function returns a symbol defined in the body.
+    DefExpr* defPoint = this->getReturnSymbol()->defPoint;
+
     newFn->retSymbol = COPY_INT(this->getReturnSymbol());
 
     newFn->retSymbol->defPoint = new DefExpr(newFn->retSymbol,
-                                             COPY_INT(this->getReturnSymbol()->defPoint->init),
-                                             COPY_INT(this->getReturnSymbol()->defPoint->exprType));
+                                             COPY_INT(defPoint->init),
+                                             COPY_INT(defPoint->exprType));
 
     update_symbols(newFn->retSymbol, map);
   }
 
   // Add a map entry from this FnSymbol to the newly generated one.
   map->put(this, newFn);
+
   // Update symbols in the sub-AST as is appropriate.
   update_symbols(newFn, map);
 
@@ -1246,8 +1221,8 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
  *
  * \param map Map from symbols in the old function to symbols in the new one
  */
-void FnSymbol::finalizeCopy(void) {
-  if (PartialCopyData* pci = getPartialCopyInfo(this)) {
+void FnSymbol::finalizeCopy() {
+  if (PartialCopyData* pci = getPartialCopyData(this)) {
     FnSymbol* const partialCopySource = pci->partialCopySource;
 
     // Make sure that the source has been finalized.
@@ -1352,23 +1327,25 @@ void FnSymbol::finalizeCopy(void) {
 
     // Replace vararg formal if appropriate.
     if (pci->varargOldFormal) {
-      substituteVarargTupleRefs(this->body, pci->varargNewFormals.size(),
-                                pci->varargOldFormal, pci->varargNewFormals);
+      substituteVarargTupleRefs(this, pci);
     }
 
     // Clean up book keeping information.
-    clearPartialCopyInfo(this);
+    clearPartialCopyData(this);
   }
 }
 
 
-void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == body) {
-    body = toBlockStmt(new_ast);
-  } else if (old_ast == where) {
-    where = toBlockStmt(new_ast);
-  } else if (old_ast == retExprType) {
-    retExprType = toBlockStmt(new_ast);
+void FnSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
+  if (oldAst == body) {
+    body = toBlockStmt(newAst);
+
+  } else if (oldAst == where) {
+    where = toBlockStmt(newAst);
+
+  } else if (oldAst == retExprType) {
+    retExprType = toBlockStmt(newAst);
+
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }

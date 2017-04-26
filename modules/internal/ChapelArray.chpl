@@ -76,19 +76,6 @@
    The ``<=>`` operator can be used to swap the contents of two arrays
    with the same shape.
 
-   The array alias operator ``=>``
-   -------------------------------
-
-   The ``=>`` operator can be used in a variable declaration to create
-   a new alias of an array. The new variable will refer to the same
-   array elements as the aliased array.  In the following example,
-   the variable ``Inner`` refers to the inner 9 elements of ``A``.
-
-   .. code-block:: chapel
-
-     var A: [0..10] int;
-     var Inner => A[1..9];
-
    ================================================
    Set Operations on Associative Domains and Arrays
    ================================================

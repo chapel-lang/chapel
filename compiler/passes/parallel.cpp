@@ -340,7 +340,7 @@ static void
 bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
-  FnSymbol* fn = fcall->isResolved();
+  FnSymbol* fn = fcall->resolvedFunction();
 
   const bool firstCall = baData.firstCall;
   if (firstCall)
@@ -602,7 +602,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
 {
   ModuleSymbol* mod = fcall->getModule();
-  INT_ASSERT(fn == fcall->isResolved());
+  INT_ASSERT(fn == fcall->resolvedFunction());
 
   AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
@@ -956,7 +956,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
                   varsToTrack.add(toAdd);
                 }
               }
-              else if (fnsContainingTaskll.in(call->isResolved())) {
+              else if (fnsContainingTaskll.in(call->resolvedFunction())) {
                 freeVar = false;
                 break;
               }

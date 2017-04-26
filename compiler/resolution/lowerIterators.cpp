@@ -388,14 +388,17 @@ fragmentLocalBlocks() {
         insertNewLocal = true;
 
         if (BlockStmt* block = toBlockStmt(current)) {
-          // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+          // NOAKES 2014/11/25 Transitional.
+          // Avoid calling blockInfoGet() on loops
           if (block->isLoopStmt()   == false &&
               block->blockInfoGet() != NULL  &&
-              block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
-            block->blockInfoGet()->remove(); // UNLOCAL applies to a single LOCAL
+              block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
+            // UNLOCAL applies to a single LOCAL
+            block->blockInfoGet()->remove();
 
-          else if (block->body.head)
+          } else if (block->body.head) {
             queue.add(block->body.head);
+          }
         } else if (CondStmt* cond = toCondStmt(current)) {
           if (cond->thenStmt && cond->thenStmt->body.head)
             queue.add(cond->thenStmt->body.head);
@@ -405,11 +408,16 @@ fragmentLocalBlocks() {
       } else if (call && resolvedToTaskFun(call)) {
         // Do what the above would have done to a coforall/etc. block.
         insertNewLocal = true;
-        Expr* taskfnBodyHead = call->isResolved()->body->body.head;
-        if (taskfnBodyHead)
+
+        Expr* taskfnBodyHead = call->resolvedFunction()->body->body.head;
+
+        if (taskfnBodyHead) {
           queue.add(taskfnBodyHead);
+        }
+
       } else if (isDefExpr(current)) {
         preVec.add(current);
+
       } else {
         inVec.add(current);
       }
@@ -693,8 +701,8 @@ static AggregateType*
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
                                       FnSymbol* loopBodyFnWrapper) {
-  FnSymbol* iteratorFn = iteratorFnCall->isResolved();
-  FnSymbol* loopBodyFn = loopBodyFnCall->isResolved();
+  FnSymbol* iteratorFn = iteratorFnCall->resolvedFunction();
+  FnSymbol* loopBodyFn = loopBodyFnCall->resolvedFunction();
 
   // Create the argument bundle type
   AggregateType* ct = new AggregateType(AGGREGATE_CLASS);
@@ -992,7 +1000,7 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
         threadLoopBodyFnArgs(call, loopBodyFnIDArg, loopBodyFnArgArgs,
                              &taskFn, &tIDArg, &tArgArgs);
         // both 'taskFn' and 'call' are updated by threadLoopBodyFnArgs()
-        INT_ASSERT(call->isResolved() == taskFn);
+        INT_ASSERT(call->resolvedFunction() == taskFn);
         std::vector<BaseAST*> taskAsts;
         collect_asts(taskFn, taskAsts);
         convertYieldsAndReturns(taskAsts, index, tIDArg, tArgArgs);
@@ -1849,7 +1857,7 @@ static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
 
         if (CallExpr* call = toCallExpr(expr))
         {
-          FnSymbol* fn = call->isResolved();
+          FnSymbol* fn = call->resolvedFunction();
 
           // Naturally, a flag is preferred.
           if (fn && !strcmp(fn->name, "_freeIterator"))
@@ -1962,7 +1970,7 @@ static void cleanupLeaderFollowerIteratorCalls()
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
-      if (FnSymbol* fn = call->isResolved()) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
         if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
             (isDefExpr(fn->formals.tail) &&
              !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&

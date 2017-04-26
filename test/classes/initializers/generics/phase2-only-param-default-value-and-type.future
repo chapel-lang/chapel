@@ -1,0 +1,5 @@
+error message: Setting a param field during Phase 2 of initialization
+
+Though it is correct to error when setting a param field during Phase 2 of
+initialization, it would be nice to get an error message that is more specific
+to initializers, for clarity.

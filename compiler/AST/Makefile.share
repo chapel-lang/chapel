@@ -28,6 +28,7 @@ AST_SRCS =                                          \
            iterator.cpp                             \
            foralls.cpp                              \
            flags.cpp                                \
+           PartialCopyData.cpp                      \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \

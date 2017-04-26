@@ -24,10 +24,9 @@ proc TEST_CLASS(param ARG_PARAM) {
   param LOC_ALIAS_PARAM = ARG_PARAM;
   compilerWarning(LOC_ALIAS_PARAM: string);
 
-/*  this does not work - see param-formal-in-ctor.chpl
   type LOC_TYPE = CLASS_PARAM(ARG_PARAM);
   compilerWarning(LOC_TYPE:string);
-*/
+
   var LOC_VAR1: CLASS_PARAM(ARG_PARAM);
   compilerWarning(LOC_VAR1.type:string);
   compilerWarning(LOC_VAR1.FIELD_PARAM: string);
@@ -36,6 +35,7 @@ proc TEST_CLASS(param ARG_PARAM) {
   compilerWarning(LOC_ALIAS_PARAM1: string);
   type LOC_ALIAS_TYPE1 = LOC_VAR1.METHOD_TYPE;
   compilerWarning(LOC_ALIAS_TYPE1:string);
+
 /*
   var LOC_VAR2: LOC_TYPE;
   compilerWarning(LOC_VAR2.type:string);

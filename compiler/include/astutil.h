@@ -76,6 +76,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 // collect set of symbols
 //
 void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet);
 
 
 //

@@ -21,12 +21,8 @@
 #define _chpl_atomics_h_
 
 #include "chpltypes.h"
+#include "chpl-comp-detect-macros.h"
 #include <assert.h>
-
-// required to use __builtin_ia32_mfence
-#ifdef _CRAYC
-  #include <intrinsics.h>
-#endif
 
 //
 // SIZE_ALIGN_TYPE:  Declare a version of a type aligned to at least its size.
@@ -68,10 +64,11 @@ static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
 
-// Cray does not support __sync_synchronize so we use a cray specific memory
-// fence. Cray also does not support __sync_bool_compare_and_swap so we 
-// cheat our way around this using __sync_val_compare_and_swap
-#ifdef _CRAYC
+// __sync_synchronize/__sync_bool_compare_and_swap are missing for cce < 8.4
+// and __sync_bool_compare_and_swap is broken in newer versions. Use
+// __builtin_ia32_mfence and __sync_val_compare_and_swap instead.
+#if RT_COMP_CC == RT_COMP_CRAY
+  #include <intrinsics.h>
   #define full_memory_barrier __builtin_ia32_mfence
   
   # define my__sync_bool_compare_and_swap(obj, expected, desired) \

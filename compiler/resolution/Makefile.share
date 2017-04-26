@@ -21,6 +21,7 @@ RESOLUTION_SRCS =                                              \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \
                   cullOverReferences.cpp                       \
+                  expandVarArgs.cpp                            \
                   implementForallIntents.cpp                   \
                   generics.cpp                                 \
                   functionResolution.cpp                       \

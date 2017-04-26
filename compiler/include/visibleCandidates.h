@@ -17,35 +17,23 @@
  * limitations under the License.
  */
 
-#ifndef _VISIBILE_CANDIDATES_H_
-#define _VISIBILE_CANDIDATES_H_
+#ifndef _VISIBLE_CANDIDATES_H_
+#define _VISIBLE_CANDIDATES_H_
 
 #include "vec.h"
 
-#include <vector>
-
-class ArgSymbol;
-class BlockStmt;
 class CallInfo;
 class FnSymbol;
 class ResolutionCandidate;
 
-void      findVisibleCandidates(CallInfo&                  info,
-                                Vec<FnSymbol*>&            visibleFns,
-                                Vec<ResolutionCandidate*>& candidates);
+void findVisibleCandidates(CallInfo&                  info,
+                           Vec<FnSymbol*>&            visibleFns,
+                           Vec<ResolutionCandidate*>& candidates);
 
-void      resolveTypedefedArgTypes(FnSymbol* fn);
+void resolveTypedefedArgTypes(FnSymbol* fn);
 
-FnSymbol* expandIfVarArgs(FnSymbol* fn,
-                          CallInfo& info);
+bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
 
-void      substituteVarargTupleRefs(BlockStmt*               ast,
-                                    int                      numArgs,
-                                    ArgSymbol*               formal,
-                                    std::vector<ArgSymbol*>& varargFormals);
-
-bool      checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
-
-bool      checkGenericFormals(ResolutionCandidate* currCandidate);
+bool checkGenericFormals(ResolutionCandidate* currCandidate);
 
 #endif
