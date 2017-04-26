@@ -21,11 +21,12 @@
 
 #include "checks.h"
 
+#include "docsDriver.h"
 #include "expr.h"
+#include "PartialCopyData.h"
 #include "passes.h"
 #include "primitive.h"
 #include "resolution.h"
-#include "docsDriver.h" // for fDocs
 #include "TryStmt.h"
 
 //
@@ -436,7 +437,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
-    checkEmptyPartialCopyFnMap();
+    checkEmptyPartialCopyDataFnMap();
   }
 }
 
@@ -707,7 +708,7 @@ checkFormalActualBaseTypesMatch()
     if (! call->parentSymbol->hasFlag(FLAG_RESOLVED))
       continue;
 
-    if (FnSymbol* fn = call->isResolved())
+    if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
@@ -767,7 +768,7 @@ checkFormalActualTypesMatch()
 {
   for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
-    if (FnSymbol* fn = call->isResolved())
+    if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;

@@ -93,7 +93,7 @@ module ChapelDistribution {
     //
     // TODO: There may be some opportunities to optimize out the
     // locking here, as in the add_arr() case.  For example, the
-    // construction of the distriution and domain used for rank change
+    // construction of the distribution and domain used for rank change
     // slicing could use an unlocked version because that operation
     // creates a new distribution followed immediately by a domain
     // over the distribution. It's unclear how important this

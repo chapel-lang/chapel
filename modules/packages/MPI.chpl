@@ -124,12 +124,15 @@ follows:
 
 .. code-block:: sh
 
-  CHPL_TARGET_COMPILER=cray-prgenv-gnu
+  CHPL_TARGET_COMPILER=cray-prgenv-{gnu, intel}
   CHPL_TASKS=fifo
-  CHPL_COMM=gasnet
-  CHPL_COMM_SUBSTRATE=mpi           # or aries
+  CHPL_COMM={ugni, gasnet}
+  CHPL_COMM_SUBSTRATE={aries, mpi}   # if CHPL_COMM=gasnet 
   MPICH_MAX_THREAD_SAFETY=multiple
   AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
+
+Running under ``gasnet+aries`` might require setting ``MPICH_GNI_DYNAMIC_CONN=disabled``.
+This is discussed `here <http://chapel.cray.com/docs/latest/platforms/cray.html#known-constraints-and-bugs>`.
 
 These are the configurations in which this module is currently tested. Any
 launcher should work fine for this mode. Support is expected to expand in
@@ -149,9 +152,8 @@ Communicators
 The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
 ranks will match the GASNet locales. This module creates a new MPI communicator
 :proc:`CHPL_COMM_WORLD` that ensures that this mapping is true.
-Note that this is only set in mixed Chapel-MPI mode. If numLocales is 1, then
-:proc:`CHPL_COMM_WORLD` is set to :const:`MPI_COMM_NULL`, and will cause an MPI
-error if used.
+Note that if numLocales is 1, :proc:`CHPL_COMM_WORLD` is identical to :const:`MPI_COMM_WORLD`,
+which is the desired behaviour for SPMD mode programs.
 
 .. note::
   #. Pointer arguments are written as ``ref`` arguments, so no casting to a ``c_ptr``
@@ -260,6 +262,24 @@ module MPI {
      processes (world size)
      */
   proc initialize() {
+    // If we are running using the uGNI layer, then the following hack
+    // appears to be necessary in order to run MPI, as well as Chapel
+    // See : https://hpcrdm.lbl.gov/pipermail/upc-users/2014-May/002061.html
+    if (CHPL_COMM=="ugni") {
+      coforall loc in Locales do on loc {
+          // This must be done on all locales!
+          var pmiGniCookie = C_Env.getenv("PMI_GNI_COOKIE") : string;
+          if !pmiGniCookie.isEmptyString() {
+            // This may be a colon separated string.
+            var cookieJar = pmiGniCookie.split(":");
+            const lastcookie = cookieJar.domain.last;
+            cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
+            C_Env.setenv("PMI_GNI_COOKIE",("%s".format(":".join(cookieJar))).c_str(),1);
+          }
+        }
+    }
+
+    // The actual MPI initialization goes here.
     coforall loc in Locales do on loc {
       // TODO : Need a gasnet barrier here???
       var provided : c_int;
@@ -627,4 +647,11 @@ module MPI {
   extern proc MPI_Graph_map (comm: MPI_Comm, nnodes: c_int, ref iindex: c_int, ref edges: c_int, ref newrank: c_int): c_int;
 
    } // End C_MPI
+
+
+  module C_Env {
+    // Helper routines to access the environment
+    extern proc getenv(name : c_string) : c_string;
+    extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
+  }
 }

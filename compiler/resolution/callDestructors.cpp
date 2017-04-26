@@ -21,13 +21,14 @@
 
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
-#include "stringutil.h"
 #include "expr.h"
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
+#include "virtualDispatch.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -160,7 +161,7 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
 FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
 {
   // The common case of a user-level call to a resolved function
-  FnSymbol* theCall = call->isResolved();
+  FnSymbol* theCall = call->resolvedFunction();
 
   // Also handle the PRIMOP for a virtual method call
   if (theCall == NULL)
@@ -248,18 +249,23 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   CallExpr* returnCall  = toCallExpr(returnPrim);
   Expr*     returnValue = returnCall->get(1)->remove();
   CallExpr* moveExpr    = new CallExpr(PRIM_ASSIGN, formal, returnValue);
+  Expr*     expr        = returnPrim;
 
-
-  Expr* expr = returnPrim;
   // Walk backwards while the previous element is an autoDestroy call
   while (expr->prev != NULL) {
     bool stop = true;
-    if (CallExpr* call = toCallExpr(expr->prev))
-      if (FnSymbol* calledFn = call->isResolved())
-        if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
-          stop = false;
 
-    if (stop) break;
+    if (CallExpr* call = toCallExpr(expr->prev)) {
+      if (FnSymbol* calledFn = call->resolvedFunction()) {
+        if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+          stop = false;
+        }
+      }
+    }
+
+    if (stop == true) {
+      break;
+    }
 
     expr = expr->prev;
   }
@@ -379,9 +385,10 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
             // A chpl__unref call may be inserted to implement copy-out
             // semantics for the returning of arrays.
             bool isCopied = false;
+
             for_SymbolUses(use, varLhs) {
               if (CallExpr* call = toCallExpr(use->parentExpr)) {
-                if (FnSymbol* parentFn = call->isResolved()) {
+                if (FnSymbol* parentFn = call->resolvedFunction()) {
                   if (parentFn->hasFlag(FLAG_INIT_COPY_FN) ||
                       parentFn->hasFlag(FLAG_UNREF_FN)) {
                     isCopied = true;
@@ -505,11 +512,13 @@ void ReturnByRef::transform()
     }
     else
     {
-      FnSymbol * calledFn = call->isResolved();
-      if (!calledFn->hasFlag(FLAG_NEW_ALIAS_FN))
+      FnSymbol* calledFn = call->resolvedFunction();
+
+      if (!calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
         // fixupNewAlias removes some - but not all - calls
         // to the newAlias function from the tree.
         INT_ASSERT(false);
+      }
     }
   }
 
@@ -567,7 +576,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Expr*     lhs       = moveExpr->get(1);
 
   CallExpr* callExpr  = toCallExpr(moveExpr->get(2));
-  FnSymbol* fn        = callExpr->isResolved();
+  FnSymbol* fn        = callExpr->resolvedFunction();
 
   Expr*     nextExpr  = moveExpr->next;
   CallExpr* copyExpr  = NULL;
@@ -598,7 +607,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       {
         if (CallExpr* rhsCall = toCallExpr(callNext->get(2)))
         {
-          FnSymbol* rhsFn = rhsCall->isResolved();
+          FnSymbol* rhsFn = rhsCall->resolvedFunction();
 
           if (rhsFn                              != NULL &&
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
@@ -643,7 +652,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
   // Possibly reduce a copy operation to a simple move
   if (copyExpr) {
-    FnSymbol* rhsFn = copyExpr->isResolved();
+    FnSymbol* rhsFn = copyExpr->resolvedFunction();
 
     // If replacing an init copy, we got to a user variable.
     // Use an unalias call if possible
@@ -690,10 +699,12 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> retToArgCache;
 // replacing it with (newSym), and the function that was called in the first
 // use of oldSym in the callee, to replace oldSym with newSym without breaking
 // the AST.
-inline static void
-replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
-                  FnSymbol* useFn) {
-  focalPt->insertAfter(new CallExpr(PRIM_ASSIGN, newSym,
+inline static void replacementHelper(CallExpr*  focalPt,
+                                     VarSymbol* oldSym,
+                                     Symbol*    newSym,
+                                     FnSymbol* useFn) {
+  focalPt->insertAfter(new CallExpr(PRIM_ASSIGN,
+                                    newSym,
                                     new CallExpr(useFn, oldSym)));
 }
 
@@ -712,20 +723,32 @@ static FnSymbol*
 createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 {
   SET_LINENO(fn);
-  FnSymbol* newFn = fn->copy();
+
+  FnSymbol*  newFn = fn->copy();
   // Note: other code does strcmps against the name _retArg
-  ArgSymbol* arg = new ArgSymbol(INTENT_REF, "_retArg", useFn->retType->refType);
+  ArgSymbol* arg   = new ArgSymbol(INTENT_REF,
+                                   "_retArg",
+                                   useFn->retType->refType);
+
   arg->addFlag(FLAG_RETARG);
+
   newFn->insertFormalAtTail(arg);
   newFn->addFlag(FLAG_FN_RETARG);
+
   VarSymbol* ret = toVarSymbol(newFn->getReturnSymbol());
+
   INT_ASSERT(ret);
+
   Expr* returnPrim = newFn->body->body.tail;
+
   returnPrim->replace(new CallExpr(PRIM_RETURN, gVoid));
+
   newFn->retType = dtVoid;
+
   fn->defPoint->insertBefore(new DefExpr(newFn));
 
   std::vector<SymExpr*> symExprs;
+
   collectSymExprs(newFn, symExprs);
 
   // In the body of the function, replace references to the original
@@ -736,53 +759,68 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   for_vector(SymExpr, se, symExprs) {
     if (se->symbol() == ret) {
       CallExpr* move = toCallExpr(se->parentExpr);
+
       if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
         SET_LINENO(move);
         replacementHelper(move, ret, arg, useFn);
       } else {
         // Any other call or primitive.
-        FnSymbol* calledFn = move->isResolved();
-        CallExpr* parent = toCallExpr(move->parentExpr);
-        if (calledFn && !strcmp(calledFn->name, "=") &&
+        FnSymbol* calledFn = move->resolvedFunction();
+        CallExpr* parent   = toCallExpr(move->parentExpr);
+
+        if (calledFn                    != NULL &&
+            strcmp(calledFn->name, "=") ==    0 &&
             // Filter out case handled above.
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
+
         } else {
-          Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
+          Symbol*   tmp   = newTemp("ret_to_arg_tmp_", useFn->retType);
+          CallExpr* deref = new CallExpr(PRIM_DEREF, arg);
+          CallExpr* move  = new CallExpr(PRIM_MOVE, tmp, deref);
+
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
+          se->getStmtExpr()->insertBefore(move);
+
           se->setSymbol(tmp);
         }
       }
     }
   }
+
   return newFn;
 }
 
 
-static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
-                                 Symbol* actual)
-{
+static void replaceRemainingUses(Vec<SymExpr*>& use,
+                                 SymExpr*       firstUse,
+                                 Symbol*        actual) {
   // for each remaining use "se"
-  //   replace se with deref of the actual return value argument, unless parent is
-  //   accessing its address
+  //   replace se with deref of the actual return value argument,
+  //   unless parent is accessing its address
   forv_Vec(SymExpr, se, use) {
     // Because we've already handled the first use
     if (se != firstUse) {
       CallExpr* parent = toCallExpr(se->parentExpr);
+
       if (parent) {
         SET_LINENO(parent);
+
         if (parent->isPrimitive(PRIM_ADDR_OF)) {
           parent->replace(new SymExpr(actual));
         } else {
-          FnSymbol* parentFn = parent->isResolved();
+          FnSymbol* parentFn = parent->resolvedFunction();
+
           if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
                 parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
             // Leave the auto copies/inits in, we'll need them for
             // moving information back to us.
 
             // Copy the information we currently have into the temp
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->symbol(), new CallExpr(PRIM_DEREF, actual)));
+            CallExpr* deref = new CallExpr(PRIM_DEREF, actual);
+            CallExpr* move  = new CallExpr(PRIM_MOVE, se->symbol(), deref);
+
+            se->getStmtExpr()->insertBefore(move);
           }
         }
       }
@@ -805,18 +843,20 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
 // where a call to useFn replaces the return that used to be at the end of
 // newFn.  The use function is expected to be assignment, initCopy or
 // autoCopy.  All other cases are ignored.
-static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
-                                          Vec<SymExpr*>& use, FnSymbol* fn)
-{
+static void replaceUsesOfFnResultInCaller(CallExpr*      move,
+                                          CallExpr*      call,
+                                          Vec<SymExpr*>& use,
+                                          FnSymbol*      fn) {
   SymExpr* firstUse = use.v[0];
+
   // If this isn't a call expression, we've got problems.
   if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
-    if (FnSymbol* useFn = useCall->isResolved()) {
-      if ((!strcmp(useFn->name, "=") && firstUse == useCall->get(2)) ||
-          useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+    if (FnSymbol* useFn = useCall->resolvedFunction()) {
+      if ((strcmp(useFn->name, "=") == 0 && firstUse == useCall->get(2)) ||
+          useFn->hasFlag(FLAG_AUTO_COPY_FN)                              ||
           useFn->hasFlag(FLAG_INIT_COPY_FN)) {
-        Symbol* actual;
-        FnSymbol* newFn = NULL;
+        Symbol*   actual = NULL;
+        FnSymbol* newFn  = NULL;
 
         //
         // check cache for new function
@@ -836,55 +876,64 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
           // add new function to cache
           //
           Vec<FnSymbol*>* vfn = retToArgCache.get(fn);
-          if (!vfn)
+
+          if (!vfn) {
             vfn = new Vec<FnSymbol*>();
+          }
+
           vfn->add(useFn);
           vfn->add(newFn);
+
           retToArgCache.put(fn, vfn);
         }
 
         SET_LINENO(call);
         call->baseExpr->replace(new SymExpr(newFn));
 
-        CallExpr* useMove = toCallExpr(useCall->parentExpr);
-        if (useMove)
-        {
+        if (CallExpr* useMove = toCallExpr(useCall->parentExpr)) {
           INT_ASSERT(isMoveOrAssign(useMove));
 
           Symbol* useLhs = toSymExpr(useMove->get(1))->symbol();
-          if (!useLhs->isRef())
-          {
+
+          if (useLhs->isRef() == false) {
+            Expr*     lhs    = useMove->get(1)->remove();
+            CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF, lhs);
+
             useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
+
             move->insertBefore(new DefExpr(useLhs));
-            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
+            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, addrOf));
           }
 
           move->replace(call->remove());
+
           useMove->remove();
+
           call->insertAtTail(useLhs);
 
           actual = useLhs;
-        }
-        else
-        {
+
+        } else {
           // We assume the useFn is an assignment.
-          if (strcmp(useFn->name, "="))
-          {
+          if (strcmp(useFn->name, "=") != 0) {
             INT_FATAL(useFn, "should be an assignment function");
             return;
+          } else {
+
+            // We expect that the used symbol is the second actual passed to
+            // the "=".  That is, it is an assignment from the result of the
+            // call to fn to useLhs.
+            INT_ASSERT(firstUse == useCall->get(2));
+
+            Symbol* useLhs = toSymExpr(useCall->get(1))->symbol();
+
+            move->replace(call->remove());
+            call->insertAtTail(useLhs);
+
+            actual = useLhs;
           }
-
-          // We expect that the used symbol is the second actual passed to
-          // the "=".  That is, it is an assignment from the result of the
-          // call to fn to useLhs.
-          INT_ASSERT(firstUse == useCall->get(2));
-
-          Symbol* useLhs = toSymExpr(useCall->get(1))->symbol();
-          move->replace(call->remove());
-          call->insertAtTail(useLhs);
-
-          actual = useLhs;
         }
+
         if (actual) {
           replaceRemainingUses(use, firstUse, actual);
         }
@@ -895,21 +944,26 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
 
 
 static void
-changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
-                       CallExpr* call, FnSymbol* fn) {
+changeRetToArgAndClone(CallExpr* move,
+                       Symbol*   lhs,
+                       CallExpr* call,
+                       FnSymbol* fn) {
   // Here are some relations between the arguments that can be relied upon.
-  INT_ASSERT(call->parentExpr == move);
-  INT_ASSERT(call->isResolved() == fn);
+  INT_ASSERT(call->parentExpr         == move);
+  INT_ASSERT(call->resolvedFunction() == fn);
 
   // In the suffix of the containing function, look for uses of the lhs of the
   // move containing the call to fn.
   Vec<SymExpr*> use;
+
   if (SymExpr* singleUse = lhs->getSingleUse()) {
     use.add(singleUse);
   } else {
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
       std::vector<SymExpr*> symExprs;
+
       collectSymExprs(stmt, symExprs);
+
       for_vector(SymExpr, se, symExprs) {
         if (se->symbol() == lhs) {
           use.add(se);
@@ -1300,7 +1354,7 @@ void fixupNewAlias(void) {
   size_t lookForAliasFieldLen = strlen(lookForAliasField);
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* calledFn = call->isResolved();
+    FnSymbol* calledFn = call->resolvedFunction();
     if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
         newAliasCalls.push_back(call);
     }
@@ -1328,7 +1382,7 @@ void fixupNewAlias(void) {
   }
 
   for_vector(CallExpr, ctorCall, hasAliasArgInCtor) {
-    FnSymbol* fn = ctorCall->isResolved();
+    FnSymbol* fn = ctorCall->resolvedFunction();
 
     for_formals_actuals(formal, actual, ctorCall) {
 

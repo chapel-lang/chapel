@@ -18,6 +18,7 @@
  */
 
 #include "astutil.h"
+
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
@@ -30,6 +31,7 @@
 #include "symbol.h"
 #include "TryStmt.h"
 #include "type.h"
+#include "virtualDispatch.h"
 #include "WhileStmt.h"
 
 #include "oldCollectors.h" // Deprecated. To be removed.
@@ -247,6 +249,15 @@ void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet) {
   AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
 }
 
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (isLcnSymbol(def->sym)) {
+      symSet.insert(def->sym);
+    }
+  }
+  AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
+}
+
 
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'
@@ -365,8 +376,8 @@ bool isRelationalOperator(CallExpr* call) {
 // return & 2 is true if se is a use
 //
 // Note that a DefExpr is where we hang the variable declaration, but after
-// normalize, a DefExpr itself does not set a variable, and so it does not count
-// as a Def.
+// normalize, a DefExpr itself does not set a variable, and so it does not
+// count as a Def.
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
 
@@ -376,16 +387,19 @@ int isDefAndOrUse(SymExpr* se) {
 //    Expr* src = NULL;
 //    if (getSettingPrimitiveDstSrc(call, &dest, &src) && dest == se) {
 //      CallExpr* rhsCall = toCallExpr(src);
+
     if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
         call->get(1) == se) {
-      CallExpr* rhsCall = toCallExpr(call->get(2));
+      CallExpr*     rhsCall = toCallExpr(call->get(2));
       QualifiedType lhsQual = se->symbol()->qualType();
+
       if ((lhsQual.isRef() || lhsQual.isWideRef()) &&
           !isReferenceType(lhsQual.type()) &&
           !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
         // Assigning to a reference variable counts as a 'use'
         // of the reference and a 'def' of its value
         return 3;
+
 //      } else if(call->isPrimitive(PRIM_SET_MEMBER) ||
 //                call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
 //        // since setting a field might not change the entire object,
@@ -394,10 +408,13 @@ int isDefAndOrUse(SymExpr* se) {
 //        return 3;
       }
       return 1;
+
     } else if (isOpEqualPrim(call) && call->get(1) == se) {
       return 3;
-    } else if (FnSymbol* fn = call->isResolved()) {
+
+    } else if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* arg = actual_to_formal(se);
+
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
           (strcmp(fn->name, "=") == 0   &&
@@ -409,11 +426,13 @@ int isDefAndOrUse(SymExpr* se) {
           //isRecordWrappedType(arg->type)) { // pass by reference
         return 3;
         // also use; do not "continue"
+
       } else if (arg->intent == INTENT_OUT) {
         return 1;
       }
     }
   }
+
   return 2;
 }
 
@@ -657,9 +676,11 @@ bool isTypeExpr(Expr* expr)
       }
     }
 
-    if (FnSymbol* fn = call->isResolved())
-      if (fn->retTag == RET_TYPE)
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      if (fn->retTag == RET_TYPE) {
         return true;
+      }
+    }
   }
 
   return false;
@@ -959,13 +980,15 @@ static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols,
 */
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
   AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
-  //if there is a function call, get the FnSymbol associated with it
-  //and look through that FnSymbol for other function calls. Do not
-  //look through an already visited FnSymbol, or you'll have an infinite
-  //loop in the case of recursion.
+
+  // if there is a function call, get the FnSymbol associated with it
+  // and look through that FnSymbol for other function calls. Do not
+  // look through an already visited FnSymbol, or you'll have an infinite
+  // loop in the case of recursion.
   if (CallExpr* call = toCallExpr(ast)) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       addToUsedFnSymbols(fnSymbols, fn);
+
     } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
       //
       // TODO: We'd like a way to accurately find the set of functions that

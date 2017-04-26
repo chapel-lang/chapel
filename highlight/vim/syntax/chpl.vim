@@ -249,10 +249,10 @@ syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool
 syn keyword chplType            file string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single dmapped
-syn keyword chplOperator	on reduce scan by
+syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
 syn keyword chplStructure	proc iter cobegin begin local sync let select where
-syn keyword chplStructure	pragma inline with private public
+syn keyword chplStructure	pragma inline with private public forwarding
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil

@@ -480,26 +480,29 @@ Type* ParamForLoop::indexType()
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
   CallExpr* range    = new CallExpr("chpl_build_bounded_range",
-                                    lse->copy(), hse->copy());
+                                    lse->copy(),
+                                    hse->copy());
   Type*     idxType = 0;
 
   insertBefore(range);
 
   resolveCall(range);
 
-  if (FnSymbol* sym = range->isResolved())
+  if (FnSymbol* sym = range->resolvedFunction())
   {
     resolveFormals(sym);
 
     DefExpr* formal = toDefExpr(sym->formals.get(1));
 
-    if (toArgSymbol(formal->sym)->typeExpr)
+    if (toArgSymbol(formal->sym)->typeExpr != NULL) {
       idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-    else
+    } else {
       idxType = formal->sym->type;
+    }
 
     range->remove();
   }
+
   else
   {
     INT_FATAL("unresolved range");

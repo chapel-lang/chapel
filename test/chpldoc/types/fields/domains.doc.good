@@ -1,10 +1,22 @@
-domains.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: domains.doc
+
+domains.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
    use domains.doc;
 
-   Class: fullOfDomains
-      var baseCase: domain(1)
-         This field contains a one dimensional array 
-      var twoDimension: domain(2)
-         This field contains a two dimensional array 
+.. class:: fullOfDomains
+
+   .. attribute:: var baseCase: domain(1)
+
+      This field contains a one dimensional array 
+
+   .. attribute:: var twoDimension: domain(2)
+
+      This field contains a two dimensional array 
+

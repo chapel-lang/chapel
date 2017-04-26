@@ -3,4 +3,3 @@ files: stencil-defaultdist.dat, stencil-blockdist.dat, stencil-stencildist.dat, 
 graphkeys: DefaultDist, BlockDist, StencilDist, Serial
 graphtitle: PRK stencil time
 ylabel: Time (seconds)
-graphname: prk-stencil-time

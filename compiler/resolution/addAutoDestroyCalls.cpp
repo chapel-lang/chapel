@@ -335,18 +335,18 @@ bool Scope::startingToHandleFormalTemps(const Expr* stmt) const {
 
   if (mLocalsHandled == false) {
     if (const CallExpr* call = toConstCallExpr(stmt)) {
-      FnSymbol* fn  =  NULL;
-      SymExpr*  lhs =  NULL;
-      SymExpr*  rhs =  NULL;
+      if (FnSymbol* fn = call->resolvedFunction()) {
+        if (fn->hasFlag(FLAG_ASSIGNOP) == true && call->numActuals() == 2) {
+          SymExpr* lhs = toSymExpr(call->get(1));
+          SymExpr* rhs = toSymExpr(call->get(2));
 
-      if ((fn  = call->isResolved())               != NULL &&
-          fn->hasFlag(FLAG_ASSIGNOP)               == true &&
-          call->numActuals()                       ==    2 &&
-          (lhs = toSymExpr(call->get(1)))          != NULL &&
-          (rhs = toSymExpr(call->get(2)))          != NULL &&
-          isArgSymbol(lhs->symbol())               == true &&
-          rhs->symbol()->hasFlag(FLAG_FORMAL_TEMP) == true) {
-        retval = true;
+          if (lhs                                      != NULL &&
+              rhs                                      != NULL &&
+              isArgSymbol(lhs->symbol())               == true &&
+              rhs->symbol()->hasFlag(FLAG_FORMAL_TEMP) == true) {
+            retval = true;
+          }
+        }
       }
     }
   }

@@ -65,10 +65,10 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 # with parallel execution.
 #
 $(OBJ_SUBDIR)/bison-chapel.o: ../include/bison-chapel.h bison-chapel.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ bison-chapel.cpp
+	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CXXFLAGS_NONCHPL) -o $@ bison-chapel.cpp
 
 $(OBJ_SUBDIR)/flex-chapel.o: ../include/bison-chapel.h ../include/flex-chapel.h flex-chapel.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ flex-chapel.cpp
+	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CXXFLAGS_NONCHPL) -o $@ flex-chapel.cpp
 
 $(OBJ_SUBDIR)/parser.o:  ../include/bison-chapel.h ../include/flex-chapel.h parser.cpp $(OBJ_SUBDIR_MADE)
-	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ parser.cpp
+	$(CXX) -c $(COMP_CXXFLAGS) -o $@ parser.cpp

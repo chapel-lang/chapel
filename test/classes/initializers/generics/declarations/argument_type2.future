@@ -1,0 +1,7 @@
+semantic: should you be able to write the generated type as an argument type?
+
+When you create an instance using the more unusual type functions, in order to
+specify which instantiation you require for a function argument, should you be
+able to write the exact output a writeln of the type would give, or are you
+required to specify it in the same form as you would for a local variable
+declaration?

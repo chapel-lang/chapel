@@ -65,18 +65,19 @@ DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -
 DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = $(C_STD) $(CFLAGS)
-RUNTIME_CXXFLAGS = $(CXX_STD) $(CFLAGS)
+COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+COMP_CXXFLAGS_NONCHPL = -Wno-error
+RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
 GEN_CFLAGS = $(C_STD)
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
-LIB_STATIC_FLAG = 
+LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
@@ -136,9 +137,8 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile

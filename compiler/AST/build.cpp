@@ -1738,9 +1738,11 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       }
     }
   }
+  // TODO: Is it OK to just have an 'otherwise' ?
+  if (!condStmt) {
+    USR_FATAL(selectCond, "Select has no when clauses");
+  }
   if (otherwise) {
-    if (!condStmt)
-      USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
 
@@ -2242,46 +2244,61 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
 }
 
 
-DefExpr*
-buildClassDefExpr(const char* name,
-                  const char* cname,
-                  Type*       type,
-                  Expr*       inherit,
-                  BlockStmt*  decls,
-                  Flag        isExtern,
-                  const char* docs) {
-  AggregateType* ct = toAggregateType(type);
+DefExpr* buildClassDefExpr(const char*  name,
+                           const char*  cname,
+                           AggregateTag tag,
+                           Expr*        inherit,
+                           BlockStmt*   decls,
+                           Flag         isExtern,
+                           const char*  docs) {
+  AggregateType* ct = new AggregateType(tag);
+
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
   if (strcmp("string", name) == 0) {
     *dtString = *ct;
-    // These fields get overwritten with `ct` by the assignment. These fields are
-    // set to `this` by the AggregateType constructor so they should still be
-    // `dtString`. Fix them back up.
-    dtString->fields.parent = dtString;
+
+    // These fields get overwritten with `ct` by the assignment.
+    // These fields are set to `this` by the AggregateType constructor
+    // so they should still be `dtString`. Fix them back up.
+    dtString->fields.parent   = dtString;
     dtString->inherits.parent = dtString;
+
     gAggregateTypes.remove(gAggregateTypes.index(ct));
+
     delete ct;
+
     ct = dtString;
   }
+
   INT_ASSERT(ct);
-  TypeSymbol* ts = new TypeSymbol(name, ct);
-  DefExpr* def = new DefExpr(ts);
+
+  TypeSymbol* ts  = new TypeSymbol(name, ct);
+  DefExpr*    def = new DefExpr(ts);
+
   ct->addDeclarations(decls);
+
   if (isExtern == FLAG_EXTERN) {
     if (cname) {
       ts->cname = astr(cname);
     }
+
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
-    if (inherit)
-      USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+
+    if (inherit != NULL)
+      USR_FATAL_CONT(inherit,
+                     "External types do not currently support inheritance");
   }
-  if (inherit)
+
+  if (inherit != NULL) {
     ct->inherits.insertAtTail(inherit);
+  }
+
   ct->doc = docs;
+
   return def;
 }
 

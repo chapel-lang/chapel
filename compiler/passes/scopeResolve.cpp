@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 #include <algorithm>
 #include <map>
@@ -1770,7 +1771,7 @@ static int computeNestedDepth(const char* name, Type* type) {
     // this symbol is first defined in
     AggregateType* ct = toAggregateType(type);
 
-    while (ct != NULL && ct->getField(name, false) == false) {
+    while (ct != NULL && ct->getField(name, false) == NULL) {
       retval = retval + 1;
       ct     = toAggregateType(ct->symbol->defPoint->parentSymbol->type);
     }

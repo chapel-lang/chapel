@@ -204,11 +204,13 @@ typedef struct _chpl_fn_info {
 
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!
+#ifndef __cplusplus
 #ifndef false
 #define false 0
 #endif
 #ifndef  true
 #define  true 1
+#endif
 #endif
 
 typedef float               _real32;

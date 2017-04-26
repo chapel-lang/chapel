@@ -51,7 +51,7 @@ typedef struct {
 // This value is initially returned by chpl_com_get_nb(), and can then
 // be passed to chpl_comm_test_get_nb() while polling for the GET to
 // complete.  Once chpl_comm_test_get_nb() returns true, however, the
-// handle is expired and must not be passsed to it again.
+// handle is expired and must not be passed to it again.
 //
 // Code external to the comm layer must not assume anything about or
 // change any of the contents of a nonblocking GET handle.  The only

@@ -1,19 +1,32 @@
-methods.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: methods.doc
+
+methods.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
    use methods.doc;
 
-   Class: fullOfMethods
-      proc commented()
-         This is just a normal method with a comment.  I shouldn't
-         need to test various other forms of methods, because those
-         are tested elsewhere 
+.. class:: fullOfMethods
 
-      proc commentless()
-   Record: fullOfMethodsToo
-      proc commented()
-         This is just a normal method with a comment.  I shouldn't
-         need to test various other forms of methods, because those
-         are tested elsewhere 
+   .. method:: proc commented()
 
-      proc commentless()
+      This is just a normal method with a comment.  I shouldn't
+      need to test various other forms of methods, because those
+      are tested elsewhere 
+
+   .. method:: proc commentless()
+
+.. record:: fullOfMethodsToo
+
+   .. method:: proc commented()
+
+      This is just a normal method with a comment.  I shouldn't
+      need to test various other forms of methods, because those
+      are tested elsewhere 
+
+   .. method:: proc commentless()
+

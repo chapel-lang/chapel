@@ -1,2 +1,0 @@
-initViaConditional.chpl:6: In initializer:
-initViaConditional.chpl:7: error: initializers cannot return a value

@@ -277,4 +277,6 @@ VarSymbol* newMemDesc(Type* type);
 
 bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
 
+void makeNoop(CallExpr* call);
+
 #endif

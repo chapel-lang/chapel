@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,9 +25,13 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "virtualDispatch.h"
+
+#include <queue>
 
 //
 // insertLineNumbers() inserts line numbers and filenames into
@@ -40,7 +44,8 @@
 //
 
 
-std::vector<std::string> gFilenameLookup;
+std::vector<std::string>   gFilenameLookup;
+
 // Caches lookups into our filename vector
 std::map<std::string, int> gFilenameLookupCache;
 
@@ -77,7 +82,7 @@ static void moveLinenoInsideArgBundle();
 // filename arguments have been added so that calls to these functions
 // can be updated with new actual arguments.
 //
-static Vec<FnSymbol*> queue;
+static std::queue<FnSymbol*> queue;
 
 static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
@@ -102,7 +107,7 @@ static ArgSymbol* newFile(FnSymbol* fn) {
   ArgSymbol* file = new ArgSymbol(INTENT_IN, "_fn", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
-  queue.add(fn);
+  queue.push(fn);
   if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
     forv_Vec(FnSymbol, rootFn, *rootFns)
       if (!filenameMap.get(rootFn))
@@ -122,67 +127,82 @@ static ArgSymbol* newFile(FnSymbol* fn) {
 //
 static void
 insertLineNumber(CallExpr* call) {
-  FnSymbol* fn = call->getFunction();
-  ModuleSymbol* mod = fn->getModule();
-  ArgSymbol* file = filenameMap.get(fn);
-  ArgSymbol* line = linenoMap.get(fn);
   SET_LINENO(call);
 
-  if (call->isPrimitive(PRIM_GET_USER_FILE) || 
+  FnSymbol*     fn   = call->getFunction();
+  ModuleSymbol* mod  = fn->getModule();
+  ArgSymbol*    file = filenameMap.get(fn);
+  ArgSymbol*    line = linenoMap.get(fn);
+
+
+  if (call->isPrimitive(PRIM_GET_USER_FILE) ||
       call->isPrimitive(PRIM_GET_USER_LINE)) {
-    
+
     // add both arguments or none
-    if (!file) { 
+    if (!file) {
       line = newLine(fn);
       file = newFile(fn);
     }
-    
-    // 
+
+    //
     if (call->isPrimitive(PRIM_GET_USER_FILE)) {
       call->replace(new SymExpr(file));
     } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
       call->replace(new SymExpr(line));
     }
-  } else if (fn->hasFlag(FLAG_EXTERN) ||
-             (fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) ||
-             !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
-             !strcmp(fn->name, "chpl__initStringLiterals") ||
-             !strcmp(fn->name, "chpl__initModuleGuards") ||
-             !strcmp(fn->name, "chpl_gen_main") ||
-             ftableMap.count(fn) ||
-             (mod->modTag == MOD_USER && 
-              !fn->hasFlag(FLAG_COMPILER_GENERATED) && !fn->hasFlag(FLAG_INLINE)) ||
-             (developer && strcmp(fn->name, "halt"))) {
-    // hilde sez: This special casing is suspect.  Can't we key off a flag?
 
+  } else if (fn->hasFlag(FLAG_EXTERN)                           ||
+             (fn->hasFlag(FLAG_EXPORT) &&
+              !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))         ||
+             strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
+             strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
+             strcmp(fn->name, "chpl__initModuleGuards")    == 0 ||
+             strcmp(fn->name, "chpl_gen_main")             == 0 ||
+             ftableMap.count(fn)                                ||
+             (mod->modTag == MOD_USER               &&
+              !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+              !fn->hasFlag(FLAG_INLINE)) ||
+             (developer && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
     // or the call is via the ftable
     if (call->isResolved() &&
-        call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
+        call->resolvedFunction()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
       call->insertAtTail(new_IntSymbol(0));
-      FnSymbol* fn = call->isResolved();
+
+      FnSymbol* fn = call->resolvedFunction();
+
       INT_ASSERT(fn);
       INT_ASSERT(fn->substitutions.n);
+
       VarSymbol* var = toVarSymbol(fn->substitutions.v[0].value);
+
       INT_ASSERT(var);
       INT_ASSERT(var->immediate);
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
-      const char *cmdLineSetting =
-          astr("<command line setting of '", var->immediate->v_string, "'>");
-      int filenameIdx = getFilenameLookupPosition(cmdLineSetting);
+
+      const char* cmdLineSetting = astr("<command line setting of '",
+                                        var->immediate->v_string,
+                                        "'>");
+
+      int         filenameIdx    = getFilenameLookupPosition(cmdLineSetting);
+
       call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
+
     } else {
       call->insertAtTail(new_IntSymbol(call->linenum()));
 
       int filenameIdx = getFilenameLookupPosition(call->fname());
+
       call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
     }
+
   } else if (file) {
     // call is in non-user code, but the function already has line
     // number and filename arguments
     call->insertAtTail(line);
     call->insertAtTail(file);
+
   } else {
     // call is in non-user code, and the function requires new line
     // number and filename arguments
@@ -196,18 +216,21 @@ insertLineNumber(CallExpr* call) {
 
 
 static bool isClassMethodCall(CallExpr* call) {
-  FnSymbol* fn = call->isResolved();
+  FnSymbol* fn     = call->resolvedFunction();
+  bool      retval = false;
+
   if (fn && fn->isMethod() && fn->_this) {
     if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
-      if (fn->numFormals() > 0 &&
+      if (fn->numFormals()             >  0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          return true;
+          retval = true;
         }
       }
     }
   }
-  return false;
+
+  return retval;
 }
 
 
@@ -232,7 +255,7 @@ static void insertNilChecks() {
       AggregateType* ct   = toAggregateType(arg0->typeInfo());
 
       if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-        FnSymbol* fn = call->isResolved();
+        FnSymbol* fn = call->resolvedFunction();
 
         // Avoid inserting a nil-check if this is a call to a destructor
         if (fn == NULL || fn->hasFlag(FLAG_DESTRUCTOR) == false) {
@@ -254,16 +277,19 @@ void insertLineNumbers() {
   // directly by the runtime. The index for these matter, and are provided to
   // the runtime as defines in chpl-linefile-support.h
   std::vector<std::string> constantFilenames;
+
   // Put a null string into the iterator at the first position, some runtime
   // calls will pass in NULL for their filename, we can then use this null
   // string to deal with that case.
   constantFilenames.push_back("");
+
   // Add "<internal>" to the filename table if it didn't make it in there, some
   // runtime functions use this name directly, and it doesn't always end up in
   // the table otherwise
   constantFilenames.push_back("<internal>");
 
-  gFilenameLookup.insert(gFilenameLookup.begin(), constantFilenames.begin(),
+  gFilenameLookup.insert(gFilenameLookup.begin(),
+                         constantFilenames.begin(),
                          constantFilenames.end());
 
   if (!fNoNilChecks) {
@@ -293,7 +319,11 @@ void insertLineNumbers() {
 
   // loop over all functions in the queue and all calls to these
   // functions, and pass the calls an actual line number and filename
-  forv_Vec(FnSymbol, fn, queue) {
+  // Note: 'queue' may be appended to during this loop
+  while (queue.empty() == false) {
+    FnSymbol* fn = queue.front();
+    queue.pop();
+
     forv_Vec(CallExpr, call, *fn->calledBy) {
       insertLineNumber(call);
     }

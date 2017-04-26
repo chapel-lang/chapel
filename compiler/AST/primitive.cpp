@@ -738,3 +738,15 @@ bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src)
 
   return false;
 }
+
+void makeNoop(CallExpr* call) {
+  if (call->baseExpr)
+    call->baseExpr->remove();
+
+  while (call->numActuals())
+    call->get(1)->remove();
+
+  call->primitive = primitives[PRIM_NOOP];
+}
+
+
