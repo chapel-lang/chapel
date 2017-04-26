@@ -14,7 +14,8 @@ retval = ((compiler !="mpi-gnu")
 # Only support fifo 
 retval |= (os.environ['CHPL_TASKS']!="fifo")
 
-# Only support GASNET+MPI 
+# Check CHPL_COMM support
+# Currently supports GASNET+MPI, GASNET+Aries, uGNI
 comm=os.environ['CHPL_COMM']
 substrate=os.environ['CHPL_COMM_SUBSTRATE']
 
