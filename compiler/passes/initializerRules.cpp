@@ -49,6 +49,8 @@ static InitStyle findInitStyle(Expr*     expr);
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
 
+static void      buildTypeFunction(FnSymbol* fn)
+
 /************************************* | **************************************
 *                                                                             *
 * Attempt to assign a type to the symbol for each field in some of the        *
@@ -724,6 +726,10 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
     buildClassAllocator(fn);
 
     fn->addFlag(FLAG_INLINE);
+  }
+
+  if (at->isGeneric() == true) {
+    buildTypeFunction(fn);
   }
 }
 
@@ -1667,6 +1673,10 @@ static void preNormalizeGenericInit(FnSymbol* fn) {
 
     fn->addFlag(FLAG_INLINE);
   }
+
+  if (at->isGeneric() == true) {
+    buildTypeFunction(fn);
+  }
 }
 
 /************************************* | **************************************
@@ -2317,4 +2327,62 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   at->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   return fn;
+}
+
+static void buildTypeFunction(FnSymbol* fn) {
+  Symbol* _this = fn->_this;
+  AggregateType* at = toAggregateType(_this->type);
+
+  SET_LINENO(at);
+
+  FnSymbol* tFn = new FnSymbol(at->name); // TODO: naming
+
+  tFn->retTag = RET_TYPE;
+  tFn->addFlag(FLAG_COMPILER_GENERATED);
+
+  VarSymbol* local = new_Temp(at);
+  tFn->body->insertAtTail(new DefExpr(local));
+
+  // TODO: reuse previously created type functions
+
+  // TODO: store relationship between tFn and fn
+  CallExpr* initCall = new CallExpr(fn, gMethodToken, local);
+  CallExpr* typeCall = new CallExpr(PRIM_TYPEOF, local);
+
+  int count = 1;
+
+  for_formals(formal, fn) {
+    // Ignore _mt and this
+    if (count >= 3) {
+      ArgSymbol* arg = NULL;
+      if (formal->intent == INTENT_PARAM || formal->isType()) {
+        // Type and param arguments are just passed along as is
+        arg = formal->copy();
+        initCall->insertAtTail(arg);
+
+      } else if (formal->type == dtAny) {
+        // The argument is generic, so we need a corresponding type argument
+        arg = new ArgSymbol(INTENT_BLANK, formal->name, formal->type);
+        arg->addFlag(FLAG_TYPE_VARIABLE);
+
+        arg->addFlag(FLAG_GENERIC);
+        initCall->insertAtTail(new CallExpr("_defaultOf", arg));
+
+      } else {
+        // The argument is not generic, so we don't want to create an argument
+        // for it in the type function.
+        initCall->insertAtTail(new CallExpr("_defaultOf", formal->type));
+      }
+      if (arg != NULL) {
+        tFn->insertFormalAtTail(arg);
+      }
+    }
+
+    count = count + 1;
+  }
+
+  tFn->body->insertAtTail(initCall);
+  tFn->body->insertAtTail(PRIM_RETURN, typeCall);
+
+  at->symbol->defPoint->insertBefore(new DefExpr(tFn));
 }
