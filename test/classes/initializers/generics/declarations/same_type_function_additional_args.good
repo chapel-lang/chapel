@@ -1,0 +1,1 @@
+same_type_function_additional_args.chpl: 25: error: cannot determine type instantiation based on initializers provided
