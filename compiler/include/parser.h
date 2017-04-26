@@ -36,6 +36,8 @@ extern int         yystartlineno;
 extern const char* yyfilename;
 extern BlockStmt*  yyblock;
 
+void               parse();
+
 void               setupModulePaths();
 
 void               addFlagModulePath(const char* newpath);
