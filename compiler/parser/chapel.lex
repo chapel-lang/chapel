@@ -750,7 +750,7 @@ static int processBlockComment(yyscan_t scanner) {
       addChar(c);
     }
 
-    if(c == fDocsCommentLabel[len - d])
+    if (len != 0 && c == fDocsCommentLabel[len - d])
       d++;
     else
       d = 1;
