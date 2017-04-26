@@ -1144,7 +1144,7 @@ module DefaultRectangular {
     var mdRHi: mdType(idxType);   //       "     "  .high
     var mdRStr: mdType(idxType);  //       "     "  .stride
     var mdRLen: mdType(idxType);  //       "     "  .length
-    var mdRLenRecip: mdType(chpl_divTok_t(idxType));
+    var mdRLenDivTok: mdType(chpl_divTok_t(idxType));
     var mdAlias: mdType(bool);    //   is this an alias of another array?
 
     pragma "local field"
@@ -1565,7 +1565,7 @@ module DefaultRectangular {
         mdRHi = dom.dsiDim(mdParDim).alignedHigh;
         mdRStr = abs(dom.dsiDim(mdParDim).stride):idxType;
         mdRLen = dom.dsiDim(mdParDim).length;
-        chpl_libdiv_gen(mdRLenRecip, mdRLen);
+        chpl_libdiv_gen(mdRLenDivTok, mdRLen);
         mData = _ddata_allocate(_multiData(eltType=eltType,
                                            idxType=idxType),
                                 mdNumChunks);
@@ -1617,7 +1617,7 @@ module DefaultRectangular {
                 / mdRLen):int;
       else
         return chpl_libdiv_do((ind - mdRLo) * mdNumChunks:idxType,
-                              mdRLenRecip):int;
+                              mdRLenDivTok):int;
     }
 
     inline proc mdChunk2Ind(chunk)
@@ -1809,6 +1809,7 @@ module DefaultRectangular {
           mdRHi = copy.mdRHi;
           mdRStr = copy.mdRStr;
           mdRLen = copy.mdRLen;
+          mdRLenDivTok = copy.mdRLenDivTok;
           mData = copy.mData;
         }
         // We can't call initShiftedData here because the new domain
