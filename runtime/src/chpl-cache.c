@@ -280,6 +280,7 @@ use.
 #include "chpl-cache.h"
 #include "chpl-linefile-support.h"
 #include "sys.h" // sys_page_size()
+#include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-no-warning-macros.h" // No warnings for chpl_comm_get etc.
 #include <string.h> // memcpy, memset, etc.
 #include <assert.h>
@@ -1736,7 +1737,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
                              entry->base.node,
                              (void*)(entry->raddr+start),
                              got_len /*size*/, -1/*typei*/,
-                             -1, 0);
+                             CHPL_UNKNOWN_COMM_ID, -1, 0);
 
           // Save the handle in the list of pending requests.
           entry->max_put_sequence_number = pending_push(cache, handle);
@@ -2475,7 +2476,7 @@ void cache_get(struct rdcache_s* cache,
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                        node, (void*) ra_line,
                        ra_line_end - ra_line /*size*/, -1/*typei*/,
-                       ln, fn);
+                       CHPL_UNKNOWN_COMM_ID, ln, fn);
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get2);
 #endif
@@ -2869,10 +2870,10 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided get.
 #ifdef CHPL_TASK_COMM_GET_STRD
   chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, ln, fn);
+                          elemSize, typeIndex, CHPL_UNKNOWN_COMM_ID, ln, fn);
 #else
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, ln, fn);
+                     elemSize, typeIndex, CHPL_UNKNOWN_COMM_ID, ln, fn);
 #endif
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
@@ -2891,10 +2892,10 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided put.
 #ifdef CHPL_TASK_COMM_PUT_STRD
   chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, ln, fn);
+                          elemSize, typeIndex, CHPL_UNKNOWN_COMM_ID, ln, fn);
 #else
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, ln, fn);
+                     elemSize, typeIndex, CHPL_UNKNOWN_COMM_ID, ln, fn);
 #endif
 }
 
