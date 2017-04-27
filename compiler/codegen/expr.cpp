@@ -1498,6 +1498,9 @@ GenRet codegenAdd(GenRet a, GenRet b)
       if(values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = info->builder->CreateFAdd(values.a, values.b);
       } else {
+        // Purpose of adding values.isSigned is to generate 'nsw' argument
+        // to add instruction if addition happens to be between signed integers.
+        // This causes overflowing on adding to be undefined behaviour as in C.
         ret.val = info->builder->CreateAdd(values.a, values.b, "", false, values.isSigned);
       }
       ret.isUnsigned = !values.isSigned;
