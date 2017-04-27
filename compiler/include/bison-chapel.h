@@ -32,7 +32,7 @@
 
 /* "%code requires" blocks.  */
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 32 "chapel.ypp"
 
   #include <string>
@@ -40,7 +40,7 @@
   extern std::string captureString;
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 45 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
@@ -58,7 +58,7 @@
   #endif
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 65 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
@@ -127,7 +127,7 @@
   #endif
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 136 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
@@ -147,7 +147,7 @@
   #endif
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 158 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
@@ -178,7 +178,7 @@
 
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 183 "../include/bison-chapel.h"
 
 /* Tokens.  */
@@ -382,7 +382,7 @@ void yypstate_delete ();
 
 /* "%code provides" blocks.  */
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 189 "chapel.ypp"
 
   extern int yydebug;
@@ -393,5 +393,5 @@ void yypstate_delete ();
 
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 398 "../include/bison-chapel.h"
