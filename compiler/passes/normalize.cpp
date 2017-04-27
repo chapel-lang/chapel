@@ -1952,6 +1952,28 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     var->type = type;
 
   } else {
+    if (CallExpr* call = toCallExpr(typeExpr)) {
+      if (SymExpr* sym = toSymExpr(call->baseExpr)) {
+        if (TypeSymbol* ts = toTypeSymbol(sym->symbol())) {
+          if (isGenericRecordWithInitializers(ts->type)) {
+            VarSymbol* typeTemp = newTemp("type_tmp");
+            call->insertBefore(new DefExpr(typeTemp));
+            //CallExpr* typeSpec = new CallExpr(
+
+            // call's arg list will be necessary for determining the type
+            // specifier to use
+
+            // Get type specifier
+
+            // Generic record with initializers!
+
+          } else if (isGenericClassWithInitializers(ts->type)) {
+            // Generic class with initializers!
+          }
+        }
+      }
+    }
+
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
     CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
