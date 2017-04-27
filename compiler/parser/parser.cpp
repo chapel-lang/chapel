@@ -69,6 +69,9 @@ static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
                                bool        namedOnCommandLine);
 
+static const char*   searchThePath(const char*      modName,
+                                   Vec<const char*> path);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -208,31 +211,6 @@ void addModuleToParseList(const char* name, UseStmt* useExpr) {
     sModNameSet.set_add(modName);
     sModNameList.add(modName);
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* These are only used by the prototype IPE.  The baseName is the name of a    *
-* Chapel file without .chpl extension.                                        *
-*                                                                             *
-************************************** | *************************************/
-
-// Return a fully qualified path name for the internal file
-// with the specified baseName
-const char* pathNameForInternalFile(const char* baseName) {
-  const char* fileName = astr(baseName, ".chpl");
-
-  return searchPath(sIntModPath, fileName, NULL, true);
-}
-
-// Return a fully qualified path name for the standard file
-// with the specified baseName
-// Generate a warning if there is a user file that might define the same module
-const char* pathNameForStandardFile(const char* baseName) {
-  const char* fileName     = astr(baseName, ".chpl");
-  const char* userFileName = searchPath(sUsrModPath, fileName, NULL, false);
-
-  return searchPath(sStdModPath, fileName, userFileName, false);
 }
 
 /************************************* | **************************************
@@ -659,7 +637,7 @@ static void ensureRequiredStandardModulesAreParsed() {
 // Returns either a file name or NULL if no such file was found
 // (which could happen if there's a use of an enum within the library files)
 static const char* stdModNameToFileName(const char* modName) {
-  return searchPath(sStdModPath, astr(modName, ".chpl"), NULL, false);
+  return searchThePath(modName, sStdModPath);
 }
 
 /************************************* | **************************************
@@ -725,10 +703,10 @@ static const char* modNameToFileName(const char* modName,
   const char* fullFileName = NULL;
 
   if (isInternal) {
-    fullFileName = searchPath(sIntModPath, fileName, NULL,         true);
+    fullFileName = searchThePath(modName, sIntModPath);
 
   } else {
-    fullFileName = searchPath(sUsrModPath, fileName, NULL,         false);
+    fullFileName = searchThePath(modName, sUsrModPath);
 
     *isStandard = (fullFileName == NULL);
 
@@ -1028,4 +1006,48 @@ BlockStmt* parseString(const char* string,
   yylex_destroy(context.scanner);
 
   return yyblock;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+// Used by IPE
+const char* pathNameForInternalFile(const char* modName) {
+  return searchThePath(modName, sIntModPath);
+}
+
+// Used by IPE: Prefer user file to standard file
+const char* pathNameForStandardFile(const char* modName) {
+  const char* fileName     = astr(modName, ".chpl");
+  const char* userFileName = searchThePath(modName, sUsrModPath);
+
+  return searchPath(sStdModPath, fileName, userFileName, false);
+}
+
+static const char* searchThePath(const char*      modName,
+                                 Vec<const char*> path) {
+  const char* fileName = astr(modName, ".chpl");
+  const char* retval   = NULL;
+
+  forv_Vec(const char*, dirName, path) {
+    const char* path = astr(dirName, "/", fileName);
+
+    if (FILE* file = openfile(path, "r", false)) {
+      closefile(file);
+
+      if (retval == NULL) {
+        retval = path;
+
+      } else {
+        USR_WARN("Ambiguous module source file -- using %s over %s",
+                 cleanFilename(retval),
+                 cleanFilename(path));
+      }
+    }
+  }
+
+  return retval;
 }
