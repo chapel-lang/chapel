@@ -51,8 +51,6 @@ static bool          sHandlingInternalModulesNow   = false;
 
 static void          countTokensInCmdLineFiles();
 
-static void          addDashMsToUserPath();
-
 static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
@@ -61,13 +59,14 @@ static void          parseDependentModules(ModTag modtype);
 
 static ModuleSymbol* parseMod(const char* modname, ModTag modType);
 
+static const char*   searchPath(Vec<const char*> path,
+                                const char*      fileName,
+                                const char*      foundFile,
+                                bool             noWarn);
+
 static ModuleSymbol* parseFile(const char* filename,
                                ModTag      modType,
                                bool        namedOnCommandLine);
-
-static void          addModulePaths();
-
-static void          printModuleSearchPath();
 
 /************************************* | **************************************
 *                                                                             *
@@ -83,14 +82,6 @@ void parse() {
   }
 
   parseInternalModules();
-
-  addModulePaths();
-
-  addDashMsToUserPath();
-
-  if (printSearchDirs) {
-    printModuleSearchPath();
-  }
 
   parseCommandLineFiles();
 
@@ -120,17 +111,6 @@ static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<UseStmt*>    sModReqdByInt;
-
-static void        helpPrintPath(Vec<const char*> path);
-
-static const char* searchPath(Vec<const char*> path,
-                              const char*      fileName,
-                              const char*      foundFile = NULL,
-                              bool             noWarn    = false);
-
-static void        addUsrDirToModulePath(const char* dir);
-
-static void        addModulePathFromFileName(const char* origFileName);
 
 void setupModulePaths() {
   const char* modulesRoot = NULL;
@@ -229,6 +209,13 @@ void addModuleToParseList(const char* name, UseStmt* useExpr) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* These are only used by the prototype IPE.  The baseName is the name of a    *
+* Chapel file without .chpl extension.                                        *
+*                                                                             *
+************************************** | *************************************/
+
 // Return a fully qualified path name for the internal file
 // with the specified baseName
 const char* pathNameForInternalFile(const char* baseName) {
@@ -245,92 +232,6 @@ const char* pathNameForStandardFile(const char* baseName) {
   const char* userFileName = searchPath(sUsrModPath, fileName, NULL, false);
 
   return searchPath(sStdModPath, fileName, userFileName, false);
-}
-
-static void printModuleSearchPath() {
-  fprintf(stderr, "module search dirs:\n");
-
-  if (developer == true) {
-    helpPrintPath(sIntModPath);
-  }
-
-  helpPrintPath(sUsrModPath);
-
-  helpPrintPath(sStdModPath);
-
-  fprintf(stderr, "end of module search dirs\n");
-}
-
-static void helpPrintPath(Vec<const char*> path) {
-  forv_Vec(const char*, dirName, path) {
-    fprintf(stderr, "  %s\n", cleanFilename(dirName));
-  }
-}
-
-static void addDashMsToUserPath() {
-  forv_Vec(const char*, dirName, sFlagModPath) {
-    addUsrDirToModulePath(dirName);
-  }
-}
-
-static void addUsrDirToModulePath(const char* dir) {
-  const char* uniqueDir = astr(dir);
-
-  if (sModPathSet.set_in(uniqueDir) == NULL) {
-    sUsrModPath.add(uniqueDir);
-    sModPathSet.set_add(uniqueDir);
-  }
-}
-
-static const char* searchPath(Vec<const char*> path,
-                              const char*      fileName,
-                              const char*      foundFile,
-                              bool             noWarn) {
-  forv_Vec(const char*, dirname, path) {
-    const char* fullFileName = astr(dirname, "/", fileName);
-
-    if (FILE* file = openfile(fullFileName, "r", false)) {
-      closefile(file);
-
-      if (foundFile == NULL) {
-        foundFile = fullFileName;
-      } else if (!noWarn) {
-        USR_WARN("Ambiguous module source file -- using %s over %s",
-                 cleanFilename(foundFile),
-                 cleanFilename(fullFileName));
-      }
-    }
-  }
-
-  return foundFile;
-}
-
-static void addModulePaths() {
-  int         fileNum       = 0;
-  const char* inputFileName = 0;
-
-  while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName) == true) {
-      addModulePathFromFileName(inputFileName);
-    }
-  }
-}
-
-static void addModulePathFromFileName(const char* origFileName) {
-  char dirName[FILENAME_MAX + 1];
-
-  strncpy(dirName, origFileName, FILENAME_MAX);
-
-  if (char* lastSlash = strrchr(dirName, '/')) {
-    *lastSlash = '\0';
-
-    addUsrDirToModulePath(dirName);
-
-    *lastSlash = '/';
-
-  } else {
-    addUsrDirToModulePath(".");
-  }
 }
 
 /************************************* | **************************************
@@ -363,11 +264,6 @@ static void gatherWellKnownTypes();
 static void gatherWellKnownFns();
 
 static void parseInternalModules() {
-  //
-  // If we're running chpldoc on just a single file, we don't want to
-  // bring in all the base, standard, etc. modules -- just the file
-  // we're documenting.
-  //
   if (fDocs == false || fDocsProcessUsedModules == true) {
     baseModule            = parseMod("ChapelBase",           MOD_INTERNAL);
     standardModule        = parseMod("ChapelStandard",       MOD_INTERNAL);
@@ -461,10 +357,6 @@ static void gatherWellKnownTypes() {
     }
   }
 
-  //
-  // When compiling for minimal modules, we don't require any specific
-  // well-known types to be defined.
-  //
   if (fMinimalModules == false) {
     // Make sure all well-known types are defined.
     for (int i = 0; i < nEntries; ++i) {
@@ -578,12 +470,7 @@ static void gatherWellKnownFns() {
     }
   }
 
-  //
-  // When compiling for minimal modules, we don't require any specific
-  // well-known functions to be defined.
-  //
   if (fMinimalModules == false) {
-    // Make sure all well-known functions are defined.
     for (int i = 0; i < nEntries; ++i) {
       WellKnownFn& wkfn        = sWellKnownFns[i];
       FnSymbol*    lastMatched = wkfn.lastNameMatchedFn;
@@ -611,12 +498,25 @@ static void gatherWellKnownFns() {
 *                                                                             *
 ************************************** | *************************************/
 
+static void        addModulePaths();
+static void        addDashMsToUserPath();
+static void        addUsrDirToModulePath(const char* dir);
+static void        printModuleSearchPath();
+static void        helpPrintPath(Vec<const char*> path);
 static void        ensureRequiredStandardModulesAreParsed();
 static const char* stdModNameToFilename(const char* modName);
 
 static void parseCommandLineFiles() {
-  int         fileNum       = 0;
-  const char* inputFilename = 0;
+  int         fileNum       =    0;
+  const char* inputFilename = NULL;
+
+  addModulePaths();
+
+  addDashMsToUserPath();
+
+  if (printSearchDirs) {
+    printModuleSearchPath();
+  }
 
   while ((inputFilename = nthFilename(fileNum++))) {
     if (isChplSource(inputFilename) == true) {
@@ -632,6 +532,63 @@ static void parseCommandLineFiles() {
     forv_Vec(ModuleSymbol, mod, allModules) {
       mod->addDefaultUses();
     }
+  }
+}
+
+static void addModulePaths() {
+  int         fileNum  =    0;
+  const char* fileName = NULL;
+
+  while ((fileName = nthFilename(fileNum++))) {
+    if (isChplSource(fileName) == true) {
+      char dirName[FILENAME_MAX + 1];
+
+      strncpy(dirName, fileName, FILENAME_MAX);
+
+      if (char* lastSlash = strrchr(dirName, '/')) {
+        *lastSlash = '\0';
+        addUsrDirToModulePath(dirName);
+
+      } else {
+        addUsrDirToModulePath(".");
+      }
+    }
+  }
+}
+
+// Add directories specified with -M to the UserPath
+static void addDashMsToUserPath() {
+  forv_Vec(const char*, dirName, sFlagModPath) {
+    addUsrDirToModulePath(dirName);
+  }
+}
+
+static void addUsrDirToModulePath(const char* dir) {
+  const char* uniqueDir = astr(dir);
+
+  if (sModPathSet.set_in(uniqueDir) == NULL) {
+    sUsrModPath.add(uniqueDir);
+    sModPathSet.set_add(uniqueDir);
+  }
+}
+
+static void printModuleSearchPath() {
+  fprintf(stderr, "module search dirs:\n");
+
+  if (developer == true) {
+    helpPrintPath(sIntModPath);
+  }
+
+  helpPrintPath(sUsrModPath);
+
+  helpPrintPath(sStdModPath);
+
+  fprintf(stderr, "end of module search dirs\n");
+}
+
+static void helpPrintPath(Vec<const char*> path) {
+  forv_Vec(const char*, dirName, path) {
+    fprintf(stderr, "  %s\n", cleanFilename(dirName));
   }
 }
 
@@ -701,7 +658,7 @@ static void ensureRequiredStandardModulesAreParsed() {
 // Returns either a file name or NULL if no such file was found
 // (which could happen if there's a use of an enum within the library files)
 static const char* stdModNameToFilename(const char* modName) {
-  return searchPath(sStdModPath, astr(modName, ".chpl"), NULL);
+  return searchPath(sStdModPath, astr(modName, ".chpl"), NULL, false);
 }
 
 /************************************* | **************************************
@@ -760,17 +717,40 @@ static const char* modNameToFilename(const char* modName,
   const char* fullFileName = NULL;
 
   if (isInternal) {
-    fullFileName = searchPath(sIntModPath, fileName, NULL, true);
+    fullFileName = searchPath(sIntModPath, fileName, NULL,         true);
 
   } else {
-    fullFileName = searchPath(sUsrModPath, fileName);
+    fullFileName = searchPath(sUsrModPath, fileName, NULL,         false);
 
     *isStandard = (fullFileName == NULL);
 
-    fullFileName = searchPath(sStdModPath, fileName, fullFileName);
+    fullFileName = searchPath(sStdModPath, fileName, fullFileName, false);
   }
 
   return  fullFileName;
+}
+
+static const char* searchPath(Vec<const char*> path,
+                              const char*      fileName,
+                              const char*      foundFile,
+                              bool             noWarn) {
+  forv_Vec(const char*, dirname, path) {
+    const char* fullFileName = astr(dirname, "/", fileName);
+
+    if (FILE* file = openfile(fullFileName, "r", false)) {
+      closefile(file);
+
+      if (foundFile == NULL) {
+        foundFile = fullFileName;
+      } else if (!noWarn) {
+        USR_WARN("Ambiguous module source file -- using %s over %s",
+                 cleanFilename(foundFile),
+                 cleanFilename(fullFileName));
+      }
+    }
+  }
+
+  return foundFile;
 }
 
 /************************************* | **************************************
