@@ -24,6 +24,7 @@
 #include "LoopStmt.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 #include "typeSpecifier.h"
@@ -49,7 +50,7 @@ static InitStyle findInitStyle(Expr*     expr);
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
 
-static void      buildTypeFunction(FnSymbol* fn)
+static void      buildTypeFunction(FnSymbol* fn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -2335,12 +2336,12 @@ static void buildTypeFunction(FnSymbol* fn) {
 
   SET_LINENO(at);
 
-  FnSymbol* tFn = new FnSymbol(at->name); // TODO: naming
+  FnSymbol* tFn = new FnSymbol(astr("_type_specifier_", at->symbol->name));
 
   tFn->retTag = RET_TYPE;
   tFn->addFlag(FLAG_COMPILER_GENERATED);
 
-  VarSymbol* local = new_Temp(at);
+  VarSymbol* local = newTemp("local_tmp", at);
   tFn->body->insertAtTail(new DefExpr(local));
 
   // TODO: reuse previously created type functions
@@ -2355,7 +2356,7 @@ static void buildTypeFunction(FnSymbol* fn) {
     // Ignore _mt and this
     if (count >= 3) {
       ArgSymbol* arg = NULL;
-      if (formal->intent == INTENT_PARAM || formal->isType()) {
+      if (formal->intent == INTENT_PARAM || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         // Type and param arguments are just passed along as is
         arg = formal->copy();
         initCall->insertAtTail(arg);
@@ -2382,7 +2383,7 @@ static void buildTypeFunction(FnSymbol* fn) {
   }
 
   tFn->body->insertAtTail(initCall);
-  tFn->body->insertAtTail(PRIM_RETURN, typeCall);
+  tFn->body->insertAtTail(new CallExpr(PRIM_RETURN, typeCall));
 
   at->symbol->defPoint->insertBefore(new DefExpr(tFn));
 }
