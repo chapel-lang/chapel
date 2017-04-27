@@ -55,7 +55,7 @@ static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
 
-static void          parseDependentModules(ModTag modTag);
+static void          parseDependentModules(bool isInternal);
 
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
@@ -270,7 +270,7 @@ static void parseInternalModules() {
     standardModule        = parseMod("ChapelStandard",       true);
     printModuleInitModule = parseMod("PrintModuleInitOrder", true);
 
-    parseDependentModules(MOD_INTERNAL);
+    parseDependentModules(true);
 
     gatherIteratorTags();
     gatherWellKnownTypes();
@@ -526,7 +526,7 @@ static void parseCommandLineFiles() {
   }
 
   if (fDocs == false || fDocsProcessUsedModules == true) {
-    parseDependentModules(MOD_USER);
+    parseDependentModules(false);
 
     ensureRequiredStandardModulesAreParsed();
 
@@ -668,10 +668,8 @@ static const char* stdModNameToFileName(const char* modName) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void parseDependentModules(ModTag modTag) {
+static void parseDependentModules(bool isInternal) {
   forv_Vec(const char*, modName, sModNameList) {
-    bool isInternal = (modTag == MOD_INTERNAL);
-
     if (sModDoneSet.set_in(modName)   == NULL &&
         parseMod(modName, isInternal) != NULL) {
       sModDoneSet.set_add(modName);
