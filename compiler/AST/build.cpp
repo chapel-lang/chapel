@@ -677,12 +677,19 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs) {
-  ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
+ModuleSymbol* buildModule(const char* name,
+                          ModTag      modTag,
+                          BlockStmt*  block,
+                          const char* filename,
+                          bool        priv,
+                          const char* docs) {
+  ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
+
   if (currentFileNamedOnCommandLine) {
     mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
   }
-  if (priv) {
+
+  if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
   }
 

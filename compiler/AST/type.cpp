@@ -1943,6 +1943,32 @@ bool isNonGenericClassWithInitializers(Type* type) {
   return retval;
 }
 
+bool isGenericClass(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isClass()                    == true  &&
+        at->isGeneric()                  == true  &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+bool isGenericClassWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (isGenericClass(type) == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      retval = at->initializerStyle == DEFINES_INITIALIZER;
+    }
+  }
+
+  return retval;
+}
+
 bool isNonGenericRecord(Type* type) {
   bool retval = false;
 
@@ -1961,6 +1987,32 @@ bool isNonGenericRecordWithInitializers(Type* type) {
   bool retval = false;
 
   if (isNonGenericRecord(type) == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      retval = at->initializerStyle == DEFINES_INITIALIZER;
+    }
+  }
+
+  return retval;
+}
+
+bool isGenericRecord(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isRecord()                   == true  &&
+        at->isGeneric()                  == true  &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+bool isGenericRecordWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (isGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
       retval = at->initializerStyle == DEFINES_INITIALIZER;
     }
