@@ -2,23 +2,27 @@
 \label{Records}
 \index{records}
 
-A record is a data structure that is similar to a class but instead has value
-semantics, similar to primitive types.  Value semantics mean that assignment, argument passing and function
-return values are by default all done by copying.  Value semantics also imply that a
-variable of record type is associated with only one piece of storage and has
-only one type throughout its lifetime.  Storage is allocated for a variable of
-record type when the variable declaration is executed, and the record variable
-is also initialized at that time.
+A record is a data structure that is similar to a class except it has
+value semantics, similar to primitive types.  Value semantics mean that
+assignment, argument passing and function return values are by default
+all done by copying.  Value semantics also imply that a variable of
+record type is associated with only one piece of storage and has only one
+type throughout its lifetime.  Storage is allocated for a variable of
+record type when the variable declaration is executed, and the record
+variable is also initialized at that time. When the record variable goes
+out of scope, or at the end of the program if it is a global, it is
+deinitialized and its storage is deallocated.
 
-A record declaration statement creates a record type~\rsec{Record_Declarations}.  A
-variable of record type contains all and only the fields defined by that type
-(\rsec{Record_Types}).  Value semantics imply that the type of a record variable
-is known at compile time (i.e. it is statically typed).  
+A record declaration statement creates a record
+type~\rsec{Record_Declarations}.  A variable of record type contains all
+and only the fields defined by that type (\rsec{Record_Types}).  Value
+semantics imply that the type of a record variable is known at compile
+time (i.e. it is statically typed).
 
-A record can be created using the \chpl{new} operator, which
-allocates storage, initializes it via a call to a record constructor,
-and returns it.
-A record is also created upon a variable declaration of a record type.
+A record can be created using the \chpl{new} operator, which allocates
+storage, initializes it via a call to a record constructor, and returns
+it.  A record is also created upon a variable declaration of a record
+type.
 
 A record type is generic if it contains generic fields.  Generic record types
 are discussed in detail in~\rsec{Generic_Types}.
@@ -36,14 +40,7 @@ record-declaration-statement:
   external-record-declaration-statement
 
 simple-record-declaration-statement:
-  `record' identifier record-inherit-list[OPT] { record-statement-list }
-
-record-inherit-list:
-  : record-type-list
-
-record-type-list:
-  record-type
-  record-type , record-type-list
+  `record' identifier { record-statement-list }
 
 record-statement-list:
   record-statement
@@ -56,46 +53,21 @@ record-statement:
   empty-statement
 \end{syntax}
 
-A \sntx{record-declaration-statement} defines a new type symbol specified by the
-identifier.  A record inherits data and methods from other records
-if the \sntx{record-inherit-list} is specified.
+A \sntx{record-declaration-statement} defines a new type symbol specified
+by the identifier. As in a class declaration, the body of a record declaration
+can contain variable, method, and type declarations.
 
-\begin{future}
-Allowing a record to inherit from more than one record is future work.
-\end{future}
-
-\begin{rationale}
-We do not allow records to inherit from classes because of the following.
-
-Inheritance implies that the derived type can be cast to one of its base types.
-If the base type is a record type, casting to the base type has the effect of
-removing all of the data fields and all of functions that are not associated
-with the base type.  Thereafter, the record variable has the base record type,
-in both compile-time and run-time interpretations.
-
-If the base type were a class type, the result of the cast would have the static
-type of the base class while its run-time type was a record type.  Since a
-record's type is supposed to be determined at compile time, this is a bit
-incongruous with the definition of a record.  Moreover, space would have to be
-allocated in this special case, to store the record's run-time type.
-\end{rationale}
-
-As in a class declaration, the body of a record declaration can contain
-variable, iterator and method declarations as well as nested type declarations.
-
-If a record declaration contains a type alias or parameter field, or it contains
-a variable or constant field without a specified type and without an initialization
-expression, then it declares a generic record type.  Generic record types are
-described in~\rsec{Generic_Types}.
+If a record declaration contains a type alias or parameter field, or it
+contains a variable or constant field without a specified type and
+without an initialization expression, then it declares a generic record
+type.  Generic record types are described in~\rsec{Generic_Types}.
 
 If the \chpl{extern} keyword appears before the \chpl{record} keyword, then an
-external record type is declared.  An external record type declaration must not
-contain a \sntx{record-inherit-list}.  An external record is used within Chapel
+external record type is declared. An external record is used within Chapel
 for type and field resolution, but no corresponding backend definition is
 generated.  It is presumed that the definition of an external record is supplied
 by a library or the execution environment.  See the chapter on interoperability
 (\rsec{Interoperability}) for more information on external records.
-% External record inheritance is not currently supported.
 
 \begin{future}
 Privacy controls for classes and records are currently not specified,
@@ -146,7 +118,8 @@ record ActorRecord {
 defines a new record type called \chpl{ActorRecord} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.  The data
 contained by a record of this type is exactly the same as that contained by
-an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Class_Fields}.
+an instance of the \chpl{Actor} class defined in the preceding
+chapter~\rsec{Class_Fields}.
 \end{chapelexample}
 
 \subsection{Record Methods}
@@ -155,12 +128,12 @@ an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Cla
 \index{methods!records}
 
 A record method is a function or iterator that is bound to a record.
+See the methods section~\rsec{Methods} for more information about
+methods.
 
-The syntax for record method declarations is identical to that for class method
-declarations (\rsec{Class_Methods}).
-
-The record is passed by \chpl{ref} or \chpl{const ref} be default. See
-\rsec{The_this_Reference}.
+Note that the receiver of a record method is passed by \chpl{ref} or
+\chpl{const ref} intent by default, depending on whether or not
+\chpl{this} is modified in the body of the method.
 
 \subsection{Nested Record Types}
 \label{Nested_Record_Types}
@@ -172,68 +145,6 @@ declarations.  Methods defined in a nested record type may access fields
 declared in the containing aggregate type either implicitly, or explicitly by
 means of an \chpl{outer} reference.
 
-\section{Record Inheritance}
-\label{Record_Inheritance}
-\index{records!inheritance}
-\index{inheritance!records}
-
-A \emph{derived} record type is a type that inherits from another record
-type. Inheritance effectively inserts
-all of the field in the base record type into the new record type.
-
-\begin{openissue}
-Inheritance of methods in records has not been defined. Inheritance of
-fields in records may change.
-\end{openissue}
-
-\begin{openissue}
-It has not been decided whether or not multiple inheritance for records
-will be allowed.
-\end{openissue}
-
-There is no type hierarchy implied
-by record inheritance.  It is merely a shorthand for including a list of fields
-in the record (or class) type being defined.  Record inheritance can be useful
-for grouping data common to several or class or record types.
-
-\begin{future}
-Depending on how inheritance of record methods is defined, record
-inheritance might possibly define a type hierarchy.
-\end{future}
-
-
-\begin{chapelexample}{recordInheritance.chpl}
-\begin{chapel}
-record Center { var x, y: real; }
-record Circle : Center {
-  var radius: real;
-}
-record Ellipse : Center {
-  var major, minor: real;
-}
-\end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
-The record \chpl{Center} is defined and used as a shorthand in defining
-the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
-three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
-\chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
-\chpl{major} and \chpl{minor}.
-\end{chapelexample}
-
-\subsection{Shadowing Base Record Fields}
-\label{Shadowing_Base_Record_Fields}
-\index{records!fields!shadowing}
-
-A field in the derived record can be declared with the same name as a
-field in a base record.  Such a field shadows the field in the base
-record, meaning that the field by the same name in the base record is not
-directly accessible.
-
-\begin{openissue}
-A syntax for accessing shadowed fields has not yet been specified.
-\end{openissue}
-
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
 \index{records!variable declarations}
@@ -241,12 +152,12 @@ A syntax for accessing shadowed fields has not yet been specified.
 
 A record variable declaration is a variable declaration using a record type.
 When a variable of record type is declared, storage is allocated sufficient to
-store all of the fields defined in that record type.  
+store all of the fields defined in that record type.
 
 In the context of a class or record or union declaration, the fields are
 allocated within the object as if they had been declared individually.  In this
 sense, records provide a way to group related fields within a containing class
-or record type. 
+or record type.
 
 In the context of a function body, a record variable declaration
 causes storage to be allocated sufficient to store all of the fields in that
@@ -272,28 +183,25 @@ of another variable's record.
 \index{initialization!record}
 
 A variable of a record type declared without an initialization expression
-is initialized through a call to the record's default initializer, passing no arguments.
-The default initializer for a record is defined in the same way as the default
-initializer for a class (\rsec{Default_Initialization}).
-
-If the new record type is derived from other record types, the
-default initializer for each base record will be called in lexical order before default
-initializer for the record itself.
+is initialized through a call to the record's default initializer,
+passing no arguments.  The default initializer for a record is defined in
+the same way as the default initializer for a class
+(\rsec{Default_Initialization}).
 
 To construct a record as an expression,
 i.e. without binding it to a variable, the \chpl{new} operator is
 required.  In this case, storage is allocated and reclaimed as for a record
 variable declaration (\rsec{Record_Storage}), except that the temporary record
-goes out of scope at the end of the enclosing expression.
-
-To initialize a record variable with a non-default value, it can be assigned
-the value of a constructor call expression.  The constructors for a record are
+goes out of scope at the end of the enclosing statement.
+The constructors for a record are
 defined in the same way as those for a class (\rsec{Class_Constructors}).
 
 \begin{rationale}
-The \chpl{new} keyword disambiguates types from values. This is needed because of the close
-relationship between constructors and type specifiers for classes and
-records.
+
+The \chpl{new} keyword disambiguates types from values. This is needed
+because of the syntactic similarity between constructors and type
+specifiers for classes and records.
+
 \end{rationale}
 
 \begin{chapelexample}{recordCreation.chpl}
@@ -334,7 +242,7 @@ they are used.
 
 As with classes, the user can provide his own constructors
 (\rsec{User_Defined_Constructors}).  If any user-defined constructors are
-supplied, the default initializer cannot be called directly.  
+supplied, the default initializer cannot be called directly.
 
 \subsection{Record Deinitializer}
 \label{Record_Deinitializer}
@@ -366,7 +274,7 @@ on a record object after it goes out of scope and before its memory is reclaimed
 \begin{chapelexample}{recordDeinitializer.chpl}
 \begin{chapel}
 class C { var x: int; } // A class with nonzero size.
-// If the class were empty, whether or not its memory was reclaimed 
+// If the class were empty, whether or not its memory was reclaimed
 // would not be observable.
 
 // Defines a record implementing simple memory management.
@@ -475,42 +383,9 @@ redefine these as needed.
 \index{records!method calls}
 \index{method calls}
 
-A record method may be invoked the same way as a class method
-(\rsec{Class_Method_Calls}).  Unlike class methods, record methods are
-resolved at compile time.  
-
-\subsection{The Method Receiver and the {\em this} Argument}
-\label{The_this_Reference}
-\index{this@\chpl{this}}
-\index{records!receiver}
-\index{receiver}
-
-The \emph{receiver} of a record method is similar to and is determined in the
-same way as the receiver of a class method (\rsec{The_em_this_Reference}).
-The type of the receiver is the record in which the method is defined.
-The receiver formal argument can be referred to within the method
-using the identifier \chpl{this}.
-
-The default intent for the implicit {\em this} formal argument is
-different for record methods than it is for class methods. For record
-methods, the intent for the receiver formal argument is \chpl{ref} or
-\chpl{const ref}, depending on whether the formal argument is modified
-inside of the method. Programmers wishing to be explicit about whether or
-not record methods modify the receiver can explicitly use the \chpl{ref}
-or \chpl{const ref} {\em this-intent}.
-
-\section{The {\em this} Method}
-\index{records!indexing}
-
-As with classes, records can be supplied with a \chpl{this} method.  This method
-defines the behavior of the indexing operator \chpl{[]}.
-
-\section{The {\em these} Method}
-\index{records!iterating}
-
-A \chpl{these} method can be defined for records as well as classes (\rsec{The_these_Method}).  It
-provides an iterator which iterates over the contents of the record in a
-user-defined manner.
+Record method calls are written the same way as other method calls
+(\rsec{Method_Calls}). Unlike class methods, record methods are
+always resolved at compile time.
 
 \section{Common Operations}
 
@@ -518,18 +393,22 @@ user-defined manner.
 \label{Record_Assignment}
 \index{records!assignment}
 
-A variable of record type may be updated by assignment.  The compiler provides
-a default assignment operator for each record type \chpl{R} having the signature
-\begin{example}
-\begin{chapel}
-proc =(ref lhs:R, rhs:R) : void ;
-\end{chapel}
-\end{example}
-\noindent
-In it, the value of each field of the record on the right-hand side is assigned
-to the corresponding field of the record on the left-hand side.
+A variable of record type may be updated by assignment.  The compiler
+provides a default assignment operator for each record type \chpl{R}
+having the signature:
 
-The compiler-provided assignment operator may be overridden.
+\begin{chapel}
+proc =(ref lhs:R, rhs) : void ;
+\end{chapel}
+
+In it, the value of each field of the record on the right-hand side is assigned
+to the corresponding field of the record on the left-hand side. It is
+a type error if the left-hand side and the right-hand side do not have
+the same set of field names. It is also a type error if two fields with
+the same name do not have assignable types.
+
+The compiler-provided assignment operator may be overridden as described
+in \ref{Assignment_Statements}.
 
 The following example demonstrates record assignment.
 \begin{chapelexample}{assignment.chpl}
@@ -566,18 +445,6 @@ rather than two references to the same object.  Assigning \chpl{3.14}
 to \chpl{C.x} does not affect the \chpl{x} field in \chpl{A}.
 \end{chapelexample}
 
-%REVIEW: vass: need to define "reference assignment"
-% and ideally remove the reference to C++.
-% Also, this seems not specific to records and so should be moved
-% to the "assignment statement" section.
-\begin{openissue}
-Whether reference assignment is to be supported is an open question.
-If so, it would work like reference assignment in C++ -- basically creating an
-alias for the RHS.
-References can be used to reduce the length of dereference expression, and also
-improve performance -- especially if that expression is used repeatedly.
-\end{openissue}
-
 \subsection{Default Comparison Operators}
 \label{Record_Comparison_Operators}
 \index{records!equality}
@@ -594,34 +461,6 @@ the \chpl{&&} operator.  The default implementation of \chpl{\!=}
 applies \chpl{\!=} to each field of the two argument records and
 reduces the result with the \chpl{||} operator.
 
-\subsection{Implicit Record Conversions}
-\label{Implicit_Record_Conversions}
-\index{conversions!records}
-\index{conversions!implicit!records}
-\index{records!implicit conversions}
-
-An expression of record type \chpl{D} can be implicitly converted to
-another record type \chpl{C} if
-
-\begin{itemize}
-\item for each field in \chpl{C} there is a like-named field in \chpl{D},
-      and
-\item an implicit conversion is allowed from the type of the field in \chpl{D}
-      to the type of the field in \chpl{C}.
-\end{itemize}
-%REVIEW: vass: the following silently loses part of the record value,
-% which is different than what we aim for with numeric types.
-% Consider disabling this.
-Such a conversion removes any fields that are in \chpl{D} but not \chpl{C}.
-
-The value produced by such a conversion is a record of type \chpl{C}.
-The value of each field of this record is obtained by an implicit
-conversion of the corresponding field in \chpl{D} to
-that field's type in \chpl{C}.
-
-%REVIEW: vass: did we agree that instead of a field in D,
-% just a getter with that name would be sufficient?
-
 \section{Differences between Classes and Records}
 \label{Class_and_Record_Differences}
 \index{records!differences with classes}
@@ -634,8 +473,7 @@ The key differences between records and classes are listed below.
 
 Syntactically, class and record type declarations are identical, except that
 they begin with the \chpl{class} and \chpl{record} keywords, respectively.
-Also, a record type can only inherit from other record types.  Class inheritance
-is not permitted.
+In contrast to classes, records do not support inheritance.
 
 \subsection{Storage Allocation}
 \label{Storage_Allocation_Differences}
@@ -677,56 +515,12 @@ Assignment of a record to a class variable is not permitted.
 \index{classes!arguments}
 \index{records!arguments}
 
-The semantics of argument passing is determined by the type of the formal
-argument (as declared inside the function header).  An actual argument is of a
-type compatible with the formal argument only if it is legal to assign the
-actual to the formal.
-%REVIEW: vass: how is this different from the general rule for argument passing?
+Record arguments use the \chpl{const ref} intent by default - in contrast
+to class arguments which pass by \chpl{const in} intent by default.
 
-%REVIEW: vass: only the implicit conversion rules are different.
-% Argument passing is the same.
-Specifically, if the formal argument is of class type, the actual argument must
-be of that class type or of a type derived from that class type.  If the formal
-argument is of a record type, then it is only necessary for the fields in the
-actual argument to ``cover'' the fields in the formal argument type.
-
-By default, the receiver argument is passed by value for class methods but is
-passed by \chpl{ref} or \chpl{const ref} for record methods.
-In both cases modifications to the receiver fields are visible
-outside the method.
-
-\subsection{Inheritance}
-\label{Inheritance_Differences}
-\index{records!inheritance}
-\index{inheritance!records}
-\index{records!inheritance}
-\index{inheritance!records}
-
-The difference between record inheritance and class
-inheritance is that for records there is no dynamic dispatch.  The record type of
-a variable is the exact type of that variable, i.e. a variable of a
-base record type cannot store a derived record type.
-
-Casting a derived record type to a base record type truncates all 
-fields except those belonging to the base record type.  In the same way, only
-those methods accessible to the base record type may be invoked using the result
-of such a cast.
-
-\subsection{Shadowing and Overriding}
-\label{Base_Method_Differences}
-\index{classes!shadowing}
-\index{records!shadowing}
-\index{classes!overriding}
-\index{records!overriding}
-
-Class variables have run-time types and (therefore) support dynamic dispatch.
-Records are statically typed, so they do not have run-time types and they do not
-support dynamic dispatch.
-
-As a result, in record type hierarchies, shadowing and overriding are the same.  
-Which field is accessed
-and/or which method is invoked is determined statically by the declared type of
-the record being referenced.
+Similarly, the \chpl{this} receiver argument is passed by \chpl{const in} by
+default for class methods. In contrast, it is passed by \chpl{ref} or
+\chpl{const ref} by default for record methods.
 
 \subsection{No {\em nil} Value}
 \index{nil@\chpl{nil}!not provided for records}
@@ -752,7 +546,9 @@ Calling \chpl{delete} on a record is illegal.
 \index{classes!comparison}
 \index{records!comparison}
 
-For records, the compiler will supply default comparison operators if they are
-not supplied by the user.  The compiler does not supply default comparison
-operators for classes.
-
+For records, the compiler will supply default comparison operators if
+they are not supplied by the user.  In contrast, the user cannot redefine
+\chpl{==} and \chpl{!=} for classes.  The default comparison operators
+for a record examine the arguments' fields, while the comparison
+operators for classes check whether the l.h.s. and r.h.s. refer to the
+same class instance or are both \chpl{nil}.

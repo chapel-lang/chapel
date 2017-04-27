@@ -129,7 +129,7 @@ A method's \emph{receiver} is an implicit formal argument
 named \chpl{this} representing the expression on which the method is
 invoked.  The receiver's actual argument is specified by the
 \sntx{receiver-clause} of a method-call-expression as specified
-in \rsec{Class_Field_Accesses}.  
+in \rsec{Method_Calls}.
 
 
 
@@ -168,6 +168,15 @@ receivers---these are known as \emph{type methods}.
 The optional \sntx{this-intent} is used to specify type methods, to
 constrain a receiver argument to be a \chpl{param}, or to specify how
 the receiver argument should be passed to the method.
+
+When no \sntx{this-intent} is used, a default this intent applies. For
+methods on classes and other primitive types, the default this intent is
+the same as the default intent for that type.
+For record methods, the intent for the receiver formal argument is \chpl{ref}
+or \chpl{const ref}, depending on whether the formal argument is modified
+inside of the method. Programmers wishing to be explicit about whether or
+not record methods modify the receiver can explicitly use the \chpl{ref}
+or \chpl{const ref} \sntx{this-intent}.
 
 A method whose \sntx{this-intent} is \chpl{type} defines a \emph{type
 method}.  It can only be called on the type itself rather than on an
@@ -324,9 +333,9 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 
 An iterator method declared with the name \chpl{these} allows the
 receiver to be ``iterated over'' similarly to how a domain or array
-supports iteration.  Using a value in the context of a loop where an
-\sntx{iteratable-expression} is expected has the semantics of calling a
-method on the value named \chpl{these}.
+supports iteration. When a value supporting a \chpl{these} method
+is used as the the \sntx{iteratable-expression} of a loop, the
+loop proceeds in a manner controlled by the \chpl{these} iterator.
 
 \begin{chapelexample}{theseIterator.chpl}
 In the following code, the \chpl{these} method is used to create a
