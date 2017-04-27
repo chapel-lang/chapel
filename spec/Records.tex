@@ -2,14 +2,16 @@
 \label{Records}
 \index{records}
 
-A record is a data structure that is similar to a class but instead has
+A record is a data structure that is similar to a class except it has
 value semantics, similar to primitive types.  Value semantics mean that
 assignment, argument passing and function return values are by default
 all done by copying.  Value semantics also imply that a variable of
 record type is associated with only one piece of storage and has only one
 type throughout its lifetime.  Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record
-variable is also initialized at that time.
+variable is also initialized at that time. When the record variable goes
+out of scope, or at the end of the program if it is a global, it is
+deinitialized and its storage is deallocated.
 
 A record declaration statement creates a record
 type~\rsec{Record_Declarations}.  A variable of record type contains all
@@ -51,11 +53,9 @@ record-statement:
   empty-statement
 \end{syntax}
 
-A \sntx{record-declaration-statement} defines a new type symbol specified by the
-identifier.
-
-As in a class declaration, the body of a record declaration can contain
-variable, iterator and method declarations as well as nested type declarations.
+A \sntx{record-declaration-statement} defines a new type symbol specified
+by the identifier. As in a class declaration, the body of a record declaration
+can contain variable, method, and type declarations.
 
 If a record declaration contains a type alias or parameter field, or it
 contains a variable or constant field without a specified type and
@@ -193,14 +193,14 @@ To construct a record as an expression,
 i.e. without binding it to a variable, the \chpl{new} operator is
 required.  In this case, storage is allocated and reclaimed as for a record
 variable declaration (\rsec{Record_Storage}), except that the temporary record
-goes out of scope at the end of the enclosing expression.
+goes out of scope at the end of the enclosing statement.
 The constructors for a record are
 defined in the same way as those for a class (\rsec{Class_Constructors}).
 
 \begin{rationale}
 
 The \chpl{new} keyword disambiguates types from values. This is needed
-because of the close relationship between constructors and type
+because of the syntactic similarity between constructors and type
 specifiers for classes and records.
 
 \end{rationale}
@@ -394,18 +394,22 @@ always resolved at compile time.
 \label{Record_Assignment}
 \index{records!assignment}
 
-A variable of record type may be updated by assignment.  The compiler provides
-a default assignment operator for each record type \chpl{R} having the signature
-\begin{example}
+A variable of record type may be updated by assignment.  The compiler
+provides a default assignment operator for each record type \chpl{R}
+having the signature:
+
 \begin{chapel}
 proc =(ref lhs:R, rhs) : void ;
 \end{chapel}
-\end{example}
-\noindent
-In it, the value of each field of the record on the right-hand side is assigned
-to the corresponding field of the record on the left-hand side.
 
-The compiler-provided assignment operator may be overridden.
+In it, the value of each field of the record on the right-hand side is assigned
+to the corresponding field of the record on the left-hand side. It is
+a type error if the left-hand side and the right-hand side do not have
+the same set of field names. It is also a type error if two fields with
+the same name do not have assignable types.
+
+The compiler-provided assignment operator may be overridden as described
+in \ref{Assignment_Statements}.
 
 The following example demonstrates record assignment.
 \begin{chapelexample}{assignment.chpl}
@@ -513,11 +517,11 @@ Assignment of a record to a class variable is not permitted.
 \index{records!arguments}
 
 Record arguments use the \chpl{const ref} intent by default - in contrast
-to class arguments which pass by \chpl{in} intent by default.
+to class arguments which pass by \chpl{const in} intent by default.
 
-Similarly, the \chpl{this} receiver argument is passed by \chpl{in} by
+Similarly, the \chpl{this} receiver argument is passed by \chpl{const in} by
 default for class methods. In contrast, it is passed by \chpl{ref} or
-\chpl{const ref} for record methods.
+\chpl{const ref} by default for record methods.
 
 \subsection{No {\em nil} Value}
 \index{nil@\chpl{nil}!not provided for records}
@@ -544,6 +548,8 @@ Calling \chpl{delete} on a record is illegal.
 \index{records!comparison}
 
 For records, the compiler will supply default comparison operators if
-they are not supplied by the user. In contrast, the compiler only
-provides \chpl{==} and \chpl{!=} for classes and these perform pointer
-comparison.
+they are not supplied by the user.  In contrast, the user cannot redefine
+\chpl{==} and \chpl{!=} for classes.  The default comparison operators
+for a record examine the arguments' fields, while the comparison
+operators for classes check whether the l.h.s. and r.h.s. refer to the
+same class instance or are both \chpl{nil}.
