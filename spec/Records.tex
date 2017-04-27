@@ -40,10 +40,6 @@ record-declaration-statement:
 simple-record-declaration-statement:
   `record' identifier { record-statement-list }
 
-record-type-list:
-  record-type
-  record-type , record-type-list
-
 record-statement-list:
   record-statement
   record-statement record-statement-list
@@ -133,11 +129,12 @@ chapter~\rsec{Class_Fields}.
 
 A record method is a function or iterator that is bound to a record.
 
-The syntax for record method declarations is identical to that for class method
-declarations (\rsec{Class_Methods}).
+See the methods section~\rsec{Methods} for more information about
+methods.
 
-The record is passed by \chpl{ref} or \chpl{const ref} be default. See
-\rsec{The_this_Reference}.
+Note that the receiver of a record method \chpl{ref} or \chpl{const ref}
+by default, depending on whether or not \chpl{this} is modified in the
+body of the method.
 
 \subsection{Nested Record Types}
 \label{Nested_Record_Types}
@@ -387,42 +384,9 @@ redefine these as needed.
 \index{records!method calls}
 \index{method calls}
 
-A record method may be invoked the same way as a class method
-(\rsec{Class_Method_Calls}).  Unlike class methods, record methods are
-resolved at compile time.
-
-\subsection{The Method Receiver and the {\em this} Argument}
-\label{The_this_Reference}
-\index{this@\chpl{this}}
-\index{records!receiver}
-\index{receiver}
-
-The \emph{receiver} of a record method is similar to and is determined in the
-same way as the receiver of a class method (\rsec{The_em_this_Reference}).
-The type of the receiver is the record in which the method is defined.
-The receiver formal argument can be referred to within the method
-using the identifier \chpl{this}.
-
-The default intent for the implicit {\em this} formal argument is
-different for record methods than it is for class methods. For record
-methods, the intent for the receiver formal argument is \chpl{ref} or
-\chpl{const ref}, depending on whether the formal argument is modified
-inside of the method. Programmers wishing to be explicit about whether or
-not record methods modify the receiver can explicitly use the \chpl{ref}
-or \chpl{const ref} {\em this-intent}.
-
-\section{The {\em this} Method}
-\index{records!indexing}
-
-As with classes, records can be supplied with a \chpl{this} method.  This method
-defines the behavior of the indexing operator \chpl{[]}.
-
-\section{The {\em these} Method}
-\index{records!iterating}
-
-A \chpl{these} method can be defined for records as well as classes
-(\rsec{The_these_Method}).  It provides an iterator which iterates over
-the contents of the record in a user-defined manner.
+Record method calls are written the same way as other method calls
+(\rsec{Method_Calls}). Unlike class methods, record methods are
+always resolved at compile time.
 
 \section{Common Operations}
 
