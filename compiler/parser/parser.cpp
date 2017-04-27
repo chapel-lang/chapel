@@ -60,11 +60,6 @@ static void          parseDependentModules(bool isInternal);
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
-static const char*   searchPath(Vec<const char*> path,
-                                const char*      fileName,
-                                const char*      foundFile,
-                                bool             noWarn);
-
 static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
                                bool        namedOnCommandLine);
@@ -73,7 +68,7 @@ static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
 
 static const char*   searchThePath(const char*      modName,
-                                   Vec<const char*> path);
+                                   Vec<const char*> searchPath);
 
 /************************************* | **************************************
 *                                                                             *
@@ -672,74 +667,22 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-static const char* modNameToFileName(const char* modName,
-                                     bool        isInternal,
-                                     bool*       isStandard);
-
 static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
-  bool          isStandard = false;
-  ModuleSymbol* retval     = NULL;
+  const char* path   = NULL;
+  ModTag      modTag = MOD_INTERNAL;
 
-  if (const char* path = modNameToFileName(modName, isInternal, &isStandard)) {
-    ModTag modTag = MOD_INTERNAL;
-
-    if (isInternal == true) {
-      modTag = MOD_INTERNAL;
-
-    } else if (isStandard == true) {
-      modTag = MOD_STANDARD;
-
-    } else {
-      modTag = MOD_USER;
-    }
-
-    retval = parseFile(path, modTag, false);
-  }
-
-  return retval;
-}
-
-static const char* modNameToFileName(const char* modName,
-                                     bool        isInternal,
-                                     bool*       isStandard) {
-  const char* fileName     = astr(modName, ".chpl");
-  const char* fullFileName = NULL;
-
-  if (isInternal) {
-    fullFileName = searchThePath(modName, sIntModPath);
+  if (isInternal == true) {
+    path   = searchThePath(modName, sIntModPath);
+    modTag = MOD_INTERNAL;
 
   } else {
-    fullFileName = searchThePath(modName, sUsrModPath);
+    bool isStandard = false;
 
-    *isStandard = (fullFileName == NULL);
-
-    fullFileName = searchPath(sStdModPath, fileName, fullFileName, false);
+    path   = stdModNameToPath(modName, &isStandard);
+    modTag = isStandard ? MOD_STANDARD : MOD_USER;
   }
 
-  return  fullFileName;
-}
-
-static const char* searchPath(Vec<const char*> path,
-                              const char*      fileName,
-                              const char*      foundFile,
-                              bool             noWarn) {
-  forv_Vec(const char*, dirname, path) {
-    const char* fullFileName = astr(dirname, "/", fileName);
-
-    if (FILE* file = openfile(fullFileName, "r", false)) {
-      closefile(file);
-
-      if (foundFile == NULL) {
-        foundFile = fullFileName;
-      } else if (!noWarn) {
-        USR_WARN("Ambiguous module source file -- using %s over %s",
-                 cleanFilename(foundFile),
-                 cleanFilename(fullFileName));
-      }
-    }
-  }
-
-  return foundFile;
+  return (path != NULL) ? parseFile(path, modTag, false) : NULL;
 }
 
 /************************************* | **************************************
@@ -1060,11 +1003,11 @@ static const char* stdModNameToPath(const char* modName,
 }
 
 static const char* searchThePath(const char*      modName,
-                                 Vec<const char*> path) {
+                                 Vec<const char*> searchPath) {
   const char* fileName = astr(modName, ".chpl");
   const char* retval   = NULL;
 
-  forv_Vec(const char*, dirName, path) {
+  forv_Vec(const char*, dirName, searchPath) {
     const char* path = astr(dirName, "/", fileName);
 
     if (FILE* file = openfile(path, "r", false)) {
