@@ -1,17 +1,3 @@
 declaration.chpl:12: error: unresolved call 'Foo.init()'
 declaration.chpl:6: note: candidates are: Foo.init(xVal)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1485: note:                 init(_mt: _MT, this: _ic_chpl_direct_param_stride_range_iter)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1421: note:                 init(_mt: _MT, this: _ic_chpl_direct_range_iter)
-$CHPL_HOME/modules/internal/String.chpl:328: note:                 init(_mt: _MT, this: _ic_these__ref_string)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1551: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_T)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1578: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_F)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1523: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_boundedLow_F)
-$CHPL_HOME/modules/standard/List.chpl:88: note:                 init(_mt: _MT, this: _ic_these__ref_list_BaseArr)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1640: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_F)
-$CHPL_HOME/modules/internal/DefaultRectangular.chpl:181: note:                 init(_mt: _MT, this: _ic_these_DefaultRectangularDom_1_int64_t_F)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:407: note:                 init(_mt: _MT, this: _ic_chpl_initOnLocales_AbstractRootLocale)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1640: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_F)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:1466: note:                 init(_mt: _MT, this: _ic_chpl_direct_pos_stride_range_iter)
-$CHPL_HOME/modules/internal/DefaultRectangular.chpl:1928: note:                 init(_mt: _MT, this: _ic_chpl__serialViewIter)
-$CHPL_HOME/modules/internal/DefaultRectangular.chpl:1289: note:                 init(_mt: _MT, this: _ic_these_DefaultRectangularArr_localesSignal_1_int64_t_F_int64_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:420: note:                 init(_mt: _MT, this: _ic_chpl_initOnLocales_AbstractRootLocale)
+deleted module lines
