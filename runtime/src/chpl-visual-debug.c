@@ -67,7 +67,7 @@ int chpl_vdebug = 0;
 #define TID_STRING(buff, tid) (chpl_task_idToString(buff, CHPL_TASK_ID_STRING_MAX_LEN, tid))
 
 #define CHPL_VDEBUG_GETPUT_FORMAT_NAMES "tv srcNodeID dstNodeID commTaskID addr raddr elemSize typeIndex length commID lineNumber fileno"
-#define CHPL_VDEBUG_GETPUT_FORMAT_STRING(name) #name ": %lld.%06ld %d %d %s %#lx %#lx 1 %zd %d %d %d %d\n"
+#define CHPL_VDEBUG_GETPUT_FORMAT_STRING(name) #name ": %lld.%06ld %d %d %s %#lx %#lx %zd %d %zd %d %d %d\n"
 
 int chpl_dprintf (int fd, const char * format, ...) {
   char buffer[2048]; 
@@ -319,7 +319,7 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(nb_put),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, cm->size, cm->typeIndex,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -340,7 +340,7 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(nb_get),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, cm->size, cm->typeIndex,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -360,7 +360,7 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(put),
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, cm->size, cm->typeIndex,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -381,7 +381,7 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(get),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, cm->size, cm->typeIndex,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -396,12 +396,18 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
+
+    size_t length = 1;
+    for (int32_t i = 0; i < cm->stridelevels; i++) {
+      length *= cm->count[i];
+    }
+
     chpl_dprintf (chpl_vdebug_fd,
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(st_put),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID, 
                   info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->srcaddr, (unsigned long) cm->dstaddr, cm->elemSize,
-                  cm->typeIndex, cm->commID, cm->lineno, cm->filename);
+                  cm->typeIndex, length, cm->commID, cm->lineno, cm->filename);
     // printout srcstrides and dststrides and stridelevels and count?
   }
 
@@ -419,12 +425,18 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
+
+    size_t length = 1;
+    for (int32_t i = 0; i < cm->stridelevels; i++) {
+      length *= cm->count[i];
+    }
+
     chpl_dprintf (chpl_vdebug_fd,
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(st_get),
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->dstaddr, (unsigned long) cm->srcaddr, cm->elemSize,
-                  cm->typeIndex, cm->commID, cm->lineno, cm->filename);
+                  cm->typeIndex, length, cm->commID, cm->lineno, cm->filename);
     // print out the srcstrides and dststrides and stridelevels and count?
   }
 }
