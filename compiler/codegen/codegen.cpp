@@ -38,8 +38,6 @@
 #endif
 
 #include <inttypes.h>
-#include <limits.h>
-#include <stdlib.h>
 
 #include "llvmDebug.h"
 
