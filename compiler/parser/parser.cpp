@@ -55,9 +55,9 @@ static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
 
-static void          parseDependentModules(ModTag modtype);
+static void          parseDependentModules(ModTag modTag);
 
-static ModuleSymbol* parseMod(const char* modname, ModTag modType);
+static ModuleSymbol* parseMod(const char* modname, ModTag modTag);
 
 static const char*   searchPath(Vec<const char*> path,
                                 const char*      fileName,
@@ -65,7 +65,7 @@ static const char*   searchPath(Vec<const char*> path,
                                 bool             noWarn);
 
 static ModuleSymbol* parseFile(const char* filename,
-                               ModTag      modType,
+                               ModTag      modTag,
                                bool        namedOnCommandLine);
 
 /************************************* | **************************************
@@ -763,7 +763,7 @@ static void addModuleToDoneList(ModuleSymbol* module);
 static bool containsOnlyModules(BlockStmt* block, const char* filename);
 
 static ModuleSymbol* parseFile(const char* fileName,
-                               ModTag      modType,
+                               ModTag      modTag,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
 
@@ -781,7 +781,7 @@ static ModuleSymbol* parseFile(const char* fileName,
 
     currentFileNamedOnCommandLine = namedOnCommandLine;
 
-    currentModuleType             = modType;
+    currentModuleType             = modTag;
 
     yyblock                       = NULL;
     yyfilename                    = fileName;
@@ -794,7 +794,7 @@ static ModuleSymbol* parseFile(const char* fileName,
 
     chplLineno                    = 1;
 
-    if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
+    if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
       if (sFirstFile) {
         fprintf(stderr, "Parsing module files:\n");
 
@@ -848,9 +848,9 @@ static ModuleSymbol* parseFile(const char* fileName,
 
     } else if (yyblock->body.head                     == NULL ||
                containsOnlyModules(yyblock, fileName) == false) {
-      const char* moduleName = filenameToModulename(fileName);
+      const char* modName = filenameToModulename(fileName);
 
-      retval = buildModule(moduleName, yyblock, yyfilename, false, NULL);
+      retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
 
       theProgram->block->insertAtTail(new DefExpr(retval));
 

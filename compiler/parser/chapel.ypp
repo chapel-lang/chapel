@@ -488,9 +488,9 @@ stmt:
 
 module_decl_stmt:
   access_control TMODULE ident TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($3, new BlockStmt(), yyfilename, $1, @1.comment))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($3, currentModuleType, new BlockStmt(), yyfilename, $1, @1.comment))); }
 | access_control TMODULE ident TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($3, $5, yyfilename, $1, @1.comment))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($3, currentModuleType, $5, yyfilename, $1, @1.comment))); }
 ;
 
 access_control:
