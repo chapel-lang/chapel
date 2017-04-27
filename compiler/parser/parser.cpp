@@ -684,8 +684,8 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool containsOnlyModules(BlockStmt* block, const char* path);
 static void addModuleToDoneList(ModuleSymbol* module);
-static bool containsOnlyModules(BlockStmt* block, const char* fileName);
 
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
@@ -771,24 +771,11 @@ static ModuleSymbol* parseFile(const char* path,
     if (yyblock == NULL) {
       INT_FATAL("yyblock should always be non-NULL after yyparse()");
 
-    } else if (yyblock->body.head                 == NULL ||
-               containsOnlyModules(yyblock, path) == false) {
-      const char* modName = filenameToModulename(path);
-
-      retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
-
-      theProgram->block->insertAtTail(new DefExpr(retval));
-
-      addModuleToDoneList(retval);
-
-    } else {
+    } else if (containsOnlyModules(yyblock, path) == true) {
       ModuleSymbol* moduleLast  = 0;
       int           moduleCount = 0;
 
       for_alist(stmt, yyblock->body) {
-        if (BlockStmt* block = toBlockStmt(stmt))
-          stmt = block->body.first();
-
         if (DefExpr* defExpr = toDefExpr(stmt)) {
           if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
 
@@ -805,6 +792,15 @@ static ModuleSymbol* parseFile(const char* path,
       if (moduleCount == 1) {
         retval = moduleLast;
       }
+
+    } else {
+      const char* modName = filenameToModulename(path);
+
+      retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
+
+      theProgram->block->insertAtTail(new DefExpr(retval));
+
+      addModuleToDoneList(retval);
     }
 
     yyfilename                    =  NULL;
@@ -826,10 +822,6 @@ static ModuleSymbol* parseFile(const char* path,
   }
 
   return retval;
-}
-
-static void addModuleToDoneList(ModuleSymbol* module) {
-  sModDoneSet.set_add(astr(module->name));
 }
 
 static bool containsOnlyModules(BlockStmt* block, const char* path) {
@@ -879,6 +871,10 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
   }
 
   return hasUses == false && hasOther == false && moduleDefs > 0;
+}
+
+static void addModuleToDoneList(ModuleSymbol* module) {
+  sModDoneSet.set_add(astr(module->name));
 }
 
 /************************************* | **************************************
