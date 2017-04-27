@@ -333,9 +333,9 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 
 An iterator method declared with the name \chpl{these} allows the
 receiver to be ``iterated over'' similarly to how a domain or array
-supports iteration.  Using a value in the context of a loop where an
-\sntx{iteratable-expression} is expected has the semantics of calling a
-method on the value named \chpl{these}.
+supports iteration. When a value supporting a \chpl{these} method
+is used as the the \sntx{iteratable-expression} of a loop, the
+loop proceeds in a manner controlled by the \chpl{these} iterator.
 
 \begin{chapelexample}{theseIterator.chpl}
 In the following code, the \chpl{these} method is used to create a
