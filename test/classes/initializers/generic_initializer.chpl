@@ -14,3 +14,4 @@ class Foo {
 var bar = new Foo(int, 5, 10);
 
 writeln(bar.x);
+delete bar;

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+testname=$1
+outputfile=$2
+
+clbg_good=$testname-clbg.good
+alt_good=$testname-alt.good
+real_good=$testname.good
+
+#
+# There's a numerical instability in this test which makes the output
+# match one of two files depending on the choice of compiler, flags,
+# platform, ...  Try matching against the alternate .good file first
+# and if we get a match, copy that to the .good file used by the
+# testing system.  Otherwise, use the default .good file.
+#
+diff $outputfile $alt_good > /dev/null && \
+    mand_version="alt" || \
+    mand_version="clbg"
+
+#
+# On the shootout test box, though, we want to force the default
+# version to avoid submitting code to the CLBG site that fails.
+#
+echo $HOSTNAME
+if [ "$HOSTNAME" == "shootout" ]; then mand_version="clbg"; fi
+
+echo "Using $testname-$mand_version.good as the .good file"
+
+cp $testname-$mand_version.good $real_good

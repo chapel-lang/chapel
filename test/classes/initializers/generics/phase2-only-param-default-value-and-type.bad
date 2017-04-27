@@ -1,0 +1,3 @@
+phase2-only-param-default-value-and-type.chpl:7: In initializer:
+phase2-only-param-default-value-and-type.chpl:8: error: illegal lvalue in assignment
+phase2-only-param-default-value-and-type.chpl:8: error: parameter set multiple times

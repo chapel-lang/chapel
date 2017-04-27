@@ -1271,7 +1271,7 @@ static void insertCallTemps(CallExpr* call) {
       newArg->insertAtHead(tmp);
       newArg->insertAtHead(gMethodToken);
 
-      // Move the tmp.init(args) expession to before the call
+      // Move the tmp.init(args) expression to before the call
       stmt->insertBefore(newArg->remove());
 
       // Replace the degenerate new-expression with a use of the tmp variable
@@ -1402,7 +1402,7 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 // 2017/03/14 This currently runs before new expressions have been
 // normalized.
 //
-// Before normalization, a new expression is ususally
+// Before normalization, a new expression is usually
 //
 //    prim_new(MyRec(a, b, c))
 //
@@ -1842,10 +1842,15 @@ static void normVarTypeInference(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   initExpr = defExpr->init->remove();
 
+  // Do not complain here.  Put this stub in to the AST and let
+  // checkUseBeforeDefs() generate a consistent error message.
+  if (isUnresolvedSymExpr(initExpr) == true) {
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
+
   // e.g.
   //   var x = <immediate>;
   //   var y = <identifier>;
-  if (SymExpr* initSym = toSymExpr(initExpr)) {
+  } else if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
     if (isPrimitiveScalar(type) == true) {

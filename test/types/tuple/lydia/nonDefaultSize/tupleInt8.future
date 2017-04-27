@@ -1,0 +1,16 @@
+feature request: Tuples can't be assigned with non-default-sized types
+
+This is due to not supporting param tuples and so param-coercion is not applied.
+See Github issue #6000 for more details on why this is not supported today.
+
+To summarize:
+
+In thinking about what it would take to implement these more complex param
+cases, we have a difficult choice to make: Do we explicitly teach the compiler
+how to reason about each of these types (tuples, ranges, domains, arrays) at
+compile-time? Or do we teach the compiler how to reason about arbitrary records
+and classes at compile-time (which are used under the covers to implement most
+of these types) in which case any object can be a param and these just fall out?
+The tradeoff is arguably that the former would be simpler but introduce more
+special case code (and duplicated code with the modules, arguably) while the
+latter is a much larger endeavor to take on.

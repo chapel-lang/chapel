@@ -21,9 +21,12 @@ CRAYPE_GEN_CFLAGS = -hnomessage=7212
 # Suppress warnings about unsigned ints being compared to 0
 CRAYPE_GEN_CFLAGS += -hnomessage=186
 
+# Could set CRAYPE_COMP_CXXFLAGS, CRAYPE_GEN_CFLAGS
 
 FAST_FLOAT_GEN_CFLAGS = -hfp2
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
+
+CXX11_STD := -h std=c++11
 
 # If this is not a --fast compilation or OPTIMIZE=1 is not set, disable
 # optimizations for cce. This is done by default for other compilers and it

@@ -21,7 +21,7 @@ endif
 
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = backend
-COMP_CFLAGS += -I$(COMPILER_ROOT)/ifa
+COMP_CXXFLAGS += -I$(COMPILER_ROOT)/ifa
 
 #
 # standard header

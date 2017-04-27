@@ -50,6 +50,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 //########################################################################
 //# Static Function Forward Declarations
@@ -190,10 +191,7 @@ buildDefaultWrapper(FnSymbol* fn,
 
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
 
-    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME) &&
-        (!isAggregateType(wrapper->_this->type) ||
-         toAggregateType(wrapper->_this->type)->initializerStyle !=
-         DEFINES_INITIALIZER)) {
+    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            wrapper->_this,
@@ -337,15 +335,6 @@ buildDefaultWrapper(FnSymbol* fn,
       // hack: why is the type of meme set to dtNil?
       //
       formal->type = wrapper->_this->type;
-
-      if (AggregateType* ct = toAggregateType(formal->type)) {
-        if (ct->initializerStyle == DEFINES_INITIALIZER) {
-          ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
-          wrapper->insertAtHead(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                             wrapper_formal));
-          wrapper->insertFormalAtTail(wrapper_formal);
-        }
-      }
 
       call->insertAtTail(wrapper->_this);
     } else {
@@ -711,7 +700,7 @@ static void addArgCoercion(FnSymbol*  fn,
   call->getStmtExpr()->insertBefore(castMove);
 
   resolveCallAndCallee(castCall, true);
-  if (FnSymbol* castTarget = castCall->isResolved()) {
+  if (FnSymbol* castTarget = castCall->resolvedFunction()) {
 
     // Perhaps equivalently, we could check "if (tryToken)",
     // except tryToken is not visible in this file.
@@ -912,7 +901,7 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper, FnSymbol
   std::vector<CallExpr*> calls;
   collectCallExprs(wrapper, calls);
   for_vector(CallExpr, call, calls) {
-    if (call->isResolved() == fn) {
+    if (call->resolvedFunction() == fn) {
       for_actuals(actual, call) {
         if (UnresolvedSymExpr* unsym = toUnresolvedSymExpr(actual)) {
           // Get the StmtExpr in case 'call' returns something

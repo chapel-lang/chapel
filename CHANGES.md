@@ -42,13 +42,11 @@ Highlights (see subsequent sections for further details)
   - added support for numa-localization of array memory
   - improved array slice, rank change, and reindexing support for domain maps
   - streamlined several aspects of the domain map standard interface (dsi)
-* documentation and example code highlights:
-  TODO: remove?
 * additional highlights:
   - added new users guide text for promotion, constants, type aliases, configs
   - enabled GitHub issues to file and track Chapel bugs and feature requests
   - added the 'ugni' communication layer to the open-source repository
-  - updated our cached versions of GASNet, Qthreads, jemalloc, and hwloc
+  - updated our versions of GASNet, Qthreads, jemalloc, and hwloc
 
 Deployment
 ----------
@@ -176,8 +174,8 @@ Performance Optimizations/Improvements
 * reduced array overhead by eliminating reference counting overheads
 * optimized 1D strided iterations
 * reduced the overhead of slicing, rank-change slicing, and reindexing arrays
-* reduced the number of communications required for a number of idioms
-* improved the precision of the array access optimization introduced in 1.14
+* reduced the amount of communication required for a number of idioms
+* improved the precision of the array index optimization introduced in 1.14
 * stopped limiting the number of ugni communication domains with slurm on Crays
 * optimized a costly temporary array out of the BlockCyclic distribution
 * added intra-locale parallelism for iterations over BlockCyclic distributions
@@ -241,7 +239,7 @@ Documentation
   (see http://chapel.cray.com/docs/1.15/builtins/internal/String.html?highlight=strip#String.string.strip)
 * updated documentation regarding reference counting of files and channels
 * added an indication that IO is a module that is used by default
-* updated documents to refer to install.html rather than download.html
+* updated documents to refer to download.html rather than install.html
 * improved some entries in the "quick reference" document
   (see http://chapel.cray.com/docs/1.15/_downloads/quickReference.pdf)
 
@@ -289,12 +287,12 @@ Error Messages
 --------------
 * significantly improved const-checking in the compiler
 * added an error message for re-assigning a 'param' after its initialization
-* added a user error when 'inline' is applied to a recursive function
+* added an error when 'inline' is applied to a recursive function
 * added an error when trying to cast to values rather than types
 * added an error message for trying to capture generic functions
 * added an error message for initializers that attempt to return a value
 * added an error message for missing copy initializers
-* made the compiler flag illegal 'param' types more clearly
+* made the compiler indicate illegal 'param' types more clearly
 * added support for printing multiple 'param' errors before halting compilation
 * added an error when using domain queries in field declarations
 * added an error message for querying the 'IRV' of a non-sparse array
@@ -315,7 +313,7 @@ Bug Fixes
 * fixed a bug in which 'uint **= uint' failed to resolve
 * fixed a bug in the support of 'extern' blocks
 * fixed a bug in which the wrong LD was selected by our Makefiles
-* fixed a buffer overrun problem in the parser for long function signatures
+* fixed a buffer overflow problem in the parser for long function signatures
 * fixed a broken link to Quickstart.rst
 * fixed a bug in which the LLVM back-end couldn't support multiple --ccflags
 * fixed an off-by-one bug in string.split()
@@ -369,9 +367,9 @@ Third-Party Software Changes
 * updated to GASNet 1.28.0
 * updated to qthreads 1.12
 * updated to jemalloc 4.5.0
-* updated hwloc to 1.11.6
-* made GASNet build 'amudprun' using CHPL_HOST_COMPILER rather than ..TARGET..
-* limited the maximum size of qthreads memory pools to 65MB
+* updated to hwloc 1.11.6
+* made GASNet build 'amudprun' using host compiler rather than target
+* limited the maximum size of qthreads memory pools
 * made 'hwloc' always use libnuma for non-flat locale models when available
 * improved the portability of our libunwind support
 
@@ -392,7 +390,7 @@ Developer-oriented changes: Configuration changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * refactored locale models code
-* optimized out array fields used only in numa configurations using 'void'
+* optimized out array fields used only in non-flat configurations using 'void'
 * added 'export' to locale model routines to avoid widening arguments
 * refactored rectangular I/O into a single helper routine
 * moved c_void_ptr comparisons from CPtr to ChapelBase
@@ -419,7 +417,7 @@ Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * made PRIM_GETCID return an int(32) rather than a bool
 * replaced four FnSymbol fields and a flag with a std::map
-* improved the compiler's opt-in verification pass
+* improved the compiler's opt-in verification checks
 * updated the compiler's representation of 'ref' types to use qualified types
 * fixed a segfault in list_ast() for type-less symbols
 * changed more compiler data structures over to their STL equivalents
@@ -436,9 +434,9 @@ Developer-oriented changes: Compiler improvements/changes
 * improved the implementation of destructors/deinitializers
 * rewrote buildDefUseMaps and compute_call_sites to use SymExpr info in Symbols
 * eliminated an unnecessary vector computed in flattenClasses
-* refactored FnSymbol::tag_generic(), renaming to tagIfGeneric() for clarity
+* refactored FnSymbol::tag_generic(), renamed to tagIfGeneric() for clarity
 * cleaned up and simplified normalize, particularly w.r.t. initializers
-* improved modifying code around a function's epilogue label
+* improved ability to modify code around a function's epilogue label
 * fixed a minor bug in printResolutionErrorUnresolved()
 * unified the number of memory descriptors created for --devel vs. --no-devel
 * significantly refactored build_record_init_function()
@@ -453,12 +451,12 @@ Developer-oriented changes: Compiler improvements/changes
 * added AggregateType::isGeneric()
 * updated the logic for pruning unused module-scope variables
 * removed the complex but not very useful single-yield iterator optimization
-* removed the essentially unused virtual method getFnSymbol()
+* removed Symbol::getFnSymbol()
 * streamlined the normalization of many variable declarations
 * removed a leak-based workaround in formalRequiresTemp()
 * added cast-related functions to the compiler
 * converted several parser buffers over to std::string
-* reduced the cases where the compiler treats certain records specially
+* reduced number of cases where the compiler treats certain records specially
 * removed the wide-return optimization due to complexity and lack of impact
 * added a new primitive, PRIM_INIT_VAR, for variable initializations
 * removed the old compiler-based optimization of array access inner multiplies
@@ -476,7 +474,6 @@ Developer-oriented changes: Runtime improvements
 * fixed some issues in how privatization works
 * updated some interfaces to use c_nodeid_t rather than int32_t
 * removed some dead code in the qthreads tasking layer
-* improved chpl_task_idToString()
 * changed how and when the heap page size is computed
 
 Developer-oriented changes: Third-party improvements

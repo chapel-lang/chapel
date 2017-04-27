@@ -323,8 +323,6 @@ CHPL_TASKS
         qthreads       use Sandia's Qthreads package
         fifo           use POSIX threads
         massivethreads use U Tokyo's MassiveThreads package
-        muxed          use Cray-specific lightweight threading (with Cray
-                       pre-built module only)
         ============== ===================================================
 
    If ``CHPL_TASKS`` is not set it defaults to ``qthreads`` in all cases
@@ -341,8 +339,7 @@ CHPL_TASKS
      behavior described just above.
 
    See :ref:`readme-tasks` for more information about executing using the
-   various ``CHPL_TASKS`` options.  See also :ref:`readme-cray` for more
-   information about Cray-specific runtime layers.
+   various ``CHPL_TASKS`` options.
 
 
 .. _readme-chplenv.CHPL_COMM:

@@ -47,7 +47,7 @@ void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
 const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
-void deleteTmpDir(void);
+void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
@@ -57,8 +57,15 @@ void closeCFile(fileinfo* fi, bool beautifyIt=true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");
 
-void openfile(fileinfo* thefile, const char* mode);
-void closefile(fileinfo* thefile);
+void      openfile(fileinfo*   thefile,
+                   const char* mode);
+
+FILE*     openfile(const char* filename,
+                   const char* mode  = "w",
+                   bool        fatal = true);
+
+void      closefile(fileinfo* thefile);
+void      closefile(FILE*     thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
@@ -77,31 +84,18 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
-std::string getChplPythonVersion(void);
+std::string getChplPythonVersion();
 std::string runCommand(std::string& command);
-
-void setupModulePaths(void);
-void addFlagModulePath(const char* newpath);
-void addDashMsToUserPath(void);
-void addModulePathFromFilename(const char* filename);
-
-const char* modNameToFilename(const char* modName,
-                              bool        isInternal,
-                              bool*       isStandard);
-const char* stdModNameToFilename(const char* modName);
 
 const char* filenameToModulename(const char* filename);
 
-const char* pathNameForInternalFile(const char* baseName);
-const char* pathNameForStandardFile(const char* baseName);
-
-void printModuleSearchPath(void);
-
 const char* getIntermediateDirName();
-void readArgsFromCommand(const char* cmd, std::vector<std::string> & cmds);
 
-char* dirHasFile(const char *dir, const char *file);
-char* findProgramPath(const char* argv0);
-bool isSameFile(const char* pathA, const char* pathB);
+void        readArgsFromCommand(const char*               cmd,
+                                std::vector<std::string>& cmds);
+
+char*       dirHasFile(const char* dir, const char* file);
+char*       findProgramPath(const char* argv0);
+bool        isSameFile(const char* pathA, const char* pathB);
 
 #endif

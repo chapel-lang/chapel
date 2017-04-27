@@ -1059,7 +1059,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       else if (CallExpr* call = toCallExpr(move->get(2)))
       {
         // The RHS is a function call.
-        if (FnSymbol* fn = call->isResolved()) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
           for_actuals(actual, call) {
             SymExpr* se = toSymExpr(actual);
 
@@ -1165,12 +1165,14 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
       // TODO: This forv + filter casts a wide net.
       // Try to make the filter reject as many cases as possible
       // by first matching on the callee and then testing if call == theCall.
-      if (FnSymbol* rc = call->isResolved()) {
-        if (rc == callee)
+      if (FnSymbol* rc = call->resolvedFunction()) {
+        if (rc == callee) {
           return false;
+        }
       }
     }
   }
+
   return true;
 }
 

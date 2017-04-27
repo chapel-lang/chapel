@@ -835,7 +835,12 @@ module String {
         return '';
       } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
-        var ret = S[S.domain.first];
+        var ret: string;
+        if (isArray(S)) {
+          ret = S[S.domain.first];
+        } else {
+          ret = S[1];
+        }
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
@@ -1736,6 +1741,17 @@ module String {
       // a[1] grabs the first character as a string (making it local)
       return a[1].buff[0];
     }
+  }
+
+  /*
+     :returns: A string with the single character with the ASCII value `i`.
+  */
+  inline proc asciiToString(i: uint(8)) {
+    var buffer = chpl_here_alloc(2, CHPL_RT_MD_STR_COPY_DATA): bufferType;
+    buffer[0] = i;
+    buffer[1] = 0;
+    var s = new string(buffer, 1, 2, owned=true, needToCopy=false);
+    return s;
   }
 
 

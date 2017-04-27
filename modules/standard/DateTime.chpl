@@ -1085,7 +1085,10 @@ module DateTime {
                (if minutes < 10 then "0" + minutes: string else minutes: string);
     }
 
-    return strftime("%Y-%m-%d" + sep + "%H:%M:%S" + micro + offset);
+    // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
+    // characters on its own, so do it manually.
+    var year = zeroPad(4, strftime("%Y"):int);
+    return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
   /* Create a `datetime` as described by the `date_string` and `format`
@@ -1115,7 +1118,7 @@ module DateTime {
 
     if tzinfo != nil {
       timeStruct.tm_isdst = tzinfo.dst(this).seconds: int(32);
-      timeStruct.tm_gmtoff = tzinfo.gmtoff(): c_long;
+      timeStruct.tm_gmtoff = tzinfo.utcoffset(this).seconds: c_long;
       timeStruct.tm_zone = nil;
     } else {
       timeStruct.tm_isdst = -1: int(32);

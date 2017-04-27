@@ -340,7 +340,7 @@ static void
 bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
-  FnSymbol* fn = fcall->isResolved();
+  FnSymbol* fn = fcall->resolvedFunction();
 
   const bool firstCall = baData.firstCall;
   if (firstCall)
@@ -602,7 +602,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
 {
   ModuleSymbol* mod = fcall->getModule();
-  INT_ASSERT(fn == fcall->isResolved());
+  INT_ASSERT(fn == fcall->resolvedFunction());
 
   AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
@@ -956,7 +956,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
                   varsToTrack.add(toAdd);
                 }
               }
-              else if (fnsContainingTaskll.in(call->isResolved())) {
+              else if (fnsContainingTaskll.in(call->resolvedFunction())) {
                 freeVar = false;
                 break;
               }
@@ -1037,12 +1037,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 //  CHPL_COMM == "gasnet" && CHPL_GASNET_SEGMENT == "everything";
 // or
 //  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "fifo"
-// or
-//  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "muxed"
 //
 // true otherwise.
 //
-// The tasking layer matters because fifo and muxed allocate
+// The tasking layer matters because fifo allocates
 // from task stacks the communication registered heap
 // (unless stack checks is on, in which case it might not
 //  be possible because of huge pages).
@@ -1056,9 +1054,7 @@ needHeapVars() {
        !strcmp(CHPL_GASNET_SEGMENT, "everything")))
     return false;
 
-  if (fNoStackChecks &&
-      (0 == strcmp(CHPL_TASKS, "fifo") ||
-       0 == strcmp(CHPL_TASKS, "muxed")) )
+  if (fNoStackChecks && (0 == strcmp(CHPL_TASKS, "fifo")))
     return false;
 
   return true;

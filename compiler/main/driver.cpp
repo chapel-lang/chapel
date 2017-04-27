@@ -35,6 +35,7 @@
 #include "log.h"
 #include "misc.h"
 #include "mysystem.h"
+#include "parser.h"
 #include "PhaseTracker.h"
 #include "primitive.h"
 #include "runpasses.h"
@@ -721,7 +722,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-callgraph", ' ', NULL, "Print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
- {"strict-errors", ' ', NULL, "Enable strict mode for error handling", "F", &fStrictErrorHandling, NULL, NULL},
+ {"strict-errors", ' ', NULL, "Enable [disable] strict mode for error handling", "N", &fStrictErrorHandling, NULL, NULL},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},

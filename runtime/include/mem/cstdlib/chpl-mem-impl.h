@@ -23,13 +23,14 @@
 
 // Uses the built-in malloc, calloc, realloc and free.
 
+// disable mem warnings since cstdlib uses the system allocator
+#include "chpl-mem-no-warning-macros.h"
+
 #include <stdlib.h>
 #if defined(__APPLE__)
 #include <malloc/malloc.h>
 #endif
 
-// disable mem warnings since cstdlib uses the system allocator
-#include "chpl-mem-no-warning-macros.h"
 
 #include <stdlib.h>
 

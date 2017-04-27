@@ -119,14 +119,16 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs);
 
-DefExpr*  buildClassDefExpr(const char* name,
-                            const char* cname,
-                            Type*       type,
-                            Expr*       inherit,
-                            BlockStmt*  decls,
-                            Flag        isExtern,
-                            const char* docs);
+DefExpr*  buildClassDefExpr(const char*   name,
+                            const char*   cname,
+                            AggregateTag  tag,
+                            Expr*         inherit,
+                            BlockStmt*    decls,
+                            Flag          isExtern,
+                            const char*   docs);
+
 void setupTypeIntentArg(ArgSymbol* arg);
+
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);

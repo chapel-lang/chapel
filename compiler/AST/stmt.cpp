@@ -579,8 +579,9 @@ static bool isFlowStmt(Expr* stmt) {
     // false-positive memory allocation errors because the waiting (parent
     // task) can then proceed to test that the subtask has not leaked before
     // the subtask release locally-(dynamically-)allocated memory.
-    else if (FnSymbol* fn = call->isResolved())
+    else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = (strcmp(fn->name, "_downEndCount") == 0) ? true : false;
+    }
   }
 
   return retval;
