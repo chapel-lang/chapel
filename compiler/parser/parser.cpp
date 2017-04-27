@@ -598,11 +598,11 @@ static void ensureRequiredStandardModulesAreParsed() {
         }
       }
 
-      // if we haven't found the standard version of the module,
+      // If we haven't found the standard version of the module,
       // then we need to parse it
       if (foundInt == false) {
-        if (const char* fileName = searchThePath(modName, sStdModPath)) {
-          ModuleSymbol* mod = parseFile(fileName, MOD_STANDARD, false);
+        if (const char* path = searchThePath(modName, sStdModPath)) {
+          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
 
           // If we also found a user module by the same name,
           // we need to rename the standard module and the use of it
@@ -687,13 +687,13 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 static void addModuleToDoneList(ModuleSymbol* module);
 static bool containsOnlyModules(BlockStmt* block, const char* fileName);
 
-static ModuleSymbol* parseFile(const char* fileName,
+static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
                                bool        namedOnCommandLine) {
   ModuleSymbol* retval = NULL;
 
-  if (FILE* fp = openInputFile(fileName)) {
-    gFilenameLookup.push_back(fileName);
+  if (FILE* fp = openInputFile(path)) {
+    gFilenameLookup.push_back(path);
 
     // State for the lexer
     int           lexerStatus  = 100;
@@ -709,7 +709,7 @@ static ModuleSymbol* parseFile(const char* fileName,
     currentModuleType             = modTag;
 
     yyblock                       = NULL;
-    yyfilename                    = fileName;
+    yyfilename                    = path;
     yystartlineno                 = 1;
 
     yylloc.first_line             = 1;
@@ -726,11 +726,11 @@ static ModuleSymbol* parseFile(const char* fileName,
         sFirstFile = false;
       }
 
-      fprintf(stderr, "  %s\n", cleanFilename(fileName));
+      fprintf(stderr, "  %s\n", cleanFilename(path));
     }
 
     if (namedOnCommandLine == true) {
-      startCountingFileTokens(fileName);
+      startCountingFileTokens(path);
     }
 
     yylex_init(&context.scanner);
@@ -771,9 +771,9 @@ static ModuleSymbol* parseFile(const char* fileName,
     if (yyblock == NULL) {
       INT_FATAL("yyblock should always be non-NULL after yyparse()");
 
-    } else if (yyblock->body.head                     == NULL ||
-               containsOnlyModules(yyblock, fileName) == false) {
-      const char* modName = filenameToModulename(fileName);
+    } else if (yyblock->body.head                 == NULL ||
+               containsOnlyModules(yyblock, path) == false) {
+      const char* modName = filenameToModulename(path);
 
       retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
 
@@ -802,8 +802,9 @@ static ModuleSymbol* parseFile(const char* fileName,
         }
       }
 
-      if (moduleCount == 1)
+      if (moduleCount == 1) {
         retval = moduleLast;
+      }
     }
 
     yyfilename                    =  NULL;
@@ -821,7 +822,7 @@ static ModuleSymbol* parseFile(const char* fileName,
   } else {
     fprintf(stderr,
             "ParseFile: Unable to open \"%s\" for reading\n",
-            fileName);
+            path);
   }
 
   return retval;
@@ -831,7 +832,7 @@ static void addModuleToDoneList(ModuleSymbol* module) {
   sModDoneSet.set_add(astr(module->name));
 }
 
-static bool containsOnlyModules(BlockStmt* block, const char* fileName) {
+static bool containsOnlyModules(BlockStmt* block, const char* path) {
   int           moduleDefs     =     0;
   bool          hasUses        = false;
   bool          hasOther       = false;
@@ -872,7 +873,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* fileName) {
              "meant for '%s' to be a top-level module, move the 'use' "
              "statements into its scope.",
              lastModSym->name,
-             fileName,
+             path,
              lastModSym->name);
 
   }
@@ -887,7 +888,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* fileName) {
 ************************************** | *************************************/
 
 BlockStmt* parseString(const char* string,
-                       const char* fileName,
+                       const char* path,
                        const char* msg) {
   // State for the lexer
   YY_BUFFER_STATE handle       =   0;
@@ -906,7 +907,7 @@ BlockStmt* parseString(const char* string,
   handle              = yy_scan_string(string, context.scanner);
 
   yyblock             = NULL;
-  yyfilename          = fileName;
+  yyfilename          = path;
 
   chplParseString     = true;
   chplParseStringMsg  = msg;
