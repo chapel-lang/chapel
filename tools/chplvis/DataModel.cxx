@@ -41,6 +41,11 @@
 #define MAXPATHLEN 2048
 #endif
 
+#define MAX_LINE_LEN 1024
+
+#define EXPECTED_VMAJOR 1
+#define EXPECTED_VMINOR 3
+
 void DataModel::newList()
 {
   curEvent = theEvents.begin();
@@ -141,11 +146,11 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   fclose(data);
 
   // Should make this more parameterized !!!!
-  if (VerMajor != 1 || VerMinor != 2) {
+  if (VerMajor != EXPECTED_VMAJOR || VerMinor != EXPECTED_VMINOR) {
     if (!fromArgv)
-      fl_alert("VisualDebug data files are not version 1.2.");
+      fl_alert("VisualDebug data files are not version %d.%d - got %d.%d", EXPECTED_VMAJOR, EXPECTED_VMINOR, VerMajor, VerMinor);
     else
-      printf("VisualDebug data files are not version 1.2.\n");
+      printf("VisualDebug data files are not version %d.%d - got %d.%d\n", EXPECTED_VMAJOR, EXPECTED_VMINOR, VerMajor, VerMinor);
     return 0;
   }
 
@@ -793,7 +798,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 {
   FILE *data = fopen(fileToOpen, "r");
-  char line[1024];
+  char line[MAX_LINE_LEN];
 
   int floc;        // Number of locales in the file
   int findex;      // current locale's index
@@ -806,7 +811,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
   if (!data) return 0;
 
   //printf ("LoadFile %s\n", fileToOpen);
-  if (fgets(line,1024,data) != line) {
+  if (fgets(line,MAX_LINE_LEN,data) != line) {
     fprintf (stderr, "Error reading file %s.\n", fileToOpen);
     return 0;
   }
@@ -829,7 +834,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 
   // Verify the data
 
-  if (floc != numLocales || findex != index || fabs(seq-fseq) > .01 || VerMinor != 2 ) {
+  if (floc != numLocales || findex != index || fabs(seq-fseq) > .01 || VerMinor != EXPECTED_VMINOR) {
     fprintf (stderr, "Data file %s does not match other data.\n", fileToOpen);
     return 0;
   }
@@ -856,7 +861,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     theEvents.insert(itr,newEvent);
   }
 
-  while ( fgets(line, 1024, data) == line ) {
+  while ( fgets(line, MAX_LINE_LEN, data) == line ) {
     // Common Data
     char *linedata;
     long linelen;
@@ -868,6 +873,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     int nid;    // Node id
     char onstr[5];  // "O" or "L" for onExecute or local
     int ix; //
+    int commID;
     int nlineno; // line number starting the task
     int nfileno;  // file number, indexes fileTbl.
     char tmpname[512];  // File name for fileTbl and funcTbl
@@ -902,7 +908,8 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
                               || (strstr(line,"tname:") == line)
                               || (strstr(line,"FID") == line)
                               || (strstr(line,"CHPL_HOME:") == line)
-                              || (strstr(line,"DIR:") == line) )) {
+                              || (strstr(line,"DIR:") == line)
+                              || (strstr(line,"SAVEC:") == line) )) {
         switch (line[0]) {
         case 'T': // filename Table size
           if (sscanf(linedata, ": %d", &fileTblSize) != 1) {
@@ -981,6 +988,16 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             linedata[linelen-1] = 0;
           dir = strdup (linedata);
           break;
+
+        case 'S': // the --savec directory (might be an empty string!)
+          linedata++;
+          while (*linedata == ' ') linedata++;
+          linelen = strlen(linedata);
+          if (linedata[linelen-1] == '\n')
+            linedata[linelen-1] = 0;
+          savec = strdup (linedata);
+          break;
+
         }
         continue;
       } else {
@@ -1047,10 +1064,10 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
       case 'g':  // regular get
       case 'p':  // regular put
         // All comm data:
-        // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len lineno fileToOpen
-        if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d",
+        // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len commID lineno fileToOpen
+        if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d %d",
                     &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
-                    &nlineno, &nfileno) != 10) {
+                    &commID, &nlineno, &nfileno) != 11) {
           fprintf (stderr, "Bad comm line: %s\n  '%s'\n", fileToOpen, line);
           nErrs++;
         } else {
