@@ -128,13 +128,12 @@ chapter~\rsec{Class_Fields}.
 \index{methods!records}
 
 A record method is a function or iterator that is bound to a record.
-
 See the methods section~\rsec{Methods} for more information about
 methods.
 
-Note that the receiver of a record method \chpl{ref} or \chpl{const ref}
-by default, depending on whether or not \chpl{this} is modified in the
-body of the method.
+Note that the receiver of a record method is passed by \chpl{ref} or
+\chpl{const ref} intent by default, depending on whether or not
+\chpl{this} is modified in the body of the method.
 
 \subsection{Nested Record Types}
 \label{Nested_Record_Types}
