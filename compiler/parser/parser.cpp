@@ -475,13 +475,12 @@ static void gatherWellKnownFns() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void        addModulePaths();
-static void        addDashMsToUserPath();
-static void        addUsrDirToModulePath(const char* dir);
-static void        printModuleSearchPath();
-static void        helpPrintPath(Vec<const char*> path);
-static void        ensureRequiredStandardModulesAreParsed();
-static const char* stdModNameToFileName(const char* modName);
+static void addModulePaths();
+static void addDashMsToUserPath();
+static void addUsrDirToModulePath(const char* dir);
+static void printModuleSearchPath();
+static void helpPrintPath(Vec<const char*> path);
+static void ensureRequiredStandardModulesAreParsed();
 
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
@@ -602,7 +601,7 @@ static void ensureRequiredStandardModulesAreParsed() {
       // if we haven't found the standard version of the module,
       // then we need to parse it
       if (foundInt == false) {
-        if (const char* fileName = stdModNameToFileName(modName)) {
+        if (const char* fileName = searchThePath(modName, sStdModPath)) {
           ModuleSymbol* mod = parseFile(fileName, MOD_STANDARD, false);
 
           // If we also found a user module by the same name,
@@ -630,12 +629,6 @@ static void ensureRequiredStandardModulesAreParsed() {
       }
     }
   } while (sModReqdByInt.n != 0);
-}
-
-// Returns either a file name or NULL if no such file was found
-// (which could happen if there's a use of an enum within the library files)
-static const char* stdModNameToFileName(const char* modName) {
-  return searchThePath(modName, sStdModPath);
 }
 
 /************************************* | **************************************
