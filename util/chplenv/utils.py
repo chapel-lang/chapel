@@ -63,8 +63,8 @@ def run_command(command, stdout=True, stderr=False, cmd_input=None):
             return ''
 
 def run_live_command(command):
-    """Run a command, writing its output live instead of after the process is
-       finished. stderr is merged with stdout"""
+    """Run a command, yielding the merged output (stdout/stderr) as the process
+       runs rather than returning the output after the process finishes"""
     try:
         process = subprocess.Popen(command,
                                    stdout=subprocess.PIPE,
