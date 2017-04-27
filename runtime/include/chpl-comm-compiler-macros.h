@@ -39,11 +39,13 @@
 // Note: Macros starting with CHPL_COMM involve some kind of communication
 //
 
+#define CHPL_UNKNOWN_COMM_ID -1
+
 
 static inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t typeIndex,
-                       int ln, int32_t fn)
+                       int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
     chpl_memcpy(addr, raddr, size);
@@ -53,9 +55,9 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_GET
-    chpl_task_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_task_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #else
-    chpl_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #endif
   }
 }
@@ -63,7 +65,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
                             size_t size, int32_t typeIndex,
-                            int ln, int32_t fn)
+                            int32_t commID, int ln, int32_t fn)
 {
   const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   size_t offset;
@@ -90,7 +92,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 static inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t typeIndex,
-                       int ln, int32_t fn)
+                       int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
     chpl_memcpy(raddr, addr, size);
@@ -100,9 +102,9 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_PUT
-    chpl_task_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_task_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #else
-    chpl_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #endif
   }
 }
@@ -111,7 +113,7 @@ static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        size_t elemSize, int32_t typeIndex,
-                       int ln, int32_t fn)
+                       int32_t commID, int ln, int32_t fn)
 {
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
@@ -120,9 +122,9 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_GET_STRD
-  chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
+  chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
 #else
-  chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
+  chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
 #endif
   }
 }
@@ -131,7 +133,7 @@ static inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
                        size_t elemSize, int32_t typeIndex,
-                       int ln, int32_t fn)
+                       int32_t commID, int ln, int32_t fn)
 {
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
@@ -140,9 +142,9 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_PUT_STRD
-  chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
+  chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
 #else
-  chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
+  chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
 #endif
   }
 }
