@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,23 +21,23 @@
    The ``RangeChunk`` module assists with dividing a bounded ``range`` of any ``idxType``
    and stride into ``numChunks``. Chunks are 0-based, with the ``0`` index chunk including
    ``range.low`` and the ``numChunks - 1`` index chunk including ``range.high``.
-   
+
    Chunks are accessible in several ways:
 
      * as a range, through an iterator
      * as a range, through a query
      * as a tuple of 0-based orders into the range, through an iterator
      * as a tuple of 0-based orders into the range, through a query
-   
+
    Given that it will be uncommon for the length of a given ``range`` to be divisible by
    ``numChunks``, there are three different remainder policies available, expressed
    by the enum ``RemElems``.
-*/  
+*/
 module RangeChunk {
 
   /*
      ``RemElems`` specifies the distribution of remainder elements:
-       
+
        - **Thru**: default policy; remainder elements will be distributed throughout
          ``numChunks`` chunks
        - **Pack**: chunks at the front will receive ``ceil(range.length / numChunks)``
@@ -54,7 +54,7 @@ module RangeChunk {
   use RemElems;
   use BoundedRangeType;
 
-  
+
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a range. The remainders will be distributed according to ``remPol``.
@@ -85,10 +85,22 @@ module RangeChunk {
   }
 
   /*
-     Iterates through blocks of size ``blockSize`` of ``idx`` chunk of range ``r``, in a round robin fashion.
+     Iterates through blocks of size ``blockSize`` of ``idx`` chunk of range ``r``, in a cyclic manner.
   */
-  iter roundRobinBasedChunkOfBlocks(r: range(?RT, bounded, ?S),  blockSize: integral,
-             idx:integral, numChunks: integral): range(RT, bounded, S) {
+  iter blockCyclicChunks(r: range(?), blockSize: integral, idx: integral, numInds: integral) {
+
+   if (r.boundedType != BoundedRangeType.bounded) then
+     halt("range argument to iterator 'blockCyclicChunks' must be bounded");
+
+  if (idx >= numInds) then
+    halt("idx argument to iterator 'blockCyclicChunks' must be < numInds argument");
+
+   if (blockSize <= 0) then
+     halt("blockSize must be greater than 0 in iterator 'blockCyclicChunks'");
+
+   if (numInds <= 0) then
+     halt("numInds must be greater than 0 in iterator 'blockCyclicChunks'");
+
     const nElems = r.length;
     if(nElems == 0) {
       return;
@@ -108,7 +120,7 @@ module RangeChunk {
       return;
     }
     var start = r.orderToIndex(ordinalStartIndex);
-    const stride = blockSize*numChunks*rangeStride;
+    const stride = blockSize*numInds*rangeStride;
     var end = r.orderToIndex(nElems - 1);
     if(rangeStride >= 0) {
       for chunkStartIdx in start..end by stride {
@@ -117,12 +129,12 @@ module RangeChunk {
       }
     }
     else {
-      for chunkStartIdx in end..start by stride {    
+      for chunkStartIdx in end..start by stride {
         const chunkEndIdx = max(chunkStartIdx + blockSize*rangeStride + 1, end);
         yield chunkEndIdx..chunkStartIdx by rangeStride;
       }
     }
-    
+
   }
 
   /*
@@ -180,7 +192,7 @@ module RangeChunk {
       when Thru {
         return chunkOrderThru(nElems, nChunks, i);
       }
-      when Pack { 
+      when Pack {
         var chunkSize = nElems / nChunks;
         if chunkSize * nChunks != nElems then
           chunkSize += 1;
@@ -223,7 +235,7 @@ module RangeChunk {
     var end = start + chunkSize - 1;
     if end >= nElems then
       end = nElems - 1;
-    return (start, end); 
+    return (start, end);
   }
 
   pragma "no doc"

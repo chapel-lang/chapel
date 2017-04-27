@@ -15,7 +15,7 @@ var negative_indexed_negative_strided = -6..19 by -stride;
 writeln("Non strided zero indexed range: ", positive_zero_indexed, " block_size: ", block_size, " num_tasks: ", num_tasks);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(positive_zero_indexed, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(positive_zero_indexed, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
@@ -23,7 +23,7 @@ for tid in 0..num_tasks - 1 {
 writeln("Non strided one indexed range: ", positive_one_indexed, " block_size: ", block_size, " num_tasks: ", num_tasks);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(positive_one_indexed, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(positive_one_indexed, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
@@ -31,7 +31,7 @@ for tid in 0..num_tasks - 1 {
 writeln("Strided zero indexed range: ", positive_zero_indexed_strided, " block_size: ", block_size, " num_tasks: ", num_tasks, " stride: ", stride);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(positive_zero_indexed_strided, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(positive_zero_indexed_strided, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
@@ -39,7 +39,7 @@ for tid in 0..num_tasks - 1 {
 writeln("Strided one indexed range: ", positive_one_indexed_strided, " block_size: ", block_size, " num_tasks: ", num_tasks, " stride: ", stride);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(positive_one_indexed_strided, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(positive_one_indexed_strided, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
@@ -47,7 +47,7 @@ for tid in 0..num_tasks - 1 {
 writeln("Strided negative indexed range: ", negative_indexed_strided, " block_size: ", block_size, " num_tasks: ", num_tasks, " stride: ", stride);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(negative_indexed_strided, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(negative_indexed_strided, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
@@ -55,7 +55,7 @@ for tid in 0..num_tasks - 1 {
 writeln("Positive Indexed Negative Strided range: ", positive_indexed_negative_strided, " block_size: ", block_size, " num_tasks: ", num_tasks, " stride: ", -stride);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(positive_indexed_negative_strided, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(positive_indexed_negative_strided, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
@@ -63,7 +63,7 @@ for tid in 0..num_tasks - 1 {
 writeln("Negative Indexed Negative Strided range: ", negative_indexed_negative_strided, " block_size: ", block_size, " num_tasks: ", num_tasks, " stride: ", -stride);
 for tid in 0..num_tasks - 1 {
 	writeln("for tid: ", tid);
-	for chunk in roundRobinBasedChunkOfBlocks(negative_indexed_negative_strided, block_size, tid, num_tasks) {
+	for chunk in blockCyclicChunks(negative_indexed_negative_strided, block_size, tid, num_tasks) {
 		writeln("got: ", chunk);
 	}
 }
