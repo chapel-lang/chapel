@@ -69,6 +69,9 @@ static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
                                bool        namedOnCommandLine);
 
+static const char*   stdModNameToPath(const char* modName,
+                                      bool*       isStandard);
+
 static const char*   searchThePath(const char*      modName,
                                    Vec<const char*> path);
 
@@ -1021,10 +1024,39 @@ const char* pathNameForInternalFile(const char* modName) {
 
 // Used by IPE: Prefer user file to standard file
 const char* pathNameForStandardFile(const char* modName) {
-  const char* fileName     = astr(modName, ".chpl");
-  const char* userFileName = searchThePath(modName, sUsrModPath);
+  bool isStandard = false;
 
-  return searchPath(sStdModPath, fileName, userFileName, false);
+  return stdModNameToPath(modName, &isStandard);
+}
+
+static const char* stdModNameToPath(const char* modName,
+                                    bool*       isStandard) {
+  const char* usrPath = searchThePath(modName, sUsrModPath);
+  const char* stdPath = searchThePath(modName, sStdModPath);
+  const char* retval  = NULL;
+
+  if        (usrPath == NULL && stdPath == NULL) {
+    *isStandard = false;
+    retval      = NULL;
+
+  } else if (usrPath == NULL && stdPath != NULL) {
+    *isStandard = true;
+    retval      = stdPath;
+
+  } else if (usrPath != NULL && stdPath == NULL) {
+    *isStandard = false;
+    retval      = usrPath;
+
+  } else {
+    USR_WARN("Ambiguous module source file -- using %s over %s",
+             cleanFilename(usrPath),
+             cleanFilename(stdPath));
+
+    *isStandard = false;
+    retval      = usrPath;
+  }
+
+  return retval;
 }
 
 static const char* searchThePath(const char*      modName,
