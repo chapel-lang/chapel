@@ -2722,6 +2722,26 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
   return s;
 }
 
+VarSymbol* new_CommIDSymbol(int64_t b) {
+  IF1_int_type size = INT_SIZE_64;
+  Immediate imm;
+  imm.v_int64 = b;
+
+  imm.const_kind = NUM_KIND_COMMID;
+  imm.num_index = size;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  PrimitiveType* dtRetType = dtInt[size];
+  if (s) {
+    return s;
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+  rootModule->block->insertAtTail(new DefExpr(s));
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
 static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {

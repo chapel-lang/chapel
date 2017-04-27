@@ -313,6 +313,14 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         } else {
           ret.c = "UINT64(" + uint64_to_string(uconst) + ")";
         }
+      } else if (immediate->const_kind == NUM_KIND_COMMID) {
+        int64_t iconst = immediate->commid_value();
+        if (iconst == (1ll<<63)) {
+          ret.c = "-COMMID(9223372036854775807) - COMMID(1)";
+        } else {
+          INT_ASSERT(immediate->num_index == INT_SIZE_64);
+          ret.c = "COMMID(" + int64_to_string(iconst) + ")";
+        }
       } else {
         ret.c = cname; // in C, all floating point literals are (double)
       }
@@ -1340,6 +1348,7 @@ void ModuleSymbol::codegenDef() {
 
   info->filename = fname();
   info->lineno   = linenum();
+  commIDMap[info->filename] = 0;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();

@@ -32,13 +32,17 @@
 #define IFA_EXTERN_INIT(x)
 #endif
 
+//
+// NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
+// 'IF1_const_kind' enum below uses it to set values.
+//
 enum IF1_num_kind {
   NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
-  NUM_KIND_IMAG, NUM_KIND_COMPLEX
+  NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID, NUM_KIND_LAST
 };
 
 enum IF1_const_kind {
-  CONST_KIND_STRING = NUM_KIND_COMPLEX + 1, CONST_KIND_SYMBOL
+  CONST_KIND_STRING = NUM_KIND_LAST + 1, CONST_KIND_SYMBOL
 };
 
 enum IF1_string_kind {
@@ -118,6 +122,7 @@ class Immediate { public:
   };
 
   int64_t  int_value( void);
+  int64_t  commid_value( void);
   uint64_t uint_value( void);
   uint64_t bool_value( void);
   // calls int_value, uint_value, or bool_value as appropriate.
@@ -176,6 +181,13 @@ Immediate::int_value( void) {
     INT_FATAL("unknown int size");
   }
   return val;
+}
+
+inline int64_t
+Immediate::commid_value( void) {
+  INT_ASSERT(const_kind == NUM_KIND_COMMID &&
+             num_index == INT_SIZE_64);
+  return v_int64;
 }
 
 

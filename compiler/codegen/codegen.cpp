@@ -38,6 +38,8 @@
 #endif
 
 #include <inttypes.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "llvmDebug.h"
 
@@ -55,6 +57,8 @@ static bool compareSymbol(void* v1, void* v2);
 GenInfo* gGenInfo   =  0;
 int      gMaxVMT    = -1;
 int      gStmtCount =  0;
+
+std::map<std::string, int> commIDMap;
 
 
 // ensure these two produce consistent output
@@ -1017,6 +1021,13 @@ static void codegen_header_compilation_config() {
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
     genGlobalString("chpl_compileDirectory", getCwd());
+    if (strcmp(saveCDir, "") != 0) {
+      char *actualPath = realpath(saveCDir, NULL);
+      genGlobalString("chpl_saveCDir", actualPath);
+    } else {
+      genGlobalString("chpl_saveCDir", "");
+    }
+
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);

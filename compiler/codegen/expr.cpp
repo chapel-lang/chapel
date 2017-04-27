@@ -235,6 +235,10 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
 
 static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 
+static GenRet genCommID(GenInfo* info) {
+  return baseASTCodegen(new_CommIDSymbol(commIDMap[info->filename]++));
+}
+
 // Generates code to load the wide version of an address and returns an
 // expression that evaluates to this address.
 //
@@ -2471,6 +2475,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -2485,8 +2490,8 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a7);
   codegenCall(fnName, args);
 }
+*/
 
-/* Commented out to avoid an unused function, this probably should be varargs
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8)
@@ -2503,6 +2508,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2539,6 +2545,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }*/
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2556,6 +2563,28 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a9);
   args.push_back(a10);
   args.push_back(a11);
+  codegenCall(fnName, args);
+}
+*/
+
+static
+void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                 GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
+                 GenRet a9, GenRet a10, GenRet a11, GenRet a12)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  args.push_back(a8);
+  args.push_back(a9);
+  args.push_back(a10);
+  args.push_back(a11);
+  args.push_back(a12);
   codegenCall(fnName, args);
 }
 
@@ -3059,7 +3088,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(from),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
-                      info->lineno, gFilenameLookupCache[info->filename] );
+                      genCommID(info),
+                      info->lineno, gFilenameLookupCache[info->filename]);
         }
       }
     } else { // PUT
@@ -3081,6 +3111,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(to_ptr),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
+                      genCommID(info),
                       info->lineno, gFilenameLookupCache[info->filename]);
         }
       }
@@ -4258,6 +4289,7 @@ GenRet CallExpr::codegenPrimitive() {
                   remoteAddr,
                   size,
                   genTypeStructureIndex(dt),
+                  genCommID(gGenInfo),
                   get(5),
                   get(6));
 
@@ -4445,6 +4477,7 @@ GenRet CallExpr::codegenPrimitive() {
                 stridelevels,
                 eltSize,
                 genTypeStructureIndex(dt),
+                genCommID(gGenInfo),
                 get(8),
                 get(9));
 
