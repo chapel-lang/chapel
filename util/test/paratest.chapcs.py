@@ -123,6 +123,7 @@ def run_paratest(args):
     start_time = timeit.default_timer()
     for line in utils.run_live_command(paratest_cmd):
         sys.stdout.write(line)
+        sys.stdout.flush()
     elapsed = int(timeit.default_timer() - start_time)
     minutes, seconds = divmod(elapsed, 60)
     print('paratest took {0} minutes and {1} seconds'.format(minutes, seconds))
