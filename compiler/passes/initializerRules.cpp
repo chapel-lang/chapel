@@ -2362,7 +2362,8 @@ static void buildTypeFunction(FnSymbol* fn) {
         arg = formal->copy();
         initCall->insertAtTail(arg);
 
-      } else if (formal->type == dtAny) {
+      } else if ((formal->type == dtUnknown  || formal->type == dtAny)
+                 && formal->defaultExpr == NULL) {
         // The argument is generic, so we need a corresponding type argument
         arg = new ArgSymbol(INTENT_BLANK, formal->name, formal->type);
         arg->addFlag(FLAG_TYPE_VARIABLE);
@@ -2373,7 +2374,11 @@ static void buildTypeFunction(FnSymbol* fn) {
       } else {
         // The argument is not generic, so we don't want to create an argument
         // for it in the type function.
-        initCall->insertAtTail(new CallExpr("_defaultOf", formal->type));
+        if (formal->defaultExpr != NULL) {
+          initCall->insertAtTail(formal->defaultExpr->copy());
+        } else {
+          initCall->insertAtTail(new CallExpr("_defaultOf", formal->type));
+        }
       }
       if (arg != NULL) {
         tFn->insertFormalAtTail(arg);
