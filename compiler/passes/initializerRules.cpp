@@ -2341,13 +2341,14 @@ static void buildTypeFunction(FnSymbol* fn) {
   tFn->retTag = RET_TYPE;
   tFn->addFlag(FLAG_COMPILER_GENERATED);
 
-  VarSymbol* local = newTemp("local_tmp", at);
+  VarSymbol* local = newTemp("local_tmp");
   tFn->body->insertAtTail(new DefExpr(local));
 
   // TODO: reuse previously created type functions
 
   // TODO: store relationship between tFn and fn
-  CallExpr* initCall = new CallExpr(fn, gMethodToken, local);
+  CallExpr* initCall = new CallExpr(PRIM_NEW, at->symbol);
+  CallExpr* moveCall = new CallExpr(PRIM_MOVE, local, initCall);
   CallExpr* typeCall = new CallExpr(PRIM_TYPEOF, local);
 
   int count = 1;
@@ -2382,7 +2383,7 @@ static void buildTypeFunction(FnSymbol* fn) {
     count = count + 1;
   }
 
-  tFn->body->insertAtTail(initCall);
+  tFn->body->insertAtTail(moveCall);
   tFn->body->insertAtTail(new CallExpr(PRIM_RETURN, typeCall));
 
   at->symbol->defPoint->insertBefore(new DefExpr(tFn));
