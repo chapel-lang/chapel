@@ -63,8 +63,8 @@
 char llvmFuncDumpName[FUNC_NAME_MAX+1] = "";
 int llvmFuncOptDump = 0;
 
-void llvmFunctionDump(int optLevel, const std::string &name)
-{
+void llvmFunctionDump(int optLevel, const std::string &name) {
+#ifdef HAVE_LLVM
   if(llvmFuncOptDump != optLevel) return;
 
   std::string llvmName = name + "_chpl";
@@ -74,6 +74,7 @@ void llvmFunctionDump(int optLevel, const std::string &name)
 
   if(func)
     func->dump();
+#endif
 }
 
 /******************************** | *********************************
