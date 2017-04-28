@@ -1958,8 +1958,14 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
           if (isGenericRecordWithInitializers(ts->type)) {
             VarSymbol* typeTemp = newTemp("type_tmp");
             call->insertBefore(new DefExpr(typeTemp));
-            //CallExpr* typeSpec = new CallExpr(
+            CallExpr* typeSpec = new CallExpr(astr("_type_specifier_",
+                                                   ts->type->symbol->name));
+            for_actuals(actual, call) {
+              // Get all the arguments over into the type specifier call
+              typeSpec->insertAtTail(actual->copy());
+            }
 
+            call->insertBefore(new CallExpr(PRIM_MOVE, typeTemp, typeSpec));
             // call's arg list will be necessary for determining the type
             // specifier to use
 
