@@ -562,14 +562,19 @@ class EnumSymbol : public Symbol {
   Immediate*      getImmediate();
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
+public:
+  static void          addTopLevelModule (ModuleSymbol*               module);
+  static void          getTopLevelModules(std::vector<ModuleSymbol*>& mods);
+
 public:
                        ModuleSymbol(const char* iName,
                                     ModTag      iModTag,

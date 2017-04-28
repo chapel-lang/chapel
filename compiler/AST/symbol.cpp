@@ -1871,10 +1871,27 @@ void EnumSymbol::accept(AstVisitor* visitor) {
   visitor->visitEnumSym(this);
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static std::vector<ModuleSymbol*>    sTopLevelModules;
+
+void ModuleSymbol::addTopLevelModule(ModuleSymbol* module) {
+  sTopLevelModules.push_back(module);
+
+  theProgram->block->insertAtTail(new DefExpr(module));
+}
+
+
+void ModuleSymbol::getTopLevelModules(std::vector<ModuleSymbol*>& mods) {
+  for (size_t i = 0; i < sTopLevelModules.size(); i++) {
+    mods.push_back(sTopLevelModules[i]);
+  }
+}
+
 
 ModuleSymbol::ModuleSymbol(const char* iName,
                            ModTag      iModTag,
