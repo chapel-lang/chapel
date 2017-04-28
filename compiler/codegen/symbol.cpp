@@ -60,8 +60,21 @@
 *                                                                   *
 ********************************* | ********************************/
 
-char llvmFuncDump[FUNC_NAME_MAX+1] = "";
-bool llvmFuncOptDump;
+char llvmFuncDumpName[FUNC_NAME_MAX+1] = "";
+int llvmFuncOptDump = 0;
+
+void llvmFunctionDump(int optLevel, const std::string &name)
+{
+  if(llvmFuncOptDump != optLevel) return;
+
+  std::string llvmName = name + "_chpl";
+  llvm::Function *func = getFunctionLLVM(llvmName.c_str());
+  if(llvmName == std::string(llvmFuncDumpName) + "_chpl")
+      func = getFunctionLLVM(llvmName.c_str());
+
+  if(func)
+    func->dump();
+}
 
 /******************************** | *********************************
 *                                                                   *
@@ -1251,6 +1264,7 @@ void FnSymbol::codegenDef() {
       ArgNo++;
     }
 
+    llvmFunctionDump(0, cname);
 #endif
   }
 
@@ -1271,10 +1285,6 @@ void FnSymbol::codegenDef() {
   flushStatements();
 
 #ifdef HAVE_LLVM
-  std::string llvmName = std::string(llvmFuncDump) + "_chpl";
-  if(!llvmFuncOptDump && llvmName == cname) {
-    func->dump();
-  }
 #endif
 
   if( outfile ) {
@@ -1302,9 +1312,7 @@ void FnSymbol::codegenDef() {
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
     info->FPM_postgen->run(*func);
-    if(llvmFuncOptDump && llvmName == cname) {
-      func->dump();
-    }
+    llvmFunctionDump(1, cname);
 #endif
   }
 

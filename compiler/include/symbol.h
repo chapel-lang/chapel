@@ -43,10 +43,6 @@ namespace llvm
 //
 extern FnSymbol* chpl_gen_main;
 
-#define FUNC_NAME_MAX 256
-extern char llvmFuncDump[FUNC_NAME_MAX+1];
-extern bool llvmFuncOptDump;
-
 class BasicBlock;
 class BlockStmt;
 class DefExpr;
@@ -779,5 +775,11 @@ extern Symbol *gSingleVarAuxFields;
 
 extern std::map<FnSymbol*,int> ftableMap;
 extern std::vector<FnSymbol*> ftableVec;
+
+#define FUNC_NAME_MAX 256
+extern char llvmFuncDumpName[FUNC_NAME_MAX+1];
+extern int llvmFuncOptDump;
+
+void llvmFunctionDump(int optLevel, const std::string &name);
 
 #endif

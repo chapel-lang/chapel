@@ -1867,6 +1867,7 @@ void makeBinaryLLVM(void) {
   output.keep();
   output.os().flush();
 
+
   //finishClang is before the call to the debug finalize
   deleteClang(info);
 
@@ -1996,6 +1997,8 @@ void makeBinaryLLVM(void) {
   }
 
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+
+  llvmFunctionDump(2, llvmFuncDumpName);
 }
 
 #endif
