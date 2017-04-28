@@ -319,7 +319,7 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(nb_put),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -340,7 +340,7 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(nb_get),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -360,7 +360,7 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(put),
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -381,7 +381,7 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
                   CHPL_VDEBUG_GETPUT_FORMAT_STRING(get),
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
-                  (unsigned long) cm->raddr, 1, cm->typeIndex, cm->size,
+                  (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
                   cm->commID, cm->lineno, cm->filename);
   }
 }
@@ -392,12 +392,13 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
 void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     if (chpl_vdebug) {
     struct timeval tv;
+    size_t length;
     const struct chpl_comm_info_comm_strd *cm = &info->iu.comm_strd;
     chpl_taskID_t commTask = chpl_task_getId();
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
 
-    size_t length = 1;
+    length = 1;
     for (int32_t i = 0; i < cm->stridelevels; i++) {
       length *= cm->count[i];
     }
@@ -421,12 +422,13 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
 void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
     struct timeval tv;
+    size_t length;
     const struct chpl_comm_info_comm_strd *cm = &info->iu.comm_strd;
     chpl_taskID_t commTask = chpl_task_getId();
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
 
-    size_t length = 1;
+    length = 1;
     for (int32_t i = 0; i < cm->stridelevels; i++) {
       length *= cm->count[i];
     }
