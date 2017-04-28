@@ -68,6 +68,7 @@ static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
 
 static const char*   searchThePath(const char*      modName,
+                                   bool             isInternal,
                                    Vec<const char*> searchPath);
 
 /************************************* | **************************************
@@ -98,7 +99,26 @@ void parse() {
 
 /************************************* | **************************************
 *                                                                             *
+*                          Manage the module search path                      *
 *                                                                             *
+* A few internal modules are defined multiple times.  On 4/28/17 these are    *
+*                                                                             *
+*   ChapelTaskTable          ./tasktable/off/ChapelTaskTable.chpl             *
+*                            ./tasktable/on/ChapelTaskTable.chpl              *
+*                                                                             *
+*   LocaleModel              ./localeModels/flat/LocaleModel.chpl             *
+*                            ./localeModels/knl/LocaleModel.chpl              *
+*                            ./localeModels/numa/LocaleModel.chpl             *
+*                                                                             *
+*   NetworkAtomicTypes       ./comm/ugni/NetworkAtomicTypes.chpl              *
+*                            ./NetworkAtomicTypes.chpl                        *
+*                                                                             *
+* The search paths include the value of configuration variables.              *
+* This means that a search for the first two cases will be unique.            *
+*                                                                             *
+* However the third case is currently ambiguous.  This is handled by          *
+*    a) preferring the first hit to later hits                                *
+*    b) disabling the warning message for searches in internal/               *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -127,6 +147,10 @@ void setupModulePaths() {
     modulesRoot = "modules";
   }
 
+  //
+  // Set up the search path for modulesRoot/internal
+  //
+
   sIntModPath.add(astr(CHPL_HOME,
                       "/",
                       modulesRoot,
@@ -153,6 +177,9 @@ void setupModulePaths() {
 
   sIntModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
 
+  //
+  // Set up the search path for modulesRoot/standard
+  //
   sStdModPath.add(astr(CHPL_HOME,
                       "/",
                       modulesRoot,
@@ -601,7 +628,7 @@ static void ensureRequiredStandardModulesAreParsed() {
       // If we haven't found the standard version of the module,
       // then we need to parse it
       if (foundInt == false) {
-        if (const char* path = searchThePath(modName, sStdModPath)) {
+        if (const char* path = searchThePath(modName, false, sStdModPath)) {
           ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
 
           // If we also found a user module by the same name,
@@ -665,7 +692,7 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   ModTag      modTag = MOD_INTERNAL;
 
   if (isInternal == true) {
-    path   = searchThePath(modName, sIntModPath);
+    path   = searchThePath(modName, true, sIntModPath);
     modTag = MOD_INTERNAL;
 
   } else {
@@ -952,7 +979,7 @@ BlockStmt* parseString(const char* string,
 
 // Used by IPE
 const char* pathNameForInternalFile(const char* modName) {
-  return searchThePath(modName, sIntModPath);
+  return searchThePath(modName, true, sIntModPath);
 }
 
 // Used by IPE: Prefer user file to standard file
@@ -964,8 +991,8 @@ const char* pathNameForStandardFile(const char* modName) {
 
 static const char* stdModNameToPath(const char* modName,
                                     bool*       isStandard) {
-  const char* usrPath = searchThePath(modName, sUsrModPath);
-  const char* stdPath = searchThePath(modName, sStdModPath);
+  const char* usrPath = searchThePath(modName, false, sUsrModPath);
+  const char* stdPath = searchThePath(modName, false, sStdModPath);
   const char* retval  = NULL;
 
   if        (usrPath == NULL && stdPath == NULL) {
@@ -993,6 +1020,7 @@ static const char* stdModNameToPath(const char* modName,
 }
 
 static const char* searchThePath(const char*      modName,
+                                 bool             isInternal,
                                  Vec<const char*> searchPath) {
   const char* fileName = astr(modName, ".chpl");
   const char* retval   = NULL;
@@ -1006,7 +1034,8 @@ static const char* searchThePath(const char*      modName,
       if (retval == NULL) {
         retval = path;
 
-      } else {
+      // 4/28/17 internal/ has an ambiguous duplicate for NetworkAtomicTypes
+      } else if (isInternal == false) {
         USR_WARN("Ambiguous module source file -- using %s over %s",
                  cleanFilename(retval),
                  cleanFilename(path));
