@@ -1086,14 +1086,21 @@ std::string AggregateType::docsDirective() {
 ************************************** | *************************************/
 
 void initRootModule() {
-  rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
+  rootModule           = new ModuleSymbol("_root",
+                                          MOD_INTERNAL,
+                                          new BlockStmt());
+
   rootModule->filename = astr("<internal>");
 }
 
 void initStringLiteralModule() {
-  stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
+  stringLiteralModule           = new ModuleSymbol("ChapelStringLiterals",
+                                                   MOD_INTERNAL,
+                                                   new BlockStmt());
+
   stringLiteralModule->filename = astr("<internal>");
-  theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
+
+  ModuleSymbol::addTopLevelModule(stringLiteralModule);
 }
 
 /************************************* | **************************************
