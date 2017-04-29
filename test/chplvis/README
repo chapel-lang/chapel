@@ -10,9 +10,9 @@ requires a human to verify that the generated data for chplvis is
 correct.
 
 overhead: Programs that only use VisualDebug (or a for loop) and 
-          should not generate any tasks or communitction.
+          should not generate any tasks or communication.
 
-benchmarks-hpcc:  Programs taken from test/examples/benchmarks/hpcc and
+benchmarks-hpcc:  Programs taken from test/release/examples/benchmarks/hpcc and
                   had VisualDebug added.
 
 
