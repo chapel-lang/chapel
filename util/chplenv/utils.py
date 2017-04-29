@@ -72,8 +72,8 @@ def run_live_command(command):
     except OSError:
         error("command not found: {0}".format(command[0]), OSError)
 
-    for stdout_line in iter(process.stdout.readline, str.encode("")):
-        yield stdout_line.decode()
+    for stdout_char in iter(lambda: process.stdout.read(1), str.encode("")):
+        yield stdout_char.decode()
     process.stdout.close()
     returncode = process.wait()
 
