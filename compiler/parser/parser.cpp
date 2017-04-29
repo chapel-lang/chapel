@@ -806,7 +806,9 @@ static ModuleSymbol* parseFile(const char* path,
         if (DefExpr* defExpr = toDefExpr(stmt)) {
           if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
 
-            theProgram->block->insertAtTail(defExpr->remove());
+            defExpr->remove();
+
+            ModuleSymbol::addTopLevelModule(modSym);
 
             addModuleToDoneList(modSym);
 
@@ -825,7 +827,7 @@ static ModuleSymbol* parseFile(const char* path,
 
       retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
 
-      theProgram->block->insertAtTail(new DefExpr(retval));
+      ModuleSymbol::addTopLevelModule(retval);
 
       addModuleToDoneList(retval);
     }
