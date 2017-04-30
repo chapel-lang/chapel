@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <vector>
 
 /*
@@ -453,10 +454,25 @@ public:
   int                         classId;
 
 private:
+  static ArgSymbol*           createGenericArg(VarSymbol* field);
+  static void                 insertImplicitThis(
+                                            FnSymbol*         fn,
+                                            Vec<const char*>& fieldNamesSet);
+
+private:
   virtual std::string         docsDirective();
 
   std::string                 docsSuperClass();
+
   void                        addDeclaration(DefExpr* defExpr);
+
+  void                        addClassToHierarchy(
+                                          std::set<AggregateType*>& seen);
+
+  AggregateType*              discoverParentAndCheck(Expr* storesName);
+  void                        buildTypeConstructor();
+  void                        buildConstructor();
+  void                        moveConstructorToOuter(FnSymbol* fn);
 
   std::vector<AggregateType*> instantiations;
 
