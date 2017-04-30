@@ -36,13 +36,17 @@
 
 static void cleanup(ModuleSymbol* module);
 
-static void normalizeNestedFunctionExpressions(DefExpr* def);
+static void normalizeNestedFunctionExpressions(FnSymbol* fn);
+
+static void normalizeLoopIterExpressions(FnSymbol* fn);
 
 static void flattenScopelessBlock(BlockStmt* block);
 
 static void destructureTupleAssignment(CallExpr* call);
 
-static void flattenPrimaryMethods(FnSymbol* fn);
+static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
+
+static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 static void changeCastInWhere(FnSymbol* fn);
 
@@ -71,9 +75,16 @@ static void cleanup(ModuleSymbol* module) {
 
   for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      SET_LINENO(ast);
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        SET_LINENO(def);
 
-      normalizeNestedFunctionExpressions(def);
+        if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
+          normalizeNestedFunctionExpressions(fn);
+
+        } else if (strncmp("_iterator_for_loopexpr", fn->name, 22) == 0) {
+          normalizeLoopIterExpressions(fn);
+        }
+      }
     }
   }
 
@@ -92,7 +103,12 @@ static void cleanup(ModuleSymbol* module) {
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        flattenPrimaryMethods(fn);
+        // Is this function defined within a type i.e. is it a method?
+        if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
+          flattenPrimaryMethod(ts, fn);
+          applyAtomicTypeToPrimaryMethod(ts, fn);
+        }
+
         changeCastInWhere(fn);
         addParensToDeinitFns(fn);
       }
@@ -107,46 +123,60 @@ static void cleanup(ModuleSymbol* module) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeNestedFunctionExpressions(DefExpr* def) {
-  if (def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
+  DefExpr* def = fn->defPoint;
+
+  if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+    AggregateType* ct = toAggregateType(ts->type);
+
+    INT_ASSERT(ct);
+
+    def->replace(new UnresolvedSymExpr(fn->name));
+
+    ct->addDeclarations(def);
+
+  } else {
     Expr* stmt = def->getStmtExpr();
 
-    if (stmt == NULL) {
-      if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
-        if (AggregateType* ct = toAggregateType(ts->type)) {
-          def->replace(new UnresolvedSymExpr(def->sym->name));
+    def->replace(new UnresolvedSymExpr(fn->name));
 
-          ct->addDeclarations(def);
-
-          return;
-        }
-      }
-    }
-
-    def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
+  }
+}
 
-  } else if (strncmp("_iterator_for_loopexpr", def->sym->name, 22) == 0) {
-    FnSymbol* parent = toFnSymbol(def->parentSymbol);
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-    INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
-               strncmp("_seqloopexpr", parent->name, 12) == 0);
+static void normalizeLoopIterExpressions(FnSymbol* fn) {
+  DefExpr*  def    = fn->defPoint;
+  FnSymbol* parent = toFnSymbol(def->parentSymbol);
+  Symbol*   parSym = parent->defPoint->parentSymbol;
 
-    while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12) ||
-           !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12)) {
-      parent = toFnSymbol(parent->defPoint->parentSymbol);
-    }
+  INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
+             strncmp("_seqloopexpr", parent->name, 12) == 0);
 
-    if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
-      AggregateType* ct = toAggregateType(ts->type);
+  // Walk up through nested loop expressions
+  while (strncmp("_parloopexpr", parSym->name, 12) == 0  ||
+         strncmp("_seqloopexpr", parSym->name, 12) == 0) {
+    parent = toFnSymbol(parSym);
+    parSym = parent->defPoint->parentSymbol;
+  }
 
-      INT_ASSERT(ct);
+  def->remove();
 
-      ct->addDeclarations(def->remove());
+  // Move the parent
+  if (TypeSymbol* ts = toTypeSymbol(parSym)) {
+    AggregateType* ct = toAggregateType(ts->type);
 
-    } else {
-      parent->defPoint->insertBefore(def->remove());
-    }
+    INT_ASSERT(ct);
+
+    ct->addDeclarations(def);
+
+  } else {
+    parent->defPoint->insertBefore(def);
   }
 }
 
@@ -177,10 +207,14 @@ static void flattenScopelessBlock(BlockStmt* block) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertDestructureStatements(Expr*     S1,
-                                        Expr*     S2,
-                                        CallExpr* lhs,
-                                        Expr*     rhs);
+static void      insertDestructureStatements(Expr*     S1,
+                                             Expr*     S2,
+                                             CallExpr* lhs,
+                                             Expr*     rhs);
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
+
+static CallExpr* destructureErr();
 
 static void destructureTupleAssignment(CallExpr* call) {
   CallExpr* parent = toCallExpr(call->parentExpr);
@@ -189,18 +223,17 @@ static void destructureTupleAssignment(CallExpr* call) {
       parent->isNamed("=") == true &&
       parent->get(1)       == call) {
     VarSymbol* rtmp = newTemp();
+    Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
+    Expr*      S2   = new CallExpr(PRIM_NOOP);
 
     rtmp->addFlag(FLAG_EXPR_TEMP);
     rtmp->addFlag(FLAG_MAYBE_TYPE);
     rtmp->addFlag(FLAG_MAYBE_PARAM);
 
-    Expr* S1 = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
-    Expr* S2 = new CallExpr(PRIM_NOOP);
-
     call->getStmtExpr()->replace(S1);
 
-    S1->insertAfter(S2);
     S1->insertBefore(new DefExpr(rtmp));
+    S1->insertAfter(S2);
 
     insertDestructureStatements(S1, S2, call, new SymExpr(rtmp));
 
@@ -212,48 +245,79 @@ static void insertDestructureStatements(Expr*     S1,
                                         Expr*     S2,
                                         CallExpr* lhs,
                                         Expr*     rhs) {
-  int i = 0;
+  int       index = 0;
+  CallExpr* test  = destructureChk(lhs, rhs);
+  CallExpr* err   = destructureErr();
 
-  S1->getStmtExpr()->insertAfter(
-    buildIfStmt(new CallExpr("!=",
-                             new SymExpr(new_IntSymbol(lhs->numActuals())),
-                             new CallExpr(".",
-                                          rhs->copy(),
-                                          new_CStringSymbol("size"))),
-
-                new CallExpr("compilerError",
-                             new_StringSymbol("tuple size must match the number of grouped variables"),
-                             new_IntSymbol(0))));
+  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
 
   for_actuals(expr, lhs) {
-    i++;
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
 
-    expr->remove();
+    index = index + 1;
 
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
-      if (strcmp(se->unresolved, "chpl__tuple_blank") == 0) {
-        continue;
+    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
+      CallExpr* nextLHS = toCallExpr(expr);
+      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
+
+      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+
+      } else {
+        VarSymbol* lhsTmp = newTemp();
+        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+
+        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
+
+        S1->insertBefore(new DefExpr(lhsTmp));
+        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
+
+        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
       }
     }
+  }
+}
 
-    CallExpr* nextLHS = toCallExpr(expr);
-    Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(i));
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
+  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
 
-    if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
-      insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
+}
+
+static CallExpr* destructureErr() {
+  const char* msg  = NULL;
+  Symbol*     zero = new_IntSymbol(0);
+
+  msg = "tuple size must match the number of grouped variables";
+
+  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  Expr*    insertPoint = ts->defPoint;
+  DefExpr* def         = fn->defPoint;
+
+  while (isTypeSymbol(insertPoint->parentSymbol)) {
+    insertPoint = insertPoint->parentSymbol->defPoint;
+  }
+
+  insertPoint->insertBefore(def->remove());
+
+  if (fn->userString != NULL && fn->name != ts->name) {
+    if (strncmp(fn->userString, "ref ", 4) == 0) {
+      // fn->userString of "ref foo()"
+      // Move "ref " before the type name so we end up with "ref Type.foo()"
+      // instead of "Type.ref foo()"
+      fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
 
     } else {
-      VarSymbol* ltmp = newTemp();
-
-      ltmp->addFlag(FLAG_MAYBE_PARAM);
-
-      S1->insertBefore(new DefExpr(ltmp));
-
-      S1->insertBefore(new CallExpr(PRIM_MOVE,
-                                    ltmp,
-                                    new CallExpr(PRIM_ADDR_OF, expr)));
-
-      S2->insertBefore(new CallExpr("=", ltmp, nextRHS));
+      fn->userString = astr(ts->name, ".", fn->userString);
     }
   }
 }
@@ -264,35 +328,9 @@ static void insertDestructureStatements(Expr*     S1,
 *                                                                             *
 ************************************** | *************************************/
 
-static void flattenPrimaryMethods(FnSymbol* fn) {
-  if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
-    Expr* insertPoint = ts->defPoint;
-
-    while (isTypeSymbol(insertPoint->parentSymbol)) {
-      insertPoint = insertPoint->parentSymbol->defPoint;
-    }
-
-    DefExpr* def = fn->defPoint;
-
-    def->remove();
-
-    insertPoint->insertBefore(def);
-
-    if (fn->userString != NULL && fn->name != ts->name) {
-      if (strncmp(fn->userString, "ref ", 4) == 0) {
-        // fn->userString of "ref foo()"
-        // Move "ref " before the type name so we end up with "ref Type.foo()"
-        // instead of "Type.ref foo()"
-        fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
-
-      } else {
-        fn->userString = astr(ts->name, ".", fn->userString);
-      }
-    }
-
-    if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
-      fn->addFlag(FLAG_ATOMIC_TYPE);
-    }
+static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
+    fn->addFlag(FLAG_ATOMIC_TYPE);
   }
 }
 
@@ -311,21 +349,13 @@ static void changeCastInWhere(FnSymbol* fn) {
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isCast() == true) {
-          CallExpr* isSubtype = NULL;
-          Expr*     to        = call->castTo();
-          Expr*     from      = call->castFrom();
-
-          // now remove to and from so we can add them
-          // again as arguments. Don't interleave the
-          // remove with the calls to castTo and castFrom.
+          Expr* to   = call->castTo();
+          Expr* from = call->castFrom();
 
           to->remove();
-
           from->remove();
 
-          isSubtype = new CallExpr(PRIM_IS_SUBTYPE, to, from);
-
-          call->replace(isSubtype);
+          call->replace(new CallExpr(PRIM_IS_SUBTYPE, to, from));
         }
       }
     }
