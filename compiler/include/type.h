@@ -360,15 +360,22 @@ enum InitializerStyle {
 
 class AggregateType : public Type {
 public:
-  AggregateType(AggregateTag initTag);
-  ~AggregateType();
+  static void                 addRecordDefaultConstruction();
+
+  static void                 setCreationStyle(TypeSymbol* t, FnSymbol* fn);
+
+public:
+                              AggregateType(AggregateTag initTag);
+                             ~AggregateType();
 
   DECLARE_COPY(AggregateType);
 
   virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
 
   virtual void                verify();
+
   virtual void                accept(AstVisitor* visitor);
+
   virtual void                printDocs(std::ostream* file, unsigned int tabs);
 
   void                        addDeclarations(Expr* expr);
@@ -388,8 +395,8 @@ public:
 
   // The following two methods are used for types which define initializers
   bool                        setNextGenericField();
-  AggregateType*              getInstantiation(SymExpr* t, int index);
 
+  AggregateType*              getInstantiation(SymExpr* t, int index);
 
   const char*                 classStructName(bool standalone);
 
@@ -413,9 +420,14 @@ public:
   bool                        isGeneric()                                const;
   void                        markAsGeneric();
 
+  void                        buildConstructors();
 
+  void                        addRootType();
+
+  void                        addClassToHierarchy();
 
   AggregateTag                aggregateTag;
+
   InitializerStyle            initializerStyle;
 
   bool                        initializerResolved;
@@ -459,19 +471,6 @@ private:
 
   bool                        mIsGeneric;
 };
-
-class AggregateType;
-
-void build_constructors(AggregateType* ct);
-
-void add_root_type(AggregateType* ct);
-
-void addClassToHierarchy(AggregateType* ct);
-
-void addRecordDefaultConstruction();
-
-void setCreationStyle(TypeSymbol* t, FnSymbol* fn);
-
 
 /************************************* | **************************************
 *                                                                             *

@@ -1093,15 +1093,13 @@ static void       insert_implicit_this(FnSymbol*         fn,
 static void       move_constructor_to_outer(FnSymbol*      fn,
                                             AggregateType* outerType);
 
-void build_constructors(AggregateType* ct)
-{
-  if (ct->defaultInitializer)
-    return;
+void AggregateType::buildConstructors() {
+  if (defaultInitializer == NULL) {
+    SET_LINENO(this);
 
-  SET_LINENO(ct);
-
-  build_type_constructor(ct);
-  build_constructor(ct);
+    build_type_constructor(this);
+    build_constructor(this);
+  }
 }
 
 
@@ -1397,8 +1395,10 @@ static void build_constructor(AggregateType* ct) {
       if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
         // This class has a parent class.
         if (!ct->dispatchParents.v[0]->defaultInitializer) {
+          AggregateType* at = toAggregateType(ct->dispatchParents.v[0]);
+
           // If it doesn't yet have an initializer, make one.
-          build_constructors(toAggregateType(ct->dispatchParents.v[0]));
+          at->buildConstructors();
         }
 
         // Get the parent constructor.
@@ -1699,10 +1699,10 @@ static void           addClassToHierarchy(AggregateType*            ct,
 static AggregateType* discoverParentAndCheck(Expr*          storesName,
                                              AggregateType* child);
 
-void addClassToHierarchy(AggregateType* ct) {
+void AggregateType::addClassToHierarchy() {
   std::set<AggregateType*> localSeen; // classes in potential cycle
 
-  addClassToHierarchy(ct, localSeen);
+  ::addClassToHierarchy(this, localSeen);
 }
 
 static void addClassToHierarchy(AggregateType*            ct,
@@ -1720,7 +1720,7 @@ static void addClassToHierarchy(AggregateType*            ct,
 
   globalSeen.insert(ct);
 
-  add_root_type(ct);
+  ct->addRootType();
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
@@ -1822,7 +1822,7 @@ static AggregateType* discoverParentAndCheck(Expr*          storesName,
   return pt;
 }
 
-void addRecordDefaultConstruction() {
+void AggregateType::addRecordDefaultConstruction() {
   forv_Vec(DefExpr, def, gDefExprs) {
     // We're only interested in declarations that do not have initializers.
     if (def->init != NULL) {
@@ -1848,65 +1848,71 @@ void addRecordDefaultConstruction() {
   }
 }
 
-void setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
-  bool isCtor = (0 == strcmp(t->name, fn->name));
-  bool isInit = (0 == strcmp(fn->name, "init"));
+void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
+  bool isCtor = (strcmp(t->name,  fn->name) == 0);
+  bool isInit = (strcmp(fn->name, "init")   == 0);
 
-  if (!isCtor && !isInit)
-    return;
+  if (isCtor == true || isInit == true) {
+    AggregateType* ct = toAggregateType(t->type);
 
-  AggregateType* ct = toAggregateType(t->type);
-  if (!ct)
-    INT_FATAL(fn, "initializer on non-class type");
-
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
-  }
-
-  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-    // We hadn't previously seen a constructor or initializer definition.
-    // Update the field on the type appropriately.
-    if (isInit) {
-      ct->initializerStyle = DEFINES_INITIALIZER;
-    } else if (isCtor) {
-      ct->initializerStyle = DEFINES_CONSTRUCTOR;
-    } else {
-      // Should never reach here, but just in case...
-      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+    if (ct == NULL) {
+      INT_FATAL(fn, "initializer on non-class type");
     }
-  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
-             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
-    // We've previously seen a constructor but this new method is an initializer
-    // or we've previously seen an initializer but this new method is a
-    // constructor.  We don't allow both to be defined on a type.
-    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
+
+    if (fn->hasFlag(FLAG_NO_PARENS)) {
+      USR_FATAL(fn,
+                "a%s cannot be declared without parentheses",
+                isCtor ? " constructor" : "n initializer");
+    }
+
+    if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+      // We hadn't previously seen a constructor or initializer definition.
+      // Update the field on the type appropriately.
+      if (isInit) {
+        ct->initializerStyle = DEFINES_INITIALIZER;
+
+      } else if (isCtor) {
+        ct->initializerStyle = DEFINES_CONSTRUCTOR;
+
+      } else {
+        // Should never reach here, but just in case...
+        INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+      }
+
+    } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
+               (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
+      // We've previously seen a constructor but this new method
+      // is an initializer or we've previously seen an initializer
+      // but this new method is a constructor.
+      // We don't allow both to be defined on a type.
+
+      USR_FATAL_CONT(fn,
+                     "Definition of both constructor '%s' and "
+                     "initializer 'init'.  Please choose one.",
+                     ct->symbol->name);
+    }
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void add_root_type(AggregateType* ct) {
+void AggregateType::addRootType() {
   // make root records inherit from value
   // make root classes inherit from object
-  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-    SET_LINENO(ct);
+  if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
+    SET_LINENO(this);
 
-    if (isRecord(ct)) {
-      ct->dispatchParents.add(dtValue);
+    if (isRecord()) {
+      dispatchParents.add(dtValue);
 
       // Assume that this addition is unique; report if not.
-      if (dtValue->dispatchChildren.add_exclusive(ct) == false) {
+      if (dtValue->dispatchChildren.add_exclusive(this) == false) {
         INT_ASSERT(false);
       }
 
-    } else if (isClass(ct)) {
-      ct->dispatchParents.add(dtObject);
+    } else if (isClass()) {
+      dispatchParents.add(dtObject);
 
       // Assume that this addition is unique; report if not.
-      if (dtObject->dispatchChildren.add_exclusive(ct) == false) {
+      if (dtObject->dispatchChildren.add_exclusive(this) == false) {
         INT_ASSERT(false);
       }
 
@@ -1914,7 +1920,7 @@ void add_root_type(AggregateType* ct) {
 
       super->addFlag(FLAG_SUPER_CLASS);
 
-      ct->fields.insertAtHead(new DefExpr(super));
+      fields.insertAtHead(new DefExpr(super));
     }
   }
 }

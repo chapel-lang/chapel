@@ -128,7 +128,7 @@ void scopeResolve() {
   // compute class hierarchy
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    addClassToHierarchy(ct);
+    ct->addClassToHierarchy();
   }
 
   //
@@ -179,34 +179,39 @@ void scopeResolve() {
     }
   }
 
-  addRecordDefaultConstruction();
+  AggregateType::addRecordDefaultConstruction();
 
   //
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->_this && fn->_this->type == dtUnknown) {
-      if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
+    if (fn->_this != NULL && fn->_this->type == dtUnknown) {
+      Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
+
+      if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
         SET_LINENO(fn->_this);
 
-        TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
+        if (TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved))) {
+          sym->replace(new SymExpr(ts));
 
-        if (!ts) {
+          fn->_this->type = ts->type;
+          fn->_this->type->methods.add(fn);
+
+          AggregateType::setCreationStyle(ts, fn);
+
+        } else {
           USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
         }
 
-        sym->replace(new SymExpr(ts));
-
-        fn->_this->type = ts->type;
-        fn->_this->type->methods.add(fn);
-        setCreationStyle(ts, fn);
-      } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
+      } else if (SymExpr* sym = toSymExpr(stmt)) {
         fn->_this->type = sym->symbol()->type;
         fn->_this->type->methods.add(fn);
-        setCreationStyle(sym->symbol()->type->symbol, fn);
+
+        AggregateType::setCreationStyle(sym->symbol()->type->symbol, fn);
       }
+
     } else if (fn->_this) {
-      setCreationStyle(fn->_this->type->symbol, fn);
+      AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
 
@@ -214,7 +219,7 @@ void scopeResolve() {
   // build constructors (type and value versions)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    build_constructors(ct);
+    ct->buildConstructors();
   }
 
   resolveGotoLabels();
