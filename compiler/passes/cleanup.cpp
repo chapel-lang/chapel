@@ -117,23 +117,24 @@ static void cleanup(ModuleSymbol* module) {
 ************************************** | *************************************/
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
-  DefExpr* def  = fn->defPoint;
-  Expr*    stmt = def->getStmtExpr();
+  DefExpr* def = fn->defPoint;
 
-  if (stmt == NULL) {
-    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
-      if (AggregateType* ct = toAggregateType(ts->type)) {
-        def->replace(new UnresolvedSymExpr(fn->name));
+  if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+    AggregateType* ct = toAggregateType(ts->type);
 
-        ct->addDeclarations(def);
+    INT_ASSERT(ct);
 
-        return;
-      }
-    }
+    def->replace(new UnresolvedSymExpr(fn->name));
+
+    ct->addDeclarations(def);
+
+  } else {
+    Expr* stmt = def->getStmtExpr();
+
+    def->replace(new UnresolvedSymExpr(fn->name));
+
+    stmt->insertBefore(def);
   }
-
-  def->replace(new UnresolvedSymExpr(fn->name));
-  stmt->insertBefore(def);
 }
 
 /************************************* | **************************************
@@ -145,24 +146,30 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
 static void normalizeLoopIterExpressions(FnSymbol* fn) {
   DefExpr*  def    = fn->defPoint;
   FnSymbol* parent = toFnSymbol(def->parentSymbol);
+  Symbol*   parSym = parent->defPoint->parentSymbol;
 
   INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
              strncmp("_seqloopexpr", parent->name, 12) == 0);
 
-  while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12) ||
-         !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12)) {
-    parent = toFnSymbol(parent->defPoint->parentSymbol);
+  // Walk up through nested loop expressions
+  while (strncmp("_parloopexpr", parSym->name, 12) == 0  ||
+         strncmp("_seqloopexpr", parSym->name, 12) == 0) {
+    parent = toFnSymbol(parSym);
+    parSym = parent->defPoint->parentSymbol;
   }
 
-  if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
+  def->remove();
+
+  // Move the parent
+  if (TypeSymbol* ts = toTypeSymbol(parSym)) {
     AggregateType* ct = toAggregateType(ts->type);
 
     INT_ASSERT(ct);
 
-    ct->addDeclarations(def->remove());
+    ct->addDeclarations(def);
 
   } else {
-    parent->defPoint->insertBefore(def->remove());
+    parent->defPoint->insertBefore(def);
   }
 }
 
