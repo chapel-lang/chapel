@@ -38,6 +38,8 @@ static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(DefExpr* def);
 
+static void normalizeLoopIterExpressions(DefExpr* def);
+
 static void flattenScopelessBlock(BlockStmt* block);
 
 static void destructureTupleAssignment(CallExpr* call);
@@ -74,6 +76,7 @@ static void cleanup(ModuleSymbol* module) {
       SET_LINENO(ast);
 
       normalizeNestedFunctionExpressions(def);
+      normalizeLoopIterExpressions(def);
     }
   }
 
@@ -125,8 +128,17 @@ static void normalizeNestedFunctionExpressions(DefExpr* def) {
 
     def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
+  }
+}
 
-  } else if (strncmp("_iterator_for_loopexpr", def->sym->name, 22) == 0) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void normalizeLoopIterExpressions(DefExpr* def) {
+  if (strncmp("_iterator_for_loopexpr", def->sym->name, 22) == 0) {
     FnSymbol* parent = toFnSymbol(def->parentSymbol);
 
     INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
