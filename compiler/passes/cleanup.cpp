@@ -207,10 +207,14 @@ static void flattenScopelessBlock(BlockStmt* block) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertDestructureStatements(Expr*     S1,
-                                        Expr*     S2,
-                                        CallExpr* lhs,
-                                        Expr*     rhs);
+static void      insertDestructureStatements(Expr*     S1,
+                                             Expr*     S2,
+                                             CallExpr* lhs,
+                                             Expr*     rhs);
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
+
+static CallExpr* destructureErr();
 
 static void destructureTupleAssignment(CallExpr* call) {
   CallExpr* parent = toCallExpr(call->parentExpr);
@@ -219,18 +223,17 @@ static void destructureTupleAssignment(CallExpr* call) {
       parent->isNamed("=") == true &&
       parent->get(1)       == call) {
     VarSymbol* rtmp = newTemp();
+    Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
+    Expr*      S2   = new CallExpr(PRIM_NOOP);
 
     rtmp->addFlag(FLAG_EXPR_TEMP);
     rtmp->addFlag(FLAG_MAYBE_TYPE);
     rtmp->addFlag(FLAG_MAYBE_PARAM);
 
-    Expr* S1 = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
-    Expr* S2 = new CallExpr(PRIM_NOOP);
-
     call->getStmtExpr()->replace(S1);
 
-    S1->insertAfter(S2);
     S1->insertBefore(new DefExpr(rtmp));
+    S1->insertAfter(S2);
 
     insertDestructureStatements(S1, S2, call, new SymExpr(rtmp));
 
@@ -242,50 +245,52 @@ static void insertDestructureStatements(Expr*     S1,
                                         Expr*     S2,
                                         CallExpr* lhs,
                                         Expr*     rhs) {
-  int i = 0;
+  int       index = 0;
+  CallExpr* test  = destructureChk(lhs, rhs);
+  CallExpr* err   = destructureErr();
 
-  S1->getStmtExpr()->insertAfter(
-    buildIfStmt(new CallExpr("!=",
-                             new SymExpr(new_IntSymbol(lhs->numActuals())),
-                             new CallExpr(".",
-                                          rhs->copy(),
-                                          new_CStringSymbol("size"))),
-
-                new CallExpr("compilerError",
-                             new_StringSymbol("tuple size must match the number of grouped variables"),
-                             new_IntSymbol(0))));
+  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
 
   for_actuals(expr, lhs) {
-    i++;
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
 
-    expr->remove();
+    index = index + 1;
 
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
-      if (strcmp(se->unresolved, "chpl__tuple_blank") == 0) {
-        continue;
+    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
+      CallExpr* nextLHS = toCallExpr(expr);
+      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
+
+      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+
+      } else {
+        VarSymbol* lhsTmp = newTemp();
+        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+
+        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
+
+        S1->insertBefore(new DefExpr(lhsTmp));
+        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
+
+        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
       }
     }
-
-    CallExpr* nextLHS = toCallExpr(expr);
-    Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(i));
-
-    if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
-      insertDestructureStatements(S1, S2, nextLHS, nextRHS);
-
-    } else {
-      VarSymbol* ltmp = newTemp();
-
-      ltmp->addFlag(FLAG_MAYBE_PARAM);
-
-      S1->insertBefore(new DefExpr(ltmp));
-
-      S1->insertBefore(new CallExpr(PRIM_MOVE,
-                                    ltmp,
-                                    new CallExpr(PRIM_ADDR_OF, expr)));
-
-      S2->insertBefore(new CallExpr("=", ltmp, nextRHS));
-    }
   }
+}
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
+  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
+
+  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
+}
+
+static CallExpr* destructureErr() {
+  const char* msg  = NULL;
+  Symbol*     zero = new_IntSymbol(0);
+
+  msg = "tuple size must match the number of grouped variables";
+
+  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
 }
 
 /************************************* | **************************************
