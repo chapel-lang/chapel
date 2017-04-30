@@ -460,6 +460,19 @@ private:
   bool                        mIsGeneric;
 };
 
+class AggregateType;
+
+void build_constructors(AggregateType* ct);
+
+void add_root_type(AggregateType* ct);
+
+void addClassToHierarchy(AggregateType* ct);
+
+void addRecordDefaultConstruction();
+
+void setCreationStyle(TypeSymbol* t, FnSymbol* fn);
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
