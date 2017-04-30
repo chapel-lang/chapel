@@ -44,7 +44,9 @@ static void flattenScopelessBlock(BlockStmt* block);
 
 static void destructureTupleAssignment(CallExpr* call);
 
-static void flattenPrimaryMethods(FnSymbol* fn);
+static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
+
+static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 static void changeCastInWhere(FnSymbol* fn);
 
@@ -101,7 +103,12 @@ static void cleanup(ModuleSymbol* module) {
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        flattenPrimaryMethods(fn);
+        // Is this function defined within a type i.e. is it a method?
+        if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
+          flattenPrimaryMethod(ts, fn);
+          applyAtomicTypeToPrimaryMethod(ts, fn);
+        }
+
         changeCastInWhere(fn);
         addParensToDeinitFns(fn);
       }
@@ -287,35 +294,38 @@ static void insertDestructureStatements(Expr*     S1,
 *                                                                             *
 ************************************** | *************************************/
 
-static void flattenPrimaryMethods(FnSymbol* fn) {
-  if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
-    Expr* insertPoint = ts->defPoint;
+static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  Expr*    insertPoint = ts->defPoint;
+  DefExpr* def         = fn->defPoint;
 
-    while (isTypeSymbol(insertPoint->parentSymbol)) {
-      insertPoint = insertPoint->parentSymbol->defPoint;
+  while (isTypeSymbol(insertPoint->parentSymbol)) {
+    insertPoint = insertPoint->parentSymbol->defPoint;
+  }
+
+  insertPoint->insertBefore(def->remove());
+
+  if (fn->userString != NULL && fn->name != ts->name) {
+    if (strncmp(fn->userString, "ref ", 4) == 0) {
+      // fn->userString of "ref foo()"
+      // Move "ref " before the type name so we end up with "ref Type.foo()"
+      // instead of "Type.ref foo()"
+      fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
+
+    } else {
+      fn->userString = astr(ts->name, ".", fn->userString);
     }
+  }
+}
 
-    DefExpr* def = fn->defPoint;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-    def->remove();
-
-    insertPoint->insertBefore(def);
-
-    if (fn->userString != NULL && fn->name != ts->name) {
-      if (strncmp(fn->userString, "ref ", 4) == 0) {
-        // fn->userString of "ref foo()"
-        // Move "ref " before the type name so we end up with "ref Type.foo()"
-        // instead of "Type.ref foo()"
-        fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
-
-      } else {
-        fn->userString = astr(ts->name, ".", fn->userString);
-      }
-    }
-
-    if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
-      fn->addFlag(FLAG_ATOMIC_TYPE);
-    }
+static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
+    fn->addFlag(FLAG_ATOMIC_TYPE);
   }
 }
 
