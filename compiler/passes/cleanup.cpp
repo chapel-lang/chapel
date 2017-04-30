@@ -36,9 +36,9 @@
 
 static void cleanup(ModuleSymbol* module);
 
-static void normalizeNestedFunctionExpressions(DefExpr* def);
+static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
-static void normalizeLoopIterExpressions(DefExpr* def);
+static void normalizeLoopIterExpressions(FnSymbol* fn);
 
 static void flattenScopelessBlock(BlockStmt* block);
 
@@ -73,10 +73,16 @@ static void cleanup(ModuleSymbol* module) {
 
   for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
-      SET_LINENO(ast);
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        SET_LINENO(def);
 
-      normalizeNestedFunctionExpressions(def);
-      normalizeLoopIterExpressions(def);
+        if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
+          normalizeNestedFunctionExpressions(fn);
+
+        } else if (strncmp("_iterator_for_loopexpr", fn->name, 22) == 0) {
+          normalizeLoopIterExpressions(fn);
+        }
+      }
     }
   }
 
@@ -110,25 +116,24 @@ static void cleanup(ModuleSymbol* module) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeNestedFunctionExpressions(DefExpr* def) {
-  if (def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
-    Expr* stmt = def->getStmtExpr();
+static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
+  DefExpr* def  = fn->defPoint;
+  Expr*    stmt = def->getStmtExpr();
 
-    if (stmt == NULL) {
-      if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
-        if (AggregateType* ct = toAggregateType(ts->type)) {
-          def->replace(new UnresolvedSymExpr(def->sym->name));
+  if (stmt == NULL) {
+    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+      if (AggregateType* ct = toAggregateType(ts->type)) {
+        def->replace(new UnresolvedSymExpr(fn->name));
 
-          ct->addDeclarations(def);
+        ct->addDeclarations(def);
 
-          return;
-        }
+        return;
       }
     }
-
-    def->replace(new UnresolvedSymExpr(def->sym->name));
-    stmt->insertBefore(def);
   }
+
+  def->replace(new UnresolvedSymExpr(fn->name));
+  stmt->insertBefore(def);
 }
 
 /************************************* | **************************************
@@ -137,28 +142,27 @@ static void normalizeNestedFunctionExpressions(DefExpr* def) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeLoopIterExpressions(DefExpr* def) {
-  if (strncmp("_iterator_for_loopexpr", def->sym->name, 22) == 0) {
-    FnSymbol* parent = toFnSymbol(def->parentSymbol);
+static void normalizeLoopIterExpressions(FnSymbol* fn) {
+  DefExpr*  def    = fn->defPoint;
+  FnSymbol* parent = toFnSymbol(def->parentSymbol);
 
-    INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
-               strncmp("_seqloopexpr", parent->name, 12) == 0);
+  INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
+             strncmp("_seqloopexpr", parent->name, 12) == 0);
 
-    while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12) ||
-           !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12)) {
-      parent = toFnSymbol(parent->defPoint->parentSymbol);
-    }
+  while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12) ||
+         !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12)) {
+    parent = toFnSymbol(parent->defPoint->parentSymbol);
+  }
 
-    if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
-      AggregateType* ct = toAggregateType(ts->type);
+  if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
+    AggregateType* ct = toAggregateType(ts->type);
 
-      INT_ASSERT(ct);
+    INT_ASSERT(ct);
 
-      ct->addDeclarations(def->remove());
+    ct->addDeclarations(def->remove());
 
-    } else {
-      parent->defPoint->insertBefore(def->remove());
-    }
+  } else {
+    parent->defPoint->insertBefore(def->remove());
   }
 }
 
