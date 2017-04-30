@@ -2325,6 +2325,24 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
   }
 }
 
+void initRootModule() {
+  rootModule           = new ModuleSymbol("_root",
+                                          MOD_INTERNAL,
+                                          new BlockStmt());
+
+  rootModule->filename = astr("<internal>");
+}
+
+void initStringLiteralModule() {
+  stringLiteralModule           = new ModuleSymbol("ChapelStringLiterals",
+                                                   MOD_INTERNAL,
+                                                   new BlockStmt());
+
+  stringLiteralModule->filename = astr("<internal>");
+
+  ModuleSymbol::addTopLevelModule(stringLiteralModule);
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

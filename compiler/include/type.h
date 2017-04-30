@@ -567,8 +567,6 @@ TYPE_EXTERN Type* dtObject;
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
-void     initRootModule();
-void     initStringLiteralModule();
 void     initPrimitiveTypes();
 DefExpr* defineObjectClass();
 void     initChplProgram(DefExpr* objectDef);

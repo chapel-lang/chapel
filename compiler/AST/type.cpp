@@ -1925,30 +1925,6 @@ void add_root_type(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-void initRootModule() {
-  rootModule           = new ModuleSymbol("_root",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
-
-  rootModule->filename = astr("<internal>");
-}
-
-void initStringLiteralModule() {
-  stringLiteralModule           = new ModuleSymbol("ChapelStringLiterals",
-                                                   MOD_INTERNAL,
-                                                   new BlockStmt());
-
-  stringLiteralModule->filename = astr("<internal>");
-
-  ModuleSymbol::addTopLevelModule(stringLiteralModule);
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
 
