@@ -349,21 +349,13 @@ static void changeCastInWhere(FnSymbol* fn) {
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isCast() == true) {
-          CallExpr* isSubtype = NULL;
-          Expr*     to        = call->castTo();
-          Expr*     from      = call->castFrom();
-
-          // now remove to and from so we can add them
-          // again as arguments. Don't interleave the
-          // remove with the calls to castTo and castFrom.
+          Expr* to   = call->castTo();
+          Expr* from = call->castFrom();
 
           to->remove();
-
           from->remove();
 
-          isSubtype = new CallExpr(PRIM_IS_SUBTYPE, to, from);
-
-          call->replace(isSubtype);
+          call->replace(new CallExpr(PRIM_IS_SUBTYPE, to, from));
         }
       }
     }
