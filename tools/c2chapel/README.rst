@@ -75,15 +75,9 @@ intervention may be required (e.g. commenting out unhandled portions of the
 file). There are also some limitations based on Chapel's extern capability.
 See http://chapel.cray.com/bugs.html for instructions on reporting bugs.
 
-- Handle enums (fail gracefully, as Chapel does not yet support extern enums)
-- Should we avoid scraping #defines within an #ifdef?
-- Scrape other kinds of #defines:
-  - strings
-  - hex, octal integers
-  - floats/doubles ?
-  - bitshift constants (e.g. 1<<3)
-- Accept file from stdin
-- Better error handling
+Known issues:
+- enums may cause fatal errors
+- fake standard headers are incomplete
 
 ============
 Contributors
