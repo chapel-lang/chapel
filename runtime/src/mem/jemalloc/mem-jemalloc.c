@@ -251,7 +251,7 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
   return true;
 }
 
-#endif // jemalloc >= 4
+#endif // ifdef USE_JE_CHUNK_HOOKS
 
 // *** End chunk hook replacements *** //
 
