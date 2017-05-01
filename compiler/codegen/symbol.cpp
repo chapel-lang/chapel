@@ -43,7 +43,6 @@
 
 // LLVM debugging support
 #include "llvmDebug.h"
-#include "llvm/Support/raw_os_ostream.h"
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
@@ -54,6 +53,10 @@
 #include <iostream>
 #include <sstream>
 #include <stdint.h>
+
+#ifdef HAVE_LLVM
+#include "llvm/Support/raw_os_ostream.h"
+#endif
 
 /******************************** | *********************************
 *                                                                   *
