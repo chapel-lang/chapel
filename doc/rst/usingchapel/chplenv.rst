@@ -377,8 +377,6 @@ CHPL_MEM
         =============== =======================================================
         cstdlib         use the standard C malloc/free commands
         jemalloc        use included version of Jason Evan's memory allocator
-        jemalloc-system use a system install of jemalloc
-                        (#include jemalloc/jemalloc.h, -ljemalloc)
         =============== =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
