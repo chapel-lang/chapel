@@ -87,7 +87,7 @@ static bool                                enableModuleUsesCache = false;
 // be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
-static Vec<const char*>                         aliasFieldSet;
+static Vec<const char*>                    aliasFieldSet;
 
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
@@ -694,9 +694,6 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
 
 #ifdef HAVE_LLVM
 static bool tryCResolve(ModuleSymbol* module, const char* name);
-static bool tryCResolve_set(ModuleSymbol*                     module,
-                            const char*                       name,
-                            llvm::SmallSet<ModuleSymbol*, 24> already_checked);
 #endif
 
 static void resolveUnresolvedSymExprs() {
@@ -1117,19 +1114,24 @@ static void resolveModuleCall(CallExpr*                     call,
 }
 
 #ifdef HAVE_LLVM
-static bool tryCResolve(ModuleSymbol* module, const char* name) {
-  llvm::SmallSet<ModuleSymbol*, 24> already_checked;
+static bool tryCResolve(ModuleSymbol*                     module,
+                        const char*                       name,
+                        llvm::SmallSet<ModuleSymbol*, 24> visited);
 
-  return tryCResolve_set(module, name, already_checked);
+static bool tryCResolve(ModuleSymbol* module, const char* name) {
+  llvm::SmallSet<ModuleSymbol*, 24> visited;
+
+  return tryCResolve(module, name, visited);
 }
 
-static bool tryCResolve_set(ModuleSymbol* module, const char* name,
-  llvm::SmallSet<ModuleSymbol*, 24> already_checked) {
+static bool tryCResolve(ModuleSymbol*                     module,
+                        const char*                       name,
+                        llvm::SmallSet<ModuleSymbol*, 24> visited) {
 
   if (! module) return false;
 
-  if (llvm_small_set_insert(already_checked, module)) {
-    // already_checked.insert(module)) {
+  if (llvm_small_set_insert(visited, module)) {
+    // visited.insert(module)) {
     // we added it to the set, so continue.
   } else {
     // It was already in the set.
@@ -1137,7 +1139,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
   }
 
   // Is it resolveable in this module?
-  if (module->extern_info) {
+  if (module->extern_info != NULL) {
     // Try resolving it
     Vec<Expr*> c_exprs;
 
@@ -1161,7 +1163,7 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
               SET_LINENO(ct->symbol);
               // If this is a class DefExpr,
               //  make sure its initializer gets created.
-              build_constructors(ct);
+              ct->buildConstructors();
             }
           }
         }
@@ -1175,9 +1177,9 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
 
   // Otherwise, try the modules used by this module.
   forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
-    bool got = tryCResolve_set(usedMod, name, already_checked);
-
-    if( got ) return true;
+    if (tryCResolve(usedMod, name, visited) == true) {
+      return true;
+    }
   }
 
   return false;
