@@ -93,7 +93,6 @@ void Symbol::codegenDef() {
 
 void Symbol::codegenPrototype() { }
 
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

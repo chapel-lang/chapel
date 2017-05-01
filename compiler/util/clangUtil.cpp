@@ -1867,7 +1867,6 @@ void makeBinaryLLVM(void) {
   output.keep();
   output.os().flush();
 
-
   //finishClang is before the call to the debug finalize
   deleteClang(info);
 
