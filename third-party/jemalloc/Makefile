@@ -28,6 +28,11 @@ endif
 # default ratio-based purging
 CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
 
+# To work around a problem with jemalloc's auto-detection of version
+# from git history & out-of-tree builds, explicitly set the version
+CHPL_JEMALLOC_CFG_OPTIONS += --with-version=`cat $(JEMALLOC_SUBDIR)/VERSION`
+
+
 CHPL_JEMALLOC_CFG_OPTIONS += $(CHPL_JEMALLOC_MORE_CFG_OPTIONS)
 
 default: all
