@@ -457,7 +457,6 @@ void chpl_mem_layerInit(void) {
   //   jemalloc 4.5.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
-
     initializeSharedHeap(heap_base, heap_size);
   } else {
     void* p;
