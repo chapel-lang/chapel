@@ -43,7 +43,7 @@
 
 // LLVM debugging support
 #include "llvmDebug.h"
-
+#include "llvm/Support/raw_os_ostream.h"
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
@@ -73,7 +73,10 @@ void llvmFunctionDump(int optLevel, const std::string &name) {
       func = getFunctionLLVM(llvmName.c_str());
 
   if(func)
-    func->dump();
+  {
+      llvm::raw_os_ostream stdOut(std::cout);
+      func->print(stdOut);
+  }
 #endif
 }
 
