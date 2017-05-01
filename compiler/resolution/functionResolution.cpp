@@ -764,39 +764,50 @@ protoIteratorClass(FnSymbol* fn) {
     className = astr(className, "_", fn->_this->type->symbol->cname);
 
   ii->iclass = new AggregateType(AGGREGATE_CLASS);
+
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
+
   cts->addFlag(FLAG_ITERATOR_CLASS);
   cts->addFlag(FLAG_POD);
-  add_root_type(ii->iclass);    // Add super : dtObject.
+
+  ii->iclass->addRootType();
+
   fn->defPoint->insertBefore(new DefExpr(cts));
 
   ii->irecord = new AggregateType(AGGREGATE_RECORD);
+
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
+
   rts->addFlag(FLAG_ITERATOR_RECORD);
+
   // TODO -- do a better job of deciding if an iterator record is
   // POD or not POD.
   rts->addFlag(FLAG_NOT_POD);
-  if (fn->retTag == RET_REF) // TODO -- handle RET_CONST_REF
+
+  if (fn->retTag == RET_REF) { // TODO -- handle RET_CONST_REF
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
+  }
+
   fn->defPoint->insertBefore(new DefExpr(rts));
 
-  ii->tag = it_iterator;
-  ii->advance = protoIteratorMethod(ii, "advance", dtVoid);
-  ii->zip1 = protoIteratorMethod(ii, "zip1", dtVoid);
-  ii->zip2 = protoIteratorMethod(ii, "zip2", dtVoid);
-  ii->zip3 = protoIteratorMethod(ii, "zip3", dtVoid);
-  ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
-  ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
+  ii->tag      = it_iterator;
+  ii->advance  = protoIteratorMethod(ii, "advance",  dtVoid);
+  ii->zip1     = protoIteratorMethod(ii, "zip1",     dtVoid);
+  ii->zip2     = protoIteratorMethod(ii, "zip2",     dtVoid);
+  ii->zip3     = protoIteratorMethod(ii, "zip3",     dtVoid);
+  ii->zip4     = protoIteratorMethod(ii, "zip4",     dtVoid);
+  ii->hasMore  = protoIteratorMethod(ii, "hasMore",  dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
-  ii->init = protoIteratorMethod(ii, "init", dtVoid);
-  ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
+  ii->init     = protoIteratorMethod(ii, "init",     dtVoid);
+  ii->incr     = protoIteratorMethod(ii, "incr",     dtVoid);
 
   // Save the iterator info in the iterator record.
   // The iterator info is still owned by the iterator function.
-  ii->irecord->iteratorInfo = ii;
+  ii->irecord->iteratorInfo        = ii;
   ii->irecord->scalarPromotionType = fn->retType;
+
   fn->retType = ii->irecord;
-  fn->retTag = RET_VALUE;
+  fn->retTag  = RET_VALUE;
 
   makeRefType(fn->retType);
 

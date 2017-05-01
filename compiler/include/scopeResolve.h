@@ -20,9 +20,14 @@
 #ifndef _SCOPE_RESOLVE_H_
 #define _SCOPE_RESOLVE_H_
 
-class AggregateType;
+#include <vector>
 
-void build_constructors(AggregateType* ct);
-void add_root_type(AggregateType* ct);
+class BaseAST;
+class DefExpr;
+class Symbol;
+
+void    addToSymbolTable(std::vector<DefExpr*>& defs);
+
+Symbol* lookup(BaseAST* scope, const char* name);
 
 #endif
