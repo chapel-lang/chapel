@@ -66,6 +66,12 @@ command from within this directory:
 The resulting output should be identical to ``test/fnints.chpl``. Run
 ``c2chapel`` with the ``--help`` flag for more information.
 
+``c2chapel`` by default uses the fake standard headers included with pycparser.
+These are headers used to work around compiler-specific macros or attributes
+often found in C standard headers. Without these fake headers, pycparser will
+probably not be able to parse the given C99 file. Usage of these fake headers
+can be disabled with the ``--no-fake-headers`` flag.
+
 ===========
 Future Work
 ===========
