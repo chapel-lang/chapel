@@ -14,5 +14,11 @@ def get_uniq_cfg_path():
                             chpl_locale_model.get())
 
 @memoize
-def get_link_args():
-    return third_party_utils.default_get_link_args('hwloc')
+def get_link_args(hwloc):
+    if hwloc == 'hwloc':
+        return third_party_utils.default_get_link_args('hwloc',
+                                                       ucp=get_uniq_cfg_path())
+    elif hwloc == 'system':
+        return ['-lhwloc']
+    else:
+        return []

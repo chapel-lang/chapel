@@ -460,7 +460,8 @@ CHPL_GMP
        =======  ============================================================
        Value     Description
        =======  ============================================================
-       system   assume GMP is already installed (#include gmp.h, -lgmp)
+       system   use a system install of GMP
+                (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
        gmp      use the GMP distribution bundled with Chapel in third-party
        =======  ============================================================
@@ -489,17 +490,17 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support or using the hwloc package distributed with Chapel in
-   third-party.  Note that hwloc is only used by the qthreads tasking layer,
-   and does not need to be built for other tasking layers.  Current options
-   are:
+   no hwloc support, using the hwloc package distributed with Chapel in
+   third-party, or using a system jemalloc.
 
-       ======= ==============================================================
-       Value   Description
-       ======= ==============================================================
-       none    do not build hwloc support into the Chapel runtime
-       hwloc   use the hwloc distribution bundled with Chapel in third-party
-       ======= ==============================================================
+       ======== ==============================================================
+       Value    Description
+       ======== ==============================================================
+       none     do not build hwloc support into the Chapel runtime
+       system   use a system install of hwloc
+                (#include hwloc.h, -lhwloc)
+       hwloc    use the hwloc distribution bundled with Chapel in third-party
+       ======== ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`readme-chplenv.CHPL_TASKS` is
    ``qthreads``.  In all other cases it defaults to ``none``.  In the unlikely

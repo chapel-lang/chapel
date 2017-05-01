@@ -150,8 +150,7 @@ def print_mode(mode='list', anonymize=False):
         print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
                   chpl_3p_hwloc_configs.get_uniq_cfg_path(),
                   mode, filters=('runtime',))
-        if hwloc == 'hwloc':
-            link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args())
+        link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args(hwloc))
 
         print_var('  CHPL_JEMALLOC_UNIQ_CFG_PATH',
                   chpl_3p_jemalloc_configs.get_uniq_cfg_path(),
