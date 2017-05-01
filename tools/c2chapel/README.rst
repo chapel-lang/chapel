@@ -51,6 +51,15 @@ have sourced a script like ``$CHPL_HOME/util/setchplenv.bash`` (also used to
 make the ``chpl`` compiler available to your path). To test the ``c2chapel``
 installation, you can run ``make check`` to automatically run some tests.
 
+To remove ``c2chapel`` and files generated during the build process, execute
+one of the following commands:
+
+.. code-block:: sh
+
+  make clean
+  make cleanall
+  make clobber
+
 =====
 Usage
 =====
