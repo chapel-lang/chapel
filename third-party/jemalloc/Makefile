@@ -15,7 +15,7 @@ CHPL_JEMALLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-g
 endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
-			     --with-jemalloc-prefix=chpl_je_ \
+			     --with-jemalloc-prefix=$(CHPL_JEMALLOC_PREFIX) \
 			     --with-private-namespace=chpl_
 
 # Unless the user explicitly asks for stats gathering, disable it since
