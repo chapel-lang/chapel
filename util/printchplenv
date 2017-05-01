@@ -115,6 +115,9 @@ def print_mode(mode='list', anonymize=False):
     hwloc = chpl_hwloc.get()
     print_var('CHPL_HWLOC', hwloc, mode, 'hwloc', ('runtime',))
 
+    jemalloc = chpl_jemalloc.get()
+    print_var('CHPL_JEMALLOC', jemalloc, mode, 'jemalloc', ('runtime',))
+
     regexp = chpl_regexp.get()
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
 
@@ -159,8 +162,7 @@ def print_mode(mode='list', anonymize=False):
         print_var('  CHPL_JEMALLOC_UNIQ_CFG_PATH',
                   chpl_3p_jemalloc_configs.get_uniq_cfg_path(),
                   mode, filters=('runtime',))
-        if target_mem == 'jemalloc':
-            link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args())
+        link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args(jemalloc))
 
         print_var('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
                   chpl_3p_libunwind_configs.get_uniq_cfg_path(),

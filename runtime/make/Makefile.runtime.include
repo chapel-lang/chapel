@@ -107,6 +107,11 @@ UNWIND_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.unwind-$(CHPL_MAKE_UNWIND)
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
 
+# Add any further includes for JEMALLOC.
+JEMALLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.jemalloc-$(CHPL_MAKE_JEMALLOC)
+-include $(JEMALLOC_INCLUDE)
+
+
 #
 # For use with pyChapel / library-mode.
 # Position independent code is required to create shared objects.

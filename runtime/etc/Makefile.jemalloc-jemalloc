@@ -15,4 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_INCLS += -I$(JEMALLOC_INCLUDE_DIR)
+GEN_LFLAGS += -L$(JEMALLOC_LIB_DIR)

@@ -372,12 +372,14 @@ CHPL_MEM
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
    a memory management layer.  Current options are:
 
-        ========= =======================================================
-        Value     Description
-        ========= =======================================================
-        cstdlib   use the standard C malloc/free commands
-        jemalloc  use Jason Evan's memory allocator
-        ========= =======================================================
+        =============== =======================================================
+        Value           Description
+        =============== =======================================================
+        cstdlib         use the standard C malloc/free commands
+        jemalloc        use included version of Jason Evan's memory allocator
+        jemalloc-system use a system install of jemalloc
+                        (#include jemalloc/jemalloc.h, -ljemalloc)
+        =============== =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
@@ -514,6 +516,28 @@ CHPL_HWLOC
        for you. Chapel depends on hwloc features that are not available in
        all versions. For best results, we recommend using the bundled hwloc
        if possible.
+
+.. _readme-chplenv.CHPL_JEMALLOC:
+
+CHPL_JEMALLOC
+~~~~~~~~~~~~~
+   Optionally, the ``CHPL_JEMALLOC`` environment variable can select
+   between no jemalloc, using the jemalloc distributed with Chapel in
+   third-party, or using a system jemalloc. This setting is intented
+   to elaborate upon ``CHPL_MEM=jemalloc``.
+
+       ======== ==============================================================
+       Value    Description
+       ======== ==============================================================
+       none     do not build or use jemalloc
+       system   use a system install of jemalloc
+                (#include jemalloc/jemalloc.h, -ljemalloc)
+       jemalloc use the jemalloc distribution bundled with Chapel in third-party
+       ======== ==============================================================
+
+   If unset, ``CHPL_JEMALLOC`` defaults to ``jemalloc`` if
+   :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
+   defaults to ``none``.
 
 .. _readme-chplenv.CHPL_REGEXP:
 

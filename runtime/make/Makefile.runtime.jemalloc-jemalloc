@@ -15,4 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Intentionally empty
+RUNTIME_INCLS += -I$(JEMALLOC_INCLUDE_DIR)
+# Chapel third-party install of jemalloc calls the routines
+# chpl_je_malloc, chpl_je_free, etc
+RUNTIME_DEFS += -DCHPL_JEMALLOC_PREFIX=chpl_je_
