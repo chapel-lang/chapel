@@ -1999,7 +1999,8 @@ void makeBinaryLLVM(void) {
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
 
 #ifdef HAVE_LLVM
-  llvmFunctionDump(2);
+  if(llvmFuncOptDump == 2)
+      llvmFunctionDump(getFunctionLLVM(llvmFuncDumpCName));
 #endif
 }
 
