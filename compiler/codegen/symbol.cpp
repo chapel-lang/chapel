@@ -63,22 +63,21 @@
 char llvmFuncDumpName[FUNC_NAME_MAX+1] = "";
 int llvmFuncOptDump = 0;
 
-void llvmFunctionDump(int optLevel, const std::string &name) {
 #ifdef HAVE_LLVM
-  if(llvmFuncOptDump != optLevel) return;
+void llvmFunctionDump(int optLevel, llvm::Function *llvmFunc, FnSymbol *chapelFunc) {
+  static llvm::Function *func = NULL; //Store function once we've found it
 
-  std::string llvmName = name + "_chpl";
-  llvm::Function *func = getFunctionLLVM(llvmName.c_str());
-  if(llvmName == std::string(llvmFuncDumpName) + "_chpl")
-      func = getFunctionLLVM(llvmName.c_str());
+  if(chapelFunc && llvmFunc && strcmp(llvmFuncDumpName, chapelFunc->name) == 0)
+      func = llvmFunc;
 
-  if(func)
+  if(llvmFuncOptDump == optLevel && func)
   {
       llvm::raw_os_ostream stdOut(std::cout);
       func->print(stdOut);
+      func = NULL; //Print once, then forget
   }
-#endif
 }
+#endif
 
 /******************************** | *********************************
 *                                                                   *
@@ -1268,7 +1267,6 @@ void FnSymbol::codegenDef() {
       ArgNo++;
     }
 
-    llvmFunctionDump(0, cname);
 #endif
   }
 
@@ -1311,12 +1309,13 @@ void FnSymbol::codegenDef() {
         INT_FATAL("LLVM function verification failed");
       }
     }
+    llvmFunctionDump(0, func, this);
     // Now run the optimizations on that function.
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
     info->FPM_postgen->run(*func);
-    llvmFunctionDump(1, cname);
+    llvmFunctionDump(1);
 #endif
   }
 

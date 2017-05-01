@@ -704,7 +704,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
- {"llvm-fdump", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stderr", "S256", llvmFuncDumpName, "CHPL_LLVM_FDUMP", NULL},
+ {"llvm-fdump", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmFuncDumpName, "CHPL_LLVM_FDUMP", NULL},
  {"llvm-fdump-opt", ' ', "<opt>", "Specifies from which LLVM transformation phase to print function: 0 - before any transformation, 1 - basic cleaning, 2 - full optimization", "I", &llvmFuncOptDump, "CHPL_LLVM_OPT_FDUMP", NULL},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},

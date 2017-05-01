@@ -780,6 +780,8 @@ extern std::vector<FnSymbol*> ftableVec;
 extern char llvmFuncDumpName[FUNC_NAME_MAX+1];
 extern int llvmFuncOptDump;
 
-void llvmFunctionDump(int optLevel, const std::string &name);
+#ifdef HAVE_LLVM
+void llvmFunctionDump(int optLevel, llvm::Function *llvmFunc = NULL, FnSymbol *chapelFunc = NULL);
+#endif
 
 #endif
