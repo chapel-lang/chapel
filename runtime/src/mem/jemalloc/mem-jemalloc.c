@@ -36,6 +36,17 @@
 // The CHPL_JE_ macro needs malloc etc to not be #defined
 #include "chpl-mem-no-warning-macros.h"
 
+// Decide whether or not to try to use jemalloc's chunk hooks interface
+//   jemalloc < 4.0 didn't support chunk_hooks_t
+//   jemalloc 4.1 changed opt.nareas from size_t to unsigned
+// .. so we use chunk hooks interface for jemalloc >= 4.1
+#if JEMALLOC_VERSION_MAJOR > 4
+#define USE_JE_CHUNK_HOOKS
+#endif
+#if (JEMALLOC_VERSION_MAJOR == 4) && (JEMALLOC_VERSION_MINOR >= 1)
+#define USE_JE_CHUNK_HOOKS
+#endif
+
 //
 // Information about shared heaps gotten from the comm layer.
 //
@@ -157,9 +168,9 @@ static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment)
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
 
-// jemalloc < 4.0 didn't support chunk_hooks_t
-// avoid unused function warnings by only defining these if they could be used
-#if JEMALLOC_VERSION_MAJOR >= 4
+// avoid unused function warnings by only defining these chunk hooks
+// if they could be used
+#ifdef USE_JE_CHUNK_HOOKS
 
 
 // Our chunk replacement hook for allocations (Essentially a replacement for
@@ -297,8 +308,8 @@ static void initialize_arenas(void) {
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
 
-// jemalloc < 4.0 didn't support chunk_hooks_t
-#if JEMALLOC_VERSION_MAJOR >= 4
+// we can't use chunk hooks for older versions of jemalloc
+#ifdef USE_JE_CHUNK_HOOKS
 
   unsigned narenas;
   unsigned arena;
@@ -324,7 +335,7 @@ static void replaceChunkHooks(void) {
     }
   }
 #else
-    chpl_internal_error("cannot init multi-locale heap: please rebuild with jemalloc >= 4.0");
+    chpl_internal_error("cannot init multi-locale heap: please rebuild with jemalloc >= 4.1");
 #endif
 
 }
