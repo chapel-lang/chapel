@@ -1,5 +1,5 @@
 //
-// Chapel's serial implementation of transpose
+// Chapel's parallel implementation of transpose
 //
 use Time;
 use BlockDist;
