@@ -42,9 +42,9 @@ in the Chapel distribution.
 
 .. note::
 
-  if re2 support is not enabled (which is the default), all features
-  described below will compile successfully, but will result in an internal
-  error at *run time*, saying "No Regexp Support".
+  if re2 support is not enabled (which is the case in quickstart configurations
+  as in :ref:`chapelhome-quickstart`), the functionality described below will
+  result in either a compile-time or a run-time error.
 
 
 Using Regular Expression Support
