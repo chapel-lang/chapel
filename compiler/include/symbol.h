@@ -562,14 +562,19 @@ class EnumSymbol : public Symbol {
   Immediate*      getImmediate();
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
+public:
+  static void          addTopLevelModule (ModuleSymbol*               module);
+  static void          getTopLevelModules(std::vector<ModuleSymbol*>& mods);
+
 public:
                        ModuleSymbol(const char* iName,
                                     ModTag      iModTag,
@@ -612,20 +617,30 @@ public:
   // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*     extern_info;
-  llvm::MDNode* llvmDINameSpace;
+  llvm::MDNode*        llvmDINameSpace;
 #else
-  void* extern_info;
-  void* llvmDINameSpace;
+  void*                extern_info;
+  void*                llvmDINameSpace;
 #endif
 
-  void                 printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
-  void                 printTableOfContents(std::ostream *file);
+  void                 printDocs(std::ostream* file,
+                                 unsigned int  tabs,
+                                 std::string   parentName);
+
+  void                 printTableOfContents(std::ostream* file);
+
   std::string          docsName();
 
 private:
-  void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
+  void                 getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
+                                                    Expr*            expr,
+                                                    bool             config);
   bool                 hasTopLevelModule();
 };
+
+void initRootModule();
+
+void initStringLiteralModule();
 
 /******************************** | *********************************
 *                                                                   *

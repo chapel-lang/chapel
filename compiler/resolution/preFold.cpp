@@ -1096,27 +1096,41 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   call->parentExpr->insertBefore(new DefExpr(ts));
 
   ct->dispatchParents.add(parent);
+
   bool inserted = parent->dispatchChildren.add_exclusive(ct);
   INT_ASSERT(inserted);
+
   VarSymbol* super = new VarSymbol("super", parent);
+
   super->addFlag(FLAG_SUPER_CLASS);
+
   ct->fields.insertAtHead(new DefExpr(super));
 
-  build_constructors(ct);
+  ct->buildConstructors();
+
   buildDefaultDestructor(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
+
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
-  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
+                                               "_mt",
+                                               dtMethodToken));
+
   thisMethod->addFlag(FLAG_METHOD);
+
   ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
+
   thisSymbol->addFlag(FLAG_ARG_THIS);
+
   thisMethod->insertFormalAtTail(thisSymbol);
+
   thisMethod->_this = thisSymbol;
 
-  CallExpr *innerCall = new CallExpr(captured_fn);
+  CallExpr* innerCall = new CallExpr(captured_fn);
+  int       skip      = 2;
 
-  int skip = 2;
   for_alist(formalExpr, thisParentMethod->formals) {
     //Skip the first two arguments from the parent, which are _mt and this
     if (skip) {
@@ -1124,7 +1138,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
       continue;
     }
 
-    DefExpr* dExp = toDefExpr(formalExpr);
+    DefExpr*   dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
     if (fArg->type->symbol->hasFlag(FLAG_GENERIC)) {
@@ -1132,15 +1146,20 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     }
 
     ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
-    if (fArg->typeExpr)
+
+    if (fArg->typeExpr) {
       newFormal->typeExpr = fArg->typeExpr->copy();
+    }
+
     SymExpr* argSym = new SymExpr(newFormal);
+
     innerCall->insertAtTail(argSym);
 
     thisMethod->insertFormalAtTail(newFormal);
   }
 
   std::vector<CallExpr*> calls;
+
   collectCallExprs(captured_fn, calls);
 
   for_vector(CallExpr, cl, calls) {
@@ -1151,9 +1170,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   if (captured_fn->retType == dtVoid) {
     thisMethod->insertAtTail(innerCall);
-  }
-  else {
-    VarSymbol *tmp = newTemp("_return_tmp_");
+
+  } else {
+    VarSymbol* tmp = newTemp("_return_tmp_");
+
     thisMethod->insertAtTail(new DefExpr(tmp));
     thisMethod->insertAtTail(new CallExpr(PRIM_MOVE, tmp, innerCall));
 
@@ -1161,23 +1181,29 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   }
 
   call->parentExpr->insertBefore(new DefExpr(thisMethod));
+
   normalize(thisMethod);
 
   ct->methods.add(thisMethod);
 
-  FnSymbol *wrapper = new FnSymbol("wrapper");
+  FnSymbol* wrapper = new FnSymbol("wrapper");
+
   wrapper->addFlag(FLAG_INLINE);
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->defaultInitializer))));
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
+                                     new CallExpr(PRIM_CAST,
+                                                  parent->symbol,
+                                                  new CallExpr(ct->defaultInitializer))));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 
   normalize(wrapper);
 
-  CallExpr *call_wrapper = new CallExpr(wrapper);
+  CallExpr* callWrapper = new CallExpr(wrapper);
+
   functionCaptureMap[captured_fn] = wrapper;
 
-  return call_wrapper;
+  return callWrapper;
 }
 
 /*
@@ -1339,24 +1365,28 @@ static std::string buildParentName(AList& arg_list,
 */
 static AggregateType* createAndInsertFunParentClass(CallExpr*   call,
                                                     const char* name) {
-  AggregateType* parent    = new AggregateType(AGGREGATE_CLASS);
-  TypeSymbol*    parent_ts = new TypeSymbol(name, parent);
+  AggregateType* parent   = new AggregateType(AGGREGATE_CLASS);
+  TypeSymbol*    parentTs = new TypeSymbol(name, parent);
 
-  parent_ts->addFlag(FLAG_FUNCTION_CLASS);
+  parentTs->addFlag(FLAG_FUNCTION_CLASS);
 
   // Because this function type needs to be globally visible (because
   // we don't know the modules it will be passed to), we put it at the
   // highest scope
-  theProgram->block->body.insertAtTail(new DefExpr(parent_ts));
+  theProgram->block->body.insertAtTail(new DefExpr(parentTs));
 
   parent->dispatchParents.add(dtObject);
+
   dtObject->dispatchChildren.add(parent);
 
-  VarSymbol* parent_super = new VarSymbol("super", dtObject);
-  parent_super->addFlag(FLAG_SUPER_CLASS);
-  parent->fields.insertAtHead(new DefExpr(parent_super));
+  VarSymbol* parentSuper = new VarSymbol("super", dtObject);
 
-  build_constructors(parent);
+  parentSuper->addFlag(FLAG_SUPER_CLASS);
+
+  parent->fields.insertAtHead(new DefExpr(parentSuper));
+
+  parent->buildConstructors();
+
   buildDefaultDestructor(parent);
 
   return parent;
