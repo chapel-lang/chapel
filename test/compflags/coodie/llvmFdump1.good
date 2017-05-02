@@ -1,0 +1,39 @@
+
+define internal void @mainTest_chpl(i64 %n_chpl) {
+entry:
+  %chpl_macro_tmp_1162 = alloca i64
+  store i64 %n_chpl, i64* %chpl_macro_tmp_1162, !tbaa !0
+  %_ic__F1_high_chpl = alloca i64
+  %i_chpl = alloca i64
+  br label %mainTest_chpl_2blk_body_
+
+mainTest_chpl_2blk_body_:                         ; preds = %entry
+  %0 = load i64, i64* %chpl_macro_tmp_1162, !tbaa !0
+  store i64 %0, i64* %_ic__F1_high_chpl, !tbaa !0
+  %1 = load i64, i64* %chpl_macro_tmp_1162, !tbaa !0
+  %2 = load i64, i64* %chpl_macro_tmp_1162, !tbaa !0
+  %3 = call i8 @chpl_checkIfRangeIterWillOverflow(i64 1, i64 %1, i64 1, i64 1, i64 %2, i8 1, i64 3, i32 51)
+  br label %mainTest_chpl_3blk_c_for_init_
+
+mainTest_chpl_3blk_c_for_init_:                   ; preds = %mainTest_chpl_2blk_body_
+  store i64 1, i64* %i_chpl, !tbaa !0
+  %4 = load i64, i64* %i_chpl, !tbaa !0
+  %5 = load i64, i64* %_ic__F1_high_chpl, !tbaa !0
+  %6 = icmp sle i64 %4, %5
+  br i1 %6, label %mainTest_chpl_3blk_body_, label %mainTest_chpl_3blk_end_
+
+mainTest_chpl_3blk_body_:                         ; preds = %mainTest_chpl_3blk_body_, %mainTest_chpl_3blk_c_for_init_
+  %7 = load i64, i64* %i_chpl, !tbaa !0
+  call void @writeln_chpl2(i64 %7, i64 5, i32 51)
+  %8 = load i64, i64* %i_chpl, !tbaa !0
+  %9 = add i64 %8, 1
+  store i64 %9, i64* %i_chpl, !tbaa !0
+  %10 = load i64, i64* %i_chpl, !tbaa !0
+  %11 = load i64, i64* %_ic__F1_high_chpl, !tbaa !0
+  %12 = icmp sle i64 %10, %11
+  br i1 %12, label %mainTest_chpl_3blk_body_, label %mainTest_chpl_3blk_end_
+
+mainTest_chpl_3blk_end_:                          ; preds = %mainTest_chpl_3blk_body_, %mainTest_chpl_3blk_c_for_init_
+  ret void
+}
+1
