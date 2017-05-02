@@ -50,7 +50,7 @@ static InitStyle findInitStyle(Expr*     expr);
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
 
-static void      buildTypeFunction(FnSymbol* fn);
+static void      buildTypeFunction(FnSymbol* initFn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -727,10 +727,6 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
     buildClassAllocator(fn);
 
     fn->addFlag(FLAG_INLINE);
-  }
-
-  if (at->isGeneric() == true) {
-    buildTypeFunction(fn);
   }
 }
 
@@ -2330,30 +2326,30 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   return fn;
 }
 
-static void buildTypeFunction(FnSymbol* fn) {
-  Symbol* _this = fn->_this;
+static void buildTypeFunction(FnSymbol* initFn) {
+  Symbol* _this = initFn->_this;
   AggregateType* at = toAggregateType(_this->type);
 
-  SET_LINENO(fn);
+  SET_LINENO(initFn);
 
-  FnSymbol* tFn = new FnSymbol(astr("_type_specifier_", at->symbol->name));
+  FnSymbol* typeFn = new FnSymbol(astr("_type_specifier_", at->symbol->name));
 
-  tFn->retTag = RET_TYPE;
-  tFn->addFlag(FLAG_COMPILER_GENERATED);
+  typeFn->retTag = RET_TYPE;
+  typeFn->addFlag(FLAG_COMPILER_GENERATED);
 
   VarSymbol* local = newTemp("local_tmp");
-  tFn->body->insertAtTail(new DefExpr(local));
+  typeFn->body->insertAtTail(new DefExpr(local));
 
   // TODO: reuse previously created type functions
 
-  // TODO: store relationship between tFn and fn
+  // TODO: store relationship between typeFn and initFn
   CallExpr* initCall = new CallExpr(PRIM_NEW, at->symbol);
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, local, initCall);
   CallExpr* typeCall = new CallExpr(PRIM_TYPEOF, local);
 
   int count = 1;
 
-  for_formals(formal, fn) {
+  for_formals(formal, initFn) {
     // Ignore _mt and this
     if (count >= 3) {
       ArgSymbol* arg = NULL;
@@ -2380,15 +2376,15 @@ static void buildTypeFunction(FnSymbol* fn) {
         }
       }
       if (arg != NULL) {
-        tFn->insertFormalAtTail(arg);
+        typeFn->insertFormalAtTail(arg);
       }
     }
 
     count = count + 1;
   }
 
-  tFn->body->insertAtTail(moveCall);
-  tFn->body->insertAtTail(new CallExpr(PRIM_RETURN, typeCall));
+  typeFn->body->insertAtTail(moveCall);
+  typeFn->body->insertAtTail(new CallExpr(PRIM_RETURN, typeCall));
 
-  at->symbol->defPoint->insertBefore(new DefExpr(tFn));
+  at->symbol->defPoint->insertBefore(new DefExpr(typeFn));
 }
