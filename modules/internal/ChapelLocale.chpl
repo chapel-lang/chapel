@@ -161,8 +161,7 @@ module ChapelLocale {
     var callStackSize: size_t;
 
     /*
-      Get the integer identifier for the top-level locale the
-      current task is running on.
+      Get the integer identifier for this locale.
 
       :returns: locale number, in the range ``0..numLocales-1``
       :rtype: int
@@ -173,8 +172,7 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
 
     /*
-      Get the name of the top-level locale the current task is
-      running on.
+      Get the name of this locale.
 
       :returns: locale name
       :rtype: string

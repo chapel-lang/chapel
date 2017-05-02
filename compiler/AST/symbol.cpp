@@ -1871,10 +1871,27 @@ void EnumSymbol::accept(AstVisitor* visitor) {
   visitor->visitEnumSym(this);
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static std::vector<ModuleSymbol*>    sTopLevelModules;
+
+void ModuleSymbol::addTopLevelModule(ModuleSymbol* module) {
+  sTopLevelModules.push_back(module);
+
+  theProgram->block->insertAtTail(new DefExpr(module));
+}
+
+
+void ModuleSymbol::getTopLevelModules(std::vector<ModuleSymbol*>& mods) {
+  for (size_t i = 0; i < sTopLevelModules.size(); i++) {
+    mods.push_back(sTopLevelModules[i]);
+  }
+}
+
 
 ModuleSymbol::ModuleSymbol(const char* iName,
                            ModTag      iModTag,
@@ -2306,6 +2323,24 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
       }
     }
   }
+}
+
+void initRootModule() {
+  rootModule           = new ModuleSymbol("_root",
+                                          MOD_INTERNAL,
+                                          new BlockStmt());
+
+  rootModule->filename = astr("<internal>");
+}
+
+void initStringLiteralModule() {
+  stringLiteralModule           = new ModuleSymbol("ChapelStringLiterals",
+                                                   MOD_INTERNAL,
+                                                   new BlockStmt());
+
+  stringLiteralModule->filename = astr("<internal>");
+
+  ModuleSymbol::addTopLevelModule(stringLiteralModule);
 }
 
 /******************************** | *********************************

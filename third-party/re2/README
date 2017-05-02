@@ -10,6 +10,10 @@ for convenience and was obtained from:
 Any Chapel issues that seem to be related to re2 should be directed
 to the Chapel team at http://chapel.cray.com/bugs.html.
 
+Note that since RE2 uses C++11 atomics, it may not build or function with
+certain older compilers. In particular, if you are using GCC, we
+recommend at least GCC version 5. While this version of RE2 will build
+with GCC 4.7, the C++11 atomics were not sufficiently tested until GCC 5.
 
 Chapel modifications to re2
 ===========================

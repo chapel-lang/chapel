@@ -19,9 +19,10 @@
 
 #include "runpasses.h"
 
-#include "checks.h"        // For check function prototypes.
-#include "log.h"           // For LOG_<passname> #defines.
-#include "passes.h"        // For pass function prototypes.
+#include "checks.h"
+#include "log.h"
+#include "parser.h"
+#include "passes.h"
 #include "PhaseTracker.h"
 
 #include <cstdio>

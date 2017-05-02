@@ -237,14 +237,6 @@ generic fields in the \chpl{ParentC} as described in
 ~\ref{Type_Constructors}. Furthermore, a fully specified \chpl{C} will be
 a subclass of a corresponding fully specified \chpl{ParentC}.
 
-\begin{future}
-A derived class may also incorporate any number of records by listing them
-in the derived class declaration.
-As with record inheritance, this has the effect of injecting the record's fields and
-methods into the new class type.  Record inheritance does not induce a
-well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
-\end{future}
-
 \subsection{The object Class}
 \label{The_object_Class}
 \index{object@\chpl{object}}
@@ -587,7 +579,7 @@ receiver-clause:
 The receiver-clause specifies the \emph{receiver}, which is the class
 instance whose field is being accessed.
 The receiver clause can be omitted when the field access is within a method.
-In this case the receiver is the method's receiver \rsec{The_em_this_Reference}.
+In this case the receiver is the method's receiver.
 The receiver clause can also be omitted when the field access is within
 a class declaration. In this case the receiver is the instance
 being implicitly defined or referenced.
@@ -686,9 +678,11 @@ Class method calls are similar to other method calls which are described
 in \rsec{Method_Calls}. However, class method calls are subject to
 dynamic dispatch.
 
-The receiver-clause (or its absence) specifies the method's receiver
-\rsec{The_em_this_Reference} in the same way it does for field accesses
-\rsec{Class_Field_Accesses}.
+The receiver-clause (or its absence) specifies the method's receiver in
+the same way it does for field accesses \rsec{Class_Field_Accesses}.
+
+See (\rsec{Method_receiver_and_this}) for more details of about method
+receivers.
 
 \section{Common Operations}
 

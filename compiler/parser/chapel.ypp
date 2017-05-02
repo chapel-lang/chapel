@@ -488,9 +488,9 @@ stmt:
 
 module_decl_stmt:
   access_control TMODULE ident TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($3, new BlockStmt(), yyfilename, $1, @1.comment))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($3, currentModuleType, new BlockStmt(), yyfilename, $1, @1.comment))); }
 | access_control TMODULE ident TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($3, $5, yyfilename, $1, @1.comment))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($3, currentModuleType, $5, yyfilename, $1, @1.comment))); }
 ;
 
 access_control:
@@ -541,6 +541,7 @@ only_ls:
                                          cur->tag = OnlyRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
                                          $1->push_back(cur); }
+;
 
 opt_only_ls:
   /* nothing */                        { $$ = new std::vector<OnlyRename*>();
@@ -920,6 +921,7 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
+;
 
 fn_decl_stmt:
   linkage_spec proc_or_iter

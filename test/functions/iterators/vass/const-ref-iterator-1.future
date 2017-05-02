@@ -1,0 +1,3 @@
+bug: yielding a non-const variable from a 'const ref' iterator is allowed
+
+Issue #6142

@@ -1,3 +1,2 @@
 CHPL_TASKS == massivethreads
-CHPL_TASKS == muxed
 CHPL_TASKS == qthreads
