@@ -133,10 +133,6 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-c2chapel: FORCE
-	cd tools/c2chapel && $(MAKE)
-	cd tools/c2chapel && $(MAKE) install
-
 third-party-fltk: FORCE
 	cd third-party/fltk && $(MAKE)
 
