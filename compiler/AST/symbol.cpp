@@ -2833,6 +2833,12 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   return s->flags & mask;
 }
 
+/******************************** | *********************************
+*                                                                   *
+* Create a temporary, with FLAG_TEMP and (optionally) FLAG_CONST.   *
+*                                                                   *
+********************************* | ********************************/
+
 VarSymbol* newTemp(const char* name, QualifiedType qt) {
   VarSymbol* vs = newTemp(name, qt.type());
   vs->qual = qt.getQual();
@@ -2855,7 +2861,30 @@ VarSymbol* newTemp(const char* name, Type* type) {
   return vs;
 }
 
-
 VarSymbol* newTemp(Type* type) {
   return newTemp((const char*)NULL, type);
+}
+
+VarSymbol* newTempConst(const char* name, Type* type) {
+  VarSymbol* result = newTemp(name, type);
+  result->addFlag(FLAG_CONST);
+  return result;
+}
+
+VarSymbol* newTempConst(Type* type) {
+  VarSymbol* result = newTemp(type);
+  result->addFlag(FLAG_CONST);
+  return result;
+}
+
+VarSymbol* newTempConst(const char* name, QualifiedType qt) {
+  VarSymbol* result = newTemp(name, qt);
+  result->addFlag(FLAG_CONST);
+  return result;
+}
+
+VarSymbol* newTempConst(QualifiedType qt) {
+  VarSymbol* result = newTemp(qt);
+  result->addFlag(FLAG_CONST);
+  return result;
 }

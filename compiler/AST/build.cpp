@@ -997,7 +997,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(lifn));
 
-  VarSymbol* leaderIterator = newTemp("_leaderIterator");
+  VarSymbol* leaderIterator = newTempConst("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
   lifn->insertAtTail(new DefExpr(leaderIterator));
 
@@ -1032,7 +1032,7 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(fifn));
-  followerIterator = newTemp("_followerIterator");
+  followerIterator = newTempConst("_followerIterator");
   followerIterator->addFlag(FLAG_EXPR_TEMP);
   fifn->insertAtTail(new DefExpr(followerIterator));
 
@@ -1229,7 +1229,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   if (useThisGlobalOp) {
     globalOp = useThisGlobalOp;
   } else {
-    globalOp = newTemp("chpl__reduceGlob");
+    globalOp = newTempConst("chpl__reduceGlob");
     iterRec->defPoint->insertBefore(new DefExpr(globalOp));
   }
   // Because of this, can't just do reduceOp->replace(...).
@@ -1578,7 +1578,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     //   wasting threads that would do nothing other than wait on the
     //   on-statement.
     //
-    VarSymbol* coforallCount = newTemp("_coforallCount");
+    VarSymbol* coforallCount = newTempConst("_coforallCount");
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
     block->insertAtHead(new DefExpr(coforallCount));
@@ -1607,7 +1607,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     coforallBlk->insertAtTail(new DefExpr(tmpIter));
     coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
     {
-      VarSymbol* coforallCount = newTemp("_coforallCount");
+      VarSymbol* coforallCount = newTempConst("_coforallCount");
       BlockStmt* beginBlk = new BlockStmt();
       beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
       addByrefVars(beginBlk, byref_vars);
@@ -1622,7 +1622,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
       nonVectorCoforallBlk->insertAtTail(block);
     }
     {
-      VarSymbol* coforallCount = newTemp("_coforallCount");
+      VarSymbol* coforallCount = newTempConst("_coforallCount");
       BlockStmt* beginBlk = new BlockStmt();
       beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
       addByrefVars(beginBlk, byref_vars);
@@ -1920,7 +1920,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
     return NULL;
   }
 
-  VarSymbol* globalOp = newTemp("chpl_reduceGlob");
+  VarSymbol* globalOp = newTempConst("chpl_reduceGlob");
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   VarSymbol* result = newTemp("chpl_reduceResult");
@@ -2049,7 +2049,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   if (forallExpr)
     return forallExpr;
 
-  VarSymbol* globalOp = newTemp("chpl_globalOp");
+  VarSymbol* globalOp = newTempConst("chpl_globalOp");
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   BlockStmt* serialBlock = buildChapelStmt();
@@ -2137,7 +2137,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->insertFormalAtTail(data);
 
   VarSymbol* eltType = newTemp("chpl_eltType");
-  VarSymbol* globalOp = newTemp();
+  VarSymbol* globalOp = newTempConst();
 
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
@@ -2776,7 +2776,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     // remote_fork (node) { foo(); } // no wait();
 
     // Execute the construct "on x begin ..." asynchronously.
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTempConst();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
     beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, gFalse, tmp));
@@ -2785,7 +2785,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   } else {
     // Otherwise, wait for the "on" statement to complete before proceeding.
     BlockStmt* block = buildChapelStmt();
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTempConst();
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
@@ -2831,7 +2831,7 @@ BlockStmt*
 buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
-  VarSymbol* endCountSave = newTemp("_endCountSave");
+  VarSymbol* endCountSave = newTempConst("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
   block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
@@ -2861,8 +2861,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     return buildChapelStmt(block);
   }
 
-  VarSymbol* cobeginCount = newTemp("_cobeginCount");
-  cobeginCount->addFlag(FLAG_TEMP);
+  VarSymbol* cobeginCount = newTempConst("_cobeginCount");
 
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
