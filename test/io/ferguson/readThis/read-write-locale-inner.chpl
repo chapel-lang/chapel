@@ -1,13 +1,15 @@
 record A {
   var x:int;
-  proc writeThis(writer, loc) {
+  proc writeThis(writer) {
+    var loc = writer.readWriteThisFromLocale();
     writeln("in A.writeThis loc=", loc.id);
     writer.write(x);
   }
 }
 record B {
   var a:A;
-  proc writeThis(writer, loc) {
+  proc writeThis(writer) {
+    var loc = writer.readWriteThisFromLocale();
     writeln("in B.writeThis loc=", loc.id);
     writer.write(a);
   }

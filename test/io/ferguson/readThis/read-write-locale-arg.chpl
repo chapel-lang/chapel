@@ -1,6 +1,9 @@
+use IO;
+
 class A {
   var x:int;
-  proc writeThis(writer, loc:locale) {
+  proc writeThis(writer) {
+    var loc = writer.readWriteThisFromLocale();
     writeln("in A.writeThis loc= ", loc.id);
     writer.writeln(x);
   }
@@ -8,7 +11,8 @@ class A {
 
 class B {
   var x:int;
-  proc readThis(writer, loc:locale) {
+  proc readThis(writer) {
+    var loc = writer.readWriteThisFromLocale();
     writeln("in B.readThis loc= ", loc.id);
     writer.readln(x);
   }
@@ -16,7 +20,8 @@ class B {
 
 class C {
   var x:int;
-  proc readWriteThis(rw, loc:locale) {
+  proc readWriteThis(rw) {
+    var loc = rw.readWriteThisFromLocale();
     writeln("in C.readWriteThis loc= ", loc.id);
     rw.readwrite(x);
   }

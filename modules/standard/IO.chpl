@@ -2675,6 +2675,14 @@ record channel {
   var home:locale;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  // Use to support writeThis including an on statement and writeThis that needs
+  // to know where the I/O was originally requested from. Not used outside of
+  // calling writeThis/readThis. If readWriteThisFromLocale != nil, then
+  // we are working on a channel created for running writeThis/readThis.
+  // Therefore further locking by the same task is not necessary.
+  pragma "no doc"
+  var _readWriteThisFromLocale:locale;
 }
 
 // TODO -- shouldn't have to write this this way!
@@ -3068,6 +3076,33 @@ proc channel._set_style(style:iostyle) {
     var local_style:iostyle = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
+}
+
+/*
+
+   Return the locale on which an ongoing I/O was started with a channel.
+   This method will return nil unless it is called on a channel that is
+   the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
+
+ */
+inline
+proc channel.readWriteThisFromLocale() {
+  return _readWriteThisFromLocale;
+}
+
+// Returns the original locale that the I/O started on
+// Uses readWriteThisFromLocale in order to propagate that
+// information across readThis/writeThis/readWriteThis calls.
+// If readWriteThisFromLocale returns nil, that means the channel
+// was not created to call readThis/writeThis/readWriteThis and
+// so the original locale of the I/O is `here`.
+pragma "no doc"
+inline
+proc channel.getIoStartedOnLocale() {
+  var ret = this.readWriteThisFromLocale();
+  if ret == nil then
+    ret = here;
+  return ret;
 }
 
 /*
@@ -3700,10 +3735,11 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
-
   var reader = new channel(writing=false, iokind.dynamic, locking=false,
                            home=here,
-                           _channel_internal=_channel_internal);
+                           _channel_internal=_channel_internal,
+                           _readWriteThisFromLocale=loc);
+
   var err:syserr = ENOERR;
 
   // Clear the channel error so we can use the error
@@ -3734,7 +3770,8 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // already have the lock)
   var writer = new channel(writing=true, iokind.dynamic, locking=false,
                            home=here,
-                           _channel_internal=_channel_internal);
+                           _channel_internal=_channel_internal,
+                           _readWriteThisFromLocale=loc);
 
   var err:syserr = ENOERR;
 
@@ -3771,7 +3808,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 pragma "no doc"
 proc channel.readIt(ref x) {
   if writing then compilerError("read on write-only channel");
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var error:syserr;
@@ -3787,7 +3824,7 @@ proc channel.readIt(ref x) {
 pragma "no doc"
 proc channel.writeIt(x) {
   if !writing then compilerError("write on read-only channel");
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var error:syserr;
@@ -3975,7 +4012,7 @@ inline proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     for param i in 1..k {
@@ -4149,7 +4186,7 @@ proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -4249,7 +4286,7 @@ where arg.rank == 1 && isRectangularArr(arg)
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -4580,7 +4617,7 @@ pragma "no doc"
 inline proc channel.write(const args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     for param i in 1..k {
@@ -4629,7 +4666,7 @@ proc channel.write(const args ...?k,
                    out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -5843,7 +5880,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var fmt = fmtStr.localize().c_str();
@@ -6059,7 +6096,7 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
 proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
   if writing then compilerError("readf on write-only channel");
   error = ENOERR;
-  const origLocale = here;
+  const origLocale = this.getIoStartedOnLocale();
   on this.home {
     this.lock();
     var fmt = fmtStr.localize().c_str();
