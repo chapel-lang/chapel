@@ -110,7 +110,7 @@ for niter in 0..iterations {
 
   if niter == 1 then t.start();
 
-  forall i in 0..#n {
+  forall i in 0..#particles.size {
 
     const (fx, fy) = computeTotalForce(particles[i]);
     if debug then writeln("Force acting on particle " , i, " ", (fx,fy));
@@ -134,7 +134,7 @@ for niter in 0..iterations {
 t.stop();
 
 
-for i in 0..#n {
+for i in 0..#particles.size {
   if !verifyParticle(particles[i]) then
     halt("Verification failed");
 }
