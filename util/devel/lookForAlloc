@@ -65,12 +65,16 @@ def get_non_allowed_files(search_dir):
         srcs = [s for s in srcs if not s.endswith(allowed_file)]
     return srcs
 
-def cscope_find_calls(func_call, src_file):
-    """Run cscope searching for calls to func_call in src_file. cscope """
-    # TODO check that cscope is available
-    # -k  -- don't use don't use /usr/include
+def build_cscope_ref(src_files):
+    """Build a cscope cross-reference for crazy fast searching of src_files"""
+    cscope_cmd = ['cscope', '-b', '-q', '-k'] + src_files
+    # TODO check for errors
+    run_command(cscope_cmd)
+
+def cscope_find_calls(func_call):
+    """Run cscope searching for calls to func_call"""
     # -L3 -- line based "Find functions calling this function"
-    cscope_cmd = ['cscope', '-k', '-L3{0}'.format(func_call), src_file]
+    cscope_cmd = ['cscope', '-d', '-L3{0}'.format(func_call)]
     return run_command(cscope_cmd)
 
 def main():
@@ -79,16 +83,17 @@ def main():
     options = parser.parse_args()[0]
     chpl_home = os.path.normpath(options.chpl_home)
 
-    runtime_dir = os.path.join(chpl_home, 'runtime')
     # TODO check that runtime dir exists
-    src_files = get_non_allowed_files(runtime_dir)
     # TODO print out number of runtime files that we check?
+    runtime_dir = os.path.join(chpl_home, 'runtime')
+    src_files = get_non_allowed_files(runtime_dir)
 
-    for src_file in src_files:
-        for alloc_func in get_alloc_funcs():
-            out = cscope_find_calls(alloc_func, src_file)
-            sys.stdout.write(out.replace(chpl_home + os.path.sep, ''))
+    # TODO check that cscope is available
+    build_cscope_ref(src_files)
 
+    for alloc_func in get_alloc_funcs():
+        out = cscope_find_calls(alloc_func)
+        sys.stdout.write(out.replace(chpl_home + os.path.sep, ''))
 
 if __name__ == "__main__":
     main()
