@@ -10,7 +10,8 @@ config param useBlockDist = false;
 
 config const iterations = 100,
              length = 100,
-             validate = false;
+             correctness = false, //being run in start_test
+             validate = true;
 
 config var SCALAR = 3.0;
 
@@ -33,14 +34,13 @@ var A: [vectorDom] real,
     B: [vectorDom] real,
     C: [vectorDom] real;
 
-//
-// Print information before main loop
-//
-writeln("Parallel Research Kernels version ", PRKVERSION);
-writeln("Serial stream triad: A = B + SCALAR*C");
-writeln("Max parallelism        = ", here.maxTaskPar);
-writeln("Vector length          = ", length);
-writeln("Number of iterations   = ", iterations);
+if !correctness {
+  writeln("Parallel Research Kernels version ", PRKVERSION);
+  writeln("Serial stream triad: A = B + SCALAR*C");
+  writeln("Max parallelism        = ", here.maxTaskPar);
+  writeln("Vector length          = ", length);
+  writeln("Number of iterations   = ", iterations);
+}
 
 // initialization
 A = 0.0;
@@ -84,6 +84,8 @@ if validate {
     halt("Validation failed");
 }
 
-const bytes = 4 * 8 * length;
-writeln("Rate (MB/s): ", 1.0E-06*bytes/avgTime,
-   " Avg time (s): ",avgTime);
+if !correctness {
+  const bytes = 4 * 8 * length;
+  writeln("Rate (MB/s): ", 1.0E-06*bytes/avgTime,
+         " Avg time (s): ",avgTime);
+}
