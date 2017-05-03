@@ -29,12 +29,12 @@ def get_alloc_funcs():
     misc = ['strdup', 'strndup']
     return std + align + p_align + misc
 
-def find_files(search_dir, extenstions):
+def find_files(search_dir, extensions):
     """Return a list of absolute paths to files with any of the provided
        extensions in the search_dir."""
     source_files = []
     for root, dirnames, filenames in os.walk(search_dir):
-        for ext in extenstions:
+        for ext in extensions:
             for filename in fnmatch.filter(filenames, '*.{0}'.format(ext)):
                 source_files.append(os.path.join(root, filename))
     return source_files
