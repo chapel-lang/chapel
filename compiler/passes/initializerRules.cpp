@@ -2375,7 +2375,26 @@ static void buildTypeFunction(FnSymbol* initFn) {
         arg->addFlag(FLAG_GENERIC);
 
         if (formal->defaultExpr != NULL) {
-          initCall->insertAtTail(formal->defaultExpr->copy());
+          INT_ASSERT(formal->defaultExpr->body.length == 1);
+          // Assumes the defaultExpr on the formal in the initializer is of
+          // length 1
+          Expr* formalDefault = formal->defaultExpr->body.tail->copy();
+
+          CallExpr* getFormalType = new CallExpr(PRIM_TYPEOF, formalDefault);
+          CallExpr* newClause = new CallExpr("==", arg, getFormalType);
+
+          if (typeFn->where != NULL) {
+            // Need to join all previous conditions in the where clause
+            Expr* last = typeFn->where->body.tail->remove();
+            CallExpr* andCall = new CallExpr("&", last, newClause);
+            typeFn->where->insertAtTail(andCall);
+          } else {
+            // This type argument can never be anything other than the type
+            // of the default value specified
+            typeFn->where = new BlockStmt(newClause);
+          }
+
+          initCall->insertAtTail(formalDefault->copy());
         } else {
           INT_ASSERT(formal->typeExpr->body.length == 1);
           // Assumes the typeExpr on the formal in the initializer is of length
