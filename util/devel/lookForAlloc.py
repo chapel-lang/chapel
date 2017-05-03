@@ -84,7 +84,8 @@ def cscope_find_calls(func_call):
 
 
 def check_runtime_for_alloc_calls(chpl_home):
-    """ Check $CHPL_HOME/runtime for calls to the system allocator"""
+    """ Check $CHPL_HOME/runtime for calls to the system allocator. Returns
+        True if alloc calls were found, False otherwise"""
     # TODO check that runtime dir exists
     # TODO print out number of runtime files that we check?
     runtime_dir = os.path.join(chpl_home, 'runtime')
@@ -94,22 +95,26 @@ def check_runtime_for_alloc_calls(chpl_home):
     # TODO check for errors in calls to cscope
     build_cscope_ref(src_files)
 
+    found_alloc_calls = False
     for alloc_func in get_alloc_funcs():
         out = cscope_find_calls(alloc_func)
         if out:
+            found_alloc_calls = True
             sys.stdout.write('Error: found "{0}" calls:\n'.format(alloc_func))
             sys.stdout.write(out.replace(chpl_home + os.path.sep, ''))
             sys.stdout.write('\n')
+    return found_alloc_calls
 
 
 def main():
+    """Determine chpl_home and check for alloc calls in chpl_home/runtime"""
     parser = optparse.OptionParser(description=__doc__)
     parser.add_option('--chpl_home', dest='chpl_home', default=get_chpl_home())
     options = parser.parse_args()[0]
     chpl_home = os.path.normpath(options.chpl_home)
 
-    check_runtime_for_alloc_calls(chpl_home)
+    return check_runtime_for_alloc_calls(chpl_home)
 
 
 if __name__ == "__main__":
-    main()
+    exit(main())
