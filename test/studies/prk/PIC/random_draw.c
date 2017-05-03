@@ -90,8 +90,8 @@ void LCG_get_chunk(uint64_t *start, uint64_t *end, int tid, int nthreads, uint64
  
 static uint64_t tail(uint64_t x) {
   uint64_t x2 = x;
-  if (!x) return x;
   uint64_t result = 1;
+  if (!x) return x;
   while (x>>=1) result <<=1;
   return (x2 - result);
 }  
@@ -110,9 +110,11 @@ static int LOG(uint64_t n) {
  
 /* Sum(i=1,n) a^i, with n arbitrary */
 static uint64_t SUMK(uint64_t n) {
+  uint64_t HEAD;
+  uint64_t TAILn;
   if (n==0) return(0);
-  uint64_t HEAD = SUMPOWER(LOG(n));
-  uint64_t TAILn = tail(n);
+  HEAD = SUMPOWER(LOG(n));
+  TAILn = tail(n);
   if (TAILn==0) return(HEAD);
   return(HEAD + (LCG_A[LOG(n)])*SUMK(TAILn));
 }

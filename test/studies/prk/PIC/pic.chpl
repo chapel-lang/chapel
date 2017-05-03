@@ -20,6 +20,7 @@ config const L = 10, // grid size
              m = 1,
              iterations = 10,
              debug = false,
+             correctness = false, //being run in start_test
              particleMode = "SINUSOIDAL"; //how to initialize the input
 
 // for geomteric initialization
@@ -43,9 +44,9 @@ config const initPatchTop= 1;
 config const initPatchBottom = 2;
 
 const patch = new bbox(initPatchLeft,
-                           initPatchRight,
-                           initPatchTop,
-                           initPatchBottom);
+                       initPatchRight,
+                       initPatchTop,
+                       initPatchBottom);
 
 const gridPatch = new bbox(0, (L+1), 0, (L+1));
 
@@ -63,30 +64,31 @@ record particle {
   var m: int;
 }
 
-writeln("Parallel Research Kernels Version ", PRKVERSION);
-writeln("Chapel Particle-in-Cell execution on 2D grid");
-writeln("Max parallelism                = ", here.maxTaskPar);
-writeln("Grid Size                      = ", L);
-writeln("Number of particles requested  = ", n);
-writeln("Number of time steps           = ", iterations);
-writeln("Initialization mode            = ", particleMode);
-select particleMode {
-  when "GEOMETRIC" do
-    writeln("\tAttenuation factor           = ", rho);
-  when "LINEAR" {
-    writeln("\tNegative Slope               = ", alpha);
-    writeln("\tOffset                       = ", beta);
+if !correctness {
+  writeln("Parallel Research Kernels Version ", PRKVERSION);
+  writeln("Chapel Particle-in-Cell execution on 2D grid");
+  writeln("Max parallelism                = ", here.maxTaskPar);
+  writeln("Grid Size                      = ", L);
+  writeln("Number of particles requested  = ", n);
+  writeln("Number of time steps           = ", iterations);
+  writeln("Initialization mode            = ", particleMode);
+  select particleMode {
+    when "GEOMETRIC" do
+      writeln("\tAttenuation factor           = ", rho);
+    when "LINEAR" {
+      writeln("\tNegative Slope               = ", alpha);
+      writeln("\tOffset                       = ", beta);
+    }
+    when "PATCH" {
+      writeln("\tBounding box                 = ", (patch.left,
+                                                    patch.right,
+                                                    patch.top,
+                                                    patch.bottom));
+    }
   }
-  when "PATCH" {
-    writeln("\tBounding box                 = ", (patch.left,
-                                                  patch.right,
-                                                  patch.top,
-                                                  patch.bottom));
-  }
+  writeln("Particle charge semi-increment = ", k);
+  writeln("Vertical velocity              = ", m);
 }
-writeln("Particle charge semi-increment = ", k);
-writeln("Vertical velocity              = ", m);
-
 var Qgrid = initializeGrid(L);
 
 var particleDom = {1..0};
@@ -102,7 +104,9 @@ select particleMode {
 
 finishDistribution();
 
-writeln("Number of particles placed : ", particles.size);
+if !correctness {
+  writeln("Number of particles placed : ", particles.size);
+}
 
 var t = new Timer();
 
@@ -139,10 +143,12 @@ for i in 0..#particles.size {
     halt("Verification failed");
 }
 
-writeln("Verification succesful");
+writeln("Verification successful");
 
-const avgTime = t.elapsed()/iterations;
-writeln("Rate (Mparticles_moved/s): ", 1.0e-6*(n/avgTime));
+if !correctness {
+  const avgTime = t.elapsed()/iterations;
+  writeln("Rate (Mparticles_moved/s): ", 1.0e-6*(n/avgTime));
+}
 
 proc initializeGrid(L) {
   const gridDom = {0..#(L+1), 0..#(L+1)};
