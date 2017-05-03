@@ -2385,6 +2385,9 @@ static void buildTypeFunction(FnSymbol* initFn) {
                                              formal->typeExpr->body.tail->copy());
           if (typeFn->where != NULL) {
             // Need to join all previous conditions in the where clause
+            Expr* last = typeFn->where->body.tail->remove();
+            CallExpr* andCall = new CallExpr("&", last, newClause);
+            typeFn->where->insertAtTail(andCall);
           } else {
             // This type argument can never be anything other than the one
             // specified
