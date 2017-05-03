@@ -1,0 +1,2 @@
+default_value_bad.chpl:12: error: unresolved type specifier generated for 'Foo(type string)'
+default_value_bad.chpl:5: note: candidates are: Foo(type xVal)
