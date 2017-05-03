@@ -13,7 +13,8 @@ config const order = 10,
              iterations = 100,
              blockSize = 0,
              debug = false,
-             validate = true;
+             validate = true,
+             correctness = false; // being run in start_test
 
 
 // TODO current logic assumes order is divisible by blockSize. add that
@@ -37,13 +38,16 @@ forall (i,j) in matrixDom {
 }
 
 const nTasksPerLocale = here.maxTaskPar;
-writeln("Chapel Dense matrix-matrix multiplication");
-writeln("Max parallelism      =   ", nTasksPerLocale);
-writeln("Matrix order         =   ", order);
-writeln("Blocking factor      =   ", if blockSize>0 then blockSize+""
-    else "N/A");
-writeln("Number of iterations =   ", iterations);
-writeln();
+
+if !correctness {
+  writeln("Chapel Dense matrix-matrix multiplication");
+  writeln("Max parallelism      =   ", nTasksPerLocale);
+  writeln("Matrix order         =   ", order);
+  writeln("Blocking factor      =   ", if blockSize>0 then blockSize+""
+      else "N/A");
+  writeln("Number of iterations =   ", iterations);
+  writeln();
+}
 
 const refChecksum = (iterations) *
     (0.25*order*order*order*(order-1.0)*(order-1.0));
@@ -66,6 +70,7 @@ else {
   // using explicit coforalls
   coforall l in Locales with (ref t) {
     on l {
+      const bVecRange = 0..#blockSize;
       const blockDom = {bVecRange, bVecRange};
       const localDom = matrixDom.localSubdomain();
 
@@ -129,9 +134,11 @@ if validate {
         Reference checksum = ", refChecksum, " Checksum = ",
         checksum);
   else
-    writeln("Validation succesful.");
+    writeln("Validation successful.");
 }
 
-const nflops = 2.0*(order**3);
-const avgTime = t.elapsed()/iterations;
-writeln("Rate(MFlop/s) = ", 1e-6*nflops/avgTime, " Time : ", avgTime);
+if !correctness {
+  const nflops = 2.0*(order**3);
+  const avgTime = t.elapsed()/iterations;
+  writeln("Rate(MFlop/s) = ", 1e-6*nflops/avgTime, " Time : ", avgTime);
+}
