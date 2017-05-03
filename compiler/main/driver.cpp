@@ -281,7 +281,7 @@ static void setupChplHome(const char* argv0) {
   }
 
   if( chpl_home ) {
-    if( strlen(chpl_home) >= FILENAME_MAX )
+    if( strlen(chpl_home) > FILENAME_MAX )
       USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
 
     if( guess == NULL ) {
