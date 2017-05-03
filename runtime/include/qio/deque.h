@@ -45,8 +45,9 @@
 #define deque_free(ptr) chpl_mem_free(ptr, 0, 0)
 #define deque_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 #else
-#define deque_calloc(nmemb, size) calloc(nmemb,size)
-#define deque_free(ptr) free(ptr)
+#include "chpl-mem-sys.h"
+#define deque_calloc(nmemb, size) sys_calloc(nmemb,size)
+#define deque_free(ptr) sys_free(ptr)
 #define deque_memcpy(dest, src, num) memcpy(dest, src, num)
 #endif
 
