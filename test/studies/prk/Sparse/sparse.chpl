@@ -101,7 +101,7 @@ const referenceSum = 0.5 * matrixDom.numIndices * (iterations+1) *
     (iterations+2);
 const vectorSum = + reduce result;
 if abs(vectorSum-referenceSum) > epsilon then
-  halt("Validation failed. Reference sum = ", referenceSum,
+  halt("VALIDATION FAILED!. Reference sum = ", referenceSum,
       " Vector sum = ", vectorSum);
 
 writeln("Validation successful");

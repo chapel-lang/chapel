@@ -140,10 +140,10 @@ t.stop();
 
 for i in 0..#particles.size {
   if !verifyParticle(particles[i]) then
-    halt("Verification failed");
+    halt("VALIDATION FAILED!");
 }
 
-writeln("Verification successful");
+writeln("Validation successful");
 
 if !correctness {
   const avgTime = t.elapsed()/iterations;
@@ -378,7 +378,7 @@ proc verifyParticle(p) {
   const y_periodic = mod(y_final+(iterations+1):real *abs(p.m)*L, L);
 
   if ( abs(p.x - x_periodic) > epsilon || abs(p.y - y_periodic) > epsilon) {
-    writeln("Verification for particle failed");
+    writeln("Validation for particle failed");
     writeln(p.x, " ", x_periodic);
     writeln(p.y, " ", y_periodic);
     return false;

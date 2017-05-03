@@ -81,7 +81,8 @@ if validate {
   if abs(aj-asum)/asum <= epsilon then
     writeln("Validation successful");
   else
-    halt("Validation failed");
+    halt("VALIDATION FAILED! Reference checksum = ", aj,
+                           " Checksum = ", asum);
 }
 
 if !correctness {

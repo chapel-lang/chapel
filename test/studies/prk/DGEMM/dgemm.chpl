@@ -130,11 +130,10 @@ else {
 if validate {
   const checksum = + reduce C;
   if abs(checksum-refChecksum)/refChecksum > epsilon then
-    halt("VALIDATION FAILED!\n \
-        Reference checksum = ", refChecksum, " Checksum = ",
-        checksum);
+    halt("VALIDATION FAILED! Reference checksum = ", refChecksum,
+                           " Checksum = ", checksum);
   else
-    writeln("Validation successful.");
+    writeln("Validation successful");
 }
 
 if !correctness {
