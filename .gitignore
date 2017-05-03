@@ -17,8 +17,9 @@ tags
 # Top level ignores.
 /BUILD_VERSION
 /Chapel.xcodeproj
-/configured-chplconfig
+/chplconfig
 /configured-prefix
+/configured-chpl-home
 /SVNLOG
 /.SVNLOG-revnum
 /bin

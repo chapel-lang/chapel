@@ -184,9 +184,10 @@ myinstallfile CHANGES.md              "$DEST_CHPL_HOME"
 myinstallfile CONTRIBUTORS.md         "$DEST_CHPL_HOME"
 myinstallfile COPYRIGHT               "$DEST_CHPL_HOME"
 myinstallfile GOALS.md                "$DEST_CHPL_HOME"
+myinstallfile LICENSE                 "$DEST_CHPL_HOME"
+myinstallfile LICENSE.chapel          "$DEST_CHPL_HOME"
 myinstallfile PERFORMANCE.md          "$DEST_CHPL_HOME"
 myinstallfile README.rst              "$DEST_CHPL_HOME"
-myinstallfile STATUS                  "$DEST_CHPL_HOME"
 
 # copy modules
 myinstalldir  modules                 "$DEST_CHPL_HOME"/modules
