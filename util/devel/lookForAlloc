@@ -76,12 +76,8 @@ def cscope_find_calls(func_call):
     cscope_cmd = ['cscope', '-d', '-L3{0}'.format(func_call)]
     return run_command(cscope_cmd)
 
-def main():
-    parser = optparse.OptionParser(description=__doc__)
-    parser.add_option('--chpl_home', dest='chpl_home', default=get_chpl_home())
-    options = parser.parse_args()[0]
-    chpl_home = os.path.normpath(options.chpl_home)
-
+def check_runtime_for_alloc_calls(chpl_home):
+    """ Check $CHPL_HOME/runtime for calls to the system allocator"""
     # TODO check that runtime dir exists
     # TODO print out number of runtime files that we check?
     runtime_dir = os.path.join(chpl_home, 'runtime')
@@ -97,6 +93,14 @@ def main():
             sys.stdout.write('Error: found "{0}" calls:\n'.format(alloc_func))
             sys.stdout.write(out.replace(chpl_home + os.path.sep, ''))
             sys.stdout.write('\n')
+
+def main():
+    parser = optparse.OptionParser(description=__doc__)
+    parser.add_option('--chpl_home', dest='chpl_home', default=get_chpl_home())
+    options = parser.parse_args()[0]
+    chpl_home = os.path.normpath(options.chpl_home)
+
+    check_runtime_for_alloc_calls(chpl_home)
 
 if __name__ == "__main__":
     main()
