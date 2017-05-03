@@ -78,6 +78,12 @@ they do not already exist - which call ``readWriteThis``.
 Note that arguments to ``readThis`` and ``writeThis`` may represent a locked
 channel; as a result, calling methods on the channel in parallel from within a
 ``readThis``, ``writeThis``, or ``readWriteThis`` may cause undefined behavior.
+Additionally, performing I/O on a global channel that is the same channel as the
+one ``readThis``, ``writeThis``, or ``readWriteThis`` is operating on can result
+in deadlock. In particular, these methods should not refer to :var:`stdin`,
+:var:`stdout`, or :var:`stderr` explicitly or implicitly (such as by calling
+the global :proc:`writeln` function). Instead, these methods should only
+perform I/O on the channel passed as an argument.
 
 Because it is often more convenient to use an operator for I/O, instead of
 writing
