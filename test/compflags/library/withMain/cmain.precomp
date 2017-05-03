@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+chpl --library lib.chpl -oliblib
