@@ -14,6 +14,9 @@ then
 fi
 
 
+# Let ORIG_CHPL_HOME be PWD or CHPL_HOME
+ORIG_CHPL_HOME="${CHPL_HOME:-$PWD}"
+
 export CHPL_HOME="$PWD"
 
 # PREFIX is for split installations, e.g. /usr/bin/chpl, /usr/share/chapel
@@ -104,6 +107,7 @@ mynormalizepath () {
 # Save configured installation prefix/dir
 rm -f configured-chpl-home
 rm -f configured-prefix
+CONFIGURED=""
 if [ "$DEST_DIR_SET" -ne 0 ]
 then
   # Normalize DEST_DIR
@@ -111,12 +115,28 @@ then
   DEST_DIR="$NORMALIZED"
   # Save target installation directory for 'make install' / install.sh
   echo "$DEST_DIR" > configured-chpl-home
+  CONFIGURED=configured-chpl-home
 else
   # Normalize PREFIX
   mynormalizepath "$PREFIX"
   PREFIX="$NORMALIZED"
   # Save prefix for building the compiler
   echo "$PREFIX" > configured-prefix
+  CONFIGURED=configured-prefix
+fi
+
+# Check that the file we added exists in ORIG_CHPL_HOME
+if [ ! -f "$ORIG_CHPL_HOME/$CONFIGURED" ]
+then
+  echo "Error: CHPL_HOME is not the same as PWD. Please reset or unset CHPL_HOME"
+  echo "       CHPL_HOME is $ORIG_CHPL_HOME"
+  echo "             PWD is $PWD"
+  echo
+  echo "       try"
+  echo
+  echo "       unset CHPL_HOME"
+  echo
+  exit -1
 fi
 
 # Save currently selected configuration
