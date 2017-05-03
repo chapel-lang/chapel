@@ -2367,12 +2367,30 @@ static void buildTypeFunction(FnSymbol* initFn) {
         initCall->insertAtTail(new CallExpr("_defaultOf", arg));
 
       } else {
-        // The argument is not generic, so we don't want to create an argument
-        // for it in the type function.
+        // The argument is not generic.  If the argument has a type, we'll
+        // want to ensure it always gets that type.  If the argument has a
+        // default expression, we'll want that to be taken into account
+        arg = new ArgSymbol(INTENT_BLANK, formal->name, dtAny);
+        arg->addFlag(FLAG_TYPE_VARIABLE);
+        arg->addFlag(FLAG_GENERIC);
+
         if (formal->defaultExpr != NULL) {
           initCall->insertAtTail(formal->defaultExpr->copy());
         } else {
-          initCall->insertAtTail(new CallExpr("_defaultOf", formal->typeExpr->copy()));
+          INT_ASSERT(formal->typeExpr->body.length == 1);
+          // Assumes the typeExpr on the formal in the initializer is of length
+          // 1.
+          CallExpr* newClause = new CallExpr("==",
+                                             arg,
+                                             formal->typeExpr->body.tail->copy());
+          if (typeFn->where != NULL) {
+            // Need to join all previous conditions in the where clause
+          } else {
+            // This type argument can never be anything other than the one
+            // specified
+            typeFn->where = new BlockStmt(newClause);
+          }
+          initCall->insertAtTail(new CallExpr("_defaultOf", arg));
         }
       }
       if (arg != NULL) {
