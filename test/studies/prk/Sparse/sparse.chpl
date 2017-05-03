@@ -4,36 +4,23 @@ use LayoutCSR;
 
 param PRKVERSION = "2.17";
 
-config param rowDistributeMatrix = false;
-
 config const lsize = 5,
              radius = 2,
              iterations = 10,
              correctness = false,
              scramble = true;
 
-const lsize2 = 2*lsize;
-const size = 1<<lsize;
-const size2 = size*size;
-const stencilSize = 4*radius+1;
-const sparsity = stencilSize:real/size2;
+const lsize2 = 2*lsize,
+      size = 1<<lsize,
+      size2 = size*size,
+      stencilSize = 4*radius+1,
+      sparsity = stencilSize:real/size2;
 
 // create vector domain
-const vectorSpace = {0..#size2};
-var vectorDom = vectorSpace dmapped Block(vectorSpace);
-
-// create matrix domain
-var rowDistLocDom = {0..#numLocales, 0..0};
-var rowDistLocArr: [rowDistLocDom] locale;
-rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
+const vectorDom = {0..#size2};
 
 const parentDom = {0..#size2, 0..#size2};
-var matrixDenseDom = parentDom dmapped Block(parentDom,
-                              targetLocales=if rowDistributeMatrix then
-                              rowDistLocArr else Locales,
-                              sparseLayoutType=CSR);
-
-var matrixDom: sparse subdomain(matrixDenseDom);
+var matrixDom: sparse subdomain(parentDom) dmapped CSR();
 
 // temporary index buffer for fast initialization
 const indBufDom = {0..#(size2*stencilSize)};
@@ -75,7 +62,6 @@ if !correctness {
   writeln("Parallel Research Kernels Version ", PRKVERSION);
   writeln("Sparse matrix-dense vector multiplication");
   writeln("Max parallelism      = ", here.maxTaskPar);
-  writeln("Row distribution     = ", rowDistributeMatrix);
   writeln("Matrix order         = ", size2);
   writeln("Stencil diameter     = ", 2*radius+1);
   writeln("Sparsity             = ", sparsity);
@@ -90,7 +76,7 @@ for niter in 0..iterations {
   [i in vectorDom] vector[i] += i+1;
 
   forall i in matrix.domain.dim(1) do
-    for j in matrix.domain.dim(2) do
+    for j in matrix.domain.dimIter(2,i) do
     result[i] += matrix[i,j] * vector[j];
 }
 t.stop();
