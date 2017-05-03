@@ -170,7 +170,7 @@ you to send your changes back to us at: :disguise:`chapel_info@cray.com`
 Installing Chapel
 -----------------
 
-Chapel can be build and installed as follows:
+Chapel can be built and installed as follows:
 
 .. code-block:: bash
 
@@ -183,5 +183,5 @@ See ``./configure --help`` for more information on the options available.
 .. note::
 
  ``./configure`` will save the current configuration into a
- ``chplconfig`` file and can set the installation path to be
+ ``chplconfig`` file and can set the installation path that will be
  compiled in to the ``chpl`` binary.
