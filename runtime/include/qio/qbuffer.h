@@ -493,11 +493,14 @@ typedef chpl_bool qio_bool;
 
 #else
 
-#define qio_malloc(size) malloc(size)
-#define qio_calloc(nmemb, size) calloc(nmemb,size)
-#define qio_realloc(ptr, size) realloc(ptr, size)
-#define qio_valloc(size) valloc(size)
-#define qio_free(ptr) free(ptr)
+#include "chpl-mem-sys.h"
+#include "sys.h"
+
+#define qio_malloc(size) sys_malloc(size)
+#define qio_calloc(nmemb, size) sys_calloc(nmemb,size)
+#define qio_realloc(ptr, size) sys_realloc(ptr, size)
+#define qio_valloc(size) sys_memalign(sys_page_size(), size)
+#define qio_free(ptr) sys_free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
 #define qio_memcpy(dest, src, num) memcpy(dest, src, num)
 
