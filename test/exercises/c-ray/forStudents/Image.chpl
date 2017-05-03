@@ -66,7 +66,12 @@ inline proc colorOffset(param color) param {
 //
 // write the image to the output file
 //
-proc writeImage(outfile, format, pixels: [] pixelType) {
+proc writeImage(image, format, pixels: [] pixelType) {
+  // the output file channel
+  const outfile = if image == "stdout" then stdout
+                                       else open(image, iomode.cw).writer();
+  if image != "stdout" then
+    writeln("Writing image to ", image);
   select format {
     when imageType.ppm do
       writeImagePPM(outfile, pixels);
