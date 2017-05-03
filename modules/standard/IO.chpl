@@ -3746,10 +3746,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop reading if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  if __primitive("method call resolves", x, "readThis", reader, loc) then
-    x.readThis(reader, loc);
-  else
-    x.readThis(reader);
+  x.readThis(reader);
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
@@ -3790,10 +3787,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     }
     _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
   } else {
-    if __primitive("method call resolves", x, "writeThis", writer, loc) then
-      x.writeThis(writer, loc);
-    else
-      x.writeThis(writer);
+    x.writeThis(writer);
   }
 
   // Set the channel pointer to NULL to make the
