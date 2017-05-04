@@ -95,8 +95,6 @@ def check_for_alloc_calls(search_dir, rel_dir=''):
         False otherwise"""
     src_files = get_non_allowed_files(search_dir)
 
-    # TODO check that cscope is available
-    # TODO check for errors in calls to cscope
     build_cscope_ref(src_files)
 
     found_alloc_calls = False
@@ -116,12 +114,10 @@ def main():
     options = parser.parse_args()[0]
     chpl_home = os.path.normpath(options.chpl_home)
 
-    # TODO check that runtime dir exists
-    # TODO print out number of runtime files that we check?
     runtime_dir = os.path.join(chpl_home, 'runtime')
     rel_dir = chpl_home + os.path.sep
     return check_for_alloc_calls(runtime_dir, rel_dir)
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())
