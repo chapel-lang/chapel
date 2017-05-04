@@ -196,7 +196,7 @@ module ChapelBase {
   inline proc -(a: real(?w)) return __primitive("u-", a);
   inline proc -(a: imag(?w)) return __primitive("u-", a);
   inline proc -(a: complex(?w)) return __primitive("u-", a);
-  
+
   inline proc +(param a: int(?w)) param return a;
   inline proc +(param a: uint(?w)) param return a;
 
@@ -254,7 +254,7 @@ module ChapelBase {
   inline proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
   inline proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
   inline proc *(a: complex(?w), b: complex(w)) return __primitive("*", a, b);
-  
+
   inline proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
   inline proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
   inline proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex(w*2);
@@ -277,7 +277,7 @@ module ChapelBase {
   inline proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
   inline proc /(a: complex(?w), b: complex(w)) return __primitive("/", a, b);
-  
+
   inline proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
   inline proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
   inline proc /(a: real(?w), b: complex(w*2))
@@ -307,11 +307,31 @@ module ChapelBase {
   //
   // % on primitive types
   //
-  inline proc %(a: int(?w), b: int(w)) return __primitive("%", a, b);
-  inline proc %(a: uint(?w), b: uint(w)) return __primitive("%", a, b);
+  inline proc %(a: int(?w), b: int(w)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("%", a, b);
+  }
+  inline proc %(a: uint(?w), b: uint(w)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("%", a, b);
+  }
 
-  inline proc %(param a: int(?w), param b: int(w)) param return __primitive("%", a, b);
-  inline proc %(param a: uint(?w), param b: uint(w)) param return __primitive("%", a, b);
+  inline proc %(param a: int(?w), param b: int(w)) param {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("%", a, b);
+  }
+  inline proc %(param a: uint(?w), param b: uint(w)) param {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("%", a, b);
+  }
 
   //
   // ** on primitive types
@@ -375,7 +395,7 @@ module ChapelBase {
   }
 
   inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
-    if b == 0 then 
+    if b == 0 then
       return 1:a.type;
     if b < 0 then
       if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
@@ -570,7 +590,7 @@ module ChapelBase {
       return cimagf(this);
     }
   }
-  
+
   //
   // helper functions
   //
@@ -1293,15 +1313,27 @@ module ChapelBase {
   }
 
   inline proc %=(ref lhs:int(?w), rhs:int(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:uint(?w), rhs:uint(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:real(?w), rhs:real(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0.0 then
+        halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs, rhs) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     lhs = lhs % rhs;
   }
 
@@ -1485,9 +1517,15 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline proc %(a: uint(64), param b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
     return __primitive("%", a, b);
   }
   inline proc %(param a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
     return __primitive("%", a, b);
   }
 
