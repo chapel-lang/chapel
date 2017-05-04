@@ -162,13 +162,13 @@ proc initializeGrid(L) {
 
 proc initializeGeometric() {
 
-  const A = n * ((1.0-rho) / (1.0-(rho**L))) / L:real;
+  const A = n * ((1.0-rho) / (1.0-(rho**L))) / L;
   LCG_init();
 
 
-  var nPlaced = 0;
+  var nPlaced = 0:uint;
   for (x,y) in {0..#L, 0..#L} do
-    nPlaced += random_draw(getSeed(x)):int;
+    nPlaced += random_draw(getSeed(x));
 
   particleDom = {0..#nPlaced};
 
@@ -178,7 +178,7 @@ proc initializeGeometric() {
   for (x,y) in {0..#L, 0..#L} {
     // TODO without cast this creates a seg fault and overflow
     // warning with no --fast. Investigate for possible bug. Engin
-    const actual_particles = random_draw(getSeed(x)):int;
+    const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
 
@@ -193,10 +193,10 @@ proc initializeSinusoidal() {
 
   LCG_init();
 
-  var nPlaced = 0;
+  var nPlaced = 0:uint;
 
   for (x,y) in {0..#L, 0..#L} do
-    nPlaced += random_draw(getSeed(x)):int;
+    nPlaced += random_draw(getSeed(x));
 
   particleDom = {0..#nPlaced};
 
@@ -207,7 +207,7 @@ proc initializeSinusoidal() {
   for (x,y) in {0..#L, 0..#L} {
     // TODO without cast this creates a seg fault and overflow
     // warning with no --fast. Investigate for possible bug. Engin
-    const actual_particles = random_draw(getSeed(x)):int;
+    const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
 
@@ -221,12 +221,12 @@ proc initializeLinear() {
   const step = 1.0/L;
   const total_weight = beta*L-alpha*0.5*step*L*(L-1);
 
-  var nPlaced = 0;
+  var nPlaced = 0:uint; // random_draw is a uint proc
 
   LCG_init();
 
   for (x,y) in {0..#L, 0..#L} do
-    nPlaced += random_draw(getSeed(x)):int;
+    nPlaced += random_draw(getSeed(x));
 
   particleDom = {0..#nPlaced};
 
@@ -236,7 +236,7 @@ proc initializeLinear() {
   for (x,y) in {0..#L, 0..#L} {
     // TODO without cast this creates a seg fault and overflow
     // warning with no --fast. Investigate for possible bug. Engin
-    const actual_particles = random_draw(getSeed(x)):int;
+    const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
 
@@ -254,11 +254,11 @@ proc initializePatch() {
       patch.bottom+1);
   const particles_per_cell = (n/total_cells):real;
 
-  var nPlaced = 0;
+  var nPlaced = 0:uint;
   LCG_init();
 
   for (x,y) in {0..#L, 0..#L} {
-    const actual_particles = random_draw(particles_per_cell):int;
+    const actual_particles = random_draw(particles_per_cell);
     if !outsidePatch(x, y) then
       nPlaced += actual_particles;
   }
@@ -271,7 +271,7 @@ proc initializePatch() {
   for (x,y) in {0..#L, 0..#L} {
     // TODO without cast this creates a seg fault and overflow
     // warning with no --fast. Investigate for possible bug. Engin
-    const actual_particles = random_draw(particles_per_cell):int;
+    const actual_particles = random_draw(particles_per_cell);
     if !outsidePatch(x, y) {
       placeParticles(pIdx, actual_particles, x, y);
     }
@@ -387,7 +387,7 @@ proc verifyParticle(p) {
 }
 
 inline proc placeParticles(ref pIdx, n, x, y) {
-  for p in 0..#n {
+  for p in 0..#(n:int) {
     particles[pIdx].x = x + REL_X;
     particles[pIdx].y = y + REL_Y;
     particles[pIdx].k = k;
