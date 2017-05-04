@@ -212,6 +212,8 @@ bool preserveInlinedLineNumbers = false;
 const char* compileCommand = NULL;
 char compileVersion[64];
 
+static
+bool fPrintChplSettings = false;
 
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
@@ -910,6 +912,7 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
+ {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
@@ -963,6 +966,14 @@ static void printStuff(const char* argv0) {
     free(guess);
 
     printedSomething = true;
+  }
+
+  if( fPrintChplSettings ) {
+    char buf[FILENAME_MAX+1] = "";
+    snprintf(buf, FILENAME_MAX, "%s/util/printchplenv", CHPL_HOME);
+    printf("Running %s\n", buf);
+    int status = mysystem(buf, "running printchplenv", false);
+    clean_exit(status);
   }
 
   if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
