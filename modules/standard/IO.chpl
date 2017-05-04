@@ -3100,7 +3100,7 @@ proc channel.readWriteThisFromLocale() {
 // so the original locale of the I/O is `here`.
 pragma "no doc"
 inline
-proc channel.getIoStartedOnLocale() {
+proc channel.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
   if ret == nil then
     ret = here;
@@ -3804,7 +3804,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 pragma "no doc"
 proc channel.readIt(ref x) {
   if writing then compilerError("read on write-only channel");
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var error:syserr;
@@ -3820,7 +3820,7 @@ proc channel.readIt(ref x) {
 pragma "no doc"
 proc channel.writeIt(x) {
   if !writing then compilerError("write on read-only channel");
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var error:syserr;
@@ -4008,7 +4008,7 @@ inline proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     for param i in 1..k {
@@ -4182,7 +4182,7 @@ proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -4282,7 +4282,7 @@ where arg.rank == 1 && isRectangularArr(arg)
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -4613,7 +4613,7 @@ pragma "no doc"
 inline proc channel.write(const args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     for param i in 1..k {
@@ -4662,7 +4662,7 @@ proc channel.write(const args ...?k,
                    out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -5876,7 +5876,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var fmt = fmtStr.localize().c_str();
@@ -6092,7 +6092,7 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
 proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
   if writing then compilerError("readf on write-only channel");
   error = ENOERR;
-  const origLocale = this.getIoStartedOnLocale();
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var fmt = fmtStr.localize().c_str();
