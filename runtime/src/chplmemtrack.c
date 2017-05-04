@@ -22,6 +22,7 @@
 #include "chplmemtrack.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
+#include "chpl-mem-sys.h"  // mem layer not initialized yet, need system alloc
 #include "chpl-tasks.h"
 #include "chpltypes.h"
 #include "chpl-comm.h"
@@ -59,9 +60,6 @@ extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
                                               c_string* memLeaksLog);
 
 chpl_bool chpl_memTrack = false;
-
-// memory layer hasn't been initialized, need to use the system allocator
-#include "chpl-mem-no-warning-macros.h"
 
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;
@@ -147,10 +145,10 @@ void chpl_setMemFlags(void) {
     if (chpl_numNodes == 1) {
       memLogFile = fopen(memLog, "w");
     } else {
-      char* filename = (char*)malloc((strlen(memLog)+10)*sizeof(char));
+      char* filename = (char*)sys_malloc((strlen(memLog)+10)*sizeof(char));
       sprintf(filename, "%s.%" FORMAT_c_nodeid_t, memLog, chpl_nodeID);
       memLogFile = fopen(filename, "w");
-      free(filename);
+      sys_free(filename);
     }
   }
 
@@ -158,7 +156,7 @@ void chpl_setMemFlags(void) {
     chpl_sync_initAux(&memTrack_sync);
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
-    memTable = calloc(hashSize, sizeof(memTableEntry*));
+    memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
   }
 }
 
@@ -202,7 +200,7 @@ resizeTable(int direction) {
 
   newHashSizeIndex = hashSizeIndex + direction;
   newHashSize = hashSizes[newHashSizeIndex];
-  newMemTable = calloc(newHashSize, sizeof(memTableEntry*));
+  newMemTable = sys_calloc(newHashSize, sizeof(memTableEntry*));
 
   for (i = 0; i < hashSize; i++) {
     for (me = memTable[i]; me != NULL; me = next) {
@@ -213,7 +211,7 @@ resizeTable(int direction) {
     }
   }
 
-  free(memTable);
+  sys_free(memTable);
   memTable = newMemTable;
   hashSize = newHashSize;
   hashSizeIndex = newHashSizeIndex;
@@ -228,7 +226,7 @@ static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
   if ((totalEntries+1)*2 > hashSize && hashSizeIndex < NUM_HASH_SIZE_INDICES-1)
     resizeTable(1);
 
-  memEntry = (memTableEntry*) calloc(1, sizeof(memTableEntry));
+  memEntry = (memTableEntry*) sys_calloc(1, sizeof(memTableEntry));
   if (!memEntry) {
     chpl_error("memtrack fault: out of memory allocating memtrack table",
                lineno, filename);
@@ -354,7 +352,7 @@ static void printMemAllocsByType(_Bool forLeaks,
     return;
   }
 
-  table = (size_t*)calloc(numEntries, 3*sizeof(size_t));
+  table = (size_t*)sys_calloc(numEntries, 3*sizeof(size_t));
 
   for (i = 0; i < hashSize; i++) {
     for (me = memTable[i]; me != NULL; me = me->nextInBucket) {
@@ -393,7 +391,7 @@ static void printMemAllocsByType(_Bool forLeaks,
   }
   fprintf(memLogFile, "==============================================================\n");
 
-  free(table);
+  sys_free(table);
 }
 
 
@@ -506,7 +504,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
     fprintf(memLogFile, "=");
   fprintf(memLogFile, "\n");
 
-  table = (memTableEntry**)malloc(n*sizeof(memTableEntry*));
+  table = (memTableEntry**)sys_malloc(n*sizeof(memTableEntry*));
   if (!table)
     chpl_error("out of memory printing memory table", lineno, filename);
 
@@ -523,7 +521,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   }
   qsort(table, n, sizeof(memTableEntry*), descCmp);
 
-  loc = (char*)malloc((filenameWidth+numberWidth+1)*sizeof(char));
+  loc = (char*)sys_malloc((filenameWidth+numberWidth+1)*sizeof(char));
 
   for (i = 0; i < n; i++) {
     memEntry = table[i];
@@ -546,8 +544,8 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   fprintf(memLogFile, "\n");
   putchar('\n');
 
-  free(table);
-  free(loc);
+  sys_free(table);
+  sys_free(loc);
 }
 
 
@@ -615,7 +613,7 @@ void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
                 lineno, memEntry->number * memEntry->size,
                 chpl_mem_descString(memEntry->description), memAlloc);
       }
-      free(memEntry);
+      sys_free(memEntry);
     }
     chpl_sync_unlock(&memTrack_sync);
   } else if (chpl_verbose_mem && !memEntry) {
@@ -636,7 +634,7 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
     if (memAlloc) {
       memEntry = removeMemTableEntry(memAlloc);
       if (memEntry)
-        free(memEntry);
+        sys_free(memEntry);
     }
     chpl_sync_unlock(&memTrack_sync);
   }
