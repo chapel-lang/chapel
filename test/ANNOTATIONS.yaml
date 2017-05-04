@@ -237,6 +237,8 @@ all:
     - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
   03/20/17:
     - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
+  05/03/17:
+    - Flag some compiler temps as const (#6154)
 
 
 AllCompTime:
@@ -733,6 +735,12 @@ prk-stencil.ml-perf:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
+
+prk-transpose: &transpose-base
+  05/04/17:
+    - Update benchmark to track latest reference version (#6152)
+prk-transpose-time:
+  <<: *transpose-base
 
 ptrans: &ptrans-base
   01/11/17:
