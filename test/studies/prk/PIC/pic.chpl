@@ -176,8 +176,6 @@ proc initializeGeometric() {
 
   var pIdx = 0;
   for (x,y) in {0..#L, 0..#L} {
-    // TODO without cast this creates a seg fault and overflow
-    // warning with no --fast. Investigate for possible bug. Engin
     const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
@@ -205,8 +203,6 @@ proc initializeSinusoidal() {
   // pIdx = pi in OpenMP code
   var pIdx = 0;
   for (x,y) in {0..#L, 0..#L} {
-    // TODO without cast this creates a seg fault and overflow
-    // warning with no --fast. Investigate for possible bug. Engin
     const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
@@ -234,8 +230,6 @@ proc initializeLinear() {
 
   var pIdx = 0;
   for (x,y) in {0..#L, 0..#L} {
-    // TODO without cast this creates a seg fault and overflow
-    // warning with no --fast. Investigate for possible bug. Engin
     const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
