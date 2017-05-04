@@ -1,1 +1,1 @@
-hasMain.chpl:2: error: 'main()' not permitted when compiling in --library mode
+hasMain.chpl:2: warning: 'main()' has no special meaning when compiling in --library mode
