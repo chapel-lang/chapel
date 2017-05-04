@@ -474,6 +474,24 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_free(ptr) chpl_mem_free(ptr, 0, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
+typedef chpl_bool qio_bool;
+
+#else
+
+#include "chpl-mem-sys.h"
+
+#define qio_malloc(size) sys_malloc(size)
+#define qio_calloc(nmemb, size) sys_calloc(nmemb,size)
+#define qio_realloc(ptr, size) sys_realloc(ptr, size)
+#define qio_memalign(boundary, size) sys_memalign(boundary, size)
+#define qio_free(ptr) sys_free(ptr)
+#define qio_memcpy(dest, src, num) memcpy(dest, src, num)
+
+typedef bool qio_bool;
+
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -487,24 +505,6 @@ static inline char* qio_strdup(const char* ptr)
 
 #ifdef __cplusplus
 } // end extern "C"
-#endif
-
-typedef chpl_bool qio_bool;
-
-#else
-
-#include "chpl-mem-sys.h"
-
-#define qio_malloc(size) sys_malloc(size)
-#define qio_calloc(nmemb, size) sys_calloc(nmemb,size)
-#define qio_realloc(ptr, size) sys_realloc(ptr, size)
-#define qio_memalign(boundary, size) sys_memalign(boundary, size)
-#define qio_free(ptr) sys_free(ptr)
-#define qio_strdup(ptr) strdup(ptr)
-#define qio_memcpy(dest, src, num) memcpy(dest, src, num)
-
-typedef bool qio_bool;
-
 #endif
 
 // Declare MAX_ON_STACK bytes. We declare it with the original
