@@ -116,20 +116,23 @@ for niter in 0..iterations {
 
   forall i in 0..#particles.size {
 
-    const (fx, fy) = computeTotalForce(particles[i]);
-    if debug then writeln("Force acting on particle " , i, " ", (fx,fy));
-    const ax = fx * MASS_INV;
-    const ay = fy * MASS_INV;
+    var x0:real, y0:real; // for debug mode
 
-    if debug then write("Particle ", i, " moved from ",
-        (particles[i].x,particles[i].y));
+    const (fx, fy) = computeTotalForce(particles[i]);
+    const (ax, ay) = (fx * MASS_INV, fy * MASS_INV);
+
+    if debug then
+      (x0,y0) = (particles[i].x, particles[i].y);
 
     particles[i].x = mod(particles[i].x + particles[i].v_x*DT +
-        0.5*ax*DT*DT + L, L);
+                         0.5*ax*DT*DT + L, L);
     particles[i].y = mod(particles[i].y + particles[i].v_y*DT +
-        0.5*ay*DT*DT + L, L);
+                         0.5*ay*DT*DT + L, L);
 
-    if debug then writeln(" to ", (particles[i].x,particles[i].y));
+    if debug then
+      writeln("Force acting on particle " , i, " ", (fx,fy),
+              "\n\tParticle moved from ", (x0,y0), " to ",
+                                    (particles[i].x,particles[i].y));
 
     particles[i].v_x += ax * DT;
     particles[i].v_y += ay * DT;
@@ -337,24 +340,21 @@ proc computeTotalForce(p) {
   var tmp_fx = 0.0;
   var tmp_fy = 0.0;
 
-  (tmp_fx, tmp_fy) = computeCoulomb(rel_x, rel_y, p.q, Qgrid[y,x]);
+  (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,    rel_y, p.q, Qgrid[y  ,x  ]);
   var tmp_res_x = tmp_fx;
   var tmp_res_y = tmp_fy;
 
-  (tmp_fx, tmp_fy) = computeCoulomb(rel_x, 1.0-rel_y, p.q, Qgrid[y+1,x]);
+  (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,1.0-rel_y, p.q, Qgrid[y+1,x  ]);
   tmp_res_x += tmp_fx;
   tmp_res_y -= tmp_fy;
 
-  (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x, rel_y, p.q, Qgrid[y,x+1]);
+  (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x,    rel_y, p.q, Qgrid[y  ,x+1]);
   tmp_res_x -= tmp_fx;
   tmp_res_y += tmp_fy;
 
-  (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x, 1.0-rel_y, p.q, Qgrid[y+1,x+1]);
+  (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x,1.0-rel_y, p.q, Qgrid[y+1,x+1]);
   tmp_res_x -= tmp_fx;
   tmp_res_y -= tmp_fy;
-
-  if debug then writeln("Total force on particle : ", (tmp_res_x,
-        tmp_res_y));
 
   return (tmp_res_x, tmp_res_y);
 }
