@@ -80,10 +80,11 @@ channel; as a result, calling methods on the channel in parallel from within a
 ``readThis``, ``writeThis``, or ``readWriteThis`` may cause undefined behavior.
 Additionally, performing I/O on a global channel that is the same channel as the
 one ``readThis``, ``writeThis``, or ``readWriteThis`` is operating on can result
-in deadlock. In particular, these methods should not refer to :var:`~IO.stdin`,
-:var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or implicitly (such as by
-calling the global :proc:`~IO.writeln` function). Instead, these methods
-should only perform I/O on the channel passed as an argument.
+in a deadlock. In particular, these methods should not refer to
+:var:`~IO.stdin`, :var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or
+implicitly (such as by calling the global :proc:`~IO.writeln` function).
+Instead, these methods should only perform I/O on the channel passed as an
+argument.
 
 Because it is often more convenient to use an operator for I/O, instead of
 writing

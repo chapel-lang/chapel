@@ -2676,9 +2676,11 @@ record channel {
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
-  // Use to support writeThis including an on statement and writeThis that needs
-  // to know where the I/O was originally requested from. Not used outside of
-  // calling writeThis/readThis. If readWriteThisFromLocale != nil, then
+  // The member variable _readWriteThisFromLocale is used to support
+  // writeThis needing to know where the I/O started. It is a member
+  // variable on channel so that calls to writeln etc within writeThis
+  // can preserve this information. Not used outside of
+  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
   // we are working on a channel created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
