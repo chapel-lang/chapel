@@ -62,3 +62,20 @@ def run_command(command, stdout=True, stderr=False, cmd_input=None):
         else:
             return ''
 
+def run_live_command(command):
+    """Run a command, yielding the merged output (stdout/stderr) as the process
+       runs rather than returning the output after the process finishes"""
+    try:
+        process = subprocess.Popen(command,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
+    except OSError:
+        error("command not found: {0}".format(command[0]), OSError)
+
+    for stdout_char in iter(lambda: process.stdout.read(1), str.encode("")):
+        yield stdout_char.decode()
+    process.stdout.close()
+    returncode = process.wait()
+
+    if returncode != 0:
+        error("command failed: {0}".format(command), CommandError)

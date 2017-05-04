@@ -263,19 +263,6 @@ static FnSymbol* function_exists(const char* name,
                          formalType1, formalType2, formalType3, NULL, kind);
 }
 
-/*static FnSymbol* function_exists(const char* name,
-                                 Type* formalType1,
-                                 Type* formalType2,
-                                 Type* formalType3,
-                                 Type* formalType4,
-                                 function_exists_kind_t kind=FIND_EITHER)
-{
-  return function_exists(name, 4, formalType1, formalType2,
-                         formalType3, formalType4, kind);
-}
-*/
-
-
 static void fixup_accessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
                            FnSymbol* fn)
@@ -511,7 +498,7 @@ static void build_chpl_entry_points() {
 
   if (fLibraryCompile) {
     if (chpl_user_main)
-      INT_FATAL(chpl_user_main, "'main' found when compiling a library");
+      USR_WARN(chpl_user_main, "'main()' has no special meaning when compiling in --library mode");
   }
 
   if (!chpl_user_main) {

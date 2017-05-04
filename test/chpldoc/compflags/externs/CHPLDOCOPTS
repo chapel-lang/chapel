@@ -1,1 +1,1 @@
---text-only --no-externs
+--no-html --save-sphinx docs --no-externs

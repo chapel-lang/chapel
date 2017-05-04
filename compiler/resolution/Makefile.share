@@ -21,6 +21,7 @@ RESOLUTION_SRCS =                                              \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \
                   cullOverReferences.cpp                       \
+                  expandVarArgs.cpp                            \
                   implementForallIntents.cpp                   \
                   generics.cpp                                 \
                   functionResolution.cpp                       \
@@ -30,6 +31,9 @@ RESOLUTION_SRCS =                                              \
                   preFold.cpp                                  \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
+                  virtualDispatch.cpp                          \
+                  visibleCandidates.cpp                        \
+                  visibleFunctions.cpp                         \
                   wrappers.cpp
 
 SVN_SRCS        = $(RESOLUTION_SRCS)

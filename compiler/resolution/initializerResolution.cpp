@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "initializerRules.h"
 #include "passes.h"
@@ -32,6 +33,8 @@
 #include "symbol.h"
 #include "type.h"
 #include "view.h"
+#include "visibleCandidates.h"
+#include "visibleFunctions.h"
 
 static
 void resolveInitializer(CallExpr* call);
@@ -156,7 +159,7 @@ static void
 filterInitConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
                             ResolutionCandidate* currCandidate,
                             CallInfo& info) {
-  currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) return;
 
@@ -185,7 +188,7 @@ static void
 filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* currCandidate,
                            CallInfo& info) {
-  currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) return;
 
@@ -344,7 +347,7 @@ void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew) {
   // execution of Phase 1, if the type is generic we will need to update the
   // type of the actual we are sending in for the this arg
   if (typeToNew->symbol->hasFlag(FLAG_GENERIC) == true) {
-    new_temp->type = call->isResolved()->_this->type;
+    new_temp->type = call->resolvedFunction()->_this->type;
 
     if (isClass(typeToNew) == true) {
       // use the allocator instead of directly calling the init method
@@ -354,7 +357,7 @@ void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew) {
       call->get(2)->remove();
       // Need to resolve the allocator
       resolveCall(call);
-      resolveFns(call->isResolved());
+      resolveFns(call->resolvedFunction());
 
       def->remove();
     }
@@ -370,7 +373,7 @@ void resolveInitializer(CallExpr* call) {
 
   INT_ASSERT(call->isResolved());
 
-  resolveMatch(call->isResolved());
+  resolveMatch(call->resolvedFunction());
 
   callStack.pop();
 }
@@ -395,7 +398,7 @@ void resolveInitCall(CallExpr* call) {
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
-  fillVisibleFuncVec(call, info, visibleFns);
+  findVisibleFunctions(info, visibleFns);
 
 
   // Modified narrowing down the candidates to operate in an

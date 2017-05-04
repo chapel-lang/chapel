@@ -50,6 +50,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 //########################################################################
 //# Static Function Forward Declarations
@@ -699,7 +700,7 @@ static void addArgCoercion(FnSymbol*  fn,
   call->getStmtExpr()->insertBefore(castMove);
 
   resolveCallAndCallee(castCall, true);
-  if (FnSymbol* castTarget = castCall->isResolved()) {
+  if (FnSymbol* castTarget = castCall->resolvedFunction()) {
 
     // Perhaps equivalently, we could check "if (tryToken)",
     // except tryToken is not visible in this file.
@@ -900,7 +901,7 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper, FnSymbol
   std::vector<CallExpr*> calls;
   collectCallExprs(wrapper, calls);
   for_vector(CallExpr, call, calls) {
-    if (call->isResolved() == fn) {
+    if (call->resolvedFunction() == fn) {
       for_actuals(actual, call) {
         if (UnresolvedSymExpr* unsym = toUnresolvedSymExpr(actual)) {
           // Get the StmtExpr in case 'call' returns something

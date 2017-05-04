@@ -56,10 +56,6 @@ environment variable to one of the following values:
 :massivethreads:
   based on U Tokyo's MassiveThreads library
 
-:muxed:
-  available only on Cray Inc. systems; not documented here,
-  see :ref:`readme-cray` instead
-
 Each tasking layer is described in more detail below:
 
 
@@ -68,9 +64,9 @@ CHPL_TASKS == qthreads
 
 Chapel's default tasking layer implementation for most targets is based
 on the Qthreads user-level threading package from Sandia National Labs.
-This provides a lightweight implementation of Chapel tasking and will
-also ultimately provide an optimized implementation of sync variables.
-To use qthreads tasking, please take the following steps:
+This provides a lightweight implementation of Chapel tasking as well as
+an optimized implementation of sync variables.  To use qthreads tasking,
+please take the following steps:
 
 1) Ensure that the environment variable ``CHPL_HOME`` points to the
    top-level Chapel directory.

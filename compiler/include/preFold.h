@@ -20,8 +20,9 @@
 #ifndef _PRE_FOLD_H_
 #define _PRE_FOLD_H_
 
+class CallExpr;
 class Expr;
 
-Expr* preFold(Expr* expr);
+Expr* preFold(CallExpr* expr);
 
 #endif

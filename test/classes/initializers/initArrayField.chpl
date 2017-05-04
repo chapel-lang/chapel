@@ -13,3 +13,5 @@ A = 1.0;
 
 writeln(myC);
 writeln(A);
+
+delete myC;

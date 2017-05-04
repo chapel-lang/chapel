@@ -76,6 +76,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 // collect set of symbols
 //
 void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
+void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet);
 
 
 //
@@ -182,8 +183,5 @@ bool isTypeExpr(Expr* expr);
 
 Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
-
-// move to resolve when scope resolution is put in resolution directory
-BlockStmt* getVisibilityBlock(Expr* expr);
 
 #endif

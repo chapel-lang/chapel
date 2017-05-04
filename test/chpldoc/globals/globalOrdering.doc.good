@@ -1,15 +1,32 @@
-globalOrdering.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: globalOrdering.doc
+
+globalOrdering.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
    use globalOrdering.doc;
 
-   config var goop: bool
-      hello 
-   param after = 35
-      I'm thirty five. 
-   var fluctuates: int
-      I fluctuate. Guess what I am? 
-   config const resorted = "what's in a name"
-      Who am I? 
-   const running = false
-      Run! 
+.. data:: config var goop: bool
+
+   hello 
+
+.. data:: param after = 35
+
+   I'm thirty five. 
+
+.. data:: var fluctuates: int
+
+   I fluctuate. Guess what I am? 
+
+.. data:: config const resorted = "what's in a name"
+
+   Who am I? 
+
+.. data:: const running = false
+
+   Run! 
+

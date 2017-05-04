@@ -39,7 +39,7 @@ use Image;    // use helper module related to writing out images
 //
 config const size = "800x600",            // size of output image
              samples = 1,                 // number of rays sampled per pixel
-             scene = "scene",             // input scene filename, or stdin
+             scene = "built-in",          // input scene filename, or stdin
              image = "image.bmp",         // output image filename, or stdout
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
@@ -64,20 +64,11 @@ const ssize = size.partition("x");        // split size string into components
 if (ssize.size != 3 || ssize(2) != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize(1):int,         // x- and y-resolutions of the image
+const xres = ssize(1):int,                // x- and y-resolutions of the image
       yres = ssize(3):int;
 
-const rcpSamples = 1.0 / samples;  // the reciprocal of the # of samples
-
-//
-// the input and output file channels
-//
-const infile = if scene == "stdin" then stdin
-                                   else open(scene, iomode.r).reader(),
-      outfile = if image == "stdout" then stdout
-                                     else open(image, iomode.cw).writer();
-
-const halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
+const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
+      halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
 // set params for dimensions
@@ -144,9 +135,8 @@ proc main() {
 
   //
   // STEP 0: Compile and run the code as it is.  You should get a
-  // small black rectangular image in the resulting image.ppm file.
-  // View the image file in gimp, or your favorite image viewer, or a
-  // modern version of emacs running with its own window.
+  // small black rectangular image in the resulting image.bmp file.
+  // View the image file in your favorite image viewer.
   //
   // STEP 1: Declare an array (and optionally a domain for it) here to
   // describe the image of pixels to render.  The array should store
@@ -167,9 +157,9 @@ proc main() {
 
   //
   // STEP 3: Within these timer calls, fill in your array's values via
-  // calls to 'computePixel()' (defined below).  Start by trying a
+  // calls to 'computePixel()' (pre-defined below).  Start by trying a
   // serial loop.  Do you get a reasonable image?  Try the 'sphfract'
-  // scene file as well...
+  // input scene file as well using the --scene config const.
   //
   // Step 4: Try experimenting with setting other configuration
   // options on the command-line to see if things work as expected.
@@ -178,7 +168,7 @@ proc main() {
   //
   // Step 5: Time how long the rendering takes.  Recompile with the
   // --fast flag (intended for performance runs, once a program is
-  // working) and retime.  Note these timings for future reference.
+  // working) and re-time.  Note these timings for future reference.
   //
   // STEP 6: Now try switching to a parallel loop and make sure your
   // code still produces the right image.  What kind of speed
@@ -194,7 +184,7 @@ proc main() {
   // dynamic() iterator from the DynamicIters module:
   // http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html
   // Do you need to create a more load-imbalanced scene (or increase
-  // the value of 'maxRayDepth' in order to see a noticeable
+  // the value of 'maxRayDepth') in order to see a noticeable
   // difference?
   //
   // STEP 9 (intended for the afternoon session): Make your array a
@@ -213,7 +203,7 @@ proc main() {
                   rendTime, rendTime*1000);
 
   var dummy: [1..100, 1..200] int;
-  writeImage(outfile, imgType, dummy);
+  writeImage(image, imgType, dummy);
 
   for obj in objects do
     delete obj;
@@ -424,6 +414,7 @@ proc shade(obj, sp, depth) {
   return col;
 }
 
+
 //
 // print usage information
 //
@@ -456,8 +447,38 @@ proc printUsage() {
 // Load the scene from an extremely simple scene description file
 //
 proc loadScene() {
+  //
+  // Support a built-in scene in order to avoid file input, should it
+  // be problematic in any way.
+  //
+  if scene == "built-in" {
+    objects.push_back(new sphere((-1.5, -0.3, -1), 0.7,
+                                 new material((1.0, 0.2, 0.05), 50.0, 0.3)));
+    objects.push_back(new sphere((1.5, -0.4, 0), 0.6,
+                                 new material((0.1, 0.85, 1.0), 50.0, 0.4)));
+    objects.push_back(new sphere((0, -1000, 2), 999,
+                                 new material((0.1, 0.2, 0.6), 80.0, 0.8)));
+    objects.push_back(new sphere((0, 0, 2), 1,
+                                 new material((1.0, 0.5, 0.1), 60.0, 0.7)));
+    lights.push_back((-50, 100, -50));
+    lights.push_back((40, 40, 150));
+    cam = new camera((0, 6, -17), (0, -1, 0), 45);
+    return;
+  }
+
+  //
+  // Otherwise, read the scene from 'infile'
+  //
+
+  // the input file channel
+  const infile = if scene == "stdin" then stdin
+                                     else open(scene, iomode.r).reader();
+
+  // a map (associative array) from the supported input file argument
+  // types to the number of columns of input they expect
   const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
 
+  // loop over the lines from the input file, counting them
   for (rawLine, lineno) in zip(infile.readlines(), 1..) {
     // drop any comments (text following '#')
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
@@ -569,6 +590,6 @@ inline proc crossProduct(v1, v2) {
 iter channel.readlines() {
   var line: string;
 
-  while (infile.readline(line)) do
+  while (this.readline(line)) do
     yield line;
 }

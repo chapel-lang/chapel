@@ -1,6 +1,14 @@
-interruptingSingleComment.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: interruptingSingleComment.doc
+
+interruptingSingleComment.doc
+=============================
+**Usage**
+
+.. code-block:: chapel
+
    use interruptingSingleComment.doc;
 
-   proc foo()
+.. function:: proc foo()
+

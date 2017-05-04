@@ -34,7 +34,7 @@
 char             log_dir   [FILENAME_MAX + 1]           = "./log";
 char             log_module[FILENAME_MAX + 1]           =      "";
 
-bool             fLogIds                                =   false;
+bool             fLogIds                                =    true;
 
 int              fdump_html                             =       0;
 char             fdump_html_chpl_home[FILENAME_MAX + 1] =      "";

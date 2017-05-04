@@ -166,10 +166,6 @@ Building Chapel for a Cray System from Source
    For CS\ |trade| series systems, see :ref:`readme-infiniband` for
    information about using Chapel with InfiniBand.
 
-   Note that the Cray-specific settings of ``muxed`` tasking cannot be
-   selected when building Chapel from source, because the corresponding
-   runtime layer is not distributed in source form.
-
 
 6) Make sure you're in the top-level chapel/ directory and make/re-make the
    compiler and runtime::
@@ -421,31 +417,16 @@ Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 ``GASNET_MAX_SEGSIZE``, and the former overrides the latter if both are set.
 
 
-Native Runtime Layers
-~~~~~~~~~~~~~~~~~~~~~
+Native Communication Layer
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`readme-multilocale` and :ref:`readme-tasks` pages describe a
-variety of communication and tasking layers that can be used by Chapel
-programs.  In addition to the standard runtime layers available, Chapel
-supports Cray-specific communication and tasking layers. These make use
-of the Cray systems' hardware and/or software to produce enhanced
-performance for Chapel programs.  On Cray XC or XE systems the default
-is to use the ugni communication layer and qthreads tasking.
-
-When using the pre-built module, muxed tasking has traditionally been an
-option, but it will be retired for the 1.16 release, and its performance
-usually lags behind qthreads.  Note that the muxed tasking layer cannot
-be built from source, as it is not distributed in source form.
-
-The ugni communication layer interacts with the system's network
-interface very closely through a lightweight interface called uGNI (user
-Generic Network Interface).  The muxed tasking layer switches Chapel
-tasks and threads in a lightweight manner in user space, avoiding the
-overhead and some of the resource limitations associated with OS thread
-switching.  These layers cooperate to overlap communication to remote
-locales with task execution, particularly improving the performance of
-programs limited by the latency of small remote data references, such as
-graph analytic applications.
+The :ref:`readme-multilocale` page describes a variety of communication
+layers that can be used by Chapel programs.  In addition to the standard
+runtime layers available, Chapel supports a Cray-specific ``ugni``
+communication layer. The ``ugni`` communication layer interacts with the
+system's network interface very closely through a lightweight interface
+called uGNI (user Generic Network Interface).  On Cray XC or XE systems
+the default is to use the ugni communication layer.
 
 
 Using the ugni Communications Layer
@@ -464,17 +445,11 @@ To use ugni communications:
 
 
 2) Set your CHPL_TASKS environment variable to ``qthreads`` (the
-   default), ``muxed``, or ``fifo``:
+   default) or ``fifo``:
 
    .. code-block:: sh
 
      export CHPL_TASKS=qthreads
-
-   or:
-
-   .. code-block:: sh
-
-     export CHPL_TASKS=muxed
 
    or:
 
@@ -535,9 +510,7 @@ When hugepages are used with the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
 can only use guard pages for stack overflow detection, so if ugni
 communications is combined with qthreads tasking, overflow detection is
-turned off completely.  Muxed tasking can use guard pages for stack
-overflow detection, but it can also drop back to synchronous overflow
-detection, as described below, with ``CHPL_COMM=ugni`` and hugepages.
+turned off completely.
 
 There is one special parameter recognized by the ugni communication
 layer:
@@ -557,167 +530,6 @@ that do a lot of remote references, increasing it may help the
 performance.  Useful values for ``CHPL_RT_COMM_CONCURRENCY`` are in
 the range 1 to 30.  Values specified outside this range are
 silently increased or reduced so as to fall within it.
-
-
-Using the muxed Tasking Layer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To use muxed tasking:
-
-1) Make sure that you are using either the GNU, Intel, or Cray target
-   compiler::
-
-     module load PrgEnv-gnu
-
-   or::
-
-     module load PrgEnv-intel
-
-   or::
-
-     module load PrgEnv-cray
-
-   (If you have a different PrgEnv module loaded, you will have to
-   unload it first, or do a swap instead of a load.)
-
-
-2) Set your ``CHPL_TASKS`` environment variable to ``muxed``:
-
-   .. code-block:: sh
-
-     export CHPL_TASKS=muxed
-
-   This specifies that you wish to use the Cray-specific tasking
-   layer.
-
-3) Set your CHPL_COMM environment variable to ``ugni`` (the usual
-   default), ``gasnet`` (an alternative default), or ``none``:
-
-   .. code-block:: sh
-
-     export CHPL_COMM=ugni
-
-or:
-
-   .. code-block:: sh
-
-     export CHPL_COMM=gasnet
-
-or:
-
-   .. code-block:: sh
-
-     export CHPL_COMM=none
-
-   All three Chapel communication layers are known to work with muxed
-   tasking.  Other Chapel environment variables having to do with
-   runtime layers can be left unset.  Setting ``CHPL_TASKS`` and
-   ``CHPL_COMM`` like this will cause the correct combination of other
-   runtime layers that work with those to be selected automatically.
-
-
-There are a few special parameters recognized by the muxed tasking
-layer:
-
-
-Controlling the Call Stack Size
-_______________________________
-
-For muxed tasking, more so than for other tasking implementations,
-it may be important to reduce the task call stack size from its
-default of 8 MiB.  A side effect of using the ugni communication
-layer is that task stacks have to be created at full size.  With
-other comm layers (or no comm layer), creating a stack just reserves
-the memory for it without actually bringing the pages of memory into
-existence.  The memory does not exist until each page of the stack
-is actually used.  If the stack limit is 8 MiB (the default) and
-2,000 tasks exist at the same time but each one only uses 32 KiB of
-its stack space, then the program only requires about 64 MiB (2000 *
-32 KiB) of memory for stacks.  But with ugni communications, the
-network interactions require that all the space be brought into
-existence up front.  So there, our hypothetical program would need
-16 GiB (2000 * 8 MiB) of heap space just for stacks.  Thus with ugni
-communications, in programs that may have many tasks active at once
-but where each one does not need a very large call stack (such as
-SSCA#2), it can be useful to make the stack size smaller than its
-default of 8 MiB.
-
-You can set the task stack size using ``CHPL_RT_CALL_STACK_SIZE``, as described
-in :ref:`readme-executing`.  The following would make the task stack
-size 128 KiB, for example:
-
-  .. code-block:: sh
-
-    export CHPL_RT_CALL_STACK_SIZE=128k
-
-
-Stack Overflow Checking
-_______________________
-
-With muxed tasking, the compiler ``--stack-checks`` setting
-specifies the default setting for execution-time stack overflow
-checking.  If this is set and the program heap (from which stacks
-are allocated) is not on hugepages then each stack gets an
-inaccessible guard page added at the end toward which stack growth
-occurs.  If the stack overflows into this guard page, the resulting
-SIGSEGV is diagnostic.  This signal-based solution is crude, but
-also trustworthy because it relies on OS services.
-
-Guard pages cannot be used when the heap is on hugepages, because
-the system call that makes memory pages inaccessible cannot be
-applied to hugepages.  Currently the heap is on hugepages when
-``CHPL_COMM=ugni`` and there is a craype-hugepages module loaded.
-In this case muxed tasking does synchronous
-stack overflow detection instead.  Explicit checks against the
-task's stack limit are done on entry to selected functions in the
-muxed tasking layer.  If overflow is seen, the runtime prints an
-error message and halts the program.  The level of overflow checking
-may be controlled using the ``CHPL_RT_STACK_CHECK_LEVEL``
-environment variable, which can take the following values:
-
-  :0: no stack overflow checking
-  :1: limited stack overflow checking (default)
-  :2: more stack overflow checking
-
-Successively higher levels of overflow checking are more likely both to
-catch overflow and to catch it earlier, but they also have more overhead
-and thus a greater impact on performance.
-
-
-Number of Threads per Locale
-____________________________
-
-The muxed tasking layer gets the threads it uses as task execution
-vehicles from the soft-threads threading layer.  The soft-threads
-layer provides lightweight threads that can be switched rapidly.
-Chapel configuration constants allow you to control how many
-processor cores the soft-threads threading layer uses and the total
-number of lightweight threads it provides to the tasking layer.
-
-The ``CHPL_RT_NUM_HARDWARE_THREADS`` environment variable specifies the
-number of cores that should be used to run Chapel tasks on each
-locale.  The default is to use all of the cores, but if something
-other than the ability to run tasks limits performance, such as
-limited parallelism or doing many remote loads, reducing this may
-improve performance.  You can set ``CHPL_RT_NUM_HARDWARE_THREADS`` to
-any value from 1 to the actual number of hardware processor cores.
-For applications where the performance is dominated by the latency
-of small remote loads, such as the SSCA#2 benchmark and other graph
-processing codes, using 8 processor cores often gives better
-performance than using all of them.
-
-The ``CHPL_RT_NUM_THREADS_PER_LOCALE`` environment variable specifies
-the number of lightweight threads the soft-threads threading layer
-should provide to the muxed tasking layer for hosting tasks.  The
-default is the number of processor cores being used, which gives
-good performance in most cases.  However, if performance is limited
-by something other than on-node processor or bandwidth limits, and
-especially for applications like RA or SSCA#2 where performance is
-limited by network latency, it can be worthwhile to set this to as
-much as 16*the number of hardware threads (whether default or user
-specified).  You can set this to any value >= 0, but note that the
-soft-threads threading layer will silently limit it to >= 1 and <=
-32*the number of hardware threads.
 
 
 ---------------

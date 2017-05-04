@@ -34,218 +34,343 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+static void cleanup(ModuleSymbol* module);
 
-//
-// Move the statements in a block out of the block
-//
-static void
-flatten_scopeless_block(BlockStmt* block) {
-  for_alist(stmt, block->body) {
-    stmt->remove();
-    block->insertBefore(stmt);
+static void normalizeNestedFunctionExpressions(FnSymbol* fn);
+
+static void normalizeLoopIterExpressions(FnSymbol* fn);
+
+static void flattenScopelessBlock(BlockStmt* block);
+
+static void destructureTupleAssignment(CallExpr* call);
+
+static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
+
+static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
+
+static void changeCastInWhere(FnSymbol* fn);
+
+static void addParensToDeinitFns(FnSymbol* fn);
+
+void cleanup() {
+  std::vector<ModuleSymbol*> mods;
+
+  ModuleSymbol::getTopLevelModules(mods);
+
+  for_vector(ModuleSymbol, mod, mods) {
+    cleanup(mod);
   }
-  block->remove();
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-//
-// Moves expressions that are parsed as nested function definitions
-// into their own statement; during parsing, these are embedded in
-// call expressions
-//
-static void normalize_nested_function_expressions(DefExpr* def) {
-  if (def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
-    Expr* stmt = def->getStmtExpr();
-    if (!stmt) {
-      if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
-        if (AggregateType* ct = toAggregateType(ts->type)) {
-          def->replace(new UnresolvedSymExpr(def->sym->name));
-          ct->addDeclarations(def);
-          return;
+static void cleanup(ModuleSymbol* module) {
+  std::vector<BaseAST*> asts;
+
+  collect_asts(module, asts);
+
+  for_vector(BaseAST, ast, asts) {
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        SET_LINENO(def);
+
+        if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
+          normalizeNestedFunctionExpressions(fn);
+
+        } else if (strncmp("_iterator_for_loopexpr", fn->name, 22) == 0) {
+          normalizeLoopIterExpressions(fn);
         }
       }
     }
-    def->replace(new UnresolvedSymExpr(def->sym->name));
-    stmt->insertBefore(def);
-  } else if (!strncmp("_iterator_for_loopexpr", def->sym->name, 22)) {
-    FnSymbol* parent = toFnSymbol(def->parentSymbol);
-    INT_ASSERT(!strncmp("_parloopexpr", parent->name, 12) ||
-               !strncmp("_seqloopexpr", parent->name, 12));
-    while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12) ||
-           !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12))
-      parent = toFnSymbol(parent->defPoint->parentSymbol);
-    if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
-      AggregateType* ct = toAggregateType(ts->type);
-      INT_ASSERT(ct);
-      ct->addDeclarations(def->remove());
-    } else {
-      parent->defPoint->insertBefore(def->remove());
-    }
   }
-}
 
+  for_vector(BaseAST, ast, asts) {
+    SET_LINENO(ast);
 
-//
-// recursive helper function for destructureTuple below
-//
-static void
-insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
-  int i = 0;
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
+        flattenScopelessBlock(block);
+      }
 
-  S1->getStmtExpr()->insertAfter(
-    buildIfStmt(new CallExpr("!=",
-                             new SymExpr(new_IntSymbol(lhs->numActuals())),
-                             new CallExpr(".", rhs->copy(),
-                                          new_CStringSymbol("size"))),
-                new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+    } else if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isNamed("_build_tuple") == true) {
+        destructureTupleAssignment(call);
+      }
 
-  for_actuals(expr, lhs) {
-    i++;
-    expr->remove();
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
-      if (!strcmp(se->unresolved, "chpl__tuple_blank")) {
-        continue;
+    } else if (DefExpr* def = toDefExpr(ast)) {
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        // Is this function defined within a type i.e. is it a method?
+        if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
+          flattenPrimaryMethod(ts, fn);
+          applyAtomicTypeToPrimaryMethod(ts, fn);
+        }
+
+        changeCastInWhere(fn);
+        addParensToDeinitFns(fn);
       }
     }
-    CallExpr* nextLHS = toCallExpr(expr);
-    Expr* nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(i));
-    if (nextLHS && nextLHS->isNamed("_build_tuple")) {
-      insertDestructureStatements(S1, S2, nextLHS, nextRHS);
-    } else {
-      VarSymbol* ltmp = newTemp();
-      ltmp->addFlag(FLAG_MAYBE_PARAM);
-      S1->insertBefore(new DefExpr(ltmp));
-      S1->insertBefore(new CallExpr(PRIM_MOVE, ltmp,
-                         new CallExpr(PRIM_ADDR_OF, expr)));
-      S2->insertBefore(new CallExpr("=", ltmp, nextRHS));
-    }
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Moves expressions that are parsed as nested function definitions into their *
+* own statement; during parsing, these are embedded in call expressions       *
+*                                                                             *
+************************************** | *************************************/
 
-//
-// destructureTupleAssignment
-//
-//   (i,j) = expr;    ==>    i = expr(1);
-//                           j = expr(2);
-//
-//   note: handles recursive tuple destructuring, (i,(j,k)) = ...
-//
-static void
-destructureTupleAssignment(CallExpr* call) {
+static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
+  DefExpr* def = fn->defPoint;
+
+  if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+    AggregateType* ct = toAggregateType(ts->type);
+
+    INT_ASSERT(ct);
+
+    def->replace(new UnresolvedSymExpr(fn->name));
+
+    ct->addDeclarations(def);
+
+  } else {
+    Expr* stmt = def->getStmtExpr();
+
+    def->replace(new UnresolvedSymExpr(fn->name));
+
+    stmt->insertBefore(def);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void normalizeLoopIterExpressions(FnSymbol* fn) {
+  DefExpr*  def    = fn->defPoint;
+  FnSymbol* parent = toFnSymbol(def->parentSymbol);
+  Symbol*   parSym = parent->defPoint->parentSymbol;
+
+  INT_ASSERT(strncmp("_parloopexpr", parent->name, 12) == 0 ||
+             strncmp("_seqloopexpr", parent->name, 12) == 0);
+
+  // Walk up through nested loop expressions
+  while (strncmp("_parloopexpr", parSym->name, 12) == 0  ||
+         strncmp("_seqloopexpr", parSym->name, 12) == 0) {
+    parent = toFnSymbol(parSym);
+    parSym = parent->defPoint->parentSymbol;
+  }
+
+  def->remove();
+
+  // Move the parent
+  if (TypeSymbol* ts = toTypeSymbol(parSym)) {
+    AggregateType* ct = toAggregateType(ts->type);
+
+    INT_ASSERT(ct);
+
+    ct->addDeclarations(def);
+
+  } else {
+    parent->defPoint->insertBefore(def);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Move the statements in a block out of the block                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void flattenScopelessBlock(BlockStmt* block) {
+  for_alist(stmt, block->body) {
+    stmt->remove();
+
+    block->insertBefore(stmt);
+  }
+
+  block->remove();
+}
+
+/************************************* | **************************************
+*                                                                             *
+* destructureTupleAssignment                                                  *
+*                                                                             *
+*    (i,j) = expr;    ==>    i = expr(1);                                     *
+*                            j = expr(2);                                     *
+*                                                                             *
+* note: handles recursive tuple destructuring, (i,(j,k)) = ...                *
+*                                                                             *
+************************************** | *************************************/
+
+static void      insertDestructureStatements(Expr*     S1,
+                                             Expr*     S2,
+                                             CallExpr* lhs,
+                                             Expr*     rhs);
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
+
+static CallExpr* destructureErr();
+
+static void destructureTupleAssignment(CallExpr* call) {
   CallExpr* parent = toCallExpr(call->parentExpr);
-  if (parent && parent->isNamed("=") && parent->get(1) == call) {
+
+  if (parent               != NULL &&
+      parent->isNamed("=") == true &&
+      parent->get(1)       == call) {
     VarSymbol* rtmp = newTemp();
+    Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
+    Expr*      S2   = new CallExpr(PRIM_NOOP);
+
     rtmp->addFlag(FLAG_EXPR_TEMP);
     rtmp->addFlag(FLAG_MAYBE_TYPE);
     rtmp->addFlag(FLAG_MAYBE_PARAM);
-    Expr* S1 = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
-    Expr* S2 = new CallExpr(PRIM_NOOP);
+
     call->getStmtExpr()->replace(S1);
-    S1->insertAfter(S2);
+
     S1->insertBefore(new DefExpr(rtmp));
+    S1->insertAfter(S2);
+
     insertDestructureStatements(S1, S2, call, new SymExpr(rtmp));
+
     S2->remove();
   }
 }
 
-static void flatten_primary_methods(FnSymbol* fn) {
-  if (TypeSymbol* ts = toTypeSymbol(fn->defPoint->parentSymbol)) {
-    Expr* insertPoint = ts->defPoint;
+static void insertDestructureStatements(Expr*     S1,
+                                        Expr*     S2,
+                                        CallExpr* lhs,
+                                        Expr*     rhs) {
+  int       index = 0;
+  CallExpr* test  = destructureChk(lhs, rhs);
+  CallExpr* err   = destructureErr();
 
-    while (toTypeSymbol(insertPoint->parentSymbol))
-      insertPoint = insertPoint->parentSymbol->defPoint;
+  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
 
-    DefExpr* def = fn->defPoint;
+  for_actuals(expr, lhs) {
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
 
-    def->remove();
+    index = index + 1;
 
-    insertPoint->insertBefore(def);
+    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
+      CallExpr* nextLHS = toCallExpr(expr);
+      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
 
-    if (fn->userString && fn->name != ts->name) {
-      if (strncmp(fn->userString, "ref ", 4) == 0) {
-        // fn->userString of "ref foo()"
-        // Move "ref " before the type name so we end up with "ref Type.foo()"
-        // instead of "Type.ref foo()"
-        fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
+      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+
       } else {
-        fn->userString = astr(ts->name, ".", fn->userString);
+        VarSymbol* lhsTmp = newTemp();
+        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+
+        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
+
+        S1->insertBefore(new DefExpr(lhsTmp));
+        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
+
+        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
       }
-    }
-
-
-    if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
-      fn->addFlag(FLAG_ATOMIC_TYPE);
     }
   }
 }
 
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
+  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
 
-static void change_cast_in_where(FnSymbol* fn) {
-  if (fn->where) {
+  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
+}
+
+static CallExpr* destructureErr() {
+  const char* msg  = NULL;
+  Symbol*     zero = new_IntSymbol(0);
+
+  msg = "tuple size must match the number of grouped variables";
+
+  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  Expr*    insertPoint = ts->defPoint;
+  DefExpr* def         = fn->defPoint;
+
+  while (isTypeSymbol(insertPoint->parentSymbol)) {
+    insertPoint = insertPoint->parentSymbol->defPoint;
+  }
+
+  insertPoint->insertBefore(def->remove());
+
+  if (fn->userString != NULL && fn->name != ts->name) {
+    if (strncmp(fn->userString, "ref ", 4) == 0) {
+      // fn->userString of "ref foo()"
+      // Move "ref " before the type name so we end up with "ref Type.foo()"
+      // instead of "Type.ref foo()"
+      fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
+
+    } else {
+      fn->userString = astr(ts->name, ".", fn->userString);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  if (ts->hasFlag(FLAG_ATOMIC_TYPE)) {
+    fn->addFlag(FLAG_ATOMIC_TYPE);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void changeCastInWhere(FnSymbol* fn) {
+  if (fn->where != NULL) {
     std::vector<BaseAST*> asts;
+
     collect_asts(fn->where, asts);
+
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isCast()) {
-          CallExpr* isSubtype;
-          Expr* to = call->castTo();
+        if (call->isCast() == true) {
+          Expr* to   = call->castTo();
           Expr* from = call->castFrom();
-          // now remove to and from so we can add them
-          // again as arguments. Don't interleave the
-          // remove with the calls to castTo and castFrom.
+
           to->remove();
           from->remove();
-          isSubtype = new CallExpr(PRIM_IS_SUBTYPE, to, from);
-          call->replace(isSubtype);
+
+          call->replace(new CallExpr(PRIM_IS_SUBTYPE, to, from));
         }
       }
     }
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Make paren-less decls act as paren-ful.                                     *
+* Otherwise "arg.deinit()" in proc chpl__delete(arg) would not resolve.       *
+*                                                                             *
+************************************** | *************************************/
 
-static void add_parens_to_deinit_fns(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_DESTRUCTOR))
-    // Make paren-less decls act as paren-ful. Otherwise
-    // "arg.deinit()" in proc chpl__delete(arg)
-    // would not resolve.
+static void addParensToDeinitFns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_DESTRUCTOR)) {
     fn->removeFlag(FLAG_NO_PARENS);
-}
-
-
-void cleanup() {
-  std::vector<BaseAST*> asts;
-
-  collect_asts(rootModule, asts);
-
-  for_vector(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      SET_LINENO(ast);
-
-      normalize_nested_function_expressions(def);
-    }
-  }
-
-  for_vector(BaseAST, ast1, asts) {
-    SET_LINENO(ast1);
-
-    if (BlockStmt* block = toBlockStmt(ast1)) {
-      if (block->blockTag == BLOCK_SCOPELESS && block->list) {
-        flatten_scopeless_block(block);
-      }
-
-    } else if (CallExpr* call = toCallExpr(ast1)) {
-      if (call->isNamed("_build_tuple")) {
-        destructureTupleAssignment(call);
-      }
-
-    } else if (DefExpr* def = toDefExpr(ast1)) {
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        flatten_primary_methods(fn);
-        change_cast_in_where(fn);
-        add_parens_to_deinit_fns(fn);
-      }
-    }
   }
 }

@@ -37,7 +37,7 @@ proc main() {
   forall depth in dynamic(depths, chunkSize=1) {
     const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
-			
+
     for i in 1..iterations {
       const t = new Tree(depth);
       sum += t.sum();

@@ -13,6 +13,7 @@ At present, this directory contains the following codes:
 
     binarytrees.chpl    : Allocates and deallocates many, many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
+    chameneosredux-fast.chpl : A tuned version of chameneosredux.chpl
     fannkuchredux.chpl  : Performs many operations on small arrays
     knucleotide.chpl    : Count the frequencies of specific nucleotide sequences
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap

@@ -11,7 +11,7 @@ use VisualDebug;
 use StencilDist;
 
 /* Version kept in sync with PRK repository */
-param PRKVERSION = "2.16";
+param PRKVERSION = "2.17";
 
 /* Numerical type for matrix elements */
 config type dtype = real;
@@ -117,12 +117,27 @@ proc main() {
   /* Weight matrix represented as tuple of tuples*/
   var weight: Wsize*(Wsize*(dtype));
 
-  for i in 1..R {
-    const element : dtype = 1 / (2*i*R) : dtype;
-    weight[R1][R1+i]  =  element;
-    weight[R1+i][R1]  =  element;
-    weight[R1-i][R1] = -element;
-    weight[R1][R1-i] = -element;
+  if !compact {
+    for i in 1..R {
+      const element : dtype = 1 / (2*i*R) : dtype;
+      weight[R1][R1+i]  =  element;
+      weight[R1+i][R1]  =  element;
+      weight[R1-i][R1] = -element;
+      weight[R1][R1-i] = -element;
+    }
+  }
+  else {
+    for jj in 1..R {
+      const element = (1.0/(4.0*jj*(2.0*jj-1)*R)):dtype;
+      for ii in R1+(-jj+1)..R1+jj-1 {
+        weight[ ii][R1+jj] = element;
+        weight[ ii][R1-jj] = -element;
+        weight[R1+jj][ ii] = element;
+        weight[R1-jj][ ii] = -element;
+      }
+      weight[R1+jj][R1+jj] = (1.0/(4.0*jj*R));
+      weight[R1-jj][R1-jj] = -(1.0/(4.0*jj*R));
+    }
   }
 
   /* Initialize Input matrix */
@@ -171,8 +186,8 @@ proc main() {
           for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
           for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
         } else {
-          for ii in -R..R do
-            for jj in -R..R do
+          for param ii in -R..R do
+            for param jj in -R..R do
               tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
         }
         output[i, j] += tmpout;
@@ -188,8 +203,8 @@ proc main() {
               for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
               for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
             } else {
-              for ii in -R..R do
-                for jj in -R..R do
+              for param ii in -R..R do
+                for param jj in -R..R do
                   tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
             }
             output[i, j] += tmpout;

@@ -562,14 +562,19 @@ class EnumSymbol : public Symbol {
   Immediate*      getImmediate();
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
+public:
+  static void          addTopLevelModule (ModuleSymbol*               module);
+  static void          getTopLevelModules(std::vector<ModuleSymbol*>& mods);
+
 public:
                        ModuleSymbol(const char* iName,
                                     ModTag      iModTag,
@@ -612,20 +617,30 @@ public:
   // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*     extern_info;
-  llvm::MDNode* llvmDINameSpace;
+  llvm::MDNode*        llvmDINameSpace;
 #else
-  void* extern_info;
-  void* llvmDINameSpace;
+  void*                extern_info;
+  void*                llvmDINameSpace;
 #endif
 
-  void                 printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
-  void                 printTableOfContents(std::ostream *file);
+  void                 printDocs(std::ostream* file,
+                                 unsigned int  tabs,
+                                 std::string   parentName);
+
+  void                 printTableOfContents(std::ostream* file);
+
   std::string          docsName();
 
 private:
-  void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
+  void                 getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
+                                                    Expr*            expr,
+                                                    bool             config);
   bool                 hasTopLevelModule();
 };
+
+void initRootModule();
+
+void initStringLiteralModule();
 
 /******************************** | *********************************
 *                                                                   *
@@ -699,6 +714,10 @@ VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
 VarSymbol* newTemp(const char* name, QualifiedType qt);
 VarSymbol* newTemp(QualifiedType qt);
+VarSymbol* newTempConst(const char* name = NULL, Type* type = dtUnknown);
+VarSymbol* newTempConst(Type* type);
+VarSymbol* newTempConst(const char* name, QualifiedType qt);
+VarSymbol* newTempConst(QualifiedType qt);
 
 // for use in an English sentence
 const char* retTagDescrString(RetTag retTag);
@@ -708,33 +727,6 @@ const char* intentDescrString(IntentTag intent);
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
-
-//
-// Used to pass information from partialCopy() to finalizeCopy().
-//
-class PartialCopyData {
- public:
-  // Used to keep track of symbol substitutions during partial copying.
-  SymbolMap partialCopyMap;
-  // Source of a partially copied function.
-  FnSymbol* partialCopySource;
-  // Vararg formal to be replaced with individual formals, or NULL.
-  ArgSymbol* varargOldFormal;
-  // Individual formals to replace varargOldFormal.
-  std::vector<ArgSymbol*> varargNewFormals;
-
-  PartialCopyData() : partialCopySource(NULL), varargOldFormal(NULL) { }
-  ~PartialCopyData() { partialCopyMap.clear(); varargNewFormals.clear(); }
-};
-
-PartialCopyData* getPartialCopyInfo(FnSymbol* fn);
-PartialCopyData& addPartialCopyInfo(FnSymbol* fn);
-void clearPartialCopyInfo(FnSymbol* fn);
-void clearPartialCopyFnMap();
-void checkEmptyPartialCopyFnMap();
-
-void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
-                               std::vector<ArgSymbol*>& varargFormals);
 
 // Parser support.
 class ForallIntents;
@@ -802,19 +794,5 @@ extern Symbol *gSingleVarAuxFields;
 
 extern std::map<FnSymbol*,int> ftableMap;
 extern std::vector<FnSymbol*> ftableVec;
-
-//
-// The virtualMethodTable maps types to their arrays of methods.  The
-// virtualMethodMap maps methods to their indexes into these arrays.
-// The virtualChildrenMap maps methods to all of the methods that
-// could be called when they are called.  The virtualRootsMap maps
-// methods to the root methods that it overrides.  Note that multiple
-// inheritance will require more virtual method tables, one for each
-// path up the class hierarchy to each class root.
-//
-extern Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
-extern Map<FnSymbol*,int> virtualMethodMap;
-extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
-extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 #endif

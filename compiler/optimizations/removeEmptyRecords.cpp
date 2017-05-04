@@ -30,7 +30,7 @@ removeEmptyRecords() {
   if (fNoRemoveEmptyRecords)
     return;
 
-  Vec<Type*> emptyRecordTypeSet;
+  std::set<Type*> emptyRecordTypeSet;
   int numEmptyRecordTypes = 0;
   std::vector<Symbol*> emptyRecordSymbols;
 
@@ -47,18 +47,18 @@ removeEmptyRecords() {
           !ct->symbol->hasFlag(FLAG_EXTERN)) {
         bool empty = true;
         for_fields(field, ct) {
-          if (!emptyRecordTypeSet.set_in(field->type)) {
+          if (emptyRecordTypeSet.count(field->type) == 0) {
             empty = false;
             break;
           }
         }
         if (empty) {
           change = true;
-          emptyRecordTypeSet.set_add(ct);
+          emptyRecordTypeSet.insert(ct);
           numEmptyRecordTypes++;
           ct->symbol->defPoint->remove();
           if (ct->refType) {
-            emptyRecordTypeSet.set_add(ct->refType);
+            emptyRecordTypeSet.insert(ct->refType);
             numEmptyRecordTypes++;
             ct->refType->symbol->defPoint->remove();
           }
@@ -73,7 +73,7 @@ removeEmptyRecords() {
   compute_call_sites();
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (emptyRecordTypeSet.set_in(arg->type)) {
+    if (emptyRecordTypeSet.count(arg->type) != 0) {
       forv_Vec(CallExpr, call, *arg->getFunction()->calledBy) {
         formal_to_actual(call, arg)->remove();
       }
@@ -83,14 +83,14 @@ removeEmptyRecords() {
   }
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (emptyRecordTypeSet.set_in(var->type)) {
+    if (emptyRecordTypeSet.count(var->type) != 0) {
       emptyRecordSymbols.push_back(var);
       var->defPoint->remove();
     }
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (emptyRecordTypeSet.set_in(fn->retType)) {
+    if (emptyRecordTypeSet.count(fn->retType) != 0) {
       CallExpr* ret = toCallExpr(fn->body->body.last());
       INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
       ret->get(1)->replace(new SymExpr(gVoid));
@@ -102,7 +102,7 @@ removeEmptyRecords() {
         }
       }
     }
-    if (fn->_this && emptyRecordTypeSet.set_in(fn->_this->type))
+    if (fn->_this && emptyRecordTypeSet.count(fn->_this->type) != 0)
       fn->_this = NULL;
   }
 
