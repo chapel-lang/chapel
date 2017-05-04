@@ -21,66 +21,40 @@
 #ifndef _chpl_mem_impl_H_
 #define _chpl_mem_impl_H_
 
-// Uses the built-in malloc, calloc, realloc and free.
-
-// disable mem warnings since cstdlib uses the system allocator
-#include "chpl-mem-no-warning-macros.h"
-
-#include <stdlib.h>
-#if defined(__APPLE__)
-#include <malloc/malloc.h>
-#endif
-
-
-#include <stdlib.h>
-
-#ifdef __GLIBC__
-// get memalign
-#include <malloc.h>
-#endif
+// Uses the system allocator
+#include "chpl-mem-sys.h"
 
 static inline void* chpl_calloc(size_t n, size_t size) {
-  return calloc(n,size);
+  return sys_calloc(n,size);
 }
 
 static inline void* chpl_malloc(size_t size) {
-  return malloc(size);
+  return sys_malloc(size);
 }
 
 static inline void* chpl_memalign(size_t boundary, size_t size) {
-#ifdef __GLIBC__
-  return memalign(boundary, size);
-#else
-  void* ret = NULL;
-  int rc;
-  rc = posix_memalign(&ret, boundary, size);
-  if( rc == 0 ) return ret;
-  else return NULL;
-#endif
+  return sys_memalign(boundary, size);
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {
-  return realloc(ptr,size);
+  return sys_realloc(ptr,size);
 }
 
 static inline void chpl_free(void* ptr) {
-  free(ptr);
+  sys_free(ptr);
 }
 
 // malloc_good_size is OSX specific unfortunately. On other platforms just
 // return minSize.
 static inline size_t chpl_good_alloc_size(size_t minSize) {
 #if defined(__APPLE__)
+  #include <malloc/malloc.h>
   return malloc_good_size(minSize);
 #else
   return minSize;
 #endif
 }
 
-// Now that we've defined our functions, turn the warnings back on.
-#include "chpl-mem-warning-macros.h"
-
 #define CHPL_USING_CSTDLIB_MALLOC 1
-
 
 #endif
