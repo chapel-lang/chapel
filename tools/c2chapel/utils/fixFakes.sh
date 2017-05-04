@@ -1,7 +1,7 @@
 #!/bin/sh
 
 fakesDir=$1
-header=$(realpath $2)
+header=$2
 
 linkName="_c2chapel_custom.h"
 linkPath=${fakesDir}/${linkName}

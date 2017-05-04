@@ -51,7 +51,7 @@ c2chapel:
 	wget $(RELEASE) -O $(TAR) && \
 	tar xzf $(TAR) -C $(FAKES) --strip 3 pycparser-release_v$(VERSION)/utils/fake_libc_include
 
-	./utils/fixFakes.sh $(FAKES) ./utils/custom.h
+	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
 
 	virtualenv $(VENV)
 	. $(VENV)/bin/activate && \
