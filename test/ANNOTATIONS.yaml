@@ -736,6 +736,12 @@ prk-stencil.ml-perf:
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
 
+prk-transpose: &transpose-base
+  05/04/17:
+    - Update benchmark to track latest reference version (#6152)
+prk-transpose-time:
+  <<: *transpose-base
+
 ptrans: &ptrans-base
   01/11/17:
     - Replace temporary array in BlockCycDist with tuple (#5139)
