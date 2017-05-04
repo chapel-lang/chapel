@@ -237,6 +237,8 @@ all:
     - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
   03/20/17:
     - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
+  05/03/17:
+    - Flag some compiler temps as const (#6154)
 
 
 AllCompTime:
