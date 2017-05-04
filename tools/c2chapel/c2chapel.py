@@ -401,7 +401,7 @@ def getFakeHeaderPath():
     ret    = ""
     if os.path.isfile(script):
         parent = os.path.dirname(script)
-        fakes = parent + "/install/utils/fake_libc_include/"
+        fakes = parent + "/install/fakeHeaders/"
         if os.path.isdir(fakes):
             ret = fakes
 
