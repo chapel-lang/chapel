@@ -240,77 +240,80 @@ verifyID(BA);
 // is replicated onto each locale. (Note: consistency among these
 // array replicands is NOT maintained automatically.)
 //
-// This replication is observable in some cases but not others,
-// as shown below. Note: this behavior may change in the future.
+// This replication is observable in some cases but not others, as
+// shown below.  In places this example uses a utility function,
+// writeReplicands() to have each locale print its copy of the array.
 //
 const ReplicatedSpace = Space dmapped ReplicatedDist();
 var RA: [ReplicatedSpace] int;
 
-// The replication is observable - this visits each replicand.
-forall ra in RA do
-  ra = here.id;
+// Queries about the size of a replicated domain or array will return
+// the size per locale:
+writeln("Replicated Array Index Map, ", RA.numElements, " elements per locale");
 
-writeln("Replicated Array Index Map, ", RA.numElements, " elements total");
-writeln(RA);
+// This loop-based assignment will only affect the copy of 'RA' on the
+// locale on which it's running (the last locale, in this example).
+// All other copies will remain uninitialized.
+
+on Locales[numLocales-1] do
+  forall ra in RA do
+    ra = here.id;
+
+// In printing the array, only the local copy will be printed.
+writeln("Locale 0's copy of RA is:\n", RA);
+
+// So, we'll use a utility function can be used to print the other
+// locales' copies:
+writeReplicands(RA);
 writeln();
 
+proc writeReplicands(X) {
+  for loc in Locales {
+    on loc {
+      writeln(loc, ":");
+      writeln(X);
+    }
+  }
+}
+
 //
-// The replication is observable when the replicated array is
-// on the left-hand side of an assignment. If the right-hand side is not
-// replicated, it is copied into each replicand.
-// We illustrate this using a non-distributed array.
+// Whole-array assignment is similarly local only to the current
+// locale's copy of the array.
 //
 var A: [Space] int = [(i,j) in Space] i*100 + j;
 RA = A;
 writeln("Replicated Array after being array-assigned into");
-writeln(RA);
+writeReplicands(RA);
 writeln();
 
-//
-// Analogously, each replicand will be visited and
-// other participated expressions will be computed on each locale when:
-//
-// (a) the replicated array is assigned a scalar:
-//       ``RA = 5;``
-//
-// (b) it appears first in a zippered forall loop:
-//       ``forall (ra, a) in zip(RA, A) do ...;``
-//
-// (c) it appears in a for loop:
-//       ``for ra in RA do ...;``
-//
-// Zippering ``(RA,A)`` or ``(A,RA)`` in a ``for`` loop will generate
-// an error due to their different number of elements.
-//
-
-// Let ``RA`` store the Index Map again, for the examples below.
-forall ra in RA do
-  ra = here.id;
+// Have each locale assign its local copy of RA:
+coforall loc in Locales do
+  on loc do
+    RA = here.id;
 
 //
-// Only the local replicand is accessed - replication is NOT observable
-// and consistency is NOT maintained - when:
+// Only the local replicand is accessed when:
 //
 // (a) the replicated array is indexed - an individual element is read...
 //
-on Locales(0) do
+on Locales[0] do
   writeln("on ", here, ": ", RA(Space.low));
-on Locales(LocaleSpace.high) do
+on Locales[LocaleSpace.high] do
   writeln("on ", here, ": ", RA(Space.low));
 writeln();
 
 // ...or an individual element is written;
-on Locales(LocaleSpace.high) do
+on Locales[LocaleSpace.high] do
   RA(Space.low) = 7777;
 
 writeln("Replicated Array after being indexed into");
-writeln(RA);
+writeReplicands(RA);
 writeln();
 
 //
 // (b) the replicated array is on the right-hand side of an assignment...
 //
-on Locales(LocaleSpace.high) do
+on Locales[LocaleSpace.high] do
   A = RA + 4;
 writeln("Non-Replicated Array after assignment from Replicated Array + 4");
 writeln(A);
@@ -318,8 +321,7 @@ writeln();
 
 //
 // (c) ...or, generally, the replicated array or domain participates
-//     in a zippered forall loop, but not in the first position.
-//     The loop could look like:
+//     in a zippered forall loop, for example:
 //
 //     ``forall (a, (i,j), ra) in (A, ReplicatedSpace, RA) do ...;``
 //
