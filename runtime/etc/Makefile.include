@@ -131,7 +131,7 @@ printclangcxx:
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
 ifdef CHPL_DEVELOPER
-	$(warning Expected runtime configuration: $(shell basename $(CHPL_RT_LIB_DIR)))
+	$(warning Expected runtime library in $(CHPL_RT_LIB_DIR))
 endif
 ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
 	$(error The requested configuration is not included in the module. \
