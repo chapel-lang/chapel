@@ -35,9 +35,9 @@ TAR=release_v$(VERSION).tar.gz
 
 RELEASE=https://github.com/eliben/pycparser/archive/$(TAR)
 
-INSTALL=./install
+INSTALL=$(realpath .)/install
 VENV=$(INSTALL)/venv
-UTILS=$(INSTALL)/utils
+FAKES=$(INSTALL)/fakeHeaders
 
 .PHONY: clean clobber c2chapel install
 
@@ -45,11 +45,13 @@ all: c2chapel
 
 c2chapel:
 	mkdir -p $(VENV)
-	mkdir -p $(UTILS)
+	mkdir -p $(FAKES)
 	cd $(INSTALL) && \
 	echo "Fetching release $(VERSION) tarball..." && \
 	wget $(RELEASE) -O $(TAR) && \
-	tar xzf $(TAR) -C utils --strip 2 pycparser-release_v$(VERSION)/utils/
+	tar xzf $(TAR) -C $(FAKES) --strip 3 pycparser-release_v$(VERSION)/utils/fake_libc_include
+
+	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
 
 	virtualenv $(VENV)
 	. $(VENV)/bin/activate && \
