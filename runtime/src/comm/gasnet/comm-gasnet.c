@@ -35,6 +35,7 @@
 #include "chpl-linefile-support.h"
 #include "error.h"
 #include "chpl-mem-desc.h"
+#include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
 #include "chpl-cache.h" // to call chpl_cache_init()
 
 // Don't get warning macros for chpl_comm_get etc
@@ -791,11 +792,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
                             0));
-  // memory layer hasn't been initialized, need to use the system allocator
-#include "chpl-mem-no-warning-macros.h"
   // TODO (EJR: 03/03/16): we currently "leak" seginfo_table. We should
   // probably free it on exit (but only for "clean" exits.)
-  seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
+  seginfo_table = (gasnet_seginfo_t*)sys_malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
   //
   // The following call has no real effect on the .addr and .size
   // fields for GASNET_SEGMENT_EVERYTHING, but is recommended to be
@@ -824,7 +823,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     // locale 0 sets up its segment to an appropriate size:
     //
     int global_table_size = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) + GASNETT_PAGESIZE;
-    void* global_table = malloc(global_table_size);
+    void* global_table = sys_malloc(global_table_size);
     seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) + 
                                       (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 : 
                                        (GASNETT_PAGESIZE-(((uintptr_t)global_table)%GASNETT_PAGESIZE)))));
@@ -857,7 +856,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   GASNET_BLOCKUNTIL(bcast_seginfo_done);
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
-#include "chpl-mem-warning-macros.h"
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
