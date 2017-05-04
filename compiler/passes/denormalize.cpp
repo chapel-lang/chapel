@@ -462,6 +462,7 @@ inline bool isArithmeticPrimitive(CallExpr *ce) {
       case PRIM_MOD:
       case PRIM_LSH:
       case PRIM_RSH:
+      case PRIM_UNARY_NOT:
         return true;
         break;
       default:

@@ -33,9 +33,9 @@ sphfract.bmp : The expected BMP file for 'sphfract'
 sphfract.ppm : The expected PPM file for 'sphfract'
 README       : This file
 
-The following files are related to the Chapel testing system, which we
-use to maintain this code.  They can be ignored if they haven't
-already been removed for you:
+If present, the following files are related to the Chapel testing
+system, which we use to maintain this code.  They can be ignored for
+the purposes of the hands-on exercise:
 
 CATFILES
 CLEANFILES

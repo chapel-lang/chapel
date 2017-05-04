@@ -5,9 +5,10 @@ Miscellaneous Notes
 README files
 ------------
 
-The repository has a collection of README files on various topics. The main
-file is $CHPL_HOME/README. Each file points to other related READMEs so that
-any README can be reached from the main one by following such "links".
+The repository has a collection of README files on various topics. The
+main file is $CHPL_HOME/README.rst.  Each file points to other related
+READMEs so that any README can be reached from the main one by
+following such "links".
 
 Some directories also have README.devel, which contain additional
 information for Chapel developers. They are not (necessarily)
@@ -18,35 +19,6 @@ Chapel. Therefore they reflect the directory structure of Chapel's
 public releases; see $CHPL_HOME/README.devel for details.
 
 
---runtime compiler flag
------------------------
-
-This flag is to be passed when the compiled code will become a part of
-the runtime library. It sets the 'fRuntime' variable in the compiler.
-
-The fRuntime variable is set according to the use of the --runtime flag 
-(intended for developer use only).  Some time ago, we decided that it 
-would be nice to write some code for Chapel's runtime in Chapel rather 
-than C to take advantage of associative domains/arrays, generic 
-programming, etc.  At present, this code lives in 
-runtime/src/common-chpl/chpl_rt_utils.chpl, so the --runtime flag is used 
-when building it.  In practice we haven't made as much use of this as we 
-expected, but we continue to think it has sufficient value to continue 
-supporting it.  The --runtime flag indicates that the Chapel code being 
-compiled is intended for use in the runtime and is not user code.
-
-Some of the implications of --runtime are that the program does not own 
-main() (since the user code will); that it will not span multiple locales 
-(since the runtime C code is local to each locale); that symbols in the C 
-code will not be static by default; and in some cases it will generate 
-different names (to avoid conflicting with identifiers in the generated 
-user code).
-
-At times we've talked about a compilation mode in which Chapel does not 
-own main() for purposes of interoperability; at present, the --runtime 
-flag is the closest thing we have to this.
-
-
 grep shortcuts
 --------------
 
@@ -54,7 +26,7 @@ In $CHPL_HOME/util/devel/ - grep these files:
 
 grepcomp    - compiler sources
 
-grepREADMEs - READMEs in $CHPL_HOME (except test/ and third-party/)
+grepdocs    - READMEs in $CHPL_HOME (except test/ and third-party/)
 
 grepmake    - Makefiles
 
@@ -66,6 +38,8 @@ grepchpl    - all of the above
 
 grepgoods   - .good files in the test subtree
 
-grepstdchdrs - ?
+grepstdchdrs - grep C files to look for std C header #includes
 
 greptests    - Chapel sources in the test subtree
+
+greptestoutputs - .good files from the test subtree
