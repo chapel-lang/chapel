@@ -1998,8 +1998,8 @@ void makeBinaryLLVM(void) {
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
 
 #ifdef HAVE_LLVM
-  if(llvmFuncOptDump == 2)
-      llvmFunctionDump(getFunctionLLVM(llvmFuncDumpCName));
+  if(LLVM_FULL_STAGE_NUM == llvmPrintIrNameStageNum)
+      llvmFunctionDump(getFunctionLLVM(llvmPrintIrCName), LLVM_FULL_STAGE_NUM);
 #endif
 }
 

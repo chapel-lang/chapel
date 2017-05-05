@@ -777,12 +777,30 @@ extern std::map<FnSymbol*,int> ftableMap;
 extern std::vector<FnSymbol*> ftableVec;
 
 #define FUNC_NAME_MAX 256
-extern char llvmFuncDumpName[FUNC_NAME_MAX+1];
-extern const char *llvmFuncDumpCName;
-extern int llvmFuncOptDump;
+extern char llvmPrintIrName[FUNC_NAME_MAX+1];
+extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
+
+//Names representations in LLVM IR and C generated code are
+//different from their names in AST. 'llvmPrintIrCName'
+//is place to keep name in LLVM IR and C version of
+//'llvmPrintIrName' variable.
+extern const char *llvmPrintIrCName;
+extern int llvmPrintIrNameStageNum;
+
+
+
+#define LLVM_NONE_STAGE_NAME "none"
+#define LLVM_NONE_STAGE_NUM 1
+#define LLVM_BASIC_STAGE_NAME "basic"
+#define LLVM_BASIC_STAGE_NUM 2
+#define LLVM_FULL_STAGE_NAME "full"
+#define LLVM_FULL_STAGE_NUM 3
+
+extern std::map<std::string, int> llvmStageMap;
+extern std::map<int, std::string> llvmStageRevMap;
 
 #ifdef HAVE_LLVM
-void llvmFunctionDump(llvm::Function *llvmFunc);
+void llvmFunctionDump(llvm::Function *func, int numStage);
 #endif
 
 #endif

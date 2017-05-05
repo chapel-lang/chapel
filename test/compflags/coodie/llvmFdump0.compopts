@@ -1,1 +1,0 @@
---llvm --llvm-fdump-opt=0 --llvm-fdump mainTest
