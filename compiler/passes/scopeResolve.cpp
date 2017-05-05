@@ -1167,11 +1167,13 @@ static bool tryCResolve(ModuleSymbol*                     module,
                         const char*                       name,
                         llvm::SmallSet<ModuleSymbol*, 24> visited) {
 
-  if (! module) return false;
+  if (module == NULL) {
+    return false;
 
-  if (llvm_small_set_insert(visited, module)) {
+  } else if (llvm_small_set_insert(visited, module)) {
     // visited.insert(module)) {
     // we added it to the set, so continue.
+
   } else {
     // It was already in the set.
     return false;
@@ -1194,7 +1196,9 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
         collectDefExprs(c_expr, v);
 
-        addToSymbolTable(v);
+        for_vector(DefExpr, def, v) {
+          addToSymbolTable(def);
+        }
 
         if (DefExpr* de = toDefExpr(c_expr)) {
           if (TypeSymbol* ts = toTypeSymbol(de->sym)) {
