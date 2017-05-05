@@ -1,3 +1,6 @@
+// This test exercises attempting to create an instance that the initializer
+// does not allow and assigning it into the instantiation that cannot have
+// anything assigned into it.
 class Foo {
   var x;
   var y;

@@ -1,1 +1,1 @@
-no-arg-type2.chpl:14: error: cannot determine type instantiation based on initializers provided
+Foo(real(64))

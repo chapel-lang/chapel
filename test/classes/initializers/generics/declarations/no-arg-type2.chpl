@@ -11,6 +11,6 @@ class Foo {
   }
 }
 
-var foo: Foo(real); // We cannot create an instantiation with t = real, and that
-// is not what this means, really.
+var foo: Foo(real); // We can create an instantiation with t = real, but we
+// can never initialize it
 writeln(foo.type:string);

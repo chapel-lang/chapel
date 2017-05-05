@@ -1,3 +1,6 @@
+// This test exercises more of creating a type constructor from the initializer
+// argument list.  If and when we support that, this is intended to valid the
+// behavior of initializers with concrete arguments.
 class Foo {
   var x;
   var y;
