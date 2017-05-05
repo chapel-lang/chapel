@@ -96,7 +96,9 @@ typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 
-static void     addToSymbolTable(Vec<DefExpr*>& defs);
+static void     addRecordDefaultConstruction();
+
+static void     addToSymbolTable();
 
 static void     processImportExprs();
 
@@ -118,7 +120,7 @@ void scopeResolve() {
   //
   // add all program asts to the symbol table
   //
-  addToSymbolTable(gDefExprs);
+  addToSymbolTable();
 
   processImportExprs();
 
@@ -179,7 +181,7 @@ void scopeResolve() {
     }
   }
 
-  AggregateType::addRecordDefaultConstruction();
+  addRecordDefaultConstruction();
 
   //
   // resolve type of this for methods
@@ -241,27 +243,64 @@ void scopeResolve() {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void addRecordDefaultConstruction() {
+  forv_Vec(DefExpr, def, gDefExprs) {
+    // We're only interested in declarations that do not have initializers.
+    if (def->init != NULL) {
+
+    } else if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (AggregateType* at = toAggregateType(var->type)) {
+        if (at->isRecord() == false) {
+
+        // No initializer for extern records.
+        } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+
+        } else {
+          SET_LINENO(def);
+
+          CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
+
+          def->init = new CallExpr(PRIM_NEW, ctor_call);
+
+          insert_help(def->init, def, def->parentSymbol);
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * addToSymbolTable adds the asts in a vector to the global symbolTable such   *
 * that symbol definitions are added to entries in the table and new           *
 * enclosing asts become entries                                               *
 *                                                                             *
 ************************************** | *************************************/
 
-static void addOneToSymbolTable(DefExpr* def);
+static void addToSymbolTable(DefExpr* def);
 
-void addToSymbolTable(std::vector<DefExpr*>& defs) {
+// Exported call for AggregateType
+void addToSymbolTable(FnSymbol* fn) {
+  std::vector<DefExpr*> defs;
+
+  collectDefExprs(fn, defs);
+
   for_vector(DefExpr, def, defs) {
-    addOneToSymbolTable(def);
+    addToSymbolTable(def);
   }
 }
 
-static void addToSymbolTable(Vec<DefExpr*>& defs) {
-  forv_Vec(DefExpr, def, defs) {
-    addOneToSymbolTable(def);
+static void addToSymbolTable() {
+  forv_Vec(DefExpr, def, gDefExprs) {
+    addToSymbolTable(def);
   }
 }
 
-static void addOneToSymbolTable(DefExpr* def) {
+static void addToSymbolTable(DefExpr* def) {
   // If the symbol is a compiler-generated variable or a label,
   // do not add it to the symbol table.
   if (def->sym->hasFlag(FLAG_TEMP) ||

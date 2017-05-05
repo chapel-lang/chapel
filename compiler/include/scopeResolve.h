@@ -20,13 +20,11 @@
 #ifndef _SCOPE_RESOLVE_H_
 #define _SCOPE_RESOLVE_H_
 
-#include <vector>
-
 class BaseAST;
-class DefExpr;
+class FnSymbol;
 class Symbol;
 
-void    addToSymbolTable(std::vector<DefExpr*>& defs);
+void    addToSymbolTable(FnSymbol* fn);
 
 Symbol* lookup(BaseAST* scope, const char* name);
 
