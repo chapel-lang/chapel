@@ -1952,18 +1952,66 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     var->type = type;
 
   } else {
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+    bool handled = false;
+    if (CallExpr* call = toCallExpr(typeExpr)) {
+      if (SymExpr* sym = toSymExpr(call->baseExpr)) {
+        if (TypeSymbol* ts = toTypeSymbol(sym->symbol())) {
+          if (isGenericRecordWithInitializers(ts->type)) {
+            /*
+            VarSymbol* typeTemp = newTemp("type_tmp");
+            typeTemp->addFlag(FLAG_TYPE_VARIABLE);
+            call->insertBefore(new DefExpr(typeTemp));
+            CallExpr* typeSpec = new CallExpr(astr("_type_specifier_",
+                                                   ts->type->symbol->name));
+            for_actuals(actual, call) {
+              // Get all the arguments over into the type specifier call
+              typeSpec->insertAtTail(actual->copy());
+            }
 
-    if (var->hasFlag(FLAG_PARAM) == true) {
-      typeTemp->addFlag(FLAG_PARAM);
+            call->insertBefore(new CallExpr(PRIM_MOVE, typeTemp, typeSpec));
+            // call's arg list will be necessary for determining the type
+            // specifier to use
+
+            // Get type specifier
+
+            // Generic record with initializers!
+            handled = true;
+            */
+          } else if (isGenericClassWithInitializers(ts->type)) {
+            // Generic class with initializers!
+            VarSymbol* typeTemp = newTemp("type_tmp");
+            typeTemp->addFlag(FLAG_TYPE_VARIABLE);
+            defExpr->insertBefore(new DefExpr(typeTemp));
+            CallExpr* typeSpec = new CallExpr(astr("_type_specifier_",
+                                                   ts->type->symbol->name));
+            for_actuals(actual, call) {
+              // Get all the arguments over into the type specifier call
+              typeSpec->insertAtTail(actual->copy());
+            }
+
+            defExpr->insertBefore(new CallExpr(PRIM_MOVE, typeTemp, typeSpec));
+            CallExpr* defaultCall = new CallExpr("_defaultOf", typeTemp);
+            defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, defaultCall));
+            handled = true;
+          }
+        }
+      }
     }
 
-    defExpr ->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    if (!handled) {
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      DefExpr*   typeDefn = new DefExpr(typeTemp);
+      CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+      CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp, initCall);
+
+      if (var->hasFlag(FLAG_PARAM) == true) {
+        typeTemp->addFlag(FLAG_PARAM);
+      }
+
+      defExpr ->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    }
   }
 }
 

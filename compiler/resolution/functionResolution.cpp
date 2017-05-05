@@ -587,6 +587,8 @@ const char* toString(CallInfo* info) {
   } else if (!developer && !strncmp("_construct_", info->name, 11)) {
     str = astr(str, info->name+11);
     str = astr(str, ".init");
+  } else if (!developer && !strncmp("_type_specifier_", info->name, 16)) {
+    str = astr(str, info->name+16);
   } else if (!_this) {
     str = astr(str, info->name);
   }
@@ -655,6 +657,8 @@ const char* toString(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     // if not, make sure 'str' is built as desired
     INT_ASSERT(!strncmp("_type_construct_", fn->name, 16));
+    str = astr(fn->name+16);
+  } else if (!strncmp("_type_specifier_", fn->name, 16)) {
     str = astr(fn->name+16);
   } else if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
     if (!strncmp("_construct_", fn->name, 11)) {
@@ -2365,6 +2369,8 @@ printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
       entity = "type specifier";
+    else if (!strncmp("_type_specifier_", info->name, 16))
+      entity = "type specifier generated for";
     const char* str = toString(info);
     if (info->scope) {
       ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
@@ -2471,6 +2477,8 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
       entity = "type specifier";
+    else if (!strncmp("_type_specifier_", info->name, 16))
+      entity = "type specifier generated for";
     const char* str = toString(info);
     if (info->scope) {
       ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);

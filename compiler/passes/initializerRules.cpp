@@ -24,6 +24,7 @@
 #include "LoopStmt.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
 #include "typeSpecifier.h"
@@ -48,6 +49,8 @@ static InitStyle findInitStyle(Expr*     expr);
 
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
+
+static void      buildTypeFunction(FnSymbol* initFn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -1667,6 +1670,10 @@ static void preNormalizeGenericInit(FnSymbol* fn) {
 
     fn->addFlag(FLAG_INLINE);
   }
+
+  if (at->isGeneric() == true) {
+    buildTypeFunction(fn);
+  }
 }
 
 /************************************* | **************************************
@@ -2317,4 +2324,107 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   at->symbol->defPoint->insertBefore(new DefExpr(fn));
 
   return fn;
+}
+
+static void buildTypeFunction(FnSymbol* initFn) {
+  Symbol* _this = initFn->_this;
+  AggregateType* at = toAggregateType(_this->type);
+
+  SET_LINENO(initFn);
+
+  FnSymbol* typeFn = new FnSymbol(astr("_type_specifier_", at->symbol->name));
+
+  typeFn->retTag = RET_TYPE;
+  typeFn->addFlag(FLAG_COMPILER_GENERATED);
+
+  VarSymbol* local = newTemp("local_tmp");
+  typeFn->body->insertAtTail(new DefExpr(local));
+
+  // TODO: reuse previously created type functions
+
+  // TODO: store relationship between typeFn and initFn
+  CallExpr* initCall = new CallExpr(PRIM_NEW, at->symbol);
+  CallExpr* moveCall = new CallExpr(PRIM_MOVE, local, initCall);
+  CallExpr* typeCall = new CallExpr(PRIM_TYPEOF, local);
+
+  int count = 1;
+
+  for_formals(formal, initFn) {
+    // Ignore _mt and this
+    if (count >= 3) {
+      ArgSymbol* arg = NULL;
+      if (formal->intent == INTENT_PARAM || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // Type and param arguments are just passed along as is
+        arg = formal->copy();
+        initCall->insertAtTail(arg);
+
+      } else if (formal->typeExpr == NULL && formal->defaultExpr == NULL) {
+        // The argument is generic, so we need a corresponding type argument
+        arg = new ArgSymbol(INTENT_BLANK, formal->name, formal->type);
+        arg->addFlag(FLAG_TYPE_VARIABLE);
+
+        arg->addFlag(FLAG_GENERIC);
+        initCall->insertAtTail(new CallExpr("_defaultOf", arg));
+
+      } else {
+        // The argument is not generic.  If the argument has a type, we'll
+        // want to ensure it always gets that type.  If the argument has a
+        // default expression, we'll want that to be taken into account
+        arg = new ArgSymbol(INTENT_BLANK, formal->name, dtAny);
+        arg->addFlag(FLAG_TYPE_VARIABLE);
+        arg->addFlag(FLAG_GENERIC);
+
+        if (formal->defaultExpr != NULL) {
+          INT_ASSERT(formal->defaultExpr->body.length == 1);
+          // Assumes the defaultExpr on the formal in the initializer is of
+          // length 1
+          Expr* formalDefault = formal->defaultExpr->body.tail->copy();
+
+          CallExpr* getFormalType = new CallExpr(PRIM_TYPEOF, formalDefault);
+          CallExpr* newClause = new CallExpr("==", arg, getFormalType);
+
+          if (typeFn->where != NULL) {
+            // Need to join all previous conditions in the where clause
+            Expr* last = typeFn->where->body.tail->remove();
+            CallExpr* andCall = new CallExpr("&", last, newClause);
+            typeFn->where->insertAtTail(andCall);
+          } else {
+            // This type argument can never be anything other than the type
+            // of the default value specified
+            typeFn->where = new BlockStmt(newClause);
+          }
+
+          initCall->insertAtTail(formalDefault->copy());
+        } else {
+          INT_ASSERT(formal->typeExpr->body.length == 1);
+          // Assumes the typeExpr on the formal in the initializer is of length
+          // 1.
+          CallExpr* newClause = new CallExpr("==",
+                                             arg,
+                                             formal->typeExpr->body.tail->copy());
+          if (typeFn->where != NULL) {
+            // Need to join all previous conditions in the where clause
+            Expr* last = typeFn->where->body.tail->remove();
+            CallExpr* andCall = new CallExpr("&", last, newClause);
+            typeFn->where->insertAtTail(andCall);
+          } else {
+            // This type argument can never be anything other than the one
+            // specified
+            typeFn->where = new BlockStmt(newClause);
+          }
+          initCall->insertAtTail(new CallExpr("_defaultOf", arg));
+        }
+      }
+      if (arg != NULL) {
+        typeFn->insertFormalAtTail(arg);
+      }
+    }
+
+    count = count + 1;
+  }
+
+  typeFn->body->insertAtTail(moveCall);
+  typeFn->body->insertAtTail(new CallExpr(PRIM_RETURN, typeCall));
+
+  at->symbol->defPoint->insertBefore(new DefExpr(typeFn));
 }
