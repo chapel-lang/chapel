@@ -53,6 +53,8 @@ AST_SRCS =                                          \
            AstDumpToHtml.cpp                        \
            AstDumpToNode.cpp                        \
                                                     \
+           AstCount.cpp                             \
+                                                    \
            AstPrintDocs.cpp                         \
                                                     \
            AstToText.cpp                            \

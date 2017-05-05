@@ -26,6 +26,7 @@
 
 #include "resolution.h"
 
+#include "AstCount.h"
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
@@ -6037,8 +6038,10 @@ static void resolveUses(ModuleSymbol* mod)
     resolveUses(usedMod);
 
   // Finally, myself.
-  if (fPrintModuleResolution)
-    fprintf(stderr, "%2d Resolving module %s ...", module_resolution_depth, mod->name);
+  if (fPrintModuleResolution) {
+    fprintf(stderr, "%2d Resolving module %30s ...",
+            module_resolution_depth, mod->name);
+  }
 
   FnSymbol* fn = mod->initFn;
   resolveFormals(fn);
@@ -6049,8 +6052,11 @@ static void resolveUses(ModuleSymbol* mod)
     resolveFns(defn);
   }
 
-  if (fPrintModuleResolution)
-    putc('\n', stderr);
+  if (fPrintModuleResolution) {
+    AstCount visitor = AstCount();
+    mod->accept(&visitor);
+    fprintf(stderr, " %6d asts\n", visitor.total());
+  }
 
   --module_resolution_depth;
 }
