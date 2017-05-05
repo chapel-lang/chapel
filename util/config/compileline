@@ -28,6 +28,15 @@ if( defined $ENV{"CHPL_HOME"} ) {
 }
 
 $ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
+if( defined $ENV{"CHPL_RUNTIME_LIB"} ) {
+  $ENV{"CHPL_MAKE_RUNTIME_LIB"} = $ENV{"CHPL_RUNTIME_LIB"}
+}
+if( defined $ENV{"CHPL_RUNTIME_INCL"} ) {
+  $ENV{"CHPL_MAKE_RUNTIME_INCL"} = $ENV{"CHPL_RUNTIME_INCL"}
+}
+if( defined $ENV{"CHPL_THIRD_PARTY"} ) {
+  $ENV{"CHPL_MAKE_THIRD_PARTY"} = $ENV{"CHPL_THIRD_PARTY"}
+}
 
 $make = `$chpl_home_dir/util/chplenv/chpl_make.py`;
 chomp($make);

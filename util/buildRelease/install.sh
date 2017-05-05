@@ -198,6 +198,11 @@ myinstallfile util/printchplenv       "$DEST_CHPL_HOME"/util/
 # copy util/chplenv
 myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 
+# copy util/config/compileline
+# (needed for LLVM builds)
+myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
+
+
 if [ ! -z "$DEST_DIR" ]
 then
   # copy util/setchplenv*, util/quickstart
