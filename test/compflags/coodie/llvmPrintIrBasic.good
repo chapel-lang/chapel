@@ -1,13 +1,1 @@
 ; LLVM IR representation of mainTest function after basic optimization stage
-define internal void @mainTest_chpl() {
-entry:
-  %local__str_literal_1924_chpl = alloca %string
-  br label %mainTest_chpl_2blk_body_
-
-mainTest_chpl_2blk_body_:                         ; preds = %entry
-  %0 = load %string, %string* @_str_literal_1924, !tbaa !0
-  store %string %0, %string* %local__str_literal_1924_chpl, !tbaa !0
-  call void @writeln_chpl2(%string* %local__str_literal_1924_chpl, i64 3, i32 51)
-  ret void
-}
-Hello World!
