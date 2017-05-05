@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef _VERSION_H_
-#define _VERSION_H_
+#ifndef _configured_prefix_H_
+#define _configured_prefix_H_
 
-void get_version(char * buf);
-void get_major_minor_version(char * buf);
-const char* get_configured_prefix();
+static const char* CONFIGURED_PREFIX =
+#include "CONFIGURED_PREFIX"
+;
 
 #endif

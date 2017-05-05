@@ -12,8 +12,12 @@ def print_mode(mode='list', anonymize=False):
 
     if mode == 'overrides':
         for var in overrides.allvars():
-            stdout.write(var);
-            stdout.write('\n');
+            if anonymize and var.startswith('CHPL_HOME='):
+                # don't print CHPL_HOME if --anonymize is set.
+                pass
+            else:
+                stdout.write(var);
+                stdout.write('\n');
         return
 
     # `m` is a 'simplified' version of `mode` that merges some cases that can

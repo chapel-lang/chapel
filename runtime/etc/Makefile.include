@@ -89,7 +89,14 @@ GEN_LFLAGS += $(RUNTIME_LFLAGS)
 
 CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
-CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
+ifndef CHPL_MAKE_RUNTIME_LIB
+CHPL_MAKE_RUNTIME_LIB = $(CHPL_MAKE_HOME)/lib
+endif
+
+CHPL_RT_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_RUNTIME_SUBDIR)
+
+x:
+	@echo $(CHPL_MAKE_RUNTIME_LIB)
 
 printincludesanddefines:
 	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
@@ -124,7 +131,7 @@ printclangcxx:
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
 ifdef CHPL_DEVELOPER
-	$(warning Expected runtime configuration: $(shell basename $(CHPL_RT_LIB_DIR)))
+	$(warning Expected runtime library in $(CHPL_RT_LIB_DIR))
 endif
 ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
 	$(error The requested configuration is not included in the module. \
