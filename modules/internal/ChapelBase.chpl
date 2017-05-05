@@ -323,13 +323,13 @@ module ChapelBase {
   inline proc %(param a: int(?w), param b: int(w)) param {
     if (chpl_checkDivByZero) then
       if b == 0 then
-        halt("Attempt to divide by zero");
+        compilerError("Attempt to divide by zero");
     return __primitive("%", a, b);
   }
   inline proc %(param a: uint(?w), param b: uint(w)) param {
     if (chpl_checkDivByZero) then
       if b == 0 then
-        halt("Attempt to divide by zero");
+        compilerError("Attempt to divide by zero");
     return __primitive("%", a, b);
   }
 
@@ -1306,6 +1306,9 @@ module ChapelBase {
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs:real(?w), rhs:real(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0.0 then
+        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs, rhs) {
@@ -1314,27 +1317,24 @@ module ChapelBase {
 
   inline proc %=(ref lhs:int(?w), rhs:int(w)) {
     if (chpl_checkDivByZero) then
-      if rhs == 0 then
+      if rhs == 0:int(w) then
         halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:uint(?w), rhs:uint(w)) {
     if (chpl_checkDivByZero) then
-      if rhs == 0 then
+      if rhs == 0:uint(w) then
         halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:real(?w), rhs:real(w)) {
     if (chpl_checkDivByZero) then
-      if rhs == 0.0 then
+      if rhs == 0:real(w) then
         halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs, rhs) {
-    if (chpl_checkDivByZero) then
-      if rhs == 0 then
-        halt("Attempt to divide by zero");
-    lhs = lhs % rhs;
+      lhs = lhs % rhs;
   }
 
   //
@@ -1517,15 +1517,8 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline proc %(a: uint(64), param b: uint(64)) {
-    if (chpl_checkDivByZero) then
-      if b == 0 then
-        halt("Attempt to divide by zero");
-    return __primitive("%", a, b);
-  }
-  inline proc %(param a: uint(64), b: uint(64)) {
-    if (chpl_checkDivByZero) then
-      if b == 0 then
-        halt("Attempt to divide by zero");
+    if b == 0 then
+      compilerError("Attempt to divide by zero");
     return __primitive("%", a, b);
   }
 
