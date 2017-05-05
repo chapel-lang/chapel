@@ -1311,7 +1311,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
       fn->insertAtHead(new DefExpr(_this));
 
       call->insertAtTail(new SymExpr(gMethodToken));
-      call->insertAtTail(new SymExpr(_this));
+      call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
 
       fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 
