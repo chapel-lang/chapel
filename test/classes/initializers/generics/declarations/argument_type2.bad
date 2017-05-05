@@ -1,2 +1,0 @@
-argument_type2.chpl:13: In function 'takesAFoo':
-argument_type2.chpl:13: error: Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference
