@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <vector>
 
 /*
@@ -345,116 +346,7 @@ private:
 *                                                                             *
 ************************************** | *************************************/
 
-enum AggregateTag {
-  AGGREGATE_CLASS,
-  AGGREGATE_RECORD,
-  AGGREGATE_UNION
-};
-
-enum InitializerStyle {
-  DEFINES_CONSTRUCTOR,
-  DEFINES_INITIALIZER,
-  DEFINES_NONE_USE_DEFAULT
-};
-
-
-class AggregateType : public Type {
-public:
-  AggregateType(AggregateTag initTag);
-  ~AggregateType();
-
-  DECLARE_COPY(AggregateType);
-
-  virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
-
-  virtual void                verify();
-  virtual void                accept(AstVisitor* visitor);
-  virtual void                printDocs(std::ostream* file, unsigned int tabs);
-
-  void                        addDeclarations(Expr* expr);
-
-  void                        codegenDef();
-
-  void                        codegenPrototype();
-
-  GenRet                      codegenClassStructType();
-
-  int                         codegenStructure(FILE*       outfile,
-                                               const char* baseoffset);
-
-  int                         codegenFieldStructure(FILE*       outfile,
-                                                    bool        nested,
-                                                    const char* baseOffset);
-
-  // The following two methods are used for types which define initializers
-  bool                        setNextGenericField();
-  AggregateType*              getInstantiation(SymExpr* t, int index);
-
-
-  const char*                 classStructName(bool standalone);
-
-  int                         getMemberGEP(const char* name);
-
-  int                         getFieldPosition(const char* name,
-                                               bool        fatal = true);
-
-  Symbol*                     getField(const char* name, bool fatal = true);
-  Symbol*                     getField(int i);
-
-  // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
-  QualifiedType               getFieldType(Expr* e);
-
-  int                         numFields()                                const;
-
-  bool                        isClass()                                  const;
-  bool                        isRecord()                                 const;
-  bool                        isUnion()                                  const;
-
-  bool                        isGeneric()                                const;
-  void                        markAsGeneric();
-
-
-
-  AggregateTag                aggregateTag;
-  InitializerStyle            initializerStyle;
-
-  bool                        initializerResolved;
-
-  AList                       fields;
-
-  // used from parsing, sets dispatchParents
-  AList                       inherits;
-
-  // pointer to an outer class if this is an inner class
-  Symbol*                     outer;
-
-  // Attached only to iterator class/records
-  IteratorInfo*               iteratorInfo;
-
-  // What to delegate to with 'forwarding'
-  AList                       forwardingTo;
-
-  const char*                 doc;
-
-private:
-  virtual std::string         docsDirective();
-
-  std::string                 docsSuperClass();
-  void                        addDeclaration(DefExpr* defExpr);
-
-  std::vector<AggregateType*> instantiations;
-
-  // genericField stores the index of the first generic field in the
-  // AggregateType which does not have a substitution,
-  // but only if the AggregateType defines an initializer.
-  //
-  // If the type has no generic fields without substitutions,
-  // or if setNextGenericField has not been called on the base AggregateType,
-  // this will be set to 0.
-  int                         genericField;
-
-  bool                        mIsGeneric;
-};
+#include "AggregateType.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -522,26 +414,10 @@ TYPE_EXTERN PrimitiveType* dtTaskID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 
-// Well-known types
-TYPE_EXTERN AggregateType* dtString;
-TYPE_EXTERN AggregateType* dtArray;
-TYPE_EXTERN AggregateType* dtBaseArr;
-TYPE_EXTERN AggregateType* dtBaseDom;
-TYPE_EXTERN AggregateType* dtDist;
-TYPE_EXTERN AggregateType* dtTuple;
-TYPE_EXTERN AggregateType* dtLocale;
-TYPE_EXTERN AggregateType* dtLocaleID;
-TYPE_EXTERN AggregateType* dtMainArgument;
-
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
 TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
-
-TYPE_EXTERN AggregateType* dtOnBundleRecord;
-TYPE_EXTERN AggregateType* dtTaskBundleRecord;
-
-TYPE_EXTERN AggregateType* dtError;
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
@@ -550,8 +426,6 @@ TYPE_EXTERN Type* dtObject;
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
-void     initRootModule();
-void     initStringLiteralModule();
 void     initPrimitiveTypes();
 DefExpr* defineObjectClass();
 void     initChplProgram(DefExpr* objectDef);
@@ -600,6 +474,12 @@ bool isNonGenericRecord(Type* type);
 
 bool isNonGenericClassWithInitializers (Type* type);
 bool isNonGenericRecordWithInitializers(Type* type);
+
+bool isGenericClass (Type* type);
+bool isGenericRecord(Type* type);
+
+bool isGenericClassWithInitializers (Type* type);
+bool isGenericRecordWithInitializers(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);

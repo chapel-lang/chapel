@@ -784,7 +784,7 @@ inline proc _remoteAccessData.getDataIndex(
       return (0, sum);
     } else {
       const chunk = mdInd2Chunk(ind(mdParDim));
-      return (chunk, sum - mData(chunk).dataOff);
+      return (chunk, sum);
     }
   }
 }

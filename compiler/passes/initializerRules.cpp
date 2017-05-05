@@ -157,14 +157,14 @@ static bool isReturnVoid(FnSymbol* fn);
 void preNormalizeInitMethod(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (fn->hasFlag(FLAG_NO_PARENS) == true) {
+  if (fn->hasFlag(FLAG_NO_PARENS)   ==  true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
-  } else if (isReturnVoid(fn) == false) {
+  } else if (isReturnVoid(fn)       == false) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
 
-  } else if (isNonGenericRecord(at) == true ||
-             isNonGenericClass(at)  == true) {
+  } else if (isNonGenericRecord(at) ==  true ||
+             isNonGenericClass(at)  ==  true) {
     preNormalizeNonGenericInit(fn);
 
   } else {
@@ -187,7 +187,7 @@ static bool isReturnVoid(FnSymbol* fn) {
   } else {
     std::vector<CallExpr*> calls;
 
-    collectCallExprs(fn->body, calls);
+    collectMyCallExprs(fn->body, calls, fn);
 
     for (size_t i = 0; i < calls.size() && retval == true; i++) {
       if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
@@ -256,6 +256,26 @@ enum InitPhase {
   cPhase2
 };
 
+static const char* phaseToString(InitPhase phase) {
+  const char* retval = "?";
+
+  switch (phase) {
+    case cPhase0:
+      retval = "Phase0";
+      break;
+
+    case cPhase1:
+      retval = "Phase1";
+      break;
+
+    case cPhase2:
+      retval = "Phase2";
+      break;
+  }
+
+  return retval;
+}
+
 class InitVisitor {
 public:
                   InitVisitor(FnSymbol*  fn);
@@ -275,6 +295,8 @@ public:
   bool            isPhase0()                                             const;
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
+
+  void            checkPhase(BlockStmt* block);
 
   Expr*           completePhase1(CallExpr* insertBefore);
   void            initializeFieldsBefore(Expr* insertBefore);
@@ -466,7 +488,6 @@ bool InitVisitor::isFieldInitialized(const DefExpr* field) const {
     }
   }
 
-
   return retval;
 }
 
@@ -535,6 +556,16 @@ InitPhase InitVisitor::startPhase(BlockStmt* block) const {
   return retval;
 }
 
+void InitVisitor::checkPhase(BlockStmt* block) {
+  if (mPhase == cPhase0) {
+    InitPhase newPhase = startPhase(block);
+
+    if (newPhase == cPhase1) {
+      mPhase = newPhase;
+    }
+  }
+}
+
 DefExpr* InitVisitor::firstField(FnSymbol* fn) const {
   AggregateType* at     = toAggregateType(fn->_this->type);
   DefExpr*       retval = toDefExpr(at->fields.head);
@@ -587,22 +618,7 @@ void InitVisitor::describe(int offset) const {
 
   printf("%s#<InitVisitor\n", pad);
 
-  printf("%s  Phase: ",       pad);
-
-  switch (mPhase) {
-    case cPhase0:
-      printf("phase 0\n");
-      break;
-
-    case cPhase1:
-      printf("phase 1\n");
-      break;
-
-    case cPhase2:
-      printf("phase 2\n");
-      break;
-  }
-
+  printf("%s  Phase: %s\n", pad, phaseToString(mPhase));
 
   printf("%s  Block: ",       pad);
 
@@ -654,10 +670,14 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
   InitVisitor    state(fn);
 
-  // This implies the body contains at least one instance of super.init()
-  // and/or this.init() i.e. the body is not empty and we do not need to
-  // insert super.init()
-  if (state.isPhase0() == true || state.isPhase1() == true) {
+  // The body contains at least one instance of this.init()
+  // i.e. the body is not empty and we do not need to insert super.init()
+  if (state.isPhase0() == true) {
+    preNormalize(fn->body, state);
+
+  // The body contains at least one instance of super.init()
+  // i.e. the body is not empty and we do not need to insert super.init()
+  } else if (state.isPhase1() == true) {
     preNormalize(fn->body, state);
 
   // 1) Insert super.init()
@@ -715,6 +735,9 @@ static InitVisitor preNormalize(BlockStmt*  block,
 static InitVisitor preNormalize(BlockStmt*  block,
                                 InitVisitor state,
                                 Expr*       stmt) {
+  // This sub-block may have a different phase than the parent
+  state.checkPhase(block);
+
   while (stmt != NULL) {
     if (isDefExpr(stmt) == true) {
       stmt = stmt->next;

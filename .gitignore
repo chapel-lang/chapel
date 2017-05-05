@@ -12,6 +12,7 @@ gen
 TAGS
 tags
 *.DS_Store
+*.vagrant
 
 
 # Top level ignores.
@@ -443,3 +444,5 @@ tags
 /util/tokencount/tokencount.output
 /util/tokencount/tokencount.tab.c
 /util/tokencount/tokencount.tab.h
+
+/util/devel/test/vagrant/log

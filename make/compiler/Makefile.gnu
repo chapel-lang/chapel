@@ -46,10 +46,24 @@ endif
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = $(CFLAGS)
-RUNTIME_CXXFLAGS = $(CFLAGS)
+# User can provide:
+#   CPPFLAGS - C PreProcessor flags
+#   CFLAGS   - C flags
+#   CXXFLAGS - C++ flags
+#   LDFLAGS  - ld (linker) flags
+#
+# We set
+#  COMP_CXXFLAGS,                    (compiling C++ code in compiler/)
+#  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
+# in a way that respects the above user-provide-able variables.
+COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+# Appended after COMP_CXXFLAGS when compiling parser/lexer
+COMP_CXXFLAGS_NONCHPL = -Wno-error
+RUNTIME_CFLAGS = $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+# For compiling the generated code
+# Note, user-provided CPPFLAGS / CFLAGS are not provided to generated code.
+# Instead, such flags would be provided on the chpl command line.
 GEN_CFLAGS =
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
@@ -117,6 +131,12 @@ DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
+# CXX11_STD is the flag to select C++11, or "unknown" for compilers
+# we don't know how to do that with yet.
+# If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
+CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+COMP_CXXFLAGS += $(CXX_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -153,7 +173,7 @@ endif
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
-COMP_CFLAGS += -fno-tree-vrp
+COMP_CXXFLAGS += -fno-tree-vrp
 endif
 
 endif
@@ -178,9 +198,8 @@ endif
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile

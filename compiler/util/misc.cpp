@@ -149,7 +149,7 @@ findNonTaskCaller(FnSymbol* fn) {
     FnSymbol* caller = NULL;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->inTree()) {
-        if (FnSymbol* cfn = call->isResolved()) {
+        if (FnSymbol* cfn = call->resolvedFunction()) {
           if (cfn == fn) {
             caller = toFnSymbol(call->parentSymbol);
             break;
@@ -353,22 +353,24 @@ static void printCallStackOnError() {
 //
 // debugging convenience
 //
-void printCallStack();
 void printCallStack() {
   printCallStack(true, true, stdout);
 }
 
 // another one
-void printCallStackCalls();
 void printCallStackCalls() {
   printf("\n" "callStack %d elms\n\n", callStack.n);
+
   for (int i = 0; i < callStack.n; i++) {
     CallExpr* call = callStack.v[i];
-    FnSymbol* cfn = call->isResolved();
-    printf("%d  %d %s  <-  %d %s\n", i,
-           cfn ? cfn->id : 0, cfn ? cfn->name: "<no callee>",
+    FnSymbol* cfn  = call->resolvedFunction();
+
+    printf("%d  %d %s  <-  %d %s\n",
+           i,
+           cfn  ? cfn->id  : 0, cfn  ? cfn->name         : "<no callee>",
            call ? call->id : 0, call ? call->stringLoc() : "<no call>");
   }
+
   printf("\n");
 }
 

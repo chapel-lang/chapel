@@ -16,6 +16,7 @@
 # limitations under the License.
 
 AST_SRCS =                                          \
+           AggregateType.cpp                        \
            alist.cpp                                \
            astutil.cpp                              \
            baseAST.cpp                              \
@@ -28,6 +29,7 @@ AST_SRCS =                                          \
            iterator.cpp                             \
            foralls.cpp                              \
            flags.cpp                                \
+           PartialCopyData.cpp                      \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \

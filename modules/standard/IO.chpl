@@ -155,13 +155,9 @@ As an example for specifying an I/O style, the code below specifies the minimum 
 
 I/O facilities in Chapel also include several other ways to control I/O
 formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
-with :proc:`channel.readf` and :proc:`channel.writef`.  It is possible to write
-data to strings (see "The write and writeln Methods on Strings" in the Chapel
-language specification) which can then be further modified or combined
-programmatically. Lastly, record or class implementations can provide custom
-functions implementing read or write operations for that type (see "The
-readThis, writeThis, and readWriteThis Methods" in the Chapel language
-specification).
+with :proc:`channel.readf` and :proc:`channel.writef`. Also note that record or
+class implementations can provide custom functions implementing read or write
+operations for that type (see :ref:`readThis-writeThis-readWriteThis`).
 
 .. _about-io-files:
 
@@ -2675,6 +2671,16 @@ record channel {
   var home:locale;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  // The member variable _readWriteThisFromLocale is used to support
+  // writeThis needing to know where the I/O started. It is a member
+  // variable on channel so that calls to writeln etc within writeThis
+  // can preserve this information. Not used outside of
+  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
+  // we are working on a channel created for running writeThis/readThis.
+  // Therefore further locking by the same task is not necessary.
+  pragma "no doc"
+  var _readWriteThisFromLocale:locale;
 }
 
 // TODO -- shouldn't have to write this this way!
@@ -3068,6 +3074,33 @@ proc channel._set_style(style:iostyle) {
     var local_style:iostyle = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
+}
+
+/*
+
+   Return the locale on which an ongoing I/O was started with a channel.
+   This method will return nil unless it is called on a channel that is
+   the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
+
+ */
+inline
+proc channel.readWriteThisFromLocale() {
+  return _readWriteThisFromLocale;
+}
+
+// Returns the original locale that the I/O started on
+// Uses readWriteThisFromLocale in order to propagate that
+// information across readThis/writeThis/readWriteThis calls.
+// If readWriteThisFromLocale returns nil, that means the channel
+// was not created to call readThis/writeThis/readWriteThis and
+// so the original locale of the I/O is `here`.
+pragma "no doc"
+inline
+proc channel.getLocaleOfIoRequest() {
+  var ret = this.readWriteThisFromLocale();
+  if ret == nil then
+    ret = here;
+  return ret;
 }
 
 /*
@@ -3623,7 +3656,10 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 
 // Channel must be locked, must be running on this.home
 // x is ref (vs out) because it might contain a literal string.
-private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
+private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
+                                       param kind:iokind,
+                                       ref x:?t,
+                                       loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -3658,7 +3694,10 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
 }
 
 // Channel must be locked, must be running on this.home
-private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
+private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
+                                        param kind:iokind,
+                                        x:?t,
+                                        loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -3686,15 +3725,19 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
   return e;
 }
 
-private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
+private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
+                                       param kind:iokind,
+                                       ref x:?t,
+                                       loc:locale):syserr {
 
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
-
   var reader = new channel(writing=false, iokind.dynamic, locking=false,
                            home=here,
-                           _channel_internal=_channel_internal);
+                           _channel_internal=_channel_internal,
+                           _readWriteThisFromLocale=loc);
+
   var err:syserr = ENOERR;
 
   // Clear the channel error so we can use the error
@@ -3714,13 +3757,16 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
 
 pragma "suppress lvalue error"
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
-    param kind:iokind, const x:?t):syserr {
+                                        param kind:iokind,
+                                        const x:?t,
+                                        loc:locale):syserr {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
   var writer = new channel(writing=true, iokind.dynamic, locking=false,
                            home=here,
-                           _channel_internal=_channel_internal);
+                           _channel_internal=_channel_internal,
+                           _readWriteThisFromLocale=loc);
 
   var err:syserr = ENOERR;
 
@@ -3737,7 +3783,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     } else {
       iolit = new ioLiteral("nil");
     }
-    _write_one_internal(_channel_internal, iokind.dynamic, iolit);
+    _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
   } else {
     x.writeThis(writer);
   }
@@ -3754,12 +3800,13 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 pragma "no doc"
 proc channel.readIt(ref x) {
   if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var error:syserr;
     error = qio_channel_error(_channel_internal);
     if ! error {
-      error = _read_one_internal(_channel_internal, kind, x);
+      error = _read_one_internal(_channel_internal, kind, x, origLocale);
       _qio_channel_set_error_unlocked(_channel_internal, error);
     }
     this.unlock();
@@ -3769,12 +3816,13 @@ proc channel.readIt(ref x) {
 pragma "no doc"
 proc channel.writeIt(x) {
   if !writing then compilerError("write on read-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var error:syserr;
     error = qio_channel_error(_channel_internal);
     if ! error {
-      error = _write_one_internal(_channel_internal, kind, x);
+      error = _write_one_internal(_channel_internal, kind, x, origLocale);
       _qio_channel_set_error_unlocked(_channel_internal, error);
     }
     this.unlock();
@@ -3956,15 +4004,16 @@ inline proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     for param i in 1..k {
       if !error {
         if args[i].locale == here {
-          error = _read_one_internal(_channel_internal, kind, args[i]);
+          error = _read_one_internal(_channel_internal, kind, args[i], origLocale);
         } else {
           var tmp:args[i].type;
-          error = _read_one_internal(_channel_internal, kind, tmp);
+          error = _read_one_internal(_channel_internal, kind, tmp, origLocale);
           args[i] = tmp;
         }
       }
@@ -4114,7 +4163,7 @@ inline proc channel.read(ref args ...?k):bool {
    :arg args: a list of arguments to read. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
-              in the specification.
+              in :ref:`readThis-writeThis-readWriteThis`.
    :arg style: optional argument to provide an :type:`iostyle` for this read.
                If this argument is not provided, use the current style
                associated with this channel.
@@ -4129,13 +4178,14 @@ proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
       if !error {
-        error = _read_one_internal(_channel_internal, kind, args[i]);
+        error = _read_one_internal(_channel_internal, kind, args[i], origLocale);
       }
     }
     this._set_style(save_style);
@@ -4228,6 +4278,7 @@ where arg.rank == 1 && isRectangularArr(arg)
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var save_style = this._style();
@@ -4235,7 +4286,7 @@ proc channel.readline(ref arg:string, out error:syserr):bool {
     mystyle.string_format = QIO_STRING_FORMAT_TOEND;
     mystyle.string_end = 0x0a; // ascii newline.
     this._set_style(mystyle);
-    error = _read_one_internal(_channel_internal, iokind.dynamic, arg);
+    error = _read_one_internal(_channel_internal, iokind.dynamic, arg, origLocale);
     this._set_style(save_style);
     this.unlock();
   }
@@ -4448,7 +4499,7 @@ proc channel.readln(ref args ...?k,
               with zero or more such arguments. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
-              in the specification.
+              in :ref:`readThis-writeThis-readWriteThis`.
    :arg style: optional argument to provide an :type:`iostyle` for this read.
                If this argument is not provided, use the current style
                associated with this channel.
@@ -4558,11 +4609,12 @@ pragma "no doc"
 inline proc channel.write(const args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     for param i in 1..k {
       if !error {
-        error = _write_one_internal(_channel_internal, kind, args(i));
+        error = _write_one_internal(_channel_internal, kind, args(i), origLocale);
       }
     }
     this.unlock();
@@ -4606,13 +4658,14 @@ proc channel.write(const args ...?k,
                    out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
       if !error {
-        error = _write_one_internal(_channel_internal, iokind.dynamic, args(i));
+        error = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
       }
     }
     this._set_style(save_style);
@@ -5819,6 +5872,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var fmt = fmtStr.localize().c_str();
@@ -5871,7 +5925,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
                 error = _write_signed(style.max_width_bytes, t, i);
               else
-                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
             var (t,ok) = _toUnsigned(args(i));
@@ -5882,7 +5936,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
                 error = _write_unsigned(style.max_width_bytes, t, i);
               else
-                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
             var (t,ok) = _toReal(args(i));
@@ -5893,7 +5947,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
                 error = _write_real(style.max_width_bytes, t, i);
               else
-                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
             var (t,ok) = _toImag(args(i));
@@ -5904,7 +5958,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
                 error = _write_real(style.max_width_bytes, t:real, i);
               else
-                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
             var (t,ok) = _toComplex(args(i));
@@ -5914,33 +5968,33 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
                 error = _write_complex(style.max_width_bytes, t, i);
-              else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+              else error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_NUMERIC {
             var (t,ok) = _toNumeric(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
               if _format_debug then stdout.writeln("DEBUG AZO11");
-            } else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            } else error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_CHAR {
             var (t,ok) = _toChar(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
               if _format_debug then stdout.writeln("DEBUG AZN");
-            } else error = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t));
+            } else error = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
           } when QIO_CONV_ARG_TYPE_STRING {
             var (t,ok) = _toString(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
               if _format_debug then stdout.writeln("DEBUG AZO");
-            } else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            } else error = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_REGEXP {
             // It's not so clear what to do when printing
             // a regexp. So we just don't handle it.
             error = qio_format_error_write_regexp();
             if _format_debug then stdout.writeln("DEBUG AZP");
           } when QIO_CONV_ARG_TYPE_REPR {
-            error = _write_one_internal(_channel_internal, iokind.dynamic, args(i));
+            error = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
             halt("readf/writef internal error ", argType(i));
@@ -6034,6 +6088,7 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
 proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
   if writing then compilerError("readf on write-only channel");
   error = ENOERR;
+  const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     this.lock();
     var fmt = fmtStr.localize().c_str();
@@ -6097,7 +6152,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
                   error = _read_signed(style.max_width_bytes, ti, i);
                 else
-                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
                 if ! error then error = _setIfPrimitive(args(i),ti,i);
               }
             }
@@ -6111,7 +6166,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
                   error = _read_unsigned(style.max_width_bytes, ti, i);
                 else
-                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
                 if ! error then error = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
@@ -6124,7 +6179,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
                   error = _read_real(style.max_width_bytes, ti, i);
                 else
-                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
                 if ! error then error = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
@@ -6139,7 +6194,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                   error = _read_real(style.max_width_bytes, tr, i);
                   ti = tr:imag;
                 } else
-                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
                 if ! error then error = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
@@ -6152,7 +6207,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
                  error = _read_complex(style.max_width_bytes, ti, i);
                 else
-                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
                 if ! error then error = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_NUMERIC {
@@ -6162,7 +6217,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 if _format_debug then stdout.writeln("DEBUG AXB1");
               } else {
                 var ti = t;
-                error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                error = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
                 if ! error then error = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_CHAR {
@@ -6171,7 +6226,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
                 if _format_debug then stdout.writeln("DEBUG AXE");
-              } else error = _read_one_internal(_channel_internal, iokind.dynamic, chr);
+              } else error = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
               if ! error then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_STRING {
               var (t,ok) = _toString(args(i));
@@ -6179,7 +6234,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 error = qio_format_error_arg_mismatch(i);
                 if _format_debug then stdout.writeln("DEBUG AXF");
               }
-              else error = _read_one_internal(_channel_internal, iokind.dynamic, t);
+              else error = _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
               if ! error then error = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_REGEXP {
               var (t,ok) = _toRegexp(args(i));
@@ -6207,7 +6262,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
-              error = _read_one_internal(_channel_internal, iokind.dynamic, args(i));
+              error = _read_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 error = qio_format_error_bad_regexp();

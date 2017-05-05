@@ -1,8 +1,17 @@
-docConstants.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: docConstants.doc
+
+docConstants.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
    use docConstants.doc;
 
-   enum Color { Red, Yellow }
-      enum documentation 
+.. enum:: enum Color { Red, Yellow }
+
+   enum documentation 
+
 

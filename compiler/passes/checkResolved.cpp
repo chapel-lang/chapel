@@ -238,13 +238,16 @@ static int
 findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*> & sources)
 {
   int ret = 0;
+
   for_SymbolSymExprs(se, sym) {
     Expr* stmt = se->getStmtExpr();
+
     if (CallExpr* call = toCallExpr(stmt)) {
       if (call->isPrimitive(PRIM_MOVE) ||
           call->isPrimitive(PRIM_ASSIGN)) {
         Expr* lhs = call->get(1);
         Expr* rhs = call->get(2);
+
         if (se == lhs) {
           // Handle the following cases:
           //   rhs is a call_tmp -> recurse on the call_tmp
@@ -260,24 +263,30 @@ findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*> & sources)
                  rhsSym->hasFlag(FLAG_ARRAY_ALIAS))) {
               ret += findOriginalArrays(fn, rhsSym, sources);
             }
+
           } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
-            FnSymbol* calledFn = rhsCall->isResolved();
-            SymExpr* aliased = NULL; // the array that is sliced or aliased
+            FnSymbol* calledFn = rhsCall->resolvedFunction();
+            SymExpr*  aliased  = NULL; // the array that is sliced or aliased
+
             if (calledFn && calledFn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
               aliased = toSymExpr(rhsCall->get(1));
             }
+
             if (aliased) {
               int got = 0;
+
               if (aliased->symbol()->defPoint->getFunction() == fn) {
                 // further traverse if aliased was a local variable.
                 got = findOriginalArrays(fn, aliased->symbol(), sources);
               }
+
               if (got == 0) {
                 // If we didn't find another local source array, add
                 // aliased as the source.
                 got = 1;
                 sources.insert(aliased);
               }
+
               ret += got;
             }
           }
@@ -285,6 +294,7 @@ findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*> & sources)
       }
     }
   }
+
   return ret;
 }
 
@@ -407,7 +417,7 @@ checkReturnPaths(FnSymbol* fn) {
 static void
 checkNoRecordDeletes(CallExpr* call)
 {
-  FnSymbol* fn = call->isResolved();
+  FnSymbol* fn = call->resolvedFunction();
 
   // Note that fn can (legally) be null if the call is primitive.
   if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {

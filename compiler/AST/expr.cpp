@@ -1126,9 +1126,8 @@ void CallExpr::setUnresolvedFunction(const char* name) {
   }
 }
 
-// MDN 2016/01/29: This will become a predicate
-FnSymbol* CallExpr::isResolved() const {
-  return resolvedFunction();
+bool CallExpr::isResolved() const {
+  return (resolvedFunction() != NULL) ? true : false;
 }
 
 FnSymbol* CallExpr::resolvedFunction() const {
@@ -1261,14 +1260,19 @@ CallExpr* createCast(BaseAST* src, BaseAST* toType)
 
 
 QualifiedType CallExpr::qualType(void) {
-  if (primitive)
-    return primitive->returnInfo(this);
+  QualifiedType retval(NULL);
 
-  else if (isResolved())
-    return QualifiedType(isResolved()->retType);
+  if (primitive) {
+    retval = primitive->returnInfo(this);
 
-  else
-    return QualifiedType(dtUnknown);
+  } else if (isResolved()) {
+    retval = QualifiedType(resolvedFunction()->retType);
+
+  } else {
+    retval = QualifiedType(dtUnknown);
+  }
+
+  return retval;
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
@@ -1508,27 +1512,33 @@ CallExpr* ContextCallExpr::getRValueCall() {
 void  ContextCallExpr::getCalls(CallExpr*& refCall,
                                 CallExpr*& valueCall,
                                 CallExpr*& constRefCall) {
-  refCall = NULL;
-  valueCall = NULL;
+  refCall      = NULL;
+  valueCall    = NULL;
   constRefCall = NULL;
 
   if (options.length == 2) {
     refCall = getRefCall();
+
     CallExpr* rvalueCall = getRValueCall();
-    FnSymbol* fn = rvalueCall->isResolved();
+    FnSymbol* fn         = rvalueCall->resolvedFunction();
+
     INT_ASSERT(fn);
-    if (fn->retTag == RET_CONST_REF)
+
+    if (fn->retTag == RET_CONST_REF) {
       constRefCall = rvalueCall;
-    else
+    } else {
       valueCall = rvalueCall;
+    }
+
   } else if (options.length == 3) {
     // Note: it would be nicer to check retTag to decide between
     // ref / value versions. However, doing so is challenging because
     // of the way that iterator functions no longer have the original
     // retTag.
     constRefCall = toCallExpr(options.get(1));
-    valueCall = toCallExpr(options.get(2));
-    refCall = toCallExpr(options.get(3));
+    valueCall    = toCallExpr(options.get(2));
+    refCall      = toCallExpr(options.get(3));
+
   } else {
     INT_FATAL("Bad ContextCallExpr options");
   }

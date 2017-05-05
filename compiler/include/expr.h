@@ -261,7 +261,7 @@ public:
 
   void            setUnresolvedFunction(const char* name);
 
-  FnSymbol*       isResolved()                                           const;
+  bool            isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
 
@@ -419,7 +419,7 @@ static inline bool isTaskFun(FnSymbol* fn) {
 
 static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
   INT_ASSERT(call);
-  if (FnSymbol* cfn = call->isResolved()) {
+  if (FnSymbol* cfn = call->resolvedFunction()) {
     if (isTaskFun(cfn))
       return cfn;
   }
@@ -477,5 +477,6 @@ GenRet createTempVarWith(GenRet v);
 
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
+GenRet codegenNullPointer();
 
 #endif

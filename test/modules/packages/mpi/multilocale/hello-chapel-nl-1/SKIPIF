@@ -5,16 +5,25 @@ import os
 retval = True
 
 # Only support the GNU compilers for now
+# except on Crays
 compiler=os.environ['CHPL_TARGET_COMPILER']
-retval = (compiler !="mpi-gnu") & (compiler!="cray-prgenv-gnu")
+retval = ((compiler !="mpi-gnu")
+          & (compiler!="cray-prgenv-gnu")
+          & (compiler!='cray-prgenv-intel'))
 
 # Only support fifo 
 retval |= (os.environ['CHPL_TASKS']!="fifo")
 
-# Only support GASNET+MPI 
-retval |= (os.environ['CHPL_COMM']!="gasnet")
-retval |= (os.environ['CHPL_COMM_SUBSTRATE']!="mpi")
+# Check CHPL_COMM support
+# Currently supports GASNET+MPI, GASNET+Aries, uGNI
+comm=os.environ['CHPL_COMM']
+substrate=os.environ['CHPL_COMM_SUBSTRATE']
 
+gasnetmpi=(comm=="gasnet") & (substrate=="mpi")
+gasnetaries=(comm=="gasnet") & (substrate=="aries")
+ugni=(comm=="ugni")
+
+retval |= not (ugni | gasnetmpi | gasnetaries)
 
 print(retval)
 

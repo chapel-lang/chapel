@@ -57,6 +57,8 @@ a pair of variables ``x`` and ``y``.
   /* reading via multiple type arguments */
   (x, y) = read(int, real);
 
+.. _readThis-writeThis-readWriteThis:
+
 The readThis(), writeThis(), and readWriteThis() Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -78,6 +80,13 @@ they do not already exist - which call ``readWriteThis``.
 Note that arguments to ``readThis`` and ``writeThis`` may represent a locked
 channel; as a result, calling methods on the channel in parallel from within a
 ``readThis``, ``writeThis``, or ``readWriteThis`` may cause undefined behavior.
+Additionally, performing I/O on a global channel that is the same channel as the
+one ``readThis``, ``writeThis``, or ``readWriteThis`` is operating on can result
+in a deadlock. In particular, these methods should not refer to
+:var:`~IO.stdin`, :var:`~IO.stdout`, or :var:`~IO.stderr` explicitly or
+implicitly (such as by calling the global :proc:`~IO.writeln` function).
+Instead, these methods should only perform I/O on the channel passed as an
+argument.
 
 Because it is often more convenient to use an operator for I/O, instead of
 writing
@@ -141,24 +150,15 @@ function resolution error if the class NoRead is read.
 
   delete nr;
 
-.. _default-write-and-read-methods:
+.. _default-readThis-writeThis:
 
-Default write and read Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Default writeThis and readThis Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default ``write`` methods are created for all types for which a user-defined
-``write`` method is not provided.  They have the following semantics:
+Default ``writeThis`` methods are created for all types for which a user-defined
+``writeThis`` or ``readWriteThis`` method is not provided.  They have the
+following semantics:
 
-* for an array argument: outputs the elements of the array in row-major order
-  where rows are separated by line-feeds and blank lines are used to separate
-  other dimensions.
-* for a `domain` argument: outputs the dimensions of the domain enclosed by
-  ``[`` and ``]``.
-* for a `range` argument: output the lower bound of the range, output ``..``,
-  then output the upper bound of the range.  If the stride of the range
-  is not ``1``, output the word ``by`` and then the stride of the range.
-* for a tuples, outputs the components of the tuple in order delimited by ``(``
-  and ``)``, and separated by commas.
 * for a class: outputs the values within the fields of the class prefixed by
   the name of the field and the character ``=``.  Each field is separated by a
   comma.  The output is delimited by ``{`` and ``}``.
@@ -166,9 +166,29 @@ Default ``write`` methods are created for all types for which a user-defined
   the name of the field and the character ``=``.  Each field is separated by a
   comma.  The output is delimited by ``(`` and ``)``.
 
-Default ``read`` methods are created for all types for which a user-defined
-``read`` method is not provided.  The default ``read`` methods are defined to
-read in the output of the default ``write`` method.
+Default ``readThis`` methods are created for all types for which a user-defined
+``readThis`` method is not provided.  The default ``readThis`` methods are
+defined to read in the output of the default ``writeThis`` method.
+
+Additionally, the Chapel implementation includes ``writeThis`` methods for
+built-in types as follows:
+
+* for an array: outputs the elements of the array in row-major order
+  where rows are separated by line-feeds and blank lines are used to separate
+  other dimensions.
+* for a domain: outputs the dimensions of the domain enclosed by
+  ``{`` and ``}``.
+* for a range: output the lower bound of the range, output ``..``,
+  then output the upper bound of the range.  If the stride of the range
+  is not ``1``, output the word ``by`` and then the stride of the range.
+  If the range has special alignment, output the word ``align`` and then the
+  alignment.
+* for tuples, outputs the components of the tuple in order delimited by ``(``
+  and ``)``, and separated by commas.
+
+These types also include ``readThis`` methods to read the corresponding format.
+Note that when reading an array, the domain of the array must be set up
+appropriately before the elements can be read.
 
 .. note::
 

@@ -677,12 +677,19 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs) {
-  ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
+ModuleSymbol* buildModule(const char* name,
+                          ModTag      modTag,
+                          BlockStmt*  block,
+                          const char* filename,
+                          bool        priv,
+                          const char* docs) {
+  ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
+
   if (currentFileNamedOnCommandLine) {
     mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
   }
-  if (priv) {
+
+  if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
   }
 
@@ -990,7 +997,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(lifn));
 
-  VarSymbol* leaderIterator = newTemp("_leaderIterator");
+  VarSymbol* leaderIterator = newTempConst("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
   lifn->insertAtTail(new DefExpr(leaderIterator));
 
@@ -1025,7 +1032,7 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(fifn));
-  followerIterator = newTemp("_followerIterator");
+  followerIterator = newTempConst("_followerIterator");
   followerIterator->addFlag(FLAG_EXPR_TEMP);
   fifn->insertAtTail(new DefExpr(followerIterator));
 
@@ -1222,7 +1229,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   if (useThisGlobalOp) {
     globalOp = useThisGlobalOp;
   } else {
-    globalOp = newTemp("chpl__reduceGlob");
+    globalOp = newTempConst("chpl__reduceGlob");
     iterRec->defPoint->insertBefore(new DefExpr(globalOp));
   }
   // Because of this, can't just do reduceOp->replace(...).
@@ -1571,7 +1578,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     //   wasting threads that would do nothing other than wait on the
     //   on-statement.
     //
-    VarSymbol* coforallCount = newTemp("_coforallCount");
+    VarSymbol* coforallCount = newTempConst("_coforallCount");
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
     block->insertAtHead(new DefExpr(coforallCount));
@@ -1600,7 +1607,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     coforallBlk->insertAtTail(new DefExpr(tmpIter));
     coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
     {
-      VarSymbol* coforallCount = newTemp("_coforallCount");
+      VarSymbol* coforallCount = newTempConst("_coforallCount");
       BlockStmt* beginBlk = new BlockStmt();
       beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
       addByrefVars(beginBlk, byref_vars);
@@ -1615,7 +1622,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
       nonVectorCoforallBlk->insertAtTail(block);
     }
     {
-      VarSymbol* coforallCount = newTemp("_coforallCount");
+      VarSymbol* coforallCount = newTempConst("_coforallCount");
       BlockStmt* beginBlk = new BlockStmt();
       beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
       addByrefVars(beginBlk, byref_vars);
@@ -1738,9 +1745,11 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       }
     }
   }
+  // TODO: Is it OK to just have an 'otherwise' ?
+  if (!condStmt) {
+    USR_FATAL(selectCond, "Select has no when clauses");
+  }
   if (otherwise) {
-    if (!condStmt)
-      USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
 
@@ -1911,7 +1920,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
     return NULL;
   }
 
-  VarSymbol* globalOp = newTemp("chpl_reduceGlob");
+  VarSymbol* globalOp = newTempConst("chpl_reduceGlob");
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   VarSymbol* result = newTemp("chpl_reduceResult");
@@ -2040,7 +2049,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   if (forallExpr)
     return forallExpr;
 
-  VarSymbol* globalOp = newTemp("chpl_globalOp");
+  VarSymbol* globalOp = newTempConst("chpl_globalOp");
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   BlockStmt* serialBlock = buildChapelStmt();
@@ -2128,7 +2137,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->insertFormalAtTail(data);
 
   VarSymbol* eltType = newTemp("chpl_eltType");
-  VarSymbol* globalOp = newTemp();
+  VarSymbol* globalOp = newTempConst();
 
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
@@ -2242,46 +2251,61 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
 }
 
 
-DefExpr*
-buildClassDefExpr(const char* name,
-                  const char* cname,
-                  Type*       type,
-                  Expr*       inherit,
-                  BlockStmt*  decls,
-                  Flag        isExtern,
-                  const char* docs) {
-  AggregateType* ct = toAggregateType(type);
+DefExpr* buildClassDefExpr(const char*  name,
+                           const char*  cname,
+                           AggregateTag tag,
+                           Expr*        inherit,
+                           BlockStmt*   decls,
+                           Flag         isExtern,
+                           const char*  docs) {
+  AggregateType* ct = new AggregateType(tag);
+
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
   if (strcmp("string", name) == 0) {
     *dtString = *ct;
-    // These fields get overwritten with `ct` by the assignment. These fields are
-    // set to `this` by the AggregateType constructor so they should still be
-    // `dtString`. Fix them back up.
-    dtString->fields.parent = dtString;
+
+    // These fields get overwritten with `ct` by the assignment.
+    // These fields are set to `this` by the AggregateType constructor
+    // so they should still be `dtString`. Fix them back up.
+    dtString->fields.parent   = dtString;
     dtString->inherits.parent = dtString;
+
     gAggregateTypes.remove(gAggregateTypes.index(ct));
+
     delete ct;
+
     ct = dtString;
   }
+
   INT_ASSERT(ct);
-  TypeSymbol* ts = new TypeSymbol(name, ct);
-  DefExpr* def = new DefExpr(ts);
+
+  TypeSymbol* ts  = new TypeSymbol(name, ct);
+  DefExpr*    def = new DefExpr(ts);
+
   ct->addDeclarations(decls);
+
   if (isExtern == FLAG_EXTERN) {
     if (cname) {
       ts->cname = astr(cname);
     }
+
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
-    if (inherit)
-      USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+
+    if (inherit != NULL)
+      USR_FATAL_CONT(inherit,
+                     "External types do not currently support inheritance");
   }
-  if (inherit)
+
+  if (inherit != NULL) {
     ct->inherits.insertAtTail(inherit);
+  }
+
   ct->doc = docs;
+
   return def;
 }
 
@@ -2752,7 +2776,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     // remote_fork (node) { foo(); } // no wait();
 
     // Execute the construct "on x begin ..." asynchronously.
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTempConst();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
     beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, gFalse, tmp));
@@ -2761,7 +2785,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   } else {
     // Otherwise, wait for the "on" statement to complete before proceeding.
     BlockStmt* block = buildChapelStmt();
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTempConst();
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
@@ -2807,7 +2831,7 @@ BlockStmt*
 buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
-  VarSymbol* endCountSave = newTemp("_endCountSave");
+  VarSymbol* endCountSave = newTempConst("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
   block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
@@ -2837,8 +2861,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     return buildChapelStmt(block);
   }
 
-  VarSymbol* cobeginCount = newTemp("_cobeginCount");
-  cobeginCount->addFlag(FLAG_TEMP);
+  VarSymbol* cobeginCount = newTempConst("_cobeginCount");
 
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();

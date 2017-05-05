@@ -192,58 +192,8 @@ with \chpl{ref} or \chpl{const ref} keywords, are an area of future work.
 \index{primary methods}
 \index{secondary methods}
 
-A \emph{method} is a procedure or iterator that is associated with a
-type known as the \emph{receiver}.  Methods on classes are referred
-to as to as \emph{class methods}.  Methods may be defined on other
-types as well.
-
-Methods are declared with the following syntax:
-\begin{syntax}
-method-declaration-statement:
-  linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] function-name argument-list[OPT] 
-    return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
-
-proc-or-iter:
-  `proc'
-  `iter'
-
-this-intent:
-  `param'
-  `type'
-  `ref'
-  `const ref'
-  `const'
-
-type-binding:
-  identifier .
-  `(' expr `)' .
-
-\end{syntax}
-
-% Note: at the time `const ref` and `const` this intents were
-% added, we didn't see any conceptual reason not to support
-% `const in` and `in` this intents; it's just not a pressing concern.
-
-Methods defined within the lexical scope of a class, record, or union
-are referred to as \emph{primary methods}.  For such methods,
-the \sntx{type-binding} is omitted and is taken to be the
-innermost class, record, or union in which the method is defined.
-Methods defined outside of such scopes are known as \emph{secondary
-methods} and must have a \sntx{type-binding} (otherwise, they would
-simply be standalone functions rather than methods).  Note that
-secondary methods can be defined not only for classes, records, and
-unions, but also for any other type (e.g., integers, reals, strings).
-
-Secondary methods can be declared with a type expression instead of a
-type identifier. In particular, if the \sntx{type-binding} is a
-parenthesized expression, the compiler will evaluate that expression to
-find the receiver type for the method. In that case, the method applies
-only to receivers of that type. See also
-\rsec{Creating_General_and_Specialized_Versions_of_a_Function}.
-
-Method calls are described in \rsec{Class_Method_Calls}.
-
-The use of \sntx{this-intent} is described in \rsec{The_em_this_Reference}.
+Methods on classes are referred to as to as \emph{class methods}.
+See the methods section~\rsec{Methods}.
 
 \subsection{Nested Classes}
 \label{Nested_Classes}
@@ -286,14 +236,6 @@ situation, \chpl{C} will have type constructor arguments based upon
 generic fields in the \chpl{ParentC} as described in
 ~\ref{Type_Constructors}. Furthermore, a fully specified \chpl{C} will be
 a subclass of a corresponding fully specified \chpl{ParentC}.
-
-\begin{future}
-A derived class may also incorporate any number of records by listing them
-in the derived class declaration.
-As with record inheritance, this has the effect of injecting the record's fields and
-methods into the new class type.  Record inheritance does not induce a
-well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
-\end{future}
 
 \subsection{The object Class}
 \label{The_object_Class}
@@ -375,25 +317,6 @@ should not dispatch dynamically since that would make it
 impossible to access a base field within a base method should that
 field be shadowed by a subclass.
 \end{rationale}
-
-\subsection{Inheriting from Multiple Classes}
-\label{Inheriting_from_Multiple_Classes}
-\index{multiple inheritance}
-\index{inheritance!multiple}
-\index{classes!inheritance!multiple}
-
-%REVIEW: vass: need to decide as a group whether we want this in the spec
-A class can be derived from multiple base classes provided that only
-one of the base classes contains fields either directly or from base
-classes that it is derived from.  The methods defined by the other
-base classes can be overridden.  This provides functionality similar to the C\#
-concept of interfaces.
-
-\begin{openissue}
-It is an open question whether the language will support \chpl{interface}
-declarations and multiple inheritance. This is currently under study
-at the University of Colorado (Boulder).
-\end{openissue}
 
 \subsection{The {\em nil} Value}
 \label{Class_nil_value}
@@ -656,7 +579,7 @@ receiver-clause:
 The receiver-clause specifies the \emph{receiver}, which is the class
 instance whose field is being accessed.
 The receiver clause can be omitted when the field access is within a method.
-In this case the receiver is the method's receiver \rsec{The_em_this_Reference}.
+In this case the receiver is the method's receiver.
 The receiver clause can also be omitted when the field access is within
 a class declaration. In this case the receiver is the instance
 being implicitly defined or referenced.
@@ -751,321 +674,15 @@ the number of times x was assigned a value.
 \index{classes!method calls}
 \index{methods!calling}
 
-A method is invoked with a method call, which is similar to a non-method
-call expression.
+Class method calls are similar to other method calls which are described
+in \rsec{Method_Calls}. However, class method calls are subject to
+dynamic dispatch.
 
-\begin{syntax}
-method-call-expression:
-  receiver-clause[OPT] expression ( named-expression-list )
-  receiver-clause[OPT] expression [ named-expression-list ]
-  receiver-clause[OPT] parenthesesless-function-identifier
-\end{syntax}
+The receiver-clause (or its absence) specifies the method's receiver in
+the same way it does for field accesses \rsec{Class_Field_Accesses}.
 
-The receiver-clause (or its absence) specifies the method's receiver
-\rsec{The_em_this_Reference} in the same way it does for field accesses
-\rsec{Class_Field_Accesses}.
-
-\begin{chapelexample}{defineMethod.chpl}
-A method to output information about an instance of the \chpl{Actor}
-class can be defined as follows:
-\begin{chapelpre}
-use useActor1;
-\end{chapelpre}
-\begin{chapel}
-proc Actor.print() {
-  writeln("Actor ", name, " is ", age, " years old");
-}
-\end{chapel}
-\begin{chapelpost}
-anActor.print();
-delete anActor;
-\end{chapelpost}
-\begin{chapeloutput}
-(Tommy, {name = Tommy, age = 27})
-Actor Tommy is 27 years old
-\end{chapeloutput}
-This method can be called on an instance of the \chpl{Actor}
-class, \chpl{anActor}, with the call expression \chpl{anActor.print()}.
-\end{chapelexample}
-
-The actual arguments supplied in the method call are bound to the
-formal arguments in the method declaration following the rules specified for
-procedures (\rsec{Functions}). The exception is the receiver
-\rsec{The_em_this_Reference}.
-
-\subsection{The Method Receiver and the {\em this} Argument}
-\label{The_em_this_Reference}
-\index{classes!receiver}
-\index{this@\chpl{this}}
-\index{classes!this@\chpl{this}}
-\index{receiver}
-\index{type methods}
-\index{instance methods}
-\index{methods!type}
-\index{methods!instance}
-
-A method's \emph{receiver} is an implicit formal argument
-named \chpl{this} representing the expression on which the method is
-invoked.  The receiver's actual argument is specified by the
-\sntx{receiver-clause} of a method-call-expression as specified
-in \rsec{Class_Field_Accesses}.  
-
-
-
-% TODO: specify how the receiver affects the choice of the method.
-
-\begin{chapelexample}{implicitThis.chpl}
-Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
-defined as
-\begin{chapel}
-class C {
-  proc foo() {
-    bar(this);
-  }
-}
-proc bar(c: C) { writeln(c); }
-\end{chapel}
-\begin{chapelpost}
-var c1: C = new C();
-c1.foo();
-delete c1;
-\end{chapelpost}
-\begin{chapeloutput}
-{}
-\end{chapeloutput}
-Then given an instance of \chpl{C} called \chpl{c1}, the method
-call \chpl{c1.foo()} results in a call to \chpl{bar} where the
-argument is \chpl{c1}.  Within primary method \chpl{C.foo()}, the
-(implicit) receiver formal has static type \chpl{C} and is referred to
-as \chpl{this}.
-\end{chapelexample}
-
-Methods whose receivers are objects are called \emph{instance
-methods}.  Methods may also be defined to have \chpl{type}
-receivers---these are known as \emph{type methods}.
-
-The optional \sntx{this-intent} is used to specify type methods, to
-constrain a receiver argument to be a \chpl{param}, or to specify how
-the receiver argument should be passed to the method.
-
-A method whose \sntx{this-intent} is \chpl{type} defines a \emph{type
-method}.  It can only be called on the type itself rather than on an
-instance of the type.  When \sntx{this-intent} is \chpl{param}, it
-specifies that the function can only be applied to param objects of
-the given type binding.
-
-\begin{chapelexample}{paramTypeThisIntent.chpl}
-In the following code, the \chpl{isOdd} method is defined with
-a \sntx{this-intent} of \chpl{param}, permitting it to be called on
-params only.  The \chpl{size} method is defined with
-a \sntx{this-intent} of \chpl{type}, requiring it to be called on
-the \chpl{int} type itself, not on integer values.
-\begin{chapel}
-proc param int.isOdd() param {
-  return this & 0x1 == 0x1;
-}
-
-proc type int.size() param {
-  return 64;
-}
-
-param three = 3;
-var seven = 7;
-
-writeln(42.isOdd());          // prints false
-writeln(three.isOdd());       // prints true
-writeln((42+three).isOdd());  // prints true
-// writeln(seven.isOdd());    // illegal since 'seven' is not a param
-
-writeln(int.size());          // prints 64
-// writeln(42.size());        // illegal since 'size()' is a type method
-\end{chapel}
-\begin{chapeloutput}
-false
-true
-true
-64
-\end{chapeloutput}
-\end{chapelexample}
-
-\pagebreak
-Type methods can also be iterators.
-
-\begin{chapelexample}{typeMethodIter.chpl}
-In the following code, the class \chpl{C} defines a type method
-iterator which can be invoked on the type itself:
-\begin{chapel}
-class C {
-  var x: int;
-  var y: string;
-
-  iter type myIter() {
-    yield 3;
-    yield 5;
-    yield 7;
-    yield 11;
-  }
-}
-
-for i in C.myIter() do
-  writeln(i);
-\end{chapel}
-\begin{chapeloutput}
-3
-5
-7
-11
-\end{chapeloutput}
-\end{chapelexample}
-
-When \sntx{this-intent} is \chpl{ref}, the receiver argument will be
-passed by reference, allowing modifications to \chpl{this}.  If
-\sntx{this-intent} is \chpl{const ref}, the receiver argument is passed
-by reference but it cannot be modified inside the method. The
-\sntx{this-intent} can also describe an abstract intent as follows. If it is
-\chpl{const}, the receiver argument will be passed with \chpl{const}
-intent. If it is left out entirely, the receiver will be passed with
-the default intent. See \rsec{The_Default_Intent} for more information
-on these abstract intents.
-
-\begin{chapelexample}{refThisIntent.chpl}
-In the following code, the \chpl{doubleMe} function is defined with a
-\sntx{this-intent} of \chpl{ref}, allowing variables of type \chpl{int} to
-double themselves.
-\begin{chapel}
-proc ref int.doubleMe() { this *= 2; }
-\end{chapel}
-\begin{chapelpost}
-var x: int = 2;
-x.doubleMe();
-writeln(x);
-\end{chapelpost}
-\begin{chapeloutput}
-4
-\end{chapeloutput}
-Given a variable \chpl{x = 2}, a call to \chpl{x.doubleMe()} will set \chpl{x}
-to \chpl{4}.
-\end{chapelexample}
-
-\section{The {\em this} Method}
-\label{The_em_this_Method}
-\index{classes!indexing}
-\index{this@\chpl{this}}
-\index{classes!this@\chpl{this}}
-
-A procedure method declared with the name \chpl{this} allows a class to be
-``indexed'' similarly to how an array is indexed.  Indexing into a
-class instance has the semantics of calling a method
-named \chpl{this}.  There is no other way to call a method
-called \chpl{this}.  The \chpl{this} method must be declared with
-parentheses even if the argument list is empty.
-
-\begin{chapelexample}{thisMethod.chpl}
-In the following code, the \chpl{this} method is used to create a
-class that acts like a simple array that contains three integers
-indexed by 1, 2, and 3.
-\begin{chapel}
-class ThreeArray {
-  var x1, x2, x3: int;
-  proc this(i: int) ref {
-    select i {
-      when 1 do return x1;
-      when 2 do return x2;
-      when 3 do return x3;
-    }
-    halt("ThreeArray index out of bounds: ", i);
-  }
-}
-\end{chapel}
-\begin{chapelpost}
-var ta = new ThreeArray();
-ta(1) = 1;
-ta(2) = 2;
-ta(3) = 3;
-for i in 1..3 do
-  writeln(ta(i));
-ta(4) = 4;
-\end{chapelpost}
-\begin{chapeloutput}
-1
-2
-3
-thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
-\end{chapeloutput}
-\end{chapelexample}
-
-\section{The {\em these} Method}
-\label{The_these_Method}
-\index{classes!iterating over}
-\index{these@\chpl{these}}
-\index{classes!these@\chpl{these}}
-
-An iterator method declared with the name \chpl{these} allows a class object to be
-``iterated over'' similarly to how a domain or array supports iteration.
-Using a class in the context of a loop where
-an \sntx{iteratable-expression} is expected has the semantics of calling
-a method on the class named \chpl{these}.
-
-\begin{chapelexample}{theseIterator.chpl}
-In the following code, the \chpl{these} method is used to create a
-class that acts like a simple array that can be iterated over and
-contains three integers.
-\begin{chapel}
-class ThreeArray {
-  var x1, x2, x3: int;
-  iter these() ref {
-    yield x1;
-    yield x2;
-    yield x3;
-  }
-}
-\end{chapel}
-\begin{chapelpost}
-var ta = new ThreeArray();
-for (i, j) in zip(ta, 1..) do
-  i = j;
-
-for i in ta do
-  writeln(i);
-delete ta;
-\end{chapelpost}
-\begin{chapeloutput}
-1
-2
-3
-\end{chapeloutput}
-
-\end{chapelexample}
-
-An iterator type method with the name \chpl{these} supports iteration
-over the class type itself.
-
-\begin{chapelexample}{typeMethodIterThese.chpl}
-In the following code, the class \chpl{C} defines a type method
-iterator named \chpl{these}, supporting direct iteration over the type:
-\begin{chapel}
-class C {
-  var x: int;
-  var y: string;
-
-  iter type these() {
-    yield 1;
-    yield 2;
-    yield 4;
-    yield 8;
-  }
-}
-
-for i in C do
-  writeln(i);
-\end{chapel}
-\begin{chapeloutput}
-1
-2
-4
-8
-\end{chapeloutput}
-\end{chapelexample}
+See (\rsec{Method_receiver_and_this}) for more details of about method
+receivers.
 
 \section{Common Operations}
 

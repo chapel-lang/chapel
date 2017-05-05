@@ -180,16 +180,18 @@ typedef enum {
 
 static FnSymbol* function_exists(const char* name,
                                  int numFormals,
-                                 Type* formalType1 = NULL,
-                                 Type* formalType2 = NULL,
-                                 Type* formalType3 = NULL,
-                                 function_exists_kind_t kind=FIND_EITHER)
+                                 Type* formalType1,
+                                 Type* formalType2,
+                                 Type* formalType3,
+                                 Type* formalType4,
+                                 function_exists_kind_t kind)
 {
   switch(numFormals)
   {
    default:
-    INT_FATAL("function_exists checks at most 3 argument types.  Add more if needed.");
+    INT_FATAL("function_exists checks at most 4 argument types.  Add more if needed.");
     break;
+   case 4:  if (!formalType4)   INT_FATAL("Missing argument formalType4");  break;
    case 3:  if (!formalType3)   INT_FATAL("Missing argument formalType3");  break;
    case 2:  if (!formalType2)   INT_FATAL("Missing argument formalType2");  break;
    case 1:  if (!formalType1)   INT_FATAL("Missing argument formalType1");  break;
@@ -217,6 +219,10 @@ static FnSymbol* function_exists(const char* name,
       if (!type_match(formalType3, fn->getFormal(3)))
         continue;
 
+    if (formalType4)
+      if (!type_match(formalType4, fn->getFormal(4)))
+        continue;
+
     if (kind == FIND_REF && fn->retTag != RET_REF)
       continue;
 
@@ -230,6 +236,32 @@ static FnSymbol* function_exists(const char* name,
   return NULL;
 }
 
+static FnSymbol* function_exists(const char* name,
+                                 Type* formalType1,
+                                 function_exists_kind_t kind=FIND_EITHER)
+{
+  return function_exists(name, 1, formalType1, NULL, NULL, NULL, kind);
+}
+
+
+
+static FnSymbol* function_exists(const char* name,
+                                 Type* formalType1,
+                                 Type* formalType2,
+                                 function_exists_kind_t kind=FIND_EITHER)
+{
+  return function_exists(name, 2, formalType1, formalType2, NULL, NULL, kind);
+}
+
+static FnSymbol* function_exists(const char* name,
+                                 Type* formalType1,
+                                 Type* formalType2,
+                                 Type* formalType3,
+                                 function_exists_kind_t kind=FIND_EITHER)
+{
+  return function_exists(name, 3,
+                         formalType1, formalType2, formalType3, NULL, kind);
+}
 
 static void fixup_accessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
@@ -372,10 +404,10 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
 
-  FnSymbol *setter = function_exists(field->name, 2,
-                                     dtMethodToken, ct, NULL, FIND_REF);
-  FnSymbol *getter = function_exists(field->name, 2,
-                                     dtMethodToken, ct, NULL, FIND_NOT_REF);
+  FnSymbol *setter = function_exists(field->name,
+                                     dtMethodToken, ct, FIND_REF);
+  FnSymbol *getter = function_exists(field->name,
+                                     dtMethodToken, ct, FIND_NOT_REF);
   if (setter)
     fixup_accessor(ct, field, fieldIsConst, recordLike, setter);
   if (getter)
@@ -466,7 +498,7 @@ static void build_chpl_entry_points() {
 
   if (fLibraryCompile) {
     if (chpl_user_main)
-      INT_FATAL(chpl_user_main, "'main' found when compiling a library");
+      USR_WARN(chpl_user_main, "'main()' has no special meaning when compiling in --library mode");
   }
 
   if (!chpl_user_main) {
@@ -601,7 +633,7 @@ static void build_chpl_entry_points() {
 }
 
 static void build_record_equality_function(AggregateType* ct) {
-  if (function_exists("==", 2, ct, ct))
+  if (function_exists("==", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("==");
@@ -630,7 +662,7 @@ static void build_record_equality_function(AggregateType* ct) {
 
 
 static void build_record_inequality_function(AggregateType* ct) {
-  if (function_exists("!=", 2, ct, ct))
+  if (function_exists("!=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("!=");
@@ -660,7 +692,7 @@ static void build_record_inequality_function(AggregateType* ct) {
 
 
 static void build_enum_size_function(EnumType* et) {
-  if (function_exists("size", 1, et))
+  if (function_exists("size", et))
     return;
   // Build a function that returns the length of the enum specified
   FnSymbol* fn = new FnSymbol("size");
@@ -695,7 +727,7 @@ static void build_enum_size_function(EnumType* et) {
 
 
 static void build_enum_first_function(EnumType* et) {
-  if (function_exists("chpl_enum_first", 1, et))
+  if (function_exists("chpl_enum_first", et))
     return;
   // Build a function that returns the first option for the enum
   // specified, also known as the default.
@@ -849,7 +881,7 @@ static void build_enum_cast_function(EnumType* et) {
 
 
 static void build_enum_assignment_function(EnumType* et) {
-  if (function_exists("=", 2, et, et))
+  if (function_exists("=", et, et))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -869,7 +901,7 @@ static void build_enum_assignment_function(EnumType* et) {
 
 
 static void build_record_assignment_function(AggregateType* ct) {
-  if (function_exists("=", 2, ct, ct))
+  if (function_exists("=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -921,7 +953,7 @@ static void build_record_assignment_function(AggregateType* ct) {
 
 static void build_extern_init_function(Type* type)
 {
-  if (function_exists("_defaultOf", 1, type))
+  if (function_exists("_defaultOf", type))
     return;
 
   // In the world where initialization lived entirely within the compiler,
@@ -952,7 +984,7 @@ static void build_extern_init_function(Type* type)
 
 static void build_extern_assignment_function(Type* type)
 {
-  if (function_exists("=", 2, type, type))
+  if (function_exists("=", type, type))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1009,7 +1041,7 @@ static void build_record_cast_function(AggregateType* ct) {
 
 // TODO: we should know what field is active after assigning unions
 static void build_union_assignment_function(AggregateType* ct) {
-  if (function_exists("=", 2, ct, ct))
+  if (function_exists("=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1043,13 +1075,13 @@ static void build_union_assignment_function(AggregateType* ct) {
 }
 
 static void build_record_copy_function(AggregateType* ct) {
-  if (function_exists("chpl__initCopy", 1, ct) != NULL) {
+  if (function_exists("chpl__initCopy", ct) != NULL) {
     return;
   }
 
   if (isNonGenericClassWithInitializers(ct)  == true ||
       isNonGenericRecordWithInitializers(ct) == true) {
-    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+    if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
       ct->symbol->addFlag(FLAG_NOT_POD);
     }
 
@@ -1062,7 +1094,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   // as an optimization, the below conditionals use ct->initializerStyle
   if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
-    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct)) {
+    if (FnSymbol* ctor = function_exists(copyCtorName, ct)) {
       // note: default ctor has 1 arg, meme
       if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME)) {
         foundUserDefinedCopy = true;
@@ -1070,7 +1102,7 @@ static void build_record_copy_function(AggregateType* ct) {
     }
 
   } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
-    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+    if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
       foundUserDefinedCopy = true;
     } else {
       // Don't try to use the compiler-generated default init fn if
@@ -1185,7 +1217,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
 
 static void build_record_hash_function(AggregateType *ct) {
-  if (function_exists("chpl__defaultHash", 1, ct))
+  if (function_exists("chpl__defaultHash", ct))
     return;
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
@@ -1249,7 +1281,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
   } else if (isNonGenericRecordWithInitializers(ct) == true) {
 
 
-  } else if (function_exists("_defaultOf", 1, ct)     == NULL  &&
+  } else if (function_exists("_defaultOf", ct)        == NULL  &&
              ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
              ct->defaultValue                         != gNil) {
 
@@ -1399,22 +1431,25 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (function_exists("readWriteThis", 3, dtMethodToken, ct, dtAny)) {
+  if (function_exists("readWriteThis", dtMethodToken, ct, dtAny)) {
     hasReadWriteThis = true;
   }
+
+  if (function_exists("writeThis", dtMethodToken, ct, dtAny)) {
+    hasWriteThis = true;
+  }
+
+  if (function_exists("readThis", dtMethodToken, ct, dtAny)) {
+    hasReadThis = true;
+  }
+
   // We'll make a writeThis and a readThis if neither exist.
   // If only one exists, we leave just one (as some types
   // can be written but not read, for example).
-  if (function_exists("writeThis", 3, dtMethodToken, ct, dtAny)) {
-    hasWriteThis = true;
+  if (hasWriteThis || hasReadThis)
     makeReadThisAndWriteThis = false;
-  }
-  if (function_exists("readThis", 3, dtMethodToken, ct, dtAny)) {
-    hasReadThis = true;
-    makeReadThisAndWriteThis = false;
-  }
 
-  // Make writeThis if we have neither writeThis nor readThis.
+  // Make writeThis when appropriate
   if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1428,10 +1463,12 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
+
     fn->retType = dtVoid;
 
     if( hasReadWriteThis ) {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
     } else {
       fn->insertAtTail(new CallExpr("writeThisDefaultImpl", fileArg, fn->_this));
     }
@@ -1444,6 +1481,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     normalize(fn);
     ct->methods.add(fn);
   }
+
+  // Make readThis when appropriate
   if ( makeReadThisAndWriteThis && ! hasReadThis ) {
     FnSymbol* fn = new FnSymbol("readThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1460,14 +1499,14 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->retType = dtVoid;
 
     if( hasReadWriteThis ) {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
     } else {
       fn->insertAtTail(new CallExpr("readThisDefaultImpl", fileArg, fn->_this));
     }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
-    // ? ct->methods.add(fn) ? in old code
     fn->addFlag(FLAG_METHOD);
     fn->addFlag(FLAG_METHOD_PRIMARY);
     reset_ast_loc(def, ct->symbol);
@@ -1478,7 +1517,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", 2, dtString, et))
+  if (function_exists("_cast", dtString, et))
     return;
 
   FnSymbol* fn = new FnSymbol("_cast");
@@ -1511,7 +1550,7 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (function_exists("deinit", 2, dtMethodToken, ct))
+  if (function_exists("deinit", dtMethodToken, ct))
     return;
 
   SET_LINENO(ct->symbol);

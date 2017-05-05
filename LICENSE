@@ -43,13 +43,6 @@ The Chapel implementation is composed of two categories of code:
                                                                    Python
                                                                    BSD
                                                                    GPL 3
-       scspell        Spell-checking utility (developer-only)      GPL 2
-       scspell SCOWL word lists
-                      Spell-checking dictionaries (developer-only) MIT-like
-                                                                   BSD
-                                                                   other (UKACD)
-                                                                   public domain
-
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
