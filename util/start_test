@@ -443,7 +443,8 @@ def run(test=False):
     # output to the command line, instead of logging all output in one huge
     # block.
     logger.write("[Starting {0} {1}]".format(sub_test, date_str))
-    p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
+    p = subprocess.Popen([sub_test, compiler],
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     printout(p.stdout)
     p.wait()
     return p.returncode
