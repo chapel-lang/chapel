@@ -380,12 +380,10 @@ static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unus
 
 static void initStageNames(const ArgumentDescription* desc, const char* arg_unused)
 {
- // llvmStageName[llvmStageNum::LAST] = {
- //   [llvmStageNum::EMPTY] = "",
- //   [llvmStageNum::NONE] = "none",
- //   [llvmStageNum::BASIC] = "basic",
- //   [llvmStageNum::FULL] = "full"
- // };
+  llvmStageName[llvmStageNum::NOPRINT] = "";
+  llvmStageName[llvmStageNum::NONE] = "none";
+  llvmStageName[llvmStageNum::BASIC] = "basic";
+  llvmStageName[llvmStageNum::FULL] = "full";
 }
 
 static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const char* arg_unused)

@@ -66,12 +66,7 @@ const char *llvmPrintIrCName;
 
 int llvmPrintIrStageNum = llvmStageNum::NOPRINT;
 
-const char* llvmStageName[llvmStageNum::LAST] = {
-  [llvmStageNum::NOPRINT] = "",
-  [llvmStageNum::NONE] = "none",
-  [llvmStageNum::BASIC] = "basic",
-  [llvmStageNum::FULL] = "full"
-};
+const char* llvmStageName[llvmStageNum::LAST];
 
 const char *stageNameFromStageNum(int stageNum) {
   if(stageNum < llvmStageNum::LAST)
