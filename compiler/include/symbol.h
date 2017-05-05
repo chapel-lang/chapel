@@ -785,7 +785,7 @@ extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
 //is place to keep name in LLVM IR and C version of
 //'llvmPrintIrName' variable.
 extern const char *llvmPrintIrCName;
-extern int llvmPrintIrNameStageNum;
+extern int llvmPrintIrStageNum;
 
 
 

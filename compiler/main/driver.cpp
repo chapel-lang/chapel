@@ -378,9 +378,12 @@ static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unus
   printCppLineno = true;
 }
 
-static void setLlvmPrintIrNameStageNum(const ArgumentDescription* desc, const char* arg_unused)
+static void verifyStageAndsetStageNum(const ArgumentDescription* desc, const char* arg_unused)
 {
-  llvmPrintIrNameStageNum = llvmStageMap[llvmPrintIrStage];
+  if(!llvmStageMap[llvmPrintIrStage])
+    USR_FATAL("Unknown llvm-print-ir-stage argument");
+
+  llvmPrintIrStageNum = llvmStageMap[llvmPrintIrStage];
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -710,7 +713,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmPrintIrName, "CHPL_LLVM_FDUMP", NULL},
- {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_OPT_FDUMP", &setLlvmPrintIrNameStageNum},
+ {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_OPT_FDUMP", &verifyStageAndsetStageNum},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},

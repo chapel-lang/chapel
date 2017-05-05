@@ -63,7 +63,7 @@
 char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
 char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
 
-int llvmPrintIrNameStageNum;
+int llvmPrintIrStageNum;
 const char *llvmPrintIrCName;
 
 std::map<std::string, int> llvmStageMap =
@@ -84,7 +84,7 @@ std::map<int, std::string> llvmStageRevMap =
 void llvmFunctionDump(llvm::Function *func, int numStage) {
   llvm::raw_os_ostream stdOut(std::cout);
   std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
-            << " after " << llvmStageRevMap[numStage] << std::endl;
+            << " function after " << llvmStageRevMap[numStage] << " optimization stage";
   func->print(stdOut);
 }
 #endif
@@ -1319,7 +1319,7 @@ void FnSymbol::codegenDef() {
       }
     }
 
-    if(llvmPrintIrNameStageNum == LLVM_NONE_STAGE_NUM
+    if(llvmPrintIrStageNum == LLVM_NONE_STAGE_NUM
             && strcmp(llvmPrintIrName, name) == 0)
         llvmFunctionDump(func, LLVM_NONE_STAGE_NUM);
 
@@ -1328,7 +1328,7 @@ void FnSymbol::codegenDef() {
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
     info->FPM_postgen->run(*func);
-    if(llvmPrintIrNameStageNum == LLVM_BASIC_STAGE_NUM
+    if(llvmPrintIrStageNum == LLVM_BASIC_STAGE_NUM
             && strcmp(llvmPrintIrName, name) == 0)
         llvmFunctionDump(func, LLVM_BASIC_STAGE_NUM);
 #endif
