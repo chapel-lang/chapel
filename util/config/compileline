@@ -37,6 +37,15 @@ $make = "$make --no-print-directory";
 
 sub mysystem {
   my $cmd = shift;
+
+  # Uncomment for debug output
+  #print "About to run $cmd\n";
+  #for my $k (keys %ENV) {
+  #  if ($k =~ /CHPL/) {
+  #    print "$k=$ENV{$k}\n";
+  #  }
+  #}
+
   # Run $cmd but filter out e.g. make[2]: lines
   # (about which directory we are in)
   open(CMD, "$cmd |") or die "Cannot run $cmd: $!";
