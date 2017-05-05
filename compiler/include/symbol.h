@@ -787,20 +787,22 @@ extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
 extern const char *llvmPrintIrCName;
 extern int llvmPrintIrStageNum;
 
+namespace llvmStageNum {
+enum { NOPRINT = 0,
+       NONE,
+       BASIC,
+       FULL,
+       LAST
+     };
+}
 
+extern const char *llvmStageName[llvmStageNum::LAST];
 
-#define LLVM_NONE_STAGE_NAME "none"
-#define LLVM_NONE_STAGE_NUM 1
-#define LLVM_BASIC_STAGE_NAME "basic"
-#define LLVM_BASIC_STAGE_NUM 2
-#define LLVM_FULL_STAGE_NAME "full"
-#define LLVM_FULL_STAGE_NUM 3
-
-extern std::map<std::string, int> llvmStageMap;
-extern std::map<int, std::string> llvmStageRevMap;
+const char *stageNameFromStageNum(int stageNum);
+int stageNumFromStageName(const char* stageName);
 
 #ifdef HAVE_LLVM
-void llvmFunctionDump(llvm::Function *func, int numStage);
+void printLlvmIr(llvm::Function *func, int numStage);
 #endif
 
 #endif

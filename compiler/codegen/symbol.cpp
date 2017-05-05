@@ -62,29 +62,36 @@
 
 char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
 char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
-
-int llvmPrintIrStageNum;
 const char *llvmPrintIrCName;
 
-std::map<std::string, int> llvmStageMap =
-{
-    {LLVM_NONE_STAGE_NAME, LLVM_NONE_STAGE_NUM},
-    {LLVM_BASIC_STAGE_NAME, LLVM_BASIC_STAGE_NUM},
-    {LLVM_FULL_STAGE_NAME, LLVM_FULL_STAGE_NUM}
+int llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+
+const char* llvmStageName[llvmStageNum::LAST] = {
+  [llvmStageNum::NOPRINT] = "",
+  [llvmStageNum::NONE] = "none",
+  [llvmStageNum::BASIC] = "basic",
+  [llvmStageNum::FULL] = "full"
 };
 
-std::map<int, std::string> llvmStageRevMap =
-{
-    {LLVM_NONE_STAGE_NUM, LLVM_NONE_STAGE_NAME},
-    {LLVM_BASIC_STAGE_NUM, LLVM_BASIC_STAGE_NAME},
-    {LLVM_FULL_STAGE_NUM, LLVM_FULL_STAGE_NAME}
-};
+const char *stageNameFromStageNum(int stageNum) {
+  if(stageNum < llvmStageNum::LAST)
+    return llvmStageName[stageNum];
+  else
+    return NULL;
+}
+
+int stageNumFromStageName(const char* stageName) {
+  for(int i = 0; i < llvmStageNum::LAST; i++)
+    if(strcmp(llvmStageName[i], stageName) == 0)
+      return i;
+  return llvmStageNum::NOPRINT;
+}
 
 #ifdef HAVE_LLVM
-void llvmFunctionDump(llvm::Function *func, int numStage) {
+void printLlvmIr(llvm::Function *func, int numStage) {
   llvm::raw_os_ostream stdOut(std::cout);
   std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
-            << " function after " << llvmStageRevMap[numStage] << " optimization stage";
+            << " function after " << stageNameFromStageNum(numStage) << " optimization stage";
   func->print(stdOut);
 }
 #endif
@@ -1319,18 +1326,18 @@ void FnSymbol::codegenDef() {
       }
     }
 
-    if(llvmPrintIrStageNum == LLVM_NONE_STAGE_NUM
+    if(llvmPrintIrStageNum == llvmStageNum::NONE
             && strcmp(llvmPrintIrName, name) == 0)
-        llvmFunctionDump(func, LLVM_NONE_STAGE_NUM);
+        printLlvmIr(func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
     info->FPM_postgen->run(*func);
-    if(llvmPrintIrStageNum == LLVM_BASIC_STAGE_NUM
+    if(llvmPrintIrStageNum == llvmStageNum::BASIC
             && strcmp(llvmPrintIrName, name) == 0)
-        llvmFunctionDump(func, LLVM_BASIC_STAGE_NUM);
+        printLlvmIr(func, llvmStageNum::BASIC);
 #endif
   }
 
