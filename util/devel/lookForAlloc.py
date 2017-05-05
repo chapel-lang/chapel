@@ -1,24 +1,47 @@
 #!/usr/bin/env python
 
-"""Simple script that effectively "greps" the runtime for calls to the system
-allocator. Generally speaking, unless the memory layer hasn't been initialized,
-or you need memory that isn't registered, the runtime should use the chapel
-allocator, not the system one.
+"""Simple script that effectively "greps" for calls to the system allocator.
+For projects that provide their own allocation interface, this helps ensure
+that direct calls to the system allocator aren't accidentally introduced.
 
-Finds all C/C++ files in the runtime, and uses cscope to check for calls to
-system allocation/deallocation routines. Note that we don't check files that
-are allowed to call the system allocator (sys alloc wrapper)"""
+Finds all C/C++ files in the search directory, and uses cscope to check for and
+report calls to system allocation/deallocation routines.
+
+Prints out the location of any calls to the system allocator. Exit status is 0
+on success, 1 if calls to the allocator were found, and 2 if there were fatal
+errors trying to run this script.
+"""
 
 import fnmatch
 import optparse
 import os
+import subprocess
 import sys
 
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
-sys.path.insert(0, os.path.abspath(chplenv_dir))
+def log_error(msg, fatal=False):
+    """Log an error, exiting if fatal"""
+    sys.stdout.write('Error: {0}\n'.format(msg))
+    if fatal:
+        sys.exit(2)
 
-from chpl_home_utils import get_chpl_home
-from utils import run_command
+
+def run_command(cmd):
+    """Simple subprocess wrapper. Similar to subprocess.check_output, but that
+       is only available after Python 2.7, and we still support 2.6 :("""
+    try:
+        process = subprocess.Popen(cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    except OSError:
+        log_error('command not found: "{0}"'.format(cmd[0]), fatal=True)
+
+    output = process.communicate()
+    output = (output[0].decode(), output[1].decode())
+    if process.returncode != 0:
+        msg = 'command failed: "{0}"\nstderr was:\n{1}'.format(cmd, output[1])
+        log_error(msg, fatal=True)
+    else:
+        return output[0]
 
 
 def get_alloc_funcs():
@@ -54,30 +77,13 @@ def find_source_files(search_dir):
     return find_files(search_dir, code_file_exts)
 
 
-def get_allowed_files():
-    """Return a list of files that are allowed to call the system allocator"""
-    # The system alloc wrapper is the only place that's allowed to directly
-    # call the system allocator
-    return ['chpl-mem-sys.h']
-
-
-def get_non_allowed_files(search_dir):
-    """Return a list of absolute paths to files that are not allowed to call
-       the system allocator. i.e. source files in search_dir minus any files
-       that end with an allowed file"""
-    srcs = find_source_files(search_dir)
-    for allowed_file in get_allowed_files():
-        srcs = [s for s in srcs if not s.endswith(allowed_file)]
-    return srcs
-
-
 def build_cscope_ref(src_files):
     """Build a cscope cross-reference for crazy fast searching of src_files"""
-    # -b -- build cross ref only
-    # -q -- enable faster symbol lookup
-    # -k -- turns off default include dir (don't include/parse system files
-    #       since we only care if our files call the system allocator)
-    cscope_cmd = ['cscope', '-b', '-q', '-k'] + src_files
+    # -bu -- build cross ref only, wipe any old cross refs
+    # -q  -- enable faster symbol lookup
+    # -k  -- turns off default include dir (don't include/parse system files
+    #        since we only care if our files call the system allocator)
+    cscope_cmd = ['cscope', '-bu', '-q', '-k'] + src_files
     run_command(cscope_cmd)
 
 
@@ -89,11 +95,19 @@ def cscope_find_calls(func_call):
     return run_command(cscope_cmd)
 
 
-def check_for_alloc_calls(search_dir, rel_dir=''):
-    """ Check src files in search_dir for calls to the system allocator. Report
-        files relative to rel_dir.  Returns True if alloc calls were found,
-        False otherwise"""
-    src_files = get_non_allowed_files(search_dir)
+def check_for_alloc_calls(search_dir, exclude_paths=None, rel_paths=True):
+    """Check source files in search_dir for calls to the system allocator.
+       Don't check files that contain any of the exclude_paths.  Report files
+       relative to search_dir/../ if rel_paths is True, otherwise use absolute
+       paths. Returns True if alloc calls were found, False otherwise"""
+    rel_dir = ''
+    if rel_paths:
+        rel_dir = os.path.abspath(os.path.join(search_dir, '..')) + os.path.sep
+
+    src_files = find_source_files(search_dir)
+    if exclude_paths:
+        for exclude_path in exclude_paths:
+            src_files = [s for s in src_files if exclude_path not in s]
 
     build_cscope_ref(src_files)
 
@@ -102,21 +116,33 @@ def check_for_alloc_calls(search_dir, rel_dir=''):
         out = cscope_find_calls(alloc_func)
         if out:
             found_alloc_calls = True
-            sys.stdout.write('Error: found "{0}" calls:\n'.format(alloc_func))
+            log_error('found call to "{0}"'.format(alloc_func))
             sys.stdout.write(out.replace(rel_dir, '') + '\n')
     return found_alloc_calls
 
 
 def main():
-    """Determine chpl_home and check for alloc calls in chpl_home/runtime"""
-    parser = optparse.OptionParser(description=__doc__)
-    parser.add_option('--chpl_home', dest='chpl_home', default=get_chpl_home())
-    options = parser.parse_args()[0]
-    chpl_home = os.path.normpath(options.chpl_home)
+    """Parse options and check for alloc calls"""
 
-    runtime_dir = os.path.join(chpl_home, 'runtime')
-    rel_dir = chpl_home + os.path.sep
-    return check_for_alloc_calls(runtime_dir, rel_dir)
+    class MyParser(optparse.OptionParser):
+        """Optparse wrapper that doesn't strip newlines from the epilog"""
+        def format_epilog(self, formatter):
+            return self.epilog
+
+    parser = MyParser(epilog='\n{0}'.format(__doc__))
+    parser.add_option('--search-dir', dest='search_dir', default=os.getcwd(),
+                      help='directory to check for alloc calls [default: CWD]')
+    parser.add_option('--exclude-paths', dest='exclude_paths', default='',
+                      help='comma separated list of (sub)paths/files to skip')
+    parser.add_option('--abs-paths', dest='abs_paths', action="store_true",
+                      help='report abs paths vs. rel to --search-dir/../')
+    options = parser.parse_args()[0]
+
+    search_dir = os.path.abspath(options.search_dir)
+    exclude_paths = [x.strip() for x in options.exclude_paths.split(',') if x]
+    rel_paths = not options.abs_paths
+
+    return check_for_alloc_calls(search_dir, exclude_paths, rel_paths)
 
 
 if __name__ == "__main__":
