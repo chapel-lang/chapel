@@ -1327,12 +1327,6 @@ module ChapelBase {
         halt("Attempt to divide by zero");
     __primitive("%=", lhs, rhs);
   }
-  inline proc %=(ref lhs:real(?w), rhs:real(w)) {
-    if (chpl_checkDivByZero) then
-      if rhs == 0:real(w) then
-        halt("Attempt to divide by zero");
-    __primitive("%=", lhs, rhs);
-  }
   inline proc %=(ref lhs, rhs) {
       lhs = lhs % rhs;
   }
