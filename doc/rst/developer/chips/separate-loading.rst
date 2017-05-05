@@ -64,6 +64,14 @@ compilation, since generally speaking the instantiation cannot happen at
 the time a library is compiled - but rather must happen when compiling
 code that uses the library.
 
+Iterators
++++++++++
+
+Iterators need to be inlined in order to achieve good performance.  But
+inlining an iterator uses both the body of the iterator and the body of
+the loop. For this reason, iterators share many of the properties of
+generic code.
+
 Ftable, Class IDs and Virtual Method Table
 ++++++++++++++++++++++++++++++++++++++++++
 
