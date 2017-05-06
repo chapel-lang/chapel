@@ -63,10 +63,13 @@
 char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
 char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
 const char *llvmPrintIrCName;
-
 int llvmPrintIrStageNum = llvmStageNum::NOPRINT;
-
-const char* llvmStageName[llvmStageNum::LAST];
+const char* llvmStageName[llvmStageNum::LAST] = {
+  "", //llvmStageNum::NOPRINT
+  "none", //llvmStageNum::NONE
+  "basic", //llvmStageNum::BASIC
+  "full", //llvmStageNum::FULL
+};
 
 const char *stageNameFromStageNum(int stageNum) {
   if(stageNum < llvmStageNum::LAST)
@@ -84,10 +87,12 @@ int stageNumFromStageName(const char* stageName) {
 
 #ifdef HAVE_LLVM
 void printLlvmIr(llvm::Function *func, int numStage) {
-  llvm::raw_os_ostream stdOut(std::cout);
-  std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
-            << " function after " << stageNameFromStageNum(numStage) << " optimization stage";
-  func->print(stdOut);
+  if(func) {
+    llvm::raw_os_ostream stdOut(std::cout);
+    std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
+              << " function after " << stageNameFromStageNum(numStage) << " optimization stage";
+    func->print(stdOut);
+  }
 }
 #endif
 
