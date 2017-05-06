@@ -1301,11 +1301,11 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void lookup(BaseAST* scope, const char * name,
-                   std::vector<Symbol* >& symbols,
-                   Vec<BaseAST*>& alreadyVisited,
-                   std::set<int> rejectedPrivateIds,
-                   BaseAST* callingContext);
+static void lookup(BaseAST*              scope,
+                   const char*           name,
+                   std::vector<Symbol*>& symbols,
+                   Vec<BaseAST*>&        alreadyVisited,
+                   BaseAST*              callingContext);
 
 
 
@@ -1318,27 +1318,13 @@ static void    buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
 // Given a name and a scope, determine the symbol referred by that name in the
 // context of that scope.
 Symbol* lookup(BaseAST* scope, const char* name) {
-  Symbol * symbolResult = NULL;
-  std::vector<Symbol * > symbolOptions;
-  Vec<BaseAST*> nestedscopes;
-
-  std::set<int> rejectedPrivateIds;
-  // rejectedPrivateIds is a set of all ids for private symbols that we have
-  // encountered and determined are not visible to us.  Though it adds storage
-  // and requires a check of all later symbol matches once it has any contents,
-  // it allows us to go back to a scope we may have partially traversed (and
-  // left early due to finding the incorrect private symbol match).  It also
-  // means that, in the event a private symbol lives in the internal or commonly
-  // used standard modules, the user will not be flooded with multiple output
-  // for the same incorrect match.
-
-  // Lydia note: I would like to investigate the effect of traversing all call
-  // expressions of the "." accessor.
-
+  Symbol*              symbolResult = NULL;
+  std::vector<Symbol*> symbolOptions;
+  Vec<BaseAST*>        nestedscopes;
 
   // Call inner lookup on scope, the name, the symbols return vector, and the
   // vector of ASTs already visited.
-  lookup(scope, name, symbolOptions, nestedscopes, rejectedPrivateIds, scope);
+  lookup(scope, name, symbolOptions, nestedscopes, scope);
 
   int numFound = symbolOptions.size();
   if (numFound == 0) {
@@ -1482,23 +1468,18 @@ static bool isRepeat(std::vector<Symbol* >& symbols, Symbol* toAdd) {
 }
 
 // Assumes that symbols contains nothing before entering this function
-static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
-                                   std::vector<Symbol* >& symbols,
-                                   std::set<int> rejectedPrivateIds,
-                                   BaseAST* callingContext) {
+static bool lookupThisScopeAndUses(BaseAST*              scope,
+                                   const char*           name,
+                                   std::vector<Symbol*>& symbols,
+                                   BaseAST*              callingContext) {
   INT_ASSERT(symbols.size() == 0);
 
   if (Symbol* sym = inSymbolTable(scope, name)) {
     if (sym->hasFlag(FLAG_PRIVATE)) {
-      if (rejectedPrivateIds.find(sym->id) == rejectedPrivateIds.end()) {
-        // The symbol found was not one of the already rejected private
-        // symbols
-        if (!sym->isVisible(callingContext)) {
-          rejectedPrivateIds.insert(sym->id);
-        } else {
-          symbols.push_back(sym);
-        }
-      } // If it was already rejected, we definitely don't want to add it.
+      if (sym->isVisible(callingContext) == true) {
+        symbols.push_back(sym);
+      }
+
     } else {
       symbols.push_back(sym);
     }
@@ -1510,6 +1491,7 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
       // and we can just return.
       return true;
     }
+
     // When methods and fields can be private, need to check against the
     // rejected private symbols here.  But that's in the future.
     symbols.push_back(sym);
@@ -1542,37 +1524,26 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         }
 
         forv_Vec(UseStmt, use, *moduleUses) {
-          if (use) {
-            if (!use->skipSymbolSearch(name)) {
+          if (use != NULL) {
+            if (use->skipSymbolSearch(name) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
               if (Symbol* sym = inSymbolTable(scopeToUse, nameToUse)) {
-                if (sym->hasFlag(FLAG_PRIVATE)) {
-                  if (rejectedPrivateIds.find(sym->id) ==
-                      rejectedPrivateIds.end()) {
-                    // The symbol found was not one of the already rejected
-                    // private symbols
-                    if (!sym->isVisible(callingContext)) {
-                      rejectedPrivateIds.insert(sym->id);
-                    } else {
-                      if (!isRepeat(symbols, sym)) {
-                        symbols.push_back(sym);
-                      }
-                    }
+                if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                  if (sym->isVisible(callingContext) == true &&
+                      isRepeat(symbols, sym)         == false) {
+                    symbols.push_back(sym);
                   }
-                  // If it was already rejected, we don't want to add it.
 
-                } else if (!isRepeat(symbols, sym)) {
-                  // Don't want to add if the symbol itself was already present.
+                } else if (isRepeat(symbols, sym) == false) {
                   symbols.push_back(sym);
                 }
               }
             }
+
           } else {
-            //
             // break on each new depth if a symbol has been found
-            //
             if (symbols.size() > 0)
               break;
           }
@@ -1611,52 +1582,57 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
 // Note that having this set up would make it easier to check the entirety of
 // an access call (M1.M2.M3, for instance) as the recursion does not occur in
 // the innermost scope.
-static void lookup(BaseAST* scope, const char * name,
-                   std::vector<Symbol* >& symbols,
-                   Vec<BaseAST*>& alreadyVisited,
-                   std::set<int> rejectedPrivateIds,
-                   BaseAST* callingContext) {
+static void lookup(BaseAST*              scope,
+                   const char*           name,
+                   std::vector<Symbol*>& symbols,
+                   Vec<BaseAST*>&        alreadyVisited,
+                   BaseAST*              callingContext) {
   if (!alreadyVisited.set_in(scope)) {
     alreadyVisited.set_add(scope);
 
-    if (lookupThisScopeAndUses(scope, name, symbols, rejectedPrivateIds, callingContext)) {
+    if (lookupThisScopeAndUses(scope, name, symbols, callingContext) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
-      // surrounding scopes for the symbols on the left and right part of the
-      // call (if any) to verify we were finding anything in particular.
-      // A symbol could be visible in the innermost scope because it was defined
-      // in an outer scope (for instance, if M1 defines foo, M2 doesn't shadow
-      // it and we're looking for M1.M2.foo), so that is something to keep in
-      // mind as well.
+      // surrounding scopes for the symbols on the left and right part
+      // of the call (if any) to verify we were finding anything in particular.
+      //
+      // A symbol could be visible in the innermost scope because it was
+      // defined in an outer scope (for instance, if M1 defines foo,
+      // M2 doesn't shadow it and we're looking for M1.M2.foo),
+      // so that is something to keep in mind as well.
 
       return;
     }
 
     if (scope->getModule()->block == scope) {
-      if (getScope(scope))
-        lookup(getScope(scope), name, symbols, alreadyVisited, rejectedPrivateIds, callingContext);
+      if (getScope(scope) != NULL) {
+        lookup(getScope(scope), name, symbols, alreadyVisited, callingContext);
+      }
+
     } else {
       // Otherwise, look in the next scope up.
       FnSymbol* fn = toFnSymbol(scope);
-      if (fn && fn->_this) {
-        // If we're currently in a method, the next scope up is anything visible
+
+      if (fn != NULL && fn->_this) {
+        // If currently in a method, the next scope up is anything visible
         // within the aggregate type
-        AggregateType* ct = toAggregateType(fn->_this->type);
-        if (ct)
-          lookup(ct->symbol, name, symbols, alreadyVisited, rejectedPrivateIds, callingContext);
+        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+          lookup(ct->symbol, name, symbols, alreadyVisited, callingContext);
+        }
       }
+
       // Check if found something in last lookup call
       if (symbols.size() == 0) {
-        // If we didn't find something in the aggregate type that matched, or we
-        // weren't in an aggregate type method, so look at next scope up.
-        lookup(getScope(scope), name, symbols, alreadyVisited, rejectedPrivateIds, callingContext);
+        // If we didn't find something in the aggregate type that matched,
+        // or we weren't in an aggregate type method, so look at next scope up.
+        lookup(getScope(scope), name, symbols, alreadyVisited, callingContext);
       }
     }
   }
 }
 
 static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
-                    UseStmt* current);
+                    UseStmt*                                   current);
 
 static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
   std::map<Symbol*, std::vector<UseStmt* > > seen;
