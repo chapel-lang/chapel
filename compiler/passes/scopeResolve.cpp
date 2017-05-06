@@ -885,18 +885,13 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
           Type* type = method->_this->type;
 
           if (isAggr == true || isMethodName(name, type) == true) {
-            CallExpr* call = toCallExpr(expr->parentExpr);
-
-            if (call                              != NULL &&
-                call->baseExpr                    == expr &&
-                call->numActuals()                >= 2    &&
-                isSymExpr(call->get(1))           == true &&
-                toSymExpr(call->get(1))->symbol() == gMethodToken) {
-              UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
-
-              expr->replace(use);
-
-              skipSet.insert(use);
+            if (CallExpr* call = toCallExpr(expr->parentExpr)) {
+              if (call->baseExpr                    != expr  ||
+                  call->numActuals()                <  2     ||
+                  isSymExpr(call->get(1))           == false ||
+                  toSymExpr(call->get(1))->symbol() != gMethodToken) {
+                insertFieldAccess(method, usymExpr, sym, expr);
+              }
 
             } else {
               insertFieldAccess(method, usymExpr, sym, expr);
