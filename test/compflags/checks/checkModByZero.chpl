@@ -26,37 +26,37 @@ select testParamCases {
   //proc %(param a: uint(?w), param b: uint(w)) param
   when 2 do
     writeln(10 % 0);
+
+  //proc %(a: uint(64), param b: uint(64))
+  when 3 do
+    writeln(unum % (0:uint));
 }
 
 select testExecCases {
   //proc %(a: int(?w), b: int(w))
-  when 1 do
+  when 0 do
     writeln(num % denom);
 
   //proc %(a: uint(?w), b: uint(w))
-  when 2 do
+  when 1 do
     writeln(unum % udenom);
 
   //proc %=(ref lhs:int(?w), rhs:int(w))
-  when 3 do
+  when 2 do
     num %= denom;
 
   //proc %=(ref lhs:uint(?w), rhs:uint(w))
-  when 4 do
+  when 3 do
     unum %= udenom;
 
   //proc %=(ref lhs, rhs)
-  when 5 do
+  when 4 do
     rec1 %= rec0;
 
-  //proc %(a: uint(64), param b: uint(64))
-  when 6 do
-    writeln(unum % 0);
-
   //proc %(param a: uint(64), b: uint(64))
-  when 7 do
-    writeln(10 % udenom);
+  when 5 do
+    writeln((10:uint) % udenom);
 
   otherwise do
-    compilerError('No tests run');
+    halt('No tests run');
 }

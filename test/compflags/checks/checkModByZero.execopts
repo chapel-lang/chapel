@@ -1,7 +1,6 @@
---testExecCases=1   # checkModByZero-varint.good
---testExecCases=2   # checkModByZero-varuint.good
---testExecCases=3   # checkModByZero-assignint.good
---testExecCases=4   # checkModByZero-assignuint.good
---testExecCases=5   # checkModByZero-assigngeneric.good
---testExecCases=6   # checkModByZero-varparamuint.good
---testExecCases=7   # checkModByZero-paramvaruint.good
+--testExecCases=0   # checkModByZero-varint.good
+--testExecCases=1   # checkModByZero-varuint.good
+--testExecCases=2   # checkModByZero-assignint.good
+--testExecCases=3   # checkModByZero-assignuint.good
+--testExecCases=4   # checkModByZero-assigngeneric.good
+--testExecCases=5   # checkModByZero-paramvaruint.good

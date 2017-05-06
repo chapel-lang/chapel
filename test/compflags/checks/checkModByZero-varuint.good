@@ -1,0 +1,1 @@
+checkModByZero.chpl:42: error: halt reached - Attempt to divide by zero

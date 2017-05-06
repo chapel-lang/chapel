@@ -1511,8 +1511,7 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline proc %(a: uint(64), param b: uint(64)) {
-    if b == 0 then
-      compilerError("Attempt to divide by zero");
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("%", a, b);
   }
 
