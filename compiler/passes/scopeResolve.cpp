@@ -699,20 +699,16 @@ static void resolveGotoLabels() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
-                                     std::set<UnresolvedSymExpr*>& skipSet);
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet);
+static void updateMethod(UnresolvedSymExpr* usymExpr);
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym);
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym);
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym,
-                         SymExpr*                      symExpr);
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym,
+                         SymExpr*           symExpr);
 
 static void insertFieldAccess(FnSymbol*          method,
                               UnresolvedSymExpr* usymExpr,
@@ -722,8 +718,7 @@ static void insertFieldAccess(FnSymbol*          method,
 static int  computeNestedDepth(const char* name,
                                Type*       type);
 
-static void resolveModuleCall(CallExpr*                     call,
-                              std::set<UnresolvedSymExpr*>& skipSet);
+static void resolveModuleCall(CallExpr* call);
 
 static bool isMethodName(const char* name, Type* type);
 static bool isMethodNameLocal(const char* name, Type* type);
@@ -736,8 +731,6 @@ static bool tryCResolve(ModuleSymbol* module, const char* name);
 #endif
 
 static void resolveUnresolvedSymExprs() {
-  std::set<UnresolvedSymExpr*> skipSet;
-
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
   // the symbol in module M; for functions, insert a "module=" token
@@ -748,13 +741,13 @@ static void resolveUnresolvedSymExprs() {
   int i           = 0;
 
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
-    resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
+    resolveUnresolvedSymExpr(unresolvedSymExpr);
 
     maxResolved++;
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    resolveModuleCall(call, skipSet);
+    resolveModuleCall(call);
   }
 
   // Note that the extern C resolution might add new UnresolvedSymExprs, and it
@@ -771,21 +764,19 @@ static void resolveUnresolvedSymExprs() {
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if (i >= maxResolved) {
-      resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
+      resolveUnresolvedSymExpr(unresolvedSymExpr);
     }
 
     i++;
   }
 }
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
-                                     std::set<UnresolvedSymExpr*>& skipSet) {
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
 
-  if (skipSet.find(usymExpr) != skipSet.end() ||
-      strcmp(name, ".")      == 0             ||
+  if (strcmp(name, ".")      == 0             ||
       usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(usymExpr, name)) {
@@ -796,11 +787,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
       usymExpr->replace(symExpr);
 
-      updateMethod(usymExpr, skipSet, sym, symExpr);
+      updateMethod(usymExpr, sym, symExpr);
 
     // sjd: stopgap to avoid shadowing variables or functions by methods
     } else if (fn->hasFlag(FLAG_METHOD) == true) {
-      updateMethod(usymExpr, skipSet);
+      updateMethod(usymExpr);
 
     // handle function call without parentheses
     } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -824,44 +815,39 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
         primFn->insertAtTail(usymExpr);
 
-        skipSet.insert(usymExpr);
-
       } else {
-        updateMethod(usymExpr, skipSet, sym);
+        updateMethod(usymExpr, sym);
       }
 
     } else {
-      updateMethod(usymExpr, skipSet, sym);
+      updateMethod(usymExpr, sym);
     }
 
   } else {
-    updateMethod(usymExpr, skipSet);
+    updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
     if (externC == true && tryCResolve(usymExpr->getModule(), name) == true) {
       // Try resolution again since the symbol should exist now
-      resolveUnresolvedSymExpr(usymExpr, skipSet);
+      resolveUnresolvedSymExpr(usymExpr);
     }
 #endif
   }
 }
 
 // Apply 'this' and 'outer' in methods where necessary
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet) {
-  updateMethod(usymExpr, skipSet, NULL);
+static void updateMethod(UnresolvedSymExpr* usymExpr) {
+  updateMethod(usymExpr, NULL);
 }
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym) {
-  updateMethod(usymExpr, skipSet, sym, NULL);
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym) {
+  updateMethod(usymExpr, sym, NULL);
 }
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym,
-                         SymExpr*                      symExpr) {
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym,
+                         SymExpr*           symExpr) {
   const char* name   = usymExpr->unresolved;
   Expr*       expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
   Symbol*     parent = expr->parentSymbol;
@@ -1074,8 +1060,7 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
-static void resolveModuleCall(CallExpr*                     call,
-                              std::set<UnresolvedSymExpr*>& skipSet) {
+static void resolveModuleCall(CallExpr* call) {
   if (call->isNamed(".") == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
@@ -1110,13 +1095,11 @@ static void resolveModuleCall(CallExpr*                     call,
             if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
               call->replace(new CallExpr(fn));
             } else {
-              UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
-
-              skipSet.insert(se);
+              UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
 
               call->replace(se);
 
-              CallExpr* parent = toCallExpr(se->parentExpr);
+              CallExpr*          parent = toCallExpr(se->parentExpr);
 
               INT_ASSERT(parent);
 
@@ -1133,7 +1116,7 @@ static void resolveModuleCall(CallExpr*                     call,
                    tryCResolve(call->getModule(), mbrName) == true) {
           // Try to resolve again now that the symbol should
           // be in the table
-          resolveModuleCall(call, skipSet);
+          resolveModuleCall(call);
 #endif
 
         } else {
