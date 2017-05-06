@@ -90,7 +90,7 @@ module RangeChunk {
   iter blockCyclicChunks(r: range(?), blockSize: integral, idx: integral, numInds: integral) {
 
    if (r.boundedType != BoundedRangeType.bounded) then
-     halt("range argument to iterator 'blockCyclicChunks' must be bounded");
+     compilerError("range argument to iterator 'blockCyclicChunks' must be bounded");
 
   if (idx >= numInds) then
     halt("idx argument to iterator 'blockCyclicChunks' must be < numInds argument");
