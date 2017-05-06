@@ -1693,7 +1693,6 @@ GenRet codegenDiv(GenRet a, GenRet b)
   return ret;
 }
 
-// special case, if rhs == 0,
 static
 GenRet codegenMod(GenRet a, GenRet b)
 {
@@ -3152,7 +3151,6 @@ codegenExprMinusOne(Expr* expr)
 //     routine that would be used to generate the operator
 //     itself in a normal context (used by LLVM)
 //
-// special case, if rhs == 0,
 static
 void codegenOpAssign(GenRet a, GenRet b, const char* op,
                      GenRet (*codegenOp)(GenRet a, GenRet b))
