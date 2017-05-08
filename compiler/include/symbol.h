@@ -705,6 +705,8 @@ VarSymbol *new_ImagSymbol(const char *n,
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size=COMPLEX_SIZE_128);
 
+VarSymbol *new_CommIDSymbol(int64_t b);
+
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 
 void createInitStringLiterals();

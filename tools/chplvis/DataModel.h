@@ -135,6 +135,7 @@ class DataModel {
   // File name help
   const char *chpl_home;
   const char *dir;
+  const char *savec;
 
   filename *fileTbl;
   int fileTblSize;
@@ -264,6 +265,8 @@ class DataModel {
 
   // void DIR(const char *d) { dir = d; }
   const char * DIR() { return dir; }
+
+  const char * SAVEC() { return savec; }
 
   // Function name access
 

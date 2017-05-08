@@ -321,10 +321,10 @@ void chpl_printMemAllocStats(int32_t lineno, int32_t filename) {
     fprintf(memLogFile, "==============================================================\n");
     for (i = 0; i < chpl_numNodes; i++) {
       static size_t m1, m2, m3, m4;
-      chpl_gen_comm_get(&m1, i, &totalMem, sizeof(size_t), -1 /* broke for hetero */, lineno, filename);
-      chpl_gen_comm_get(&m2, i, &maxMem, sizeof(size_t), -1 /* broke for hetero */, lineno, filename);
-      chpl_gen_comm_get(&m3, i, &totalAllocated,  sizeof(size_t), -1 /* broke for hetero */, lineno, filename);
-      chpl_gen_comm_get(&m4, i, &totalFreed, sizeof(size_t), -1 /*broke for hetero */, lineno, filename);
+      chpl_gen_comm_get(&m1, i, &totalMem,       sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
+      chpl_gen_comm_get(&m2, i, &maxMem,         sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
+      chpl_gen_comm_get(&m3, i, &totalAllocated, sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
+      chpl_gen_comm_get(&m4, i, &totalFreed,     sizeof(size_t), -1 /* broke for hetero */, CHPL_COMM_UNKNOWN_ID, lineno, filename);
       fprintf(memLogFile, "%-9d  %-9zu  %-9zu  %-9zu  %-9zu\n", i, m1, m2, m3, m4);
     }
     fprintf(memLogFile, "==============================================================\n");

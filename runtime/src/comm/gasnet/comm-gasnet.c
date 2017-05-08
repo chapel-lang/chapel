@@ -370,7 +370,7 @@ static void fork_large_wrapper(large_fork_task_t* f) {
   // GET the bundle data
   // TODO: This could get only the payload
   chpl_comm_get(arg, caller, arg_on_caller, bundle_size_on_caller,
-                -1 /*typeIndex: unused*/, 0, CHPL_FILE_IDX_FORK_LARGE);
+                -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Call the on body function
   chpl_ftable_call(fid, arg);
@@ -453,7 +453,7 @@ static void fork_nb_large_wrapper(large_fork_task_t* f) {
 
   // GET the bundle data
   chpl_comm_get(arg, caller, arg_on_caller, bundle_size_on_caller,
-                -1 /*typeIndex: unused*/, 0, CHPL_FILE_IDX_FORK_LARGE);
+                -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Signal that the allocated region can be freed
   GASNET_Safe(gasnet_AMRequestShort2(caller, FREE,
@@ -599,7 +599,7 @@ static gasnet_handlerentry_t ftable[] = {
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   gasnet_handle_t ret;
   int remote_in_segment;
@@ -608,7 +608,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, node,
-       .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
     
@@ -619,7 +619,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 #endif
 
   if(!remote_in_segment) {
-    chpl_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
     ret = NULL;
     return (chpl_comm_nb_handle_t) ret;
   }
@@ -637,7 +637,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   gasnet_handle_t ret;
   int remote_in_segment;
@@ -646,7 +646,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
     chpl_comm_cb_info_t cb_data = 
       {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, node,
-       .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -657,7 +657,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
 #endif
 
   if(!remote_in_segment) {
-    chpl_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
     ret = NULL;
     return (chpl_comm_nb_handle_t) ret;
   }
@@ -919,7 +919,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 0, 0);
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
     }
   }
 }
@@ -1083,7 +1083,7 @@ void chpl_comm_exit(int all, int status) {
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, int32_t fn) {
+                    int32_t commID, int ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1093,7 +1093,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
@@ -1165,7 +1165,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, int32_t fn) {
+                    int32_t commID, int ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1175,7 +1175,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data = 
         {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, typeIndex, ln, fn}};
+         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
@@ -1295,7 +1295,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_id, 
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                         int ln, int32_t fn) {
+                         int32_t commID, int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
@@ -1340,7 +1340,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srcnode_id,
        .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
-                      stridelevels, elemSize, typeIndex, ln, fn}};
+                      stridelevels, elemSize, typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
   
@@ -1362,7 +1362,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id, 
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                         int ln, int32_t fn) {
+                         int32_t commID, int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;
@@ -1405,7 +1405,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstnode_id,
          .iu.comm_strd={srcaddr, srcstrides, dstaddr, dststrides, count,
-                        stridelevels, elemSize, typeIndex, ln, fn}};
+                        stridelevels, elemSize, typeIndex, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 

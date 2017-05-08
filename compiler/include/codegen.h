@@ -148,6 +148,10 @@ extern GenInfo* gGenInfo;
 extern int      gMaxVMT;
 extern int      gStmtCount;
 
+// Map from filename to an integer that will represent an unique ID for each
+// generated GET/PUT
+extern std::map<std::string, int> commIDMap;
+
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
