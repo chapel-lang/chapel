@@ -1,4 +1,5 @@
-// Checks the behavior for declaring an argument with the type desired
+// Checks the behavior for declaring an argument with the type desired, when
+// type constructors get generated for defined initializers
 class Foo {
   type t;
   var x;

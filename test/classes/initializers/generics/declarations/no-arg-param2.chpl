@@ -11,5 +11,6 @@ class Foo {
   }
 }
 
-var foo: Foo(5); // This does not correspond to an actual instantiation
+var foo: Foo(5); // We can make a type instantiation, but not an instance that
+// will match
 writeln(foo.type:string);

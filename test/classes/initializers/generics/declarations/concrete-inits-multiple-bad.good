@@ -1,0 +1,2 @@
+concrete-inits-multiple-bad.chpl:18: error: unresolved type specifier generated for 'Foo(type int(64), type imag(64))'
+concrete-inits-multiple-bad.chpl:10: note: candidates are: Foo(type xVal, type yVal)

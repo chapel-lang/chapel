@@ -14,7 +14,7 @@ class Foo {
     super.init();
   }
 
-  proc init(type tVal, xVal, yVal: int) {
+  proc init(type tVal, xVal, yVal: bool) {
     t = tVal;
     x = xVal;
     y = yVal;

@@ -1,1 +1,1 @@
-no-arg-param2.chpl:14: error: cannot determine type instantiation based on initializers provided
+Foo(5)
