@@ -3275,9 +3275,9 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
     if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
       if (!strcmp(ures->unresolved, "init") &&
-          isRecord(call->get(2)->typeInfo())) {
+          isGenericRecordWithInitializers(call->get(2)->typeInfo())) {
         // If the first actual is an instance of dtMethodToken and the call is
-        // to "init" of a record
+        // to "init" of a generic record that defined initializers
         resolveInitializer(call);
         return call->resolvedFunction();
       }
