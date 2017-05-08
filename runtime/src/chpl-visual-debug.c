@@ -66,8 +66,8 @@ int chpl_vdebug = 0;
 
 #define TID_STRING(buff, tid) (chpl_task_idToString(buff, CHPL_TASK_ID_STRING_MAX_LEN, tid))
 
-#define CHPL_VDEBUG_GETPUT_FORMAT_NAMES "tv srcNodeID dstNodeID commTaskID addr raddr elemSize typeIndex length commID lineNumber fileno"
-#define CHPL_VDEBUG_GETPUT_FORMAT_STRING(name) #name ": %lld.%06ld %d %d %s %#lx %#lx %zd %d %zd %d %d %d\n"
+#define VDEBUG_GETPUT_FORMAT_NAMES "kind tv srcNodeID dstNodeID commTaskID addr raddr elemSize typeIndex length commID lineNumber fileno"
+#define VDEBUG_GETPUT_FORMAT_STRING "%s: %lld.%06ld %d %d %s %#lx %#lx %zd %d %zd %d %d %d\n"
 
 int chpl_dprintf (int fd, const char * format, ...) {
   char buffer[2048]; 
@@ -316,7 +316,7 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, 
-                  CHPL_VDEBUG_GETPUT_FORMAT_STRING(nb_put),
+                  VDEBUG_GETPUT_FORMAT_STRING, "nb_put",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
@@ -337,7 +337,7 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  CHPL_VDEBUG_GETPUT_FORMAT_STRING(nb_get),
+                  VDEBUG_GETPUT_FORMAT_STRING, "nb_get",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
@@ -357,7 +357,7 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  CHPL_VDEBUG_GETPUT_FORMAT_STRING(put),
+                  VDEBUG_GETPUT_FORMAT_STRING, "put",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
@@ -378,7 +378,7 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
     char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  CHPL_VDEBUG_GETPUT_FORMAT_STRING(get),
+                  VDEBUG_GETPUT_FORMAT_STRING, "get",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, (size_t)1, cm->typeIndex, cm->size,
@@ -404,7 +404,7 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     }
 
     chpl_dprintf (chpl_vdebug_fd,
-                  CHPL_VDEBUG_GETPUT_FORMAT_STRING(st_put),
+                  VDEBUG_GETPUT_FORMAT_STRING, "st_put",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID, 
                   info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->srcaddr, (unsigned long) cm->dstaddr, cm->elemSize,
@@ -434,7 +434,7 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
     }
 
     chpl_dprintf (chpl_vdebug_fd,
-                  CHPL_VDEBUG_GETPUT_FORMAT_STRING(st_get),
+                  VDEBUG_GETPUT_FORMAT_STRING, "st_get",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->dstaddr, (unsigned long) cm->srcaddr, cm->elemSize,
