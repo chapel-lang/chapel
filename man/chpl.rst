@@ -432,8 +432,8 @@ OPTIONS
 **--llvm-print-ir-stage <stage>**
     Picks stage from which to print LLVM IR of function defined in 
     **--llvm-print-ir**. 
-    Chapel compiler runs many different optimization passes each of which
-    can change IR of function. This option allows to pick IR of function
+    The chapel compiler runs many different optimization passes each of which
+    can change IR of functions. This option allows one to pick IR of function
     from some stages of optimization.
     There are 3 optimization stages: none, basic, full:
     1. 'none' is stage before any optimization has occured

@@ -380,8 +380,8 @@ static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unus
 
 static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const char* arg_unused)
 {
-  int stageNum = stageNumFromStageName(llvmPrintIrStage);
-  if(!stageNum)
+  llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(llvmPrintIrStage);
+  if(stageNum == llvmStageNum::NOPRINT)
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
