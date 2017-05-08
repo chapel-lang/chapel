@@ -39,6 +39,7 @@ PASSES_SRCS =                                              \
         normalize.cpp                                      \
         parallel.cpp                                       \
         resolveIntents.cpp                                 \
+        ResolveScope.cpp                                   \
         returnStarTuplesByRefArgs.cpp                      \
         scopeResolve.cpp
 

@@ -24,8 +24,10 @@ class BaseAST;
 class FnSymbol;
 class Symbol;
 
-void    addToSymbolTable(FnSymbol* fn);
+void     addToSymbolTable(FnSymbol* fn);
 
-Symbol* lookup(BaseAST* scope, const char* name);
+Symbol*  lookup(BaseAST* scope, const char* name);
+
+BaseAST* getScope(BaseAST* ast);
 
 #endif
