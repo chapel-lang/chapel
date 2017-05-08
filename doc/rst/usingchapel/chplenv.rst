@@ -521,7 +521,7 @@ CHPL_JEMALLOC
 ~~~~~~~~~~~~~
    Optionally, the ``CHPL_JEMALLOC`` environment variable can select
    between no jemalloc, using the jemalloc distributed with Chapel in
-   third-party, or using a system jemalloc. This setting is intented
+   third-party, or using a system jemalloc. This setting is intended
    to elaborate upon ``CHPL_MEM=jemalloc``.
 
        ======== ==============================================================

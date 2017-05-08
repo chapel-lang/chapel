@@ -107,7 +107,7 @@ static void setupLocalizedHeaps(void* heap_base, size_t heap_size) {
   char* subchunk_base;
   size_t* subchunk_sizes;
 
-  heaps = (shared_heap_t*) CHPL_JE_(malloc)(num_heaps * sizeof(*heaps));
+  heaps = (shared_heap_t*) CHPL_JE_MALLOC(num_heaps * sizeof(*heaps));
   if (heaps == NULL) {
     chpl_internal_error("cannot allocate heaps");
   }
@@ -124,7 +124,7 @@ static void setupLocalizedHeaps(void* heap_base, size_t heap_size) {
   }
 
   subchunk_sizes =
-    (size_t*) CHPL_JE_(malloc)(num_heaps * sizeof(*subchunk_sizes));
+    (size_t*) CHPL_JE_MALLOC(num_heaps * sizeof(*subchunk_sizes));
   if (subchunk_sizes == NULL) {
     chpl_internal_error("cannot allocate subchunk_sizes");
   }
@@ -262,7 +262,7 @@ static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
   type value; \
   size_t sz; \
   sz = sizeof(value); \
-  if (CHPL_JE_(mallctl)(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+  if (CHPL_JE_MALLCTL(mallctl_string, &value, &sz, NULL, 0) != 0) { \
     char error_msg[256]; \
     snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
     chpl_internal_error(error_msg); \
@@ -292,14 +292,14 @@ static void initialize_arenas(void) {
   //   calling this interface."
   narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
-    if (CHPL_JE_(mallctl)("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+    if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
     }
   }
 
   // then set the current thread back to using arena 0
   arena = 0;
-  if (CHPL_JE_(mallctl)("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+  if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena back to 0");
   }
 }
@@ -330,7 +330,7 @@ static void replaceChunkHooks(void) {
   for (arena=0; arena<narenas; arena++) {
     char path[128];
     snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
-    if (CHPL_JE_(mallctl)(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
+    if (CHPL_JE_MALLCTL(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
   }
@@ -418,11 +418,11 @@ static void useUpMemNotInHeap(void) {
     size_t alloc_size;
     alloc_size = classes[class];
     do {
-      if ((p = CHPL_JE_(malloc)(alloc_size)) == NULL) {
+      if ((p = CHPL_JE_MALLOC(alloc_size)) == NULL) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInAnyHeap(p));
-    CHPL_JE_(free)(p);
+    CHPL_JE_FREE(p);
   }
 }
 
@@ -460,10 +460,10 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap(heap_base, heap_size);
   } else {
     void* p;
-    if ((p = CHPL_JE_(malloc)(1)) == NULL) {
+    if ((p = CHPL_JE_MALLOC(1)) == NULL) {
       chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
-    CHPL_JE_(free)(p);
+    CHPL_JE_FREE(p);
   }
 }
 
