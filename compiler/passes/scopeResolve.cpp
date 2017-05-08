@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-//
-// scopeResolve.cpp
-//
-
 #include "scopeResolve.h"
 
 #include "astutil.h"
@@ -31,6 +27,7 @@
 #include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
+#include "ResolveScope.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -47,28 +44,11 @@
 #include "llvm/ADT/SmallSet.h"
 #endif
 
-typedef std::map<const char*, Symbol*>           SymbolTableEntry;
-typedef std::map<BaseAST*,    SymbolTableEntry*> SymbolTable;
-
-
-//
-// The symbolTable maps BaseAST* pointers to entries based on scope
-// definitions.  The following BaseAST subtypes define scopes:
-//
-//   FnSymbol: defines a scope mainly for its arguments but also for
-//   identifiers that are defined via query-expressions, e.g., 't' in
-//   'def f(x: ?t)'
-//
-//   TypeSymbol: defines a scope for EnumType and AggregateType types for
-//   the enumerated type constants or the class/record fields
-//
-//   BlockStmt: defines a scope if the block is a normal block
-//   for any locally defined symbols
-//
-// Each entry contains a map from canonicalized string pointers to the
-// symbols defined in the scope.
-//
-static SymbolTable symbolTable;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 //
 // The moduleUsesCache is a cache from blocks with use-statements to
@@ -79,15 +59,15 @@ static SymbolTable symbolTable;
 // Note that this caching is not enabled until after use expression
 // have been resolved.
 //
-static std::map<BlockStmt*,Vec<UseStmt*>*> moduleUsesCache;
-static bool                                enableModuleUsesCache = false;
+static std::map<BlockStmt*, Vec<UseStmt*>*>   moduleUsesCache;
+static bool                                   enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
 // be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
-static Vec<const char*>                    aliasFieldSet;
+static Vec<const char*>                       aliasFieldSet;
 
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
@@ -96,25 +76,21 @@ typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 
-static void     addRecordDefaultConstruction();
+static void addToSymbolTable();
 
-static void     addToSymbolTable();
+static void processImportExprs();
 
-static void     processImportExprs();
+static void addRecordDefaultConstruction();
 
-static void     resolveGotoLabels();
+static void resolveGotoLabels();
 
-static void     resolveUnresolvedSymExprs();
+static void resolveUnresolvedSymExprs();
 
-static void     resolveEnumeratedTypes();
+static void resolveEnumeratedTypes();
 
-static void     destroyTable();
+static void destroyModuleUsesCaches();
 
-static void     destroyModuleUsesCaches();
-
-static void     renameDefaultTypesToReflectWidths();
-
-static BaseAST* getScope(BaseAST* ast);
+static void renameDefaultTypesToReflectWidths();
 
 void scopeResolve() {
   //
@@ -230,7 +206,7 @@ void scopeResolve() {
 
   resolveEnumeratedTypes();
 
-  destroyTable();
+  ResolveScope::destroyAstMap();
 
   destroyModuleUsesCaches();
 
@@ -301,50 +277,13 @@ static void addToSymbolTable() {
 }
 
 static void addToSymbolTable(DefExpr* def) {
-  // If the symbol is a compiler-generated variable or a label,
-  // do not add it to the symbol table.
-  if (def->sym->hasFlag(FLAG_TEMP) ||
-      isLabelSymbol(def->sym))
-    return;
+  Symbol* newSym = def->sym;
 
-  BaseAST* scope = getScope(def);
+  if (newSym->hasFlag(FLAG_TEMP) == false &&
+      isLabelSymbol(newSym)      == false) {
+    ResolveScope* entry = ResolveScope::findOrCreateScopeFor(def);
 
-  if (symbolTable.count(scope) == 0) {
-    symbolTable[scope] = new SymbolTableEntry();
-  }
-
-  SymbolTableEntry* entry = symbolTable[scope];
-
-  if (entry->count(def->sym->name) != 0) {
-    Symbol*     sym       = (*entry)[def->sym->name];
-    FnSymbol*   oldFn     = toFnSymbol(sym);
-    FnSymbol*   newFn     = toFnSymbol(def->sym);
-    TypeSymbol* typeScope = toTypeSymbol(scope);
-
-    if (!typeScope || !isAggregateType(typeScope->type)) { // inheritance
-      if ((!oldFn || (!oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
-          (!newFn || (!newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
-        USR_FATAL(sym,
-                  "'%s' has multiple definitions, redefined at:\n  %s",
-                  sym->name,
-                  def->sym->stringLoc());
-      }
-
-      if ((!oldFn && (newFn && !newFn->_this)) ||
-          (!newFn && (oldFn && !oldFn->_this))) {
-        // A function definition is conflicting with another named symbol
-        // that isn't a function (could be a variable, a module name, etc.)
-        USR_FATAL(sym,
-                  "'%s' has multiple definitions, redefined at:\n  %s",
-                  sym->name,
-                  def->sym->stringLoc());
-      }
-    }
-
-    if (!newFn || (newFn && !newFn->_this))
-      (*entry)[def->sym->name] = def->sym;
-  } else {
-    (*entry)[def->sym->name] = def->sym;
+    entry->extend(newSym);
   }
 }
 
@@ -1072,13 +1011,8 @@ static void resolveModuleCall(CallExpr* call) {
 
         enclosingModule->moduleUseAdd(mod);
 
-        // Can the identifier be mapped to something at this scope?
-        if (symbolTable.count(mod->block) != 0) {
-          SymbolTableEntry* entry = symbolTable[mod->block];
-
-          if (entry->count(mbrName) != 0) {
-            sym = (*entry)[mbrName];
-          }
+        if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
+          sym = scope->lookup(mbrName);
         }
 
         if (sym != NULL) {
@@ -1094,6 +1028,7 @@ static void resolveModuleCall(CallExpr* call) {
           } else if (FnSymbol* fn = toFnSymbol(sym)) {
             if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
               call->replace(new CallExpr(fn));
+
             } else {
               UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
 
@@ -1248,22 +1183,11 @@ static void resolveEnumeratedTypes() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void destroyTable() {
-  SymbolTable::iterator entry;
-
-  for (entry = symbolTable.begin(); entry != symbolTable.end(); entry++) {
-    delete entry->second;
-  }
-
-  symbolTable.clear();
-}
-
-
 //
 // delete the module uses cache
 //
 static void destroyModuleUsesCaches() {
-  std::map<BlockStmt*,Vec<UseStmt*>*>::iterator use;
+  std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
     delete use->second;
@@ -1271,7 +1195,6 @@ static void destroyModuleUsesCaches() {
 
   moduleUsesCache.clear();
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1418,28 +1341,26 @@ static bool methodMatched(BaseAST* scope, FnSymbol* method) {
   }
 }
 
-// inSymbolTable returns a Symbol* if there was an entry for this scope
-// that matched this name, NULL otherwise.
-static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
-  if (symbolTable.count(scope) != 0) {
-    SymbolTableEntry* entry = symbolTable[scope];
-    if (entry->count(name) != 0) {
-      Symbol* sym = (*entry)[name];
-      // If the symbol found isn't a method, or it was a method and we are
-      // in the appropriate scope to add it (as determined by calling
-      // methodMatched), then return the symbol
-      FnSymbol* fn = toFnSymbol(sym);
-      if (sym && (!sym->hasFlag(FLAG_METHOD) ||
-                  (fn && (methodMatched(scope, fn)))))
-        return sym;
+// Is this name defined in this scope?
+static Symbol* inSymbolTable(BaseAST* ast, const char* name) {
+  Symbol* retval = NULL;
+
+  if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
+    if (Symbol* sym = scope->lookup(name)) {
+      if (sym->hasFlag(FLAG_METHOD) == false) {
+        retval = sym;
+
+      } else if (FnSymbol* fn = toFnSymbol(sym)) {
+        if (methodMatched(ast, fn) == true) {
+          retval = sym;
+        }
+      }
     }
   }
-  return NULL;
+
+  return retval;
 }
 
-// If the current scope is an aggregate type, checks if the name refers to a
-// field or method on that type.  If a match is found, return it.  Otherwise
-// return NULL.
 static Symbol* inType(BaseAST* scope, const char* name) {
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
@@ -2036,7 +1957,7 @@ static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
 *                                                                             *
 ************************************** | *************************************/
 
-static BaseAST* getScope(BaseAST* ast) {
+BaseAST* getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
     BlockStmt* block = toBlockStmt(expr->parentExpr);
 
@@ -2073,4 +1994,3 @@ static BaseAST* getScope(BaseAST* ast) {
 
   return NULL;
 }
-
