@@ -6699,6 +6699,16 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
+      } else if (call->isPrimitive(PRIM_YIELD)) {
+        if (call->get(1)->typeInfo() == dtVoid ||
+            call->get(1)->typeInfo() == dtVoid->refType) {
+          if (SymExpr* ret = toSymExpr(call->get(1))) {
+            if (ret->symbol() != gVoid) {
+              SET_LINENO(call);
+              call->replace(new CallExpr(PRIM_YIELD, gVoid));
+            }
+          }
+        }
       }
       if (call->isResolved()) {
         for_actuals(actual, call) {
@@ -6724,6 +6734,15 @@ static void cleanupVoidVarsAndFields() {
       }
     }
   }
+
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* loop = toForLoop(block)) {
+      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
+        loop->indexGet()->setSymbol(gVoid);
+      }
+    }
+  }
+
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->inTree()) {
       if (def->sym->type == dtVoid || def->sym->type == dtVoid->refType) {

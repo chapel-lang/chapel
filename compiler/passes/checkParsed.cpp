@@ -304,8 +304,6 @@ checkFunction(FnSymbol* fn) {
 
   if (numVoidReturns != 0 && numNonVoidReturns != 0)
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
-  if (isIterator && numYields == 0)
-    USR_FATAL_CONT(fn, "iterator does not yield a value");
   if (!isIterator &&
       fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
