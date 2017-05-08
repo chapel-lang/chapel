@@ -25,3 +25,8 @@ typedef fancyStruct renamedFancy;
 fancyStruct retStruct(my_int a, my_int b, renamedStruct r);
 
 void tdPointer(fancyStruct* a, renamedStruct** b);
+
+typedef struct {
+  int i;
+  char c;
+} *recp;
