@@ -971,8 +971,12 @@ static void printStuff(const char* argv0) {
 
   if( fPrintChplSettings ) {
     char buf[FILENAME_MAX+1] = "";
+    printf("CHPL_HOME: %s\n", CHPL_HOME);
+    printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB);
+    printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
+    printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
+    printf("\n");
     snprintf(buf, FILENAME_MAX, "%s/util/printchplenv", CHPL_HOME);
-    printf("Running %s\n", buf);
     int status = mysystem(buf, "running printchplenv", false);
     clean_exit(status);
   }
