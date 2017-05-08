@@ -51,7 +51,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
     chpl_memcpy(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_cache_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_GET
@@ -98,7 +98,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
     chpl_memcpy(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_cache_comm_put(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_PUT
@@ -118,7 +118,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
+    chpl_cache_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_GET_STRD
@@ -138,7 +138,7 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, ln, fn);
+    chpl_cache_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, typeIndex, commID, ln, fn);
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_PUT_STRD
