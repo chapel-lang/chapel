@@ -39,7 +39,7 @@
 // Note: Macros starting with CHPL_COMM involve some kind of communication
 //
 
-#define CHPL_UNKNOWN_COMM_ID -1
+#define CHPL_COMM_UNKNOWN_ID -1
 
 
 static inline

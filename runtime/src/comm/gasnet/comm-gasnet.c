@@ -370,7 +370,7 @@ static void fork_large_wrapper(large_fork_task_t* f) {
   // GET the bundle data
   // TODO: This could get only the payload
   chpl_comm_get(arg, caller, arg_on_caller, bundle_size_on_caller,
-                -1 /*typeIndex: unused*/, CHPL_UNKNOWN_COMM_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
+                -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Call the on body function
   chpl_ftable_call(fid, arg);
@@ -453,7 +453,7 @@ static void fork_nb_large_wrapper(large_fork_task_t* f) {
 
   // GET the bundle data
   chpl_comm_get(arg, caller, arg_on_caller, bundle_size_on_caller,
-                -1 /*typeIndex: unused*/, CHPL_UNKNOWN_COMM_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
+                -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Signal that the allocated region can be freed
   GASNET_Safe(gasnet_AMRequestShort2(caller, FREE,
@@ -919,7 +919,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, CHPL_UNKNOWN_COMM_ID, 0, 0);
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
     }
   }
 }

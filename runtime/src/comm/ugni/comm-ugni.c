@@ -6229,7 +6229,7 @@ void chpl_comm_statsReport(chpl_bool32 sum_over_locales)
     sum = chpl_comm_pstats;
     for (int li = 0; li < chpl_numNodes; li++) {
       if (li != chpl_nodeID) {
-        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), -1, CHPL_UNKNOWN_COMM_ID, 0, -1);
+        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
 #define _PSV_SUM(psv) sum.psv += ps.psv;
         PERFSTATS_DO_ALL(_PSV_SUM);
 #undef _PSV_SUM
