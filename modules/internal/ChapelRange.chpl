@@ -151,10 +151,6 @@ module ChapelRange {
     proc strType type  return indexToStrideType(idxType);
     inline proc low  return _low;
     inline proc high return _high;
-    inline proc stride       where stridable  return _stride;
-           proc stride param where !stridable return 1 : strType;
-    inline proc alignment return _alignment;
-    inline proc aligned   return _aligned;
   
     // TODO: hilde 2011/03/31
     // This should be a pragma and not a var declaration.  
@@ -270,7 +266,18 @@ module ChapelRange {
   proc range.hasHighBound() param
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedHigh;
-  
+
+  /* Returns the stride of the range */
+  inline proc range.stride where stridable  return _stride;
+  pragma "no doc"
+  proc range.stride param where !stridable return 1 : strType;
+
+  /* Returns the alignment of the range */
+  inline proc range.alignment return _alignment;
+
+  /* Returns true if the range is aligned */
+  inline proc range.aligned   return _aligned;
+
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
     if ! stridable then return _low;
