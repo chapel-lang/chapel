@@ -264,4 +264,7 @@ AggregateType* computeTupleWithIntent(IntentTag intent, Type* t);
 
 bool evaluateWhereClause(FnSymbol* fn);
 
+
+bool isAutoDestroyedVariable(Symbol* sym);
+
 #endif
