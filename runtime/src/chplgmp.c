@@ -63,6 +63,7 @@ void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from) {
                     from._mp_d,
                     sizeof(mp_limb_t) * ret[0]._mp_alloc,
                     CHPL_TYPE_uint64_t,
+                    CHPL_COMM_UNKNOWN_ID,
                     0,
                     0);
 }
