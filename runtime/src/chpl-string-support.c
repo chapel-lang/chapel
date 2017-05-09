@@ -77,22 +77,6 @@ c_string_copy chpl_format(c_string format, ...) {
 }
 
 
-//
-// We need an allocator for the rest of the code, but for the user
-// program it needs to be a locale-aware one with tracking, while for
-// the launcher the regular system one will do.
-//
-static inline void*
-chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
-                 int32_t lineno, int32_t filename) {
-#ifndef LAUNCHER
-  return chpl_mem_alloc(size, description, lineno, filename);
-#else
-  return malloc(size);
-#endif
-}
-
-
 c_string_copy
 string_copy(c_string x, int32_t lineno, int32_t filename)
 {
@@ -102,8 +86,8 @@ string_copy(c_string x, int32_t lineno, int32_t filename)
   if (x == NULL)
     return NULL;
 
-  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STR_COPY_DATA,
-                              lineno, filename);
+  z = (char*)chpl_mem_allocMany(1, strlen(x)+1, CHPL_RT_MD_STR_COPY_DATA,
+                                lineno, filename);
   return strcpy(z, x);
 }
 
@@ -122,9 +106,9 @@ string_concat(c_string x, c_string y, int32_t lineno, int32_t filename) {
   xlen = strlen(x);
   ylen = strlen(y);
 
-  z = (char*)chpltypes_malloc(xlen + ylen + 1,
-                              CHPL_RT_MD_STR_CONCAT_DATA,
-                              lineno, filename);
+  z = (char*)chpl_mem_allocMany(1, xlen + ylen + 1,
+                                CHPL_RT_MD_STR_CONCAT_DATA,
+                                lineno, filename);
 
   // memcpy can be more efficient than the str??? functions because it does not
   // look for terminating NUL characters.  We are guaranteed that the source
@@ -159,8 +143,8 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t
   if (high < low) return NULL;
 
   size = high - low + 1;
-  result = chpltypes_malloc(size + 1, CHPL_RT_MD_STR_SELECT_DATA,
-                            lineno, filename);
+  result = chpl_mem_allocMany(1, size + 1, CHPL_RT_MD_STR_SELECT_DATA,
+                              lineno, filename);
   src = stride > 0 ? x + low - 1 : x + high - 1;
   dst = result;
   if (stride == 1) {
@@ -191,8 +175,8 @@ string_index(c_string x, int i, int32_t lineno, int32_t filename) {
   {
     return NULL;
   }
-  buffer = chpltypes_malloc(2, CHPL_RT_MD_STR_COPY_DATA,
-                            lineno, filename);
+  buffer = chpl_mem_allocMany(1, 2, CHPL_RT_MD_STR_COPY_DATA,
+                              lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
   return buffer;
 }

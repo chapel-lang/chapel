@@ -249,14 +249,14 @@ size_t chpl_mem_localizationThreshold(void) {
 
 #else // LAUNCHER
 
-#include <stdlib.h>
+#include "chpl-mem-sys.h"
 #include "arg.h"
 
 #define chpl_mem_allocMany(number, size, description, lineno, filename)        \
-  malloc((number)*(size))
+  sys_malloc((number)*(size))
 
 #define chpl_mem_free(ptr, lineno, filename)        \
-  free(ptr)
+  sys_free(ptr)
 
 #endif // LAUNCHER
 
