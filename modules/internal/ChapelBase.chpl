@@ -1510,6 +1510,14 @@ module ChapelBase {
     return __primitive("%", a, b);
   }
 
+  // TODO: No longer necessary once param coercion for uints is improved
+  inline proc %(param a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
   inline proc %(a: int(64), param b: int(64)) {
     if b == 0 then compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
