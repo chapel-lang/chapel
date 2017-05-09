@@ -149,8 +149,6 @@ module ChapelRange {
     var _aligned : bool = false;
 
     proc strType type  return indexToStrideType(idxType);
-    inline proc low  return _low;
-    inline proc high return _high;
   
     // TODO: hilde 2011/03/31
     // This should be a pragma and not a var declaration.  
@@ -289,6 +287,14 @@ module ChapelRange {
     if ! stridable then return _high;
     else return if stride > 0 then this.alignedHigh else this.alignedLow;
   }
+
+  /* Return the range's low bound. If the range does not have a low
+     bound the behavior is undefined. */
+  inline proc range.low  return _low;
+
+  /* Return the range's high bound. If the range does not have a high
+     bound the behavior is undefined. */
+  inline proc range.high return _high;
 
   /* Returns the range's aligned low bound. If the aligned low bound is
      undefined (does not exist), the behavior is undefined.
