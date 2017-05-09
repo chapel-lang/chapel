@@ -424,6 +424,25 @@ OPTIONS
     example, they might be able to hoist a 'get' out of a loop. See
     $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
+**--llvm-print-ir <name>**
+    Print intermediate representation (IR) of function named <name>. 
+    Need to specify stage using  **--llvm-print-ir-stage** in order 
+    to be printed.
+
+**--llvm-print-ir-stage <stage>**
+    Picks stage from which to print LLVM IR of function defined in 
+    **--llvm-print-ir**. 
+    The chapel compiler runs many different optimization passes each of which
+    can change IR of functions. This option allows one to pick IR of function
+    from some stages of optimization.
+    There are 3 optimization stages: none, basic, full:
+    1. 'none' is stage before any optimization has occured
+    2. 'basic' is stage where basic optimizations occurs.
+    3. 'full' is stage where all kinds of optimization occurs, these consist
+           of very big optimizations executed by chapel compiler on LLVM IR.
+    Note that sometimes function might not be printed, for example when
+    one optimization pass notes that function is unused and decides to remove it.
+
 *Compilation Trace Options*
 
 **--[no-]print-commands**

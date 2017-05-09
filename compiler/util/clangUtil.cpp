@@ -1996,6 +1996,11 @@ void makeBinaryLLVM(void) {
   }
 
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+
+#ifdef HAVE_LLVM
+  if(llvmStageNum::FULL == llvmPrintIrStageNum)
+      printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
+#endif
 }
 
 #endif

@@ -60,6 +60,47 @@
 *                                                                   *
 ********************************* | ********************************/
 
+char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
+char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
+const char *llvmPrintIrCName;
+llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+const char* llvmStageName[llvmStageNum::LAST] = {
+  "", //llvmStageNum::NOPRINT
+  "none", //llvmStageNum::NONE
+  "basic", //llvmStageNum::BASIC
+  "full", //llvmStageNum::FULL
+};
+
+const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum) {
+  if(stageNum < llvmStageNum::LAST)
+    return llvmStageName[stageNum];
+  else
+    return NULL;
+}
+
+llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
+  for(int i = 0; i < llvmStageNum::LAST; i++)
+    if(strcmp(llvmStageName[i], stageName) == 0)
+      return static_cast<llvmStageNum_t>(i);
+  return llvmStageNum::NOPRINT;
+}
+
+#ifdef HAVE_LLVM
+void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage) {
+  if(func) {
+    llvm::raw_os_ostream stdOut(std::cout);
+    std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
+              << " function after " << llvmStageNameFromLlvmStageNum(numStage) << " optimization stage";
+    func->print(stdOut);
+  }
+}
+#endif
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -1218,6 +1259,10 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     func = getFunctionLLVM(cname);
 
+    if(llvmPrintIrStageNum != llvmStageNum::NOPRINT
+            && strcmp(llvmPrintIrName, name) == 0)
+        llvmPrintIrCName = cname;
+
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 
@@ -1295,11 +1340,19 @@ void FnSymbol::codegenDef() {
         INT_FATAL("LLVM function verification failed");
       }
     }
+
+    if(llvmPrintIrStageNum == llvmStageNum::NONE
+            && strcmp(llvmPrintIrName, name) == 0)
+        printLlvmIr(func, llvmStageNum::NONE);
+
     // Now run the optimizations on that function.
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
     info->FPM_postgen->run(*func);
+    if(llvmPrintIrStageNum == llvmStageNum::BASIC
+            && strcmp(llvmPrintIrName, name) == 0)
+        printLlvmIr(func, llvmStageNum::BASIC);
 #endif
   }
 
