@@ -27,6 +27,28 @@
 
 #include <algorithm>
 
+#ifdef HAVE_LLVM
+namespace
+{
+  llvm::MDNode* addLoopVectorizationHint(llvm::Instruction* instruction)
+  {
+    GenInfo* info                  = gGenInfo;
+    auto &C                        = info->module->getContext();
+    llvm::ArrayRef<llvm::Metadata*> loopVectorizeEnable({llvm::MDString::get(C, "llvm.loop.vectorize.enable"), llvm::ValueAsMetadata::get(llvm::ConstantInt::getTrue(C))});
+    llvm::MDTuple*                  loopVectorizeEnableMetadata = llvm::MDNode::get(C, loopVectorizeEnable);
+
+    //Try to make cyclic reference to itself, since that's how llvm.loop parameters are supposed to be passed
+    llvm::TempMDTuple dummy        = llvm::MDNode::getTemporary(C, {});
+    llvm::ArrayRef<llvm::Metadata*> MDs({dummy.get(), loopVectorizeEnableMetadata});
+    llvm::MDNode* llvmLoopMetadata = llvm::MDNode::get(C, MDs);
+
+    dummy->replaceAllUsesWith(llvmLoopMetadata);
+    instruction->setMetadata(llvm::StringRef("llvm.loop"), llvmLoopMetadata);
+    return llvmLoopMetadata;
+  }
+}
+#endif
+
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
@@ -154,7 +176,19 @@ GenRet CForLoop::codegen()
                                                FNAME("condition"));
 
     // Create the conditional branch
-    info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+    llvm::Instruction* endLoopBranch = info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+
+    if(fNoVectorize == false && isOrderIndependent())
+    {
+        llvm::MDNode* llvmLoopMetadata = addLoopVectorizationHint(endLoopBranch);
+        for(auto it = blockStmtBody->begin(); it != blockStmtBody->end(); it++)
+        {
+            if(it->mayReadOrWriteMemory())
+            {
+                it->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), llvmLoopMetadata);
+            }
+        }
+    }
 
     func->getBasicBlockList().push_back(blockStmtEnd);
 
