@@ -435,13 +435,17 @@ OPTIONS
     The chapel compiler runs many different optimization passes each of which
     can change IR of functions. This option allows one to pick IR of function
     from some stages of optimization.
+
     There are 3 optimization stages: none, basic, full:
+
     1. 'none' is stage before any optimization has occured
     2. 'basic' is stage where basic optimizations occurs.
     3. 'full' is stage where all kinds of optimization occurs, these consist
-           of very big optimizations executed by chapel compiler on LLVM IR.
+        of very big optimizations executed by chapel compiler on LLVM IR.
+
     Note that sometimes function might not be printed, for example when
-    one optimization pass notes that function is unused and decides to remove it.
+    one optimization pass notes that function is unused and decides to remove
+    it.
 
 *Compilation Trace Options*
 
