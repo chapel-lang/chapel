@@ -5701,9 +5701,7 @@ void do_fork_post(int locale,
     // it's mapped, and give the target locale that instead of the one
     // on our stack.
     //
-    // This happens when comm=ugni is used with tasks=fifo.  Tasks use
-    // the pthread stack, which is allocated by the pthreads library
-    // directly from malloc(), and thus isn't mapped.
+    // This can happen if task stacks aren't in the registered heap.
     //
     mem_region_t* rf_done_mr;
 
