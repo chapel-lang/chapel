@@ -430,8 +430,8 @@ AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
       // to the generic fields, and that they will gain substitutions in order.
       // Bad things will happen if this assumption is violated
       SymExpr* valSe = val->firstSymExpr();
-      instantiation = this->getInstantiation(valSe,
-                                             instantiation->genericField);
+      instantiation = instantiation->getInstantiation(valSe,
+                                                      instantiation->genericField);
     }
   }
 
