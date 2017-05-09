@@ -15,8 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Suppress warning about variables used before defined
-CRAYPE_GEN_CFLAGS = -hnomessage=7212
+# Suppress warnings:
+# 7212: Suppress warning about variables used before defined
+# 167:  Suppress warning about pointer mismatches (required by 'c_fn_ptr')
+CRAYPE_GEN_CFLAGS = -hnomessage=7212:167
 
 # Suppress warnings about unsigned ints being compared to 0
 CRAYPE_GEN_CFLAGS += -hnomessage=186
