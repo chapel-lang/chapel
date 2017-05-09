@@ -4177,6 +4177,19 @@ static void resolveMove(CallExpr* call) {
     rhsType = resolveTypeAlias(toSymExpr(rhs));
   }
 
+  if (rhsType == dtVoid) {
+    if (CallExpr* rhsCall = toCallExpr(rhs)) {
+      if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
+        if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
+          USR_FATAL(userCall(call),
+                    "illegal use of function that does not "
+                    "return a value: '%s'",
+                    rhsFn->name);
+        }
+      }
+    }
+  }
+
   // This is a workaround for problems where the _iterator
   // in buildForLoopExpr would be an _array instead of a ref(_array)
   // in 4-init-array-forexpr.chpl. This could be improved with
