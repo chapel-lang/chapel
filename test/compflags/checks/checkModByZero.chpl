@@ -53,10 +53,6 @@ select testExecCases {
   when 4 do
     rec1 %= rec0;
 
-  //proc %(param a: uint(64), b: uint(64))
-  when 5 do
-    writeln(10 % udenom);
-
   otherwise do
     halt('No tests run');
 }

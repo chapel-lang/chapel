@@ -1,1 +1,1 @@
-checkModByZero.chpl:50: error: halt reached - Attempt to divide by zero
+checkModByZero.chpl:50: error: halt reached - Attempt to compute a modulus by zero

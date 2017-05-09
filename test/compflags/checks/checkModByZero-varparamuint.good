@@ -1,1 +1,1 @@
-checkModByZero.chpl:32: error: Attempt to divide by zero
+checkModByZero.chpl:32: error: Attempt to compute a modulus by zero
