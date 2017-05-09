@@ -138,6 +138,12 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
           break;
       }
       break;
+    case NUM_KIND_COMMID:
+      ret = llvm::ConstantInt::get(
+          llvm::Type::getInt64Ty(info->module->getContext()),
+          i->commid_value(),
+          true);
+      break;
     case NUM_KIND_INT:
       switch(i->num_index) {
         case INT_SIZE_8:
