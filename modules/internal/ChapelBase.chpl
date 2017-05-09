@@ -310,26 +310,24 @@ module ChapelBase {
   inline proc %(a: int(?w), b: int(w)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
-        halt("Attempt to divide by zero");
+        halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
   inline proc %(a: uint(?w), b: uint(w)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
-        halt("Attempt to divide by zero");
+        halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 
   inline proc %(param a: int(?w), param b: int(w)) param {
-    if (chpl_checkDivByZero) then
-      if b == 0 then
-        compilerError("Attempt to divide by zero");
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
   inline proc %(param a: uint(?w), param b: uint(w)) param {
-    if (chpl_checkDivByZero) then
-      if b == 0 then
-        compilerError("Attempt to divide by zero");
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 
@@ -1306,9 +1304,6 @@ module ChapelBase {
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs:real(?w), rhs:real(w)) {
-    if (chpl_checkDivByZero) then
-      if rhs == 0.0 then
-        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
   inline proc /=(ref lhs, rhs) {
@@ -1317,18 +1312,18 @@ module ChapelBase {
 
   inline proc %=(ref lhs:int(?w), rhs:int(w)) {
     if (chpl_checkDivByZero) then
-      if rhs == 0:int(w) then
-        halt("Attempt to divide by zero");
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:uint(?w), rhs:uint(w)) {
     if (chpl_checkDivByZero) then
-      if rhs == 0:uint(w) then
-        halt("Attempt to divide by zero");
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs, rhs) {
-      lhs = lhs % rhs;
+    lhs = lhs % rhs;
   }
 
   //
@@ -1511,7 +1506,12 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline proc %(a: uint(64), param b: uint(64)) {
-    if b == 0 then compilerError("Attempt to divide by zero");
+    if b == 0 then compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
+  inline proc %(a: int(64), param b: int(64)) {
+    if b == 0 then compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 
