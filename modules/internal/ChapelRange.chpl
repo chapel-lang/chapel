@@ -105,8 +105,7 @@ module ChapelRange {
    */
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
-  pragma "no doc"
-  /*private*/ proc indexToStrideType(type idxType) type  return chpl__signedType(idxType);
+  private proc indexToStrideType(type idxType) type  return chpl__signedType(idxType);
   
   //
   // range type
@@ -456,7 +455,7 @@ module ChapelRange {
 
   // This helper takes one arg by 'in', i.e. explicitly creating a copy,
   // so it can be modified.
-  /* private */ inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
+  private inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
     compilerAssert(arg2.stridable);
     arg2._stride = -arg2._stride;
     return arg2 == arg1(arg2);
@@ -621,8 +620,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //#
   
   // Moves the low bound of the range up to the next alignment point.
-  pragma "no doc"
-  /* private */ proc range.alignLow() 
+  private proc range.alignLow() 
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignLow -- Cannot be applied to a range with ambiguous alignment.");
@@ -632,8 +630,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
   
   // Moves the high bound of the range down to the next alignment point.
-  pragma "no doc"
-  /* private */ proc range.alignHigh()
+  private proc range.alignHigh()
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignHigh -- Cannot be applied to a range with ambiguous alignment.");
