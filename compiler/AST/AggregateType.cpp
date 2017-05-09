@@ -352,6 +352,13 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
         at->substitutions.get(field) == t->symbol()) {
       return at;
     }
+    if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
+        !field->hasFlag(FLAG_PARAM) &&
+        isTypeExpr(t)) {
+      if (field->type == t->typeInfo()) {
+        return at;
+      }
+    }
   }
   // Otherwise, we need to create an instantiation for that type
   AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
@@ -434,6 +441,7 @@ AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
                                                       instantiation->genericField);
     }
   }
+  instantiation->instantiatedFrom = this;
 
   return instantiation;
 }
