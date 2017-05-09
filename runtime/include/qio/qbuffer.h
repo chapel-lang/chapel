@@ -498,8 +498,9 @@ extern "C" {
 
 static inline char* qio_strdup(const char* ptr)
 {
-  char* ret = (char*) qio_malloc(strlen(ptr)+1);
-  if( ret ) strcpy(ret, ptr);
+  size_t len = strlen(ptr) + 1;
+  char* ret = (char*) qio_malloc(len);
+  if( ret ) qio_memcpy(ret, ptr, len);
   return ret;
 }
 

@@ -498,8 +498,8 @@ char* get_locale_name(char *loc)
   int len = strcspn (loc, keys);
   ret = (char*) qio_malloc(len+1);
   if (ret) {
-    ret[len] = '\0';
     qio_memcpy(ret, loc, len);
+    ret[len] = '\0';
   }
   return ret;
 }
