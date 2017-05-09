@@ -29,7 +29,7 @@ select testParamCases {
 
   //proc %(a: uint(64), param b: uint(64))
   when 3 do
-    writeln(unum % (0:uint));
+    writeln(unum % 0);
 }
 
 select testExecCases {
@@ -55,7 +55,7 @@ select testExecCases {
 
   //proc %(param a: uint(64), b: uint(64))
   when 5 do
-    writeln((10:uint) % udenom);
+    writeln(10 % udenom);
 
   otherwise do
     halt('No tests run');
