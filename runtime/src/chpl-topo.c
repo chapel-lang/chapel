@@ -23,6 +23,7 @@
 #include "chplrt.h"
 
 #include "chpl-align.h"
+#include "chpl-env-gen.h"
 #include "chplcgfns.h"
 #include "chplsys.h"
 #include "chpl-topo.h"
@@ -37,6 +38,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#if defined(CHPL_HWLOC_HWLOC) || defined(CHPL_HWLOC_SYSTEM)
+#define CHPL_HAS_HWLOC
+#endif
 
 #ifdef CHPL_HAS_HWLOC
 //
