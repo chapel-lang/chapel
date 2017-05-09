@@ -497,7 +497,6 @@ CHPL_HWLOC
        Value    Description
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
-       system   use a system install of hwloc (but see note below)
        hwloc    use the hwloc distribution bundled with Chapel in third-party
        ======== ==============================================================
 
@@ -509,11 +508,12 @@ CHPL_HWLOC
    and rebuild (and please file a bug with the Chapel team.) Note that
    building without hwloc will have a negative impact on performance.
 
-   .. note::
-     Using CHPL_HWLOC=system is not regularly tested and may not work
-     for you. Chapel depends on hwloc features that are not available in
-     all versions. For best results, we recommend using the bundled hwloc
-     if possible.
+   .. (comment) CHPL_HWLOC=system is also available but it is only
+       intended to support packaging.
+       Using CHPL_HWLOC=system is not regularly tested and may not work
+       for you. Chapel depends on hwloc features that are not available in
+       all versions. For best results, we recommend using the bundled hwloc
+       if possible.
 
 .. _readme-chplenv.CHPL_REGEXP:
 
