@@ -414,6 +414,30 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   return newInstance;
 }
 
+AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
+                                                    FnSymbol* fn) {
+  INT_ASSERT(this->symbol->hasFlag(FLAG_GENERIC));
+
+  if (this->genericField == 0) {
+    setNextGenericField();
+  }
+
+  AggregateType* instantiation = this;
+
+  for_formals(formal, fn) {
+    if (Symbol* val = subs.get(formal)) {
+      // Assumes that the type constructor arguments will correspond directly
+      // to the generic fields, and that they will gain substitutions in order.
+      // Bad things will happen if this assumption is violated
+      SymExpr* valSe = val->firstSymExpr();
+      instantiation = this->getInstantiation(valSe,
+                                             instantiation->genericField);
+    }
+  }
+
+  return instantiation;
+}
+
 
 int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
