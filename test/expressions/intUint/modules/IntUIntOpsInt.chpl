@@ -1,0 +1,17 @@
+module IntUIntOpsInt {
+  config param safeCast = true;
+
+  proc +(x: int, y: uint) {
+    if safeCast then
+      return x + y.safeCast(int);
+    else
+      return x + y:int;
+  }
+
+  proc +(x: uint, y: int) {
+    if safeCast then
+      return x.safeCast(int) + y;
+    else
+      return x:int + y;
+  }
+}

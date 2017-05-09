@@ -1395,7 +1395,9 @@ module ChapelBase {
   // permitting the user to define their own overloads (or 'use'
   // a module which does).
   //
+  pragma "compiler generated"
   inline proc +(a: uint(64), b: int(64)) { _throwOpError("+"); }
+  pragma "compiler generated"
   inline proc +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
   //
