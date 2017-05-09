@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.6</span>
+   &#160;<span id="projectnumber">1.11.7</span>
    </div>
   </td>
  </tr>
@@ -249,7 +249,10 @@ How do I find the local MCDRAM NUMA node on Intel Knights Landing Xeon Phi?</h2>
 <p>The DDR memory is the local NUMA node above cores as usual. Allocating memory from one core to its local NUMA node will therefore actually allocate it on the normal memory by default.</p>
 <p>The local high-bandwidth MCDRAM is the second NUMA node (without any Core or PU below it). It is the next sibling of the local DDR NUMA node below the same parent object. To allocate on the faster MCDRAM, one should first find the local NUMA node (the DDR memory, by looking up parent objects), and then take the next sibling to reach the local MCDRAM NUMA node (if any).</p>
 <p>The MCDRAM NUMA nodes may also be identified thanks to the <code>Type</code> info attribute which is set to <code>MCDRAM</code>.</p>
-<h2><a class="anchor" id="faq_knl_dump"></a>
+<p>Command-line tools such as <code>hwloc-bind</code> may bind memory on the MCDRAM by using the <em>hbm</em> keyword. For instance, to bind on the first MCDRAM NUMA node:</p>
+<pre class="fragment">$ hwloc-bind --membind --hbm numa:0 -- myprogram
+$ hwloc-bind --membind numa:0 -- myprogram
+</pre><h2><a class="anchor" id="faq_knl_dump"></a>
 Why do I need hwloc-dump-hwdata for memory on Intel Knights Landing Xeon Phi?</h2>
 <p>Intel Knights Landing Xeon Phi processors may use the on-package memory (MCDRAM) as either memory or a memory-side cache (currently reported as a L3 cache by hwloc). There are also several clustering modes that significantly affect the memory organization (see <a class="el" href="a00335.html#faq_knl_numa">How do I find the local MCDRAM NUMA node on Intel Knights Landing Xeon Phi?</a> for more information about these modes). Details about these are currently only available to privileged users.</p>
 <p>The hwloc-dump-hwdata utility may be used to dump this privileged binary information into human-readable and world-accessible files that the hwloc library will later load. The utility should usually run as root once during boot, in order to update dumped information (stored under /var/run/hwloc by default) in case the MCDRAM or clustering configuration changed between reboots.</p>

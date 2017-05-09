@@ -1,7 +1,7 @@
 /*
  * Copyright © 2009 CNRS
  * Copyright © 2009-2017 Inria.  All rights reserved.
- * Copyright © 2009-2010, 2014 Université Bordeaux
+ * Copyright © 2009-2010, 2014, 2017 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -212,6 +212,7 @@ x11_init(void *_disp)
   int scr;
   Screen *screen;
   int screen_width, screen_height;
+  unsigned int dpi_x, dpi_y, dpi;
 
   /* create the toplevel window */
   if (!(dpy = XOpenDisplay(NULL))) {
@@ -222,6 +223,15 @@ x11_init(void *_disp)
   disp->dpy = dpy;
   disp->scr = scr = DefaultScreen(dpy);
   screen = ScreenOfDisplay(dpy, scr);
+
+  /* 25.4mm per inch */
+  dpi_x = ((double) DisplayWidth(dpy, scr) * 25.4) / DisplayWidthMM(dpy, scr);
+  dpi_y = ((double) DisplayHeight(dpy, scr) * 25.4) / DisplayHeightMM(dpy, scr);
+  dpi = (dpi_x + dpi_y) / 2;
+
+  /* Original values for fontsize/gridsize were tuned for 96dpi */
+  fontsize = (fontsize * dpi) / 96;
+  gridsize = (gridsize * dpi) / 96;
 
   /* compute the maximal needed size using the root window */
   root = RootWindow(dpy, scr);

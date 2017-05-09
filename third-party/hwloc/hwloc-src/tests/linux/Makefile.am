@@ -55,6 +55,8 @@ sysfs_outputs = \
 		48amd64-4d2n6c-sparse.output \
 		64amd64-4s2n4ca2co.output \
 		64fake-4n2s2ca2c2t.output \
+		64intel64-fakeKNL-A2A-cache.output \
+		64intel64-fakeKNL-SNC4-hybrid.output \
 		96em64t-4n4d3ca2co.output \
 		96em64t-4n4d3ca2co-forcecpuinfo.output \
 		128ia64-17n4s2c.output \
@@ -115,6 +117,8 @@ sysfs_tarballs = \
 		48amd64-4d2n6c-sparse.tar.bz2 \
 		64amd64-4s2n4ca2co.tar.bz2 \
 		64fake-4n2s2ca2c2t.tar.bz2 \
+		64intel64-fakeKNL-A2A-cache.tar.bz2 \
+		64intel64-fakeKNL-SNC4-hybrid.tar.bz2 \
 		96em64t-4n4d3ca2co.tar.bz2 \
 		96em64t-4n4d3ca2co-forcecpuinfo.source \
 		128ia64-17n4s2c.tar.bz2 \

@@ -640,6 +640,8 @@ sysfs_outputs = \
 		48amd64-4d2n6c-sparse.output \
 		64amd64-4s2n4ca2co.output \
 		64fake-4n2s2ca2c2t.output \
+		64intel64-fakeKNL-A2A-cache.output \
+		64intel64-fakeKNL-SNC4-hybrid.output \
 		96em64t-4n4d3ca2co.output \
 		96em64t-4n4d3ca2co-forcecpuinfo.output \
 		128ia64-17n4s2c.output \
@@ -701,6 +703,8 @@ sysfs_tarballs = \
 		48amd64-4d2n6c-sparse.tar.bz2 \
 		64amd64-4s2n4ca2co.tar.bz2 \
 		64fake-4n2s2ca2c2t.tar.bz2 \
+		64intel64-fakeKNL-A2A-cache.tar.bz2 \
+		64intel64-fakeKNL-SNC4-hybrid.tar.bz2 \
 		96em64t-4n4d3ca2co.tar.bz2 \
 		96em64t-4n4d3ca2co-forcecpuinfo.source \
 		128ia64-17n4s2c.tar.bz2 \
@@ -1347,6 +1351,20 @@ recheck: all
 64fake-4n2s2ca2c2t.output.log: 64fake-4n2s2ca2c2t.output
 	@p='64fake-4n2s2ca2c2t.output'; \
 	b='64fake-4n2s2ca2c2t.output'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+64intel64-fakeKNL-A2A-cache.output.log: 64intel64-fakeKNL-A2A-cache.output
+	@p='64intel64-fakeKNL-A2A-cache.output'; \
+	b='64intel64-fakeKNL-A2A-cache.output'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+64intel64-fakeKNL-SNC4-hybrid.output.log: 64intel64-fakeKNL-SNC4-hybrid.output
+	@p='64intel64-fakeKNL-SNC4-hybrid.output'; \
+	b='64intel64-fakeKNL-SNC4-hybrid.output'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2016 Inria.  All rights reserved.
+.\" Copyright © 2009-2017 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
@@ -24,7 +24,6 @@ hwloc-info \- Show some information about some objects or about a topology or ab
 Note that hwloc(7) provides a detailed explanation of the hwloc system
 and of valid <object> formats;
 it should be read before reading this man page.
-.
 .\" **************************
 .\"    Options Section
 .\" **************************
@@ -80,6 +79,12 @@ about all its ancestors up to the root of the topology.
 .TP
 \fB\-\-ancestor\fR <type>
 Only display the object ancestors that match the given type.
+.TP
+\fB\-\-children\fR
+Display information about the object children.
+.TP
+\fB\-\-descendants\fR <type>
+Display information about the object descendants that match the given type.
 .TP
 \fB\-n\fR
 When outputting object information, prefix each line with the index
