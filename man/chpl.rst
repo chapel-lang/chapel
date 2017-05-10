@@ -278,8 +278,8 @@ OPTIONS
 
 **--[no-]div-by-zero-checks**
 
-    Enable [disable] run-time checks in integer division routines to
-    guard against dividing by zero.
+    Enable [disable] run-time checks in integer division and modulus operations
+    to guard against dividing by zero.
 
 **--[no-]formal-domain-checks**
 
