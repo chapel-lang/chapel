@@ -23,8 +23,6 @@
 #include <stdint.h>
 #include "chpltypes.h"
 
-extern void** chpl_privateObjects;
-
 void chpl_privatization_init(void);
 
 void chpl_newPrivatizedClass(void*, int64_t);
@@ -32,6 +30,7 @@ void chpl_newPrivatizedClass(void*, int64_t);
 // Implementation is here for performance: getPrivatizedClass can be called
 // frequently, so putting it in a header allows the backend to fully optimize.
 static inline void* chpl_getPrivatizedClass(int64_t i) {
+  extern void** chpl_privateObjects;
   return chpl_privateObjects[i];
 }
 
