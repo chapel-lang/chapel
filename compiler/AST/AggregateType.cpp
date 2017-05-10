@@ -353,8 +353,7 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
       return at;
     }
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !field->hasFlag(FLAG_PARAM) &&
-        isTypeExpr(t)) {
+        !field->hasFlag(FLAG_PARAM)) {
       if (field->type == t->typeInfo()) {
         return at;
       }
