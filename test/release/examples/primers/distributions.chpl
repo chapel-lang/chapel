@@ -34,6 +34,8 @@ config const n = 8;
 //
 const Space = {1..n, 1..n};
 
+// Block (and distribution basics)
+// -------------------------------
 //
 // The ``Block`` distribution distributes a bounding box from
 // n-dimensional space across the target locale array viewed as an
@@ -141,6 +143,8 @@ for (L, ML) in zip(BA2.targetLocales(), MyLocales) do
 
 
 
+// Cyclic
+// ------
 //
 // Next, we'll perform a similar computation for the ``Cyclic`` distribution.
 // Cyclic distributions start at a designated n-dimensional index and
@@ -173,7 +177,8 @@ on Locales[0] {
   }
 }
 
-
+// Block-Cyclic
+// ------------
 //
 // Next, we'll use a ``BlockCyclic`` distribution.  Block-Cyclic
 // distributions also deal out indices in a round-robin fashion,
@@ -233,40 +238,61 @@ verifyID(BCA);
 //
 verifyID(BA);
 
-
+// Replicated
+// ----------
 //
-// The ``ReplicatedDist`` distribution is different: each of the
-// original domain's indices - and the corresponding array elements -
-// is replicated onto each locale. (Note: consistency among these
-// array replicands is NOT maintained automatically.)
+// The ``ReplicatedDist`` distribution is different from the previous
+// cases: each of the original domain's indices is replicated onto
+// each locale, as are the corresponding array elements.  For example,
+// a domain ``{1..3}`` distributed using ``ReplicatedDist`` will store
+// three indices per locale that the distribution is targeting (by
+// default, all of them).  Similarly, an array declared over that
+// domain will store three elements per locale.  Each locale's copy of
+// the domain or array is known as its *replicand*.
 //
-// This replication is observable in some cases but not others, as
-// shown below.  In places this example uses a utility function,
-// writeReplicands() to have each locale print its copy of the array.
+// Consistency among these array replicands is NOT maintained
+// automatically; users who want a replicated array to store the same
+// values on every target locale will have to manage that consistency
+// themselves.
+//
+// In general, operations on replicated domains and arrays only refer
+// the local replicand.  The primary exception to this rule is the
+// re-assignment of a replicated domain's indices.  In this case, the
+// copy of the domain on each locale will be updated (and any arrays
+// over the domain will be reallocated on each locale).
+//
+// Here's a declaration of a replicated domain and array:
 //
 const ReplicatedSpace = Space dmapped ReplicatedDist();
 var RA: [ReplicatedSpace] int;
 
 // Queries about the size of a replicated domain or array will return
 // the size per locale:
+//
 writeln("Replicated Array Index Map, ", RA.numElements, " elements per locale");
 
-// This loop-based assignment will only affect the copy of 'RA' on the
-// locale on which it's running (the last locale, in this example).
-// All other copies will remain uninitialized.
-
+//
+// The following loop-based assignment to `RA` only affects the copy
+// of 'RA' on the locale on which it's running (the last locale, in
+// this example).  All other copies will remain in their
+// default-initialized form.
+//
 on Locales[numLocales-1] do
   forall ra in RA do
     ra = here.id;
 
-// In printing the array, only the local copy will be printed.
+//
+// Similarly, when reading the array, only the local copy will be
+// accessed.  Thus, when running on more than one locale, the
+// following writeln() will not see the modification performed by the
+// loop above since the two statements executed on distinct locales:
+//
 writeln("Locale 0's copy of RA is:\n", RA);
 
-// So, we'll use a utility function can be used to print the other
-// locales' copies:
-writeReplicands(RA);
-writeln();
-
+//
+// In order to see the replicands owned by all the locales, let's
+// define and call a little utility function:
+//
 proc writeReplicands(X) {
   for loc in Locales {
     on loc {
@@ -276,42 +302,50 @@ proc writeReplicands(X) {
   }
 }
 
-//
-// Whole-array assignment is similarly local only to the current
-// locale's copy of the array.
-//
-var A: [Space] int = [(i,j) in Space] i*100 + j;
-RA = A;
-writeln("Replicated Array after being array-assigned into");
 writeReplicands(RA);
 writeln();
 
-// Have each locale assign its local copy of RA:
+//
+// Whole-array assignment is similarly local only to the current
+// locale's copy of the array:
+//
+var A: [Space] int = [(i,j) in Space] i*100 + j;
+RA = A;
+writeln("Replicated Array after whole-array assignment:");
+writeReplicands(RA);
+writeln();
+
+//
+// Here, we have each locale update its own copy of `RA` to store its
+// locale ID, which results in a modification to each replicand:
+//
 coforall loc in Locales do
   on loc do
     RA = here.id;
+writeln("Replicated Array after assigning on each locale:");
+writeReplicands(RA);
+writeln();
 
 //
-// Only the local replicand is accessed when:
-//
-// (a) the replicated array is indexed - an individual element is read...
+// The following examples simply demonstrate that only the local
+// replicand is accessed when an individual element is read...
 //
 on Locales[0] do
   writeln("on ", here, ": ", RA(Space.low));
 on Locales[LocaleSpace.high] do
   writeln("on ", here, ": ", RA(Space.low));
 writeln();
-
-// ...or an individual element is written;
+//
+// ...or written:
+//
 on Locales[LocaleSpace.high] do
   RA(Space.low) = 7777;
 
 writeln("Replicated Array after being indexed into");
 writeReplicands(RA);
 writeln();
-
 //
-// (b) the replicated array is on the right-hand side of an assignment...
+// ...or the whole array is read:
 //
 on Locales[LocaleSpace.high] do
   A = RA + 4;
@@ -319,14 +353,9 @@ writeln("Non-Replicated Array after assignment from Replicated Array + 4");
 writeln(A);
 writeln();
 
-//
-// (c) ...or, generally, the replicated array or domain participates
-//     in a zippered forall loop, for example:
-//
-//     ``forall (a, (i,j), ra) in (A, ReplicatedSpace, RA) do ...;``
-//
 
-
+// 2D Dimensional
+// --------------
 //
 // The ``DimensionalDist2D`` distribution lets us build a 2D distribution
 // as a composition of specifiers for individual dimensions.
