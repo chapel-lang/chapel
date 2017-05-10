@@ -1322,6 +1322,9 @@ module ChapelBase {
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
+  inline proc %=(ref lhs:real(?w), rhs:real(w)) {
+    __primitive("%=", lhs, rhs);
+  }
   inline proc %=(ref lhs, rhs) {
     lhs = lhs % rhs;
   }
