@@ -54,6 +54,8 @@ import re
 noComments = False
 DEBUG      = False
 
+VARARGS_STR = "c__varargs ..."
+
 ## Global dictionary of C->Chapel mappings. New types can
 ## be registered here.
 c2chapel = {}
@@ -65,6 +67,7 @@ c2chapel["void"]   = ""
 
 # Based on SysCTypes.chpl
 c2chapel["int"]                = "c_int"
+c2chapel["unsigned"]           = "c_uint"
 c2chapel["unsigned int"]       = "c_uint"
 c2chapel["long"]               = "c_long"
 c2chapel["unsigned long"]      = "c_ulong"
@@ -80,6 +83,9 @@ c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
 c2chapel["ssize_t"]            = "ssize_t"
 c2chapel["size_t"]             = "size_t"
+
+# Note: this mapping is defined by the compiler, not the SysCTypes file
+c2chapel["FILE"] = "_file"
 
 __temp = [k for k in c2chapel.keys()]
 for key in __temp:
@@ -99,6 +105,18 @@ typeDefs = {}
 
 # set of types c2chapel is aware of
 foundTypes = set()
+
+# set of Chapel keywords, used to identify if a C identifier needs to be
+# replaced.
+chapelKeywords = set(["align","as","atomic","begin","break","by","class",
+    "cobegin","coforall","config","const","continue","delete","dmapped","do",
+    "domain","else","enum","except","export","extern","for","forall","if",
+    "in","index","inline","inout","iter","label","let","local","module","new",
+    "nil","noinit","on","only","otherwise","out","param","private","proc",
+    "public","record","reduce","ref","require","return","scan","select",
+    "serial","single","sparse","subdomain","sync","then","type","union","use",
+    "var","when","where","while","with","yield","zip"])
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description="Generate C bindings for Chapel", prog="c2chapel")
@@ -152,7 +170,10 @@ def computeArgName(decl):
     if type(decl) == c_ast.Typename:
         return ""
     elif type(decl) == c_ast.Decl:
-        return decl.name
+        if decl.name in chapelKeywords:
+            return decl.name + "_arg"
+        else:
+            return decl.name
     else:
         decl.show()
         raise c_parser.ParseError("Unhandled Node type")
@@ -180,7 +201,7 @@ def computeArgs(pl):
 
     for (i, arg) in enumerate(pl.params):
         if type(arg) == c_ast.EllipsisParam:
-            formals.append("c__varargs ...")
+            formals.append(VARARGS_STR)
         else:
             (intent, typeName) = getIntentInfo(arg.type)
             argName = computeArgName(arg)
@@ -234,6 +255,8 @@ def toChapelType(ty):
 def getFunctionName(ty):
     if type(ty) == c_ast.PtrDecl:
         return getFunctionName(ty.type)
+    elif type(ty) == c_ast.FuncDecl:
+        return getFunctionName(ty.type)
     else:
         if type(ty) != c_ast.TypeDecl:
             ty.show()
@@ -247,10 +270,26 @@ def genFuncDecl(fn):
     fnName  = getFunctionName(fn.type)
     args    = computeArgs(fn.args)
 
+    if fnName in chapelKeywords:
+        genComment("Unable to generate function '" + fnName + "' because its name is a Chapel keyword")
+        print()
+        return
+
+    if re.match(r'.*: \bva_list\b', args):
+        genComment("Unable to generate function '" + fnName + "' due to va_list argument")
+        print()
+        return
+
     if retType == "":
         retType = "void"
 
-    return "extern proc " + fnName + "(" + args + ") : " + retType
+    print("extern proc " + fnName + "(" + args + ") : " + retType + ";\n")
+
+    listArgs = args.split(", ")
+    if listArgs[-1] == VARARGS_STR:
+        newArgs = ",".join(listArgs[:-1])
+        genComment("Overload for empty varargs")
+        print("extern proc " + fnName + "(" + newArgs + ") : " + retType + ";\n")
 
 def isStructDef(decl):
     if type(decl) == c_ast.Struct:
@@ -267,20 +306,35 @@ def isStructDef(decl):
 def genStruct(struct, name=""):
     if name == "":
         name = struct.name
+
+    if name in chapelKeywords:
+        genComment("Unable to generate struct '" + name + "' because its name is a Chapel keyword")
+        print()
+        return
+
     ret = "extern record " + name + " {"
     foundTypes.add(name)
 
     members = ""
+    warnKeyword = False
     for decl in struct.decls:
         innerStruct = isStructDef(decl)
         if innerStruct is not None:
             genStruct(innerStruct)
 
-        members += "  var " + getDeclName(decl) + " : " + toChapelType(decl.type) + ";\n"
+        fieldName = getDeclName(decl)
+        if fieldName in chapelKeywords:
+            members = ""
+            warnKeyword = True
+            break
+        else:
+            members += "  var " + fieldName + " : " + toChapelType(decl.type) + ";\n"
 
     if members != "":
         members = "\n" + members
     ret += members + "}\n"
+    if warnKeyword:
+        genComment("Fields omitted because one or more of the identifiers is a Chapel keyword")
     print(ret)
 
 def genVar(decl):
@@ -300,8 +354,7 @@ class ChapelVisitor(c_ast.NodeVisitor):
             typeDefs[node.name] = node
 
     def visit_FuncDecl(self, node):
-        print(genFuncDecl(node) + ";")
-        print()
+        genFuncDecl(node)
 
     def visit_FuncDef(self, node):
         if DEBUG:
@@ -333,21 +386,32 @@ def genTypeAlias(node):
         print("extern type " + alias + " = " + typeName + ";")
         print()
 
+def isPointerToStruct(node):
+    if type(node) == c_ast.PtrDecl:
+        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Struct:
+            return node.type.type
+        else:
+            return isPointerToStruct(node.type)
+    return None
+
 def genTypedefs(defs):
     for name in sorted(defs):
         node = defs[name]
         if node is not None:
             if type(node.type.type) == c_ast.Struct:
-                if node.type.type.decls is not None:
-                    genStruct(node.type.type, name=node.name)
-                elif node.type.type.name not in foundTypes:
+                sn = node.type.type
+                if sn.decls is not None:
+                    genStruct(sn, name=node.name)
+                elif sn.name not in foundTypes:
                     genComment("Opaque struct?")
-                    print("extern record " + node.name + " {};")
-                    print()
+                    print("extern record " + node.name + " {};\n")
                 else:
                     genTypeAlias(node)
+            elif isPointerToStruct(node.type):
+                genComment("Typedef'd pointer to struct")
+                print("extern type " + node.name + ";\n")
             else:
-              genTypeAlias(node)
+                genTypeAlias(node)
 
 def handleTypedefs(defs, ignores):
     ignoreDefs = {}

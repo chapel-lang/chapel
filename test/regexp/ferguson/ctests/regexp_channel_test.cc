@@ -219,8 +219,8 @@ void check_channel(qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_ch
          discard_check_mask,
          allow_buffer_search,
 	 idx );
-  free(fhints);
-  free(chhints);
+  qio_free(fhints);
+  qio_free(chhints);
 
   printf("[%d] '%s' vs '%s'\n", test->kind, test->data, test->pattern);
 

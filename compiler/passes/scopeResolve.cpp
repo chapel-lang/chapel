@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-//
-// scopeResolve.cpp
-//
-
 #include "scopeResolve.h"
 
 #include "astutil.h"
@@ -31,6 +27,7 @@
 #include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
+#include "ResolveScope.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -47,28 +44,11 @@
 #include "llvm/ADT/SmallSet.h"
 #endif
 
-typedef std::map<const char*, Symbol*>           SymbolTableEntry;
-typedef std::map<BaseAST*,    SymbolTableEntry*> SymbolTable;
-
-
-//
-// The symbolTable maps BaseAST* pointers to entries based on scope
-// definitions.  The following BaseAST subtypes define scopes:
-//
-//   FnSymbol: defines a scope mainly for its arguments but also for
-//   identifiers that are defined via query-expressions, e.g., 't' in
-//   'def f(x: ?t)'
-//
-//   TypeSymbol: defines a scope for EnumType and AggregateType types for
-//   the enumerated type constants or the class/record fields
-//
-//   BlockStmt: defines a scope if the block is a normal block
-//   for any locally defined symbols
-//
-// Each entry contains a map from canonicalized string pointers to the
-// symbols defined in the scope.
-//
-static SymbolTable symbolTable;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 //
 // The moduleUsesCache is a cache from blocks with use-statements to
@@ -79,15 +59,15 @@ static SymbolTable symbolTable;
 // Note that this caching is not enabled until after use expression
 // have been resolved.
 //
-static std::map<BlockStmt*,Vec<UseStmt*>*> moduleUsesCache;
-static bool                                enableModuleUsesCache = false;
+static std::map<BlockStmt*, Vec<UseStmt*>*>   moduleUsesCache;
+static bool                                   enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
 // be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
-static Vec<const char*>                    aliasFieldSet;
+static Vec<const char*>                       aliasFieldSet;
 
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
@@ -96,29 +76,27 @@ typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 
-static void     addToSymbolTable(Vec<DefExpr*>& defs);
+static void addToSymbolTable();
 
-static void     processImportExprs();
+static void processImportExprs();
 
-static void     resolveGotoLabels();
+static void addRecordDefaultConstruction();
 
-static void     resolveUnresolvedSymExprs();
+static void resolveGotoLabels();
 
-static void     resolveEnumeratedTypes();
+static void resolveUnresolvedSymExprs();
 
-static void     destroyTable();
+static void resolveEnumeratedTypes();
 
-static void     destroyModuleUsesCaches();
+static void destroyModuleUsesCaches();
 
-static void     renameDefaultTypesToReflectWidths();
-
-static BaseAST* getScope(BaseAST* ast);
+static void renameDefaultTypesToReflectWidths();
 
 void scopeResolve() {
   //
   // add all program asts to the symbol table
   //
-  addToSymbolTable(gDefExprs);
+  addToSymbolTable();
 
   processImportExprs();
 
@@ -179,7 +157,7 @@ void scopeResolve() {
     }
   }
 
-  AggregateType::addRecordDefaultConstruction();
+  addRecordDefaultConstruction();
 
   //
   // resolve type of this for methods
@@ -228,7 +206,7 @@ void scopeResolve() {
 
   resolveEnumeratedTypes();
 
-  destroyTable();
+  ResolveScope::destroyAstMap();
 
   destroyModuleUsesCaches();
 
@@ -241,71 +219,71 @@ void scopeResolve() {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void addRecordDefaultConstruction() {
+  forv_Vec(DefExpr, def, gDefExprs) {
+    // We're only interested in declarations that do not have initializers.
+    if (def->init != NULL) {
+
+    } else if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (AggregateType* at = toAggregateType(var->type)) {
+        if (at->isRecord() == false) {
+
+        // No initializer for extern records.
+        } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+
+        } else {
+          SET_LINENO(def);
+
+          CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
+
+          def->init = new CallExpr(PRIM_NEW, ctor_call);
+
+          insert_help(def->init, def, def->parentSymbol);
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * addToSymbolTable adds the asts in a vector to the global symbolTable such   *
 * that symbol definitions are added to entries in the table and new           *
 * enclosing asts become entries                                               *
 *                                                                             *
 ************************************** | *************************************/
 
-static void addOneToSymbolTable(DefExpr* def);
+static void addToSymbolTable(DefExpr* def);
 
-void addToSymbolTable(std::vector<DefExpr*>& defs) {
+// Exported call for AggregateType
+void addToSymbolTable(FnSymbol* fn) {
+  std::vector<DefExpr*> defs;
+
+  collectDefExprs(fn, defs);
+
   for_vector(DefExpr, def, defs) {
-    addOneToSymbolTable(def);
+    addToSymbolTable(def);
   }
 }
 
-static void addToSymbolTable(Vec<DefExpr*>& defs) {
-  forv_Vec(DefExpr, def, defs) {
-    addOneToSymbolTable(def);
+static void addToSymbolTable() {
+  forv_Vec(DefExpr, def, gDefExprs) {
+    addToSymbolTable(def);
   }
 }
 
-static void addOneToSymbolTable(DefExpr* def) {
-  // If the symbol is a compiler-generated variable or a label,
-  // do not add it to the symbol table.
-  if (def->sym->hasFlag(FLAG_TEMP) ||
-      isLabelSymbol(def->sym))
-    return;
+static void addToSymbolTable(DefExpr* def) {
+  Symbol* newSym = def->sym;
 
-  BaseAST* scope = getScope(def);
+  if (newSym->hasFlag(FLAG_TEMP) == false &&
+      isLabelSymbol(newSym)      == false) {
+    ResolveScope* entry = ResolveScope::findOrCreateScopeFor(def);
 
-  if (symbolTable.count(scope) == 0) {
-    symbolTable[scope] = new SymbolTableEntry();
-  }
-
-  SymbolTableEntry* entry = symbolTable[scope];
-
-  if (entry->count(def->sym->name) != 0) {
-    Symbol*     sym       = (*entry)[def->sym->name];
-    FnSymbol*   oldFn     = toFnSymbol(sym);
-    FnSymbol*   newFn     = toFnSymbol(def->sym);
-    TypeSymbol* typeScope = toTypeSymbol(scope);
-
-    if (!typeScope || !isAggregateType(typeScope->type)) { // inheritance
-      if ((!oldFn || (!oldFn->_this && oldFn->hasFlag(FLAG_NO_PARENS))) &&
-          (!newFn || (!newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
-        USR_FATAL(sym,
-                  "'%s' has multiple definitions, redefined at:\n  %s",
-                  sym->name,
-                  def->sym->stringLoc());
-      }
-
-      if ((!oldFn && (newFn && !newFn->_this)) ||
-          (!newFn && (oldFn && !oldFn->_this))) {
-        // A function definition is conflicting with another named symbol
-        // that isn't a function (could be a variable, a module name, etc.)
-        USR_FATAL(sym,
-                  "'%s' has multiple definitions, redefined at:\n  %s",
-                  sym->name,
-                  def->sym->stringLoc());
-      }
-    }
-
-    if (!newFn || (newFn && !newFn->_this))
-      (*entry)[def->sym->name] = def->sym;
-  } else {
-    (*entry)[def->sym->name] = def->sym;
+    entry->extend(newSym);
   }
 }
 
@@ -660,20 +638,16 @@ static void resolveGotoLabels() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
-                                     std::set<UnresolvedSymExpr*>& skipSet);
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet);
+static void updateMethod(UnresolvedSymExpr* usymExpr);
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym);
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym);
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym,
-                         SymExpr*                      symExpr);
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym,
+                         SymExpr*           symExpr);
 
 static void insertFieldAccess(FnSymbol*          method,
                               UnresolvedSymExpr* usymExpr,
@@ -683,8 +657,7 @@ static void insertFieldAccess(FnSymbol*          method,
 static int  computeNestedDepth(const char* name,
                                Type*       type);
 
-static void resolveModuleCall(CallExpr*                     call,
-                              std::set<UnresolvedSymExpr*>& skipSet);
+static void resolveModuleCall(CallExpr* call);
 
 static bool isMethodName(const char* name, Type* type);
 static bool isMethodNameLocal(const char* name, Type* type);
@@ -697,8 +670,6 @@ static bool tryCResolve(ModuleSymbol* module, const char* name);
 #endif
 
 static void resolveUnresolvedSymExprs() {
-  std::set<UnresolvedSymExpr*> skipSet;
-
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
   // the symbol in module M; for functions, insert a "module=" token
@@ -709,13 +680,13 @@ static void resolveUnresolvedSymExprs() {
   int i           = 0;
 
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
-    resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
+    resolveUnresolvedSymExpr(unresolvedSymExpr);
 
     maxResolved++;
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    resolveModuleCall(call, skipSet);
+    resolveModuleCall(call);
   }
 
   // Note that the extern C resolution might add new UnresolvedSymExprs, and it
@@ -732,21 +703,19 @@ static void resolveUnresolvedSymExprs() {
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
     if (i >= maxResolved) {
-      resolveUnresolvedSymExpr(unresolvedSymExpr, skipSet);
+      resolveUnresolvedSymExpr(unresolvedSymExpr);
     }
 
     i++;
   }
 }
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
-                                     std::set<UnresolvedSymExpr*>& skipSet) {
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
 
-  if (skipSet.find(usymExpr) != skipSet.end() ||
-      strcmp(name, ".")      == 0             ||
+  if (strcmp(name, ".")      == 0             ||
       usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(usymExpr, name)) {
@@ -757,11 +726,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
       usymExpr->replace(symExpr);
 
-      updateMethod(usymExpr, skipSet, sym, symExpr);
+      updateMethod(usymExpr, sym, symExpr);
 
     // sjd: stopgap to avoid shadowing variables or functions by methods
     } else if (fn->hasFlag(FLAG_METHOD) == true) {
-      updateMethod(usymExpr, skipSet);
+      updateMethod(usymExpr);
 
     // handle function call without parentheses
     } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
@@ -785,44 +754,39 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*            usymExpr,
 
         primFn->insertAtTail(usymExpr);
 
-        skipSet.insert(usymExpr);
-
       } else {
-        updateMethod(usymExpr, skipSet, sym);
+        updateMethod(usymExpr, sym);
       }
 
     } else {
-      updateMethod(usymExpr, skipSet, sym);
+      updateMethod(usymExpr, sym);
     }
 
   } else {
-    updateMethod(usymExpr, skipSet);
+    updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
     if (externC == true && tryCResolve(usymExpr->getModule(), name) == true) {
       // Try resolution again since the symbol should exist now
-      resolveUnresolvedSymExpr(usymExpr, skipSet);
+      resolveUnresolvedSymExpr(usymExpr);
     }
 #endif
   }
 }
 
 // Apply 'this' and 'outer' in methods where necessary
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet) {
-  updateMethod(usymExpr, skipSet, NULL);
+static void updateMethod(UnresolvedSymExpr* usymExpr) {
+  updateMethod(usymExpr, NULL);
 }
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym) {
-  updateMethod(usymExpr, skipSet, sym, NULL);
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym) {
+  updateMethod(usymExpr, sym, NULL);
 }
 
-static void updateMethod(UnresolvedSymExpr*            usymExpr,
-                         std::set<UnresolvedSymExpr*>& skipSet,
-                         Symbol*                       sym,
-                         SymExpr*                      symExpr) {
+static void updateMethod(UnresolvedSymExpr* usymExpr,
+                         Symbol*            sym,
+                         SymExpr*           symExpr) {
   const char* name   = usymExpr->unresolved;
   Expr*       expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
   Symbol*     parent = expr->parentSymbol;
@@ -846,18 +810,13 @@ static void updateMethod(UnresolvedSymExpr*            usymExpr,
           Type* type = method->_this->type;
 
           if (isAggr == true || isMethodName(name, type) == true) {
-            CallExpr* call = toCallExpr(expr->parentExpr);
-
-            if (call                              != NULL &&
-                call->baseExpr                    == expr &&
-                call->numActuals()                >= 2    &&
-                isSymExpr(call->get(1))           == true &&
-                toSymExpr(call->get(1))->symbol() == gMethodToken) {
-              UnresolvedSymExpr* use = new UnresolvedSymExpr(name);
-
-              expr->replace(use);
-
-              skipSet.insert(use);
+            if (CallExpr* call = toCallExpr(expr->parentExpr)) {
+              if (call->baseExpr                    != expr  ||
+                  call->numActuals()                <  2     ||
+                  isSymExpr(call->get(1))           == false ||
+                  toSymExpr(call->get(1))->symbol() != gMethodToken) {
+                insertFieldAccess(method, usymExpr, sym, expr);
+              }
 
             } else {
               insertFieldAccess(method, usymExpr, sym, expr);
@@ -1040,8 +999,7 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
-static void resolveModuleCall(CallExpr*                     call,
-                              std::set<UnresolvedSymExpr*>& skipSet) {
+static void resolveModuleCall(CallExpr* call) {
   if (call->isNamed(".") == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
@@ -1053,13 +1011,8 @@ static void resolveModuleCall(CallExpr*                     call,
 
         enclosingModule->moduleUseAdd(mod);
 
-        // Can the identifier be mapped to something at this scope?
-        if (symbolTable.count(mod->block) != 0) {
-          SymbolTableEntry* entry = symbolTable[mod->block];
-
-          if (entry->count(mbrName) != 0) {
-            sym = (*entry)[mbrName];
-          }
+        if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
+          sym = scope->lookup(mbrName);
         }
 
         if (sym != NULL) {
@@ -1075,14 +1028,13 @@ static void resolveModuleCall(CallExpr*                     call,
           } else if (FnSymbol* fn = toFnSymbol(sym)) {
             if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
               call->replace(new CallExpr(fn));
-            } else {
-              UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
 
-              skipSet.insert(se);
+            } else {
+              UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
 
               call->replace(se);
 
-              CallExpr* parent = toCallExpr(se->parentExpr);
+              CallExpr*          parent = toCallExpr(se->parentExpr);
 
               INT_ASSERT(parent);
 
@@ -1099,7 +1051,7 @@ static void resolveModuleCall(CallExpr*                     call,
                    tryCResolve(call->getModule(), mbrName) == true) {
           // Try to resolve again now that the symbol should
           // be in the table
-          resolveModuleCall(call, skipSet);
+          resolveModuleCall(call);
 #endif
 
         } else {
@@ -1128,11 +1080,13 @@ static bool tryCResolve(ModuleSymbol*                     module,
                         const char*                       name,
                         llvm::SmallSet<ModuleSymbol*, 24> visited) {
 
-  if (! module) return false;
+  if (module == NULL) {
+    return false;
 
-  if (llvm_small_set_insert(visited, module)) {
+  } else if (llvm_small_set_insert(visited, module)) {
     // visited.insert(module)) {
     // we added it to the set, so continue.
+
   } else {
     // It was already in the set.
     return false;
@@ -1155,7 +1109,9 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
         collectDefExprs(c_expr, v);
 
-        addToSymbolTable(v);
+        for_vector(DefExpr, def, v) {
+          addToSymbolTable(def);
+        }
 
         if (DefExpr* de = toDefExpr(c_expr)) {
           if (TypeSymbol* ts = toTypeSymbol(de->sym)) {
@@ -1227,22 +1183,11 @@ static void resolveEnumeratedTypes() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void destroyTable() {
-  SymbolTable::iterator entry;
-
-  for (entry = symbolTable.begin(); entry != symbolTable.end(); entry++) {
-    delete entry->second;
-  }
-
-  symbolTable.clear();
-}
-
-
 //
 // delete the module uses cache
 //
 static void destroyModuleUsesCaches() {
-  std::map<BlockStmt*,Vec<UseStmt*>*>::iterator use;
+  std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
     delete use->second;
@@ -1250,7 +1195,6 @@ static void destroyModuleUsesCaches() {
 
   moduleUsesCache.clear();
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1280,11 +1224,11 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void lookup(BaseAST* scope, const char * name,
-                   std::vector<Symbol* >& symbols,
-                   Vec<BaseAST*>& alreadyVisited,
-                   std::set<int> rejectedPrivateIds,
-                   BaseAST* callingContext);
+static void lookup(BaseAST*              scope,
+                   const char*           name,
+                   std::vector<Symbol*>& symbols,
+                   Vec<BaseAST*>&        alreadyVisited,
+                   BaseAST*              callingContext);
 
 
 
@@ -1297,27 +1241,13 @@ static void    buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
 // Given a name and a scope, determine the symbol referred by that name in the
 // context of that scope.
 Symbol* lookup(BaseAST* scope, const char* name) {
-  Symbol * symbolResult = NULL;
-  std::vector<Symbol * > symbolOptions;
-  Vec<BaseAST*> nestedscopes;
-
-  std::set<int> rejectedPrivateIds;
-  // rejectedPrivateIds is a set of all ids for private symbols that we have
-  // encountered and determined are not visible to us.  Though it adds storage
-  // and requires a check of all later symbol matches once it has any contents,
-  // it allows us to go back to a scope we may have partially traversed (and
-  // left early due to finding the incorrect private symbol match).  It also
-  // means that, in the event a private symbol lives in the internal or commonly
-  // used standard modules, the user will not be flooded with multiple output
-  // for the same incorrect match.
-
-  // Lydia note: I would like to investigate the effect of traversing all call
-  // expressions of the "." accessor.
-
+  Symbol*              symbolResult = NULL;
+  std::vector<Symbol*> symbolOptions;
+  Vec<BaseAST*>        nestedscopes;
 
   // Call inner lookup on scope, the name, the symbols return vector, and the
   // vector of ASTs already visited.
-  lookup(scope, name, symbolOptions, nestedscopes, rejectedPrivateIds, scope);
+  lookup(scope, name, symbolOptions, nestedscopes, scope);
 
   int numFound = symbolOptions.size();
   if (numFound == 0) {
@@ -1411,28 +1341,26 @@ static bool methodMatched(BaseAST* scope, FnSymbol* method) {
   }
 }
 
-// inSymbolTable returns a Symbol* if there was an entry for this scope
-// that matched this name, NULL otherwise.
-static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
-  if (symbolTable.count(scope) != 0) {
-    SymbolTableEntry* entry = symbolTable[scope];
-    if (entry->count(name) != 0) {
-      Symbol* sym = (*entry)[name];
-      // If the symbol found isn't a method, or it was a method and we are
-      // in the appropriate scope to add it (as determined by calling
-      // methodMatched), then return the symbol
-      FnSymbol* fn = toFnSymbol(sym);
-      if (sym && (!sym->hasFlag(FLAG_METHOD) ||
-                  (fn && (methodMatched(scope, fn)))))
-        return sym;
+// Is this name defined in this scope?
+static Symbol* inSymbolTable(BaseAST* ast, const char* name) {
+  Symbol* retval = NULL;
+
+  if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
+    if (Symbol* sym = scope->lookup(name)) {
+      if (sym->hasFlag(FLAG_METHOD) == false) {
+        retval = sym;
+
+      } else if (FnSymbol* fn = toFnSymbol(sym)) {
+        if (methodMatched(ast, fn) == true) {
+          retval = sym;
+        }
+      }
     }
   }
-  return NULL;
+
+  return retval;
 }
 
-// If the current scope is an aggregate type, checks if the name refers to a
-// field or method on that type.  If a match is found, return it.  Otherwise
-// return NULL.
 static Symbol* inType(BaseAST* scope, const char* name) {
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
@@ -1461,23 +1389,18 @@ static bool isRepeat(std::vector<Symbol* >& symbols, Symbol* toAdd) {
 }
 
 // Assumes that symbols contains nothing before entering this function
-static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
-                                   std::vector<Symbol* >& symbols,
-                                   std::set<int> rejectedPrivateIds,
-                                   BaseAST* callingContext) {
+static bool lookupThisScopeAndUses(BaseAST*              scope,
+                                   const char*           name,
+                                   std::vector<Symbol*>& symbols,
+                                   BaseAST*              callingContext) {
   INT_ASSERT(symbols.size() == 0);
 
   if (Symbol* sym = inSymbolTable(scope, name)) {
     if (sym->hasFlag(FLAG_PRIVATE)) {
-      if (rejectedPrivateIds.find(sym->id) == rejectedPrivateIds.end()) {
-        // The symbol found was not one of the already rejected private
-        // symbols
-        if (!sym->isVisible(callingContext)) {
-          rejectedPrivateIds.insert(sym->id);
-        } else {
-          symbols.push_back(sym);
-        }
-      } // If it was already rejected, we definitely don't want to add it.
+      if (sym->isVisible(callingContext) == true) {
+        symbols.push_back(sym);
+      }
+
     } else {
       symbols.push_back(sym);
     }
@@ -1489,6 +1412,7 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
       // and we can just return.
       return true;
     }
+
     // When methods and fields can be private, need to check against the
     // rejected private symbols here.  But that's in the future.
     symbols.push_back(sym);
@@ -1521,37 +1445,26 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         }
 
         forv_Vec(UseStmt, use, *moduleUses) {
-          if (use) {
-            if (!use->skipSymbolSearch(name)) {
+          if (use != NULL) {
+            if (use->skipSymbolSearch(name) == false) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
               if (Symbol* sym = inSymbolTable(scopeToUse, nameToUse)) {
-                if (sym->hasFlag(FLAG_PRIVATE)) {
-                  if (rejectedPrivateIds.find(sym->id) ==
-                      rejectedPrivateIds.end()) {
-                    // The symbol found was not one of the already rejected
-                    // private symbols
-                    if (!sym->isVisible(callingContext)) {
-                      rejectedPrivateIds.insert(sym->id);
-                    } else {
-                      if (!isRepeat(symbols, sym)) {
-                        symbols.push_back(sym);
-                      }
-                    }
+                if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                  if (sym->isVisible(callingContext) == true &&
+                      isRepeat(symbols, sym)         == false) {
+                    symbols.push_back(sym);
                   }
-                  // If it was already rejected, we don't want to add it.
 
-                } else if (!isRepeat(symbols, sym)) {
-                  // Don't want to add if the symbol itself was already present.
+                } else if (isRepeat(symbols, sym) == false) {
                   symbols.push_back(sym);
                 }
               }
             }
+
           } else {
-            //
             // break on each new depth if a symbol has been found
-            //
             if (symbols.size() > 0)
               break;
           }
@@ -1590,52 +1503,57 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
 // Note that having this set up would make it easier to check the entirety of
 // an access call (M1.M2.M3, for instance) as the recursion does not occur in
 // the innermost scope.
-static void lookup(BaseAST* scope, const char * name,
-                   std::vector<Symbol* >& symbols,
-                   Vec<BaseAST*>& alreadyVisited,
-                   std::set<int> rejectedPrivateIds,
-                   BaseAST* callingContext) {
+static void lookup(BaseAST*              scope,
+                   const char*           name,
+                   std::vector<Symbol*>& symbols,
+                   Vec<BaseAST*>&        alreadyVisited,
+                   BaseAST*              callingContext) {
   if (!alreadyVisited.set_in(scope)) {
     alreadyVisited.set_add(scope);
 
-    if (lookupThisScopeAndUses(scope, name, symbols, rejectedPrivateIds, callingContext)) {
+    if (lookupThisScopeAndUses(scope, name, symbols, callingContext) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
-      // surrounding scopes for the symbols on the left and right part of the
-      // call (if any) to verify we were finding anything in particular.
-      // A symbol could be visible in the innermost scope because it was defined
-      // in an outer scope (for instance, if M1 defines foo, M2 doesn't shadow
-      // it and we're looking for M1.M2.foo), so that is something to keep in
-      // mind as well.
+      // surrounding scopes for the symbols on the left and right part
+      // of the call (if any) to verify we were finding anything in particular.
+      //
+      // A symbol could be visible in the innermost scope because it was
+      // defined in an outer scope (for instance, if M1 defines foo,
+      // M2 doesn't shadow it and we're looking for M1.M2.foo),
+      // so that is something to keep in mind as well.
 
       return;
     }
 
     if (scope->getModule()->block == scope) {
-      if (getScope(scope))
-        lookup(getScope(scope), name, symbols, alreadyVisited, rejectedPrivateIds, callingContext);
+      if (getScope(scope) != NULL) {
+        lookup(getScope(scope), name, symbols, alreadyVisited, callingContext);
+      }
+
     } else {
       // Otherwise, look in the next scope up.
       FnSymbol* fn = toFnSymbol(scope);
-      if (fn && fn->_this) {
-        // If we're currently in a method, the next scope up is anything visible
+
+      if (fn != NULL && fn->_this) {
+        // If currently in a method, the next scope up is anything visible
         // within the aggregate type
-        AggregateType* ct = toAggregateType(fn->_this->type);
-        if (ct)
-          lookup(ct->symbol, name, symbols, alreadyVisited, rejectedPrivateIds, callingContext);
+        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+          lookup(ct->symbol, name, symbols, alreadyVisited, callingContext);
+        }
       }
+
       // Check if found something in last lookup call
       if (symbols.size() == 0) {
-        // If we didn't find something in the aggregate type that matched, or we
-        // weren't in an aggregate type method, so look at next scope up.
-        lookup(getScope(scope), name, symbols, alreadyVisited, rejectedPrivateIds, callingContext);
+        // If we didn't find something in the aggregate type that matched,
+        // or we weren't in an aggregate type method, so look at next scope up.
+        lookup(getScope(scope), name, symbols, alreadyVisited, callingContext);
       }
     }
   }
 }
 
 static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
-                    UseStmt* current);
+                    UseStmt*                                   current);
 
 static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
   std::map<Symbol*, std::vector<UseStmt* > > seen;
@@ -2039,7 +1957,7 @@ static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
 *                                                                             *
 ************************************** | *************************************/
 
-static BaseAST* getScope(BaseAST* ast) {
+BaseAST* getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
     BlockStmt* block = toBlockStmt(expr->parentExpr);
 
@@ -2076,4 +1994,3 @@ static BaseAST* getScope(BaseAST* ast) {
 
   return NULL;
 }
-

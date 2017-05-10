@@ -56,6 +56,8 @@ GenInfo* gGenInfo   =  0;
 int      gMaxVMT    = -1;
 int      gStmtCount =  0;
 
+std::map<std::string, int> commIDMap;
+
 
 // ensure these two produce consistent output
 std::string zlineToString(BaseAST* ast) {
@@ -1017,6 +1019,13 @@ static void codegen_header_compilation_config() {
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
     genGlobalString("chpl_compileDirectory", getCwd());
+    if (strcmp(saveCDir, "") != 0) {
+      char *actualPath = realpath(saveCDir, NULL);
+      genGlobalString("chpl_saveCDir", actualPath);
+    } else {
+      genGlobalString("chpl_saveCDir", "");
+    }
+
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);

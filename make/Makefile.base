@@ -158,7 +158,11 @@ CHPL_MAKE_BASE_LFLAGS =
 #
 # Third-party package stuff
 #
-THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
+ifdef CHPL_MAKE_THIRD_PARTY
+  THIRD_PARTY_DIR = $(CHPL_MAKE_THIRD_PARTY)
+else
+  THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
+endif
 
 include $(THIRD_PARTY_DIR)/amudprun/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include

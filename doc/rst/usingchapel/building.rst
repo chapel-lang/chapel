@@ -108,6 +108,9 @@ Makefiles support the following targets:
   | cleanall  | Remove the intermediate files for all configurations |
   +-----------+------------------------------------------------------+
   | clobber   | Remove everything created by the Makefiles           |
+  |           | Note: make clobber will remove chplconfig            |
+  +-----------+------------------------------------------------------+
+  | install   | Install chapel to a previously configured location   |
   +-----------+------------------------------------------------------+
 
 Each target processes all subdirectories then the current directory.
@@ -161,3 +164,24 @@ refer to those files.  If you do develop new build environment support
 that you would like to contribute back to the community, we encourage
 you to send your changes back to us at: :disguise:`chapel_info@cray.com`
 
+.. _readme-installing:
+
+-----------------
+Installing Chapel
+-----------------
+
+Chapel can be built and installed as follows:
+
+.. code-block:: bash
+
+  ./configure # adding appropriate options
+  make
+  make install # possibly with elevated privilege
+
+See ``./configure --help`` for more information on the options available.
+
+.. note::
+
+ ``./configure`` will save the current configuration into a
+ ``chplconfig`` file and can set the installation path that will be
+ compiled in to the ``chpl`` binary.

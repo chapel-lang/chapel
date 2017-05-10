@@ -20,14 +20,13 @@ case $current_gmp in
         echo "[Warning: Did not recognize GMP value: ${current_gmp}]"
 esac
 
-main_o=$($CHPL_HOME/util/config/compileline --main.o)
-rt_config=$(basename $(dirname $main_o))
+#main_o=$($CHPL_HOME/util/config/compileline --main.o)
 
 # /Users/tvandoren/src/chapel/runtime/etc/Makefile.include:83: *** The runtime has not been built for this configuration. Check $CHPL_HOME/util/printchplenv and try (re)building runtime.  Stop.
 $compiler "${test_executable}.chpl" 2>&1 | \
     grep 'runtime/etc/Makefile.include' | \
+    grep -v 'Expected runtime library' | \
     sed "s:${CHPL_HOME}:\$CHPL_HOME:g" | \
-    sed "s:${rt_config}:<runtime_config>:g" | \
     sed "s:'.*make':\$CHPL_MAKE:g" | \
     sed "s/:[0-9]*:/:nnnnn:/g" \
     > $output

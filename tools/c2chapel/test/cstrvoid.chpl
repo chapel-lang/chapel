@@ -13,7 +13,7 @@ extern proc ret_cstr() : c_string;
 
 extern proc ret_void_ptr() : c_void_ptr;
 
-extern proc arg_ptr_to_cstr(ref out : c_string) : void;
+extern proc arg_ptr_to_cstr(ref out_arg : c_string) : void;
 
-extern proc arg_ptr_to_void_ptr(ref out : c_void_ptr) : void;
+extern proc arg_ptr_to_void_ptr(ref out_arg : c_void_ptr) : void;
 

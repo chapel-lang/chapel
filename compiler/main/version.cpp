@@ -20,7 +20,12 @@
 #include <cstdio>
 #include "driver.h"
 #include "version.h"
+
+// this include sets BUILD_VERSION
 #include "version_num.h"
+
+// this include sets CONFIGURED_PREFIX
+#include "configured_prefix.h"
 
 void
 get_version(char *v) {
@@ -29,3 +34,12 @@ get_version(char *v) {
     sprintf(v, " pre-release (%s)", BUILD_VERSION);
 }
 
+void
+get_major_minor_version(char *v) {
+  sprintf(v, "%d.%s", MAJOR_VERSION, MINOR_VERSION);
+}
+
+const char*
+get_configured_prefix() {
+  return CONFIGURED_PREFIX;
+}

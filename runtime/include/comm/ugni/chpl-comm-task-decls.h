@@ -69,7 +69,7 @@ typedef void* chpl_comm_nb_handle_t;
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, int32_t fn);
+                                       int32_t commID, int ln, int32_t fn);
 chpl_bool chpl_comm_test_get_nb(chpl_comm_nb_handle_t handle,
                                 int ln, int32_t fn);
 

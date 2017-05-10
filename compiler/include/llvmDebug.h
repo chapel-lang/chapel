@@ -26,6 +26,7 @@
 
 #include "llvmUtil.h"
 #include "llvm/Support/Dwarf.h"
+#include "llvm/Support/raw_os_ostream.h"
 
 #if HAVE_LLVM_VER >= 35
 #include "llvm/IR/DebugInfo.h"

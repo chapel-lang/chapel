@@ -28,6 +28,15 @@ if( defined $ENV{"CHPL_HOME"} ) {
 }
 
 $ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
+if( defined $ENV{"CHPL_RUNTIME_LIB"} ) {
+  $ENV{"CHPL_MAKE_RUNTIME_LIB"} = $ENV{"CHPL_RUNTIME_LIB"}
+}
+if( defined $ENV{"CHPL_RUNTIME_INCL"} ) {
+  $ENV{"CHPL_MAKE_RUNTIME_INCL"} = $ENV{"CHPL_RUNTIME_INCL"}
+}
+if( defined $ENV{"CHPL_THIRD_PARTY"} ) {
+  $ENV{"CHPL_MAKE_THIRD_PARTY"} = $ENV{"CHPL_THIRD_PARTY"}
+}
 
 $make = `$chpl_home_dir/util/chplenv/chpl_make.py`;
 chomp($make);
@@ -37,6 +46,15 @@ $make = "$make --no-print-directory";
 
 sub mysystem {
   my $cmd = shift;
+
+  # Uncomment for debug output
+  #print "About to run $cmd\n";
+  #for my $k (keys %ENV) {
+  #  if ($k =~ /CHPL/) {
+  #    print "$k=$ENV{$k}\n";
+  #  }
+  #}
+
   # Run $cmd but filter out e.g. make[2]: lines
   # (about which directory we are in)
   open(CMD, "$cmd |") or die "Cannot run $cmd: $!";

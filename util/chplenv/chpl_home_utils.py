@@ -17,6 +17,11 @@ def get_chpl_home():
         chpl_home = dirname(dirname(dirname(os.path.realpath(__file__))))
     return chpl_home
 
+@memoize
+def get_chpl_third_party():
+    default = os.path.join(get_chpl_home(), 'third-party')
+    chpl_third_party = overrides.get('CHPL_THIRD_PARTY', default)
+    return chpl_third_party
 
 @memoize
 def using_chapel_module():

@@ -5,12 +5,12 @@
 class Foo {
   var v;
 
-  proc init(var vVal) where (isIntegralType(vVal.type)) {
+  proc init(vVal) where (isIntegralType(vVal.type)) {
     v = 10;
     super.init();
   }
 
-  proc init(var vVal) where (!isIntegralType(vVal.type)) {
+  proc init(vVal) where (!isIntegralType(vVal.type)) {
     v = vVal;
     super.init();
   }
