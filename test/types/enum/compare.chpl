@@ -1,2 +1,2 @@
-enum E {zero}
-writeln(E.zero == 0);
+enum E {one}
+writeln(E.one == 1);
