@@ -27,6 +27,10 @@ endif
 ifeq ($(CHPL_MAKE_HWLOC),hwloc)
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc --with-hwloc=$(HWLOC_INSTALL_DIR)
 endif
+ifeq ($(CHPL_MAKE_HWLOC),system)
+CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
+endif
+
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
