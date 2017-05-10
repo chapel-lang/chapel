@@ -623,20 +623,27 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
   return NULL;
 }
 
+bool givesType(Symbol* sym) {
+  if (isTypeSymbol(sym))
+    return true;
+
+  if (sym->hasFlag(FLAG_TYPE_VARIABLE))
+    return true;
+
+  if (FnSymbol* fn = toFnSymbol(sym))
+    if (fn->retTag == RET_TYPE)
+      return true;
+
+  return false;
+}
+
 
 bool isTypeExpr(Expr* expr)
 {
   if (SymExpr* sym = toSymExpr(expr))
   {
-    if (isTypeSymbol(sym->symbol()))
+    if (givesType(sym->symbol()))
       return true;
-
-    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
-      return true;
-
-    if (FnSymbol* fn = toFnSymbol(sym->symbol()))
-      if (fn->retTag == RET_TYPE)
-        return true;
   }
 
   if (CallExpr* call = toCallExpr(expr))

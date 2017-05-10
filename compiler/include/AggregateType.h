@@ -80,7 +80,7 @@ public:
   // The following two methods are used for types which define initializers
   bool                        setNextGenericField();
 
-  AggregateType*              getInstantiation(SymExpr* t, int index);
+  AggregateType*              getInstantiation(Symbol* sym, int index);
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
                                                     FnSymbol* fn);
 

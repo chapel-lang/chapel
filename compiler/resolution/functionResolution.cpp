@@ -3986,7 +3986,7 @@ static void resolveInitField(CallExpr* call) {
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
-      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      AggregateType* instantiate = ct->getInstantiation(rhs->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
         FnSymbol* parentFn = toFnSymbol(call->parentSymbol);

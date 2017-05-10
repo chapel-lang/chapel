@@ -326,7 +326,7 @@ bool AggregateType::setNextGenericField() {
 // previously made an instantiation for the provided argument and will return
 // that instantiation if we find one.  Otherwise, will create a new
 // instantiation with the given argument and will return that.
-AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
+AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   // If the index of the field is prior to the index of the next generic field
   // then trivially return ourselves
   if (index < genericField)
@@ -344,17 +344,17 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   for_vector(AggregateType, at, instantiations) {
     // TODO: test me
     Symbol* field = at->getField(genericField);
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
-      if (field->type == t->typeInfo())
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+      if (field->type == sym->typeInfo())
         return at;
     }
     if (field->hasFlag(FLAG_PARAM) &&
-        at->substitutions.get(field) == t->symbol()) {
+        at->substitutions.get(field) == sym) {
       return at;
     }
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
         !field->hasFlag(FLAG_PARAM)) {
-      if (field->type == t->typeInfo()) {
+      if (field->type == sym->typeInfo()) {
         return at;
       }
     }
@@ -368,22 +368,22 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
 
   Symbol* field = newInstance->getField(genericField);
   if (field->hasFlag(FLAG_PARAM)) {
-    newInstance->substitutions.put(field, t->symbol());
-    newInstance->symbol->renameInstantiatedSingle(t->symbol());
+    newInstance->substitutions.put(field, sym);
+    newInstance->symbol->renameInstantiatedSingle(sym);
   } else {
-    newInstance->substitutions.put(field, t->typeInfo()->symbol);
-    newInstance->symbol->renameInstantiatedSingle(t->typeInfo()->symbol);
+    newInstance->substitutions.put(field, sym->typeInfo()->symbol);
+    newInstance->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
 
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
-    field->type = t->typeInfo();
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+    field->type = sym->typeInfo();
   } else {
     if (!field->defPoint->exprType && field->type == dtUnknown)
-      field->type = t->typeInfo();
-    else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
+      field->type = sym->typeInfo();
+    else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
       // TODO: Something something, casts and coercions
     } else {
-      field->type = t->typeInfo();
+      field->type = sym->typeInfo();
     }
   }
   instantiations.push_back(newInstance);
@@ -435,8 +435,7 @@ AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
       // Assumes that the type constructor arguments will correspond directly
       // to the generic fields, and that they will gain substitutions in order.
       // Bad things will happen if this assumption is violated
-      SymExpr* valSe = val->firstSymExpr();
-      instantiation = instantiation->getInstantiation(valSe,
+      instantiation = instantiation->getInstantiation(val,
                                                       instantiation->genericField);
     }
   }
