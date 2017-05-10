@@ -38,7 +38,7 @@ Block-Cyclic Array Index Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 
-Replicated Array Index Map, 64 elements per locale
+Replicated Array has 64 elements per locale
 Locale 0's copy of RA is:
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
@@ -48,6 +48,7 @@ Locale 0's copy of RA is:
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
+Replicated Array Index Map
 LOCALE0:
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0

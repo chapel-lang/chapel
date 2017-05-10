@@ -246,7 +246,7 @@ verifyID(BA);
 // each locale, as are the corresponding array elements.  For example,
 // a domain ``{1..3}`` distributed using ``ReplicatedDist`` will store
 // three indices per locale that the distribution is targeting (by
-// default, all of them).  Similarly, an array declared over that
+// default, all locales).  Similarly, an array declared over that
 // domain will store three elements per locale.  Each locale's copy of
 // the domain or array is known as its *replicand*.
 //
@@ -269,7 +269,7 @@ var RA: [ReplicatedSpace] int;
 // Queries about the size of a replicated domain or array will return
 // the size per locale:
 //
-writeln("Replicated Array Index Map, ", RA.numElements, " elements per locale");
+writeln("Replicated Array has ", RA.numElements, " elements per locale");
 
 //
 // The following loop-based assignment to `RA` only affects the copy
@@ -302,6 +302,7 @@ proc writeReplicands(X) {
   }
 }
 
+writeln("Replicated Array Index Map");
 writeReplicands(RA);
 writeln();
 
