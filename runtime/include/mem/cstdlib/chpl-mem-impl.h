@@ -24,6 +24,10 @@
 // Uses the system allocator
 #include "chpl-mem-sys.h"
 
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#endif
+
 static inline void* chpl_calloc(size_t n, size_t size) {
   return sys_calloc(n,size);
 }
@@ -48,7 +52,6 @@ static inline void chpl_free(void* ptr) {
 // return minSize.
 static inline size_t chpl_good_alloc_size(size_t minSize) {
 #if defined(__APPLE__)
-  #include <malloc/malloc.h>
   return malloc_good_size(minSize);
 #else
   return minSize;
