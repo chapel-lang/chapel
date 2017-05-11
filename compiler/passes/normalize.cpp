@@ -865,9 +865,6 @@ static void normalizeReturns(FnSymbol* fn) {
     }
   }
 
-  // If an iterator, then there is at least one nonvoid return-or-yield.
-  INT_ASSERT(isIterator == false || rets.size() > numVoidReturns);
-
   // Check if this function's returns are already normal.
   if (rets.size() == numYields + 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {

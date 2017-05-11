@@ -1,0 +1,4 @@
+-stestParamCases=0
+-stestParamCases=1 # checkModByZero-paramint.good
+-stestParamCases=2 # checkModByZero-paramuint.good
+-stestParamCases=3 # checkModByZero-varparamuint.good

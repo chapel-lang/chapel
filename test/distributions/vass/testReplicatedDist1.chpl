@@ -19,7 +19,15 @@ var ReplBlockDist = new dmap(new ReplicatedDist());
 var DRepl: domain(2) dmapped ReplBlockDist = Dsub;
 var ARepl: [DRepl] elt;
 
-proc show() { write(ARepl, "\n"); }
+proc show() {
+  for loc in Locales {
+    on loc {
+      writeln(loc, ":");
+      writeln(ARepl);
+    }
+  }
+}
+    
 
 // set everything to predetermined values
 proc reset() {

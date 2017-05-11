@@ -872,12 +872,7 @@ void AggregateType::buildTypeConstructor() {
     outer = tmpOuter;
   }
 
-  // Update the symbol table with added defs.
-  std::vector<DefExpr*> defs;
-
-  collectDefExprs(fn, defs);
-
-  addToSymbolTable(defs);
+  addToSymbolTable(fn);
 }
 
 
@@ -1209,11 +1204,7 @@ void AggregateType::buildConstructor() {
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
-  std::vector<DefExpr*> defs;
-
-  collectDefExprs(fn, defs);
-
-  addToSymbolTable(defs);
+  addToSymbolTable(fn);
 }
 
 ArgSymbol* AggregateType::createGenericArg(VarSymbol* field) {
@@ -1422,32 +1413,6 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
   }
 
   return pt;
-}
-
-void AggregateType::addRecordDefaultConstruction() {
-  forv_Vec(DefExpr, def, gDefExprs) {
-    // We're only interested in declarations that do not have initializers.
-    if (def->init != NULL) {
-
-    } else if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (AggregateType* at = toAggregateType(var->type)) {
-        if (at->isRecord() == false) {
-
-        // No initializer for extern records.
-        } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-
-        } else {
-          SET_LINENO(def);
-
-          CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
-
-          def->init = new CallExpr(PRIM_NEW, ctor_call);
-
-          insert_help(def->init, def, def->parentSymbol);
-        }
-      }
-    }
-  }
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {

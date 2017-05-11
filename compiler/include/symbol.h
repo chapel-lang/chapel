@@ -705,6 +705,8 @@ VarSymbol *new_ImagSymbol(const char *n,
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size=COMPLEX_SIZE_128);
 
+VarSymbol *new_CommIDSymbol(int64_t b);
+
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 
 void createInitStringLiterals();
@@ -794,5 +796,35 @@ extern Symbol *gSingleVarAuxFields;
 
 extern std::map<FnSymbol*,int> ftableMap;
 extern std::vector<FnSymbol*> ftableVec;
+
+#define FUNC_NAME_MAX 256
+extern char llvmPrintIrName[FUNC_NAME_MAX+1];
+extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
+
+namespace llvmStageNum {
+typedef enum { NOPRINT = 0,
+       NONE,
+       BASIC,
+       FULL,
+       LAST
+     } llvmStageNum_t;
+}
+using llvmStageNum::llvmStageNum_t;
+
+//Names representations in LLVM IR and C generated code are
+//different from their names in AST. 'llvmPrintIrCName'
+//is place to keep name in LLVM IR and C version of
+//'llvmPrintIrName' variable.
+extern const char *llvmPrintIrCName;
+extern llvmStageNum_t llvmPrintIrStageNum;
+
+extern const char *llvmStageName[llvmStageNum::LAST];
+
+const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
+llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
+
+#ifdef HAVE_LLVM
+void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage);
+#endif
 
 #endif

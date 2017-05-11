@@ -4189,6 +4189,19 @@ static void resolveMove(CallExpr* call) {
     rhsType = resolveTypeAlias(toSymExpr(rhs));
   }
 
+  if (rhsType == dtVoid) {
+    if (CallExpr* rhsCall = toCallExpr(rhs)) {
+      if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
+        if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
+          USR_FATAL(userCall(call),
+                    "illegal use of function that does not "
+                    "return a value: '%s'",
+                    rhsFn->name);
+        }
+      }
+    }
+  }
+
   // This is a workaround for problems where the _iterator
   // in buildForLoopExpr would be an _array instead of a ref(_array)
   // in 4-init-array-forexpr.chpl. This could be improved with
@@ -6708,6 +6721,16 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
+      } else if (call->isPrimitive(PRIM_YIELD)) {
+        if (call->get(1)->typeInfo() == dtVoid ||
+            call->get(1)->typeInfo() == dtVoid->refType) {
+          if (SymExpr* ret = toSymExpr(call->get(1))) {
+            if (ret->symbol() != gVoid) {
+              SET_LINENO(call);
+              call->replace(new CallExpr(PRIM_YIELD, gVoid));
+            }
+          }
+        }
       }
       if (call->isResolved()) {
         for_actuals(actual, call) {
@@ -6733,6 +6756,15 @@ static void cleanupVoidVarsAndFields() {
       }
     }
   }
+
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* loop = toForLoop(block)) {
+      if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
+        loop->indexGet()->setSymbol(gVoid);
+      }
+    }
+  }
+
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->inTree()) {
       if (def->sym->type == dtVoid || def->sym->type == dtVoid->refType) {

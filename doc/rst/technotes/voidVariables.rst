@@ -51,17 +51,13 @@ fields will be removed by the compiler.
 Void Functions
 --------------
 
-A function that does not return is treated as a function that returns a
-``void`` value.  A non-returning function can be assigned to a variable
-of type ``void``. Initializing a variable without a specified type with
-a function that doesn't return will infer the variable type to be
-``void``. The variables will be removed by the compiler.
+A function may return the ``void`` value ``_void``.  Functions that
+return the value ``_void`` have a return type of ``void`` and can be
+used as ``void`` values.
 
-A function may also explicitly return the ``void`` value ``_void``.
-Functions that have no return and functions that return the value ``_void``
-both have a return type of ``void``. Functions that have no return and
-functions that return ``_void`` can both optionally specify their return
-types as ``void``.
+A function that does not return also has a return type of ``void``,
+but can not be used as a ``void`` value. For example, it cannot be
+assigned to a void-variable.
 
 .. code-block:: chapel
 
@@ -69,8 +65,8 @@ types as ``void``.
     writeln("Hello from noReturn");
   }
 
-  var v1: void = noReturn();
-  var v2 = noReturn();
+  //var v1: void = noReturn();
+  //var v2 = noReturn();
 
   proc explicitReturn(): void {
     writeln("Hello from explicitReturn");
@@ -80,8 +76,8 @@ types as ``void``.
   var v3: void = explicitReturn();
   var v4 = explicitReturn();
 
-In the future, a function that does not return may be differentiated from
-a function that explicitly returns a ``void`` value. In that case, both
-the ``v1`` and ``v2`` examples above would be errors, but a function that
-returns a ``void`` value explicitly would still be assignable to a variable
-of type ``void``, as is the case for ``v3`` and ``v4``.
+Although the function ``noReturn()`` has a return type of ``void``,
+it cannot be assigned to a variable. Both the ``v1`` and ``v2``
+assignments above would be errors if uncommented. A function that returns
+a ``void`` value explicitly is assignable to a variable of type ``void``,
+as in the ``v3`` and ``v4`` examples.

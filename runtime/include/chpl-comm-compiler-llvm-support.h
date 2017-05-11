@@ -40,7 +40,7 @@ void chpl_gen_comm_get_ctl(void *dst_addr, wide_ptr_t src, int64_t n, int64_t ct
 {
   c_nodeid_t src_node = chpl_wide_ptr_get_node(src);
   void* src_addr = chpl_wide_ptr_get_address(src);
-  chpl_gen_comm_get(dst_addr, src_node, src_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, -1, 0);
+  chpl_gen_comm_get(dst_addr, src_node, src_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
 
 static inline
@@ -48,7 +48,7 @@ void chpl_gen_comm_put_ctl(wide_ptr_t dst, void *src_addr, int64_t n, int64_t ct
 {
   c_nodeid_t dst_node = chpl_wide_ptr_get_node(dst);
   void* dst_addr = chpl_wide_ptr_get_address(dst);
-  chpl_gen_comm_put(src_addr, dst_node, dst_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, -1, 0);
+  chpl_gen_comm_put(src_addr, dst_node, dst_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
 
 // This function implements memcpy/memmove when both the source and destination

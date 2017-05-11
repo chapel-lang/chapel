@@ -93,6 +93,17 @@ def pkgconfig_get_link_args(pkg, ucp='', system=True, static=True):
   libs = libs_line.split()
   return libs
 
+# Get the version number for a system-wide installed package.
+# Presumably we update the bundled packages to compatible versions,
+# so this routine doesn't handle ucp and other bundled version concerns.
+@memoize
+def pkgconfig_get_system_version(pkg):
+  # check that pkg-config knows about the package in question
+  run_command(['pkg-config', '--exists', pkg])
+  # run pkg-config to get the version
+  version = run_command(['pkg-config', '--modversion', pkg])
+  return version.strip()
+
 #
 # This returns the default link args for the given third-party package.
 #

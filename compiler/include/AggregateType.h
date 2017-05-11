@@ -44,8 +44,6 @@ enum InitializerStyle {
 
 class AggregateType : public Type {
 public:
-  static void                 addRecordDefaultConstruction();
-
   static void                 setCreationStyle(TypeSymbol* t, FnSymbol* fn);
 
 public:

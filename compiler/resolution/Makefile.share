@@ -17,6 +17,7 @@
 
 RESOLUTION_SRCS =                                              \
                   addAutoDestroyCalls.cpp                      \
+                  AutoDestroyScope.cpp                         \
                   caches.cpp                                   \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \

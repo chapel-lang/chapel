@@ -8,7 +8,12 @@ writeln("running on locales ", ls.domain);
 var d = {1..3,1..3} dmapped ReplicatedDist(ls);
 var a: [d] int;
 
-a = 33;
+//
+// set 'a' on each locale
+//
+for l in Locales do
+  on l do
+    a = 33;
 
 for loc in ls {
   write("on ", loc);

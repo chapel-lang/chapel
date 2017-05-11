@@ -17,13 +17,14 @@ loghome=/data/sea/chapel
 loghistdir=/data/sea/chapel/NightlyHistory
 logsources="\
 Nightly \
-NightlyDists \
 NightlyMemLeaks \
 NightlyPerformance/bradc-lnx \
 NightlyPerformance/chap01 \
 NightlyPerformance/chap04 \
 NightlyPerformance/chap08 \
 NightlyPerformance/chap12 \
+NightlyPerformance/chapcs \
+NightlyPerformance/shootout \
 "
 
 # logs for "Cray hardware" configurations

@@ -1736,8 +1736,10 @@ expandForLoop(ForLoop* forLoop) {
     // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call
     // to getValue is inserted.  Check the order in the generated code to see
-    // if this is the case.
-    forLoop->insertAtHead(index->defPoint->remove());
+    // if this is the case.  Avoid moving the global void value when it is
+    // the loop index.
+    if (index != gVoid)
+      forLoop->insertAtHead(index->defPoint->remove());
 
     // Ensure that the test clause for completely unbounded loops contains
     // something.

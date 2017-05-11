@@ -21,6 +21,10 @@ CRAYPE_GEN_CFLAGS = -hnomessage=7212
 # Suppress warnings about unsigned ints being compared to 0
 CRAYPE_GEN_CFLAGS += -hnomessage=186
 
+# Suppress warnings about needing the optimizer to handle
+# certain cases of __asm__
+CRAYPE_GEN_CFLAGS += -hnomessage=3140
+
 # Could set CRAYPE_COMP_CXXFLAGS, CRAYPE_GEN_CFLAGS
 
 FAST_FLOAT_GEN_CFLAGS = -hfp2

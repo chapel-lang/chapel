@@ -610,7 +610,7 @@ do_stmt:
 ;
 
 return_stmt:
-  TRETURN TSEMI       { $$ = buildPrimitiveStmt(PRIM_RETURN, new SymExpr(gVoid)); }
+  TRETURN TSEMI       { $$ = buildPrimitiveStmt(PRIM_RETURN); }
 | TRETURN expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
 ;
 

@@ -98,6 +98,11 @@ LLVM Code Generation Options:
       --[no-]llvm                     [Don't] use the LLVM code generator
       --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
                                       optimizations
+      --llvm-print-ir <name>          Dump LLVM Intermediate Representation of
+                                      given function to stdout
+      --llvm-print-ir-stage <stage>   Specifies from which LLVM optimization
+                                      stage to print function: none, basic,
+                                      full
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands

@@ -186,6 +186,8 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
+#define COMMID( i)  ((int64_t)(INT64_C(i)))
+
 
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;

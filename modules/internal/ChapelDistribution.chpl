@@ -403,22 +403,60 @@ module ChapelDistribution {
       }
     }
 
+    inline proc _countDuplicates(arr) where isArray(arr) {
+      var dupCount = -1;
+      var prev = arr[arr.domain.low];
+      for a in arr {
+        if a == prev then
+          dupCount += 1;
+        else
+          prev = a;;
+      }
+      return dupCount;
+    }
+
+    // (1) sorts indices if !dataSorted
+    // (2) verifies the flags are set correctly if boundsChecking
+    // (3) checks OOB if boundsChecking
+    proc bulkAdd_prepareInds(inds, dataSorted, isUnique) {
+      use Sort;
+      if !dataSorted then sort(inds);
+
+      //verify sorted and no duplicates if not --fast
+      if boundsChecking {
+        if dataSorted && !isSorted(inds) then
+          halt("bulkAdd: Data not sorted, call the function with \
+              dataSorted=false");
+
+        //check duplicates assuming sorted
+        if isUnique {
+          const indsStart = inds.domain.low;
+          const indsEnd = inds.domain.high;
+          var lastInd = inds[indsStart];
+          for i in indsStart+1..indsEnd {
+            if inds[i] == lastInd then
+              halt("bulkAdd: There are duplicates, call the function \
+                  with isUnique=false");
+            else lastInd = inds[i];
+          }
+        }
+
+        //check OOB
+        for i in inds do boundsCheck(i);
+      }
+    }
+
     // this is a helper function for bulkAdd functions in sparse subdomains.
     // NOTE:it assumes that nnz array of the sparse domain has non-negative 
     // indices. If, for some reason it changes, this function and bulkAdds have to
     // be refactored. (I think it is a safe assumption at this point and keeps the
     // function a bit cleaner than some other approach. -Engin)
-    proc __getActualInsertPts(d, inds, 
-        dataSorted, isUnique) /* where isSparseDom(d) */ {
-
-      use Sort;
+    proc __getActualInsertPts(d, inds, isUnique) {
 
       //find individual insert points
       //and eliminate duplicates between inds and dom
       var indivInsertPts: [inds.domain] int;
       var actualInsertPts: [inds.domain] int; //where to put in newdom
-
-      if !dataSorted then sort(inds);
 
       //eliminate duplicates --assumes sorted
       if !isUnique {
@@ -428,24 +466,6 @@ module ChapelDistribution {
           if i == lastInd then p = -1;
           else lastInd = i;
         }
-      }
-
-      //verify sorted and no duplicates if not --fast
-      if boundsChecking {
-        if !isSorted(inds) then
-          halt("bulkAdd: Data not sorted, call the function with dataSorted=false");
-
-        //check duplicates assuming sorted
-        const indsStart = inds.domain.low;
-        const indsEnd = inds.domain.high;
-        var lastInd = inds[indsStart];
-        for i in indsStart+1..indsEnd {
-          if inds[i] == lastInd && indivInsertPts[i] != -1 then 
-            halt("There are duplicates, call the function with isUnique=false"); 
-        }
-
-        for i in inds do d.boundsCheck(i);
-
       }
 
       forall (i,p) in zip(inds, indivInsertPts) {

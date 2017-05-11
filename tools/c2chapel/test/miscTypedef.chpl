@@ -30,6 +30,9 @@ extern type my_int = c_int;
 
 extern type my_string = c_string;
 
+// Typedef'd pointer to struct
+extern type recp;
+
 extern type renamedFancy = fancyStruct;
 
 extern type renamedStruct = simpleStruct;

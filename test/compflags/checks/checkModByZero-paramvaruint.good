@@ -1,0 +1,1 @@
+checkModByZero.chpl:58: error: halt reached - Attempt to compute a modulus by zero
