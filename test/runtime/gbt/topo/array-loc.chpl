@@ -35,8 +35,8 @@ extern proc chpl_topo_getMemLocality(p: c_ptr): chpl_sublocID_t;
     locality = localityRight;
     for i in 0..#A._value.mdNumChunks {
       const size = A.domain.numIndices / A._value.mdRLen
-                   * A._value.mData(i).pdr.length;
-      const loc = checkMemLocalityWhole(c_ptrTo(A._value.mData(i).data(0)),
+                   * A._value.mdPDR(i).length;
+      const loc = checkMemLocalityWhole(c_ptrTo(A._value.mdData(i)(0)),
                                         size, A.eltType, i:chpl_sublocID_t);
       if loc != localityRight {
         locality = loc;

@@ -674,26 +674,31 @@ module DefaultRectangular {
     var mdBlk: mdType(idxType);
     var mdAlias: mdType(bool);
 
-    var mdPDR: mdType(experimentalMaxSublocales
-                      * range(idxType,BoundedRangeType.bounded,stridable));
-    inline proc mdPDRAcc(chunk) ref return mdPDR(chunk+1);
+    //
+    // Various distributions make this stridable even when the base
+    // array is not, so support the more general case here and adjust
+    // as necessary in dsiGetRAD().
+    //
+    var mdPDRVec: mdType(experimentalMaxSublocales
+                         * range(idxType,BoundedRangeType.bounded,true));
+    inline proc mdPDR(chunk) ref return mdPDRVec(chunk+1);
 
-    var mdDataOff: mdType(experimentalMaxSublocales * idxType);
-    inline proc mdDataOffAcc(chunk) ref return mdDataOff(chunk+1);
+    var mdDataOffVec: mdType(experimentalMaxSublocales * idxType);
+    inline proc mdDataOff(chunk) ref return mdDataOffVec(chunk+1);
 
     pragma "local field"
-    var mdData : mdType(experimentalMaxSublocales * _ddata(eltType));
-    inline proc mdDataAcc(chunk) ref return mdData(chunk+1);
+    var mdDataVec : mdType(experimentalMaxSublocales * _ddata(eltType));
+    inline proc mdData(chunk) ref return mdDataVec(chunk+1);
 
     pragma "local field"
-    var mdShiftedData : mdType(experimentalMaxSublocales * _ddata(eltType));
-    inline proc mdShiftedDataAcc(chunk) ref return mdShiftedData(chunk+1);
+    var mdShiftedDataVec : mdType(experimentalMaxSublocales * _ddata(eltType));
+    inline proc mdShiftedData(chunk) ref return mdShiftedDataVec(chunk+1);
 
     inline proc dataChunk(i) ref {
       if defRectSimpleDData then
         return data;
       else {
-        return mdDataAcc(i);
+        return mdData(i);
       }
     }
 
@@ -701,7 +706,7 @@ module DefaultRectangular {
       if defRectSimpleDData then
         return shiftedData;
       else {
-        return mdShiftedDataAcc(i);
+        return mdShiftedData(i);
       }
     }
 
@@ -725,7 +730,7 @@ module DefaultRectangular {
       if defRectSimpleDData then
         return data(i);
       else {
-        return mdDataAcc(i(1))(i(2));
+        return mdData(i(1))(i(2));
       }
     }
 
@@ -733,7 +738,7 @@ module DefaultRectangular {
       return shiftedData(i);
 
     inline proc shiftedDataElem(i) ref where !defRectSimpleDData {
-      return mdShiftedDataAcc(i(1))(i(2));
+      return mdShiftedData(i(1))(i(2));
     }
 
     // duplicates DefaultRectangularArr.mdInd2Chunk except for mdBlk,
@@ -852,8 +857,7 @@ module DefaultRectangular {
         shiftedData = _ddata_shift(eltType, data, shiftDist);
       } else {
         for i in 0..#mdNumChunks {
-          mdShiftedDataAcc(i) =
-            _ddata_shift(eltType, mdDataAcc(i), shiftDist);
+          mdShiftedData(i) = _ddata_shift(eltType, mdData(i), shiftDist);
         }
       }
     }
@@ -870,12 +874,13 @@ module DefaultRectangular {
     if defRectSimpleDData {
       this.data = other.data;
     } else {
-      if other.mdNumChunks > experimentalMaxSublocales {
-        halt("mdNumChunks > experimentalMaxSublocales: ", mdNumChunks, " > ", experimentalMaxSublocales);
-      }
-      for i in 0..#other.mdNumChunks {
-        this.mdDataOffAcc(i) = other.mdDataOffAcc(i);
-        this.mdDataAcc(i)    = other.mdDataAcc(i);
+      //
+      // Operate directly on md*Vec(i) here to avoid gripes about
+      // passing const actuals to ref accessor functions.
+      //
+      for i in 1..#other.mdNumChunks {
+        this.mdDataOffVec(i) = other.mdDataOffVec(i);
+        this.mdDataVec(i)    = other.mdDataVec(i);
       }
     }
   }
@@ -918,21 +923,21 @@ module DefaultRectangular {
       rad.mdBlk       = this.mdBlk;
 
       for i in 0..#mdNumChunks {
-        var low = max(this.mdPDRAcc(i).low, newDom.dsiDim(mdParDim).low);
+        var low = max(this.mdPDR(i).low, newDom.dsiDim(mdParDim).low);
         low = if rad.stridable
               then strideAlignUp(low, newDom.dsiDim(mdParDim))
               else low;
 
-        var high = min(this.mdPDRAcc(i).high, newDom.dsiDim(mdParDim).high);
+        var high = min(this.mdPDR(i).high, newDom.dsiDim(mdParDim).high);
         high = if rad.stridable
                then strideAlignDown(high, newDom.dsiDim(mdParDim))
                else high;
 
         const rng = low..high;
-        rad.mdPDRAcc(i) = if !rad.stridable
-                              then rng
-                              else rng by newDom.dsiDim(mdParDim).stride
-                                       align newDom.dsiDim(mdParDim).alignment;
+        rad.mdPDR(i) = if !rad.stridable
+                       then rng
+                       else rng by newDom.dsiDim(mdParDim).stride
+                                align newDom.dsiDim(mdParDim).alignment;
       }
     }
 
@@ -976,19 +981,19 @@ module DefaultRectangular {
       const thisLo    = this.off(mdParDim);
       const radLo     = rad.off(mdParDim);
       for i in 0..#mdNumChunks {
-        var low = (this.mdPDRAcc(i).low - thisLo) / thisStr;
+        var low = (this.mdPDR(i).low - thisLo) / thisStr;
         low = if rad.stridable then low * radStr else low;
         low += radLo;
 
-        var high = (this.mdPDRAcc(i).high - thisLo) /thisStr;
+        var high = (this.mdPDR(i).high - thisLo) /thisStr;
         high = if rad.stridable then high * radStr else high;
         high += radLo;
 
         const rng = low..high;
-        rad.mdPDRAcc(i) = if !rad.stridable
-                              then rng
-                              else rng by radStr
-                                       align newDom.dsiDim(mdParDim).alignment;
+        rad.mdPDR(i) = if !rad.stridable
+                       then rng
+                       else rng by radStr
+                                align newDom.dsiDim(mdParDim).alignment;
       }
     }
 
@@ -1058,15 +1063,14 @@ module DefaultRectangular {
         rad.mdBlk       = this.mdBlk;
 
         for i in 0..#mdNumChunks {
-          const rng = max(this.mdPDRAcc(i).low,
+          const rng = max(this.mdPDR(i).low,
                           newDom.dsiDim(rad.mdParDim).low)
-                      ..min(this.mdPDRAcc(i).high,
+                      ..min(this.mdPDR(i).high,
                             newDom.dsiDim(rad.mdParDim).high);
-          rad.mdPDRAcc(i) =
-            if !rad.stridable
-            then rng
-            else rng by newDom.dsiDim(rad.mdParDim).stride
-                     align newDom.dsiDim(rad.mdParDim).alignment;
+          rad.mdPDR(i) = if !rad.stridable           
+                         then rng
+                         else rng by newDom.dsiDim(rad.mdParDim).stride
+                                  align newDom.dsiDim(rad.mdParDim).alignment;
         }
       } else {
         // If the mdParDim'th dimension is removed, then we switch to
@@ -1084,10 +1088,10 @@ module DefaultRectangular {
           const (lo, hi) = rad.mdChunk2Ind(i);
           const rng = max(lo, newDom.dsiDim(1).low)
                       .. min(hi, newDom.dsiDim(1).high);
-          rad.mdPDRAcc(i) = if !rad.stridable
-                                then rng
-                                else rng by newDom.dsiDim(1).stride
-                                         align newDom.dsiDim(1).alignment;
+          rad.mdPDR(i) = if !rad.stridable
+                         then rng
+                         else rng by newDom.dsiDim(1).stride
+                                  align newDom.dsiDim(1).alignment;
         }
       }
     }
@@ -1162,20 +1166,20 @@ module DefaultRectangular {
     var mdRLen: mdType(idxType);  //       "     "  .length
     var mdAlias: mdType(bool);    //   is this an alias of another array?
 
-    var mdPDR: mdType(experimentalMaxSublocales
-                      * range(idxType,BoundedRangeType.bounded,stridable));
-    inline proc mdPDRAcc(chunk) ref return mdPDR(chunk+1);
+    var mdPDRVec: mdType(experimentalMaxSublocales
+                         * range(idxType,BoundedRangeType.bounded,stridable));
+    inline proc mdPDR(chunk) ref return mdPDRVec(chunk+1);
 
-    var mdDataOff: mdType(experimentalMaxSublocales * idxType);
-    inline proc mdDataOffAcc(chunk) ref return mdDataOff(chunk+1);
-
-    pragma "local field"
-    var mdData : mdType(experimentalMaxSublocales * _ddata(eltType));
-    inline proc mdDataAcc(chunk) ref return mdData(chunk+1);
+    var mdDataOffVec: mdType(experimentalMaxSublocales * idxType);
+    inline proc mdDataOff(chunk) ref return mdDataOffVec(chunk+1);
 
     pragma "local field"
-    var mdShiftedData : mdType(experimentalMaxSublocales * _ddata(eltType));
-    inline proc mdShiftedDataAcc(chunk) ref return mdShiftedData(chunk+1);
+    var mdDataVec : mdType(experimentalMaxSublocales * _ddata(eltType));
+    inline proc mdData(chunk) ref return mdDataVec(chunk+1);
+
+    pragma "local field"
+    var mdShiftedDataVec : mdType(experimentalMaxSublocales * _ddata(eltType));
+    inline proc mdShiftedData(chunk) ref return mdShiftedDataVec(chunk+1);
 
     var noinit_data: bool = false;
 
@@ -1203,7 +1207,7 @@ module DefaultRectangular {
         writeln("mdRStr=", mdRStr);
         writeln("mdRLen=", mdRLen);
         for i in 0..#mdNumChunks {
-          writeln("chunk (", mdPDRAcc(i), ') @', mdDataOffAcc(i));
+          writeln("chunk (", mdPDR(i), ') @', mdDataOff(i));
         }
       }
       writeln("noinit_data=", noinit_data);
@@ -1247,11 +1251,10 @@ module DefaultRectangular {
           } else {
             for chunk in 0..#mdNumChunks {
               const chunkSize = if mdRLen == 0 then 0
-                                else numElts / mdRLen
-                                     * mdPDRAcc(chunk).length;
+                                else numElts / mdRLen * mdPDR(chunk).length;
               if chunkSize > 0 {
                 dsiDestroyDataHelper(_ddata_shift(eltType, dataChunk(chunk),
-                                                  mdDataOffAcc(chunk)),
+                                                  mdDataOff(chunk)),
                                      chunkSize);
               }
             }
@@ -1265,7 +1268,7 @@ module DefaultRectangular {
         for chunk in 0..#mdNumChunks {
           _ddata_free(_ddata_shift(eltType,
                                    dataChunk(chunk),
-                                   mdDataOffAcc(chunk)));
+                                   mdDataOff(chunk)));
         }
       }
     }
@@ -1274,7 +1277,7 @@ module DefaultRectangular {
       if defRectSimpleDData then
         return data;
       else {
-        return mdDataAcc(i);
+        return mdData(i);
       }
     }
 
@@ -1286,9 +1289,9 @@ module DefaultRectangular {
           return data;
       } else {
         if earlyShiftData && !stridable then
-          return mdShiftedDataAcc(i);
+          return mdShiftedData(i);
         else
-          return mdDataAcc(i);
+          return mdData(i);
       }
     }
 
@@ -1483,7 +1486,7 @@ module DefaultRectangular {
         if boundsChecking {
           // the code here assumes followThis spans but a single chunk
           assert(mdPDLow + followThis(mdParDim).high:mdPDLow.type
-                 <= mdPDRAcc(chunk).high);
+                 <= mdPDR(chunk).high);
         }
 
         //
@@ -1494,7 +1497,7 @@ module DefaultRectangular {
         //
         // gbt TODO: change to using .data here
         //
-        var dd = mdShiftedDataAcc(chunk);
+        var dd = mdShiftedData(chunk);
         for ind in dom.these(tag=iterKind.follower, followThis,
                              tasksPerLocale,
                              ignoreRunning,
@@ -1538,8 +1541,8 @@ module DefaultRectangular {
             shiftedData = _ddata_shift(eltType, dataChunk(0), shiftDist);
           } else {
             for chunk in 0..#mdNumChunks {
-              mdShiftedDataAcc(chunk) =
-                _ddata_shift(eltType, mdDataAcc(chunk), shiftDist);
+              mdShiftedData(chunk) =
+                _ddata_shift(eltType, mdData(chunk), shiftDist);
             }
           }
         }
@@ -1598,35 +1601,37 @@ module DefaultRectangular {
         //
         if mdNumChunks == 1 {
           if stridable then
-            mdPDRAcc(0) =
-              dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high
-                by dom.dsiDim(mdParDim).stride
-                align dom.dsiDim(mdParDim).alignment;
+            mdPDR(0) = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high
+                         by dom.dsiDim(mdParDim).stride
+                         align dom.dsiDim(mdParDim).alignment;
           else
-            mdPDRAcc(0) =
-              dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
+            mdPDR(0) = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           const dd =
             _ddata_allocate(eltType, size,
                             locStyle = if here.maxTaskPar < 2
                                        then localizationStyle_t.locNone
                                        else localizationStyle_t.locSubchunks);
-          mdDataAcc(0) = dd;
+          mdData(0) = dd;
         } else {
+          if mdNumChunks > experimentalMaxSublocales {
+            halt("mdNumChunks > experimentalMaxSublocales: ",
+                 mdNumChunks, " > ", experimentalMaxSublocales);
+          }
+
           var dataOff: idxType = 0;
           for chunk in 0..#mdNumChunks do local on here.getChild(chunk) {
-            mdDataOffAcc(chunk) = dataOff;
+            mdDataOff(chunk) = dataOff;
             const (lo, hi) = mdChunk2Ind(chunk);
             if stridable then
-              mdPDRAcc(chunk) = lo..hi by dom.dsiDim(mdParDim).stride
-                                           align dom.dsiDim(mdParDim).alignment;
+              mdPDR(chunk) = lo..hi by dom.dsiDim(mdParDim).stride
+                                    align dom.dsiDim(mdParDim).alignment;
             else
-              mdPDRAcc(chunk) = lo..hi;
-            const chunkSize = size / mdRLen * mdPDRAcc(chunk).length;
+              mdPDR(chunk) = lo..hi;
+            const chunkSize = size / mdRLen * mdPDR(chunk).length;
             const dd = _ddata_allocate(eltType, chunkSize,
                                        locStyle = localizationStyle_t.locWhole,
                                        subloc = chunk:chpl_sublocID_t);
-            mdDataAcc(chunk) = _ddata_shift(eltType, dd,
-                                                -dataOff:idxSignedType);
+            mdData(chunk) = _ddata_shift(eltType, dd, -dataOff:idxSignedType);
             dataOff += chunkSize;
           }
         }
@@ -1835,10 +1840,10 @@ module DefaultRectangular {
           mdRHi = copy.mdRHi;
           mdRStr = copy.mdRStr;
           mdRLen = copy.mdRLen;
-          mdPDR = copy.mdPDR;
-          mdDataOff = copy.mdDataOff;
-          mdData = copy.mdData;
-          mdShiftedData = copy.mdShiftedData;
+          mdPDRVec = copy.mdPDRVec;
+          mdDataOffVec = copy.mdDataOffVec;
+          mdDataVec = copy.mdDataVec;
+          mdShiftedDataVec = copy.mdShiftedDataVec;
         }
         // We can't call initShiftedData here because the new domain
         // has not yet been updated (this is called from within the
@@ -1889,10 +1894,13 @@ module DefaultRectangular {
         rad.mdRLen = mdRLen;
         rad.mdBlk = 1;
         for chunk in 0..#mdNumChunks {
-          rad.mdDataAcc(chunk)        = mdDataAcc(chunk);
-          rad.mdShiftedDataAcc(chunk) = mdShiftedDataAcc(chunk);
-          rad.mdPDRAcc(chunk)         = mdPDRAcc(chunk);
-          rad.mdDataOffAcc(chunk)     = mdDataOffAcc(chunk);
+          // see _remoteAccessData.mdPDRVec decl above for more info
+          rad.mdPDR(chunk)         = mdPDR(chunk).low..mdPDR(chunk).high
+                                      by mdPDR(chunk).stride
+                                      align mdPDR(chunk).alignment;
+          rad.mdDataOff(chunk)     = mdDataOff(chunk);
+          rad.mdData(chunk)        = mdData(chunk);
+          rad.mdShiftedData(chunk) = mdShiftedData(chunk);
         }
       }
       return rad;
@@ -1932,18 +1940,15 @@ module DefaultRectangular {
       const lo     = viewDom.dsiDim(info.mdParDim).low;
       const hi     = viewDom.dsiDim(info.mdParDim).high;
 
-//      param chunkOffset = if useCache then 1 else 0;
       var (chunk, idx) = info.getDataIndex(viewDom.dsiLow);
       var dd           = info.theDataChunk(chunk);
-//      chunk += chunkOffset;
-      var lastChunkInd = info.mdPDRAcc(chunk).high;
+      var lastChunkInd = info.mdPDR(chunk).high;
 
       for ind in chpl_direct_pos_stride_range_iter(lo, hi, 1:viewDom.idxType) {
         if ind > lastChunkInd { // traverse to next chunk
           (chunk, idx) = info.getDataIndex(ind);
           dd           = info.theDataChunk(chunk);
-//          chunk += chunkOffset;
-          lastChunkInd = info.mdPDRAcc(chunk).high;
+          lastChunkInd = info.mdPDR(chunk).high;
         }
         yield dd(idx);
         idx += step;
@@ -2245,10 +2250,10 @@ module DefaultRectangular {
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#arr.mdNumChunks {
-          if arr.mdPDRAcc(chunk).length >= 0 {
+          if arr.mdPDR(chunk).length >= 0 {
             const src = arr.theDataChunk(chunk);
             const cmp = if isTuple(indLo) then indLo(arr.mdParDim) else indLo;
-            const newLow = max(arr.mdPDRAcc(chunk).low, cmp);
+            const newLow = max(arr.mdPDR(chunk).low, cmp);
             if isTuple(indLo) then
               indLo(arr.mdParDim) = newLow;
             else
@@ -2258,7 +2263,7 @@ module DefaultRectangular {
                            then 1
                            else arr.blk(arr.mdParDim) / arr.blk(arr.mdParDim+1);
             const outer = dom.dsiDim(arr.mdParDim);
-            const inner = arr.mdPDRAcc(chunk);
+            const inner = arr.mdPDR(chunk);
             const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
             if f.writing {
@@ -2400,8 +2405,7 @@ module DefaultRectangular {
       //
       const (chunk0, Aidx) = getDataIndex(Alo);
       const Adata = _ddata_shift(eltType, this.theDataChunk(chunk0), Aidx);
-      var len0 = ((mdPDRAcc(chunk0).high - Alo(mdParDim) + 1)
-                  * blk(mdParDim))
+      var len0 = ((mdPDR(chunk0).high - Alo(mdParDim) + 1) * blk(mdParDim))
                  .safeCast(size_t);
       const (_, Bidx) = getDataIndex(Blo);
       const Bdata = _ddata_shift(eltType, B.theDataChunk(chunk0), Bidx);
@@ -2413,15 +2417,14 @@ module DefaultRectangular {
         var chunk = chunk0 + 1;
         do {
           lenRemain -= chunkLen;
-          chunkLen = (mdPDRAcc(chunk).length * blk(mdParDim))
-                     .safeCast(size_t);
+          chunkLen = (mdPDR(chunk).length * blk(mdParDim)).safeCast(size_t);
           doiBulkTransferHelper(B,
                                 _ddata_shift(eltType,
                                              dataChunk(chunk),
-                                             mdDataOffAcc(chunk)),
+                                             mdDataOff(chunk)),
                                 _ddata_shift(B.eltType,
                                              B.dataChunk(chunk),
-                                             mdDataOffAcc(chunk)),
+                                             mdDataOff(chunk)),
                                 min(chunkLen, lenRemain));
         } while lenRemain > chunkLen;
       }
