@@ -326,7 +326,7 @@ bool AggregateType::setNextGenericField() {
 // previously made an instantiation for the provided argument and will return
 // that instantiation if we find one.  Otherwise, will create a new
 // instantiation with the given argument and will return that.
-AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
+AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   // If the index of the field is prior to the index of the next generic field
   // then trivially return ourselves
   if (index < genericField)
@@ -344,13 +344,19 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   for_vector(AggregateType, at, instantiations) {
     // TODO: test me
     Symbol* field = at->getField(genericField);
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
-      if (field->type == t->typeInfo())
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+      if (field->type == sym->typeInfo())
         return at;
     }
     if (field->hasFlag(FLAG_PARAM) &&
-        at->substitutions.get(field) == t->symbol()) {
+        at->substitutions.get(field) == sym) {
       return at;
+    }
+    if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
+        !field->hasFlag(FLAG_PARAM)) {
+      if (field->type == sym->typeInfo()) {
+        return at;
+      }
     }
   }
   // Otherwise, we need to create an instantiation for that type
@@ -362,22 +368,22 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
 
   Symbol* field = newInstance->getField(genericField);
   if (field->hasFlag(FLAG_PARAM)) {
-    newInstance->substitutions.put(field, t->symbol());
-    newInstance->symbol->renameInstantiatedSingle(t->symbol());
+    newInstance->substitutions.put(field, sym);
+    newInstance->symbol->renameInstantiatedSingle(sym);
   } else {
-    newInstance->substitutions.put(field, t->typeInfo()->symbol);
-    newInstance->symbol->renameInstantiatedSingle(t->typeInfo()->symbol);
+    newInstance->substitutions.put(field, sym->typeInfo()->symbol);
+    newInstance->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
 
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(t)) {
-    field->type = t->typeInfo();
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+    field->type = sym->typeInfo();
   } else {
     if (!field->defPoint->exprType && field->type == dtUnknown)
-      field->type = t->typeInfo();
-    else if (field->defPoint->exprType->typeInfo() != t->typeInfo()) {
+      field->type = sym->typeInfo();
+    else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
       // TODO: Something something, casts and coercions
     } else {
-      field->type = t->typeInfo();
+      field->type = sym->typeInfo();
     }
   }
   instantiations.push_back(newInstance);
@@ -386,9 +392,9 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   // Handle dispatch parents (because it totally makes sense for this to have
   // been done outside of the AggregateType by
   // instantiateTypeForTypeConstructor.  Totally)
-  forv_Vec(Type, t, this->dispatchParents) {
-    newInstance->dispatchParents.add(t);
-    bool inserted = t->dispatchChildren.add_exclusive(newInstance);
+  forv_Vec(Type, pt, this->dispatchParents) {
+    newInstance->dispatchParents.add(pt);
+    bool inserted = pt->dispatchChildren.add_exclusive(newInstance);
     INT_ASSERT(inserted);
   }
 
@@ -412,6 +418,38 @@ AggregateType* AggregateType::getInstantiation(SymExpr* t, int index) {
   }
 
   return newInstance;
+}
+
+// Obtain the instantiation of this generic type with the given substitutions.
+// fn is the type constructor.  Used exclusively for types that define
+// initializers.
+// Basically, when a type constructor gets resolved, it will gather the
+// substitutions it needs and send them here, to create the instantiation from
+// those substitutions following the same mechanism used by the resolution of
+// initializers but extended to handling multiple updates at a time.
+AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
+                                                    FnSymbol* fn) {
+  INT_ASSERT(this->symbol->hasFlag(FLAG_GENERIC));
+  INT_ASSERT(fn->hasFlag(FLAG_TYPE_CONSTRUCTOR));
+
+  if (this->genericField == 0) {
+    setNextGenericField();
+  }
+
+  AggregateType* instantiation = this;
+
+  for_formals(formal, fn) {
+    if (Symbol* val = subs.get(formal)) {
+      // Assumes that the type constructor arguments will correspond directly
+      // to the generic fields, and that they will gain substitutions in order.
+      // Bad things will happen if this assumption is violated
+      instantiation = instantiation->getInstantiation(val,
+                                                      instantiation->genericField);
+    }
+  }
+  instantiation->instantiatedFrom = this;
+
+  return instantiation;
 }
 
 

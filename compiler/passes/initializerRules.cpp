@@ -1609,6 +1609,11 @@ static void preNormalizeGenericInit(FnSymbol* fn) {
   AggregateType* at        = toAggregateType(fn->_this->type);
   InitStyle      initStyle = findInitStyle(fn);
 
+  if (isRecord(at))
+    USR_FATAL_CONT(fn,
+                   "Generic records that define initializers are not yet "
+                   "supported, stay tuned!");
+
   // The body is pure phase 2
   if (initStyle == STYLE_NONE) {
     SET_LINENO(fn->body);

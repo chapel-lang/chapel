@@ -3272,6 +3272,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   resolveDefaultGenericType(call);
 
+  if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
+    if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
+      if (!strcmp(ures->unresolved, "init") &&
+          isGenericRecordWithInitializers(call->get(2)->typeInfo())) {
+        // If the first actual is an instance of dtMethodToken and the call is
+        // to "init" of a generic record that defined initializers
+        resolveInitializer(call);
+        return call->resolvedFunction();
+      }
+    }
+  }
+
   CallInfo info(call, checkonly);
 
   // Return early if creating the call info would have been an error.
@@ -3974,7 +3986,7 @@ static void resolveInitField(CallExpr* call) {
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(rhs)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL)) {
-      AggregateType* instantiate = ct->getInstantiation(rhs, index);
+      AggregateType* instantiate = ct->getInstantiation(rhs->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
         FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
@@ -5152,16 +5164,6 @@ resolveExpr(Expr* expr) {
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             ct->defaultTypeConstructor) {
 
-          if (ct->initializerStyle == DEFINES_INITIALIZER &&
-              (ct->isGeneric() ||
-               (isAggregateType(ct->instantiatedFrom) &&
-                toAggregateType(ct->instantiatedFrom)->isGeneric()))) {
-            USR_FATAL(ct,
-                      "Type constructors are not yet supported for "
-                      "generic types that define initializers.  "
-                      "As a workaround, try relying on type inference");
-          }
-
           resolveFormals(ct->defaultTypeConstructor);
 
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
@@ -5730,8 +5732,9 @@ resolveFns(FnSymbol* fn) {
         }
       }
     }
+    AggregateType* ct = toAggregateType(fn->retType);
 
-    if (AggregateType* ct = toAggregateType(fn->retType)) {
+    if (ct) {
       for_fields(field, ct) {
         if (AggregateType* fct = toAggregateType(field->type)) {
           if (fct->defaultTypeConstructor) {
@@ -5745,14 +5748,20 @@ resolveFns(FnSymbol* fn) {
       }
     }
 
-    // This instantiates the default constructor
-    // for  the corresponding type constructor.
-    instantiate_default_constructor(fn);
+    if (ct && ct->initializerStyle == DEFINES_INITIALIZER
+        && ct->instantiatedFrom) {
+      // Don't instantiate the default constructor for generic types that
+      // define initializers, they don't have one!
+    } else {
+      // This instantiates the default constructor
+      // for  the corresponding type constructor.
+      instantiate_default_constructor(fn);
+    }
 
     //
     // resolve destructor
     //
-    if (AggregateType* ct = toAggregateType(fn->retType)) {
+    if (ct) {
       if (!ct->destructor &&
           !ct->symbol->hasFlag(FLAG_REF) &&
           !isTupleContainingOnlyReferences(ct)) {

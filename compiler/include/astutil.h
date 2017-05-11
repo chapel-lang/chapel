@@ -180,6 +180,7 @@ ArgSymbol* actual_to_formal( Expr *a);
 Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
 bool isTypeExpr(Expr* expr);
+bool givesType(Symbol* sym);
 
 Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);

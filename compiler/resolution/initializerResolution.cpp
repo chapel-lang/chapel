@@ -37,9 +37,6 @@
 #include "visibleFunctions.h"
 
 static
-void resolveInitializer(CallExpr* call);
-
-static
 void resolveInitCall(CallExpr* call);
 
 static
@@ -364,7 +361,6 @@ void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew) {
   }
 }
 
-static
 void resolveInitializer(CallExpr* call) {
   // From resolveExpr() (removed the tryStack stuff)
   callStack.add(call);

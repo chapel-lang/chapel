@@ -262,10 +262,10 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
  * \param type The generic type we wish to instantiate
  */
 static Type*
-instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call, Type* type) {
-  INT_ASSERT(isAggregateType(type));
-  AggregateType* ct = toAggregateType(type);
-
+instantiateTypeForTypeConstructor(FnSymbol* fn,
+                                  SymbolMap& subs,
+                                  CallExpr* call,
+                                  AggregateType* ct) {
   Type* newType = NULL;
   newType = ct->symbol->copy()->type;
 
@@ -472,10 +472,17 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       Type* newType = NULL;
 
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-        newType = instantiateTypeForTypeConstructor(fn,
-                                                    subs,
-                                                    call,
-                                                    fn->retType);
+        INT_ASSERT(isAggregateType(fn->retType));
+        AggregateType* ct = toAggregateType(fn->retType);
+
+        if (ct->initializerStyle != DEFINES_INITIALIZER) {
+          newType = instantiateTypeForTypeConstructor(fn,
+                                                      subs,
+                                                      call,
+                                                      ct);
+        } else {
+          newType = ct->getInstantiationMulti(subs, fn);
+        }
       }
 
       //
