@@ -198,6 +198,7 @@ proc file.realPath(): string {
   :rtype: `string`
 
  */
+ pragma "no doc"
  proc file.getParentName(out error:syserr): string {
    check();
    var ret: string;
@@ -219,7 +220,6 @@ proc file.realPath(): string {
  */
  proc file.getParentName(): string {
    var err: syserr = ENOERR;
-   var tmp: string;
    var ret = getParentName(err);
    if err != ENOERR then ioerror(err, "in file.getParentName");
    return ret;
