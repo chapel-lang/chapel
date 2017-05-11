@@ -420,6 +420,13 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   return newInstance;
 }
 
+// Obtain the instantiation of this generic type with the given substitutions.
+// fn is the type constructor.  Used exclusively for types that define
+// initializers.
+// Basically, when a type constructor gets resolved, it will gather the
+// substitutions it needs and send them here, to create the instantiation from
+// those substitutions following the same mechanism used by the resolution of
+// initializers but extended to handling multiple updates at a time.
 AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
                                                     FnSymbol* fn) {
   INT_ASSERT(this->symbol->hasFlag(FLAG_GENERIC));
