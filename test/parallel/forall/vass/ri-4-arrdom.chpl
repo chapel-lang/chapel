@@ -44,8 +44,6 @@ var
   A1: [D1] int,
   A2: [D2] real;
 
-const mult = if distType == DistType.replicated then numLocales else 1;
-
 proc main {
   writeConfig("starting"); writeln();
   initArrays();
@@ -152,7 +150,7 @@ proc sum0(l) return l * (l-1) / 2;  // sum(0..l-1)
 proc sum1(l) return l * (l+1) / 2;  // sum(1..l)
 
 proc check(actual, expected, ri, name) {
-  if actual == expected * mult then return; // OK!
+  if actual == expected then return; // OK!
   nErr += 1;
   writeln("ERROR: onetest(", ri, ", ", name, ")  expected ", expected,
           "  actual ", actual);

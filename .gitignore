@@ -169,32 +169,6 @@ tags
 
 /test/distributions/dm/hplx.exec.out.tmp.orig
 
-/test/distributions/robust/arithmetic/basics/test_array_assignment.good
-/test/distributions/robust/arithmetic/basics/test_array_iteration1.good
-/test/distributions/robust/arithmetic/basics/test_array_of_distributed_array1.good
-/test/distributions/robust/arithmetic/basics/test_array_swap.good
-/test/distributions/robust/arithmetic/basics/test_class_of_distributed_array.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_array1.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_array2.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_record1.good
-/test/distributions/robust/arithmetic/basics/test_distributed_array_of_record2.good
-/test/distributions/robust/arithmetic/basics/test_domain_assignment.good
-/test/distributions/robust/arithmetic/basics/test_domain_iteration1.good
-/test/distributions/robust/arithmetic/basics/test_infer_array_type.good
-/test/distributions/robust/arithmetic/basics/test_promotion1.good
-/test/distributions/robust/arithmetic/basics/test_promotion2.good
-/test/distributions/robust/arithmetic/basics/test_promotion3.good
-/test/distributions/robust/arithmetic/basics/test_record_of_distributed_array.good
-/test/distributions/robust/arithmetic/basics/test_reduce1.good
-/test/distributions/robust/arithmetic/basics/test_reshape.good
-/test/distributions/robust/arithmetic/basics/test_scan1.good
-/test/distributions/robust/arithmetic/basics/test_strided_serial_iteration.good
-/test/distributions/robust/arithmetic/collapsing/test_array_rank_change1.good
-/test/distributions/robust/arithmetic/collapsing/test_domain_rank_change1.good
-/test/distributions/robust/arithmetic/collapsing/test_domain_rank_change_OOB.good
-/test/distributions/robust/arithmetic/modules/test_module_Norm.good
-/test/distributions/robust/arithmetic/modules/test_module_Random.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple.comm-gasnet.good
@@ -206,28 +180,6 @@ tags
 /test/distributions/robust/arithmetic/performance/multilocale/reduce.good
 /test/distributions/robust/arithmetic/performance/multilocale/reduceAlias.good
 /test/distributions/robust/arithmetic/performance/multilocale/reduceSlice.good
-/test/distributions/robust/arithmetic/reindexing/test_array_alias1.good
-/test/distributions/robust/arithmetic/reindexing/test_array_alias2.good
-/test/distributions/robust/arithmetic/reindexing/test_array_alias3.good
-/test/distributions/robust/arithmetic/reindexing/test_reindexing6.good
-/test/distributions/robust/arithmetic/reindexing/test_strided_reindex1.good
-/test/distributions/robust/arithmetic/reindexing/test_strided_reindex2.good
-/test/distributions/robust/arithmetic/resizing/test_domain_resize1.good
-/test/distributions/robust/arithmetic/slicing/test_array_slicing1.good
-/test/distributions/robust/arithmetic/slicing/test_array_slicing2.good
-/test/distributions/robust/arithmetic/slicing/test_array_slicing3.good
-/test/distributions/robust/arithmetic/slicing/test_domain_slicing1.good
-/test/distributions/robust/arithmetic/slicing/test_strided_slice1.good
-/test/distributions/robust/arithmetic/slicing/test_strided_slice2.good
-/test/distributions/robust/arithmetic/trivial/test_domain_plus_minus_index.good
-/test/distributions/robust/arithmetic/trivial/test_dot_domain.good
-/test/distributions/robust/arithmetic/trivial/test_dot_expand.good
-/test/distributions/robust/arithmetic/trivial/test_dot_exterior.good
-/test/distributions/robust/arithmetic/trivial/test_dot_interior.good
-/test/distributions/robust/arithmetic/trivial/test_dot_numIndices.good
-/test/distributions/robust/arithmetic/trivial/test_dot_translate.good
-/test/distributions/robust/arithmetic/trivial/test_tuple_to_array.good
-/test/distributions/robust/arithmetic/trivial/test_writeln.good
 
 /test/domains/shannon/OUTPUT
 
