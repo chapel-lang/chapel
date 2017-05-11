@@ -279,20 +279,24 @@ BaseAST* UseStmt::getSearchScope() {
 }
 
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
-  Stmt(E_BlockStmt),
-  blockTag(initBlockTag),
-  modUses(NULL),
-  userLabel(NULL),
-  byrefVars(NULL),
-  forallIntents(NULL),
-  blockInfo(NULL) {
-  body.parent = this;
+  Stmt(E_BlockStmt) {
+
+
+  blockTag      = initBlockTag;
+  useList       = NULL;
+  userLabel     = NULL;
+  byrefVars     = NULL;
+  forallIntents = NULL;
+  blockInfo     = NULL;
+
+  body.parent   = this;
 
   if (initBody)
     body.insertAtTail(initBody);
@@ -321,32 +325,39 @@ void BlockStmt::verify() {
       INT_FATAL(this, "BlockStmt::verify. Bad body.expr->parentExpr");
   }
 
-  if (blockInfo && blockInfo->parentExpr != this)
+  if (blockInfo != NULL && blockInfo->parentExpr != this) {
     INT_FATAL(this, "BlockStmt::verify. Bad blockInfo->parentExpr");
+  }
 
-  if (modUses   && modUses->parentExpr   != this)
-    INT_FATAL(this, "BlockStmt::verify. Bad modUses->parentExpr");
+  if (useList   != NULL && useList->parentExpr   != this) {
+    INT_FATAL(this, "BlockStmt::verify. Bad useList->parentExpr");
+  }
 
   if (byrefVars) {
-    if (byrefVars->parentExpr != this)
+    if (byrefVars->parentExpr != this) {
       INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
+    }
 
-    if (!byrefVars->isPrimitive(PRIM_ACTUALS_LIST))
+    if (!byrefVars->isPrimitive(PRIM_ACTUALS_LIST)) {
       INT_FATAL(this, "BlockStmt::byrefVars not PRIM_ACTUALS_LIST");
+    }
 
     for_actuals(varExp, byrefVars) {
-      if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp))
+      if (!isSymExpr(varExp) && !isUnresolvedSymExpr(varExp)) {
         INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
+      }
     }
   }
 
-  if (forallIntents)
+  if (forallIntents) {
     forallIntents->verifyFI(this);
+  }
 
-  if (byrefVars && forallIntents)
+  if (byrefVars && forallIntents) {
     INT_FATAL(this,"BlockStmt: byrefVars and forallIntents are both non-NULL");
+  }
 
-  verifyNotOnList(modUses);
+  verifyNotOnList(useList);
   verifyNotOnList(byrefVars);
   verifyNotOnList(blockInfo);
 }
@@ -358,7 +369,7 @@ BlockStmt::copyInner(SymbolMap* map) {
 
   _this->blockTag  = blockTag;
   _this->blockInfo = COPY_INT(blockInfo);
-  _this->modUses   = COPY_INT(modUses);
+  _this->useList   = COPY_INT(useList);
   _this->byrefVars = COPY_INT(byrefVars);
   _this->forallIntents = COPY_INT(forallIntents);
 
@@ -381,8 +392,8 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   else if (oldExpr == blockInfo)
     blockInfo = newExpr;
 
-  else if (oldExpr == modUses)
-    modUses   = newExpr;
+  else if (oldExpr == useList)
+    useList   = newExpr;
 
   else if (oldExpr == byrefVars)
     byrefVars = newExpr;
@@ -670,31 +681,31 @@ BlockStmt::length() const {
 
 
 void
-BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
-  moduleUseAdd(new UseStmt(mod));
+BlockStmt::useListAdd(ModuleSymbol* mod) {
+  useListAdd(new UseStmt(mod));
 }
 
 void
-BlockStmt::moduleUseAdd(UseStmt* use) {
-  if (modUses == NULL) {
-    modUses = new CallExpr(PRIM_USED_MODULES_LIST);
+BlockStmt::useListAdd(UseStmt* use) {
+  if (useList == NULL) {
+    useList = new CallExpr(PRIM_USED_MODULES_LIST);
 
     if (parentSymbol)
-      insert_help(modUses, this, parentSymbol);
+      insert_help(useList, this, parentSymbol);
   }
 
-  modUses->insertAtTail(use);
+  useList->insertAtTail(use);
 }
 
 
 // Remove a module from the list of modules used by the module this block
-// statement belongs to. The list of used modules is stored in modUses
+// statement belongs to. The list of used modules is stored in useList
 bool
-BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
+BlockStmt::useListRemove(ModuleSymbol* mod) {
   bool retval = false;
 
-  if (modUses != NULL) {
-    for_alist(expr, modUses->argList) {
+  if (useList != NULL) {
+    for_alist(expr, useList->argList) {
       if (SymExpr* symExpr = toSymExpr(expr)) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->symbol())) {
           if (curMod == mod) {
@@ -712,38 +723,44 @@ BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
 }
 
 void
-BlockStmt::moduleUseClear() {
-  if (modUses != 0) {
+BlockStmt::useListClear() {
+  if (useList != NULL) {
 
-    for_alist(expr, modUses->argList) {
+    for_alist(expr, useList->argList) {
       expr->remove();
     }
 
     // It's possible that this use definition is not alive
-    if (isAlive(modUses))
-      modUses->remove();
+    if (isAlive(useList)) {
+      useList->remove();
+    }
 
-    modUses = 0;
+    useList = NULL;
   }
 }
 
 void
 BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
-    for_alist(next_ast, body)
+    for_alist(next_ast, body) {
       next_ast->accept(visitor);
+    }
 
-    if (blockInfo)
+    if (blockInfo) {
       blockInfo->accept(visitor);
+    }
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList) {
+      useList->accept(visitor);
+    }
 
-    if (byrefVars)
+    if (byrefVars) {
       byrefVars->accept(visitor);
+    }
 
-    if (forallIntents)
+    if (forallIntents) {
       forallIntents->acceptFI(visitor);
+    }
 
     visitor->exitBlockStmt(this);
   }

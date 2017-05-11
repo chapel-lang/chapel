@@ -134,8 +134,8 @@ void WhileDoStmt::accept(AstVisitor* visitor)
     if (condExprGet() != 0)
       condExprGet()->accept(visitor);
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList)
+      useList->accept(visitor);
 
     if (byrefVars)
       byrefVars->accept(visitor);
