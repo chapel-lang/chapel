@@ -189,4 +189,40 @@ proc file.realPath(): string {
    }
  }
 
+ /*
+
+ Returns the parent directory of the :type:`~IO.file` record.  For instance,
+ a file with path `/foo/bar/baz` would return `/foo/bar`
+
+  :return: The parent directory of the file
+  :rtype: `string`
+
+ */
+ pragma "no doc"
+ proc file.getParentName(out error:syserr): string {
+   check();
+   var ret: string;
+   var tmp: string;
+   tmp = this.realPath(error);
+   ret = if error then "unknown"
+                  else dirname(new string(tmp));
+   return ret;
+ }
+
+ /*
+ Returns the parent directory of the :type:`~IO.file` record.  For instance,
+ a file with path `/foo/bar/baz` would return `/foo/bar`
+
+ Will halt with an error message if one is detected.
+
+  :return: The parent directory of the file
+  :rtype: `string`
+ */
+ proc file.getParentName(): string {
+   var err: syserr = ENOERR;
+   var ret = getParentName(err);
+   if err != ENOERR then ioerror(err, "in file.getParentName");
+   return ret;
+ }
+
 }
