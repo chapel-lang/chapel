@@ -1344,7 +1344,7 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
 AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
   UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
-  Symbol*            sym = lookup(storesName, se->unresolved);
+  Symbol*            sym = lookup(se->unresolved, storesName);
   TypeSymbol*        ts  = toTypeSymbol(sym);
 
   if (ts == NULL) {

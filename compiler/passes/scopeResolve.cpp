@@ -92,6 +92,11 @@ static void destroyModuleUsesCaches();
 
 static void renameDefaultTypesToReflectWidths();
 
+static bool lookupThisScopeAndUses(const char*           name,
+                                   BaseAST*              context,
+                                   BaseAST*              scope,
+                                   std::vector<Symbol*>& symbols);
+
 void scopeResolve() {
   //
   // add all program asts to the symbol table
@@ -169,7 +174,7 @@ void scopeResolve() {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
         SET_LINENO(fn->_this);
 
-        if (TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved))) {
+        if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
@@ -295,285 +300,179 @@ static void addToSymbolTable(DefExpr* def) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Symbol* getUsedSymbol(UseStmt* use);
-static Symbol* getUsedSymbol(Expr* expr, UseStmt* useCall);
+static void    processImportExprs(UseStmt* useStmt);
+
+static Symbol* getUsedSymbol(UseStmt* useStmt, Expr* expr);
+
+static bool    isValidUsedSymbol(UseStmt* useStmt, Symbol* symbol);
+
+static void    printUseError(UseStmt* useStmt, Symbol* sym);
 
 static void processImportExprs() {
-  // handle "use mod;" where mod is a module
-  forv_Vec(UseStmt, use, gUseStmts) {
-    SET_LINENO(use);
-
-    Symbol* sym = getUsedSymbol(use);
-
-    if (!sym)
-      USR_FATAL(use, "Cannot find module or enum");
-
-    // We don't need to perform any resolution on the default use of the
-    // rootModule, so don't add it to the current module's use list or that
-    // of its block (it should already be in the latter).
-    if (sym == rootModule)
-      continue;
-
-    if (!use->parentExpr) {
-      // This happens for the uses I create when traversing use chains which
-      // contain excepts, so that the excepted keywords are skipped down all
-      // paths from that chain head (see buildBreadthFirstModuleList).  In
-      // that case, we don't need to do any further work here beyond make
-      // sure the sym is a SymExpr
-      use->src = new SymExpr(sym);
-      continue;
-    }
-
-    use->src->replace(new SymExpr(sym));
-    // Need to update the use now that we've found what it refers to
-
-    ModuleSymbol* enclosingModule = use->getModule();
-
-    if (ModuleSymbol* mod = toModuleSymbol(sym)) {
-      // A ModuleSymbol's modUseList is intended to be for initializing modules
-      // in an appropriate order.  If we're using an enum symbol, we don't
-      // need to worry about this.
-      enclosingModule->moduleUseAdd(mod);
-    }
-
-    BlockStmt* useParent = getVisibilityBlock(use);
-    use->getStmtExpr()->remove();
-
-    useParent->moduleUseAdd(use);
-
-    use->validateList();
+  forv_Vec(UseStmt, useStmt, gUseStmts) {
+    processImportExprs(useStmt);
   }
 }
 
-//
-// Return the module imported by a use call.  The module returned could be
-// nested: e.g. "use outermost.middle.innermost;"
-//
-static Symbol* getUsedSymbol(UseStmt* use) {
-  return getUsedSymbol(use->src, use);
-}
+static void processImportExprs(UseStmt* useStmt) {
+  SET_LINENO(useStmt);
 
+  Symbol* sym = getUsedSymbol(useStmt, useStmt->src);
 
-//
-// Helper routine to factor some 'use' error messages into a single place
-//
-static void printUseError(UseStmt* useExpr,
-                          Symbol* sym = NULL) {
-  if (sym && !sym->isImmediate()) {
-    if (sym->name) {
-      USR_FATAL(useExpr, "'use' of non-module/enum symbol %s", sym->name);
-    } else {
-      USR_FATAL(useExpr, "'use' of non-module/enum symbol");
-    }
-  } else {
-    USR_FATAL(useExpr, "'use' statements must refer to module or enum symbols "
-              "(e.g., 'use <module>[.<submodule>]*;')");
+  if (sym == NULL) {
+    USR_FATAL(useStmt, "Cannot find module or enum");
   }
-  return;
-}
 
-static bool isValidUsedSymbol(UseStmt* useExpr, Symbol* symbol) {
-  if (isModuleSymbol(symbol)) {
-    return true;
-  } else if (TypeSymbol* type = toTypeSymbol(symbol)) {
-    if (isEnumType(type->type))
-      return true;
+  // We don't need to perform any resolution on the default use of the
+  // rootModule, so don't add it to the current module's use list or that
+  // of its block (it should already be in the latter).
+  if (sym == rootModule) {
+    return;
   }
-  printUseError(useExpr, symbol);
-  return false;
+
+  if (useStmt->parentExpr == NULL) {
+    // This happens for the uses I create when traversing use chains which
+    // contain excepts, so that the excepted keywords are skipped down all
+    // paths from that chain head (see buildBreadthFirstModuleList).  In
+    // that case, we don't need to do any further work here beyond make
+    // sure the sym is a SymExpr
+    useStmt->src = new SymExpr(sym);
+    return;
+  }
+
+  useStmt->src->replace(new SymExpr(sym));
+
+  ModuleSymbol* enclosingModule = useStmt->getModule();
+
+  if (ModuleSymbol* mod = toModuleSymbol(sym)) {
+    // A ModuleSymbol's modUseList is intended to be for initializing modules
+    // in an appropriate order.  If we're using an enum symbol, we don't
+    // need to worry about this.
+    enclosingModule->moduleUseAdd(mod);
+  }
+
+  BlockStmt* useParent = getVisibilityBlock(useStmt);
+
+  useStmt->getStmtExpr()->remove();
+
+  useParent->moduleUseAdd(useStmt);
+
+  useStmt->validateList();
 }
 
 //
 // Return the module or enum imported by a use call.  The module returned
 // could be nested: e.g. "use outermost.middle.innermost;"
 //
-static Symbol* getUsedSymbol(Expr* expr, UseStmt* useCall) {
+static Symbol* getUsedSymbol(UseStmt* useStmt, Expr* expr) {
   //
   // This handles the simple case of 'use <symbol>' (as well as error
   // cases that try to use non-module or non-enum symbols)
   //
   if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* symbol = sym->symbol()) {
-      if (isValidUsedSymbol(useCall, symbol)) {
+      if (isValidUsedSymbol(useStmt, symbol) == true) {
         return symbol;
       }
+
     } else {
-      printUseError(useCall);
+      printUseError(useStmt, NULL);
     }
+
     return NULL;
+
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
     //
     // This case handles the (common) case that we're 'use'ing a
     // symbol that we have not yet resolved.
     //
-    if (Symbol* symbol = lookup(useCall, sym->unresolved)) {
-      if (isValidUsedSymbol(useCall, symbol)) {
+    if (Symbol* symbol = lookup(sym->unresolved, useStmt)) {
+      if (isValidUsedSymbol(useStmt, symbol) == true) {
         return symbol;
       }
+
     } else {
-      USR_FATAL(useCall, "Cannot find module or enum '%s'", sym->unresolved);
+      USR_FATAL(useStmt, "Cannot find module or enum '%s'", sym->unresolved);
     }
+
     return NULL;
+
   } else if (CallExpr* call = toCallExpr(expr)) {
     //
     // This handles the case of 'use <symbol>.<symbol>' (as well as
     // error cases in which other expressions than '.' are used)
     //
 
-    if (!call->isNamed("."))
-      printUseError(useCall);
+    if (call->isNamed(".") == false) {
+      printUseError(useStmt, NULL);
+    }
 
-    ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1), useCall));
+    ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(useStmt, call->get(1)));
 
-    if (!lhs)
-      USR_FATAL(useCall, "Cannot find module");
+    if (lhs == NULL) {
+      USR_FATAL(useStmt, "Cannot find module");
+    }
 
     SymExpr*    rhs     = toSymExpr(call->get(2));
     const char* rhsName = 0;
 
-    if (!rhs)
-      INT_FATAL(useCall, "Bad use statement in getUsedSymbol");
+    if (rhs == NULL) {
+      INT_FATAL(useStmt, "Bad use statement in getUsedSymbol");
+    }
 
-    if (!get_string(rhs, &rhsName))
-      INT_FATAL(useCall, "Bad use statement in getUsedSymbol");
+    if (get_string(rhs, &rhsName) == false) {
+      INT_FATAL(useStmt, "Bad use statement in getUsedSymbol");
+    }
 
-    if (Symbol* symbol = lookup(lhs->block, rhsName)) {
-      if (isValidUsedSymbol(useCall, symbol)) {
+    if (Symbol* symbol = lookup(rhsName, lhs->block)) {
+      if (isValidUsedSymbol(useStmt, symbol) == true) {
         return symbol;
       }
+
     } else {
-      USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
+      USR_FATAL(useStmt, "Cannot find module '%s'", rhsName);
     }
+
     return NULL;
+
   } else {
-    //
-    // This is a general fall-through case that I suspect we may never
-    // reach, but better safe than sorry...
-    //
-    printUseError(useCall);
+    INT_FATAL(useStmt, "Bad use statement in getUsedSymbol");
+
     return NULL;
   }
 }
 
-// Verifies that all the symbols in the include and exclude lists of use
-// statements refer to symbols that are visible from that module.
-void UseStmt::validateList() {
-  if (isPlainUse()) {
-    // Trivially, if we don't have a list (are a plain use), then it must be
-    // valid!
-    return;
-  }
-  noRepeats();
+static bool isValidUsedSymbol(UseStmt* useStmt, Symbol* symbol) {
+  if (isModuleSymbol(symbol) == true) {
+    return true;
 
-  BaseAST* scopeToUse = getSearchScope();
-
-  const char* listName = except ? "except" : "only";
-  for_vector(const char, name, named) {
-    if (name[0] != '\0') {
-      Symbol* sym = lookup(scopeToUse, name);
-
-      if (!sym) {
-        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
-      } else if (!sym->isVisible(this)) {
-        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
-      }
-
-      createRelatedNames(sym);
+  } else if (TypeSymbol* type = toTypeSymbol(symbol)) {
+    if (isEnumType(type->type) == true) {
+      return true;
     }
   }
 
-  for (std::map<const char*, const char*>::iterator it = renamed.begin();
-       it != renamed.end(); ++it) {
-    Symbol* sym = lookup(scopeToUse, it->second);
+  printUseError(useStmt, symbol);
 
-    if (!sym) {
-      SymExpr* se = toSymExpr(src);
-      INT_ASSERT(se);
-      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->symbol()->name);
-    } else if (!sym->isVisible(this)) {
-      USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
-    }
-
-    createRelatedNames(sym);
-  }
+  return false;
 }
 
-void UseStmt::noRepeats() {
-  for (std::vector<const char*>::iterator it = named.begin();
-       it != named.end(); ++it) {
-    std::vector<const char*>::iterator next = it;
-    for (++next; next != named.end(); ++next) {
-      // Check rest of named for the same name
-      if (!strcmp(*it, *next)) {
-        USR_WARN(this, "identifier '%s' is repeated", *it);
-      }
-    }
-    for (std::map<const char*, const char*>::iterator renamedIt = renamed.begin();
-         renamedIt != renamed.end(); ++renamedIt) {
-      if (!strcmp(*it, renamedIt->second)) {
-        // This identifier is also used as the old name for a renaming.
-        // Probably a mistake on the user's part, but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", *it);
-      }
-      if (!strcmp(*it, renamedIt->first)) {
-        // The user attempted to rename a symbol to a name that was already
-        // in the 'only' list.  This causes a naming conflict.
-        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it);
-      }
-    }
-  }
-  for (std::map<const char*, const char*>::iterator it = renamed.begin();
-       it != renamed.end(); ++it) {
-    std::map<const char*, const char*>::iterator next = it;
-    for (++next; next != renamed.end(); ++next) {
-      if (!strcmp(it->second, next->second)) {
-        // Renamed this variable twice.  Probably a mistake on the user's part,
-        // but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", it->second);
-      }
-      if (!strcmp(it->second, next->first)) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it->second);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?", next->second, it->first);
-      }
-      if (!strcmp(it->first, next->second)) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it->first);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?", it->second, next->first);
-      }
-      // Two symbols can't be renamed to the same name because the map can only
-      // store one entry with a given key.  We catch this case in build.cpp
-      // when creating the UseStmt.  No need to check it->first matching
-      // next->first.
-    }
-  }
-}
+//
+// Helper routine to factor some 'use' error messages into a single place
+//
+static void printUseError(UseStmt* useStmt, Symbol* sym) {
+  if (sym != NULL && sym->isImmediate() == false) {
+    if (sym->name != NULL) {
+      USR_FATAL(useStmt, "'use' of non-module/enum symbol %s", sym->name);
 
-void UseStmt::createRelatedNames(Symbol* maybeType) {
-  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
-    Type* type = ts->type;
-    forv_Vec(FnSymbol, method, type->methods) {
-      relatedNames.push_back(method->name);
-    }
-    if (AggregateType* at = toAggregateType(type)) {
-      for_fields(sym, at) {
-        relatedNames.push_back(sym->name);
-      }
+    } else {
+      USR_FATAL(useStmt, "'use' of non-module/enum symbol");
     }
 
-    unsigned int constructorLen = strlen(ts->name) + strlen("_construct_") + 1;
-    char * constructorName = (char *) malloc(constructorLen);
-    strcpy(constructorName, "_construct_");
-    strcat(constructorName, ts->name);
-    relatedNames.push_back(constructorName);
-
-    unsigned int typeConstLen = constructorLen + strlen("_type");
-    char * typeConstructorName = (char *) malloc(typeConstLen);
-    strcpy(typeConstructorName, "_type_construct_");
-    strcat(typeConstructorName, ts->name);
-    relatedNames.push_back(typeConstructorName);
+  } else {
+    USR_FATAL(useStmt,
+              "'use' statements must refer to module or enum symbols "
+              "(e.g., 'use <module>[.<submodule>]*;')");
   }
 }
 
@@ -718,7 +617,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   if (strcmp(name, ".")      == 0             ||
       usymExpr->parentSymbol == NULL) {
 
-  } else if (Symbol* sym = lookup(usymExpr, name)) {
+  } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
 
     if (fn == NULL) {
@@ -1179,13 +1078,10 @@ static void resolveEnumeratedTypes() {
 
 /************************************* | **************************************
 *                                                                             *
-* delete the symbol table and module uses cache                               *
+* delete the module uses cache                                                *
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// delete the module uses cache
-//
 static void destroyModuleUsesCaches() {
   std::map<BlockStmt*, Vec<UseStmt*>*>::iterator use;
 
@@ -1222,182 +1118,148 @@ static void renameDefaultType(Type* type, const char* newname) {
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
+*                                                                             *
 ************************************** | *************************************/
 
-static void lookup(BaseAST*              scope,
-                   const char*           name,
-                   std::vector<Symbol*>& symbols,
-                   Vec<BaseAST*>&        alreadyVisited,
-                   BaseAST*              callingContext);
+static void lookup(const char*           name,
+                   BaseAST*              context,
+                   std::vector<Symbol*>& symbols);
 
+static void lookup(const char*           name,
+                   BaseAST*              context,
 
+                   BaseAST*              scope,
+                   Vec<BaseAST*>&        visited,
 
-static void    buildBreadthFirstModuleList(Vec<UseStmt*>* modules);
+                   std::vector<Symbol*>& symbols);
 
-static void    buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
-                                           Vec<UseStmt*>* current,
-                                           std::map<Symbol*, std::vector<UseStmt*> >* alreadySeen);
+// Given a name and a calling context, determine the symbol referred to
+// by that name in the context of that call
+Symbol* lookup(const char* name, BaseAST* context) {
+  std::vector<Symbol*> symbols;
+  Symbol*              retval = NULL;
 
-// Given a name and a scope, determine the symbol referred by that name in the
-// context of that scope.
-Symbol* lookup(BaseAST* scope, const char* name) {
-  Symbol*              symbolResult = NULL;
-  std::vector<Symbol*> symbolOptions;
-  Vec<BaseAST*>        nestedscopes;
+  lookup(name, context, symbols);
 
-  // Call inner lookup on scope, the name, the symbols return vector, and the
-  // vector of ASTs already visited.
-  lookup(scope, name, symbolOptions, nestedscopes, scope);
+  if (symbols.size() == 0) {
+    retval = NULL;
 
-  int numFound = symbolOptions.size();
-  if (numFound == 0) {
-    // No symbols found for this name
-    symbolResult = NULL;
-  } else if (numFound == 1) {
-    // A unique symbol found for this name
-      symbolResult = symbolOptions.front();
+  } else if (symbols.size() == 1) {
+    retval = symbols[0];
+
   } else {
-    // Multiple symbols found for this name.  If at least one of them isn't
-    // a function, we need to handle it now so error out.  Otherwise, function
-    // resolution will handle it.
-    for_vector(Symbol, sym, symbolOptions) {
-      if (!isFnSymbol(sym))
+    // Multiple symbols found for this name.
+    // If they're all functions
+    //   then      assume function resolution will be applied
+    //   otherwise fail
+
+    for_vector(Symbol, sym, symbols) {
+      if (isFnSymbol(sym) == false) {
         USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
+      }
     }
+
     USR_STOP();
-    symbolResult = NULL;
-  }
 
-  return symbolResult;
-  // return symbol matching the name
-}
-
-// Determines and obtains a method by the given name on the given type
-//
-// This function uses the same methodology as isMethodName but returns the
-// symbol found instead of just a boolean
-static FnSymbol* getMethod(const char* name, Type* type) {
-  if (strcmp(name, type->symbol->name) == 0)
-    return NULL;
-
-  // Looks for name in methods defined directly on this type
-  forv_Vec(FnSymbol, method, type->methods) {
-    if (method && !strcmp(name, method->name))
-      return method;
-  }
-
-  // Looks for name in methods defined on parent types
-  forv_Vec(Type, pt, type->dispatchParents) {
-    if (FnSymbol *sym = getMethod(name, pt))
-      return sym;
-  }
-
-  // Looks for name in types wrapping this type definition
-  if (AggregateType* ct = toAggregateType(type)) {
-    Type *outerType = ct->symbol->defPoint->parentSymbol->type;
-
-    if (AggregateType* outer = toAggregateType(outerType))
-      if (FnSymbol *sym = getMethod(name, outer))
-        return sym;
-  }
-
-  return NULL;
-}
-
-// For a scope and a given method, determine if the method is visible in this
-// scope
-// Lydia note (2015/06/26)
-// Semantic issue not handled by this function: when a parenthesis-less method
-// is defined by an outside module and the use of that module is at the same
-// scope as another symbol of the same name as the method, which symbol should
-// take precedent?  When the use is not present, both the prior version of
-// scopeResolve and the current version don't resolve the symbol, leaving the
-// decision to function resolution, which thinks it should have gotten the
-// method that wasn't available
-static bool methodMatched(BaseAST* scope, FnSymbol* method) {
-  if (method->_this->type->symbol == scope) {
-    return true;
-  } else {
-    BaseAST* curScope = getScope(scope);
-    // Traverse up the scopes either until we find this method or until there
-    // are no more scopes to traverse
-    while (curScope) {
-      if (TypeSymbol* ts = toTypeSymbol(scope)) {
-        // Are we in a type symbol?
-        if (Symbol* sym = getMethod(method->name, ts->type)) {
-          // Does that type symbol have a method with the same name?
-          if (sym == method) {
-            // Is it us?
-            return true;
-          } else {
-            // We are not in scope
-            return false;
-          }
-        }
-      }
-      curScope = getScope(curScope);
-    }
-    return false;
-  }
-}
-
-// Is this name defined in this scope?
-static Symbol* inSymbolTable(BaseAST* ast, const char* name) {
-  Symbol* retval = NULL;
-
-  if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
-    if (Symbol* sym = scope->lookup(name)) {
-      if (sym->hasFlag(FLAG_METHOD) == false) {
-        retval = sym;
-
-      } else if (FnSymbol* fn = toFnSymbol(sym)) {
-        if (methodMatched(ast, fn) == true) {
-          retval = sym;
-        }
-      }
-    }
+    retval = NULL;
   }
 
   return retval;
 }
 
-static Symbol* inType(BaseAST* scope, const char* name) {
-  if (TypeSymbol* ts = toTypeSymbol(scope)) {
-    if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (Symbol* sym = ct->getField(name, false)) {
-        return sym;
-      } else if (Symbol* fn = getMethod(name, ct)) {
-        // There is a method of that name, is it visible?
-        if (methodMatched(scope, toFnSymbol(fn))) {
-          return fn;
+static void lookup(const char*           name,
+                   BaseAST*              context,
+                   std::vector<Symbol*>& symbols) {
+  Vec<BaseAST*> visited;
+
+  lookup(name, context, context, visited, symbols);
+}
+
+static void lookup(const char*           name,
+                   BaseAST*              context,
+
+                   BaseAST*              scope,
+                   Vec<BaseAST*>&        visited,
+
+                   std::vector<Symbol*>& symbols) {
+
+  if (!visited.set_in(scope)) {
+    visited.set_add(scope);
+
+    if (lookupThisScopeAndUses(name, context, scope, symbols) == true) {
+      // We've found an instance here.
+      // Lydia note: in the access call case, we'd want to look in our
+      // surrounding scopes for the symbols on the left and right part
+      // of the call (if any) to verify we were finding anything in particular.
+      //
+      // A symbol could be visible in the innermost scope because it was
+      // defined in an outer scope (for instance, if M1 defines foo,
+      // M2 doesn't shadow it and we're looking for M1.M2.foo),
+      // so that is something to keep in mind as well.
+
+      return;
+    }
+
+    if (scope->getModule()->block == scope) {
+      if (getScope(scope) != NULL) {
+        lookup(name, context, getScope(scope), visited, symbols);
+      }
+
+    } else {
+      // Otherwise, look in the next scope up.
+      FnSymbol* fn = toFnSymbol(scope);
+
+      if (fn != NULL && fn->_this) {
+        // If currently in a method, the next scope up is anything visible
+        // within the aggregate type
+        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+          lookup(name, context, ct->symbol, visited, symbols);
         }
+      }
+
+      // Check if found something in last lookup call
+      if (symbols.size() == 0) {
+        // If we didn't find something in the aggregate type that matched,
+        // or we weren't in an aggregate type method, so look at next scope up.
+        lookup(name, context, getScope(scope), visited, symbols);
       }
     }
   }
-  return NULL;
 }
 
-// Returns true if the symbol is already present in the vector, false otherwise
-static bool isRepeat(std::vector<Symbol* >& symbols, Symbol* toAdd) {
-  for (std::vector<Symbol* >::iterator it = symbols.begin();
-       it != symbols.end(); ++it) {
-    if (*it == toAdd) {
-      return true;
-    }
-  }
-  return false;
-}
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-// Assumes that symbols contains nothing before entering this function
-static bool lookupThisScopeAndUses(BaseAST*              scope,
-                                   const char*           name,
-                                   std::vector<Symbol*>& symbols,
-                                   BaseAST*              callingContext) {
-  INT_ASSERT(symbols.size() == 0);
+static bool      isRepeat(Symbol* toAdd, const std::vector<Symbol*>& symbols);
 
-  if (Symbol* sym = inSymbolTable(scope, name)) {
-    if (sym->hasFlag(FLAG_PRIVATE)) {
-      if (sym->isVisible(callingContext) == true) {
+static Symbol*   inSymbolTable(const char* name, BaseAST* scope);
+
+static Symbol*   inType(const char* name, BaseAST* scope);
+
+static bool      methodMatched(BaseAST* scope, FnSymbol* method);
+
+static FnSymbol* getMethod(const char* name, Type* type);
+
+static void      buildBreadthFirstModuleList(Vec<UseStmt*>* modules);
+
+static void      buildBreadthFirstModuleList(
+                      Vec<UseStmt*>*                             modules,
+                      Vec<UseStmt*>*                             current,
+                      std::map<Symbol*, std::vector<UseStmt*> >* alreadySeen);
+
+static bool      skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
+                         UseStmt*                                   current);
+
+static bool lookupThisScopeAndUses(const char*           name,
+                                   BaseAST*              context,
+                                   BaseAST*              scope,
+                                   std::vector<Symbol*>& symbols) {
+  if (Symbol* sym = inSymbolTable(name, scope)) {
+    if (sym->hasFlag(FLAG_PRIVATE) == true) {
+      if (sym->isVisible(context) == true) {
         symbols.push_back(sym);
       }
 
@@ -1406,8 +1268,8 @@ static bool lookupThisScopeAndUses(BaseAST*              scope,
     }
   }
 
-  if (Symbol* sym = inType(scope, name)) {
-    if (isRepeat(symbols, sym)) {
+  if (Symbol* sym = inType(name, scope)) {
+    if (isRepeat(sym, symbols) == true) {
       // If we're looking at the exact same Symbol, there's no need to add it
       // and we can just return.
       return true;
@@ -1421,7 +1283,7 @@ static bool lookupThisScopeAndUses(BaseAST*              scope,
   if (symbols.size() == 0) {
     // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
-      if (block->modUses) {
+      if (block->modUses != NULL) {
         Vec<UseStmt*>* moduleUses = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
@@ -1450,14 +1312,14 @@ static bool lookupThisScopeAndUses(BaseAST*              scope,
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
-              if (Symbol* sym = inSymbolTable(scopeToUse, nameToUse)) {
+              if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
                 if (sym->hasFlag(FLAG_PRIVATE) == true) {
-                  if (sym->isVisible(callingContext) == true &&
-                      isRepeat(symbols, sym)         == false) {
+                  if (sym->isVisible(context) == true &&
+                      isRepeat(sym, symbols)  == false) {
                     symbols.push_back(sym);
                   }
 
-                } else if (isRepeat(symbols, sym) == false) {
+                } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
                 }
               }
@@ -1465,27 +1327,28 @@ static bool lookupThisScopeAndUses(BaseAST*              scope,
 
           } else {
             // break on each new depth if a symbol has been found
-            if (symbols.size() > 0)
+            if (symbols.size() > 0) {
               break;
+            }
           }
         }
 
         if (symbols.size() > 0) {
-          // We found a symbol in the module use.  This could conflict with the
-          // function symbol's arguments if we are at the top level scope
+          // We found a symbol in the module use.  This could conflict with
+          // the function symbol's arguments if we are at the top level scope
           // within a function.  Note that we'd check the next scope up if
           // size() == 0, so we only need to do this check here because the
           // module case would hide it otherwise
           if (FnSymbol* fn = toFnSymbol(getScope(block))) {
             // The next scope up from the block statement is a function
             // symbol. That means that we need to check the arguments
-            if (Symbol* sym = inSymbolTable(fn, name)) {
+            if (Symbol* sym = inSymbolTable(name, fn)) {
               // We found it in the arguments.  This should cause a conflict,
               // because it is probably an error that the user had the same
               // name as a module level variable.
-              USR_WARN(sym, "Module level symbol is hiding function argument '%s'", name);
-              //symbols.push_back(sym);
-              // If we wanted this to be an error case, uncomment the above line
+              USR_WARN(sym,
+                       "Module level symbol is hiding function argument '%s'",
+                       name);
             }
           }
         }
@@ -1496,64 +1359,138 @@ static bool lookupThisScopeAndUses(BaseAST*              scope,
   return symbols.size() != 0;
 }
 
-
-// Recursive look up - separates the checks which occur in the scope from the
-// steps that occur to get the next scope.
-//
-// Note that having this set up would make it easier to check the entirety of
-// an access call (M1.M2.M3, for instance) as the recursion does not occur in
-// the innermost scope.
-static void lookup(BaseAST*              scope,
-                   const char*           name,
-                   std::vector<Symbol*>& symbols,
-                   Vec<BaseAST*>&        alreadyVisited,
-                   BaseAST*              callingContext) {
-  if (!alreadyVisited.set_in(scope)) {
-    alreadyVisited.set_add(scope);
-
-    if (lookupThisScopeAndUses(scope, name, symbols, callingContext) == true) {
-      // We've found an instance here.
-      // Lydia note: in the access call case, we'd want to look in our
-      // surrounding scopes for the symbols on the left and right part
-      // of the call (if any) to verify we were finding anything in particular.
-      //
-      // A symbol could be visible in the innermost scope because it was
-      // defined in an outer scope (for instance, if M1 defines foo,
-      // M2 doesn't shadow it and we're looking for M1.M2.foo),
-      // so that is something to keep in mind as well.
-
-      return;
+// Returns true if the symbol is present in the vector, false otherwise
+static bool isRepeat(Symbol* toAdd, const std::vector<Symbol*>& symbols) {
+  for (std::vector<Symbol* >::const_iterator it = symbols.begin();
+       it != symbols.end();
+       ++it) {
+    if (*it == toAdd) {
+      return true;
     }
+  }
 
-    if (scope->getModule()->block == scope) {
-      if (getScope(scope) != NULL) {
-        lookup(getScope(scope), name, symbols, alreadyVisited, callingContext);
-      }
+  return false;
+}
 
-    } else {
-      // Otherwise, look in the next scope up.
-      FnSymbol* fn = toFnSymbol(scope);
+// Is this name defined in this scope?
+static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
+  Symbol* retval = NULL;
 
-      if (fn != NULL && fn->_this) {
-        // If currently in a method, the next scope up is anything visible
-        // within the aggregate type
-        if (AggregateType* ct = toAggregateType(fn->_this->type)) {
-          lookup(ct->symbol, name, symbols, alreadyVisited, callingContext);
+  if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
+    if (Symbol* sym = scope->lookup(name)) {
+      if (sym->hasFlag(FLAG_METHOD) == false) {
+        retval = sym;
+
+      } else if (FnSymbol* fn = toFnSymbol(sym)) {
+        if (methodMatched(ast, fn) == true) {
+          retval = sym;
         }
-      }
-
-      // Check if found something in last lookup call
-      if (symbols.size() == 0) {
-        // If we didn't find something in the aggregate type that matched,
-        // or we weren't in an aggregate type method, so look at next scope up.
-        lookup(getScope(scope), name, symbols, alreadyVisited, callingContext);
       }
     }
   }
+
+  return retval;
 }
 
-static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
-                    UseStmt*                                   current);
+static Symbol* inType(const char* name, BaseAST* scope) {
+  Symbol* retval = NULL;
+
+  if (TypeSymbol* ts = toTypeSymbol(scope)) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
+      if (Symbol* sym = ct->getField(name, false)) {
+        retval = sym;
+
+      } else if (Symbol* fn = getMethod(name, ct)) {
+        if (methodMatched(scope, toFnSymbol(fn)) == true) {
+          retval = fn;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+// For a scope and a given method, determine if the method is visible in this
+// scope
+// Lydia note (2015/06/26)
+// Semantic issue not handled by this function: when a parenthesis-less method
+// is defined by an outside module and the use of that module is at the same
+// scope as another symbol of the same name as the method, which symbol should
+// take precedent?  When the use is not present, both the prior version of
+// scopeResolve and the current version don't resolve the symbol, leaving the
+// decision to function resolution, which thinks it should have gotten the
+// method that wasn't available
+static bool methodMatched(BaseAST* scope, FnSymbol* method) {
+  bool retval = true;
+
+  if (method->_this->type->symbol == scope) {
+    retval = true;
+
+  } else {
+    BaseAST* curScope = getScope(scope);
+
+    // Traverse up the scopes either until we find this method or until there
+    // are no more scopes to traverse
+    while (curScope) {
+      if (TypeSymbol* ts = toTypeSymbol(scope)) {
+        // Are we in a type symbol?
+        if (Symbol* sym = getMethod(method->name, ts->type)) {
+          // Does that type symbol have a method with the same name?
+          if (sym == method) {
+            // Is it us?
+            return true;
+          } else {
+            // We are not in scope
+            return false;
+          }
+        }
+      }
+      curScope = getScope(curScope);
+    }
+
+    retval = false;
+  }
+
+  return retval;
+}
+
+// Determines and obtains a method by the given name on the given type
+//
+// This function uses the same methodology as isMethodName but returns the
+// symbol found instead of just a boolean
+static FnSymbol* getMethod(const char* name, Type* type) {
+  if (strcmp(name, type->symbol->name) == 0) {
+    return NULL;
+  }
+
+  // Looks for name in methods defined directly on this type
+  forv_Vec(FnSymbol, method, type->methods) {
+    if (method != NULL && strcmp(name, method->name) == 0) {
+      return method;
+    }
+  }
+
+  // Looks for name in methods defined on parent types
+  forv_Vec(Type, pt, type->dispatchParents) {
+    if (FnSymbol* sym = getMethod(name, pt)) {
+      return sym;
+    }
+  }
+
+  // Looks for name in types wrapping this type definition
+  if (AggregateType* ct = toAggregateType(type)) {
+    Type *outerType = ct->symbol->defPoint->parentSymbol->type;
+
+    if (AggregateType* outer = toAggregateType(outerType)) {
+      if (FnSymbol* sym = getMethod(name, outer)) {
+        return sym;
+      }
+    }
+  }
+
+  return NULL;
+}
 
 static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
   std::map<Symbol*, std::vector<UseStmt* > > seen;
@@ -1564,10 +1501,12 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
 // If the uses of a particular module are considered its level 1 uses, then
 // this function will only add level 2 and lower uses to the modules vector
 // argument.
-static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
-                                        Vec<UseStmt*>* current,
-                                        std::map<Symbol*, std::vector<UseStmt*> >* alreadySeen) {
-  modules->add(NULL); // use NULL sentinel to identify modules of equal depth
+static void buildBreadthFirstModuleList(
+                 Vec<UseStmt*>*                             modules,
+                 Vec<UseStmt*>*                             current,
+                 std::map<Symbol*, std::vector<UseStmt*> >* alreadySeen) {
+ // use NULL as a sentinel to identify modules of equal depth
+  modules->add(NULL);
 
   Vec<UseStmt*> next;
 
@@ -1588,16 +1527,19 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
 
             UseStmt* useToAdd = NULL;
             if (!useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-              // Uses of private modules are not transitive - the symbols in the
-              // private modules are only visible to itself and its immediate
-              // parent.  Therefore, if the symbol is private, we will not
-              // traverse it further and will merely add it to the alreadySeen
-              // map.
+              // Uses of private modules are not transitive -
+              // the symbols in the private modules are only visible to
+              // itself and its immediate parent.  Therefore, if the symbol
+              // is private, we will not traverse it further and will merely
+              // add it to the alreadySeen map.
               useToAdd = use->applyOuterUse(source);
-              if (useToAdd != NULL && !skipUse(alreadySeen, useToAdd)) {
+
+              if (useToAdd                       != NULL &&
+                  skipUse(alreadySeen, useToAdd) == false) {
                 next.add(useToAdd);
                 modules->add(useToAdd);
               }
+
               // if applyOuterUse returned NULL, the number of symbols that
               // could be provided from this use was 0, so it didn't need to be
               // added to the alreadySeen map.
@@ -1619,48 +1561,87 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
   }
 }
 
-// Returns true if this module is capable of being used or traversed as part of
-// an access in the provided scope, false if the module is private and the
-// scope is not in its direct parent
+// Returns true if we should skip looking at this use, because the symbols it
+// provides have already been covered by a previous use.
+static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
+                    UseStmt*                                   current) {
+  SymExpr* useSE = toSymExpr(current->src);
+
+  INT_ASSERT(useSE);
+
+  std::vector<UseStmt*> vec = (*seen)[useSE->symbol()];
+
+  if (vec.size() > 0) {
+    // We've already seen at least one use of this module, but it might
+    // not be thorough enough to justify skipping the newest 'use'.
+    for_vector(UseStmt, use, vec) {
+      if (current->providesNewSymbols(use) == false) {
+        // We found a prior use that covered all the symbols available
+        // from current.  We can skip looking at current
+        return true;
+      }
+    }
+  }
+
+  // We didn't have a prior use, or all the prior uses we missing at
+  // least one of the symbols current provides.  Don't skip current.
+  return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if this module is capable of being used or traversed as part   *
+* of an access in the provided scope, false if the module is private and the  *
+* scope is not in its direct parent.                                          *
+*                                                                             *
+************************************** | *************************************/
+
 bool Symbol::isVisible(BaseAST* scope) const {
-  if (!hasFlag(FLAG_PRIVATE)) {
-    // If it isn't public, it is trivially visible.
-    return true;
-  } else {
+  bool retval = true;
+
+  if (hasFlag(FLAG_PRIVATE) == true) {
     BaseAST* parentScope = getScope(defPoint);
-    INT_ASSERT(parentScope != NULL); // Should be true, given we found this
-    // module symbol.
+    BaseAST* searchScope = scope;
+
+    INT_ASSERT(parentScope != NULL);
 
     // We need to walk up scopes until we either find our parent scope (in
     // which case, we're visible if it "use"s us) or we run out of scope to
     // check against (in which case we are most certainly *not* visible)
-    BaseAST* searchScope = scope;
     while (searchScope != NULL) {
       if (searchScope == parentScope) {
         return true;
       }
 
       searchScope = getScope(searchScope);
-      // Keep walkin', we didn't find the parent scope yet.
     }
 
     // We got to the top of the scope without finding the parent.
     return false;
   }
+
+  return retval;
 }
 
-// If the outer use statement would limit this one, return a new use of our
-// module with the additional symbols accounted for.  This new use will not be
-// added to the AST, but will be reused in scopeResolution if the same use path
-// is followed.
-// If the outer use does not require us to alter ourself, return ourself.  If
-// the combination of the two uses results in no new symbols being provided by
-// this module, return NULL.
+/************************************* | **************************************
+*                                                                             *
+* If the outer use statement would limit this one, return a new use of our    *
+* module with the additional symbols accounted for.  This new use will not    *
+* be added to the AST, but will be reused in scopeResolution if the same use  *
+* path is followed.                                                           *
+*                                                                             *
+* If the outer use does not require us to alter ourself, return ourself.      *
+* If the combination of the two uses results in no new symbols being provided *
+* by this module, return NULL.                                                *
+*                                                                             *
+************************************** | *************************************/
+
 UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
   if (outer->isPlainUse()) {
     // The outer use would not modify us, return ourself.
     return this;
   }
+
   if (outer->except) {
     // The outer use specifies an 'except' list
     if (!except && !isPlainUse()) {
@@ -1669,16 +1650,23 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       // in the 'except' list are specified by the 'only' list, and
       // not place them in the new 'only' list.
       std::vector<const char*> newOnlyList;
+
       for_vector(const char, includeMe, named) {
-        if (std::find(outer->named.begin(), outer->named.end(), includeMe) == outer->named.end()) {
+        if (std::find(outer->named.begin(),
+                      outer->named.end(),
+                      includeMe) == outer->named.end()) {
+
           // We didn't find this symbol in the list to exclude, so
           // add it.
           newOnlyList.push_back(includeMe);
         }
       }
+
       std::map<const char*, const char*> newRenamed;
+
       for (std::map<const char*, const char*>::iterator it = renamed.begin();
-          it != renamed.end(); ++it) {
+          it != renamed.end();
+           ++it) {
         if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
             outer->named.end()) {
           // We didn't find the new name in the list to exclude, so the rename
@@ -1692,9 +1680,10 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
         // The except list didn't cut down on our only list.
         // No need to create a new UseStmt, just return ourself.
         return this;
+
       } else if (newOnlyList.size() == 0 && newRenamed.size() == 0) {
-        // All of the 'only' list was in the 'except' list, so we don't provide
-        // new symbols.
+        // All of the 'only' list was in the 'except' list,
+        // so we don't provide new symbols.
         return NULL;
       } else {
         // The only list will be shorter, create a new UseStmt with it.
@@ -1921,30 +1910,6 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
   }
 }
 
-// Returns true if we should skip looking at this use, because the symbols it
-// provides have already been covered by a previous use.
-static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
-                    UseStmt* current) {
-  SymExpr* useSE = toSymExpr(current->src);
-  INT_ASSERT(useSE);
-
-  std::vector<UseStmt*> vec = (*seen)[useSE->symbol()];
-  if (vec.size() > 0) {
-    // We've already seen at least one use of this module, but it might not be
-    // thorough enough to justify skipping the newest 'use'.
-    for_vector(UseStmt, use, vec) {
-      if (!current->providesNewSymbols(use)) {
-        // We found a prior use that covered all the symbols available from
-        // current.  We can skip looking at current
-        return true;
-      }
-    }
-  }
-  // We didn't have a prior use, or all the prior uses we missing at least one
-  // of the symbols current provides.  Don't skip current.
-  return false;
-}
-
 /************************************* | **************************************
 *                                                                             *
 * getScope returns the BaseAST that corresponds to the scope where 'ast'      *
@@ -1993,4 +1958,163 @@ BaseAST* getScope(BaseAST* ast) {
   INT_FATAL(ast, "getScope expects an Expr or a Symbol");
 
   return NULL;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+// Verifies that all the symbols in the include and exclude lists of use
+// statements refer to symbols that are visible from that module.
+void UseStmt::validateList() {
+  if (isPlainUse()) {
+    // Trivially, if we don't have a list (are a plain use), then it must be
+    // valid!
+    return;
+  }
+
+  noRepeats();
+
+  BaseAST*    scopeToUse = getSearchScope();
+  const char* listName   = except ? "except" : "only";
+
+  for_vector(const char, name, named) {
+    if (name[0] != '\0') {
+      Symbol* sym = lookup(name, scopeToUse);
+
+      if (!sym) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in '%s' clause, no known '%s'",
+                       listName, name);
+
+      } else if (sym->isVisible(this) == false) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in '%s' clause, '%s' is private",
+                       listName,
+                       name);
+      }
+
+      createRelatedNames(sym);
+    }
+  }
+
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end(); ++it) {
+    Symbol* sym = lookup(it->second, scopeToUse);
+
+    if (sym == NULL) {
+      SymExpr* se = toSymExpr(src);
+
+      INT_ASSERT(se);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (sym->isVisible(this) == false) {
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, '%s' is private",
+                     it->second);
+    }
+
+    createRelatedNames(sym);
+  }
+}
+
+void UseStmt::noRepeats() {
+  for (std::vector<const char*>::iterator it = named.begin();
+       it != named.end(); ++it) {
+    std::vector<const char*>::iterator next = it;
+
+    for (++next; next != named.end(); ++next) {
+      // Check rest of named for the same name
+      if (strcmp(*it, *next) == 0) {
+        USR_WARN(this, "identifier '%s' is repeated", *it);
+      }
+    }
+
+    for (std::map<const char*, const char*>::iterator renamedIt = renamed.begin();
+         renamedIt != renamed.end(); ++renamedIt) {
+
+      if (strcmp(*it, renamedIt->second) == 0) {
+        // This identifier is also used as the old name for a renaming.
+        // Probably a mistake on the user's part, but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", *it);
+      }
+
+      if (strcmp(*it, renamedIt->first) == 0) {
+        // The user attempted to rename a symbol to a name that was already
+        // in the 'only' list.  This causes a naming conflict.
+        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it);
+      }
+    }
+  }
+
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end();
+       ++it) {
+    std::map<const char*, const char*>::iterator next = it;
+
+    for (++next; next != renamed.end(); ++next) {
+      if (strcmp(it->second, next->second) == 0) {
+        // Renamed this variable twice.  Probably a mistake on the user's part,
+        // but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", it->second);
+      }
+
+      if (strcmp(it->second, next->first) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it->second);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  next->second,
+                  it->first);
+      }
+
+      if (strcmp(it->first, next->second) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  it->second,
+                  next->first);
+      }
+
+      // Two symbols can't be renamed to the same name because the map can only
+      // store one entry with a given key.  We catch this case in build.cpp
+      // when creating the UseStmt.  No need to check it->first matching
+      // next->first.
+    }
+  }
+}
+
+void UseStmt::createRelatedNames(Symbol* maybeType) {
+  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
+    Type* type = ts->type;
+
+    forv_Vec(FnSymbol, method, type->methods) {
+      relatedNames.push_back(method->name);
+    }
+
+    if (AggregateType* at = toAggregateType(type)) {
+      for_fields(sym, at) {
+        relatedNames.push_back(sym->name);
+      }
+    }
+
+    unsigned int constructorLen = strlen(ts->name) + strlen("_construct_") + 1;
+    char * constructorName = (char *) malloc(constructorLen);
+    strcpy(constructorName, "_construct_");
+    strcat(constructorName, ts->name);
+    relatedNames.push_back(constructorName);
+
+    unsigned int typeConstLen = constructorLen + strlen("_type");
+    char * typeConstructorName = (char *) malloc(typeConstLen);
+    strcpy(typeConstructorName, "_type_construct_");
+    strcat(typeConstructorName, ts->name);
+    relatedNames.push_back(typeConstructorName);
+  }
 }

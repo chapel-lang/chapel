@@ -26,7 +26,7 @@ class Symbol;
 
 void     addToSymbolTable(FnSymbol* fn);
 
-Symbol*  lookup(BaseAST* scope, const char* name);
+Symbol*  lookup(const char* name, BaseAST* scope);
 
 BaseAST* getScope(BaseAST* ast);
 
