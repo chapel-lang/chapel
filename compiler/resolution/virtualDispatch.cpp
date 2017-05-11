@@ -75,8 +75,8 @@ static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
 static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
                                          Type*           ct,
                                          FnSymbol*       pfn);
-static void collectInstantiatedAggregateTypes(Vec<Type*>& icts,
-                                              Type*       ct);
+static void collectInstantiatedAggregateTypes(Vec<AggregateType*>& icts,
+                                              AggregateType*       ct);
 
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
@@ -295,7 +295,7 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
   forv_Vec(FnSymbol, cfn, methods) {
     if (cfn && !cfn->instantiatedFrom) {
-      Vec<Type*> types;
+      Vec<AggregateType*> types;
 
       if (ct->symbol->hasFlag(FLAG_GENERIC)) {
         collectInstantiatedAggregateTypes(types, ct);
@@ -303,7 +303,7 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         types.add(ct);
       }
 
-      forv_Vec(Type, type, types) {
+      forv_Vec(AggregateType, type, types) {
         SymbolMap subs;
 
         if (ct->symbol->hasFlag(FLAG_GENERIC) ||
@@ -477,16 +477,18 @@ static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
 //
 // add to vector icts all types instantiated from ct
 //
-static void collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct) {
+static void collectInstantiatedAggregateTypes(Vec<AggregateType*>& icts,
+                                              AggregateType* ct) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->type->defaultTypeConstructor)
+    AggregateType* instanceT = toAggregateType(ts->type);
+    if (instanceT && instanceT->defaultTypeConstructor)
       if (!ts->hasFlag(FLAG_GENERIC) &&
-          ts->type->defaultTypeConstructor->instantiatedFrom ==
+          instanceT->defaultTypeConstructor->instantiatedFrom ==
           ct->defaultTypeConstructor) {
-        icts.add(ts->type);
+        icts.add(instanceT);
 
-        INT_ASSERT(isInstantiation(ts->type, ct));
-        INT_ASSERT(ts->type->instantiatedFrom == ct);
+        INT_ASSERT(isInstantiation(instanceT, ct));
+        INT_ASSERT(instanceT->instantiatedFrom == ct);
       }
   }
 }
