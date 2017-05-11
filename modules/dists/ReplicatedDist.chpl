@@ -63,8 +63,8 @@ When accessing a replicated domain or array from a locale *not* in the
 set of target locales, an error is reported if bounds-checking is on;
 undefined behavior occurs if it is off.
 
-Otherwise, only the replicand on the current locale is accessed by
-default when performing operations on the domain or array.
+Otherwise, only the replicand on the current locale is accessed when
+referring to the domain or array.
 
 **Example**
 
@@ -150,11 +150,13 @@ proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
 // TODO: going over all the locales - is there a scalability issue?
 proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
   // ideally would like to make this a "eureka"
+  /*
   forall (ix, loc) in zip(targetLocDom, targetLocales) do
     if loc.id != ix {
       halt("The array of locales ", purposeMessage, " must be \"consistent\".",
            " See ReplicatedDist documentation for details.");
     }
+  */
 }
 
 proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
@@ -376,7 +378,7 @@ iter ReplicatedDom.these() {
 }
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
-  // for simplicity, redirect to DefaultRectangular's leader
+  // redirect to DefaultRectangular's leader
   for follow in chpl_myLocDom().domLocalRep._value.these(tag) do
     yield follow;
 }
