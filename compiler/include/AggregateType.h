@@ -112,6 +112,8 @@ public:
 
   AggregateTag                aggregateTag;
 
+  FnSymbol*                   defaultTypeConstructor;
+
   InitializerStyle            initializerStyle;
 
   bool                        initializerResolved;

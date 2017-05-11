@@ -44,8 +44,10 @@ AggregateType* dtOnBundleRecord    = NULL;
 AggregateType* dtTaskBundleRecord  = NULL;
 AggregateType* dtError             = NULL;
 
-AggregateType::AggregateType(AggregateTag initTag)
-  : Type(E_AggregateType, NULL) {
+AggregateType::AggregateType(AggregateTag initTag) :
+  Type(E_AggregateType, NULL),
+
+  defaultTypeConstructor(NULL) {
 
   aggregateTag        = initTag;
   initializerStyle    = DEFINES_NONE_USE_DEFAULT;

@@ -89,7 +89,6 @@ public:
                                        // default-initializer.
                                        // It provides initial values for the
                                        // fields in an aggregate type.
-  FnSymbol*        defaultTypeConstructor;
   FnSymbol*        destructor;
 
   // Used only in PrimitiveType; replace with flag?
