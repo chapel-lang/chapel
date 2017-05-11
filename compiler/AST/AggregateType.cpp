@@ -430,6 +430,7 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
 AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
                                                     FnSymbol* fn) {
   INT_ASSERT(this->symbol->hasFlag(FLAG_GENERIC));
+  INT_ASSERT(fn->hasFlag(FLAG_TYPE_CONSTRUCTOR));
 
   if (this->genericField == 0) {
     setNextGenericField();
