@@ -183,17 +183,17 @@ public:
 
   int                 length()                                     const;
 
-  void                moduleUseAdd(ModuleSymbol* mod);
-  void                moduleUseAdd(UseStmt* use);
-  bool                moduleUseRemove(ModuleSymbol* mod);
-  void                moduleUseClear();
+  void                useListAdd(ModuleSymbol* mod);
+  void                useListAdd(UseStmt*      use);
+  bool                useListRemove(ModuleSymbol* mod);
+  void                useListClear();
 
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
 
   BlockTag            blockTag;
   AList               body;
-  CallExpr*           modUses;       // module uses
+  CallExpr*           useList;       // module/enum uses for this block
   const char*         userLabel;
   CallExpr*           byrefVars;     // task intents - task constructs only
   ForallIntents*      forallIntents; // only for forall-body blocks

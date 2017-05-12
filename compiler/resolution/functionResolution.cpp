@@ -1857,8 +1857,8 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   //
   // ensure f2 is not more visible via module uses, and recurse
   //
-  if (block && block->modUses) {
-    for_actuals(expr, block->modUses) {
+  if (block && block->useList) {
+    for_actuals(expr, block->useList) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
       SymExpr* se = toSymExpr(use->src);
@@ -5876,8 +5876,8 @@ computeStandardModuleSet() {
   stack.add(standardModule);
 
   while (ModuleSymbol* mod = stack.pop()) {
-    if (mod->block->modUses) {
-      for_actuals(expr, mod->block->modUses) {
+    if (mod->block->useList) {
+      for_actuals(expr, mod->block->useList) {
         UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
         SymExpr* se = toSymExpr(use->src);
@@ -5991,7 +5991,7 @@ void resolve() {
   clearPartialCopyDataFnMap();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
-    stmt->moduleUseClear();
+    stmt->useListClear();
   }
 
   resolved = true;

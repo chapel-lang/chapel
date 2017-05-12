@@ -355,7 +355,7 @@ static void processImportExprs(UseStmt* useStmt) {
 
   useStmt->getStmtExpr()->remove();
 
-  useParent->moduleUseAdd(useStmt);
+  useParent->useListAdd(useStmt);
 
   useStmt->validateList();
 }
@@ -1283,13 +1283,13 @@ static bool lookupThisScopeAndUses(const char*           name,
   if (symbols.size() == 0) {
     // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
-      if (block->modUses != NULL) {
+      if (block->useList != NULL) {
         Vec<UseStmt*>* moduleUses = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
           moduleUses = new Vec<UseStmt*>();
 
-          for_actuals(expr, block->modUses) {
+          for_actuals(expr, block->useList) {
             UseStmt* use = toUseStmt(expr);
             INT_ASSERT(use);
 
@@ -1517,8 +1517,8 @@ static void buildBreadthFirstModuleList(
       SymExpr* se = toSymExpr(source->src);
       INT_ASSERT(se);
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        if (mod->block->modUses) {
-          for_actuals(expr, mod->block->modUses) {
+        if (mod->block->useList != NULL) {
+          for_actuals(expr, mod->block->useList) {
             UseStmt* use = toUseStmt(expr);
             INT_ASSERT(use);
 

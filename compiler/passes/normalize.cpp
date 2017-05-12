@@ -786,7 +786,7 @@ insertUseForExplicitModuleCalls(void) {
       BlockStmt* block = new BlockStmt();
       stmt->insertBefore(block);
       block->insertAtHead(stmt->remove());
-      block->moduleUseAdd(mod);
+      block->useListAdd(mod);
     }
   }
 }
