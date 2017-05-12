@@ -218,6 +218,11 @@ module LocaleModel {
       // node.
       return myLocales[chpl_rt_nodeFromLocaleID(id)];
     }
+
+    proc deinit() {
+      for loc in myLocales do
+        delete loc;
+    }
   }
 
   //////////////////////////////////////////
