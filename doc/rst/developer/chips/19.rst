@@ -19,7 +19,7 @@ discussed.
 Rationale
 ---------
 
-It is desireable to be able to create and load Chapel code at run-time.
+It is desirable to be able to create and load Chapel code at run-time.
 However,  s of Chapel 1.15, there are several issues preventing this from
 working in a straightforward manner.
 
@@ -194,7 +194,7 @@ Chapel code:
 
      b. The generated code could include calls that perform resolution
 
-   While b. is philisophically interesting, it amounts to embedding much
+   While b. is philosophically interesting, it amounts to embedding much
    of the interpreter in the generated code. It is not clear what
    advantage that would offer but it would restrict the flexibility of
    the interpreter/dynamic compiler.
@@ -231,7 +231,7 @@ Handling Ftable, Class IDs and Virtual Method Table
 There are two basic approaches to these tables
 
 1. Each of these tables could be constructed in a pointer-driven manner
-   that enables the class heirarchy information to be built at run-time.
+   that enables the class hierarchy information to be built at run-time.
    Adding a new class or function does not require changes to tables that
    store the other functions. This is the approach in C++.
 
@@ -257,10 +257,10 @@ There are two basic approaches to these tables
    code can continue to use the same indexes/IDs/offsets that it did
    before.
 
-   For the class IDs that support sub-class checks, the Shubert
+   For the class IDs that support sub-class checks, the Schubert
    numbering strategy can still be used if a new table is created to
    go from class ID (that are numbered based on load order) to a
-   depth-first traversal of the class heirarchy.
+   depth-first traversal of the class hierarchy.
 
 Appendix: Test Programs
 -----------------------
