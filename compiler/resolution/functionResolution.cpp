@@ -354,11 +354,13 @@ resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
   BlockStmt* insideBlock = NULL;
   Expr* beforeExpr = NULL;
 
-  if (type->defaultInitializer) {
-    if (type->defaultInitializer->instantiationPoint)
-      insideBlock = type->defaultInitializer->instantiationPoint;
+  AggregateType* at = toAggregateType(type);
+
+  if (at && at->defaultInitializer) {
+    if (at->defaultInitializer->instantiationPoint)
+      insideBlock = at->defaultInitializer->instantiationPoint;
     else
-      beforeExpr = type->symbol->defPoint;
+      beforeExpr = at->symbol->defPoint;
   } else {
     insideBlock = chpl_gen_main->body;
   }
@@ -4886,12 +4888,13 @@ Expr* resolvePrimInit(CallExpr* call)
     }
   }
 
-  if (type->defaultInitializer)
-  {
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-      // defaultInitializers for iterator record types cannot be called as
-      // default constructors.  So give up now!
-      return result;
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->defaultInitializer) {
+      if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+        // defaultInitializers for iterator record types cannot be called as
+        // default constructors.  So give up now!
+        return result;
+    }
   }
 
   //
@@ -5402,15 +5405,21 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   // along with tuple type.
   //
   if (fn->instantiatedFrom && !fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
-    INT_ASSERT(!fn->retType->defaultInitializer);
+    AggregateType* retAt = toAggregateType(fn->retType);
+    INT_ASSERT(retAt);
+
+    INT_ASSERT(!retAt->defaultInitializer);
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
 
-    CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
+    AggregateType* instanceRetAt = toAggregateType(instantiatedFrom->retType);
+    INT_ASSERT(instanceRetAt);
+
+    CallExpr* call = new CallExpr(instanceRetAt->defaultInitializer);
 
     // This should not be happening for iterators.
-    TypeSymbol* ts = instantiatedFrom->retType->symbol;
+    TypeSymbol* ts = instanceRetAt->symbol;
     INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS));
 
     for_formals(formal, fn) {
@@ -5429,9 +5438,9 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     }
     fn->insertBeforeEpilogue(call);
     resolveCall(call);
-    fn->retType->defaultInitializer = call->resolvedFunction();
-    INT_ASSERT(fn->retType->defaultInitializer);
-    //      resolveFns(fn->retType->defaultInitializer);
+    retAt->defaultInitializer = call->resolvedFunction();
+    INT_ASSERT(retAt->defaultInitializer);
+    //      resolveFns(retAt->defaultInitializer);
     call->remove();
   }
 }
