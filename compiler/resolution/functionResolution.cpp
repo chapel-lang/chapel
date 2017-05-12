@@ -6132,12 +6132,15 @@ static void insertRuntimeTypeTemps() {
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       SET_LINENO(ts);
-      VarSymbol* tmp = newTemp("_runtime_type_tmp_", ts->type);
-      ts->type->defaultInitializer->insertBeforeEpilogue(new DefExpr(tmp));
+      AggregateType* at = toAggregateType(ts->type);
+      INT_ASSERT(at);
+
+      VarSymbol* tmp = newTemp("_runtime_type_tmp_", at);
+      at->defaultInitializer->insertBeforeEpilogue(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      ts->type->defaultInitializer->insertBeforeEpilogue(call);
+      at->defaultInitializer->insertBeforeEpilogue(call);
       resolveCallAndCallee(call);
-      valueToRuntimeTypeMap.put(ts->type, call->resolvedFunction());
+      valueToRuntimeTypeMap.put(at, call->resolvedFunction());
       call->remove();
       tmp->defPoint->remove();
     }
@@ -6404,7 +6407,9 @@ static void resolveRecordInitializers() {
       // code
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      CallExpr* classCall = new CallExpr(type->getField("_instance")->type->defaultInitializer);
+      AggregateType* instanceAt = toAggregateType(type->getField("_instance")->type);
+
+      CallExpr* classCall = new CallExpr(instanceAt->defaultInitializer);
       CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
       init->getStmtExpr()->insertBefore(move);
       resolveCallAndCallee(classCall);
@@ -6819,25 +6824,27 @@ pruneResolvedTree() {
 }
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
+  AggregateType* at = toAggregateType(unusedFn->retType);
   // Before removing an unused function, check if it is a defaultInitializer.
   // If unusedFn is a defaultInitializer, its retType's defaultInitializer
   // field will be unusedFn. Set the defaultInitializer field to NULL so the
   // removed function doesn't leave behind a garbage pointer.
-  if (unusedFn->retType->defaultInitializer == unusedFn) {
-    unusedFn->retType->defaultInitializer = NULL;
-  }
-  // Also remove unused fns from iterator infos.
-  // Ditto for iterator fn in iterator info.
-  AggregateType* at = toAggregateType(unusedFn->retType);
-  if (at && at->iteratorInfo) {
-    IteratorInfo* ii = at->iteratorInfo;
-    INT_ASSERT(at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
-                                         FLAG_ITERATOR_CLASS));
-    if (ii) {
-      if (ii->iterator == unusedFn)
-        ii->iterator = NULL;
-      if (ii->getIterator == unusedFn)
-        ii->getIterator = NULL;
+  if (at) {
+    if (at->defaultInitializer == unusedFn) {
+      at->defaultInitializer = NULL;
+    }
+    // Also remove unused fns from iterator infos.
+    // Ditto for iterator fn in iterator info.
+    if (at->iteratorInfo) {
+      IteratorInfo* ii = at->iteratorInfo;
+      INT_ASSERT(at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
+                                           FLAG_ITERATOR_CLASS));
+      if (ii) {
+        if (ii->iterator == unusedFn)
+          ii->iterator = NULL;
+        if (ii->getIterator == unusedFn)
+          ii->getIterator = NULL;
+      }
     }
   }
 }
