@@ -5721,14 +5721,14 @@ resolveFns(FnSymbol* fn) {
   // Resolve base class type constructors as well.
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
-      if (isAggregateType(parent)        == true     &&
-          parent                         != dtValue  &&
-          parent                         != dtObject &&
-          parent->defaultTypeConstructor != NULL) {
-        resolveFormals(parent->defaultTypeConstructor);
+      AggregateType* pt = toAggregateType(parent);
+      if (pt                         != NULL     &&
+          pt                         != dtObject &&
+          pt->defaultTypeConstructor != NULL) {
+        resolveFormals(pt->defaultTypeConstructor);
 
-        if (resolvedFormals.set_in(parent->defaultTypeConstructor)) {
-          resolveFns(parent->defaultTypeConstructor);
+        if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
+          resolveFns(pt->defaultTypeConstructor);
         }
       }
     }
