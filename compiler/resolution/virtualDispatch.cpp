@@ -53,6 +53,7 @@ static child type could end up calling something in the parent.
 #include "symbol.h"
 
 #include <set>
+#include <vector>
 
 bool                            inDynamicDispatchResolution = false;
 
@@ -75,8 +76,8 @@ static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
 static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
                                          Type*           ct,
                                          FnSymbol*       pfn);
-static void collectInstantiatedAggregateTypes(Vec<AggregateType*>& icts,
-                                              AggregateType*       ct);
+static void collectInstantiatedAggregateTypes(std::vector<AggregateType*>& icts,
+                                              AggregateType*               ct);
 
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
@@ -295,12 +296,12 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
   forv_Vec(FnSymbol, cfn, methods) {
     if (cfn && !cfn->instantiatedFrom) {
-      Vec<AggregateType*> types;
+      std::vector<AggregateType*> types;
 
       if (ct->symbol->hasFlag(FLAG_GENERIC)) {
         collectInstantiatedAggregateTypes(types, ct);
       } else {
-        types.add(ct);
+        types.push_back(ct);
       }
 
       forv_Vec(AggregateType, type, types) {
@@ -477,7 +478,7 @@ static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
 //
 // add to vector icts all types instantiated from ct
 //
-static void collectInstantiatedAggregateTypes(Vec<AggregateType*>& icts,
+static void collectInstantiatedAggregateTypes(std::vector<AggregateType*>& icts,
                                               AggregateType* ct) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     AggregateType* instanceT = toAggregateType(ts->type);
@@ -485,7 +486,7 @@ static void collectInstantiatedAggregateTypes(Vec<AggregateType*>& icts,
       if (!ts->hasFlag(FLAG_GENERIC) &&
           instanceT->defaultTypeConstructor->instantiatedFrom ==
           ct->defaultTypeConstructor) {
-        icts.add(instanceT);
+        icts.push_back(instanceT);
 
         INT_ASSERT(isInstantiation(instanceT, ct));
         INT_ASSERT(instanceT->instantiatedFrom == ct);
