@@ -550,7 +550,7 @@ BlockStmt* getVisibilityBlock(Expr* expr) {
     return getVisibilityBlock(expr->parentExpr);
   } else if (Symbol* s = expr->parentSymbol) {
       FnSymbol* fn = toFnSymbol(s);
-      if (fn && fn->instantiationPoint)
+      if (fn && fn->instantiationPoint && fn->instantiationPoint->parentSymbol)
         return fn->instantiationPoint;
       else
         return getVisibilityBlock(s->defPoint);
