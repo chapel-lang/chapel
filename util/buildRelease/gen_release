@@ -79,6 +79,13 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     print "Cloning the sources (repo: $git_url branch: $git_branch)...\n";
     SystemOrDie("git clone --branch $git_branch $git_url $rootdir");
 
+    if (exists($ENV{'CHPL_GEN_RELEASE_COMMIT'})) {
+        $commit = $ENV{'CHPL_GEN_RELEASE_COMMIT'};
+        print "Checking out revision $commit...\n";
+        SystemOrDie("cd $rootdir && git reset --hard $commit")
+    }
+
+
     print "Creating build workspace with git archive...\n";
     SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
 
