@@ -665,6 +665,7 @@ module ChapelLocale {
   //
   // Free the original root locale when the program is being torn down
   //
+  pragma "no doc"
   proc deinit() {
     delete origRootLocale;
   }
