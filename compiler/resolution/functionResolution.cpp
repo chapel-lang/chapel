@@ -908,7 +908,7 @@ isTupleContainingAnyReferences(Type* t)
 
 
 static Type*
-getReturnedTupleType(FnSymbol* fn, Type* retType)
+getReturnedTupleType(FnSymbol* fn, AggregateType* retType)
 {
   INT_ASSERT(retType->symbol->hasFlag(FLAG_TUPLE));
 
@@ -948,8 +948,10 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     // So we make sure returned tuple types capture values here.
     if (retType->symbol->hasFlag(FLAG_TUPLE) &&
         !doNotChangeTupleTypeRefLevel(fn, true)) {
+      AggregateType* tupleType = toAggregateType(retType);
+      INT_ASSERT(tupleType);
 
-      retType = getReturnedTupleType(fn, retType);
+      retType = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
     } else if (fn->returnsRefOrConstRef()) {
       makeRefType(retType);
@@ -1100,7 +1102,9 @@ resolveFormals(FnSymbol* fn) {
         // Let 'in' intent work similarly to the blank intent.
         IntentTag intent = formal->intent;
         if (intent == INTENT_IN) intent = INTENT_BLANK;
-        Type* newType = computeTupleWithIntent(intent, formal->type);
+        AggregateType* tupleType = toAggregateType(formal->type);
+        INT_ASSERT(tupleType);
+        Type* newType = computeTupleWithIntent(intent, tupleType);
         formal->type = newType;
       }
 
@@ -4482,8 +4486,10 @@ resolveCoerce(CallExpr* call) {
   // Adjust tuple reference-level for return if necessary
   if (toType->symbol->hasFlag(FLAG_TUPLE) &&
       !doNotChangeTupleTypeRefLevel(fn, true)) {
+    AggregateType* tupleType = toAggregateType(toType);
+    INT_ASSERT(tupleType);
 
-    Type* retType = getReturnedTupleType(fn, toType);
+    Type* retType = getReturnedTupleType(fn, tupleType);
     if (retType != toType) {
       // Also adjust any PRIM_COERCE calls
       call->get(2)->replace(new SymExpr(retType->symbol));
@@ -5502,7 +5508,9 @@ void resolveReturnType(FnSymbol* fn)
       !doNotChangeTupleTypeRefLevel(fn, true)) {
     // Compute the tuple type without any refs
     // Set the function return type to that type.
-    retType = getReturnedTupleType(fn, retType);
+    AggregateType* tupleType = toAggregateType(retType);
+    INT_ASSERT(tupleType);
+    retType = getReturnedTupleType(fn, tupleType);
   }
 
   ret->type = retType;

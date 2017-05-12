@@ -796,14 +796,13 @@ shouldChangeTupleType(Type* elementType)
 
 
 static AggregateType*
-do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
+do_computeTupleWithIntent(bool valueOnly, IntentTag intent, AggregateType* at)
 {
-  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
+  INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
 
   bool allSame = true;
-  AggregateType* at = toAggregateType(t);
 
   FnSymbol*  typeConstructor    = at->defaultTypeConstructor;
   BlockStmt* instantiationPoint = typeConstructor->instantiationPoint;
@@ -820,7 +819,9 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
       // blank-intent-is-ref types.
 
       if (useType->symbol->hasFlag(FLAG_TUPLE)) {
-        useType = do_computeTupleWithIntent(valueOnly, intent, useType);
+        AggregateType* useAt = toAggregateType(useType);
+        INT_ASSERT(useAt);
+        useType = do_computeTupleWithIntent(valueOnly, intent, useAt);
       } else if (shouldChangeTupleType(useType)) {
         if (valueOnly) {
           // already OK since we did getValType() above
@@ -856,12 +857,12 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
   }
 }
 
-AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
+AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
   return do_computeTupleWithIntent(false, intent, t);
 }
 
-AggregateType* computeNonRefTuple(Type* t)
+AggregateType* computeNonRefTuple(AggregateType* t)
 {
   return do_computeTupleWithIntent(true, INTENT_BLANK, t);
 }
