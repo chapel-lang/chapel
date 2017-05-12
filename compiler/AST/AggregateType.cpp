@@ -48,6 +48,7 @@ AggregateType::AggregateType(AggregateTag initTag)
   : Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
+  defaultInitializer  = NULL;
   initializerStyle    = DEFINES_NONE_USE_DEFAULT;
   initializerResolved = false;
   outer               = NULL;

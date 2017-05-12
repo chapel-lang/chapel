@@ -112,6 +112,12 @@ public:
 
   AggregateTag                aggregateTag;
 
+  FnSymbol*                   defaultInitializer;
+                              // This is the compiler-supplied
+                              // default-initializer.
+                              // It provides initial values for the
+                              // fields in an aggregate type.
+
   InitializerStyle            initializerStyle;
 
   bool                        initializerResolved;
