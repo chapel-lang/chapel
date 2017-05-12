@@ -2671,6 +2671,7 @@ pnext
 rnext
 
 FILEID: 2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5
+wkfn
 yylloc
 yyparse
 
@@ -2723,6 +2724,7 @@ otharrs
 replmt
 rhsv
 shetag
+ures
 urse
 
 FILEID: 4f065520-1d85-11e6-a3a6-10ddb1d4c3d5
@@ -2854,6 +2856,7 @@ FILEID: 3efba760-1f11-11e6-a3a6-10ddb1d4c3d5
 arepl
 drepl
 neednl
+origloc
 parenthesesless
 
 FILEID: 610c0354-1f11-11e6-a3a6-10ddb1d4c3d5
@@ -2984,12 +2987,14 @@ bxor
 cartdim
 coords
 displs
+envval
 errhandler
 errorclass
 errorcode
 gatherv
 graphdims
 hindexed
+hpcrdm
 hvector
 ibsend
 iindex
@@ -4344,6 +4349,12 @@ FILEID: 01f4f6a8-2016-11e7-980e-10ddb1d4c3d5
 fock
 iact
 
+FILEID: c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5
+sealedabstract
+
+FILEID: d7761e16-36bd-11e7-96a7-10ddb1d4c3d5
+replmt
+
 NATURAL:
 abcd
 abcdefg
@@ -4632,6 +4643,7 @@ cohen
 colorado
 colostate
 combit
+commid
 comparetype
 compenv
 compileline
@@ -5055,6 +5067,7 @@ fstab
 fstatfs
 fstream
 fsync
+ftable
 ftest
 ftpport
 ftpsslauth
@@ -5262,6 +5275,7 @@ iolittle
 iomode
 iomodes
 ionative
+iostream
 iostringformat
 iostringstyle
 iostyle
@@ -5398,6 +5412,7 @@ langer
 lapack
 laplace
 larrosa
+lastcookie
 lastentry
 lastexecopts
 lastresult
@@ -5611,6 +5626,7 @@ moler
 monday
 mongolian
 monoid
+monomorphization
 monte
 monthstr
 morecore
@@ -5750,6 +5766,7 @@ nonwide
 nonzeroes
 nonzeros
 noop
+noprint
 noprobe
 noprogress
 nopromote
@@ -5869,6 +5886,7 @@ phong
 physmem
 pidigits
 pids
+pipermail
 pkgs
 pktinfo
 planckian
