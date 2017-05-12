@@ -1613,12 +1613,14 @@ module ChapelArray {
       return this((...r));
     }
 
-    pragma "no doc"
+    /* Return an array slice halting if the range contains elements
+       that are not local. */
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
 
-    pragma "no doc"
+    /* Return an array slice halting if the domain contains elements
+       that are not local. */
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
@@ -2293,7 +2295,17 @@ module ChapelArray {
              "  Actual domain is: ", this.domain);
     }
 
-    pragma "no doc"
+    /* Return an array declared over a new domain, provided that the new
+       domain is of the same rank and size as the original.
+
+       For example:
+
+       .. code-block:: chapel
+
+          var A: [{1..10}] int;
+          var B = A.reindex({5..15});
+
+    */
     pragma "fn returns aliasing array"
     proc reindex(d: domain)
       where isRectangularDom(this.domain) && isRectangularDom(d)
