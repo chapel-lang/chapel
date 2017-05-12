@@ -987,8 +987,11 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
       return info.typeSymbol->type->defaultTypeConstructor;
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return info.typeSymbol->type->defaultInitializer;
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      AggregateType* at = toAggregateType(info.typeSymbol->type);
+      INT_ASSERT(at);
+      return at->defaultInitializer;
+    }
     if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
       // is it the star tuple function?
       if (fn->hasFlag(FLAG_STAR_TUPLE))
