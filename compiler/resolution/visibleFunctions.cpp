@@ -31,6 +31,24 @@
 #include <map>
 #include <set>
 
+
+/*
+   The process of finding visible functions works with some global
+   tables. The global tables map
+
+     block id -> function name -> FnSymbol*s
+
+   In this way, the symbols declared in each block are stored.
+   These tables do not save the transitive symbols available.
+   To do that, code using the table needs to go up blocks/scopes
+   and explicitly consider module 'use's.
+
+   This file also includes an optimization, where the
+   symbols available to all modules (i.e. what is in ChapelStandard)
+   is considered to be in a single block. This optimization
+   provides a significant performance for compiling 'hello'.
+ */
+
 class VisibleFunctionBlock {
 public:
                                         VisibleFunctionBlock();
