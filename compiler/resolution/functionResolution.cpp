@@ -4795,22 +4795,25 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
-    FnSymbol* typeCons = type->defaultTypeConstructor;
+    FnSymbol* typeCons = NULL;
+    if (AggregateType* at = toAggregateType(type)) {
+      typeCons = at->defaultTypeConstructor;
 
-    if (typeCons) {
-      //
-      // If it had one, create a zero-argument call to the type
-      // constructor, insert it into the code point in question,
-      // and try to resolve it (saving the answer).
-      //
-      CallExpr* typeConsCall = new CallExpr(typeCons->name);
-      call->replace(typeConsCall);
-      unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
+      if (typeCons) {
+        //
+        // If it had one, create a zero-argument call to the type
+        // constructor, insert it into the code point in question,
+        // and try to resolve it (saving the answer).
+        //
+        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+        call->replace(typeConsCall);
+        unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
 
-      //
-      // Put things back the way they were.
-      //
-      typeConsCall->replace(call);
+        //
+        // Put things back the way they were.
+        //
+        typeConsCall->replace(call);
+      }
     }
 
     //
