@@ -150,13 +150,11 @@ proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
 // TODO: going over all the locales - is there a scalability issue?
 proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
   // ideally would like to make this a "eureka"
-  /*
   forall (ix, loc) in zip(targetLocDom, targetLocales) do
     if loc.id != ix {
       halt("The array of locales ", purposeMessage, " must be \"consistent\".",
            " See ReplicatedDist documentation for details.");
     }
-  */
 }
 
 proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
