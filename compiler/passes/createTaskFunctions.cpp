@@ -194,8 +194,12 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore(new DefExpr(eltType));
   headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
   headAnchor->insertBefore(new DefExpr(globalOp));
-  CallExpr* newOp = new CallExpr(reduceType->type->defaultInitializer->name,
-                              new NamedExpr("eltType", new SymExpr(eltType)));
+
+  AggregateType* reduceAt = toAggregateType(reduceType->type);
+  INT_ASSERT(reduceAt);
+
+  CallExpr* newOp = new CallExpr(reduceAt->defaultInitializer->name,
+                                 new NamedExpr("eltType", new SymExpr(eltType)));
   headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
 
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
