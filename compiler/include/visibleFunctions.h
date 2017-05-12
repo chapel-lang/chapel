@@ -29,11 +29,13 @@ class Expr;
 class FnSymbol;
 
 void       findVisibleFunctions(CallInfo&       info,
-                                Vec<FnSymbol*>& visibleFns);
+                                Vec<FnSymbol*>& visibleFns,
+                                Vec<int>&        visibilityDistances);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,
-                               Vec<FnSymbol*>&  visibleFns);
+                               Vec<FnSymbol*>&  visibleFns,
+                               Vec<int>&        visibilityDistances);
 
 BlockStmt* getVisibilityBlock(Expr* expr);
 

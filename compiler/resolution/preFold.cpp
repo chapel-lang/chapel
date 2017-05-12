@@ -1033,8 +1033,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   const char*        flname = use->unresolved;
 
   Vec<FnSymbol*>     visibleFns;
+  Vec<int>           visibilityDistances;
 
-  getVisibleFunctions(flname, call, visibleFns);
+  getVisibleFunctions(flname, call, visibleFns, visibilityDistances);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",

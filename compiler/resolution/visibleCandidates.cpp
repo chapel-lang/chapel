@@ -199,9 +199,19 @@ void resolveTypedefedArgTypes(FnSymbol* fn) {
 static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
   SET_LINENO(fn);
 
+  // Create reference types more explicitly as a workaround
+  /*if (fn->hasFlag(FLAG_REF) == true) {
+    DefExpr* def = toDefExpr(fn->formals.first());
+    INT_ASSERT(def);
+    Type* actualType = def->sym->typeInfo();
+    makeRefType(actualType);
+    fn->_this->type = actualType->refType;
+  } else
+  */
+
   // Ignore tuple constructors; they were generated
   // with their type constructors.
-  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
 
     for_formals(formal, fn) {

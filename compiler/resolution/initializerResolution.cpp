@@ -397,8 +397,9 @@ void resolveInitCall(CallExpr* call) {
 
 
   Vec<FnSymbol*> visibleFns; // visible functions
+  Vec<int> visibilityDistances;
 
-  findVisibleFunctions(info, visibleFns);
+  findVisibleFunctions(info, visibleFns, visibilityDistances);
 
 
   // Modified narrowing down the candidates to operate in an

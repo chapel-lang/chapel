@@ -25,11 +25,26 @@
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stmt.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 
 #include <map>
 #include <set>
+#include <vector>
+
+/*
+   The process of finding visible functions works with some global
+   tables. The global tables map
+
+     block id -> function name -> FnSymbol*s
+
+   In this way, the symbols declared in each block are stored.
+   These tables do not save the transitive symbols available.
+   To do that, code using the table needs to go up blocks/scopes
+   and explicitly consider module 'use's.
+
+ */
 
 class VisibleFunctionBlock {
 public:
@@ -45,6 +60,45 @@ static CapturedValueMap                       capturedValues;
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 static Map<BlockStmt*, BlockStmt*>            visibilityBlockCache;
+
+struct UseDistance {
+  int distance;
+  bool onlyOrExcept;
+  UseDistance()
+    : distance(-1), onlyOrExcept(true)
+  { }
+
+  UseDistance(int distance, bool onlyOrExcept)
+    : distance(distance), onlyOrExcept(onlyOrExcept)
+  { }
+};
+
+// moduleUsesTable[(m1->id,m2->id)] = i
+//   where m1 and m2 are modules.
+//
+// i is -1 if m1 does not use m2
+// i is 0 if m1 == m2
+// i is 1 if m1 uses m2 directly
+// i is 2 if m1 uses another module B that uses m2
+// ...
+// in other words, i is the distance between the modules.
+static std::map<std::pair<int,int>, UseDistance>     moduleUsesTable;
+
+// This one stores the transitive closure.
+// i.e. it includes symbols from 'use'd functions
+// does *not* include functions available directly in that module!
+// that part comes from visibleFunctionMap.
+typedef std::map<ModuleSymbol*, VisibleFunctionBlock*> ModuleVisibleFunctionMapType;
+static ModuleVisibleFunctionMapType moduleVisibleFunctionMap;
+
+// TODO - would it help to store a map from
+// block to the set of modules "in use" at that block?
+
+// This one stores the modules already included in the transitive
+// closure above
+typedef std::map<ModuleSymbol*, std::set<ModuleSymbol*> > ModuleVisibleModuleMapType;
+static ModuleVisibleModuleMapType moduleVisibleModuleMap;
+
 
 static int                                    nVisibleFunctions       = 0;
 
@@ -74,8 +128,9 @@ static void  verifyTaskFnCall(BlockStmt* parent, CallExpr* call);
 
 static Expr* parentToMarker(BlockStmt* parent, CallExpr* call);
 
-void findVisibleFunctions(CallInfo&       info,
-                          Vec<FnSymbol*>& visibleFns) {
+void findVisibleFunctions(CallInfo&           info,
+                          Vec<FnSymbol*>&     visibleFns,
+                          Vec<int>&           visibilityDistances) {
   CallExpr* call = info.call;
 
   //
@@ -87,16 +142,25 @@ void findVisibleFunctions(CallInfo&       info,
 
   if (!call->isResolved()) {
     if (!info.scope) {
-      getVisibleFunctions(info.name, call, visibleFns);
+      getVisibleFunctions(info.name, call, visibleFns, visibilityDistances);
     } else {
       if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
           visibleFns.append(*fns);
+          forv_Vec(FnSymbol, fn, *fns) {
+            // scope 0 is acceptable because MyMod.fn() is already
+            // explicitly scoped and so should never compete with candidates
+            // with different visibility
+            visibilityDistances.push_back(0);
+          }
         }
       }
     }
   } else {
-    visibleFns.add(call->resolvedFunction());
+    visibleFns.push_back(call->resolvedFunction());
+    // scope 0 is acceptable because the call is already resolved
+    // and so should never compete with other candidates
+    visibilityDistances.push_back(0);
     handleTaskIntentArgs(call, call->resolvedFunction(), info);
   }
 
@@ -118,9 +182,110 @@ void findVisibleFunctions(CallInfo&       info,
   }
 }
 
+// Returns UseDistance between module m1 and module m2.
+// E.g. is m2 available in m1? If so, through how many 'use'
+// statements in different modules?
+static UseDistance computeUseDistance(ModuleSymbol* m1, ModuleSymbol* m2)
+{
 
+  std::pair<int,int> key(m1->id, m2->id);
+
+  // this is a base case for recursion
+  if (m1 == m2)
+    return UseDistance(0,false);
+
+  // Distance from anything to theProgram / rootModule is 0
+  // because these symbols are available in all modules.
+  //if (//(m1 == theProgram || m1 == rootModule) ||
+  //    (m2 == theProgram || m2 == rootModule))
+  //  return UseDistance(0,false);
+
+  if (moduleUsesTable.count(key) == 0) {
+
+
+    UseDistance dist(-1, true);
+
+    // Put something in the table to avoid an infinite loop
+    // for modules that use each other.
+    moduleUsesTable[key] = dist;
+
+    BlockStmt* block = m1->block;
+    if (block->modUses != NULL) {
+      for_actuals(expr, block->modUses) {
+        UseStmt* use = toUseStmt(expr);
+        INT_ASSERT(use);
+        SymExpr* se = toSymExpr(use->src);
+        INT_ASSERT(se);
+        bool onlyOrExcept = !use->isPlainUse();
+// TODO
+// use A only ;
+// does not count as a use for this purpose.
+//
+// neither does using a private module.?
+        // only consider uses of modules (not uses of enums)
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->symbol())) {
+          // Does 'usedMod' use 'm2', transitively?
+          UseDistance gotDist = computeUseDistance(usedMod, m2);
+          // record only/except as a different "use level"
+          if (onlyOrExcept)
+            gotDist.onlyOrExcept = true;
+          if (gotDist.distance != -1) {
+            // Account for it being a 'use'
+            gotDist.distance += 1;
+	    // merge gotDist want global dist
+	    // onlyOrExcept is set only if both are that way.
+	    dist.onlyOrExcept = dist.onlyOrExcept && gotDist.onlyOrExcept;
+	    // distance is the minimum use distance
+	    if (dist.distance == -1 ||
+		dist.distance > gotDist.distance)
+              dist.distance = gotDist.distance;
+          }
+        }
+      }
+    }
+
+    //printf("computeUseDistance(%s, %s) = %i\n",
+    //       m1->name, m2->name, dist.distance);
+
+    moduleUsesTable[key] = dist;
+  }
+
+  return moduleUsesTable[key];
+}
+
+// returns true for rootModule, theProgram,
+// and any module 'use'd by those.
+static bool isModuleGloballyVisible(ModuleSymbol* mod) {
+  // theProgram and rootModule are parents of all other modules,
+  // so they are globally visible.
+  if (mod == theProgram || mod == rootModule)
+    return true;
+  // theProgram can use other modules; in that event, symbols
+  // from those modules are globally visible.
+  UseDistance d = computeUseDistance(theProgram, mod);
+  if (d.distance != -1)
+    return true;
+
+  return false;
+}
+
+static UseDistance computeVisibilityDistance(ModuleSymbol* m1, ModuleSymbol* m2)
+{
+  UseDistance d;
+  // Symbols visible from theProgram or rootModule
+  // should be added to all other modules.
+  if (isModuleGloballyVisible(m2))
+    d = UseDistance(0, false);
+  else
+    d = computeUseDistance(m1, m2);
+  return d;
+}
 
 static void buildVisibleFunctionMap() {
+  typedef std::map<ModuleSymbol*,std::vector<FnSymbol*> > ModToNewFnsMap;
+  ModToNewFnsMap updates;
+
+  //printf("buildVisibleFunctionMap %i\n", gFnSymbols.n);
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
@@ -129,6 +294,8 @@ static void buildVisibleFunctionMap() {
         block = theProgram->block;
       } else {
         block = getVisibilityBlock(fn->defPoint);
+
+/*
         //
         // add all functions in standard modules to theProgram
         //
@@ -141,6 +308,14 @@ static void buildVisibleFunctionMap() {
         //
         if (standardModuleSet.set_in(block))
           block = theProgram->block;
+*/
+        // Treat theProgram the same as the root module
+        //if (theProgram->block == block)
+        //  block = rootModule->block;
+      }
+      ModuleSymbol* mod = toModuleSymbol(block->parentSymbol);
+      if (mod) {
+        updates[mod].push_back(fn);
       }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
@@ -152,9 +327,64 @@ static void buildVisibleFunctionMap() {
         fns = new Vec<FnSymbol*>();
         vfb->visibleFunctions.put(fn->name, fns);
       }
+      //printf("Adding fn %s (%i) to block %i mod %s\n",
+      //       fn->name, fn->id, block->id, mod?mod->name:"");
       fns->add(fn);
     }
   }
+
+  //printf("computing transitives\n");
+
+  for (ModToNewFnsMap::iterator it = updates.begin();
+       it != updates.end();
+       ++it) {
+    ModuleSymbol* mod = it->first;
+    std::vector<FnSymbol*> &vec = it->second;
+
+    // Any module that could use mod transitively might need to be updated
+    // TODO - do this in a smarter manner... possible transitive map
+    // from module to modules that use it? And handle theProgram/rootModule
+    // in a separate loop?
+    forv_Vec(ModuleSymbol, otherMod, gModuleSymbols) {
+
+
+      // Don't bother updating theProgram or rootModule
+      if (/*otherMod == theProgram || */otherMod == rootModule)
+        continue;
+
+      UseDistance d = computeVisibilityDistance(otherMod, mod);
+
+      //printf("distance from %s to %s is %i %i\n",
+      //       otherMod->name, mod->name, d.distance, d.onlyOrExcept);
+
+      // TODO -- should handle onlyOrExcept, not rule it out.
+      if (mod != otherMod && d.distance != -1 && d.onlyOrExcept == false) {
+
+        // Update moduleVisibleModuleMap.
+        moduleVisibleModuleMap[otherMod].insert(mod);
+
+        // otherMod uses mod with some use distance d.distance.
+        // Update transitive closure of visible function maps.
+	for_vector(FnSymbol, fn, vec) {
+          if (moduleVisibleFunctionMap.count(otherMod) == 0) {
+            // Create an entry, set use distance
+            VisibleFunctionBlock* vfb = new VisibleFunctionBlock();
+            moduleVisibleFunctionMap.insert(std::make_pair(otherMod, vfb));
+          }
+          VisibleFunctionBlock* vfb = moduleVisibleFunctionMap[otherMod];
+          Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
+          if (!fns) {
+            fns = new Vec<FnSymbol*>();
+            vfb->visibleFunctions.put(fn->name, fns);
+          }
+          //printf("transitive adding fn %s (%i) to transitive module %s\n",
+          //       fn->name, fn->id, otherMod->name);
+          fns->add(fn);
+        }
+      }
+    }
+  }
+
   nVisibleFunctions = gFnSymbols.n;
 }
 
@@ -381,26 +611,150 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 static BlockStmt* getVisibleFunctions(const char*           name,
                                       CallExpr*             call,
                                       BlockStmt*            block,
-                                      std::set<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>&       visibleFns);
-
-void getVisibleFunctions(const char*      name,
-                         CallExpr*        call,
-                         Vec<FnSymbol*>&  visibleFns) {
+                                      std::set<ModuleSymbol*>& visited,
+                                      Vec<FnSymbol*>&       visibleFns,
+                                      Vec<int>&             visibilityDistances,
+                                      int                   distance);
+static void getVisibleFnsFromUsedModule(const char*      name,
+                                        ModuleSymbol*    mod,
+                                        std::set<ModuleSymbol*>& visited,
+                                        Vec<FnSymbol*>&  visibleFns,
+                                        Vec<int>&        visibilityDistances,
+                                        int              distance);
+ 
+void getVisibleFunctions(const char*            name,
+                         CallExpr*              call,
+                         Vec<FnSymbol*>&       visibleFns,
+                         Vec<int>&             visibilityDistances) {
   BlockStmt*           block    = getVisibilityBlock(call);
-  std::set<BlockStmt*> visited;
+  std::set<ModuleSymbol*> visited;
 
-  getVisibleFunctions(name, call, block, visited, visibleFns);
+  getVisibleFunctions(name, call, block, visited,
+                      visibleFns, visibilityDistances, 0);
 }
+
+/* Gather any definitions from 'use' statements in module mod */
+static void getVisibleFnsFromUsesInModule(const char*      name,
+                                          ModuleSymbol*    mod,
+                                          std::set<ModuleSymbol*>& visited,
+                                          Vec<FnSymbol*>&  visibleFns,
+                                          Vec<int>&        visibilityDistances,
+                                          int              distance) {
+
+  // root module cannot use other modules currently.
+  if (mod == rootModule)
+    return;
+
+  // Gather any definitions available from 'use' of other modules
+  ModuleVisibleFunctionMapType::iterator it;
+  it = moduleVisibleFunctionMap.find(mod);
+  if (it == moduleVisibleFunctionMap.end())
+    return; // module might have defined no symbols, used no modules
+
+  if (0 == strcmp("foo", name) && 0 == strcmp("TestTwo", mod->name))
+    gdbShouldBreakHere();
+
+  //printf("getVisibleFnsFromUsesInModule (have %i) %s mod %s\n",
+  //       visibleFns.n, name, mod->name);
+
+
+  VisibleFunctionBlock* vfb = it->second;
+
+  bool anyAlreadyVisited = false;
+
+  std::set<ModuleSymbol*>& usedModulesSet = moduleVisibleModuleMap[mod];
+  for_set(ModuleSymbol, usedMod, usedModulesSet) {
+    if (visited.find(usedMod) != visited.end()) {
+      //printf("module %s already visited!\n", usedMod->name);
+      anyAlreadyVisited = true;
+      break;
+    }
+    //printf("module %s not visited yet\n", usedMod->name);
+  }
+
+  if (anyAlreadyVisited) {
+    // If any were already visited, add symbols from each non-visited
+    // module directly.
+    for_set(ModuleSymbol, usedMod, usedModulesSet) {
+      if (visited.find(usedMod) == visited.end()) {
+        UseDistance d = computeVisibilityDistance(mod, usedMod);
+        INT_ASSERT(d.distance>=0);
+
+        getVisibleFnsFromUsedModule(name, usedMod, visited,
+                                    visibleFns, visibilityDistances,
+                                    distance+d.distance);
+      }
+    }
+  } else {
+    // Otherwise, add all symbols from the module
+    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+      forv_Vec(FnSymbol, fn, *fns) {
+        
+        ModuleSymbol* fnModule = fn->getModule();
+        UseDistance d = computeVisibilityDistance(mod, fnModule);
+        INT_ASSERT(d.distance>=0);
+
+        visibleFns.push_back(fn);
+        visibilityDistances.push_back(distance + d.distance);
+      }
+    }
+    for_set(ModuleSymbol, usedMod, usedModulesSet) {
+      visited.insert(usedMod);
+    }
+  }
+  
+  //printf("getVisibleFnsFromUsesInModule finishing, now have %i\n",
+  //       visibleFns.n);
+}
+
+
+/* Gather any definitions from module 'mod' that are available to a
+   'use' of that module.
+   
+   Does not included transitively available definitions
+   (that is covered in getVisibleFnsFromUsesInModule)
+ */
+static void getVisibleFnsFromUsedModule(const char*      name,
+                                        ModuleSymbol*    mod,
+                                        std::set<ModuleSymbol*>& visited,
+                                        Vec<FnSymbol*>&  visibleFns,
+                                        Vec<int>&        visibilityDistances,
+                                        int              distance) {
+  BlockStmt* block = mod->block;
+  
+  //
+  // visit modules only once
+  //
+  if (visited.find(mod) != visited.end())
+    return;
+  visited.insert(mod);
+
+  //printf("getVisibleFnsFromUsedModule (have %i) %s mod %s\n",
+  //       visibleFns.n, name, mod->name);
+
+  // Gather any non-private definitions declared directly in the module
+  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+      forv_Vec(FnSymbol, fn, *fns) {
+        visibleFns.push_back(fn);
+        visibilityDistances.push_back(distance);
+      }
+    }
+  }
+}
+
 
 static BlockStmt* getVisibleFunctions(const char*           name,
                                       CallExpr*             call,
                                       BlockStmt*            block,
-                                      std::set<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>&       visibleFns) {
+                                      std::set<ModuleSymbol*>& visited,
+                                      Vec<FnSymbol*>&       visibleFns,
+                                      Vec<int>&             visibilityDistances,
+                                      int                   distance) {
   BlockStmt* retval = NULL;
 
-  //
+
+/*
   // all functions in standard modules are stored in a single block
   //
   // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
@@ -410,41 +764,80 @@ static BlockStmt* getVisibleFunctions(const char*           name,
   // modules like List and Sort.  This implementation needs to be linked
   // to the computation of the standardModuleSet.
   //
+// TODO
   if (standardModuleSet.set_in(block)) {
     block = theProgram->block;
   }
+*/
+  // Treat theProgram the same as the root module
+  // This enables most symbols to resolve through
+  // the transitive module uses computed above.
+  //if (theProgram->block == block)
+  //  block = rootModule->block;
+
+
+ 
+  ModuleSymbol* mod = toModuleSymbol(block->parentSymbol);
+
+  // But it has to be *the* block of the module,
+  // not a nested block.
+  if (mod && mod->block != block)
+    mod = NULL;
 
   //
-  // avoid infinite recursion due to modules with mutual uses
+  // visit modules only once
   //
-  if (visited.find(block) == visited.end()) {
-    bool canSkipThisBlock = true;
+  if (mod != NULL) {
+    if (visited.find(mod) != visited.end())
+      return NULL;
+    visited.insert(mod);
+  }
 
-    if (isModuleSymbol(block->parentSymbol)) {
-      visited.insert(block);
-    }
+  //ModuleSymbol* inModule = call->getModule();
+  //printf("getVisibleFunctions (have %i) %s for call id %i mod %s (in mod %s)\n",
+  //       visibleFns.n, name, call->id, mod?mod->name:"", inModule->name);
+  //if (call->id == 691)
+  //  gdbShouldBreakHere();
 
-    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
-      canSkipThisBlock = false; // cannot skip if this block defines functions
+  bool canSkipThisBlock = true;
 
-      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
-        forv_Vec(FnSymbol, fn, *fns) {
-          if (fn->isVisible(call) == true) {
-            // isVisible checks if the function is private to its defining
-            // module (and in that case, if we are under its defining module)
-            // This ensures that private functions will not be used outside
-            // of their proper scope.
-            visibleFns.add(fn);
-          }
-        }
+  // at this point block may or may not be module scope
+  // but here we just look for local definitions
+  // this allows us to find private definitions.
+  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+    canSkipThisBlock = false; // cannot skip if this block defines functions
+
+    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+      forv_Vec(FnSymbol, fn, *fns) {
+        visibleFns.push_back(fn);
+        visibilityDistances.push_back(distance);
       }
     }
+  }
 
-    if (block->modUses != NULL) {
-      for_actuals(expr, block->modUses) {
-        UseStmt* use = toUseStmt(expr);
+  // Have we reached module scope?
+  // if so, use the pre-computed module-level table
+  // to check for symbols from 'use'd modules.
 
-        INT_ASSERT(use);
+  if (mod != NULL) {
+    // above code would have already handled declarations
+    // directly in this module.
+    getVisibleFnsFromUsesInModule(name, mod, visited,
+                                  visibleFns, visibilityDistances,
+                                  distance);
+    // Can't return yet
+    //   - need to find symbols from fancy 'use'
+    //   - need to find symbols from parent modules in case of nested modules
+  }
+
+  if (block->modUses != NULL) {
+    for_actuals(expr, block->modUses) {
+      UseStmt* use = toUseStmt(expr);
+
+      INT_ASSERT(use);
+
+      if (mod == NULL || !use->isPlainUse()) {
+        // simple module-level uses are handled above
 
         if (use->skipSymbolSearch(name) == false) {
           SymExpr* se = toSymExpr(use->src);
@@ -457,41 +850,72 @@ static BlockStmt* getVisibleFunctions(const char*           name,
             // cannot skip if this block uses modules
             canSkipThisBlock = false;
 
+
+
             if (mod->isVisible(call) == true) {
               if (use->isARename(name) == true) {
-                getVisibleFunctions(use->getRename(name),
-                                    call,
-                                    mod->block,
-                                    visited,
-                                    visibleFns);
+                getVisibleFnsFromUsedModule(use->getRename(name),
+                                            mod, visited,
+                                            visibleFns,
+                                            visibilityDistances,
+                                            distance+1);
+                getVisibleFnsFromUsesInModule(use->getRename(name),
+                                              mod, visited,
+                                              visibleFns,
+                                              visibilityDistances,
+                                              distance+1);
               } else {
-                getVisibleFunctions(name,
-                                    call,
-                                    mod->block,
-                                    visited,
-                                    visibleFns);
+                getVisibleFnsFromUsedModule(name,
+                                            mod, visited,
+                                            visibleFns,
+                                            visibilityDistances,
+                                            distance+1);
+                getVisibleFnsFromUsesInModule(name, mod, visited,
+                                              visibleFns,
+                                              visibilityDistances,
+                                              distance+1);
               }
             }
           }
         }
       }
     }
+  }
 
+  //printf("getVisibleFunctions processing parents (have %i) %s for call id %i mod %s\n",
+  //       visibleFns.n, name, call->id, mod?mod->name:"");
+ 
+  //
+  // visibilityBlockCache may contain the next block
+  //
+  if (BlockStmt* cachedNext = visibilityBlockCache.get(block)) {
+    //printf("cached\n");
+    getVisibleFunctions(name, call, cachedNext, visited,
+                        visibleFns, visibilityDistances, distance+1);
+
+    retval = (canSkipThisBlock) ? cachedNext : block;
+
+  } else if (block != rootModule->block) {
+    BlockStmt* next  = getVisibilityBlock(block);
+    bool isModuleContainedInTheProgram = false;
+
+    if (mod != NULL && next == theProgram->block)
+      isModuleContainedInTheProgram = true;
+
+    // Continue if:
+    //   we are processing a call in theProgram somewhere
+    //   or, parent visibility block is not rootModule / theProgram
     //
-    // visibilityBlockCache contains blocks that can be skipped
-    //
-    if (BlockStmt* next = visibilityBlockCache.get(block)) {
-      getVisibleFunctions(name, call, next, visited, visibleFns);
-
-      retval = (canSkipThisBlock) ? next : block;
-
-    } else if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityBlock(block);
+    // Symbols from theProgram/rootModule are generally covered by
+    // getVisibleFnsFromUsesInModule above.
+    if (isModuleContainedInTheProgram == false) {
       BlockStmt* cache = getVisibleFunctions(name,
                                              call,
                                              next,
                                              visited,
-                                             visibleFns);
+                                             visibleFns,
+                                             visibilityDistances,
+                                             distance+1);
 
       if (cache) {
         visibilityBlockCache.put(block, cache);
@@ -532,7 +956,7 @@ BlockStmt* getVisibilityBlock(Expr* expr) {
     return getVisibilityBlock(expr->parentExpr);
   } else if (Symbol* s = expr->parentSymbol) {
       FnSymbol* fn = toFnSymbol(s);
-      if (fn && fn->instantiationPoint)
+      if (fn && fn->instantiationPoint && fn->instantiationPoint->parentSymbol)
         return fn->instantiationPoint;
       else
         return getVisibilityBlock(s->defPoint);
