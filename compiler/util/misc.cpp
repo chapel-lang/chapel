@@ -35,42 +35,41 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-
 static const char* help_url = "http://chapel.cray.com/bugs.html";
-
-static void cleanup_for_exit(void) {
-  deleteTmpDir();
-  stopCatchingSignals();
-}
-
-// must be non-static to avoid dead-code elim. when compiling -O3
-void gdbShouldBreakHere(void) {
-}
 
 // Support for internal errors, adopted from ZPL compiler
 
-static bool exit_immediately = true;
-static bool exit_eventually = false;
-static bool exit_end_of_pass = false;
+static bool        exit_immediately = true;
+static bool        exit_eventually  = false;
+static bool        exit_end_of_pass = false;
 
-static const char* err_filename;
-static int err_lineno;
-static int err_fatal;
-static int err_user;
-static int err_print;
-static int err_ignore;
-static FnSymbol* err_fn = NULL;
+static const char* err_filename     = NULL;
 
-//
-// Chances are that all non-flat locale models will require wide
-// pointers.  Ultimately, we'd like to have such decisions be made by
-// param fields/methods within the locale models themselves, but that
-// would require a fairly large refactoring, so for now, we
-// special-case 'flat' with the expectation that most other locale
-// models will not be flat.
-//
-static bool forceWidePtrs() {
-  return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0);
+static int         err_lineno       =    0;
+static int         err_fatal        =    0;
+static int         err_user         =    0;
+static int         err_print        =    0;
+static int         err_ignore       =    0;
+
+static FnSymbol*   err_fn           = NULL;
+
+static bool forceWidePtrs();
+
+// must be non-static to avoid dead-code elim. when compiling -O3
+void gdbShouldBreakHere() {
+
+}
+
+void setupError(const char* filename, int lineno, int tag) {
+  err_filename      = filename;
+  err_lineno        = lineno;
+  err_fatal         = tag == 1 || tag == 2 || tag == 3;
+  err_user          = tag != 1;
+  err_print         = tag == 5;
+  err_ignore        = ignore_warnings && tag == 4;
+
+  exit_immediately  = tag == 1 || tag == 2;
+  exit_eventually  |= tag == 3;
 }
 
 bool forceWidePtrsForLocal() {
@@ -92,38 +91,69 @@ bool requireOutlinedOn() {
 }
 
 const char* cleanFilename(const char* name) {
-  static int chplHomeLen = strlen(CHPL_HOME);
+  static int  chplHomeLen = strlen(CHPL_HOME);
+  const char* retval      = NULL;
 
-  if (!strncmp(name, CHPL_HOME, chplHomeLen)) {
-    return astr("$CHPL_HOME", name + chplHomeLen);
+  if (strncmp(name, CHPL_HOME, chplHomeLen) == 0) {
+    retval = astr("$CHPL_HOME", name + chplHomeLen);
   } else {
-    return name;
+    retval = name;
   }
+
+  return retval;
+}
+
+const char* cleanFilename(const BaseAST* ast) {
+  const char* retval = NULL;
+
+  if (const char* astFname = ast->fname()) {
+    retval = cleanFilename(astFname);
+
+  } else if (yyfilename != NULL) {
+    retval = cleanFilename(yyfilename);
+
+  } else {
+    retval = astr("<unknown>");
+  }
+
+  return retval;
 }
 
 
-const char* cleanFilename(BaseAST* ast) {
-  const char* astFname = ast->fname();
-  if (astFname)
-    return cleanFilename(astFname);
-  else if (yyfilename)
-    return cleanFilename(yyfilename);
-  else
-    return astr("<unknown>");
+static void cleanup_for_exit() {
+  deleteTmpDir();
+  stopCatchingSignals();
 }
 
 
-static void
-print_user_internal_error() {
+//
+// Chances are that all non-flat locale models will require wide
+// pointers.  Ultimately, we'd like to have such decisions be made by
+// param fields/methods within the locale models themselves, but that
+// would require a fairly large refactoring, so for now, we
+// special-case 'flat' with the expectation that most other locale
+// models will not be flat.
+//
+static bool forceWidePtrs() {
+  return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0);
+}
+
+static void print_user_internal_error() {
   static char error[8];
 
   const char* filename_start = strrchr(err_filename, '/');
-  if (filename_start)
+  char        version[128]   = { '\0' };
+
+  if (filename_start) {
     filename_start++;
-  else
+  } else {
     filename_start = err_filename;
+  }
+
   strncpy(error, filename_start, 3);
-  sprintf(error+3, "%04d", err_lineno);
+
+  sprintf(error + 3, "%04d", err_lineno);
+
   for (int i = 0; i < 7; i++) {
     if (error[i] >= 'a' && error[i] <= 'z') {
       error[i] += 'A' - 'a';
@@ -131,54 +161,54 @@ print_user_internal_error() {
   }
 
   fprintf(stderr, "%s ", error);
-  char version[128];
+
   get_version(version);
+
   fprintf(stderr, "chpl Version %s", version);
 }
 
 
 // find a caller (direct or not) that is not in a task function,
 // for line number reporting
-static FnSymbol*
-findNonTaskCaller(FnSymbol* fn) {
-  if (!fn || !fn->inTree()) return fn;
-  while (true) {
-    if (!isTaskFun(fn)) return fn;
+static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
+  FnSymbol* retval = NULL;
 
-    // who calls this?
-    FnSymbol* caller = NULL;
-    forv_Vec(CallExpr, call, gCallExprs) {
-      if (call->inTree()) {
-        if (FnSymbol* cfn = call->resolvedFunction()) {
-          if (cfn == fn) {
-            caller = toFnSymbol(call->parentSymbol);
-            break;
+  if (fn == NULL || fn->inTree() == false) {
+    retval = fn;
+
+  } else {
+    while (retval == NULL) {
+      if (isTaskFun(fn) == false) {
+        retval = fn;
+      } else {
+        FnSymbol* caller = NULL;
+
+        forv_Vec(CallExpr, call, gCallExprs) {
+          if (call->inTree() == true) {
+            if (FnSymbol* cfn = call->resolvedFunction()) {
+              if (cfn == fn) {
+                caller = toFnSymbol(call->parentSymbol);
+                break;
+              }
+            }
           }
+        }
+
+        if (caller == NULL) {
+          retval = fn;
+        } else {
+          fn     = caller;
         }
       }
     }
-    if (!caller) return fn; // or should it return the original value of 'fn'?
-    fn = caller;
   }
+
+  return retval;
 }
 
-void
-setupError(const char *filename, int lineno, int tag) {
-  err_filename = filename;
-  err_lineno = lineno;
-  err_fatal = tag == 1 || tag == 2 || tag == 3;
-  err_user = tag != 1;
-  err_print = tag == 5;
-  err_ignore = ignore_warnings && tag == 4;
-  exit_immediately = tag == 1 || tag == 2;
-  exit_eventually |= tag == 3;
-}
-
-
-static bool
-printErrorHeader(BaseAST* ast) {
+static bool printErrorHeader(const BaseAST* ast) {
   if (!err_print) {
-    if (Expr* expr = toExpr(ast)) {
+    if (const Expr* expr = toConstExpr(ast)) {
       Symbol* parent = expr->parentSymbol;
 
       if (isArgSymbol(parent))
@@ -309,7 +339,7 @@ static void printErrorFooter(bool guess) {
             "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
             "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
             "please see %s for instructions.  In the meantime,\n"
-            "the filename + line number above may be useful in working around the issue.\n\n", 
+            "the filename + line number above may be useful in working around the issue.\n\n",
             help_url);
 
     //
@@ -332,13 +362,18 @@ void printCallStack(bool force, bool shortModule, FILE* out) {
     if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
       return;
   }
-  if (!developer)
+
+  if (!developer) {
     fprintf(out, "while processing the following Chapel call chain:\n");
+  }
+
   for (int i = callStack.n-1; i >= 0; i--) {
-    CallExpr* call = callStack.v[i];
-    FnSymbol* fn = call->getFunction();
+    CallExpr*     call   = callStack.v[i];
+    FnSymbol*     fn     = call->getFunction();
     ModuleSymbol* module = call->getModule();
-    fprintf(out, "  %s:%d: %s%s%s\n",
+
+    fprintf(out,
+            "  %s:%d: %s%s%s\n",
             (shortModule ? module->name : cleanFilename(fn->fname())),
             call->linenum(), toString(fn),
             (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
@@ -375,11 +410,13 @@ void printCallStackCalls() {
 }
 
 
-void handleError(const char *fmt, ...) {
+void handleError(const char* fmt, ...) {
   fflush(stdout);
   fflush(stderr);
-  if (err_ignore)
+
+  if (err_ignore) {
     return;
+  }
 
   bool guess = printErrorHeader(NULL);
 
@@ -391,7 +428,9 @@ void handleError(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
+
     vfprintf(stderr, fmt, args);
+
     va_end(args);
   }
 
@@ -400,8 +439,9 @@ void handleError(const char *fmt, ...) {
 
   printCallStackOnError();
 
-  if (!err_user && !developer)
+  if (!err_user && !developer) {
     return;
+  }
 
   if (exit_immediately) {
     if (ignore_errors_for_pass) {
@@ -413,46 +453,71 @@ void handleError(const char *fmt, ...) {
 }
 
 
-static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args);
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-void handleError(BaseAST* ast, const char *fmt, ...) {
+static void vhandleError(FILE*          file,
+                         const BaseAST* ast,
+                         const char*    fmt,
+                         va_list        args);
+
+void handleError(const BaseAST* ast, const char *fmt, ...) {
   va_list args;
+
   va_start(args, fmt);
+
   vhandleError(stderr, ast, fmt, args);
+
   va_end(args);
 }
 
-void handleError(FILE* file, BaseAST* ast, const char *fmt, ...) {
+void handleError(FILE* file, const BaseAST* ast, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
+
   vhandleError(file, ast, fmt, args);
+
   va_end(args);
 }
 
-static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args) {
-  if (err_ignore)
+static void vhandleError(FILE*          file,
+                         const BaseAST* ast,
+                         const char*    fmt,
+                         va_list        args) {
+  if (err_ignore) {
     return;
+  }
 
   bool guess = false;
-  if (file == stderr)
+
+  if (file == stderr) {
     guess = printErrorHeader(ast);
+  }
 
   if (err_user || developer) {
     vfprintf(file, fmt, args);
   }
 
-  if (fPrintIDonError && ast)
+  if (fPrintIDonError && ast) {
     fprintf(file, " [%d]", ast->id);
+  }
 
-  if (file == stderr)
+  if (file == stderr) {
     printErrorFooter(guess);
+  }
+
   fprintf(file, "\n");
 
-  if (file == stderr)
+  if (file == stderr) {
     printCallStackOnError();
+  }
 
-  if (!err_user && !developer)
+  if (!err_user && !developer) {
     return;
+  }
 
   if (exit_immediately) {
     if (ignore_errors_for_pass) {
@@ -494,16 +559,16 @@ static void handleSegFault(int sig) {
 }
 
 
-void startCatchingSignals(void) {
-  signal(SIGINT, handleInterrupt);
+void startCatchingSignals() {
+  signal(SIGINT,  handleInterrupt);
   signal(SIGTERM, handleInterrupt);
-  signal(SIGHUP, handleInterrupt);
+  signal(SIGHUP,  handleInterrupt);
   signal(SIGSEGV, handleSegFault);
 }
 
 
-void stopCatchingSignals(void) {
-  signal(SIGINT, SIG_DFL);
+void stopCatchingSignals() {
+  signal(SIGINT,  SIG_DFL);
   signal(SIGSEGV, SIG_DFL);
 }
 
@@ -514,11 +579,15 @@ void stopCatchingSignals(void) {
 #ifdef exit
 #undef exit
 #endif
+
 void clean_exit(int status) {
   if (status != 0) {
     gdbShouldBreakHere();
   }
+
   cleanup_for_exit();
+
   deleteStrings();
+
   exit(status);
 }

@@ -22,6 +22,7 @@
 #include "checks.h"
 
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
 #include "passes.h"

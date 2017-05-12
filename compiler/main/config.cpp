@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include "chpl.h"
+#include "driver.h"
 #include "expr.h"
 #include "parser.h"
 #include "stmt.h"

@@ -24,12 +24,16 @@
 //  the handler (rather than creating a new task).
 //
 
-#include <vector>
-#include "stlUtil.h"
-#include "astutil.h"
-#include "expr.h"
-#include "stmt.h"
 #include "passes.h"
+
+#include "astutil.h"
+#include "driver.h"
+#include "expr.h"
+#include "stlUtil.h"
+#include "stmt.h"
+
+#include <vector>
+
 
 // There are two questions:
 // 1- is the primitive/function eligible to run in a fast block?

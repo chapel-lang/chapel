@@ -20,6 +20,7 @@
 #include "runpasses.h"
 
 #include "checks.h"
+#include "driver.h"
 #include "log.h"
 #include "parser.h"
 #include "passes.h"

@@ -20,6 +20,7 @@
 #include "resolution.h"
 
 #include "astutil.h"
+#include "driver.h"
 #include "ForLoop.h"
 #include "passes.h"
 #include "resolveIntents.h"

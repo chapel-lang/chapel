@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "CForLoop.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"

@@ -23,6 +23,7 @@
 #include "bb.h"
 #include "bitVec.h"
 #include "CForLoop.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "oldCollectors.h"

@@ -20,11 +20,12 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "driver.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "ForLoop.h"
 
 #define DEBUG_RAAWRT 0
 
