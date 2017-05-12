@@ -198,11 +198,11 @@ computeGenericSubs(SymbolMap &subs,
                    bool inInitRes);
 
 static BlockStmt* getParentBlock(Expr* expr);
+//static bool
+//isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
+//                      Vec<BlockStmt*>& visited);
 static bool
-isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
-                      Vec<BlockStmt*>& visited);
-static bool
-isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
+isMoreVisible(Expr* expr, ResolutionCandidate* fn1, ResolutionCandidate* fn2);
 static CallExpr* userCall(CallExpr* call);
 static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
@@ -1825,7 +1825,7 @@ getParentBlock(Expr* expr) {
 // helper routine for isMoreVisible (below);
 // returns true if fn1 is more visible than fn2
 //
-static bool
+/*static bool
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
                       Vec<BlockStmt*>& visited) {
   //
@@ -1874,7 +1874,7 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 
   return moreVisible;
 }
-
+*/
 
 //
 // return true if fn1 is more visible than fn2 from expr
@@ -1883,7 +1883,12 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 //             is violated, this function will return true
 //
 static bool
-isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
+isMoreVisible(Expr* expr, ResolutionCandidate* c1, ResolutionCandidate* c2) {
+
+  return (c1->distance < c2->distance);
+/*
+  FnSymbol* fn1 = c1->fn;
+  FnSymbol* fn2 = c2->fn;
   //
   // common-case check to see if functions have equal visibility
   //
@@ -1903,6 +1908,7 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   if (!block)
     block = getParentBlock(expr);
   return isMoreVisibleInternal(block, fn1, fn2, visited);
+ */
 }
 
 
@@ -2209,11 +2215,11 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
   if (!onlyConsiderPromotion && !(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
     // If the decision hasn't been made based on the argument mappings...
 
-    if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
+    if (isMoreVisible(DC.scope, candidate1, candidate2)) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nQ: Fn %d is more specific\n", DC.i);
       DS.fn1MoreSpecific = true;
 
-    } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
+    } else if (isMoreVisible(DC.scope, candidate2, candidate1)) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nR: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
 
@@ -3283,7 +3289,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   // First, try finding candidates without delegation
   findVisibleFunctions (info, visibleFns, visibilityDistances);
-  findVisibleCandidates(info, visibleFns, candidates);
+  findVisibleCandidates(info, visibleFns, visibilityDistances, candidates);
 
   bool retry_find = false;
 
@@ -3310,7 +3316,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
     // try again to include forwarded functions
     findVisibleFunctions (info, visibleFns, visibilityDistances);
-    findVisibleCandidates(info, visibleFns, candidates);
+    findVisibleCandidates(info, visibleFns, visibilityDistances, candidates);
   }
 
   explainGatherCandidate(candidates, info, call);

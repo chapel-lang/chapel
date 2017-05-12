@@ -54,6 +54,7 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
 static void
 filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
                     FnSymbol* fn,
+                    int distance,
                     CallInfo& info);
 
 static FnSymbol*
@@ -255,9 +256,10 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
  * \param info          The CallInfo object for the call site.
  */
 static void
-filterInitCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn,
+filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+                    FnSymbol* fn, int distance,
                     CallInfo& info) {
-  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
+  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn, distance);
   filterInitCandidate(candidates, currCandidate, info);
 
   if (candidates.tail() != currCandidate) {
@@ -269,9 +271,11 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn,
 static void
 doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
                        Vec<FnSymbol*>& visibleFns,
+                       Vec<int>& distances,
                        CallInfo& info,
                        bool compilerGenerated) {
 
+  int i = 0;
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     // Only consider user functions or compiler-generated functions
     if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
@@ -299,22 +303,24 @@ doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
         }
       }
 
-      filterInitCandidate(candidates, visibleFn, info);
+      filterInitCandidate(candidates, visibleFn, distances.v[i], info);
     }
+    i++;
   }
 }
 
 static void
 gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
                      Vec<FnSymbol*>& visibleFns,
+                     Vec<int>& distances,
                      CallInfo& info) {
 
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  doGatherInitCandidates(candidates, visibleFns, info, false);
+  doGatherInitCandidates(candidates, visibleFns, distances, info, false);
 
   // If no results, try again with any compiler-generated candidates.
   if (candidates.n == 0) {
-    doGatherInitCandidates(candidates, visibleFns, info, true);
+    doGatherInitCandidates(candidates, visibleFns, distances, info, true);
   }
 }
 /* end of function resolution steal */
@@ -405,7 +411,7 @@ void resolveInitCall(CallExpr* call) {
   // Modified narrowing down the candidates to operate in an
   // initializer-specific manner
   Vec<ResolutionCandidate*> candidates;
-  gatherInitCandidates(candidates, visibleFns, info);
+  gatherInitCandidates(candidates, visibleFns, visibilityDistances, info);
 
   explainGatherCandidate(candidates, info, call);
 

@@ -113,13 +113,14 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 // disambiguation
 /** A wrapper for candidates for function call resolution.
- *
- * If a best candidate was found than the function member will point to it.
  */
 class ResolutionCandidate {
 public:
-  /// A pointer to the best candidate function.
+  /// A pointer to the candidate function.
   FnSymbol* fn;
+
+  // scope distance away from call site
+  int distance;
 
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
@@ -138,7 +139,9 @@ public:
    *
    * \param fn A function that is a candidate for the resolution process.
    */
-  ResolutionCandidate(FnSymbol* function) : fn(function) {}
+  //ResolutionCandidate(FnSymbol* function) : fn(function) {}
+  ResolutionCandidate(FnSymbol* function, int distance)
+    : fn(function), distance(distance) {}
 
   /** Compute the alignment of actual and formal arguments for the wrapped
    *  function and the current call site.

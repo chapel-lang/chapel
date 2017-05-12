@@ -43,11 +43,13 @@ static void filterGeneric (CallInfo&                  info,
 
 static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
+                             Vec<int>&                  distances,
                              bool                       generated,
                              Vec<ResolutionCandidate*>& candidates);
 
 static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
+                             int                        distance,
                              Vec<ResolutionCandidate*>& candidates);
 
 static void filterCandidate (CallInfo&                  info,
@@ -57,20 +59,23 @@ static void filterCandidate (CallInfo&                  info,
 
 void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
+                           Vec<int>&                  distances,
                            Vec<ResolutionCandidate*>& candidates) {
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  gatherCandidates(info, visibleFns, false, candidates);
+  gatherCandidates(info, visibleFns, distances, false, candidates);
 
   // If no results, try again with any compiler-generated candidates.
   if (candidates.n == 0) {
-    gatherCandidates(info, visibleFns, true, candidates);
+    gatherCandidates(info, visibleFns, distances, true, candidates);
   }
 }
 
 static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
+                             Vec<int>&                  distances,
                              bool                       compilerGenerated,
                              Vec<ResolutionCandidate*>& candidates) {
+  int i = 0;
   forv_Vec(FnSymbol, fn, visibleFns) {
     // Consider either the user-defined functions or the compiler-generated
     // functions based on the input 'compilerGenerated'.
@@ -103,22 +108,24 @@ static void gatherCandidates(CallInfo&                  info,
       //
 
       if (info.call->methodTag == false) {
-        filterCandidate(info, fn, candidates);
+        filterCandidate(info, fn, distances.v[i], candidates);
 
       } else {
         if (fn->hasFlag(FLAG_NO_PARENS)        == true ||
             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-          filterCandidate(info, fn, candidates);
+          filterCandidate(info, fn, distances.v[i], candidates);
         }
       }
     }
+    i++;
   }
 }
 
 static void filterCandidate(CallInfo&                  info,
                             FnSymbol*                  fn,
+                            int                        distance,
                             Vec<ResolutionCandidate*>& candidates) {
-  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
+  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn, distance);
 
   if (fExplainVerbose &&
       ((explainCallLine && explainCallMatch(info.call)) ||

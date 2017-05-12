@@ -28,6 +28,7 @@ class ResolutionCandidate;
 
 void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
+                           Vec<int>&                  distances,
                            Vec<ResolutionCandidate*>& candidates);
 
 void resolveTypedefedArgTypes(FnSymbol* fn);
