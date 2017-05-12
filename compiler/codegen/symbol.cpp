@@ -23,36 +23,36 @@
 
 #include "symbol.h"
 
-#include "astutil.h"
-#include "stlUtil.h"
+#include "AstToText.h"
 #include "bb.h"
+#include "AstVisitor.h"
+#include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "CollapseBlocks.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
+#include "llvmDebug.h"
 #include "misc.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
 
-// LLVM debugging support
-#include "llvmDebug.h"
-
-#include "AstToText.h"
-#include "AstVisitor.h"
-#include "CollapseBlocks.h"
 
 #include <algorithm>
 #include <cstdlib>
-#include <inttypes.h>
 #include <iostream>
 #include <sstream>
+
+#include <inttypes.h>
 #include <stdint.h>
 
 /******************************** | *********************************

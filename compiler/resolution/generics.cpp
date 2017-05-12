@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
+#include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
 #include "resolveIntents.h"

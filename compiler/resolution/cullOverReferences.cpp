@@ -20,6 +20,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"

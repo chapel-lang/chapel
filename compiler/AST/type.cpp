@@ -27,6 +27,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"

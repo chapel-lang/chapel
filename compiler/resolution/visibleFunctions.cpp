@@ -20,6 +20,7 @@
 #include "visibleFunctions.h"
 
 #include "callInfo.h"
+#include "driver.h"
 #include "expr.h"
 #include "map.h"
 #include "resolution.h"

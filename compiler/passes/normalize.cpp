@@ -26,6 +26,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "driver.h"
 #include "expr.h"
 #include "initializerRules.h"
 #include "stlUtil.h"

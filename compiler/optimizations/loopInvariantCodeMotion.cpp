@@ -24,6 +24,7 @@
 #include "bitVec.h"
 #include "CForLoop.h"
 #include "dominator.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"

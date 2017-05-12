@@ -21,22 +21,23 @@
 
 #include "AstToText.h"
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "ipe.h"
+#include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
 
-#include "iterator.h"
 
-#include "AstVisitor.h"
 
 GenRet Type::codegen() {
   if (this == dtUnknown) {

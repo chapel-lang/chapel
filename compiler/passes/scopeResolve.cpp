@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "clangUtil.h"
+#include "driver.h"
 #include "expr.h"
 #include "externCResolve.h"
 #include "initializerRules.h"
