@@ -6016,7 +6016,9 @@ static void unmarkDefaultedGenerics() {
             formal != fn->_this &&
             !formal->hasFlag(FLAG_IS_MEME)) {
           SET_LINENO(formal);
-          formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
+          AggregateType* formalAt = toAggregateType(formal->type);
+          INT_ASSERT(formalAt);
+          formal->typeExpr = new BlockStmt(new CallExpr(formalAt->defaultTypeConstructor));
           insert_help(formal->typeExpr, NULL, formal);
           formal->type = dtUnknown;
         } else {
@@ -6356,18 +6358,21 @@ static void resolveRecordInitializers() {
       // defaultTypeConstructor calls are already cleaned up at the end of
       // function resolution, so the noinit cleanup would be redundant.
       SET_LINENO(init);
-      CallExpr* res = new CallExpr(type->defaultTypeConstructor);
-      for_formals(formal, type->defaultTypeConstructor) {
+      AggregateType* rec = toAggregateType(type);
+      INT_ASSERT(rec);
+
+      CallExpr* res = new CallExpr(rec->defaultTypeConstructor);
+      for_formals(formal, rec->defaultTypeConstructor) {
         Vec<Symbol *> keys;
         // Finds each named argument in the type constructor and inserts
         // the substitution provided.
-        type->substitutions.get_keys(keys);
+        rec->substitutions.get_keys(keys);
         // I don't think we can guarantee that the substitutions will be
         // in the same order as the arguments for the defaultTypeConstructor.
         // That would make this O(n) instead of potentially O(n*n)
         forv_Vec(Symbol, key, keys) {
           if (!strcmp(formal->name, key->name)) {
-            Symbol* formalVal = type->substitutions.get(key);
+            Symbol* formalVal = rec->substitutions.get(key);
             res->insertAtTail(new NamedExpr(formal->name,
                                             new SymExpr(formalVal)));
           }
@@ -6969,8 +6974,10 @@ static void removeUnusedTypes() {
         }
         // If the default type constructor for this ref type is in the tree, it
         // can be removed.
-        if (type->type->defaultTypeConstructor->defPoint->parentSymbol)
-          type->type->defaultTypeConstructor->defPoint->remove();
+        AggregateType* at = toAggregateType(type->type);
+        INT_ASSERT(at);
+        if (at->defaultTypeConstructor->defPoint->parentSymbol)
+          at->defaultTypeConstructor->defPoint->remove();
       }
     }
   }
