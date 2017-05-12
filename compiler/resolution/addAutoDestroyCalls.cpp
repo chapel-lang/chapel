@@ -259,7 +259,7 @@ static bool isReturnLabel(const Expr* stmt, const LabelSymbol* returnLabel) {
 
 /************************************* | **************************************
 *                                                                             *
-* A shared utilty function for resolution.                                    *
+* A shared utility function for resolution.                                   *
 *                                                                             *
 ************************************** | *************************************/
 

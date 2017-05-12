@@ -438,7 +438,7 @@ OPTIONS
 
     There are 3 optimization stages: none, basic, full:
 
-    1. 'none' is stage before any optimization has occured
+    1. 'none' is stage before any optimization has occurred
     2. 'basic' is stage where basic optimizations occurs.
     3. 'full' is stage where all kinds of optimization occurs, these consist
         of very big optimizations executed by chapel compiler on LLVM IR.
