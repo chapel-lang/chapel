@@ -20,6 +20,7 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
+  use ChapelStandard;
   use RangeChunk only ;
 
   config param debugDefaultSparse = false;

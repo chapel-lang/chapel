@@ -39,6 +39,8 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
+  use ChapelStandard;
+
   use AlignedTSupport;
   use MemConsistency;
   use SyncVarRuntimeSupport;
@@ -836,6 +838,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
+  use ChapelStandard;
   use AlignedTSupport;
 
   //
