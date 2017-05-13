@@ -566,14 +566,15 @@ module DefaultAssociative {
 
     // ref version
     proc dsiAccess(idx : idxType, haveLock = false) ref {
-      const shouldLock = dom.parSafe && !haveLock;
+      const arrOwnsDom = dom._arrs.length == 1;
+      const shouldLock = dom.parSafe && !haveLock && arrOwnsDom;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
       if found {
         if shouldLock then dom.unlockTable();
         return data(slotNum);
       } else if slotNum != -1 { // do an insert using the slot we found
-        if dom._arrs.length != 1 {
+        if !arrOwnsDom {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
@@ -590,11 +591,8 @@ module DefaultAssociative {
     // value version for POD types
     proc dsiAccess(idx : idxType, haveLock = false)
     where shouldReturnRvalueByValue(eltType) {
-      const shouldLock = dom.parSafe && !haveLock;
-      if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
       if found {
-        if shouldLock then dom.unlockTable();
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
@@ -604,11 +602,8 @@ module DefaultAssociative {
     // const ref version for strings, records with copy ctor
     proc dsiAccess(idx : idxType, haveLock = false) const ref
     where shouldReturnRvalueByConstRef(eltType) {
-      const shouldLock = dom.parSafe && !haveLock;
-      if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
       if found {
-        if shouldLock then dom.unlockTable();
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
