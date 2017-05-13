@@ -1613,14 +1613,24 @@ module ChapelArray {
       return this((...r));
     }
 
-    /* Return an array slice halting if the range contains elements
-       that are not local. */
+    /*
+       Return a local view of the sub-array (slice) defined by the provided
+       range(s), halting if the slice contains elements that are not local.
+
+       Indexing into this local view is cheaper, because the indices are known
+       to be local.
+    */
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
 
-    /* Return an array slice halting if the domain contains elements
-       that are not local. */
+    /*
+       Return a local view of the sub-array (slice) defined by the provided
+       domain, halting if the slice contains elements that are not local.
+
+       Indexing into this local view is cheaper, because the indices are known
+       to be local.
+     */
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
@@ -2295,15 +2305,16 @@ module ChapelArray {
              "  Actual domain is: ", this.domain);
     }
 
-    /* Return an array declared over a new domain, provided that the new
+    /*
+       Return an array view over a new domain, provided that the new
        domain is of the same rank and size as the original.
 
        For example:
 
        .. code-block:: chapel
 
-          var A: [{1..10}] int;
-          var B = A.reindex({5..15});
+          var A: [1..10] int;
+          var B = A.reindex(6..15);
 
     */
     pragma "fn returns aliasing array"
