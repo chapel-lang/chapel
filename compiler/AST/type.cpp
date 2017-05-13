@@ -800,15 +800,6 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  UseStmt* base = new UseStmt(new UnresolvedSymExpr("ChapelBase"));
-  UseStmt* std  = new UseStmt(new UnresolvedSymExpr("ChapelStandard"));
-
-  theProgram->block->insertAtTail(base);
-
-  // it may be better to add the following use after parsing
-  // to simplify insertion of module guard sync var defs
-  theProgram->block->insertAtTail(std);
-
   theProgram->block->insertAtHead(objectDef);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
@@ -818,11 +809,13 @@ void initChplProgram(DefExpr* objectDef) {
 // matching 'value'. For use in initCompilerGlobals.
 static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
   rootModule->block->insertAtTail(new DefExpr(globalVar));
+
   if (value) {
-    globalVar->immediate = new Immediate;
+     globalVar->immediate = new Immediate;
     *globalVar->immediate = *gTrue->immediate;
+
   } else {
-    globalVar->immediate = new Immediate;
+     globalVar->immediate = new Immediate;
     *globalVar->immediate = *gFalse->immediate;
   }
 }

@@ -18,6 +18,8 @@
  */
 
 module ChapelDynDispHack {
+  use ChapelStandard;
+
   //
   // This is an incredibly lame hack.  If the test:
   //
