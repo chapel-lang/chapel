@@ -301,15 +301,47 @@ static void addToSymbolTable(DefExpr* def) {
 *                                                                             *
 ************************************** | *************************************/
 
+static ModuleSymbol* definesModuleSymbol(Expr* expr);
+static void          processImportExprs(ModuleSymbol* topLevelModule);
+
 static void processImportExprs() {
-  forv_Vec(UseStmt, useStmt, gUseStmts) {
-    if (useStmt->isValid() == true) {
+  for_alist(expr, theProgram->block->body) {
+    if (UseStmt* useStmt = toUseStmt(expr))  {
       useStmt->scopeResolve();
+
+    } else if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
+      processImportExprs(mod);
     }
   }
 }
 
+static void processImportExprs(ModuleSymbol* topLevelModule) {
+  std::vector<BaseAST*> asts;
+
+  // Collect *all* asts within this top-level module in text order
+  collect_asts(topLevelModule, asts);
+
+  for_vector(BaseAST, item, asts) {
+    if (UseStmt* useStmt = toUseStmt(item)) {
+      if (useStmt->isValid() == true) {
+        useStmt->scopeResolve();
+      }
+    }
+  }
+}
+
+static ModuleSymbol* definesModuleSymbol(Expr* expr) {
+  ModuleSymbol* retval = NULL;
+
+  if (DefExpr* def = toDefExpr(expr)) {
+    retval = toModuleSymbol(def->sym);
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -956,10 +988,6 @@ static void renameDefaultType(Type* type, const char* newname) {
 
 static void lookup(const char*           name,
                    BaseAST*              context,
-                   std::vector<Symbol*>& symbols);
-
-static void lookup(const char*           name,
-                   BaseAST*              context,
 
                    BaseAST*              scope,
                    Vec<BaseAST*>&        visited,
@@ -1000,9 +1028,9 @@ Symbol* lookup(const char* name, BaseAST* context) {
   return retval;
 }
 
-static void lookup(const char*           name,
-                   BaseAST*              context,
-                   std::vector<Symbol*>& symbols) {
+void lookup(const char*           name,
+            BaseAST*              context,
+            std::vector<Symbol*>& symbols) {
   Vec<BaseAST*> visited;
 
   lookup(name, context, context, visited, symbols);

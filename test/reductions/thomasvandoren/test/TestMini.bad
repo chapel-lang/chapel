@@ -1,6 +1,5 @@
 TestMini.chpl:12: error: unresolved call 'mini(2*int(64)).accumulate((int(64),int(64)))'
-../mini.chpl:11: note: candidates are: mini.accumulate(t: (eltType, int))
-$CHPL_HOME/modules/internal/ChapelReduce.chpl:96: note:                 SumReduceScanOp.accumulate(x)
+$CHPL_HOME/modules/internal/ChapelReduce.chpl:96: note: candidates are: SumReduceScanOp.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:114: note:                 ProductReduceScanOp.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:132: note:                 MaxReduceScanOp.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:150: note:                 MinReduceScanOp.accumulate(x)
@@ -11,3 +10,4 @@ $CHPL_HOME/modules/internal/ChapelReduce.chpl:222: note:                 Bitwise
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:240: note:                 BitwiseXorReduceScanOp.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:259: note:                 maxloc.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:284: note:                 minloc.accumulate(x)
+../mini.chpl:11: note:                 mini.accumulate(t: (eltType, int))

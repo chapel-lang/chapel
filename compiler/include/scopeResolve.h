@@ -24,9 +24,16 @@ class BaseAST;
 class FnSymbol;
 class Symbol;
 
+#include <vector>
+
 void     addToSymbolTable(FnSymbol* fn);
 
-Symbol*  lookup(const char* name, BaseAST* scope);
+Symbol*  lookup(const char*           name,
+                BaseAST*              context);
+
+void     lookup(const char*           name,
+                BaseAST*              context,
+                std::vector<Symbol*>& symbols);
 
 BaseAST* getScope(BaseAST* ast);
 

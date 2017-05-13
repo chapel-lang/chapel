@@ -369,21 +369,27 @@ void UseStmt::validateList() {
 
     for_vector(const char, name, named) {
       if (name[0] != '\0') {
-        if (Symbol* sym = lookup(name, scopeToUse)) {
-          if (sym->isVisible(this) == true) {
-            createRelatedNames(sym);
+        std::vector<Symbol*> symbols;
 
-          } else {
-            USR_FATAL_CONT(this,
-                           "Bad identifier in '%s' clause, '%s' is private",
-                           listName,
-                           name);
-          }
+        lookup(name, scopeToUse, symbols);
 
-        } else {
+        if (symbols.size() == 0) {
           USR_FATAL_CONT(this,
                          "Bad identifier in '%s' clause, no known '%s'",
-                         listName, name);
+                         listName,
+                         name);
+
+        } else {
+          for_vector(Symbol, sym, symbols) {
+            if (sym->isVisible(this) == false) {
+              USR_FATAL_CONT(this,
+                             "Bad identifier in '%s' clause, '%s' is private",
+                             listName,
+                             name);
+            }
+
+            createRelatedNames(sym);
+          }
         }
       }
     }
@@ -546,7 +552,9 @@ void UseStmt::printUseError(Symbol* sym) const {
               "(e.g., 'use <module>[.<submodule>]*;')");
 
   } else if (sym->name != NULL) {
-    USR_FATAL(this, "'use' of non-module/enum symbol %s", sym->name);
+    USR_FATAL_CONT(this, "'use' of non-module/enum symbol %s", sym->name);
+    USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
+    USR_STOP();
 
   } else {
     USR_FATAL(this, "'use' of non-module/enum symbol");
