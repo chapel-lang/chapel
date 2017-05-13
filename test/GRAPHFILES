@@ -74,8 +74,6 @@ performance/bradc/parOpEquals.graph
 performance/sungeun/assign.1024.graph
 performance/sungeun/init.graph
 performance/thomasvandoren/matrix-multiply.graph
-parallel/taskCompare/elliot/taskSpawn.graph
-parallel/taskCompare/elliot/serialTaskSpawn.graph
 distributions/robust/associative/performance/array_iter.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
