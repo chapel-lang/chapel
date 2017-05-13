@@ -34,6 +34,7 @@ AST_SRCS =                                          \
            stmt.cpp                                 \
            symbol.cpp                               \
            TryStmt.cpp                              \
+           UseStmt.cpp                              \
            type.cpp                                 \
            view.cpp                                 \
                                                     \
