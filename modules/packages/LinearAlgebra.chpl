@@ -610,6 +610,9 @@ private inline proc _raw(D: domain(1), i) {
    Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
  */
 proc diag(A: [?Adom] ?eltType, k=0){
+  //This should be printed at compile time-"This function only supports 0-based non-strided arrays, 
+  //including the vectors and matrices created from this module."
+
   if(Adom.rank == 2) then{
     if(k==0) then{
       return _diag_vec(A);  
@@ -627,51 +630,22 @@ proc diag(A: [?Adom] ?eltType, k=0){
 
 }
 
-/*
-  Return a Vector containing the off diagonal elements of ``A``
-*/
-proc skewdiag(A:[?Adom] ?eltType){
-  if(Adom.rank != 2) then compilerError("skewdiag expects argument to be of rank 2");
-  return _diag_vec(A,skew=true);
-}
-
-
-proc _diag_vec(A:[?Adom] ?eltType, skew=false){
+proc _diag_vec(A:[?Adom] ?eltType){
 
   //better way to do this if type of Adom.dim(1) and Adom.dim(2) can be determined
-  if(skew==true){
-    if(Adom.dim(1).length<Adom.dim(2).length) then{
-      var diagonal = Vector(Adom.dim(1).length, eltType);
-      forall i in Adom.dim(1) do{
-        var n = Adom.dim(1).length;
-        diagonal[i] = A[i,n-1-i];
-      }
-      return diagonal;
+  if(Adom.dim(1).length<Adom.dim(2).length) then{
+    var diagonal = Vector(Adom.dim(1).length, eltType);
+    forall i in Adom.dim(1) do{
+      diagonal[i] = A[i,i];
     }
-    else{
-      var diagonal = Vector(Adom.dim(2).length, eltType);
-      forall i in Adom.dim(2) do{
-        var n = Adom.dim(2).length;
-        diagonal[i] = A[i,n-1-i];
-      }
-      return diagonal;
-    }
+    return diagonal;
   }
   else{
-    if(Adom.dim(1).length<Adom.dim(2).length) then{
-      var diagonal = Vector(Adom.dim(1).length, eltType);
-      forall i in Adom.dim(1) do{
-        diagonal[i] = A[i,i];
-      }
-      return diagonal;
+    var diagonal = Vector(Adom.dim(2).length, eltType);
+    forall i in Adom.dim(2) do{
+      diagonal[i] = A[i,i];
     }
-    else{
-      var diagonal = Vector(Adom.dim(2).length, eltType);
-      forall i in Adom.dim(2) do{
-        diagonal[i] = A[i,i];
-      }
-      return diagonal;
-    }
+    return diagonal;
   }
 }
 

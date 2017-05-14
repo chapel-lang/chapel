@@ -328,6 +328,10 @@ config const verbose=false;
                  [7,8,9],
                  eltType=real);
   var v = Vector(1,5,9);
+  var matrix = Matrix([1,0,0],
+                      [0,5,0],
+                      [0,0,9],
+                      eltType=real);
   var M1 = Matrix([1,2,3,4],
                   [5,6,7,8],
                   [9,0,1,2],
@@ -337,6 +341,7 @@ config const verbose=false;
   var v13 = Vector([9]);
 
   assertEqual(v, diag(M), "diag(M)");
+  assertEqual(matrix, diag(v),"diag(v)");
   assertEqual(v11,diag(M1),"diag(M1)");
   assertEqual(v12,diag(M1,2),"diag(M1,2)");
   assertEqual(v13,diag(M1,-2),"diag(M1,-2)");
