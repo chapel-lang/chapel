@@ -527,7 +527,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     } else  {                                                                  \
       AST_CALL_LIST (stmt, BlockStmt,    body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, BlockStmt,    modUses,        call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    useList,        call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
       if (ForallIntents* bi = stmt->forallIntents) {                           \
         AST_CALL_STDVEC(bi->fiVars,  Expr, call, __VA_ARGS__);                 \

@@ -20,6 +20,7 @@
 #include "visibleCandidates.h"
 
 #include "callInfo.h"
+#include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "resolution.h"

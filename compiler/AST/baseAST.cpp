@@ -26,6 +26,7 @@
 #include "astutil.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"

@@ -181,7 +181,7 @@ void AstDumpToNode::enterNode(BaseAST* node) const
   {
     if (FnSymbol* fn = toFnSymbol(node))
     {
-      fprintf(mFP, "%s%-10s", delimitEnter, node->astTagAsString());
+      fprintf(mFP, "%s%-12s", delimitEnter, node->astTagAsString());
 
       writeNodeID(node, true, false);
 
@@ -193,13 +193,13 @@ void AstDumpToNode::enterNode(BaseAST* node) const
 
     else if (isUnresolvedSymExpr(node) == true)
     {
-      fprintf(mFP, "%s%-10s", delimitEnter, "UsymExpr");
+      fprintf(mFP, "%s%-12s", delimitEnter, "UsymExpr");
       writeNodeID(node, true, false);
     }
 
     else
     {
-      fprintf(mFP, "%s%-10s", delimitEnter, node->astTagAsString());
+      fprintf(mFP, "%s%-12s", delimitEnter, node->astTagAsString());
       writeNodeID(node, true, false);
     }
   }
@@ -329,7 +329,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     next_ast->accept(this);
   }
 
-  if (node->modUses)
+  if (node->useList)
   {
     fprintf(mFP, "\n");
 
@@ -338,7 +338,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     write(false, "ModUses:", false);
     mOffset = mOffset + 2;
     newline();
-    node->modUses->accept(this);
+    node->useList->accept(this);
     mOffset = mOffset - 2;
   }
 

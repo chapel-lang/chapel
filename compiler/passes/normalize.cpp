@@ -26,6 +26,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "driver.h"
 #include "expr.h"
 #include "initializerRules.h"
 #include "stlUtil.h"
@@ -786,7 +787,7 @@ insertUseForExplicitModuleCalls(void) {
       BlockStmt* block = new BlockStmt();
       stmt->insertBefore(block);
       block->insertAtHead(stmt->remove());
-      block->moduleUseAdd(mod);
+      block->useListAdd(mod);
     }
   }
 }

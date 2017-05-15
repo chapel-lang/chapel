@@ -244,8 +244,8 @@ void CForLoop::verify()
   if (incrBlockGet()->blockTag  != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. incrBlock is not BLOCK_C_FOR_LOOP");
 
-  if (modUses                   != 0)
-    INT_FATAL(this, "CForLoop::verify. modUses   is not NULL");
+  if (useList                   != 0)
+    INT_FATAL(this, "CForLoop::verify. useList   is not NULL");
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");

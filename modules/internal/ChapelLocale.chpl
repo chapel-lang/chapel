@@ -661,4 +661,12 @@ module ChapelLocale {
   proc chpl_taskRunningCntDec() {
     here.runningTaskCntSub(1);
   }
+
+  //
+  // Free the original root locale when the program is being torn down
+  //
+  pragma "no doc"
+  proc deinit() {
+    delete origRootLocale;
+  }
 }

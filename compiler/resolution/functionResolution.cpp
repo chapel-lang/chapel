@@ -910,7 +910,7 @@ isTupleContainingAnyReferences(Type* t)
 
 
 static Type*
-getReturnedTupleType(FnSymbol* fn, Type* retType)
+getReturnedTupleType(FnSymbol* fn, AggregateType* retType)
 {
   INT_ASSERT(retType->symbol->hasFlag(FLAG_TUPLE));
 
@@ -950,8 +950,10 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     // So we make sure returned tuple types capture values here.
     if (retType->symbol->hasFlag(FLAG_TUPLE) &&
         !doNotChangeTupleTypeRefLevel(fn, true)) {
+      AggregateType* tupleType = toAggregateType(retType);
+      INT_ASSERT(tupleType);
 
-      retType = getReturnedTupleType(fn, retType);
+      retType = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
     } else if (fn->returnsRefOrConstRef()) {
       makeRefType(retType);
@@ -1102,7 +1104,9 @@ resolveFormals(FnSymbol* fn) {
         // Let 'in' intent work similarly to the blank intent.
         IntentTag intent = formal->intent;
         if (intent == INTENT_IN) intent = INTENT_BLANK;
-        Type* newType = computeTupleWithIntent(intent, formal->type);
+        AggregateType* tupleType = toAggregateType(formal->type);
+        INT_ASSERT(tupleType);
+        Type* newType = computeTupleWithIntent(intent, tupleType);
         formal->type = newType;
       }
 
@@ -1859,8 +1863,8 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   //
   // ensure f2 is not more visible via module uses, and recurse
   //
-  if (block && block->modUses) {
-    for_actuals(expr, block->modUses) {
+  if (block && block->useList) {
+    for_actuals(expr, block->useList) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
       SymExpr* se = toSymExpr(use->src);
@@ -4484,8 +4488,10 @@ resolveCoerce(CallExpr* call) {
   // Adjust tuple reference-level for return if necessary
   if (toType->symbol->hasFlag(FLAG_TUPLE) &&
       !doNotChangeTupleTypeRefLevel(fn, true)) {
+    AggregateType* tupleType = toAggregateType(toType);
+    INT_ASSERT(tupleType);
 
-    Type* retType = getReturnedTupleType(fn, toType);
+    Type* retType = getReturnedTupleType(fn, tupleType);
     if (retType != toType) {
       // Also adjust any PRIM_COERCE calls
       call->get(2)->replace(new SymExpr(retType->symbol));
@@ -4797,22 +4803,25 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
-    FnSymbol* typeCons = type->defaultTypeConstructor;
+    FnSymbol* typeCons = NULL;
+    if (AggregateType* at = toAggregateType(type)) {
+      typeCons = at->defaultTypeConstructor;
 
-    if (typeCons) {
-      //
-      // If it had one, create a zero-argument call to the type
-      // constructor, insert it into the code point in question,
-      // and try to resolve it (saving the answer).
-      //
-      CallExpr* typeConsCall = new CallExpr(typeCons->name);
-      call->replace(typeConsCall);
-      unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
+      if (typeCons) {
+        //
+        // If it had one, create a zero-argument call to the type
+        // constructor, insert it into the code point in question,
+        // and try to resolve it (saving the answer).
+        //
+        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+        call->replace(typeConsCall);
+        unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
 
-      //
-      // Put things back the way they were.
-      //
-      typeConsCall->replace(call);
+        //
+        // Put things back the way they were.
+        //
+        typeConsCall->replace(call);
+      }
     }
 
     //
@@ -5508,7 +5517,9 @@ void resolveReturnType(FnSymbol* fn)
       !doNotChangeTupleTypeRefLevel(fn, true)) {
     // Compute the tuple type without any refs
     // Set the function return type to that type.
-    retType = getReturnedTupleType(fn, retType);
+    AggregateType* tupleType = toAggregateType(retType);
+    INT_ASSERT(tupleType);
+    retType = getReturnedTupleType(fn, tupleType);
   }
 
   ret->type = retType;
@@ -5730,14 +5741,14 @@ resolveFns(FnSymbol* fn) {
   // Resolve base class type constructors as well.
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
     forv_Vec(Type, parent, fn->retType->dispatchParents) {
-      if (isAggregateType(parent)        == true     &&
-          parent                         != dtValue  &&
-          parent                         != dtObject &&
-          parent->defaultTypeConstructor != NULL) {
-        resolveFormals(parent->defaultTypeConstructor);
+      AggregateType* pt = toAggregateType(parent);
+      if (pt                         != NULL     &&
+          pt                         != dtObject &&
+          pt->defaultTypeConstructor != NULL) {
+        resolveFormals(pt->defaultTypeConstructor);
 
-        if (resolvedFormals.set_in(parent->defaultTypeConstructor)) {
-          resolveFns(parent->defaultTypeConstructor);
+        if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
+          resolveFns(pt->defaultTypeConstructor);
         }
       }
     }
@@ -5885,8 +5896,8 @@ computeStandardModuleSet() {
   stack.add(standardModule);
 
   while (ModuleSymbol* mod = stack.pop()) {
-    if (mod->block->modUses) {
-      for_actuals(expr, mod->block->modUses) {
+    if (mod->block->useList) {
+      for_actuals(expr, mod->block->useList) {
         UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
         SymExpr* se = toSymExpr(use->src);
@@ -6000,7 +6011,7 @@ void resolve() {
   clearPartialCopyDataFnMap();
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
-    stmt->moduleUseClear();
+    stmt->useListClear();
   }
 
   resolved = true;
@@ -6025,7 +6036,9 @@ static void unmarkDefaultedGenerics() {
             formal != fn->_this &&
             !formal->hasFlag(FLAG_IS_MEME)) {
           SET_LINENO(formal);
-          formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
+          AggregateType* formalAt = toAggregateType(formal->type);
+          INT_ASSERT(formalAt);
+          formal->typeExpr = new BlockStmt(new CallExpr(formalAt->defaultTypeConstructor));
           insert_help(formal->typeExpr, NULL, formal);
           formal->type = dtUnknown;
         } else {
@@ -6368,18 +6381,21 @@ static void resolveRecordInitializers() {
       // defaultTypeConstructor calls are already cleaned up at the end of
       // function resolution, so the noinit cleanup would be redundant.
       SET_LINENO(init);
-      CallExpr* res = new CallExpr(type->defaultTypeConstructor);
-      for_formals(formal, type->defaultTypeConstructor) {
+      AggregateType* rec = toAggregateType(type);
+      INT_ASSERT(rec);
+
+      CallExpr* res = new CallExpr(rec->defaultTypeConstructor);
+      for_formals(formal, rec->defaultTypeConstructor) {
         Vec<Symbol *> keys;
         // Finds each named argument in the type constructor and inserts
         // the substitution provided.
-        type->substitutions.get_keys(keys);
+        rec->substitutions.get_keys(keys);
         // I don't think we can guarantee that the substitutions will be
         // in the same order as the arguments for the defaultTypeConstructor.
         // That would make this O(n) instead of potentially O(n*n)
         forv_Vec(Symbol, key, keys) {
           if (!strcmp(formal->name, key->name)) {
-            Symbol* formalVal = type->substitutions.get(key);
+            Symbol* formalVal = rec->substitutions.get(key);
             res->insertAtTail(new NamedExpr(formal->name,
                                             new SymExpr(formalVal)));
           }
@@ -6985,8 +7001,10 @@ static void removeUnusedTypes() {
         }
         // If the default type constructor for this ref type is in the tree, it
         // can be removed.
-        if (type->type->defaultTypeConstructor->defPoint->parentSymbol)
-          type->type->defaultTypeConstructor->defPoint->remove();
+        AggregateType* at = toAggregateType(type->type);
+        INT_ASSERT(at);
+        if (at->defaultTypeConstructor->defPoint->parentSymbol)
+          at->defaultTypeConstructor->defPoint->remove();
       }
     }
   }

@@ -26,6 +26,7 @@
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
+#include "driver.h"
 #include "expr.h"
 #include "passes.h"
 #include "resolveIntents.h"
@@ -93,7 +94,8 @@ FnSymbol* makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
                             ModuleSymbol* tupleModule,
                             BlockStmt* instantiationPoint)
 {
-  Type *newType = newTypeSymbol->type;
+  AggregateType *newType = toAggregateType(newTypeSymbol->type);
+  INT_ASSERT(newType);
   FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
   for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
     typeCtor->insertFormalAtTail(typeCtorArgs[i]);
@@ -795,17 +797,17 @@ shouldChangeTupleType(Type* elementType)
 
 
 static AggregateType*
-do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
+do_computeTupleWithIntent(bool valueOnly, IntentTag intent, AggregateType* at)
 {
-  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
-
-  FnSymbol*  typeConstructor    = t->defaultTypeConstructor;
-  BlockStmt* instantiationPoint = typeConstructor->instantiationPoint;
+  INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
 
   bool allSame = true;
-  AggregateType* at = toAggregateType(t);
+
+  FnSymbol*  typeConstructor    = at->defaultTypeConstructor;
+  BlockStmt* instantiationPoint = typeConstructor->instantiationPoint;
+
   std::vector<TypeSymbol*> args;
   int i = 0;
 
@@ -818,7 +820,9 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
       // blank-intent-is-ref types.
 
       if (useType->symbol->hasFlag(FLAG_TUPLE)) {
-        useType = do_computeTupleWithIntent(valueOnly, intent, useType);
+        AggregateType* useAt = toAggregateType(useType);
+        INT_ASSERT(useAt);
+        useType = do_computeTupleWithIntent(valueOnly, intent, useAt);
       } else if (shouldChangeTupleType(useType)) {
         if (valueOnly) {
           // already OK since we did getValType() above
@@ -854,12 +858,12 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
   }
 }
 
-AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
+AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
   return do_computeTupleWithIntent(false, intent, t);
 }
 
-AggregateType* computeNonRefTuple(Type* t)
+AggregateType* computeNonRefTuple(AggregateType* t)
 {
   return do_computeTupleWithIntent(true, INTENT_BLANK, t);
 }
@@ -985,8 +989,11 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     BlockStmt* point = getVisibilityBlock(call);
     TupleInfo info   = getTupleInfo(args, point, noref);
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-      return info.typeSymbol->type->defaultTypeConstructor;
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+      AggregateType* at = toAggregateType(info.typeSymbol->type);
+      INT_ASSERT(at);
+      return at->defaultTypeConstructor;
+    }
     if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       AggregateType* at = toAggregateType(info.typeSymbol->type);
       INT_ASSERT(at);

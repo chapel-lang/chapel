@@ -17,20 +17,24 @@
  * limitations under the License.
  */
 
-#include "astutil.h"
 #include "passes.h"
+
+#include "astutil.h"
+#include "driver.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "stlUtil.h"
-#include "resolution.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol* markPruned;
+
 // initial value for 'uses' SymbolMap
 Symbol* markUnspecified;
 
 // These mark the intents for variables in a task intent clause.
 static ArgSymbol *tiMarkBlank, *tiMarkIn, *tiMarkConstDflt, *tiMarkConstIn,
                  *tiMarkConstRef, *tiMarkRef;
+
 // Dummy function to host the above.
 static FnSymbol* tiMarkHost;
 

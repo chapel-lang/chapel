@@ -259,8 +259,8 @@ void printTaskOrForallConstErrorNote(Symbol* aVar);
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 // returns true if the function was handled
 bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
-AggregateType* computeNonRefTuple(Type* t);
-AggregateType* computeTupleWithIntent(IntentTag intent, Type* t);
+AggregateType* computeNonRefTuple(AggregateType* t);
+AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 
 bool evaluateWhereClause(FnSymbol* fn);
 

@@ -85,7 +85,6 @@ public:
   bool             hasGenericDefaults; // all generic fields have defaults
 
   Symbol*          defaultValue;
-  FnSymbol*        defaultTypeConstructor;
   FnSymbol*        destructor;
 
   // Used only in PrimitiveType; replace with flag?

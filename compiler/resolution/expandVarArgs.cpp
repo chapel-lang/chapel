@@ -76,7 +76,7 @@ static void      cacheExtend(FnSymbol* fn, FnSymbol* expansion);
 *                                                                             *
 *    1) Construct the required tuple within the body of the procedure         *
 *                                                                             *
-*    2) Convert the references to the typle to references to the formals      *
+*    2) Convert the references to the tuple to references to the formals      *
 *                                                                             *
 * The current implementation selects between these strategies based on the    *
 * way in which the varArg is used.                                            *

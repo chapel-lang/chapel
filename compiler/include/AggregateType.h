@@ -112,6 +112,7 @@ public:
 
   AggregateTag                aggregateTag;
 
+  FnSymbol*                   defaultTypeConstructor;
   FnSymbol*                   defaultInitializer;
                               // This is the compiler-supplied
                               // default-initializer.
