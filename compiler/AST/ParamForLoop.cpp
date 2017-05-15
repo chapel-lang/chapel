@@ -274,8 +274,8 @@ void ParamForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList)
+      useList->accept(visitor);
 
     if (byrefVars)
       byrefVars->accept(visitor);
@@ -288,19 +288,19 @@ void ParamForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (mResolveInfo              == 0)
+  if (mResolveInfo              == NULL)
     INT_FATAL(this, "ParamForLoop::verify. mResolveInfo is NULL");
 
-  if (BlockStmt::blockInfoGet() != 0)
+  if (BlockStmt::blockInfoGet() != NULL)
     INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
 
-  if (modUses                   != 0)
-    INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
+  if (useList                   != NULL)
+    INT_FATAL(this, "ParamForLoop::verify. useList   is not NULL");
 
-  if (byrefVars                 != 0)
+  if (byrefVars                 != NULL)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
 
-  if (forallIntents             != 0)
+  if (forallIntents             != NULL)
     INT_FATAL(this, "ParamForLoop::verify. forallIntents is not NULL");
 }
 

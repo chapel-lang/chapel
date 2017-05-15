@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@
 // Internal data structures module
 //
 module ChapelUtil {
+  use ChapelStandard;
 
   //
   // safeAdd: If a and b are of type t, return true iff no
@@ -52,7 +53,7 @@ module ChapelUtil {
       }
     }
   }
-  
+
   //
   // safeSub: If a and b are of type t, return true iff no
   //  underflow/overflow would occur for a - b

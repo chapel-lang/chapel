@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "config.h"
+#include "driver.h"
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"

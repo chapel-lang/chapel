@@ -1,0 +1,4 @@
+bug: chpldoc-ing module deinit() routines results in internal error
+
+I believe that this is because chpldoc assumes that deinit() is intended
+for classes only.

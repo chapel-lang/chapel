@@ -17,19 +17,22 @@
  * limitations under the License.
  */
 
+#include "passes.h"
+
+
 #include "astutil.h"
 #include "baseAST.h"
-#include "stlUtil.h"
+#include "CForLoop.h"
+#include "driver.h"
 #include "expr.h"
+#include "exprAnalysis.h"
+#include "LoopStmt.h"
+#include "optimizations.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
-#include "LoopStmt.h"
-#include "CForLoop.h"
 #include "WhileStmt.h"
-#include "exprAnalysis.h"
-#include "optimizations.h"
-
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;

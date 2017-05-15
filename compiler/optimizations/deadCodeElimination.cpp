@@ -22,13 +22,13 @@
 
 #include "astutil.h"
 #include "bb.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
-#include "ForLoop.h"
 
 #include <queue>
 #include <set>

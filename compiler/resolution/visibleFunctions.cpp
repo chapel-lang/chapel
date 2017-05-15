@@ -20,6 +20,7 @@
 #include "visibleFunctions.h"
 
 #include "callInfo.h"
+#include "driver.h"
 #include "expr.h"
 #include "map.h"
 #include "resolution.h"
@@ -440,8 +441,8 @@ static BlockStmt* getVisibleFunctions(const char*           name,
       }
     }
 
-    if (block->modUses != NULL) {
-      for_actuals(expr, block->modUses) {
+    if (block->useList != NULL) {
+      for_actuals(expr, block->useList) {
         UseStmt* use = toUseStmt(expr);
 
         INT_ASSERT(use);

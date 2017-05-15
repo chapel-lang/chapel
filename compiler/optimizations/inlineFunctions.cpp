@@ -20,6 +20,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "driver.h"
 #include "expr.h"
 #include "optimizations.h"
 #include "stlUtil.h"

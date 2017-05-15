@@ -2266,7 +2266,7 @@ void ModuleSymbol::addDefaultUses() {
   } else if (this == baseModule) {
     SET_LINENO(this);
 
-    block->moduleUseAdd(rootModule);
+    block->useListAdd(rootModule);
 
     UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
     block->insertAtHead(new UseStmt(modRef));
@@ -2306,7 +2306,7 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
   int index = modUseList.index(mod);
 
   if (index >= 0) {
-    bool inBlock = block->moduleUseRemove(mod);
+    bool inBlock = block->useListRemove(mod);
 
     modUseList.remove(index);
 
@@ -2316,8 +2316,9 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
       if (modUseList.index(modUsedByDeadMod) < 0) {
         SET_LINENO(this);
 
-        if (inBlock == true)
-          block->moduleUseAdd(modUsedByDeadMod);
+        if (inBlock == true) {
+          block->useListAdd(modUsedByDeadMod);
+        }
 
         modUseList.add(modUsedByDeadMod);
       }

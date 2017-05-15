@@ -75,8 +75,8 @@ void WhileStmt::verify()
   if (BlockStmt::blockInfoGet() != 0)
     INT_FATAL(this, "WhileStmt::verify. blockInfo is not NULL");
 
-  if (modUses                   != 0)
-    INT_FATAL(this, "WhileStmt::verify. modUses   is not NULL");
+  if (useList                   != 0)
+    INT_FATAL(this, "WhileStmt::verify. useList   is not NULL");
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");

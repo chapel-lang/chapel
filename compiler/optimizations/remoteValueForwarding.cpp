@@ -20,10 +20,11 @@
 #include "optimizations.h"
 
 #include "astutil.h"
-#include "stringutil.h"
-#include "stlUtil.h"
+#include "driver.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 

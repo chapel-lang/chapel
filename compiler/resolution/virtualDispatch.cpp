@@ -46,6 +46,7 @@ static child type could end up calling something in the parent.
 #include "virtualDispatch.h"
 
 #include "baseAST.h"
+#include "driver.h"
 #include "expr.h"
 #include "iterator.h"
 #include "resolution.h"

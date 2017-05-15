@@ -40,6 +40,7 @@
 //   classes... should I?
 //
 module ArrayViewRankChange {
+  use ChapelStandard;
 
   //
   // This class represents a distribution that knows how to create
@@ -51,7 +52,7 @@ module ArrayViewRankChange {
     // lower-dimensional views of
     var downDistPid:int;
     var downDistInst;
-    
+
     // These two fields represent whether or not each dimension was
     // collapsed as part of the rank-change; and if so, what the
     // index of that collapsed dimension was.  So for A[lo..hi, 3]

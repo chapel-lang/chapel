@@ -94,34 +94,17 @@ The ``ReplicatedDist`` class constructor is defined as follows:
       targetLocales: [] locale = Locales,
       purposeMessage: string = "used to create a ReplicatedDist")
 
-The array ``targetLocales`` must be "consistent", as defined below.
-
 The optional ``purposeMessage`` may be useful for debugging
 when the constructor encounters an error.
 
 
-**Features/Limitations**
+**Limitations**
 
 * Only rectangular domains are presently supported.
 
-* When replicating over user-provided array of locales, that array
-  must be "consistent" (see below).
-
-"Consistent" array requirement:
-
-* The array of desired locales, if passed explicitly as ``targetLocales``
-  to the ReplicatedDist constructor, must be "consistent".
-
-* The array ``A`` is "consistent" if
-  for each ``ix`` in ``A.domain``, this holds: ``A[ix].id == ix``.
-
-* Tip: if the domain of your ``targetLocales`` cannot be described
-  as a rectangular domain (whether strided, multi-dimensional,
-  and/or sparse), make the domain associative over the `int` type.
-
 */
 class ReplicatedDist : BaseDist {
-  var targetLocDom : domain(Locales.idxType);
+  var targetLocDom : domain(here.id.type);
 
   // the desired locales (an array of locales)
   const targetLocales : [targetLocDom] locale;
@@ -133,30 +116,13 @@ class ReplicatedDist : BaseDist {
 proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
                  purposeMessage: string = "used to create a ReplicatedDist")
 {
-  if targetLocales.rank != 1 then
-    compilerError("ReplicatedDist only accepts a 1D targetLocales array");
-
-  for (idx, loc) in zip(targetLocales.domain, targetLocales) {
-    this.targetLocDom.add(idx);
-    this.targetLocales[idx] = loc;
+  for loc in targetLocales {
+    this.targetLocDom.add(loc.id);
+    this.targetLocales[loc.id] = loc;
   }
 
   if traceReplicatedDist then
     writeln("ReplicatedDist constructor over ", targetLocales);
-  _localesCheckHelper(purposeMessage);
-}
-
-// helper to check consistency of the locales array
-// TODO: going over all the locales - is there a scalability issue?
-proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
-  // ideally would like to make this a "eureka"
-  /*
-  forall (ix, loc) in zip(targetLocDom, targetLocales) do
-    if loc.id != ix {
-      halt("The array of locales ", purposeMessage, " must be \"consistent\".",
-           " See ReplicatedDist documentation for details.");
-    }
-  */
 }
 
 proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
@@ -558,9 +524,9 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr
 }
 
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on dom.dist.targetLocales(localeIdx) do
-      delete localArrs(localeIdx);
+  coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
+    on loc do
+      delete locArr;
   }
 }
 

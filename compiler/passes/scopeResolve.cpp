@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "clangUtil.h"
+#include "driver.h"
 #include "expr.h"
 #include "externCResolve.h"
 #include "initializerRules.h"
@@ -300,183 +301,47 @@ static void addToSymbolTable(DefExpr* def) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void    processImportExprs(UseStmt* useStmt);
-
-static Symbol* getUsedSymbol(UseStmt* useStmt, Expr* expr);
-
-static bool    isValidUsedSymbol(UseStmt* useStmt, Symbol* symbol);
-
-static void    printUseError(UseStmt* useStmt, Symbol* sym);
+static ModuleSymbol* definesModuleSymbol(Expr* expr);
+static void          processImportExprs(ModuleSymbol* topLevelModule);
 
 static void processImportExprs() {
-  forv_Vec(UseStmt, useStmt, gUseStmts) {
-    processImportExprs(useStmt);
+  for_alist(expr, theProgram->block->body) {
+    if (UseStmt* useStmt = toUseStmt(expr))  {
+      useStmt->scopeResolve();
+
+    } else if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
+      processImportExprs(mod);
+    }
   }
 }
 
-static void processImportExprs(UseStmt* useStmt) {
-  SET_LINENO(useStmt);
+static void processImportExprs(ModuleSymbol* topLevelModule) {
+  std::vector<BaseAST*> asts;
 
-  Symbol* sym = getUsedSymbol(useStmt, useStmt->src);
+  // Collect *all* asts within this top-level module in text order
+  collect_asts(topLevelModule, asts);
 
-  if (sym == NULL) {
-    USR_FATAL(useStmt, "Cannot find module or enum");
-  }
-
-  // We don't need to perform any resolution on the default use of the
-  // rootModule, so don't add it to the current module's use list or that
-  // of its block (it should already be in the latter).
-  if (sym == rootModule) {
-    return;
-  }
-
-  if (useStmt->parentExpr == NULL) {
-    // This happens for the uses I create when traversing use chains which
-    // contain excepts, so that the excepted keywords are skipped down all
-    // paths from that chain head (see buildBreadthFirstModuleList).  In
-    // that case, we don't need to do any further work here beyond make
-    // sure the sym is a SymExpr
-    useStmt->src = new SymExpr(sym);
-    return;
-  }
-
-  useStmt->src->replace(new SymExpr(sym));
-
-  ModuleSymbol* enclosingModule = useStmt->getModule();
-
-  if (ModuleSymbol* mod = toModuleSymbol(sym)) {
-    // A ModuleSymbol's modUseList is intended to be for initializing modules
-    // in an appropriate order.  If we're using an enum symbol, we don't
-    // need to worry about this.
-    enclosingModule->moduleUseAdd(mod);
-  }
-
-  BlockStmt* useParent = getVisibilityBlock(useStmt);
-
-  useStmt->getStmtExpr()->remove();
-
-  useParent->moduleUseAdd(useStmt);
-
-  useStmt->validateList();
-}
-
-//
-// Return the module or enum imported by a use call.  The module returned
-// could be nested: e.g. "use outermost.middle.innermost;"
-//
-static Symbol* getUsedSymbol(UseStmt* useStmt, Expr* expr) {
-  //
-  // This handles the simple case of 'use <symbol>' (as well as error
-  // cases that try to use non-module or non-enum symbols)
-  //
-  if (SymExpr* sym = toSymExpr(expr)) {
-    if (Symbol* symbol = sym->symbol()) {
-      if (isValidUsedSymbol(useStmt, symbol) == true) {
-        return symbol;
+  for_vector(BaseAST, item, asts) {
+    if (UseStmt* useStmt = toUseStmt(item)) {
+      if (useStmt->isValid() == true) {
+        useStmt->scopeResolve();
       }
-
-    } else {
-      printUseError(useStmt, NULL);
     }
-
-    return NULL;
-
-  } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    //
-    // This case handles the (common) case that we're 'use'ing a
-    // symbol that we have not yet resolved.
-    //
-    if (Symbol* symbol = lookup(sym->unresolved, useStmt)) {
-      if (isValidUsedSymbol(useStmt, symbol) == true) {
-        return symbol;
-      }
-
-    } else {
-      USR_FATAL(useStmt, "Cannot find module or enum '%s'", sym->unresolved);
-    }
-
-    return NULL;
-
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    //
-    // This handles the case of 'use <symbol>.<symbol>' (as well as
-    // error cases in which other expressions than '.' are used)
-    //
-
-    if (call->isNamed(".") == false) {
-      printUseError(useStmt, NULL);
-    }
-
-    ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(useStmt, call->get(1)));
-
-    if (lhs == NULL) {
-      USR_FATAL(useStmt, "Cannot find module");
-    }
-
-    SymExpr*    rhs     = toSymExpr(call->get(2));
-    const char* rhsName = 0;
-
-    if (rhs == NULL) {
-      INT_FATAL(useStmt, "Bad use statement in getUsedSymbol");
-    }
-
-    if (get_string(rhs, &rhsName) == false) {
-      INT_FATAL(useStmt, "Bad use statement in getUsedSymbol");
-    }
-
-    if (Symbol* symbol = lookup(rhsName, lhs->block)) {
-      if (isValidUsedSymbol(useStmt, symbol) == true) {
-        return symbol;
-      }
-
-    } else {
-      USR_FATAL(useStmt, "Cannot find module '%s'", rhsName);
-    }
-
-    return NULL;
-
-  } else {
-    INT_FATAL(useStmt, "Bad use statement in getUsedSymbol");
-
-    return NULL;
   }
 }
 
-static bool isValidUsedSymbol(UseStmt* useStmt, Symbol* symbol) {
-  if (isModuleSymbol(symbol) == true) {
-    return true;
+static ModuleSymbol* definesModuleSymbol(Expr* expr) {
+  ModuleSymbol* retval = NULL;
 
-  } else if (TypeSymbol* type = toTypeSymbol(symbol)) {
-    if (isEnumType(type->type) == true) {
-      return true;
-    }
+  if (DefExpr* def = toDefExpr(expr)) {
+    retval = toModuleSymbol(def->sym);
   }
 
-  printUseError(useStmt, symbol);
-
-  return false;
-}
-
-//
-// Helper routine to factor some 'use' error messages into a single place
-//
-static void printUseError(UseStmt* useStmt, Symbol* sym) {
-  if (sym != NULL && sym->isImmediate() == false) {
-    if (sym->name != NULL) {
-      USR_FATAL(useStmt, "'use' of non-module/enum symbol %s", sym->name);
-
-    } else {
-      USR_FATAL(useStmt, "'use' of non-module/enum symbol");
-    }
-
-  } else {
-    USR_FATAL(useStmt,
-              "'use' statements must refer to module or enum symbols "
-              "(e.g., 'use <module>[.<submodule>]*;')");
-  }
+  return retval;
 }
 
 /************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -1123,10 +988,6 @@ static void renameDefaultType(Type* type, const char* newname) {
 
 static void lookup(const char*           name,
                    BaseAST*              context,
-                   std::vector<Symbol*>& symbols);
-
-static void lookup(const char*           name,
-                   BaseAST*              context,
 
                    BaseAST*              scope,
                    Vec<BaseAST*>&        visited,
@@ -1167,9 +1028,9 @@ Symbol* lookup(const char* name, BaseAST* context) {
   return retval;
 }
 
-static void lookup(const char*           name,
-                   BaseAST*              context,
-                   std::vector<Symbol*>& symbols) {
+void lookup(const char*           name,
+            BaseAST*              context,
+            std::vector<Symbol*>& symbols) {
   Vec<BaseAST*> visited;
 
   lookup(name, context, context, visited, symbols);
@@ -1283,13 +1144,13 @@ static bool lookupThisScopeAndUses(const char*           name,
   if (symbols.size() == 0) {
     // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
-      if (block->modUses != NULL) {
+      if (block->useList != NULL) {
         Vec<UseStmt*>* moduleUses = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
           moduleUses = new Vec<UseStmt*>();
 
-          for_actuals(expr, block->modUses) {
+          for_actuals(expr, block->useList) {
             UseStmt* use = toUseStmt(expr);
             INT_ASSERT(use);
 
@@ -1517,8 +1378,8 @@ static void buildBreadthFirstModuleList(
       SymExpr* se = toSymExpr(source->src);
       INT_ASSERT(se);
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-        if (mod->block->modUses) {
-          for_actuals(expr, mod->block->modUses) {
+        if (mod->block->useList != NULL) {
+          for_actuals(expr, mod->block->useList) {
             UseStmt* use = toUseStmt(expr);
             INT_ASSERT(use);
 
@@ -1625,293 +1486,6 @@ bool Symbol::isVisible(BaseAST* scope) const {
 
 /************************************* | **************************************
 *                                                                             *
-* If the outer use statement would limit this one, return a new use of our    *
-* module with the additional symbols accounted for.  This new use will not    *
-* be added to the AST, but will be reused in scopeResolution if the same use  *
-* path is followed.                                                           *
-*                                                                             *
-* If the outer use does not require us to alter ourself, return ourself.      *
-* If the combination of the two uses results in no new symbols being provided *
-* by this module, return NULL.                                                *
-*                                                                             *
-************************************** | *************************************/
-
-UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
-  if (outer->isPlainUse()) {
-    // The outer use would not modify us, return ourself.
-    return this;
-  }
-
-  if (outer->except) {
-    // The outer use specifies an 'except' list
-    if (!except && !isPlainUse()) {
-      // The most complicated case is if we specified an 'only' list.
-      // If that happened, we want to check if any of the identifiers
-      // in the 'except' list are specified by the 'only' list, and
-      // not place them in the new 'only' list.
-      std::vector<const char*> newOnlyList;
-
-      for_vector(const char, includeMe, named) {
-        if (std::find(outer->named.begin(),
-                      outer->named.end(),
-                      includeMe) == outer->named.end()) {
-
-          // We didn't find this symbol in the list to exclude, so
-          // add it.
-          newOnlyList.push_back(includeMe);
-        }
-      }
-
-      std::map<const char*, const char*> newRenamed;
-
-      for (std::map<const char*, const char*>::iterator it = renamed.begin();
-          it != renamed.end();
-           ++it) {
-        if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
-            outer->named.end()) {
-          // We didn't find the new name in the list to exclude, so the rename
-          // is still interesting.  Add it.
-          newRenamed[it->first] = it->second;
-        }
-      }
-
-      if (newOnlyList.size() == named.size() &&
-          newRenamed.size() == renamed.size()) {
-        // The except list didn't cut down on our only list.
-        // No need to create a new UseStmt, just return ourself.
-        return this;
-
-      } else if (newOnlyList.size() == 0 && newRenamed.size() == 0) {
-        // All of the 'only' list was in the 'except' list,
-        // so we don't provide new symbols.
-        return NULL;
-      } else {
-        // The only list will be shorter, create a new UseStmt with it.
-        SET_LINENO(this);
-        return new UseStmt(src, &newOnlyList, false, &newRenamed);
-        // Note: we don't populate the relatedNames vector for the new use,
-        // since we don't have a way to connect the names in it back to the
-        // types we did or didn't include in the shorter 'only' list.
-      }
-    } else {
-      // Handles case where inner use has an 'except' list, or is
-      // just a plain use.  The use returned will have a (longer) 'except'
-      // list.
-      SET_LINENO(this);
-      UseStmt* newUse = copy();
-      for_vector(const char, toExclude, outer->named) {
-        newUse->named.push_back(toExclude);
-      }
-      newUse->except = true;
-      return newUse;
-    }
-  } else {
-    // The outer use has an 'only' list
-    if (!isPlainUse()) {
-      if (except) {
-        // The more complicated case arises if we have an 'except' list
-        // The inner use should turn into a use with an 'only' list if anything
-        // remains.
-        std::vector<const char*> newOnlyList;
-        for_vector(const char, includeMe, outer->named) {
-          if (std::find(named.begin(), named.end(), includeMe) == named.end()) {
-            // We didn't find this symbol in our 'except' list, so
-            // add it.
-            newOnlyList.push_back(includeMe);
-          }
-        }
-        std::map<const char*, const char*> newRenamed;
-        for(std::map<const char*, const char*>::iterator it = outer->renamed.begin();
-            it != outer->renamed.end(); ++it) {
-          if (std::find(named.begin(), named.end(), it->second) == named.end()) {
-            // We didn't find the old name of the renamed symbol in our
-            // 'except' list, so add it.
-            newRenamed[it->first] = it->second;
-          }
-        }
-        if (newOnlyList.size() > 0 || newRenamed.size() > 0) {
-          // At least some of the identifiers in the 'only' list
-          // weren't in the inner 'except' list.  Modify the use to
-          // 'only' include those from the original 'only' list which
-          // weren't in the inner 'except' list (could be all of the
-          // outer 'only' list)
-          SET_LINENO(this);
-          return new UseStmt(src, &newOnlyList, false, &newRenamed);
-        } else {
-          // all the 'only' identifiers were in the 'except'
-          // list so this module use will give us nothing.
-          return NULL;
-        }
-      } else {
-        // We had an 'only' list, so we need to narrow that list down to just
-        // the names that are in both lists.
-        SET_LINENO(this);
-        std::vector<const char*> newOnlyList;
-        std::map<const char*, const char*> newRenamed;
-        for_vector(const char, includeMe, outer->named) {
-          if (std::find(named.begin(), named.end(), includeMe) != named.end()) {
-            // We found this symbol in both 'only' lists, so add it
-            // to the union of them.
-            newOnlyList.push_back(includeMe);
-          } else {
-            std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
-            if (it != renamed.end()) {
-              // We found this symbol in the renamed list and the outer 'only'
-              // list so add it to the new renamed list.
-              newRenamed[it->first] = it->second;
-            }
-          }
-        }
-        for (std::map<const char*, const char*>::iterator it = outer->renamed.begin();
-             it != outer->renamed.end(); ++it) {
-          if (std::find(named.begin(), named.end(), it->second) != named.end()) {
-            // The old name was in our 'only' list.  We need to rename it.
-            newRenamed[it->first] = it->second;
-          } else {
-            std::map<const char*, const char*>::iterator innerIt = renamed.find(it->second);
-            if (innerIt != renamed.end()) {
-              // We found this symbol in the renamed list and the outer
-              // renamed list so add the outer use's new name as the key, and
-              // our old name as the old name to use.
-              newRenamed[it->first] = innerIt->second;
-            }
-          }
-        }
-        if (newOnlyList.size() > 0 || newRenamed.size() > 0) {
-          // There were symbols that were in both 'only' lists, so
-          // this module use is still interesting.
-          SET_LINENO(this);
-          return new UseStmt(src, &newOnlyList, false, &newRenamed);
-        } else {
-          // all of the 'only' identifiers in the outer use
-          // were missing from the inner use's 'only' list, so this
-          // module use will give us nothing.
-          return NULL;
-        }
-      }
-    } else {
-      // The inner use did not specify an 'except' or 'only' list,
-      // so propagate our 'only' list and/or renamed list to it.
-      SET_LINENO(this);
-      UseStmt* newUse = copy();
-      for_vector(const char, toInclude, outer->named) {
-        newUse->named.push_back(toInclude);
-      }
-      for (std::map<const char*, const char*>::iterator it = outer->renamed.begin();
-          it != outer->renamed.end(); ++it) {
-        newUse->renamed[it->first] = it->second;
-      }
-      newUse->except = false;
-      return newUse;
-    }
-  }
-}
-
-// Returns true if the current use statement has the possibility of allowing
-// symbols that weren't already covered by 'other'
-//
-// Assumes that other->mod == this->mod.  Will not verify that fact.
-bool UseStmt::providesNewSymbols(UseStmt* other) {
-  if (other->isPlainUse()) {
-    // Other is a general use, without an 'only' or 'except' list.  It covers
-    // everything we could possibly cover, so we don't provide new symbols.
-    return false;
-  }
-  if (isPlainUse()) {
-    // We're a general use.  We know the other one isn't, so we provide symbols
-    // it doesn't.
-    return true;
-  }
-
-  if (except) {
-    // We have an 'except' list.  This may be more general than other, so
-    // we might want to dive into it.
-    if (other->except) {
-      // Other also has an 'except' list.
-      if (other->named.size() <= named.size()) {
-        // We are excluding more symbols than other, or the same number
-        unsigned int numSame = 0;
-        for_vector(const char, exclude, other->named) {
-          if (std::find(named.begin(), named.end(), exclude) != named.end())
-            numSame++;
-        }
-        // If all of other's excludes are in our list, we provide no new
-        // symbols. If we don't cover all of the other's 'except' list, then we
-        // know we provide the missing symbols.
-        return numSame != other->named.size();
-      } else {
-        // Our 'except' list is smaller, so by definition we must provide
-        // symbols that 'other' does not.
-        return true;
-      }
-    } else {
-      // Other has an 'only' list.  'Only' lists are usually more
-      // restrictive than 'except' lists, and determining whether a
-      // long 'only' list is less restrictive than a long 'except' list
-      // doesn't seem beneficial in the long run.  So err on the side of
-      // assuming we provide something new
-      return true;
-    }
-  } else {
-    // We have an 'only' list.  This is likely more specific than other, but
-    // we should still check.
-    if (other->except) {
-      // Other has an 'except' list
-      if (renamed.size() > 0) {
-        // If we renamed any symbols, then we provide something new
-        return true;
-      }
-
-      // If there were no renamed symbols and there's overlap in the two
-      // lists then we provide new symbols
-      int numSame = 0;
-      for_vector(const char, include, named) {
-        if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
-          numSame++;
-        }
-      }
-      // If numSame > 0, some of the names in our 'only' list were present in
-      // other's 'except' list, which means we definitely provide new symbols
-      return numSame > 0;
-    } else if (other->named.size() + other->renamed.size() < named.size() +
-               renamed.size()) {
-      // Other has a smaller 'only' list.  By definition, this means we are
-      // providing symbols not available in other.
-      return true;
-    } else {
-      unsigned int numSame = 0;
-      for_vector(const char, include, named) {
-        if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
-          numSame++;
-        }
-        // Don't check against other's renamed list, since a renamed version
-        // of something in our only list is a new symbol
-      }
-      for(std::map<const char*, const char*>::iterator it = renamed.begin();
-          it != renamed.end(); ++it) {
-        // Don't check against other's only list.  A renamed version of
-        // something in their only list is a new symbol
-        // Do check against other's renamed list.  If both uses cause the exact
-        // same rename to occur, we should count it.
-        for (std::map<const char*, const char*>::iterator otherIt =
-               other->renamed.begin();
-             otherIt != other->renamed.end(); ++otherIt) {
-          if (!strcmp(it->first, otherIt->first) &&
-              !strcmp(it->second, otherIt->second)) {
-            numSame++;
-          }
-        }
-      }
-
-      // If all of our 'only' list was in the 'only' list of other, we don't
-      // provide anything new.
-      return numSame != named.size() + renamed.size();
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
 * getScope returns the BaseAST that corresponds to the scope where 'ast'      *
 * exists; 'ast' must be an Expr or a Symbol.  Note that if you pass this a    *
 * BaseAST that defines a scope, the BaseAST that defines the scope where it   *
@@ -1958,163 +1532,4 @@ BaseAST* getScope(BaseAST* ast) {
   INT_FATAL(ast, "getScope expects an Expr or a Symbol");
 
   return NULL;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-// Verifies that all the symbols in the include and exclude lists of use
-// statements refer to symbols that are visible from that module.
-void UseStmt::validateList() {
-  if (isPlainUse()) {
-    // Trivially, if we don't have a list (are a plain use), then it must be
-    // valid!
-    return;
-  }
-
-  noRepeats();
-
-  BaseAST*    scopeToUse = getSearchScope();
-  const char* listName   = except ? "except" : "only";
-
-  for_vector(const char, name, named) {
-    if (name[0] != '\0') {
-      Symbol* sym = lookup(name, scopeToUse);
-
-      if (!sym) {
-        USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, no known '%s'",
-                       listName, name);
-
-      } else if (sym->isVisible(this) == false) {
-        USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, '%s' is private",
-                       listName,
-                       name);
-      }
-
-      createRelatedNames(sym);
-    }
-  }
-
-  for (std::map<const char*, const char*>::iterator it = renamed.begin();
-       it != renamed.end(); ++it) {
-    Symbol* sym = lookup(it->second, scopeToUse);
-
-    if (sym == NULL) {
-      SymExpr* se = toSymExpr(src);
-
-      INT_ASSERT(se);
-
-      USR_FATAL_CONT(this,
-                     "Bad identifier in rename, no known '%s' in '%s'",
-                     it->second,
-                     se->symbol()->name);
-
-    } else if (sym->isVisible(this) == false) {
-      USR_FATAL_CONT(this,
-                     "Bad identifier in rename, '%s' is private",
-                     it->second);
-    }
-
-    createRelatedNames(sym);
-  }
-}
-
-void UseStmt::noRepeats() {
-  for (std::vector<const char*>::iterator it = named.begin();
-       it != named.end(); ++it) {
-    std::vector<const char*>::iterator next = it;
-
-    for (++next; next != named.end(); ++next) {
-      // Check rest of named for the same name
-      if (strcmp(*it, *next) == 0) {
-        USR_WARN(this, "identifier '%s' is repeated", *it);
-      }
-    }
-
-    for (std::map<const char*, const char*>::iterator renamedIt = renamed.begin();
-         renamedIt != renamed.end(); ++renamedIt) {
-
-      if (strcmp(*it, renamedIt->second) == 0) {
-        // This identifier is also used as the old name for a renaming.
-        // Probably a mistake on the user's part, but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", *it);
-      }
-
-      if (strcmp(*it, renamedIt->first) == 0) {
-        // The user attempted to rename a symbol to a name that was already
-        // in the 'only' list.  This causes a naming conflict.
-        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it);
-      }
-    }
-  }
-
-  for (std::map<const char*, const char*>::iterator it = renamed.begin();
-       it != renamed.end();
-       ++it) {
-    std::map<const char*, const char*>::iterator next = it;
-
-    for (++next; next != renamed.end(); ++next) {
-      if (strcmp(it->second, next->second) == 0) {
-        // Renamed this variable twice.  Probably a mistake on the user's part,
-        // but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", it->second);
-      }
-
-      if (strcmp(it->second, next->first) == 0) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it->second);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  next->second,
-                  it->first);
-      }
-
-      if (strcmp(it->first, next->second) == 0) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it->first);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  it->second,
-                  next->first);
-      }
-
-      // Two symbols can't be renamed to the same name because the map can only
-      // store one entry with a given key.  We catch this case in build.cpp
-      // when creating the UseStmt.  No need to check it->first matching
-      // next->first.
-    }
-  }
-}
-
-void UseStmt::createRelatedNames(Symbol* maybeType) {
-  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
-    Type* type = ts->type;
-
-    forv_Vec(FnSymbol, method, type->methods) {
-      relatedNames.push_back(method->name);
-    }
-
-    if (AggregateType* at = toAggregateType(type)) {
-      for_fields(sym, at) {
-        relatedNames.push_back(sym->name);
-      }
-    }
-
-    unsigned int constructorLen = strlen(ts->name) + strlen("_construct_") + 1;
-    char * constructorName = (char *) malloc(constructorLen);
-    strcpy(constructorName, "_construct_");
-    strcat(constructorName, ts->name);
-    relatedNames.push_back(constructorName);
-
-    unsigned int typeConstLen = constructorLen + strlen("_type");
-    char * typeConstructorName = (char *) malloc(typeConstLen);
-    strcpy(typeConstructorName, "_type_construct_");
-    strcat(typeConstructorName, ts->name);
-    relatedNames.push_back(typeConstructorName);
-  }
 }

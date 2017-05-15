@@ -18,6 +18,8 @@
  */
 
 module ChapelError {
+  use ChapelStandard;
+
   class Error {
     var msg: string;
 
