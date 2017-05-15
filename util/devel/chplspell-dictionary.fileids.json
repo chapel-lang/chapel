@@ -9,7 +9,8 @@
     "CONTRIBUTORS.md"
   ],
   "06bdda1e-bb86-11e6-9740-843835579daa": [
-    "LICENSE"
+    "LICENSE",
+    "LICENSE.devel"
   ],
   "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstDumpToHtml.cpp"
@@ -146,6 +147,9 @@
   "208f1cd2-0c12-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/cullOverReferences.cpp"
   ],
+  "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
+    "compiler/resolution/expandVarArgs.cpp"
+  ],
   "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/functionResolution.cpp"
   ],
@@ -211,6 +215,9 @@
   ],
   "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
     "doc/rst/developer/chips/18.rst"
+  ],
+  "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/19.rst"
   ],
   "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/chips/2.rst"
