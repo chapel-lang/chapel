@@ -44,6 +44,8 @@ all:
   03/28/14:
     - Add static flag for performance testing (22992)
   05/08/14:
+  05/11/17:
+    - 
     - switched to gcc-4.7
   07/19/14:
     - no testing occurred, machine update
@@ -662,6 +664,10 @@ meteor:
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
 
+mg-b:
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+
 miniMD:
   12/21/13:
     - clean up of noRefCount related code in modules/internal (22473)
@@ -735,6 +741,12 @@ prk-stencil.ml-perf:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+
+prk-stencil-time:
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
 
 prk-transpose: &transpose-base
   05/04/17:
