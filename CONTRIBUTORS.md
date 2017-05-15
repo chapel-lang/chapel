@@ -9,6 +9,7 @@ Contributors to the current release
 * Ben Albrecht, [Cray Inc.]
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
+* Marcos Cleison Silva Santana, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
