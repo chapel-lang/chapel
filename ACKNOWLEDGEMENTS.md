@@ -2,9 +2,8 @@ Chapel Acknowledgements
 =======================
 
 The Chapel project's source repository and releases are currently
-hosted by [GitHub].  Our mailing lists are hosted by [SourceForge], as
-is a mirror of the release.  We are grateful to both organizations for
-their ongoing support.
+hosted by [GitHub].  Our mailing lists are hosted by [SourceForge].
+We are grateful to both organizations for their ongoing support.
 
 The Chapel project was originally funded by the [Defense Advanced
 Research Projects Agency] under its Agreement No. HR0011-07-9-0001,
@@ -39,6 +38,9 @@ the [Department of Computer Science and Engineering] at the
 Thanks very much to [Intel] for donating compiler licenses during the
 initial years of the project for the purpose of portability testing.
 
+Thanks to Google for funding several students to work on projects within
+Chapel as part of the [Google Summer of Code] program.
+
 ---
 
 [Argonne National Laboratory]: http://www.anl.gov/
@@ -47,6 +49,7 @@ initial years of the project for the purpose of portability testing.
 [Defense Advanced Research Projects Agency]: http://www.darpa.mil/
 [Department of Computer Science and Engineering]: http://cs.washington.edu
 [GitHub]: https://github.com/
+[Google Summer of Code]: https://developers.google.com/open-source/gsoc/
 [HPCx]: http://www.hpcx.ac.uk/
 [Intel]: http://www.intel.com/
 [Laboratory for Telecommunications Sciences]: https://www.ltsnet.net/
