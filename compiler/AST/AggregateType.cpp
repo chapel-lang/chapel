@@ -49,6 +49,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   aggregateTag           = initTag;
   defaultTypeConstructor = NULL;
+  defaultInitializer     = NULL;
   initializerStyle       = DEFINES_NONE_USE_DEFAULT;
   initializerResolved    = false;
   outer                  = NULL;
@@ -970,8 +971,9 @@ void AggregateType::buildConstructor() {
     if (isClass() == true) {
       if (dispatchParents.n > 0 && symbol->hasFlag(FLAG_EXTERN) == false) {
         // This class has a parent class.
-        if (dispatchParents.v[0]->defaultInitializer == NULL) {
-          AggregateType* at = toAggregateType(dispatchParents.v[0]);
+        AggregateType* at = toAggregateType(dispatchParents.v[0]);
+        INT_ASSERT(at);
+        if (at->defaultInitializer == NULL) {
 
           // If it doesn't yet have an initializer, make one.
           at->buildConstructors();
@@ -981,7 +983,7 @@ void AggregateType::buildConstructor() {
         // Note that since we only pay attention to the first entry in the
         // dispatchParents list, we are effectively implementing
         // single class inheritance, multiple interface inheritance.
-        FnSymbol* superCtor = dispatchParents.v[0]->defaultInitializer;
+        FnSymbol* superCtor = at->defaultInitializer;
 
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);

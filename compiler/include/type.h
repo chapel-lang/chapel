@@ -85,10 +85,6 @@ public:
   bool             hasGenericDefaults; // all generic fields have defaults
 
   Symbol*          defaultValue;
-  FnSymbol*        defaultInitializer; // This is the compiler-supplied
-                                       // default-initializer.
-                                       // It provides initial values for the
-                                       // fields in an aggregate type.
   FnSymbol*        destructor;
 
   // Used only in PrimitiveType; replace with flag?

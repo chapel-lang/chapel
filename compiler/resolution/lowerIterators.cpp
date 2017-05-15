@@ -58,9 +58,11 @@ FnSymbol* getTheIteratorFn(CallExpr* call) {
 FnSymbol* getTheIteratorFn(Type* icType)
 {
   // the asserts document the current state
+  AggregateType* icTypeAgg = toAggregateType(icType);
+  INT_ASSERT(icTypeAgg);
 
   if (icType->symbol->hasFlag(FLAG_TUPLE)) {
-    FnSymbol* getIterFn = icType->defaultInitializer;
+    FnSymbol* getIterFn = icTypeAgg->defaultInitializer;
     // A tuple of iterator classes -> first argument to
     // tuple constructor is the iterator class type.
     Type* firstIcType = getIterFn->getFormal(1)->type;
@@ -71,7 +73,6 @@ FnSymbol* getTheIteratorFn(Type* icType)
     return result;
   } else {
     INT_ASSERT(icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-    AggregateType* icTypeAgg = toAggregateType(icType);
     INT_ASSERT(icTypeAgg->iteratorInfo);
     FnSymbol* getIterFn = icTypeAgg->iteratorInfo->getIterator;
     // The type of _getIterator's first formal arg is _iteratorRecord.
