@@ -44,23 +44,24 @@ AggregateType* dtOnBundleRecord    = NULL;
 AggregateType* dtTaskBundleRecord  = NULL;
 AggregateType* dtError             = NULL;
 
-AggregateType::AggregateType(AggregateTag initTag)
-  : Type(E_AggregateType, NULL) {
+AggregateType::AggregateType(AggregateTag initTag) :
+  Type(E_AggregateType, NULL) {
 
-  aggregateTag        = initTag;
-  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
-  initializerResolved = false;
-  outer               = NULL;
-  iteratorInfo        = NULL;
-  doc                 = NULL;
+  aggregateTag           = initTag;
+  defaultTypeConstructor = NULL;
+  initializerStyle       = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved    = false;
+  outer                  = NULL;
+  iteratorInfo           = NULL;
+  doc                    = NULL;
 
-  fields.parent       = this;
-  inherits.parent     = this;
+  fields.parent          = this;
+  inherits.parent        = this;
 
-  genericField        = 0;
-  mIsGeneric          = false;
+  genericField           = 0;
+  mIsGeneric             = false;
 
-  classId = 0;
+  classId                = 0;
 
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
