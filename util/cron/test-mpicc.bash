@@ -19,7 +19,7 @@ export CHPL_TASKS=fifo
 export CHPL_COMM=none
 export CHPL_LAUNCHER=mpirun
 
-export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl modules/packages/mpi/spmd/hello-chapel"
+export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl modules/packages/mpi"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="mpicc"
 
