@@ -44,8 +44,6 @@ all:
   03/28/14:
     - Add static flag for performance testing (22992)
   05/08/14:
-  05/11/17:
-    - 
     - switched to gcc-4.7
   07/19/14:
     - no testing occurred, machine update
