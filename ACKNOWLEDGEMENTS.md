@@ -5,6 +5,9 @@ The Chapel project's source repository and releases are currently
 hosted by [GitHub].  Our mailing lists are hosted by [SourceForge].
 We are grateful to both organizations for their ongoing support.
 
+Thanks to Google for funding several students to work on projects
+within Chapel as part of the [Google Summer of Code] program.
+
 The Chapel project was originally funded by the [Defense Advanced
 Research Projects Agency] under its Agreement No. HR0011-07-9-0001,
 Contract No. HR0011-10-9-0008, and Contract No. NBCH3039003.  Any
@@ -37,9 +40,6 @@ the [Department of Computer Science and Engineering] at the
 
 Thanks very much to [Intel] for donating compiler licenses during the
 initial years of the project for the purpose of portability testing.
-
-Thanks to Google for funding several students to work on projects within
-Chapel as part of the [Google Summer of Code] program.
 
 ---
 
