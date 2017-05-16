@@ -51,7 +51,7 @@ sprint_complex_val(char* str, double real, double imm) {
 }
 
 int 
-snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
+snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -117,7 +117,7 @@ snprint_imm(char *str, size_t max, char *control_string, Immediate &imm) {
 }
 
 int 
-snprint_imm(char *str, size_t max, Immediate &imm) {
+snprint_imm(char *str, size_t max, const Immediate &imm) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
@@ -189,7 +189,7 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
 }
 
 int 
-fprint_imm(FILE *fp, Immediate &imm, bool showType) {
+fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
