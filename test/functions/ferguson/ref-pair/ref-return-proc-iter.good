@@ -1,0 +1,4 @@
+ref-return-proc-iter.chpl:14: error: invalid ref return pair: mixing proc and iter
+ref-return-proc-iter.chpl:9: error: here
+ref-return-proc-iter.chpl:3: error: here
+ref-return-proc-iter.chpl:14: error: cannot iterate over values of type real(64)

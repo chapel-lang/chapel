@@ -158,14 +158,6 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
 void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
                            bool buildFastFollowerChecks);
 
-typedef enum {
-  FIND_EITHER = 0,
-  FIND_REF,
-  FIND_CONST_REF,
-  FIND_NOT_REF_OR_CONST_REF, // !(ref || const_ref)
-} disambiguate_kind_t;
-
-
 /** Contextual info used by the disambiguation process.
  *
  * This class wraps information that is used by multiple functions during the
@@ -209,12 +201,17 @@ public:
 
 
 ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                                         DisambiguationContext DC,
-                                         disambiguate_kind_t kind);
+                                         DisambiguationContext DC);
 bool isBetterMatch(ResolutionCandidate* candidate1,
                    ResolutionCandidate* candidate2,
                    const DisambiguationContext& DC,
                    bool onlyConsiderPromotion);
+
+void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
+                                        DisambiguationContext DC,
+                                        ResolutionCandidate*& bestRef,
+                                        ResolutionCandidate*& bestConstRef,
+                                        ResolutionCandidate*& bestValue);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);

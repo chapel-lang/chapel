@@ -417,7 +417,7 @@ void resolveInitCall(CallExpr* call) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* best = disambiguateByMatch(candidates, DC, FIND_NOT_REF_OR_CONST_REF);
+  ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
 
   if (best && best->fn) {
     /*

@@ -2259,8 +2259,7 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
  */
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    DisambiguationContext DC,
-                    disambiguate_kind_t kind) {
+                    DisambiguationContext DC) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2274,11 +2273,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
     ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
-
-    // Only consider ref return fns in ref return part
-    if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
-    if (kind == FIND_CONST_REF && (candidate1->fn->retTag != RET_CONST_REF)) continue;
-    if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate1->fn->retTag == RET_REF || candidate1->fn->retTag == RET_CONST_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -2294,11 +2288,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
       TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
 
       ResolutionCandidate* candidate2 = candidates.v[j];
-
-      // Only consider ref return fns in ref return part
-      if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
-      if (kind == FIND_CONST_REF && (candidate2->fn->retTag != RET_CONST_REF)) continue;
-      if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate2->fn->retTag == RET_REF || candidate2->fn->retTag == RET_CONST_REF)) continue;
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -2325,6 +2314,68 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
   TRACE_DISAMBIGUATE_BY_MATCH("Z: No non-ambiguous best match.\n\n");
 
   return NULL;
+}
+
+/* Find the best return-intent overloads from a list of candidates.
+ */
+void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
+                                        DisambiguationContext DC,
+                                        ResolutionCandidate*& bestRef,
+                                        ResolutionCandidate*& bestConstRef,
+                                        ResolutionCandidate*& bestValue) {
+
+  // Split candidates into ref, const ref, and value candidates
+  Vec<ResolutionCandidate*> refCandidates;
+  Vec<ResolutionCandidate*> constRefCandidates;
+  Vec<ResolutionCandidate*> valueCandidates;
+
+  // Move candidates to above Vecs according to return intent
+  forv_Vec(ResolutionCandidate*, candidate, candidates) {
+    if (candidate->fn->retTag == RET_REF)
+      refCandidates.push_back(candidate);
+    else if(candidate->fn->retTag == RET_CONST_REF)
+      constRefCandidates.push_back(candidate);
+    else
+      valueCandidates.push_back(candidate);
+  }
+
+  // Run disambiguateByMatch to choose the best from each list
+  bestRef = disambiguateByMatch(refCandidates, DC);
+  bestConstRef = disambiguateByMatch(constRefCandidates, DC);
+  bestValue = disambiguateByMatch(valueCandidates, DC);
+
+  // If disambiguateByMatch returned NULL for a non-empty list
+  // that means that there was ambiguity.
+  // In that case, we set all candidates to NULL in order to trigger an
+  // ambiguous resolution error.
+  bool ambiguousRef = (refCandidates.n > 1 && !bestRef);
+  bool ambiguousConstRefRef = (constRefCandidates.n > 1 && !bestConstRef);
+  bool ambiguousValue = (valueCandidates.n > 1 && !bestValue);
+  if (ambiguousRef || ambiguousConstRefRef || ambiguousValue) {
+    bestRef = NULL;
+    bestConstRef = NULL;
+    bestValue = NULL;
+  }
+
+  // If one requires more promotion than the other, this is not a ref-pair.
+  if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
+    bestRef = NULL; // Don't consider the ref function.
+  }
+  if (bestRef && bestConstRef && isBetterMatch(bestRef, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
+  if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
+    bestRef = NULL; // Don't consider the ref function.
+  }
+  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
+    bestConstRef = NULL; // Don't consider the const ref function.
+  }
 }
 
 
@@ -3338,54 +3389,62 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
-  ResolutionCandidate* bestConstRef = disambiguateByMatch(candidates, DC, FIND_CONST_REF);
-  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF_OR_CONST_REF);
+  ResolutionCandidate* bestRef = NULL;
+  ResolutionCandidate* bestConstRef = NULL;
+  ResolutionCandidate* bestValue = NULL;
 
-  // If one requires more promotion than the other, this is not a ref-pair.
-  if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
-    bestValue = NULL; // Don't consider the value function.
-  }
-  if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
-    bestRef = NULL; // Don't consider the ref function.
-  }
-  if (bestRef && bestConstRef && isBetterMatch(bestRef, bestConstRef, DC, true)) {
-    bestConstRef = NULL; // Don't consider the const ref function.
-  }
-  if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
-    bestRef = NULL; // Don't consider the ref function.
-  }
-  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
-    bestValue = NULL; // Don't consider the value function.
-  }
-  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
-    bestConstRef = NULL; // Don't consider the const ref function.
-  }
+  disambiguateByMatchReturnOverloads(candidates, DC,
+                                     bestRef, bestConstRef, bestValue);
 
   ResolutionCandidate* best = bestRef;
   if (!best && bestValue) best = bestValue;
   if (!best && bestConstRef) best = bestConstRef;
 
-  bool refPair = (bestRef && (bestValue || bestConstRef));
+  // compute a boolean indicating if we are working with
+  // a return intent overload.
+  // TODO: rename this variable.
+  bool refPair = false;
+  {
+    int nBestRef = (bestRef != NULL);
+    int nBestValue = (bestValue != NULL);
+    int nBestConstRef = (bestConstRef != NULL);
+    int nBest = nBestRef + nBestValue + nBestConstRef;
+    refPair = (nBest > 1);
+  }
 
-  // If we have both ref and value matches:
-  //  'call' will invoke the ref function best->fn
+  // If we are working with a return intent overload:
+  //  'refCall' will invoke the ref function bestRef->fn
   //  'valueCall' will invoke the value function bestValue->fn
   //  'constRefCall' will invoke the value function bestConstRef->fn
   //  we will manipulate these three side by side.
-  //  valueCall is always NULL if there aren't ref and value matches.
+  // and 'call' will be the first of these.
+  CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
 
-  if (refPair && bestValue) {
-    valueCall = call->copy();
-    call->insertAfter(valueCall);
+  if (refPair) {
+    bool first = true;
+    if (bestRef) {
+      // call will be refCall.
+      refCall = call;
+      first = false;
+    }
+    // might not have had a ref call, so maybe value is first
+    if (bestValue) {
+      if (first) {
+        valueCall = call;
+        first = false;
+      } else {
+        valueCall = call->copy();
+        call->insertAfter(valueCall);
+      }
+    }
+    // by here, usedCall must be true.
+    if (bestConstRef) {
+      constRefCall = call->copy();
+      call->insertAfter(constRefCall);
+    }
   }
-  if (refPair && bestConstRef) {
-    constRefCall = call->copy();
-    call->insertAfter(constRefCall);
-  }
-
 
   if (best && best->fn) {
     /*
@@ -3393,18 +3452,15 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      * partially instantiated.
      */
 
-    instantiateBody(best->fn);
-    if (valueCall) {
-      // If we're resolving a ref and non-ref pair,
-      // also instantiate the value version. best is the ref version.
-      INT_ASSERT(bestValue->fn);
-      instantiateBody(bestValue->fn);
-    }
-    if (constRefCall) {
-      // If we're resolving a ref and non-ref pair,
-      // also instantiate the const-ref version. best is the ref version.
-      INT_ASSERT(bestConstRef->fn);
-      instantiateBody(bestConstRef->fn);
+    if (refPair == false)
+      instantiateBody(best->fn);
+    else {
+      if (refCall)
+        instantiateBody(bestRef->fn);
+      if (valueCall)
+        instantiateBody(bestValue->fn);
+      if (constRefCall)
+        instantiateBody(bestConstRef->fn);
     }
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -3447,18 +3503,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
   } else {
     wrapAndCleanUpActuals(best, info, true);
-    if (valueCall) {
+    // for return intent overload, ref call must be first, so above
+    // case would handle it.
+    if (valueCall && call != valueCall) {
       // If we're resolving a ref and non-ref pair,
-      // also handle the value version. best is the ref version.
+      // also handle the value version if it wasn't already handled.
       CallInfo valueInfo(valueCall, checkonly);
-
       wrapAndCleanUpActuals(bestValue, valueInfo, false);
     }
     if (constRefCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the const ref version. best is the ref version.
       CallInfo constRefInfo(constRefCall, checkonly);
-
       wrapAndCleanUpActuals(bestConstRef, constRefInfo, false);
     }
   }
@@ -3470,8 +3526,13 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   // Only keep it a ref-pair if a ref version is present and
   // we have options that resolved.
-  if (refPair)
-    refPair = resolvedRefFn && (resolvedValueFn || resolvedConstRefFn);
+  if (refPair) {
+    int nBestRef = (resolvedRefFn != NULL);
+    int nBestValue = (resolvedValueFn != NULL);
+    int nBestConstRef = (resolvedConstRefFn != NULL);
+    int nBest = nBestRef + nBestValue + nBestConstRef;
+    refPair = (nBest > 1);
+  }
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
@@ -3503,38 +3564,35 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
-    call->baseExpr->replace(new SymExpr(resolvedFn));
     if (refPair) {
+      if (refCall && resolvedRefFn)
+        refCall->baseExpr->replace(new SymExpr(resolvedRefFn));
       if (valueCall && resolvedValueFn)
         valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
       if (constRefCall && resolvedConstRefFn)
         constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
 
-      // Replace the call with a new ContextCallExpr containing 2 or 3
-      // calls, where the first returns ref and the 2nd does not.
-      // The 3 calls might be:
-      //  ref version
-      //  value version
-      //  const ref version
+      // Replace the call with a new ContextCallExpr containing 2 or 3 calls
       ContextCallExpr* contextCall = new ContextCallExpr();
       call->insertAfter(contextCall);
 
-      call->remove();
+      // note: call is one of refCall, valueCall, constRefCall
+      if (refCall) refCall->remove();
       if (valueCall) valueCall->remove();
       if (constRefCall) constRefCall->remove();
 
-      if (valueCall && constRefCall)
-        contextCall->setRefValueConstRefOptions(call, valueCall, constRefCall);
-      else
-        contextCall->setRefRValueOptions(call, valueCall?valueCall:constRefCall);
+      contextCall->setRefValueConstRefOptions(refCall, valueCall, constRefCall);
 
-    } else if (valueCall) {
-      // value call was added but didn't resolve right. Remove it.
-      valueCall->remove();
-    } else if (constRefCall) {
-      // const ref call was added but didn't resolve right. Remove it.
-      constRefCall->remove();
     } else {
+      call->baseExpr->replace(new SymExpr(resolvedFn));
+      if (valueCall && valueCall != call) {
+        // value call was added but didn't resolve right. Remove it.
+        valueCall->remove();
+      }
+      if (constRefCall && constRefCall != call) {
+        // const ref call was added but didn't resolve right. Remove it.
+        constRefCall->remove();
+      }
       // If we aren't working with a ref not-ref return intent pair,
       // adjust the returned value to have flag FLAG_REF_TO_CONST,
       // but disable this behavior for constructors, so that they
@@ -5075,39 +5133,77 @@ resolveExpr(Expr* expr) {
 
         cc->getCalls(refCall, valueCall, constRefCall);
 
-        FnSymbol* refFn = refCall->resolvedFunction();
+        FnSymbol* refFn = refCall?refCall->resolvedFunction():NULL;
         FnSymbol* valueFn = valueCall?valueCall->resolvedFunction():NULL;
         FnSymbol* constRefFn = constRefCall?constRefCall->resolvedFunction():NULL;
 
-        INT_ASSERT(refFn && (valueFn || constRefFn));
-        resolveFns(refFn);
-
+        if (refFn)
+          resolveFns(refFn);
         if (valueFn)
           resolveFns(valueFn);
         if (constRefFn)
           resolveFns(constRefFn);
 
-        // Produce an error if the return types do not match.
+        // TODO: pull this error checking out into a function call.
+
+        // Error checking. First, check all or none are iterators.
+        int n = 0;
+        int nIterator = 0;
+        if (refFn) {
+          n++;
+          nIterator += refFn->isIterator();
+        }
+        if (valueFn) {
+          n++;
+          nIterator += valueFn->isIterator();
+        }
+        if (constRefFn) {
+          n++;
+          nIterator += constRefFn->isIterator();
+        }
+        if (nIterator != 0 && nIterator != n) {
+          USR_FATAL_CONT(cc, "invalid ref return pair: mixing proc and iter");
+          if (refFn)
+            USR_FATAL_CONT(refFn, "here");
+          if (valueFn)
+            USR_FATAL_CONT(valueFn, "here");
+          if (constRefFn)
+            USR_FATAL_CONT(constRefFn, "here");
+        }
+        // Next, check that the return types match.
         // This error is skipped for iterators because
         // the return type of an iterator is e.g. an iterator record
         // which is not the same as the yielded type.
-        if (!refFn->isIterator()) {
-          if (valueFn &&
-              refFn->retType->getValType() != valueFn->retType->getValType()) {
-            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-            USR_FATAL_CONT(valueFn, "function returns %s",
-                           toString(valueFn->retType));
-            USR_FATAL_CONT(refFn, "function returns %s",
-                           toString(refFn->retType));
-            USR_STOP();
+        if (nIterator == 0) {
+          Type* firstType = NULL;
+          bool typeError = false;
+          if (refFn) {
+            firstType = refFn->retType->getValType();
           }
-          if (constRefFn &&
-              refFn->retType->getValType() != constRefFn->retType->getValType()) {
-            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-            USR_FATAL_CONT(constRefFn, "function returns %s",
-                           toString(constRefFn->retType));
-            USR_FATAL_CONT(refFn, "function returns %s",
-                           toString(refFn->retType));
+          if (valueFn) {
+            Type* retType = valueFn->retType->getValType();
+            if (firstType == NULL)
+              firstType = retType;
+            if (firstType != retType)
+              typeError = true;
+          }
+          if (constRefFn) {
+            Type* retType = constRefFn->retType->getValType();
+            if (firstType != retType)
+              typeError = true;
+          }
+
+          if (typeError) {
+            USR_FATAL_CONT(cc, "invalid return intent overload: return types differ");
+            if (refFn)
+              USR_FATAL_CONT(refFn, "function returns %s",
+                             toString(refFn->retType));
+            if (valueFn)
+              USR_FATAL_CONT(valueFn, "function returns %s",
+                             toString(valueFn->retType));
+            if (constRefFn)
+              USR_FATAL_CONT(constRefFn, "function returns %s",
+                             toString(constRefFn->retType));
             USR_STOP();
           }
         }

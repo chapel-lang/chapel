@@ -82,13 +82,16 @@ static bool shouldTrace(Symbol* sym)
 
 typedef enum {
   USE_REF = 1,
-  USE_CONST_REF = 2,
-  USE_VALUE = 3
+  USE_CONST_REF,
+  USE_VALUE,
 } choose_type_t;
 
 static bool symExprIsSet(SymExpr* sym);
 static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
+static void lowerContextCallPreferRefConstRef(ContextCallExpr* cc);
+static void lowerContextCallPreferConstRefValue(ContextCallExpr* cc);
+static void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
@@ -205,6 +208,13 @@ bool symExprIsUsedAsConstRef(SymExpr* use) {
       if (call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         Symbol* lhsSymbol = lhs->symbol();
+
+        if (lhsSymbol->hasFlag(FLAG_REF_VAR)) {
+          // intended to handle 'const ref'
+          // it would be an error to reach this point if it is not const
+          INT_ASSERT(lhsSymbol->hasFlag(FLAG_CONST));
+          return true;
+        }
 
         if (lhs != use &&
             lhsSymbol->isRef() &&
@@ -1684,26 +1694,19 @@ void cullOverReferences() {
 
     CallExpr* move = toCallExpr(cc->parentExpr);
 
-    choose_type_t which = USE_CONST_REF;
+    bool notConst = false;
+    Symbol* lhsSymbol = NULL;
 
     if (move) {
       SymExpr* lhs = toSymExpr(move->get(1));
-      Symbol* lhsSymbol = lhs->symbol();
+      lhsSymbol = lhs->symbol();
       Qualifier qual = lhsSymbol->qualType().getQual();
 
-      INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
       if (qual == QUAL_REF)
-        which = USE_REF;
-      else {
-        // Check: should we use the const-ref or value version?
-        // Use value version if it's never passed/returned as const ref
-        which = USE_VALUE;
-        if (symbolIsUsedAsConstRef(lhsSymbol))
-          which = USE_CONST_REF;
-      }
+        notConst = true;
     }
 
-    lowerContextCall(cc, which);
+    lowerContextCallComputeConstRef(cc, notConst, lhsSymbol);
   }
 
   // We already changed INTENT_REF_MAYBE_CONST in
@@ -1718,15 +1721,20 @@ void cullOverReferences() {
 static
 bool firstPassLowerContextCall(ContextCallExpr* cc)
 {
-  CallExpr* refCall = cc->getRefCall();
-  CallExpr* valueCall = cc->getRValueCall();
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
 
-  INT_ASSERT(refCall && valueCall);
+  cc->getCalls(refCall, valueCall, constRefCall);
 
-  FnSymbol* refFn = refCall->resolvedFunction();
-  INT_ASSERT(refFn);
-  FnSymbol* valueFn = valueCall->resolvedFunction();
-  INT_ASSERT(valueFn);
+  INT_ASSERT(refCall || valueCall || constRefCall);
+
+  CallExpr* someCall = refCall;
+  if (someCall == NULL) someCall = constRefCall;
+  if (someCall == NULL) someCall = valueCall;
+
+  FnSymbol* fn = someCall->resolvedFunction();
+  INT_ASSERT(fn);
 
   CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
   SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
@@ -1738,8 +1746,8 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
   //  would require specific support for iterators since yielding
   //  is not the same as returning.)
   move = toCallExpr(cc->parentExpr);
-  if (refFn->isIterator()) {
-    lowerContextCall(cc, USE_REF);
+  if (fn->isIterator()) {
+    lowerContextCallPreferRefConstRef(cc);
     return true;
   } else if (move) {
     INT_ASSERT(move->isPrimitive(PRIM_MOVE));
@@ -1753,11 +1761,75 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
     // should use 'getter'
     // MPF - note 2016-01: this code does not seem to be triggered
     // in the present compiler.
-    lowerContextCall(cc, USE_CONST_REF);
+    lowerContextCallPreferConstRefValue(cc);
     return true;
   }
 }
 
+static
+void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
+{
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  choose_type_t which = USE_REF;
+
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  if (refCall) which = USE_REF;
+  else if(constRefCall) which = USE_CONST_REF;
+
+  lowerContextCall(cc, which);
+}
+
+static
+void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
+{
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  choose_type_t which = USE_CONST_REF;
+
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  if(constRefCall) which = USE_CONST_REF;
+  else if(valueCall) which = USE_VALUE;
+
+  lowerContextCall(cc, which);
+}
+
+static
+void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol)
+{
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  choose_type_t which = USE_CONST_REF;
+
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  if (notConst) {
+    which = USE_REF;
+    // it would be a program error if the ref version didn't exist
+  } else {
+    // Check: should we use the const-ref or value version?
+    // Use value version if it's never passed/returned as const ref
+    if (valueCall != NULL && constRefCall != NULL) {
+      if (lhsSymbol == NULL || symbolIsUsedAsConstRef(lhsSymbol))
+        which = USE_CONST_REF;
+      else
+        which = USE_VALUE;
+    } else {
+      // Use whichever value version we have.
+      if (constRefCall != NULL)
+        which = USE_CONST_REF;
+      else
+        which = USE_VALUE;
+    }
+  }
+
+  lowerContextCall(cc, which);
+}
 
 static
 void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
@@ -1768,10 +1840,22 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
-  // For now, ref version is required for a ref-pair
-  INT_ASSERT(refCall);
-  FnSymbol* refFn = refCall->resolvedFunction();
-  INT_ASSERT(refFn);
+  // Check that whatever was selected is available.
+  if (which == USE_REF)
+    INT_ASSERT(refCall != NULL);
+  if (which == USE_CONST_REF)
+    INT_ASSERT(constRefCall != NULL);
+  if (which == USE_VALUE)
+    INT_ASSERT(valueCall != NULL);
+  
+  CallExpr* someCall = refCall;
+  if (someCall == NULL) someCall = constRefCall;
+  if (someCall == NULL) someCall = valueCall;
+
+  FnSymbol* fn = someCall->resolvedFunction();
+  INT_ASSERT(fn);
+
+  // TODO tidy up below based upon the above assumptions.
 
   bool useValueCall = (which == USE_VALUE || which == USE_CONST_REF);
   CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
@@ -1784,9 +1868,10 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
   //  would require specific support for iterators since yielding
   //  is not the same as returning.)
   move = toCallExpr(cc->parentExpr);
-  if (refFn->isIterator())
+  if (fn->isIterator()) {
+    INT_ASSERT(which == USE_REF);
     useValueCall = false;
-  else if (move) {
+  } else if (move) {
     lhs = toSymExpr(move->get(1));
     // useValueCall set from useSetter argument to this function
   } else {
@@ -1796,9 +1881,10 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     // MPF - note 2016-01: this code does not seem to be triggered
     // in the present compiler.
     useValueCall = true;
+    INT_ASSERT(which == USE_CONST_REF || which == USE_VALUE);
   }
 
-  refCall->remove();
+  if (refCall) refCall->remove();
   if (valueCall) valueCall->remove();
   if (constRefCall) constRefCall->remove();
 
@@ -1875,7 +1961,8 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
   } else {
     // Replace the ContextCallExpr with the ref call
-    cc->replace(refCall);
+    if (refCall) cc->replace(refCall);
+    else if(constRefCall) cc->replace(constRefCall);
   }
 }
 
