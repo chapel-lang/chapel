@@ -415,6 +415,21 @@ void getVisibleFunctions(const char*      name,
   getVisibleFunctions(name, call, block, visited, visibleFns, distances, 0);
 }
 
+BlockStmt* getInnermostBlockContainingAnyFunction(CallExpr* call)
+{
+  BlockStmt* block = getVisibilityBlock(call);
+
+  if (standardModuleSet.set_in(block)) {
+    return theProgram->block;
+  }
+
+  if (BlockStmt* next = visibilityBlockCache.get(block)) {
+    return next;
+  }
+
+  return block;
+}
+
 static BlockStmt* getVisibleFunctions(const char*           name,
                                       CallExpr*             call,
                                       BlockStmt*            block,

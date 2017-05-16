@@ -30,12 +30,15 @@ class FnSymbol;
 
 void       findVisibleFunctions(CallInfo&       info,
                                 Vec<FnSymbol*>& visibleFns,
-                                Vec<int>&        visibilityDistances);
+                                Vec<int>&       visibilityDistances);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,
                                Vec<FnSymbol*>&  visibleFns,
                                Vec<int>&        visibilityDistances);
+
+
+BlockStmt* getInnermostBlockContainingAnyFunction(CallExpr* call);
 
 BlockStmt* getVisibilityBlock(Expr* expr);
 

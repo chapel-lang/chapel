@@ -166,6 +166,10 @@ Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotio
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
+// cache to speed up resolveNormalCall
+typedef std::map<std::string, FnSymbol*> ResolveCallCacheType;
+ResolveCallCacheType resolveCallCache;
+
 //#
 //# Static Function Declarations
 //#
@@ -3266,22 +3270,9 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 // returns the result of resolving - or NULL if we couldn't do it.
 // If checkonly is set, NULL can be returned - otherwise that would
 // be a fatal error.
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
-
-  if( call->id == breakOnResolveID ) {
-    printf("breaking on resolve call:\n");
-    print_view(call);
-    gdbShouldBreakHere();
-  }
-
-  temporaryInitializerFixup(call);
-
-  resolveDefaultGenericType(call);
-
-  CallInfo info(call, checkonly);
-
-  // Return early if creating the call info would have been an error.
-  if( checkonly && info.badcall ) return NULL;
+static
+FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly) {
+  CallExpr* call = info.call;
 
   Vec<FnSymbol*> visibleFns; // visible functions
   Vec<int> visibilityDistances;
@@ -3557,6 +3548,193 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   return resolvedFn;
 }
+
+static
+std::string getResolveNormalCallCacheKey(CallInfo& info)
+{
+  char buf[128];
+  std::string ret;
+  CallExpr* call = info.call;
+
+  // TODO - is this a problem?
+  BlockStmt* scope = getInnermostBlockContainingAnyFunction(call);
+
+  // TODO -- this should be commented out, but when I do that,
+  // get errors resolving AbstractRootLocale.chpl_initOnLocales
+  //   try token?
+  scope = getVisibilityBlock(call);
+
+  snprintf(buf, sizeof(buf),
+           "scope %d ", scope->id);
+
+  ret += buf;
+  ret += info.name;
+
+  if (call->partialTag) {
+    ret += " (partial) ";
+  }
+
+  ret += "(";
+
+  bool first = true;
+  for_actuals(actual, call) {
+    if (!first) ret += ", ";
+    first = false;
+
+    SymExpr* se = toSymExpr(actual);
+    if (NamedExpr* ne = toNamedExpr(actual)) {
+      se = toSymExpr(ne->actual);
+      ret += ne->name;
+      ret += "=";
+    }
+
+    if (se != NULL) {
+      Immediate* imm = NULL;
+      if (VarSymbol* var = toVarSymbol(se->symbol())) {
+	imm = var->immediate;
+      } else if (EnumSymbol* e = toEnumSymbol(se->symbol())) {
+	imm = e->getImmediate();
+      }
+
+      if (imm != NULL) {
+	const char* str;
+
+        if (imm->const_kind == CONST_KIND_STRING) {
+          str = imm->string_value();
+        } else {
+	  int rc = snprint_imm(buf, sizeof(buf), *imm);
+          INT_ASSERT(rc < (int) sizeof(buf)); // or output truncated.
+          str = buf;
+        }
+
+        ret += str;
+      }
+    }
+
+    // TODO type arguments?
+    // type argument vs regular argument?
+
+    // now print the type
+    snprintf(buf, sizeof(buf),
+             ":%d", actual->typeInfo()->symbol->id);
+
+
+    ret += buf;
+
+    // For debugging, also put type name
+    // note ID is required in some cases
+    ret += " ";
+    ret += actual->typeInfo()->symbol->name;
+  }
+
+  ret += ")";
+
+  return ret;
+}
+
+
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
+
+  static int gDepth = 0;
+  static const char* pad = "                                               ";
+  const int debug = 1;
+
+  if( call->id == breakOnResolveID ) {
+    printf("breaking on resolve call:\n");
+    print_view(call);
+    gdbShouldBreakHere();
+  }
+
+  temporaryInitializerFixup(call);
+
+  resolveDefaultGenericType(call);
+
+  CallInfo info(call, checkonly);
+
+  // Return early if creating the call info would have been an error.
+  if( checkonly && info.badcall ) return NULL;
+
+  // Check for a call like this in the cache.
+  std::string key = getResolveNormalCallCacheKey(info);
+  ResolveCallCacheType::iterator it = resolveCallCache.find(key);
+  FnSymbol* resolvedFn = NULL;
+  if (it != resolveCallCache.end()
+      //&& it->second != NULL // TODO: why need this line?
+      ) {
+    resolvedFn = it->second;
+    /*FnSymbol* fromCache = resolvedFn;
+    resolvedFn = resolveNormalCallUncached(info, checkonly);
+    if (fromCache && resolvedFn && fromCache->id != resolvedFn->id) {
+      printf("for %s\n", key.c_str());
+      printf("cache returned %i\n", fromCache->id);
+      printf("but actually got %i\n", resolvedFn->id);
+    }
+    if ((fromCache==NULL) != (resolvedFn==NULL)) {
+      printf("for %s\n", key.c_str());
+      printf("fromCache==NULL is %d\n", (fromCache==NULL));
+      printf("resolvedFn==NULL is %d\n", (resolvedFn==NULL));
+    }
+    resolvedFn = fromCache; // Testing?
+     */
+
+    if (debug) printf("%*.s%i cached version for %s\n", gDepth, pad, call->id, key.c_str());
+    if (call->partialTag) {
+      if (!resolvedFn) {
+        // OK for resolvedFn to be NULL.
+      } else {
+        call->partialTag = false;
+      }
+    }
+
+    if (resolvedFn != NULL) {
+      ResolutionCandidate candidate(resolvedFn, 0);
+      ResolutionCandidate* best = &candidate;
+
+      reorderActuals(best->fn, &best->actualIdxToFormal, &info);
+      coerceActuals(best->fn, &info);
+
+      // Set the baseExpr for the call
+      SET_LINENO(call);
+      call->baseExpr->replace(new SymExpr(resolvedFn));
+      // TODO: ref-pairs
+
+      //reorderActuals(best->fn, &best->actualIdxToFormal, &info);
+
+      // If we aren't working with a ref not-ref return intent pair,
+      // adjust the returned value to have flag FLAG_REF_TO_CONST,
+      // but disable this behavior for constructors, so that they
+      // can set 'const' fields.
+      if (resolvedFn->retTag == RET_CONST_REF)
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+          if (parentCall->isPrimitive(PRIM_MOVE))
+            if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+              if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol()))
+                if (lhs->hasFlag(FLAG_EXPR_TEMP))
+                  if (FnSymbol* inFn = toFnSymbol(parentCall->parentSymbol))
+                    if (!isConstructorLikeFunction(inFn))
+                      lhs->addFlag(FLAG_REF_TO_CONST);
+
+
+    }
+  } else {
+    if (debug) printf("%*.s%i enter: un-cached version for %s\n", gDepth, pad, call->id, key.c_str());
+    gDepth++;
+    resolvedFn = resolveNormalCallUncached(info, checkonly);
+    gDepth--;
+    if (resolvedFn != NULL || call->partialTag)
+      resolveCallCache.insert(make_pair(key, resolvedFn));
+    if (resolvedFn != NULL) {
+      if (debug>1) printf("%*.s%i exit: got fn %i\n", gDepth, pad, call->id, resolvedFn->id);
+      //resolveCallCache.insert(make_pair(key, resolvedFn));
+    } else {
+      if (debug>1) printf("%*.s%i exit: got NULL\n", gDepth, pad, call->id);
+    }
+  }
+  if (debug>1) nprint_view(call);
+
+  return resolvedFn;
+}
+
 
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call) {
