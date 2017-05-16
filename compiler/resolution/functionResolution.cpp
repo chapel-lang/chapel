@@ -58,6 +58,9 @@
 
 #include "../ifa/prim_data.h"
 
+
+#include "timer.h" // debug
+
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -3557,12 +3560,20 @@ std::string getResolveNormalCallCacheKey(CallInfo& info)
   CallExpr* call = info.call;
 
   // TODO - is this a problem?
-  BlockStmt* scope = getInnermostBlockContainingAnyFunction(call);
+  BlockStmt* scope = getInnermostBlockContainingAnyFunction(info);
 
   // TODO -- this should be commented out, but when I do that,
   // get errors resolving AbstractRootLocale.chpl_initOnLocales
   //   try token?
-  scope = getVisibilityBlock(call);
+  //scope = getVisibilityBlock(call);
+
+  /*
+  printf("call file %s line %i\n", call->fname(), call->linenum());
+  if (ModuleSymbol* mod = toModuleSymbol(scope->parentSymbol))
+    if (mod->block == scope)
+      printf("scope is module %s\n", mod->name);
+  printf("scope file %s line %i\n", scope->fname(), scope->linenum());
+  */
 
   snprintf(buf, sizeof(buf),
            "scope %d ", scope->id);
@@ -3597,27 +3608,32 @@ std::string getResolveNormalCallCacheKey(CallInfo& info)
       }
 
       if (imm != NULL) {
-	const char* str;
-
         if (imm->const_kind == CONST_KIND_STRING) {
-          str = imm->string_value();
+          ret += "\"";
+          ret += imm->string_value();
+          ret += "\"";
         } else {
 	  int rc = snprint_imm(buf, sizeof(buf), *imm);
           INT_ASSERT(rc < (int) sizeof(buf)); // or output truncated.
-          str = buf;
+          ret += buf;
         }
 
-        ret += str;
       }
     }
 
-    // TODO type arguments?
-    // type argument vs regular argument?
+    // TODO - quote string immediates?
 
-    // now print the type
-    snprintf(buf, sizeof(buf),
-             ":%d", actual->typeInfo()->symbol->id);
-
+    if (isTypeExpr(actual)) {
+      // now print the type
+      snprintf(buf, sizeof(buf),
+               "type %d", actual->typeInfo()->symbol->id);
+      // TODO: should this use getValType?
+    } else {
+      // now print the type
+      snprintf(buf, sizeof(buf),
+               ":%d", actual->typeInfo()->symbol->id);
+      // TODO: should this use getValType?
+    }
 
     ret += buf;
 
@@ -3637,7 +3653,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   static int gDepth = 0;
   static const char* pad = "                                               ";
-  const int debug = 1;
+  const int debug = 0;
+  Timer localTimer;
+
+  bool disableCache = false;
+
+  localTimer.start();
 
   if( call->id == breakOnResolveID ) {
     printf("breaking on resolve call:\n");
@@ -3654,14 +3675,25 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   // Return early if creating the call info would have been an error.
   if( checkonly && info.badcall ) return NULL;
 
-  // Check for a call like this in the cache.
-  std::string key = getResolveNormalCallCacheKey(info);
-  ResolveCallCacheType::iterator it = resolveCallCache.find(key);
+  bool cached = false;
   FnSymbol* resolvedFn = NULL;
-  if (it != resolveCallCache.end()
-      //&& it->second != NULL // TODO: why need this line?
-      ) {
-    resolvedFn = it->second;
+  std::string key;
+
+  // Check for a call like this in the cache.
+  if (!disableCache) {
+    key = getResolveNormalCallCacheKey(info);
+    ResolveCallCacheType::iterator it = resolveCallCache.find(key);
+
+    if (it != resolveCallCache.end()
+        //&& it->second != NULL // TODO: why need this line?
+        && tryStack.n == 0 // TODO - need this?
+        ) {
+      resolvedFn = it->second;
+      cached = true;
+    }
+  }
+
+  if (cached) {
     /*FnSymbol* fromCache = resolvedFn;
     resolvedFn = resolveNormalCallUncached(info, checkonly);
     if (fromCache && resolvedFn && fromCache->id != resolvedFn->id) {
@@ -3721,8 +3753,19 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     gDepth++;
     resolvedFn = resolveNormalCallUncached(info, checkonly);
     gDepth--;
-    if (resolvedFn != NULL || call->partialTag)
+
+    bool putInCache = false;
+    if (resolvedFn == NULL && call->partialTag)
+      putInCache = true;
+    //if (resolvedFn)
+    //  putInCache = true;
+
+    if (resolvedFn && resolvedFn->isResolved())
+      putInCache = true;
+
+    if (putInCache)
       resolveCallCache.insert(make_pair(key, resolvedFn));
+
     if (resolvedFn != NULL) {
       if (debug>1) printf("%*.s%i exit: got fn %i\n", gDepth, pad, call->id, resolvedFn->id);
       //resolveCallCache.insert(make_pair(key, resolvedFn));
@@ -3730,7 +3773,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       if (debug>1) printf("%*.s%i exit: got NULL\n", gDepth, pad, call->id);
     }
   }
-  if (debug>1) nprint_view(call);
+  if (debug>2) nprint_view(call);
+  //if (resolvedFn && resolvedFn->id == 1065660)
+  //  nprint_view(resolvedFn);
+
+  localTimer.stop();
+  if ( resolvedFn != NULL ) {
+
+    printf("%i %ld usec cached=%i %s\n", resolvedFn->id,
+        localTimer.elapsedUsecs(), (int) cached,
+        key.c_str());
+
+  }
 
   return resolvedFn;
 }
@@ -5332,6 +5386,7 @@ resolveExpr(Expr* expr) {
         // that point)
         if (!(ct == dtString &&
               (sym->symbol()->isParameter() ||
+               sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE) ||
                sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
             !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&

@@ -38,7 +38,7 @@ void       getVisibleFunctions(const char*      name,
                                Vec<int>&        visibilityDistances);
 
 
-BlockStmt* getInnermostBlockContainingAnyFunction(CallExpr* call);
+BlockStmt* getInnermostBlockContainingAnyFunction(CallInfo& info);
 
 BlockStmt* getVisibilityBlock(Expr* expr);
 

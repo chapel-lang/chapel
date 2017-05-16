@@ -415,20 +415,99 @@ void getVisibleFunctions(const char*      name,
   getVisibleFunctions(name, call, block, visited, visibleFns, distances, 0);
 }
 
-BlockStmt* getInnermostBlockContainingAnyFunction(CallExpr* call)
+static BlockStmt* doGetInnermostBlockContainingAnyFunction(const char*           name,
+                                                           CallExpr*             call,
+                                                           BlockStmt*            block,
+                                                           std::set<BlockStmt*>& visited)
 {
-  BlockStmt* block = getVisibilityBlock(call);
+  BlockStmt* retval = NULL;
 
+  //
+  // all functions in standard modules are stored in a single block
+  //
   if (standardModuleSet.set_in(block)) {
-    return theProgram->block;
+    block = theProgram->block;
   }
 
-  if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    return next;
+  // base case for recursion
+  if (block == rootModule->block) {
+    return block;
+  }
+
+  //
+  // avoid infinite recursion due to modules with mutual uses
+  //
+  if (visited.find(block) == visited.end()) {
+    if (isModuleSymbol(block->parentSymbol)) {
+      visited.insert(block);
+    }
+
+    // Stop if a function with matching name is defined here
+    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+        if (fns->n > 0)
+          return block;
+      }
+    }
+
+    if (block->modUses != NULL) {
+      for_actuals(expr, block->modUses) {
+        UseStmt* use = toUseStmt(expr);
+
+        INT_ASSERT(use);
+
+        if (use->skipSymbolSearch(name) == false) {
+          SymExpr* se = toSymExpr(use->src);
+
+          INT_ASSERT(se);
+
+          if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+
+            if (mod->isVisible(call) == true) {
+              if (use->isARename(name) == true) {
+                retval = doGetInnermostBlockContainingAnyFunction(use->getRename(name),
+                                    call,
+                                    mod->block,
+                                    visited);
+              } else {
+                retval = doGetInnermostBlockContainingAnyFunction(name, call,
+                                    mod->block,
+                                    visited);
+              }
+              if (retval != NULL) return retval;
+            }
+          }
+        }
+      }
+    }
+
+    //
+    // visibilityBlockCache contains blocks that can be skipped
+    //
+    if (BlockStmt* next = visibilityBlockCache.get(block)) {
+      return doGetInnermostBlockContainingAnyFunction(name, call, next, visited);
+
+    } else if (block != rootModule->block) {
+      BlockStmt* next  = getVisibilityBlock(block);
+      return doGetInnermostBlockContainingAnyFunction(name, call,
+                                             next,
+                                             visited);
+    }
   }
 
   return block;
 }
+
+BlockStmt* getInnermostBlockContainingAnyFunction(CallInfo& info)
+{
+  CallExpr* call = info.call;
+  const char* name = info.name;
+  BlockStmt*           block    = getVisibilityBlock(call);
+  std::set<BlockStmt*> visited;
+
+  return doGetInnermostBlockContainingAnyFunction(name, call, block, visited);
+}
+
 
 static BlockStmt* getVisibleFunctions(const char*           name,
                                       CallExpr*             call,
