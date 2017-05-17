@@ -1283,10 +1283,12 @@ void FnSymbol::codegenDef() {
         continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
-        info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
+        llvm::Argument& llArg = *ai;
+        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(type));
       } else {
         GenRet gArg;
-        gArg.val = ai;
+        llvm::Argument& llArg = *ai;
+        gArg.val = &llArg;
         gArg.chplType = arg->typeInfo();
         GenRet tempVar = createTempVarWith(gArg);
 

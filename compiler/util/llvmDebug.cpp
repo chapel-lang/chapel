@@ -521,8 +521,10 @@ LLVM_DINAMESPACE debug_data::get_module_scope(ModuleSymbol* modSym)
 
 LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
 {
+#if HAVE_LLVM_VER <= 37
   const char *file_name = function->astloc.filename;
   LLVM_DIFILE file = get_file(file_name);
+#endif
   llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *,16> ret_arg_types;
 
   ret_arg_types.push_back(get_type(function->retType));
@@ -530,7 +532,10 @@ LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
   {
     ret_arg_types.push_back(get_type(arg->type));
   }
-#if HAVE_LLVM_VER >= 37
+#if HAVE_LLVM_VER >= 38
+  llvm::DITypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
+  return this->dibuilder.createSubroutineType(ret_arg_arr);
+#elif HAVE_LLVM_VER >= 37
   llvm::DITypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
   return this->dibuilder.createSubroutineType(file, ret_arg_arr);
 #elif HAVE_LLVM_VER >= 36
@@ -551,7 +556,9 @@ LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
   int line_number = function->astloc.lineno;
   // Get the function using the cname since that is how it is
   // stored in the generated code. The name is just used within Chapel.
+#if HAVE_LLVM_VER <= 37
   llvm::Function* llFunc = getFunctionLLVM(function->cname);
+#endif
 
   LLVM_DINAMESPACE module = get_module_scope(modSym);
   LLVM_DIFILE file = get_file(file_name);
@@ -567,8 +574,12 @@ LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
     true, /* is definition */
     line_number, /* beginning of scope we start */
     0, /* flags */
-    optimized, /* isOptimized */
-    llFunc);
+    optimized /* isOptimized */
+    // TODO - in 3.8, do we need to pass Decl?
+#if HAVE_LLVM_VER <= 37
+    , llFunc
+#endif
+    );
   
   return ret;
 }
@@ -648,8 +659,12 @@ LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
   LLVM_DITYPE varSym_type = get_type(varSym->type);
 
   if(varSym_type){
+#if HAVE_LLVM_VER >= 38
+    return this->dibuilder.createAutoVariable(
+#else
     return this->dibuilder.createLocalVariable(
       llvm::dwarf::DW_TAG_auto_variable, /*Tag*/
+#endif
       scope, /* Scope */
       name, /*Name*/
       file, /*File*/
@@ -692,6 +707,18 @@ LLVM_DIVARIABLE debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned Arg
   LLVM_DITYPE argSym_type = get_type(argSym->type);
       
   if(argSym_type)
+#if HAVE_LLVM_VER >= 38
+    return this->dibuilder.createParameterVariable(
+      scope, /* Scope */
+      name, /*Name*/
+      ArgNo, /* ArgNo */
+      file, /*File*/
+      line_number, /*Lineno*/
+      argSym_type, /*Type*/
+      true,/*AlwaysPreserve, won't be removed when optimized*/
+      0 /*Flags*/
+      );
+#else
     return this->dibuilder.createLocalVariable(
       llvm::dwarf::DW_TAG_arg_variable, /*Tag: formal arg to a function */
       scope, /* Scope */
@@ -703,6 +730,7 @@ LLVM_DIVARIABLE debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned Arg
       0,  /*Flags*/
       ArgNo
       ); 
+#endif
   else {
     //Empty dbg node if the symbol type is unresolved
     LLVM_DIVARIABLE ret;

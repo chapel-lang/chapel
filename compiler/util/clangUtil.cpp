@@ -198,7 +198,11 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     }
   }
 
+#if HAVE_LLVM_VER >= 38
+  info->targetLayout = info->Ctx->getTargetInfo().getDataLayoutString();
+#else
   info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();
+#endif
   layout = info->targetLayout;
 
   if( fLLVMWideOpt && ! info->parseOnly ) {
@@ -219,7 +223,11 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
   if( info->module ) info->module->setDataLayout(layout);
 
   info->targetData =
+#if HAVE_LLVM_VER >= 38
+    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayoutString());
+#else
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
+#endif
   if( ! info->parseOnly ) {
     info->cgBuilder = new CodeGen::CodeGenModule(*Ctx,
 #if HAVE_LLVM_VER >= 37
@@ -228,7 +236,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 #endif
                               info->codegenOptions,
                               *info->module,
-                              *info->targetData, *info->Diags);
+#if HAVE_LLVM_VER <= 37
+                              *info->targetData,
+#endif
+                              *info->Diags);
   }
 
 
@@ -1794,7 +1805,9 @@ void setupForGlobalToWide(void) {
 
   llvm::Value* ret = llvm::Constant::getNullValue(retType);
   llvm::Function::arg_iterator args = fn->arg_begin();
-  llvm::Value* arg = args++;
+  llvm::Argument& llArg = *args;
+  llvm::Value* arg = &llArg;
+  ++args;
 
   for( int i = 0; fns[i]; i++ ) {
     llvm::Constant* f = fns[i];
@@ -1860,8 +1873,12 @@ void makeBinaryLLVM(void) {
 
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
+#if HAVE_LLVM_VER >= 38
+                    info->Ctx->getTargetInfo().getDataLayoutString(),
+#else
 #if HAVE_LLVM_VER >= 35
                     info->Ctx->getTargetInfo().getTargetDescription(),
+#endif
 #endif
                     info->module, Backend_EmitBC, &output.os());
   output.keep();

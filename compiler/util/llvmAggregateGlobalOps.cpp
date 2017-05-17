@@ -170,8 +170,11 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   SmallPtrSet<Instruction*, 8> memopsUses;
   Instruction *LastMemopUse = NULL;
 
-  for (BasicBlock::iterator BI = FirstLoadOrStore; !isa<TerminatorInst>(BI); ++BI) {
-    Instruction* insn = BI;
+  for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
+       !isa<TerminatorInst>(BI);
+       ++BI) {
+    Instruction& insnRef = *BI;
+    Instruction* insn = &insnRef;
     bool isUseOfMemop = false;
 
     if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
@@ -199,8 +202,12 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   // Reorder the instructions here.
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
-  for (BasicBlock::iterator BI = FirstLoadOrStore; !isa<TerminatorInst>(BI);) {
-    Instruction* insn = BI++; // don't invalidate iterator.
+  for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
+       !isa<TerminatorInst>(BI);
+       ) {
+    Instruction& insnRef = *BI;
+    Instruction* insn = &insnRef;
+    ++BI; // don't invalidate iterator.
     // Leave loads/stores where they are (they will be removed)
     if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
       if( DebugThis ) {
@@ -471,12 +478,13 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 
   private:
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+      // TODO -- update these better
       AU.setPreservesCFG();
       /*AU.addRequired<DominatorTree>();
       AU.addRequired<MemoryDependenceAnalysis>();
       AU.addRequired<AliasAnalysis>();
       AU.addRequired<TargetLibraryInfo>();*/
-      AU.addPreserved<AliasAnalysis>();
+      //AU.addPreserved<AliasAnalysis>();
       AU.addPreserved<MemoryDependenceAnalysis>();
     }
 
@@ -524,10 +532,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
 
-  BasicBlock::iterator BI = StartInst;
+  BasicBlock::iterator BI = StartInst->getIterator();
   for (++BI; !isa<TerminatorInst>(BI); ++BI) {
 
-    if( isGlobalLoadOrStore(BI, globalSpace, isLoad, isStore) ) {
+    Instruction& insnRef = *BI;
+    Instruction* insn = &insnRef;
+    if( isGlobalLoadOrStore(insn, globalSpace, isLoad, isStore) ) {
       // OK!
     } else {
       // If the instruction is readnone, ignore it, otherwise bail out.  We
@@ -775,13 +785,15 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
 
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
       // Avoid invalidating the iterator.
-      Instruction *I = BI++;
+      Instruction& insnRef = *BI;
+      Instruction *I = &insnRef;
+      ++BI;
 
       if( isGlobalLoadOrStore(I, globalSpace, true, true) ) {
         Instruction* lastAdded = tryAggregating(I, getLoadStorePointer(I), DebugThis);
         if( lastAdded ) {
           MadeChange = true;
-          BI = lastAdded;
+          BI = lastAdded->getIterator();
         }
       }
     }
