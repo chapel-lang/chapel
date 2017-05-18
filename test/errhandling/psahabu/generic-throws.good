@@ -1,0 +1,1 @@
+generic-throws.chpl:9: error: halt reached - {msg = 42 is a numeric type}
