@@ -21,8 +21,7 @@
 //
 module DefaultRectangular {
   config const dataParTasksPerLocale = 0;
-  config const dataParIgnoreRunningTasks = if CHPL_LOCALE_MODEL!="flat" then true
-                                           else false;
+  config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
 
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
@@ -295,9 +294,12 @@ module DefaultRectangular {
       const numSublocs = here.getChildCount();
 
       if localeModelHasSublocales && numSublocs != 0 {
-
-        const dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                      else tasksPerLocale;
+        var dptpl = if tasksPerLocale==0 then here.maxTaskPar
+                    else tasksPerLocale;
+        if !ignoreRunning {
+          const otherTasks = here.runningTasks() - 1; // don't include self
+          dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
+        }
         // Make sure we don't use more sublocales than the numbers of
         // tasksPerLocale requested
         const numSublocTasks = min(numSublocs, dptpl);
@@ -305,7 +307,7 @@ module DefaultRectangular {
         const (numChunks, parDim) = if __primitive("task_get_serial") then
                                     (1, -1) else
                                     _computeChunkStuff(numSublocTasks,
-                                                       ignoreRunning,
+                                                       ignoreRunning=true,
                                                        minIndicesPerTask,
                                                        ranges);
         if debugDataParNuma {
@@ -336,8 +338,9 @@ module DefaultRectangular {
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
-              const numSublocTasks = dptpl/numChunks +
-                if chunk==numChunks-1 then dptpl%numChunks else 0;
+              const numSublocTasks = (if chunk < dptpl % numChunks
+                                      then dptpl / numChunks + 1
+                                      else dptpl / numChunks);
               var locBlock: rank*range(idxType);
               for param i in 1..rank do
                 locBlock(i) = offset(i)..#(ranges(i).length);
@@ -349,7 +352,7 @@ module DefaultRectangular {
                                             locBlock(parDim).low);
               followMe(parDim) = lo..hi;
               const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
-                                                               ignoreRunning,
+                                                               ignoreRunning=true,
                                                                minIndicesPerTask,
                                                                followMe);
               coforall chunk2 in 0..#numChunks2 {
@@ -1364,8 +1367,12 @@ module DefaultRectangular {
         chpl_debug_writeln("*** In defRectArr multi-dd leader iterator");
       }
       // This was adapted from the DefaultRectangularDom leader.
-      const dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                    else tasksPerLocale;
+      var dptpl = if tasksPerLocale==0 then here.maxTaskPar
+                  else tasksPerLocale;
+      if !ignoreRunning {
+        const otherTasks = here.runningTasks() - 1; // don't include self
+        dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
+      }
       if debugDataParMultiDData {
         chpl_debug_writeln("### mdNumChunks = ", mdNumChunks, "\n",
                            "### ignoreRunning = ", ignoreRunning, "\n",
@@ -1396,7 +1403,7 @@ module DefaultRectangular {
                                         locBlock(mdParDim).low);
           followMe(mdParDim) = lo..hi;
           const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
-                                                           ignoreRunning,
+                                                           ignoreRunning=true,
                                                            minIndicesPerTask,
                                                            followMe);
           if debugDataParMultiDData then
