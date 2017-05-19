@@ -1,0 +1,1 @@
+generic-record-throws.chpl:8: error: cannot throw in a non-throwing function

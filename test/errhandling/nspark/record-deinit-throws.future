@@ -1,0 +1,2 @@
+Error-handling WIP: This future should close when error handling supports
+throwing from the deinit() method of a generic function.
