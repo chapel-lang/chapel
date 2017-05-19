@@ -15,11 +15,24 @@ Developer Workflow
 
 Overview:
 
+#. `Discuss design`_ changes or big development efforts
 #. `Fork repo on github`_
 #. `Create new branch`_
 #. `Submit pull request`_
 #. `Test changes`_ (can be done by team at Cray)
 #. `Mail chapel-developers@ for review and merge`_
+#. `Policy details`_
+
+.. _Discuss design:
+
+Discuss design changes or big development efforts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before performing major work on the language, please open an issue on the
+git repository and/or send an email to chapel-developers@lists.sourceforge.net
+with a prefix of ``[Design]`` in the subject header for discussion with the
+community and to ensure that you are aware of any parallel efforts in that
+area.
 
 .. _Fork repo on github:
 
@@ -205,6 +218,16 @@ Mail chapel-developers@ for review and merge
   have intentionally made the process as lightweight as possible, so it can be
   used for changes big and small alike.
 
+* See `Reviewer Responsibilities`_ for details on what performing a review on
+  another contributor's code entails.
+
+.. _Policy details:
+
+Policy details
+~~~~~~~~~~~~~~
+
+
+.. _Reviewer Responsibilities:
 
 Reviewer Responsibilities
 -------------------------

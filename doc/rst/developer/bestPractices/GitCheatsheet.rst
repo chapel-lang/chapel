@@ -4,7 +4,6 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-A) `Let the Chapel community know about any long-term or big efforts`_
 B) `Use GitHub to fork the Chapel project`_
 C) `Create and switch to a feature branch`_
 D) `Develop your contribution locally`_
@@ -15,11 +14,6 @@ H) `Push your work to your feature branch`_
 I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
 
-
-Let the Chapel community know about any long-term or big efforts
-----------------------------------------------------------------
-
-Email chapel-developers@lists.sourceforge.net -- see ContributorInfo.rst
 
 Use GitHub to fork the Chapel project
 -------------------------------------
