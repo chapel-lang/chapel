@@ -485,7 +485,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
       AU.addRequired<AliasAnalysis>();
       AU.addRequired<TargetLibraryInfo>();*/
       //AU.addPreserved<AliasAnalysis>();
-      AU.addPreserved<MemoryDependenceAnalysis>();
+      //AU.addPreserved<MemoryDependenceAnalysis>();
     }
 
     Instruction *tryAggregating(Instruction *I, Value *StartPtr, bool DebugThis);

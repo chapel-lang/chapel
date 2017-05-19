@@ -152,7 +152,7 @@ namespace {
     int atomic_part = 0;
     int sync_part = 0;
     int val = 0;
-    atomic_part = ordering;
+    atomic_part = (int) ordering;
     sync_part = scope;
     sync_part *= 256;
     val = atomic_part + sync_part;
@@ -736,7 +736,11 @@ namespace {
 
               Value* wDst = callGlobalToWideFn(gDst, call);
               Value* wSrc = callGlobalToWideFn(gSrc, call);
+#if HAVE_LLVM_VER >= 39
+              Value* ctl = createLoadStoreControl(M, info, AtomicOrdering::NotAtomic, SingleThread);
+#else
               Value* ctl = createLoadStoreControl(M, info, NotAtomic, SingleThread);
+#endif
 
               Instruction* putget = NULL;
 
@@ -980,7 +984,11 @@ namespace {
     // This will update PHI nodes incoming blocks that have
     // been remapped.
     //
+#if HAVE_LLVM_VER >= 39
+    RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
+#else
     RemapInstruction(I, VM, RF_IgnoreMissingEntries, TypeMapper);
+#endif
 
     if( extraChecks ) {
       if( VM.count(I) ) {
@@ -1402,7 +1410,11 @@ namespace {
 
       {
         ValueToValueMapTy VM;
+#if HAVE_LLVM_VER >= 39
+        RemapFlags Flags = RF_IgnoreMissingLocals;
+#else
         RemapFlags Flags = RF_IgnoreMissingEntries;
+#endif
         // iterate through all global variables
         for (Module::global_iterator GI = M.global_begin(), GE = M.global_end();
                 GI != GE; ++GI) {
@@ -1483,7 +1495,11 @@ namespace {
 
       // Pass #2
       ValueToValueMapTy VM;
+#if HAVE_LLVM_VER >= 39
+      RemapFlags Flags = RF_IgnoreMissingLocals;
+#else
       RemapFlags Flags = RF_IgnoreMissingEntries;
+#endif
       SmallVector<Instruction*,16> Junk;
 
       for(Module::iterator func = M.begin(); func!= M.end(); func++)

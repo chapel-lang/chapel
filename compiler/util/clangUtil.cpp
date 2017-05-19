@@ -198,7 +198,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     }
   }
 
-#if HAVE_LLVM_VER >= 38
+#if HAVE_LLVM_VER >= 39
+  info->targetLayout =
+    info->Ctx->getTargetInfo().getDataLayout().getStringRepresentation();
+#elif HAVE_LLVM_VER >= 38
   info->targetLayout = info->Ctx->getTargetInfo().getDataLayoutString();
 #else
   info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();
@@ -223,7 +226,9 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
   if( info->module ) info->module->setDataLayout(layout);
 
   info->targetData =
-#if HAVE_LLVM_VER >= 38
+#if HAVE_LLVM_VER >= 39
+    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayout().getStringRepresentation());
+#elif HAVE_LLVM_VER >= 38
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayoutString());
 #else
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
@@ -565,8 +570,15 @@ class CCodeGenConsumer : public ASTConsumer {
       // and cgBuilder.
       setupClangContext(info, &Context);
 
+#if HAVE_LLVM_VER <= 38
       for (size_t i = 0, e = CodeGenOpts.DependentLibraries.size(); i < e; ++i)
         HandleDependentLibrary(CodeGenOpts.DependentLibraries[i]);
+#else
+      for (auto &&Lib : CodeGenOpts.DependentLibraries)
+        Builder->AddDependentLib(Lib);
+      for (auto &&Opt : CodeGenOpts.LinkerOptions)
+        Builder->AppendLinkerOptions(Opt);
+#endif
     }
 
     // ASTConsumer override:
@@ -637,6 +649,44 @@ class CCodeGenConsumer : public ASTConsumer {
        DeferredInlineMethodDefinitions.clear();
     }
 
+#if HAVE_LLVM_VER >= 39
+   // ASTConsumer override:
+   // \brief This callback is invoked each time an inline (method or friend)
+   // function definition in a class is completed.
+    void HandleInlineFunctionDefinition(FunctionDecl *D) override {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      assert(D->doesThisDeclarationHaveABody());
+
+      // Handle friend functions.
+      if (D->isInIdentifierNamespace(Decl::IDNS_OrdinaryFriend)) {
+        if (Ctx->getTargetInfo().getCXXABI().isMicrosoft()
+            && !D->getLexicalDeclContext()->isDependentContext())
+          Builder->EmitTopLevelDecl(D);
+        return;
+      }
+
+      // Otherwise, must be a method.
+      auto MD = cast<CXXMethodDecl>(D);
+
+      // We may want to emit this definition. However, that decision might be
+      // based on computing the linkage, and we have to defer that in case we
+      // are inside of something that will change the method's final linkage,
+      // e.g.
+      //   typedef struct {
+      //     void bar();
+      //     void foo() { bar(); }
+      //   } A;
+      DeferredInlineMethodDefinitions.push_back(MD);
+
+      // Provide some coverage mapping even for methods that aren't emitted.
+      // Don't do this for templated classes though, as they may not be
+      // instantiable.
+      if (!MD->getParent()->getDescribedClassTemplate())
+        Builder->AddDeferredUnusedCoverageMapping(MD);
+    }
+#else
    // ASTConsumer override:
    // \brief This callback is invoked each time an inline method
    // definition is completed.
@@ -662,6 +712,7 @@ class CCodeGenConsumer : public ASTConsumer {
       if (!D->getParent()->getDescribedClassTemplate())
         Builder->AddDeferredUnusedCoverageMapping(D);
     }
+#endif
 
      // skipped ASTConsumer HandleInterestingDecl
      // HandleTagDeclRequiredDefinition
@@ -801,13 +852,14 @@ class CCodeGenConsumer : public ASTConsumer {
 #endif
            );
      }
-     
+
+#if HAVE_LLVM_VER <= 38
      // ASTConsumer override:
      //
      // \brief Handle a pragma that appends to Linker Options.  Currently
      // this only exists to support Microsoft's #pragma comment(linker,
      // "/foo").
-     void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
+     virtual void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
        Builder->AppendLinkerOptions(Opts);
      }
 
@@ -828,6 +880,7 @@ class CCodeGenConsumer : public ASTConsumer {
      virtual void HandleDependentLibrary(llvm::StringRef Lib) LLVM_CXX_OVERRIDE {
        Builder->AddDependentLib(Lib);
      }
+#endif
 
     // undefine macros we created to help with ModuleBuilder
 #undef Ctx
@@ -1853,6 +1906,9 @@ void makeBinaryLLVM(void) {
     output.os().flush();
   }
 
+#if HAVE_LLVM_VER >= 39
+  std::error_code Error;
+#else
   tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
 #if HAVE_LLVM_VER >= 34
@@ -1861,6 +1917,7 @@ void makeBinaryLLVM(void) {
                              raw_fd_ostream::F_Binary
 #endif
                            );
+#endif
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -1873,16 +1930,35 @@ void makeBinaryLLVM(void) {
 
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
-#if HAVE_LLVM_VER >= 38
+#if HAVE_LLVM_VER >= 39
+                    info->Ctx->getTargetInfo().getDataLayout(),
+#elif HAVE_LLVM_VER >= 38
                     info->Ctx->getTargetInfo().getDataLayoutString(),
 #else
 #if HAVE_LLVM_VER >= 35
                     info->Ctx->getTargetInfo().getTargetDescription(),
 #endif
 #endif
-                    info->module, Backend_EmitBC, &output.os());
+                    info->module, Backend_EmitBC,
+#if HAVE_LLVM_VER >= 39
+                    llvm::make_unique<llvm::raw_fd_ostream>(
+                                                 moduleFilename,
+                                                 Error,
+                                                 llvm::sys::fs::F_None)
+#else
+                    &output.os()
+#endif
+                   );
+
+#if HAVE_LLVM_VER <= 39
+  if (Error)
+    USR_FATAL("Could not create temporary .bc file");
+#endif
+
+#if HAVE_LLVM_VER <= 38
   output.keep();
   output.os().flush();
+#endif
 
   //finishClang is before the call to the debug finalize
   deleteClang(info);
