@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-#include <ostream>
-#include <sstream>
-#include <string>
-
 #include "baseAST.h"
 
 #include "astutil.h"
@@ -30,6 +26,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
+#include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "passes.h"
@@ -40,6 +37,10 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
+
+#include <ostream>
+#include <sstream>
+#include <string>
 
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
@@ -545,9 +546,6 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
 
 
 astlocT currentAstLoc(0,NULL);
-
-Vec<ModuleSymbol*> userModules; // Contains user + main modules
-Vec<ModuleSymbol*> allModules;  // Contains all modules
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {

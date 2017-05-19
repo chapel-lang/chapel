@@ -237,9 +237,10 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
   }
   else
   {
-    const char* tag = modTagDescrString(node->modTag);
+    const char* tag = ModuleSymbol::modTagToString(node->modTag);
 
     enterNode(node);
+
     fprintf(mFP, " %s", node->name);
 
     mOffset = mOffset + 2;
@@ -247,6 +248,7 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
     newline();
 
     fprintf(mFP, "ModTag: %s\n", tag);
+
     newline();
 
     retval  = true;
