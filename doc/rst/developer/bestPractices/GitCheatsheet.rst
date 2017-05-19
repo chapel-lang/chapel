@@ -4,7 +4,6 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-C) `Create and switch to a feature branch`_
 D) `Develop your contribution locally`_
 E) `Update your feature branch with changes from the main Chapel project`_
 F) `Read commit messages for changes from the main Chapel project`_
@@ -13,13 +12,6 @@ H) `Push your work to your feature branch`_
 I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
 
-
-Create and switch to a feature branch
--------------------------------------
-
-.. code-block:: bash
-
-    git checkout -b <branch_name>
 
 Develop your contribution locally
 ---------------------------------
@@ -271,8 +263,6 @@ This commit message should:
 
 
 
-
-.. _initial_git_setup:
 
 More Information on Using Git
 =============================

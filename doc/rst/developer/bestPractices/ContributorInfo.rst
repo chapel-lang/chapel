@@ -50,8 +50,9 @@ similar, though the specific people involved are likely to change and grow).
   `initial_git_setup`_ instructions.
 
 * Use the GitHub web interface to create a fork of the Chapel repo by visiting
-  https://github.com/chapel-lang/chapel and clicking the 'Fork' button. Then
-  `configure your local git`_ and check out your fork
+  https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
+  also `Fork the repo`_).  Then `configure your local git`_ and check out your
+  fork
 
 * If you will need commit/push access to the main repository,
   `chapel-lang/chapel`_, send a request including your github username to
@@ -79,15 +80,14 @@ similar, though the specific people involved are likely to change and grow).
 
   https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
-* `Fork the repo`_.
-
 .. _Create new branch:
 
 Create new branch
 ~~~~~~~~~~~~~~~~~
 
 * Develop your feature, bug fix, etc on your fork. Using a concisely named
-  branch is encouraged.
+  branch is encouraged.  See `Create and switch to a feature branch`_ for the
+  git command.
 
 .. _Submit pull request:
 
@@ -278,6 +278,16 @@ Here is the uncommented version of the commands:
     git remote add upstream https://github.com/chapel-lang/chapel.git
     # Make sure it works, get up-to-date without modifying your files
     git fetch upstream
+
+.. _Create and switch to a feature branch:
+
+Create and switch to a feature branch
+-------------------------------------
+
+.. code-block:: bash
+
+    git checkout -b <branch_name>
+
 
 .. _Policy details:
 
