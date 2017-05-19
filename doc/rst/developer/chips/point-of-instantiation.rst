@@ -1,8 +1,8 @@
-Chapel Improvement Proposals
-============================
+Point of Instantiation and Private Scoping
+==========================================
 
 Status
-  Active
+  Draft
 
 Authors
   Lydia Duncan
