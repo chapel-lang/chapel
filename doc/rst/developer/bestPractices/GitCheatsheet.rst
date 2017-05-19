@@ -225,36 +225,3 @@ should be kept:
    # do not use --hard if you wish to leave untracked files in your tree
    git reset --hard <last commit you want to keep>
 
-Other Logging Commands
-----------------------
-
-To view commits grouped by author (for example, show me commits by author from
-1.9.0.1 tag to now):
-
-.. code-block:: bash
-
-    git shortlog --numbered --no-merges
-
-    # With commit sha1 and relative date:
-    git shortlog --numbered --no-merges \
-      --format='* %Cred[%h]%Creset %s %Cgreen(%cr)%Creset'
-
-    # Set alias
-    git config --global alias.sl \
-      'shortlog --numbered --no-merges \
-       --format=\'* %Cred[%h]%Creset %s %Cgreen(%cr)%Creset\''
-
-    # Show commits by author between 1.8.0 and 1.9.0.1 releases:
-    git sl 1.8.0..1.9.0.1
-
-
-Finding a Pull Request by Commit
---------------------------------
-
-Suppose you have figured out that a particular commit is causing a problem
-and you'd like to view the pull request discussion on GitHub. You can go
-to
-  https://github.com/chapel-lang/chapel/commit/<commit-hash>
-and GitHub shows the pull request number at the bottom of the commit message
-complete with a link to the pull request page.
-
