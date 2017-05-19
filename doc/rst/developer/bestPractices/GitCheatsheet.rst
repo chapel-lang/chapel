@@ -4,125 +4,12 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-D) `Develop your contribution locally`_
 E) `Update your feature branch with changes from the main Chapel project`_
 F) `Read commit messages for changes from the main Chapel project`_
 G) `Test your feature`_
 H) `Push your work to your feature branch`_
 I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
-
-
-Develop your contribution locally
----------------------------------
-
-Your contribution will take the form of a series of commits.  While including
-sensible commit messages is a good idea, it is more important to have a good
-merge message once the pull request is going in. Likewise, it is OK to have
-many small commits that reflect the history of development rather than commits
-for the feature.
-
-Stage a file/dir for commit:
-
-.. code-block:: bash
-
-    git add path/to/file
-
-    # (sort of) similar to:
-    svn add path/to/file
-
-Delete a file/dir and stage the change for commit:
-
-.. code-block:: bash
-
-    git rm [-r] path/to/dir/or/file
-
-    # similar to:
-    svn delete path/to/dir/or/file
-
-Move a file/dir:
-
-.. code-block:: bash
-
-    git mv orig/path/a.txt new/path/to/b.txt
-
-    # similar to:
-    svn move orig/path/a.txt new/path/to/b.txt
-
-Copy a file/dir and stage target for commit:
-
-.. code-block:: bash
-
-    cp <src> <target>
-    git add <target>
-
-    # similar to:
-    svn copy <src> <target>
-
-Get the status of files/dirs (staged and unstaged):
-
-.. code-block:: bash
-
-    git status
-
-    # similar to:
-    svn status
-
-Get the diff of unstaged changes:
-
-.. code-block:: bash
-
-    git diff
-
-    # similar to:
-    svn diff
-
-Get the diff of staged changes (those that were staged with ``git add``):
-
-.. code-block:: bash
-
-    git diff --cached
-
-Backing out unstaged changes:
-
-.. code-block:: bash
-
-    git checkout path/to/file/a.txt
-
-    # similar to:
-    svn revert path/to/file/a.txt
-
-Committing staged changes:
-
-.. code-block:: bash
-
-    git commit [-m <message>]
-
-    # similar to:
-    svn commit [-m <message>]
-
-Fixing a commit message:
-
-.. code-block:: bash
-
-    git commit --amend
-
-.. note::
-
-    This should only every be done to commits that **have not been pushed** to
-    a remote repository.
-
-Un-do the last commit (leaving changed files in your working directory)
-
-.. code-block:: bash
-
-    git reset --soft HEAD~1
-
-.. note::
-
-    This should only every be done to commits that **have not been pushed** to
-    a remote repository.
-
 
 
 Update your feature branch with changes from the main Chapel project

@@ -87,7 +87,8 @@ Create new branch
 
 * Develop your feature, bug fix, etc on your fork. Using a concisely named
   branch is encouraged.  See `Create and switch to a feature branch`_ for the
-  git command.
+  git command, and `Develop your contribution`_ for the commands and
+  recommended policies.
 
 .. _Submit pull request:
 
@@ -287,6 +288,120 @@ Create and switch to a feature branch
 .. code-block:: bash
 
     git checkout -b <branch_name>
+
+.. _Develop your contribution:
+
+Develop your contribution locally
+---------------------------------
+
+Your contribution will take the form of a series of commits.  While including
+sensible commit messages is a good idea, it is more important to have a good
+merge message once the pull request is going in. Likewise, it is OK to have
+many small commits that reflect the history of development rather than commits
+for the feature.
+
+Stage a file/dir for commit:
+
+.. code-block:: bash
+
+    git add path/to/file
+
+    # (sort of) similar to:
+    svn add path/to/file
+
+Delete a file/dir and stage the change for commit:
+
+.. code-block:: bash
+
+    git rm [-r] path/to/dir/or/file
+
+    # similar to:
+    svn delete path/to/dir/or/file
+
+Move a file/dir:
+
+.. code-block:: bash
+
+    git mv orig/path/a.txt new/path/to/b.txt
+
+    # similar to:
+    svn move orig/path/a.txt new/path/to/b.txt
+
+Copy a file/dir and stage target for commit:
+
+.. code-block:: bash
+
+    cp <src> <target>
+    git add <target>
+
+    # similar to:
+    svn copy <src> <target>
+
+Get the status of files/dirs (staged and unstaged):
+
+.. code-block:: bash
+
+    git status
+
+    # similar to:
+    svn status
+
+Get the diff of unstaged changes:
+
+.. code-block:: bash
+
+    git diff
+
+    # similar to:
+    svn diff
+
+Get the diff of staged changes (those that were staged with ``git add``):
+
+.. code-block:: bash
+
+    git diff --cached
+
+Backing out unstaged changes:
+
+.. code-block:: bash
+
+    git checkout path/to/file/a.txt
+
+    # similar to:
+    svn revert path/to/file/a.txt
+
+Committing staged changes:
+
+.. code-block:: bash
+
+    git commit [-m <message>]
+
+    # similar to:
+    svn commit [-m <message>]
+
+Fixing a commit message:
+
+.. code-block:: bash
+
+    git commit --amend
+
+.. note::
+
+    This should only every be done to commits that **have not been pushed** to
+    a remote repository.
+
+Un-do the last commit (leaving changed files in your working directory)
+
+.. code-block:: bash
+
+    git reset --soft HEAD~1
+
+.. note::
+
+    This should only every be done to commits that **have not been pushed** to
+    a remote repository.
+
+
 
 More information on using git
 -----------------------------
