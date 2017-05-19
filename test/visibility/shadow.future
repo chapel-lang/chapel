@@ -1,0 +1,12 @@
+bug: Cannot Access module-scope function from shadowed record-scope method
+
+Due to scoping rules in Chapel, the only way to access a function or variable
+that shares the same name as a method or field is to specify the scope with
+the module accessor. This future demonstrates that this does not work for
+methods shadowing functions.
+
+Confusingly, the error emitted is:
+
+    use of 'A' before encountering its definition, type unknown
+
+, despite the A module being accessible elsewhere within the method.
