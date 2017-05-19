@@ -531,12 +531,12 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
     var hi = i;
     var mid:int; //mid point
     while(lo!=hi){
-    	mid = (hi+lo) >> 1	;
+      mid = (hi+lo) >> 1	;
     	if (chpl_compare(Data[mid],ithVal,comparator)>0){
-    		hi=mid;
+        hi=mid;
     	}
     	else{
-    		lo=mid+1;
+        lo=mid+1;
     	}
     };
 
