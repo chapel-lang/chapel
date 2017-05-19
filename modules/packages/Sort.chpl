@@ -525,18 +525,31 @@ proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparato
   const low = Dom.low,
         high = Dom.high;
         
-  for i in low..high{
+  for i in low+1..high{
     var ithVal = Data[i];
-    var inserted=false;
+    var lo =low;
+    var hi = i;
+    var mid:int; //mid point
+    while(lo!=hi){
+    	mid = (hi+lo) >> 1	;
+    	if (chpl_compare(Data[mid],ithVal,comparator)>0){
+    		hi=mid;
+    	}
+    	else{
+    		lo=mid+1;
+    	}
+    };
+
+    /*
     var (found,loc) = binarySearch(Data,ithVal,comparator=comparator,lo=low,hi=i);
     
     while(found && loc!=i){      
       (found,loc) = binarySearch(Data,ithVal,comparator=comparator,lo=loc+1,hi=i);      
     }
-    
+    */
     var j:int = i-1;
     
-    while(j>=loc)
+    while(j>=lo)
     {
       
       Data[j+1]=Data[j];
@@ -582,7 +595,7 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         high = Dom.high;
   
 
-  var (runs,count)=getRuns(Data,getMinrun(Dom.size)); 
+  var (runs,count)=getRuns(Data,getMinrun(Dom.size),comparator=comparator); 
   
   //reusing runs array for stack
   var top = 1; //array stack. Add first 3 runs
@@ -598,7 +611,7 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
         runs[top]=runs[next];
         next+=1;
       }
-    }else{
+    }else{    
       if(runs[top].size> runs[top-1].size+runs[top-2].size && runs[top-1].size>runs[top-2].size){
         top+=1;
         runs[top]=runs[next];
@@ -613,6 +626,7 @@ proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
           runs[top]=runs[top+1];
         }
       }
+      
     }
   }
   
