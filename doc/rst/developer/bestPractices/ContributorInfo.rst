@@ -21,6 +21,7 @@ Overview:
 #. `Submit pull request`_
 #. `Test changes`_ (can be done by team at Cray)
 #. `Mail chapel-developers@ for review and merge`_
+#. `HOWTO/Git/GitHub details`_
 #. `Policy details`_
 
 .. _Discuss design:
@@ -28,11 +29,10 @@ Overview:
 Discuss design changes or big development efforts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before performing major work on the language, please open an issue on the
-git repository and/or send an email to chapel-developers@lists.sourceforge.net
-with a prefix of ``[Design]`` in the subject header for discussion with the
-community and to ensure that you are aware of any parallel efforts in that
-area.
+Before performing major work on the language, please open an issue on the git
+repository and/or send an email to chapel-developers_ with a prefix of
+``[Design]`` in the subject header for discussion with the community and to
+ensure that you are aware of any parallel efforts in that area.
 
 .. _Fork repo on github:
 
@@ -47,7 +47,11 @@ similar, though the specific people involved are likely to change and grow).
   Chapel.
 
 * Make sure you have configured your environment to work with git. See
-  :ref:`Initial Git Set up <initial_git_setup>` instructions.
+  `initial_git_setup`_ instructions.
+
+* Use the GitHub web interface to create a fork of the Chapel repo by visiting
+  https://github.com/chapel-lang/chapel and clicking the 'Fork' button. Then
+  `configure your local git`_ and check out your fork
 
 * If you will need commit/push access to the main repository,
   `chapel-lang/chapel`_, send a request including your github username to
@@ -220,6 +224,60 @@ Mail chapel-developers@ for review and merge
 
 * See `Reviewer Responsibilities`_ for details on what performing a review on
   another contributor's code entails.
+
+.. _HOWTO/Git/GitHub details:
+
+HOWTO/Git/GitHub details
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _initial_git_setup:
+
+Initial Git Setup
+-----------------
+
+Follow the GitHub directions to setup a new account.
+
+  https://help.github.com/categories/53/articles
+
+If you plan to use ssh to push/pull, setup SSH keys.
+
+  https://help.github.com/categories/56/articles
+
+
+
+.. _Configure your local git:
+
+Configure your local git
+------------------------
+
+Here is the uncommented version of the commands:
+
+.. code-block:: bash
+
+    git config --global user.name 'Thomas Van Doren'
+    git config --global user.email 'thomas@example.com'
+
+    # linux/mac
+    git config --global core.autocrlf input
+
+    # windows
+    git config --global core.autocrlf true
+
+    # If using ssh keys, verify access to github. It should respond with a
+    # message including your github username.
+    ssh git@github.com
+
+    # Clone your fork of the chapel repo!
+    git clone git@github.com:<github_username>/chapel.git
+
+    # Or, if using HTTPS instead of SSH.
+    git clone https://github.com/<github_username>/chapel.git
+
+    # Set up remotes for github
+    cd chapel
+    git remote add upstream https://github.com/chapel-lang/chapel.git
+    # Make sure it works, get up-to-date without modifying your files
+    git fetch upstream
 
 .. _Policy details:
 

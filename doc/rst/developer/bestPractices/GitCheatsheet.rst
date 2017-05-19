@@ -4,7 +4,6 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-B) `Use GitHub to fork the Chapel project`_
 C) `Create and switch to a feature branch`_
 D) `Develop your contribution locally`_
 E) `Update your feature branch with changes from the main Chapel project`_
@@ -14,44 +13,6 @@ H) `Push your work to your feature branch`_
 I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
 
-
-Use GitHub to fork the Chapel project
--------------------------------------
-
-See Initial Git Setup below for information on getting a GitHub account and
-setting up Git.
-
-Use the GitHub web interface to create a fork of the Chapel repo by visiting
- https://github.com/chapel-lang/chapel
-and clicking the 'Fork' button. Then configure your local git and check out
-your fork:
-
-.. code-block:: bash
-
-    git config --global user.name 'Thomas Van Doren'
-    git config --global user.email 'thomas@example.com'
-
-    # linux/mac
-    git config --global core.autocrlf input
-
-    # windows
-    git config --global core.autocrlf true
-
-    # If using ssh keys, verify access to github. It should respond with a
-    # message including your github username.
-    ssh git@github.com
-
-    # Clone your fork of the chapel repo!
-    git clone git@github.com:<github_username>/chapel.git
-
-    # Or, if using HTTPS instead of SSH.
-    git clone https://github.com/<github_username>/chapel.git
-
-    # Set up remotes for github
-    cd chapel
-    git remote add upstream https://github.com/chapel-lang/chapel.git
-    # Make sure it works, get up-to-date without modifying your files
-    git fetch upstream
 
 Create and switch to a feature branch
 -------------------------------------
@@ -312,51 +273,6 @@ This commit message should:
 
 
 .. _initial_git_setup:
-
-Initial Git Setup
-=================
-
-Follow the GitHub directions to setup a new account.
-
-  https://help.github.com/categories/53/articles
-
-If you plan to use ssh to push/pull, setup SSH keys.
-
-  https://help.github.com/categories/56/articles
-
-Use the GitHub web interface to create a fork of the Chapel repo by visiting
-https://github.com/chapel-lang/chapel and clicking the 'Fork' button. Then
-configure your local git and check out your fork:
-
-Here is the uncommented version of the commands:
-
-.. code-block:: bash
-
-    git config --global user.name 'Thomas Van Doren'
-    git config --global user.email 'thomas@example.com'
-
-    # linux/mac
-    git config --global core.autocrlf input
-
-    # windows
-    git config --global core.autocrlf true
-
-    # If using ssh keys, verify access to github. It should respond with a
-    # message including your github username.
-    ssh git@github.com
-
-    # Clone your fork of the chapel repo!
-    git clone git@github.com:<github_username>/chapel.git
-
-    # Or, if using HTTPS instead of SSH.
-    git clone https://github.com/<github_username>/chapel.git
-
-    # Set up remotes for github
-    cd chapel
-    git remote add upstream https://github.com/chapel-lang/chapel.git
-    # Make sure it works, get up-to-date without modifying your files
-    git fetch upstream
-
 
 More Information on Using Git
 =============================
