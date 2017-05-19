@@ -26,72 +26,179 @@
 #include "stlUtil.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
-Symbol* markPruned;
+Symbol*           markPruned      = NULL;
 
 // initial value for 'uses' SymbolMap
-Symbol* markUnspecified;
+Symbol*           markUnspecified = NULL;
 
-// These mark the intents for variables in a task intent clause.
-static ArgSymbol *tiMarkBlank, *tiMarkIn, *tiMarkConstDflt, *tiMarkConstIn,
-                 *tiMarkConstRef, *tiMarkRef;
 
-// Dummy function to host the above.
-static FnSymbol* tiMarkHost;
+/************************************* | **************************************
+*                                                                             *
+* Several Chapel parallel statements accept an optional task-intent clause.   *
+*                                                                             *
+* Consider a begin statement that includes a task-intent clause for example.  *
+* This is represented as a block stmt that includes                           *
+*                                                                             *
+*   1) a blockInfo property for "begin block"                                 *
+*   2) a byrefVars property that is a PRIM_ACTUALS_LIST CallExpr              *
+*   3) the body of the begin stmt                                             *
+*   4) a call to update the endCount when the block completes                 *
+*                                                                             *
+* The byrefVars property is then a list of pairs { marker, variable } where   *
+* marker is one of 6 constant ArgSymbols that encode the intent.              *
+*                                                                             *
+* 2017/05/18: The challenge is to prevent these ArgSymbols from being purged  *
+* by the cleanAST() phase at the end of each pass.  There is no  well defined *
+* way to do this currently.                                                   *
+*                                                                             *
+* The approach that is used here is to wrap the ArgSymbols in a dummy         *
+* function and insert this function in to the tree.                           *
+*                                                                             *
+* It is inserted in to rootModule to avoid cluttering the scope for the       *
+* module "theProgram".  This in turn implies that it must be pre-normalized   *
+* to avoid triggering the AST checks for --verify.                            *
+*                                                                             *
+* This dummy function is never resolved and is purged at the end of the       *
+* function resolution pass.                                                   *
+*                                                                             *
+************************************** | *************************************/
+
+static ArgSymbol* tiMarkBlank     = NULL;
+static ArgSymbol* tiMarkIn        = NULL;
+static ArgSymbol* tiMarkConstDflt = NULL;
+static ArgSymbol* tiMarkConstIn   = NULL;
+static ArgSymbol* tiMarkConstRef  = NULL;
+static ArgSymbol* tiMarkRef       = NULL;
+
+void initForTaskIntents() {
+  FnSymbol* tiMarkHost = NULL;
+
+  markPruned      = gVoid;
+  markUnspecified = gNil;
+
+  tiMarkBlank     = new ArgSymbol(INTENT_BLANK,
+                                  "tiMarkBlank",
+                                  dtVoid);
+
+  tiMarkIn        = new ArgSymbol(INTENT_IN,
+                                  "tiMarkIn",
+                                  dtVoid);
+
+  tiMarkConstDflt = new ArgSymbol(INTENT_CONST,
+                                  "tiMarkConstDflt",
+                                  dtVoid);
+
+  tiMarkConstIn   = new ArgSymbol(INTENT_CONST_IN,
+                                  "tiMarkConstIn",
+                                  dtVoid);
+
+  tiMarkConstRef  = new ArgSymbol(INTENT_CONST_REF,
+                                  "tiMarkConstRef",
+                                  dtVoid);
+
+  tiMarkRef       = new ArgSymbol(INTENT_REF,
+                                  "tiMarkRef",
+                                  dtVoid);
+
+  tiMarkHost = new FnSymbol("tiMarkHost");
+
+  tiMarkHost->insertFormalAtTail(tiMarkBlank);
+  tiMarkHost->insertFormalAtTail(tiMarkIn);
+  tiMarkHost->insertFormalAtTail(tiMarkConstDflt);
+  tiMarkHost->insertFormalAtTail(tiMarkConstIn);
+  tiMarkHost->insertFormalAtTail(tiMarkConstRef);
+  tiMarkHost->insertFormalAtTail(tiMarkRef);
+
+  tiMarkHost->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  rootModule->block->insertAtTail(new DefExpr(tiMarkHost));
+}
 
 // Return a fixed ArgSymbol marker for the given intent, or NULL if n/a.
 ArgSymbol* tiMarkForIntent(IntentTag intent) {
+  ArgSymbol* retval = NULL;
+
   switch (intent) {
-    case INTENT_BLANK:     return tiMarkBlank;    break;
-    case INTENT_IN:        return tiMarkIn;        break;
-    case INTENT_INOUT:     return NULL;            break;
-    case INTENT_OUT:       return NULL;            break;
-    case INTENT_CONST:     return tiMarkConstDflt; break;
-    case INTENT_CONST_IN:  return tiMarkConstIn;   break;
-    case INTENT_CONST_REF: return tiMarkConstRef;  break;
-    case INTENT_REF:       return tiMarkRef;       break;
-    case INTENT_PARAM:     return NULL;            break;
-    case INTENT_TYPE:      return NULL;            break;
-    case INTENT_REF_MAYBE_CONST:      return NULL;            break;
+    case INTENT_BLANK:
+      retval = tiMarkBlank;
+      break;
+
+    case INTENT_IN:
+      retval = tiMarkIn;
+      break;
+
+    case INTENT_CONST:
+      retval = tiMarkConstDflt;
+      break;
+
+    case INTENT_CONST_IN:
+      retval = tiMarkConstIn;
+      break;
+
+    case INTENT_CONST_REF:
+      retval = tiMarkConstRef;
+      break;
+
+    case INTENT_REF:
+      retval = tiMarkRef;
+      break;
+
+    case INTENT_INOUT:
+    case INTENT_OUT:
+    case INTENT_PARAM:
+    case INTENT_TYPE:
+    case INTENT_REF_MAYBE_CONST:
+      retval = NULL;
+      break;
   }
-  INT_FATAL("unexpected intent in tiMarkForIntent()");
-  return NULL; // dummy
+
+  return retval;
 }
+
 
 // Same except uses TFITag. It is encoded as int to deal with header ordering.
 // Do not invoke on TFI_REDUCE.
 ArgSymbol* tiMarkForTFIntent(int tfIntent) {
-  switch ((TFITag)tfIntent) {
-    case TFI_DEFAULT:   return tiMarkBlank;     break;
-    case TFI_CONST:     return tiMarkConstDflt; break;
-    case TFI_IN:        return tiMarkIn;        break;
-    case TFI_CONST_IN:  return tiMarkConstIn;   break;
-    case TFI_REF:       return tiMarkRef;       break;
-    case TFI_CONST_REF: return tiMarkConstRef;  break;
-    case TFI_REDUCE:    break; // there is tiMark for reduce intents
+  ArgSymbol* retval = NULL;
+
+  switch ((TFITag) tfIntent) {
+    case TFI_DEFAULT:
+      retval = tiMarkBlank;
+      break;
+
+    case TFI_CONST:
+      retval = tiMarkConstDflt;
+      break;
+
+    case TFI_IN:
+      retval = tiMarkIn;
+      break;
+
+    case TFI_CONST_IN:
+      retval = tiMarkConstIn;
+      break;
+
+    case TFI_REF:
+      retval = tiMarkRef;
+      break;
+
+    case TFI_CONST_REF:
+      retval = tiMarkConstRef;
+      break;
+
+    case TFI_REDUCE:
+      INT_FATAL("unexpected intent in tiMarkForTFIntent()");
+      break;
   }
-  INT_FATAL("unexpected intent in tiMarkForTFIntent()");
-  return NULL; // dummy
+
+  return retval;
 }
 
-#define tiMarkAdd(intent, mark) \
-  mark = new ArgSymbol(intent, #mark, dtVoid); \
-  tiMarkHost->insertFormalAtTail(mark);
-// does not work: rootModule->block->insertAtTail(new DefExpr(mark));
-
-// one-time initialization
-void initForTaskIntents() {
-  tiMarkHost = new FnSymbol("tiMarkHost");
-  theProgram->block->insertAtTail(new DefExpr(tiMarkHost));
-
-  markPruned = gVoid;
-  markUnspecified = gNil;
-  tiMarkAdd(INTENT_BLANK,     tiMarkBlank);
-  tiMarkAdd(INTENT_IN,        tiMarkIn);
-  tiMarkAdd(INTENT_CONST,     tiMarkConstDflt);
-  tiMarkAdd(INTENT_CONST_IN,  tiMarkConstIn);
-  tiMarkAdd(INTENT_CONST_REF, tiMarkConstRef);
-  tiMarkAdd(INTENT_REF,       tiMarkRef);
-}
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 //
 // Find the _waitEndCount and _endCountFree calls that comes after 'fromHere'.
@@ -99,9 +206,9 @@ void initForTaskIntents() {
 // our stuff after the latter.
 //
 static Expr* findTailInsertionPoint(Expr* fromHere, bool isCoforall) {
-  Expr* curr = fromHere;
-  if (isCoforall) curr = curr->parentExpr;
+  Expr*     curr   = (isCoforall) ? fromHere->parentExpr : fromHere;
   CallExpr* result = NULL;
+
   while ((curr = curr->next)) {
     if (CallExpr* call = toCallExpr(curr))
       if (call->isNamed("_waitEndCount")) {
@@ -109,10 +216,14 @@ static Expr* findTailInsertionPoint(Expr* fromHere, bool isCoforall) {
         break;
       }
   }
+
   INT_ASSERT(result);
+
   CallExpr* freeEC = toCallExpr(result->next);
+
   // Currently these two calls come together.
   INT_ASSERT(freeEC && freeEC->isNamed("_endCountFree"));
+
   return freeEC;
 }
 
