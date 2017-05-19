@@ -301,12 +301,6 @@ public:
 };
 
 //
-// vectors of modules
-//
-extern Vec<ModuleSymbol*> allModules;  // contains all modules
-extern Vec<ModuleSymbol*> userModules; // contains user modules
-
-//
 // class test inlines: determine the dynamic type of a BaseAST*
 //
 static inline bool isExpr(const BaseAST* a)
