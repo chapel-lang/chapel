@@ -4,16 +4,16 @@ module A {
     writeln('A scope');
   }
 
-  proc other() { }
+  proc newline() { writeln(); }
 
   record R {
     proc shadow() {
 
       writeln('R scope');
 
-      // This works
-      A.other();
-      other();
+      // These work fine
+      A.newline();
+      newline();
 
       // This does not
       A.shadow();
