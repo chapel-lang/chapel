@@ -630,7 +630,7 @@ proc diag(A: [?Adom] ?eltType, k=0){
 
 }
 
-proc _diag_vec(A:[?Adom] ?eltType){
+private proc _diag_vec(A:[?Adom] ?eltType){
 
   //better way to do this if type of Adom.dim(1) and Adom.dim(2) can be determined
   if(Adom.dim(1).length<Adom.dim(2).length) then{
@@ -649,7 +649,7 @@ proc _diag_vec(A:[?Adom] ?eltType){
   }
 }
 
-proc _diag_vec(A:[?Adom] ?eltType, k){
+private proc _diag_vec(A:[?Adom] ?eltType, k){
   if(k>0){
     //Upper diagonal
     if(Adom.dim(2).length<k) then halt("k is out of range");
@@ -684,7 +684,7 @@ proc _diag_vec(A:[?Adom] ?eltType, k){
   }
 }
 
-proc _diag_mat(A:[?Adom] ?eltType){
+private proc _diag_mat(A:[?Adom] ?eltType){
   var diagonal = Matrix(Adom.dim(1).length, eltType);
   forall i in Adom.dim(1) do{
     diagonal[i, i] = A[i];
