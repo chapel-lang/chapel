@@ -267,14 +267,6 @@ This commit message should:
 More Information on Using Git
 =============================
 
-Additional docs available online at: http://git-scm.com/docs/
-
-Git help pages can be viewed with:
-
-.. code-block:: bash
-
-    git help <command>
-
 
 Other Git Commands
 ------------------

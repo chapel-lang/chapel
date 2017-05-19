@@ -288,6 +288,18 @@ Create and switch to a feature branch
 
     git checkout -b <branch_name>
 
+More information on using git
+-----------------------------
+
+Additional docs available online at: http://git-scm.com/docs/
+
+Git help pages can be viewed with:
+
+.. code-block:: bash
+
+    git help <command>
+
+
 
 .. _Policy details:
 
