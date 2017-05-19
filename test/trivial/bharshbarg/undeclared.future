@@ -1,0 +1,3 @@
+bug: INT_ASSERT instead of nice message for undeclared identifier
+
+This worked in 1.14, but not in 1.15
