@@ -45,8 +45,6 @@
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
-#include "llvm/IR/Attributes.h"
-
 
 #include <algorithm>
 #include <cstdlib>
@@ -55,6 +53,10 @@
 
 #include <inttypes.h>
 #include <stdint.h>
+
+#ifdef HAVE_LLVM
+#include "llvm/IR/Attributes.h"
+#endif
 
 /******************************** | *********************************
 *                                                                   *
