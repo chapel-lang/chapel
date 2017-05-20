@@ -971,8 +971,14 @@ void setupClang(GenInfo* info, std::string mainFile)
   info->Diags = new DiagnosticsEngine(info->DiagID, info->DiagClient);
 #endif
 
+#if HAVE_LLVM_VER >= 40
+  std::shared_ptr<CompilerInvocation> CI_shared =
+    createInvocationFromCommandLine(clangArgs, info->Diags);
+  CompilerInvocation* CI = CI_shared.get();
+#else
   CompilerInvocation* CI =
     createInvocationFromCommandLine(clangArgs, info->Diags);
+#endif
 
   // Get the codegen options from the clang command line.
   info->codegenOptions = CI->getCodeGenOpts();
@@ -1028,7 +1034,11 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   // Create a compiler instance to handle the actual work.
   info->Clang = new CompilerInstance();
+#if HAVE_LLVM_VER >= 40
+  info->Clang->setInvocation(CI_shared);
+#else
   info->Clang->setInvocation(CI);
+#endif
 
   // Save the TargetOptions and LangOptions since these
   // are used during machine code generation.
@@ -1928,7 +1938,13 @@ void makeBinaryLLVM(void) {
     addedGlobalExts = true;
   }
 
-  EmitBackendOutput(*info->Diags, info->codegenOptions,
+  // Note, as of LLVM/clang 4.0, we can call EmitBitcode
+  // and have a simpler story here...
+  EmitBackendOutput(*info->Diags,
+#if HAVE_LLVM_VER >= 40
+                    info->Clang->getHeaderSearchOpts(),
+#endif
+                    info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
 #if HAVE_LLVM_VER >= 39
                     info->Ctx->getTargetInfo().getDataLayout(),

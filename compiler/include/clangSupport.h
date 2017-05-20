@@ -24,6 +24,13 @@
 
 #ifdef HAVE_LLVM
 
+// Workaround problem with 'exit' macro
+// 'exit' might be needed to work from LLVM headers.
+#ifdef exit
+#define CLANGSUPPORT_EXIT_WAS exit
+#undef exit
+#endif
+
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallString.h"
 
@@ -88,7 +95,13 @@ namespace clang {
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/ToolOutputFile.h"
+
+#if HAVE_LLVM_VER >= 40
+#include "llvm/Bitcode/BitcodeReader.h"
+#include "llvm/Bitcode/BitcodeWriter.h"
+#else
 #include "llvm/Bitcode/ReaderWriter.h"
+#endif
 
 #if HAVE_LLVM_VER >= 35
 #include "llvm/IR/Verifier.h"
@@ -101,6 +114,11 @@ namespace clang {
 
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Support/raw_ostream.h"
+
+#ifdef CLANGSUPPORT_EXIT_WAS
+#define exit CLANGSUPPORT_EXIT_WAS
+#undef CLANGSUPPORT_EXIT_WAS
+#endif
 
 #endif
 
