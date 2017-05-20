@@ -1,2 +1,0 @@
-shadow.chpl:10: In function 'shadow':
-shadow.chpl:19: error: use of 'A' before encountering its definition, type unknown

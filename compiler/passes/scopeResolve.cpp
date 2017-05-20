@@ -413,6 +413,8 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
                          Symbol*            sym,
                          SymExpr*           symExpr);
 
+static bool isFunctionNameWithExplicitScope(Expr* expr);
+
 static void insertFieldAccess(FnSymbol*          method,
                               UnresolvedSymExpr* usymExpr,
                               Symbol*            sym,
@@ -479,8 +481,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
   const char* name = usymExpr->unresolved;
 
-  if (strcmp(name, ".")      == 0             ||
-      usymExpr->parentSymbol == NULL) {
+  if (strcmp(name, ".") == 0 || usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
@@ -551,10 +552,9 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 static void updateMethod(UnresolvedSymExpr* usymExpr,
                          Symbol*            sym,
                          SymExpr*           symExpr) {
-  const char* name   = usymExpr->unresolved;
-  Expr*       expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
-  Symbol*     parent = expr->parentSymbol;
-  bool        isAggr = false;
+  Expr*   expr   = (symExpr != NULL) ? (Expr*) symExpr : (Expr*) usymExpr;
+  Symbol* parent = expr->parentSymbol;
+  bool    isAggr = false;
 
   if (sym != NULL) {
     if (TypeSymbol* cts = toTypeSymbol(sym->defPoint->parentSymbol)) {
@@ -571,18 +571,11 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 
       } else if (method->_this != NULL) {
         if (symExpr == NULL || symExpr->symbol() != method->_this) {
-          Type* type = method->_this->type;
+          const char* name = usymExpr->unresolved;
+          Type*       type = method->_this->type;
 
           if (isAggr == true || isMethodName(name, type) == true) {
-            if (CallExpr* call = toCallExpr(expr->parentExpr)) {
-              if (call->baseExpr                    != expr  ||
-                  call->numActuals()                <  2     ||
-                  isSymExpr(call->get(1))           == false ||
-                  toSymExpr(call->get(1))->symbol() != gMethodToken) {
-                insertFieldAccess(method, usymExpr, sym, expr);
-              }
-
-            } else {
+            if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);
             }
           }
@@ -594,6 +587,33 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
 
     parent = parent->defPoint->parentSymbol;
   }
+}
+
+//
+// Is <expr> one of
+//        ModName.<expr>( ... );                 or
+//        aggrType.<expr>( ... );                ?
+//
+// These will be have been converted to one of
+//        <expr>(_module=, <mod>,  ...)          or
+//        <expr>(_mt,      <this>, ...)
+//
+
+static bool isFunctionNameWithExplicitScope(Expr* expr) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(expr->parentExpr)) {
+    if (expr == call->baseExpr && call->numActuals() >= 2) {
+      if (SymExpr* arg1 = toSymExpr(call->get(1))) {
+        if (arg1->symbol() == gModuleToken ||
+            arg1->symbol() == gMethodToken) {
+          retval = true;
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 // Apply implicit this pointers and outer this pointers
@@ -613,10 +633,11 @@ static void insertFieldAccess(FnSymbol*          method,
     }
   }
 
-  if (isTypeSymbol(sym) == true)
+  if (isTypeSymbol(sym) == true) {
     dot = new CallExpr(".", dot, sym);
-  else
+  } else {
     dot = new CallExpr(".", dot, new_CStringSymbol(name));
+  }
 
   expr->replace(dot);
 }
