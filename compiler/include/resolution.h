@@ -21,6 +21,7 @@
 #define _RESOLUTION_H_
 
 #include "baseAST.h"
+#include "candidateDisposition.h"
 #include "symbol.h"
 #include <vector>
 #include <map>
@@ -122,6 +123,8 @@ public:
   // scope distance away from call site
   int distance;
 
+  CandidateDisposition disposition;
+
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
    */
@@ -141,7 +144,7 @@ public:
    */
   //ResolutionCandidate(FnSymbol* function) : fn(function) {}
   ResolutionCandidate(FnSymbol* function, int distance)
-    : fn(function), distance(distance) {}
+    : fn(function), distance(distance), disposition(AcceptCandidate) {}
 
   /** Compute the alignment of actual and formal arguments for the wrapped
    *  function and the current call site.
@@ -157,7 +160,8 @@ public:
 };
 
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
-                            CallInfo& info, CallExpr* call);
+                            CallInfo& info, CallExpr* call,
+                            Vec<ResolutionCandidate*>* rejects = NULL);
 void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
                            bool buildFastFollowerChecks);
 

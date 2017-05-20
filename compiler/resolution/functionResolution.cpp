@@ -170,7 +170,20 @@ Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promot
 std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
 // cache to speed up resolveNormalCall
-typedef std::map<std::string, FnSymbol*> ResolveCallCacheType;
+
+typedef std::map<std::string, FnSymbol* > ResolveCallSubCache;
+struct ResolveCallCacheEntry {
+  bool paramCandidates; // were there candidates with INTENT_PARAM args?
+  FnSymbol* fnNoParamArgs; // match for paramCandidates=false
+  ResolveCallSubCache* fnsForParamArgs; // map from param settings -> fn
+  ResolveCallCacheEntry()
+    : paramCandidates(false), fnNoParamArgs(NULL), fnsForParamArgs(NULL)
+  { }
+};
+
+// maps from
+//   name(argument types) ->
+typedef std::map<std::string, ResolveCallCacheEntry > ResolveCallCacheType;
 ResolveCallCacheType resolveCallCache;
 
 //#
@@ -204,7 +217,7 @@ computeGenericSubs(SymbolMap &subs,
                    Vec<Symbol*>& formalIdxToActual,
                    bool inInitRes);
 
-static BlockStmt* getParentBlock(Expr* expr);
+//static BlockStmt* getParentBlock(Expr* expr);
 //static bool
 //isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 //                      Vec<BlockStmt*>& visited);
@@ -1810,7 +1823,7 @@ computeGenericSubs(SymbolMap &subs,
   }
 }
 
-
+/*
 static BlockStmt*
 getParentBlock(Expr* expr) {
   for (Expr* tmp = expr->parentExpr; tmp; tmp = tmp->parentExpr) {
@@ -1826,7 +1839,7 @@ getParentBlock(Expr* expr) {
   }
   return NULL;
 }
-
+*/
 
 //
 // helper routine for isMoreVisible (below);
@@ -3274,16 +3287,47 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 // If checkonly is set, NULL can be returned - otherwise that would
 // be a fatal error.
 static
-FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly) {
+FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly,
+    Vec<FnSymbol*>& visibleFns, Vec<int>& visibilityDistances, bool& anyParamCandidates) {
   CallExpr* call = info.call;
 
-  Vec<FnSymbol*> visibleFns; // visible functions
-  Vec<int> visibilityDistances;
   Vec<ResolutionCandidate*> candidates;
+  Vec<ResolutionCandidate*> rejects;
+
+  // TODO? -- move visibleFns back here
+  //findVisibleFunctions (info, visibleFns, visibilityDistances, firstRelevantBlock);
 
   // First, try finding candidates without delegation
-  findVisibleFunctions (info, visibleFns, visibilityDistances);
-  findVisibleCandidates(info, visibleFns, visibilityDistances, candidates);
+  // visible functions gathered in caller
+  findVisibleCandidates(info, visibleFns, visibilityDistances, candidates,
+                        rejects);
+
+  //if (call->id == 646583) // this isTrue doesn't seem to be working.
+  //  gdbShouldBreakHere();
+
+  anyParamCandidates = false;
+  forv_Vec(ResolutionCandidate, candidate, candidates) {
+    for_formals(formal, candidate->fn) {
+      if (formal->intent == INTENT_PARAM ||
+          formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        anyParamCandidates = true;
+        break;
+      }
+    }
+  }
+  forv_Vec(ResolutionCandidate, candidate, rejects) {
+    if (candidate->disposition == RejectCandidateParamFormalNotActual ||
+        // TODO shouldn't need this 2nd clause
+        candidate->disposition == RejectCandidateArgTypeError) {
+      for_formals(formal, candidate->fn) {
+        if (formal->intent == INTENT_PARAM ||
+            formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+          anyParamCandidates = true;
+          break;
+        }
+      }
+    }
+  }
 
   bool retry_find = false;
 
@@ -3307,13 +3351,19 @@ FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly) {
       delete candidate;
     }
     candidates.clear();
+    forv_Vec(ResolutionCandidate*, candidate, rejects) {
+      delete candidate;
+    }
+    rejects.clear();
 
+    BlockStmt* ignoreBlock = NULL;
     // try again to include forwarded functions
-    findVisibleFunctions (info, visibleFns, visibilityDistances);
-    findVisibleCandidates(info, visibleFns, visibilityDistances, candidates);
+    findVisibleFunctions (info, visibleFns, visibilityDistances, ignoreBlock);
+    findVisibleCandidates(info, visibleFns, visibilityDistances, candidates,
+        rejects);
   }
 
-  explainGatherCandidate(candidates, info, call);
+  explainGatherCandidate(candidates, info, call, &rejects);
 
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
@@ -3460,6 +3510,10 @@ FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly) {
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
   }
+  forv_Vec(ResolutionCandidate*, candidate, rejects) {
+    delete candidate;
+  }
+
 
   if (call->partialTag) {
     if (!resolvedFn) {
@@ -3553,14 +3607,15 @@ FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly) {
 }
 
 static
-std::string getResolveNormalCallCacheKey(CallInfo& info)
+std::string getResolveNormalCallCacheKey(CallInfo& info, BlockStmt* scope, bool
+    paramVisible)
 {
   char buf[128];
   std::string ret;
   CallExpr* call = info.call;
 
   // TODO - is this a problem?
-  BlockStmt* scope = getInnermostBlockContainingAnyFunction(info);
+  //BlockStmt* scope = getInnermostBlockContainingAnyFunction(info);
 
   // TODO -- this should be commented out, but when I do that,
   // get errors resolving AbstractRootLocale.chpl_initOnLocales
@@ -3575,14 +3630,16 @@ std::string getResolveNormalCallCacheKey(CallInfo& info)
   printf("scope file %s line %i\n", scope->fname(), scope->linenum());
   */
 
-  snprintf(buf, sizeof(buf),
-           "scope %d ", scope->id);
+  if (!paramVisible) {
+    snprintf(buf, sizeof(buf),
+             "scope %d ", scope->id);
 
-  ret += buf;
-  ret += info.name;
+    ret += buf;
+    ret += info.name;
 
-  if (call->partialTag) {
-    ret += " (partial) ";
+    if (call->partialTag) {
+      ret += " (partial) ";
+    }
   }
 
   ret += "(";
@@ -3599,7 +3656,7 @@ std::string getResolveNormalCallCacheKey(CallInfo& info)
       ret += "=";
     }
 
-    if (se != NULL) {
+    if (paramVisible && se != NULL) {
       Immediate* imm = NULL;
       if (VarSymbol* var = toVarSymbol(se->symbol())) {
 	imm = var->immediate;
@@ -3623,24 +3680,27 @@ std::string getResolveNormalCallCacheKey(CallInfo& info)
 
     // TODO - quote string immediates?
 
-    if (isTypeExpr(actual)) {
-      // now print the type
-      snprintf(buf, sizeof(buf),
-               "type %d", actual->typeInfo()->symbol->id);
-      // TODO: should this use getValType?
-    } else {
-      // now print the type
-      snprintf(buf, sizeof(buf),
-               ":%d", actual->typeInfo()->symbol->id);
-      // TODO: should this use getValType?
+    if (!paramVisible) {
+
+      if (isTypeExpr(actual)) {
+        // now print the type
+        snprintf(buf, sizeof(buf),
+                 "type %d", actual->typeInfo()->symbol->id);
+        // TODO: should this use getValType?
+      } else {
+        // now print the type
+        snprintf(buf, sizeof(buf),
+                 ":%d", actual->typeInfo()->symbol->id);
+        // TODO: should this use getValType?
+      }
+
+      ret += buf;
+
+      // For debugging, also put type name
+      // note ID is required in some cases
+      ret += " ";
+      ret += actual->typeInfo()->symbol->name;
     }
-
-    ret += buf;
-
-    // For debugging, also put type name
-    // note ID is required in some cases
-    ret += " ";
-    ret += actual->typeInfo()->symbol->name;
   }
 
   ret += ")";
@@ -3654,6 +3714,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   static int gDepth = 0;
   static const char* pad = "                                               ";
   const int debug = 0;
+  const int time = 0;
+
   Timer localTimer;
 
   bool disableCache = false;
@@ -3666,6 +3728,31 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     gdbShouldBreakHere();
   }
 
+  // first isTrue(false) after isTrue(false) is resolved (to put in cache)
+  //if (call->id == 646620)
+  //  gdbShouldBreakHere();
+
+  // first cached isTrue(false)
+  //if (call->id == 646666)
+  //  gdbShouldBreakHere();
+
+  // isTrue(true) looks ok too.
+
+  // this call to ! should ge the param version
+  // paramCandidates is false but it should be true.
+  //if (call->id == 665238)
+  //  gdbShouldBreakHere();
+
+  // this call to ! should indicate that there are param
+  // versions available.
+  //if (call->id == 198352)
+  //  gdbShouldBreakHere();
+
+  if (debug>2) {
+    printf("Resolving call id %i\n", call->id);
+    nprint_view(call);
+  }
+
   temporaryInitializerFixup(call);
 
   resolveDefaultGenericType(call);
@@ -3675,21 +3762,70 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   // Return early if creating the call info would have been an error.
   if( checkonly && info.badcall ) return NULL;
 
+  Vec<FnSymbol*> visibleFns; // visible functions
+  Vec<int> visibilityDistances;
+  BlockStmt* firstRelevantBlock = NULL;
+
+  // Gather visible functions.
+  findVisibleFunctions (info, visibleFns, visibilityDistances,
+      firstRelevantBlock);
+
+  // Determine if any visible functions have param arguments
+  /*
+  bool paramVisible = false;
+  forv_Vec(FnSymbol, fn, visibleFns) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_PARAM) {
+        paramVisible = true;
+        break;
+      }
+    }
+    if (paramVisible)
+      break;
+  }*/
+
   bool cached = false;
   FnSymbol* resolvedFn = NULL;
   std::string key;
+  std::string paramKey;
 
   // Check for a call like this in the cache.
   if (!disableCache) {
-    key = getResolveNormalCallCacheKey(info);
+    key = getResolveNormalCallCacheKey(info, firstRelevantBlock, false);
+    paramKey = getResolveNormalCallCacheKey(info, firstRelevantBlock, true);
     ResolveCallCacheType::iterator it = resolveCallCache.find(key);
 
+    if (debug > 2) {
+      printf("%i has key %s\n", call->id, key.c_str());
+      printf("%i has param key %s\n", call->id, paramKey.c_str());
+    }
+
     if (it != resolveCallCache.end()
-        //&& it->second != NULL // TODO: why need this line?
         && tryStack.n == 0 // TODO - need this?
-        ) {
-      resolvedFn = it->second;
-      cached = true;
+       ) {
+      bool paramCandidates = it->second.paramCandidates;
+      FnSymbol* noParamsFn = it->second.fnNoParamArgs;
+      ResolveCallSubCache* paramMap = it->second.fnsForParamArgs;
+      if (!paramCandidates) {
+        if (debug > 2)
+          printf("%i Resolving with no param candidates\n", call->id);
+        resolvedFn = noParamsFn;
+        cached = true;
+      } else {
+        // There were param candidates. Look in paramMap.
+        if (paramMap != NULL) {
+          if (debug > 2)
+            printf("%i Resolving with param key %s\n", call->id, paramKey.c_str());
+          ResolveCallSubCache::iterator subIt = paramMap->find(paramKey);
+
+          if (subIt != paramMap->end()) {
+            if (debug > 2)
+              printf("%i found param match\n", call->id);
+            resolvedFn = subIt->second;
+            cached = true;
+          }
+        }
+      }
     }
   }
 
@@ -3709,7 +3845,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     resolvedFn = fromCache; // Testing?
      */
 
-    if (debug) printf("%*.s%i cached version for %s\n", gDepth, pad, call->id, key.c_str());
+    if (debug) printf("%*.s%i cached version for %s %s\n", gDepth, pad,
+        call->id, key.c_str(), paramKey.c_str());
     if (call->partialTag) {
       if (!resolvedFn) {
         // OK for resolvedFn to be NULL.
@@ -3749,10 +3886,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
     }
   } else {
-    if (debug) printf("%*.s%i enter: un-cached version for %s\n", gDepth, pad, call->id, key.c_str());
+    bool anyParamCandidates = false;
+
+    if (debug) printf("%*.s%i enter: un-cached version for %s %s\n", gDepth, pad,
+        call->id, key.c_str(), paramKey.c_str());
     gDepth++;
-    resolvedFn = resolveNormalCallUncached(info, checkonly);
+    resolvedFn = resolveNormalCallUncached(info, checkonly, visibleFns,
+        visibilityDistances, anyParamCandidates);
     gDepth--;
+
+    if (debug > 2) {
+      printf("%i any param candidates = %i\n", call->id, (int)anyParamCandidates);
+    }
 
     bool putInCache = false;
     if (resolvedFn == NULL && call->partialTag)
@@ -3763,8 +3908,31 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     if (resolvedFn && resolvedFn->isResolved())
       putInCache = true;
 
-    if (putInCache)
-      resolveCallCache.insert(make_pair(key, resolvedFn));
+    if (putInCache) {
+      ResolveCallCacheEntry& entry = resolveCallCache[key];
+      
+      if (debug>2)
+        printf("In putInCache\n");
+
+      entry.paramCandidates |= anyParamCandidates;
+      if (anyParamCandidates == false) {
+        if (debug>2)
+          printf("Adding as no-param\n");
+        entry.fnNoParamArgs = resolvedFn;
+      } else {
+        // Add to fnsForParamArgs
+        ResolveCallSubCache* paramMap = entry.fnsForParamArgs;
+        if (paramMap == NULL) {
+          paramMap = new ResolveCallSubCache();
+          entry.fnsForParamArgs = paramMap;
+        }
+
+        // Add paramKey to the entry.
+        (*paramMap)[paramKey] = resolvedFn;
+        if (debug>2)
+          printf("Adding as param under key %s\n", paramKey.c_str());
+      }
+    }
 
     if (resolvedFn != NULL) {
       if (debug>1) printf("%*.s%i exit: got fn %i\n", gDepth, pad, call->id, resolvedFn->id);
@@ -3778,12 +3946,17 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   //  nprint_view(resolvedFn);
 
   localTimer.stop();
-  if ( resolvedFn != NULL ) {
+  if ( time && resolvedFn != NULL ) {
 
-    printf("%i %ld usec cached=%i %s\n", resolvedFn->id,
+    printf("%i %ld usec cached=%i %s %s\n", resolvedFn->id,
         localTimer.elapsedUsecs(), (int) cached,
-        key.c_str());
+        key.c_str(), paramKey.c_str());
 
+  }
+
+  if (debug>2) {
+    printf("After resolving call id %i\n", call->id);
+    nprint_view(call);
   }
 
   return resolvedFn;
@@ -3791,12 +3964,20 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
 
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
-                            CallInfo& info, CallExpr* call) {
+                            CallInfo& info, CallExpr* call,
+                            Vec<ResolutionCandidate*>* rejects) {
   if ((explainCallLine && explainCallMatch(info.call)) ||
       call->id == explainCallID) {
     if (candidates.n == 0) {
       USR_PRINT(info.call, "no candidates found");
 
+      if (rejects != NULL) {
+        forv_Vec(ResolutionCandidate*, candidate, *rejects) {
+          USR_PRINT(candidate->fn, "rejected %s %s",
+                    getDispositionDescription(candidate->disposition),
+                    toString(candidate->fn));
+        }
+      }
     } else {
       bool first = true;
       forv_Vec(ResolutionCandidate*, candidate, candidates) {
@@ -5682,6 +5863,11 @@ void resolveReturnType(FnSymbol* fn)
   Type* retType = ret->type;
 
   if (retType == dtUnknown) {
+
+    // 665221 is _if_fn16 that should return a type
+    // having problems with isTrue.
+    //if (fn->id == 665221)
+    //  gdbShouldBreakHere();
 
     Vec<Type*> retTypes;
     Vec<Symbol*> retParams;

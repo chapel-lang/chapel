@@ -21,6 +21,7 @@ RESOLUTION_SRCS =                                              \
                   caches.cpp                                   \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \
+                  candidateDisposition.cpp                     \
                   cullOverReferences.cpp                       \
                   expandVarArgs.cpp                            \
                   implementForallIntents.cpp                   \

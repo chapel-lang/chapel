@@ -1034,8 +1034,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   Vec<FnSymbol*>     visibleFns;
   Vec<int>           visibilityDistances;
+  BlockStmt*         ignoreBlock = NULL;
 
-  getVisibleFunctions(flname, call, visibleFns, visibilityDistances);
+  getVisibleFunctions(flname, call, visibleFns, visibilityDistances, ignoreBlock);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",

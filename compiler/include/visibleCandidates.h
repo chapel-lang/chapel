@@ -20,6 +20,7 @@
 #ifndef _VISIBLE_CANDIDATES_H_
 #define _VISIBLE_CANDIDATES_H_
 
+#include "candidateDisposition.h"
 #include "vec.h"
 
 class CallInfo;
@@ -29,12 +30,13 @@ class ResolutionCandidate;
 void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
                            Vec<int>&                  distances,
-                           Vec<ResolutionCandidate*>& candidates);
+                           Vec<ResolutionCandidate*>& candidates,
+                           Vec<ResolutionCandidate*>& rejects);
 
 void resolveTypedefedArgTypes(FnSymbol* fn);
 
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
+CandidateDisposition checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
 
-bool checkGenericFormals(ResolutionCandidate* currCandidate);
+CandidateDisposition checkGenericFormals(ResolutionCandidate* currCandidate);
 
 #endif

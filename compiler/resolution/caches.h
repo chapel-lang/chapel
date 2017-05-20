@@ -22,6 +22,16 @@
 
 #include "baseAST.h"
 
+// Note: these caches do not include scope because of spec
+// section 22.2 "Function Visibility in Generic Functions"
+//
+// Function visibility in generic functions is altered depending on the
+// instantiation. When resolving function calls made within generic functions,
+// the visible functions are taken from any call site at which the generic
+// function is instantiated for each particular instantiation. The specific
+// call site chosen is arbitrary and it is referred to as the point of
+// instantiation.
+
 //
 // SymbolMapCache: FnSymbol -> FnSymbol cache based on a SymbolMap
 //

@@ -27,13 +27,11 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static void filterConcrete(CallInfo&                  info,
-                           ResolutionCandidate*       currCandidate,
-                           Vec<ResolutionCandidate*>& candidates);
+static CandidateDisposition filterConcrete(CallInfo&                  info,
+                           ResolutionCandidate*       currCandidate);
 
-static void filterGeneric (CallInfo&                  info,
-                           ResolutionCandidate*       currCandidate,
-                           Vec<ResolutionCandidate*>& candidates);
+static CandidateDisposition filterGeneric(CallInfo&            info,
+                                          ResolutionCandidate* currCandidate);
 
 /************************************* | **************************************
 *                                                                             *
@@ -45,28 +43,30 @@ static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
                              Vec<int>&                  distances,
                              bool                       generated,
-                             Vec<ResolutionCandidate*>& candidates);
+                             Vec<ResolutionCandidate*>& candidates,
+                             Vec<ResolutionCandidate*>& rejects);
 
-static void filterCandidate (CallInfo&                  info,
+static void gatherCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
                              int                        distance,
-                             Vec<ResolutionCandidate*>& candidates);
+                             Vec<ResolutionCandidate*>& candidates,
+                             Vec<ResolutionCandidate*>& rejects);
 
-static void filterCandidate (CallInfo&                  info,
-                             ResolutionCandidate*       currCandidate,
-                             Vec<ResolutionCandidate*>& candidates);
+static CandidateDisposition filterCandidate (CallInfo&                  info,
+                             ResolutionCandidate*       currCandidate);
 
 
 void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
                            Vec<int>&                  distances,
-                           Vec<ResolutionCandidate*>& candidates) {
+                           Vec<ResolutionCandidate*>& candidates,
+                           Vec<ResolutionCandidate*>& rejects) {
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  gatherCandidates(info, visibleFns, distances, false, candidates);
+  gatherCandidates(info, visibleFns, distances, false, candidates, rejects);
 
   // If no results, try again with any compiler-generated candidates.
   if (candidates.n == 0) {
-    gatherCandidates(info, visibleFns, distances, true, candidates);
+    gatherCandidates(info, visibleFns, distances, true, candidates, rejects);
   }
 }
 
@@ -74,7 +74,8 @@ static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
                              Vec<int>&                  distances,
                              bool                       compilerGenerated,
-                             Vec<ResolutionCandidate*>& candidates) {
+                             Vec<ResolutionCandidate*>& candidates,
+                             Vec<ResolutionCandidate*>& rejects) {
   int i = 0;
   forv_Vec(FnSymbol, fn, visibleFns) {
     // Consider either the user-defined functions or the compiler-generated
@@ -108,12 +109,12 @@ static void gatherCandidates(CallInfo&                  info,
       //
 
       if (info.call->methodTag == false) {
-        filterCandidate(info, fn, distances.v[i], candidates);
+        gatherCandidate(info, fn, distances.v[i], candidates, rejects);
 
       } else {
         if (fn->hasFlag(FLAG_NO_PARENS)        == true ||
             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-          filterCandidate(info, fn, distances.v[i], candidates);
+          gatherCandidate(info, fn, distances.v[i], candidates, rejects);
         }
       }
     }
@@ -121,10 +122,11 @@ static void gatherCandidates(CallInfo&                  info,
   }
 }
 
-static void filterCandidate(CallInfo&                  info,
+static void gatherCandidate(CallInfo&                  info,
                             FnSymbol*                  fn,
                             int                        distance,
-                            Vec<ResolutionCandidate*>& candidates) {
+                            Vec<ResolutionCandidate*>& candidates,
+                            Vec<ResolutionCandidate*>& rejects) {
   ResolutionCandidate* currCandidate = new ResolutionCandidate(fn, distance);
 
   if (fExplainVerbose &&
@@ -137,20 +139,20 @@ static void filterCandidate(CallInfo&                  info,
     }
   }
 
-  filterCandidate(info, currCandidate, candidates);
-
-  if (candidates.tail() != currCandidate) {
-    delete currCandidate;
-  }
+  CandidateDisposition disp = filterCandidate(info, currCandidate);
+  currCandidate->disposition = disp;
+  if (disp == AcceptCandidate)
+    candidates.add(currCandidate);
+  else
+    rejects.add(currCandidate);
 }
 
-static void filterCandidate(CallInfo&                  info,
-                            ResolutionCandidate*       currCandidate,
-                            Vec<ResolutionCandidate*>& candidates) {
+static CandidateDisposition filterCandidate(CallInfo&            info,
+                                            ResolutionCandidate* currCandidate){
   if (currCandidate->fn->hasFlag(FLAG_GENERIC) == false) {
-    filterConcrete(info, currCandidate, candidates);
+    return filterConcrete(info, currCandidate);
   } else {
-    filterGeneric (info, currCandidate, candidates);
+    return filterGeneric(info, currCandidate);
   }
 }
 
@@ -162,25 +164,24 @@ static void filterCandidate(CallInfo&                  info,
 
 static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn);
 
-static void filterConcrete(CallInfo&                  info,
-                           ResolutionCandidate*       currCandidate,
-                           Vec<ResolutionCandidate*>& candidates) {
+static CandidateDisposition filterConcrete(CallInfo&            info,
+                                           ResolutionCandidate* currCandidate) {
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
-  if (currCandidate->fn != NULL) {
-    resolveTypedefedArgTypes(currCandidate->fn);
+  if (currCandidate->fn == NULL)
+    return RejectCandidateAlignment;
 
-    if (currCandidate->computeAlignment(info) == true) {
-      // Ensure that type constructor is resolved before other constructors.
-      if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-        resolveTypeConstructor(info, currCandidate->fn);
-      }
+  resolveTypedefedArgTypes(currCandidate->fn);
 
-      if (checkResolveFormalsWhereClauses(currCandidate) == true) {
-        candidates.add(currCandidate);
-      }
-    }
+  if (currCandidate->computeAlignment(info) == false)
+    return RejectCandidateAlignment;
+  
+  // Ensure that type constructor is resolved before other constructors.
+  if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+    resolveTypeConstructor(info, currCandidate->fn);
   }
+
+  return checkResolveFormalsWhereClauses(currCandidate);
 }
 
 void resolveTypedefedArgTypes(FnSymbol* fn) {
@@ -270,7 +271,7 @@ static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
 }
 
 // Verifies the usage of this candidate function
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
+CandidateDisposition checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
   int coindex = -1;
 
   /*
@@ -284,11 +285,16 @@ bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
       bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
+      bool actualIsParam     = actual->isParameter();
+
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
 
       if (actualIsTypeAlias != formalIsTypeAlias) {
-        return false;
+        return RejectCandidateTypeFormalNotActual;
+
+      } else if(formalIsParam && !actualIsParam) {
+        return RejectCandidateParamFormalNotActual;
 
       } else if (canDispatch(actual->type,
                              actual,
@@ -296,12 +302,15 @@ bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
                              currCandidate->fn,
                              NULL,
                              formalIsParam) == false) {
-        return false;
+        return RejectCandidateArgTypeError;
       }
     }
   }
 
-  return evaluateWhereClause(currCandidate->fn);
+  if (evaluateWhereClause(currCandidate->fn) == false)
+    return RejectCandidateWhere;
+
+  return AcceptCandidate;
 }
 
 /************************************* | **************************************
@@ -310,35 +319,48 @@ bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void filterGeneric(CallInfo&                  info,
-                          ResolutionCandidate*       currCandidate,
-                          Vec<ResolutionCandidate*>& candidates) {
+static CandidateDisposition filterGeneric(CallInfo&            info,
+                                          ResolutionCandidate* currCandidate) {
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
-  if (currCandidate->fn                     != NULL &&
-      currCandidate->computeAlignment(info) == true &&
-      checkGenericFormals(currCandidate)    == true) {
-    // Compute the param/type substitutions for generic arguments.
-    currCandidate->computeSubstitutions();
+  if (currCandidate->fn == NULL)
+    return RejectCandidateAlignment;
 
-    if (currCandidate->substitutions.n > 0) {
-      /*
-       * Instantiate enough of the generic to get through the rest of the
-       * filtering and disambiguation processes.
-       */
-      currCandidate->fn = instantiateSignature(currCandidate->fn,
-                                               currCandidate->substitutions,
-                                               info.call);
-
-      if (currCandidate->fn != NULL) {
-        filterCandidate(info, currCandidate, candidates);
-      }
-    }
+  if (currCandidate->computeAlignment(info) == false) {
+    return RejectCandidateAlignment;
   }
+
+  {
+    CandidateDisposition d = checkGenericFormals(currCandidate);
+    if (d != AcceptCandidate)
+      return d;
+  }
+
+  // Compute the param/type substitutions for generic arguments.
+  currCandidate->computeSubstitutions();
+
+  if (currCandidate->substitutions.n <= 0) {
+    return RejectCandidateArgTypeError;
+  }
+
+  /*
+   * Instantiate enough of the generic to get through the rest of the
+   * filtering and disambiguation processes.
+   */
+  currCandidate->fn = instantiateSignature(currCandidate->fn,
+                                           currCandidate->substitutions,
+                                           info.call);
+
+  if (currCandidate->fn == NULL) {
+    return RejectCandidateArgTypeError;
+  }
+
+  return filterCandidate(info, currCandidate);
 }
 
 // Verify that the generic formals are matched correctly
-bool checkGenericFormals(ResolutionCandidate* currCandidate) {
+// Returns a disposition
+CandidateDisposition checkGenericFormals(ResolutionCandidate* currCandidate) {
   int coindex = 0;
 
   for_formals(formal, currCandidate->fn) {
@@ -348,7 +370,7 @@ bool checkGenericFormals(ResolutionCandidate* currCandidate) {
         bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
         if (actualIsTypeAlias != formalIsTypeAlias) {
-          return false;
+          return RejectCandidateTypeFormalNotActual;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* vt  = actual->getValType();
@@ -361,7 +383,11 @@ bool checkGenericFormals(ResolutionCandidate* currCandidate) {
               (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
               (svt == NULL || canInstantiate(svt, formal->type) == false)) {
 
-            return false;
+
+            if (currCandidate->fn->_this == formal)
+              return RejectCandidateThisTypeError;
+            else
+              return RejectCandidateArgTypeError;
           }
 
         } else {
@@ -374,7 +400,8 @@ bool checkGenericFormals(ResolutionCandidate* currCandidate) {
                            currCandidate->fn,
                            NULL,
                            formalIsParam) == false) {
-            return false;
+
+            return RejectCandidateArgTypeError;
           }
         }
       }
@@ -383,5 +410,5 @@ bool checkGenericFormals(ResolutionCandidate* currCandidate) {
     coindex++;
   }
 
-  return true;
+  return AcceptCandidate;
 }

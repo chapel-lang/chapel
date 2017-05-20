@@ -94,7 +94,8 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call);
 
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns,
-                          Vec<int>&       distances) {
+                          Vec<int>&       distances,
+                          BlockStmt*&     innerMostFnBlock) {
   CallExpr* call = info.call;
 
   //
@@ -106,7 +107,8 @@ void findVisibleFunctions(CallInfo&       info,
 
   if (!call->isResolved()) {
     if (!info.scope) {
-      getVisibleFunctions(info.name, call, visibleFns, distances);
+      innerMostFnBlock = NULL; // clear it so it will be set again by next call
+      getVisibleFunctions(info.name, call, visibleFns, distances, innerMostFnBlock);
     } else {
       BlockStmt* block = info.scope;
       // all functions in standard modules are stored in a single block
@@ -117,12 +119,14 @@ void findVisibleFunctions(CallInfo&       info,
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
           visibleFns.append(*fns);
           distances.add(0);
+          innerMostFnBlock = block;
         }
       }
     }
   } else {
     visibleFns.add(call->resolvedFunction());
     distances.add(0);
+    innerMostFnBlock = getVisibilityBlock(call);
     handleTaskIntentArgs(call, call->resolvedFunction(), info);
   }
 
@@ -403,18 +407,21 @@ static BlockStmt* getVisibleFunctions(const char*           name,
                                       std::set<BlockStmt*>& visited,
                                       Vec<FnSymbol*>&       visibleFns,
                                       Vec<int>&             distances,
+                                      BlockStmt*&           innerMostFnBlock,
                                       int                   distance);
 
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
                          Vec<FnSymbol*>&  visibleFns,
-                         Vec<int>&        distances) {
+                         Vec<int>&        distances,
+                         BlockStmt*&      innerMostFnBlock) {
   BlockStmt*           block    = getVisibilityBlock(call);
   std::set<BlockStmt*> visited;
 
-  getVisibleFunctions(name, call, block, visited, visibleFns, distances, 0);
+  getVisibleFunctions(name, call, block, visited, visibleFns, distances,
+      innerMostFnBlock, 0);
 }
-
+/*
 static BlockStmt* doGetInnermostBlockContainingAnyFunction(const char*           name,
                                                            CallExpr*             call,
                                                            BlockStmt*            block,
@@ -508,6 +515,7 @@ BlockStmt* getInnermostBlockContainingAnyFunction(CallInfo& info)
   return doGetInnermostBlockContainingAnyFunction(name, call, block, visited);
 }
 
+*/
 
 static BlockStmt* getVisibleFunctions(const char*           name,
                                       CallExpr*             call,
@@ -515,6 +523,7 @@ static BlockStmt* getVisibleFunctions(const char*           name,
                                       std::set<BlockStmt*>& visited,
                                       Vec<FnSymbol*>&       visibleFns,
                                       Vec<int>&             distances,
+                                      BlockStmt*&           innerMostFnBlock,
                                       int                   distance) {
   BlockStmt* retval = NULL;
 
@@ -547,6 +556,8 @@ static BlockStmt* getVisibleFunctions(const char*           name,
             // of their proper scope.
             visibleFns.add(fn);
             distances.add(distance);
+            if (innerMostFnBlock == NULL)
+              innerMostFnBlock = block;
           }
         }
       }
@@ -577,6 +588,7 @@ static BlockStmt* getVisibleFunctions(const char*           name,
                                     visited,
                                     visibleFns,
                                     distances,
+                                    innerMostFnBlock,
                                     distance+1);
               } else {
                 getVisibleFunctions(name,
@@ -585,6 +597,7 @@ static BlockStmt* getVisibleFunctions(const char*           name,
                                     visited,
                                     visibleFns,
                                     distances,
+                                    innerMostFnBlock,
                                     distance+1);
               }
             }
@@ -598,7 +611,7 @@ static BlockStmt* getVisibleFunctions(const char*           name,
     //
     if (BlockStmt* next = visibilityBlockCache.get(block)) {
       getVisibleFunctions(name, call, next, visited, visibleFns, distances,
-          distance+1);
+          innerMostFnBlock, distance+1);
 
       retval = (canSkipThisBlock) ? next : block;
 
@@ -610,6 +623,7 @@ static BlockStmt* getVisibleFunctions(const char*           name,
                                              visited,
                                              visibleFns,
                                              distances,
+                                             innerMostFnBlock,
                                              distance+1);
 
       if (cache) {

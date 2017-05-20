@@ -197,7 +197,7 @@ filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
     return;
   }
 
-  if (checkGenericFormals(currCandidate) == false)
+  if (checkGenericFormals(currCandidate) != AcceptCandidate)
     return;
 
   // Compute the param/type substitutions for generic arguments.
@@ -404,8 +404,9 @@ void resolveInitCall(CallExpr* call) {
 
   Vec<FnSymbol*> visibleFns; // visible functions
   Vec<int> visibilityDistances;
+  BlockStmt* ignoreBlock = NULL;
 
-  findVisibleFunctions(info, visibleFns, visibilityDistances);
+  findVisibleFunctions(info, visibleFns, visibilityDistances, ignoreBlock);
 
 
   // Modified narrowing down the candidates to operate in an
