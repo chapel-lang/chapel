@@ -177,10 +177,6 @@ or variable identifier (that's being defined)."
   "Keywords besides constants and operators that start primary expressions."
   chpl '("new" "delete")) ;; Not really a keyword, but practically works as one.
 
-(c-lang-defconst c-error-handling-kwds
-  "Keywords for error handling."
-  chpl '("catch" "throw" "throws" "try" "try!"))
-
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
   chpl '("align" "atomic" "begin" "by" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "reduce" "ref" "scan" "serial" "single" "sparse" "sync" "where" "while" "with" "zip"))
