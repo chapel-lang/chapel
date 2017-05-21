@@ -368,9 +368,16 @@ CandidateDisposition checkGenericFormals(ResolutionCandidate* currCandidate) {
       if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
         bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
         bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+        bool actualIsParam     = actual->isParameter();
+
+        bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                                 formal->intent == INTENT_PARAM;
 
         if (actualIsTypeAlias != formalIsTypeAlias) {
           return RejectCandidateTypeFormalNotActual;
+
+        } else if(formalIsParam && !actualIsParam) {
+          return RejectCandidateParamFormalNotActual;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* vt  = actual->getValType();
