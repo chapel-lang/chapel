@@ -16,8 +16,9 @@ Developer Workflow
 Overview:
 
 #. `Discuss design`_ changes or big development efforts
-#. `Fork repo on github`_
-#. `Create new branch`_
+#. `Set up a branch for development`_
+   #. `Fork repo on github`_
+   #. `Create new branch`_
 #. `Submit pull request`_
 #. `Test changes`_ (can be done by team at Cray)
 #. `Mail chapel-developers@ for review and merge`_
@@ -34,10 +35,19 @@ repository and/or send an email to chapel-developers_ with a prefix of
 ``[Design]`` in the subject header for discussion with the community and to
 ensure that you are aware of any parallel efforts in that area.
 
+.. _Set up a branch for development:
+
+Set up a branch for development
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This consists of two steps.  The first, `Fork repo on github`_, only needs to
+happen once per developer.  The second, `Create new branch`_, should happen
+for every new effort.
+
 .. _Fork repo on github:
 
 Fork repo on github
-~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++
 
 These are expected to evolve over time as the governance of Chapel is migrated
 from Cray to an external/community body (the major elements are likely to be
@@ -83,7 +93,7 @@ similar, though the specific people involved are likely to change and grow).
 .. _Create new branch:
 
 Create new branch
-~~~~~~~~~~~~~~~~~
++++++++++++++++++
 
 * Develop your feature, bug fix, etc on your fork. Using a concisely named
   branch is encouraged.  See `Create and switch to a feature branch`_ for the
