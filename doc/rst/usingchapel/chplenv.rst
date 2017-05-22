@@ -372,12 +372,12 @@ CHPL_MEM
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
    a memory management layer.  Current options are:
 
-        =============== =======================================================
-        Value           Description
-        =============== =======================================================
-        cstdlib         use the standard C malloc/free commands
-        jemalloc        use included version of Jason Evan's memory allocator
-        =============== =======================================================
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
