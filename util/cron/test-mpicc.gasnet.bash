@@ -21,4 +21,6 @@ export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl modules/packages/mpi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="mpicc.gasnet"
 
+export GASNET_QUIET=Y
+
 $CWD/nightly -cron -no-buildcheck ${nightly_args}
