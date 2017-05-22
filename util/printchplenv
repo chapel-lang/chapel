@@ -99,6 +99,10 @@ def print_mode(mode='list', anonymize=False):
     else:
         print_var('CHPL_MEM', target_mem, mode, 'mem', ('runtime', 'launcher'))
 
+    if m == 'make' or (target_mem == 'jemalloc') or m == 'shell':
+        jemalloc = chpl_jemalloc.get()
+        print_var('  CHPL_JEMALLOC', jemalloc, mode, 'jemalloc', ('runtime',))
+
     if m == 'list' or m == 'make' or m == 'shell':
         make = chpl_make.get()
         print_var('CHPL_MAKE', make, mode, 'make')
@@ -114,10 +118,6 @@ def print_mode(mode='list', anonymize=False):
 
     hwloc = chpl_hwloc.get()
     print_var('CHPL_HWLOC', hwloc, mode, 'hwloc', ('runtime',))
-
-    if m == 'make' or (target_mem == 'jemalloc') or m == 'shell':
-        jemalloc = chpl_jemalloc.get()
-        print_var('CHPL_JEMALLOC', jemalloc, mode, 'jemalloc', ('runtime',))
 
     regexp = chpl_regexp.get()
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
