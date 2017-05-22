@@ -17,8 +17,10 @@ Overview:
 
 #. `Discuss design`_ changes or big development efforts
 #. `Set up a branch for development`_
+
    #. `Fork repo on github`_
    #. `Create new branch`_
+
 #. `Submit pull request`_
 #. `Test changes`_ (can be done by team at Cray)
 #. `Mail chapel-developers@ for review and merge`_
