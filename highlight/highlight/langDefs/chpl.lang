@@ -12,15 +12,15 @@ Description="Chapel"
 Keywords={
   { Id=1,
    List={"as", "align", "atomic", "begin", "break", "by", "catch", "class",
-         "cobegin", "coforall", "config", "const", "continue", "proc", "iter",
-         "delete", "dmapped", "do", "domain", "else", "enum", "except",
-         "export", "extern", "false", "for", "forall", "if", "in", "index",
-         "inline", "inout", "label", "lambda", "let", "local", "module", "new",
+         "cobegin", "coforall", "config", "const", "continue", "delete",
+         "dmapped", "do", "domain", "else", "enum", "except", "export",
+         "extern", "false", "for", "forall", "if", "in", "index", "inline",
+         "inout", "iter", "label", "lambda", "let", "local", "module", "new",
          "nil", "noinit", "on", "only", "otherwise", "out", "param", "private",
-         "public", "record", "reduce", "ref", "require", "return", "scan",
-         "select", "serial", "single", "sparse", "subdomain", "sync", "then",
-         "throw", "throws", "true", "try", "try!", "type", "union", "use",
-         "var", "when", "where", "while", "with", "yield", "zip"
+         "proc", "public", "record", "reduce", "ref", "require", "return",
+         "scan", "select", "serial", "single", "sparse", "subdomain", "sync",
+         "then", "throw", "throws", "true", "try", "try!", "type", "union",
+         "use", "var", "when", "where", "while", "with", "yield", "zip"
         }
   },
   { Id=2,
