@@ -264,11 +264,30 @@ static void addRecordDefaultConstruction() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addToSymbolTable(DefExpr* def);
+static void addToSymbolTable(ModuleSymbol* topLevelModule);
+
+static void addToSymbolTable(DefExpr*      def);
 
 static void addToSymbolTable() {
-  forv_Vec(DefExpr, def, gDefExprs) {
-    addToSymbolTable(def);
+  ResolveScope::initializeScopeForChplProgram();
+
+  for_alist(stmt, theProgram->block->body) {
+    if (ModuleSymbol* mod = definesModuleSymbol(stmt)) {
+      addToSymbolTable(mod->defPoint);
+      addToSymbolTable(mod);
+    }
+  }
+}
+
+static void addToSymbolTable(ModuleSymbol* topLevelModule) {
+  std::vector<BaseAST*> asts;
+
+  collect_asts(topLevelModule, asts);
+
+  for_vector(BaseAST, item, asts) {
+    if (DefExpr* def = toDefExpr(item)) {
+      addToSymbolTable(def);
+    }
   }
 }
 

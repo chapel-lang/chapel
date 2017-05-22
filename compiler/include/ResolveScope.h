@@ -33,6 +33,8 @@ class TypeSymbol;
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
 public:
+  static void                     initializeScopeForChplProgram();
+
   static ResolveScope*            findOrCreateScopeFor(DefExpr* def);
 
   static ResolveScope*            getScopeFor(BaseAST* ast);
