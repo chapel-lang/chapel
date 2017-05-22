@@ -21,6 +21,7 @@ Overview:
    #. `Fork repo on github`_
    #. `Create new branch`_
 
+#. `Develop and test contributions locally`_
 #. `Submit pull request`_
 #. `Test changes`_ (can be done by team at Cray)
 #. `Mail chapel-developers@ for review and merge`_
@@ -97,10 +98,27 @@ similar, though the specific people involved are likely to change and grow).
 Create new branch
 +++++++++++++++++
 
-* Develop your feature, bug fix, etc on your fork. Using a concisely named
-  branch is encouraged.  See `Create and switch to a feature branch`_ for the
-  git command, and `Develop your contribution`_ for the commands and
-  recommended policies.
+* Develop your feature, bug fix, etc on your fork.  To create a new branch, use
+  the following command:
+
+.. code-block:: bash
+
+    git checkout -b <branch_name>
+
+  Using a concisely named branch is encouraged.
+
+.. _Develop and test contributions locally:
+
+Develop and test contributions locally
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Your contribution will take the form of a series of commits.  While including
+sensible commit messages is a good idea, it is more important to have a good
+merge message once the pull request is going in. Likewise, it is OK to have many
+small commits that reflect the history of development rather than commits for
+the feature.  See `Development commands`_ for how to perform some common
+operations during development.
+
 
 .. _Submit pull request:
 
@@ -297,20 +315,10 @@ Here is the uncommented version of the commands:
 Create and switch to a feature branch
 -------------------------------------
 
-.. code-block:: bash
+.. _Development commands:
 
-    git checkout -b <branch_name>
-
-.. _Develop your contribution:
-
-Develop your contribution locally
----------------------------------
-
-Your contribution will take the form of a series of commits.  While including
-sensible commit messages is a good idea, it is more important to have a good
-merge message once the pull request is going in. Likewise, it is OK to have
-many small commits that reflect the history of development rather than commits
-for the feature.
+Development commands
+--------------------
 
 Stage a file/dir for commit:
 
@@ -399,7 +407,7 @@ Fixing a commit message:
 
 .. note::
 
-    This should only every be done to commits that **have not been pushed** to
+    This should only ever be done to commits that **have not been pushed** to
     a remote repository.
 
 Un-do the last commit (leaving changed files in your working directory)
@@ -410,7 +418,7 @@ Un-do the last commit (leaving changed files in your working directory)
 
 .. note::
 
-    This should only every be done to commits that **have not been pushed** to
+    This should only ever be done to commits that **have not been pushed** to
     a remote repository.
 
 
