@@ -76,27 +76,28 @@ static Vec<const char*>                       aliasFieldSet;
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
+static void          addToSymbolTable();
 
-static void addToSymbolTable();
+static void          processImportExprs();
 
-static void processImportExprs();
+static void          addRecordDefaultConstruction();
 
-static void addRecordDefaultConstruction();
+static void          resolveGotoLabels();
 
-static void resolveGotoLabels();
+static void          resolveUnresolvedSymExprs();
 
-static void resolveUnresolvedSymExprs();
+static void          resolveEnumeratedTypes();
 
-static void resolveEnumeratedTypes();
+static void          destroyModuleUsesCaches();
 
-static void destroyModuleUsesCaches();
+static void          renameDefaultTypesToReflectWidths();
 
-static void renameDefaultTypesToReflectWidths();
+static bool          lookupThisScopeAndUses(const char*           name,
+                                            BaseAST*              context,
+                                            BaseAST*              scope,
+                                            std::vector<Symbol*>& symbols);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols);
+static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
 void scopeResolve() {
   //
@@ -265,17 +266,6 @@ static void addRecordDefaultConstruction() {
 
 static void addToSymbolTable(DefExpr* def);
 
-// Exported call for AggregateType
-void addToSymbolTable(FnSymbol* fn) {
-  std::vector<DefExpr*> defs;
-
-  collectDefExprs(fn, defs);
-
-  for_vector(DefExpr, def, defs) {
-    addToSymbolTable(def);
-  }
-}
-
 static void addToSymbolTable() {
   forv_Vec(DefExpr, def, gDefExprs) {
     addToSymbolTable(def);
@@ -294,6 +284,18 @@ static void addToSymbolTable(DefExpr* def) {
 }
 
 
+// Exported entry point for AggregateType
+void addToSymbolTable(FnSymbol* fn) {
+  std::vector<DefExpr*> defs;
+
+  collectDefExprs(fn, defs);
+
+  for_vector(DefExpr, def, defs) {
+    addToSymbolTable(def);
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * Transform module uses into calls to initialize functions; store the         *
@@ -301,8 +303,7 @@ static void addToSymbolTable(DefExpr* def) {
 *                                                                             *
 ************************************** | *************************************/
 
-static ModuleSymbol* definesModuleSymbol(Expr* expr);
-static void          processImportExprs(ModuleSymbol* topLevelModule);
+static void processImportExprs(ModuleSymbol* topLevelModule);
 
 static void processImportExprs() {
   for_alist(expr, theProgram->block->body) {
@@ -328,16 +329,6 @@ static void processImportExprs(ModuleSymbol* topLevelModule) {
       }
     }
   }
-}
-
-static ModuleSymbol* definesModuleSymbol(Expr* expr) {
-  ModuleSymbol* retval = NULL;
-
-  if (DefExpr* def = toDefExpr(expr)) {
-    retval = toModuleSymbol(def->sym);
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
@@ -1553,4 +1544,20 @@ BaseAST* getScope(BaseAST* ast) {
   INT_FATAL(ast, "getScope expects an Expr or a Symbol");
 
   return NULL;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static ModuleSymbol* definesModuleSymbol(Expr* expr) {
+  ModuleSymbol* retval = NULL;
+
+  if (DefExpr* def = toDefExpr(expr)) {
+    retval = toModuleSymbol(def->sym);
+  }
+
+  return retval;
 }
