@@ -21,11 +21,13 @@
 #define _RESOLVE_SCOPE_H_
 
 #include <map>
+#include <string>
 
 class BaseAST;
 class BlockStmt;
 class DefExpr;
 class FnSymbol;
+class ModuleSymbol;
 class Symbol;
 class TypeSymbol;
 
@@ -33,34 +35,53 @@ class TypeSymbol;
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
 public:
-  static void                     initializeScopeForChplProgram();
+  static void           initializeScopeForChplProgram();
 
-  static ResolveScope*            findOrCreateScopeFor(DefExpr* def);
+  static ResolveScope*  findOrCreateScopeFor(DefExpr* def);
 
-  static ResolveScope*            getScopeFor(BaseAST* ast);
+  static ResolveScope*  getScopeFor(BaseAST* ast);
 
-  static void                     destroyAstMap();
+  static void           destroyAstMap();
 
 public:
-                                  ResolveScope(BlockStmt*  blockStmt);
-                                  ResolveScope(FnSymbol*   fnSym);
-                                  ResolveScope(TypeSymbol* typeSym);
+                        ResolveScope(ModuleSymbol*       modSym,
+                                     const ResolveScope* parent);
 
-  bool                            extend(Symbol*     sym);
+                        ResolveScope(FnSymbol*           fnSym,
+                                     const ResolveScope* parent);
 
-  Symbol*                         lookup(const char* name)               const;
+                        ResolveScope(TypeSymbol*         typeSym,
+                                     const ResolveScope* parent);
+
+                        ResolveScope(BlockStmt*          blockStmt,
+                                     const ResolveScope* parent);
+
+  std::string           name()                                           const;
+
+  int                   depth()                                          const;
+
+  int                   numBindings()                                    const;
+
+  bool                  extend(Symbol*     sym);
+
+  Symbol*               lookup(const char* name)                         const;
+
+  void                  describe()                                       const;
 
 private:
-                                  ResolveScope();
+  typedef std::map<const char*, Symbol*>  Bindings;
 
-  bool                            isAggregateTypeAndConstructor(Symbol* sym0,
-                                                                Symbol* sym1);
+                        ResolveScope();
 
-  bool                            isSymbolAndMethod(Symbol* sym0,
-                                                    Symbol* sym1);
+  bool                  isAggregateTypeAndConstructor(Symbol* sym0,
+                                                      Symbol* sym1);
 
-  BaseAST*                        mAstRef;
-  std::map<const char*, Symbol*>  mBindings;
+  bool                  isSymbolAndMethod(Symbol* sym0,
+                                          Symbol* sym1);
+
+  BaseAST*              mAstRef;
+  const ResolveScope*   mParent;
+  Bindings              mBindings;
 };
 
 #endif

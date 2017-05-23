@@ -62,13 +62,13 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
   if (retval == NULL) {
     if (BlockStmt* blockStmt = toBlockStmt(ast)) {
-      retval = new ResolveScope(blockStmt);
+      retval = new ResolveScope(blockStmt, NULL);
 
     } else if (FnSymbol*  fnSymbol = toFnSymbol(ast)) {
-      retval = new ResolveScope(fnSymbol);
+      retval = new ResolveScope(fnSymbol, NULL);
 
     } else if (TypeSymbol* typeSymbol = toTypeSymbol(ast)) {
-      retval = new ResolveScope(typeSymbol);
+      retval = new ResolveScope(typeSymbol, NULL);
 
     } else {
       INT_ASSERT(false);
@@ -105,6 +105,34 @@ void ResolveScope::destroyAstMap() {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+ResolveScope::ResolveScope(FnSymbol*           fnSymbol,
+                           const ResolveScope* parent) {
+  mAstRef = fnSymbol;
+  mParent = parent;
+}
+
+ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
+                           const ResolveScope* parent) {
+  Type* type = typeSymbol->type;
+
+  INT_ASSERT(isEnumType(type) || isAggregateType(type));
+
+  mAstRef = typeSymbol;
+  mParent = parent;
+}
+
+ResolveScope::ResolveScope(BlockStmt*          blockStmt,
+                           const ResolveScope* parent) {
+  mAstRef = blockStmt;
+  mParent = parent;
+}
+
+/************************************* | **************************************
+*                                                                             *
 * Historically, definitions have been mapped to scopes by                     *
 *   1) Walking gDefExprs                                                      *
 *   2) Determining the "scope" for a given DefExpr by walking upwards         *
@@ -126,7 +154,7 @@ void ResolveScope::destroyAstMap() {
 ************************************** | *************************************/
 
 void ResolveScope::initializeScopeForChplProgram() {
-  ResolveScope* program = new ResolveScope(theProgram->block);
+  ResolveScope* program = new ResolveScope(theProgram->block, NULL);
 
   program->extend(dtObject->symbol);
   program->extend(dtVoid->symbol);
@@ -232,21 +260,60 @@ void ResolveScope::initializeScopeForChplProgram() {
 *                                                                             *
 ************************************** | *************************************/
 
-ResolveScope::ResolveScope(BlockStmt* blockStmt) {
-  mAstRef = blockStmt;
+std::string ResolveScope::name() const {
+  std::string retval = "";
+
+  if        (ModuleSymbol* modSym  = toModuleSymbol(mAstRef)) {
+    retval = modSym->name;
+
+  } else if (FnSymbol*     fnSym   = toFnSymbol(mAstRef))     {
+    retval = fnSym->name;
+
+  } else if (TypeSymbol*   typeSym = toTypeSymbol(mAstRef))   {
+    retval = typeSym->name;
+
+  } else if (BlockStmt*    block   = toBlockStmt(mAstRef))    {
+    char buff[1024];
+
+    sprintf(buff, "BlockStmt %9d", block->id);
+
+    retval = buff;
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
 }
 
-ResolveScope::ResolveScope(FnSymbol*  fnSymbol)  {
-  mAstRef = fnSymbol;
+int ResolveScope::depth() const {
+  const ResolveScope* ptr    = mParent;
+  int                 retval =       0;
+
+  while (ptr != NULL) {
+    retval = retval + 1;
+    ptr    = ptr->mParent;
+  }
+
+  return retval;
 }
 
-ResolveScope::ResolveScope(TypeSymbol* typeSymbol) {
-  Type* type = typeSymbol->type;
+int ResolveScope::numBindings() const {
+  Bindings::const_iterator it;
+  int                      retval = 0;
 
-  INT_ASSERT(isEnumType(type) || isAggregateType(type));
+  for (it = mBindings.begin(); it != mBindings.end(); it++) {
+    retval = retval + 1;
+  }
 
-  mAstRef = typeSymbol;
+  return retval;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 bool ResolveScope::extend(Symbol* newSym) {
   const char* name   = newSym->name;
@@ -326,4 +393,24 @@ Symbol* ResolveScope::lookup(const char* name) const {
   }
 
   return retval;
+}
+
+void ResolveScope::describe() const {
+  Bindings::const_iterator it;
+  const char*              blockParent = "";
+  int                      index       = 0;
+
+  if (BlockStmt* block = toBlockStmt(mAstRef)) {
+    blockParent = block->parentSymbol->name;
+  }
+
+  printf("#<ResolveScope %s %s\n", name().c_str(), blockParent);
+  printf("  Depth:       %19d\n", depth());
+  printf("  NumBindings: %19d\n", numBindings());
+
+  for (it = mBindings.begin(); it != mBindings.end(); it++, index++) {
+    printf("    %3d: %s\n", index, it->first);
+  }
+
+  printf(">\n\n");
 }
