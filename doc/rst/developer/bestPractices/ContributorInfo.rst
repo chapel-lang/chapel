@@ -137,6 +137,9 @@ If there are conflicts, you will be asked to resolve them. Once the affected
 files have been fixed, stage them with ``git add``, and then call ``git
 commit`` to finish the merge process.
 
+If you want to understand the changes that occurred upstream, see `Read commit
+messages`_ below.
+
 
 .. _Submit pull request:
 
@@ -328,11 +331,6 @@ Here is the uncommented version of the commands:
     # Make sure it works, get up-to-date without modifying your files
     git fetch upstream
 
-.. _Create and switch to a feature branch:
-
-Create and switch to a feature branch
--------------------------------------
-
 .. _Development commands:
 
 Development commands
@@ -439,6 +437,30 @@ Un-do the last commit (leaving changed files in your working directory)
     This should only ever be done to commits that **have not been pushed** to
     a remote repository.
 
+.. _Read commit messages:
+
+Read commit messages for changes from the main Chapel project
+-------------------------------------------------------------
+
+To view only the commits that happened on master (in other words, the old svn
+commits and the merge commits for pull requests):
+
+.. code-block:: bash
+
+    git log --first-parent
+
+    # or with line wrapping
+    git log --first-parent | less
+
+    # or including files changed
+    git log --first-parent -m --stat
+
+    # or similar to svn log
+    git log --first-parent -m --name-status
+
+More logging commands are described in `Other logging commands`_ below.
+
+
 
 More information on using git
 -----------------------------
@@ -522,7 +544,9 @@ should be kept:
    git reset --hard <last commit you want to keep>
 
 
-Other Logging Commands
+.. _Other logging commands:
+
+Other logging commands
 ----------------------
 
 To view commits grouped by author (for example, show me commits by author from

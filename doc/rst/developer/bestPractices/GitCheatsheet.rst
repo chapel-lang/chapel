@@ -4,33 +4,11 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-F) `Read commit messages for changes from the main Chapel project`_
 G) `Test your feature`_
 H) `Push your work to your feature branch`_
 I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
 
-
-Read commit messages for changes from the main Chapel project
--------------------------------------------------------------
-
-To view only the commits that happened on master (in other words, the old svn
-commits and the merge commits for pull requests):
-
-.. code-block:: bash
-
-    git log --first-parent
-
-    # or with line wrapping
-    git log --first-parent | less
-
-    # or including files changed
-    git log --first-parent -m --stat
-
-    # or similar to svn log
-    git log --first-parent -m --name-status
-
-More logging commands are described in "Other Logging Commands" below.
 
 Test your feature
 -----------------
