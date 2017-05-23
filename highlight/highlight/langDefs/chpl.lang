@@ -19,8 +19,8 @@ Keywords={
          "nil", "noinit", "on", "only", "otherwise", "out", "param", "private",
          "proc", "public", "record", "reduce", "ref", "require", "return",
          "scan", "select", "serial", "single", "sparse", "subdomain", "sync",
-         "then", "throw", "throws", "true", "try", "try!", "type", "union",
-         "use", "var", "when", "where", "while", "with", "yield", "zip"
+         "then", "throw", "throws", "true", "try", "type", "union", "use",
+         "var", "when", "where", "while", "with", "yield", "zip"
         }
   },
   { Id=2,

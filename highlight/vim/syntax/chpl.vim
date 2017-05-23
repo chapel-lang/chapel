@@ -258,7 +258,7 @@ syn keyword chplConditional	if then else
 syn keyword chplConstant	nil
 syn keyword chplRepeat		while for do coforall forall in serial
 syn keyword chplLabel	        when otherwise label
-syn keyword chplErrorHandling   throw throws try try! catch
+syn keyword chplErrorHandling   throw throws try catch
 
 " Folding
 syn region scopeFold start="{" end="}" fold transparent
