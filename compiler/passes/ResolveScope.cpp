@@ -103,6 +103,135 @@ void ResolveScope::destroyAstMap() {
   sScopeMap.clear();
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Historically, definitions have been mapped to scopes by                     *
+*   1) Walking gDefExprs                                                      *
+*   2) Determining the "scope" for a given DefExpr by walking upwards         *
+*      through the AST.                                                       *
+*   3) Validating that the definition is valid.                               *
+*   4) Extending the scope with the definition                                *
+*                                                                             *
+* As a special case the built-in symbols, which are defined in rootModule,    *
+* are mapped as if they were defined in chpl_Program.                         *
+*                                                                             *
+* 2017/05/23:                                                                 *
+*   Begin to modify this process so that scopes and definitions are managed   *
+* using a traditional top-down traversal of the AST starting at chpl_Program. *
+*                                                                             *
+* This process will overlook the compiler defined built-ins.  This function   *
+* is responsible for pre-allocating the scope for chpl_Program and then       *
+* inserting the built-ins.
+*                                                                             *
+************************************** | *************************************/
+
+void ResolveScope::initializeScopeForChplProgram() {
+  ResolveScope* program = new ResolveScope(theProgram->block);
+
+  program->extend(dtObject->symbol);
+  program->extend(dtVoid->symbol);
+  program->extend(dtStringC->symbol);
+
+  program->extend(gFalse);
+  program->extend(gTrue);
+
+  program->extend(gTryToken);
+
+  program->extend(dtNil->symbol);
+  program->extend(gNil);
+
+  program->extend(gNoInit);
+
+  program->extend(dtUnknown->symbol);
+  program->extend(dtValue->symbol);
+
+  program->extend(gUnknown);
+  program->extend(gVoid);
+
+  program->extend(dtBools[BOOL_SIZE_SYS]->symbol);
+  program->extend(dtBools[BOOL_SIZE_1]->symbol);
+  program->extend(dtBools[BOOL_SIZE_8]->symbol);
+  program->extend(dtBools[BOOL_SIZE_16]->symbol);
+  program->extend(dtBools[BOOL_SIZE_32]->symbol);
+  program->extend(dtBools[BOOL_SIZE_64]->symbol);
+
+  program->extend(dtInt[INT_SIZE_8]->symbol);
+  program->extend(dtInt[INT_SIZE_16]->symbol);
+  program->extend(dtInt[INT_SIZE_32]->symbol);
+  program->extend(dtInt[INT_SIZE_64]->symbol);
+
+  program->extend(dtUInt[INT_SIZE_8]->symbol);
+  program->extend(dtUInt[INT_SIZE_16]->symbol);
+  program->extend(dtUInt[INT_SIZE_32]->symbol);
+  program->extend(dtUInt[INT_SIZE_64]->symbol);
+
+  program->extend(dtReal[FLOAT_SIZE_32]->symbol);
+  program->extend(dtReal[FLOAT_SIZE_64]->symbol);
+
+  program->extend(dtImag[FLOAT_SIZE_32]->symbol);
+  program->extend(dtImag[FLOAT_SIZE_64]->symbol);
+
+  program->extend(dtComplex[COMPLEX_SIZE_64]->symbol);
+  program->extend(dtComplex[COMPLEX_SIZE_128]->symbol);
+
+  program->extend(dtStringCopy->symbol);
+  program->extend(gStringCopy);
+
+  program->extend(dtCVoidPtr->symbol);
+  program->extend(dtCFnPtr->symbol);
+  program->extend(gCVoidPtr);
+  program->extend(dtSymbol->symbol);
+
+  program->extend(dtFile->symbol);
+  program->extend(gFile);
+
+  program->extend(dtOpaque->symbol);
+  program->extend(gOpaque);
+
+  program->extend(dtTaskID->symbol);
+  program->extend(gTaskID);
+
+  program->extend(dtSyncVarAuxFields->symbol);
+  program->extend(gSyncVarAuxFields);
+
+  program->extend(dtSingleVarAuxFields->symbol);
+  program->extend(gSingleVarAuxFields);
+
+  program->extend(dtAny->symbol);
+  program->extend(dtIntegral->symbol);
+  program->extend(dtAnyComplex->symbol);
+  program->extend(dtNumeric->symbol);
+
+  program->extend(dtIteratorRecord->symbol);
+  program->extend(dtIteratorClass->symbol);
+
+  program->extend(dtMethodToken->symbol);
+  program->extend(gMethodToken);
+
+  program->extend(dtTypeDefaultToken->symbol);
+  program->extend(gTypeDefaultToken);
+
+  program->extend(dtModuleToken->symbol);
+  program->extend(gModuleToken);
+
+  program->extend(dtAnyEnumerated->symbol);
+
+  program->extend(gBoundsChecking);
+  program->extend(gCastChecking);
+  program->extend(gDivZeroChecking);
+  program->extend(gPrivatization);
+  program->extend(gLocal);
+  program->extend(gNodeID);
+
+  sScopeMap[theProgram->block] = program;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 ResolveScope::ResolveScope(BlockStmt* blockStmt) {
   mAstRef = blockStmt;
 }
