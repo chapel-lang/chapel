@@ -32,6 +32,24 @@
 #include <map>
 #include <set>
 
+
+/*
+   The process of finding visible functions works with some global
+   tables. The global tables map
+
+     block id -> function name -> FnSymbol*s
+
+   In this way, the symbols declared in each block are stored.
+   These tables do not save the transitive symbols available.
+   To do that, code using the table needs to go up blocks/scopes
+   and explicitly consider module 'use's.
+
+   This file also includes an optimization, where the
+   symbols available to all modules (i.e. what is in ChapelStandard)
+   is considered to be in a single block. This optimization
+   provides a significant performance improvement for compiling 'hello'.
+ */
+
 class VisibleFunctionBlock {
 public:
                                         VisibleFunctionBlock();
@@ -90,7 +108,12 @@ void findVisibleFunctions(CallInfo&       info,
     if (!info.scope) {
       getVisibleFunctions(info.name, call, visibleFns);
     } else {
-      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
+      BlockStmt* block = info.scope;
+      // all functions in standard modules are stored in a single block
+      if (standardModuleSet.set_in(block))
+        block = theProgram->block;
+
+      if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
           visibleFns.append(*fns);
         }
@@ -132,13 +155,6 @@ static void buildVisibleFunctionMap() {
         block = getVisibilityBlock(fn->defPoint);
         //
         // add all functions in standard modules to theProgram
-        //
-        // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
-        // tied to what is actually placed within theProgram->block.  As such
-        // there could be bugs where that implementation differs.  We have
-        // already encountered some with qualified access to default-included
-        // modules like List and Sort.  This implementation needs to be linked
-        // to the computation of the standardModuleSet.
         //
         if (standardModuleSet.set_in(block))
           block = theProgram->block;
@@ -403,13 +419,6 @@ static BlockStmt* getVisibleFunctions(const char*           name,
 
   //
   // all functions in standard modules are stored in a single block
-  //
-  // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
-  // tied to what is actually placed within theProgram->block.  As such
-  // there could be bugs where that implementation differs.  We have
-  // already encountered some with qualified access to default-included
-  // modules like List and Sort.  This implementation needs to be linked
-  // to the computation of the standardModuleSet.
   //
   if (standardModuleSet.set_in(block)) {
     block = theProgram->block;
