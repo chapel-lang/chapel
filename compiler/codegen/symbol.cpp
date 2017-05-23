@@ -54,10 +54,6 @@
 #include <inttypes.h>
 #include <stdint.h>
 
-#ifdef HAVE_LLVM
-#include "llvm/IR/Attributes.h"
-#endif
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
