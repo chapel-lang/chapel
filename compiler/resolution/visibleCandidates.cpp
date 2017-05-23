@@ -169,12 +169,12 @@ static CandidateDisposition filterConcrete(CallInfo&            info,
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn == NULL)
-    return RejectCandidateAlignment;
+    return RejectCandidateAlignmentMismatch;
 
   resolveTypedefedArgTypes(currCandidate->fn);
 
   if (currCandidate->computeAlignment(info) == false)
-    return RejectCandidateAlignment;
+    return RejectCandidateAlignmentMismatch;
   
   // Ensure that type constructor is resolved before other constructors.
   if (currCandidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
@@ -291,7 +291,7 @@ CandidateDisposition checkResolveFormalsWhereClauses(ResolutionCandidate* currCa
                                formal->intent == INTENT_PARAM;
 
       if (actualIsTypeAlias != formalIsTypeAlias) {
-        return RejectCandidateTypeFormalNotActual;
+        return RejectCandidateTypeNonTypeMismatch;
 
       } else if(formalIsParam && !actualIsParam) {
         return RejectCandidateParamFormalNotActual;
@@ -302,7 +302,7 @@ CandidateDisposition checkResolveFormalsWhereClauses(ResolutionCandidate* currCa
                              currCandidate->fn,
                              NULL,
                              formalIsParam) == false) {
-        return RejectCandidateArgTypeError;
+        return RejectCandidateArgTypeMismatch;
       }
     }
   }
@@ -324,10 +324,10 @@ static CandidateDisposition filterGeneric(CallInfo&            info,
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (currCandidate->fn == NULL)
-    return RejectCandidateAlignment;
+    return RejectCandidateAlignmentMismatch;
 
   if (currCandidate->computeAlignment(info) == false) {
-    return RejectCandidateAlignment;
+    return RejectCandidateAlignmentMismatch;
   }
 
   {
@@ -340,7 +340,7 @@ static CandidateDisposition filterGeneric(CallInfo&            info,
   currCandidate->computeSubstitutions();
 
   if (currCandidate->substitutions.n <= 0) {
-    return RejectCandidateArgTypeError;
+    return RejectCandidateArgTypeMismatch;
   }
 
   /*
@@ -352,7 +352,7 @@ static CandidateDisposition filterGeneric(CallInfo&            info,
                                            info.call);
 
   if (currCandidate->fn == NULL) {
-    return RejectCandidateArgTypeError;
+    return RejectCandidateArgTypeMismatch;
   }
 
   return filterCandidate(info, currCandidate);
@@ -360,26 +360,33 @@ static CandidateDisposition filterGeneric(CallInfo&            info,
 
 // Verify that the generic formals are matched correctly
 // Returns a disposition
+// Does not concern itself with instantiation or handling formals
+// of type dtUnknown
 CandidateDisposition checkGenericFormals(ResolutionCandidate* currCandidate) {
   int coindex = 0;
 
   for_formals(formal, currCandidate->fn) {
-    if (formal->type != dtUnknown) {
-      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
-        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
-        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
-        bool actualIsParam     = actual->isParameter();
+    if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
+      bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+      bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+      bool actualIsParam     = actual->isParameter();
 
-        bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-                                 formal->intent == INTENT_PARAM;
+      bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                               formal->intent == INTENT_PARAM;
 
-        if (actualIsTypeAlias != formalIsTypeAlias) {
-          return RejectCandidateTypeFormalNotActual;
+      // These first checks don't need the type of the formal
+      // to be known yet.
+      if (actualIsTypeAlias != formalIsTypeAlias)
+        return RejectCandidateTypeNonTypeMismatch;
+      else if(formalIsParam && !actualIsParam)
+        return RejectCandidateParamFormalNotActual;
+      
+      // Further checking uses the type of the formal and so should only
+      // apply if it is known. (It might be instantiated and checked later).
+      if (formal->type != dtUnknown) {
+        bool mismatch = false;
 
-        } else if(formalIsParam && !actualIsParam) {
-          return RejectCandidateParamFormalNotActual;
-
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* vt  = actual->getValType();
           Type* st  = actual->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
@@ -390,17 +397,9 @@ CandidateDisposition checkGenericFormals(ResolutionCandidate* currCandidate) {
               (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
               (svt == NULL || canInstantiate(svt, formal->type) == false)) {
 
-
-            if (currCandidate->fn->_this == formal)
-              return RejectCandidateThisTypeError;
-            else
-              return RejectCandidateArgTypeError;
+            mismatch = true;
           }
-
         } else {
-          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-                               formal->intent == INTENT_PARAM;
-
           if (canDispatch(actual->type,
                            actual,
                            formal->type,
@@ -408,8 +407,16 @@ CandidateDisposition checkGenericFormals(ResolutionCandidate* currCandidate) {
                            NULL,
                            formalIsParam) == false) {
 
-            return RejectCandidateArgTypeError;
+            mismatch = true;
           }
+        }
+
+        // report a mismatch if one occurs
+        if (mismatch) {
+          if (currCandidate->fn->_this == formal)
+            return RejectCandidateThisTypeMismatch;
+          else
+            return RejectCandidateArgTypeMismatch;
         }
       }
     }
