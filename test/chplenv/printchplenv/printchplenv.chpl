@@ -14,6 +14,8 @@ writeln('CHPL_LAUNCHER: ', CHPL_LAUNCHER);
 writeln('CHPL_TIMERS: ', CHPL_TIMERS);
 writeln('CHPL_UNWIND: ', CHPL_UNWIND);
 writeln('CHPL_MEM: ', CHPL_MEM);
+if CHPL_MEM == 'jemalloc' then
+  writeln('  CHPL_JEMALLOC: ', CHPL_JEMALLOC);
 writeln('CHPL_MAKE: ', CHPL_MAKE);
 writeln('CHPL_ATOMICS: ', CHPL_ATOMICS);
 if CHPL_COMM != 'none' then

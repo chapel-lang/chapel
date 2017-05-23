@@ -15,4 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.jemalloc-$(CHPL_MAKE_JEMALLOC)
+RUNTIME_INCLS += -I$(JEMALLOC_INCLUDE_DIR)
+# Chapel third-party install of jemalloc calls the routines
+# chpl_je_malloc, chpl_je_free, etc
+#
+# CHPL_JEMALLOC_PREFIX is set in third-party/jemalloc/Makefile.include
+RUNTIME_DEFS += -DCHPL_JEMALLOC_PREFIX=$(CHPL_JEMALLOC_PREFIX)

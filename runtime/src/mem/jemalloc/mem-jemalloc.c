@@ -33,6 +33,19 @@
 #include "chpltypes.h"
 #include "error.h"
 
+// The CHPL_JE_ macro needs malloc etc to not be #defined
+#include "chpl-mem-no-warning-macros.h"
+
+// Decide whether or not to try to use jemalloc's chunk hooks interface
+//   jemalloc < 4.0 didn't support chunk_hooks_t
+//   jemalloc 4.1 changed opt.nareas from size_t to unsigned
+// .. so we use chunk hooks interface for jemalloc >= 4.1
+#if JEMALLOC_VERSION_MAJOR > 4
+#define USE_JE_CHUNK_HOOKS
+#endif
+#if (JEMALLOC_VERSION_MAJOR == 4) && (JEMALLOC_VERSION_MINOR >= 1)
+#define USE_JE_CHUNK_HOOKS
+#endif
 
 //
 // Information about shared heaps gotten from the comm layer.
@@ -94,7 +107,7 @@ static void setupLocalizedHeaps(void* heap_base, size_t heap_size) {
   char* subchunk_base;
   size_t* subchunk_sizes;
 
-  heaps = (shared_heap_t*) chpl_je_malloc(num_heaps * sizeof(*heaps));
+  heaps = (shared_heap_t*) CHPL_JE_MALLOC(num_heaps * sizeof(*heaps));
   if (heaps == NULL) {
     chpl_internal_error("cannot allocate heaps");
   }
@@ -111,7 +124,7 @@ static void setupLocalizedHeaps(void* heap_base, size_t heap_size) {
   }
 
   subchunk_sizes =
-    (size_t*) chpl_je_malloc(num_heaps * sizeof(*subchunk_sizes));
+    (size_t*) CHPL_JE_MALLOC(num_heaps * sizeof(*subchunk_sizes));
   if (subchunk_sizes == NULL) {
     chpl_internal_error("cannot allocate subchunk_sizes");
   }
@@ -154,6 +167,11 @@ static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment)
 
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
+
+// avoid unused function warnings by only defining these chunk hooks
+// if they could be used
+#ifdef USE_JE_CHUNK_HOOKS
+
 
 // Our chunk replacement hook for allocations (Essentially a replacement for
 // mmap/sbrk.) Grab memory out of the shared heap and give it to jemalloc.
@@ -232,6 +250,9 @@ static bool null_split(void *chunk, size_t size, size_t size_a, size_t size_b, b
 static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
   return true;
 }
+
+#endif // ifdef USE_JE_CHUNK_HOOKS
+
 // *** End chunk hook replacements *** //
 
 
@@ -241,7 +262,7 @@ static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
   type value; \
   size_t sz; \
   sz = sizeof(value); \
-  if (chpl_je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+  if (CHPL_JE_MALLCTL(mallctl_string, &value, &sz, NULL, 0) != 0) { \
     char error_msg[256]; \
     snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
     chpl_internal_error(error_msg); \
@@ -271,14 +292,14 @@ static void initialize_arenas(void) {
   //   calling this interface."
   narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
-    if (chpl_je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+    if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
     }
   }
 
   // then set the current thread back to using arena 0
   arena = 0;
-  if (chpl_je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+  if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena back to 0");
   }
 }
@@ -286,6 +307,10 @@ static void initialize_arenas(void) {
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
+
+// we can't use chunk hooks for older versions of jemalloc
+#ifdef USE_JE_CHUNK_HOOKS
+
   unsigned narenas;
   unsigned arena;
 
@@ -305,10 +330,14 @@ static void replaceChunkHooks(void) {
   for (arena=0; arena<narenas; arena++) {
     char path[128];
     snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
-    if (chpl_je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
+    if (CHPL_JE_MALLCTL(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
   }
+#else
+    chpl_internal_error("cannot init multi-locale heap: please rebuild with jemalloc >= 4.1");
+#endif
+
 }
 
 // helper routines to get the number of size classes
@@ -346,7 +375,7 @@ static void get_small_and_large_class_sizes(size_t* classes) {
 }
 
 // helper routine to determine if an address is not part of any shared heap
-static bool addressNotInAnyHeap(void* ptr) {
+static chpl_bool addressNotInAnyHeap(void* ptr) {
   const int num_heaps = get_num_heaps();
   uintptr_t u_ptr = (uintptr_t)ptr;
   int hpi;
@@ -389,11 +418,11 @@ static void useUpMemNotInHeap(void) {
     size_t alloc_size;
     alloc_size = classes[class];
     do {
-      if ((p = chpl_je_malloc(alloc_size)) == NULL) {
+      if ((p = CHPL_JE_MALLOC(alloc_size)) == NULL) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInAnyHeap(p));
-    chpl_je_free(p);
+    CHPL_JE_FREE(p);
   }
 }
 
@@ -431,10 +460,10 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap(heap_base, heap_size);
   } else {
     void* p;
-    if ((p = chpl_je_malloc(1)) == NULL) {
+    if ((p = CHPL_JE_MALLOC(1)) == NULL) {
       chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
-    chpl_je_free(p);
+    CHPL_JE_FREE(p);
   }
 }
 

@@ -15,4 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_INCLS += -I$(JEMALLOC_INCLUDE_DIR)
+# Add any further includes for JEMALLOC.
+JEMALLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.jemalloc-$(CHPL_MAKE_JEMALLOC)
+-include $(JEMALLOC_INCLUDE)

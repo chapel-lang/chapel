@@ -515,6 +515,33 @@ CHPL_HWLOC
        all versions. For best results, we recommend using the bundled hwloc
        if possible.
 
+.. _readme-chplenv.CHPL_JEMALLOC:
+
+CHPL_JEMALLOC
+~~~~~~~~~~~~~
+   Optionally, the ``CHPL_JEMALLOC`` environment variable can select
+   between no jemalloc, or using the jemalloc distributed with Chapel in
+   third-party. This setting is intended to elaborate upon
+   ``CHPL_MEM=jemalloc``.
+
+       ======== ==============================================================
+       Value    Description
+       ======== ==============================================================
+       none     do not build or use jemalloc
+       jemalloc use the jemalloc distribution bundled with Chapel in third-party
+       ======== ==============================================================
+
+   If unset, ``CHPL_JEMALLOC`` defaults to ``jemalloc`` if
+   :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
+   defaults to ``none``.
+
+   .. (comment) CHPL_JEMALLOC=system is also available but it is only
+       intended to support packaging.
+       Using CHPL_JEMALLOC=system is not regularly tested and may not work
+       for you. Chapel depends on jemalloc features that are not available in
+       all versions. For best results, we recommend using the bundled jemalloc
+       if possible.
+
 .. _readme-chplenv.CHPL_REGEXP:
 
 CHPL_REGEXP

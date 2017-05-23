@@ -21,10 +21,15 @@ def get_jemalloc_config_file():
     return config_file
 
 @memoize
-def get_link_args():
-    jemalloc_config = get_jemalloc_config_file()
-    libs = ['-ljemalloc']
-    if os.access(jemalloc_config, os.X_OK):
-        jemalloc_libs = run_command([jemalloc_config, '--libs'])
-        libs += jemalloc_libs.split()
-    return libs
+def get_link_args(target_mem):
+    if target_mem == 'jemalloc':
+        jemalloc_config = get_jemalloc_config_file()
+        libs = ['-ljemalloc']
+        if os.access(jemalloc_config, os.X_OK):
+            jemalloc_libs = run_command([jemalloc_config, '--libs'])
+            libs += jemalloc_libs.split()
+        return libs
+    elif target_mem == 'system':
+        return ['-ljemalloc']
+    else:
+        return []
