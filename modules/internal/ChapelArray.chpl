@@ -3749,7 +3749,7 @@ module ChapelArray {
   //
   // Although it appears to be a copy constructor, it is in fact
   // an Array constructor.  It appears to me that this implementation
-  // it due to an artifact in the interaction between normalize and
+  // is due to an artifact in the interaction between normalize and
   // function resolution; the former inserts calls to initCopy() without
   // understanding the types involved.  This in turn leads to some
   // confusion for the compiler is resolved by the liberal use of
