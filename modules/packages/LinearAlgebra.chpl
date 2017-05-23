@@ -148,7 +148,6 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
   return V;
 }
 
-
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
   type eltType = Scalars(1).type;
@@ -588,6 +587,96 @@ private inline proc _raw(D: domain(1), i) {
 // Matrix Structure
 //
 
+
+/*
+   Return a Vector containing the diagonal elements of ``A`` if the argument ``A`` is of rank 2.
+   Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
+ */
+proc diag(A: [?Adom] ?eltType, k=0){
+  //This should be printed at compile time-"This function only supports 0-based non-strided arrays, 
+  //including the vectors and matrices created from this module."
+
+  if(Adom.rank == 2) then{
+    if(k==0) then{
+      return _diag_vec(A);  
+    }
+    else{
+      return _diag_vec(A, k);
+    }
+  }
+  else if(Adom.rank == 1) then {
+    return _diag_mat(A);
+  }
+  else{
+    compilerError("A must have rank 2 or less");
+  }
+
+}
+
+private proc _diag_vec(A:[?Adom] ?eltType){
+
+  //better way to do this if type of Adom.dim(1) and Adom.dim(2) can be determined
+  if(Adom.dim(1).length<Adom.dim(2).length) then{
+    var diagonal = Vector(Adom.dim(1).length, eltType);
+    forall i in Adom.dim(1) do{
+      diagonal[i] = A[i,i];
+    }
+    return diagonal;
+  }
+  else{
+    var diagonal = Vector(Adom.dim(2).length, eltType);
+    forall i in Adom.dim(2) do{
+      diagonal[i] = A[i,i];
+    }
+    return diagonal;
+  }
+}
+
+private proc _diag_vec(A:[?Adom] ?eltType, k){
+  if(k>0){
+    //Upper diagonal
+    if(Adom.dim(2).length<k) then halt("k is out of range");
+    var length:int;
+    if((Adom.dim(2).length-k)<Adom.dim(1).length) then{
+      length = Adom.dim(2).length - k;
+    }
+    else{
+      length = Adom.dim(1).length;
+    }
+    var diagonal = Vector(length, eltType);
+    forall i in Adom.dim(1)(..length-1) do{
+      diagonal[i] = A[i,i+k];
+    }
+    return diagonal;
+  }
+  else{
+    //Lower diagonal
+    if(Adom.dim(1).length<abs(k)) then halt("k is out of range");
+    var length:int;
+    if((Adom.dim(1).length-abs(k))<Adom.dim(2).length) then {
+      length = Adom.dim(1).length - abs(k);
+    }
+    else{
+      length = Adom.dim(2).length;
+    }
+    var diagonal = Vector(length, eltType);
+    forall i in Adom.dim(1)(..length-1) do{
+      diagonal[i] = A[i+abs(k),i];
+    }
+    return diagonal;
+  }
+}
+
+private proc _diag_mat(A:[?Adom] ?eltType){
+  var diagonal = Matrix(Adom.dim(1).length, eltType);
+  forall i in Adom.dim(1) do{
+    diagonal[i, i] = A[i];
+  }
+  return diagonal;
+}
+
+
+
 /*
    Return lower triangular part of matrix, below the diagonal + ``k``,
    where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
@@ -618,6 +707,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   return U;
 }
 
+  
 
 /* Return `true` if matrix is diagonal */
 proc isDiag(A: [?D] ?eltType) {
