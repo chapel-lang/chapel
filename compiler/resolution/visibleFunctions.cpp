@@ -46,7 +46,7 @@
    This file also includes an optimization, where the
    symbols available to all modules (i.e. what is in ChapelStandard)
    is considered to be in a single block. This optimization
-   provides a significant performance for compiling 'hello'.
+   provides a significant performance improvement for compiling 'hello'.
  */
 
 class VisibleFunctionBlock {
