@@ -135,7 +135,7 @@ and distributes using block-cyclic distribution in the second dimension.
     for loc in MyLocales do on loc {
 
       // The ReplicatedDim specifier always accesses the local replicand.
-      // (This differs from how the ReplicatedDist distribution works.)
+      // (This differs from how the Replicated distribution works.)
       //
       // Therefore, 'forall a in A' when executed on MyLocales[loc1,loc2]
       // visits only the replicands on MyLocales[loc1,0..N_2-1].

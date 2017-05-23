@@ -88,7 +88,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 
   printBriefConfiguration();
 
-  const distReplicated = new ReplicatedDist();
+  const distReplicated = new Replicated();
 
   // Replicate 'targetLocales' to reduce comm.
   // 'targetLocales' itself could be replicated instead,

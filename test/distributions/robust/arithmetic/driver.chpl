@@ -57,11 +57,11 @@ proc setupDistributions() {
   }
   if distType == DistType.replicated {
     return (
-            new dmap(new ReplicatedDist()),
-            new dmap(new ReplicatedDist()),
-            new dmap(new ReplicatedDist()),
-            new dmap(new ReplicatedDist()),
-            new dmap(new ReplicatedDist())
+            new dmap(new Replicated()),
+            new dmap(new Replicated()),
+            new dmap(new Replicated()),
+            new dmap(new Replicated()),
+            new dmap(new Replicated())
            );
   }
   halt("unexpected 'distType': ", distType);

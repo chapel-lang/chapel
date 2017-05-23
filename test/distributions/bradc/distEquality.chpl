@@ -87,8 +87,8 @@ writeln();
 
 const OneLocOnly1D: [0..0] locale = Locales[0];
 
-const R1 = Space dmapped ReplicatedDist();
-const R2 = Space dmapped ReplicatedDist(targetLocales=OneLocOnly1D);
+const R1 = Space dmapped Replicated();
+const R2 = Space dmapped Replicated(targetLocales=OneLocOnly1D);
 
 writeln("Replicated comparisons:");
 
@@ -97,4 +97,4 @@ writeln(R1.dist == R2.dist);
 
 writeln(R2.dist == R2.dist);
 
-writeln(R2.dist == (Space dmapped ReplicatedDist(targetLocales=OneLocOnly1D)).dist);
+writeln(R2.dist == (Space dmapped Replicated(targetLocales=OneLocOnly1D)).dist);

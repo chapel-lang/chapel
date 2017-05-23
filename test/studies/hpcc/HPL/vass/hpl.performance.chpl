@@ -101,7 +101,7 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
           divceilpos(n, blkSize*tl1), "*", divceilpos(n+1, blkSize*tl2),
           "  locs ", tl1, "*", tl2, "  dPTPL ", dataParTasksPerLocale);
 
-  const distReplicated = new ReplicatedDist();
+  const distReplicated = new Replicated();
 
   // Replicate 'targetLocales' to reduce comm.
   // 'targetLocales' itself could be replicated instead,
