@@ -119,6 +119,24 @@ small commits that reflect the history of development rather than commits for
 the feature.  See `Development commands`_ for how to perform some common
 operations during development.
 
+As you work, you will want to periodically bring in changes from the main Chapel
+project to your feature branch:
+
+.. code-block:: bash
+
+    git fetch upstream
+    git merge upstream/master
+
+    # or:
+    git pull upstream <branch_name>
+
+    # with feature branch checked out:
+    git merge [--no-ff] upstream/master
+
+If there are conflicts, you will be asked to resolve them. Once the affected
+files have been fixed, stage them with ``git add``, and then call ``git
+commit`` to finish the merge process.
+
 
 .. _Submit pull request:
 
@@ -422,7 +440,6 @@ Un-do the last commit (leaving changed files in your working directory)
     a remote repository.
 
 
-
 More information on using git
 -----------------------------
 
@@ -433,6 +450,77 @@ Git help pages can be viewed with:
 .. code-block:: bash
 
     git help <command>
+
+Other git commands
+------------------
+
+Update to HEAD:
+
+(If you use this command on a feature branch, you'll just be updating to the
+latest work stored on github. See `Develop and test contributions locally`_ for
+how to update a feature branch with new changes from the main Chapel project)
+
+.. code-block:: bash
+
+    git pull
+
+    # or:
+    git fetch origin
+    git merge origin/master # replace master with whatever branch you're on
+
+    # similar to:
+    svn update
+
+Update to specific revision number:
+
+.. code-block:: bash
+
+    git checkout <commit sha1>
+
+    # similar to:
+    svn update -r<revision number>
+
+To view "dirty" files, or all those files that are not tracked (includes
+ignored files):
+
+.. code-block:: bash
+
+    git ls-files --others
+
+
+If you've gotten your master branch mucked up but haven't pushed the branch
+with errors to your remote fork, you can fix it with the following series of
+commands:
+
+.. code-block:: bash
+
+   # This will save your old master state to a different branch name, removing
+   # the name "master" from the list of branches you can access on your fork
+   git branch -m <name for old, messed up master>
+
+   # You will get a message indicating you are in a "detached HEAD state".  This
+   # is expected (and desired).  Now the repository you are in is in line with
+   # your fork's master branch.
+   git checkout origin/master
+
+   # This will save the state of the repository right now to a new branch, named
+   # master.
+   git checkout -b master
+
+At this point, a `git push origin master` should work as expected.  Remember, do
+not try this with a master branch that has been corrupted on your remote fork.
+
+An alternate method, if you know or can easily find out the last commit that
+should be kept:
+
+.. code-block:: bash
+
+   # on any branch that contains commits you do not want.
+   git branch <new branch name>
+
+   # do not use --hard if you wish to leave untracked files in your tree
+   git reset --hard <last commit you want to keep>
+
 
 Other Logging Commands
 ----------------------
