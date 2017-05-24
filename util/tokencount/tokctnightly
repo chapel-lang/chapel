@@ -106,7 +106,7 @@ if ($debug == 1) {
 #
 # directory locations
 #
-$logdir = "/data/sea/chapel/Nightly";
+$logdir = "/data/cf/chapel/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {
     $statfile = "$chplhomedir/tokctnightly.debug.dat";

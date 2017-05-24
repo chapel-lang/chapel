@@ -13,7 +13,9 @@ if [ -n "$*" ]; then
   exit 1
 fi
 
-loghome=/data/sea/chapel
+# 2017-05-24: /data/sea/chapel/NightlyHistory remains in Seattle,
+#   while other /data/sea/chapel/Nightly* have moved to /data/cf/chapel
+loghome=/data/cf/chapel
 loghistdir=/data/sea/chapel/NightlyHistory
 logsources="\
 Nightly \
