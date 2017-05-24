@@ -441,9 +441,10 @@ module ChapelBase {
   //
   // bitwise operations on primitive types
   //
-  inline proc ~(a: bool) return __primitive("u~", a);
   inline proc ~(a: int(?w)) return __primitive("u~", a);
   inline proc ~(a: uint(?w)) return __primitive("u~", a);
+  // note: where clause used here to enable a user-defined overload
+  inline proc ~(a: bool) where true { compilerError("~ is not suported on operands of boolean type"); }
 
   inline proc &(a: bool, b: bool) return __primitive("&", a, b);
   inline proc &(a: int(?w), b: int(w)) return __primitive("&", a, b);
