@@ -50,6 +50,14 @@
 
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
 
+ResolveScope* ResolveScope::getRootModule() {
+  ResolveScope* retval = new ResolveScope(theProgram, NULL);
+
+  retval->addBuiltIns();
+
+  return retval;
+}
+
 ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
   BaseAST*      ast    = getScope(def);
   ResolveScope* retval = NULL;
@@ -109,10 +117,24 @@ void ResolveScope::destroyAstMap() {
 *                                                                             *
 ************************************** | *************************************/
 
+ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
+                           const ResolveScope* parent) {
+  mAstRef = modSymbol;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
+
+  sScopeMap[modSymbol->block] = this;
+}
+
 ResolveScope::ResolveScope(FnSymbol*           fnSymbol,
                            const ResolveScope* parent) {
   mAstRef = fnSymbol;
   mParent = parent;
+
+  INT_ASSERT(getScopeFor(fnSymbol) == NULL);
+
+  sScopeMap[fnSymbol] = this;
 }
 
 ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
@@ -123,12 +145,20 @@ ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
 
   mAstRef = typeSymbol;
   mParent = parent;
+
+  INT_ASSERT(getScopeFor(typeSymbol) == NULL);
+
+  sScopeMap[typeSymbol] = this;
 }
 
 ResolveScope::ResolveScope(BlockStmt*          blockStmt,
                            const ResolveScope* parent) {
   mAstRef = blockStmt;
   mParent = parent;
+
+  INT_ASSERT(getScopeFor(blockStmt) == NULL);
+
+  sScopeMap[blockStmt] = this;
 }
 
 /************************************* | **************************************
@@ -153,105 +183,100 @@ ResolveScope::ResolveScope(BlockStmt*          blockStmt,
 *                                                                             *
 ************************************** | *************************************/
 
-void ResolveScope::initializeScopeForChplProgram() {
-  ResolveScope* program = new ResolveScope(theProgram->block, NULL);
+void ResolveScope::addBuiltIns() {
+  extend(dtVoid->symbol);
+  extend(dtStringC->symbol);
 
-  program->extend(dtObject->symbol);
-  program->extend(dtVoid->symbol);
-  program->extend(dtStringC->symbol);
+  extend(gFalse);
+  extend(gTrue);
 
-  program->extend(gFalse);
-  program->extend(gTrue);
+  extend(gTryToken);
 
-  program->extend(gTryToken);
+  extend(dtNil->symbol);
+  extend(gNil);
 
-  program->extend(dtNil->symbol);
-  program->extend(gNil);
+  extend(gNoInit);
 
-  program->extend(gNoInit);
+  extend(dtUnknown->symbol);
+  extend(dtValue->symbol);
 
-  program->extend(dtUnknown->symbol);
-  program->extend(dtValue->symbol);
+  extend(gUnknown);
+  extend(gVoid);
 
-  program->extend(gUnknown);
-  program->extend(gVoid);
+  extend(dtBools[BOOL_SIZE_SYS]->symbol);
+  extend(dtBools[BOOL_SIZE_1]->symbol);
+  extend(dtBools[BOOL_SIZE_8]->symbol);
+  extend(dtBools[BOOL_SIZE_16]->symbol);
+  extend(dtBools[BOOL_SIZE_32]->symbol);
+  extend(dtBools[BOOL_SIZE_64]->symbol);
 
-  program->extend(dtBools[BOOL_SIZE_SYS]->symbol);
-  program->extend(dtBools[BOOL_SIZE_1]->symbol);
-  program->extend(dtBools[BOOL_SIZE_8]->symbol);
-  program->extend(dtBools[BOOL_SIZE_16]->symbol);
-  program->extend(dtBools[BOOL_SIZE_32]->symbol);
-  program->extend(dtBools[BOOL_SIZE_64]->symbol);
+  extend(dtInt[INT_SIZE_8]->symbol);
+  extend(dtInt[INT_SIZE_16]->symbol);
+  extend(dtInt[INT_SIZE_32]->symbol);
+  extend(dtInt[INT_SIZE_64]->symbol);
 
-  program->extend(dtInt[INT_SIZE_8]->symbol);
-  program->extend(dtInt[INT_SIZE_16]->symbol);
-  program->extend(dtInt[INT_SIZE_32]->symbol);
-  program->extend(dtInt[INT_SIZE_64]->symbol);
+  extend(dtUInt[INT_SIZE_8]->symbol);
+  extend(dtUInt[INT_SIZE_16]->symbol);
+  extend(dtUInt[INT_SIZE_32]->symbol);
+  extend(dtUInt[INT_SIZE_64]->symbol);
 
-  program->extend(dtUInt[INT_SIZE_8]->symbol);
-  program->extend(dtUInt[INT_SIZE_16]->symbol);
-  program->extend(dtUInt[INT_SIZE_32]->symbol);
-  program->extend(dtUInt[INT_SIZE_64]->symbol);
+  extend(dtReal[FLOAT_SIZE_32]->symbol);
+  extend(dtReal[FLOAT_SIZE_64]->symbol);
 
-  program->extend(dtReal[FLOAT_SIZE_32]->symbol);
-  program->extend(dtReal[FLOAT_SIZE_64]->symbol);
+  extend(dtImag[FLOAT_SIZE_32]->symbol);
+  extend(dtImag[FLOAT_SIZE_64]->symbol);
 
-  program->extend(dtImag[FLOAT_SIZE_32]->symbol);
-  program->extend(dtImag[FLOAT_SIZE_64]->symbol);
+  extend(dtComplex[COMPLEX_SIZE_64]->symbol);
+  extend(dtComplex[COMPLEX_SIZE_128]->symbol);
 
-  program->extend(dtComplex[COMPLEX_SIZE_64]->symbol);
-  program->extend(dtComplex[COMPLEX_SIZE_128]->symbol);
+  extend(dtStringCopy->symbol);
+  extend(gStringCopy);
 
-  program->extend(dtStringCopy->symbol);
-  program->extend(gStringCopy);
+  extend(dtCVoidPtr->symbol);
+  extend(dtCFnPtr->symbol);
+  extend(gCVoidPtr);
+  extend(dtSymbol->symbol);
 
-  program->extend(dtCVoidPtr->symbol);
-  program->extend(dtCFnPtr->symbol);
-  program->extend(gCVoidPtr);
-  program->extend(dtSymbol->symbol);
+  extend(dtFile->symbol);
+  extend(gFile);
 
-  program->extend(dtFile->symbol);
-  program->extend(gFile);
+  extend(dtOpaque->symbol);
+  extend(gOpaque);
 
-  program->extend(dtOpaque->symbol);
-  program->extend(gOpaque);
+  extend(dtTaskID->symbol);
+  extend(gTaskID);
 
-  program->extend(dtTaskID->symbol);
-  program->extend(gTaskID);
+  extend(dtSyncVarAuxFields->symbol);
+  extend(gSyncVarAuxFields);
 
-  program->extend(dtSyncVarAuxFields->symbol);
-  program->extend(gSyncVarAuxFields);
+  extend(dtSingleVarAuxFields->symbol);
+  extend(gSingleVarAuxFields);
 
-  program->extend(dtSingleVarAuxFields->symbol);
-  program->extend(gSingleVarAuxFields);
+  extend(dtAny->symbol);
+  extend(dtIntegral->symbol);
+  extend(dtAnyComplex->symbol);
+  extend(dtNumeric->symbol);
 
-  program->extend(dtAny->symbol);
-  program->extend(dtIntegral->symbol);
-  program->extend(dtAnyComplex->symbol);
-  program->extend(dtNumeric->symbol);
+  extend(dtIteratorRecord->symbol);
+  extend(dtIteratorClass->symbol);
 
-  program->extend(dtIteratorRecord->symbol);
-  program->extend(dtIteratorClass->symbol);
+  extend(dtMethodToken->symbol);
+  extend(gMethodToken);
 
-  program->extend(dtMethodToken->symbol);
-  program->extend(gMethodToken);
+  extend(dtTypeDefaultToken->symbol);
+  extend(gTypeDefaultToken);
 
-  program->extend(dtTypeDefaultToken->symbol);
-  program->extend(gTypeDefaultToken);
+  extend(dtModuleToken->symbol);
+  extend(gModuleToken);
 
-  program->extend(dtModuleToken->symbol);
-  program->extend(gModuleToken);
+  extend(dtAnyEnumerated->symbol);
 
-  program->extend(dtAnyEnumerated->symbol);
-
-  program->extend(gBoundsChecking);
-  program->extend(gCastChecking);
-  program->extend(gDivZeroChecking);
-  program->extend(gPrivatization);
-  program->extend(gLocal);
-  program->extend(gNodeID);
-
-  sScopeMap[theProgram->block] = program;
+  extend(gBoundsChecking);
+  extend(gCastChecking);
+  extend(gDivZeroChecking);
+  extend(gPrivatization);
+  extend(gLocal);
+  extend(gNodeID);
 }
 
 /************************************* | **************************************

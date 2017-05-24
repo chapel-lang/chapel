@@ -35,7 +35,7 @@ class TypeSymbol;
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
 public:
-  static void           initializeScopeForChplProgram();
+  static ResolveScope*  getRootModule();
 
   static ResolveScope*  findOrCreateScopeFor(DefExpr* def);
 
@@ -72,6 +72,8 @@ private:
   typedef std::map<const char*, Symbol*>  Bindings;
 
                         ResolveScope();
+
+  void                  addBuiltIns();
 
   bool                  isAggregateTypeAndConstructor(Symbol* sym0,
                                                       Symbol* sym1);

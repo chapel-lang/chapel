@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "CatchStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
 #include "expr.h"
@@ -33,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "visibleFunctions.h"
 
 #include <algorithm>
@@ -77,6 +79,11 @@ typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 static void          addToSymbolTable();
+
+static void          addToSymbolTable(DefExpr* def);
+
+static void          scopeResolve(ModuleSymbol*       module,
+                                  const ResolveScope* root);
 
 static void          processImportExprs();
 
@@ -226,6 +233,311 @@ void scopeResolve() {
 
 /************************************* | **************************************
 *                                                                             *
+* addToSymbolTable adds the asts in a vector to the global symbolTable such   *
+* that symbol definitions are added to entries in the table and new           *
+* enclosing asts become entries                                               *
+*                                                                             *
+************************************** | *************************************/
+
+static void addToSymbolTable(ModuleSymbol* topLevelModule);
+
+// 2017/05/23: Noakes
+//
+// This is a specialized walk for the simplified case of chpl__Program.
+// This provides an anchor to start the transition to a more general
+// version of a conventional top-down traversal.
+
+// It also serves as a template for the more general version.
+// Eventually it should be possible to use the general implementation
+// to handle chpl__Program with little or no special casing.
+
+static void addToSymbolTable() {
+  ResolveScope* rootScope = ResolveScope::getRootModule();
+
+  // Extend the rootScope with every top-level definition
+  for_alist(stmt, theProgram->block->body) {
+    if (DefExpr* def = toDefExpr(stmt)) {
+      rootScope->extend(def->sym);
+    }
+  }
+
+  // This would be the place to handle use statments but
+  // skipping for now as chpl__Program does not have any.
+
+  // Now recurse on every top-level module
+  for_alist(stmt, theProgram->block->body) {
+    if (ModuleSymbol* mod = definesModuleSymbol(stmt)) {
+      if (mod->modTag == MOD_USER) {
+        scopeResolve(mod, rootScope);
+      } else {
+        addToSymbolTable(mod);
+      }
+    }
+  }
+}
+
+// The legacy way to process the DefExprs, but on a module by module basis
+static void addToSymbolTable(ModuleSymbol* topLevelModule) {
+  std::vector<BaseAST*> asts;
+
+  collect_asts(topLevelModule, asts);
+
+  for_vector(BaseAST, item, asts) {
+    if (DefExpr* def = toDefExpr(item)) {
+      Symbol* newSym = def->sym;
+      if (newSym->hasFlag(FLAG_TEMP) == false &&
+          isLabelSymbol(newSym)      == false) {
+        ResolveScope* entry = ResolveScope::findOrCreateScopeFor(def);
+
+        entry->extend(newSym);
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Exported entry point for AggregateType                                      *
+*                                                                             *
+************************************** | *************************************/
+
+void addToSymbolTable(FnSymbol* fn) {
+  std::vector<DefExpr*> defs;
+
+  collectDefExprs(fn, defs);
+
+  for_vector(DefExpr, def, defs) {
+    addToSymbolTable(def);
+  }
+}
+
+static void addToSymbolTable(DefExpr* def) {
+  Symbol* newSym = def->sym;
+
+  if (newSym->hasFlag(FLAG_TEMP) == false &&
+      isLabelSymbol(newSym)      == false) {
+    ResolveScope* entry = ResolveScope::findOrCreateScopeFor(def);
+
+    entry->extend(newSym);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void scopeResolve(FnSymbol*           fn,
+                         const ResolveScope* parent);
+
+static void scopeResolve(BlockStmt*          block,
+                         const ResolveScope* parent);
+
+static void scopeResolve(TypeSymbol*         typeSym,
+                         const ResolveScope* parent);
+
+static void scopeResolve(const AList&        alist,
+                         ResolveScope*       scope);
+
+static void scopeResolve(ModuleSymbol*       module,
+                         const ResolveScope* parent) {
+  ResolveScope* scope = new ResolveScope(module, parent);
+
+  scopeResolve(module->block->body, scope);
+}
+
+static void scopeResolve(BlockStmt*          block,
+                         const ResolveScope* parent) {
+  ResolveScope* scope = new ResolveScope(block, parent);
+
+  scopeResolve(block->body,         scope);
+}
+
+static void scopeResolve(FnSymbol*           fn,
+                         const ResolveScope* parent) {
+  ResolveScope* scope = new ResolveScope(fn, parent);
+
+  for_alist(formal, fn->formals) {
+    if (DefExpr* def = toDefExpr(formal)) {
+      Symbol* sym = def->sym;
+
+      // Remarkably, there is such a thing as TEMP formals!
+      if (sym->hasFlag(FLAG_TEMP) == false) {
+        if (ArgSymbol* formal = toArgSymbol(sym)) {
+          scope->extend(formal);
+
+          if (formal->typeExpr != NULL) {
+            std::vector<BaseAST*> asts;
+
+            // The typeExpr may define query variables.  The DefExpr for
+            // these are unconventional so fall back on the collect()
+            // functions.
+
+            // Collect *all* asts within this top-level module in text order
+            collect_asts(formal->typeExpr, asts);
+
+            for_vector(BaseAST, item, asts) {
+              if (DefExpr* subDef = toDefExpr(item)) {
+                scope->extend(subDef->sym);
+              }
+            }
+          }
+
+          if (formal->variableExpr != NULL) {
+            std::vector<BaseAST*> asts;
+
+            // Use the same scheme as for typeExpr
+            collect_asts(formal->variableExpr, asts);
+
+            for_vector(BaseAST, item, asts) {
+              if (DefExpr* subDef = toDefExpr(item)) {
+                scope->extend(subDef->sym);
+              }
+            }
+          }
+
+        } else {
+          INT_ASSERT(false);
+        }
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+
+  if (fn->where != NULL) {
+    scopeResolve(fn->where, scope);
+  }
+
+  if (fn->retExprType != NULL) {
+    scopeResolve(fn->retExprType, scope);
+  }
+
+  scopeResolve(fn->body, scope);
+}
+
+static void scopeResolve(TypeSymbol*         typeSym,
+                         const ResolveScope* parent) {
+  Type* type = typeSym->type;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    ResolveScope* scope = new ResolveScope(typeSym, parent);
+
+    scopeResolve(at->fields,    scope);
+
+  } else if (EnumType* et = toEnumType(type)) {
+    ResolveScope* scope = new ResolveScope(typeSym, parent);
+
+    scopeResolve(et->constants, scope);
+  }
+}
+
+static void scopeResolve(const AList& alist, ResolveScope* scope) {
+  for_alist(stmt, alist) {
+    if (DefExpr* def = toDefExpr(stmt))   {
+      Symbol* sym = def->sym;
+
+      if (sym->hasFlag(FLAG_TEMP) == false &&
+          isLabelSymbol(sym)      == false) {
+        scope->extend(sym);
+      }
+    }
+  }
+
+  for_alist(stmt, alist) {
+    if (DefExpr* def = toDefExpr(stmt))   {
+      Symbol* sym = def->sym;
+
+      if (sym->hasFlag(FLAG_TEMP) == false &&
+          isLabelSymbol(sym)      == false) {
+        if (ModuleSymbol* modSym  = toModuleSymbol(sym)) {
+          scopeResolve(modSym,  scope);
+
+        } else if (FnSymbol* fnSym = toFnSymbol(sym))     {
+          scopeResolve(fnSym,   scope);
+
+        } else if (TypeSymbol* typeSym = toTypeSymbol(sym))   {
+          scopeResolve(typeSym, scope);
+        }
+      }
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      if (block->blockTag == BLOCK_NORMAL) {
+        scopeResolve(block,       scope);
+
+      } else {
+        scopeResolve(block->body, scope);
+      }
+
+    } else if (CondStmt* cond = toCondStmt(stmt))  {
+      scopeResolve(cond->thenStmt, scope);
+
+      if (cond->elseStmt != NULL) {
+        scopeResolve(cond->elseStmt, scope);
+      }
+
+    } else if (TryStmt* tryStmt = toTryStmt(stmt)) {
+      scopeResolve(tryStmt->_body, scope);
+
+      for_alist(item, tryStmt->_catches) {
+        if (CatchStmt* catchStmt = toCatchStmt(item)) {
+          scopeResolve(catchStmt->_body, scope);
+
+        } else {
+          INT_ASSERT(false);
+        }
+      }
+
+    } else if (isUseStmt(stmt)           == true ||
+               isCallExpr(stmt)          == true ||
+               isUnresolvedSymExpr(stmt) == true ||
+               isGotoStmt(stmt)          == true) {
+
+    // May occur in --llvm runs
+    } else if (isExternBlockStmt(stmt)   == true) {
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Transform module uses into calls to initialize functions; store the         *
+* relevant scoping information in BlockStmt::modUses                          *
+*                                                                             *
+************************************** | *************************************/
+
+static void processImportExprs(ModuleSymbol* topLevelModule);
+
+static void processImportExprs() {
+  for_alist(expr, theProgram->block->body) {
+    if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
+      processImportExprs(mod);
+    }
+  }
+}
+
+static void processImportExprs(ModuleSymbol* topLevelModule) {
+  std::vector<BaseAST*> asts;
+
+  // Collect *all* asts within this top-level module in text order
+  collect_asts(topLevelModule, asts);
+
+  for_vector(BaseAST, item, asts) {
+    if (UseStmt* useStmt = toUseStmt(item)) {
+      if (useStmt->isValid() == true) {
+        useStmt->scopeResolve();
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -251,100 +563,6 @@ static void addRecordDefaultConstruction() {
 
           insert_help(def->init, def, def->parentSymbol);
         }
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* addToSymbolTable adds the asts in a vector to the global symbolTable such   *
-* that symbol definitions are added to entries in the table and new           *
-* enclosing asts become entries                                               *
-*                                                                             *
-************************************** | *************************************/
-
-static void addToSymbolTable(ModuleSymbol* topLevelModule);
-
-static void addToSymbolTable(DefExpr*      def);
-
-static void addToSymbolTable() {
-  ResolveScope::initializeScopeForChplProgram();
-
-  for_alist(stmt, theProgram->block->body) {
-    if (ModuleSymbol* mod = definesModuleSymbol(stmt)) {
-      addToSymbolTable(mod->defPoint);
-      addToSymbolTable(mod);
-    }
-  }
-}
-
-static void addToSymbolTable(ModuleSymbol* topLevelModule) {
-  std::vector<BaseAST*> asts;
-
-  collect_asts(topLevelModule, asts);
-
-  for_vector(BaseAST, item, asts) {
-    if (DefExpr* def = toDefExpr(item)) {
-      addToSymbolTable(def);
-    }
-  }
-}
-
-static void addToSymbolTable(DefExpr* def) {
-  Symbol* newSym = def->sym;
-
-  if (newSym->hasFlag(FLAG_TEMP) == false &&
-      isLabelSymbol(newSym)      == false) {
-    ResolveScope* entry = ResolveScope::findOrCreateScopeFor(def);
-
-    entry->extend(newSym);
-  }
-}
-
-
-// Exported entry point for AggregateType
-void addToSymbolTable(FnSymbol* fn) {
-  std::vector<DefExpr*> defs;
-
-  collectDefExprs(fn, defs);
-
-  for_vector(DefExpr, def, defs) {
-    addToSymbolTable(def);
-  }
-}
-
-
-/************************************* | **************************************
-*                                                                             *
-* Transform module uses into calls to initialize functions; store the         *
-* relevant scoping information in BlockStmt::modUses                          *
-*                                                                             *
-************************************** | *************************************/
-
-static void processImportExprs(ModuleSymbol* topLevelModule);
-
-static void processImportExprs() {
-  for_alist(expr, theProgram->block->body) {
-    if (UseStmt* useStmt = toUseStmt(expr))  {
-      useStmt->scopeResolve();
-
-    } else if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
-      processImportExprs(mod);
-    }
-  }
-}
-
-static void processImportExprs(ModuleSymbol* topLevelModule) {
-  std::vector<BaseAST*> asts;
-
-  // Collect *all* asts within this top-level module in text order
-  collect_asts(topLevelModule, asts);
-
-  for_vector(BaseAST, item, asts) {
-    if (UseStmt* useStmt = toUseStmt(item)) {
-      if (useStmt->isValid() == true) {
-        useStmt->scopeResolve();
       }
     }
   }
