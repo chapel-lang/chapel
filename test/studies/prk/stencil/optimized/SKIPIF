@@ -1,2 +1,0 @@
-CHPL_TEST_PERF != on
-CHPL_TEST_PERF_LABEL != ml-
