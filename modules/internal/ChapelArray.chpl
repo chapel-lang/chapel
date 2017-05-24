@@ -83,12 +83,12 @@
    Associative domains and arrays support a number of operators for
    set manipulations.  The supported set operators are:
 
-     =====  ====================
-     \+     Union
-     &      Intersection
-     \-      Difference
-     ^      Symmetric Difference
-     =====  ====================
+     =======  ====================
+     \+ , \|  Union
+     &        Intersection
+     \-       Difference
+     ^        Symmetric Difference
+     =======  ====================
 
    Consider the following code where ``A`` and ``B`` are associative arrays:
 
