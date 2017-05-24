@@ -81,7 +81,7 @@
    ================================================
 
    Associative domains and arrays support a number of operators for
-   set manipulations.  The supported set operators are demonstrated below:
+   set manipulations.  The supported set operators are:
 
      =======  ====================
      \+ , \|  Union
