@@ -85,6 +85,7 @@
 
      =====  ====================
      \+     Union
+     \|     Union
      &      Intersection
      \-      Difference
      ^      Symmetric Difference
