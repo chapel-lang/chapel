@@ -4,29 +4,9 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-G) `Test your feature`_
 H) `Push your work to your feature branch`_
 I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
-
-
-Test your feature
------------------
-
-You will probably need to create new tests for your feature. See
-ContributorInfo.rst and TestSystem.rst for more information on this process.
-To do the most basic testing, you'd do:
-
-.. code-block:: bash
-
-    # run Hello tests
-    make check
-
-    # run tests that end up in $CHPL_HOME/examples
-    start_test test/release/examples
-
-    # run all tests
-    start_test test/
 
 
 Push your work to your feature branch

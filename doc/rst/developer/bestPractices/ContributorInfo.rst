@@ -140,6 +140,27 @@ commit`` to finish the merge process.
 If you want to understand the changes that occurred upstream, see `Read commit
 messages`_ below.
 
+Test your feature
+-----------------
+
+You will probably need to create new tests for your feature. See `Test System`_
+for more information on this process.  To do the most basic testing, you'd do:
+
+.. code-block:: bash
+
+    # run Hello tests
+    make check
+
+    # run tests that end up in $CHPL_HOME/examples
+    start_test test/release/examples
+
+    # run all tests
+    start_test test/
+
+Any addition/change to the Chapel test system should pass testing when that
+test/directory is run with ``start_test`` (and performance tests should also
+pass testing for ``start_test -performance``).
+
 
 .. _Submit pull request:
 
@@ -180,10 +201,6 @@ It may be helpful to read the documentation on Chapel's `Test System`_ before
 writing or modifying tests.
 
 * Testing your patch:
-
-  * Any addition/change to the Chapel test system should pass testing when that
-    test/directory is run with ``start_test`` (and performance tests should
-    also pass testing for ``start_test -performance``).
 
   * Changes to the Chapel implementation should not cause
     regressions. Developers are responsible for doing a degree of testing
