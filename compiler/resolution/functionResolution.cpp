@@ -1075,8 +1075,12 @@ resolveFormals(FnSymbol* fn) {
            (isUnion(formal->type) ||
             isRecord(formal->type)))) {
         makeRefType(formal->type);
-        formal->type = formal->type->refType;
-        // The type of the formal is its own ref type!
+        if (formal->type->refType) {
+          formal->type = formal->type->refType;
+          // The type of the formal is its own ref type!
+        } else {
+          formal->qual = QUAL_REF;
+        }
       }
 
       if (isRecordWrappedType(formal->type) &&
@@ -3285,6 +3289,11 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
         // If the first actual is an instance of dtMethodToken and the call is
         // to "init" of a generic record that defined initializers
         resolveInitializer(call);
+        NamedExpr* named = toNamedExpr(call->get(2));
+        INT_ASSERT(named);
+        SymExpr* namedSe = toSymExpr(named->actual);
+        INT_ASSERT(namedSe);
+        namedSe->symbol()->type = call->resolvedFunction()->_this->type;
         return call->resolvedFunction();
       }
     }
@@ -4078,7 +4087,8 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isNonGenericRecordWithInitializers(srcType) == true)  {
+  } else if (isNonGenericRecordWithInitializers(srcType) == true ||
+             isGenericRecordWithInitializers(srcType) == true)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 

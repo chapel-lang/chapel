@@ -134,7 +134,8 @@ void normalize() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isNonGenericClassWithInitializers(at)  == true ||
-        isNonGenericRecordWithInitializers(at) == true) {
+        isNonGenericRecordWithInitializers(at) == true ||
+        isGenericRecordWithInitializers(at)) {
       preNormalizeFields(at);
     }
   }
@@ -678,7 +679,8 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // non generic records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isNonGenericRecordWithInitializers(at) == true) {
+          if (isNonGenericRecordWithInitializers(at) == true ||
+              isGenericRecordWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -1862,7 +1864,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
-      if (isNonGenericRecordWithInitializers(type) == true) {
+      if (isNonGenericRecordWithInitializers(type) == true ||
+          isGenericRecordWithInitializers(type)) {
         Expr*     arg1    = initCall->get(1)->remove();
         CallExpr* argExpr = toCallExpr(arg1);
 
@@ -1873,14 +1876,15 @@ static void normVarTypeInference(DefExpr* defExpr) {
         argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
 
         // Add _mt and _this (insert at head in reverse order)
-        argExpr->insertAtHead(var);
+        argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
         argExpr->insertAtHead(gMethodToken);
 
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
 
-      if (type != NULL && type->isGeneric() == false) {
+      if (type != NULL && (type->isGeneric() == false ||
+                           isGenericRecordWithInitializers(type))) {
         var->type = type;
       }
 
@@ -1989,7 +1993,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isNonGenericRecordWithInitializers(type) == true) {
+  } else if (isNonGenericRecordWithInitializers(type) == true ||
+             isGenericRecordWithInitializers(type)) {
     if (isNewExpr(initExpr) == true) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
