@@ -134,8 +134,8 @@ void normalize() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isNonGenericClassWithInitializers(at)  == true ||
-        isNonGenericRecordWithInitializers(at) == true ||
-        isGenericRecordWithInitializers(at)) {
+        (at->isRecord() == true &&
+         at->initializerStyle == DEFINES_INITIALIZER)) {
       preNormalizeFields(at);
     }
   }
@@ -677,10 +677,10 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         } else if (isPrimitiveScalar(type) == true) {
           retval = var;
 
-        // non generic records with initializers are defined
+        // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isNonGenericRecordWithInitializers(at) == true ||
-              isGenericRecordWithInitializers(at) == true) {
+          if (at->isRecord() == true &&
+              at->initializerStyle == DEFINES_INITIALIZER) {
             retval = var;
           }
         }
@@ -1864,8 +1864,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
-      if (isNonGenericRecordWithInitializers(type) == true ||
-          isGenericRecordWithInitializers(type)) {
+      if (type->isRecord() == true &&
+          type->initializerStyle == DEFINES_INITIALIZER) {
         Expr*     arg1    = initCall->get(1)->remove();
         CallExpr* argExpr = toCallExpr(arg1);
 
