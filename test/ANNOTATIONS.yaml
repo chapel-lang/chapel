@@ -665,7 +665,7 @@ meteor:
 mg-b:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
-  05/22/17:
+  05/23/17:
     - Fix NPB MG (#6284)
 
 miniMD:
