@@ -665,6 +665,8 @@ meteor:
 mg-b:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  05/22/17:
+    - Fix NPB MG (#6284)
 
 miniMD:
   12/21/13:
@@ -741,6 +743,8 @@ prk-stencil.ml-perf:
     - Improve and enable strided bulk transfer optimization as default (#4318)
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  05/18/17:
+    - Use nonblocking transactions for strided transfers (#6262)
 
 prk-stencil-time:
   05/11/17:
