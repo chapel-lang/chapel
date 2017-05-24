@@ -495,6 +495,9 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
                isUnresolvedSymExpr(stmt) == true ||
                isGotoStmt(stmt)          == true) {
 
+    // May occur in --llvm runs
+    } else if (isExternBlockStmt(stmt)   == true) {
+
     } else {
       INT_ASSERT(false);
     }
