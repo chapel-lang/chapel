@@ -84,7 +84,7 @@
    set manipulations.  The supported set operators are:
 
      =====  ====================
-     \+ \|    Union
+     \+     Union
      &      Intersection
      \-      Difference
      ^      Symmetric Difference
@@ -99,7 +99,7 @@
    The result ``C`` is a new associative array backed by a new associative
    domain. The domains of ``A`` and ``B`` are not modified by ``op``.
 
-   There are also op= variants that store the result into the first operand.
+   There are also ``op=`` variants that store the result into the first operand.
 
    Consider the following code where ``A`` and ``B`` are associative arrays:
 
