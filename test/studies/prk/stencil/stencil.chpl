@@ -260,8 +260,7 @@ proc main() {
     }
 
     if (!validate) {
-      writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime, "  Avg time (s): ",
-              avgTime);
+      writef("Rate (MFlops/s): %dr  Avg time (s): %r\n", 1.0E-06 * flops/avgTime, avgTime);
     }
   }
 }
