@@ -1113,6 +1113,13 @@ static void call_constructor_for_class(CallExpr* call) {
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
       } else {
         // Transform C ( ... ) into _type_construct_C ( ... ) .
+        if (isGenericRecordWithInitializers(ct) == true) {
+          USR_FATAL_CONT(se,
+                         "Type constructors are not yet supported for generic "
+                         "records that define initializers.  As a workaround, "
+                         "try relying on type inference");
+
+        }
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
       }
     }
