@@ -377,7 +377,8 @@ class SparseBlockArr: BaseSparseArr {
   }
 
 
-  proc dsiAccess(i: rank*idxType) ref {
+  proc dsiAccess(i: rank*idxType) ref
+  where true /* to be as specific as below overloads */ {
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
         return myLocArr.dsiAccess(i);
@@ -408,6 +409,7 @@ class SparseBlockArr: BaseSparseArr {
 
 
   proc dsiAccess(i: idxType...rank) ref
+  where true /* to be as specific as below overloads */
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank)
   where shouldReturnRvalueByValue(eltType)

@@ -1996,7 +1996,8 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
-    inline proc ref this(i: rank*_value.dom.idxType) ref {
+    inline proc ref this(i: rank*_value.dom.idxType) ref
+    where true /* to be as specific as below overloads */ {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
@@ -2027,6 +2028,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "removable array access"
     inline proc ref this(i: _value.dom.idxType ...rank) ref
+    where true /* to be as specific as below overloads */
       return this(i);
 
     pragma "no doc" // value version, for POD types
@@ -2043,6 +2045,7 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
+    where true /* to be as specific as below overloads */
     {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
@@ -2073,6 +2076,7 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
+    where true /* to be as specific as below overloads */
       return localAccess(i);
 
     pragma "no doc" // value version, for POD types

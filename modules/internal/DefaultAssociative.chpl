@@ -565,7 +565,8 @@ module DefaultAssociative {
     }
 
     // ref version
-    proc dsiAccess(idx : idxType, haveLock = false) ref {
+    proc dsiAccess(idx : idxType, haveLock = false) ref
+    where true /* to be as specific as below overloads */ {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);

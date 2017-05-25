@@ -384,7 +384,8 @@ module DefaultSparse {
 
 
     // ref version
-    proc dsiAccess(ind: rank*idxType) ref {
+    proc dsiAccess(ind: rank*idxType) ref
+    where true /* to be as specific as below overloads */ {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.member(ind)) then

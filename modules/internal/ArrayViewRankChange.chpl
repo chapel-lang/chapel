@@ -538,7 +538,8 @@ module ArrayViewRankChange {
     // accessors
     //
 
-    inline proc dsiAccess(i: idxType ...rank) ref {
+    inline proc dsiAccess(i: idxType ...rank) ref
+      where true /* to be as specific as below overloads */ {
       return dsiAccess(i);
     }
 
@@ -552,7 +553,8 @@ module ArrayViewRankChange {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i) ref {
+    inline proc dsiAccess(i) ref
+      where true /* to be as specific as below overloads */ {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
@@ -585,6 +587,7 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiLocalAccess(i) ref
+      where true /* to be as specific as below overloads */
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
     inline proc dsiLocalAccess(i)

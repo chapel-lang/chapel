@@ -1706,7 +1706,8 @@ module DefaultRectangular {
     where rank == 1 && shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(ind);
 
-    inline proc dsiAccess(ind : rank*idxType) ref {
+    inline proc dsiAccess(ind : rank*idxType) ref
+    where true /* to be as specific as below overloads */ {
       if boundsChecking then
         if !dom.dsiMember(ind) {
           // Note -- because of module load order dependency issues,
@@ -1741,6 +1742,7 @@ module DefaultRectangular {
 
 
     inline proc dsiLocalAccess(i) ref
+    where true /* to be as specific as below overloads */
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i)

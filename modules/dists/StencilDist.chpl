@@ -1110,7 +1110,8 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 }
 
 // ref version
-inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
+inline proc StencilArr.dsiAccess(i: rank*idxType) ref
+where true /* to be as specific as below overloads */ {
   return do_dsiAccess(true, i);
 }
 // value version for POD types
@@ -1127,6 +1128,7 @@ where shouldReturnRvalueByConstRef(eltType) {
 
 // ref version
 inline proc StencilArr.dsiAccess(i: idxType...rank) ref
+where true /* to be as specific as below overloads */
   return dsiAccess(i);
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: idxType...rank)

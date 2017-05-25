@@ -135,7 +135,8 @@ module ArrayViewSlice {
     // accessors
     //
 
-    inline proc dsiAccess(i: idxType ...rank) ref {
+    inline proc dsiAccess(i: idxType ...rank) ref
+    where true /* to be as specific as below overloads */ {
       return dsiAccess(i);
     }
 
@@ -149,7 +150,8 @@ module ArrayViewSlice {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i) ref {
+    inline proc dsiAccess(i) ref
+      where true /* to be as specific as below overloads */ {
       checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
@@ -182,6 +184,7 @@ module ArrayViewSlice {
     }
 
     inline proc dsiLocalAccess(i) ref
+      where true /* to be as specific as below overloads */
       return arr.dsiLocalAccess(i);
 
     inline proc dsiLocalAccess(i)
