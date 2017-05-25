@@ -11,9 +11,6 @@ retval = ((compiler !="mpi-gnu")
           & (compiler!="cray-prgenv-gnu")
           & (compiler!='cray-prgenv-intel'))
 
-# Only support fifo 
-retval |= (os.environ['CHPL_TASKS']!="fifo")
-
 # Check CHPL_COMM support
 # Currently supports GASNET+MPI, GASNET+Aries, uGNI
 comm=os.environ['CHPL_COMM']
