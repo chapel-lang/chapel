@@ -38,3 +38,4 @@ proc recv() {
     writef("Rank %i received %i from the left.\n", rank, val);
   }
 }
+
