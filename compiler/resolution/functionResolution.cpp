@@ -2405,11 +2405,11 @@ void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
     // Move candidates to above Vecs according to return intent
     forv_Vec(ResolutionCandidate*, candidate, candidates) {
       if (candidate->fn->retTag == RET_REF)
-	refCandidates.push_back(candidate);
+        refCandidates.push_back(candidate);
       else if(candidate->fn->retTag == RET_CONST_REF)
-	constRefCandidates.push_back(candidate);
+        constRefCandidates.push_back(candidate);
       else
-	valueCandidates.push_back(candidate);
+        valueCandidates.push_back(candidate);
     }
 
     // Disambiguate each group
