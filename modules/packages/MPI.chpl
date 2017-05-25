@@ -369,7 +369,7 @@ module MPI {
   }
 
   /* Overloaded version of Wait, which ignores the returned status */
-  inline proc Wait(ref request): c_int {
+  inline proc Wait(ref request: MPI_Request): c_int {
     var status: MPI_Status;
     return Wait(request, status);
   }
@@ -404,9 +404,9 @@ module MPI {
      This is implemented by a call to ``MPI_Irecv``, followed by a call to ``Wait`` above. The
      returned value of ``MPI_Status`` is ignored.
    */
-  proc Recv(ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int {
+  proc Recv(ref buf, count: c_int, datatype: MPI_Datatype, source: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int {
     var request: MPI_Request;
-    var ret = MPI_Irecv(buf, count, datatype, dest, tag, comm, request);
+    var ret = MPI_Irecv(buf, count, datatype, source, tag, comm, request);
     Wait(request, status);
     return ret;
   }
