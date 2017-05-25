@@ -2363,26 +2363,29 @@ void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
   int nRef = 0;
   int nConstRef = 0;
   int nValue = 0;
+  int nOther = 0;
   ResolutionCandidate* refCandidate = NULL;
   ResolutionCandidate* constRefCandidate = NULL;
   ResolutionCandidate* valueCandidate = NULL;
 
   // Count number of candidates in each category.
   forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
-    if (candidate->fn->retTag == RET_REF) {
+    RetTag retTag = candidate->fn->retTag;
+    if (retTag == RET_REF) {
       refCandidate = candidate;
       nRef++;
-    } else if(candidate->fn->retTag == RET_CONST_REF) {
+    } else if(retTag == RET_CONST_REF) {
       constRefCandidate = candidate;
       nConstRef++;
-    } else {
+    } else if(retTag == RET_VALUE) {
       valueCandidate = candidate;
       nValue++;
+    } else {
+      nOther++;
     }
   }
 
-
-  int total = nRef + nConstRef + nValue;
+  int total = nRef + nConstRef + nValue + nOther;
 
   // 0 matches -> return now, not a ref pair.
   if (total == 0)
@@ -2394,6 +2397,19 @@ void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
   // Now, if there are more than 2 matches in any category,
   // try harder to disambiguate. disambiguateByMatch might not have
   // resolved the finer points.
+  if (nOther > 0) {
+    ambiguous.clear();
+    // If there are *any* type/param candidates, we need to cause ambiguity
+    // if they are not selected... including consideration of where clauses.
+    ResolutionCandidate* best = disambiguateByMatch(candidates,
+                                                    ambiguous,
+                                                    DC,
+                                                    false /*ignoreWhere*/);
+    // returns ambiguity if best == NULL, best match otherwise
+    bestValue = best;
+    return;
+  }
+
   if (nRef > 1 || nConstRef > 1 || nValue > 1) {
 
     // Split candidates into ref, const ref, and value candidates
@@ -2404,11 +2420,12 @@ void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
 
     // Move candidates to above Vecs according to return intent
     forv_Vec(ResolutionCandidate*, candidate, candidates) {
-      if (candidate->fn->retTag == RET_REF)
+      RetTag retTag = candidate->fn->retTag;
+      if (retTag == RET_REF)
         refCandidates.push_back(candidate);
-      else if(candidate->fn->retTag == RET_CONST_REF)
+      else if(retTag == RET_CONST_REF)
         constRefCandidates.push_back(candidate);
-      else
+      else if(retTag == RET_VALUE)
         valueCandidates.push_back(candidate);
     }
 
