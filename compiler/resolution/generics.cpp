@@ -530,6 +530,9 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
     }
   }
 
+  if (retval != NULL && fn->throwsError())
+    retval->throwsErrorInit();
+
   return retval;
 }
 
