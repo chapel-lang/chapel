@@ -1,1 +1,5 @@
+# Test prints out comm counts, needs networking layer
 CHPL_COMM != gasnet
+# Avoid maintenance burden for --cache-remote or --llvm-wide-opt configs
+COMPOPTS <= --cache-remote
+COMPOPTS <= --llvm-wide-opt

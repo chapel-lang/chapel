@@ -1,0 +1,3 @@
+Optimized on clause (wrapon_fn) in module test_OptimizedOn_Block2 (test_OptimizedOn_Block2.chpl:13)
+Optimized rmem fence (wrapon_fn) in module test_OptimizedOn_Block2 (test_OptimizedOn_Block2.chpl:13)
+(r = 1) (r = 1) (r = 1) (r = 1) (r = 5) (r = 1) (r = 1) (r = 1) (r = 1) (r = 1)

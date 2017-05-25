@@ -1,0 +1,2 @@
+Optimized on clause (wrapon_fn) in module opequals (opequals.chpl:3)
+Optimized rmem fence (wrapon_fn) in module opequals (opequals.chpl:3)

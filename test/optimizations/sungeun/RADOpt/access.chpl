@@ -26,8 +26,8 @@ proc printCommDiagnosticsHere(s) {
 }
 proc printCommDiagnostics(id, s) {
   var diagnostics = getCommDiagnostics()(id);
-  writeln(s, "(Locale", id, "): gets: ", diagnostics.get);
-  writeln(s, "(Locale", id, "): puts: ", diagnostics.put);
+  writeln(s, "(Locale", id, "): gets: ", diagnostics.get + diagnostics.get_nb);
+  writeln(s, "(Locale", id, "): puts: ", diagnostics.put + diagnostics.put_nb);
   writeln(s, "(Locale", id, "): executeOns: ", diagnostics.execute_on);
   writeln(s, "(Locale", id, "): fast executeOns: ", diagnostics.execute_on_fast);
   writeln(s, "(Locale", id, "): nb executeOns: ", diagnostics.execute_on_nb);

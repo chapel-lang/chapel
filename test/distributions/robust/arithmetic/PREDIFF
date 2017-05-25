@@ -6,7 +6,7 @@
 #  * there is no TESTNAME.default.good
 #  * there is TESTNAME.prediff
 
-import sys, os, shutil, string;
+import sys, os, shutil, string, subprocess;
 
 testname=sys.argv[1]
 compopts=sys.argv[4]
@@ -29,10 +29,28 @@ else:
         opt = compopts[s+len(searchstring):len(compopts)]
         dist = opt.split()[0]
 
+cache_remote = False
+
+# search for --cache-remote
+if "--cache-remote" in compopts:
+  cache_remote = True
+
+if cache_remote:
+  dist = dist + ".cache-remote"
+  
 targetfn=testname+'.good'
 goodfn=testname+'.'+dist+'.good'
 if not os.path.isfile(goodfn):
+    print "good file ",goodfn," not found; using .default.good"
     goodfn=testname+'.default.good'
 
 print "cp", goodfn, targetfn
 shutil.copy(goodfn, targetfn)
+
+if cache_remote:
+  fix_cmd = "loose-comm-counts-cache-remote"
+  fix_counts = os.getenv('CHPL_HOME') + "/util/test/" + fix_cmd
+  print fix_cmd, sys.argv[1], sys.argv[6], goodfn
+  subprocess.call([fix_counts, sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], goodfn]);
+
+ 
