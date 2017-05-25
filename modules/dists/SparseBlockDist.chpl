@@ -368,7 +368,7 @@ class SparseBlockArr: BaseSparseArr {
   }
 
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-    coforall locA in locArr do on locArr {
+    coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       for i in locA.myElems._value.these(tag) {
         yield i;
