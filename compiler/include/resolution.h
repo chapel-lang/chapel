@@ -202,11 +202,12 @@ public:
 
 ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
                                          Vec<ResolutionCandidate*>& ambiguous,
-                                         DisambiguationContext DC);
+                                         DisambiguationContext DC,
+                                         bool ignoreWhere);
 bool isBetterMatch(ResolutionCandidate* candidate1,
                    ResolutionCandidate* candidate2,
                    const DisambiguationContext& DC,
-                   bool onlyConsiderPromotion);
+                   bool ignoreWhere);
 
 void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
                                         Vec<ResolutionCandidate*>& ambiguous,

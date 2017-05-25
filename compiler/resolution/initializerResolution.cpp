@@ -418,7 +418,8 @@ void resolveInitCall(CallExpr* call) {
   DisambiguationContext DC(&info.actuals, scope, explain);
 
   Vec<ResolutionCandidate*> ambiguous;
-  ResolutionCandidate* best = disambiguateByMatch(candidates, ambiguous, DC);
+  ResolutionCandidate* best = disambiguateByMatch(candidates, ambiguous, DC,
+      false /*ignoreWhere*/ );
 
   if (best && best->fn) {
     /*

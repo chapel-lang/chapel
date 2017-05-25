@@ -2193,7 +2193,7 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
 bool isBetterMatch(ResolutionCandidate* candidate1,
                           ResolutionCandidate* candidate2,
                           const DisambiguationContext& DC,
-                          bool onlyConsiderPromotion=false) {
+                          bool ignoreWhere=false) {
 
   DisambiguationState DS;
 
@@ -2213,7 +2213,7 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
     return true;
   }
 
-  if (!onlyConsiderPromotion && !(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
+  if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
     // If the decision hasn't been made based on the argument mappings...
 
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
@@ -2232,11 +2232,11 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
       TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
 
-    } else if (candidate1->fn->where && !candidate2->fn->where) {
+    } else if (!ignoreWhere && candidate1->fn->where && !candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
       DS.fn1MoreSpecific = true;
 
-    } else if (!candidate1->fn->where && candidate2->fn->where) {
+    } else if (!ignoreWhere && !candidate1->fn->where && candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
     }
@@ -2264,7 +2264,8 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
                     Vec<ResolutionCandidate*>& ambiguous,
-                    DisambiguationContext DC) {
+                    DisambiguationContext DC,
+                    bool ignoreWhere=false) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2296,7 +2297,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
-      if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j))) {
+      if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j), ignoreWhere)) {
         TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
         notBest[j] = true;
 
@@ -2340,7 +2341,8 @@ void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
 
   ResolutionCandidate* best = disambiguateByMatch(candidates,
                                                   ambiguous,
-                                                  DC);
+                                                  DC,
+                                                  true /*ignoreWhere*/);
 
   // The common case is that there is no ambiguity because
   // the return intent overload feature is not used.
@@ -2388,6 +2390,51 @@ void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
 
   // 1 match -> should have returned above (best from disambiguateByMatch)
   INT_ASSERT(1 < total);
+
+  // Now, if there are more than 2 matches in any category,
+  // try harder to disambiguate. disambiguateByMatch might not have
+  // resolved the finer points.
+  if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+
+    // Split candidates into ref, const ref, and value candidates
+    Vec<ResolutionCandidate*> refCandidates;
+    Vec<ResolutionCandidate*> constRefCandidates;
+    Vec<ResolutionCandidate*> valueCandidates;
+    Vec<ResolutionCandidate*> tmpAmbiguous;
+
+    // Move candidates to above Vecs according to return intent
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      if (candidate->fn->retTag == RET_REF)
+	refCandidates.push_back(candidate);
+      else if(candidate->fn->retTag == RET_CONST_REF)
+	constRefCandidates.push_back(candidate);
+      else
+	valueCandidates.push_back(candidate);
+    }
+
+    // Disambiguate each group
+    refCandidate = disambiguateByMatch(refCandidates,
+                                       tmpAmbiguous,
+                                       DC,
+                                       false /*ignoreWhere*/);
+    constRefCandidate = disambiguateByMatch(constRefCandidates,
+                                            tmpAmbiguous,
+                                            DC,
+                                            false /*ignoreWhere*/);
+    valueCandidate = disambiguateByMatch(valueCandidates,
+                                         tmpAmbiguous,
+                                         DC,
+                                         false /*ignoreWhere*/);
+
+
+    // update the counts
+    if (refCandidate != NULL)
+      nRef = 1;
+    if (constRefCandidate != NULL)
+      nConstRef = 1;
+    if (valueCandidate != NULL)
+      nValue = 1;
+  }
 
   // Now we know there are >= 2 matches.
   // If there are more than 2 matches in any category, fail for ambiguity.
@@ -2437,9 +2484,9 @@ void
 printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("this", info->name)) {
-    USR_FATAL(call, "ambiguous access of '%s' by '%s'",
-              toString(info->actuals.v[1]->type),
-              toString(info));
+    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
+                   toString(info->actuals.v[1]->type),
+                   toString(info));
   } else {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
@@ -2451,25 +2498,26 @@ printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
       str = astr(mod->name, ".", str);
     }
     USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-    if (developer) {
-      for (int i = callStack.n-1; i>=0; i--) {
-        CallExpr* cs = callStack.v[i];
-        FnSymbol* f = cs->getFunction();
-        if (f->instantiatedFrom)
-          USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-        else
-          break;
-      }
-    }
-    bool printed_one = false;
-    forv_Vec(FnSymbol, fn, candidates) {
-      USR_PRINT(fn, "%s %s",
-                printed_one ? "               " : "candidates are:",
-                toString(fn));
-      printed_one = true;
-    }
-    USR_STOP();
   }
+
+  if (developer) {
+    for (int i = callStack.n-1; i>=0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f = cs->getFunction();
+      if (f->instantiatedFrom)
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      else
+        break;
+    }
+  }
+  bool printed_one = false;
+  forv_Vec(FnSymbol, fn, candidates) {
+    USR_PRINT(fn, "%s %s",
+              printed_one ? "               " : "candidates are:",
+              toString(fn));
+    printed_one = true;
+  }
+  USR_STOP();
 }
 
 void
