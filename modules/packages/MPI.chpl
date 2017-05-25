@@ -138,6 +138,26 @@ These are the configurations in which this module is currently tested. Any
 launcher should work fine for this mode. Support is expected to expand in
 future versions.
 
+Qthreads and MPI
+----------------
+
+Since MPI is not natively Qthread-aware, some care is required to avoid deadlocks. This
+section describes current recommendations on using ``CHPL_TASKS=qthreads`` and the MPI
+module.
+
+We assume that ``CHPL_COMM`` is either ``ugni`` or ``gasnet+aries``.
+We do not recommend using the MPI module with the ``gasnet+mpi`` communication backend
+and ``qthreads``. 
+
+1. Use non-blocking calls whenever possible. Note that this also requires using ``MPI_Test``
+   instead of ``MPI_Wait``. For convenience, we provide wrappers for a subset of
+   the MPI blocking calls that are implemented with non-blocking calls and correctly yield
+   tasks while waiting.
+
+2. Any blocking calls (including third-party libraries) must be preceded with a call to
+   ``Barrier``.
+
+3. Blocking calls must be serialized; concurrent blocking calls can result in deadlocks.
 
 Configurations Constants
 ------------------------
