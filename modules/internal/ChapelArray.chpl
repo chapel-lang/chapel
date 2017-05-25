@@ -3175,8 +3175,15 @@ module ChapelArray {
       }
       return false;
     }
+    proc oneNonRange() param {
+      for param dim in 1.. args.size {
+        if !isRange(args(dim)) then
+          return true;
+      }
+      return false;
+    }
 
-    return allValid() && oneRange();
+    return allValid() && oneRange() && oneNonRange();
     //return help(1);
   }
 
