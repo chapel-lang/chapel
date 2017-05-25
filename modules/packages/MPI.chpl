@@ -333,6 +333,45 @@ module MPI {
     return size;
   }
 
+  //Wait??
+  inline proc Wait(ref request: MPI_Request, ref status: MPI_Status): c_int {
+    var flag, ret : c_int;
+    ret = C_MPI.MPI_Test(request, flag, status);
+    while (flag==0) {
+      chpl_task_yield();
+      ret = C_MPI.MPI_Test(request, flag, status);
+    }
+    return ret;
+  }
+
+  inline proc Wait(ref request): c_int {
+    var status: MPI_Status;
+    return Wait(request, status);
+  }
+
+  //Barrier???
+  proc Barrier(comm: MPI_Comm): c_int {
+    var request: MPI_Request;
+
+    C_MPI.MPI_Ibarrier(comm, request);
+    Wait(request);
+  }
+
+  //Send??
+  proc Send(ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm): c_int {
+    var request: MPI_Request;
+    var ret = MPI_Isend (buf, count, datatype, dest, tag, comm, request);
+    Wait(request);
+    return ret;
+  }
+
+  //Recv??
+  proc Recv(ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int {
+    var request: MPI_Request;
+    var ret = MPI_Irecv(buf, count, datatype, dest, tag, comm, request);
+    Wait(request, status);
+    return ret;
+  }
 
   /* A wrapper around ``MPI_Status``. Only the defined fields are exposed */
   extern record MPI_Status {
