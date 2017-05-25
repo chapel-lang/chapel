@@ -1522,6 +1522,7 @@ bool canCoerce(Type*     actualType,
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(),
                        NULL,
+                       // Should this be formalType->getValType() ?
                        formalType,
                        fn,
                        promotes);
@@ -2253,12 +2254,16 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
  *
  * \param candidates A list of the candidate functions, from which the best
  *                   match is selected.
+ * \param ambiguous  On return, if there was ambiguity, this stores the
+ *                   any candidate participating in the ambiguity - that
+ *                   is, any candidate not known to be worse than another.
  * \param DC         The disambiguation context.
  *
  * \return The result of the disambiguation process.
  */
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    Vec<ResolutionCandidate*>& ambiguous,
                     DisambiguationContext DC) {
 
   // If index i is set then we can skip testing function F_i because we already
@@ -2313,69 +2318,86 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
   TRACE_DISAMBIGUATE_BY_MATCH("Z: No non-ambiguous best match.\n\n");
 
+  for (int i = 0; i < candidates.n; ++i) {
+    if (!notBest[i])
+      ambiguous.add(candidates.v[i]);
+  }
+
   return NULL;
 }
 
 /* Find the best return-intent overloads from a list of candidates.
+   If there was ambiguity, bestRef, bestConstRef, and bestValue will be NULL,
+   and the vector ambiguous will store any functions that participated
+   in the ambiguity (i.e. the multiple best matches).
  */
 void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
+                                        Vec<ResolutionCandidate*>& ambiguous,
                                         DisambiguationContext DC,
                                         ResolutionCandidate*& bestRef,
                                         ResolutionCandidate*& bestConstRef,
                                         ResolutionCandidate*& bestValue) {
 
-  // Split candidates into ref, const ref, and value candidates
-  Vec<ResolutionCandidate*> refCandidates;
-  Vec<ResolutionCandidate*> constRefCandidates;
-  Vec<ResolutionCandidate*> valueCandidates;
+  ResolutionCandidate* best = disambiguateByMatch(candidates,
+                                                  ambiguous,
+                                                  DC);
 
-  // Move candidates to above Vecs according to return intent
-  forv_Vec(ResolutionCandidate*, candidate, candidates) {
-    if (candidate->fn->retTag == RET_REF)
-      refCandidates.push_back(candidate);
-    else if(candidate->fn->retTag == RET_CONST_REF)
-      constRefCandidates.push_back(candidate);
+  // The common case is that there is no ambiguity because
+  // the return intent overload feature is not used.
+  if (best) {
+    if (best->fn->retTag == RET_REF)
+      bestRef = best;
+    else if(best->fn->retTag == RET_CONST_REF)
+      bestConstRef = best;
     else
-      valueCandidates.push_back(candidate);
+      bestValue = best;
+    return;
   }
 
-  // Run disambiguateByMatch to choose the best from each list
-  bestRef = disambiguateByMatch(refCandidates, DC);
-  bestConstRef = disambiguateByMatch(constRefCandidates, DC);
-  bestValue = disambiguateByMatch(valueCandidates, DC);
+  // Now, if there was ambiguity, find candidates with different
+  // return intent in ambiguousCandidates. If there is only
+  // one of each, we are good to go.
 
-  // If disambiguateByMatch returned NULL for a non-empty list
-  // that means that there was ambiguity.
-  // In that case, we set all candidates to NULL in order to trigger an
-  // ambiguous resolution error.
-  bool ambiguousRef = (refCandidates.n > 1 && !bestRef);
-  bool ambiguousConstRefRef = (constRefCandidates.n > 1 && !bestConstRef);
-  bool ambiguousValue = (valueCandidates.n > 1 && !bestValue);
-  if (ambiguousRef || ambiguousConstRefRef || ambiguousValue) {
-    bestRef = NULL;
-    bestConstRef = NULL;
-    bestValue = NULL;
+  int nRef = 0;
+  int nConstRef = 0;
+  int nValue = 0;
+  ResolutionCandidate* refCandidate = NULL;
+  ResolutionCandidate* constRefCandidate = NULL;
+  ResolutionCandidate* valueCandidate = NULL;
+
+  // Count number of candidates in each category.
+  forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
+    if (candidate->fn->retTag == RET_REF) {
+      refCandidate = candidate;
+      nRef++;
+    } else if(candidate->fn->retTag == RET_CONST_REF) {
+      constRefCandidate = candidate;
+      nConstRef++;
+    } else {
+      valueCandidate = candidate;
+      nValue++;
+    }
   }
 
-  // If one requires more promotion than the other, this is not a ref-pair.
-  if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
-    bestValue = NULL; // Don't consider the value function.
-  }
-  if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
-    bestRef = NULL; // Don't consider the ref function.
-  }
-  if (bestRef && bestConstRef && isBetterMatch(bestRef, bestConstRef, DC, true)) {
-    bestConstRef = NULL; // Don't consider the const ref function.
-  }
-  if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
-    bestRef = NULL; // Don't consider the ref function.
-  }
-  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
-    bestValue = NULL; // Don't consider the value function.
-  }
-  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
-    bestConstRef = NULL; // Don't consider the const ref function.
-  }
+
+  int total = nRef + nConstRef + nValue;
+
+  // 0 matches -> return now, not a ref pair.
+  if (total == 0)
+    return;
+
+  // 1 match -> should have returned above (best from disambiguateByMatch)
+  INT_ASSERT(1 < total);
+
+  // Now we know there are >= 2 matches.
+  // If there are more than 2 matches in any category, fail for ambiguity.
+  if (nRef > 1 || nConstRef > 1 || nValue > 1)
+    return;
+
+  // Otherwise, return the single candidate in each slot.
+  bestRef = refCandidate;
+  bestConstRef = constRefCandidate;
+  bestValue = valueCandidate;
 }
 
 
@@ -3389,11 +3411,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
+  Vec<ResolutionCandidate*> ambiguous;
   ResolutionCandidate* bestRef = NULL;
   ResolutionCandidate* bestConstRef = NULL;
   ResolutionCandidate* bestValue = NULL;
 
-  disambiguateByMatchReturnOverloads(candidates, DC,
+  disambiguateByMatchReturnOverloads(candidates, ambiguous, DC,
                                      bestRef, bestConstRef, bestValue);
 
   ResolutionCandidate* best = bestRef;
@@ -3491,7 +3514,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
         if (candidates.n > 0) {
           Vec<FnSymbol*> candidateFns;
-          forv_Vec(ResolutionCandidate*, candidate, candidates) {
+          forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
             candidateFns.add(candidate->fn);
           }
 

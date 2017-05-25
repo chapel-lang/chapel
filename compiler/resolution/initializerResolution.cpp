@@ -417,7 +417,8 @@ void resolveInitCall(CallExpr* call) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
+  Vec<ResolutionCandidate*> ambiguous;
+  ResolutionCandidate* best = disambiguateByMatch(candidates, ambiguous, DC);
 
   if (best && best->fn) {
     /*
@@ -446,7 +447,7 @@ void resolveInitCall(CallExpr* call) {
   } else if (!best) {
     if (candidates.n > 0) {
       Vec<FnSymbol*> candidateFns;
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
         candidateFns.add(candidate->fn);
       }
 
