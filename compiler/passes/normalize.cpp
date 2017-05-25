@@ -134,8 +134,7 @@ void normalize() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isNonGenericClassWithInitializers(at)  == true ||
-        (at->isRecord() == true &&
-         at->initializerStyle == DEFINES_INITIALIZER)) {
+        isNonGenericRecordWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
   }
