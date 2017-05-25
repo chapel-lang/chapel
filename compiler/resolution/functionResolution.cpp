@@ -1522,7 +1522,7 @@ bool canCoerce(Type*     actualType,
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(),
                        NULL,
-                       // Should this be formalType->getValType() ?
+                       // MPF: Should this be formalType->getValType() ?
                        formalType,
                        fn,
                        promotes);
@@ -3562,7 +3562,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
         if (candidates.n > 0) {
           Vec<FnSymbol*> candidateFns;
-          forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
+          // MPF: we could choose to only print the best matches here
+          forv_Vec(ResolutionCandidate*, candidate, candidates) {
             candidateFns.add(candidate->fn);
           }
 

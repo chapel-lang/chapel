@@ -448,7 +448,7 @@ void resolveInitCall(CallExpr* call) {
   } else if (!best) {
     if (candidates.n > 0) {
       Vec<FnSymbol*> candidateFns;
-      forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
+      forv_Vec(ResolutionCandidate*, candidate, candidates) {
         candidateFns.add(candidate->fn);
       }
 
