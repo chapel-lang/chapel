@@ -47,6 +47,8 @@ proc numFields(type t) param : int
 proc getFieldName(type t, param i:int) param : string
   return __primitive("field num to name", t, i);
 
+// Note, since this version has a where clause, it is preferred
+// over the const ref one.
 pragma "no doc"
 proc getField(const ref x:?t, param i: int) param
   where i > 0 && i <= numFields(t) &&
@@ -55,6 +57,8 @@ proc getField(const ref x:?t, param i: int) param
   return __primitive("field by num", x, i);
 }
 
+// Note, since this version has a where clause, it is preferred
+// over the const ref one.
 pragma "no doc"
 proc getField(const ref x:?t, param i: int) type
   where i > 0 && i <= numFields(t) &&
