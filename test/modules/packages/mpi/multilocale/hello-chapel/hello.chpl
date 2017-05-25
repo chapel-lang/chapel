@@ -14,7 +14,7 @@ coforall loc in Locales do on loc {
        doesn't overwrite. This could be achieved with a single Barrier.
 
        Having a direct call into the MPI_Barrier also tests that the first Barrier prevents
-       deadlocks when running CHPL_TASKS=mpi. This second MPI_Barrier call stands in for any blocking
+       deadlocks when running with CHPL_TASKS=qthreads. This second MPI_Barrier call stands in for any blocking
        MPI call.
     */
     Barrier(CHPL_COMM_WORLD);
