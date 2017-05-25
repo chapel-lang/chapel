@@ -333,7 +333,11 @@ module MPI {
     return size;
   }
 
-  //Wait??
+  /* Drop in replacement for MPI_Wait, implemented with non-blocking MPI calls.
+
+     This is simply implemented as a while loop that continually calls ``MPI_Test``. The
+     loop will yield, allowing other tasks to run.
+   */
   inline proc Wait(ref request: MPI_Request, ref status: MPI_Status): c_int {
     var flag, ret : c_int;
     ret = C_MPI.MPI_Test(request, flag, status);
@@ -344,20 +348,30 @@ module MPI {
     return ret;
   }
 
+  /* Overloaded version of Wait, which ignores the returned status */
   inline proc Wait(ref request): c_int {
     var status: MPI_Status;
     return Wait(request, status);
   }
 
-  //Barrier???
+  /* Drop in replacement for ``MPI_Barrier``, with non-blocking MPI calls.
+
+     This is implemented by a call to ``MPI_Ibarrier``, followed by a call to ``Wait`` above. The
+     returned value of ``MPI_Status`` is ignored.
+   */
   proc Barrier(comm: MPI_Comm): c_int {
     var request: MPI_Request;
 
-    C_MPI.MPI_Ibarrier(comm, request);
+    var ret = C_MPI.MPI_Ibarrier(comm, request);
     Wait(request);
+    return ret;
   }
 
-  //Send??
+  /* Drop in replacement for ``MPI_Send``, with non-blocking MPI calls.
+
+     This is implemented by a call to ``MPI_Isend``, followed by a call to ``Wait`` above. The
+     returned value of ``MPI_Status`` is ignored.
+   */
   proc Send(ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm): c_int {
     var request: MPI_Request;
     var ret = MPI_Isend (buf, count, datatype, dest, tag, comm, request);
@@ -365,7 +379,11 @@ module MPI {
     return ret;
   }
 
-  //Recv??
+  /* Drop in replacement for ``MPI_Recv``, with non-blocking MPI calls.
+
+     This is implemented by a call to ``MPI_Irecv``, followed by a call to ``Wait`` above. The
+     returned value of ``MPI_Status`` is ignored.
+   */
   proc Recv(ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int {
     var request: MPI_Request;
     var ret = MPI_Irecv(buf, count, datatype, dest, tag, comm, request);
