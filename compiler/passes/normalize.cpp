@@ -1870,9 +1870,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
-      if (type &&
-          type->isRecord() == true &&
-          type->initializerStyle == DEFINES_INITIALIZER) {
+      if (isRecordWithInitializers(type) == true) {
         Expr*     arg1    = initCall->get(1)->remove();
         CallExpr* argExpr = toCallExpr(arg1);
 
@@ -2000,8 +1998,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isNonGenericRecordWithInitializers(type) == true ||
-             isGenericRecordWithInitializers(type)) {
+  } else if (isRecordWithInitializers(type) == true) {
     if (isNewExpr(initExpr) == true) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);

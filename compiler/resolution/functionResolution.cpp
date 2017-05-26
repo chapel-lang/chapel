@@ -4087,8 +4087,7 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isNonGenericRecordWithInitializers(srcType) == true ||
-             isGenericRecordWithInitializers(srcType) == true)  {
+  } else if (isRecordWithInitializers(srcType) == true)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
