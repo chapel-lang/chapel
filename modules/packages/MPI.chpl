@@ -113,10 +113,6 @@ model requires
    simultaneous MPI calls.  We've had good experience with MPICH and
    :const:`MPI_THREAD_MULTIPLE`.
 
-2. ``CHPL_TASKS=fifo`` is currently a
-   requirement that hopefully can be relaxed
-   in the future.
-
 **Setting up multilocale mode on a Cray:**
 
 The recommended configuration for running multilocale MPI jobs on a Cray is as
@@ -125,7 +121,7 @@ follows:
 .. code-block:: sh
 
   CHPL_TARGET_COMPILER=cray-prgenv-{gnu, intel}
-  CHPL_TASKS=fifo
+  CHPL_TASKS={qthreads, fifo}   # see discussion below
   CHPL_COMM={ugni, gasnet}
   CHPL_COMM_SUBSTRATE={aries, mpi}   # if CHPL_COMM=gasnet 
   MPICH_MAX_THREAD_SAFETY=multiple
@@ -138,6 +134,26 @@ These are the configurations in which this module is currently tested. Any
 launcher should work fine for this mode. Support is expected to expand in
 future versions.
 
+Qthreads and MPI
+----------------
+
+Since MPI is not natively Qthread-aware, some care is required to avoid deadlocks. This
+section describes current recommendations on using ``CHPL_TASKS=qthreads`` and the MPI
+module.
+
+We assume that ``CHPL_COMM`` is either ``ugni`` or ``gasnet+aries``.
+We do not recommend using the MPI module with the ``gasnet+mpi`` communication backend
+and ``qthreads``. 
+
+1. Use non-blocking calls whenever possible. Note that this also requires using ``MPI_Test``
+   instead of ``MPI_Wait``. For convenience, we provide wrappers for a subset of
+   the MPI blocking calls that are implemented with non-blocking calls and correctly yield
+   tasks while waiting.
+
+2. Any blocking calls (including third-party libraries) must be preceded with a call to
+   ``Barrier``.
+
+3. Blocking calls must be serialized; concurrent blocking calls can result in deadlocks.
 
 Configurations Constants
 ------------------------
@@ -333,6 +349,63 @@ module MPI {
     return size;
   }
 
+  /* Drop in replacement for MPI_Wait, implemented with non-blocking MPI calls.
+
+     This is simply implemented as a while loop that continually calls ``MPI_Test``. The
+     loop will yield, allowing other tasks to run.
+   */
+  inline proc Wait(ref request: MPI_Request, ref status: MPI_Status): c_int {
+    var flag, ret : c_int;
+    ret = C_MPI.MPI_Test(request, flag, status);
+    while (flag==0) {
+      chpl_task_yield();
+      ret = C_MPI.MPI_Test(request, flag, status);
+    }
+    return ret;
+  }
+
+  /* Overloaded version of Wait, which ignores the returned status */
+  inline proc Wait(ref request: MPI_Request): c_int {
+    var status: MPI_Status;
+    return Wait(request, status);
+  }
+
+  /* Drop in replacement for ``MPI_Barrier``, with non-blocking MPI calls.
+
+     This is implemented by a call to ``MPI_Ibarrier``, followed by a call to ``Wait`` above. The
+     returned value of ``MPI_Status`` is ignored.
+   */
+  proc Barrier(comm: MPI_Comm): c_int {
+    var request: MPI_Request;
+
+    var ret = C_MPI.MPI_Ibarrier(comm, request);
+    Wait(request);
+    return ret;
+  }
+
+  /* Drop in replacement for ``MPI_Send``, with non-blocking MPI calls.
+
+     This is implemented by a call to ``MPI_Isend``, followed by a call to ``Wait`` above. The
+     returned value of ``MPI_Status`` is ignored.
+   */
+  proc Send(ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm): c_int {
+    var request: MPI_Request;
+    var ret = MPI_Isend (buf, count, datatype, dest, tag, comm, request);
+    Wait(request);
+    return ret;
+  }
+
+  /* Drop in replacement for ``MPI_Recv``, with non-blocking MPI calls.
+
+     This is implemented by a call to ``MPI_Irecv``, followed by a call to ``Wait`` above. The
+     returned value of ``MPI_Status`` is ignored.
+   */
+  proc Recv(ref buf, count: c_int, datatype: MPI_Datatype, source: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int {
+    var request: MPI_Request;
+    var ret = MPI_Irecv(buf, count, datatype, source, tag, comm, request);
+    Wait(request, status);
+    return ret;
+  }
 
   /* A wrapper around ``MPI_Status``. Only the defined fields are exposed */
   extern record MPI_Status {
