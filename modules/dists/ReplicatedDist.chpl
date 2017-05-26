@@ -21,7 +21,7 @@
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
-//  ReplicatedDist     -- Global distribution descriptor
+//  Replicated     -- Global distribution descriptor
 //  ReplicatedDom      -- Global domain descriptor
 //  LocReplicatedDom   -- Local domain descriptor
 //  ReplicatedArray    -- Global array descriptor
@@ -50,7 +50,7 @@ to be replicated across the desired locales (all the locales by default).
 An array receives a distinct set of elements - a "replicand" -
 allocated on each locale.
 
-In other words, a ReplicatedDist-distributed domain has
+In other words, a Replicated-distributed domain has
 an implicit additional dimension - over the locales,
 making it behave as if there is one copy of its indices per locale.
 
@@ -71,7 +71,7 @@ referring to the domain or array.
   .. code-block:: chapel
 
     const Dbase = {1..5};  // a default-distributed domain
-    const Drepl = Dbase dmapped ReplicatedDist();
+    const Drepl = Dbase dmapped Replicated();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
@@ -86,13 +86,13 @@ referring to the domain or array.
 
 **Constructor Arguments**
 
-The ``ReplicatedDist`` class constructor is defined as follows:
+The ``Replicated`` class constructor is defined as follows:
 
   .. code-block:: chapel
 
-    proc ReplicatedDist(
+    proc Replicated(
       targetLocales: [] locale = Locales,
-      purposeMessage: string = "used to create a ReplicatedDist")
+      purposeMessage: string = "used to create a Replicated")
 
 The optional ``purposeMessage`` may be useful for debugging
 when the constructor encounters an error.
@@ -103,7 +103,7 @@ when the constructor encounters an error.
 * Only rectangular domains are presently supported.
 
 */
-class ReplicatedDist : BaseDist {
+class Replicated : BaseDist {
   var targetLocDom : domain(here.id.type);
 
   // the desired locales (an array of locales)
@@ -113,8 +113,8 @@ class ReplicatedDist : BaseDist {
 
 // constructor: replicate over the given locales
 // (by default, over all locales)
-proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
-                 purposeMessage: string = "used to create a ReplicatedDist")
+proc Replicated.Replicated(targetLocales: [] locale = Locales,
+                 purposeMessage: string = "used to create a Replicated")
 {
   for loc in targetLocales {
     this.targetLocDom.add(loc.id);
@@ -122,36 +122,36 @@ proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
   }
 
   if traceReplicatedDist then
-    writeln("ReplicatedDist constructor over ", targetLocales);
+    writeln("Replicated constructor over ", targetLocales);
 }
 
-proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
+proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
   return this.targetLocales.equals(that.targetLocales);
 }
 
-proc ReplicatedDist.dsiEqualDMaps(that) param {
+proc Replicated.dsiEqualDMaps(that) param {
   return false;
 }
 
-proc ReplicatedDist.dsiDestroyDist() {
+proc Replicated.dsiDestroyDist() {
   // no action necessary here
 }
 
 // privatization
 
-proc ReplicatedDist.dsiSupportsPrivatization() param return true;
+proc Replicated.dsiSupportsPrivatization() param return true;
 
-proc ReplicatedDist.dsiGetPrivatizeData() {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiGetPrivatizeData");
+proc Replicated.dsiGetPrivatizeData() {
+  if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");
 
   // TODO: Returning 'targetLocales' here results in a memory leak. Why?
   // Other distributions seem to do this 'return 0' as well...
   return 0;
 }
 
-proc ReplicatedDist.dsiPrivatize(privatizeData)
+proc Replicated.dsiPrivatize(privatizeData)
 {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiPrivatize on ", here);
+  if traceReplicatedDist then writeln("Replicated.dsiPrivatize on ", here);
 
   const otherTargetLocales = this.targetLocales;
 
@@ -159,7 +159,7 @@ proc ReplicatedDist.dsiPrivatize(privatizeData)
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
 
-  return new ReplicatedDist(privTargetLocales, "used during privatization");
+  return new Replicated(privTargetLocales, "used during privatization");
 }
 
 
@@ -177,7 +177,7 @@ class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
-  const dist : ReplicatedDist; // must be a ReplicatedDist
+  const dist : Replicated; // must be a Replicated
 
   // this is our index set; we store it here so we can get to it easily
   var domRep: domain(rank, idxType, stridable);
@@ -269,18 +269,18 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 }
 
 
-proc ReplicatedDist.dsiClone(): this.type {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiClone");
-  return new ReplicatedDist(targetLocales);
+proc Replicated.dsiClone(): this.type {
+  if traceReplicatedDist then writeln("Replicated.dsiClone");
+  return new Replicated(targetLocales);
 }
 
 // create a new domain mapped with this distribution
-proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
+proc Replicated.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool,
                                          inds)
 {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
+  if traceReplicatedDist then writeln("Replicated.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable, inds));
 
   // Have to call the default constructor because we need to initialize 'dist'
@@ -299,8 +299,8 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
 
 // Given an index, this should return the locale that owns that index.
 // (This is the implementation of dmap.idxToLocale().)
-// For ReplicatedDist, we point it to the current locale.
-proc ReplicatedDist.dsiIndexToLocale(indexx): locale {
+// For Replicated, we point it to the current locale.
+proc Replicated.dsiIndexToLocale(indexx): locale {
   return here;
 }
 
@@ -578,4 +578,4 @@ proc ReplicatedArr.dsiLocalSubdomain() {
 }
 
 // todo? these two seem to work (written by analogy with DefaultRectangular)
-proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;
+proc Replicated.dsiCreateReindexDist(newSpace, oldSpace) return this;

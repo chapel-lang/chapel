@@ -201,7 +201,7 @@ module io_RMAT_graph
 
     } else {
       // !IOserial
-      const repfileMap = new ReplicatedDist(Locales);
+      const repfileMap = new Replicated(Locales);
       const repfileDom = repfileBase dmapped new dmap(repfileMap);
       var repfiles: [repfileDom] file;
 

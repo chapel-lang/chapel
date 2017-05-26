@@ -19,7 +19,7 @@ It would be easier to print the current-locale view directly.
 
 Note on the code: it took some work to set things up to illustrate the
 issue using a replicated array. Specifically, an array mapped using
-the multi-dimensional ReplicatedDist prints out all replicands,
+the multi-dimensional ReplicatedDist used to print out all replicands,
 regardless of which locale its writeThis() is invoked on.
 So that does not illustrate the issue. Therefore I had to use
 a replicated dimension with DimensionalDist2D.
