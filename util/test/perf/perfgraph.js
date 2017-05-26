@@ -124,12 +124,12 @@ while (curThirdDate.isBefore(Date.today())) {
 
 // array of currently displayed graphs
 var gs = [];
+
 // used to prevent multiple redraws of graphs when syncing x-axis zooms
 var globalBlockRedraw = false;
 
 // The main elements that all the graphs and graph legends will be put in
-var parent = document.getElementById('graphdisplay');
-var legend = document.getElementById('legenddisplay');
+var graphPane = document.getElementById('graphdisplay');
 
 // setup the default configuration even if it's not multi-conf
 var multiConfs = configurations.length != 0;
@@ -205,34 +205,31 @@ $(document).ready(function() {
 // for graph expansion because we need to be able to add the expanded graphs
 // after the graph that is being expanded and there may be other graphs
 // after it so we don't just want to put the expanded graphs at the end.
-function getNextDivs(afterDiv, afterLDiv) {
+function getNextDivs(afterDiv) {
 
   // if divs were specified, create new divs that follow those, else just put
-  // these divs at the end
+  // these divs at the end (indicated by 'beforeDiv == null')
   var beforeDiv = null;
-  var beforeLDiv = null;
-  if (afterDiv && afterLDiv &&
-      afterDiv.nextSibling && afterLDiv.nextSibling) {
-    beforeDiv = afterDiv.nextSibling.nextSibling;
-    beforeLDiv = afterLDiv.nextSibling.nextSibling;
+  if (afterDiv && afterDiv.nextSibling) {
+    beforeDiv = afterDiv.nextSibling;
   }
+
+  var container = document.createElement('div');
+  container.className = 'graphContainer';
+  graphPane.insertBefore(container, beforeDiv);
 
   // create the graph/legend divs and spacers
   var div = document.createElement('div');
   div.className = 'perfGraph';
-  parent.insertBefore(div, beforeDiv);
-
-  var gspacer = document.createElement('div');
-  gspacer.className = 'gspacer';
-  parent.insertBefore(gspacer, beforeDiv);
+  container.appendChild(div);
 
   var ldiv = document.createElement('div');
   ldiv.className = 'perfLegend';
-  legend.insertBefore(ldiv, beforeLDiv);
+  container.appendChild(ldiv);
 
-  var lspacer = document.createElement('div');
-  lspacer.className = 'lspacer';
-  legend.insertBefore(lspacer, beforeLDiv);
+  var gspacer = document.createElement('div');
+  gspacer.className = 'gspacer';
+  container.appendChild(gspacer);
 
   function addButtonHelper(buttonText) {
     var button = document.createElement('input');
@@ -244,8 +241,8 @@ function getNextDivs(afterDiv, afterLDiv) {
     return button;
   }
 
-  var logToggle = addButtonHelper('log');
-  var annToggle = addButtonHelper('annotations');
+  var logToggle        = addButtonHelper('log');
+  var annToggle        = addButtonHelper('annotations');
   var screenshotToggle = addButtonHelper('screenshot');
   var closeGraphToggle = addButtonHelper('close');
 
@@ -257,7 +254,7 @@ function getNextDivs(afterDiv, afterLDiv) {
     screenshotToggle: screenshotToggle,
     closeGraphToggle: closeGraphToggle,
     gspacer: gspacer,
-    lspacer: lspacer
+    container: container,
   }
 }
 
@@ -419,7 +416,7 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
     }
     newData = transpose(newData);
 
-    var newDivs = getNextDivs(graphDivs.div, graphDivs.ldiv);
+    var newDivs = getNextDivs(graphDivs.container);
     expandInfo = { colors: newColors }
     genDygraph(newInfo, newDivs, newData, newLabels, expandInfo);
   }
@@ -467,20 +464,14 @@ function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
 
 // g: A DyGraph object
 function hideGraph(g) {
-  $(g.maindiv_).hide();
-  $(g.divs.ldiv).hide();
-  $(g.divs.gspacer).hide();
-  $(g.divs.lspacer).hide();
+  $(g.divs.container).hide();
 }
 
 function showGraph(g) {
   if (g.removed) {
     return;
   }
-  $(g.maindiv_).show();
-  $(g.divs.ldiv).show();
-  $(g.divs.gspacer).show();
-  $(g.divs.lspacer).show();
+  $(g.divs.container).show();
 }
 
 // Setup the close graph button
@@ -519,19 +510,30 @@ function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
 // and legend and just render that one.
 function captureScreenshot(g, graphInfo) {
 
-  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth;
+  // 100 padding
+  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth + 100;
   var gHeight = g.divs.div.clientHeight;
 
   var captureCanvas = document.createElement('canvas');
   captureCanvas.width = gWidth;
   captureCanvas.height = gHeight;
   var ctx = captureCanvas.getContext('2d');
+  var label = graphInfo.ylabel;
+
+  var restoreOpts = {
+    showRoller: true,
+    ylabel: label,
+  };
+
+  var tempOpts = {
+    showRoller: false,
+    ylabel: '',
+  };
 
   // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
   // make the label inivisible and we also hide the roll button box since
   // theres no point in capturing it in a screenshot
-  g.updateOptions({showRoller: false, ylabel:''});
-  var label = graphInfo.ylabel;
+  g.updateOptions(tempOpts);
 
   // generate the graph
   html2canvas(g.divs.div, {
@@ -559,7 +561,7 @@ function captureScreenshot(g, graphInfo) {
           window.open(captureCanvas.toDataURL());
 
           // restore the roll box and ylabel
-          g.updateOptions({showRoller: true, ylabel:label});
+          g.updateOptions(restoreOpts);
         }
       });
     }
@@ -978,6 +980,7 @@ function perfGraphInit() {
     var elem = document.createElement('div');
     elem.className = 'graph';
     elem.innerHTML = '<input id="graph' + i + '" type="checkbox">' + allGraphs[i].title;
+    elem.title = allGraphs[i].title;
     graphlist.appendChild(elem);
   }
 
@@ -985,10 +988,20 @@ function perfGraphInit() {
 
   setGraphsFromURL();
   displaySelectedGraphs();
-
-  disableFilterBox(false);
 }
 
+// We don't know the width of the graph selection pane until the list of
+// graph names are added. Once that is done figure out the position of pane
+// that holds the dygraphs. This is needed since the graph selection pane
+// is 'fixed' meaning it's outside the normal flow and other elements act
+// like it doesn't exist so we have to manually move the graph display to
+// avoid overlap. After the page is setup, the graph selection pane size
+// only changes if the browser zoom changes.
+function setDygraphPanePos() {
+  var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+  $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
+  $('#titleDiv').css({ 'margin-left': selectPaneWidth });
+}
 
 // We use 'fixed' css positioning to keep the graph selection pane always
 // visible (scrolls when the page scrolls.) However we don't want it to scroll
@@ -1011,18 +1024,6 @@ function setupGraphSelectionPane() {
     setGraphListHeight();
     setGraphSelectionPanePos();
   });
-
-  // We don't know the width of the graph selection pane until the list of
-  // graph names are added. Once that is done figure out the position of pane
-  // that holds the dygraphs. This is needed since the graph selection pane
-  // is 'fixed' meaning it's outside the normal flow and other elements act
-  // like it doesn't exist so we have to manually move the graph display to
-  // avoid overlap. After the page is setup, the graph selection pane size
-  // only changes if the browser zoom changes.
-  function setDygraphPanePos() {
-    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
-    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
-  }
 
   // set the selection pane's horizontal positional based on the scroll so the
   // selection pane isn't always visible when scrolling horizontally. Some
@@ -1274,9 +1275,8 @@ function selectSuite(suite) {
 
 function displaySelectedGraphs() {
   // Clean up divs
-  while (parent.childNodes.length > 0) {
-    parent.removeChild(parent.childNodes[0]);
-    legend.removeChild(legend.childNodes[0]);
+  while (graphPane.childNodes.length > 0) {
+    graphPane.removeChild(graphPane.childNodes[0]);
   }
 
   // clean up all the dygraphs
@@ -1310,6 +1310,7 @@ function displaySelectedGraphs() {
   setURLFromGraphs(normalizeForURL(findSelectedSuite()));
   // set the dropdown box selection
   document.getElementsByName('jumpmenu')[0].value = findSelectedSuite();
+  setDygraphPanePos();
 }
 
 
