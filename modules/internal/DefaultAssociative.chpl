@@ -566,19 +566,48 @@ module DefaultAssociative {
 
     // ref version
     proc dsiAccess(idx : idxType, haveLock = false) ref {
-      const arrOwnsDom = dom._arrs.length == 1;
-      const shouldLock = dom.parSafe && !haveLock && arrOwnsDom;
-      if shouldLock then dom.lockTable();
-      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+
+      // Start by attempting to do an unlocked lookup of the value
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=false);
+
       if found {
-        if shouldLock then dom.unlockTable();
+        // if an element exists for that index, return (a ref to) it
         return data(slotNum);
-      } else if slotNum != -1 { // do an insert using the slot we found
+
+      } else if slotNum != -1 {
+        // if the element didn't exist, then this is either:
+        //
+        // - an error if the array does not own the domain (it's
+        //   trying to get a reference to an element that doesn't exist)
+        //
+        // - an indication that we should grow the domain + array to
+        //   include the element
+
+        const arrOwnsDom = dom._arrs.length == 1;
         if !arrOwnsDom {
+          // here's the error case
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
+          // here we're going to grow the table.  To do so, we need to
+          // grab the lock if we need it and don't already have it.
+          const shouldLock = dom.parSafe && !haveLock;
+          if shouldLock {
+            dom.lockTable();
+            // then we need to make sure that someone else hasn't already
+            // added this element in the meantime.
+            var (found, slotNum) = dom._findFilledSlot(idx, haveLock=false);
+            if found {
+              // if they have, unlock the table and return the slot
+              dom.unlockTable();
+              return data[slotNum];
+            }
+          }
+
+          // grow the table
           const (newSlot, _) = dom._addWrapper(idx, slotNum, haveLock=true);
+
+          // unlock the table, if necessary and return the element
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
