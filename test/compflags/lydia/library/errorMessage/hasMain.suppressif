@@ -2,4 +2,4 @@
 # with --library when using the LLVM back end.  See github issue
 # #6336.  Suppress this for now.
 
-CHPL_COMPILER==llvm
+CHPL_LLVM==llvm
