@@ -128,7 +128,7 @@ follows:
   AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
 
 Running under ``gasnet+aries`` might require setting ``MPICH_GNI_DYNAMIC_CONN=disabled``.
-This is discussed `here <http://chapel.cray.com/docs/latest/platforms/cray.html#known-constraints-and-bugs>`.
+This is discussed :ref:`here <readme-cray-constraints>`.
 
 These are the configurations in which this module is currently tested. Any
 launcher should work fine for this mode. Support is expected to expand in
