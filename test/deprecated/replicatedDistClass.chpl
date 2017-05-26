@@ -1,6 +1,6 @@
 use ReplicatedDist;
 
-const D = {1..3, 1..3} dmapped Replicated();
+const D = {1..3, 1..3} dmapped ReplicatedDist();
 
 var A: [D] real;
 
