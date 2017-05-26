@@ -290,6 +290,11 @@ module LocaleModel {
       chpl_task_setSubloc(origSubloc);
     }
 
+    proc deinit() {
+      delete ddr;
+      delete hbm;
+    }
+
     proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+ndName;
@@ -434,6 +439,13 @@ module LocaleModel {
       chpl_task_setSubloc(origSubloc);
     }
     //------------------------------------------------------------------------}
+
+    proc deinit() {
+      for loc in childLocales do
+        delete loc;
+      delete ddr;
+      delete hbm;
+    }
  }
 
   //
@@ -508,6 +520,11 @@ module LocaleModel {
         return ((myLocales[node:int]:LocaleModel).hbm):locale;
       else
         return (myLocales[node:int].getChild(subloc:int)):locale;
+    }
+
+    proc deinit() {
+      for loc in myLocales do
+        delete loc;
     }
   }
 

@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "bb.h"
+#include "driver.h"
 #include "expr.h"
 #include "passes.h"
 #include "stlUtil.h"

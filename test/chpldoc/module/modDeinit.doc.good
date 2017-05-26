@@ -1,1 +1,14 @@
-...Not sure what should go here...
+.. default-domain:: chpl
+
+.. module:: Foo
+
+Foo
+===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo;
+
+.. function:: proc deinit()
+

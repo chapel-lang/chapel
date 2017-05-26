@@ -24,12 +24,11 @@
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "driver.h"
 #include "expr.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
-
-// view.h is used when DEBUG_CP is enabled.
 #include "view.h"
 
 //#############################################################################

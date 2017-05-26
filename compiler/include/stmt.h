@@ -20,12 +20,12 @@
 #ifndef _STMT_H_
 #define _STMT_H_
 
+#include "expr.h"
+#include "foralls.h"
+
 #include <cstdio>
 #include <map>
 #include <set>
-
-#include "expr.h"
-#include "foralls.h"
 
 #ifdef HAVE_LLVM
 
@@ -37,10 +37,10 @@
 
 #endif
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class Stmt : public Expr {
 public:
@@ -51,68 +51,17 @@ public:
   virtual bool   isStmt()                                      const;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-class UseStmt : public Stmt {
- public:
-  Expr* src; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
-  // specify an explicit module or enum name.
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-  // Lydia note: These fields are only public because our AstTraversal classes
-  // need to see them.  No one else should touch it.  I mean it!
-  std::vector<const char *> named; // The names of symbols from an 'except' or
-  // 'only' list
-  std::map<const char*, const char*> renamed; // Map of newName: oldName
+#include "UseStmt.h"
 
-
-  UseStmt(BaseAST* source);
-  UseStmt(BaseAST* source, std::vector<const char*>* args, bool exclude, std::map<const char*, const char*>* renames);
-
-  virtual void    verify();
-
-  DECLARE_COPY(UseStmt);
-
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual GenRet  codegen();
-  virtual void    accept(AstVisitor* visitor);
-  virtual Expr*   getFirstExpr();
-
-  virtual Expr*   getFirstChild();
-
-  void validateList();
-  bool isPlainUse();
-  bool hasOnlyList();
-  bool hasExceptList();
-
-  void writeListPredicate(FILE* mFP);
-
-  bool skipSymbolSearch(const char* name);
-  bool isARename(const char* name);
-  const char* getRename(const char* name);
-  UseStmt* applyOuterUse(UseStmt* outer);
-  bool providesNewSymbols(UseStmt* other);
-  BaseAST* getSearchScope();
-
- private:
-  bool except; // Used to determine if the use contains an 'except' or 'only'
-  // list (but only if 'named' or 'renamed' has any contents)
-  std::vector<const char *> relatedNames; // The names of fields or methods
-  // related to a type specified in an 'except' or 'only' list.
-
-  void createRelatedNames(Symbol* maybeType);
-
-  bool matchedNameOrConstructor(const char* name);
-  bool inRelatedNames(const char* name);
-
-  void noRepeats();
-};
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 enum BlockTag {
   // Bits:

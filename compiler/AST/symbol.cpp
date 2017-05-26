@@ -59,13 +59,6 @@
 //
 FnSymbol *chpl_gen_main = NULL;
 
-ModuleSymbol* rootModule = NULL;
-ModuleSymbol* theProgram = NULL;
-ModuleSymbol* mainModule = NULL;
-ModuleSymbol* baseModule = NULL;
-ModuleSymbol* stringLiteralModule = NULL;
-ModuleSymbol* standardModule = NULL;
-ModuleSymbol* printModuleInitModule = NULL;
 Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gMethodToken = NULL;
@@ -113,6 +106,12 @@ FnSymbol* gChplDeleteError = NULL;
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;
 
+void verifyInTree(BaseAST* ast, const char* msg) {
+  if (ast != NULL && ast->inTree() == false) {
+    INT_FATAL(ast, "%s is not in AST", msg);
+  }
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -140,11 +139,6 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 Symbol::~Symbol() {
   if (fieldQualifiers)
     delete [] fieldQualifiers;
-}
-
-static inline void verifyInTree(BaseAST* ast, const char* msg) {
-  if (ast && !ast->inTree())
-    INT_FATAL(ast, "%s is not in AST", msg);
 }
 
 void Symbol::verify() {
@@ -754,18 +748,8 @@ const char* retTagDescrString(RetTag retTag) {
 }
 
 
-const char* modTagDescrString(ModTag modTag) {
-  switch (modTag) {
-    case MOD_INTERNAL:  return "internal";
-    case MOD_STANDARD:  return "standard";
-    case MOD_USER:      return "user";
-    default:            return "<unknown ModTag>";
-  }
-}
-
-
 // describes this argument's intent (for use in an English sentence)
-const char* ArgSymbol::intentDescrString(void) {
+const char* ArgSymbol::intentDescrString() {
   switch (intent) {
     case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";
@@ -1825,28 +1809,26 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 EnumSymbol::EnumSymbol(const char* init_name) :
-  Symbol(E_EnumSymbol, init_name)
-{
+  Symbol(E_EnumSymbol, init_name) {
   gEnumSymbols.add(this);
 }
 
-
 void EnumSymbol::verify() {
   Symbol::verify();
+
   if (astTag != E_EnumSymbol) {
     INT_FATAL(this, "Bad EnumSymbol::astTag");
   }
 }
 
-
-EnumSymbol*
-EnumSymbol::copyInner(SymbolMap* map) {
+EnumSymbol* EnumSymbol::copyInner(SymbolMap* map) {
   EnumSymbol* copy = new EnumSymbol(this->name);
   copy->copyFlags(this);
   return copy;
@@ -1856,9 +1838,11 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
 }
 
-bool EnumSymbol::isParameter() const { return true; }
+bool EnumSymbol::isParameter() const {
+  return true;
+}
 
-Immediate* EnumSymbol::getImmediate(void) {
+Immediate* EnumSymbol::getImmediate() {
   if (SymExpr* init = toSymExpr(defPoint->init)) {
     if (VarSymbol* initvar = toVarSymbol(init->symbol())) {
       return initvar->immediate;
@@ -1876,478 +1860,6 @@ void EnumSymbol::accept(AstVisitor* visitor) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static std::vector<ModuleSymbol*>    sTopLevelModules;
-
-void ModuleSymbol::addTopLevelModule(ModuleSymbol* module) {
-  sTopLevelModules.push_back(module);
-
-  theProgram->block->insertAtTail(new DefExpr(module));
-}
-
-
-void ModuleSymbol::getTopLevelModules(std::vector<ModuleSymbol*>& mods) {
-  for (size_t i = 0; i < sTopLevelModules.size(); i++) {
-    mods.push_back(sTopLevelModules[i]);
-  }
-}
-
-
-ModuleSymbol::ModuleSymbol(const char* iName,
-                           ModTag      iModTag,
-                           BlockStmt*  iBlock)
-  : Symbol(E_ModuleSymbol, iName),
-    modTag(iModTag),
-    block(iBlock),
-    initFn(NULL),
-    deinitFn(NULL),
-    filename(NULL),
-    doc(NULL),
-    extern_info(NULL),
-    llvmDINameSpace(NULL)
-{
-  block->parentSymbol = this;
-  registerModule(this);
-  gModuleSymbols.add(this);
-}
-
-
-ModuleSymbol::~ModuleSymbol() { }
-
-
-void ModuleSymbol::verify() {
-  Symbol::verify();
-
-  if (astTag != E_ModuleSymbol) {
-    INT_FATAL(this, "Bad ModuleSymbol::astTag");
-  }
-
-  if (block && block->parentSymbol != this)
-    INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
-
-  verifyNotOnList(block);
-
-  if (initFn) {
-    verifyInTree(initFn, "ModuleSymbol::initFn");
-    INT_ASSERT(initFn->defPoint->parentSymbol == this);
-  }
-
-  if (deinitFn) {
-    verifyInTree(deinitFn, "ModuleSymbol::deinitFn");
-    INT_ASSERT(deinitFn->defPoint->parentSymbol == this);
-    // initFn must call chpl_addModule(deinitFn) if deinitFn is present.
-    INT_ASSERT(initFn);
-  }
-}
-
-
-ModuleSymbol*
-ModuleSymbol::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
-
-  return NULL;
-}
-
-// Collect the top-level classes for this Module.
-//
-// 2014/07/25 MDN.  This function is currently only called by
-// docs.  Historically all of the top-level classes were buried
-// inside the prototypical module initFn.
-//
-// Installing The initFn is being moved forward but there are
-// still short periods of time when the classes will still be
-// buried inside the module initFn.
-//
-// Hence this function is currently able to handle the before
-// and after case.  The before case can be pulled out once the
-// construction of the initFn is cleaned up.
-//
-
-Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
-  Vec<AggregateType*> classes;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-
-      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
-        if (AggregateType* cl = toAggregateType(type->type)) {
-          classes.add(cl);
-        }
-
-      // Step in to the initFn
-      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
-                if (AggregateType* cl = toAggregateType(type->type)) {
-                  classes.add(cl);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return classes;
-}
-
-
-void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs, std::string parentName) {
-  if (this->noDocGen()) {
-    return;
-  }
-
-  // Print the module directive first, for .rst mode. This will associate the
-  // Module: <name> title with the module. If the .. module:: directive comes
-  // after the title, sphinx will complain about a duplicate id error.
-  if (!fDocsTextOnly) {
-    *file << ".. default-domain:: chpl" << std::endl << std::endl;
-    *file << ".. module:: " << this->docsName() << std::endl;
-
-    if (this->doc != NULL) {
-      this->printTabs(file, tabs + 1);
-      *file << ":synopsis: ";
-      *file << firstNonEmptyLine(this->doc);
-      *file << std::endl;
-    }
-    *file << std::endl;
-  }
-
-  this->printTabs(file, tabs);
-  const char *moduleTitle = astr(this->docsName().c_str());
-  *file << moduleTitle << std::endl;
-
-  if (!fDocsTextOnly) {
-    int length = tabs * this->tabText.length() + strlen(moduleTitle);
-    for (int i = 0; i < length; i++) {
-      *file << "=";
-    }
-    *file << std::endl;
-  }
-
-  if (!fDocsTextOnly) {
-    *file << "**Usage**" << std::endl << std::endl;
-    *file << ".. code-block:: chapel" << std::endl << std::endl;
-  } else {
-    *file << std::endl;
-    *file << "Usage:" << std::endl;
-  }
-  this->printTabs(file, tabs + 1);
-  *file << "use ";
-  if (parentName != "") {
-    *file << parentName << ".";
-  }
-  *file << name << ";" << std::endl << std::endl;
-
-  // If we had submodules, be sure to link to them
-  if (hasTopLevelModule()) {
-    this->printTableOfContents(file);
-  }
-
-  if (this->doc != NULL) {
-    // Only print tabs for text only mode. The .rst prefers not to have the
-    // tabs for module level comments and leading whitespace removed.
-    unsigned int t = tabs;
-    if (fDocsTextOnly) {
-      t += 1;
-    }
-
-    this->printDocsDescription(this->doc, file, t);
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-}
-
-
-/*
- * Append 'prefix' to existing module name prefix.
- */
-void ModuleSymbol::printTableOfContents(std::ostream *file) {
-  int tabs = 1;
-  if (!fDocsTextOnly) {
-    *file << "**Submodules**" << std::endl << std::endl;
-
-    *file << ".. toctree::" << std::endl;
-    this->printTabs(file, tabs);
-    *file << ":maxdepth: 1" << std::endl;
-    this->printTabs(file, tabs);
-    *file << ":glob:" << std::endl << std::endl;
-    this->printTabs(file, tabs);
-    *file << name << "/*" << std::endl << std::endl;
-  } else {
-    *file << "Submodules for this module are located in the " << name;
-    *file << "/ directory" << std::endl << std::endl;
-  }
-}
-
-
-/*
- * Returns name of module, including any prefixes that have been set.
- */
-std::string ModuleSymbol::docsName() {
-  return this->name;
-}
-
-
-// This is intended to be called by getTopLevelConfigsVars and
-// getTopLevelVariables, since the code for them would otherwise be roughly
-// the same.
-
-// It is also private to ModuleSymbols
-//
-// See the comment on getTopLevelFunctions() for the rationale behind the AST
-// traversal
-void ModuleSymbol::getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config) {
-  if (DefExpr* def = toDefExpr(expr)) {
-
-    if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (var->hasFlag(FLAG_CONFIG) == config) {
-        // The config status of the variable matches what we are looking for
-        contain->add(var);
-      }
-
-    } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-      if (fn->hasFlag(FLAG_MODULE_INIT)) {
-        for_alist(expr2, fn->body->body) {
-          if (DefExpr* def2 = toDefExpr(expr2)) {
-            if (VarSymbol* var = toVarSymbol(def2->sym)) {
-              if (var->hasFlag(FLAG_CONFIG) == config) {
-                // The config status of the variable matches what we are
-                // looking for
-                contain->add(var);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-// Collect the top-level config variables for this Module.
-Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
-  Vec<VarSymbol*> configs;
-
-  for_alist(expr, block->body) {
-    getTopLevelConfigOrVariables(&configs, expr, true);
-  }
-
-  return configs;
-}
-
-// Collect the top-level variables that aren't configs for this Module.
-Vec<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
-  Vec<VarSymbol*> variables;
-
-  for_alist(expr, block->body) {
-    getTopLevelConfigOrVariables(&variables, expr, false);
-  }
-
-  return variables;
-}
-
-// Collect the top-level functions for this Module.
-//
-// This one is similar to getTopLevelModules() and
-// getTopLevelClasses() except that it collects any
-// functions and then steps in to initFn if it finds it.
-//
-Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
-  Vec<FnSymbol*> fns;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
-        if (includeExterns == false &&
-            fn->hasFlag(FLAG_EXTERN)) {
-          continue;
-        }
-
-        fns.add(fn);
-
-        // The following additional overhead and that present in getConfigVars
-        // and getClasses is a result of the docs pass occurring before
-        // the functions/configvars/classes are taken out of the module
-        // initializer function and put on the same level as that function.
-        // If and when that changes, the code encapsulated in this if
-        // statement may be removed.
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (includeExterns == false &&
-                    fn2->hasFlag(FLAG_EXTERN)) {
-                  continue;
-                }
-
-                fns.add(fn2);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return fns;
-}
-
-Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
-  Vec<ModuleSymbol*> mods;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
-          mods.add(mod);
-      }
-  }
-
-  return mods;
-}
-
-// Intended for documentation purposes only, please don't use otherwise.
-bool ModuleSymbol::hasTopLevelModule() {
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (mod->defPoint->parentExpr == block && !mod->noDocGen()) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == block) {
-    block = toBlockStmt(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
-  }
-}
-
-void ModuleSymbol::accept(AstVisitor* visitor) {
-  if (visitor->enterModSym(this) == true) {
-
-    if (block)
-      block->accept(visitor);
-
-    visitor->exitModSym(this);
-  }
-}
-
-void ModuleSymbol::addDefaultUses() {
-  if (modTag != MOD_INTERNAL) {
-    ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
-    assert (parentModule != NULL);
-
-    //
-    // Don't insert 'use ChapelStandard' for nested user modules.
-    // They should get their ChapelStandard symbols from their parent.
-    //
-    if (parentModule->modTag != MOD_USER) {
-      //      printf("Inserting use of ChapelStandard into %s\n", name);
-
-      SET_LINENO(this);
-
-      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef));
-    }
-
-  // We don't currently have a good way to fetch the root module by name.
-  // Insert it directly rather than by name
-  } else if (this == baseModule) {
-    SET_LINENO(this);
-
-    block->useListAdd(rootModule);
-
-    UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
-    block->insertAtHead(new UseStmt(modRef));
-  }
-}
-
-//
-// NOAKES 2014/07/22
-//
-// There is currently a problem in functionResolve that this function
-// has a "temporary" work around for.
-
-// There is somewhere within that code that believes the order of items in
-// modUseList is an indicator of "dependence order" even though this list
-// does not and cannot maintain that information.
-//
-// Fortunately there are currently no tests that expose this fallacy so
-// long at ChapelStandard always appears first in the list
-void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
-  if (mod != this && modUseList.index(mod) < 0) {
-    if (mod == standardModule) {
-      modUseList.insert(0, mod);
-    } else {
-      modUseList.add(mod);
-    }
-  }
-}
-
-// If the specified module is currently used by the target
-// then remove the module from the use-state of this module
-// but introduce references to the children of the module
-// being dropped.
-//
-// At this time this is only used for deadCodeElimination and
-// it is not clear if there will be other uses.
-void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
-  int index = modUseList.index(mod);
-
-  if (index >= 0) {
-    bool inBlock = block->useListRemove(mod);
-
-    modUseList.remove(index);
-
-    // The dead module may have used other modules.  If so add them
-    // to the current module
-    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
-      if (modUseList.index(modUsedByDeadMod) < 0) {
-        SET_LINENO(this);
-
-        if (inBlock == true) {
-          block->useListAdd(modUsedByDeadMod);
-        }
-
-        modUseList.add(modUsedByDeadMod);
-      }
-    }
-  }
-}
-
-void initRootModule() {
-  rootModule           = new ModuleSymbol("_root",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
-
-  rootModule->filename = astr("<internal>");
-}
-
-void initStringLiteralModule() {
-  stringLiteralModule           = new ModuleSymbol("ChapelStringLiterals",
-                                                   MOD_INTERNAL,
-                                                   new BlockStmt());
-
-  stringLiteralModule->filename = astr("<internal>");
-
-  ModuleSymbol::addTopLevelModule(stringLiteralModule);
-}
-
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
 
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL),
@@ -2408,10 +1920,11 @@ void LabelSymbol::accept(AstVisitor* visitor) {
   visitor->visitLabelSym(this);
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 std::string unescapeString(const char* const str, BaseAST *astForError) {
   std::string newString = "";
@@ -2854,11 +2367,11 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   return s->flags & mask;
 }
 
-/******************************** | *********************************
-*                                                                   *
-* Create a temporary, with FLAG_TEMP and (optionally) FLAG_CONST.   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+* Create a temporary, with FLAG_TEMP and (optionally) FLAG_CONST.             *
+*                                                                             *
+************************************** | *************************************/
 
 VarSymbol* newTemp(const char* name, QualifiedType qt) {
   VarSymbol* vs = newTemp(name, qt.type());

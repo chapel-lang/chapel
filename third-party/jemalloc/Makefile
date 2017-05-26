@@ -15,7 +15,7 @@ CHPL_JEMALLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-g
 endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
-			     --with-jemalloc-prefix=chpl_je_ \
+			     --with-jemalloc-prefix=$(CHPL_JEMALLOC_PREFIX) \
 			     --with-private-namespace=chpl_
 
 # Unless the user explicitly asks for stats gathering, disable it since
@@ -27,6 +27,11 @@ endif
 # As an optimization, use jemalloc's decay-based purging instead of the
 # default ratio-based purging
 CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
+
+# To work around a problem with jemalloc's auto-detection of version
+# from git history & out-of-tree builds, explicitly set the version
+CHPL_JEMALLOC_CFG_OPTIONS += --with-version=`cat $(JEMALLOC_SUBDIR)/VERSION`
+
 
 CHPL_JEMALLOC_CFG_OPTIONS += $(CHPL_JEMALLOC_MORE_CFG_OPTIONS)
 

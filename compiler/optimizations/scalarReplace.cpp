@@ -26,6 +26,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "driver.h"
 #include "expr.h"
 #include "passes.h"
 #include "stmt.h"

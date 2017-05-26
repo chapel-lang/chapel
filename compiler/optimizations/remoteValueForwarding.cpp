@@ -20,10 +20,11 @@
 #include "optimizations.h"
 
 #include "astutil.h"
-#include "stringutil.h"
-#include "stlUtil.h"
+#include "driver.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
@@ -486,6 +487,8 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     if (call && call->isPrimitive(PRIM_DEREF)) {
       call->replace(new SymExpr(arg));
 
+    } else if (call && isDerefMove(call)) {
+      use->replace(new SymExpr(arg));
     } else if (call && call->isPrimitive(PRIM_MOVE)) {
       use->replace(new CallExpr(PRIM_ADDR_OF, arg));
 

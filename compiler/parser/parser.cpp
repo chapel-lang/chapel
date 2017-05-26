@@ -24,6 +24,7 @@
 #include "config.h"
 #include "countTokens.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "flex-chapel.h"

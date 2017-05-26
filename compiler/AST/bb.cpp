@@ -23,6 +23,7 @@
 #include "bitVec.h"
 #include "CForLoop.h"
 #include "DoWhileStmt.h"
+#include "driver.h"
 #include "ForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"

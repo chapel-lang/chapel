@@ -195,6 +195,11 @@ module LocaleModel {
       helpSetupLocaleNUMA(this, local_name, numSublocales);
     }
     //------------------------------------------------------------------------}
+
+    proc deinit() {
+      for loc in childLocales do
+        delete loc;
+    }
  }
 
   //
@@ -266,6 +271,11 @@ module LocaleModel {
         return (myLocales[node:int]):locale;
       else
         return (myLocales[node:int].getChild(subloc:int)):locale;
+    }
+
+    proc deinit() {
+      for loc in myLocales do
+        delete loc;
     }
   }
 }

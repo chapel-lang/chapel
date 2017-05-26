@@ -44,23 +44,25 @@ AggregateType* dtOnBundleRecord    = NULL;
 AggregateType* dtTaskBundleRecord  = NULL;
 AggregateType* dtError             = NULL;
 
-AggregateType::AggregateType(AggregateTag initTag)
-  : Type(E_AggregateType, NULL) {
+AggregateType::AggregateType(AggregateTag initTag) :
+  Type(E_AggregateType, NULL) {
 
-  aggregateTag        = initTag;
-  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
-  initializerResolved = false;
-  outer               = NULL;
-  iteratorInfo        = NULL;
-  doc                 = NULL;
+  aggregateTag           = initTag;
+  defaultTypeConstructor = NULL;
+  defaultInitializer     = NULL;
+  initializerStyle       = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved    = false;
+  outer                  = NULL;
+  iteratorInfo           = NULL;
+  doc                    = NULL;
 
-  fields.parent       = this;
-  inherits.parent     = this;
+  fields.parent          = this;
+  inherits.parent        = this;
 
-  genericField        = 0;
-  mIsGeneric          = false;
+  genericField           = 0;
+  mIsGeneric             = false;
 
-  classId = 0;
+  classId                = 0;
 
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
@@ -969,8 +971,9 @@ void AggregateType::buildConstructor() {
     if (isClass() == true) {
       if (dispatchParents.n > 0 && symbol->hasFlag(FLAG_EXTERN) == false) {
         // This class has a parent class.
-        if (dispatchParents.v[0]->defaultInitializer == NULL) {
-          AggregateType* at = toAggregateType(dispatchParents.v[0]);
+        AggregateType* at = toAggregateType(dispatchParents.v[0]);
+        INT_ASSERT(at);
+        if (at->defaultInitializer == NULL) {
 
           // If it doesn't yet have an initializer, make one.
           at->buildConstructors();
@@ -980,7 +983,7 @@ void AggregateType::buildConstructor() {
         // Note that since we only pay attention to the first entry in the
         // dispatchParents list, we are effectively implementing
         // single class inheritance, multiple interface inheritance.
-        FnSymbol* superCtor = dispatchParents.v[0]->defaultInitializer;
+        FnSymbol* superCtor = at->defaultInitializer;
 
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);

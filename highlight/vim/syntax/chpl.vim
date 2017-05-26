@@ -258,6 +258,7 @@ syn keyword chplConditional	if then else
 syn keyword chplConstant	nil
 syn keyword chplRepeat		while for do coforall forall in serial
 syn keyword chplLabel	        when otherwise label
+syn keyword chplErrorHandling   throw throws try catch
 
 " Folding
 syn region scopeFold start="{" end="}" fold transparent
@@ -274,6 +275,7 @@ if version >= 508 || !exists("did_chpl_syntax_inits")
     command -nargs=+ HiLink hi def link <args>
   endif
   HiLink chplCast		chplStatement
+  HiLink chplErrorHandling	chplStatement
   HiLink chplOperator		Operator
   HiLink chplStatement		Statement
   HiLink chplIntent		StorageClass

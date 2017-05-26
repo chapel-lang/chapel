@@ -19,18 +19,17 @@
 
 #include "insertLineNumbers.h"
 
-#include <algorithm>
-
-#include "passes.h"
-
 #include "astutil.h"
+#include "driver.h"
 #include "expr.h"
+#include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "virtualDispatch.h"
 
+#include <algorithm>
 #include <queue>
 
 //

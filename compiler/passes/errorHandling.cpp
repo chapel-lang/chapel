@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "driver.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"

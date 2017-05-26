@@ -32,6 +32,8 @@
  */
 
 private module BaseStringType {
+  use ChapelStandard;
+
   // TODO: figure out why I can't move this definition into `module String`
   type bufferType = c_ptr(uint(8));
 }

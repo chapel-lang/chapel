@@ -42,6 +42,7 @@
 #include "caches.h"
 #include "callInfo.h"
 #include "chpl.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "passes.h"

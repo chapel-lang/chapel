@@ -60,36 +60,29 @@ enum RetTag {
   RET_TYPE
 };
 
-const int INTENT_FLAG_IN    = 0x01;
-const int INTENT_FLAG_OUT   = 0x02;
-const int INTENT_FLAG_CONST = 0x04;
-const int INTENT_FLAG_REF   = 0x08;
-const int INTENT_FLAG_PARAM = 0x10;
-const int INTENT_FLAG_TYPE  = 0x20;
-const int INTENT_FLAG_BLANK = 0x40;
+const int INTENT_FLAG_IN          = 0x01;
+const int INTENT_FLAG_OUT         = 0x02;
+const int INTENT_FLAG_CONST       = 0x04;
+const int INTENT_FLAG_REF         = 0x08;
+const int INTENT_FLAG_PARAM       = 0x10;
+const int INTENT_FLAG_TYPE        = 0x20;
+const int INTENT_FLAG_BLANK       = 0x40;
 const int INTENT_FLAG_MAYBE_CONST = 0x80;
 
 // If this enum is modified, ArgSymbol::intentDescrString()
 // and intentDescrString(IntentTag) should also be updated to match
 enum IntentTag {
-  INTENT_IN        = INTENT_FLAG_IN,
-  INTENT_OUT       = INTENT_FLAG_OUT,
-  INTENT_INOUT     = INTENT_FLAG_IN    | INTENT_FLAG_OUT,
-  INTENT_CONST     = INTENT_FLAG_CONST,
-  INTENT_CONST_IN  = INTENT_FLAG_CONST | INTENT_FLAG_IN,
-  INTENT_REF       = INTENT_FLAG_REF,
-  INTENT_CONST_REF = INTENT_FLAG_CONST | INTENT_FLAG_REF,
+  INTENT_IN              = INTENT_FLAG_IN,
+  INTENT_OUT             = INTENT_FLAG_OUT,
+  INTENT_INOUT           = INTENT_FLAG_IN          | INTENT_FLAG_OUT,
+  INTENT_CONST           = INTENT_FLAG_CONST,
+  INTENT_CONST_IN        = INTENT_FLAG_CONST       | INTENT_FLAG_IN,
+  INTENT_REF             = INTENT_FLAG_REF,
+  INTENT_CONST_REF       = INTENT_FLAG_CONST       | INTENT_FLAG_REF,
   INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
-  INTENT_PARAM     = INTENT_FLAG_PARAM,
-  INTENT_TYPE      = INTENT_FLAG_TYPE,
-  INTENT_BLANK     = INTENT_FLAG_BLANK
-};
-
-// keep in sync with modTagDescrString()
-enum ModTag {
-  MOD_INTERNAL,  // an internal module that the user shouldn't know about
-  MOD_STANDARD,  // a standard module from the Chapel libraries
-  MOD_USER,      // a module found along the user's search path
+  INTENT_PARAM           = INTENT_FLAG_PARAM,
+  INTENT_TYPE            = INTENT_FLAG_TYPE,
+  INTENT_BLANK           = INTENT_FLAG_BLANK
 };
 
 typedef std::bitset<NUM_FLAGS> FlagSet;
@@ -546,7 +539,7 @@ private:
 ************************************** | *************************************/
 
 class EnumSymbol : public Symbol {
- public:
+public:
                   EnumSymbol(const char* initName);
 
   virtual void    verify();
@@ -568,87 +561,16 @@ class EnumSymbol : public Symbol {
 *                                                                             *
 ************************************** | *************************************/
 
-struct ExternBlockInfo;
+#include "ModuleSymbol.h"
 
-class ModuleSymbol : public Symbol {
-public:
-  static void          addTopLevelModule (ModuleSymbol*               module);
-  static void          getTopLevelModules(std::vector<ModuleSymbol*>& mods);
-
-public:
-                       ModuleSymbol(const char* iName,
-                                    ModTag      iModTag,
-                                    BlockStmt*  iBlock);
-
-                      ~ModuleSymbol();
-
-  // Interface to BaseAST
-  virtual void         verify();
-  virtual void         accept(AstVisitor* visitor);
-
-  DECLARE_SYMBOL_COPY(ModuleSymbol);
-
-  // Interface to Symbol
-  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  virtual void codegenDef();
-
-  // New interface
-  Vec<AggregateType*>  getTopLevelClasses();
-  Vec<VarSymbol*>      getTopLevelConfigVars();
-  Vec<VarSymbol*>      getTopLevelVariables();
-  Vec<FnSymbol*>       getTopLevelFunctions(bool includeExterns);
-  Vec<ModuleSymbol*>   getTopLevelModules();
-
-  void                 addDefaultUses();
-  void                 moduleUseAdd(ModuleSymbol* module);
-  void                 moduleUseRemove(ModuleSymbol* module);
-
-  ModTag               modTag;
-
-  BlockStmt*           block;
-  FnSymbol*            initFn;
-  FnSymbol*            deinitFn;
-
-  Vec<ModuleSymbol*>   modUseList;
-
-  const char*          filename;
-  const char*          doc;
-
-  // LLVM uses this for extern C blocks.
-#ifdef HAVE_LLVM
-  ExternBlockInfo*     extern_info;
-  llvm::MDNode*        llvmDINameSpace;
-#else
-  void*                extern_info;
-  void*                llvmDINameSpace;
-#endif
-
-  void                 printDocs(std::ostream* file,
-                                 unsigned int  tabs,
-                                 std::string   parentName);
-
-  void                 printTableOfContents(std::ostream* file);
-
-  std::string          docsName();
-
-private:
-  void                 getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
-                                                    Expr*            expr,
-                                                    bool             config);
-  bool                 hasTopLevelModule();
-};
-
-void initRootModule();
-
-void initStringLiteralModule();
-
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class LabelSymbol : public Symbol {
- public:
+public:
   GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
   void verify();
@@ -658,10 +580,11 @@ class LabelSymbol : public Symbol {
   void codegenDef();
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // Processes a char* to replace any escape sequences with the actual bytes
 std::string unescapeString(const char* const str, BaseAST* astForError);
@@ -721,9 +644,10 @@ VarSymbol* newTempConst(Type* type);
 VarSymbol* newTempConst(const char* name, QualifiedType qt);
 VarSymbol* newTempConst(QualifiedType qt);
 
+void       verifyInTree(BaseAST* ast, const char* msg);
+
 // for use in an English sentence
-const char* retTagDescrString(RetTag retTag);
-const char* modTagDescrString(ModTag modTag);
+const char* retTagDescrString(RetTag    retTag);
 const char* intentDescrString(IntentTag intent);
 
 // Return true if the arg must use a C pointer whether or not
@@ -737,18 +661,12 @@ void addTaskIntent(CallExpr* ti,        Expr* var, IntentTag intent, Expr* ri);
 
 extern bool localTempNames;
 
-extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
-extern HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
+extern HashMap<Immediate*, ImmHashFns, VarSymbol*> uniqueConstantsHash;
+extern HashMap<Immediate*, ImmHashFns, VarSymbol*> stringLiteralsHash;
+
 extern StringChainHash uniqueStringHash;
 
-extern ModuleSymbol* rootModule;
-extern ModuleSymbol* theProgram;
-extern ModuleSymbol* mainModule;
-extern ModuleSymbol* baseModule;
-extern ModuleSymbol* stringLiteralModule;
-extern FnSymbol* initStringLiterals;
-extern ModuleSymbol* standardModule;
-extern ModuleSymbol* printModuleInitModule;
+extern FnSymbol *initStringLiterals;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;

@@ -83,7 +83,6 @@ public:
   virtual void     exitAggrType        (AggregateType*     node);
 
   virtual bool     enterEnumType       (EnumType*          node);
-  virtual void     exitEnumType        (EnumType*          node);
 
   virtual void     visitPrimType       (PrimitiveType*     node);
 
@@ -103,6 +102,7 @@ public:
   virtual void     visitVarSym         (VarSymbol*         node);
 
   virtual bool     enterCallExpr       (CallExpr*          node);
+
   virtual bool     enterContextCallExpr(ContextCallExpr*   node);
 
   virtual bool     enterDefExpr        (DefExpr*           node);
@@ -133,7 +133,10 @@ public:
   virtual void     visitEblockStmt     (ExternBlockStmt*   node);
 
   virtual bool     enterGotoStmt       (GotoStmt*          node);
-  virtual void     exitGotoStmt        (GotoStmt*          node);
+
+  virtual bool     enterTryStmt        (TryStmt*           node);
+
+  virtual bool     enterCatchStmt      (CatchStmt*         node);
 
 private:
                    AstDumpToNode();

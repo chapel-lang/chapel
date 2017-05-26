@@ -19,6 +19,7 @@
 
 #include "AstToText.h"
 
+#include "driver.h"
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"

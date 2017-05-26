@@ -99,6 +99,10 @@ def print_mode(mode='list', anonymize=False):
     else:
         print_var('CHPL_MEM', target_mem, mode, 'mem', ('runtime', 'launcher'))
 
+    if m == 'make' or (target_mem == 'jemalloc') or m == 'shell':
+        jemalloc = chpl_jemalloc.get()
+        print_var('  CHPL_JEMALLOC', jemalloc, mode, 'jemalloc', ('runtime',))
+
     if m == 'list' or m == 'make' or m == 'shell':
         make = chpl_make.get()
         print_var('CHPL_MAKE', make, mode, 'make')
@@ -159,8 +163,7 @@ def print_mode(mode='list', anonymize=False):
         print_var('  CHPL_JEMALLOC_UNIQ_CFG_PATH',
                   chpl_3p_jemalloc_configs.get_uniq_cfg_path(),
                   mode, filters=('runtime',))
-        if target_mem == 'jemalloc':
-            link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args())
+        link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args(jemalloc))
 
         print_var('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
                   chpl_3p_libunwind_configs.get_uniq_cfg_path(),

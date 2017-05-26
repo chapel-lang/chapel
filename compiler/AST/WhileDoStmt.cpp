@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "CForLoop.h"
+#include "driver.h"
 
 /************************************ | *************************************
 *                                                                           *

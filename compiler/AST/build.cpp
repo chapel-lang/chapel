@@ -23,6 +23,7 @@
 #include "stlUtil.h"
 #include "baseAST.h"
 #include "config.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "ForLoop.h"

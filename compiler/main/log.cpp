@@ -22,7 +22,7 @@
 #include "AstDump.h"
 #include "AstDumpToHtml.h"
 #include "AstDumpToNode.h"
-
+#include "driver.h"
 #include "files.h"
 #include "misc.h"
 #include "runpasses.h"

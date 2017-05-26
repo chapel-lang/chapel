@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "codegen.h"
+#include "driver.h"
 #include "ForLoop.h"
 #include "genret.h"
 #include "insertLineNumbers.h"

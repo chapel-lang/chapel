@@ -20,7 +20,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
-#include "expr.h"
+#include "driver.h"
 #include "expr.h"
 #include "ParamForLoop.h"
 #include "passes.h"

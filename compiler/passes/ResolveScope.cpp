@@ -50,6 +50,14 @@
 
 static std::map<BaseAST*, ResolveScope*> sScopeMap;
 
+ResolveScope* ResolveScope::getRootModule() {
+  ResolveScope* retval = new ResolveScope(theProgram, NULL);
+
+  retval->addBuiltIns();
+
+  return retval;
+}
+
 ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
   BaseAST*      ast    = getScope(def);
   ResolveScope* retval = NULL;
@@ -62,13 +70,13 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 
   if (retval == NULL) {
     if (BlockStmt* blockStmt = toBlockStmt(ast)) {
-      retval = new ResolveScope(blockStmt);
+      retval = new ResolveScope(blockStmt, NULL);
 
     } else if (FnSymbol*  fnSymbol = toFnSymbol(ast)) {
-      retval = new ResolveScope(fnSymbol);
+      retval = new ResolveScope(fnSymbol, NULL);
 
     } else if (TypeSymbol* typeSymbol = toTypeSymbol(ast)) {
-      retval = new ResolveScope(typeSymbol);
+      retval = new ResolveScope(typeSymbol, NULL);
 
     } else {
       INT_ASSERT(false);
@@ -103,21 +111,234 @@ void ResolveScope::destroyAstMap() {
   sScopeMap.clear();
 }
 
-ResolveScope::ResolveScope(BlockStmt* blockStmt) {
-  mAstRef = blockStmt;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
+                           const ResolveScope* parent) {
+  mAstRef = modSymbol;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
+
+  sScopeMap[modSymbol->block] = this;
 }
 
-ResolveScope::ResolveScope(FnSymbol*  fnSymbol)  {
+ResolveScope::ResolveScope(FnSymbol*           fnSymbol,
+                           const ResolveScope* parent) {
   mAstRef = fnSymbol;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(fnSymbol) == NULL);
+
+  sScopeMap[fnSymbol] = this;
 }
 
-ResolveScope::ResolveScope(TypeSymbol* typeSymbol) {
+ResolveScope::ResolveScope(TypeSymbol*         typeSymbol,
+                           const ResolveScope* parent) {
   Type* type = typeSymbol->type;
 
   INT_ASSERT(isEnumType(type) || isAggregateType(type));
 
   mAstRef = typeSymbol;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(typeSymbol) == NULL);
+
+  sScopeMap[typeSymbol] = this;
 }
+
+ResolveScope::ResolveScope(BlockStmt*          blockStmt,
+                           const ResolveScope* parent) {
+  mAstRef = blockStmt;
+  mParent = parent;
+
+  INT_ASSERT(getScopeFor(blockStmt) == NULL);
+
+  sScopeMap[blockStmt] = this;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Historically, definitions have been mapped to scopes by                     *
+*   1) Walking gDefExprs                                                      *
+*   2) Determining the "scope" for a given DefExpr by walking upwards         *
+*      through the AST.                                                       *
+*   3) Validating that the definition is valid.                               *
+*   4) Extending the scope with the definition                                *
+*                                                                             *
+* As a special case the built-in symbols, which are defined in rootModule,    *
+* are mapped as if they were defined in chpl_Program.                         *
+*                                                                             *
+* 2017/05/23:                                                                 *
+*   Begin to modify this process so that scopes and definitions are managed   *
+* using a traditional top-down traversal of the AST starting at chpl_Program. *
+*                                                                             *
+* This process will overlook the compiler defined built-ins.  This function   *
+* is responsible for pre-allocating the scope for chpl_Program and then       *
+* inserting the built-ins.
+*                                                                             *
+************************************** | *************************************/
+
+void ResolveScope::addBuiltIns() {
+  extend(dtVoid->symbol);
+  extend(dtStringC->symbol);
+
+  extend(gFalse);
+  extend(gTrue);
+
+  extend(gTryToken);
+
+  extend(dtNil->symbol);
+  extend(gNil);
+
+  extend(gNoInit);
+
+  extend(dtUnknown->symbol);
+  extend(dtValue->symbol);
+
+  extend(gUnknown);
+  extend(gVoid);
+
+  extend(dtBools[BOOL_SIZE_SYS]->symbol);
+  extend(dtBools[BOOL_SIZE_1]->symbol);
+  extend(dtBools[BOOL_SIZE_8]->symbol);
+  extend(dtBools[BOOL_SIZE_16]->symbol);
+  extend(dtBools[BOOL_SIZE_32]->symbol);
+  extend(dtBools[BOOL_SIZE_64]->symbol);
+
+  extend(dtInt[INT_SIZE_8]->symbol);
+  extend(dtInt[INT_SIZE_16]->symbol);
+  extend(dtInt[INT_SIZE_32]->symbol);
+  extend(dtInt[INT_SIZE_64]->symbol);
+
+  extend(dtUInt[INT_SIZE_8]->symbol);
+  extend(dtUInt[INT_SIZE_16]->symbol);
+  extend(dtUInt[INT_SIZE_32]->symbol);
+  extend(dtUInt[INT_SIZE_64]->symbol);
+
+  extend(dtReal[FLOAT_SIZE_32]->symbol);
+  extend(dtReal[FLOAT_SIZE_64]->symbol);
+
+  extend(dtImag[FLOAT_SIZE_32]->symbol);
+  extend(dtImag[FLOAT_SIZE_64]->symbol);
+
+  extend(dtComplex[COMPLEX_SIZE_64]->symbol);
+  extend(dtComplex[COMPLEX_SIZE_128]->symbol);
+
+  extend(dtStringCopy->symbol);
+  extend(gStringCopy);
+
+  extend(dtCVoidPtr->symbol);
+  extend(dtCFnPtr->symbol);
+  extend(gCVoidPtr);
+  extend(dtSymbol->symbol);
+
+  extend(dtFile->symbol);
+  extend(gFile);
+
+  extend(dtOpaque->symbol);
+  extend(gOpaque);
+
+  extend(dtTaskID->symbol);
+  extend(gTaskID);
+
+  extend(dtSyncVarAuxFields->symbol);
+  extend(gSyncVarAuxFields);
+
+  extend(dtSingleVarAuxFields->symbol);
+  extend(gSingleVarAuxFields);
+
+  extend(dtAny->symbol);
+  extend(dtIntegral->symbol);
+  extend(dtAnyComplex->symbol);
+  extend(dtNumeric->symbol);
+
+  extend(dtIteratorRecord->symbol);
+  extend(dtIteratorClass->symbol);
+
+  extend(dtMethodToken->symbol);
+  extend(gMethodToken);
+
+  extend(dtTypeDefaultToken->symbol);
+  extend(gTypeDefaultToken);
+
+  extend(dtModuleToken->symbol);
+  extend(gModuleToken);
+
+  extend(dtAnyEnumerated->symbol);
+
+  extend(gBoundsChecking);
+  extend(gCastChecking);
+  extend(gDivZeroChecking);
+  extend(gPrivatization);
+  extend(gLocal);
+  extend(gNodeID);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+std::string ResolveScope::name() const {
+  std::string retval = "";
+
+  if        (ModuleSymbol* modSym  = toModuleSymbol(mAstRef)) {
+    retval = modSym->name;
+
+  } else if (FnSymbol*     fnSym   = toFnSymbol(mAstRef))     {
+    retval = fnSym->name;
+
+  } else if (TypeSymbol*   typeSym = toTypeSymbol(mAstRef))   {
+    retval = typeSym->name;
+
+  } else if (BlockStmt*    block   = toBlockStmt(mAstRef))    {
+    char buff[1024];
+
+    sprintf(buff, "BlockStmt %9d", block->id);
+
+    retval = buff;
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+int ResolveScope::depth() const {
+  const ResolveScope* ptr    = mParent;
+  int                 retval =       0;
+
+  while (ptr != NULL) {
+    retval = retval + 1;
+    ptr    = ptr->mParent;
+  }
+
+  return retval;
+}
+
+int ResolveScope::numBindings() const {
+  Bindings::const_iterator it;
+  int                      retval = 0;
+
+  for (it = mBindings.begin(); it != mBindings.end(); it++) {
+    retval = retval + 1;
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 bool ResolveScope::extend(Symbol* newSym) {
   const char* name   = newSym->name;
@@ -197,4 +418,24 @@ Symbol* ResolveScope::lookup(const char* name) const {
   }
 
   return retval;
+}
+
+void ResolveScope::describe() const {
+  Bindings::const_iterator it;
+  const char*              blockParent = "";
+  int                      index       = 0;
+
+  if (BlockStmt* block = toBlockStmt(mAstRef)) {
+    blockParent = block->parentSymbol->name;
+  }
+
+  printf("#<ResolveScope %s %s\n", name().c_str(), blockParent);
+  printf("  Depth:       %19d\n", depth());
+  printf("  NumBindings: %19d\n", numBindings());
+
+  for (it = mBindings.begin(); it != mBindings.end(); it++, index++) {
+    printf("    %3d: %s\n", index, it->first);
+  }
+
+  printf(">\n\n");
 }

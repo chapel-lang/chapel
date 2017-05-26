@@ -51,6 +51,7 @@ studies/prk/stencil/prk-stencil.ml-perf.graph
 # suite: <empty>
 # suite: All (time)
 npb/ep/mcahir/ep.ml-time.graph
+users/npadmana/npb-mg/mg.ml-time.graph
 release/examples/benchmarks/hpcc/fft.ml-time.graph
 release/examples/benchmarks/hpcc/hpl.ml-time.graph
 studies/hpcc/HPL/vass/hpl.hpcc2012.ml-time.graph
@@ -68,6 +69,7 @@ studies/isx/isx-hand-optimized.ml-time.graph
 release/examples/benchmarks/isx/isx-release.ml-time.graph
 # suite: - NAS Parallel Benchmarks (time)
 npb/ep/mcahir/ep.ml-time.graph
+users/npadmana/npb-mg/mg.ml-time.graph
 # suite: - HPCC (time)
 release/examples/benchmarks/hpcc/fft.ml-time.graph
 release/examples/benchmarks/hpcc/hpl.ml-time.graph

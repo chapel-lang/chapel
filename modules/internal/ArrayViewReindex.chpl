@@ -23,6 +23,7 @@
 // represent reindexings of another array via a domain.
 //
 module ArrayViewReindex {
+  use ChapelStandard;
 
   //
   // The class representing a slice of an array.  Like other array

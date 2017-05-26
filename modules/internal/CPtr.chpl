@@ -19,6 +19,8 @@
 
 /* A Chapel version of a C pointer. */
 module CPtr {
+  use ChapelStandard;
+
   /* A Chapel version of a C NULL pointer. */
   extern const c_nil:c_void_ptr;
 
@@ -42,7 +44,8 @@ module CPtr {
       if !x then do writeln("x is nil");
 
   */
-  //   Similar to _ddata from ChapelBase, but differs 
+
+  //   Similar to _ddata from ChapelBase, but differs
   //   from _ddata because it can never be wide.
   pragma "data class"
   pragma "no object"

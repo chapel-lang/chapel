@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "driver.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"

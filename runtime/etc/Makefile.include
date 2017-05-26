@@ -63,6 +63,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 -include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.unwind-$(CHPL_MAKE_UNWIND)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
 -include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.hwloc-$(CHPL_MAKE_HWLOC)
+# Makefile.jemalloc-$(CHPL_MAKE_JEMALLOC) is included in Makefile.mem-jemalloc
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.regexp-$(CHPL_MAKE_REGEXP)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.auxFilesys
 

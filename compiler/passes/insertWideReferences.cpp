@@ -180,18 +180,21 @@
 //   treatment in this pass.
 //
 
-#include "expr.h"
-#include "stmt.h"
-#include "astutil.h"
-#include "stlUtil.h"
-#include "stringutil.h"
 #include "passes.h"
+
+#include "astutil.h"
+#include "driver.h"
+#include "expr.h"
 #include "optimizations.h"
-#include <map>
-#include "view.h"
-#include <set>
-#include <queue>
+#include "stlUtil.h"
+#include "stmt.h"
+#include "stringutil.h"
 #include "timer.h"
+#include "view.h"
+
+#include <map>
+#include <queue>
+#include <set>
 
 //
 // For debugging, uncomment the following macros for insights:
