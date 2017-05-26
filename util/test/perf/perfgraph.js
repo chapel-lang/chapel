@@ -1556,7 +1556,7 @@ function parseDate(date) {
   if (numericX) {
     return date;
   } else {
-    return Date.parse(date);
+    return moment(date, "YYYY*MM*DD").toDate().getTime();
   }
 }
 
