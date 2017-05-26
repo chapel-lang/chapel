@@ -113,10 +113,6 @@ model requires
    simultaneous MPI calls.  We've had good experience with MPICH and
    :const:`MPI_THREAD_MULTIPLE`.
 
-2. ``CHPL_TASKS=fifo`` is currently a
-   requirement that hopefully can be relaxed
-   in the future.
-
 **Setting up multilocale mode on a Cray:**
 
 The recommended configuration for running multilocale MPI jobs on a Cray is as
@@ -125,7 +121,7 @@ follows:
 .. code-block:: sh
 
   CHPL_TARGET_COMPILER=cray-prgenv-{gnu, intel}
-  CHPL_TASKS=fifo
+  CHPL_TASKS={qthreads, fifo}   # see discussion below
   CHPL_COMM={ugni, gasnet}
   CHPL_COMM_SUBSTRATE={aries, mpi}   # if CHPL_COMM=gasnet 
   MPICH_MAX_THREAD_SAFETY=multiple
