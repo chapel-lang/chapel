@@ -596,7 +596,7 @@ module DefaultAssociative {
             dom.lockTable();
             // then we need to make sure that someone else hasn't already
             // added this element in the meantime.
-            var (found, slotNum) = dom._findFilledSlot(idx, haveLock=false);
+            var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
             if found {
               // if they have, unlock the table and return the slot
               dom.unlockTable();
