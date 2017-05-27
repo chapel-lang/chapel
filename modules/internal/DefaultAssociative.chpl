@@ -568,7 +568,7 @@ module DefaultAssociative {
     proc dsiAccess(idx : idxType, haveLock = false) ref {
 
       // Start by attempting to do an unlocked lookup of the value
-      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=false);
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=haveLock);
 
       if found {
         // if an element exists for that index, return (a ref to) it
