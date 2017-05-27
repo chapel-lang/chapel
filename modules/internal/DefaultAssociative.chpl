@@ -478,7 +478,7 @@ module DefaultAssociative {
     //
     // Returns true if found, along with the first open slot that may be
     // re-used for faster addition to the domain
-    proc _findFilledSlot(idx: idxType, param haveLock = false) : (bool, index(tableDom)) {
+    proc _findFilledSlot(idx: idxType, haveLock = false) : (bool, index(tableDom)) {
       if parSafe && !haveLock then lockTable();
       var firstOpen = -1;
       for slotNum in _lookForSlots(idx, table.domain.high+1) {
