@@ -99,8 +99,8 @@ def print_mode(mode='list', anonymize=False):
     else:
         print_var('CHPL_MEM', target_mem, mode, 'mem', ('runtime', 'launcher'))
 
-    if m == 'make' or (target_mem == 'jemalloc' and overrides.get('CHPL_JEMALLOC')) or m == 'shell':
-        jemalloc = chpl_jemalloc.get()
+    jemalloc = chpl_jemalloc.get()
+    if (target_mem == 'jemalloc' and not jemalloc == 'jemalloc') or m == 'make' or m == 'shell':
         print_var('  CHPL_JEMALLOC', jemalloc, mode, 'jemalloc', ('runtime',))
 
     if m == 'list' or m == 'make' or m == 'shell':
