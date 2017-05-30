@@ -678,8 +678,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
         // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (at->isRecord() == true &&
-              at->initializerStyle == DEFINES_INITIALIZER) {
+          if (isRecordWithInitializers(at) == true) {
             retval = var;
           }
         }
