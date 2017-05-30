@@ -1881,7 +1881,14 @@ static void normVarTypeInference(DefExpr* defExpr) {
         argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
 
         // Add _mt and _this (insert at head in reverse order)
-        argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
+        if (isGenericRecord(type) == true) {
+          // We need the actual for the "this" argument to be named in the
+          // generic record case ...
+          argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
+        } else {
+          // ... but not in the non-generic record case
+          argExpr->insertAtHead(var);
+        }
         argExpr->insertAtHead(gMethodToken);
 
       } else {
