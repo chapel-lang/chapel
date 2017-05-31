@@ -82,8 +82,6 @@ private:
 
   void            validateRenamed(BaseAST* scopeToUse);
 
-  Symbol*         getUsedSymbol(Expr* expr);
-
   void            createRelatedNames(Symbol* maybeType);
 
   bool            matchedNameOrConstructor(const char* name)             const;
