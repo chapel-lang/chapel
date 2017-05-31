@@ -245,22 +245,36 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       INT_ASSERT(se->symbol() == rootModule);
 
     } else if (Symbol* sym = getUsedSymbol(src)) {
-      if (isValidUsedSymbol(sym) == true) {
-        SET_LINENO(this);
+      SET_LINENO(this);
 
-        ModuleSymbol* enclosingModule = getModule();
-        BlockStmt*    enclosingBlock  = getVisibilityBlock(this);
+      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        getModule()->moduleUseAdd(modSym);
 
-        src->replace(new SymExpr(sym));
-
-        if (ModuleSymbol* mod = toModuleSymbol(sym)) {
-          enclosingModule->moduleUseAdd(mod);
-        }
-
-        remove();
-        enclosingBlock->useListAdd(this);
+        updateEnclosingBlock(sym);
 
         validateList();
+
+      } else if (isEnum(sym) == true) {
+        updateEnclosingBlock(sym);
+
+        validateList();
+
+      } else {
+        if (sym->isImmediate() == true) {
+          USR_FATAL(this,
+                    "'use' statements must refer to module or enum symbols "
+                    "(e.g., 'use <module>[.<submodule>]*;')");
+
+        } else if (sym->name != NULL) {
+          USR_FATAL_CONT(this,
+                         "'use' of non-module/enum symbol %s",
+                         sym->name);
+          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
+          USR_STOP();
+
+        } else {
+          USR_FATAL(this, "'use' of non-module/enum symbol");
+        }
       }
 
     } else {
@@ -270,6 +284,25 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
   } else {
     INT_ASSERT(false);
   }
+}
+
+bool UseStmt::isEnum(const Symbol* sym) const {
+  bool retval = false;
+
+  if (const TypeSymbol* typeSym = toConstTypeSymbol(sym)) {
+    retval = isEnumType(typeSym->type);
+  }
+
+  return retval;
+}
+
+void UseStmt::updateEnclosingBlock(Symbol* sym) {
+  BlockStmt* enclosingBlock = getVisibilityBlock(this);
+
+  src->replace(new SymExpr(sym));
+
+  remove();
+  enclosingBlock->useListAdd(this);
 }
 
 //
@@ -321,27 +354,6 @@ Symbol* UseStmt::getUsedSymbol(Expr* expr) {
 
   } else {
     INT_FATAL(this, "Bad use statement in getUsedSymbol");
-  }
-
-  return retval;
-}
-
-bool UseStmt::isValidUsedSymbol(Symbol* symbol) const {
-  bool retval = false;
-
-  if (isModuleSymbol(symbol) == true) {
-    retval = true;
-
-  } else if (TypeSymbol* type = toTypeSymbol(symbol)) {
-    if (isEnumType(type->type) == true) {
-      retval = true;
-
-    } else {
-      printUseError(symbol);
-    }
-
-  } else {
-    printUseError(symbol);
   }
 
   return retval;
@@ -536,28 +548,6 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
 
     relatedNames.push_back(constrName);
     relatedNames.push_back(typeConstrName);
-  }
-}
-
-void UseStmt::printUseError() const {
-  USR_FATAL(this,
-            "'use' statements must refer to module or enum symbols "
-            "(e.g., 'use <module>[.<submodule>]*;')");
-}
-
-void UseStmt::printUseError(Symbol* sym) const {
-  if (sym->isImmediate() == true) {
-    USR_FATAL(this,
-              "'use' statements must refer to module or enum symbols "
-              "(e.g., 'use <module>[.<submodule>]*;')");
-
-  } else if (sym->name != NULL) {
-    USR_FATAL_CONT(this, "'use' of non-module/enum symbol %s", sym->name);
-    USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-    USR_STOP();
-
-  } else {
-    USR_FATAL(this, "'use' of non-module/enum symbol");
   }
 }
 

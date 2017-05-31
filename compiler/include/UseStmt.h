@@ -70,6 +70,9 @@ public:
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
+  bool            isEnum(const Symbol* sym)                              const;
+
+  void            updateEnclosingBlock(Symbol* sym);
 
   bool            isValid(Expr* expr)                                    const;
 
@@ -81,8 +84,6 @@ private:
 
   Symbol*         getUsedSymbol(Expr* expr);
 
-  bool            isValidUsedSymbol(Symbol* symbol)                      const;
-
   void            createRelatedNames(Symbol* maybeType);
 
   bool            matchedNameOrConstructor(const char* name)             const;
@@ -90,10 +91,6 @@ private:
   bool            inRelatedNames(const char* name)                       const;
 
   void            noRepeats()                                            const;
-
-  void            printUseError()                                        const;
-
-  void            printUseError(Symbol* sym)                             const;
 
 public:
   Expr*                              src;
