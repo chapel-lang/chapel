@@ -173,6 +173,134 @@ const char* UseStmt::getRename(const char* name) const {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void UseStmt::scopeResolve(ResolveScope* scope) {
+  // 2017-05-28: isValid() does not currently return on failure
+  if (isValid(src) == true) {
+    // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
+    if (SymExpr* se = toSymExpr(src)) {
+      INT_ASSERT(se->symbol() == rootModule);
+
+    } else if (Symbol* sym = getUsedSymbol(src)) {
+      SET_LINENO(this);
+
+      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        getModule()->moduleUseAdd(modSym);
+
+        updateEnclosingBlock(sym);
+
+        validateList();
+
+      } else if (isEnum(sym) == true) {
+        updateEnclosingBlock(sym);
+
+        validateList();
+
+      } else {
+        if (sym->isImmediate() == true) {
+          USR_FATAL(this,
+                    "'use' statements must refer to module or enum symbols "
+                    "(e.g., 'use <module>[.<submodule>]*;')");
+
+        } else if (sym->name != NULL) {
+          USR_FATAL_CONT(this,
+                         "'use' of non-module/enum symbol %s",
+                         sym->name);
+          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
+          USR_STOP();
+
+        } else {
+          USR_FATAL(this, "'use' of non-module/enum symbol");
+        }
+      }
+
+    } else {
+      USR_FATAL(this, "Cannot find module or enum");
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
+
+bool UseStmt::isEnum(const Symbol* sym) const {
+  bool retval = false;
+
+  if (const TypeSymbol* typeSym = toConstTypeSymbol(sym)) {
+    retval = isEnumType(typeSym->type);
+  }
+
+  return retval;
+}
+
+void UseStmt::updateEnclosingBlock(Symbol* sym) {
+  BlockStmt* enclosingBlock = getVisibilityBlock(this);
+
+  src->replace(new SymExpr(sym));
+
+  remove();
+  enclosingBlock->useListAdd(this);
+}
+
+//
+// Return the module or enum imported by a use call.
+// The module could be nested: e.g. "use outermost.middle.innermost;"
+//
+Symbol* UseStmt::getUsedSymbol(Expr* expr) {
+  Symbol* retval = NULL;
+
+  // 1) The common case of                'use <name>;'
+  // 2) Also invoked when recursing for   'use <name>.<name>;'
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+    //
+    // This case handles the (common) case that we're 'use'ing a
+    // symbol that we have not yet resolved.
+    //
+    if (Symbol* symbol = lookup(sym->unresolved, this)) {
+      retval = symbol;
+
+    } else {
+      USR_FATAL(this, "Cannot find module or enum '%s'", sym->unresolved);
+    }
+
+  // This handles the case of 'use <symbol>.<symbol>'
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1)))) {
+      if (SymExpr* rhs = toSymExpr(call->get(2))) {
+        const char* rhsName = NULL;
+
+        if (get_string(rhs, &rhsName) == true) {
+          if (Symbol* symbol = lookup(rhsName, lhs->block)) {
+            retval = symbol;
+
+          } else {
+            USR_FATAL(this, "Cannot find module '%s'", rhsName);
+          }
+
+        } else {
+          INT_FATAL(this, "Bad use statement in getUsedSymbol");
+        }
+
+      } else {
+        INT_FATAL(this, "Bad use statement in getUsedSymbol");
+      }
+
+    } else {
+      USR_FATAL(this, "Cannot find module");
+    }
+
+  } else {
+    INT_FATAL(this, "Bad use statement in getUsedSymbol");
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
 * The parser currently accepts use statements with general expressions e.g.   *
 *   use a + b;                                                                *
 *   use 1.2;                                                                  *
@@ -226,144 +354,6 @@ bool UseStmt::isValid(Expr* expr) const {
 
   } else {
     INT_FATAL(this, "Unexpected use stmt");
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void UseStmt::scopeResolve(ResolveScope* scope) {
-  // 2017-05-28: isValid() does not currently return on failure
-  if (isValid(src) == true) {
-    SET_LINENO(this);
-
-    if (Symbol* sym = getUsedSymbol(src)) {
-      if (sym == rootModule) {
-
-      // This may happen during symbol renaming
-      } else if (parentExpr == NULL) {
-        src = new SymExpr(sym);
-
-      } else {
-        ModuleSymbol* enclosingModule = getModule();
-        BlockStmt*    enclosingBlock  = getVisibilityBlock(this);
-
-        src->replace(new SymExpr(sym));
-
-        if (ModuleSymbol* mod = toModuleSymbol(sym)) {
-          enclosingModule->moduleUseAdd(mod);
-        }
-
-        remove();
-        enclosingBlock->useListAdd(this);
-
-        validateList();
-      }
-
-    } else {
-      USR_FATAL(this, "Cannot find module or enum");
-    }
-
-  } else {
-    INT_ASSERT(false);
-  }
-}
-
-//
-// Return the module or enum imported by a use call.
-// The module could be nested: e.g. "use outermost.middle.innermost;"
-//
-Symbol* UseStmt::getUsedSymbol(Expr* expr) {
-  Symbol* retval = NULL;
-
-  // 1) The common case of                'use <name>;'
-  // 2) Also invoked when recursing for   'use <name>.<name>;'
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    //
-    // This case handles the (common) case that we're 'use'ing a
-    // symbol that we have not yet resolved.
-    //
-    if (Symbol* symbol = lookup(sym->unresolved, this)) {
-      if (isValidUsedSymbol(symbol) == true) {
-        retval = symbol;
-      }
-
-    } else {
-      USR_FATAL(this, "Cannot find module or enum '%s'", sym->unresolved);
-    }
-
-  // This handles the case of 'use <symbol>.<symbol>'
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    if (ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1)))) {
-      if (SymExpr* rhs = toSymExpr(call->get(2))) {
-        const char* rhsName = NULL;
-
-        if (get_string(rhs, &rhsName) == true) {
-          if (Symbol* symbol = lookup(rhsName, lhs->block)) {
-            if (isValidUsedSymbol(symbol) == true) {
-              retval = symbol;
-            }
-
-          } else {
-            USR_FATAL(this, "Cannot find module '%s'", rhsName);
-          }
-
-        } else {
-          INT_FATAL(this, "Bad use statement in getUsedSymbol");
-        }
-
-      } else {
-        INT_FATAL(this, "Bad use statement in getUsedSymbol");
-      }
-
-    } else {
-      USR_FATAL(this, "Cannot find module");
-    }
-
-  //
-  // The parser generates 1 instance of this to represent the dependency
-  // betweeen ChapelBase and rootModule
-  //
-  // The remaining cases are generated by symbol renaming
-  //
-  } else if (SymExpr* sym = toSymExpr(expr)) {
-    if (Symbol* symbol = sym->symbol()) {
-      if (isValidUsedSymbol(symbol) == true) {
-        retval = symbol;
-      }
-
-    } else {
-      printUseError();
-    }
-
-  } else {
-    INT_FATAL(this, "Bad use statement in getUsedSymbol");
-  }
-
-  return retval;
-}
-
-bool UseStmt::isValidUsedSymbol(Symbol* symbol) const {
-  bool retval = false;
-
-  if (isModuleSymbol(symbol) == true) {
-    retval = true;
-
-  } else if (TypeSymbol* type = toTypeSymbol(symbol)) {
-    if (isEnumType(type->type) == true) {
-      retval = true;
-
-    } else {
-      printUseError(symbol);
-    }
-
-  } else {
-    printUseError(symbol);
   }
 
   return retval;
@@ -558,28 +548,6 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
 
     relatedNames.push_back(constrName);
     relatedNames.push_back(typeConstrName);
-  }
-}
-
-void UseStmt::printUseError() const {
-  USR_FATAL(this,
-            "'use' statements must refer to module or enum symbols "
-            "(e.g., 'use <module>[.<submodule>]*;')");
-}
-
-void UseStmt::printUseError(Symbol* sym) const {
-  if (sym->isImmediate() == true) {
-    USR_FATAL(this,
-              "'use' statements must refer to module or enum symbols "
-              "(e.g., 'use <module>[.<submodule>]*;')");
-
-  } else if (sym->name != NULL) {
-    USR_FATAL_CONT(this, "'use' of non-module/enum symbol %s", sym->name);
-    USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-    USR_STOP();
-
-  } else {
-    USR_FATAL(this, "'use' of non-module/enum symbol");
   }
 }
 
