@@ -186,15 +186,15 @@ static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& formalIdxToActual,
-                             Vec<ArgSymbol*>& actualIdxToFormal,
+                             std::map<int, Symbol*>& formalIdxToActual,
+                             std::map<int, ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info);
 static Type*
 getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual,
+                   std::map<int, Symbol*>& formalIdxToActual,
                    bool inInitRes);
 
 static BlockStmt* getParentBlock(Expr* expr);
@@ -271,8 +271,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
-  if (formalIdxToActual.n != 0) formalIdxToActual.clear();
-  if (actualIdxToFormal.n != 0) actualIdxToFormal.clear();
+  if (formalIdxToActual.size() != 0) formalIdxToActual.clear();
+  if (actualIdxToFormal.size() != 0) actualIdxToFormal.clear();
 
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
@@ -1622,23 +1622,20 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& formalIdxToActual,
-                             Vec<ArgSymbol*>& actualIdxToFormal,
+                             std::map<int, Symbol*>& formalIdxToActual,
+                             std::map<int, ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info) {
-  formalIdxToActual.fill(fn->numFormals());
-  actualIdxToFormal.fill(info.actuals.n);
-
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
       int j = 0;
       for_formals(formal, fn) {
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = info.actuals.v[i];
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = info.actuals.v[i];
           break;
         }
         j++;
@@ -1653,16 +1650,16 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Record successful substitutions.
   int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
       while (formal) {
         if (formal->variableExpr)
           return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        if (!formalIdxToActual.v[j]) {
+        if (formalIdxToActual[j] == NULL) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = info.actuals.v[i];
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = info.actuals.v[i];
           formal = next_formal(formal);
           j++;
           break;
@@ -1679,7 +1676,7 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (!formalIdxToActual.v[j] && !formal->defaultExpr)
+    if (formalIdxToActual[j] == NULL && !formal->defaultExpr)
       // Fail if not.
       return false;
     formal = next_formal(formal);
@@ -1732,16 +1729,16 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual,
+                   std::map<int, Symbol*>& formalIdxToActual,
                    bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formalIdxToActual.v[i] && formalIdxToActual.v[i]->isParameter()) {
+      if (formalIdxToActual[i] != NULL && formalIdxToActual[i]->isParameter()) {
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalIdxToActual.v[i]->type, formal->type))
-          subs.put(formal, formalIdxToActual.v[i]);
-      } else if (!formalIdxToActual.v[i] && formal->defaultExpr) {
+            canInstantiate(formalIdxToActual[i]->type, formal->type))
+          subs.put(formal, formalIdxToActual[i]);
+      } else if (formalIdxToActual[i] == NULL && formal->defaultExpr) {
 
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
@@ -1767,9 +1764,9 @@ computeGenericSubs(SymbolMap &subs,
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
-      if (formalIdxToActual.v[i]) {
+      if (formalIdxToActual[i] != NULL) {
         if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
-            formalIdxToActual.v[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
+            formalIdxToActual[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
           // If the "this" arg is generic, we're resolving an initializer, and
           // the actual being passed is also still generic, don't count this as
           // a substitution.  Otherwise, we'll end up in an infinite loop if
@@ -1777,7 +1774,7 @@ computeGenericSubs(SymbolMap &subs,
           // count the this arg as a substitution and so always approach the
           // generic arg with a defaultExpr as though a substitution was going
           // to take place.
-        } else if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
+        } else if (Type* type = getInstantiationType(formalIdxToActual[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -1786,8 +1783,8 @@ computeGenericSubs(SymbolMap &subs,
           // and pass "bar" as a c_string instead of a string
           if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
               (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
-              (formalIdxToActual.v[i]->type == dtString) &&
-              (formalIdxToActual.v[i]->isImmediate())) {
+              (formalIdxToActual[i]->type == dtString) &&
+              (formalIdxToActual[i]->isImmediate())) {
             subs.put(formal, dtStringC->symbol);
           } else {
             subs.put(formal, type->symbol);
@@ -2200,10 +2197,10 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
 
   DisambiguationState DS;
 
-  for (int k = 0; k < candidate1->actualIdxToFormal.n; ++k) {
+  for (int k = 0; k < DC.actuals->n; ++k) {
     Symbol* actual = DC.actuals->v[k];
-    ArgSymbol* formal1 = candidate1->actualIdxToFormal.v[k];
-    ArgSymbol* formal2 = candidate2->actualIdxToFormal.v[k];
+    ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
+    ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
 
     TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
 
