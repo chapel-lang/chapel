@@ -173,66 +173,6 @@ const char* UseStmt::getRename(const char* name) const {
 
 /************************************* | **************************************
 *                                                                             *
-* The parser currently accepts use statements with general expressions e.g.   *
-*   use a + b;                                                                *
-*   use 1.2;                                                                  *
-*                                                                             *
-* This method returns true if the syntax is valid.                            *
-* The currnet implementation signals a FATAL error if it is not.              *
-*                                                                             *
-************************************** | *************************************/
-
-bool UseStmt::isValid(Expr* expr) const {
-  bool retval = false;
-
-  if (isUnresolvedSymExpr(expr) == true) {
-    retval = true;
-
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(".") == true) {
-      if (isValid(call->get(1)) == true) {
-        if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          VarSymbol* v = toVarSymbol(rhs->symbol());
-
-          if (v                        != NULL &&
-              v->immediate             != NULL &&
-              v->immediate->const_kind == CONST_KIND_STRING) {
-            retval = true;
-
-          } else {
-            INT_FATAL(this, "Bad use statement in getUsedSymbol");
-          }
-
-        } else {
-          INT_FATAL(this, "Bad use statement in getUsedSymbol");
-        }
-      }
-
-    } else {
-      USR_FATAL(this,
-                "'use' statements must refer to module or enum symbols "
-                "(e.g., 'use <module>[.<submodule>]*;')");
-    }
-
-  } else if (SymExpr* symExpr = toSymExpr(expr)) {
-    if (symExpr->symbol()->isImmediate() == false) {
-      retval = true;
-
-    } else {
-      USR_FATAL(this,
-                "'use' statements must refer to module or enum symbols "
-                "(e.g., 'use <module>[.<submodule>]*;')");
-    }
-
-  } else {
-    INT_FATAL(this, "Unexpected use stmt");
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -354,6 +294,66 @@ Symbol* UseStmt::getUsedSymbol(Expr* expr) {
 
   } else {
     INT_FATAL(this, "Bad use statement in getUsedSymbol");
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* The parser currently accepts use statements with general expressions e.g.   *
+*   use a + b;                                                                *
+*   use 1.2;                                                                  *
+*                                                                             *
+* This method returns true if the syntax is valid.                            *
+* The currnet implementation signals a FATAL error if it is not.              *
+*                                                                             *
+************************************** | *************************************/
+
+bool UseStmt::isValid(Expr* expr) const {
+  bool retval = false;
+
+  if (isUnresolvedSymExpr(expr) == true) {
+    retval = true;
+
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isNamed(".") == true) {
+      if (isValid(call->get(1)) == true) {
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
+          VarSymbol* v = toVarSymbol(rhs->symbol());
+
+          if (v                        != NULL &&
+              v->immediate             != NULL &&
+              v->immediate->const_kind == CONST_KIND_STRING) {
+            retval = true;
+
+          } else {
+            INT_FATAL(this, "Bad use statement in getUsedSymbol");
+          }
+
+        } else {
+          INT_FATAL(this, "Bad use statement in getUsedSymbol");
+        }
+      }
+
+    } else {
+      USR_FATAL(this,
+                "'use' statements must refer to module or enum symbols "
+                "(e.g., 'use <module>[.<submodule>]*;')");
+    }
+
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
+    if (symExpr->symbol()->isImmediate() == false) {
+      retval = true;
+
+    } else {
+      USR_FATAL(this,
+                "'use' statements must refer to module or enum symbols "
+                "(e.g., 'use <module>[.<submodule>]*;')");
+    }
+
+  } else {
+    INT_FATAL(this, "Unexpected use stmt");
   }
 
   return retval;
