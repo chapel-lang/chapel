@@ -67,7 +67,8 @@ release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/isx/isx.ml-time.graph
 studies/isx/isx-hand-optimized.ml-time.graph
 release/examples/benchmarks/isx/isx-release.ml-time.graph
-studies/prk/stencil/prk-stencil-opt.ml-time.graph
+studies/prk/stencil/optimized/prk-stencil-opt.ml-time.graph
+studies/prk/stencil/prk-stencil.ml-time.graph
 # suite: - NAS Parallel Benchmarks (time)
 npb/ep/mcahir/ep.ml-time.graph
 users/npadmana/npb-mg/mg.ml-time.graph
@@ -91,7 +92,8 @@ studies/isx/isx.ml-time.graph
 studies/isx/isx-hand-optimized.ml-time.graph
 release/examples/benchmarks/isx/isx-release.ml-time.graph
 # suite: - PRK (time)
-studies/prk/stencil/prk-stencil-opt.ml-time.graph
+studies/prk/stencil/optimized/prk-stencil-opt.ml-time.graph
+studies/prk/stencil/prk-stencil.ml-time.graph
 
 
 # suite: <empty>

@@ -165,6 +165,9 @@ proc main() {
     else                        writeln("Distribution         = None");
   }
 
+  var stenTime, incTime, commTime : real;
+  var subTimer : Timer;
+
   //
   // Main loop of Stencil
   //
@@ -175,6 +178,8 @@ proc main() {
     if (iteration == 1) {
       timer.start();
     }
+
+    if iteration >= 1 then subTimer.start();
 
     if debug then diagnostics('stencil');
     if (!tiling) {
@@ -213,16 +218,35 @@ proc main() {
       }
     }
 
+    if iteration >= 1 {
+      subTimer.stop();
+      stenTime += subTimer.elapsed();
+      subTimer.clear(); subTimer.start();
+    }
+
     /* Add constant to solution to force refresh of neighbor data */
     if debug then diagnostics('input += 1');
     forall (i,j) in Dom {
       input[i, j] += 1.0;
     }
 
+    if iteration >= 1 {
+      subTimer.stop();
+      incTime += subTimer.elapsed();
+      subTimer.clear(); subTimer.start();
+    }
+
     /* Update ghost cells for each locales, for StencilDist */
     if useStencilDist then {
       if debug then diagnostics('input.updateFluff()');
       input.updateFluff();
+    }
+
+    if iteration >= 1 {
+      subTimer.stop();
+      commTime += subTimer.elapsed();
+      subTimer.clear(); subTimer.start();
+      subTimer.stop();
     }
 
 
@@ -261,6 +285,9 @@ proc main() {
 
     if (!validate) {
       writef("Rate (MFlops/s): %dr  Avg time (s): %r\n", 1.0E-06 * flops/avgTime, avgTime);
+      writeln("stencil time = ", stenTime/iterations);
+      writeln("increment time = ", incTime / iterations);
+      writeln("comm time = ", commTime / iterations);
     }
   }
 }
