@@ -245,21 +245,23 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       INT_ASSERT(se->symbol() == rootModule);
 
     } else if (Symbol* sym = getUsedSymbol(src)) {
-      SET_LINENO(this);
+      if (isValidUsedSymbol(sym) == true) {
+        SET_LINENO(this);
 
-      ModuleSymbol* enclosingModule = getModule();
-      BlockStmt*    enclosingBlock  = getVisibilityBlock(this);
+        ModuleSymbol* enclosingModule = getModule();
+        BlockStmt*    enclosingBlock  = getVisibilityBlock(this);
 
-      src->replace(new SymExpr(sym));
+        src->replace(new SymExpr(sym));
 
-      if (ModuleSymbol* mod = toModuleSymbol(sym)) {
-        enclosingModule->moduleUseAdd(mod);
+        if (ModuleSymbol* mod = toModuleSymbol(sym)) {
+          enclosingModule->moduleUseAdd(mod);
+        }
+
+        remove();
+        enclosingBlock->useListAdd(this);
+
+        validateList();
       }
-
-      remove();
-      enclosingBlock->useListAdd(this);
-
-      validateList();
 
     } else {
       USR_FATAL(this, "Cannot find module or enum");
@@ -285,9 +287,7 @@ Symbol* UseStmt::getUsedSymbol(Expr* expr) {
     // symbol that we have not yet resolved.
     //
     if (Symbol* symbol = lookup(sym->unresolved, this)) {
-      if (isValidUsedSymbol(symbol) == true) {
-        retval = symbol;
-      }
+      retval = symbol;
 
     } else {
       USR_FATAL(this, "Cannot find module or enum '%s'", sym->unresolved);
@@ -301,9 +301,7 @@ Symbol* UseStmt::getUsedSymbol(Expr* expr) {
 
         if (get_string(rhs, &rhsName) == true) {
           if (Symbol* symbol = lookup(rhsName, lhs->block)) {
-            if (isValidUsedSymbol(symbol) == true) {
-              retval = symbol;
-            }
+            retval = symbol;
 
           } else {
             USR_FATAL(this, "Cannot find module '%s'", rhsName);
