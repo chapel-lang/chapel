@@ -124,12 +124,12 @@ public:
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
    */
-  std::map<int, Symbol*> formalIdxToActual; // note: was alignedActuals
+  std::vector<Symbol*> formalIdxToActual; // note: was alignedActuals
 
   /** The formal arguments for the candidate, aligned so that they have the same
    *  index as their corresponding actual argument in the call.
    */
-  std::map<int, ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
+  std::vector<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
 
   /// A symbol map for substitutions that were made during the copying process.
   SymbolMap substitutions;
@@ -235,8 +235,8 @@ void insertFormalTemps(FnSymbol* fn);
 void insertAndResolveCasts(FnSymbol* fn);
 void ensureInMethodList(FnSymbol* fn);
 
-FnSymbol* defaultWrap(FnSymbol* fn, std::map<int, ArgSymbol*>* actualFormals,  CallInfo* info);
-void reorderActuals(FnSymbol* fn, std::map<int, ArgSymbol*>* actualFormals,  CallInfo* info);
+FnSymbol* defaultWrap(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
+void reorderActuals(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
 void coerceActuals(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks);
 

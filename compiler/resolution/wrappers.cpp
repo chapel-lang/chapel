@@ -477,7 +477,7 @@ buildDefaultWrapper(FnSymbol* fn,
 
 FnSymbol*
 defaultWrap(FnSymbol* fn,
-            std::map<int, ArgSymbol*>* actualFormals,
+            std::vector<ArgSymbol*>* actualFormals,
             CallInfo* info) {
   FnSymbol* wrapper = fn;
   int num_actuals = actualFormals->size();
@@ -486,10 +486,8 @@ defaultWrap(FnSymbol* fn,
     Vec<Symbol*> defaults;
     for_formals(formal, fn) {
       bool used = false;
-      for (std::map<int, ArgSymbol*>::iterator it = actualFormals->begin();
-           it != actualFormals->end();
-           ++it) {
-        if (it->second == formal)
+      for_vector(ArgSymbol, arg, *actualFormals) {
+        if (arg == formal)
           used = true;
       }
       if (!used)
@@ -507,12 +505,10 @@ defaultWrap(FnSymbol* fn,
     // update actualFormals for use in reorderActuals
     int j = 1;
     for_formals(formal, fn) {
-      for (std::map<int, ArgSymbol*>::iterator it = actualFormals->begin();
-           it != actualFormals->end();
-           ++it) {
-        if (it->second == formal) {
+      for(unsigned i = 0; i < actualFormals->size(); i++) {
+        if ((*actualFormals)[i] == formal) {
           ArgSymbol* newFormal = wrapper->getFormal(j);
-          (*actualFormals)[it->first] = newFormal;
+          (*actualFormals)[i] = newFormal;
           j++;
         }
       }
@@ -528,7 +524,7 @@ defaultWrap(FnSymbol* fn,
 ////
 
 void reorderActuals(FnSymbol* fn,
-                    std::map<int, ArgSymbol*>* actualFormals,
+                    std::vector<ArgSymbol*>* actualFormals,
                     CallInfo* info) {
   int numArgs = actualFormals->size();
   if (numArgs <= 1)
@@ -541,11 +537,9 @@ void reorderActuals(FnSymbol* fn,
     i++;
 
     int j = 0;
-    for(std::map<int, ArgSymbol*>::iterator it = actualFormals->begin();
-        it != actualFormals->end();
-        ++it) {
+    for_vector(ArgSymbol, af, *actualFormals ) {
       j++;
-      if (it->second == formal) {
+      if (af == formal) {
         if (i != j)
           need_to_reorder = true;
         formals_to_formals[i-1] = j-1;

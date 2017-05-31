@@ -186,15 +186,15 @@ static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             std::map<int, Symbol*>& formalIdxToActual,
-                             std::map<int, ArgSymbol*>& actualIdxToFormal,
+                             std::vector<Symbol*>& formalIdxToActual,
+                             std::vector<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info);
 static Type*
 getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   std::map<int, Symbol*>& formalIdxToActual,
+                   std::vector<Symbol*>& formalIdxToActual,
                    bool inInitRes);
 
 static BlockStmt* getParentBlock(Expr* expr);
@@ -1622,9 +1622,15 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             std::map<int, Symbol*>& formalIdxToActual,
-                             std::map<int, ArgSymbol*>& actualIdxToFormal,
+                             std::vector<Symbol*>& formalIdxToActual,
+                             std::vector<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info) {
+  for (int i = 0; i < fn->numFormals(); i++) {
+    formalIdxToActual.push_back(NULL);
+  }
+  for (int i = 0; i < info.actuals.n; i++) {
+    actualIdxToFormal.push_back(NULL);
+  }
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
   for (int i = 0; i < info.actuals.n; i++) {
@@ -1729,7 +1735,7 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   std::map<int, Symbol*>& formalIdxToActual,
+                   std::vector<Symbol*>& formalIdxToActual,
                    bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
