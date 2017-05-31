@@ -20,6 +20,7 @@
 #include "UseStmt.h"
 
 #include "AstVisitor.h"
+#include "ResolveScope.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
 #include "visibleFunctions.h"
@@ -184,7 +185,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = getUsedSymbol(src)) {
+    } else if (Symbol* sym = scope->getUsedSymbol(src)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -245,60 +246,6 @@ void UseStmt::updateEnclosingBlock(Symbol* sym) {
   enclosingBlock->useListAdd(this);
 }
 
-//
-// Return the module or enum imported by a use call.
-// The module could be nested: e.g. "use outermost.middle.innermost;"
-//
-Symbol* UseStmt::getUsedSymbol(Expr* expr) {
-  Symbol* retval = NULL;
-
-  // 1) The common case of                'use <name>;'
-  // 2) Also invoked when recursing for   'use <name>.<name>;'
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    //
-    // This case handles the (common) case that we're 'use'ing a
-    // symbol that we have not yet resolved.
-    //
-    if (Symbol* symbol = lookup(sym->unresolved, this)) {
-      retval = symbol;
-
-    } else {
-      USR_FATAL(this, "Cannot find module or enum '%s'", sym->unresolved);
-    }
-
-  // This handles the case of 'use <symbol>.<symbol>'
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    if (ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1)))) {
-      if (SymExpr* rhs = toSymExpr(call->get(2))) {
-        const char* rhsName = NULL;
-
-        if (get_string(rhs, &rhsName) == true) {
-          if (Symbol* symbol = lookup(rhsName, lhs->block)) {
-            retval = symbol;
-
-          } else {
-            USR_FATAL(this, "Cannot find module '%s'", rhsName);
-          }
-
-        } else {
-          INT_FATAL(this, "Bad use statement in getUsedSymbol");
-        }
-
-      } else {
-        INT_FATAL(this, "Bad use statement in getUsedSymbol");
-      }
-
-    } else {
-      USR_FATAL(this, "Cannot find module");
-    }
-
-  } else {
-    INT_FATAL(this, "Bad use statement in getUsedSymbol");
-  }
-
-  return retval;
-}
-
 /************************************* | **************************************
 *                                                                             *
 * The parser currently accepts use statements with general expressions e.g.   *
@@ -306,7 +253,7 @@ Symbol* UseStmt::getUsedSymbol(Expr* expr) {
 *   use 1.2;                                                                  *
 *                                                                             *
 * This method returns true if the syntax is valid.                            *
-* The currnet implementation signals a FATAL error if it is not.              *
+* The current implementation signals a FATAL error if it is not.              *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -328,11 +275,11 @@ bool UseStmt::isValid(Expr* expr) const {
             retval = true;
 
           } else {
-            INT_FATAL(this, "Bad use statement in getUsedSymbol");
+            INT_FATAL(this, "Bad use statement");
           }
 
         } else {
-          INT_FATAL(this, "Bad use statement in getUsedSymbol");
+          INT_FATAL(this, "Bad use statement");
         }
       }
 
