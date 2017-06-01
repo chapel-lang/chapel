@@ -22,9 +22,9 @@ Overview:
    #. `Create new branch`_
 
 #. `Develop and test contributions locally`_
-#. `Submit pull request`_
+#. `Request feedback on your changes`_
 #. `Test changes`_ (can be done by team at Cray)
-#. `Mail chapel-developers@ for review and merge`_
+#. `Merge changes in to master`_
 #. `HOWTO/Git/GitHub details`_
 #. `Policy details`_
 
@@ -161,14 +161,80 @@ Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
+Contributors should be reasonably confident in the testing done on their code
+before asking for a review.  Should additional testing resources be need, you
+can request help from a member of the core Chapel team when creating your pull
+request.
+
+.. _Request feedback on your changes:
+
+Request feedback on your changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _Push your work:
+
+Push your work to your feature branch
+-------------------------------------
+
+Push your changes to your feature branch on GitHub
+
+.. code-block:: bash
+
+    git push origin <branch_name>
+
+    # or if you don't like typing your complicated branch name,
+    # you can use this command to push the current branch:
+    git push origin HEAD
+
+    # if you forgot your branch name, you can get it by running
+    git branch
+
+    # it is the starred one...
+
+Note that if you have already created a pull request from a
+feature branch, pushing your work to that feature branch will
+update the pull request.
+
+This will enable others to see your work.
+
+Ask for feedback on your branch early (optional)
+------------------------------------------------
+
+Not ready to merge yours changes, but still want to see if your work is going
+in the right direction?  Feel free to ask for early feedback!
+
 
 .. _Submit pull request:
 
 Submit pull request
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 * `Submit a pull request`_ with your changes (make sure you have `synced with
   the main repo`_).
+
+  * To do this, after pushing your changes to your feature branch on GitHub,
+    you can use the GitHub web interface to create a pull request. Visit
+
+    https://github.com/<username>/chapel
+
+    and look for a "Compare & pull request" button for your feature branch.
+    Alternatively, navigate to your feature branch, and click the green icon
+    next to the branch dropdown to "Compare, review, create a pull request".
+
+    Next, put in a message to your reviewer about the purpose of your pull
+    request and give the pull request a useful title. It's a good time to draft
+    the commit message that you will need when merging the pull request
+
+    You will have to have signed a contributors agreement.
+
+    Your pull request will be available at a URL like:
+      https://github.com/chapel-lang/chapel/pull/<number>
+
+    and you can discuss the patch with your reviewers there.
+
+    In working with your reviewers, you will no doubt change your pull request.
+    Just do your local development and then update your feature branch as in
+    `Push your work`_
 
 * In order for a pull request to be accepted and merged, it should a) pass
   testing and b) be reviewed by a member of the core Chapel team (currently, a
@@ -191,6 +257,35 @@ Submit pull request
     the developer and user community. For example, a new module introduced as a
     1000-line PR is acceptable, while a set of new tests introduced as a
     1000-line PR is not.
+
+Find a reviewer
+---------------
+
+* When you believe your pull request is ready for review, send it to a member
+  of the core Chapel team (or chapel-developers_ if there isn't an obvious
+  person to review it). To make it easy to spot, please include `[PR]` prior to
+  the subject of your email.  Even the developers that have write access to the
+  Chapel repository need to have all non-trivial changes reviewed. Developers
+  who have been given write access can merge trivial changes (e.g. small bug
+  fixes, documentation changes) without review.
+
+  .. note::
+
+    Ideally, someone should volunteer to review your pull request within a day
+    or two. If this doesn't happen, feel free to make some noise. Ideally the
+    review should take place within a few days, though timing may vary
+    depending on other deadlines.
+
+Work with your reviewers
+------------------------
+
+* Iterate with the reviewer until you're both satisfied. If you can't come to
+  agreement, one of you should bring other developers (individually or via
+  chapel-developers_) into the conversation to get a broader opinion (one of
+  the jobs of the reviewer is to serve as a proxy for other developers, or to
+  bring those developers into the conversation if they feel unqualified to do
+  so).
+
 
 .. _Test changes:
 
@@ -236,31 +331,10 @@ writing or modifying tests.
 
 .. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
 
-.. _Mail chapel-developers@ for review and merge:
+.. _Merge changes in to master:
 
-Mail chapel-developers@ for review and merge
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* When you believe your pull request is ready for review, send it to a member
-  of the core Chapel team (or chapel-developers_ if there isn't an obvious
-  person to review it). Even the developers that have write access to the
-  Chapel repository need to have all non-trivial changes reviewed. Developers
-  who have been given write access can merge trivial changes (e.g. small bug
-  fixes, documentation changes) without review.
-
-  .. note::
-
-    Ideally, someone should volunteer to review your pull request within a day
-    or two. If this doesn't happen, feel free to make some noise. Ideally the
-    review should take place within a few days, though timing may vary
-    depending on other deadlines.
-
-* Iterate with the reviewer until you're both satisfied. If you can't come to
-  agreement, one of you should bring other developers (individually or via
-  chapel-developers_) into the conversation to get a broader opinion (one of
-  the jobs of the reviewer is to serve as a proxy for other developers, or to
-  bring those developers into the conversation if they feel unqualified to do
-  so).
+Merge changes in to master
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Once the pull request is approved, it can be merged. This can be done by
   either the reviewer or developer (given sufficient permissions), as decided

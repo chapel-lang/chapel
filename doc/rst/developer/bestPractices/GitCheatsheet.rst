@@ -4,61 +4,8 @@ Git "cheat sheet" (with comparisons to svn)
 See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
-H) `Push your work to your feature branch`_
-I) `Create a pull request and work with your reviewers`_
 J) `Once your reviewers are satisfied, merge in your pull request`_
 
-
-Push your work to your feature branch
--------------------------------------
-
-Push your changes to your feature branch on GitHub
-
-.. code-block:: bash
-
-    git push origin <branch_name>
-
-    # or if you don't like typing your complicated branch name,
-    # you can use this command to push the current branch:
-    git push origin HEAD
-
-    # if you forgot your branch name, you can get it by running
-    git branch
-
-    # it is the starred one...
-
-Note that if you have already created a pull request from a
-feature branch, pushing your work to that feature branch will
-update the pull request.
-
-Create a pull request and work with your reviewers
---------------------------------------------------
-
-After pushing your changes to your feature branch on GitHub, use the GitHub web
-interface to create a pull request.  Visit
-
-  https://github.com/<username>/chapel
-
-and look for a "Compare & pull request" button for your feature branch.
-Alternatively, navigate to your feature branch, and click the green icon next
-to the branch dropdown to "Compare, review, create a pull request".
-
-Next, put in a message to your reviewer about the purpose of your pull request
-and give the pull request a useful title. It's a good time to draft the commit
-message that you will need when merging the pull request in step (J).
-
-Your contribution will need to be tested and reviewed, and you will have to
-have signed a contributors agreement. See ContributorInfo.rst for more
-information.
-
-Your pull request will be available at a URL like:
-  https://github.com/chapel-lang/chapel/pull/<number>
-
-and you can discuss the patch with your reviewers there.
-
-In working with your reviewers, you will no doubt change your pull request.
-Just do your local development and then update your feature branch as in (H)
-and the pull request will change.
 
 Once your reviewers are satisfied, merge in your pull request
 -------------------------------------------------------------
