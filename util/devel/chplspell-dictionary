@@ -4622,6 +4622,7 @@ cleanall
 cleanfiles
 cleanloop
 clearbit
+cleison
 cloexec
 closefile
 clrbit
@@ -4744,6 +4745,7 @@ deinits
 deitz
 delaney
 delims
+demangle
 denests
 dennis
 denny
@@ -5141,6 +5143,7 @@ greprt
 greptestoutputs
 greyscale
 groupsize
+gsoc
 gssapi
 guckin
 gujarati
@@ -5547,6 +5550,7 @@ manpage
 manpath
 mantevo
 mapreduce
+marcos
 marenostrum
 markhill
 martha
@@ -5690,6 +5694,7 @@ namespaces
 namespacing
 nanox
 napierian
+nareas
 narratively
 natively
 navarro
@@ -6108,6 +6113,7 @@ salloc
 samuel
 sandia
 sandybridge
+santana
 sanz
 sapiens
 sassert
@@ -6203,6 +6209,7 @@ sigusr
 sigvtalrm
 sigxcpu
 sigxfsz
+silva
 singh
 singlecls
 singlevar
@@ -6425,6 +6432,7 @@ tmpdirname
 tmpvar
 tochar
 toctou
+toctree
 todo
 todos
 toend

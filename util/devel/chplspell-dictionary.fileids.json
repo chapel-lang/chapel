@@ -259,6 +259,7 @@
   ],
   "3efba760-1f11-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/dists/ReplicatedDist.rst",
+    "modules/dists/OldReplicatedDist.chpl",
     "modules/dists/ReplicatedDist.chpl"
   ],
   "347ba0d8-1f11-11e6-a3a6-10ddb1d4c3d5": [
