@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,24 +77,24 @@ config param debugDynamicIters:bool=false;
   This iterator can be called in serial and zippered contexts.
 
 */
-iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
+iter dynamic(c:range(?), chunkSize:int=1, numTasks:int=0) {
 
-  if debugDynamicIters then 
+  if debugDynamicIters then
     writeln("Serial dynamic Iterator. Working with range ", c);
-  
-  for i in c do yield i;    
-}             
+
+  for i in c do yield i;
+}
 
 // Parallel iterator
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
 where tag == iterKind.leader
 {
   assert(chunkSize > 0); // caller's responsibility
 
   // # of tasks the range can fill. (fast) ceil so all work is represented
   const chunkTasks = divceilpos(c.length, chunkSize): int;
-  
+
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(chunkTasks, defaultNumTasks(numTasks));
 
@@ -120,7 +120,7 @@ where tag == iterKind.leader
         // There is local work in remain
         const low = curIndex.fetchAdd(chunkSize);
         var high = low + chunkSize-1;
-        
+
         if low > remain.high {
           break;
         } else if high > remain.high {
@@ -129,9 +129,9 @@ where tag == iterKind.leader
         }
 
         const current:rType = remain(low .. high);
-        
+
         if high >= low then {
-          if debugDynamicIters then 
+          if debugDynamicIters then
             writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
           yield (current,);
         }
@@ -142,7 +142,7 @@ where tag == iterKind.leader
 
 // Follower
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int, followThis) 
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, followThis)
 where tag == iterKind.follower
 {
   type rType=c.type;
@@ -157,7 +157,7 @@ where tag == iterKind.follower
 //************************* Dynamic domain iterator
 /*
 
-  :arg c: The domain to iterate over. The rank of the domain must be greater 
+  :arg c: The domain to iterate over. The rank of the domain must be greater
           than zero.
   :type c: `domain`
 
@@ -171,32 +171,32 @@ where tag == iterKind.follower
   :type numTasks: `int`
 
   :arg parDim: The index of the dimension to parallelize across. Must be > 0.
-                Must be <= the rank of the domain ``c``. Defaults to 1. 
+                Must be <= the rank of the domain ``c``. Defaults to 1.
   :type parDim: `int`
 
   :yields: Indices of the domain ``c``
 
   Given an input domain ``c``, each task is assigned slices of ``c``. The
   chunks each have ``chunkSize`` slices in them (or the remaining iterations
-  if there are fewer than ``chunkSize``). This continues until there are no 
-  remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
+  if there are fewer than ``chunkSize``). This continues until there are no
+  remaining iterations in the dimension of ``c`` indicated by ``parDim``.
 
   This iterator can be called in serial and zippered contexts.
 */
 
 //This is the serial version of this iterator
-iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1) 
+iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=1)
 {
   if debugDynamicIters then
     writeln("Serial Dynamic Domain Iterator, working with domain: ", c);
-  
+
   for yieldTuple in c do yield yieldTuple;
 }
 
 //Leader
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim : int = 1) 
-  where tag == iterKind.leader 
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 1)
+  where tag == iterKind.leader
   {
     //caller's responsibility to use a valid chunk size
     assert(chunkSize > 0, "Chunk size must be greater than zero");
@@ -214,7 +214,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
     for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
       //Set the new range based on the tuple the dynamic 1d iterator yields
       var newRange = i(1);
-    
+
       type dType = c.type;
       //does the same thing as densify, but densify makes a stridable domain,
       // which mismatches here if c (and thus dType) is non-stridable
@@ -231,7 +231,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
 
 //Follower
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:int, followThis)
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   //Invoke the default rectangular domain follower iterator
@@ -265,17 +265,17 @@ where tag == iterKind.follower
 */
 iter guided(c:range(?), numTasks:int=0) {
 
-  if debugDynamicIters then 
+  if debugDynamicIters then
     writeln("Serial guided Iterator. Working with range ", c);
-  
-  for i in c do yield i;                  
+
+  for i in c do yield i;
 }
 
 pragma "no doc"
 iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
-where tag == iterKind.leader 
-{   
-  // Check if the number of tasks is 0, in that case it returns a default value  
+where tag == iterKind.leader
+{
+  // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks=min(c.length, defaultNumTasks(numTasks));
   type rType=c.type;
   var remain:rType = densify(c,c);
@@ -284,7 +284,7 @@ where tag == iterKind.leader
   if nTasks == 1 then {
     if debugDynamicIters then
       writeln("Guided Iterator: serial execution because there is not enough work");
-    yield (remain,); 
+    yield (remain,);
   }
 
   else {
@@ -295,13 +295,13 @@ where tag == iterKind.leader
     coforall tid in 0..#nTasks with (ref remain, ref undone, ref lock) do {
       while undone do {
         // There is local work in remain(tid)
-        const current:rType=adaptSplit(remain, factor, undone, lock); 
+        const current:rType=adaptSplit(remain, factor, undone, lock);
         if current.length !=0 then {
-          if debugDynamicIters then 
+          if debugDynamicIters then
             writeln("Parallel guided Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
           yield (current,);
         }
-      }            
+      }
     }
   }
 }
@@ -348,13 +348,13 @@ where tag == iterKind.follower
 
   This iterator can be called in serial and zippered contexts.
 */
-iter adaptive(c:range(?), numTasks:int=0) {  
+iter adaptive(c:range(?), numTasks:int=0) {
 
-  if debugDynamicIters then 
+  if debugDynamicIters then
     writeln("Serial adaptive work-stealing Iterator. Working with range ", c);
-  
+
   for i in c do yield i;
-              
+
 }
 
 
@@ -392,12 +392,12 @@ config param methodStealing = Method.Whole;
 pragma "no doc"
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
-  
-{   
+
+{
   /*if (methodStealing != Method.Whole || methodStealing != Method.WholeTail) then
     compilerError("methodStealing value must be between 0 and 2");*/
 
-  // Check if the number of tasks is 0, in that case it returns a default value  
+  // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks=min(c.length, defaultNumTasks(numTasks));
   type rType=c.type;
 
@@ -407,51 +407,51 @@ where tag == iterKind.leader
     if debugDynamicIters then
       writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
     yield (densify(c,c),);
-    
+
   }
   else {
     const r:rType=densify(c,c);
     const SpaceThreads:domain(1)=0..#nTasks;
     var localWork:[SpaceThreads] rType; // The remaining range to split on each Thread
-    var moreLocalWork:[SpaceThreads] bool=true; // bool var to signal there is still work on each local range    
+    var moreLocalWork:[SpaceThreads] bool=true; // bool var to signal there is still work on each local range
     var locks:[SpaceThreads] vlock; // sync var to control the splitting on each Thread
     const factor:int=2;
-  
+
     const factorSteal:int=2;
     var moreWork:bool=true; // A global var to control the termination
 
- 
+
     // Variables to put a barrier to ensure the initial range is computed on each Thread
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks with (ref localWork, ref moreLocalWork, ref moreWork, ref r) do { 
+    coforall tid in 0..#nTasks with (ref localWork, ref moreLocalWork, ref moreWork, ref r) do {
 
       // Step 1: Initial range per Thread/Task
 
       // Initial Local range in localWork[tid]
       const chunkSize = c.length/nTasks;
-      localWork[tid]= 
-      if tid==nTasks-1 then 
+      localWork[tid]=
+      if tid==nTasks-1 then
         r#(chunkSize*(nTasks-1)-r.length)
-      else 
+      else
         (r+tid*chunkSize)#chunkSize;
       barrier.add(1);
 
-      if debugDynamicIters then 
+      if debugDynamicIters then
         writeln("Parallel adaptive work-stealing Iterator. Working at tid ", tid, " with initial range ", localWork[tid]);
 
       // A barrier waiting for each thread to finish the initial assignment
       barrier.waitFor(nTasks);
 
       // Step 2: While there is work at tid, do splitting
-      
-      while moreLocalWork[tid] do { 
-        // There is local work 
+
+      while moreLocalWork[tid] do {
+        // There is local work
         // The current range we get after splitting locally
         const zeroBasedIters:rType=adaptSplit(localWork[tid], factorSteal, moreLocalWork[tid], locks[tid]);
         if zeroBasedIters.length !=0 then {
-          if debugDynamicIters then 
+          if debugDynamicIters then
             writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
           yield (zeroBasedIters,);
         }
@@ -459,12 +459,12 @@ where tag == iterKind.leader
 
       // Step3: Task tid finished its work, so it will try to steal from a neighbor
 
-      var nVisitedVictims:int=0; 
-      var victim=(tid+1) % nTasks; 
+      var nVisitedVictims:int=0;
+      var victim=(tid+1) % nTasks;
       var stealFailed:bool=false;
 
       while moreWork do {
-        if debugDynamicIters then 
+        if debugDynamicIters then
           writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
         // Perform the splitting at the victim remaining range
@@ -474,33 +474,33 @@ where tag == iterKind.leader
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
             if zeroBasedIters2.length !=0 then {
-              if debugDynamicIters then 
+              if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
           } else {
             stealFailed=true;
-          } 
+          }
         } else {
           while moreLocalWork[victim] do {
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim], methodStealing==Method.WholeTail);
                                           //after splitting from a victim range
             if zeroBasedIters2.length !=0 then {
-              if debugDynamicIters then 
+              if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
           }
         }
-        
-        // If here, then it can have failed the stealing intent at the victim (method 1), 
+
+        // If here, then it can have failed the stealing intent at the victim (method 1),
         // or we have exhausted the victim range (methods 0, 2)
 
-        if (methodStealing==Method.Whole || methodStealing==Method.WholeTail || (methodStealing==Method.RoundRobin && stealFailed)) then { 
+        if (methodStealing==Method.Whole || methodStealing==Method.WholeTail || (methodStealing==Method.RoundRobin && stealFailed)) then {
           nVisitedVictims += 1; // Signal that there is no more work in victim
-          stealFailed=false; 
-          if debugDynamicIters then 
+          stealFailed=false;
+          if debugDynamicIters then
             writeln("Failed Stealing intent at tid ", tid," with victim ", victim, " and total no. of visited victims ", nVisitedVictims);
         }
         // Check if there is no more work
@@ -510,7 +510,7 @@ where tag == iterKind.leader
           victim=(victim+1) % nTasks; // New victim to steal
           if methodStealing==Method.RoundRobin && victim==tid then
             victim=(victim+1) % nTasks;
-        } 
+        }
       }
     }
   }
@@ -547,12 +547,12 @@ private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:b
 {
   type rType=rangeToSplit.type;
   type lenType=rangeToSplit.length.type;
-  var totLen, size:lenType; 
-  const profThreshold=1; 
+  var totLen, size:lenType;
+  const profThreshold=1;
 
   lock.lock();
   totLen=rangeToSplit.length;
-  if totLen > profThreshold then 
+  if totLen > profThreshold then
     size=max(totLen/splitFactor, profThreshold);
   else {
     size=totLen;

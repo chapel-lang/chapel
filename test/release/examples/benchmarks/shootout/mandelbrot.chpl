@@ -10,8 +10,7 @@ use DynamicIters;
 
 config const n = 200,              // image size in pixels (n x n)
              maxIter = 50,         // max # of iterations per pixel
-             limit = 4.0,          // per-pixel convergence limit
-             chunkSize = 1;        // dynamic iterator's chunk size
+             limit = 4.0;          // per-pixel convergence limit
 
 param bitsPerElt = 8;              // # of bits to store per array element
 type eltType = uint(bitsPerElt);   // element type used to store the image
@@ -22,7 +21,7 @@ proc main() {
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
+  forall (y, xelt) in dynamic(image.domain) { // for all elements
 
     var buff: eltType;                         // a single-element pixel buffer
 

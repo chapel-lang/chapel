@@ -10,8 +10,7 @@ use DynamicIters;
 
 config const n = 200,             // image size in pixels (n x n)
              maxIter = 50,        // max # of iterations per pixel
-             limit = 4.0,         // per-pixel convergence limit
-             chunkSize = 1;       // dynamic iterator's chunk size
+             limit = 4.0;         // per-pixel convergence limit
 
 param bitsPerElt = 8;             // # of bits to store per array element
 type eltType = uint(bitsPerElt);  // element type used to store the image
@@ -32,7 +31,7 @@ proc main() {
   }
 
   // compute the image
-  forall (y, xelt) in dynamic(imgSpace, chunkSize) {
+  forall (y, xelt) in dynamic(imgSpace) {
     const xbase = xelt*bitsPerElt,
           cr = (xval[xbase+0], xval[xbase+1], xval[xbase+2], xval[xbase+3],
                 xval[xbase+4], xval[xbase+5], xval[xbase+6], xval[xbase+7]),
