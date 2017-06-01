@@ -275,15 +275,25 @@
     "doc/rst/modules/packages/Curl.rst",
     "modules/packages/Curl.chpl"
   ],
-  "7e50173a-814e-11e6-b915-843835579daa": [
-    "doc/rst/modules/packages/FFTW.rst"
+  "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/modules/packages/FFTW.rst",
+    "modules/packages/FFTW.chpl"
+  ],
+  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/rst/modules/packages/Futures.rst",
+    "modules/packages/Futures.chpl"
   ],
   "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
     "doc/rst/modules/packages/HDFS.rst",
     "modules/packages/HDFS.chpl"
   ],
+  "40d00fe6-1a82-11e7-980e-10ddb1d4c3d5": [
+    "doc/rst/modules/packages/LinearAlgebra.rst",
+    "modules/packages/LinearAlgebra.chpl"
+  ],
   "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/packages/MPI.rst",
+    "doc/rst/modules/packages/MPI/C_Env.rst",
     "doc/rst/modules/packages/MPI/C_MPI.rst",
     "modules/packages/MPI.chpl"
   ],
@@ -293,6 +303,10 @@
   "24a5f32a-792f-11e6-807a-843835579daa": [
     "doc/rst/modules/packages/ZMQ.rst",
     "modules/packages/ZMQ.chpl"
+  ],
+  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
+    "doc/rst/modules/standard/DateTime.rst",
+    "modules/standard/DateTime.chpl"
   ],
   "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/standard/FileSystem.rst",
@@ -422,15 +436,6 @@
   "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/layouts/LayoutCSR.chpl"
   ],
-  "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/packages/FFTW.chpl"
-  ],
-  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "modules/packages/Futures.chpl"
-  ],
-  "40d00fe6-1a82-11e7-980e-10ddb1d4c3d5": [
-    "modules/packages/LinearAlgebra.chpl"
-  ],
   "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebraJama.chpl"
   ],
@@ -444,9 +449,6 @@
   ],
   "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Buffers.chpl"
-  ],
-  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
-    "modules/standard/DateTime.chpl"
   ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"

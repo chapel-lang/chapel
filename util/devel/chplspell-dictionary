@@ -2064,7 +2064,6 @@ leftjustify
 legendre
 lenread
 lentmp
-lfftw
 lgamma
 lgammaf
 libevent
@@ -3683,9 +3682,6 @@ taskparallel
 FILEID: 0c6ba076-814e-11e6-b915-843835579daa
 inds
 itermethod
-
-FILEID: 7e50173a-814e-11e6-b915-843835579daa
-dout
 
 FILEID: 058f379e-814f-11e6-b915-843835579daa
 strt
@@ -5443,6 +5439,7 @@ lentz
 lepcha
 lewis
 lexer
+lfftw
 lflags
 lfoo
 lgamma
