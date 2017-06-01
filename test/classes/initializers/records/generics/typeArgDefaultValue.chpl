@@ -12,7 +12,6 @@ record Foo {
 }
 
 var foo1: Foo(int); // specifies a different value
-var foo2: Foo(); // relies on the default value
 var foo3: Foo(bool); // specifies the same value as the default
 
 writeln(foo1);
