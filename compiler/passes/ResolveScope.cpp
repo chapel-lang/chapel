@@ -409,6 +409,69 @@ bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
   return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Return the module or enum imported by a use call.                           *
+* The module could be nested: e.g. "use outermost.middle.innermost;"          *
+*                                                                             *
+************************************** | *************************************/
+
+Symbol* ResolveScope::getUsedSymbol(Expr* expr) const {
+  Symbol* retval = NULL;
+
+  // 1) The common case of                'use <name>;'
+  // 2) Also invoked when recursing for   'use <name>.<name>;'
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+    //
+    // This case handles the (common) case that we're 'use'ing a
+    // symbol that we have not yet resolved.
+    //
+    if (Symbol* symbol = ::lookup(sym->unresolved, expr)) {
+      retval = symbol;
+
+    } else {
+      USR_FATAL(expr, "Cannot find module or enum '%s'", sym->unresolved);
+    }
+
+  // This handles the case of 'use <symbol>.<symbol>'
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1)))) {
+      if (SymExpr* rhs = toSymExpr(call->get(2))) {
+        const char* rhsName = NULL;
+
+        if (get_string(rhs, &rhsName) == true) {
+          if (Symbol* symbol = ::lookup(rhsName, lhs->block)) {
+            retval = symbol;
+
+          } else {
+            USR_FATAL(expr, "Cannot find module '%s'", rhsName);
+          }
+
+        } else {
+          INT_FATAL(expr, "Bad qualified name");
+        }
+
+      } else {
+        INT_FATAL(expr, "Bad qualified name");
+      }
+
+    } else {
+      USR_FATAL(expr, "Cannot find module");
+    }
+
+  } else {
+    INT_FATAL(expr, "Bad qualified name");
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 Symbol* ResolveScope::lookup(const char* name) const {
   std::map<const char*, Symbol*>::const_iterator it     = mBindings.find(name);
   Symbol*                                        retval = NULL;

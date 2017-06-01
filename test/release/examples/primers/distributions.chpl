@@ -241,10 +241,10 @@ verifyID(BA);
 // Replicated
 // ----------
 //
-// The ``ReplicatedDist`` distribution is different from the previous
+// The ``Replicated`` distribution is different from the previous
 // cases: each of the original domain's indices is replicated onto
 // each locale, as are the corresponding array elements.  For example,
-// a domain ``{1..3}`` distributed using ``ReplicatedDist`` will store
+// a domain ``{1..3}`` distributed using ``Replicated`` will store
 // three indices per locale that the distribution is targeting (by
 // default, all locales).  Similarly, an array declared over that
 // domain will store three elements per locale.  Each locale's copy of
@@ -263,7 +263,7 @@ verifyID(BA);
 //
 // Here's a declaration of a replicated domain and array:
 //
-const ReplicatedSpace = Space dmapped ReplicatedDist();
+const ReplicatedSpace = Space dmapped Replicated();
 var RA: [ReplicatedSpace] int;
 
 // Queries about the size of a replicated domain or array will return
@@ -404,7 +404,7 @@ const DimReplicatedBlockcyclicSpace = Space
 var DRBA: [DimReplicatedBlockcyclicSpace] int;
 
 // The ``ReplicatedDim`` specifier always accesses the local replicand.
-// (This differs from how the ``ReplicatedDist`` distribution works.)
+// (This differs from how the ``Replicated`` distribution works.)
 //
 // This example visits each replicand. The behavior is the same
 // regardless of the second index into ``MyLocales`` below.

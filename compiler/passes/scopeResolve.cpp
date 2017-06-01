@@ -239,8 +239,6 @@ void scopeResolve() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addToSymbolTable(ModuleSymbol* topLevelModule);
-
 // 2017/05/23: Noakes
 //
 // This is a specialized walk for the simplified case of chpl__Program.
@@ -267,30 +265,7 @@ static void addToSymbolTable() {
   // Now recurse on every top-level module
   for_alist(stmt, theProgram->block->body) {
     if (ModuleSymbol* mod = definesModuleSymbol(stmt)) {
-      if (mod->modTag == MOD_USER) {
-        scopeResolve(mod, rootScope);
-      } else {
-        addToSymbolTable(mod);
-      }
-    }
-  }
-}
-
-// The legacy way to process the DefExprs, but on a module by module basis
-static void addToSymbolTable(ModuleSymbol* topLevelModule) {
-  std::vector<BaseAST*> asts;
-
-  collect_asts(topLevelModule, asts);
-
-  for_vector(BaseAST, item, asts) {
-    if (DefExpr* def = toDefExpr(item)) {
-      Symbol* newSym = def->sym;
-      if (newSym->hasFlag(FLAG_TEMP) == false &&
-          isLabelSymbol(newSym)      == false) {
-        ResolveScope* entry = ResolveScope::findOrCreateScopeFor(def);
-
-        entry->extend(newSym);
-      }
+      scopeResolve(mod, rootScope);
     }
   }
 }
@@ -435,6 +410,7 @@ static void scopeResolve(TypeSymbol*         typeSym,
 }
 
 static void scopeResolve(const AList& alist, ResolveScope* scope) {
+  // Add the local definitions to the scope
   for_alist(stmt, alist) {
     if (DefExpr* def = toDefExpr(stmt))   {
       Symbol* sym = def->sym;
@@ -446,6 +422,12 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
     }
   }
 
+
+  // Should process use statements here
+
+
+
+  // Process the remaining statements
   for_alist(stmt, alist) {
     if (DefExpr* def = toDefExpr(stmt))   {
       Symbol* sym = def->sym;
@@ -511,26 +493,21 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void processImportExprs(ModuleSymbol* topLevelModule);
-
 static void processImportExprs() {
   for_alist(expr, theProgram->block->body) {
-    if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
-      processImportExprs(mod);
-    }
-  }
-}
+    if (ModuleSymbol* topLevelModule = definesModuleSymbol(expr)) {
+      std::vector<BaseAST*> asts;
 
-static void processImportExprs(ModuleSymbol* topLevelModule) {
-  std::vector<BaseAST*> asts;
+      // Collect *all* asts within this top-level module in text order
+      collect_asts(topLevelModule, asts);
 
-  // Collect *all* asts within this top-level module in text order
-  collect_asts(topLevelModule, asts);
+      for_vector(BaseAST, item, asts) {
+        if (UseStmt* useStmt = toUseStmt(item)) {
+          BaseAST*      astScope = getScope(useStmt);
+          ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
-  for_vector(BaseAST, item, asts) {
-    if (UseStmt* useStmt = toUseStmt(item)) {
-      if (useStmt->isValid() == true) {
-        useStmt->scopeResolve();
+          useStmt->scopeResolve(scope);
+        }
       }
     }
   }

@@ -22,6 +22,8 @@
 
 #include "stmt.h"
 
+class ResolveScope;
+
 class UseStmt : public Stmt {
 public:
                   UseStmt(BaseAST* source);
@@ -53,30 +55,32 @@ public:
 
   bool            isARename(const char* name)                            const;
 
-  const char*     getRename(const char* name);
+  const char*     getRename(const char* name)                            const;
 
-  bool            isValid()                                              const;
+  void            scopeResolve(ResolveScope* scope);
 
-  void            scopeResolve();
-
-  void            validateList();
-
-  UseStmt*        applyOuterUse(UseStmt* outer);
+  UseStmt*        applyOuterUse(const UseStmt* outer);
 
   bool            skipSymbolSearch(const char* name)                     const;
 
-  bool            providesNewSymbols(UseStmt* other)                     const;
+  bool            providesNewSymbols(const UseStmt* other)               const;
 
   BaseAST*        getSearchScope()                                       const;
 
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
+  bool            isEnum(const Symbol* sym)                              const;
+
+  void            updateEnclosingBlock(Symbol* sym);
+
   bool            isValid(Expr* expr)                                    const;
 
-  Symbol*         getUsedSymbol(Expr* expr);
+  void            validateList();
 
-  bool            isValidUsedSymbol(Symbol* symbol)                      const;
+  void            validateNamed  (BaseAST* scopeToUse);
+
+  void            validateRenamed(BaseAST* scopeToUse);
 
   void            createRelatedNames(Symbol* maybeType);
 
@@ -85,10 +89,6 @@ private:
   bool            inRelatedNames(const char* name)                       const;
 
   void            noRepeats()                                            const;
-
-  void            printUseError()                                        const;
-
-  void            printUseError(Symbol* sym)                             const;
 
 public:
   Expr*                              src;

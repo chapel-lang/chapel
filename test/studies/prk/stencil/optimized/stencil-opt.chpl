@@ -131,6 +131,9 @@ proc main() {
     writeln("Distribution         = Stencil");
   }
 
+  var stenTime, incTime, commTime : real;
+  var subTimer : Timer;
+
   //
   // Main loop of Stencil
   //
@@ -141,6 +144,8 @@ proc main() {
     if (iteration == 1) {
       timer.start();
     }
+
+    if iteration >= 1 then subTimer.start();
 
     if debug then diagnostics('stencil');
     forall (i,j) in innerDom with (in weight) do local {
@@ -158,13 +163,32 @@ proc main() {
       output.localAccess[i, j] += tmpout;
     }
 
+    if iteration >= 1 {
+      subTimer.stop();
+      stenTime += subTimer.elapsed();
+      subTimer.clear(); subTimer.start();
+    }
+
     /* Add constant to solution to force refresh of neighbor data */
     if debug then diagnostics('input += 1');
     forall i in input do i += 1.0;
 
+    if iteration >= 1 {
+      subTimer.stop();
+      incTime += subTimer.elapsed();
+      subTimer.clear(); subTimer.start();
+    }
+
     /* Update ghost cells for each locales, for StencilDist */
     if debug then diagnostics('input.updateFluff()');
     input.updateFluff();
+
+    if iteration >= 1 {
+      subTimer.stop();
+      commTime += subTimer.elapsed();
+      subTimer.clear(); subTimer.start();
+      subTimer.stop();
+    }
 
 
   } /* end of main loop */
@@ -201,8 +225,10 @@ proc main() {
     }
 
     if (!validate) {
-      writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime, "  Avg time (s): ",
-              avgTime);
+      writef("Rate (MFlops/s): %dr  Avg time (s): %r\n", 1.0E-06 * flops/avgTime, avgTime);
+      writeln("stencil time = ", stenTime/iterations);
+      writeln("increment time = ", incTime / iterations);
+      writeln("comm time = ", commTime / iterations);
     }
   }
 }

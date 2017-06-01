@@ -26,6 +26,7 @@
 class BaseAST;
 class BlockStmt;
 class DefExpr;
+class Expr;
 class FnSymbol;
 class ModuleSymbol;
 class Symbol;
@@ -63,6 +64,8 @@ public:
   int                   numBindings()                                    const;
 
   bool                  extend(Symbol*     sym);
+
+  Symbol*               getUsedSymbol(Expr* expr)                        const;
 
   Symbol*               lookup(const char* name)                         const;
 
