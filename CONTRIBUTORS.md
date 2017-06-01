@@ -9,7 +9,6 @@ Contributors to the current release
 * Ben Albrecht, [Cray Inc.]
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
-* Marcos Cleison Silva Santana, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
@@ -29,6 +28,7 @@ Contributors to the current release
 * Elliot Ronaghan, [Cray Inc.]
 * Sagar Khatri, individual contributor
 * Preston Sahabu, [Cray Inc.]
+* Marcos Cleison Silva Santana, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Greg Titus, [Cray Inc.]
 * Rob Upcraft, individual contributor
