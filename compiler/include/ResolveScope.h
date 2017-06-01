@@ -22,6 +22,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 class BaseAST;
 class BlockStmt;
@@ -31,6 +32,7 @@ class FnSymbol;
 class ModuleSymbol;
 class Symbol;
 class TypeSymbol;
+class UseStmt;
 
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
@@ -63,7 +65,13 @@ public:
 
   int                   numBindings()                                    const;
 
-  bool                  extend(Symbol*     sym);
+  BlockStmt*            asBlockStmt()                                    const;
+
+  ModuleSymbol*         enclosingModule()                                const;
+
+  bool                  extend(Symbol*        sym);
+
+  bool                  extend(const UseStmt* stmt);
 
   Symbol*               getUsedSymbol(Expr* expr)                        const;
 
@@ -73,6 +81,7 @@ public:
 
 private:
   typedef std::map<const char*, Symbol*>  Bindings;
+  typedef std::vector<const UseStmt*>     UseList;
 
                         ResolveScope();
 
@@ -87,6 +96,7 @@ private:
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;
   Bindings              mBindings;
+  UseList               mUseList;
 };
 
 #endif

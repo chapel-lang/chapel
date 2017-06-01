@@ -72,15 +72,16 @@ public:
 private:
   bool            isEnum(const Symbol* sym)                              const;
 
-  void            updateEnclosingBlock(Symbol* sym);
+  void            updateEnclosingBlock(ResolveScope* scope,
+                                       Symbol*       sym);
 
   bool            isValid(Expr* expr)                                    const;
 
   void            validateList();
 
-  void            validateNamed  (BaseAST* scopeToUse);
+  void            validateNamed();
 
-  void            validateRenamed(BaseAST* scopeToUse);
+  void            validateRenamed();
 
   void            createRelatedNames(Symbol* maybeType);
 
