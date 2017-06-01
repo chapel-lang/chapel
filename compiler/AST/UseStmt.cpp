@@ -189,14 +189,14 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-        getModule()->moduleUseAdd(modSym);
+        scope->enclosingModule()->moduleUseAdd(modSym);
 
-        updateEnclosingBlock(sym);
+        updateEnclosingBlock(scope, sym);
 
         validateList();
 
       } else if (isEnum(sym) == true) {
-        updateEnclosingBlock(sym);
+        updateEnclosingBlock(scope, sym);
 
         validateList();
 
@@ -237,13 +237,13 @@ bool UseStmt::isEnum(const Symbol* sym) const {
   return retval;
 }
 
-void UseStmt::updateEnclosingBlock(Symbol* sym) {
-  BlockStmt* enclosingBlock = getVisibilityBlock(this);
-
+void UseStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
   src->replace(new SymExpr(sym));
 
   remove();
-  enclosingBlock->useListAdd(this);
+  scope->asBlockStmt()->useListAdd(this);
+
+  scope->extend(this);
 }
 
 /************************************* | **************************************
@@ -315,90 +315,10 @@ bool UseStmt::isValid(Expr* expr) const {
 
 void UseStmt::validateList() {
   if (isPlainUse() == false) {
-    BaseAST* scopeToUse = getSearchScope();
-
     noRepeats();
 
-    validateNamed  (scopeToUse);
-    validateRenamed(scopeToUse);
-  }
-}
-
-// Should only be called when the mod field has been resolved
-BaseAST* UseStmt::getSearchScope() const {
-  BaseAST* retval = NULL;
-
-  if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* module = toModuleSymbol(se->symbol())) {
-      retval = module->block;
-
-    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->symbol())) {
-      retval = enumTypeSym;
-
-    } else {
-      INT_FATAL(this, "Use invalid, not applied to module or enum");
-    }
-
-  } else {
-    INT_FATAL(this, "getSearchScope called before this use was processed");
-  }
-
-  return retval;
-}
-
-void UseStmt::validateNamed(BaseAST* scopeToUse) {
-  for_vector(const char, name, named) {
-    if (name[0] != '\0') {
-      std::vector<Symbol*> symbols;
-
-      lookup(name, scopeToUse, symbols);
-
-      if (symbols.size() == 0) {
-        USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, no known '%s'",
-                       (except == true) ? "except" : "only",
-                       name);
-
-      } else {
-        for_vector(Symbol, sym, symbols) {
-          if (sym->isVisible(this) == false) {
-            USR_FATAL_CONT(this,
-                           "Bad identifier in '%s' clause, '%s' is private",
-                           (except == true) ? "except" : "only",
-                           name);
-          }
-
-          createRelatedNames(sym);
-        }
-      }
-    }
-  }
-}
-
-void UseStmt::validateRenamed(BaseAST* scopeToUse) {
-  for (std::map<const char*, const char*>::iterator it = renamed.begin();
-       it != renamed.end();
-       ++it) {
-    if (Symbol* sym = lookup(it->second, scopeToUse)) {
-      if (sym->isVisible(this) == true) {
-        createRelatedNames(sym);
-
-      } else {
-        USR_FATAL_CONT(this,
-                       "Bad identifier in rename, '%s' is private",
-                       it->second);
-      }
-
-    } else {
-      SymExpr* se = toSymExpr(src);
-
-      INT_ASSERT(se);
-
-      USR_FATAL_CONT(this,
-                     "Bad identifier in rename, no known '%s' in '%s'",
-                     it->second,
-                     se->symbol()->name);
-    }
+    validateNamed();
+    validateRenamed();
   }
 }
 
@@ -465,6 +385,88 @@ void UseStmt::noRepeats() const {
       }
     }
   }
+}
+
+void UseStmt::validateNamed() {
+  BaseAST* scopeToUse = getSearchScope();
+
+  for_vector(const char, name, named) {
+    if (name[0] != '\0') {
+      std::vector<Symbol*> symbols;
+
+      lookup(name, scopeToUse, symbols);
+
+      if (symbols.size() == 0) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in '%s' clause, no known '%s'",
+                       (except == true) ? "except" : "only",
+                       name);
+
+      } else {
+        for_vector(Symbol, sym, symbols) {
+          if (sym->isVisible(this) == false) {
+            USR_FATAL_CONT(this,
+                           "Bad identifier in '%s' clause, '%s' is private",
+                           (except == true) ? "except" : "only",
+                           name);
+          }
+
+          createRelatedNames(sym);
+        }
+      }
+    }
+  }
+}
+
+void UseStmt::validateRenamed() {
+  BaseAST* scopeToUse = getSearchScope();
+
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end();
+       ++it) {
+    if (Symbol* sym = lookup(it->second, scopeToUse)) {
+      if (sym->isVisible(this) == true) {
+        createRelatedNames(sym);
+
+      } else {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in rename, '%s' is private",
+                       it->second);
+      }
+
+    } else {
+      SymExpr* se = toSymExpr(src);
+
+      INT_ASSERT(se);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+    }
+  }
+}
+
+// Should only be called when the mod field has been resolved
+BaseAST* UseStmt::getSearchScope() const {
+  BaseAST* retval = NULL;
+
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* module = toModuleSymbol(se->symbol())) {
+      retval = module->block;
+
+    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->symbol())) {
+      retval = enumTypeSym;
+
+    } else {
+      INT_FATAL(this, "Use invalid, not applied to module or enum");
+    }
+
+  } else {
+    INT_FATAL(this, "getSearchScope called before this use was processed");
+  }
+
+  return retval;
 }
 
 void UseStmt::createRelatedNames(Symbol* maybeType) {

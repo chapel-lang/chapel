@@ -334,6 +334,33 @@ int ResolveScope::numBindings() const {
   return retval;
 }
 
+BlockStmt* ResolveScope::asBlockStmt() const {
+  BlockStmt* retval = NULL;
+
+  if (ModuleSymbol* modSym = toModuleSymbol(mAstRef)) {
+    retval = modSym->block;
+
+  } else if (BlockStmt* block = toBlockStmt(mAstRef)) {
+    retval = block;
+
+  } else {
+    retval = NULL;
+  }
+
+  return retval;
+}
+
+ModuleSymbol* ResolveScope::enclosingModule() const {
+  const ResolveScope* ptr    = NULL;
+  ModuleSymbol*       retval = NULL;
+
+  for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+    retval = toModuleSymbol(ptr->mAstRef);
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -380,6 +407,12 @@ bool ResolveScope::extend(Symbol* newSym) {
   }
 
   return retval;
+}
+
+bool ResolveScope::extend(const UseStmt* stmt) {
+  mUseList.push_back(stmt);
+
+  return true;
 }
 
 bool ResolveScope::isAggregateTypeAndConstructor(Symbol* sym0, Symbol* sym1) {
