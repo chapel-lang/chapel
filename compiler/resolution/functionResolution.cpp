@@ -3289,11 +3289,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
         // If the first actual is an instance of dtMethodToken and the call is
         // to "init" of a generic record that defined initializers
         resolveInitializer(call);
-        NamedExpr* named = toNamedExpr(call->get(2));
-        INT_ASSERT(named);
-        SymExpr* namedSe = toSymExpr(named->actual);
-        INT_ASSERT(namedSe);
-        namedSe->symbol()->type = call->resolvedFunction()->_this->type;
         return call->resolvedFunction();
       }
     }
