@@ -372,6 +372,14 @@ void resolveInitializer(CallExpr* call) {
 
   resolveMatch(call->resolvedFunction());
 
+  if (isGenericRecord(call->get(2)->typeInfo())) {
+    NamedExpr* named = toNamedExpr(call->get(2));
+    INT_ASSERT(named);
+    SymExpr* namedSe = toSymExpr(named->actual);
+    INT_ASSERT(namedSe);
+    namedSe->symbol()->type = call->resolvedFunction()->_this->type;
+  }
+
   callStack.pop();
 }
 
