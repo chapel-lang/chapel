@@ -259,7 +259,7 @@ static void addToSymbolTable() {
     }
   }
 
-  // This would be the place to handle use statments but
+  // This would be the place to handle use statements but
   // skipping for now as chpl__Program does not have any.
 
   // Now recurse on every top-level module
