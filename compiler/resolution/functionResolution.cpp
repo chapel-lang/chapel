@@ -6840,6 +6840,11 @@ static void cleanupVoidVarsAndFields() {
         fn->retType = dtVoid;
       }
     }
+    if (fn->_this) {
+      if (fn->_this->type == dtVoid || isVoidTupleType(fn->_this->type)) {
+        fn->_this = NULL;
+      }
+    }
   }
 
   // Set for loop index variables that are void to the global void value
