@@ -21,6 +21,7 @@
 #define _RESOLVE_SCOPE_H_
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -79,11 +80,19 @@ public:
 
   Symbol*               lookupNameLocally(const char* name)              const;
 
+  // Support for UseStmt with only/except
+  // Has the potential to return multiple fields
+  // Includes public and private fields
+  void                  getFields(const char*           fieldName,
+                                  std::vector<Symbol*>& symbols)         const;
+
   void                  describe()                                       const;
 
 private:
   typedef std::vector<const UseStmt*>    UseList;
   typedef std::vector<Symbol*>           SymList;
+
+  typedef std::set<const ResolveScope*>& ScopeSet;
 
   typedef std::map<const char*, Symbol*> Bindings;
   typedef std::map<Symbol*,     UseList> UseMap;
@@ -109,6 +118,13 @@ private:
   Symbol*               getField(const char* fieldName)                  const;
 
   Symbol*               getFieldLocally(const char* fieldName)           const;
+
+  void                  getFields(const char* fieldName,
+                                  ScopeSet&   visited,
+                                  SymList&    symbols)                   const;
+
+  bool                  getFieldsWithUses(const char* fieldName,
+                                          SymList&    symbols)           const;
 
   void                  buildBreadthFirstUseList(UseList& useList)       const;
 

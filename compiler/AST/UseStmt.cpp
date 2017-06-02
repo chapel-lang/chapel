@@ -384,13 +384,14 @@ void UseStmt::noRepeats() const {
 }
 
 void UseStmt::validateNamed() {
-  BaseAST* scopeToUse = getSearchScope();
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
 
   for_vector(const char, name, named) {
     if (name[0] != '\0') {
       std::vector<Symbol*> symbols;
 
-      lookup(name, scopeToUse, symbols);
+      scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
         USR_FATAL_CONT(this,
@@ -400,7 +401,7 @@ void UseStmt::validateNamed() {
 
       } else {
         for_vector(Symbol, sym, symbols) {
-          if (sym->isVisible(this) == false) {
+          if (sym->hasFlag(FLAG_PRIVATE) == true) {
             USR_FATAL_CONT(this,
                            "Bad identifier in '%s' clause, '%s' is private",
                            (except == true) ? "except" : "only",
@@ -417,11 +418,26 @@ void UseStmt::validateNamed() {
 void UseStmt::validateRenamed() {
   std::map<const char*, const char*>::iterator it;
 
-  BaseAST* scopeToUse = getSearchScope();
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
 
   for (it = renamed.begin(); it != renamed.end(); ++it) {
-    if (Symbol* sym = lookup(it->second, scopeToUse)) {
-      if (sym->isVisible(this) == true) {
+    std::vector<Symbol*> symbols;
+
+    scope->getFields(it->second, symbols);
+
+    if (symbols.size() == 0) {
+      SymExpr* se = toSymExpr(src);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (symbols.size() == 1) {
+      Symbol* sym = symbols[0];
+
+      if (sym->hasFlag(FLAG_PRIVATE) == false) {
         createRelatedNames(sym);
 
       } else {
@@ -431,14 +447,7 @@ void UseStmt::validateRenamed() {
       }
 
     } else {
-      SymExpr* se = toSymExpr(src);
-
-      INT_ASSERT(se);
-
-      USR_FATAL_CONT(this,
-                     "Bad identifier in rename, no known '%s' in '%s'",
-                     it->second,
-                     se->symbol()->name);
+      INT_ASSERT(false);
     }
   }
 }
@@ -730,6 +739,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
 
           } else {
             std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+
             if (it != renamed.end()) {
               // We found this symbol in the renamed list and the outer 'only'
               // list so add it to the new renamed list.
