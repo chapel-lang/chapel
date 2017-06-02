@@ -26,12 +26,14 @@
 
 class BaseAST;
 class BlockStmt;
+class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
 class ModuleSymbol;
 class Symbol;
 class TypeSymbol;
+class UnresolvedSymExpr;
 class UseStmt;
 
 // A preliminary version of a class to support the scope resolve pass
@@ -73,15 +75,18 @@ public:
 
   bool                  extend(const UseStmt* stmt);
 
-  Symbol*               getUsedSymbol(Expr* expr)                        const;
+  Symbol*               lookup(Expr*       expr)                         const;
 
   Symbol*               lookup(const char* name)                         const;
 
   void                  describe()                                       const;
 
 private:
-  typedef std::map<const char*, Symbol*>  Bindings;
-  typedef std::vector<const UseStmt*>     UseList;
+  typedef std::vector<const UseStmt*>    UseList;
+  typedef std::vector<Symbol*>           SymList;
+
+  typedef std::map<const char*, Symbol*> Bindings;
+  typedef std::map<Symbol*,     UseList> UseMap;
 
                         ResolveScope();
 
@@ -92,6 +97,23 @@ private:
 
   bool                  isSymbolAndMethod(Symbol* sym0,
                                           Symbol* sym1);
+
+  Symbol*               lookup(UnresolvedSymExpr* usymExpr)              const;
+
+  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr)      const;
+
+  bool                  isRepeat(Symbol* toAdd, const SymList& symbols)  const;
+
+  Symbol*               getFieldFromPath(CallExpr* dottedExpr)           const;
+
+  void                  buildBreadthFirstUseList(UseList& useList)       const;
+
+  void                  buildBreadthFirstUseList(UseList& modules,
+                                                 UseList& current,
+                                                 UseMap&  visited)       const;
+
+   bool                 skipUse(UseMap&        visited,
+                                const UseStmt* current)                  const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;
