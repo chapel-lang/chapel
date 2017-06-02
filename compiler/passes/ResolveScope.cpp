@@ -646,6 +646,81 @@ Symbol* ResolveScope::lookupNameLocally(const char* name) const {
 
 /************************************* | **************************************
 *                                                                             *
+* Entry point for UseStmt to check except/only lists.                         *
+*                                                                             *
+************************************** | *************************************/
+
+void ResolveScope::getFields(const char* fieldName,
+                             SymList&    symbols) const {
+  std::set<const ResolveScope*> visited;
+
+  getFields(fieldName, visited, symbols);
+}
+
+void ResolveScope::getFields(const char* fieldName,
+                             ScopeSet&   visited,
+                             SymList&    symbols) const {
+  if (visited.find(this) == visited.end()) {
+    if (getFieldsWithUses(fieldName, symbols) == true) {
+
+    } else if (isModuleSymbol(mAstRef) == true) {
+      if (mParent != NULL) {
+        visited.insert(this);
+
+        mParent->getFields(fieldName, visited, symbols);
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+bool ResolveScope::getFieldsWithUses(const char* fieldName,
+                                     SymList&    symbols) const {
+  if (Symbol* sym = lookupNameLocally(fieldName)) {
+    symbols.push_back(sym);
+
+  } else {
+    if (mUseList.size() > 0) {
+      std::vector<const UseStmt*> useList = mUseList;
+
+      buildBreadthFirstUseList(useList);
+
+      // Do not use for_vector(); it terminates on a NULL
+      for (size_t i = 0; i < useList.size(); i++) {
+        const UseStmt* use = useList[i];
+
+        if (use != NULL) {
+          if (use->skipSymbolSearch(fieldName) == false) {
+            BaseAST*    scopeToUse = use->getSearchScope();
+            const char* nameToUse  = NULL;
+
+            if (use->isARename(fieldName) == true) {
+              nameToUse = use->getRename(fieldName);
+            } else {
+              nameToUse = fieldName;
+            }
+
+            if (ResolveScope* next = getScopeFor(scopeToUse)) {
+              if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
+                symbols.push_back(sym);
+              }
+            }
+          }
+
+        } else if (symbols.size() > 0) {
+          break;
+        }
+      }
+    }
+  }
+
+  return (symbols.size() != 0) ? true : false;
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
