@@ -1002,7 +1002,7 @@ static void resolveModuleCall(CallExpr* call) {
         enclosingModule->moduleUseAdd(mod);
 
         if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookup(mbrName);
+          sym = scope->lookupNameLocally(mbrName);
         }
 
         if (sym != NULL) {
@@ -1464,7 +1464,7 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   Symbol* retval = NULL;
 
   if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
-    if (Symbol* sym = scope->lookup(name)) {
+    if (Symbol* sym = scope->lookupNameLocally(name)) {
       if (sym->hasFlag(FLAG_METHOD) == false) {
         retval = sym;
 
