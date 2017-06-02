@@ -371,7 +371,7 @@ bool ResolveScope::extend(Symbol* newSym) {
   const char* name   = newSym->name;
   bool        retval = false;
 
-  if (Symbol* oldSym = lookup(name)) {
+  if (Symbol* oldSym = lookupNameLocally(name)) {
     FnSymbol* oldFn = toFnSymbol(oldSym);
     FnSymbol* newFn = toFnSymbol(newSym);
 
@@ -457,7 +457,7 @@ Symbol* ResolveScope::lookup(Expr* expr) const {
   if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
     retval = lookup(uSym);
 
-  // A  dotted reference (<object>.<field>) to an object field
+  // A dotted reference (<object>.<field>) to a field in an object
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamed(".") == true) {
       retval = getFieldFromPath(call);
@@ -492,7 +492,7 @@ Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr) const {
 
 Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
   const char* name   = usymExpr->unresolved;
-  Symbol*     retval = lookup(name);
+  Symbol*     retval = lookupNameLocally(name);
 
   if (retval == NULL && mUseList.size() > 0) {
     UseList useList = mUseList;
@@ -512,7 +512,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
           }
 
           if (ResolveScope* next = getScopeFor(scopeToUse)) {
-            if (Symbol* sym = next->lookup(nameToUse)) {
+            if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
               if (sym->hasFlag(FLAG_METHOD) == false &&
                   isRepeat(sym, symbols)    == false) {
                 symbols.push_back(sym);
@@ -559,22 +559,27 @@ bool ResolveScope::isRepeat(Symbol* toAdd, const SymList& symbols) const {
 *                                                                             *
 ************************************** | *************************************/
 
-#include "AstDumpToNode.h"
-
 Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr) const {
   Expr*   lhsExpr = dottedExpr->get(1);
   Symbol* retval  = NULL;
 
-  if (ModuleSymbol* module = toModuleSymbol(lookup(lhsExpr))) {
-    if (SymExpr* rhs = toSymExpr(dottedExpr->get(2))) {
-      const char* rhsName = NULL;
+  if (Symbol* symbol = lookup(lhsExpr)) {
+    if (ModuleSymbol* module = toModuleSymbol(symbol)) {
+      if (SymExpr* rhs = toSymExpr(dottedExpr->get(2))) {
+        const char* rhsName = NULL;
 
-      if (get_string(rhs, &rhsName) == true) {
-        if (Symbol* symbol = ::lookup(rhsName, module->block)) {
-          retval = symbol;
+        if (get_string(rhs, &rhsName) == true) {
+          ResolveScope* scope = getScopeFor(module->block);
+
+          if (Symbol* symbol = scope->getField(rhsName)) {
+            retval = symbol;
+
+          } else {
+            USR_FATAL(dottedExpr, "Cannot find field '%s'", rhsName);
+          }
 
         } else {
-          USR_FATAL(dottedExpr, "Cannot find field '%s'", rhsName);
+          INT_FATAL(dottedExpr, "Bad qualified name");
         }
 
       } else {
@@ -582,15 +587,40 @@ Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr) const {
       }
 
     } else {
-      INT_FATAL(dottedExpr, "Bad qualified name");
+      INT_ASSERT(false);
     }
 
   } else {
     if (UnresolvedSymExpr* obj = toUnresolvedSymExpr(lhsExpr)) {
       USR_FATAL(dottedExpr, "Cannot find object '%s'", obj->unresolved);
+
     } else {
       USR_FATAL(dottedExpr, "Cannot find object");
     }
+  }
+
+  return retval;
+}
+
+// 2017/06/02: Future updates will avoid returning PRIVATE fields
+Symbol* ResolveScope::getField(const char* fieldName) const {
+  const ResolveScope* ptr    = this;
+  Symbol*             retval = NULL;
+
+  for ( ; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+    retval = ptr->getFieldLocally(fieldName);
+  }
+
+  return retval;
+}
+
+// 2017/06/02: Future updates will avoid returning PRIVATE fields
+Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
+  Bindings::const_iterator it     = mBindings.find(fieldName);
+  Symbol*                  retval = NULL;
+
+  if (it != mBindings.end()) {
+    retval = it->second;
   }
 
   return retval;
@@ -602,7 +632,8 @@ Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr) const {
 *                                                                             *
 ************************************** | *************************************/
 
-Symbol* ResolveScope::lookup(const char* name) const {
+// 2017/06/02 Used by scopeResolve.
+Symbol* ResolveScope::lookupNameLocally(const char* name) const {
   Bindings::const_iterator it     = mBindings.find(name);
   Symbol*                  retval = NULL;
 
@@ -611,26 +642,6 @@ Symbol* ResolveScope::lookup(const char* name) const {
   }
 
   return retval;
-}
-
-void ResolveScope::describe() const {
-  Bindings::const_iterator it;
-  const char*              blockParent = "";
-  int                      index       = 0;
-
-  if (BlockStmt* block = toBlockStmt(mAstRef)) {
-    blockParent = block->parentSymbol->name;
-  }
-
-  printf("#<ResolveScope %s %s\n", name().c_str(), blockParent);
-  printf("  Depth:       %19d\n", depth());
-  printf("  NumBindings: %19d\n", numBindings());
-
-  for (it = mBindings.begin(); it != mBindings.end(); it++, index++) {
-    printf("    %3d: %s\n", index, it->first);
-  }
-
-  printf(">\n\n");
 }
 
 /************************************* | **************************************
@@ -645,13 +656,13 @@ void ResolveScope::buildBreadthFirstUseList(UseList& useList) const {
   buildBreadthFirstUseList(useList, useList, visited);
 }
 
-void ResolveScope::buildBreadthFirstUseList(UseList& modules,
+void ResolveScope::buildBreadthFirstUseList(UseList& useList,
                                             UseList& current,
                                             UseMap&  visited) const {
-  ResolveScope::UseList next;
+  UseList next;
 
   // use NULL as a sentinel to identify modules of equal depth
-  modules.push_back(NULL);
+  useList.push_back(NULL);
 
   for (size_t i = 0; i < current.size(); i++) {
     const UseStmt* source = current[i];
@@ -682,7 +693,7 @@ void ResolveScope::buildBreadthFirstUseList(UseList& modules,
               if (useToAdd                   != NULL &&
                   skipUse(visited, useToAdd) == false) {
                 next.push_back(useToAdd);
-                modules.push_back(useToAdd);
+                useList.push_back(useToAdd);
               }
 
               // If applyOuterUse returned NULL, the number of symbols
@@ -702,16 +713,16 @@ void ResolveScope::buildBreadthFirstUseList(UseList& modules,
   }
 
   if (next.size() > 0) {
-    buildBreadthFirstUseList(modules, next, visited);
+    buildBreadthFirstUseList(useList, next, visited);
   }
 }
 
 // Returns true if we should skip looking at this use, because the symbols it
 // provides have already been covered by a previous use.
 bool ResolveScope::skipUse(UseMap& visited, const UseStmt* current) const {
-  SymExpr*                    useSE  = toSymExpr(current->src);
-  std::vector<const UseStmt*> vec    = visited[useSE->symbol()];
-  bool                        retval = false;
+  SymExpr* useSE  = toSymExpr(current->src);
+  UseList  vec    = visited[useSE->symbol()];
+  bool     retval = false;
 
   for (size_t i = 0; i < vec.size() && retval == false; i++) {
     const UseStmt* use = vec[i];
@@ -724,3 +735,28 @@ bool ResolveScope::skipUse(UseMap& visited, const UseStmt* current) const {
   return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void ResolveScope::describe() const {
+  Bindings::const_iterator it;
+  const char*              blockParent = "";
+  int                      index       = 0;
+
+  if (BlockStmt* block = toBlockStmt(mAstRef)) {
+    blockParent = block->parentSymbol->name;
+  }
+
+  printf("#<ResolveScope %s %s\n", name().c_str(), blockParent);
+  printf("  Depth:       %19d\n", depth());
+  printf("  NumBindings: %19d\n", numBindings());
+
+  for (it = mBindings.begin(); it != mBindings.end(); it++, index++) {
+    printf("    %3d: %s\n", index, it->first);
+  }
+
+  printf(">\n\n");
+}

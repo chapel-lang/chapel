@@ -77,7 +77,7 @@ public:
 
   Symbol*               lookup(Expr*       expr)                         const;
 
-  Symbol*               lookup(const char* name)                         const;
+  Symbol*               lookupNameLocally(const char* name)              const;
 
   void                  describe()                                       const;
 
@@ -105,6 +105,10 @@ private:
   bool                  isRepeat(Symbol* toAdd, const SymList& symbols)  const;
 
   Symbol*               getFieldFromPath(CallExpr* dottedExpr)           const;
+
+  Symbol*               getField(const char* fieldName)                  const;
+
+  Symbol*               getFieldLocally(const char* fieldName)           const;
 
   void                  buildBreadthFirstUseList(UseList& useList)       const;
 
