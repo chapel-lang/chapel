@@ -444,56 +444,153 @@ bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
 
 /************************************* | **************************************
 *                                                                             *
-* Return the module or enum imported by a use call.                           *
-* The module could be nested: e.g. "use outermost.middle.innermost;"          *
+* Lookup an object based on an expression i.e. <name>                         *
+*   1. <name> is a simple lexically scoped name                               *
+*   2. <name> is a dotted path to a field in some object                      *
 *                                                                             *
 ************************************** | *************************************/
 
-Symbol* ResolveScope::getUsedSymbol(Expr* expr) const {
+Symbol* ResolveScope::lookup(Expr* expr) const {
   Symbol* retval = NULL;
 
-  // 1) The common case of                'use <name>;'
-  // 2) Also invoked when recursing for   'use <name>.<name>;'
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    //
-    // This case handles the (common) case that we're 'use'ing a
-    // symbol that we have not yet resolved.
-    //
-    if (Symbol* symbol = ::lookup(sym->unresolved, expr)) {
-      retval = symbol;
+  // A lexical lookup from the current scope
+  if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
+    retval = lookup(uSym);
 
-    } else {
-      USR_FATAL(expr, "Cannot find module or enum '%s'", sym->unresolved);
-    }
-
-  // This handles the case of 'use <symbol>.<symbol>'
+  // A  dotted reference (<object>.<field>) to an object field
   } else if (CallExpr* call = toCallExpr(expr)) {
-    if (ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1)))) {
-      if (SymExpr* rhs = toSymExpr(call->get(2))) {
-        const char* rhsName = NULL;
-
-        if (get_string(rhs, &rhsName) == true) {
-          if (Symbol* symbol = ::lookup(rhsName, lhs->block)) {
-            retval = symbol;
-
-          } else {
-            USR_FATAL(expr, "Cannot find module '%s'", rhsName);
-          }
-
-        } else {
-          INT_FATAL(expr, "Bad qualified name");
-        }
-
-      } else {
-        INT_FATAL(expr, "Bad qualified name");
-      }
+    if (call->isNamed(".") == true) {
+      retval = getFieldFromPath(call);
 
     } else {
-      USR_FATAL(expr, "Cannot find module");
+      INT_FATAL(expr, "Not a dotted expr");
     }
 
   } else {
-    INT_FATAL(expr, "Bad qualified name");
+    INT_FATAL(expr, "Unsupported expr");
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Perform a lexical lookup for a name starting from a specific scope          *
+*                                                                             *
+************************************** | *************************************/
+
+Symbol* ResolveScope::lookup(UnresolvedSymExpr* usymExpr) const {
+  const ResolveScope* ptr    = NULL;
+  Symbol*             retval = NULL;
+
+  for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+    retval = ptr->lookupWithUses(usymExpr);
+  }
+
+  return retval;
+}
+
+Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
+  const char* name   = usymExpr->unresolved;
+  Symbol*     retval = lookup(name);
+
+  if (retval == NULL && mUseList.size() > 0) {
+    UseList useList = mUseList;
+    SymList symbols;
+
+    buildBreadthFirstUseList(useList);
+
+    // Do not use for_vector(); it terminates on a NULL
+    for (size_t i = 0; i < useList.size(); i++) {
+      if (const UseStmt* use = useList[i]) {
+        if (use->skipSymbolSearch(name) == false) {
+          BaseAST*    scopeToUse = use->getSearchScope();
+          const char* nameToUse  = name;
+
+          if (use->isARename(name) == true) {
+            nameToUse = use->getRename(name);
+          }
+
+          if (ResolveScope* next = getScopeFor(scopeToUse)) {
+            if (Symbol* sym = next->lookup(nameToUse)) {
+              if (sym->hasFlag(FLAG_METHOD) == false &&
+                  isRepeat(sym, symbols)    == false) {
+                symbols.push_back(sym);
+              }
+            }
+          }
+        }
+
+      // Found a NULL sentinel.  Break if there are results.
+      } else {
+        if (symbols.size() > 0) {
+          break;
+        }
+      }
+    }
+
+    if (symbols.size() == 1) {
+      retval = symbols[0];
+    }
+  }
+
+  return retval;
+}
+
+// Returns true if the symbol is present in the vector, false otherwise
+bool ResolveScope::isRepeat(Symbol* toAdd, const SymList& symbols) const {
+  SymList::const_iterator it;
+  bool                    retval = false;
+
+  for (it = symbols.begin(); it != symbols.end() && retval == false; ++it) {
+    if (*it == toAdd) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* The name is a dotted expression (i.e. <objectExpr>.<fieldName>).            *
+*                                                                             *
+* This is a qualified access to a field defined within the object.            *
+*                                                                             *
+************************************** | *************************************/
+
+#include "AstDumpToNode.h"
+
+Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr) const {
+  Expr*   lhsExpr = dottedExpr->get(1);
+  Symbol* retval  = NULL;
+
+  if (ModuleSymbol* module = toModuleSymbol(lookup(lhsExpr))) {
+    if (SymExpr* rhs = toSymExpr(dottedExpr->get(2))) {
+      const char* rhsName = NULL;
+
+      if (get_string(rhs, &rhsName) == true) {
+        if (Symbol* symbol = ::lookup(rhsName, module->block)) {
+          retval = symbol;
+
+        } else {
+          USR_FATAL(dottedExpr, "Cannot find field '%s'", rhsName);
+        }
+
+      } else {
+        INT_FATAL(dottedExpr, "Bad qualified name");
+      }
+
+    } else {
+      INT_FATAL(dottedExpr, "Bad qualified name");
+    }
+
+  } else {
+    if (UnresolvedSymExpr* obj = toUnresolvedSymExpr(lhsExpr)) {
+      USR_FATAL(dottedExpr, "Cannot find object '%s'", obj->unresolved);
+    } else {
+      USR_FATAL(dottedExpr, "Cannot find object");
+    }
   }
 
   return retval;
@@ -506,8 +603,8 @@ Symbol* ResolveScope::getUsedSymbol(Expr* expr) const {
 ************************************** | *************************************/
 
 Symbol* ResolveScope::lookup(const char* name) const {
-  std::map<const char*, Symbol*>::const_iterator it     = mBindings.find(name);
-  Symbol*                                        retval = NULL;
+  Bindings::const_iterator it     = mBindings.find(name);
+  Symbol*                  retval = NULL;
 
   if (it != mBindings.end()) {
     retval = it->second;
@@ -535,3 +632,95 @@ void ResolveScope::describe() const {
 
   printf(">\n\n");
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void ResolveScope::buildBreadthFirstUseList(UseList& useList) const {
+  UseMap visited;
+
+  buildBreadthFirstUseList(useList, useList, visited);
+}
+
+void ResolveScope::buildBreadthFirstUseList(UseList& modules,
+                                            UseList& current,
+                                            UseMap&  visited) const {
+  ResolveScope::UseList next;
+
+  // use NULL as a sentinel to identify modules of equal depth
+  modules.push_back(NULL);
+
+  for (size_t i = 0; i < current.size(); i++) {
+    const UseStmt* source = current[i];
+
+    if (source == NULL) {
+      break;
+
+    } else {
+      SymExpr* se = toSymExpr(source->src);
+
+      INT_ASSERT(se);
+
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+        if (mod->block->useList != NULL) {
+          for_actuals(expr, mod->block->useList) {
+            UseStmt* use      = toUseStmt(expr);
+            SymExpr* useSE    = toSymExpr(use->src);
+            UseStmt* useToAdd = NULL;
+
+            if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
+              // Uses of private modules are not transitive -
+              // the symbols in the private modules are only visible to
+              // itself and its immediate parent.  Therefore, if the symbol
+              // is private, we will not traverse it further and will merely
+              // add it to the alreadySeen map.
+              useToAdd = use->applyOuterUse(source);
+
+              if (useToAdd                   != NULL &&
+                  skipUse(visited, useToAdd) == false) {
+                next.push_back(useToAdd);
+                modules.push_back(useToAdd);
+              }
+
+              // If applyOuterUse returned NULL, the number of symbols
+              // that could be provided from this use was 0,
+              // so it didn't need to be added to the alreadySeen map.
+              if (useToAdd != NULL) {
+                visited[useSE->symbol()].push_back(useToAdd);
+              }
+
+            } else {
+              visited[useSE->symbol()].push_back(use);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (next.size() > 0) {
+    buildBreadthFirstUseList(modules, next, visited);
+  }
+}
+
+// Returns true if we should skip looking at this use, because the symbols it
+// provides have already been covered by a previous use.
+bool ResolveScope::skipUse(UseMap& visited, const UseStmt* current) const {
+  SymExpr*                    useSE  = toSymExpr(current->src);
+  std::vector<const UseStmt*> vec    = visited[useSE->symbol()];
+  bool                        retval = false;
+
+  for (size_t i = 0; i < vec.size() && retval == false; i++) {
+    const UseStmt* use = vec[i];
+
+    if (current->providesNewSymbols(use) == false) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
