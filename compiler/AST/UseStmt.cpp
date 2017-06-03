@@ -323,64 +323,60 @@ void UseStmt::validateList() {
 }
 
 void UseStmt::noRepeats() const {
-  for (std::vector<const char*>::const_iterator it = named.begin();
-       it != named.end();
-       ++it) {
-    std::vector<const char*>::const_iterator next = it;
+  std::vector<const char*>::const_iterator           it1;
+  std::map<const char*, const char*>::const_iterator it2;
+
+  for (it1 = named.begin(); it1 != named.end(); ++it1) {
+    std::vector<const char*>::const_iterator           next = it1;
+    std::map<const char*, const char*>::const_iterator rit;
 
     for (++next; next != named.end(); ++next) {
       // Check rest of named for the same name
-      if (strcmp(*it, *next) == 0) {
-        USR_WARN(this, "identifier '%s' is repeated", *it);
+      if (strcmp(*it1, *next) == 0) {
+        USR_WARN(this, "identifier '%s' is repeated", *it1);
       }
     }
 
-    for (std::map<const char*, const char*>::const_iterator
-           renamedIt = renamed.begin();
-         renamedIt != renamed.end();
-         ++renamedIt) {
-
-      if (strcmp(*it, renamedIt->second) == 0) {
+    for (rit = renamed.begin(); rit != renamed.end(); ++rit) {
+      if (strcmp(*it1, rit->second) == 0) {
         // This identifier is also used as the old name for a renaming.
         // Probably a mistake on the user's part, but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", *it);
+        USR_WARN(this, "identifier '%s' is repeated", *it1);
       }
 
-      if (strcmp(*it, renamedIt->first) == 0) {
+      if (strcmp(*it1, rit->first) == 0) {
         // The user attempted to rename a symbol to a name that was already
         // in the 'only' list.  This causes a naming conflict.
-        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it);
+        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it1);
       }
     }
   }
 
-  for (std::map<const char*, const char*>::const_iterator it = renamed.begin();
-       it != renamed.end();
-       ++it) {
-    std::map<const char*, const char*>::const_iterator next = it;
+  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
+    std::map<const char*, const char*>::const_iterator next = it2;
 
     for (++next; next != renamed.end(); ++next) {
-      if (strcmp(it->second, next->second) == 0) {
+      if (strcmp(it2->second, next->second) == 0) {
         // Renamed this variable twice.  Probably a mistake on the user's part,
         // but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", it->second);
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
       }
 
-      if (strcmp(it->second, next->first) == 0) {
+      if (strcmp(it2->second, next->first) == 0) {
         // This name is the old_name in one rename and the new_name in another
         // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it->second);
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
         USR_PRINT("Did you mean to rename '%s' to '%s'?",
                   next->second,
-                  it->first);
+                  it2->first);
       }
 
-      if (strcmp(it->first, next->second) == 0) {
+      if (strcmp(it2->first, next->second) == 0) {
         // This name is the old_name in one rename and the new_name in another
         // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it->first);
+        USR_WARN(this, "identifier '%s' is repeated", it2->first);
         USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  it->second,
+                  it2->second,
                   next->first);
       }
     }
@@ -388,13 +384,14 @@ void UseStmt::noRepeats() const {
 }
 
 void UseStmt::validateNamed() {
-  BaseAST* scopeToUse = getSearchScope();
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
 
   for_vector(const char, name, named) {
     if (name[0] != '\0') {
       std::vector<Symbol*> symbols;
 
-      lookup(name, scopeToUse, symbols);
+      scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
         USR_FATAL_CONT(this,
@@ -404,7 +401,7 @@ void UseStmt::validateNamed() {
 
       } else {
         for_vector(Symbol, sym, symbols) {
-          if (sym->isVisible(this) == false) {
+          if (sym->hasFlag(FLAG_PRIVATE) == true) {
             USR_FATAL_CONT(this,
                            "Bad identifier in '%s' clause, '%s' is private",
                            (except == true) ? "except" : "only",
@@ -419,13 +416,28 @@ void UseStmt::validateNamed() {
 }
 
 void UseStmt::validateRenamed() {
-  BaseAST* scopeToUse = getSearchScope();
+  std::map<const char*, const char*>::iterator it;
 
-  for (std::map<const char*, const char*>::iterator it = renamed.begin();
-       it != renamed.end();
-       ++it) {
-    if (Symbol* sym = lookup(it->second, scopeToUse)) {
-      if (sym->isVisible(this) == true) {
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+
+  for (it = renamed.begin(); it != renamed.end(); ++it) {
+    std::vector<Symbol*> symbols;
+
+    scope->getFields(it->second, symbols);
+
+    if (symbols.size() == 0) {
+      SymExpr* se = toSymExpr(src);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (symbols.size() == 1) {
+      Symbol* sym = symbols[0];
+
+      if (sym->hasFlag(FLAG_PRIVATE) == false) {
         createRelatedNames(sym);
 
       } else {
@@ -435,14 +447,7 @@ void UseStmt::validateRenamed() {
       }
 
     } else {
-      SymExpr* se = toSymExpr(src);
-
-      INT_ASSERT(se);
-
-      USR_FATAL_CONT(this,
-                     "Bad identifier in rename, no known '%s' in '%s'",
-                     it->second,
-                     se->symbol()->name);
+      INT_ASSERT(false);
     }
   }
 }
@@ -734,6 +739,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
 
           } else {
             std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+
             if (it != renamed.end()) {
               // We found this symbol in the renamed list and the outer 'only'
               // list so add it to the new renamed list.
@@ -750,7 +756,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
             newRenamed[it->first] = it->second;
           } else {
 
-            std::map<const char*, const char*>::iterator innerIt = renamed.find(it->second);
+            std::map<const char*, const char*>::const_iterator innerIt = renamed.find(it->second);
 
             if (innerIt != renamed.end()) {
               // We found this symbol in the renamed list and the outer
