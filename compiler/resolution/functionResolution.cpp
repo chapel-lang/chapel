@@ -37,6 +37,7 @@
 #include "ForLoop.h"
 #include "initializerResolution.h"
 #include "iterator.h"
+#include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
 #include "passes.h"
@@ -5947,9 +5948,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
-  // --ipe does not build a mainModule
-  if (mainModule)
-    resolveUses(mainModule);
+  resolveUses(ModuleSymbol::mainModule());
 
   // --ipe does not build printModuleInitModule
   if (printModuleInitModule)
