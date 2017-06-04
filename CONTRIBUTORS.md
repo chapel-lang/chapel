@@ -14,8 +14,9 @@ Contributors to the current release
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
-* David Keaton, [Cray Inc.]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
+* David Keaton, [Cray Inc.]
+* Sagar Khatri, individual contributor
 * Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
@@ -26,7 +27,6 @@ Contributors to the current release
 * Sriraj Paul, [Rice University]
 * Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
-* Sagar Khatri, individual contributor
 * Preston Sahabu, [Cray Inc.]
 * Marcos Cleison Silva Santana, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
@@ -52,6 +52,7 @@ Contributors to previous releases
 * Joel Denny, [ETI]
 * Roxana Diaconescu, [CalTech]
 * James Dinan, [Cray Inc.] / [The Ohio State University]
+* Thomas Van Doren, [Cray Inc.]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
@@ -65,10 +66,10 @@ Contributors to previous releases
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Mary Beth Hribar[*](#footnote), [Cray Inc.]
 * Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
+* Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * John Koenig, [Cray Inc.]
-* Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Matthew Lentz, [University of Maryland]
 * John Lewis, [Cray Inc.]
 * Juan Lopez, [Universidad de Málaga (University of Malaga)]
@@ -76,8 +77,8 @@ Contributors to previous releases
 * Deepak Majeti, individual contributor
 * Cory McCartan, [Cray Inc.]
 * Damian McGuckin, [Pacific Engineering Systems International]
-* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jun Nakashima, [University of Tokyo]
+* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jacob Nelson, [Cray Inc.] / [University of Washington]
 * Joshua Olson, individual contributor
 * Konstantina Panagiotopoulou, individual contributor
@@ -98,7 +99,6 @@ Contributors to previous releases
 * Chris Taylor, [DOD]
 * Akash Thorat, individual contributor
 * Jonathan Turner, [Cray Inc.] / [CU Boulder]
-* Thomas Van Doren, [Cray Inc.]
 * Chris Wailes, [Indiana University]
 * Wayne Wong, [Cray Inc.]
 * Joe Yan, [University of Maryland]
