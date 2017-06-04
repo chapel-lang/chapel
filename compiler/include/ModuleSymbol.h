@@ -28,6 +28,7 @@ enum ModTag {
   MOD_USER       // a module found along the user's search path
 };
 
+struct ArgumentDescription;
 struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
@@ -40,6 +41,8 @@ public:
 
   static ModuleSymbol*    mainModule();
 
+  static void             mainModuleNameSet(const ArgumentDescription* desc,
+                                            const char*                arg);
 private:
   static ModuleSymbol*    findMainModuleByName();
   static ModuleSymbol*    findMainModuleFromMainFunction();

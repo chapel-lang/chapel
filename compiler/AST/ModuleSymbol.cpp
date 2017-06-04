@@ -22,7 +22,6 @@
 
 #include "AstVisitor.h"
 #include "docsDriver.h"
-#include "driver.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -39,6 +38,8 @@ Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
 Vec<ModuleSymbol*>                 allModules;  // Contains all modules
 
 static ModuleSymbol*               sMainModule           = NULL;
+static char*                       sMainModuleName       = NULL;
+
 static std::vector<ModuleSymbol*>  sTopLevelModules;
 
 /************************************* | **************************************
@@ -85,6 +86,13 @@ const char* ModuleSymbol::modTagToString(ModTag modTag) {
 *                                                                             *
 ************************************** | *************************************/
 
+void ModuleSymbol::mainModuleNameSet(const ArgumentDescription* desc,
+                                     const char*                arg) {
+  sMainModuleName = (char*) malloc(strlen(arg) + 1);
+
+  strcpy(sMainModuleName, arg);
+}
+
 ModuleSymbol* ModuleSymbol::mainModule() {
   if (sMainModule == NULL) {
     sMainModule = findMainModuleByName();
@@ -106,15 +114,15 @@ ModuleSymbol* ModuleSymbol::mainModule() {
 ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   ModuleSymbol* retval = NULL;
 
-  if (mainModuleName[0] != '\0') {
+  if (sMainModuleName != NULL) {
     forv_Vec(ModuleSymbol, mod, userModules) {
-      if (strcmp(mod->name, mainModuleName) == 0) {
+      if (strcmp(mod->name, sMainModuleName) == 0) {
         retval = mod;
       }
     }
 
     if (retval == NULL) {
-      USR_FATAL("Couldn't find module %s", mainModuleName);
+      USR_FATAL("Couldn't find module %s", sMainModuleName);
     }
   }
 
