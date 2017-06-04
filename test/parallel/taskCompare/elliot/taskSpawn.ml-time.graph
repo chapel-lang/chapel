@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:
+graphkeys: coforall+on
+files: empty-coforall-on.dat
+graphtitle: Empty Remote Task Spawn Time
+ylabel: Time (seconds)
