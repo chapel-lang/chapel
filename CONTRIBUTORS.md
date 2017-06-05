@@ -10,6 +10,7 @@ Contributors to the current release
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Sung-Eun Choi, [Cray Inc.]
+* Marcos Cleison Silva Santana, individual contributor
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
@@ -28,7 +29,6 @@ Contributors to the current release
 * Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
 * Preston Sahabu, [Cray Inc.]
-* Marcos Cleison Silva Santana, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Greg Titus, [Cray Inc.]
 * Rob Upcraft, individual contributor
@@ -36,11 +36,13 @@ Contributors to the current release
 
 Contributors to previous releases
 ---------------------------------
+* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Rafael Asenjo, [Universidad de Málaga (University of Malaga)]
 * Matthew Baker, [ORNL]
 * Steve Balensiefer, [University of Washington]
 * Casey Battaglino, [Cray Inc.] / [Georgia Tech]
 * Ian Bertolacci, [Cray Inc.] / [Colorado State University]
+* Mary Beth Hribar[*](#footnote), [Cray Inc.]
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
@@ -52,10 +54,10 @@ Contributors to previous releases
 * Joel Denny, [ETI]
 * Roxana Diaconescu, [CalTech]
 * James Dinan, [Cray Inc.] / [The Ohio State University]
-* Thomas Van Doren, [Cray Inc.]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
+* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
@@ -64,12 +66,10 @@ Contributors to previous releases
 * Steven Hemmy, [Cray Inc.] / [University of Wisconsin]
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
-* Mary Beth Hribar[*](#footnote), [Cray Inc.]
-* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
-* Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * John Koenig, [Cray Inc.]
+* Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Matthew Lentz, [University of Maryland]
 * John Lewis, [Cray Inc.]
 * Juan Lopez, [Universidad de Málaga (University of Malaga)]
@@ -78,7 +78,6 @@ Contributors to previous releases
 * Cory McCartan, [Cray Inc.]
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Jun Nakashima, [University of Tokyo]
-* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jacob Nelson, [Cray Inc.] / [University of Washington]
 * Joshua Olson, individual contributor
 * Konstantina Panagiotopoulou, individual contributor
@@ -99,6 +98,7 @@ Contributors to previous releases
 * Chris Taylor, [DOD]
 * Akash Thorat, individual contributor
 * Jonathan Turner, [Cray Inc.] / [CU Boulder]
+* Thomas Van Doren, [Cray Inc.]
 * Chris Wailes, [Indiana University]
 * Wayne Wong, [Cray Inc.]
 * Joe Yan, [University of Maryland]
