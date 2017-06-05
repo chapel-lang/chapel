@@ -58,11 +58,10 @@ if blockSize == 0 {
   for niter in 0..#iterations {
     if iterations==1 || niter==1 then t.start();
 
-    forall (i,j) in matrixSpace {
-      for k in vecRange {
+    forall (i,j) in matrixSpace do
+      for k in vecRange do
         C[i,j] += A[i,k] * B[k,j];
-      }
-    }
+
   }
   t.stop();
 }
