@@ -462,7 +462,7 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
     if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
       if (isFullyWide(ts)) return; // Don't widen a field in a wide type.
 
-      if (sym->hasFlag(FLAG_LOCAL_FIELD) && !isClass(sym->type)) {
+      if (sym->hasFlag(FLAG_LOCAL_FIELD) && !(isClass(sym->type) || sym->type->symbol->hasFlag(FLAG_ARRAY))) {
         USR_WARN("\"local field\" pragma applied to non-class field %s (%s) in type %s\n",
             sym->cname, sym->type->symbol->cname, ts->cname);
       }
@@ -1277,8 +1277,10 @@ static void propagateField(Symbol* sym) {
               case PRIM_GET_SVEC_MEMBER:
                 // Currently we have to keep a 'local field' wide for
                 // compatibility with some codegen stuff.
-                debug(sym, "field causes _val of %s (%d) to be wide\n", lhs->cname, lhs->id);
-                setValWide(use, lhs);
+                if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
+                  debug(sym, "field causes _val of %s (%d) to be wide\n", lhs->cname, lhs->id);
+                  setValWide(use, lhs);
+                }
                 break;
 
               case PRIM_GET_MEMBER_VALUE:
