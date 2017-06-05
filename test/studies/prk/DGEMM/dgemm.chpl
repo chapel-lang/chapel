@@ -58,9 +58,10 @@ if blockSize == 0 {
   for niter in 0..#iterations {
     if iterations==1 || niter==1 then t.start();
 
-    // loop order is the same as the OpenMP version
-    forall (j,k,i) in {vecRange, vecRange, vecRange} {
-      C[i,j] += A[i,k] * B[k,j];
+    forall (i,j) in matrixSpace {
+      for k in vecRange {
+        C[i,j] += A[i,k] * B[k,j];
+      }
     }
   }
   t.stop();
