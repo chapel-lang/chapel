@@ -1284,8 +1284,6 @@ static void propagateField(Symbol* sym) {
             switch (call->primitive->tag) {
               case PRIM_GET_MEMBER:
               case PRIM_GET_SVEC_MEMBER:
-                // Currently we have to keep a 'local field' wide for
-                // compatibility with some codegen stuff.
                 if (fIgnoreLocalClasses || !isLocalField) {
                   debug(sym, "field causes _val of %s (%d) to be wide\n", lhs->cname, lhs->id);
                   setValWide(use, lhs);
