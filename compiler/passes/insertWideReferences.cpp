@@ -336,6 +336,14 @@ static bool typeCanBeWide(Symbol *sym) {
           ts->hasFlag(FLAG_DATA_CLASS));
 }
 
+static bool isValidLocalFieldType(BaseAST* bs) {
+  Type* ty = bs->typeInfo();
+  if (ty->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    ty = ty->getField("addr")->typeInfo();
+  }
+  return isClass(ty) || ty->symbol->hasFlag(FLAG_ARRAY);
+}
+
 static Symbol* getTupleField(CallExpr* call) {
   Symbol* field = getSvecSymbol(call);
 
@@ -462,7 +470,7 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
     if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
       if (isFullyWide(ts)) return; // Don't widen a field in a wide type.
 
-      if (sym->hasFlag(FLAG_LOCAL_FIELD) && !(isClass(sym->type) || sym->type->symbol->hasFlag(FLAG_ARRAY))) {
+      if (sym->hasFlag(FLAG_LOCAL_FIELD) && !isValidLocalFieldType(sym)) {
         USR_WARN("\"local field\" pragma applied to non-class field %s (%s) in type %s\n",
             sym->cname, sym->type->symbol->cname, ts->cname);
       }
@@ -1266,6 +1274,7 @@ static void propagateField(Symbol* sym) {
   debug(sym, "Propagating field\n");
 
   for_uses(use, useMap, sym) {
+    bool isLocalField = sym->hasFlag(FLAG_LOCAL_FIELD) && isValidLocalFieldType(sym);
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (parentCall->isPrimitive(PRIM_MOVE) ||
@@ -1277,7 +1286,7 @@ static void propagateField(Symbol* sym) {
               case PRIM_GET_SVEC_MEMBER:
                 // Currently we have to keep a 'local field' wide for
                 // compatibility with some codegen stuff.
-                if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
+                if (fIgnoreLocalClasses || !isLocalField) {
                   debug(sym, "field causes _val of %s (%d) to be wide\n", lhs->cname, lhs->id);
                   setValWide(use, lhs);
                 }
@@ -1285,7 +1294,7 @@ static void propagateField(Symbol* sym) {
 
               case PRIM_GET_MEMBER_VALUE:
               case PRIM_GET_SVEC_MEMBER_VALUE:
-                if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
+                if (fIgnoreLocalClasses || !isLocalField) {
                   DEBUG_PRINTF("\t"); debug(lhs, "widened gmv\n");
                   // this was matchWide(use, lhs); -- Ben, FIXME
                   matchWide(sym, lhs);
