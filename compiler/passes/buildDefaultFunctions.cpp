@@ -1279,6 +1279,12 @@ static void buildRecordQuery(AggregateType* ct,
                              PrimitiveTag   tag,
                              bool           named);
 
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named);
+
 static void buildDefaultOfFunction(AggregateType* ct) {
   if        (isNonGenericClassWithInitializers(ct)  == true) {
 
@@ -1350,31 +1356,9 @@ static void buildInitializerCall(AggregateType* ct,
 
     } else if (field->defPoint->exprType == NULL &&
                field->defPoint->init     == NULL) {
-      VarSymbol* tmp  = newTemp(field->name);
-      CallExpr*  init = NULL;
 
-      fn->insertAtHead(new DefExpr(tmp));
+      buildRecordQueryVarField(fn, arg, call, field, false);
 
-      VarSymbol* typeTmp   = newTemp("type_tmp");
-      VarSymbol* callTmp   = newTemp("call_tmp");
-      VarSymbol* name      = new_CStringSymbol(field->name);
-
-      CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
-      CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
-
-      typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-
-      fn->insertAtHead(new DefExpr(callTmp));
-      fn->insertAtHead(new DefExpr(typeTmp));
-
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
-
-      init = new CallExpr(PRIM_INIT, typeTmp);
-
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
-
-      call->insertAtTail(new SymExpr(tmp));
     }
   }
 
@@ -1408,38 +1392,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
       buildRecordQuery(ct, fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->defaultExpr == NULL) {
-      VarSymbol* tmp  = newTemp(formal->name);
-      CallExpr*  init = NULL;
-
-      fn->insertAtHead(new DefExpr(tmp));
-
-      if (formal->type                  != NULL  &&
-          formal->type                  != dtAny &&
-          strcmp(formal->name, "outer") != 0) {
-        init = new CallExpr(PRIM_INIT, formal->type->symbol);
-
-      } else {
-        VarSymbol* typeTmp   = newTemp("type_tmp");
-        VarSymbol* callTmp   = newTemp("call_tmp");
-        VarSymbol* name      = new_CStringSymbol(formal->name);
-
-        CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
-        CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
-
-        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-
-        fn->insertAtHead(new DefExpr(callTmp));
-        fn->insertAtHead(new DefExpr(typeTmp));
-
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
-
-        init = new CallExpr(PRIM_INIT, typeTmp);
-      }
-
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
-
-      call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      buildRecordQueryVarField(fn, arg, call, formal, true);
     }
   }
 
@@ -1462,6 +1415,50 @@ static void buildRecordQuery(AggregateType* ct,
 
   fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, query));
   fn->insertAtHead(new DefExpr(tmp));
+
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
+}
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named) {
+  VarSymbol* tmp  = newTemp(formal->name);
+  CallExpr*  init = NULL;
+
+  fn->insertAtHead(new DefExpr(tmp));
+
+  if (formal->type                  != NULL      &&
+      formal->type                  != dtAny     &&
+      formal->type                  != dtUnknown &&
+      strcmp(formal->name, "outer") != 0) {
+    init = new CallExpr(PRIM_INIT, formal->type->symbol);
+
+  } else {
+    VarSymbol* typeTmp   = newTemp("type_tmp");
+    VarSymbol* callTmp   = newTemp("call_tmp");
+    VarSymbol* name      = new_CStringSymbol(formal->name);
+
+    CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
+    CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
+
+    typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+
+    fn->insertAtHead(new DefExpr(callTmp));
+    fn->insertAtHead(new DefExpr(typeTmp));
+
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
+
+    init = new CallExpr(PRIM_INIT, typeTmp);
+  }
+
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
 
   if (named) {
     call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
