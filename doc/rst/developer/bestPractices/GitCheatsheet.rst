@@ -58,7 +58,11 @@ your fork:
     git remote add upstream https://github.com/chapel-lang/chapel.git
     # Make sure it works, get up-to-date without modifying your files
     git fetch upstream
-
+    # Change remote for upstream push to "no_push" 
+    git remote set-url --push upstream no_push 
+    # Optionally add remotes for commonly viewed branches
+    git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
+    
 Create and switch to a feature branch
 -------------------------------------
 

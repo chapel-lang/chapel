@@ -1717,8 +1717,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
-      const dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                    else tasksPerLocale;
+      var dptpl = if tasksPerLocale==0 then here.maxTaskPar
+                  else tasksPerLocale;
+      if !ignoreRunning {
+        const otherTasks = here.runningTasks() - 1; // don't include self
+        dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
+      }
 
       // Make sure we don't use more sublocales than the numbers of
       // tasksPerLocale requested
@@ -1726,7 +1730,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       // For serial tasks, we will only have a single chunk
       const numChunks =  if __primitive("task_get_serial") then
                          1 else _computeNumChunks(numSublocTasks,
-                                                  ignoreRunning,
+                                                  ignoreRunning=true,
                                                   minIndicesPerTask,
                                                   len);
       if debugDataParNuma {
@@ -1752,10 +1756,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             const locLen = locRange.length;
             // Divide the locale's tasks approximately evenly
             // among the sublocales
-            const numCoreTasks = dptpl/numChunks +
-              if chunk==numChunks-1 then dptpl%numChunks else 0;
-            const numTasks = _computeNumChunks(numCoreTasks,
-                                               ignoreRunning,
+            const numSublocTasks = (if chunk < dptpl % numChunks
+                                    then dptpl / numChunks + 1
+                                    else dptpl / numChunks);
+            const numTasks = _computeNumChunks(numSublocTasks,
+                                               ignoreRunning=true,
                                                minIndicesPerTask,
                                                locLen);
             coforall core in 0..#numTasks {

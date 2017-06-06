@@ -16,6 +16,6 @@ record A {
   }
 }
 
-var a: A;
+var a = new A(2);
 
 writeln(a);

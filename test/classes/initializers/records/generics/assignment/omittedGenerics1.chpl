@@ -15,7 +15,7 @@ record SoManyParams {
 }
 
 proc main() {
-  var c: SoManyParams;
+  var c = new SoManyParams(7);
   writeln(c.type:string);
   writeln(c);
 }

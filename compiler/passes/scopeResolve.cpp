@@ -259,7 +259,7 @@ static void addToSymbolTable() {
     }
   }
 
-  // This would be the place to handle use statments but
+  // This would be the place to handle use statements but
   // skipping for now as chpl__Program does not have any.
 
   // Now recurse on every top-level module
@@ -493,26 +493,21 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void processImportExprs(ModuleSymbol* topLevelModule);
-
 static void processImportExprs() {
   for_alist(expr, theProgram->block->body) {
-    if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
-      processImportExprs(mod);
-    }
-  }
-}
+    if (ModuleSymbol* topLevelModule = definesModuleSymbol(expr)) {
+      std::vector<BaseAST*> asts;
 
-static void processImportExprs(ModuleSymbol* topLevelModule) {
-  std::vector<BaseAST*> asts;
+      // Collect *all* asts within this top-level module in text order
+      collect_asts(topLevelModule, asts);
 
-  // Collect *all* asts within this top-level module in text order
-  collect_asts(topLevelModule, asts);
+      for_vector(BaseAST, item, asts) {
+        if (UseStmt* useStmt = toUseStmt(item)) {
+          BaseAST*      astScope = getScope(useStmt);
+          ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
-  for_vector(BaseAST, item, asts) {
-    if (UseStmt* useStmt = toUseStmt(item)) {
-      if (useStmt->isValid() == true) {
-        useStmt->scopeResolve();
+          useStmt->scopeResolve(scope);
+        }
       }
     }
   }
@@ -1007,7 +1002,7 @@ static void resolveModuleCall(CallExpr* call) {
         enclosingModule->moduleUseAdd(mod);
 
         if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookup(mbrName);
+          sym = scope->lookupNameLocally(mbrName);
         }
 
         if (sym != NULL) {
@@ -1469,7 +1464,7 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   Symbol* retval = NULL;
 
   if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
-    if (Symbol* sym = scope->lookup(name)) {
+    if (Symbol* sym = scope->lookupNameLocally(name)) {
       if (sym->hasFlag(FLAG_METHOD) == false) {
         retval = sym;
 

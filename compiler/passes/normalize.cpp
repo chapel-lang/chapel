@@ -676,9 +676,9 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         } else if (isPrimitiveScalar(type) == true) {
           retval = var;
 
-        // non generic records with initializers are defined
+        // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isNonGenericRecordWithInitializers(at) == true) {
+          if (isRecordWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -1112,6 +1112,13 @@ static void call_constructor_for_class(CallExpr* call) {
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
       } else {
         // Transform C ( ... ) into _type_construct_C ( ... ) .
+        if (isGenericRecordWithInitializers(ct) == true) {
+          USR_FATAL_CONT(se,
+                         "Type constructors are not yet supported for generic "
+                         "records that define initializers.  As a workaround, "
+                         "try relying on type inference");
+
+        }
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
       }
     }
@@ -1862,7 +1869,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
-      if (isNonGenericRecordWithInitializers(type) == true) {
+      if (isRecordWithInitializers(type) == true) {
         Expr*     arg1    = initCall->get(1)->remove();
         CallExpr* argExpr = toCallExpr(arg1);
 
@@ -1873,14 +1880,22 @@ static void normVarTypeInference(DefExpr* defExpr) {
         argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
 
         // Add _mt and _this (insert at head in reverse order)
-        argExpr->insertAtHead(var);
+        if (isGenericRecord(type) == true) {
+          // We need the actual for the "this" argument to be named in the
+          // generic record case ...
+          argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
+        } else {
+          // ... but not in the non-generic record case
+          argExpr->insertAtHead(var);
+        }
         argExpr->insertAtHead(gMethodToken);
 
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
 
-      if (type != NULL && type->isGeneric() == false) {
+      if (type != NULL && (type->isGeneric() == false ||
+                           isGenericRecordWithInitializers(type))) {
         var->type = type;
       }
 
@@ -1989,7 +2004,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isNonGenericRecordWithInitializers(type) == true) {
+  } else if (isRecordWithInitializers(type) == true) {
     if (isNewExpr(initExpr) == true) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
