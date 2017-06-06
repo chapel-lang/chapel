@@ -1266,8 +1266,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
                                  FnSymbol*      fn,
                                  ArgSymbol*     arg);
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
                              ArgSymbol*     formal,
@@ -1344,13 +1343,13 @@ static void buildRecordDefaultOf(AggregateType* ct,
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag);
 
     } else if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag);
 
     } else if (formal->defaultExpr == NULL) {
       VarSymbol* tmp  = newTemp(formal->name);
@@ -1391,8 +1390,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 }
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
                              ArgSymbol*     formal,
