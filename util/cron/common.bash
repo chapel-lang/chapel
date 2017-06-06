@@ -85,7 +85,7 @@ export CHPL_TARGET_ARCH=none
 
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
-cascade_prefix=/data/sea/chapel
+cascade_prefix=/data/cf/chapel
 if [ -n "$explicit_prefix" ]; then
     logdir_prefix=$explicit_prefix
 elif [ -d $cascade_prefix ] ; then

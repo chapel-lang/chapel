@@ -290,9 +290,9 @@ if ($perfConfigName eq "") {
 
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$perfConfigName";
+        $cronlogdir = "/data/cf/chapel/NightlyPerformance/$perfConfigName";
     } else {
-        $cronlogdir = "/data/sea/chapel/Nightly";
+        $cronlogdir = "/data/cf/chapel/Nightly";
     }
 }
 
@@ -329,7 +329,7 @@ if ($memleaks ne "") {
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
     } elsif ($memleaksdir eq "") {
-        $memleaksdir = "/data/sea/chapel/NightlyMemLeaks";
+        $memleaksdir = "/data/cf/chapel/NightlyMemLeaks";
     }
 
     unless(-d $memleaksdir) {
