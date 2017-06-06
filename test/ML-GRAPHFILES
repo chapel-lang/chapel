@@ -100,3 +100,4 @@ studies/prk/stencil/prk-stencil.ml-time.graph
 # suite: Studies (time)
 studies/nbody/md.ml-time.graph
 reductions/vass/reductions-perf.ml-time.graph
+parallel/taskCompare/elliot/taskSpawn.ml-time.graph

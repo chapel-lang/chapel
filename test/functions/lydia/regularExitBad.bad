@@ -1,0 +1,2 @@
+regularExitBad.chpl:1: In function 'exiter':
+regularExitBad.chpl:1: error: control reaches end of function that returns a value

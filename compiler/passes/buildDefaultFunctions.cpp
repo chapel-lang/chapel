@@ -1270,8 +1270,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
                                  FnSymbol*      fn,
                                  ArgSymbol*     arg);
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
                              Symbol*        formal,
@@ -1346,13 +1345,13 @@ static void buildInitializerCall(AggregateType* ct,
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, field, flag, tag, false);
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
 
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, field, flag, tag, false);
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
 
     } else if (field->defPoint->exprType == NULL &&
                field->defPoint->init     == NULL) {
@@ -1383,13 +1382,13 @@ static void buildRecordDefaultOf(AggregateType* ct,
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag, true);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag, true);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->defaultExpr == NULL) {
       buildRecordQueryVarField(fn, arg, call, formal, true);
@@ -1399,8 +1398,7 @@ static void buildRecordDefaultOf(AggregateType* ct,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 }
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
                              Symbol*        formal,
