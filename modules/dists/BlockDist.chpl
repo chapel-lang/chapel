@@ -849,9 +849,10 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
   type strType = chpl__signedType(idxType);
   for param i in 1..rank {
     var stride = whole.dim(i).stride: strType;
+    var alignment = whole.dim(i).alignment;
     // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).low:strType):idxType;
-    var high = (stride * followThis(i).high:strType):idxType;
+    var low = (stride * followThis(i).low:strType):idxType + alignment;
+    var high = (stride * followThis(i).high:strType):idxType + alignment;
     t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
@@ -1125,9 +1126,10 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
 
   for param i in 1..rank {
     var stride = dom.whole.dim(i).stride;
+    var alignment = whole.dim(i).alignment;
     // NOTE: Not bothering to check to see if these can fit into idxType
-    var low = followThis(i).low * abs(stride):idxType;
-    var high = followThis(i).high * abs(stride):idxType;
+    var low = followThis(i).low * abs(stride):idxType + alignment;
+    var high = followThis(i).high * abs(stride):idxType + alignment;
     myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
