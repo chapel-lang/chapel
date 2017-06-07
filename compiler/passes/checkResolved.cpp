@@ -103,8 +103,8 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
   if (CallExpr* call = toCallExpr(expr))
   {
-    // Maybe add a "no return" pragma and use that instead.
-    if (call->isNamed("halt"))
+    if (call->isResolved() &&
+        call->resolvedFunction()->hasFlag(FLAG_FUNCTION_NEVER_RETURNS))
       return 1;
 
     if (call->isPrimitive(PRIM_MOVE) ||

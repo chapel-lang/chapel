@@ -1,3 +1,0 @@
-bug: function named 'halt' breaks return on all paths analysis
-
-This results in stack garbage assigned to a variable

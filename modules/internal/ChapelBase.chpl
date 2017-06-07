@@ -639,6 +639,7 @@ module ChapelBase {
   //
   // More primitive funs
   //
+  pragma "function never returns"
   inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
   }
