@@ -1,6 +1,0 @@
-semantic: should exit() satisfy analysis of function return?
-
-This program gives an error when a return statement is not present in the
-control flow after an exit() call, even though the program will terminate at
-that point.  Should exit() be an acceptable alternative to having a return
-statement in that path of control flow?

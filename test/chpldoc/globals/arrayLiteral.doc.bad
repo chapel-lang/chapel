@@ -1,0 +1,18 @@
+.. default-domain:: chpl
+
+.. module:: arrayLiteral.doc
+
+arrayLiteral.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
+   use arrayLiteral.doc;
+
+.. function:: proc _parloopexpr1(iterExpr)
+
+.. data:: var x = AppendExpr.Call08
+
+   This is an array created using the forall loop initialization 
+

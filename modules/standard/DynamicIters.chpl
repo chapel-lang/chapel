@@ -321,6 +321,89 @@ where tag == iterKind.follower
   }
 }
 
+//************************* Guided domain iterator
+
+/*
+
+  :arg c: The domain to iterate over. The rank of the domain must be greater
+          than zero.
+  :type c: `domain`
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
+  :type numTasks: `int`
+
+  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
+               Must be <= the rank of the domain ``c``. Defaults to 1.
+  :type parDim: `int`
+
+  :yields: Indices in the domain ``c``.
+
+  This iterator is equivalent to the guided policy of OpenMP.
+
+  Given an input domain ``c``, each task is assigned slices of variable size,
+  until there are no remaining iterations in the dimension of ``c`` indicated
+  by ``parDim``. The size of each chunk is the number of unassigned iterations
+  divided by the number of tasks, ``numTasks``. The size decreases
+  approximately exponentially to 1. The splitting strategy is therefore
+  adaptive.
+
+  This iterator can be called in serial and zippered contexts.
+
+*/
+// Here is the serial version of this iterator.
+iter guided(c:domain, numTasks:int=0, parDim:int=1)
+{
+  if debugDynamicIters then
+    writeln("Serial guided domain iterator, working with domain ", c);
+
+  for yieldTuple in c do yield yieldTuple;
+}
+
+// Leader.
+pragma "no doc"
+iter guided(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=1)
+where tag == iterKind.leader
+{
+  // Caller's responsibility to use a valid domain.
+  assert(c.rank > 0, "Must use a valid domain");
+
+  // Caller's responsibility to use a valid parDim.
+  assert(parDim <= c.rank, "parDim must be a dimension of the domain");
+  assert(parDim > 0, "parDim must be a positive integer");
+
+  var parDimDim = c.dim(parDim);
+
+  for i in guided(tag=iterKind.leader, parDimDim, numTasks) {
+    // Set the new range based on the tuple the guided 1-D iterator yields.
+    var newRange = i(1);
+
+    type dType = c.type;
+    // Does the same thing as densify, but densify makes a stridable domain,
+    // which mismatches here if c (and thus dType) is non-stridable.
+    var tempDom : dType = computeZeroBasedDomain(c);
+
+    // Rank-change slice the domain along parDim
+    var tempTup = tempDom.dims();
+    // Change the value of the parDim elem of the tuple to the new range
+    tempTup(parDim) = newRange;
+
+    yield tempTup;
+  }
+}
+
+// Follower.
+pragma "no doc"
+iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
+where tag == iterKind.follower
+{
+  // Invoke the default rectangular domain follower iterator.
+  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do {
+    yield i;
+  }
+}
+
 //************************* Adaptive work-stealing iterator
 /*
 
@@ -526,6 +609,89 @@ where tag == iterKind.follower
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
+    yield i;
+  }
+}
+
+//************************* Adaptive work-stealing domain iterator
+/*
+
+  :arg c: The domain to iterate over. Must have a length greater than zero.
+  :type c: `domain`
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
+  :type numTasks: `int`
+
+  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
+               Must be <= the rank of the domain ``c``. Defaults to 1.
+  :type parDim: `int`
+
+  :yields: Indices in the domain ``c``.
+
+  This iterator implements a naive adaptive binary splitting work-stealing
+  strategy: Initially, the leader iterator distributes the domain to split,
+  ``c``, evenly among the ``numTasks`` tasks.
+
+  Then, each task performs adaptive splitting on its local sub-domain's
+  iterations. When a task exhausts its local iterations, it steals and splits
+  from the domain of another task (the victim). The splitting method on the
+  local domain and on the victim domain is binary: i.e. the size of each chunk
+  is computed as the number of unassigned iterations divided by 2. There are
+  three stealing strategies that can be selected at compile time using the
+  config param :param:`methodStealing` (see range version of iterator above).
+
+  This iterator can be called in serial and zippered contexts.
+*/
+// Here is the serial version of this iterator.
+iter adaptive(c:domain, numTasks:int=0, parDim:int=1)
+{
+  if debugDynamicIters then
+    writeln("Serial adaptive domain iterator, working with domain ", c);
+
+  for yieldTuple in c do yield yieldTuple;
+}
+
+// Leader.
+pragma "no doc"
+iter adaptive(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=1)
+where tag == iterKind.leader
+{
+  // Caller's responsibility to use a valid domain.
+  assert(c.rank > 0, "Must use a valid domain");
+
+  // Caller's responsibility to use a valid parDim.
+  assert(parDim <= c.rank, "parDim must be a dimension of the domain");
+  assert(parDim > 0, "parDim must be a positive integer");
+
+  var parDimDim = c.dim(parDim);
+
+  for i in adaptive(tag=iterKind.leader, parDimDim, numTasks) {
+    // Set the new range based on the tuple the guided 1-D iterator yields.
+    var newRange = i(1);
+
+    type dType = c.type;
+    // Does the same thing as densify, but densify makes a stridable domain,
+    // which mismatches here if c (and thus dType) is non-stridable.
+    var tempDom : dType = computeZeroBasedDomain(c);
+
+    // Rank-change slice the domain along parDim
+    var tempTup = tempDom.dims();
+    // Change the value of the parDim elem of the tuple to the new range
+    tempTup(parDim) = newRange;
+
+    yield tempTup;
+  }
+}
+
+// Follower.
+pragma "no doc"
+iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
+where tag == iterKind.follower
+{
+  // Invoke the default rectangular domain follower iterator.
+  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do {
     yield i;
   }
 }
