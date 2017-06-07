@@ -80,14 +80,22 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     CallExpr* range = NULL;
     Expr* stride = NULL;
     Expr* count = NULL;
+
+    // if we have a 1D domain constructor, just grab the inner range and see if
+    // that can be optimized away
+    if (call->isNamed("chpl__buildDomainExpr") and call->numActuals() == 1)
+    {
+      call = toCallExpr(call->get(1)->copy());
+    }
+
     // grab the stride if we have a strided range
-    if (call->isNamed("chpl_by"))
+    if (call && call->isNamed("chpl_by"))
     {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     }
     // or grab the count if we have a counted range and set unit stride
-    else if (call->isNamed("#"))
+    else if (call && call->isNamed("#"))
     {
       range = toCallExpr(call->get(1)->copy());
       count = toExpr(call->get(2)->copy());
