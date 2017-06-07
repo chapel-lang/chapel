@@ -10,7 +10,7 @@ config var tileSize: int = 0;
 config const iterations: int = 10,
              order: int = 1000,
              debug: bool = false,
-             validate: bool = false;
+             correctness: bool = false;
 
 config param R = 2,
              compact = false;
@@ -84,7 +84,7 @@ for i in 1..R {
 //
 // Print information before main loop
 //
-if (!validate) {
+if (!correctness) {
   writeln("Parallel Research Kernels Version ", PRKVERSION);
   writeln("Serial stencil execution on 2D grid");
   writeln("Grid size            = ", order);
@@ -176,7 +176,7 @@ if abs(norm-referenceNorm) > epsilon then {
     writeln("L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
   }
 
-  if (!validate) {
+  if (!correctness) {
     writef("Rate (MFlops/s): %dr  Avg time (s): %r\n", 1.0E-06 * flops/avgTime, avgTime);
   }
 }

@@ -10,7 +10,7 @@ config param useBlockDist = false;
 
 config const iterations = 100,
              order = 100,
-             validate = false,
+             correctness = false,
              debug = false;
 
 config var tileSize = 0;
@@ -55,7 +55,7 @@ var timer: Timer,
 //
 // Print information before main loop
 //
-if (!validate) {
+if (!correctness) {
   writeln("Parallel Research Kernels version ", PRKVERSION);
   writeln("Serial Matrix transpose: B = A^T");
   writeln("Matrix order          = ", order);
@@ -119,7 +119,7 @@ if (debug) {
 // Verify correctness
 if (absErr < epsilon) {
   writeln("Solution validates");
-  if (!validate) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,
+  if (!correctness) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,
                               " Avg time (s): ", avgTime);
 } else {
   writeln("ERROR: Aggregate squared error", absErr,

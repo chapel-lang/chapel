@@ -33,7 +33,7 @@ config const iterations: int = 10,
              /* Enable debug output, including chplvis data */
              debug: bool = false,
              /* Only print result of validation - used in correctness tests*/
-             validate: bool = false;
+             correctness: bool = false;
 
 /* Size of stride for tiling; disables tiling if set to 0 */
 config var tileSize: int = 0;
@@ -149,7 +149,7 @@ proc main() {
   //
   // Print information before main loop
   //
-  if (!validate) {
+  if (!correctness) {
     writeln("Parallel Research Kernels Version ", PRKVERSION);
     writeln("Serial stencil execution on 2D grid");
     writeln("Grid size            = ", order);
@@ -283,7 +283,7 @@ proc main() {
       writeln("L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
     }
 
-    if (!validate) {
+    if (!correctness) {
       writef("Rate (MFlops/s): %dr  Avg time (s): %r\n", 1.0E-06 * flops/avgTime, avgTime);
       writeln("stencil time = ", stenTime/iterations);
       writeln("increment time = ", incTime / iterations);
