@@ -37,6 +37,7 @@
 #include "ForLoop.h"
 #include "initializerResolution.h"
 #include "iterator.h"
+#include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
 #include "passes.h"
@@ -1075,8 +1076,12 @@ resolveFormals(FnSymbol* fn) {
            (isUnion(formal->type) ||
             isRecord(formal->type)))) {
         makeRefType(formal->type);
-        formal->type = formal->type->refType;
-        // The type of the formal is its own ref type!
+        if (formal->type->refType) {
+          formal->type = formal->type->refType;
+          // The type of the formal is its own ref type!
+        } else {
+          formal->qual = QUAL_REF;
+        }
       }
 
       if (isRecordWrappedType(formal->type) &&
@@ -4078,7 +4083,7 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isNonGenericRecordWithInitializers(srcType) == true)  {
+  } else if (isRecordWithInitializers(srcType) == true)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5943,9 +5948,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
-  // --ipe does not build a mainModule
-  if (mainModule)
-    resolveUses(mainModule);
+  resolveUses(ModuleSymbol::mainModule());
 
   // --ipe does not build printModuleInitModule
   if (printModuleInitModule)

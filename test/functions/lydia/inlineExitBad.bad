@@ -1,0 +1,1 @@
+inlineExitBad.chpl:1: error: control reaches end of function that returns a value

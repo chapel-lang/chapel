@@ -1,0 +1,4 @@
+--correctness --L=100 --n=1000 --particleMode=SINUSOIDAL
+--correctness --L=100 --n=1000 --particleMode=GEOMETRIC
+--correctness --L=100 --n=1000 --particleMode=LINEAR
+--correctness --L=100 --n=1000 --particleMode=PATCH

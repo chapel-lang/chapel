@@ -10,7 +10,7 @@ for (loc, i) in zip(Locales, 0..#numLocales by -1) {
 
 writeln("Grid is: ", Grid);
 
-const D = {1..3} dmapped ReplicatedDist(Grid);
+const D = {1..3} dmapped Replicated(Grid);
 var A: [D] real;
 
 coforall loc in Locales do

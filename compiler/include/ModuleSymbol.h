@@ -28,84 +28,96 @@ enum ModTag {
   MOD_USER       // a module found along the user's search path
 };
 
+struct ArgumentDescription;
 struct ExternBlockInfo;
 
 class ModuleSymbol : public Symbol {
 public:
-  static void          addTopLevelModule (ModuleSymbol*               module);
-  static void          getTopLevelModules(std::vector<ModuleSymbol*>& mods);
+  static void             addTopLevelModule (ModuleSymbol* module);
 
-  static const char*   modTagToString(ModTag modTag);
+  static void             getTopLevelModules(std::vector<ModuleSymbol*>& mods);
 
+  static const char*      modTagToString(ModTag modTag);
+
+  static ModuleSymbol*    mainModule();
+
+  static void             mainModuleNameSet(const ArgumentDescription* desc,
+                                            const char*                arg);
+private:
+  static ModuleSymbol*    findMainModuleByName();
+  static ModuleSymbol*    findMainModuleFromMainFunction();
+  static ModuleSymbol*    findMainModuleFromCommandLine();
 
 public:
-                       ModuleSymbol(const char* iName,
-                                    ModTag      iModTag,
-                                    BlockStmt*  iBlock);
+                          ModuleSymbol(const char* iName,
+                                       ModTag      iModTag,
+                                       BlockStmt*  iBlock);
 
-                      ~ModuleSymbol();
+                         ~ModuleSymbol();
 
   // Interface to BaseAST
-  virtual void         verify();
-  virtual void         accept(AstVisitor* visitor);
+  virtual void            verify();
+  virtual void            accept(AstVisitor* visitor);
 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
 
   // Interface to Symbol
-  virtual void         replaceChild(BaseAST* oldAst, BaseAST* newAst);
-  virtual void         codegenDef();
+  virtual void            replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  virtual void            codegenDef();
 
   // New interface
-  Vec<AggregateType*>  getTopLevelClasses();
-  Vec<VarSymbol*>      getTopLevelConfigVars();
-  Vec<VarSymbol*>      getTopLevelVariables();
-  Vec<FnSymbol*>       getTopLevelFunctions(bool includeExterns);
-  Vec<ModuleSymbol*>   getTopLevelModules();
+  Vec<AggregateType*>     getTopLevelClasses();
+  Vec<VarSymbol*>         getTopLevelConfigVars();
+  Vec<VarSymbol*>         getTopLevelVariables();
+  Vec<FnSymbol*>          getTopLevelFunctions(bool includeExterns);
+  Vec<ModuleSymbol*>      getTopLevelModules();
 
-  void                 addDefaultUses();
-  void                 moduleUseAdd(ModuleSymbol* module);
-  void                 moduleUseRemove(ModuleSymbol* module);
+  void                    addDefaultUses();
 
-  void                 printDocs(std::ostream* file,
-                                 unsigned int  tabs,
-                                 std::string   parentName);
+  void                    moduleUseAdd(ModuleSymbol* module);
+  void                    moduleUseRemove(ModuleSymbol* module);
 
-  void                 printTableOfContents(std::ostream* file);
+  void                    printDocs(std::ostream* file,
+                                    unsigned int  tabs,
+                                    std::string   parentName);
 
-  std::string          docsName();
+  void                    printTableOfContents(std::ostream* file);
+
+  std::string             docsName();
 
 
-  ModTag               modTag;
+  ModTag                  modTag;
 
-  BlockStmt*           block;
-  FnSymbol*            initFn;
-  FnSymbol*            deinitFn;
+  BlockStmt*              block;
+  FnSymbol*               initFn;
+  FnSymbol*               deinitFn;
 
-  Vec<ModuleSymbol*>   modUseList;
+  Vec<ModuleSymbol*>      modUseList;
 
-  const char*          filename;
-  const char*          doc;
+  const char*             filename;
+  const char*             doc;
 
   // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
-  ExternBlockInfo*     extern_info;
-  llvm::MDNode*        llvmDINameSpace;
+  ExternBlockInfo*        extern_info;
+  llvm::MDNode*           llvmDINameSpace;
 #else
-  void*                extern_info;
-  void*                llvmDINameSpace;
+  void*                   extern_info;
+  void*                   llvmDINameSpace;
 #endif
 
 private:
-  void                 getTopLevelConfigOrVariables(Vec<VarSymbol*>* contain,
-                                                    Expr*            expr,
-                                                    bool             config);
-  bool                 hasTopLevelModule();
+  void                    getTopLevelConfigOrVariables(
+                                             Vec<VarSymbol*>* contain,
+                                             Expr*            expr,
+                                             bool             config);
+
+  bool                    hasTopLevelModule();
 };
 
 extern ModuleSymbol*      rootModule;
 extern ModuleSymbol*      theProgram;
 extern ModuleSymbol*      baseModule;
-extern ModuleSymbol*      mainModule;
 
 extern ModuleSymbol*      stringLiteralModule;
 extern ModuleSymbol*      standardModule;

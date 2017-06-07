@@ -1,3 +1,5 @@
+/* Test to ensure that functions shadowed by methods can be called with
+   module-access-expression */
 module A {
 
   proc shadow() {
@@ -11,11 +13,9 @@ module A {
 
       writeln('R scope');
 
-      // These work fine
       A.newline();
       newline();
 
-      // This does not
       A.shadow();
     }
   }

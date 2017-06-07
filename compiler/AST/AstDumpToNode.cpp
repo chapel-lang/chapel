@@ -1138,7 +1138,14 @@ bool AstDumpToNode::enterCondStmt(CondStmt* node)
 void AstDumpToNode::visitEblockStmt(ExternBlockStmt* node)
 {
   enterNode(node);
-  fprintf(mFP, "(%s", node->astTagAsString());
+
+  mOffset = mOffset + 2;
+  newline();
+
+  fputs(node->c_code, mFP);
+
+  mOffset = mOffset - 2;
+  newline();
   exitNode(node);
 }
 

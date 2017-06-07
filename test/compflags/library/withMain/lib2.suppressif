@@ -1,0 +1,7 @@
+# Known LLVM issue with --library
+#
+# This is a known issue where we are not yet able to handle compiling
+# with --library when using the LLVM back end.  See github issue
+# #6336.  Suppress this for now.
+
+CHPL_LLVM==llvm
