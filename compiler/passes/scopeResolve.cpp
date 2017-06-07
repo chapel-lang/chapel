@@ -87,8 +87,6 @@ static void          scopeResolve(ModuleSymbol*       module,
 
 static void          processImportExprs();
 
-static void          addRecordDefaultConstruction();
-
 static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
@@ -170,8 +168,6 @@ void scopeResolve() {
       }
     }
   }
-
-  addRecordDefaultConstruction();
 
   //
   // resolve type of this for methods
@@ -507,38 +503,6 @@ static void processImportExprs() {
           ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
           useStmt->scopeResolve(scope);
-        }
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void addRecordDefaultConstruction() {
-  forv_Vec(DefExpr, def, gDefExprs) {
-    // We're only interested in declarations that do not have initializers.
-    if (def->init != NULL) {
-
-    } else if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (AggregateType* at = toAggregateType(var->type)) {
-        if (at->isRecord() == false) {
-
-        // No initializer for extern records.
-        } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-
-        } else {
-          SET_LINENO(def);
-
-          CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
-
-          def->init = new CallExpr(PRIM_NEW, ctor_call);
-
-          insert_help(def->init, def, def->parentSymbol);
         }
       }
     }
