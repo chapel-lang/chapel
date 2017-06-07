@@ -13,7 +13,7 @@ var B:[rngs] int=0;
 var C:[rngs,rng] int=0;
 var D:[dmn] int=0;
 var E:[dmns] int=0;
-var F:[{rngs,rng}] int=0;
+var F:[rngs,rng] int=0;
 
 // The iterator
 // methodStealing is a config param to select the stealing method code at compile time:
