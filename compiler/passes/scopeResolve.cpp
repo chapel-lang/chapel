@@ -87,8 +87,6 @@ static void          scopeResolve(ModuleSymbol*       module,
 
 static void          processImportExprs();
 
-static void          addRecordDefaultConstruction();
-
 static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
@@ -170,8 +168,6 @@ void scopeResolve() {
       }
     }
   }
-
-  addRecordDefaultConstruction();
 
   //
   // resolve type of this for methods
@@ -519,85 +515,35 @@ static void processImportExprs() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addRecordDefaultConstruction() {
-  forv_Vec(DefExpr, def, gDefExprs) {
-    // We're only interested in declarations that do not have initializers.
-    if (def->init != NULL) {
-
-    } else if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (AggregateType* at = toAggregateType(var->type)) {
-        if (at->isRecord() == false) {
-
-        // No initializer for extern records.
-        } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-
-        } else {
-          SET_LINENO(def);
-
-          CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
-
-          def->init = new CallExpr(PRIM_NEW, ctor_call);
-
-          insert_help(def->init, def, def->parentSymbol);
-        }
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
     SET_LINENO(gs);
 
-    if (SymExpr* label = toSymExpr(gs->label)) {
-      if (label->symbol() == gNil) {
-        LoopStmt* loop = LoopStmt::findEnclosingLoop(gs);
+    LoopStmt* loop = NULL;
 
-        if (!loop)
-          USR_FATAL(gs, "break or continue is not in a loop");
+    if (isSymExpr(gs->label) == true) {
+      loop = LoopStmt::findEnclosingLoop(gs);
 
-        if (gs->gotoTag == GOTO_BREAK) {
-          Symbol* breakLabel = loop->breakLabelGet();
-
-          INT_ASSERT(breakLabel);
-          gs->label->replace(new SymExpr(breakLabel));
-
-        } else if (gs->gotoTag == GOTO_CONTINUE) {
-          Symbol* continueLabel = loop->continueLabelGet();
-          INT_ASSERT(continueLabel);
-
-          gs->label->replace(new SymExpr(continueLabel));
-
-        } else
-          INT_FATAL(gs, "unexpected goto type");
+      if (loop == NULL) {
+        USR_FATAL(gs, "break or continue is not in a loop");
       }
 
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
-      const char* name = label->unresolved;
-      LoopStmt*   loop = LoopStmt::findEnclosingLoop(gs);
+      loop = LoopStmt::findEnclosingLoop(gs, label->unresolved);
 
-      while (loop && (!loop->userLabel || strcmp(loop->userLabel, name))) {
-        loop = LoopStmt::findEnclosingLoop(loop->parentExpr);
-      }
-
-      if (!loop) {
+      if (loop == NULL) {
         USR_FATAL(gs, "bad label on break or continue");
       }
+    }
 
-      if (gs->gotoTag == GOTO_BREAK)
-        label->replace(new SymExpr(loop->breakLabelGet()));
+    if (gs->gotoTag == GOTO_BREAK) {
+      gs->label->replace(new SymExpr(loop->breakLabelGet()));
 
-      else if (gs->gotoTag == GOTO_CONTINUE)
-        label->replace(new SymExpr(loop->continueLabelGet()));
+    } else if (gs->gotoTag == GOTO_CONTINUE) {
+      gs->label->replace(new SymExpr(loop->continueLabelGet()));
 
-      else
-        INT_FATAL(gs, "unexpected goto type");
+    } else {
+      INT_FATAL(gs, "unexpected goto type");
     }
   }
 }
