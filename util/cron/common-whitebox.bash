@@ -98,7 +98,18 @@ if [ "${COMPILER}" == "cray" ] ; then
 fi
 
 # Then load the selected compiler
-load_target_compiler ${COMPILER}
+case ${COMPILER} in
+( gnu )
+    # TEMPORARY WORKAROUND for gcc-mpich conflict on cray internal test system 2017-06-07
+    module unload cray-mpich
+    load_target_compiler ${COMPILER}
+    module load cray-mpich
+    ;;
+( * )
+    load_target_compiler ${COMPILER}
+    ;;
+esac
+
 
 # Do minor fixups
 case $COMPILER in
