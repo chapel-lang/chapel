@@ -2022,6 +2022,54 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
+  } else if (isNewExpr(initExpr)) {
+    CallExpr* origCall = toCallExpr(initExpr);
+    AggregateType* rhsType = typeForNewExpr(origCall);
+    if (isGenericRecordWithInitializers(rhsType)) {
+      // Create a temporary with the type specified in the lhs declaration
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      DefExpr*   typeDefn = new DefExpr(typeTemp);
+      CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+      CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+
+      defExpr ->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+
+      // Create a temporary to hold the result of the rhs "new" call
+      VarSymbol* initExprTemp = newTemp("init_tmp", rhsType);
+      DefExpr*   initExprDefn = new DefExpr(initExprTemp);
+      Expr*      arg          = origCall->get(1)->remove();
+      CallExpr*  argExpr      = toCallExpr(arg);
+
+      initMove    ->insertAfter(initExprDefn);
+      initExprDefn->insertAfter(argExpr);
+
+      // Modify the "new" call so that it is in the appropriate form for
+      // types with initializers
+      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+      argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
+      argExpr->insertAtHead(gMethodToken);
+
+      // Assign the rhs into the lhs.
+      CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);
+
+      argExpr->insertAfter(assign);
+      // Move the result into the original variable.
+      assign ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+
+    } else {
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      DefExpr*   typeDefn = new DefExpr(typeTemp);
+      CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+      CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+      CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+
+      defExpr ->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(assign);
+      assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+
+    }
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
