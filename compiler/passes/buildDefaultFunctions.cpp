@@ -1262,6 +1262,10 @@ static void build_record_hash_function(AggregateType *ct) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void buildInitializerCall(AggregateType* ct,
+                                 FnSymbol*      fn,
+                                 ArgSymbol*     arg);
+
 static void buildRecordDefaultOf(AggregateType* ct,
                                  FnSymbol*      fn,
                                  ArgSymbol*     arg);
@@ -1269,9 +1273,16 @@ static void buildRecordDefaultOf(AggregateType* ct,
 static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
-                             ArgSymbol*     formal,
+                             Symbol*        formal,
                              Flag           flag,
-                             PrimitiveTag   tag);
+                             PrimitiveTag   tag,
+                             bool           named);
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named);
 
 static void buildDefaultOfFunction(AggregateType* ct) {
   if        (isNonGenericClassWithInitializers(ct)  == true) {
@@ -1304,16 +1315,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
 
     } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
-      VarSymbol* _this = newTemp("_this", ct);
-      CallExpr*  call  = new CallExpr("init");
-
-      fn->insertAtHead(new DefExpr(_this));
-
-      call->insertAtTail(new SymExpr(gMethodToken));
-      call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
-
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-
+      buildInitializerCall(ct, fn, arg);
     } else {
       buildRecordDefaultOf(ct, fn, arg);
     }
@@ -1325,6 +1327,43 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     // Do not normalize until the definition has been inserted
     normalize(fn);
   }
+}
+
+static void buildInitializerCall(AggregateType* ct,
+                                 FnSymbol*      fn,
+                                 ArgSymbol*     arg) {
+  VarSymbol* _this = newTemp("_this", ct);
+  CallExpr*  call  = new CallExpr("init");
+
+  fn->insertAtHead(new DefExpr(_this));
+
+  call->insertAtTail(new SymExpr(gMethodToken));
+  call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
+
+  for_fields(field, ct) {
+    if (field->isParameter() == true) {
+      Flag         flag = FLAG_PARAM;
+      PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
+
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+
+    } else if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      Flag         flag = FLAG_TYPE_VARIABLE;
+      PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
+
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+
+    } else if (field->defPoint->exprType == NULL &&
+               field->defPoint->init     == NULL) {
+
+      buildRecordQueryVarField(fn, arg, call, field, false);
+
+    }
+  }
+
+  fn->insertAtTail(call);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(_this)));
 }
 
 static void buildRecordDefaultOf(AggregateType* ct,
@@ -1343,47 +1382,16 @@ static void buildRecordDefaultOf(AggregateType* ct,
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->defaultExpr == NULL) {
-      VarSymbol* tmp  = newTemp(formal->name);
-      CallExpr*  init = NULL;
-
-      fn->insertAtHead(new DefExpr(tmp));
-
-      if (formal->type                  != NULL  &&
-          formal->type                  != dtAny &&
-          strcmp(formal->name, "outer") != 0) {
-        init = new CallExpr(PRIM_INIT, formal->type->symbol);
-
-      } else {
-        VarSymbol* typeTmp   = newTemp("type_tmp");
-        VarSymbol* callTmp   = newTemp("call_tmp");
-        VarSymbol* name      = new_CStringSymbol(formal->name);
-
-        CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
-        CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
-
-        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-
-        fn->insertAtHead(new DefExpr(callTmp));
-        fn->insertAtHead(new DefExpr(typeTmp));
-
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
-
-        init = new CallExpr(PRIM_INIT, typeTmp);
-      }
-
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
-
-      call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      buildRecordQueryVarField(fn, arg, call, formal, true);
     }
   }
 
@@ -1393,9 +1401,10 @@ static void buildRecordDefaultOf(AggregateType* ct,
 static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
-                             ArgSymbol*     formal,
+                             Symbol*        formal,
                              Flag           flag,
-                             PrimitiveTag   tag) {
+                             PrimitiveTag   tag,
+                             bool           named) {
   VarSymbol* tmp   = newTemp(formal->name);
   VarSymbol* name  = new_CStringSymbol(formal->name);
   CallExpr*  query = new CallExpr(tag, arg, name);
@@ -1405,7 +1414,55 @@ static void buildRecordQuery(FnSymbol*      fn,
   fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, query));
   fn->insertAtHead(new DefExpr(tmp));
 
-  call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
+}
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named) {
+  VarSymbol* tmp  = newTemp(formal->name);
+  CallExpr*  init = NULL;
+
+  fn->insertAtHead(new DefExpr(tmp));
+
+  if (formal->type                  != NULL      &&
+      formal->type                  != dtAny     &&
+      formal->type                  != dtUnknown &&
+      strcmp(formal->name, "outer") != 0) {
+    init = new CallExpr(PRIM_INIT, formal->type->symbol);
+
+  } else {
+    VarSymbol* typeTmp   = newTemp("type_tmp");
+    VarSymbol* callTmp   = newTemp("call_tmp");
+    VarSymbol* name      = new_CStringSymbol(formal->name);
+
+    CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
+    CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
+
+    typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+
+    fn->insertAtHead(new DefExpr(callTmp));
+    fn->insertAtHead(new DefExpr(typeTmp));
+
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
+
+    init = new CallExpr(PRIM_INIT, typeTmp);
+  }
+
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
+
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
 }
 
 /************************************* | **************************************

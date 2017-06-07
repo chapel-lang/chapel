@@ -15,5 +15,4 @@ var foo1: Foo(int); // specifies a different value
 var foo3: Foo(bool); // specifies the same value as the default
 
 writeln(foo1);
-writeln(foo2);
 writeln(foo3);
