@@ -1,6 +1,9 @@
-//
-// Chapel's serial implementation of transpose
-//
+/*
+   Chapel's serial Transpose implementation
+
+   Contributed by Ben Albrecht (Cray Inc.)
+*/
+
 use Time;
 
 param PRKVERSION = "2.15";

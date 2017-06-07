@@ -1,6 +1,9 @@
-//
-// Chapel's parallel stencil implementation
-//
+/*
+   Chapel's parallel Stencil implementation
+
+   Contributed by Ben Albrecht, Ben Harshbarger (Cray Inc.),
+                  Engin Kayraklioglu (GWU)
+*/
 
 /* Standard Library */
 use Time;

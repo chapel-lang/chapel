@@ -1,6 +1,9 @@
-/* Contributed by Engin Kayraklioglu, Tarek El-Ghazawi
-   (The George Washington University)
+/*
+   Chapel's parallel Nstream implementation
+
+   Contributed by Engin Kayraklioglu (GWU)
 */
+
 use Time;
 use BlockDist;
 

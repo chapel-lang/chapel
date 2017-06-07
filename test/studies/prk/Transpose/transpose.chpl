@@ -1,6 +1,10 @@
-//
-// Chapel's parallel implementation of transpose
-//
+/*
+   Chapel's parallel Transpose implementation
+
+   Contributed by Ben Albrecht (Cray Inc.),
+                  Engin Kayraklioglu (GWU)
+*/
+
 use Time;
 use BlockDist;
 

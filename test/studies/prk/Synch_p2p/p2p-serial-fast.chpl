@@ -1,6 +1,8 @@
-//
-// Chapel's serial implementation of synch_p2p
-//
+/*
+   Chapel's serial synch_p2p implementation
+
+   Contributed by Ben Albrecht (Cray Inc.)
+*/
 use Time;
 
 param PRKVERSION = "2.15";

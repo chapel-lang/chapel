@@ -1,6 +1,9 @@
-//
-// Chapel's stencil implementation
-//
+/*
+   Chapel's serial Stencil implementation
+
+   Contributed by Ben Albrecht, Ben Harshbarger (Cray Inc.)
+*/
+
 use Time;
 
 param PRKVERSION = "2.15";
