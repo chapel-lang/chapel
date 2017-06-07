@@ -1997,7 +1997,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isRecordWithInitializers(type) == true) {
+  } else if (isNonGenericRecordWithInitializers(type) == true) {
     if (isNewExpr(initExpr) == true) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
