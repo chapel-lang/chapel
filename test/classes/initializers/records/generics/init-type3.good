@@ -1,2 +1,0 @@
-init-type3.chpl:19: error: unresolved call 'init(A)'
-init-type3.chpl:19: note: candidates are: 'init(A, xVal: int)'

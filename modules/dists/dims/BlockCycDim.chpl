@@ -33,11 +33,11 @@ type bcdPosInt = int;
 
 // chpldoc TODO
 // * Get the BlockCyclic distribution references to be presented
-//   as links. Currently they are not perhaps because chpldoc does not find
-//   that module while creating this documentation.
-//   Cf. it finds ReplicatedDist while processing ReplicatedDim.
-//   That is perhaps because the name of the class and the name of the file
-//   match in the ReplicatedDist case.
+//   as links. At some point in the past they were not perhaps because
+//   chpldoc did not find that module while creating this documentation.
+//   Cf. it found ReplicatedDist while processing ReplicatedDim.
+//   That may have been because the name of the class and the name of the file
+//   used to match in the ReplicatedDist case.
 //
 /*
 This Block-Cyclic dimension specifier is for use with the

@@ -476,6 +476,9 @@ bool isGenericRecord(Type* type);
 bool isGenericClassWithInitializers (Type* type);
 bool isGenericRecordWithInitializers(Type* type);
 
+bool isClassWithInitializers (Type* type);
+bool isRecordWithInitializers(Type* type);
+
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);

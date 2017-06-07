@@ -564,6 +564,7 @@ layer, accelerated by Gemini hardware capabilities.
 On XC systems, which have Aries networks, all of the operations shown
 above are done natively by the network hardware.
 
+.. _readme-cray-constraints:
 
 --------------------------
 Known Constraints and Bugs

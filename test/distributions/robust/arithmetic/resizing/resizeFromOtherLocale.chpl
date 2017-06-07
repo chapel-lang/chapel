@@ -32,7 +32,7 @@ proc buildSpace(Dom) {
     return Dom dmapped Cyclic(startIdx=1);
   }
   else if distType == DistType.replicated {
-    return Dom dmapped ReplicatedDist();
+    return Dom dmapped Replicated();
   }
   else {
     compilerError("Compiling with unknown DistType.");

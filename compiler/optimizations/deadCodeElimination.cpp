@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "ModuleSymbol.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -431,30 +432,33 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* Determines if a module is dead. A module is dead if the module's init       *
+* function can only be called from module code, and the init function is      *
+* empty, and the init function is the only thing in the module, and the       *
+* module is not a nested module.                                              *
 *                                                                             *
 ************************************** | *************************************/
 
-// Determines if a module is dead. A module is dead if the module's init
-// function can only be called from module code, and the init function
-// is empty, and the init function is the only thing in the module, and the
-// module is not a nested module.
 static bool isDeadModule(ModuleSymbol* mod) {
+  bool retval = false;
+
   // The main module and any module whose init function is exported
   // should never be considered dead, as the init function can be
   // explicitly called from the runtime, or other c code
-  if (mod == mainModule || mod->hasFlag(FLAG_EXPORT_INIT)) return false;
+  if (mod                            == ModuleSymbol::mainModule() ||
+      mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+    retval = false;
 
   // because of the way modules are initialized, we don't want to consider a
   // nested function as dead as its outer module and all of its uses should
   // have their initializer called by the inner module.
-  if (mod->defPoint->getModule() != theProgram &&
-      mod->defPoint->getModule() != rootModule)
-    return false;
+  } else if (mod->defPoint->getModule() != theProgram &&
+      mod->defPoint->getModule() != rootModule) {
+    retval = false;
 
   // if there is only one thing in the module
-  if (mod->block->body.length == 1) {
-    if (!mod->initFn) {
+  } else if (mod->block->body.length == 1) {
+    if (mod->initFn == NULL) {
       // Prevents a segfault experienced when cleaning up a module which has
       // only an inner module defined in it (and neither have an init function)
       INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
@@ -465,23 +469,26 @@ static bool isDeadModule(ModuleSymbol* mod) {
       // and the init function is empty (only has a return)
       if (mod->initFn->body->body.length == 1) {
         // then the module is dead
-        return true;
+        retval = true;
       }
     }
   }
-  return false;
+
+  return retval;
 }
 
 
 // Eliminates all dead modules
 static void deadModuleElimination() {
   deadModuleCount = 0;
+
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (isDeadModule(mod) == true) {
       deadModuleCount++;
 
       // remove the dead module and its initFn
       mod->defPoint->remove();
+
       mod->initFn->defPoint->remove();
 
       // Inform every module about the dead module

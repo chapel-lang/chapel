@@ -10,7 +10,7 @@ var Grid = reshape(Locales, GridD);
 
 writeln("Grid is: ", Grid);
 
-const D = {1..3} dmapped ReplicatedDist(Grid);
+const D = {1..3} dmapped Replicated(Grid);
 var A: [D] real;
 
 coforall loc in Locales do
