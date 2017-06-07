@@ -1,3 +1,6 @@
+/* Contributed by Engin Kayraklioglu, Tarek El-Ghazawi
+   (The George Washington University)
+*/
 use Time;
 use BlockDist;
 use RangeChunk;

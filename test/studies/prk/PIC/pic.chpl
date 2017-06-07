@@ -1,3 +1,6 @@
+/* Contributed by Engin Kayraklioglu, Tarek El-Ghazawi
+   (The George Washington University)
+*/
 require "random_draw.h", "random_draw.c";
 use Time;
 
