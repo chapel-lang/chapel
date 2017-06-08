@@ -202,6 +202,105 @@ def LauncherTimeoutArgs(seconds):
               useLauncherTimeout)
 
 
+# Execute command.
+# Its stdout+stderr go to sub_test's stdout+stderr.
+# Return its exit code.
+def runAndShowOutput(command):
+    sys.stdout.flush()
+    p = subprocess.Popen(command)
+    rc = p.wait()
+    return rc
+
+# Execute command. Rc = Return code.
+# Gather its combined stdout+stderr.
+# Return (its exit code, the gathered output).
+def runAndReturnRcOutput(command):
+    p = subprocess.Popen(command,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    output = p.communicate()[0]
+    return p.returncode, output
+
+# Execute command. EIEO = Error If Error Output.
+# Gather *separately* its stdout and stderr.
+# If stderr is non-empty or the exit code is non-0, report an error.
+# If errfatal, quit with Fatal(). Otherwise, 
+# return the return code (at least 1 if got stderr) and command's stdout.
+def runAndReturnRcOutputEIEO(command, errfatal=False):
+    p = subprocess.Popen(command,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    output = p.communicate()
+    errmsg = None
+    rc = 0
+
+    if output[1]:
+        errmsg = "unexpected stderr output while executing {0} (rc={1})".format(' '.join(command), p.returncode)
+        rc = 1
+        if errfatal:
+            sys.stdout.write("While executing {0}:\n".format(' '.join(command)))
+            sys.stdout.write("stdout=\n{0}stderr=\n{1}".format(trim_output(output[0]), trim_output(output[1])))
+        else:
+            sys.stdout.write("[Error: {0}]\n".format(errmsg))
+            sys.stdout.write("The stderr output was:\n{0}".format(trim_output(output[1])))
+    elif p.returncode:
+        errmsg = "rc={0} while executing {1}".format(p.returncode, ' '.join(command))
+        if not errfatal:
+            sys.stdout.write("[Error: {0}]\n".format(errmsg))
+        rc = p.returncode
+
+    if errfatal and errmsg:
+        Fatal(errmsg)
+
+    return rc, output[0]
+
+# Same as runAndReturnRcOutputEIEO() except drop return code.
+def runAndReturnOutputEIEO(command, errfatal=False):
+    rc, output = runAndReturnRcOutputEIEO(command, errfatal)
+    return output
+
+# Return the contents of the file. CFE = Checking For Error.
+# Report an error and proceed if something went wrong.
+def fileContentsCFE(filename):
+    p = subprocess.Popen(['cat', filename],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    output = p.communicate()
+    if output[1]:
+        sys.stdout.write("[Error: stderr output while reading {0}]\n"
+                         .format(filename))
+        sys.stdout.write("The stderr output was:\n{0}"
+                         .format(trim_output(output[1])))
+    elif p.returncode:
+        sys.stdout.write("[Error {0} while reading {1}]\n"
+                         .format(p.returncode, filename))
+    return output[0]
+
+# Return the contents of the file. ISE = Including StdError.
+# Some tests rely on "No such file or directory" from 'cat'.
+# This does not check the error code from 'cat'.
+def fileContentsISE(filename):
+    p = subprocess.Popen(['cat', filename],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    output = p.communicate()
+    return output[0]
+
+# Same as fileContentsCFE, concatenating for multiple files.
+def filesContentsCFE(files):
+    result = ''
+    for file in files:
+        result += fileContentsCFE(file)
+    return result
+
+# Same as fileContentsISE, concatenating for multiple files.
+def filesContentsISE(files):
+    result = ''
+    for file in files:
+        result += fileContentsISE(file)
+    return result
+
+
 #
 # Auxilliary functions
 #
@@ -255,22 +354,21 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # if the file is executable, run it and grab the output. If we get an
     # OSError while trying to run, report it and try to keep going
     if os.access(f, os.X_OK):
+        f_name = os.path.abspath(f)
         try:
             # grab the chplenv so it can be stuffed into the subprocess env
             env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
-            chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+            chpl_env = runAndReturnOutputEIEO(env_cmd)
             chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
             file_env = os.environ.copy()
             file_env.update(chpl_env)
 
             # execute the file and grab its output
-            cmd = subprocess.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
-            mylines = cmd.communicate()[0].splitlines()
+            mylines = runAndReturnOutputEIEO([f_name]).splitlines()
 
         except OSError as e:
             global localdir
-            f_name = os.path.join(localdir, f)
-            sys.stdout.write("[Error trying to execute '{0}': {1}]\n".format(f_name, str(e)))
+            sys.stdout.write("[Error trying to execute '{0}' ({1}): {2}]\n".format(f_name, localdir, str(e)))
 
     # otherwise, just read the file
     else:
@@ -295,32 +393,26 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
 # diff 2 files
 def DiffFiles(f1, f2):
     sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
-    p = subprocess.Popen(['diff',f1,f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    rc, myoutput = runAndReturnRcOutput(['diff',f1,f2])
+    if rc != 0:
         sys.stdout.write(trim_output(myoutput))
-    return p.returncode
+    return rc
 
 def DiffBinaryFiles(f1, f2):
     sys.stdout.write('[Executing binary diff %s %s]\n'%(f1, f2))
-    p = subprocess.Popen(['diff', '-a', f1,f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    rc, myoutput = runAndReturnRcOutput(['diff', '-a', f1,f2])
+    if rc != 0:
         sys.stdout.write(trim_output(myoutput))
-    return p.returncode
+    return rc
 
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
 # in module files.
 def DiffBadFiles(f1, f2):
     sys.stdout.write('[Executing diff-ignoring-module-line-numbers %s %s]\n'%(f1, f2))
-    p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    rc, myoutput = runAndReturnRcOutput([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2])
+    if rc != 0:
         sys.stdout.write(myoutput)
-    return p.returncode
+    return rc
 
 # kill process
 def KillProc(p, timeout):
@@ -353,11 +445,11 @@ def cleanup(execname):
             lsof = which('lsof')
             if handle is not None:
                 sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(handle))
-                subprocess.Popen([handle]).communicate()
+                runAndShowOutput([handle])
             elif lsof is not None:
                 cmd = [lsof, execname]
                 sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(' '.join(cmd)))
-                subprocess.Popen(cmd).communicate()
+                runAndShowOutput(cmd)
 
         # Do not print the warning for cygwin32 when errno is 16 (Device or resource busy).
         if not (getattr(ex, 'errno', 0) == 16 and platform == 'cygwin32'):
@@ -571,11 +663,10 @@ utildir = os.path.realpath(utildir)
 # We open the compileline inside of CHPL_HOME rather than CHPL_TEST_UTIL_DIR on
 # purpose. compileline will not work correctly in some configurations when run
 # outside of its directory tree.
-p = subprocess.Popen([os.path.join(chpl_home,'util','config','compileline'),
-                        '--compile'],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-c_compiler = p.communicate()[0].rstrip()
-if p.returncode != 0:
+rc, c_compiler = runAndReturnRcOutputEIEO(
+    [os.path.join(chpl_home,'util','config','compileline'), '--compile'])
+c_compiler = c_compiler.strip()
+if rc != 0:
   Fatal('Cannot find c compiler')
 
 # Find the test directory
@@ -605,8 +696,8 @@ if useTimedExec:
 # sys.stdout.write('timedexec='+timedexec+'\n');
 
 # HW platform
-platform=subprocess.Popen([utildir+'/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE).communicate()[0]
-platform = platform.strip()
+platform = runAndReturnOutputEIEO([utildir+'/chplenv/chpl_platform.py',
+                                   '--target']).strip()
 # sys.stdout.write('platform='+platform+'\n')
 
 # Machine name we are running on
@@ -746,12 +837,12 @@ else:
 
 globalLastcompopts=list();
 if os.access('./LASTCOMPOPTS',os.R_OK):
-    globalLastcompopts+=subprocess.Popen(['cat', './LASTCOMPOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
+    globalLastcompopts += fileContentsCFE('./LASTCOMPOPTS').strip().split()
 # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
 globalLastexecopts=list();
 if os.access('./LASTEXECOPTS',os.R_OK):
-    globalLastexecopts+=subprocess.Popen(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
+    globalLastexecopts += fileContentsCFE('./LASTEXECOPTS').strip().split()
 # sys.stdout.write('globalLastexecopts=%s\n'%(globalLastexecopts))
 
 if os.access(PerfDirFile('NUMLOCALES'),os.R_OK):
@@ -769,7 +860,7 @@ if maxLocalesAvailable is not None:
     maxLocalesAvailable = int(maxLocalesAvailable)
 
 if os.access('./CATFILES',os.R_OK):
-    globalCatfiles=subprocess.Popen(['cat', './CATFILES'], stdout=subprocess.PIPE).communicate()[0]
+    globalCatfiles = fileContentsCFE('./CATFILES')
     globalCatfiles.strip(globalCatfiles)
 else:
     globalCatfiles=None
@@ -1146,18 +1237,18 @@ for testname in testsrc:
             killtimeout=ReadIntegerValue(f, localdir)
 
         elif (suffix=='.catfiles' and os.access(f, os.R_OK)):
-            execcatfiles=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip()
+            execcatfiles=fileContentsCFE(f).strip()
             if catfiles:
                 catfiles+=execcatfiles
             else:
                 catfiles=execcatfiles
 
         elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
-            lastcompopts+=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
+            lastcompopts+=fileContentsCFE(f).strip().split()
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
         elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
-            lastexecopts+=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
+            lastexecopts+=fileContentsCFE(f).strip().split()
             # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
         elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
@@ -1352,24 +1443,12 @@ for testname in testsrc:
         #
         if globalPrecomp:
             sys.stdout.write('[Executing ./PRECOMP]\n')
-            sys.stdout.flush()
-            p = subprocess.Popen(['./PRECOMP',
-                                  execname,complog,compiler],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
-            sys.stdout.write(p.communicate()[0])
-            sys.stdout.flush()
+            runAndShowOutput(['./PRECOMP',execname,complog,compiler])
 
         if precomp:
             sys.stdout.write('[Executing precomp %s.precomp]\n'%(test_filename))
-            sys.stdout.flush()
-            p = subprocess.Popen(['./'+test_filename+'.precomp',
-                                  execname,complog,compiler],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
-            sys.stdout.write(p.communicate()[0])
-            sys.stdout.flush()
-
+            runAndShowOutput(['./'+test_filename+'.precomp',
+                              execname,complog,compiler])
 
         #
         # Build the test program
@@ -1501,9 +1580,7 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (test_filename+'.catfiles'))
                 sys.stdout.flush()
-                output+=subprocess.Popen(['cat']+catfiles.split(),
-                                         stdout=subprocess.PIPE,
-                                         stderr=subprocess.STDOUT).communicate()[0]
+                output += filesContentsISE(catfiles.split())
 
             # Sadly these scripts require an actual file
             complogfile=file(complog, 'w')
@@ -1512,39 +1589,24 @@ for testname in testsrc:
 
             if systemPrediff:
                 sys.stdout.write('[Executing system-wide prediff]\n')
-                sys.stdout.flush()
-                p = subprocess.Popen([systemPrediff,
-                                      execname,complog,compiler,
-                                      ' '.join(envCompopts)+' '+compopts,
-                                      ' '.join(args)],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+                runAndShowOutput([systemPrediff,
+                                  execname,complog,compiler,
+                                  ' '.join(envCompopts)+' '+compopts,
+                                  ' '.join(args)])
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
-                sys.stdout.flush()
-                p = subprocess.Popen(['./PREDIFF',
-                                      execname,complog,compiler,
-                                      ' '.join(envCompopts)+' '+compopts,
-                                      ' '.join(args)],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+                runAndShowOutput(['./PREDIFF',
+                                  execname,complog,compiler,
+                                  ' '.join(envCompopts)+' '+compopts,
+                                  ' '.join(args)])
 
             if prediff:
                 sys.stdout.write('[Executing prediff %s.prediff]\n'%(test_filename))
-                sys.stdout.flush()
-                p = subprocess.Popen(['./'+test_filename+'.prediff',
-                                      execname,complog,compiler,
-                                      ' '.join(envCompopts)+' '+compopts,
-                                      ' '.join(args)],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+                runAndShowOutput(['./'+test_filename+'.prediff',
+                                  execname,complog,compiler,
+                                  ' '.join(envCompopts)+' '+compopts,
+                                  ' '.join(args)])
 
 
             # find the compiler .good file to compare against. The compiler
@@ -1672,10 +1734,8 @@ for testname in testsrc:
                 # computePerfStats for the current test
                 sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'))
                 sys.stdout.flush()
-                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'], stdout=subprocess.PIPE)
-                compkeysOutput = p.communicate()[0]
-                datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
-                status = p.returncode
+                status, compkeysOutput = runAndReturnRcOutputEIEO([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'])
+                datFile = tempDatFilesDir+'/'+datFileName+'.dat'
 
                 if status == 0:
                     sys.stdout.write('[Success finding compiler performance keys for %s/%s]\n'% (localdir, test_filename))
@@ -1684,10 +1744,9 @@ for testname in testsrc:
                     printTestVariation(compoptsnum, compoptslist);
                     sys.stdout.write('computePerfStats output was:\n%s\n'%(compkeysOutput))
                     sys.stdout.flush()
-                    sys.stdout.write('Deleting .dat files for %s/%s because of failure to find all keys\n'%(localdir, test_filename))
-                    for datFile in datFiles:
-                        if os.path.isfile(datFile):
-                            os.unlink(datFile)
+                    sys.stdout.write('Deleting .dat file for %s/%s because of failure to find all keys\n'%(localdir, test_filename))
+                    if os.path.isfile(datFile):
+                        os.unlink(datFile)
 
             #delete the timing file     
             cleanup(printpassesfile)
@@ -1736,33 +1795,16 @@ for testname in testsrc:
 
             if systemPreexec:
                 sys.stdout.write('[Executing system-wide preexec]\n')
-                sys.stdout.flush()
-                p = subprocess.Popen([systemPreexec,
-                                      execname,execlog,compiler],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+                runAndShowOutput([systemPreexec,execname,execlog,compiler])
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
-                sys.stdout.flush()
-                p = subprocess.Popen(['./PREEXEC',
-                                      execname,execlog,compiler],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+                runAndShowOutput(['./PREEXEC',execname,execlog,compiler])
 
             if preexec:
                 sys.stdout.write('[Executing preexec %s.preexec]\n'%(test_filename))
-                sys.stdout.flush()
-                p = subprocess.Popen(['./'+test_filename+'.preexec',
-                                      execname,execlog,compiler],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+                runAndShowOutput(['./'+test_filename+'.preexec',
+                                  execname,execlog,compiler])
 
             pre_exec_output = ''
             if os.path.exists(execlog):
@@ -2004,9 +2046,7 @@ for testname in testsrc:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
                                     (test_filename+'.catfiles'))
                     sys.stdout.flush()
-                    output+=subprocess.Popen(['cat']+catfiles.split(),
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT).communicate()[0]
+                    output += filesContentsISE(catfiles.split())
 
                 # Sadly the scripts used below require an actual file
                 with open(execlog, 'w') as execlogfile:
@@ -2016,39 +2056,24 @@ for testname in testsrc:
                 if not exectimeout and not launcher_error:
                     if systemPrediff:
                         sys.stdout.write('[Executing system-wide prediff]\n')
-                        sys.stdout.flush()
-                        sys.stdout.write(subprocess.Popen([systemPrediff,
-                                                          execname,execlog,compiler,
-                                                          ' '.join(envCompopts)+
-                                                          ' '+compopts,
-                                                          ' '.join(args)],
-                                                          stdout=subprocess.PIPE,
-                                                          stderr=subprocess.STDOUT).
-                                        communicate()[0])
+                        runAndShowOutput([systemPrediff,
+                                          execname,execlog,compiler,
+                                          ' '.join(envCompopts)+' '+compopts,
+                                          ' '.join(args)])
 
                     if globalPrediff:
                         sys.stdout.write('[Executing ./PREDIFF]\n')
-                        sys.stdout.flush()
-                        sys.stdout.write(subprocess.Popen(['./PREDIFF',
-                                                          execname,execlog,compiler,
-                                                          ' '.join(envCompopts)+
-                                                          ' '+compopts,
-                                                          ' '.join(args)],
-                                                          stdout=subprocess.PIPE,
-                                                          stderr=subprocess.STDOUT).
-                                        communicate()[0])
+                        runAndShowOutput(['./PREDIFF',
+                                          execname,execlog,compiler,
+                                          ' '.join(envCompopts)+' '+compopts,
+                                          ' '.join(args)])
 
                     if prediff:
                         sys.stdout.write('[Executing prediff ./%s]\n'%(prediff))
-                        sys.stdout.flush()
-                        sys.stdout.write(subprocess.Popen(['./'+prediff,
-                                                          execname,execlog,compiler,
-                                                          ' '.join(envCompopts)+
-                                                          ' '+compopts,
-                                                          ' '.join(args)],
-                                                          stdout=subprocess.PIPE,
-                                                          stderr=subprocess.STDOUT).
-                                        communicate()[0])
+                        runAndShowOutput(['./'+prediff,
+                                          execname,execlog,compiler,
+                                          ' '.join(envCompopts)+' '+compopts,
+                                          ' '.join(args)])
 
                     if not perftest:
                         # find the good file 
@@ -2073,8 +2098,7 @@ for testname in testsrc:
                         if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
                             sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
                             sys.stdout.write('[Execution output was as follows:]\n')
-                            exec_output = subprocess.Popen(['cat', execlog],
-                                stdout=subprocess.PIPE).communicate()[0]
+                            exec_output = fileContentsCFE(execlog)
                             sys.stdout.write(trim_output(exec_output))
 
                             continue # on to next execopts
@@ -2150,15 +2174,12 @@ for testname in testsrc:
                         perfdate = datetime.date.today().strftime("%m/%d/%y")
 
                     sys.stdout.write('[Executing %s/test/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
-                    sys.stdout.flush()
+                    status, execkeysOutput = runAndReturnRcOutputEIEO(
+                        [utildir+'/test/computePerfStats',
+                         perfexecname, perfdir, keyfile,
+                         execlog, str(exectimeout), perfdate])
+                    sys.stdout.write(execkeysOutput)
 
-                    p = subprocess.Popen([utildir+'/test/computePerfStats',
-                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
-                                         stdout=subprocess.PIPE)
-                    sys.stdout.write('%s'%(p.communicate()[0]))
-                    sys.stdout.flush()
-
-                    status = p.returncode
                     if not exectimeout and not launcher_error:
                         if status == 0:
                             os.unlink(execlog)
