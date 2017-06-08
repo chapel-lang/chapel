@@ -54,13 +54,13 @@ if !correctness {
   writeln();
 }
 
-const refChecksum = (iterations) *
+const refChecksum = (iterations+1) *
     (0.25*order*order*order*(order-1.0)*(order-1.0));
 
 var t = new Timer();
 
 if blockSize == 0 {
-  for niter in 0..#iterations {
+  for niter in 0..iterations {
     if iterations==1 || niter==1 then t.start();
 
     forall (i,j) in matrixSpace do
@@ -86,7 +86,7 @@ else {
             BB: [blockDom] dtype,
             CC: [blockDom] dtype;
 
-        for niter in 0..#iterations {
+        for niter in 0..iterations {
           if tid==0 && (iterations==1 || niter==1) then t.start();
 
           for (jj,kk) in {myChunk by blockSize, vecRange by blockSize} {
