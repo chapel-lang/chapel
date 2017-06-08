@@ -1,0 +1,4 @@
+feature request: default initializers
+
+Don't expect any of these to pass yet.  Especially because the flag in the
+COMPOPTS isn't valid yet.
