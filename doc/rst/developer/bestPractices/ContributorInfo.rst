@@ -166,6 +166,45 @@ before asking for a review.  Should additional testing resources be need, you
 can request help from a member of the core Chapel team when creating your pull
 request.
 
+.. _Testing guidance:
+
+Testing your patch:
+
+  * Changes to the Chapel implementation should not cause
+    regressions. Developers are responsible for doing a degree of testing
+    that's appropriate for their change (see guidance below) and then can rely
+    on nightly regression testing to worry about the full cross-product of
+    configurations.
+
+    * At a minimum, patches should pass correctness testing for the full test/
+      directory hierarchy for:
+
+      * ``CHPL_*_PLATFORM=linux64``
+      * ``CHPL_*_COMPILER=gnu``
+      * ``CHPL_COMM=none``
+      * ``CHPL_TASKS=<default>``
+
+    * Most developers will start by focusing on a subdirectory of tests that
+      exercise the features they changed, or test/release/ as a suite of tests
+      that exercises a rich and important slice of the language.
+
+    * Changes that are likely to affect multi-locale executions should also be
+      tested against tests that exercise multi-locale capabilities with
+      ``CHPL_COMM=gasnet``.  A common subset is: ``test/release/``,
+      ``test/multilocale/``, and ``test/distributions/``.
+
+    * Changes that are likely to cause portability issues should be tested
+      against different platforms and compilers to avoid fallout in the nightly
+      testing to the extent possible.
+
+  * Note that the quickest way to do testing is to use the parallel testing
+    system across a large number of workstations.  If you have limited testing
+    resources available to you, you can request that a member of the core
+    Chapel team help.
+
+.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
+
+
 .. _Request feedback on your changes:
 
 Request feedback on your changes
@@ -292,44 +331,12 @@ Work with your reviewers
 Test changes
 ~~~~~~~~~~~~
 
-It may be helpful to read the documentation on Chapel's `Test System`_ before
-writing or modifying tests.
+If you did not have the resources to perform at least a full correctness test
+run, this is the point at which a reviewer would do so for you.  See
+`Testing guidance`_ above for more details on what an appropriate amount of
+testing is.
 
-* Testing your patch:
 
-  * Changes to the Chapel implementation should not cause
-    regressions. Developers are responsible for doing a degree of testing
-    that's appropriate for their change (see guidance below) and then can rely
-    on nightly regression testing to worry about the full cross-product of
-    configurations.
-
-    * At a minimum, patches should pass correctness testing for the full test/
-      directory hierarchy for:
-
-      * ``CHPL_*_PLATFORM=linux64``
-      * ``CHPL_*_COMPILER=gnu``
-      * ``CHPL_COMM=none``
-      * ``CHPL_TASKS=<default>``
-
-    * Most developers will start by focusing on a subdirectory of tests that
-      exercise the features they changed, or test/release/ as a suite of tests
-      that exercises a rich and important slice of the language.
-
-    * Changes that are likely to affect multi-locale executions should also be
-      tested against tests that exercise multi-locale capabilities with
-      ``CHPL_COMM=gasnet``.  A common subset is: ``test/release/``,
-      ``test/multilocale/``, and ``test/distributions/``.
-
-    * Changes that are likely to cause portability issues should be tested
-      against different platforms and compilers to avoid fallout in the nightly
-      testing to the extent possible.
-
-  * Note that the quickest way to do testing is to use the parallel testing
-    system across a large number of workstations.  If you have limited testing
-    resources available to you, you can request that a member of the core
-    Chapel team help.
-
-.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
 
 .. _Merge changes in to master:
 
