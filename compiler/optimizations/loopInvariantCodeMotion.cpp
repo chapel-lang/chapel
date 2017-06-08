@@ -110,22 +110,29 @@ public:
       delete bitExits;
     }
 
-    // This function exists to place an expr in the
-    // "preheader" of the loop,
-    void insertBefore(Expr* expr) {
+    // Get the BlockStmt AST that corresponds to this BasicBlock representation
+    // of the loop
+    BlockStmt* getLoopAST() {
       if (header->exprs.size() != 0) {
         // find the first expr in the header, and get it's parent expr (for
         // most cases it will be the surrounding block statement of the loop)
         if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
           if (blockStmt->isLoopStmt()) {
-            blockStmt->insertBefore(expr->remove());
-
+            return blockStmt;
           } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
-            CForLoop* cforLoop = CForLoop::loopForClause(blockStmt);
-
-            cforLoop->insertBefore(expr->remove());
+            return CForLoop::loopForClause(blockStmt);
           }
         }
+      }
+      return NULL;
+    }
+
+    // This function exists to place an expr in the
+    // "preheader" of the loop,
+    void insertBefore(Expr* expr) {
+      BlockStmt* loopAST = getLoopAST();
+      if (loopAST) {
+        loopAST->insertBefore(expr->remove());
       }
     }
 
@@ -1023,6 +1030,20 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 }
 
 
+/*
+ * Check if a symExpr's defPoint is in the current loop. If it is, we don't
+ * need to check if definitions dominate all exists since the variable can't be
+ * live past the loop.
+ */
+static bool defPointInLoop(Loop* loop, SymExpr* symExpr) {
+  if (VarSymbol* vSymbol = toVarSymbol(symExpr->symbol())) {
+    if (vSymbol->defPoint->parentExpr == loop->getLoopAST()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 /*
  * Collects the uses and defs of symbols the baseAST
@@ -1177,11 +1198,13 @@ void loopInvariantCodeMotion(void) {
       computeLoopInvariants(loopInvariants, curLoop, localDefMap, fn);
       stopTimer(computeLoopInvariantsTimer);
 
-      //For each invariant, only move it if its def, dominates all uses and all exits 
+      // For each invariant, only hoist it if its def dominates all uses and if
+      // the def dominates all exists for which the variable is live
       for_vector(SymExpr, symExpr, loopInvariants) {
         if(CallExpr* call = toCallExpr(symExpr->parentExpr)) {
           if(defDominatesAllUses(curLoop, symExpr, dominators, localMap, localUseMap)) {
-            if(defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
+            if(defPointInLoop(curLoop, symExpr) || defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
+              curLoop->insertBefore(symExpr->symbol()->defPoint);
               curLoop->insertBefore(call);
             }
           }   
