@@ -1,1 +1,1 @@
--sperfTesting=true --no-ieee-float
+-soutputFormat=2 --no-ieee-float
