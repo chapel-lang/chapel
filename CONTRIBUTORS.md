@@ -9,14 +9,15 @@ Contributors to the current release
 * Ben Albrecht, [Cray Inc.]
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
-* Marcos Cleison Silva Santana, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
+* Marcos Cleison Silva Santana, individual contributor
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
-* David Keaton, [Cray Inc.]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
+* David Keaton, [Cray Inc.]
+* Sagar Khatri, individual contributor
 * Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
@@ -27,7 +28,6 @@ Contributors to the current release
 * Sriraj Paul, [Rice University]
 * Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
-* Sagar Khatri, individual contributor
 * Preston Sahabu, [Cray Inc.]
 * [Kenjiro Taura], [University of Tokyo]
 * Greg Titus, [Cray Inc.]
@@ -36,11 +36,13 @@ Contributors to the current release
 
 Contributors to previous releases
 ---------------------------------
+* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Rafael Asenjo, [Universidad de Málaga (University of Malaga)]
 * Matthew Baker, [ORNL]
 * Steve Balensiefer, [University of Washington]
 * Casey Battaglino, [Cray Inc.] / [Georgia Tech]
 * Ian Bertolacci, [Cray Inc.] / [Colorado State University]
+* Mary Beth Hribar[*](#footnote), [Cray Inc.]
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
@@ -55,6 +57,7 @@ Contributors to previous releases
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
+* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
@@ -63,8 +66,6 @@ Contributors to previous releases
 * Steven Hemmy, [Cray Inc.] / [University of Wisconsin]
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
-* Mary Beth Hribar[*](#footnote), [Cray Inc.]
-* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * John Koenig, [Cray Inc.]
@@ -76,7 +77,6 @@ Contributors to previous releases
 * Deepak Majeti, individual contributor
 * Cory McCartan, [Cray Inc.]
 * Damian McGuckin, [Pacific Engineering Systems International]
-* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
 * Jun Nakashima, [University of Tokyo]
 * Jacob Nelson, [Cray Inc.] / [University of Washington]
 * Joshua Olson, individual contributor
