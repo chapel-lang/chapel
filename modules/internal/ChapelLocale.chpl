@@ -80,6 +80,14 @@ module ChapelLocale {
   extern const c_sublocid_none: chpl_sublocID_t;
   pragma "no doc"
   extern const c_sublocid_any: chpl_sublocID_t;
+  pragma "no doc"
+  extern const c_sublocid_all: chpl_sublocID_t;
+
+  pragma "no doc"
+  inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t)
+    return (subloc != c_sublocid_none
+            && subloc != c_sublocid_any
+            && subloc != c_sublocid_all);
 
   /*
     ``locale`` is the abstract class from which the various
