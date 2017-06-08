@@ -88,6 +88,9 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
   char lastChar;
   const char* moduleName;
   char* varName;
+  if (setConfigBuffer[0] == '/') {
+    return 1;
+  }
 
   if (!equalsSign || !(equalsSign + 1)) {
     return 0;
