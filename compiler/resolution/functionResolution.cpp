@@ -6711,14 +6711,42 @@ static FnSymbol* findGenMainFn() {
   return NULL;
 }
 
+static bool isVoidOrVoidTupleType(Type* type) {
+  if (type == NULL) {
+    return false;
+  }
+  if (type == dtVoid) {
+    return true;
+  }
+  if (type->symbol->hasFlag(FLAG_REF)) {
+    if (type->getField("_val", false)) {
+      return isVoidOrVoidTupleType(type->getValType());
+    } else {
+      // The _val field has already been removed because it is
+      // void or tuple of void
+      return true;
+    }
+  }
+  if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    Symbol* field = type->getField("x1", false);
+    if (field == NULL || field->type == dtVoid) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static void cleanupVoidVarsAndFields() {
-  // remove most uses of void variables and fields
+  // Remove most uses of void variables and fields
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (call->isPrimitive(PRIM_MOVE)) {
-        if (call->get(2)->typeInfo() == dtVoid ||
+        if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtVoid->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
+          // Remove moves where the rhs has type void. If the rhs is a
+          // call to something other than a few primitives, still make
+          // that call, just don't move the result into anything.
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIM_DEREF) ||
                 rhs->isPrimitive(PRIM_GET_MEMBER) ||
@@ -6734,8 +6762,9 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-        if (call->get(3)->typeInfo() == dtVoid) {
-          INT_ASSERT(call->get(2)->typeInfo() == dtVoid);
+        if (isVoidOrVoidTupleType(call->get(3)->typeInfo())) {
+          INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
+          // Remove set_member(a, void, void) calls
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             Expr* rmRhs = rhs->remove();
             call->insertBefore(rmRhs);
@@ -6745,8 +6774,10 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       } else if (call->isPrimitive(PRIM_RETURN)) {
-        if (call->get(1)->typeInfo() == dtVoid ||
+        if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
+          // Change functions that return void to use the global
+          // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
             if (ret->symbol() != gVoid) {
               SET_LINENO(call);
@@ -6755,8 +6786,10 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (call->get(1)->typeInfo() == dtVoid ||
+        if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
+          // Change iterators that yield void to use the global
+          // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
             if (ret->symbol() != gVoid) {
               SET_LINENO(call);
@@ -6764,32 +6797,48 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
+      } else if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
+        // Remove calls to destructors for homogeneous tuples of void
+        if (isVoidOrVoidTupleType(call->get(1)->typeInfo())) {
+          call->remove();
+        }
       }
       if (call->isResolved()) {
+        // Remove actual arguments that are void from function calls
         for_actuals(actual, call) {
-          if (actual->typeInfo() == dtVoid) {
+          if (isVoidOrVoidTupleType(actual->typeInfo())) {
             actual->remove();
           }
         }
       }
     }
   }
+
+  // Remove void formal arguments from functions.
+  // Change functions that return ref(void) to just return void.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint->inTree()) {
       for_formals(formal, fn) {
-        if (formal->type == dtVoid) {
+        if (isVoidOrVoidTupleType(formal->type)) {
           if (formal == fn->_this) {
             fn->_this = NULL;
           }
           formal->defPoint->remove();
         }
       }
-      if (fn->retType == dtVoid->refType) {
+      if (fn->retType == dtVoid->refType ||
+          isVoidOrVoidTupleType(fn->retType)) {
         fn->retType = dtVoid;
+      }
+    }
+    if (fn->_this) {
+      if (isVoidOrVoidTupleType(fn->_this->type)) {
+        fn->_this = NULL;
       }
     }
   }
 
+  // Set for loop index variables that are void to the global void value
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
       if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
@@ -6798,11 +6847,15 @@ static void cleanupVoidVarsAndFields() {
     }
   }
 
+  // Now that uses of void have been cleaned up, remove the
+  // DefExprs for void variables.
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->inTree()) {
-      if (def->sym->type == dtVoid || def->sym->type == dtVoid->refType) {
+      if (isVoidOrVoidTupleType(def->sym->type) ||
+          def->sym->type == dtVoid->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
-          if (def->parentSymbol != dtVoid->refType->symbol) {
+          // Avoid removing the "_val" field from refs
+          if (!def->parentSymbol->hasFlag(FLAG_REF)) {
             if (var != gVoid) {
               def->remove();
             }
