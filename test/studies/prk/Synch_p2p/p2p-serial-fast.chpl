@@ -1,6 +1,8 @@
-//
-// Chapel's serial implementation of synch_p2p
-//
+/*
+   Chapel's serial synch_p2p implementation
+
+   Contributed by Ben Albrecht (Cray Inc.)
+*/
 use Time;
 
 param PRKVERSION = "2.15";
@@ -9,7 +11,7 @@ config const iterations = 10,
              m = 1000,
              n = 100,
              debug: bool = false,
-             validate: bool = false;
+             correctness: bool = false;
 
 //
 // Process and test input configs
@@ -36,7 +38,7 @@ var vector : [outerDom] real;
 //
 // Print information before main loop
 //
-if (!validate) {
+if (!correctness) {
   writeln("Parallel Research Kernels version ", PRKVERSION);
   writeln("Serial pipeline execution on 2D grid");
   writeln("Grid sizes                = ", m, ", ", n);
@@ -88,7 +90,7 @@ if (abs(vector[m-1, n-1] - cornerValue) / cornerValue > epsilon) {
 
   if (debug) then writeln("Verification value = ", cornerValue);
 
-  if (!validate) {
+  if (!correctness) {
     writeln("Rate (MFlops/s): ", 1.0e-6 * 2 * ((m-1)*(n-1)) / avgTime,
             " Avg time (s): ", avgTime);
   }

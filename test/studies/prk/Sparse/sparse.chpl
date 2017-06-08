@@ -1,3 +1,8 @@
+/*
+   Chapel's parallel Sparse implementation
+
+   Contributed by Engin Kayraklioglu (GWU)
+*/
 use BlockDist;
 use Time;
 use LayoutCSR;

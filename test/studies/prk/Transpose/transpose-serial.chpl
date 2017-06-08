@@ -1,6 +1,9 @@
-//
-// Chapel's serial implementation of transpose
-//
+/*
+   Chapel's serial Transpose implementation
+
+   Contributed by Ben Albrecht (Cray Inc.)
+*/
+
 use Time;
 
 param PRKVERSION = "2.15";
@@ -8,7 +11,7 @@ param PRKVERSION = "2.15";
 config const iterations : int = 100,
              order : int = 100,
              debug: bool = false,
-             validate: bool = false;
+             correctness: bool = false;
 
 config var tileSize: int = 0;
 
@@ -41,7 +44,7 @@ var timer: Timer,
 //
 // Print information before main loop
 //
-if (!validate) {
+if (!correctness) {
   writeln("Parallel Research Kernels version ", PRKVERSION);
   writeln("Serial Matrix transpose: B = A^T");
   writeln("Matrix order          = ", order);
@@ -106,7 +109,7 @@ if (debug) {
 // Verify correctness
 if (absErr < epsilon) {
   writeln("Solution validates");
-  if (!validate) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,
+  if (!correctness) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,
                               " Avg time (s): ", avgTime);
 } else {
   writeln("ERROR: Aggregate squared error", absErr,

@@ -1,3 +1,8 @@
+/*
+   Chapel's parallel DGEMM implementation
+
+   Contributed by Engin Kayraklioglu (GWU)
+*/
 use Time;
 use BlockDist;
 use RangeChunk;
