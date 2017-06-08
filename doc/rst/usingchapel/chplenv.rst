@@ -686,6 +686,13 @@ CHPL_UNWIND
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
 
+.. tip::
+
+   The ``CHPL_RT_UNWIND`` environment variable can be set to ``0``, ``false``, or
+   ``no`` to squash the output that would normally be generated on ``halt()`` when
+   ``CHPL_UNWIND`` is set to something other than ``none``.
+   
+   
 Compiler Command Line Option Defaults
 -------------------------------------
 
