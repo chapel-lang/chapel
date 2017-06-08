@@ -29,7 +29,6 @@ extern proc chpl_topo_getMemLocality(p: c_ptr): chpl_sublocID_t;
 {
   var locality: localityCheck_t;
   if defRectSimpleDData || A._value.oneDData {
-    writeln('beep');
     locality = checkMemLocalityParts(c_ptrTo(A), A.domain.numIndices,
                                      A.eltType);
   } else {
