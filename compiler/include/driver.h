@@ -164,7 +164,6 @@ extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
 extern char defaultDist[256];
-extern char mainModuleName[256];
 extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;

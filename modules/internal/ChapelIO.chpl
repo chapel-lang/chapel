@@ -658,6 +658,7 @@ module ChapelIO {
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
+  pragma "function terminates program"
   proc halt() {
     __primitive("chpl_error", c"halt reached");
   }
@@ -667,6 +668,7 @@ module ChapelIO {
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
+  pragma "function terminates program"
   proc halt(s:string) {
     halt(s.localize().c_str());
   }
@@ -676,6 +678,7 @@ module ChapelIO {
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
+  pragma "function terminates program"
   proc halt(args ...?numArgs) {
     var tmpstring = "halt reached - " + stringify((...args));
     __primitive("chpl_error", tmpstring.c_str());

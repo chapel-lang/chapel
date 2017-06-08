@@ -44,7 +44,10 @@ module DefaultRectangular {
   // will be a query supported by the LocaleModel.
   config param experimentalMaxSublocales = 4;
 
-  inline proc defRectSimpleDData param return !localeModelHasSublocales;
+  // The multi-ddata feature is parked for the time being.
+  config param defRectDisableMultiDData = true;
+  inline proc defRectSimpleDData param
+    return !localeModelHasSublocales || defRectDisableMultiDData;
 
   // helper function to set the types of multi-ddata specific fields
   // to 'void' when they are not needed

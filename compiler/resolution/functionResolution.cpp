@@ -37,6 +37,7 @@
 #include "ForLoop.h"
 #include "initializerResolution.h"
 #include "iterator.h"
+#include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
 #include "passes.h"
@@ -3289,11 +3290,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
         // If the first actual is an instance of dtMethodToken and the call is
         // to "init" of a generic record that defined initializers
         resolveInitializer(call);
-        NamedExpr* named = toNamedExpr(call->get(2));
-        INT_ASSERT(named);
-        SymExpr* namedSe = toSymExpr(named->actual);
-        INT_ASSERT(namedSe);
-        namedSe->symbol()->type = call->resolvedFunction()->_this->type;
         return call->resolvedFunction();
       }
     }
@@ -5952,9 +5948,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
-  // --ipe does not build a mainModule
-  if (mainModule)
-    resolveUses(mainModule);
+  resolveUses(ModuleSymbol::mainModule());
 
   // --ipe does not build printModuleInitModule
   if (printModuleInitModule)
