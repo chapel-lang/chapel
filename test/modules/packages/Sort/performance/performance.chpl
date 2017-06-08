@@ -119,6 +119,30 @@ proc gatherTimings(const ref A) {
       print('bubbleSort (seconds): ', t.elapsed());
     t.clear();
   }
+  if sorts.find('B')
+  {
+    var B = A;
+    t.start();
+    binaryInsertionSort(B);
+    t.stop();
+    if !isSorted(B) then
+      writeln('binaryInsertionSort failed to sort data');
+    else
+      print('binaryInsertionSort (seconds): ', t.elapsed());
+    t.clear();
+  }
+  if sorts.find('t')
+  {
+    var B = A;
+    t.start();
+    timSort(B);
+    t.stop();
+    if !isSorted(B) then
+      writeln('timSort failed to sort data');
+    else
+      print('timSort (seconds): ', t.elapsed());
+    t.clear();
+  }
 }
 
 proc print(args...) {
