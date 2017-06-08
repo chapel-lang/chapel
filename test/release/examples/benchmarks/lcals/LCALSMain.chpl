@@ -131,7 +131,7 @@ module main {
 
     const cache_size = 0;
     const host_name = here.name;
-    if outputFormat != 0 then
+    if outputFormat != OutputStyle.MINIMAL then
       writeln("\n Running loop suite on ", host_name);
 
     allocateLoopSuiteRunInfo(host_name,
@@ -163,17 +163,17 @@ module main {
     writeln("\n generate reports....");
 
     select outputFormat {
-      when 0 {
+      when OutputStyle.MINIMAL {
         // no timing or checksum output
       }
-      when 1 {
+      when OutputStyle.REFERENCE {
         // match what the reference code does
         generateTimingReport(run_variants, output_dirname);
         generateChecksumReport(run_variants, output_dirname);
         generateFOMReport(run_variants, output_dirname);
       }
-      when 2 {
-        //
+      when OutputStyle.PERF_TEST {
+        // format times for nightly perf testing
         generatePerfTimingReport(run_variants);
       }
       otherwise {
