@@ -378,6 +378,10 @@ ep-b:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
+ep.ml-perf:
+  06/08/17:
+    - Mothball multi-ddata (#6390)
+
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
@@ -745,6 +749,8 @@ prk-stencil.ml-perf:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/18/17:
     - Use nonblocking transactions for strided transfers (#6262)
+  06/06/17:
+    - Increase the PRK stencil problem size (#6380)
 
 prk-stencil-time:
   05/11/17:
