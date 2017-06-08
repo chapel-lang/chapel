@@ -1974,6 +1974,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   Expr*   typeExpr = defExpr->exprType->remove();
   Expr*   initExpr = defExpr->init->remove();
   Type*   type     = typeForTypeSpecifier(typeExpr);
+  // Note: the above line will not obtain a type if the typeExpr is a CallExpr
+  // for a generic record or class, as that is a more complicated set of AST.
 
   //
   // e.g. const x : int     = 10;
@@ -2023,6 +2025,10 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNewExpr(initExpr)) {
+    // This check is necessary because the "typeForTypeSpecifier" call will not
+    // obtain a type if the typeExpr is a CallExpr, as it is for generic records
+    // and classes
+
     CallExpr* origCall = toCallExpr(initExpr);
     AggregateType* rhsType = typeForNewExpr(origCall);
     if (isGenericRecordWithInitializers(rhsType)) {
