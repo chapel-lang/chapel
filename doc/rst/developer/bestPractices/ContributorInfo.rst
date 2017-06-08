@@ -264,7 +264,9 @@ Submit pull request
 
     Next, put in a message to your reviewer about the purpose of your pull
     request and give the pull request a useful title. It's a good time to draft
-    the commit message that you will need when merging the pull request
+    the commit message that you will need when merging the pull request.  See
+    `Final merge message`_ for recommendations on what that commit message
+    should look like.
 
     You will have to have signed a contributors agreement.
 
@@ -364,7 +366,19 @@ Merge changes in to master
   privileges, please look through the `Reviewer responsibilities`_ once more
   before merging the change.
 
+After the final version of the change has been agreed upon, navigate to the
+pull request:
 
+go to
+  https://github.com/chapel-lang/chapel/pulls
+or
+  https://github.com/chapel-lang/chapel/pull/<number>
+
+and click the friendly green button "Merge pull request" (it is possible to
+merge the pull request from the command line also and the pull request page has
+details). When you click "Merge pull request", you will need to enter a commit
+message. See `Final merge message`_ for a reminder on what that commit message
+should entail.
 
 .. _Watch automatic testing:
 
@@ -701,6 +715,17 @@ complete with a link to the pull request page.
 Policy details
 ~~~~~~~~~~~~~~
 
+.. _Final merge message:
+
+Final merge message
+-------------------
+
+ - start with a single topic line with at most 75 characters
+ - then have a blank line
+ - then have a more detailed explanation including motivation for the
+   change and how it changes the previous behavior
+ - use present tense (e.g. "Fix file iterator bug")
+ - manually wrap long lines in the explanation to 75 or 80 characters
 
 .. _Reviewer responsibilities:
 
