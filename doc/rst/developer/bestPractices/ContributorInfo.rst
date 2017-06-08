@@ -25,8 +25,10 @@ Overview:
 #. `Request feedback on your changes`_
 #. `Test changes`_ (can be done by team at Cray)
 #. `Merge changes in to master`_
-#. `HOWTO/Git/GitHub details`_
-#. `Policy details`_
+#. `Watch automatic testing`_ and address issues
+
+`HOWTO/Git/GitHub details`_
+`Policy details`_
 
 .. _Discuss design:
 
@@ -315,6 +317,9 @@ Find a reviewer
     review should take place within a few days, though timing may vary
     depending on other deadlines.
 
+* See `Reviewer responsibilities`_ for details on what performing a review on
+  another contributor's code entails.
+
 Work with your reviewers
 ------------------------
 
@@ -355,6 +360,17 @@ Merge changes in to master
     code, code owned by anyone other than yourself). Ideally, the review will
     catch such issues, but the ultimate responsibility is on the developer.
 
+* If you are reviewing code from an external contributor without push
+  privileges, please look through the `Reviewer responsibilities`_ once more
+  before merging the change.
+
+
+
+.. _Watch automatic testing:
+
+Watch automatic testing and address issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 * In short order, a smoke-test will be run against the commit to make sure that
   nothing basic has been broken by it.  Monitor the
   chapel-test-results-regressions_ mailing list to make sure that nothing
@@ -371,9 +387,6 @@ Merge changes in to master
 * In general, all changes will go through a pull request and have a review. We
   have intentionally made the process as lightweight as possible, so it can be
   used for changes big and small alike.
-
-* See `Reviewer Responsibilities`_ for details on what performing a review on
-  another contributor's code entails.
 
 .. _HOWTO/Git/GitHub details:
 
@@ -689,9 +702,9 @@ Policy details
 ~~~~~~~~~~~~~~
 
 
-.. _Reviewer Responsibilities:
+.. _Reviewer responsibilities:
 
-Reviewer Responsibilities
+Reviewer responsibilities
 -------------------------
 
 * If you're reviewing a commit from a developer outside the Chapel core
