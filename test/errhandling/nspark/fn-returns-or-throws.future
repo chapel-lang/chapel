@@ -1,0 +1,3 @@
+Error-handling WIP: When a potentially-throwing function may return a value,
+an error thrown by that function does not immediately jump to the catch block
+and subsequent statements in the try block execute.
