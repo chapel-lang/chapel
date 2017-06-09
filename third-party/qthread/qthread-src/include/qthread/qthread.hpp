@@ -15,7 +15,7 @@ template <bool> class OnlyTrue;
 template <> class OnlyTrue<true>
 {};
 #if __cplusplus >= 201103
-#define QTHREAD_STATIC_ASSERT(X) static_assert(X, #X)
+#define QTHREAD_STATIC_ASSERT(X) static_assert((X), #X)
 #else
 #define QTHREAD_STATIC_ASSERT(X) (void)sizeof(OnlyTrue<(bool)(X)>)
 #endif
