@@ -24,6 +24,7 @@
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
+#include "initializerRules.h"
 #include "ModuleSymbol.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -35,6 +36,8 @@ static bool mainReturnsInt;
 static void build_chpl_entry_points();
 static void build_accessor(AggregateType* ct, Symbol* field, bool setter);
 static void build_accessors(AggregateType* ct, Symbol* field);
+
+static void buildDefaultInitializer(AggregateType* ct);
 
 static void buildDefaultOfFunction(AggregateType* ct);
 
@@ -78,6 +81,29 @@ void buildDefaultFunctions() {
       // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
       if (AggregateType* ct = toAggregateType(type->type)) {
         buildFieldAccessorFunctions(ct);
+
+        if (ct->isClass() && ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+          bool hasOuter = false;
+          if (ct->outer != NULL) {
+            hasOuter = true;
+          }
+
+          bool usesInitializeMethod = false;
+          forv_Vec(FnSymbol, method, ct->methods) {
+            if (method && strcmp(method->name, "initialize") == 0) {
+              if (method->numFormals() == 2) {
+                usesInitializeMethod = true;
+              }
+            }
+          }
+
+          if (!hasOuter && !usesInitializeMethod &&
+              !ct->symbol->hasFlag(FLAG_REF)) {
+            // Classes with an outer or an initialize method are weird, so
+            // don't handle them just yet.
+            buildDefaultInitializer(ct);
+          }
+        }
 
         if (!ct->symbol->hasFlag(FLAG_REF)) {
           buildDefaultDestructor(ct);
@@ -1193,7 +1219,8 @@ static void build_record_copy_function(AggregateType* ct) {
       }
     }
 
-    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    if (ct->initializerStyle == DEFINES_INITIALIZER ||
+        strcmp(ct->defaultInitializer->name, "init") == 0) {
       // We want the initializer to take in the memory it will initialize
       VarSymbol* meme = newTemp("meme_tmp", ct);
 
@@ -1254,6 +1281,196 @@ static void build_record_hash_function(AggregateType *ct) {
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
   normalize(fn);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void buildDefaultInitializer(AggregateType* ct) {
+  ModuleSymbol* mod = ct->getModule();
+  if (!mod || mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD ||
+      !fUserDefaultInitializers) {
+    // Don't make a default initializer for types that are defined in the
+    // standard or internal modules.  Only make default initializers when the
+    // flag --force-initializers is true.
+    return;
+  }
+
+  // No need to remake the default initializer if we have already made one!
+  if (ct->defaultInitializer &&
+      strcmp(ct->defaultInitializer->name, "init") == 0)
+    return;
+
+  FnSymbol* fn = new FnSymbol("init");
+  fn->cname = fn->name;
+
+  // Note: will have to do something different in wrappers.cpp if I end up
+  // adding the DEFAULT_CONSTRUCTOR flag.
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+
+  fn->_this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(fn->_this);
+
+  Vec<const char*> fieldNamesSet; // Look into making this a std::vector or set
+
+  for_fields(field1, ct) {
+    SET_LINENO(field1);
+    if (VarSymbol* field = toVarSymbol(field1)) {
+      if (!field->hasFlag(FLAG_SUPER_CLASS) /* &&
+          strcmp(field->name, "_promotionType") &&
+          strcmp(field->name, "outer")*/) { // TODO: uncomment these and check
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, dtUnknown/*, field->type*/); // Not sure if field->type will still be valid at this point.
+
+        fieldNamesSet.set_add(field->name);
+
+        // Insert initialization for each field from the argument provided.
+        SET_LINENO(field);
+
+        if (field->hasFlag(FLAG_PARAM))
+          arg->intent = INTENT_PARAM;
+        if (field->isType())
+          arg->addFlag(FLAG_TYPE_VARIABLE);
+
+        // set up the ArgSymbol appropriately for the type and initialization
+        // from the field declaration.
+        if (!field->defPoint->init) {
+          if (field->defPoint->exprType != NULL) {
+            Expr* initVal = new SymExpr(gTypeDefaultToken);
+            arg->defaultExpr = new BlockStmt(initVal);
+          }
+        } else {
+          arg->defaultExpr = new BlockStmt(field->defPoint->init->copy());
+        }
+
+        if (!field->defPoint->exprType) {
+          arg->type = dtAny;
+
+          if (field->defPoint->init != NULL) {
+            VarSymbol* tmp = newTemp();
+            //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY); // Is this necessary?
+            tmp->addFlag(FLAG_MAYBE_TYPE);
+            tmp->addFlag(FLAG_MAYBE_PARAM);
+
+            BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
+            // Do I need to make an init copy in order to get the type
+            // information?  That seems silly and unnecessary, to me.
+            typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                                field->defPoint->init->copy()));
+            // If the above line doesn't work, uncomment this set:
+            // typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+            //                                     new CallExpr("chpl__initCopy",
+            //                                                  field->defPoint->init->copy())));
+            typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
+
+            arg->typeExpr = typeExpr;
+          }
+        } else {
+          arg->typeExpr = new BlockStmt(field->defPoint->exprType->copy(),
+                                        BLOCK_SCOPELESS);
+        }
+
+        fn->insertFormalAtTail(arg);
+
+        CallExpr* setField = new CallExpr(PRIM_INIT_FIELD, fn->_this,
+                                          new_CStringSymbol(field->name), arg);
+        fn->insertAtTail(setField);
+      }
+    }
+  }
+
+  // TODO: be sure to avoid applying this to tuples, too!
+  if (!ct->symbol->hasFlag(FLAG_REF) && isClass(ct)) {
+    if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
+      if (AggregateType* parent = toAggregateType(ct->dispatchParents.v[0])) {
+        if (parent->initializerStyle != DEFINES_CONSTRUCTOR) {
+          CallExpr* superPortion = new CallExpr(".",
+                                                new SymExpr(fn->_this),
+                                                new_CStringSymbol("super"));
+          SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
+          CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+          CallExpr* superCall    = new CallExpr(base);
+
+          if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+            // We want to call the compiler-generated all-fields initializer
+
+            // First, ensure we have a default initializer for the parent
+            if (!parent->defaultInitializer) {
+              buildDefaultInitializer(parent);
+              if (!parent->defaultInitializer) {
+                // The parent might have inherited from a class that defines
+                // any initializer but not one without arguments.  In this case,
+                // we shouldn't define a default initializer or constructor for
+                // this class either.
+                return;
+              }
+
+            }/* else if (strcmp(parent->defaultInitializer->name, "init") != 0) {
+              // The parent might have inherited from a class that defines a
+              // constructor.  In this case, we should just keep the default
+              // constructor
+              return;
+              } */
+            // Otherwise, we are good to go!
+
+            // Add an argument per argument in the parent initializer
+            for_formals(formal, parent->defaultInitializer) {
+              if (formal->hasFlag(FLAG_ARG_THIS) ||
+                  formal->type == dtMethodToken ||
+                  formal->hasFlag(FLAG_IS_MEME)) {
+                continue;
+              }
+
+              // Skip arguments shadowed by this class' fields
+              if (fieldNamesSet.set_in(formal->name)) {
+                continue;
+              }
+
+              DefExpr* superArg = formal->defPoint->copy();
+              fn->insertFormalAtTail(superArg);
+              superCall->insertAtTail(superArg->sym);
+            }
+
+          } else if (parent->initializerStyle == DEFINES_INITIALIZER) {
+            // We want to call a user-defined no-argument initializer.  Insert
+            // no arguments
+          } else {
+            // The parent has defined a constructor, this should be an error.
+            USR_FATAL(ct, "Trying to create default initializer on type '%s'"
+                      ", which inherits from type '%s' that defines a "
+                      "constructor", ct->symbol->name, parent->symbol->name);
+            return;
+          }
+
+          fn->body->insertAtTail(superCall);
+        } else {
+          // We want to use the default constructor already generated for us.
+          return;
+        }
+      }
+    }
+  }
+
+  ct->defaultInitializer = fn;
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  fn->addFlag(FLAG_METHOD);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+  ct->methods.add(fn);
+
+  if (!ct->isGeneric()) {
+    FnSymbol* allocator = buildClassAllocator(fn);
+    normalize(allocator);
+  }
 }
 
 /************************************* | **************************************

@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "iterator.h"
 #include "scopeResolve.h"
@@ -889,6 +890,12 @@ void AggregateType::buildConstructor() {
     // since we won't call the default constructor, and it mutates
     // information about the fields that we would rather stayed unmutated.
     return;
+  } else if (initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    if (isClass()) {
+      if (!needsConstructor()) {
+        return;
+      }
+    }
   }
 
   // Create the default constructor function symbol,
@@ -1209,6 +1216,45 @@ void AggregateType::buildConstructor() {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
   addToSymbolTable(fn);
+}
+
+bool AggregateType::needsConstructor() {
+  ModuleSymbol* mod = getModule();
+  if (mod && (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD))
+    return true;
+  else if (fUserDefaultInitializers)
+    return false;
+
+  if (initializerStyle == DEFINES_INITIALIZER) {
+    // Defining an initializer means we don't need a default constructor
+    return false;
+  } else if (initializerStyle == DEFINES_CONSTRUCTOR) {
+    // Defining a constructor means we need a default constructor
+    return true;
+  } else {
+    // For now, nested classes need a default constructor
+    if (outer != NULL)
+      return true;
+
+    // Classes that define an initialize() method need a default constructor
+    forv_Vec(FnSymbol, method, methods) {
+      if (method && strcmp(method->name, "initialize") == 0) {
+        if (method->numFormals() == 2) {
+          return true;
+        }
+      }
+    }
+
+    // If the parent type needs a default constructor, we need a default
+    // constructor.
+    if (dispatchParents.n > 0 && !symbol->hasFlag(FLAG_EXTERN)) {
+      if (AggregateType* pt = toAggregateType(dispatchParents.v[0])) {
+        return pt->needsConstructor();
+      }
+    }
+  }
+  // Otherwise, we don't need a default constructor.
+  return false;
 }
 
 ArgSymbol* AggregateType::createGenericArg(VarSymbol* field) {
