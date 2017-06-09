@@ -65,14 +65,6 @@
 static std::map<BlockStmt*, Vec<UseStmt*>*>   moduleUsesCache;
 static bool                                   enableModuleUsesCache = false;
 
-//
-// The aliasFieldSet is a set of names of fields for which arrays may
-// be passed in by named argument as aliases, as in new C(A=>GA) (see
-// test/arrays/deitz/test_array_alias_field.chpl).
-//
-static Vec<const char*>                       aliasFieldSet;
-
-
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
@@ -104,7 +96,14 @@ static bool          lookupThisScopeAndUses(const char*           name,
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
+static void          arrayAliasFieldsByNameCollect();
+
+static void          arrayAliasFieldsByNameApply(AggregateType* at);
+
 void scopeResolve() {
+  // Deprecated for 1.15
+  arrayAliasFieldsByNameCollect();
+
   //
   // add all program asts to the symbol table
   //
@@ -122,51 +121,20 @@ void scopeResolve() {
   }
 
   //
-  // determine fields (by name) that may be passed in arrays to alias
-  //
-  forv_Vec(NamedExpr, ne, gNamedExprs) {
-    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
-      CallExpr* pne  = toCallExpr(ne->parentExpr);
-      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
-
-      if (!ppne || !ppne->isPrimitive(PRIM_NEW)) {
-        USR_FATAL(ne,
-                  "alias-named-argument passing can only be used "
-                  "in constructor calls");
-      }
-
-      aliasFieldSet.set_add(astr(&ne->name[17]));
-    }
-  }
-
-  //
   // add implicit fields for implementing alias-named-argument passing
   //
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    for_fields(field, ct) {
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    for_fields(field, at) {
       if (strcmp(field->name, "outer") == 0) {
         USR_FATAL_CONT(field,
                        "Cannot have a field named 'outer'. "
                        "'outer' is used to refer to an outer class "
                        "from within a nested class.");
       }
-
-      if (aliasFieldSet.set_in(field->name)) {
-        SET_LINENO(field);
-
-        const char* aliasName  = astr("chpl__aliasField_", field->name);
-        Symbol*     aliasField = new VarSymbol(aliasName);
-        DefExpr*    def        = new DefExpr(aliasField);
-
-        aliasField->addFlag(FLAG_CONST);
-        aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
-
-        def->init     = new UnresolvedSymExpr("false");
-        def->exprType = new UnresolvedSymExpr("bool");
-
-        ct->fields.insertAtTail(def);
-      }
     }
+
+    // Deprecated for 1.15
+    arrayAliasFieldsByNameApply(at);
   }
 
   //
@@ -1720,4 +1688,59 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* A set of names of class/record fields that are used somewhere               *
+* in the application as a target for an array alias e.g.                      *
+*                                                                             *
+* class C {                                                                   *
+*   var A: [1..5] int;                                                        *
+* }                                                                           *
+*                                                                             *
+* var c2 = new C(A=>GA);      // *** This injects the name 'A'                *
+*                                                                             *
+*    1) This is a deprecated feature for 1.15                                 *
+*    2) *Every* class/record with a field A would be impacted                 *
+*                                                                             *
+************************************** | *************************************/
+
+static std::set<const char*> sAliasFieldSet;
+
+static void arrayAliasFieldsByNameCollect() {
+  forv_Vec(NamedExpr, ne, gNamedExprs) {
+    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
+      CallExpr* pne  = toCallExpr(ne->parentExpr);
+      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
+
+      if (ppne == NULL || ppne->isPrimitive(PRIM_NEW) == false) {
+        USR_FATAL(ne,
+                  "alias-named-argument passing can only be used "
+                  "in constructor calls");
+      }
+
+      sAliasFieldSet.insert(astr(&ne->name[17]));
+    }
+  }
+}
+
+static void arrayAliasFieldsByNameApply(AggregateType* at) {
+  for_fields(field, at) {
+    if (sAliasFieldSet.find(field->name) != sAliasFieldSet.end()) {
+      SET_LINENO(field);
+
+      const char* aliasName  = astr("chpl__aliasField_", field->name);
+      Symbol*     aliasField = new VarSymbol(aliasName);
+      DefExpr*    def        = new DefExpr(aliasField);
+
+      aliasField->addFlag(FLAG_CONST);
+      aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
+
+      def->init     = new UnresolvedSymExpr("false");
+      def->exprType = new UnresolvedSymExpr("bool");
+
+      at->fields.insertAtTail(def);
+    }
+  }
 }
