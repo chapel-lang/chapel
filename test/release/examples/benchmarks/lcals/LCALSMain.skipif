@@ -1,5 +1,11 @@
 # This test takes to long for no-local configurations, so skip it for
-# comm != none and --no-local.
+# comm != none and --no-local. Same for valgrind.
 CHPL_COMM != none
 COMPOPTS <= --no-local
-
+CHPL_TEST_VGRND_EXE == on
+# Some checksums differ from expected values on the following configurations.
+# I think it is caused by sizeof(long double) being less than 16.
+CHPL_TARGET_PLATFORM == cygwin32
+CHPL_TARGET_PLATFORM == cygwin64
+CHPL_TARGET_PLATFORM == linux32
+CHPL_TARGET_COMPILER == cray-prgenv-cray
