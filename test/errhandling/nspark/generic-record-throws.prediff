@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# <name>.prediff <test> <test.exec.out.tmp> <compiler>
+#
+# Compare the compilation output and .bad files as follows:
+#
+#   - If test.bad contains lines of "<variable value>",
+#     then diff test.bad with test.exec.out.tmp and check that the only
+#     changes are on those lines containing "<variable value>".
+#
+#   - If that is the case, replace test.exec.out.tmp with test.bad.
+#
+
+if [[ -f $1.bad ]] ; then
+    badfile=$1.bad
+    tmpfile=$2
+
+    expvars=$(grep -F '<variable value>' $badfile | wc -l)
+    gotvars=$(diff -y --suppress-common-lines $badfile $tmpfile | wc -l)
+
+    if [[ $expvars -eq $gotvars ]] ; then
+        cp $badfile $tmpfile
+    fi
+    
+fi
