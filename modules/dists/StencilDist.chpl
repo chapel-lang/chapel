@@ -32,12 +32,6 @@
 // mapped to by the distribution.
 //
 
-//
-// TO DO List
-//
-// 1. refactor pid fields from distribution, domain, and array classes
-//
-
 use BlockDist;
 use DSIUtil;
 use ChapelUtil;
@@ -306,6 +300,9 @@ class StencilDom: BaseRectangularDom {
 // stridable: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
+// NeighDom will be a rectangular domain where each dimension is the range
+// -1..1
+//
 class LocStencilDom {
   param rank: int;
   type idxType;
@@ -365,6 +362,7 @@ class LocStencilArr {
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
+  // TODO: use void type when packed update is disabled
   var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;
   var sendRecvFlag : [locDom.NeighDom] atomic bool;
 
@@ -1015,7 +1013,7 @@ proc StencilDom.setup() {
         forall (recvS, recvD, sendS, sendD, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
                                                          myLocDom.sendSrc, myLocDom.sendDest,
                                                          myLocDom.Neighs, ND) {
-          if !zeruTuple(L) && recvS.size != 0 {
+          if !zeroTuple(L) && recvS.size != 0 {
             var other = -1 * L;
 
             proc checker(me, myDom, them, themDom) {
