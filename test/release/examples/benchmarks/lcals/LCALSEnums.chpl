@@ -92,4 +92,9 @@ module LCALSEnums {
     NUM_WEIGHT_GROUPS
   }
 
+  enum OutputStyle {
+    MINIMAL,   // no timing/checksum output
+    REFERENCE, // output matching the reference code
+    PERF_TEST  // output formatted for perf testing
+  }
 }

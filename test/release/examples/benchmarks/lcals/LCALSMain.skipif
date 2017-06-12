@@ -1,7 +1,12 @@
-# This test takes too long if --fast is not used so only run it for
-# performance testing.  It takes to long for no-local configurations,
-# so skip it for comm != none and --no-local too.
-CHPL_TEST_PERF != on
+# This test takes too long for no-local configurations, so skip it for
+# comm != none and --no-local. Same for valgrind and --baseline.
 CHPL_COMM != none
 COMPOPTS <= --no-local
-
+CHPL_TEST_VGRND_EXE == on
+COMPOPTS <= --baseline
+# Some checksums differ from expected values on the following configurations.
+# I think it is caused by sizeof(long double) being less than 16.
+CHPL_TARGET_PLATFORM == cygwin32
+CHPL_TARGET_PLATFORM == cygwin64
+CHPL_TARGET_PLATFORM == linux32
+CHPL_TARGET_COMPILER == cray-prgenv-cray

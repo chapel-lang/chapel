@@ -24,6 +24,7 @@ Networks
    :maxdepth: 1
 
    infiniband
+   omnipath
    udp
 
 
