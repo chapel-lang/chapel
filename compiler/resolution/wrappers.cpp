@@ -477,16 +477,16 @@ buildDefaultWrapper(FnSymbol* fn,
 
 FnSymbol*
 defaultWrap(FnSymbol* fn,
-            Vec<ArgSymbol*>* actualFormals,
+            std::vector<ArgSymbol*>* actualFormals,
             CallInfo* info) {
   FnSymbol* wrapper = fn;
-  int num_actuals = actualFormals->n;
+  int num_actuals = actualFormals->size();
   int num_formals = fn->numFormals();
   if (num_formals > num_actuals) {
     Vec<Symbol*> defaults;
     for_formals(formal, fn) {
       bool used = false;
-      forv_Vec(ArgSymbol, arg, *actualFormals) {
+      for_vector(ArgSymbol, arg, *actualFormals) {
         if (arg == formal)
           used = true;
       }
@@ -505,10 +505,10 @@ defaultWrap(FnSymbol* fn,
     // update actualFormals for use in reorderActuals
     int j = 1;
     for_formals(formal, fn) {
-      for (int i = 0; i < actualFormals->n; i++) {
-        if (actualFormals->v[i] == formal) {
+      for(unsigned i = 0; i < actualFormals->size(); i++) {
+        if ((*actualFormals)[i] == formal) {
           ArgSymbol* newFormal = wrapper->getFormal(j);
-          actualFormals->v[i] = newFormal;
+          (*actualFormals)[i] = newFormal;
           j++;
         }
       }
@@ -524,9 +524,9 @@ defaultWrap(FnSymbol* fn,
 ////
 
 void reorderActuals(FnSymbol* fn,
-          Vec<ArgSymbol*>* actualFormals,
-          CallInfo* info) {
-  int numArgs = actualFormals->n;
+                    std::vector<ArgSymbol*>* actualFormals,
+                    CallInfo* info) {
+  int numArgs = actualFormals->size();
   if (numArgs <= 1)
     return;  // no way we will need to reorder
 
@@ -537,7 +537,7 @@ void reorderActuals(FnSymbol* fn,
     i++;
 
     int j = 0;
-    forv_Vec(ArgSymbol, af, *actualFormals) {
+    for_vector(ArgSymbol, af, *actualFormals ) {
       j++;
       if (af == formal) {
         if (i != j)
