@@ -10,7 +10,7 @@ use DynamicIters;
 
 config const n = 200,              // image size in pixels (n x n)
              maxIter = 50,         // max # of iterations per pixel
-             limit = 4.0;          // per-pixel convergence limit
+             limit = 4.0,          // per-pixel convergence limit
              chunkSize = 1;        // dynamic iterator's chunk size
 
 param bitsPerElt = 8;              // # of bits to store per array element
