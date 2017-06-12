@@ -25,6 +25,7 @@ module ChapelStandard {
 
   // Internal modules.
   use CPtr;
+  use BaseStringType;
   use CString;
   use String;
   use ChapelDebugPrint;
