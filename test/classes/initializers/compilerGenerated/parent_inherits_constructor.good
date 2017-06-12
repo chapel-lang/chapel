@@ -1,2 +1,2 @@
-parent_inherits_constructor.chpl:23: In function 'main':
-parent_inherits_constructor.chpl:24: error: could not generate default initializer for type 'Child', please define one
+parent_inherits_constructor.chpl:22: In function 'main':
+parent_inherits_constructor.chpl:23: error: could not generate default initializer for type 'Child', please define one

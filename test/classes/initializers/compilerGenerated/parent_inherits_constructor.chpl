@@ -4,11 +4,10 @@
 class GrandParent {
   var a: int;
 
-  // The grandparent defined a constructor.  Generating a default initializer for the
-  // parent and child is invalid
+  // The grandparent defined a constructor.  Generating a default initializer
+  // for the parent and child is invalid
   proc GrandParent() {
     a = 11;
-    super.init();
   }
 }
 
