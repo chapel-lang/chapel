@@ -1141,8 +1141,10 @@ specific} than each other but that are \emph{more specific} than every
 other candidate function. The \emph{more specific} relationship is
 defined in ~\rsec{Determining_More_Specific_Functions}.
 \item
-From the set of most specific functions, if there is more than one
-function in the set with the same return intent, the compiler will issue
+From the set of most specific functions, the compiler determines a best
+function for each return intent as described in
+~\rsec{Determining_Best_Function}. If there is more than one
+best function for a given return intent, the compiler will issue
 an error stating that the call is ambiguous. Otherwise, it will choose
 which function to call based on the calling context as described
 in~\rsec{Choosing_Return_Intent_Overload}.
@@ -1232,8 +1234,6 @@ mapping to $F_2$, then $F_2$ is more specific.
 \item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
 \item If all \chpl{param} arguments prefer $F_1$ over $F_2$, then $F_1$ is more specific.  In order of preference, a \chpl{param} argument prefers to be passed to (a) a \chpl{param} formal of matching type; (b) a \chpl{param} formal large enough to store the \chpl{param} value; (c) a non-\chpl{param} formal of matching type.
 \item If all \chpl{param} arguments prefer $F_2$ over $F_1$, then $F_2$ is more specific.
-\item If $F_1$ has a where clause and $F_2$ does not have a where clause, then $F_1$ is more specific.
-\item If $F_2$ has a where clause and $F_1$ does not have a where clause, then $F_2$ is more specific.
 \item Otherwise neither function is more specific.
 \end{itemize}
 
@@ -1295,6 +1295,21 @@ is determined by the following steps:
  Otherwise neither mapping is more specific.
 \end{itemize}
 
+\subsection{Determining Best Function}
+\label{Determining_Best_Function}
+
+Given two functions $F_1$ and $F_2$, the better function is
+determined by the following steps:
+
+\begin{itemize}
+\item If $F_1$ is more specific than $F_2$, then $F_1$ is a better match.
+\item If $F_2$ is more specific than $F_1$, then $F_2$ is a better match.
+\item If $F_1$ has a where clause and $F_2$ does not have a where clause,
+then $F_1$ is a better match.
+\item If $F_2$ has a where clause and $F_1$ does not have a where clause,
+then $F_2$ is a better match.
+\end{itemize}
+
 
 \subsection{Choosing Return Intent Overloads Based on Calling Context}
 \label{Choosing_Return_Intent_Overload}
@@ -1302,31 +1317,24 @@ is determined by the following steps:
 
 See also \ref{Return_Intent_Overloads}.
 
-Given a set of most specific functions, the compiler can choose between
-overloads with different return intents. Recall that the set of most
-specific functions contains only functions that are not \emph{more specific}
-than each other. That is, the call will be ambiguous if the compiler
-cannot choose between them based upon return intent.
-
-The compiler can choose a single function based upon its return intent
+The compiler can choose between overloads differing in return intent
 when:
 
 \begin{itemize}
 
-\item each most specific function has a different return intent
+\item there are zero or one best functions for each of \chpl{ref},
+\chpl{const ref}, \chpl{const}, or the default (blank) return intent
 
-\item the return intents are only \chpl{ref}, \chpl{const ref},
-\chpl{const}, or the default (blank) return intent
+\item at least two of the above return intents have a best function.
 
 \end{itemize}
 
-The compiler is able to choose between \chpl{ref} return, \chpl{const
-ref} return, and value return functions based upon the context of the
-call. At present, the \chpl{ref} return version must be present but
-either or both of the \chpl{const ref} and value return versions can be
-present.
+In that case, the compiler is able to choose between \chpl{ref} return,
+\chpl{const ref} return, and value return functions based upon the
+context of the call. The compiler chooses between these return intent
+overloads as follows:
 
-The \chpl{ref} return version will be chosen when:
+If present, a \chpl{ref} return version will be chosen when:
 
 \begin{itemize}
 
