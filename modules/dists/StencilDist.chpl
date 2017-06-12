@@ -1509,6 +1509,14 @@ proc _array.updateFluff() {
 //
 // On each locale, update the local cache by fetching data from neighbors.
 //
+// TODO: What's the best way to deal with the repeated `locArr[i]` expressions?
+// Note that this is actually `this.locArr[i]`, where 'this' is on the locale
+// where the coforall-on starts. What we really want is something like this:
+//
+// const curLocArr = chpl_getPrivatizedCopy(this.type, this.pid).locArr[i];
+//
+// Ideally the compiler could do something like this for us...
+//
 proc StencilArr.naiveUpdateFluff() {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
@@ -1544,8 +1552,7 @@ proc StencilArr.naiveUpdateFluff() {
 //
 // On each locale:
 // 1) Repeat the following for each region of data that other locales will
-//    want:
-//    to fetch:
+//    want to fetch:
 //    a) Serialize/pack the region of data into a 1D buffer array. This is the
 //       buffer that other locales will read from.
 //    b) Write 'true' to an atomic flag on the local that intends to read from
