@@ -95,6 +95,7 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_HWLOC` for more information. */
   param CHPL_HWLOC:string           = __primitive("get compiler variable", "CHPL_HWLOC");
 
+  pragma "no doc"
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
   param CHPL_JEMALLOC:string           = __primitive("get compiler variable", "CHPL_JEMALLOC");
 

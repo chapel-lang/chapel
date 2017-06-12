@@ -2064,7 +2064,6 @@ leftjustify
 legendre
 lenread
 lentmp
-lfftw
 lgamma
 lgammaf
 libevent
@@ -3684,9 +3683,6 @@ FILEID: 0c6ba076-814e-11e6-b915-843835579daa
 inds
 itermethod
 
-FILEID: 7e50173a-814e-11e6-b915-843835579daa
-dout
-
 FILEID: 058f379e-814f-11e6-b915-843835579daa
 strt
 
@@ -4622,6 +4618,7 @@ cleanall
 cleanfiles
 cleanloop
 clearbit
+cleison
 cloexec
 closefile
 clrbit
@@ -4744,6 +4741,7 @@ deinits
 deitz
 delaney
 delims
+demangle
 denests
 dennis
 denny
@@ -5141,6 +5139,7 @@ greprt
 greptestoutputs
 greyscale
 groupsize
+gsoc
 gssapi
 guckin
 gujarati
@@ -5440,6 +5439,7 @@ lentz
 lepcha
 lewis
 lexer
+lfftw
 lflags
 lfoo
 lgamma
@@ -5547,6 +5547,7 @@ manpage
 manpath
 mantevo
 mapreduce
+marcos
 marenostrum
 markhill
 martha
@@ -5690,6 +5691,7 @@ namespaces
 namespacing
 nanox
 napierian
+nareas
 narratively
 natively
 navarro
@@ -6108,6 +6110,7 @@ salloc
 samuel
 sandia
 sandybridge
+santana
 sanz
 sapiens
 sassert
@@ -6203,6 +6206,7 @@ sigusr
 sigvtalrm
 sigxcpu
 sigxfsz
+silva
 singh
 singlecls
 singlevar
@@ -6425,6 +6429,7 @@ tmpdirname
 tmpvar
 tochar
 toctou
+toctree
 todo
 todos
 toend

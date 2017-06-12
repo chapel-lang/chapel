@@ -25,18 +25,21 @@
 class LoopStmt : public BlockStmt
 {
 public:
-  virtual bool           isLoopStmt()                                 const;
+  static LoopStmt*       findEnclosingLoop(Expr* expr);
 
-  LabelSymbol*           breakLabelGet()                              const;
+  static LoopStmt*       findEnclosingLoop(Expr* expr, const char* name);
+
+public:
+  virtual bool           isLoopStmt()                                    const;
+
+  LabelSymbol*           breakLabelGet()                                 const;
   void                   breakLabelSet(LabelSymbol* sym);
 
-  LabelSymbol*           continueLabelGet()                           const;
+  LabelSymbol*           continueLabelGet()                              const;
   void                   continueLabelSet(LabelSymbol* sym);
 
-  bool                   isOrderIndependent()                         const;
+  bool                   isOrderIndependent()                            const;
   void                   orderIndependentSet(bool b);
-
-  static LoopStmt*       findEnclosingLoop(Expr* expr);
 
 protected:
                          LoopStmt(BlockStmt* initBody);
@@ -50,6 +53,8 @@ protected:
 
 private:
                          LoopStmt();
+
+  bool                   isNamed(const char* name)                       const;
 };
 
 #endif

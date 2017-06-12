@@ -324,6 +324,7 @@ class StencilArr: BaseArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: StencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
+  pragma "local field"
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
   const SENTINEL = max(rank*idxType);
 }
@@ -345,6 +346,7 @@ class LocStencilArr {
   param stridable: bool;
   const locDom: LocStencilDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  pragma "local field"
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
@@ -1480,7 +1482,7 @@ proc StencilArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
-proc LocStencilArr.this(i) ref {
+inline proc LocStencilArr.this(i) ref {
   return myElems(i);
 }
 

@@ -65,14 +65,6 @@
 static std::map<BlockStmt*, Vec<UseStmt*>*>   moduleUsesCache;
 static bool                                   enableModuleUsesCache = false;
 
-//
-// The aliasFieldSet is a set of names of fields for which arrays may
-// be passed in by named argument as aliases, as in new C(A=>GA) (see
-// test/arrays/deitz/test_array_alias_field.chpl).
-//
-static Vec<const char*>                       aliasFieldSet;
-
-
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
@@ -86,8 +78,6 @@ static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
 static void          processImportExprs();
-
-static void          addRecordDefaultConstruction();
 
 static void          resolveGotoLabels();
 
@@ -106,7 +96,14 @@ static bool          lookupThisScopeAndUses(const char*           name,
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
+static void          arrayAliasFieldsByNameCollect();
+
+static void          arrayAliasFieldsByNameApply(AggregateType* at);
+
 void scopeResolve() {
+  // Deprecated for 1.15
+  arrayAliasFieldsByNameCollect();
+
   //
   // add all program asts to the symbol table
   //
@@ -124,54 +121,21 @@ void scopeResolve() {
   }
 
   //
-  // determine fields (by name) that may be passed in arrays to alias
-  //
-  forv_Vec(NamedExpr, ne, gNamedExprs) {
-    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
-      CallExpr* pne  = toCallExpr(ne->parentExpr);
-      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
-
-      if (!ppne || !ppne->isPrimitive(PRIM_NEW)) {
-        USR_FATAL(ne,
-                  "alias-named-argument passing can only be used "
-                  "in constructor calls");
-      }
-
-      aliasFieldSet.set_add(astr(&ne->name[17]));
-    }
-  }
-
-  //
   // add implicit fields for implementing alias-named-argument passing
   //
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    for_fields(field, ct) {
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    for_fields(field, at) {
       if (strcmp(field->name, "outer") == 0) {
         USR_FATAL_CONT(field,
                        "Cannot have a field named 'outer'. "
                        "'outer' is used to refer to an outer class "
                        "from within a nested class.");
       }
-
-      if (aliasFieldSet.set_in(field->name)) {
-        SET_LINENO(field);
-
-        const char* aliasName  = astr("chpl__aliasField_", field->name);
-        Symbol*     aliasField = new VarSymbol(aliasName);
-        DefExpr*    def        = new DefExpr(aliasField);
-
-        aliasField->addFlag(FLAG_CONST);
-        aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
-
-        def->init     = new UnresolvedSymExpr("false");
-        def->exprType = new UnresolvedSymExpr("bool");
-
-        ct->fields.insertAtTail(def);
-      }
     }
-  }
 
-  addRecordDefaultConstruction();
+    // Deprecated for 1.15
+    arrayAliasFieldsByNameApply(at);
+  }
 
   //
   // resolve type of this for methods
@@ -259,7 +223,7 @@ static void addToSymbolTable() {
     }
   }
 
-  // This would be the place to handle use statments but
+  // This would be the place to handle use statements but
   // skipping for now as chpl__Program does not have any.
 
   // Now recurse on every top-level module
@@ -493,57 +457,20 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void processImportExprs(ModuleSymbol* topLevelModule);
-
 static void processImportExprs() {
   for_alist(expr, theProgram->block->body) {
-    if (ModuleSymbol* mod = definesModuleSymbol(expr)) {
-      processImportExprs(mod);
-    }
-  }
-}
+    if (ModuleSymbol* topLevelModule = definesModuleSymbol(expr)) {
+      std::vector<BaseAST*> asts;
 
-static void processImportExprs(ModuleSymbol* topLevelModule) {
-  std::vector<BaseAST*> asts;
+      // Collect *all* asts within this top-level module in text order
+      collect_asts(topLevelModule, asts);
 
-  // Collect *all* asts within this top-level module in text order
-  collect_asts(topLevelModule, asts);
+      for_vector(BaseAST, item, asts) {
+        if (UseStmt* useStmt = toUseStmt(item)) {
+          BaseAST*      astScope = getScope(useStmt);
+          ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
-  for_vector(BaseAST, item, asts) {
-    if (UseStmt* useStmt = toUseStmt(item)) {
-      if (useStmt->isValid() == true) {
-        useStmt->scopeResolve();
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void addRecordDefaultConstruction() {
-  forv_Vec(DefExpr, def, gDefExprs) {
-    // We're only interested in declarations that do not have initializers.
-    if (def->init != NULL) {
-
-    } else if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (AggregateType* at = toAggregateType(var->type)) {
-        if (at->isRecord() == false) {
-
-        // No initializer for extern records.
-        } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-
-        } else {
-          SET_LINENO(def);
-
-          CallExpr* ctor_call = new CallExpr(new SymExpr(at->symbol));
-
-          def->init = new CallExpr(PRIM_NEW, ctor_call);
-
-          insert_help(def->init, def, def->parentSymbol);
+          useStmt->scopeResolve(scope);
         }
       }
     }
@@ -560,49 +487,31 @@ static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
     SET_LINENO(gs);
 
-    if (SymExpr* label = toSymExpr(gs->label)) {
-      if (label->symbol() == gNil) {
-        LoopStmt* loop = LoopStmt::findEnclosingLoop(gs);
+    LoopStmt* loop = NULL;
 
-        if (!loop)
-          USR_FATAL(gs, "break or continue is not in a loop");
+    if (isSymExpr(gs->label) == true) {
+      loop = LoopStmt::findEnclosingLoop(gs);
 
-        if (gs->gotoTag == GOTO_BREAK) {
-          Symbol* breakLabel = loop->breakLabelGet();
-
-          INT_ASSERT(breakLabel);
-          gs->label->replace(new SymExpr(breakLabel));
-
-        } else if (gs->gotoTag == GOTO_CONTINUE) {
-          Symbol* continueLabel = loop->continueLabelGet();
-          INT_ASSERT(continueLabel);
-
-          gs->label->replace(new SymExpr(continueLabel));
-
-        } else
-          INT_FATAL(gs, "unexpected goto type");
+      if (loop == NULL) {
+        USR_FATAL(gs, "break or continue is not in a loop");
       }
 
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
-      const char* name = label->unresolved;
-      LoopStmt*   loop = LoopStmt::findEnclosingLoop(gs);
+      loop = LoopStmt::findEnclosingLoop(gs, label->unresolved);
 
-      while (loop && (!loop->userLabel || strcmp(loop->userLabel, name))) {
-        loop = LoopStmt::findEnclosingLoop(loop->parentExpr);
-      }
-
-      if (!loop) {
+      if (loop == NULL) {
         USR_FATAL(gs, "bad label on break or continue");
       }
+    }
 
-      if (gs->gotoTag == GOTO_BREAK)
-        label->replace(new SymExpr(loop->breakLabelGet()));
+    if (gs->gotoTag == GOTO_BREAK) {
+      gs->label->replace(new SymExpr(loop->breakLabelGet()));
 
-      else if (gs->gotoTag == GOTO_CONTINUE)
-        label->replace(new SymExpr(loop->continueLabelGet()));
+    } else if (gs->gotoTag == GOTO_CONTINUE) {
+      gs->label->replace(new SymExpr(loop->continueLabelGet()));
 
-      else
-        INT_FATAL(gs, "unexpected goto type");
+    } else {
+      INT_FATAL(gs, "unexpected goto type");
     }
   }
 }
@@ -1007,7 +916,7 @@ static void resolveModuleCall(CallExpr* call) {
         enclosingModule->moduleUseAdd(mod);
 
         if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookup(mbrName);
+          sym = scope->lookupNameLocally(mbrName);
         }
 
         if (sym != NULL) {
@@ -1469,7 +1378,7 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   Symbol* retval = NULL;
 
   if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
-    if (Symbol* sym = scope->lookup(name)) {
+    if (Symbol* sym = scope->lookupNameLocally(name)) {
       if (sym->hasFlag(FLAG_METHOD) == false) {
         retval = sym;
 
@@ -1779,4 +1688,59 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* A set of names of class/record fields that are used somewhere               *
+* in the application as a target for an array alias e.g.                      *
+*                                                                             *
+* class C {                                                                   *
+*   var A: [1..5] int;                                                        *
+* }                                                                           *
+*                                                                             *
+* var c2 = new C(A=>GA);      // *** This injects the name 'A'                *
+*                                                                             *
+*    1) This is a deprecated feature for 1.15                                 *
+*    2) *Every* class/record with a field A would be impacted                 *
+*                                                                             *
+************************************** | *************************************/
+
+static std::set<const char*> sAliasFieldSet;
+
+static void arrayAliasFieldsByNameCollect() {
+  forv_Vec(NamedExpr, ne, gNamedExprs) {
+    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
+      CallExpr* pne  = toCallExpr(ne->parentExpr);
+      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
+
+      if (ppne == NULL || ppne->isPrimitive(PRIM_NEW) == false) {
+        USR_FATAL(ne,
+                  "alias-named-argument passing can only be used "
+                  "in constructor calls");
+      }
+
+      sAliasFieldSet.insert(astr(&ne->name[17]));
+    }
+  }
+}
+
+static void arrayAliasFieldsByNameApply(AggregateType* at) {
+  for_fields(field, at) {
+    if (sAliasFieldSet.find(field->name) != sAliasFieldSet.end()) {
+      SET_LINENO(field);
+
+      const char* aliasName  = astr("chpl__aliasField_", field->name);
+      Symbol*     aliasField = new VarSymbol(aliasName);
+      DefExpr*    def        = new DefExpr(aliasField);
+
+      aliasField->addFlag(FLAG_CONST);
+      aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
+
+      def->init     = new UnresolvedSymExpr("false");
+      def->exprType = new UnresolvedSymExpr("bool");
+
+      at->fields.insertAtTail(def);
+    }
+  }
 }

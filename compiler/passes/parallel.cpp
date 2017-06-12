@@ -1037,14 +1037,14 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 //  CHPL_COMM == "gasnet" && CHPL_GASNET_SEGMENT == "everything";
 // or
 //  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "fifo"
+// or
+//  CHPL_TASKS == "qthreads"
 //
 // true otherwise.
 //
-// The tasking layer matters because fifo allocates
-// from task stacks the communication registered heap
-// (unless stack checks is on, in which case it might not
-//  be possible because of huge pages).
-// In the future, we hope that all tasking layers do this.
+// The tasking layer matters because qthreads and fifo allocate task stacks
+// from the communication registered heap (fifo can only do so if stack checks
+// are turned off.)
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -1055,6 +1055,9 @@ needHeapVars() {
     return false;
 
   if (fNoStackChecks && (0 == strcmp(CHPL_TASKS, "fifo")))
+    return false;
+
+  if (0 == strcmp(CHPL_TASKS, "qthreads"))
     return false;
 
   return true;

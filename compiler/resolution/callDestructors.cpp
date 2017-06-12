@@ -1003,6 +1003,9 @@ static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
+      if (fn->_this == NULL) {
+        continue;
+      }
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 

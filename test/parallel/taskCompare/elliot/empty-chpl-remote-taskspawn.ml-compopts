@@ -1,0 +1,2 @@
+-staskingMode=coforallOnT                        # empty-coforall-on
+-staskingMode=coforallOnT --network-atomics=none # empty-coforall-on-proc-endcount

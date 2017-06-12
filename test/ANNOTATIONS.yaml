@@ -239,6 +239,9 @@ all:
     - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
   05/03/17:
     - Flag some compiler temps as const (#6154)
+  06/08/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: Single node XC, 16 node XC
 
 
 AllCompTime:
@@ -745,6 +748,8 @@ prk-stencil.ml-perf:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/18/17:
     - Use nonblocking transactions for strided transfers (#6262)
+  06/06/17:
+    - Increase the PRK stencil problem size (#6380)
 
 prk-stencil-time:
   05/11/17:
