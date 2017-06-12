@@ -891,10 +891,8 @@ void AggregateType::buildConstructor() {
     // information about the fields that we would rather stayed unmutated.
     return;
   } else if (initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-    if (isClass()) {
-      if (!needsConstructor()) {
-        return;
-      }
+    if (!needsConstructor()) {
+      return;
     }
   }
 
@@ -1219,7 +1217,12 @@ void AggregateType::buildConstructor() {
 }
 
 bool AggregateType::needsConstructor() {
+  // Temporarily only generate default initializers for classes
+  if (isRecord())
+    return true;
+
   ModuleSymbol* mod = getModule();
+
   if (mod && (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD))
     return true;
   else if (fUserDefaultInitializers)
