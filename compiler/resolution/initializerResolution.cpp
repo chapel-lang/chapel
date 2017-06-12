@@ -60,7 +60,7 @@ instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 static void makeRecordInitWrappers(CallExpr* call);
 static void makeActualsVector(const CallExpr* call,
                               const CallInfo& info,
-                              Vec<ArgSymbol*>& actualIdxToFormal);
+                              std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static bool isRefWrapperForNonGenericRecord(AggregateType* at);
 
@@ -568,7 +568,7 @@ void resolveMatch(FnSymbol* fn) {
 static void makeRecordInitWrappers(CallExpr* call) {
   CallInfo info(call, false, false);
 
-  Vec<ArgSymbol*> actualIdxToFormal;
+  std::vector<ArgSymbol*> actualIdxToFormal;
   makeActualsVector(call, info, actualIdxToFormal);
 
 
@@ -596,23 +596,26 @@ static void makeRecordInitWrappers(CallExpr* call) {
 // was cleaned up, though, so we are just going to recreate the parts we need.
 static void makeActualsVector(const CallExpr* call,
                               const CallInfo& info,
-                              Vec<ArgSymbol*>& actualIdxToFormal) {
-  Vec<bool> formalIdxToActual;
+                              std::vector<ArgSymbol*>& actualIdxToFormal) {
+  std::vector<bool> formalIdxToActual;
   FnSymbol* fn = call->resolvedFunction();
 
-  formalIdxToActual.fill(fn->numFormals());
+  for (int i = 0; i < fn->numFormals(); i++) {
+    formalIdxToActual.push_back(false);
+  }
+  for (int i = 0; i < info.actuals.n; i++) {
+    actualIdxToFormal.push_back(NULL);
+  }
 
-  actualIdxToFormal.fill(info.actuals.n);
-
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
       int j = 0;
       for_formals(formal, fn) {
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = true;
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = true;
           break;
         }
         j++;
@@ -629,16 +632,16 @@ static void makeActualsVector(const CallExpr* call,
   // Record successful substitutions.
   int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
       while (formal) {
         if (formal->variableExpr)
           return;
-        if (!formalIdxToActual.v[j]) {
+        if (formalIdxToActual[j] == false) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = true;
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = true;
           formal = next_formal(formal);
           j++;
           break;
@@ -657,7 +660,7 @@ static void makeActualsVector(const CallExpr* call,
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (!formalIdxToActual.v[j] && !formal->defaultExpr) {
+    if (formalIdxToActual[j] == false && !formal->defaultExpr) {
       // Fail if not.
       INT_FATAL(call, "Compilation should have verified this action was ",
                 "valid");
