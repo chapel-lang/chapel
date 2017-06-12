@@ -163,7 +163,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-simple-stmt-kwds
   "Statement keywords followed by an expression or nothing."
-  chpl '("break" "continue" "return" "yield"))
+  chpl '("break" "continue" "label" "return" "yield"))
 
 (c-lang-defconst c-label-kwds
   "Keywords introducing colon terminated labels in blocks."
