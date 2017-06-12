@@ -300,12 +300,12 @@ module DefaultAssociative {
     }
 
     proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
-        haveLock = !parSafe) {
+                     needLock = parSafe) {
 
       const inSlot = slotNum;
       var retVal = 0;
       on this {
-        const shouldLock = !haveLock && parSafe;
+        const shouldLock = needLock && parSafe;
         if shouldLock then lockTable();
         var findAgain = shouldLock;
         if ((numEntries.read()+1)*2 > tableSize) {
@@ -505,7 +505,7 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    proc _findEmptySlot(idx: idxType, haveLock = false): (bool, index(tableDom)) {
+    proc _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
       for slotNum in _lookForSlots(idx) {
         const slotStatus = table[slotNum].status;
         if (slotStatus == chpl__hash_status.empty ||
@@ -605,7 +605,7 @@ module DefaultAssociative {
           }
 
           // grow the table
-          const (newSlot, _) = dom._addWrapper(idx, slotNum, haveLock=true);
+          const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
 
           // unlock the table, if necessary and return the element
           if shouldLock then dom.unlockTable();
