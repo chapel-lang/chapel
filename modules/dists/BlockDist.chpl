@@ -839,6 +839,8 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
+// TODO: Can we just re-use the DefaultRectangularDom follower here?
+//
 iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
@@ -854,7 +856,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -1130,7 +1132,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 

@@ -264,7 +264,7 @@ bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate) {
   resolveFormals(currCandidate->fn);
 
   for_formals(formal, currCandidate->fn) {
-    if (Symbol* actual = currCandidate->formalIdxToActual.v[++coindex]) {
+    if (Symbol* actual = currCandidate->formalIdxToActual[++coindex]) {
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
       bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
@@ -327,7 +327,7 @@ bool checkGenericFormals(ResolutionCandidate* currCandidate) {
 
   for_formals(formal, currCandidate->fn) {
     if (formal->type != dtUnknown) {
-      if (Symbol* actual = currCandidate->formalIdxToActual.v[coindex]) {
+      if (Symbol* actual = currCandidate->formalIdxToActual[coindex]) {
         bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
         bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
