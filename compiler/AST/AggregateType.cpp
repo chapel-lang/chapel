@@ -1218,7 +1218,7 @@ void AggregateType::buildConstructor() {
 
 bool AggregateType::needsConstructor() {
   // Temporarily only generate default initializers for classes
-  if (isRecord())
+  if (isRecord() || isUnion())
     return true;
 
   ModuleSymbol* mod = getModule();
