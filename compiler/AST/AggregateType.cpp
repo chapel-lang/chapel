@@ -1248,9 +1248,13 @@ bool AggregateType::needsConstructor() {
       }
     }
 
+    if (symbol->hasFlag(FLAG_EXTERN)) {
+      return true;
+    }
+
     // If the parent type needs a default constructor, we need a default
     // constructor.
-    if (dispatchParents.n > 0 && !symbol->hasFlag(FLAG_EXTERN)) {
+    if (dispatchParents.n > 0) {
       if (AggregateType* pt = toAggregateType(dispatchParents.v[0])) {
         return pt->needsConstructor();
       }

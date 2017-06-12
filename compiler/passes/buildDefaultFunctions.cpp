@@ -98,7 +98,8 @@ void buildDefaultFunctions() {
           }
 
           if (!hasOuter && !usesInitializeMethod &&
-              !ct->symbol->hasFlag(FLAG_REF)) {
+              !ct->symbol->hasFlag(FLAG_REF) &&
+              !ct->symbol->hasFlag(FLAG_EXTERN)) {
             // Classes with an outer or an initialize method are weird, so
             // don't handle them just yet.
             buildDefaultInitializer(ct);
