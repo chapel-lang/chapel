@@ -296,10 +296,37 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
-
 void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
+
+//  CandidateDisposition ret = AcceptCandidate;
+
   if (substitutions.n != 0) substitutions.clear();
+
   computeGenericSubs(substitutions, fn, formalIdxToActual, inInitRes);
+  
+  /*
+  // Check for not a type to type arg, not a param to param arg first
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_PARAM) {
+      if (formalIdxToActual.v[i]) {
+        if (!formalIdxToActual.v[i]->isParameter()) {
+          ret = notparam;
+        }
+      }
+    } else
+
+  }
+    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+
+      //
+      // check for field with specified generic type
+      //
+      if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && formal->type != dtAny &&
+          strcmp(formal->name, "outer") && !formal->hasFlag(FLAG_IS_MEME) &&
+          (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+        USR_FATAL(formal, "invalid generic type specification on class field");
+
+  */
 }
 
 static bool hasRefField(Type *type) {
@@ -1744,6 +1771,7 @@ computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
                    Vec<Symbol*>& formalIdxToActual,
                    bool inInitRes) {
+
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
@@ -1766,6 +1794,8 @@ computeGenericSubs(SymbolMap &subs,
           subs.put(formal, se->symbol());
         else
           INT_FATAL(fn, "unable to handle default parameter");
+      } else {
+
       }
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
 
@@ -3304,7 +3334,7 @@ FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly,
 
   //if (call->id == 646583) // this isTrue doesn't seem to be working.
   //  gdbShouldBreakHere();
-
+#if 0
   anyParamCandidates = false;
   forv_Vec(ResolutionCandidate, candidate, candidates) {
     for_formals(formal, candidate->fn) {
@@ -3315,17 +3345,40 @@ FnSymbol* resolveNormalCallUncached(CallInfo& info, bool checkonly,
       }
     }
   }
+
   forv_Vec(ResolutionCandidate, candidate, rejects) {
-    if (candidate->disposition == RejectCandidateParamFormalNotActual ||
+    if (candidate->disposition == RejectCandidateParamFormalNotActual
         // TODO shouldn't need this 2nd clause
-        candidate->disposition == RejectCandidateArgTypeError) {
-      for_formals(formal, candidate->fn) {
+       // || candidate->disposition == RejectCandidateArgTypeError
+        ) {
+      /*for_formals(formal, candidate->fn) {
         if (formal->intent == INTENT_PARAM ||
             formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
           anyParamCandidates = true;
           break;
         }
+      }*/
+      anyParamCandidates = true;
+      break;
+    }
+  }
+#endif
+
+  anyParamCandidates = false;
+  forv_Vec(ResolutionCandidate, candidate, candidates) {
+    for_formals(formal, candidate->fn) {
+      if (formal->intent == INTENT_PARAM ||
+          formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        anyParamCandidates = true;
+        break;
       }
+    }
+  }    
+
+  forv_Vec(ResolutionCandidate, candidate, rejects) {
+    if (candidate->disposition == RejectCandidateParamFormalNotActual) {
+      anyParamCandidates = true;
+      break;
     }
   }
 
@@ -3748,6 +3801,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   //if (call->id == 198352)
   //  gdbShouldBreakHere();
 
+  // this call to ! is the one that ends up in the cache
+  //if (call->id == 22509)
+  //  gdbShouldBreakHere();
+
+  // this call to - should be param.
+  if (call->id == 875386)
+    gdbShouldBreakHere();
+
+  // this call to - adds it to the cache
+  if (call->id == 755448)
+    gdbShouldBreakHere();
+
   if (debug>2) {
     printf("Resolving call id %i\n", call->id);
     nprint_view(call);
@@ -3911,6 +3976,9 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     if (putInCache) {
       ResolveCallCacheEntry& entry = resolveCallCache[key];
       
+      if(resolvedFn && resolvedFn->id == 358929)
+        gdbShouldBreakHere();
+
       if (debug>2)
         printf("In putInCache\n");
 

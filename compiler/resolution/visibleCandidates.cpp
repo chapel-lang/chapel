@@ -330,11 +330,27 @@ static CandidateDisposition filterGeneric(CallInfo&            info,
     return RejectCandidateAlignmentMismatch;
   }
 
+  if (info.call->id == 755448 &&
+      currCandidate->fn->id == 755939)
+    gdbShouldBreakHere();
+
   {
     CandidateDisposition d = checkGenericFormals(currCandidate);
     if (d != AcceptCandidate)
       return d;
   }
+
+  if (info.call->id == 755448 &&
+      currCandidate->fn->id == 755939)
+    gdbShouldBreakHere();
+  /*
+     - should be discoving param options
+
+     (lldb) print info.call->id
+     (int) $15 = 755448
+     (lldb) print currCandidate->fn->id
+     (int) $16 = 755939
+     */
 
   // Compute the param/type substitutions for generic arguments.
   currCandidate->computeSubstitutions();
