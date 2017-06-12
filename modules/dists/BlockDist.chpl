@@ -311,6 +311,7 @@ class Block : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
+  var deferredSetup: bool;
   type sparseLayoutType = DefaultDist;
 }
 
@@ -422,36 +423,20 @@ class LocBlockArr {
 }
 
 //
-// Block constructor for clients of the Block distribution
+// Todo: Once we have initializers, the two Block.Block overloads should
+// really forward between themselves rather than relying on this helper
+// routine.
 //
-proc Block.Block(boundingBox: domain,
-                targetLocales: [] locale = Locales,
-                dataParTasksPerLocale=getDataParTasksPerLocale(),
-                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
-                dataParMinGranularity=getDataParMinGranularity(),
-                param rank = boundingBox.rank,
-                type idxType = boundingBox.idxType,
-                type sparseLayoutType = DefaultDist) {
-  if rank != boundingBox.rank then
-    compilerError("specified Block rank != rank of specified bounding box");
-  if idxType != boundingBox.idxType then
-    compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && sparseLayoutType == CSR then 
+proc chpl_blockSetupCommon(this,
+                           targetLocales,
+                           dataParTasksPerLocale,
+                           dataParIgnoreRunningTasks,
+                           dataParMinGranularity,
+                           type sparseLayoutType) {
+  if this.rank != 2 && sparseLayoutType == CSR then 
     compilerError("CSR layout is only supported for 2 dimensional domains");
 
-  if boundingBox.size == 0 then
-    halt("Block() requires a non-empty boundingBox");
-
-  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
-
-  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
-
-  const boundingBoxDims = this.boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
-  coforall locid in targetLocDom do
-    on this.targetLocales(locid) do
-      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                     targetLocDomDims);
+  setupTargetLocalesArray(this.targetLocDom, this.targetLocales, targetLocales);
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -466,6 +451,58 @@ proc Block.Block(boundingBox: domain,
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+//
+// Block constructor for clients of the Block distribution.  The first
+// takes no bounding box and will grab it from the first domain
+// declared over this distribution; the second takes a bounding box.
+//
+proc Block.Block(param rank,
+                 type idxType = int,
+                 targetLocales: [] locale = Locales,
+                 dataParTasksPerLocale=getDataParTasksPerLocale(),
+                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                 dataParMinGranularity=getDataParMinGranularity(),
+                 type sparseLayoutType = DefaultDist) {
+
+
+  deferredSetup = true;
+  chpl_blockSetupCommon(this, targetLocales, dataParTasksPerLocale,
+                        dataParIgnoreRunningTasks, dataParMinGranularity,
+                        sparseLayoutType);
+}
+
+proc Block.Block(boundingBox: domain,
+                targetLocales: [] locale = Locales,
+                dataParTasksPerLocale=getDataParTasksPerLocale(),
+                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                dataParMinGranularity=getDataParMinGranularity(),
+                param rank = boundingBox.rank,
+                type idxType = boundingBox.idxType,
+                type sparseLayoutType = DefaultDist) {
+  if rank != boundingBox.rank then
+    compilerError("specified Block rank != rank of specified bounding box");
+  if idxType != boundingBox.idxType then
+    compilerError("specified Block index type != index type of specified bounding box");
+  if boundingBox.size == 0 then
+    halt("Block() requires a non-empty boundingBox");
+
+  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+
+  chpl__setupBoundingBoxLocalDescs();
+  chpl_blockSetupCommon(this, targetLocales, dataParTasksPerLocale,
+                        dataParIgnoreRunningTasks, dataParMinGranularity,
+                        sparseLayoutType);
+}
+
+proc Block.chpl__setupBoundingBoxLocalDescs() {
+  const boundingBoxDims = this.boundingBox.dims();
+  const targetLocDomDims = targetLocDom.dims();
+  coforall locid in targetLocDom do
+    on this.targetLocales(locid) do
+      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                     targetLocDomDims);
 }
 
 proc Block.dsiAssign(other: this.type) {
@@ -527,7 +564,8 @@ proc Block.dsiDisplayRepresentation() {
   writeln("dataParIgnoreRunningTasks = ", dataParIgnoreRunningTasks);
   writeln("dataParMinGranularity = ", dataParMinGranularity);
   for tli in targetLocDom do
-    writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
+    if locDist[tli] != nil then
+      writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
 proc Block.dsiNewRectangularDom(param rank: int, type idxType,
@@ -539,10 +577,16 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
       stridable=stridable, sparseLayoutType=sparseLayoutType);
-  dom.dsiSetIndices(inds);
-  if debugBlockDist {
-    writeln("Creating new Block domain:");
-    dom.dsiDisplayRepresentation();
+    if debugBlockDist {
+      writeln("Creating new Block domain:");
+      dom.dsiDisplayRepresentation();
+    }
+  if !deferredSetup {
+    dom.dsiSetIndices(inds);
+    if debugBlockDist {
+      writeln("Creating new Block domain:");
+      dom.dsiDisplayRepresentation();
+    }
   }
   return dom;
 }
@@ -898,6 +942,12 @@ proc BlockDom.dsiSetIndices(x: domain) {
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   whole = x;
+  if (dist.deferredSetup) {
+    dist.boundingBox = whole: domain(rank, idxType, stridable=false);
+    dist.chpl__setupBoundingBoxLocalDescs();
+    _reprivatize(dist);
+    dist.deferredSetup=false;
+  }
   setup();
   if debugBlockDist {
     writeln("Setting indices of Block domain:");
@@ -914,6 +964,12 @@ proc BlockDom.dsiSetIndices(x) {
   // TODO: This seems weird:
   //
   whole.setIndices(x);
+  if (dist.deferredSetup) {
+    dist.boundingBox = whole: domain(rank, idxType, stridable=false);
+    dist.chpl__setupBoundingBoxLocalDescs();
+    _reprivatize(dist);
+    dist.deferredSetup=false;
+  }
   setup();
   if debugBlockDist {
     writeln("Setting indices of Block domain:");
