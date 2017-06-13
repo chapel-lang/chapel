@@ -1,4 +1,3 @@
-
 /*
  A unix like grep function implemented in chapel. 
 */
@@ -19,7 +18,7 @@ proc main(args: [] string) {
 
   if args.size < 3 {
     // clock.start();
-    advancedGrep(args[1]);   
+    parallelGrep(args[1]);   
     // clock.stop();
     // writeln(clock.elapsed());  uncomment for runtime
   }  
@@ -44,7 +43,7 @@ proc fileGrep(toFind: string, file: string) {
   var regEx = compile(toFind);
   var line:string;
   var lineNum = 1;
-
+  
   // Search while handling errors
   while(r.readline(line, errors)) {
     if errors != ENOERR {
@@ -58,12 +57,13 @@ proc fileGrep(toFind: string, file: string) {
 }
 
 
+
 /*
- Advanced grep: needs 
+ Parallel grep: needs 
    - string to be searched for only
  Runs in parallel across any files in the current working directory. 
 */
-proc advancedGrep(tofind: string) {
+proc parallelGrep(tofind: string) {
   
   // Seaches current working directory ignoring anthing but UTF-8
   // encoded characters
@@ -71,4 +71,4 @@ proc advancedGrep(tofind: string) {
   forall file in files {
     fileGrep(tofind, file);
   }
-}  
+}
