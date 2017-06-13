@@ -65,7 +65,6 @@ module ChapelStandard {
   use Assert;
   use Types;
   use Math;
-  use FormattedIO; // IO was included by ChapelIO
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }
