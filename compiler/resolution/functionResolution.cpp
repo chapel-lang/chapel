@@ -2181,12 +2181,16 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
 /** Determines if fn1 is a better match than fn2.
  *
  * This function implements the function comparison component of the
- * disambiguation procedure as detailed in section 13.14.3 of the Chapel
- * language specification (page 106).
+ * disambiguation procedure as detailed in section 13.13 of the Chapel
+ * language specification.
  *
  * \param candidate1 The function on the left-hand side of the comparison.
  * \param candidate2 The function on the right-hand side of the comparison.
  * \param DC         The disambiguation context.
+ * \param ignoreWhere Set to `true` to ignore `where` clauses when
+ *                    deciding if one match is better than another.
+ *                    This is important for resolving return intent
+ *                    overloads.
  *
  * \return True if fn1 is a more specific function than f2, false otherwise.
  */
@@ -2258,6 +2262,10 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
  *                   any candidate participating in the ambiguity - that
  *                   is, any candidate not known to be worse than another.
  * \param DC         The disambiguation context.
+ * \param ignoreWhere Set to `true` to ignore `where` clauses when
+ *                    deciding if one match is better than another.
+ *                    This is important for resolving return intent
+ *                    overloads.
  *
  * \return The result of the disambiguation process.
  */
