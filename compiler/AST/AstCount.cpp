@@ -21,10 +21,15 @@
 
 
 AstCount::AstCount() {
+
+// Initialize member variables for each AST node type
+// that is handled by the baseAST macro.
 #define init_members(type) num##type = 0
-foreach_ast(init_members);
+  foreach_ast(init_members);
 #undef init_members
 
+  // Initialize other member variables for AST types
+  // not handled by the baseAST macro.
   numForallIntents = 0;
   numWhileDoStmt = 0;
   numDoWhileStmt = 0;
@@ -38,19 +43,19 @@ AstCount::~AstCount() {
 
 int AstCount::total() {
   int sum = 0;
+
+  // Add those covered by the baseAST macro
 #define count_members(type) sum += num##type
 foreach_ast(count_members);
 #undef count_members
 
-  // and handle those not covered by the baseAST macro
+  // and then add those not covered by the baseAST macro
   sum += numForallIntents;
   sum += numWhileDoStmt;
   sum += numDoWhileStmt;
   sum += numCForLoop;
   sum += numForLoop;
   sum += numParamForLoop;
-
-
 
   return sum;
 }
