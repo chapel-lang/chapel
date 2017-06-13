@@ -10,7 +10,6 @@ Contributors to the current release
 * Paul Cassella, [Cray Inc.]
 * [Brad Chamberlain], [Cray Inc.]
 * Sung-Eun Choi, [Cray Inc.]
-* Marcos Cleison Silva Santana, individual contributor
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
@@ -29,6 +28,7 @@ Contributors to the current release
 * Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
 * Preston Sahabu, [Cray Inc.]
+* Marcos Cleison Silva Santana, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Greg Titus, [Cray Inc.]
 * Rob Upcraft, individual contributor
