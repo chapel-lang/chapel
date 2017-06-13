@@ -793,7 +793,7 @@ module ChapelBase {
     return ret;
   }
 
-  inline proc _ddata_free(data: _ddata, in size: integral) {
+  inline proc _ddata_free(data: _ddata, size: integral) {
     __primitive("array_free", data, size);
   }
 
