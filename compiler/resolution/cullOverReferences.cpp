@@ -1772,12 +1772,18 @@ void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
   CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
-  choose_type_t which = USE_REF;
+  choose_type_t which;
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
-  if (refCall) which = USE_REF;
-  else if(constRefCall) which = USE_CONST_REF;
+  if (refCall) {
+    which = USE_REF;
+  } else if(constRefCall) {
+    which = USE_CONST_REF;
+  } else {
+    which = USE_VALUE;
+    INT_ASSERT("lowering context call with only 1 option");
+  }
 
   lowerContextCall(cc, which);
 }
@@ -1788,12 +1794,18 @@ void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
   CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
-  choose_type_t which = USE_CONST_REF;
+  choose_type_t which;
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
-  if(constRefCall) which = USE_CONST_REF;
-  else if(valueCall) which = USE_VALUE;
+  if(constRefCall) {
+    which = USE_CONST_REF;
+  } else if(valueCall) {
+    which = USE_VALUE;
+  } else {
+    which = USE_REF;
+    INT_ASSERT("lowering context call with only 1 option");
+  }
 
   lowerContextCall(cc, which);
 }
