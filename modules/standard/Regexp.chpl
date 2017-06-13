@@ -660,7 +660,7 @@ record regexp {
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -690,7 +690,7 @@ record regexp {
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -740,7 +740,7 @@ record regexp {
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -770,7 +770,7 @@ record regexp {
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -849,7 +849,7 @@ record regexp {
       if splits > maxsplits || !got then break;
     }
     on this.home {
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
   }
 
@@ -896,7 +896,7 @@ record regexp {
       cur = matches[0].offset + matches[0].len;
     }
     on this.home {
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
   }
 

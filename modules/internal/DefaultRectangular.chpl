@@ -1207,7 +1207,7 @@ module DefaultRectangular {
       if isalias {
         // A multi-ddata alias nevertheless has its own mData.
         if !defRectSimpleDData {
-          _ddata_free(mData);
+          _ddata_free(mData, mdNumChunks);
         }
 
         return;
@@ -1242,15 +1242,18 @@ module DefaultRectangular {
         }
       }
 
+      const size = blk(1) * dom.dsiDim(1).length;
       if defRectSimpleDData {
-        _ddata_free(dataChunk(0));
+        _ddata_free(dataChunk(0), size);
       } else {
         for chunk in 0..#mdNumChunks {
+          const chunkSize = size / mdRLen * mData(chunk).pdr.length;
           _ddata_free(_ddata_shift(eltType,
                                    dataChunk(chunk),
-                                   mData(chunk).dataOff));
+                                   mData(chunk).dataOff),
+                      chunkSize);
         }
-        _ddata_free(mData);
+        _ddata_free(mData, mdNumChunks);
       }
     }
 
@@ -1541,7 +1544,7 @@ module DefaultRectangular {
       for param dim in 1..(rank-1) by -1 do
         blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
       computeFactoredOffs();
-      var size = blk(1) * dom.dsiDim(1).length;
+      const size = blk(1) * dom.dsiDim(1).length;
 
       if defRectSimpleDData {
         data = _ddata_allocate(eltType, size);

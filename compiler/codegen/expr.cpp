@@ -3412,10 +3412,9 @@ GenRet CallExpr::codegenPrimitive() {
 
   case PRIM_ARRAY_ALLOC: {
     // get(1): return symbol
-    // get(2): element type
-    // get(3): number of elements
-    // get(4): localize subchunks?
-    // get(5): desired sublocale
+    // get(2): number of elements
+    // get(3): localize subchunks?
+    // get(4): desired sublocale
     GenRet dst = get(1);
     GenRet alloced;
 
@@ -3427,12 +3426,12 @@ GenRet CallExpr::codegenPrimitive() {
       GenRet  locale  = codegenRlocale(dst);
       GenRet  call    = codegenCallExpr("chpl_mem_wide_array_alloc",
                                         codegenRnode(dst),
-                                        codegenValue(get(3)),
+                                        codegenValue(get(2)),
                                         codegenSizeof(eltType),
+                                        get(3),
                                         get(4),
                                         get(5),
-                                        get(6),
-                                        get(7));
+                                        get(6));
 
       call.chplType = get(1)->typeInfo();
       alloced       = codegenAddrOf(codegenWideAddr(locale,
@@ -3443,12 +3442,12 @@ GenRet CallExpr::codegenPrimitive() {
       Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
 
       alloced = codegenCallExpr("chpl_mem_array_alloc",
-                                codegenValue(get(3)),
+                                codegenValue(get(2)),
                                 codegenSizeof(eltType),
+                                get(3),
                                 get(4),
                                 get(5),
-                                get(6),
-                                get(7));
+                                get(6));
     }
 
     codegenAssign(dst, alloced);
@@ -3457,27 +3456,25 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_ARRAY_FREE: {
+    // get(1): memory address
+    // get(2): number of elements
     if (fNoMemoryFrees == false) {
       GenRet data = get(1);
 
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet node = codegenRnode(data);
         GenRet ptr  = codegenRaddr(data);
-
-        codegenCall("chpl_mem_wide_array_free", node, ptr, get(2), get(3));
+        Symbol* addr    = get(1)->typeInfo()->getField("addr");
+        Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
+        codegenCall("chpl_mem_wide_array_free", node, ptr,
+                    codegenValue(get(2)), codegenSizeof(eltType),
+                    get(3), get(4));
       } else {
-        codegenCall("chpl_mem_array_free", data, get(2), get(3));
+        Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
+        codegenCall("chpl_mem_array_free", data,
+                    codegenValue(get(2)), codegenSizeof(eltType),
+                    get(3), get(4));
       }
-    }
-
-    break;
-  }
-
-  case PRIM_ARRAY_FREE_ELTS: {
-    if (fNoMemoryFrees == false) {
-      // This used to run a macro like this:
-      // for(i = 0; i < (x)->size; i++) call
-      INT_FATAL("PRIM_ARRAY_FREE_ELTS");
     }
 
     break;
