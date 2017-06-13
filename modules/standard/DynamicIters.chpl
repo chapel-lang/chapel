@@ -77,7 +77,7 @@ config param debugDynamicIters:bool=false;
   This iterator can be called in serial and zippered contexts.
 
 */
-iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
+iter dynamic(c:range(?), chunkSize:int=1, numTasks:int=0) {
 
   if debugDynamicIters then
     writeln("Serial dynamic Iterator. Working with range ", c);
@@ -87,7 +87,7 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
 // Parallel iterator
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0)
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
 where tag == iterKind.leader
 {
   assert(chunkSize > 0); // caller's responsibility
@@ -142,7 +142,7 @@ where tag == iterKind.leader
 
 // Follower
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int, followThis)
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, followThis)
 where tag == iterKind.follower
 {
   type rType=c.type;
@@ -185,7 +185,7 @@ where tag == iterKind.follower
 */
 
 //This is the serial version of this iterator
-iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1)
+iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=1)
 {
   if debugDynamicIters then
     writeln("Serial Dynamic Domain Iterator, working with domain: ", c);
@@ -195,7 +195,7 @@ iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1)
 
 //Leader
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim : int = 1)
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 1)
   where tag == iterKind.leader
   {
     //caller's responsibility to use a valid chunk size
@@ -231,7 +231,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
 
 //Follower
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:int, followThis)
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   //Invoke the default rectangular domain follower iterator
