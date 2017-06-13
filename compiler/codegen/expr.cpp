@@ -3460,6 +3460,12 @@ GenRet CallExpr::codegenPrimitive() {
     // get(2): number of elements
     if (fNoMemoryFrees == false) {
       GenRet data = get(1);
+      GenRet numElts;
+      if (get(2)->isRefOrWideRef()) {
+        numElts = codegenDeref(get(2));
+      } else {
+        numElts = codegenValue(get(2));
+      }
 
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet node = codegenRnode(data);
@@ -3467,12 +3473,12 @@ GenRet CallExpr::codegenPrimitive() {
         Symbol* addr    = get(1)->typeInfo()->getField("addr");
         Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
         codegenCall("chpl_mem_wide_array_free", node, ptr,
-                    codegenValue(get(2)), codegenSizeof(eltType),
+                    numElts, codegenSizeof(eltType),
                     get(3), get(4));
       } else {
         Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
         codegenCall("chpl_mem_array_free", data,
-                    codegenValue(get(2)), codegenSizeof(eltType),
+                    numElts, codegenSizeof(eltType),
                     get(3), get(4));
       }
     }
