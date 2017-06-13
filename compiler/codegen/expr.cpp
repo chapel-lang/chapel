@@ -3541,6 +3541,7 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
+  case PRIM_SET_REFERENCE:
   case PRIM_ADDR_OF: {
     // Special handling for reference variables
     // These variables have value type so PRIM_ADDR_OF
@@ -4935,7 +4936,11 @@ GenRet CallExpr::codegenPrimMove() {
       GenRet lhs = var->codegenVarSymbol(true);
       GenRet rhs = from;
       if (!from->isRefOrWideRef()) {
-        rhs = codegenAddrOf(rhs);
+        if (var->isWideRef()) {
+          rhs = codegenAddrOf(codegenWideHere(get(2)));
+        } else {
+          rhs = codegenAddrOf(rhs);
+        }
       }
 
       codegenAssign(lhs, rhs);
