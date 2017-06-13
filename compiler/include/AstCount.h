@@ -126,10 +126,10 @@ foreach_ast(decl_members);
   virtual bool   enterCondStmt       (CondStmt*          node);
   virtual void   exitCondStmt        (CondStmt*          node);
 
+  virtual void   visitEblockStmt     (ExternBlockStmt*   node);
+
   virtual bool   enterForwardingStmt (ForwardingStmt*    node);
   virtual void   exitForwardingStmt  (ForwardingStmt*    node);
-
-  virtual void   visitEblockStmt     (ExternBlockStmt*   node);
 
   virtual bool   enterGotoStmt       (GotoStmt*          node);
   virtual void   exitGotoStmt        (GotoStmt*          node);

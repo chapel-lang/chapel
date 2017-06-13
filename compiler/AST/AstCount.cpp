@@ -227,20 +227,20 @@ void AstCount::visitEblockStmt(ExternBlockStmt* node) {
   numExternBlockStmt++;
 }
 
-bool AstCount::enterGotoStmt(GotoStmt* node) {
-  numGotoStmt++;
-  return true;
-}
-
-void AstCount::exitGotoStmt(GotoStmt* node) {
-}
-
 bool AstCount::enterForwardingStmt(ForwardingStmt* node) {
   numForwardingStmt++;
   return true;
 }
 
 void AstCount::exitForwardingStmt(ForwardingStmt* node) {
+}
+
+bool AstCount::enterGotoStmt(GotoStmt* node) {
+  numGotoStmt++;
+  return true;
+}
+
+void AstCount::exitGotoStmt(GotoStmt* node) {
 }
 
 bool AstCount::enterTryStmt(TryStmt* node) {
