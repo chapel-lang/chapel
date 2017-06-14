@@ -1264,6 +1264,49 @@ bool AggregateType::needsConstructor() {
   return false;
 }
 
+bool AggregateType::wantsDefaultInitializer() {
+  // For now, no default initializers for library and internal types
+  ModuleSymbol* mod = getModule();
+  if (!mod || mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD)
+    return false;
+
+  // No default initializers if the --force-initializers flag is not used
+  if (!fUserDefaultInitializers)
+    return false;
+
+  // Only want a default initializer when no initializer or constructor is
+  // defined
+  if (initializerStyle != DEFINES_NONE_USE_DEFAULT)
+    return false;
+
+  // For now, no default initializers for records and unions
+  if (isRecord() || isUnion())
+    return false;
+
+  // For now, no default initializers for nested aggregate types
+  if (outer != NULL)
+    return false;
+
+  // No default initializer for types that have an initialize() method
+  forv_Vec(FnSymbol, method, methods) {
+    if (method && strcmp(method->name, "initialize") == 0) {
+      if (method->numFormals() == 2) {
+        return false;
+      }
+    }
+  }
+
+  // For now, no default initializers for extern types
+  if (symbol->hasFlag(FLAG_EXTERN))
+    return false;
+
+  // For now, no default initializers for ref
+  if (symbol->hasFlag(FLAG_REF))
+    return false;
+
+  return true;
+}
+
 ArgSymbol* AggregateType::createGenericArg(VarSymbol* field) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
 

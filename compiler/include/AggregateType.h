@@ -118,6 +118,7 @@ public:
                               // default-initializer.
                               // It provides initial values for the
                               // fields in an aggregate type.
+  bool                        wantsDefaultInitializer();
 
   InitializerStyle            initializerStyle;
 

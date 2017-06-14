@@ -82,28 +82,8 @@ void buildDefaultFunctions() {
       if (AggregateType* ct = toAggregateType(type->type)) {
         buildFieldAccessorFunctions(ct);
 
-        if (ct->isClass() && ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-          bool hasOuter = false;
-          if (ct->outer != NULL) {
-            hasOuter = true;
-          }
-
-          bool usesInitializeMethod = false;
-          forv_Vec(FnSymbol, method, ct->methods) {
-            if (method && strcmp(method->name, "initialize") == 0) {
-              if (method->numFormals() == 2) {
-                usesInitializeMethod = true;
-              }
-            }
-          }
-
-          if (!hasOuter && !usesInitializeMethod &&
-              !ct->symbol->hasFlag(FLAG_REF) &&
-              !ct->symbol->hasFlag(FLAG_EXTERN)) {
-            // Classes with an outer or an initialize method are weird, so
-            // don't handle them just yet.
-            buildDefaultInitializer(ct);
-          }
+        if (ct->wantsDefaultInitializer()) {
+          buildDefaultInitializer(ct);
         }
 
         if (!ct->symbol->hasFlag(FLAG_REF)) {
@@ -1291,15 +1271,6 @@ static void build_record_hash_function(AggregateType *ct) {
 ************************************** | *************************************/
 
 static void buildDefaultInitializer(AggregateType* ct) {
-  ModuleSymbol* mod = ct->getModule();
-  if (!mod || mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD ||
-      !fUserDefaultInitializers) {
-    // Don't make a default initializer for types that are defined in the
-    // standard or internal modules.  Only make default initializers when the
-    // flag --force-initializers is true.
-    return;
-  }
-
   // No need to remake the default initializer if we have already made one!
   if (ct->defaultInitializer &&
       strcmp(ct->defaultInitializer->name, "init") == 0)
