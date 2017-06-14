@@ -166,10 +166,14 @@ endif
 #
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
-# compiled with gcc 5.X.  Issue will be pursued after the release
+# compiled with gcc 5.X.
+#
+# 2017-06-14: Regression apparently fixed since gcc 5.X.  Turning
+# off VRP interferes with operation of gcc 7, especially static
+# analysis.  The test below was "-ge 5", now changing it to "-eq 5".
 #
 # Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
 COMP_CXXFLAGS += -fno-tree-vrp
