@@ -279,6 +279,16 @@ void Expr::verify() {
   }
 }
 
+void Expr::verify(AstTag expectedTag) {
+  if (astTag != expectedTag)
+    INT_FATAL(this, "bad astTag");
+  Expr::verify();
+}
+
+void Expr::verifyParent(const Expr* child) {
+  if (child && child->parentExpr != this)
+    INT_FATAL(this, "bad parent of a child node");
+}
 
 bool Expr::inTree() {
   if (parentSymbol)
@@ -522,10 +532,7 @@ Expr* SymExpr::getFirstExpr() {
 }
 
 void SymExpr::verify() {
-  Expr::verify();
-
-  if (astTag != E_SymExpr)
-    INT_FATAL(this, "SymExpr::verify %12d: Bad astTag", id);
+  Expr::verify(E_SymExpr);
 
   if (var == NULL)
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
@@ -647,9 +654,7 @@ Expr* UnresolvedSymExpr::getFirstExpr() {
 
 void
 UnresolvedSymExpr::verify() {
-  Expr::verify();
-  if (astTag != E_UnresolvedSymExpr)
-    INT_FATAL(this, "bad UnresolvedSymExpr::astTag");
+  Expr::verify(E_UnresolvedSymExpr);
   if (!unresolved)
     INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
 }
@@ -723,10 +728,7 @@ Expr* DefExpr::getFirstExpr() {
 }
 
 void DefExpr::verify() {
-  Expr::verify();
-  if (astTag != E_DefExpr) {
-    INT_FATAL(this, "Bad DefExpr::astTag");
-  }
+  Expr::verify(E_DefExpr);
   if (!sym) {
     INT_FATAL(this, "DefExpr has no sym");
   }
@@ -734,12 +736,10 @@ void DefExpr::verify() {
     INT_FATAL(this, "Bad FnSymbol::defPoint");
   if (toArgSymbol(sym) && (exprType || init))
     INT_FATAL(this, "Bad ArgSymbol::defPoint");
-  if (init && init->parentExpr != this)
-    INT_FATAL(this, "Bad DefExpr::init::parentExpr");
-  if (exprType && exprType->parentExpr != this)
-    INT_FATAL(this, "Bad DefExpr::exprType::parentExpr");
   if (sym->defPoint != this)
     INT_FATAL(this, "Bad DefExpr::sym->defPoint");
+  verifyParent(init);
+  verifyParent(exprType);
   verifyNotOnList(init);
   verifyNotOnList(exprType);
 }
@@ -973,11 +973,7 @@ Expr* CallExpr::getNextExpr(Expr* expr) {
 }
 
 void CallExpr::verify() {
-  Expr::verify();
-
-  if (astTag != E_CallExpr) {
-    INT_FATAL(this, "Bad CallExpr::astTag");
-  }
+  Expr::verify(E_CallExpr);
 
   if (! parentExpr)
     INT_FATAL(this, "Every CallExpr is expected to have a parentExpr");
@@ -985,8 +981,7 @@ void CallExpr::verify() {
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
 
-  if (baseExpr && baseExpr->parentExpr != this)
-    INT_FATAL(this, "Bad baseExpr::parent in CallExpr");
+  verifyParent(baseExpr);
 
   if (normalized && isPrimitive(PRIM_RETURN)) {
     FnSymbol* fn  = toFnSymbol(parentSymbol);
@@ -1003,8 +998,7 @@ void CallExpr::verify() {
   }
 
   for_actuals(actual, this) {
-    if (actual->parentExpr != this)
-      INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
+    verifyParent(actual);
 
     if (isSymExpr(actual)                           &&
         toSymExpr(actual)->symbol() == gMethodToken &&
@@ -1420,12 +1414,9 @@ ContextCallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 void
 ContextCallExpr::verify() {
-  Expr::verify();
-  if (astTag != E_ContextCallExpr)
-    INT_FATAL(this, "bad ContextCallExpr::astTag");
+  Expr::verify(E_ContextCallExpr);
   for_alist(expr, options) {
-    if (expr->parentExpr != this)
-      INT_FATAL(this, "Bad ContextCallExpr::options::parentExpr");
+    verifyParent(expr);
     if (isContextCallExpr(expr))
       INT_FATAL(this, "ContextCallExpr cannot contain a ContextCallExpr");
     if (!isCallExpr(expr))
@@ -1591,9 +1582,7 @@ void ForallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 void
 ForallExpr::verify() {
-  Expr::verify();
-  if (astTag != E_ForallExpr)
-    INT_FATAL(this, "bad ForallExpr::astTag");
+  Expr::verify(E_ForallExpr);
   INT_FATAL(this, "ForallExpr::verify() is not implemented");
 }
 
@@ -1634,12 +1623,8 @@ Expr* NamedExpr::getFirstExpr() {
 }
 
 void NamedExpr::verify() {
-  Expr::verify();
-  if (astTag != E_NamedExpr) {
-    INT_FATAL(this, "Bad NamedExpr::astTag");
-  }
-  if (actual && actual->parentExpr != this)
-    INT_FATAL(this, "Bad NamedExpr::actual::parentExpr");
+  Expr::verify(E_NamedExpr);
+  verifyParent(actual);
   verifyNotOnList(actual);
 }
 
