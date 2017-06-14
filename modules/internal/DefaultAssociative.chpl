@@ -566,14 +566,18 @@ module DefaultAssociative {
 
     // ref version
     proc dsiAccess(idx : idxType) ref {
+      const arrOwnsDom = dom._arrs.length == 1;
+      const shouldLock = dom.parSafe && arrOwnsDom;
+      if shouldLock then dom.lockTable();
 
-      // Start by attempting to do an unlocked lookup of the value
+      // Attempt to look up the value
       var (found, slotNum) = dom._findFilledSlot(idx, needLock=false);
 
       if found {
         // if an element exists for that index, return (a ref to) it
-        return data(slotNum);
-
+        ref elem = data[slotNum];
+        if shouldLock then dom.unlockTable();
+        return elem;
       } else if slotNum != -1 {
         // if the element didn't exist, then this is either:
         //
@@ -583,33 +587,18 @@ module DefaultAssociative {
         // - an indication that we should grow the domain + array to
         //   include the element
 
-        const arrOwnsDom = dom._arrs.length == 1;
         if !arrOwnsDom {
           // here's the error case
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
-          // here we're going to grow the table.  To do so, we need to
-          // grab the lock if we need it and don't already have it.
-          const shouldLock = dom.parSafe;
-          if shouldLock {
-            dom.lockTable();
-            // then we need to make sure that someone else hasn't already
-            // added this element in the meantime.
-            var (found, slotNum) = dom._findFilledSlot(idx, needLock=false);
-            if found {
-              // if they have, unlock the table and return the slot
-              dom.unlockTable();
-              return data[slotNum];
-            }
-          }
-
           // grow the table
           const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
 
           // unlock the table, if necessary and return the element
+          ref elem = data[newSlot];
           if shouldLock then dom.unlockTable();
-          return data(newSlot);
+          return elem;
         }
       } else {
         halt("array index out of bounds: ", idx);
