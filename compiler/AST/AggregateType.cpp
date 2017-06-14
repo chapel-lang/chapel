@@ -891,6 +891,9 @@ void AggregateType::buildConstructor() {
     // information about the fields that we would rather stayed unmutated.
     return;
   } else if (initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    // If neither a constructor nor an initializer has been defined for the
+    // type, determine whether we should create a default constructor now or
+    // create a default initializer later.
     if (!needsConstructor()) {
       return;
     }
@@ -1216,6 +1219,15 @@ void AggregateType::buildConstructor() {
   addToSymbolTable(fn);
 }
 
+
+// Returns false if we should not generate a default constructor for this
+// AggregateType, true if we still require one.  The result of this function
+// will vary in most cases if --force-initializers is thrown: that flag tells
+// us to only generate default constructors for types that already have defined
+// constructors (as the constructor implementation relies on every user
+// constructor being modified to call the default constructor), and to try to
+// generate default initializers for types where neither an initializer nor a
+// constructor has been defined.
 bool AggregateType::needsConstructor() {
   // Temporarily only generate default initializers for classes
   if (isRecord() || isUnion())
@@ -1264,6 +1276,14 @@ bool AggregateType::needsConstructor() {
   return false;
 }
 
+// Returns true for the cases where we want to generate a default initializer.
+// Some cases are temporarily false, while others are permanently so: we never
+// want to generate a default initializer for a type that has defined an
+// explicit initializer or constructor, and we don't want to generate a default
+// initializer if --force-initializers has not been thrown (currently).
+//
+// Note that this method does not generate the opposite of needsConstructor -
+// when the type has defined an initializer both methods will return false.
 bool AggregateType::wantsDefaultInitializer() {
   // For now, no default initializers for library and internal types
   ModuleSymbol* mod = getModule();
