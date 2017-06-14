@@ -566,27 +566,23 @@ module DefaultAssociative {
 
     // ref version
     proc dsiAccess(idx : idxType) ref {
-      const arrOwnsDom = dom._arrs.length == 1;
-      const shouldLock = dom.parSafe && arrOwnsDom;
-      if shouldLock then dom.lockTable();
-
       // Attempt to look up the value
       var (found, slotNum) = dom._findFilledSlot(idx, needLock=false);
 
+      // if an element exists for that index, return (a ref to) it
       if found {
-        // if an element exists for that index, return (a ref to) it
-        ref elem = data[slotNum];
-        if shouldLock then dom.unlockTable();
-        return elem;
-      } else if slotNum != -1 {
-        // if the element didn't exist, then this is either:
-        //
-        // - an error if the array does not own the domain (it's
-        //   trying to get a reference to an element that doesn't exist)
-        //
-        // - an indication that we should grow the domain + array to
-        //   include the element
+        return data[slotNum];
 
+      // if the element didn't exist, then this is either:
+      //
+      // - an error if the array does not own the domain (it's
+      //   trying to get a reference to an element that doesn't exist)
+      //
+      // - an indication that we should grow the domain + array to
+      //   include the element
+      } else if slotNum != -1 {
+
+        const arrOwnsDom = dom._arrs.length == 1;
         if !arrOwnsDom {
           // here's the error case
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
@@ -595,10 +591,8 @@ module DefaultAssociative {
           // grow the table
           const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
 
-          // unlock the table, if necessary and return the element
-          ref elem = data[newSlot];
-          if shouldLock then dom.unlockTable();
-          return elem;
+          // and return the element
+          return data[newSlot];
         }
       } else {
         halt("array index out of bounds: ", idx);
