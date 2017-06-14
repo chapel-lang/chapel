@@ -6,8 +6,6 @@ spawn module and how it is used to create subprocesses within a chapel program.
 
 use Spawn;
 
-//Command to be executed. Starts with chpl to signal the chapel compiler.
-var command: string;
 const chapel: string = "chpl";
 
 /* 
@@ -21,21 +19,22 @@ proc main(args: [] string) {
   }
 
   // Main compilation process
-  cat_command(args);    // concatenate command 
-  writeln(command);     // print command for user
-  spawn_sub(command);   // spawn command to compile file
+  var command: string  = cat_command(args);  // concatenate command 
+  writeln(command);                          // print command for user
+  spawn_sub(command);                        // spawn command to compile file
 }
 
 
 /*
 Concatenates the given arugments to be sent to a subprocess
 */
-proc cat_command(args: [] string) {
+proc cat_command(args: [] string): string {
   
-  // Names executable the filename without .chpl 
+  var com: string; 
   var file: string = (" " + args[1]);
   var name: string = (" -o " + args[1].strip(".chpl", trailing = true));
-  command += chapel + file + name;
+  com += chapel + file + name;
+  return com;
 }
 
 
