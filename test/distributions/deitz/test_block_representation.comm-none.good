@@ -28,4 +28,4 @@ Array
 Array Representation
 
 locArr[(0, 0)].myElems = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-locArr[(0, 0)].locRAD = (off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil, mdParDim = 0, mdNumChunks = 0, mdRLo = 0, mdRHi = 0, mdRStr = 0, mdRLen = 0, mdBlk = 0, mdAlias = false, mData = nil)
+locArr[(0, 0)].locRAD = (off = (0, 0), blk = (0, 0), str = (0, 0), origin = 0, factoredOffs = 0, data = nil, shiftedData = nil)

@@ -37,6 +37,7 @@
 #include "ForLoop.h"
 #include "initializerResolution.h"
 #include "iterator.h"
+#include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
 #include "passes.h"
@@ -186,15 +187,15 @@ static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& formalIdxToActual,
-                             Vec<ArgSymbol*>& actualIdxToFormal,
+                             std::vector<Symbol*>& formalIdxToActual,
+                             std::vector<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info);
 static Type*
 getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual,
+                   std::vector<Symbol*>& formalIdxToActual,
                    bool inInitRes);
 
 static BlockStmt* getParentBlock(Expr* expr);
@@ -271,8 +272,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
-  if (formalIdxToActual.n != 0) formalIdxToActual.clear();
-  if (actualIdxToFormal.n != 0) actualIdxToFormal.clear();
+  if (formalIdxToActual.size() != 0) formalIdxToActual.clear();
+  if (actualIdxToFormal.size() != 0) actualIdxToFormal.clear();
 
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
@@ -1075,8 +1076,12 @@ resolveFormals(FnSymbol* fn) {
            (isUnion(formal->type) ||
             isRecord(formal->type)))) {
         makeRefType(formal->type);
-        formal->type = formal->type->refType;
-        // The type of the formal is its own ref type!
+        if (formal->type->refType) {
+          formal->type = formal->type->refType;
+          // The type of the formal is its own ref type!
+        } else {
+          formal->qual = QUAL_REF;
+        }
       }
 
       if (isRecordWrappedType(formal->type) &&
@@ -1618,23 +1623,26 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& formalIdxToActual,
-                             Vec<ArgSymbol*>& actualIdxToFormal,
+                             std::vector<Symbol*>& formalIdxToActual,
+                             std::vector<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info) {
-  formalIdxToActual.fill(fn->numFormals());
-  actualIdxToFormal.fill(info.actuals.n);
-
+  for (int i = 0; i < fn->numFormals(); i++) {
+    formalIdxToActual.push_back(NULL);
+  }
+  for (int i = 0; i < info.actuals.n; i++) {
+    actualIdxToFormal.push_back(NULL);
+  }
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
       int j = 0;
       for_formals(formal, fn) {
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = info.actuals.v[i];
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = info.actuals.v[i];
           break;
         }
         j++;
@@ -1649,16 +1657,16 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Record successful substitutions.
   int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
       while (formal) {
         if (formal->variableExpr)
           return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        if (!formalIdxToActual.v[j]) {
+        if (formalIdxToActual[j] == NULL) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = info.actuals.v[i];
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = info.actuals.v[i];
           formal = next_formal(formal);
           j++;
           break;
@@ -1675,7 +1683,7 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (!formalIdxToActual.v[j] && !formal->defaultExpr)
+    if (formalIdxToActual[j] == NULL && !formal->defaultExpr)
       // Fail if not.
       return false;
     formal = next_formal(formal);
@@ -1728,16 +1736,16 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual,
+                   std::vector<Symbol*>& formalIdxToActual,
                    bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formalIdxToActual.v[i] && formalIdxToActual.v[i]->isParameter()) {
+      if (formalIdxToActual[i] != NULL && formalIdxToActual[i]->isParameter()) {
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalIdxToActual.v[i]->type, formal->type))
-          subs.put(formal, formalIdxToActual.v[i]);
-      } else if (!formalIdxToActual.v[i] && formal->defaultExpr) {
+            canInstantiate(formalIdxToActual[i]->type, formal->type))
+          subs.put(formal, formalIdxToActual[i]);
+      } else if (formalIdxToActual[i] == NULL && formal->defaultExpr) {
 
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
@@ -1763,9 +1771,9 @@ computeGenericSubs(SymbolMap &subs,
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
-      if (formalIdxToActual.v[i]) {
+      if (formalIdxToActual[i] != NULL) {
         if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
-            formalIdxToActual.v[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
+            formalIdxToActual[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
           // If the "this" arg is generic, we're resolving an initializer, and
           // the actual being passed is also still generic, don't count this as
           // a substitution.  Otherwise, we'll end up in an infinite loop if
@@ -1773,7 +1781,7 @@ computeGenericSubs(SymbolMap &subs,
           // count the this arg as a substitution and so always approach the
           // generic arg with a defaultExpr as though a substitution was going
           // to take place.
-        } else if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
+        } else if (Type* type = getInstantiationType(formalIdxToActual[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -1782,8 +1790,8 @@ computeGenericSubs(SymbolMap &subs,
           // and pass "bar" as a c_string instead of a string
           if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
               (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
-              (formalIdxToActual.v[i]->type == dtString) &&
-              (formalIdxToActual.v[i]->isImmediate())) {
+              (formalIdxToActual[i]->type == dtString) &&
+              (formalIdxToActual[i]->isImmediate())) {
             subs.put(formal, dtStringC->symbol);
           } else {
             subs.put(formal, type->symbol);
@@ -2196,10 +2204,10 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
 
   DisambiguationState DS;
 
-  for (int k = 0; k < candidate1->actualIdxToFormal.n; ++k) {
+  for (int k = 0; k < DC.actuals->n; ++k) {
     Symbol* actual = DC.actuals->v[k];
-    ArgSymbol* formal1 = candidate1->actualIdxToFormal.v[k];
-    ArgSymbol* formal2 = candidate2->actualIdxToFormal.v[k];
+    ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
+    ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
 
     TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
 
@@ -4078,7 +4086,7 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isNonGenericRecordWithInitializers(srcType) == true)  {
+  } else if (isRecordWithInitializers(srcType) == true)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5943,9 +5951,7 @@ void resolve() {
 
   resolveExternVarSymbols();
 
-  // --ipe does not build a mainModule
-  if (mainModule)
-    resolveUses(mainModule);
+  resolveUses(ModuleSymbol::mainModule());
 
   // --ipe does not build printModuleInitModule
   if (printModuleInitModule)
@@ -6708,14 +6714,42 @@ static FnSymbol* findGenMainFn() {
   return NULL;
 }
 
+static bool isVoidOrVoidTupleType(Type* type) {
+  if (type == NULL) {
+    return false;
+  }
+  if (type == dtVoid) {
+    return true;
+  }
+  if (type->symbol->hasFlag(FLAG_REF)) {
+    if (type->getField("_val", false)) {
+      return isVoidOrVoidTupleType(type->getValType());
+    } else {
+      // The _val field has already been removed because it is
+      // void or tuple of void
+      return true;
+    }
+  }
+  if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    Symbol* field = type->getField("x1", false);
+    if (field == NULL || field->type == dtVoid) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static void cleanupVoidVarsAndFields() {
-  // remove most uses of void variables and fields
+  // Remove most uses of void variables and fields
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->inTree()) {
       if (call->isPrimitive(PRIM_MOVE)) {
-        if (call->get(2)->typeInfo() == dtVoid ||
+        if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtVoid->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
+          // Remove moves where the rhs has type void. If the rhs is a
+          // call to something other than a few primitives, still make
+          // that call, just don't move the result into anything.
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIM_DEREF) ||
                 rhs->isPrimitive(PRIM_GET_MEMBER) ||
@@ -6731,8 +6765,9 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-        if (call->get(3)->typeInfo() == dtVoid) {
-          INT_ASSERT(call->get(2)->typeInfo() == dtVoid);
+        if (isVoidOrVoidTupleType(call->get(3)->typeInfo())) {
+          INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
+          // Remove set_member(a, void, void) calls
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             Expr* rmRhs = rhs->remove();
             call->insertBefore(rmRhs);
@@ -6742,8 +6777,10 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       } else if (call->isPrimitive(PRIM_RETURN)) {
-        if (call->get(1)->typeInfo() == dtVoid ||
+        if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
+          // Change functions that return void to use the global
+          // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
             if (ret->symbol() != gVoid) {
               SET_LINENO(call);
@@ -6752,8 +6789,10 @@ static void cleanupVoidVarsAndFields() {
           }
         }
       } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (call->get(1)->typeInfo() == dtVoid ||
+        if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtVoid->refType) {
+          // Change iterators that yield void to use the global
+          // void value instead of a local void.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
             if (ret->symbol() != gVoid) {
               SET_LINENO(call);
@@ -6761,32 +6800,48 @@ static void cleanupVoidVarsAndFields() {
             }
           }
         }
+      } else if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
+        // Remove calls to destructors for homogeneous tuples of void
+        if (isVoidOrVoidTupleType(call->get(1)->typeInfo())) {
+          call->remove();
+        }
       }
       if (call->isResolved()) {
+        // Remove actual arguments that are void from function calls
         for_actuals(actual, call) {
-          if (actual->typeInfo() == dtVoid) {
+          if (isVoidOrVoidTupleType(actual->typeInfo())) {
             actual->remove();
           }
         }
       }
     }
   }
+
+  // Remove void formal arguments from functions.
+  // Change functions that return ref(void) to just return void.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint->inTree()) {
       for_formals(formal, fn) {
-        if (formal->type == dtVoid) {
+        if (isVoidOrVoidTupleType(formal->type)) {
           if (formal == fn->_this) {
             fn->_this = NULL;
           }
           formal->defPoint->remove();
         }
       }
-      if (fn->retType == dtVoid->refType) {
+      if (fn->retType == dtVoid->refType ||
+          isVoidOrVoidTupleType(fn->retType)) {
         fn->retType = dtVoid;
+      }
+    }
+    if (fn->_this) {
+      if (isVoidOrVoidTupleType(fn->_this->type)) {
+        fn->_this = NULL;
       }
     }
   }
 
+  // Set for loop index variables that are void to the global void value
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
       if (loop->indexGet() && loop->indexGet()->typeInfo() == dtVoid) {
@@ -6795,11 +6850,15 @@ static void cleanupVoidVarsAndFields() {
     }
   }
 
+  // Now that uses of void have been cleaned up, remove the
+  // DefExprs for void variables.
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->inTree()) {
-      if (def->sym->type == dtVoid || def->sym->type == dtVoid->refType) {
+      if (isVoidOrVoidTupleType(def->sym->type) ||
+          def->sym->type == dtVoid->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
-          if (def->parentSymbol != dtVoid->refType->symbol) {
+          // Avoid removing the "_val" field from refs
+          if (!def->parentSymbol->hasFlag(FLAG_REF)) {
             if (var != gVoid) {
               def->remove();
             }

@@ -1,0 +1,2 @@
+--set iterations=10 --set order=200 --set tileSize=64 --set correctness
+--set iterations=10 --set order=200 --set correctness

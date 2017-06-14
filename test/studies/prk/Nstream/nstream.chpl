@@ -1,6 +1,9 @@
-//
-// Chapel's implementation of nstream
-//
+/*
+   Chapel's parallel Nstream implementation
+
+   Contributed by Engin Kayraklioglu (GWU)
+*/
+
 use Time;
 use BlockDist;
 

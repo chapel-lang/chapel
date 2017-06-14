@@ -24,6 +24,7 @@
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
+#include "ModuleSymbol.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -422,23 +423,13 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
 }
 
 static FnSymbol* chpl_gen_main_exists() {
-  FnSymbol* match = NULL;
+  bool          errorP   = false;
+  ModuleSymbol* module   = ModuleSymbol::mainModule();
+  FnSymbol*     matchFn  = NULL;
   ModuleSymbol* matchMod = NULL;
-  ModuleSymbol* module = NULL;
-
-  if (strlen(mainModuleName) != 0) {
-    forv_Vec(ModuleSymbol, mod, allModules) {
-      if (!strcmp(mainModuleName, mod->name))
-        module = mod;
-    }
-    if (!module)
-      USR_FATAL("Couldn't find module %s", mainModuleName);
-  }
-
-  bool firstProblem = true;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!strcmp("main", fn->name)) {
+    if (strcmp("main", fn->name) == 0) {
       if (fn->numFormals() == 0 ||
           (fn->numFormals() == 1 &&
            fn->getFormal(1)->typeInfo() == dtArray) ) {
@@ -446,15 +437,17 @@ static FnSymbol* chpl_gen_main_exists() {
 
         CallExpr* ret = toCallExpr(fn->body->body.last());
 
-        if (!ret || !ret->isPrimitive(PRIM_RETURN))
+        if (ret == NULL || ret->isPrimitive(PRIM_RETURN) == false) {
           INT_FATAL(fn, "function is not normalized");
+        }
 
         SymExpr* sym = toSymExpr(ret->get(1));
 
-        if (!sym)
+        if (sym == NULL) {
           INT_FATAL(fn, "function is not normalized");
+        }
 
-        if( sym->symbol() != gVoid ) {
+        if (sym->symbol() != gVoid) {
           mainReturnsInt = true;
         } else {
           mainReturnsInt = false;
@@ -462,32 +455,41 @@ static FnSymbol* chpl_gen_main_exists() {
 
         ModuleSymbol* fnMod = fn->getModule();
 
-        if ((module == NULL && 
-             fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) ||
-            fnMod == module) {
-          if (!match) {
-            match = fn;
+        if (fnMod == module) {
+          if (matchFn == NULL) {
+            matchFn  = fn;
             matchMod = fnMod;
+
           } else {
-            if (firstProblem) {
-              firstProblem = false;
-              USR_FATAL_CONT("Ambiguous main() function%s:",
-                             fnMod == matchMod ? "" : " (use --main-module to disambiguate)");
-              USR_PRINT(match, "in module %s", matchMod->name);
+            if (errorP == false) {
+              const char* info = "";
+
+              errorP = true;
+
+              if (fnMod == matchMod) {
+                info = " (use --main-module to disambiguate)";
+              }
+
+              USR_FATAL_CONT("Ambiguous main() function%s:", info);
+              USR_PRINT(matchFn, "in module %s", matchMod->name);
             }
+
             USR_PRINT(fn, "in module %s", fnMod->name);
           } // else, this is not a candidate for the main module
         }
+
       } else {
         USR_FATAL_CONT("main() function with invalid signature");
         USR_PRINT(fn, "in module %s", fn->getModule()->name);
       }
     }
   }
-  if (!firstProblem) {
+
+  if (errorP == false) {
     USR_STOP();
   }
-  return match;
+
+  return matchFn;
 }
 
 
@@ -495,69 +497,58 @@ static void build_chpl_entry_points() {
   //
   // chpl_user_main is the (user) programmatic portion of the app
   //
-  FnSymbol* chpl_user_main = chpl_gen_main_exists();
+  ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
+  FnSymbol*     chplUserMain = chpl_gen_main_exists();
 
-  if (fLibraryCompile) {
-    if (chpl_user_main)
-      USR_WARN(chpl_user_main, "'main()' has no special meaning when compiling in --library mode");
+  if (fLibraryCompile == true && chplUserMain != NULL) {
+    USR_WARN(chplUserMain,
+             "'main()' has no special meaning when compiling "
+             "in --library mode");
   }
 
-  if (!chpl_user_main) {
-    if (strlen(mainModuleName) != 0) {
-      forv_Vec(ModuleSymbol, mod, userModules) {
-        if (!strcmp(mod->name, mainModuleName))
-          mainModule = mod;
-      }
-      if (!mainModule)
-        USR_FATAL("unknown module specified in '--main-module=%s'", mainModuleName);
-    } else {
-      for_alist(expr, theProgram->block->body) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-            if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
-              if (mainModule) {
-                USR_FATAL_CONT("a program with multiple user modules requires a main function");
-                USR_PRINT("alternatively, specify a main module with --main-module");
-                USR_STOP();
-              }
-              mainModule = mod;
-            }
-          }
-        }
-      }
-    }
+  if (chplUserMain == NULL) {
     SET_LINENO(mainModule);
-    chpl_user_main = new FnSymbol("main");
-    chpl_user_main->retType = dtVoid;
-    mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
-    normalize(chpl_user_main);
+
+    chplUserMain          = new FnSymbol("main");
+    chplUserMain->retType = dtVoid;
+
+    mainModule->block->insertAtTail(new DefExpr(chplUserMain));
+
+    normalize(chplUserMain);
+
   } else {
-    if (!isModuleSymbol(chpl_user_main->defPoint->parentSymbol)) {
-      USR_FATAL(chpl_user_main, "main function must be defined at module scope");
+    if (isModuleSymbol(chplUserMain->defPoint->parentSymbol) == false) {
+      USR_FATAL(chplUserMain,
+                "main function must be defined at module scope");
     }
-    mainModule = chpl_user_main->getModule();
   }
 
-  SET_LINENO(chpl_user_main);
-  chpl_user_main->cname = "chpl_user_main";
+  SET_LINENO(chplUserMain);
+
+  chplUserMain->cname = "chpl_user_main";
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.
   // It invokes the user's code.
   //
-  chpl_gen_main = new FnSymbol("chpl_gen_main");
 
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
-  chpl_gen_main->insertFormalAtTail(arg);
-  chpl_gen_main->retType = dtInt[INT_SIZE_64];
 
-  chpl_gen_main->cname = "chpl_gen_main";
+  chpl_gen_main          = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->retType = dtInt[INT_SIZE_64];
+  chpl_gen_main->cname   = "chpl_gen_main";
+
+  chpl_gen_main->insertFormalAtTail(arg);
+
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
   chpl_gen_main->addFlag(FLAG_LOCAL_ARGS);
   chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
+
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
+
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
   VarSymbol* endCount = newTemp("_endCount");
+
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
   chpl_gen_main->insertAtTail(new DefExpr(endCount));
 
@@ -567,7 +558,11 @@ static void build_chpl_entry_points() {
   // support them).
   //
   if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             endCount,
+                                             new CallExpr("_endCountAlloc",
+                                                          gFalse)));
+
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
 
@@ -579,9 +574,10 @@ static void build_chpl_entry_points() {
 
   bool main_ret_set = false;
 
-  if (!fLibraryCompile) {
+  if (fLibraryCompile == false) {
     SET_LINENO(chpl_gen_main);
-    if (mainHasArgs) {
+
+    if (mainHasArgs == true) {
       VarSymbol* converted_args = newTemp("_main_args");
 
       converted_args->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -596,15 +592,18 @@ static void build_chpl_entry_points() {
                                                  main_ret,
                                                  new CallExpr("main", converted_args)));
         main_ret_set = true;
+
       } else {
         chpl_gen_main->insertAtTail(new CallExpr("main", converted_args));
       }
+
     } else {
       if (mainReturnsInt) {
         chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                                  main_ret,
                                                  new CallExpr("main")));
         main_ret_set = true;
+
       } else {
         chpl_gen_main->insertAtTail(new CallExpr("main"));
       }
@@ -1263,17 +1262,27 @@ static void build_record_hash_function(AggregateType *ct) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void buildInitializerCall(AggregateType* ct,
+                                 FnSymbol*      fn,
+                                 ArgSymbol*     arg);
+
 static void buildRecordDefaultOf(AggregateType* ct,
                                  FnSymbol*      fn,
                                  ArgSymbol*     arg);
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
-                             ArgSymbol*     formal,
+                             Symbol*        formal,
                              Flag           flag,
-                             PrimitiveTag   tag);
+                             PrimitiveTag   tag,
+                             bool           named);
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named);
 
 static void buildDefaultOfFunction(AggregateType* ct) {
   if        (isNonGenericClassWithInitializers(ct)  == true) {
@@ -1306,16 +1315,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
 
     } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
-      VarSymbol* _this = newTemp("_this", ct);
-      CallExpr*  call  = new CallExpr("init");
-
-      fn->insertAtHead(new DefExpr(_this));
-
-      call->insertAtTail(new SymExpr(gMethodToken));
-      call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
-
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-
+      buildInitializerCall(ct, fn, arg);
     } else {
       buildRecordDefaultOf(ct, fn, arg);
     }
@@ -1327,6 +1327,43 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     // Do not normalize until the definition has been inserted
     normalize(fn);
   }
+}
+
+static void buildInitializerCall(AggregateType* ct,
+                                 FnSymbol*      fn,
+                                 ArgSymbol*     arg) {
+  VarSymbol* _this = newTemp("_this", ct);
+  CallExpr*  call  = new CallExpr("init");
+
+  fn->insertAtHead(new DefExpr(_this));
+
+  call->insertAtTail(new SymExpr(gMethodToken));
+  call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
+
+  for_fields(field, ct) {
+    if (field->isParameter() == true) {
+      Flag         flag = FLAG_PARAM;
+      PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
+
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+
+    } else if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      Flag         flag = FLAG_TYPE_VARIABLE;
+      PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
+
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+
+    } else if (field->defPoint->exprType == NULL &&
+               field->defPoint->init     == NULL) {
+
+      buildRecordQueryVarField(fn, arg, call, field, false);
+
+    }
+  }
+
+  fn->insertAtTail(call);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(_this)));
 }
 
 static void buildRecordDefaultOf(AggregateType* ct,
@@ -1345,60 +1382,29 @@ static void buildRecordDefaultOf(AggregateType* ct,
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->defaultExpr == NULL) {
-      VarSymbol* tmp  = newTemp(formal->name);
-      CallExpr*  init = NULL;
-
-      fn->insertAtHead(new DefExpr(tmp));
-
-      if (formal->type                  != NULL  &&
-          formal->type                  != dtAny &&
-          strcmp(formal->name, "outer") != 0) {
-        init = new CallExpr(PRIM_INIT, formal->type->symbol);
-
-      } else {
-        VarSymbol* typeTmp   = newTemp("type_tmp");
-        VarSymbol* callTmp   = newTemp("call_tmp");
-        VarSymbol* name      = new_CStringSymbol(formal->name);
-
-        CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
-        CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
-
-        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-
-        fn->insertAtHead(new DefExpr(callTmp));
-        fn->insertAtHead(new DefExpr(typeTmp));
-
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
-
-        init = new CallExpr(PRIM_INIT, typeTmp);
-      }
-
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
-
-      call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      buildRecordQueryVarField(fn, arg, call, formal, true);
     }
   }
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 }
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
-                             ArgSymbol*     formal,
+                             Symbol*        formal,
                              Flag           flag,
-                             PrimitiveTag   tag) {
+                             PrimitiveTag   tag,
+                             bool           named) {
   VarSymbol* tmp   = newTemp(formal->name);
   VarSymbol* name  = new_CStringSymbol(formal->name);
   CallExpr*  query = new CallExpr(tag, arg, name);
@@ -1408,7 +1414,47 @@ static void buildRecordQuery(AggregateType* ct,
   fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, query));
   fn->insertAtHead(new DefExpr(tmp));
 
-  call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
+}
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named) {
+  VarSymbol* tmp  = newTemp(formal->name);
+  CallExpr*  init = NULL;
+
+  fn->insertAtHead(new DefExpr(tmp));
+
+  VarSymbol* typeTmp   = newTemp("type_tmp");
+  VarSymbol* callTmp   = newTemp("call_tmp");
+  VarSymbol* name      = new_CStringSymbol(formal->name);
+
+  CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
+  CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
+
+  typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->insertAtHead(new DefExpr(callTmp));
+  fn->insertAtHead(new DefExpr(typeTmp));
+
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
+
+  init = new CallExpr(PRIM_INIT, typeTmp);
+
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
+
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
 }
 
 /************************************* | **************************************

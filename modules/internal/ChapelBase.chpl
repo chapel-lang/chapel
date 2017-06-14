@@ -444,7 +444,7 @@ module ChapelBase {
   inline proc ~(a: int(?w)) return __primitive("u~", a);
   inline proc ~(a: uint(?w)) return __primitive("u~", a);
   // note: where clause used here to enable a user-defined overload
-  inline proc ~(a: bool) where true { compilerError("~ is not suported on operands of boolean type"); }
+  inline proc ~(a: bool) where true { compilerError("~ is not supported on operands of boolean type"); }
 
   inline proc &(a: bool, b: bool) return __primitive("&", a, b);
   inline proc &(a: int(?w), b: int(w)) return __primitive("&", a, b);
@@ -639,6 +639,7 @@ module ChapelBase {
   //
   // More primitive funs
   //
+  pragma "function terminates program"
   inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
   }
@@ -786,14 +787,14 @@ module ChapelBase {
                               locStyle = localizationStyle_t.locNone,
                               subloc = c_sublocid_none) {
     var ret:_ddata(eltType);
-    __primitive("array_alloc", ret, eltType, size,
+    __primitive("array_alloc", ret, size,
                 locStyle == localizationStyle_t.locSubchunks, subloc);
     init_elts(ret, size, eltType);
     return ret;
   }
 
-  inline proc _ddata_free(data: _ddata) {
-    __primitive("array_free", data);
+  inline proc _ddata_free(data: _ddata, size: integral) {
+    __primitive("array_free", data, size);
   }
 
   inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {

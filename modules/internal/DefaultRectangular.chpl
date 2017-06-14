@@ -21,8 +21,7 @@
 //
 module DefaultRectangular {
   config const dataParTasksPerLocale = 0;
-  config const dataParIgnoreRunningTasks = if CHPL_LOCALE_MODEL!="flat" then true
-                                           else false;
+  config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
 
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
@@ -45,7 +44,10 @@ module DefaultRectangular {
   // will be a query supported by the LocaleModel.
   config param experimentalMaxSublocales = 4;
 
-  inline proc defRectSimpleDData param return !localeModelHasSublocales;
+  // The multi-ddata feature is parked for the time being.
+  config param defRectDisableMultiDData = true;
+  inline proc defRectSimpleDData param
+    return !localeModelHasSublocales || defRectDisableMultiDData;
 
   // helper function to set the types of multi-ddata specific fields
   // to 'void' when they are not needed
@@ -295,9 +297,12 @@ module DefaultRectangular {
       const numSublocs = here.getChildCount();
 
       if localeModelHasSublocales && numSublocs != 0 {
-
-        const dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                      else tasksPerLocale;
+        var dptpl = if tasksPerLocale==0 then here.maxTaskPar
+                    else tasksPerLocale;
+        if !ignoreRunning {
+          const otherTasks = here.runningTasks() - 1; // don't include self
+          dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
+        }
         // Make sure we don't use more sublocales than the numbers of
         // tasksPerLocale requested
         const numSublocTasks = min(numSublocs, dptpl);
@@ -305,7 +310,7 @@ module DefaultRectangular {
         const (numChunks, parDim) = if __primitive("task_get_serial") then
                                     (1, -1) else
                                     _computeChunkStuff(numSublocTasks,
-                                                       ignoreRunning,
+                                                       ignoreRunning=true,
                                                        minIndicesPerTask,
                                                        ranges);
         if debugDataParNuma {
@@ -336,8 +341,9 @@ module DefaultRectangular {
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
-              const numSublocTasks = dptpl/numChunks +
-                if chunk==numChunks-1 then dptpl%numChunks else 0;
+              const numSublocTasks = (if chunk < dptpl % numChunks
+                                      then dptpl / numChunks + 1
+                                      else dptpl / numChunks);
               var locBlock: rank*range(idxType);
               for param i in 1..rank do
                 locBlock(i) = offset(i)..#(ranges(i).length);
@@ -349,7 +355,7 @@ module DefaultRectangular {
                                             locBlock(parDim).low);
               followMe(parDim) = lo..hi;
               const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
-                                                               ignoreRunning,
+                                                               ignoreRunning=true,
                                                                minIndicesPerTask,
                                                                followMe);
               coforall chunk2 in 0..#numChunks2 {
@@ -1201,7 +1207,7 @@ module DefaultRectangular {
       if isalias {
         // A multi-ddata alias nevertheless has its own mData.
         if !defRectSimpleDData {
-          _ddata_free(mData);
+          _ddata_free(mData, mdNumChunks);
         }
 
         return;
@@ -1236,15 +1242,18 @@ module DefaultRectangular {
         }
       }
 
+      const size = blk(1) * dom.dsiDim(1).length;
       if defRectSimpleDData {
-        _ddata_free(dataChunk(0));
+        _ddata_free(dataChunk(0), size);
       } else {
         for chunk in 0..#mdNumChunks {
+          const chunkSize = size / mdRLen * mData(chunk).pdr.length;
           _ddata_free(_ddata_shift(eltType,
                                    dataChunk(chunk),
-                                   mData(chunk).dataOff));
+                                   mData(chunk).dataOff),
+                      chunkSize);
         }
-        _ddata_free(mData);
+        _ddata_free(mData, mdNumChunks);
       }
     }
 
@@ -1364,8 +1373,12 @@ module DefaultRectangular {
         chpl_debug_writeln("*** In defRectArr multi-dd leader iterator");
       }
       // This was adapted from the DefaultRectangularDom leader.
-      const dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                    else tasksPerLocale;
+      var dptpl = if tasksPerLocale==0 then here.maxTaskPar
+                  else tasksPerLocale;
+      if !ignoreRunning {
+        const otherTasks = here.runningTasks() - 1; // don't include self
+        dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
+      }
       if debugDataParMultiDData {
         chpl_debug_writeln("### mdNumChunks = ", mdNumChunks, "\n",
                            "### ignoreRunning = ", ignoreRunning, "\n",
@@ -1396,7 +1409,7 @@ module DefaultRectangular {
                                         locBlock(mdParDim).low);
           followMe(mdParDim) = lo..hi;
           const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
-                                                           ignoreRunning,
+                                                           ignoreRunning=true,
                                                            minIndicesPerTask,
                                                            followMe);
           if debugDataParMultiDData then
@@ -1531,7 +1544,7 @@ module DefaultRectangular {
       for param dim in 1..(rank-1) by -1 do
         blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
       computeFactoredOffs();
-      var size = blk(1) * dom.dsiDim(1).length;
+      const size = blk(1) * dom.dsiDim(1).length;
 
       if defRectSimpleDData {
         data = _ddata_allocate(eltType, size);

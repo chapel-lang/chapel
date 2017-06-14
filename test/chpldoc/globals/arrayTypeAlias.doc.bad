@@ -1,0 +1,18 @@
+.. default-domain:: chpl
+
+.. module:: arrayTypeAlias.doc
+
+arrayTypeAlias.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
+   use arrayTypeAlias.doc;
+
+.. function:: proc _parloopexpr1(iterExpr)
+
+.. type:: type t = AppendExpr.Call08
+
+   This is a type alias for an array type 
+

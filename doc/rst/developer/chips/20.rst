@@ -49,7 +49,7 @@ to provide a sorting function that can be called. For example:
     proc < (a:MyType, b:MyType) { ... }
     var A:[1..100] MyType;
     ...
-    sort(A); // programmer indends it to call < declared above
+    sort(A); // programmer intends it to call < declared above
   }
  
 However, the ``<`` function declared in Test is not visible to the definition
@@ -134,7 +134,7 @@ Why does public/private interact with point-of-instantiation?
     private proc < (a:MyType, b:MyType) { ... }
     var A:[1..100] MyType;
     ...
-    sort(A); // programmer indends it to call < declared above
+    sort(A); // programmer intends it to call < declared above
   }
 
 In this example, should the ``sort`` call be able to find the ``<`` routine?
@@ -292,7 +292,7 @@ context to provide functions for use during generic instantiation would
 either:
 
  1. Meet the strict requirements above (e.g. public, none defined at
-    point of definiton)
+    point of definition)
  2. Use ``implements`` clauses to explicitly provide the functions
     to the generic function - see CHIP 2.
  3. Require these dependencies as first-class function arguments.

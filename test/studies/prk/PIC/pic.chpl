@@ -1,3 +1,9 @@
+/*
+   Chapel's parallel PIC implementation
+
+   Contributed by Engin Kayraklioglu (GWU)
+*/
+
 require "random_draw.h", "random_draw.c";
 use Time;
 
@@ -24,11 +30,11 @@ config const L = 10, // grid size
              particleMode = "SINUSOIDAL"; //how to initialize the input
 
 // for geomteric initialization
-config const rho = 1.0;
+config const rho = 0.99;
 
 // for linear initialization
-config const alpha = 0.5;
-config const beta = 0.5;
+config const alpha = 1.0;
+config const beta = 3.0;
 
 // for patch initialization
 record bbox {
@@ -38,10 +44,10 @@ record bbox {
       top: int;
 }
 
-config const initPatchLeft = 1;
-config const initPatchRight = 2;
-config const initPatchTop= 1;
-config const initPatchBottom = 2;
+config const initPatchLeft = 1;     // Reference: 0
+config const initPatchRight = 2;    // Reference: 200
+config const initPatchTop= 1;       // Reference: 100
+config const initPatchBottom = 2;   // Reference: 200
 
 const patch = new bbox(initPatchLeft,
                        initPatchRight,
@@ -166,6 +172,7 @@ proc initializeGrid(L) {
 proc initializeGeometric() {
 
   const A = n * ((1.0-rho) / (1.0-(rho**L))) / L;
+
   LCG_init();
 
 
@@ -275,19 +282,20 @@ proc initializePatch() {
   }
 
   inline proc outsidePatch(x, y) {
-    return x<patch.left   || x>patch.right ||
-            y<patch.bottom || y>patch.top;
+    return x < patch.left || x > patch.right ||
+           y < patch.bottom || y > patch.top;
   }
 
   proc badPatch(patch, patch_contain) {
-    if patch.left>=patch.right || patch.bottom>=patch.top then
+    if patch.left >= patch.right || patch.bottom >= patch.top then
       return true;
-    if patch.left  <patch_contain.left   ||
-      patch.right>patch_contain.right then
-        return true;
-    if patch.bottom<patch_contain.bottom ||
-      patch.top > patch_contain.top then
-        return true;
+    if patch.left < patch_contain.left ||
+       patch.right > patch_contain.right then
+       return true;
+    if patch.bottom < patch_contain.bottom ||
+       patch.top > patch_contain.top then
+       return true;
+
     return false;
   }
 }
@@ -381,7 +389,7 @@ proc verifyParticle(p) {
 }
 
 inline proc placeParticles(ref pIdx, n, x, y) {
-  for p in 0..#(n:int) {
+  for 1..n {
     particles[pIdx].x = x + REL_X;
     particles[pIdx].y = y + REL_Y;
     particles[pIdx].k = k;

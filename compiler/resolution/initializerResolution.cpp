@@ -57,6 +57,11 @@ filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
 static FnSymbol*
 instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 
+static void makeRecordInitWrappers(CallExpr* call);
+static void makeActualsVector(const CallExpr* call,
+                              const CallInfo& info,
+                              std::vector<ArgSymbol*>& actualIdxToFormal);
+
 static bool isRefWrapperForNonGenericRecord(AggregateType* at);
 
 // Rewrite of instantiateSignature, for initializers.  Removed some bits,
@@ -372,6 +377,16 @@ void resolveInitializer(CallExpr* call) {
 
   resolveMatch(call->resolvedFunction());
 
+  if (isGenericRecord(call->get(2)->typeInfo())) {
+    NamedExpr* named = toNamedExpr(call->get(2));
+    INT_ASSERT(named);
+    SymExpr* namedSe = toSymExpr(named->actual);
+    INT_ASSERT(namedSe);
+    namedSe->symbol()->type = call->resolvedFunction()->_this->type;
+
+    makeRecordInitWrappers(call);
+  }
+
   callStack.pop();
 }
 
@@ -538,6 +553,121 @@ void resolveMatch(FnSymbol* fn) {
   // make sure methods are in the methods list
   //
   ensureInMethodList(fn);
+}
+
+// This creates wrapper functions for calls to record initializers with default
+// values, out of order named arguments, etc.  That effort was skipped during
+// the call match stage because the "this" argument to the initializer was
+// still generic until the body had been resolved.  After we have determined
+// the concrete type for the "this" argument, then we are capable of creating
+// valid wrappers.
+//
+// Note that this action is not necessary for class initializers, because such
+// calls are wrapped by the "_new" function, and appropriate wrappers will
+// be created for it, so we don't need to wrap the initializer itself.
+static void makeRecordInitWrappers(CallExpr* call) {
+  CallInfo info(call, false, false);
+
+  std::vector<ArgSymbol*> actualIdxToFormal;
+  makeActualsVector(call, info, actualIdxToFormal);
+
+
+  FnSymbol* wrap = call->resolvedFunction();
+
+  // Taken from wrapAndCleanUpActuals (modified to not need a
+  // ResolutionCandidate by recreating the necessary pieces)
+  wrap = defaultWrap(wrap, &actualIdxToFormal, &info);
+  reorderActuals(wrap, &actualIdxToFormal, &info);
+  coerceActuals(wrap, &info);
+  wrap = promotionWrap(wrap, &info, true);
+
+  call->baseExpr->replace(new SymExpr(wrap));
+
+  resolveFns(wrap);
+}
+
+// Modified version of computeActualFormalAlignment to only populate the
+// actualIdxToFormal Vec.  Substitutes the formalIdxToActual Vec with one
+// that stores booleans, because I do still need that information in order to
+// correctly populate the actuals
+//
+// This work was already performed when we found the right resolution candidate
+// so the "failure" modes should never get triggered.  The information we need
+// was cleaned up, though, so we are just going to recreate the parts we need.
+static void makeActualsVector(const CallExpr* call,
+                              const CallInfo& info,
+                              std::vector<ArgSymbol*>& actualIdxToFormal) {
+  std::vector<bool> formalIdxToActual;
+  FnSymbol* fn = call->resolvedFunction();
+
+  for (int i = 0; i < fn->numFormals(); i++) {
+    formalIdxToActual.push_back(false);
+  }
+  for (int i = 0; i < info.actuals.n; i++) {
+    actualIdxToFormal.push_back(NULL);
+  }
+
+  for (int i = 0; i < info.actuals.n; i++) {
+    if (info.actualNames.v[i]) {
+      bool match = false;
+      int j = 0;
+      for_formals(formal, fn) {
+        if (!strcmp(info.actualNames.v[i], formal->name)) {
+          match = true;
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = true;
+          break;
+        }
+        j++;
+      }
+      // Fail if no matching formal is found.
+      if (!match) {
+        INT_FATAL(call, "Compilation should have already ensured this action ",
+                  " would be valid");
+      }
+    }
+  }
+
+  // Fill in unmatched formals in sequence with the remaining actuals.
+  // Record successful substitutions.
+  int j = 0;
+  ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
+  for (int i = 0; i < info.actuals.n; i++) {
+    if (!info.actualNames.v[i]) {
+      bool match = false;
+      while (formal) {
+        if (formal->variableExpr)
+          return;
+        if (formalIdxToActual[j] == false) {
+          match = true;
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = true;
+          formal = next_formal(formal);
+          j++;
+          break;
+        }
+        formal = next_formal(formal);
+        j++;
+      }
+      // Fail if there are too many unnamed actuals.
+      if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_TUPLE))) {
+        INT_FATAL(call, "Compilation should have verified this action was ",
+                  "valid");
+      }
+    }
+  }
+
+  // Make sure that any remaining formals are matched by name
+  // or have a default value.
+  while (formal) {
+    if (formalIdxToActual[j] == false && !formal->defaultExpr) {
+      // Fail if not.
+      INT_FATAL(call, "Compilation should have verified this action was ",
+                "valid");
+    }
+    formal = next_formal(formal);
+    j++;
+  }
 }
 
 void temporaryInitializerFixup(CallExpr* call) {

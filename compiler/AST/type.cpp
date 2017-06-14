@@ -1357,6 +1357,20 @@ bool isGenericClassWithInitializers(Type* type) {
   return retval;
 }
 
+bool isClassWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isClass()                    == true  &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false &&
+        at->initializerStyle             == DEFINES_INITIALIZER) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
 bool isNonGenericRecord(Type* type) {
   bool retval = false;
 
@@ -1403,6 +1417,20 @@ bool isGenericRecordWithInitializers(Type* type) {
   if (isGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
       retval = at->initializerStyle == DEFINES_INITIALIZER;
+    }
+  }
+
+  return retval;
+}
+
+bool isRecordWithInitializers(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isRecord()                   == true  &&
+        at->symbol->hasFlag(FLAG_EXTERN) == false &&
+        at->initializerStyle             == DEFINES_INITIALIZER) {
+      retval = true;
     }
   }
 

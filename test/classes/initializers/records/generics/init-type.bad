@@ -1,1 +1,0 @@
-init-type.chpl:9: error: Generic records that define initializers are not yet supported, stay tuned!
