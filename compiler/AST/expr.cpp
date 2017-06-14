@@ -1394,6 +1394,9 @@ bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
 
 ContextCallExpr::ContextCallExpr() :
   Expr(E_ContextCallExpr),
+  hasValue(false),
+  hasConstRef(false),
+  hasRef(false),
   options()
 {
   options.parent = this;
@@ -1404,6 +1407,9 @@ ContextCallExpr*
 ContextCallExpr::copyInner(SymbolMap* map) {
   ContextCallExpr* _this = 0;
   _this = new ContextCallExpr();
+  _this->hasValue = hasValue;
+  _this->hasConstRef = hasConstRef;
+  _this->hasRef = hasRef;
   for_alist(expr, options)
     _this->options.insertAtTail(COPY_INT(expr));
   return _this;
@@ -1473,74 +1479,60 @@ Expr* ContextCallExpr::getFirstExpr() {
 }
 
 
-void ContextCallExpr::setRefRValueOptions(CallExpr* refCall,
-                                          CallExpr* rvalueCall) {
-  // Storing the ref call after the value call allows a
-  // postorder traversal to skip the value call.
-  // The order is important also - the first is always the value.
-
-  options.insertAtTail(rvalueCall);
-  parent_insert_help(this, rvalueCall);
-  options.insertAtTail(refCall);
-  parent_insert_help(this, refCall);
-}
-
 void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
                                                  CallExpr* valueCall,
                                                  CallExpr* constRefCall) {
 
+  // always use order of value, const ref, ref
   // ContextCallExpr::getCalls depends on this order
-  options.insertAtTail(constRefCall);
-  parent_insert_help(this, constRefCall);
-  options.insertAtTail(valueCall);
-  parent_insert_help(this, valueCall);
-  options.insertAtTail(refCall);
-  parent_insert_help(this, refCall);
-}
+  int n = 0;
+  if (valueCall != NULL) {
+    options.insertAtTail(valueCall);
+    parent_insert_help(this, valueCall);
+    hasValue = true;
+    n++;
+  }
+  if (constRefCall != NULL) {
+    options.insertAtTail(constRefCall);
+    parent_insert_help(this, constRefCall);
+    hasConstRef = true;
+    n++;
+  }
+  if (refCall != NULL) {
+    options.insertAtTail(refCall);
+    parent_insert_help(this, refCall);
+    hasRef = true;
+    n++;
+  }
 
-CallExpr* ContextCallExpr::getRefCall() {
-  // This used to check for the call with RET_REF, but
-  // the return tag might change during resolution. So
-  // instead we rely on them always being in order.
-  return toCallExpr(options.tail);
-}
-
-CallExpr* ContextCallExpr::getRValueCall() {
-  return toCallExpr(options.head);
+  // We shouldn't be making a ContextCallExpr with < 2 options
+  INT_ASSERT(n >= 2);
 }
 
 void  ContextCallExpr::getCalls(CallExpr*& refCall,
                                 CallExpr*& valueCall,
                                 CallExpr*& constRefCall) {
-  refCall      = NULL;
-  valueCall    = NULL;
-  constRefCall = NULL;
 
-  if (options.length == 2) {
-    refCall = getRefCall();
+  // always use order of value, const ref, ref
 
-    CallExpr* rvalueCall = getRValueCall();
-    FnSymbol* fn         = rvalueCall->resolvedFunction();
-
-    INT_ASSERT(fn);
-
-    if (fn->retTag == RET_CONST_REF) {
-      constRefCall = rvalueCall;
-    } else {
-      valueCall = rvalueCall;
-    }
-
-  } else if (options.length == 3) {
-    // Note: it would be nicer to check retTag to decide between
-    // ref / value versions. However, doing so is challenging because
-    // of the way that iterator functions no longer have the original
-    // retTag.
-    constRefCall = toCallExpr(options.get(1));
-    valueCall    = toCallExpr(options.get(2));
-    refCall      = toCallExpr(options.get(3));
-
+  int n = 1;
+  if (hasValue) {
+    valueCall = toCallExpr(options.get(n));
+    n++;
   } else {
-    INT_FATAL("Bad ContextCallExpr options");
+    valueCall = NULL;
+  }
+  if (hasConstRef) {
+    constRefCall = toCallExpr(options.get(n));
+    n++;
+  } else {
+    constRefCall = NULL;
+  }
+  if (hasRef) {
+    refCall = toCallExpr(options.get(n));
+    n++;
+  } else {
+    refCall = NULL;
   }
 }
 

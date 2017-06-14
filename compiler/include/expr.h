@@ -297,12 +297,17 @@ private:
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
  public:
-  // The options list always contains two CallExprs.
-  // The first is the value/const ref return intent
-  // and the second is the ref return intent version of a call.
+  // The options list always contains two or three CallExprs.
+  // These are always in this order:
+  //   value return
+  //   const-ref return
+  //   ref return
   // Storing the ref call after the value call allows a
   // postorder traversal to skip the value call.
-  // The order is important also - the first is always the value.
+
+  bool hasValue;
+  bool hasConstRef;
+  bool hasRef;
   AList options;
 
   ContextCallExpr();
@@ -320,10 +325,7 @@ class ContextCallExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
   void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
-  CallExpr*       getRefCall();
-  CallExpr*       getRValueCall();
   void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
 };
 
