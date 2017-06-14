@@ -29,6 +29,7 @@
 #include "CatchStmt.h"
 #include "DeferStmt.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "log.h"

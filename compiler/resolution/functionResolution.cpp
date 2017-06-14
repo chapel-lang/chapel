@@ -36,6 +36,7 @@
 #include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "initializerResolution.h"
 #include "iterator.h"

@@ -41,6 +41,7 @@ const char* tfiTagDescrString(TFITag tfiTag);
 
 //
 // ForallIntents: with clause/forall intents
+// TODO: replace with LoopIntentVars / ForallStmt::intentVariables
 //
 class ForallIntents {
 public:
