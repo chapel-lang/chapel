@@ -2079,7 +2079,7 @@ static void fixAST() {
       else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_ADDR_OF)) {
+          if (rhs->isPrimitive(PRIM_ADDR_OF) || rhs->isPrimitive(PRIM_SET_REFERENCE)) {
             SymExpr* LHS = toSymExpr(call->get(1));
             SymExpr* src = toSymExpr(rhs->get(1));
             bool same = LHS->getValType() == src->getValType() &&

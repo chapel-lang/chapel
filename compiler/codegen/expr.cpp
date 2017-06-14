@@ -4923,28 +4923,6 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(get(1), specRet);
     }
 
-  } else if (isCallExpr(get(2)) &&
-             toCallExpr(get(2))->isPrimitive(PRIM_SET_REFERENCE)) {
-      SymExpr*    lhsSe      = toSymExpr(get(1));
-      VarSymbol*  var        = toVarSymbol(lhsSe->symbol());
-      CallExpr*   call       = toCallExpr(get(2));
-      Expr*       from       = call->get(1);
-      QualifiedType  q       = var->qualType();
-
-      INT_ASSERT(q.isRef() || q.isWideRef());
-
-      GenRet lhs = var->codegenVarSymbol(true);
-      GenRet rhs = from;
-      if (!from->isRefOrWideRef()) {
-        if (var->isWideRef()) {
-          rhs = codegenAddrOf(codegenWideHere(get(2)));
-        } else {
-          rhs = codegenAddrOf(rhs);
-        }
-      }
-
-      codegenAssign(lhs, rhs);
-
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false ) {
     GenRet rhs = get(2);
