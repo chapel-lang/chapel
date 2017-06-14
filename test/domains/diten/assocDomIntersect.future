@@ -1,4 +1,0 @@
-bug: domain intersect/assign causes out of bounds access
-
-The domain intersect/assign operator is removing elements from the domain
-while iterating over it, resulting in an out of bounds access.

@@ -3075,9 +3075,12 @@ module ChapelArray {
   }
 
   proc &=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var removeSet: domain(a.idxType);
     for e in a do
       if !b.member(e) then
-        a.remove(e);
+        removeSet += e;
+    for e in removeSet do
+      a.remove(e);
   }
 
   proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
