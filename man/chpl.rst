@@ -513,13 +513,17 @@ OPTIONS
     Only a single call to each function is displayed from within any given
     parent function.
 
-
 **--[no-]print-callstack-on-error**
 
     Accompany certain error and warning messages with the Chapel call stack
     that the compiler was working on when it reached the error or warning
     location. This is useful when the underlying cause of the issue is in
     one of the callers.
+
+**--[no-]print-unused-functions**
+
+    Print the names and source locations of unused functions within the
+    user program.
 
 **-s, --set <config param>[=<value>]**
 
