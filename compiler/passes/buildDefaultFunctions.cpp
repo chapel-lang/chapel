@@ -1503,7 +1503,8 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
 
-    } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    } else if (ct->initializerStyle == DEFINES_INITIALIZER ||
+               ct->wantsDefaultInitializer()) {
       buildInitializerCall(ct, fn, arg);
     } else {
       buildRecordDefaultOf(ct, fn, arg);

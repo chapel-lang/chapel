@@ -5783,8 +5783,10 @@ resolveFns(FnSymbol* fn) {
       }
     }
 
-    if (ct && ct->initializerStyle == DEFINES_INITIALIZER
-        && ct->instantiatedFrom) {
+    if (ct &&
+        (ct->initializerStyle == DEFINES_INITIALIZER ||
+         ct->wantsDefaultInitializer()) &&
+        ct->instantiatedFrom) {
       // Don't instantiate the default constructor for generic types that
       // define initializers, they don't have one!
     } else {
