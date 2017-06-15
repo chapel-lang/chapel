@@ -665,9 +665,10 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit(Expr* stmt);
+static bool      hasReferenceToThis(Expr* expr);
 
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
-  AggregateType* at = toAggregateType(fn->_this->type);
+  AggregateType* at         = toAggregateType(fn->_this->type);
   InitVisitor    state(fn);
 
   // The body contains at least one instance of this.init()
@@ -835,7 +836,14 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // No action required
       } else {
-        stmt = stmt->next;
+        if (state.isPhase2()             == false &&
+            hasReferenceToThis(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "can't pass \"this\" as an actual to a function "
+                    "during phase 1 of initialization");
+        } else {
+          stmt = stmt->next;
+        }
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
@@ -919,6 +927,29 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
   Symbol*   initSym   = new_CStringSymbol("init");
 
   return new CallExpr(new CallExpr(".", superCall, initSym));
+}
+
+static bool hasReferenceToThis(Expr* expr) {
+  bool retval = false;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
+      retval = arg->hasFlag(FLAG_ARG_THIS);
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    for_actuals(actual, callExpr) {
+      if (hasReferenceToThis(actual) == true) {
+        retval = true;
+        break;
+      }
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
