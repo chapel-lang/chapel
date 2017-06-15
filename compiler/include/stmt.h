@@ -113,6 +113,7 @@ public:
   virtual bool        deadBlockCleanup();
 
   void                appendChapelStmt(BlockStmt* stmt);
+  void                flattenAndRemove();
 
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
