@@ -711,6 +711,7 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit(Expr* stmt);
 static bool      hasReferenceToThis(Expr* expr);
+static bool      isMethodCall(CallExpr* callExpr);
 
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
   AggregateType* at         = toAggregateType(fn->_this->type);
@@ -893,6 +894,14 @@ static InitVisitor preNormalize(BlockStmt*  block,
           USR_FATAL(stmt,
                     "can't pass \"this\" as an actual to a function "
                     "during phase 1 of initialization");
+
+
+        } else if (state.isPhase2()       == false &&
+                   isMethodCall(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "cannot call a method "
+                    "during phase 1 of initialization");
+
         } else {
           stmt = stmt->next;
         }
@@ -1003,6 +1012,23 @@ static bool hasReferenceToThis(Expr* expr) {
 
   return retval;
 }
+
+static bool isMethodCall(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (CallExpr* base = toCallExpr(callExpr->baseExpr)) {
+    if (base->isNamed(".") == true) {
+      if (SymExpr* lhs = toSymExpr(base->get(1))) {
+        if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
+          retval = arg->hasFlag(FLAG_ARG_THIS);
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 
 /************************************* | **************************************
 *                                                                             *
