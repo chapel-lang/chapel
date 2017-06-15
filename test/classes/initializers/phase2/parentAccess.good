@@ -1,1 +1,1 @@
-{f1 = 1.25, f2 = -1.95, f3 = 1.5625}
+parentAccess.chpl:7: error: Cannot access parent field 'f1' during phase 1
