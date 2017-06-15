@@ -313,6 +313,10 @@ public:
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
+  bool            fieldUsedBeforeInitialized(Expr*      expr)            const;
+
+  bool            fieldUsedBeforeInitialized(CallExpr* callExpr)         const;
+
   void            describe(int offset = 0)                               const;
 
 private:
@@ -600,9 +604,50 @@ Expr* InitVisitor::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
     }
   }
 
+  // Now that omitted fields have been handled, see if RHS is OK
+  if (fieldUsedBeforeInitialized(initStmt) == true) {
+    USR_FATAL(initStmt, "Field used before it is initialized");
+  }
+
   // Now handle this field
   retval     = fieldInitFromStmt(initStmt, mFn, *this, field);
   mCurrField = toDefExpr(mCurrField->next);
+
+  return retval;
+}
+
+bool InitVisitor::fieldUsedBeforeInitialized(Expr* expr) const {
+  bool retval = false;
+
+  if (DefExpr* defExpr = toDefExpr(expr)) {
+    if (defExpr->init != NULL) {
+      retval = fieldUsedBeforeInitialized(defExpr->init);
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = fieldUsedBeforeInitialized(callExpr);
+  }
+
+  return retval;
+}
+
+bool InitVisitor::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
+  bool retval = false;
+
+  if (isAssignment(callExpr) == true) {
+    retval = fieldUsedBeforeInitialized(callExpr->get(2));
+
+  } else if (DefExpr* field = toLocalField(type(), callExpr)) {
+    retval = isFieldInitialized(field) == true ? false : true;
+
+  } else {
+    for_actuals(actual, callExpr) {
+      if (fieldUsedBeforeInitialized(actual) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
 
   return retval;
 }
@@ -741,6 +786,10 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
   while (stmt != NULL) {
     if (isDefExpr(stmt) == true) {
+      if (state.fieldUsedBeforeInitialized(stmt) == true) {
+        USR_FATAL(stmt, "Field used before it is initialized");
+      }
+
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
@@ -836,8 +885,11 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // No action required
       } else {
-        if (state.isPhase2()             == false &&
-            hasReferenceToThis(callExpr) == true) {
+        if (state.fieldUsedBeforeInitialized(stmt) == true) {
+          USR_FATAL(stmt, "Field used before it is initialized");
+
+        } else if (state.isPhase2()             == false &&
+                   hasReferenceToThis(callExpr) == true) {
           USR_FATAL(stmt,
                     "can't pass \"this\" as an actual to a function "
                     "during phase 1 of initialization");
