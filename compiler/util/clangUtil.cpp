@@ -30,6 +30,10 @@
 #include <cstdio>
 #include <sstream>
 
+#include "clang/Driver/Compilation.h"
+#include "clang/Driver/Driver.h"
+#include "clang/Driver/Job.h"
+
 #include "astutil.h"
 #include "driver.h"
 #include "expr.h"
@@ -894,18 +898,60 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangArgs.push_back("-c");
   clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
 
+  // Initialize LLVM targets so that the clang commands can know if the
+  // target CPU supports vectorization, avx, etc, etc
+  // Also important for generating assembly from this program.
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmPrinters();
+  llvm::InitializeAllAsmParsers();
+
+
+  // Create a compiler instance to handle the actual work.
+  CompilerInstance* Clang = new CompilerInstance();
+  Clang->createDiagnostics();
+
   info->diagOptions = new DiagnosticOptions();
   info->DiagClient= new TextDiagnosticPrinter(errs(),&*info->diagOptions);
   info->DiagID = new DiagnosticIDs();
+  DiagnosticsEngine* Diags = NULL;
 #if HAVE_LLVM_VER >= 32
-  info->Diags = new DiagnosticsEngine(
+  Diags = new DiagnosticsEngine(
       info->DiagID, &*info->diagOptions, info->DiagClient);
 #else
-  info->Diags = new DiagnosticsEngine(info->DiagID, info->DiagClient);
+  Diags = new DiagnosticsEngine(info->DiagID, info->DiagClient);
 #endif
+  info->Diags = Diags;
+  info->Clang = Clang;
 
-  CompilerInvocation* CI =
-    createInvocationFromCommandLine(clangArgs, info->Diags);
+  clang::driver::Driver TheDriver(clangexe, llvm::sys::getDefaultTargetTriple(), *Diags);
+
+  //   SetInstallDir(argv, TheDriver);
+
+  std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
+
+  INT_ASSERT(C->getJobs().size() == 1);
+
+  clang::driver::Command& j = *C->getJobs().begin();
+  // Now print out the arguments
+  printf("Arguments\n");
+  for ( auto a : j.getArguments() ) {
+    printf("  %s\n", a);
+  }
+
+  // Should this run
+  // TheDriver.BuildCompilation
+  // get a Compilation?
+  //CompilerInvocation* CI =
+  //  createInvocationFromCommandLine(clangArgs, info->Diags);
+  bool success = CompilerInvocation::CreateFromArgs(
+            Clang->getInvocation(),
+           // &clangArgs.front(), &clangArgs.back(),
+            &j.getArguments().front(), (&j.getArguments().back())+1,
+            *Diags);
+  CompilerInvocation* CI = &Clang->getInvocation();
+
+  INT_ASSERT(success);
 
   // Get the codegen options from the clang command line.
   info->codegenOptions = CI->getCodeGenOpts();
@@ -959,13 +1005,19 @@ void setupClang(GenInfo* info, std::string mainFile)
 #endif
   }
 
-  // Create a compiler instance to handle the actual work.
-  info->Clang = new CompilerInstance();
-  info->Clang->setInvocation(CI);
-
   // Save the TargetOptions and LangOptions since these
   // are used during machine code generation.
   info->clangTargetOptions = info->Clang->getTargetOpts();
+
+  // For debugging, it might be useful to check that
+  // the target architecture has the right features
+  // (it has been detected correctly).
+  /*std::vector<std::string> x = info->clangTargetOptions.FeaturesAsWritten;
+  printf("target features\n");
+  for (auto  i : x) {
+    printf("%s\n", i.c_str());
+  }*/
+
   info->clangLangOptions = info->Clang->getLangOpts();
 
   // Create the compilers actual diagnostics engine.
