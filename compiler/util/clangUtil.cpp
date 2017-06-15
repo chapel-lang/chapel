@@ -1013,6 +1013,21 @@ void finishCodegenLLVM() {
   }
 }
 
+static
+void configurePMBuilder(PassManagerBuilder &PMBuilder) {
+  if( fFastFlag ) {
+    PMBuilder.OptLevel = 3;
+    PMBuilder.LoopVectorize = true;
+    PMBuilder.SLPVectorize = true;
+    PMBuilder.BBVectorize = true;
+    PMBuilder.DisableUnrollLoops = true;
+    // TODO: what other flags on PMBuilder should we set?
+  } else {
+    PMBuilder.OptLevel = 0;
+  }
+
+}
+
 void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
@@ -1036,10 +1051,8 @@ void prepareCodegenLLVM()
   fpm->add(new DataLayout(info->module));
 #endif
 
-  if( fFastFlag ) {
-    PMBuilder.OptLevel = 2;
-    PMBuilder.populateFunctionPassManager(*fpm);
-  }
+  configurePMBuilder(PMBuilder);
+  PMBuilder.populateFunctionPassManager(*fpm);
 
   info->FPM_postgen = fpm;
 
