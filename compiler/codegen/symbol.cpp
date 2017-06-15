@@ -1358,6 +1358,9 @@ void FnSymbol::codegenDef() {
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
+
+    // (note, in particular, the default pass manager's
+    //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
     if(llvmPrintIrStageNum == llvmStageNum::BASIC
             && strcmp(llvmPrintIrName, name) == 0)
