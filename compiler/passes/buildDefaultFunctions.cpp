@@ -1383,12 +1383,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
                 return;
               }
 
-            }/* else if (strcmp(parent->defaultInitializer->name, "init") != 0) {
-              // The parent might have inherited from a class that defines a
-              // constructor.  In this case, we should just keep the default
-              // constructor
-              return;
-              } */
+            }
             // Otherwise, we are good to go!
 
             // Add an argument per argument in the parent initializer
@@ -1409,20 +1404,19 @@ static void buildDefaultInitializer(AggregateType* ct) {
               superCall->insertAtTail(superArg->sym);
             }
 
-          } else if (parent->initializerStyle == DEFINES_INITIALIZER) {
+          } else {
+            INT_ASSERT(parent->initializerStyle == DEFINES_INITIALIZER);
             // We want to call a user-defined no-argument initializer.  Insert
             // no arguments
-          } else {
-            // The parent has defined a constructor, this should be an error.
-            USR_FATAL(ct, "Trying to create default initializer on type '%s'"
-                      ", which inherits from type '%s' that defines a "
-                      "constructor", ct->symbol->name, parent->symbol->name);
-            return;
           }
 
           fn->body->insertAtTail(superCall);
         } else {
-          // We want to use the default constructor already generated for us.
+          USR_FATAL(ct, "Cannot create default initializer on type '%s'"
+                    ", which inherits from type '%s' that defines a "
+                    "constructor", ct->symbol->name, parent->symbol->name);
+          // The parent has defined a constructor, we cannot have a default
+          // initializer call that constructor via super.init();
           return;
         }
       }
