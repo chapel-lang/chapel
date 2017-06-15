@@ -6650,6 +6650,9 @@ static void printUnusedFunctions() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (FnSymbol* instantiatedFrom = fn->instantiatedFrom) {
+      while (instantiatedFrom->instantiatedFrom != NULL) {
+        instantiatedFrom = instantiatedFrom->instantiatedFrom;
+      }
       instantiations[instantiatedFrom].push_back(fn);
     }
   }
