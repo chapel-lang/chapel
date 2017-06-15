@@ -73,6 +73,7 @@ using namespace llvm;
 
 #include "llvmGlobalToWide.h"
 #include "llvmAggregateGlobalOps.h"
+#include "llvmDumpIR.h"
 
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
@@ -1731,6 +1732,57 @@ void addGlobalToWide(const PassManagerBuilder &Builder,
     PM.add(createGlobalToWide(&info->globalToWideInfo, info->targetLayout));
   }
 }
+
+static
+bool getIrDumpExtensionPoint(llvmStageNum_t s,
+    PassManagerBuilder::ExtensionPointTy & dumpIrPoint)
+{
+  switch (s) {
+    case llvmStageNum::EarlyAsPossible:
+      dumpIrPoint = PassManagerBuilder::EP_EarlyAsPossible;
+      return true;
+    case llvmStageNum::ModuleOptimizerEarly:
+      dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
+      return true;
+    case llvmStageNum::LoopOptimizerEnd:
+      dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
+      return true;
+    case llvmStageNum::ScalarOptimizerLate:
+      dumpIrPoint = PassManagerBuilder::EP_ScalarOptimizerLate;
+      return true;
+    case llvmStageNum::OptimizerLast:
+      dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;
+      return true;
+    case llvmStageNum::VectorizerStart:
+#if HAVE_LLVM_VER >= 40
+      dumpIrPoint = PassManagerBuilder::EP_VectorizerStart;
+#else
+      USR_FATAL("This version of LLVM doesn't have EP_VectorizerStart");
+#endif
+      return true;
+    case llvmStageNum::EnabledOnOptLevel0:
+      dumpIrPoint = PassManagerBuilder::EP_EnabledOnOptLevel0;
+      return true;
+    case llvmStageNum::Peephole:
+      dumpIrPoint = PassManagerBuilder::EP_Peephole;
+      return true;
+    case llvmStageNum::NOPRINT:
+    case llvmStageNum::NONE:
+    case llvmStageNum::BASIC:
+    case llvmStageNum::FULL:
+    case llvmStageNum::LAST:
+      return false;
+  }
+
+  return false;
+}
+
+static
+void addDumpIrPass(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
+  PM.add(createDumpIrPass(llvmPrintIrStageNum));
+}
+
 
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers

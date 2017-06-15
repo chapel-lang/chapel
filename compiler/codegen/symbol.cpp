@@ -68,6 +68,14 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "none", //llvmStageNum::NONE
   "basic", //llvmStageNum::BASIC
   "full", //llvmStageNum::FULL
+  "early-as-possible",
+  "module-optimizer-early",
+  "loop-optimizer-end",
+  "scalar-optimizer-late",
+  "optimizer-last",
+  "vectorizer-start",
+  "enabled-on-opt-level0",
+  "peephole",
 };
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum) {

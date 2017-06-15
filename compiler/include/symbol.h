@@ -720,11 +720,25 @@ extern char llvmPrintIrName[FUNC_NAME_MAX+1];
 extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
 
 namespace llvmStageNum {
-typedef enum { NOPRINT = 0,
+typedef enum {
+       // The first options here refer to high-level Chapel LLVM optimization
+       NOPRINT = 0,
        NONE,
        BASIC,
        FULL,
-       LAST
+       // These options allow instrumenting the pass pipeline
+       // and match ExtensionPointTy in PassManagerBuilder
+       EarlyAsPossible,
+       ModuleOptimizerEarly,
+       LoopOptimizerEnd,
+       ScalarOptimizerLate,
+       OptimizerLast,
+       VectorizerStart,
+       EnabledOnOptLevel0,
+       Peephole,
+       // Updating these? Be sure to leave LAST as the last
+       // element and update llvmStageName to reflect this order.
+       LAST,
      } llvmStageNum_t;
 }
 using llvmStageNum::llvmStageNum_t;
