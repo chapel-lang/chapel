@@ -198,7 +198,7 @@ endif
 ifeq ($(GNU_GCC_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
 # (ChapelRangeBase.chpl:793) generates code which can overflow.
-GEN_CFLAGS += -Wno-strict-overflow
+SQUASH_WARN_GEN_CFLAGS += -Wno-strict-overflow
 # -fstrict-overflow was introduced in GCC 4.2 and is on by default.  When on,
 # it allows the compiler to assume that integer sums will not overflow, which
 #  can change the programs runtime behavior (when -O2 or greater is tossed).
