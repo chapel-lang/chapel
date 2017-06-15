@@ -1235,9 +1235,13 @@ bool AggregateType::needsConstructor() {
 
   ModuleSymbol* mod = getModule();
 
+  // For now, always generate a default constructor for types in the internal
+  // and library modules
   if (mod && (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD))
     return true;
   else if (fUserDefaultInitializers)
+    // Don't generate a default constructor when --force-initializers is true,
+    // we want to generate a default initializer or fail.
     return false;
 
   if (initializerStyle == DEFINES_INITIALIZER) {
@@ -1247,6 +1251,11 @@ bool AggregateType::needsConstructor() {
     // Defining a constructor means we need a default constructor
     return true;
   } else {
+    // The above two branches are only relevant in the recursive version of
+    // this call, as the outside call site for this function has already ensured
+    // that the type which is the entry point has defined neither an initializer
+    // nor a constructor.
+
     // For now, nested classes need a default constructor
     if (outer != NULL)
       return true;
@@ -1260,6 +1269,7 @@ bool AggregateType::needsConstructor() {
       }
     }
 
+    // For now, extern classes need a default constructor
     if (symbol->hasFlag(FLAG_EXTERN)) {
       return true;
     }
