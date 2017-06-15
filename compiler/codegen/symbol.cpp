@@ -46,7 +46,6 @@
 #include "type.h"
 #include "resolution.h"
 
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -1260,8 +1259,10 @@ void FnSymbol::codegenDef() {
     func = getFunctionLLVM(cname);
 
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT
-            && strcmp(llvmPrintIrName, name) == 0)
+            && strcmp(llvmPrintIrName, name) == 0) {
+        func->addFnAttr(llvm::Attribute::NoInline);
         llvmPrintIrCName = cname;
+    }
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
