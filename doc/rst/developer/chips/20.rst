@@ -9,6 +9,14 @@ Authors
   Michael Ferguson
 
 
+TODO
+----
+
+This CHIP needs to be updated based upon comments in issue #6252;
+especially about spec section 22.2 (specific call site chosen is
+arbitrary); the hijack example is misleading; and D language design in
+this area.
+
 Abstract
 --------
 
