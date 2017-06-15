@@ -1982,6 +1982,25 @@ void makeBinaryLLVM(void) {
     addedGlobalExts = true;
   }
 
+  // Set llvm options
+  if (llvmFlags != "") {
+    //split llvmFlags by spaces
+    std::stringstream argsStream(llvmFlags);
+    std::vector<std::string> vec;
+    std::string arg;
+    while(argsStream >> arg)
+        vec.push_back(arg);
+
+    std::vector<const char*> Args;
+    Args.push_back("chpl-llvm-opts");
+    for (auto & i : vec) {
+      Args.push_back(i.c_str());
+    }
+    Args.push_back(NULL);
+
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  }
+
   // Note that EmitBackendOutput, when creating a .bc file,
   // does *not* run vectorization. We confirmed this with clang 3.7
   // with --save-temps (the resulting .bc file does not contain vector IR

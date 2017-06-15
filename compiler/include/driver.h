@@ -208,4 +208,7 @@ extern bool fIncrementalCompilation;
 // Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;
 
+// LLVM flags (-mllvm)
+extern std::string llvmFlags;
+
 #endif
