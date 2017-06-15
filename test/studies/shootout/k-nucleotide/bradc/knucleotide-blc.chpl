@@ -7,7 +7,7 @@
 
 use Sort;
 
-config param tableSize = 1 << 16,
+config param tableSize = 2**16,
              columns = 61;
 
 
@@ -81,7 +81,7 @@ proc writeCount(data, param str) {
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int, parSafe=false),
+  var freqDom: domain(int),
       freqs: [freqDom] int;
 
   //
@@ -92,7 +92,7 @@ proc calculate(data, param nclSize) {
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks {
-    var myDom: domain(int, parSafe=false),
+    var myDom: domain(int),
         myArr: [myDom] int;
 
     for i in tid..(data.size-nclSize) by numTasks do
@@ -123,7 +123,7 @@ forall i in toChar.domain do
 inline proc decode(in data, param nclSize) {
   var ret: string;
 
-  for param i in 1..nclSize {
+  for i in 1..nclSize {
     ret = toChar[(data & 3)] + ret;
     data >>= 2;
   }
@@ -135,7 +135,7 @@ inline proc decode(in data, param nclSize) {
 inline proc hash(str, beg, param size) {
   var data = 0;
 
-  for param i in 0..size-1 {
+  for i in 0..size-1 {
     data <<= 2;
     data |= toNum[str[beg+i]];
   }
