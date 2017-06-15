@@ -933,11 +933,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   INT_ASSERT(C->getJobs().size() == 1);
 
   clang::driver::Command& j = *C->getJobs().begin();
-  // Now print out the arguments
-  printf("Arguments\n");
+  /*printf("Arguments\n");
   for ( auto a : j.getArguments() ) {
     printf("  %s\n", a);
-  }
+  }*/
 
   // Should this run
   // TheDriver.BuildCompilation
