@@ -891,11 +891,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangArgs.push_back(info->clangOtherArgs[i].c_str());
   }
 
-  if (llvmCodegen) {
-    clangArgs.push_back("-emit-llvm");
-  }
-
-  //clangArgs.push_back("-c");
+  clangArgs.push_back("-c");
   clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
 
   info->diagOptions = new DiagnosticOptions();
@@ -1874,7 +1870,7 @@ void makeBinaryLLVM(void) {
 
   GenInfo* info = gGenInfo;
 
-  std::string moduleFilename = genIntermediateFilename("chpl__module.bc");
+  std::string moduleFilename = genIntermediateFilename("chpl__module.o");
   std::string preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
 
   if( saveCDir[0] != '\0' ) {
@@ -1900,22 +1896,38 @@ void makeBinaryLLVM(void) {
                              raw_fd_ostream::F_Binary
 #endif
                            );
- 
+
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
+    // Note, these global extensions currently only apply
+    // to the module-level optimization (not the "basic" function
+    // optimization we do immediately after generating LLVM IR).
+
     // Add the Global to Wide optimization if necessary.
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+
+    // Add IR dumping pass if necessary
+    PassManagerBuilder::ExtensionPointTy point;
+    if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
+      printf("Adding IR dump extension at %i for %s\n", point, llvmPrintIrCName);
+      PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+    }
+
     addedGlobalExts = true;
   }
 
+  // Note that EmitBackendOutput, when creating a .bc file,
+  // does *not* run vectorization. We confirmed this with clang 3.7
+  // with --save-temps (the resulting .bc file does not contain vector IR
+  // but the resulting .o file has vectorized loops).
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
 #if HAVE_LLVM_VER >= 35
                     info->Ctx->getTargetInfo().getTargetDescription(),
 #endif
-                    info->module, Backend_EmitBC, &output.os());
+                    info->module, Backend_EmitObj, &output.os());
   output.keep();
   output.os().flush();
 
@@ -1999,7 +2011,7 @@ void makeBinaryLLVM(void) {
   // also gives us the name of the temporary place to save
   // the generated program.
   fileinfo mainfile;
-  mainfile.filename = "chpl__module.bc";
+  mainfile.filename = "chpl__module.o";
   mainfile.pathname = moduleFilename.c_str();
   const char* tmpbinname = NULL;
 
