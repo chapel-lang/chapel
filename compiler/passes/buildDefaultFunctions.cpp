@@ -1291,7 +1291,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(fn->_this);
 
-  Vec<const char*> fieldNamesSet; // Look into making this a std::vector or set
+  std::set<const char*> fieldNamesSet;
 
   for_fields(field1, ct) {
     SET_LINENO(field1);
@@ -1312,7 +1312,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
         // the compiler, but would like to leave it here in case it proves
         // useful in the future.
 
-        fieldNamesSet.set_add(field->name);
+        fieldNamesSet.insert(field->name);
 
         // Insert initialization for each field from the argument provided.
         SET_LINENO(field);
@@ -1417,7 +1417,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
               }
 
               // Skip arguments shadowed by this class' fields
-              if (fieldNamesSet.set_in(formal->name)) {
+              if (fieldNamesSet.find(formal->name) != fieldNamesSet.end()) {
                 continue;
               }
 
