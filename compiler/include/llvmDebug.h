@@ -164,6 +164,7 @@ class debug_data
   LLVM_DIVARIABLE get_variable(VarSymbol *varSym);
   LLVM_DIVARIABLE construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
   LLVM_DIVARIABLE get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
+  void createDeclare(llvm::Value* Storage, LLVM_DIVARIABLE VarInfo);
 
  private:
   llvm::DIBuilder dibuilder;

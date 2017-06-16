@@ -729,7 +729,9 @@ void VarSymbol::codegenDef() {
       }
     }
     if(debug_info){
-      debug_info->get_variable(this);
+      LLVM_DIVARIABLE lVDebug = debug_info->get_variable(this);
+      //create llvm.dbg.declare for this local variable
+      debug_info->createDeclare(varAlloca, lVDebug);
     }
 #endif
   }
@@ -1294,7 +1296,8 @@ void FnSymbol::codegenDef() {
                             tempVar.isLVPtr, !is_signed(type));
         // debug info for formal arguments
         if(debug_info){
-          debug_info->get_formal_arg(arg, ArgNo);
+          LLVM_DIVARIABLE fADebug = debug_info->get_formal_arg(arg, ArgNo);
+          debug_info->createDeclare(tempVar.val, fADebug);
         }
       }
       ++ai;

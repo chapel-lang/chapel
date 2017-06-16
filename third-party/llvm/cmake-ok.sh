@@ -2,7 +2,7 @@
 
 CMAKE=$1
 vers=`$CMAKE --version`
-if [ $? -eq 0 ]
+if [ $? -eq 1 ]
 then
   case $vers in
     "cmake version 2.8.12")
