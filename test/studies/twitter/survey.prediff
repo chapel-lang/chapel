@@ -9,7 +9,7 @@ with open(tmp_file, 'w') as tf:
   with open(out_file) as outf:
       for line in outf:
         line = re.sub(r'[0-9]+', 'n', line)
-        line = re.sub(r'[a-z\-\.]+:', 'hostname:', line)
+        line = re.sub(r'[A-Za-z\-\.]+:', 'hostname:', line)
         tf.write(line)
 
 shutil.move(tmp_file, out_file)
