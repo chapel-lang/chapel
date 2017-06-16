@@ -124,15 +124,16 @@
    this represents a race and could have arbitrary consequences
    including incorrect results and program crashes.  While making
    domains and arrays safe with respect to such concurrent operations
-   seems appealing, Chapel's current position is that the performance
-   overhead incurred by such safety would be so significant as to
-   render the types unattractive.
+   would be appealing, Chapel's current position is that such safety
+   guarantees would be prohibitively expensive.
 
-   Arrays do support concurrent reads/writes/iterations/operations as
-   long as the array is not simultaneously being resized (i.e., its
-   domain's index set is not changing).  Such operations are subject
-   to Chapel's memory consistency model like any other memory
-   accesses.
+   Chapel arrays do support concurrent reads, writes, iterations, and
+   operations as long as their domains are not being modified
+   simultaneously.  Such operations are subject to Chapel's memory
+   consistency model like any other memory accesses.  Similarly, tasks
+   may make concurrent queries and iterations on a domain as long as
+   another task is not simultaneously modifying the domain's index
+   set.
 
    By default, associative (and opaque) domains permit multiple tasks
    to modify their index sets concurrently.  This adds some amount of
