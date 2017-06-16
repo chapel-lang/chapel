@@ -709,7 +709,7 @@ module ChapelDistribution {
     }
   
     // methods for associative arrays
-    proc clearEntry(idx, haveLock:bool = false) {
+    proc clearEntry(idx) {
       halt("clearEntry() not supported for non-associative arrays");
     }
   

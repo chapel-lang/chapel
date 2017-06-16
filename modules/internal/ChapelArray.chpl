@@ -113,6 +113,46 @@
    For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
    the existing value in ``A`` when indices overlap.
 
+   ==================================================
+   Parallel Safety with respect to Arrays and Domains
+   ==================================================
+
+   Users must take care when applying operations to arrays and domains
+   concurrently from distinct tasks.  For instance, if one task is
+   modifying the index set of a domain while another task is operating
+   on either the domain itself or an array declared over that domain,
+   this represents a race and could have arbitrary consequences
+   including incorrect results and program crashes.  While making
+   domains and arrays safe with respect to such concurrent operations
+   would be appealing, Chapel's current position is that such safety
+   guarantees would be prohibitively expensive.
+
+   Chapel arrays do support concurrent reads, writes, iterations, and
+   operations as long as their domains are not being modified
+   simultaneously.  Such operations are subject to Chapel's memory
+   consistency model like any other memory accesses.  Similarly, tasks
+   may make concurrent queries and iterations on a domain as long as
+   another task is not simultaneously modifying the domain's index
+   set.
+
+   By default, associative (and opaque) domains permit multiple tasks
+   to modify their index sets concurrently.  This adds some amount of
+   overhead to these operations.  If the user knows that all such
+   modifications will be done serially or in a parallel-safe context,
+   the overheads can be avoided by setting ``parSafe`` to ``false`` in
+   the domain's type declaration.  For example, the following
+   declaration creates an associative domain of strings where the
+   implementation will do nothing to ensure that simultaneous
+   modifications to the domain are parallel-safe:
+
+     .. code-block:: chapel
+
+       var D: domain(string, parSafe=false);
+
+   As with any other domain type, it is not safe to access an
+   associative array while its domain is changing, regardless of
+   whether ``parSafe`` is set to ``true`` or ``false``.
+
    ===========================================
    Functions and Methods on Arrays and Domains
    ===========================================
