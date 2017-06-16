@@ -166,16 +166,18 @@ void* chpl_mem_wide_array_alloc(int32_t dstNode, size_t nmemb, size_t eltSize,
 
 static inline
 void chpl_mem_array_free(void* p,
+                         size_t nmemb, size_t eltSize,
                          int32_t lineno, int32_t filename) {
   chpl_mem_free(p, lineno, filename);
 }
 
 static inline
 void chpl_mem_wide_array_free(int32_t dstNode, void* p,
+                              size_t nmemb, size_t eltSize,
                               int32_t lineno, int32_t filename) {
   if (dstNode != chpl_nodeID)
     chpl_error("array vector data is not local", lineno, filename);
-  chpl_mem_array_free(p, lineno, filename);
+  chpl_mem_array_free(p, nmemb, eltSize, lineno, filename);
 }
 
 // Provide a handle to instrument Chapel calls to memcpy.

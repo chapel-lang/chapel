@@ -8,4 +8,4 @@ writeln(d(0));
 writeln(d(1));
 writeln(d(2));
 
-_ddata_free(d);
+_ddata_free(d, 3);

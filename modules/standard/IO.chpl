@@ -5328,9 +5328,9 @@ class _channel_regexp_info {
     hasRegexp = false;
     matchedRegexp = false;
     releaseRegexp = false;
-    if matches then _ddata_free(matches);
+    if matches then _ddata_free(matches, ncaptures+1);
     for i in 0..#ncaptures do capArr[i] = "";
-    if capArr then _ddata_free(capArr);
+    if capArr then _ddata_free(capArr, ncaptures);
   }
   proc allocate_captures() {
     ncaptures = qio_regexp_get_ncaptures(theRegexp);
@@ -6711,7 +6711,7 @@ proc channel.search(re:regexp, ref error:syserr):reMatch
         qio_channel_commit_unlocked(_channel_internal);
       }
     }
-    _ddata_free(matches);
+    _ddata_free(matches, nm);
     this.unlock();
   }
   return m;
@@ -6780,7 +6780,7 @@ proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
         qio_channel_commit_unlocked(_channel_internal);
       }
     }
-    _ddata_free(matches);
+    _ddata_free(matches, nm);
     this.unlock();
   }
   return m;
@@ -6831,7 +6831,7 @@ proc channel.match(re:regexp, ref error:syserr):reMatch
         qio_channel_revert_unlocked(_channel_internal);
       }
     }
-    _ddata_free(matches);
+    _ddata_free(matches, nm);
     this.unlock();
   }
   return m;
@@ -6900,7 +6900,7 @@ proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
         qio_channel_revert_unlocked(_channel_internal);
       }
     }
-    _ddata_free(matches);
+    _ddata_free(matches, nm);
     this.unlock();
   }
   return m;
@@ -6990,7 +6990,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
           // Stay at the end of the searched region.
         }
       }
-      _ddata_free(matches);
+      _ddata_free(matches, nm);
       if error then go = false;
     }
     if ! error then yield ret;

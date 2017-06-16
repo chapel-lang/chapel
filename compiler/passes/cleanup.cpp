@@ -40,8 +40,6 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
 static void normalizeLoopIterExpressions(FnSymbol* fn);
 
-static void flattenScopelessBlock(BlockStmt* block);
-
 static void destructureTupleAssignment(CallExpr* call);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
@@ -95,7 +93,7 @@ static void cleanup(ModuleSymbol* module) {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
-        flattenScopelessBlock(block);
+        block->flattenAndRemove();
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {
@@ -181,22 +179,6 @@ static void normalizeLoopIterExpressions(FnSymbol* fn) {
   } else {
     parent->defPoint->insertBefore(def);
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Move the statements in a block out of the block                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void flattenScopelessBlock(BlockStmt* block) {
-  for_alist(stmt, block->body) {
-    stmt->remove();
-
-    block->insertBefore(stmt);
-  }
-
-  block->remove();
 }
 
 /************************************* | **************************************

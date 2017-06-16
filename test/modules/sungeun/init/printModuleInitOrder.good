@@ -3,7 +3,6 @@ Initializing Modules:
     CPtr
     CString
     String
-     BaseStringType
      SysCTypes
      StringCasts
     ChapelDebugPrint

@@ -1,21 +1,31 @@
 class MethodTooEarly {
-  var i: int;
+  var i : int;
 
-  proc init(iVal: int) {
-    myMethod(); // Uh oh!
+  proc init(iVal : int) {
+    myMethod();   // *** Invalid.  Still in phase1
+    myMethod(20); // *** Invalid.  Still in phase1
+
     i = iVal;
+
     super.init();
   }
 
-  // This method demonstrates why it would be bad to access a method before the
-  // instance had finished Phase 1 of initialization
+  // This method demonstrates why it would be bad to access a method
+  // before the instance had finished Phase 1 of initialization
   proc myMethod() {
     writeln("My i value is: ", i);
+  }
+
+
+  // This method demonstrates why it would be bad to access a method
+  // before the instance had finished Phase 1 of initialization
+  proc myMethod(x : int) {
+    writeln("My i value is: ", i + x);
   }
 }
 
 proc main() {
-  var c: MethodTooEarly = new MethodTooEarly(3);
+  var c : MethodTooEarly = new MethodTooEarly(3);
 
   delete c;
 }

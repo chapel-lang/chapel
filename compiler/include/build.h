@@ -45,7 +45,6 @@ CallExpr* buildTuple(CallExpr* call);
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 
 Expr* buildNamedActual(const char* name, Expr* expr);
-Expr* buildNamedAliasActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 

@@ -18,22 +18,26 @@
  */
 
 // wrappers.cpp
-////////////////////////////////////////////////////////////////////////////////{
+//////////////////////////////////////////////////////////////////////////////
 // Wrappers are used to lower the Chapel idea of a function call to something
 // implementable in C.
-//  default wrapper -- supplies a value for every argument in the called function
-//      substituting default values for actual arguments that are omitted.
+//  default wrapper -- supplies a value for every argument in the called
+//      function substituting default values for actual arguments that are
+//       omitted.
 //      (C does not support default values for arguments.)
+//
 //  reorder named actual arguments to match the order expected by the inner
 //      function, i.e. the order of the formals (used to be order wrapper)
 //      (C does not support named argument passing.)
+//
 //  coercion wrapper -- add explicit casts to perform type coercions known only
 //      to Chapel.
 //      (C does not support base-class coercions, etc.)
+//
 //  promotion wrapper -- replaces implicit array traversals with explicit
 //      array traversals.
 //      (C has no notion of scalar operator promotion.)
-////////////////////////////////////////////////////////////////////////////////}
+//////////////////////////////////////////////////////////////////////////////
 
 #include "resolution.h"
 
@@ -213,12 +217,13 @@ buildDefaultWrapper(FnSymbol* fn,
   // argument defaults as needed, so every formal in the called function
   // has a matching actual argument in the call.
   for_formals(formal, fn) {
-
     IntentTag intent = formal->intent;
-    if (formal->type != dtTypeDefaultToken &&
-        formal->type != dtMethodToken &&
-        formal->intent == INTENT_BLANK)
+
+    if (formal->type   != dtTypeDefaultToken &&
+        formal->type   != dtMethodToken      &&
+        formal->intent == INTENT_BLANK) {
       intent = blankIntentForType(formal->type);
+    }
 
     SET_LINENO(formal);
 
@@ -228,20 +233,26 @@ buildDefaultWrapper(FnSymbol* fn,
 
       // Copy it into the formals for this wrapper function.
       ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
-      if (fn->_this == formal)
+
+      if (fn->_this == formal) {
         wrapper->_this = wrapper_formal;
+      }
+
       if (formal->hasFlag(FLAG_IS_MEME)) {
         if (wrapper->_this != NULL) {
-          wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
+          wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE,
+                                                             wrapper->_this,
+                                                             wrapper_formal));
+          // unexecuted none/gasnet on 4/25/08
         }
       }
+
       wrapper->insertFormalAtTail(wrapper_formal);
 
-      // By default, we simply pass the wrapper formal along to the wrapped function,
-      // but there are some special cases where some fixup is required.
+      // By default, we simply pass the wrapper formal along to the wrapped
+      // function, but there are some special cases where some fixup is
+      // required.
       Symbol* temp = wrapper_formal;
-
-      bool isArrayAliasField = false;
 
       // Check for the fixup cases:
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
@@ -253,85 +264,95 @@ buildDefaultWrapper(FnSymbol* fn,
         temp = newTemp("wrap_ref_arg");
         temp->addFlag(FLAG_MAYBE_PARAM);
         wrapper->insertAtTail(new DefExpr(temp));
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper_formal)));
-      } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
+                                           temp,
+                                           new CallExpr(PRIM_ADDR_OF,
+                                                        wrapper_formal)));
+
+      } else if (specializeDefaultConstructor &&
+                 wrapper_formal->typeExpr     &&
                  isRecordWrappedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is array/dom/dist
-
         temp = newTemp("wrap_type_arg");
-        if (Symbol* field = fn->_this->type->getField(formal->name, false))
-          if (field->defPoint->parentSymbol == fn->_this->type->symbol)
+
+        if (Symbol* field = fn->_this->type->getField(formal->name, false)) {
+          if (field->defPoint->parentSymbol == fn->_this->type->symbol) {
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
+        }
+
         wrapper->insertAtTail(new DefExpr(temp));
 
-        isArrayAliasField = false;
-        const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
-        for_formals(fml, fn)
-          if (fml->name == aliasFieldArg && !defaults->set_in(fml))
-            isArrayAliasField = true;
+        // Give the formal its own copy of the type expression.
+        BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
 
-        // Array alias fields initialization is different because
-        // no copy of the array elements occurs.
-        if (isArrayAliasField) {
-
-          temp->addFlag(FLAG_EXPR_TEMP);
-          temp->addFlag(FLAG_NO_AUTO_DESTROY);
-
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper_formal));
-
-        } else {
-          // Not an array alias field.  Just initialize this formal with
-          // its default type expression.
-
-          // Give the formal its own copy of the type expression.
-          BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
-          for_alist(expr, typeExpr->body) {
-            wrapper->insertAtTail(expr->remove());
-          }
-
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
-          wrapper->insertAtTail(new CallExpr("=", temp, wrapper_formal));
+        for_alist(expr, typeExpr->body) {
+          wrapper->insertAtTail(expr->remove());
         }
+
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
+                                           temp,
+                                           new CallExpr(PRIM_INIT,
+                                                        wrapper->body->body.tail->remove())));
+        wrapper->insertAtTail(new CallExpr("=", temp, wrapper_formal));
       }
 
       // Add this formal to the map used to copy the function definition.
-      // (Not sure why it is done this way, since we can also make up the 
+      // (Not sure why it is done this way, since we can also make up the
       // wrapper from whole cloth.)
       copy_map.put(formal, temp);
+
       call->insertAtTail(temp);
 
-      // If the wrapped formal is satisfied by a parameter, copy that parameter value 
-      // into the wrapper formal as well.
-      if (Symbol* value = paramMap->get(formal))
+      // If the wrapped formal is satisfied by a parameter,
+      // copy that parameter value into the wrapper formal as well.
+      if (Symbol* value = paramMap->get(formal)) {
         paramMap->put(wrapper_formal, value);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
-        if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
-          if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
-            if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-            {
+      }
+
+      if (specializeDefaultConstructor          == true &&
+          strcmp(fn->name, "_construct__tuple") != 0) {
+        if (!formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+            !paramMap->get(formal)               &&
+            formal->type != dtMethodToken) {
+          if (Symbol* field = wrapper->_this->type->getField(formal->name,
+                                                             false)) {
+            Symbol* parent = field->defPoint->parentSymbol;
+
+            if (parent == wrapper->_this->type->symbol) {
               Symbol* copyTemp = newTemp("wrap_arg");
+
               wrapper->insertAtTail(new DefExpr(copyTemp));
-              if (isArrayAliasField) {
-                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, temp));
-              } else {
-                // MPF: I believe this autoCopy is problematic
-                // adding FLAG_INSERT_AUTO_DESTROY doesn't cover it
-                // because that flag is removed in cullForDefaultConstructor
-                // The autoCopy started in commit
-                //   3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
-                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
-              }
+
+              // MPF: I believe this autoCopy is problematic
+              // adding FLAG_INSERT_AUTO_DESTROY doesn't cover it
+              // because that flag is removed in cullForDefaultConstructor
+              // The autoCopy started in commit
+              //   3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
+              wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                 copyTemp,
+                                                 new CallExpr("chpl__autoCopy",
+                                                              temp)));
+
               wrapper->insertAtTail(
-                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_CStringSymbol(formal->name), copyTemp));
+                new CallExpr(PRIM_SET_MEMBER,
+                             wrapper->_this,
+                             new_CStringSymbol(formal->name),
+                             copyTemp));
+
               copy_map.put(formal, copyTemp);
+
               call->argList.tail->replace(new SymExpr(copyTemp));
             }
+          }
+        }
+      }
+
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
-    } else if (formal->hasFlag(FLAG_IS_MEME)) {
 
+    } else if (formal->hasFlag(FLAG_IS_MEME)) {
       //
       // hack: why is the type of meme set to dtNil?
       //
