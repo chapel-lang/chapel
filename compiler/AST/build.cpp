@@ -1376,7 +1376,7 @@ buildForallLoopStmt(Expr*      indices,
   loopBody->forallIntents = forall_intents;
   // forallIntents will be processed during implementForallIntents1().
 
-  // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
+  // ensure it's normal; prevent flattenAndRemove() in cleanup.cpp
   loopBody->blockTag = BLOCK_NORMAL;
 
   // NB these copies do not get blockIntent updates below.
