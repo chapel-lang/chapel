@@ -1279,8 +1279,9 @@ static void buildDefaultInitializer(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("init");
   fn->cname = fn->name;
 
-  // Note: will have to do something different in wrappers.cpp if I end up
-  // adding the DEFAULT_CONSTRUCTOR flag.
+  // Lydia NOTE 06/16/17: I don't think I want to add the DEFAULT_CONSTRUCTOR
+  // flag to this function, but if I do, then I will need to do something
+  // different in wrappers.cpp.
   fn->addFlag(FLAG_COMPILER_GENERATED);
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
@@ -1297,8 +1298,19 @@ static void buildDefaultInitializer(AggregateType* ct) {
     if (VarSymbol* field = toVarSymbol(field1)) {
       if (!field->hasFlag(FLAG_SUPER_CLASS) /* &&
           strcmp(field->name, "_promotionType") &&
-          strcmp(field->name, "outer")*/) { // TODO: uncomment these and check
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, dtUnknown/*, field->type*/); // Not sure if field->type will still be valid at this point.
+          strcmp(field->name, "outer")*/) {
+        // Lydia NOTE 06/16/17: The above cases are commented out because I
+        // wanted to focus on basic support first.  I suspect these will be
+        // useful when I do try to support iterators and nested classes/records
+
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK,
+                                       field->name,
+                                       dtUnknown/*,
+                                                  field->type*/);
+        // Lydia NOTE 06/16/17: I suspect that field->type (which is commented
+        // out) will not be useful to us in dtUnknown's place at this point in
+        // the compiler, but would like to leave it here in case it proves
+        // useful in the future.
 
         fieldNamesSet.set_add(field->name);
 
@@ -1326,19 +1338,29 @@ static void buildDefaultInitializer(AggregateType* ct) {
 
           if (field->defPoint->init != NULL) {
             VarSymbol* tmp = newTemp();
-            //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY); // Is this necessary?
+
+            //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+            // Lydia NOTE 06/16/17: The default constructor adds this flag to
+            // its equivalent temporary.  I have decided not to do so and am
+            // not seeing issues so far, but may have missed something, so I
+            // am leaving it here just in case.
+
             tmp->addFlag(FLAG_MAYBE_TYPE);
             tmp->addFlag(FLAG_MAYBE_PARAM);
 
             BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
-            // Do I need to make an init copy in order to get the type
-            // information?  That seems silly and unnecessary, to me.
+
             typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
                                                 field->defPoint->init->copy()));
-            // If the above line doesn't work, uncomment this set:
+            // Lydia NOTE 06/16/17: I believe we don't need to make an initCopy
+            // call for the field's init (like the default constructor version
+            // attempts).  I might have missed something, though, so if it turns
+            // out we do need that initCopy, use this instead of the above
+            // statement:
             // typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
             //                                     new CallExpr("chpl__initCopy",
             //                                                  field->defPoint->init->copy())));
+
             typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
 
             arg->typeExpr = typeExpr;
@@ -1357,7 +1379,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
     }
   }
 
-  // TODO: be sure to avoid applying this to tuples, too!
+  // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
   if (!ct->symbol->hasFlag(FLAG_REF) && isClass(ct)) {
     if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
       if (AggregateType* parent = toAggregateType(ct->dispatchParents.v[0])) {
