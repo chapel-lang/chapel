@@ -314,6 +314,10 @@ def genStruct(struct, name=""):
 
     ret = "extern record " + name + " {"
     foundTypes.add(name)
+
+    if not struct.decls:
+        print()
+        return
     
     members = ""
     warnKeyword = False
