@@ -871,7 +871,7 @@ stream-promoted.ml-perf:
     - text: Improve const inference for chpl__iterLF (#5736)
       config: 16 node XC
   06/10/17:
-    - bounded-coforall optimization for remote coforalls (#6419)
+    - text: bounded-coforall optimization for remote coforalls (#6419)
       config: 16 node XC
 
 STREAM_study:
