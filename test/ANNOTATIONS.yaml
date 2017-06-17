@@ -244,6 +244,12 @@ all:
   06/08/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
       config: Single node XC, 16 node XC
+  06/14/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: chapcs, chap03, chap04
+  06/16/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: chapcs
 
 
 AllCompTime:
