@@ -1,8 +1,0 @@
-bug: can't call '.domain' on array in record initializer
-
-For some reason, it seems I can't call .domain on an array argument in
-a record initializer.  If I change the initializer to a constructor it
-works.
-
-A more general version of this future can be found at
-not-a-copy-initializer.chpl
