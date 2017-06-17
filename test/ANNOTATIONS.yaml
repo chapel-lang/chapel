@@ -128,6 +128,8 @@ all:
   05/05/16:
     - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
       config: shootout
+  06/10/17:
+    - bounded-coforall optimization for remote coforalls (#6419)
   05/12/16:
     - KACE removed from systems.  Should see less noise after this day.
   05/31/16:
@@ -670,6 +672,8 @@ mg-b:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/23/17:
     - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 miniMD:
   12/21/13:
@@ -845,12 +849,16 @@ STREAM_study_fragmented:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+  06/10/17:
+    - bounded-coforall optimization for remote coforalls (#6419)
 
 STREAM_study_performance:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+  06/10/17:
+    - bounded-coforall optimization for remote coforalls (#6419)
 
 stream-promoted.ml-perf:
   12/02/16:
@@ -861,6 +869,9 @@ stream-promoted.ml-perf:
       config: 16 node XC
   03/21/17:
     - text: Improve const inference for chpl__iterLF (#5736)
+      config: 16 node XC
+  06/10/17:
+    - bounded-coforall optimization for remote coforalls (#6419)
       config: 16 node XC
 
 STREAM_study:
