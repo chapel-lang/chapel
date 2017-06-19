@@ -32,3 +32,12 @@ typedef struct {
 } *recp;
 
 struct empty_struct;
+
+struct forwardStruct;
+typedef struct forwardStruct fwdStruct;
+
+struct forwardStruct {
+  int a;
+  int b;
+};
+
