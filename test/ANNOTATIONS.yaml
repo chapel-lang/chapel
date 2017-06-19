@@ -674,7 +674,7 @@ meteor:
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
 
-mg-b:
+mg.ml-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/23/17:
