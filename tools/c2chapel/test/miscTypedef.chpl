@@ -17,6 +17,13 @@ extern proc retStruct(a : my_int, b : my_int, r : renamedStruct) : fancyStruct;
 
 extern proc tdPointer(ref a : fancyStruct, ref b : c_ptr(renamedStruct)) : void;
 
+
+
+extern record forwardStruct {
+  var a : c_int;
+  var b : c_int;
+}
+
 // ==== c2chapel typedefs ====
 
 extern record fancyStruct {
@@ -25,6 +32,8 @@ extern record fancyStruct {
   var c : renamedStruct;
   var d : simpleStruct;
 }
+
+extern type fwdStruct = forwardStruct;
 
 extern type my_int = c_int;
 
