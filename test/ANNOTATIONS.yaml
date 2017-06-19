@@ -128,8 +128,6 @@ all:
   05/05/16:
     - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
       config: shootout
-  06/10/17:
-    - bounded-coforall optimization for remote coforalls (#6419)
   05/12/16:
     - KACE removed from systems.  Should see less noise after this day.
   05/31/16:
@@ -244,12 +242,15 @@ all:
   06/08/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
       config: Single node XC, 16 node XC
+  06/10/17:
+    - bounded-coforall optimization for remote coforalls (#6419)
+      config: 16 node XC
   06/14/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
-      config: chapcs, chap03, chap04
+      config: chapcs, chap04
   06/16/17:
     - text: revert gnu target compiler from 7.1.0 to 6.3.0
-      config: chapcs
+      config: chapcs, chap04
 
 
 AllCompTime:
@@ -744,6 +745,8 @@ prk-stencil:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil.ml-perf:
   04/08/16:
@@ -760,10 +763,14 @@ prk-stencil.ml-perf:
     - Use nonblocking transactions for strided transfers (#6262)
   06/06/17:
     - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-transpose: &transpose-base
   05/04/17:
@@ -855,16 +862,12 @@ STREAM_study_fragmented:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
-  06/10/17:
-    - bounded-coforall optimization for remote coforalls (#6419)
 
 STREAM_study_performance:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
-  06/10/17:
-    - bounded-coforall optimization for remote coforalls (#6419)
 
 stream-promoted.ml-perf:
   12/02/16:
@@ -875,9 +878,6 @@ stream-promoted.ml-perf:
       config: 16 node XC
   03/21/17:
     - text: Improve const inference for chpl__iterLF (#5736)
-      config: 16 node XC
-  06/10/17:
-    - text: bounded-coforall optimization for remote coforalls (#6419)
       config: 16 node XC
 
 STREAM_study:
