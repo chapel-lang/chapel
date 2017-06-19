@@ -31,4 +31,4 @@ typedef struct {
   char c;
 } *recp;
 
-struct emprty_struct;
+struct empty_struct;
