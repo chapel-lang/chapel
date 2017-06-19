@@ -315,6 +315,11 @@ def genStruct(struct, name=""):
     ret = "extern record " + name + " {"
     foundTypes.add(name)
 
+    # Forward Declaration
+    if not struct.decls:
+        print()
+        return
+    
     members = ""
     warnKeyword = False
     for decl in struct.decls:
@@ -342,6 +347,25 @@ def genVar(decl):
     ty   = toChapelType(decl.type)
     print("extern var " + name + " : " + ty + ";")
     print()
+
+
+def genEnum(decl):
+    if type(decl) == c_ast.Enum:
+        if decl.name: 
+            genComment("Enum: " + decl.name)
+        else: 
+            genComment("Enum: anonymous")
+        for val in decl.values.enumerators:
+            print("extern const " + val.name + " :c_int;")
+        print("\n")
+
+def genTypeEnum(decl):
+    if type(decl.type) == c_ast.Enum:
+        for child in decl.children():
+            for val in child[1].children():
+                for value in val[1].enumerators:
+                    print("extern const " + value.name + " :" + decl.declname + ";")
+        print("\n")
 
 # Simple visitor to all function declarations
 class ChapelVisitor(c_ast.NodeVisitor):
@@ -371,11 +395,14 @@ class ChapelVisitor(c_ast.NodeVisitor):
                 self.visit_Struct(c)
             elif type(c) == c_ast.FuncDecl:
                 self.visit_FuncDecl(c)
+            elif type(c) == c_ast.Enum:
+                genEnum(c)
             elif type(c) == c_ast.TypeDecl or type(c) == c_ast.PtrDecl or type(c) == c_ast.ArrayDecl:
                 genVar(node)
             else:
                 node.show()
                 raise Exception("Unhandled declaration")
+
 
 
 def genTypeAlias(node):
@@ -410,6 +437,10 @@ def genTypedefs(defs):
             elif isPointerToStruct(node.type):
                 genComment("Typedef'd pointer to struct")
                 print("extern type " + node.name + ";\n")
+            elif type(node.type.type) == c_ast.Enum:
+                genComment(node.name + " enum")
+                print("extern type " + node.name + " = c_int;")
+                genTypeEnum(node.type)
             else:
                 genTypeAlias(node)
 
