@@ -7,6 +7,15 @@ enum
   TEST_STATUS_FAILED
 };
 
+
+enum direction {
+  NORTH,
+  SOUTH,
+  EAST,
+  WEST
+};
+
+
 /* Enum with values */
 enum 
 {
@@ -29,4 +38,4 @@ int test_file(test_error e);
 
 
 /* struct with enum as a field */
-struct test_status { test_error current_status; }; 
+struct test_status { test_error current_status; };
