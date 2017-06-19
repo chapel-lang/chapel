@@ -745,8 +745,6 @@ prk-stencil:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
-  06/13/17:
-    - Optimize updateFluff (#6418)
 
 prk-stencil.ml-perf:
   04/08/16:
