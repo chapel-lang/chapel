@@ -30,3 +30,5 @@ typedef struct {
   int i;
   char c;
 } *recp;
+
+struct emprty_struct;
