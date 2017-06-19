@@ -339,6 +339,7 @@ module SSCA2_RMAT_graph_generator
 	  permutation (v) <=> permutation (new_id);
 	};
 
+      delete Rand_Gen;
     } // if newEG
 
       forall e in Edges do {
