@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "iterator.h"
 #include "scopeResolve.h"
@@ -889,6 +890,13 @@ void AggregateType::buildConstructor() {
     // since we won't call the default constructor, and it mutates
     // information about the fields that we would rather stayed unmutated.
     return;
+  } else if (initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    // If neither a constructor nor an initializer has been defined for the
+    // type, determine whether we should create a default constructor now or
+    // create a default initializer later.
+    if (!needsConstructor()) {
+      return;
+    }
   }
 
   // Create the default constructor function symbol,
@@ -1209,6 +1217,124 @@ void AggregateType::buildConstructor() {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
   addToSymbolTable(fn);
+}
+
+
+// Returns false if we should not generate a default constructor for this
+// AggregateType, true if we still require one.  The result of this function
+// will vary in most cases if --force-initializers is thrown: that flag tells
+// us to only generate default constructors for types that already have defined
+// constructors (as the constructor implementation relies on every user
+// constructor being modified to call the default constructor), and to try to
+// generate default initializers for types where neither an initializer nor a
+// constructor has been defined.
+bool AggregateType::needsConstructor() {
+  // Temporarily only generate default initializers for classes
+  if (isRecord() || isUnion())
+    return true;
+
+  ModuleSymbol* mod = getModule();
+
+  // For now, always generate a default constructor for types in the internal
+  // and library modules
+  if (mod && (mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD))
+    return true;
+  else if (fUserDefaultInitializers)
+    // Don't generate a default constructor when --force-initializers is true,
+    // we want to generate a default initializer or fail.
+    return false;
+
+  if (initializerStyle == DEFINES_INITIALIZER) {
+    // Defining an initializer means we don't need a default constructor
+    return false;
+  } else if (initializerStyle == DEFINES_CONSTRUCTOR) {
+    // Defining a constructor means we need a default constructor
+    return true;
+  } else {
+    // The above two branches are only relevant in the recursive version of
+    // this call, as the outside call site for this function has already ensured
+    // that the type which is the entry point has defined neither an initializer
+    // nor a constructor.
+
+    // For now, nested classes need a default constructor
+    if (outer != NULL)
+      return true;
+
+    // Classes that define an initialize() method need a default constructor
+    forv_Vec(FnSymbol, method, methods) {
+      if (method && strcmp(method->name, "initialize") == 0) {
+        if (method->numFormals() == 2) {
+          return true;
+        }
+      }
+    }
+
+    // For now, extern classes need a default constructor
+    if (symbol->hasFlag(FLAG_EXTERN)) {
+      return true;
+    }
+
+    // If the parent type needs a default constructor, we need a default
+    // constructor.
+    if (dispatchParents.n > 0) {
+      if (AggregateType* pt = toAggregateType(dispatchParents.v[0])) {
+        return pt->needsConstructor();
+      }
+    }
+  }
+  // Otherwise, we don't need a default constructor.
+  return false;
+}
+
+// Returns true for the cases where we want to generate a default initializer.
+// Some cases are temporarily false, while others are permanently so: we never
+// want to generate a default initializer for a type that has defined an
+// explicit initializer or constructor, and we don't want to generate a default
+// initializer if --force-initializers has not been thrown (currently).
+//
+// Note that this method does not generate the opposite of needsConstructor -
+// when the type has defined an initializer both methods will return false.
+bool AggregateType::wantsDefaultInitializer() {
+  // For now, no default initializers for library and internal types
+  ModuleSymbol* mod = getModule();
+  if (!mod || mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD)
+    return false;
+
+  // No default initializers if the --force-initializers flag is not used
+  if (!fUserDefaultInitializers)
+    return false;
+
+  // Only want a default initializer when no initializer or constructor is
+  // defined
+  if (initializerStyle != DEFINES_NONE_USE_DEFAULT)
+    return false;
+
+  // For now, no default initializers for records and unions
+  if (isRecord() || isUnion())
+    return false;
+
+  // For now, no default initializers for nested aggregate types
+  if (outer != NULL)
+    return false;
+
+  // No default initializer for types that have an initialize() method
+  forv_Vec(FnSymbol, method, methods) {
+    if (method && strcmp(method->name, "initialize") == 0) {
+      if (method->numFormals() == 2) {
+        return false;
+      }
+    }
+  }
+
+  // For now, no default initializers for extern types
+  if (symbol->hasFlag(FLAG_EXTERN))
+    return false;
+
+  // For now, no default initializers for ref
+  if (symbol->hasFlag(FLAG_REF))
+    return false;
+
+  return true;
 }
 
 ArgSymbol* AggregateType::createGenericArg(VarSymbol* field) {
