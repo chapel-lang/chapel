@@ -176,16 +176,16 @@ static void extractReferences(Expr* expr,
   if (CallExpr* call = toCallExpr(expr))
   {
     // Consider primitives that can create aliases:
-    // 1. An assign or move primitive that has ref variables on both sides.
+    // 1. A move primitive that has ref variables on both sides.
     // 2. An assign or move that has an 'addr of' primitive on its rhs.
     // 3. A field assignment or extraction that has ref variables on both
     //    sides. (not implemented)
     // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
     //    implemented)
     // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
-    // BHARSH TODO: Is this actually accurate for PRIM_ASSIGN? ASSIGN should do
-    // a content-copy for (= ref ref), not a pointer-copy
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+    bool okAssign = call->isPrimitive(PRIM_ASSIGN) &&
+                    !(call->get(1)->isRef() && call->get(2)->isRef());
+    if (call->isPrimitive(PRIM_MOVE) || okAssign)
     {
       SymExpr* lhe = toSymExpr(call->get(1)); // Left-Hand Expression
       Symbol* lhs = lhe->symbol(); // Left-Hand Symbol
