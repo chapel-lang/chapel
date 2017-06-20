@@ -243,7 +243,7 @@ all:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
       config: Single node XC, 16 node XC
   06/10/17:
-    - bounded-coforall optimization for remote coforalls (#6419)
+    - text: bounded-coforall optimization for remote coforalls (#6419)
       config: 16 node XC
   06/14/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
@@ -546,6 +546,10 @@ knucleotide:
   10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/16/17:
+    - Let parSafe revert to default in blc study version (#6475)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -645,6 +649,8 @@ memleaks:
     - Rank change dom dist view (#5694)
   03/23/17:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
 
 memleaksfull:
   07/08/14:
