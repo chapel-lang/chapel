@@ -205,7 +205,7 @@ static void destructureTupleAssignment(CallExpr* call) {
   CallExpr* parent = toCallExpr(call->parentExpr);
 
   if (parent               != NULL &&
-      parent->isNamed("=") == true &&
+      parent->isNamedAstr(astrSequals) &&
       parent->get(1)       == call) {
     VarSymbol* rtmp = newTemp();
     Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());

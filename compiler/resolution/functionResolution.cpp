@@ -576,7 +576,7 @@ const char* toString(CallInfo* info) {
   if (info->actuals.n > 1)
     if (info->actuals.head()->type == dtMethodToken)
       method = true;
-  if (!strcmp("this", info->name)) {
+  if (info->name == astrThis) {
     _this = true;
     method = false;
   }
@@ -670,7 +670,7 @@ const char* toString(FnSymbol* fn) {
       INT_FATAL(fn, "flagged as constructor but not named _construct_ or init");
     }
   } else if (fn->isPrimaryMethod()) {
-    if (!strcmp(fn->name, "this")) {
+    if (fn->name == astrThis) {
       INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type));
       start = 1;
@@ -1015,9 +1015,9 @@ static bool convertAtomicFormalTypeToRef(ArgSymbol* formal, FnSymbol* fn) {
   return (formal->intent == INTENT_BLANK &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
           isAtomicType(formal->type))
+    && fn->name != astrSequals
     && !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
     && !fn->hasFlag(FLAG_CONSTRUCTOR)
-    && strcmp(fn->name,"=") != 0
     && !fn->hasFlag(FLAG_BUILD_TUPLE);
 }
 
@@ -1594,7 +1594,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   }
 
   if (fn &&
-      strcmp(fn->name, "=") &&
+      fn->name != astrSequals &&
       actualType->scalarPromotionType &&
       (canDispatch(actualType->scalarPromotionType, NULL, formalType, fn))) {
     if (promotes)
@@ -2517,7 +2517,7 @@ userCall(CallExpr* call) {
 void
 printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
   CallExpr* call = userCall(info->call);
-  if (!strcmp("this", info->name)) {
+  if (info->name == astrThis) {
     USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
                    toString(info->actuals.v[1]->type),
                    toString(info));
@@ -2597,7 +2597,7 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
     } else {
       USR_FATAL_CONT(call, "invalid tuple");
     }
-  } else if (!strcmp("=", info->name)) {
+  } else if (info->name == astrSequals) {
     if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
         info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL_CONT(call, "illegal assignment of type to value");
@@ -2612,7 +2612,7 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
                      toString(info->actuals.v[1]->type),
                      toString(info->actuals.v[0]->type));
     }
-  } else if (!strcmp("this", info->name)) {
+  } else if (info->name == astrThis) {
     Type* type = info->actuals.v[1]->getValType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
@@ -3036,7 +3036,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 // If 'fn' is the default assignment for a record type, return
 // the name of that record type; otherwise return NULL.
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
-  if (!strcmp("=", fn->name)) {
+  if (fn->name == astrSequals) {
     if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
       Type* desttype = fn->getFormal(1)->type->getValType();
       INT_ASSERT(desttype != dtUnknown); // otherwise this test is unreliable
@@ -3656,7 +3656,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( ! checkonly ) {
     if (resolvedFn &&
-        !strcmp("=", resolvedFn->name) &&
+        resolvedFn->name == astrSequals &&
         isRecord(resolvedFn->getFormal(1)->type) &&
         resolvedFn->getFormal(2)->type == dtNil) {
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",

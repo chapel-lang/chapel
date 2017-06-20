@@ -270,7 +270,8 @@ public:
 
   FnSymbol*       theFnSymbol()                                          const;
 
-  bool            isNamed(const char*);
+  bool            isNamed(const char*)                                   const;
+  bool            isNamedAstr(const char*)                               const;
 
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;

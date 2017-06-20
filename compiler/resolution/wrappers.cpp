@@ -1125,7 +1125,7 @@ FnSymbol*
 promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks) {
 
   Vec<Symbol*>* actuals = &info->actuals;
-  if (!strcmp(fn->name, "="))
+  if (fn->name == astrSequals)
     return fn;
   // Don't try to promotion wrap _ref type constructor
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))

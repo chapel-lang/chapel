@@ -942,13 +942,13 @@ static VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
   for (Expr* curr = ref->prev; curr; curr = curr->prev)
     if (CallExpr* call = toCallExpr(curr))
       if (call->isPrimitive(PRIM_MOVE) ||
-          call->isNamed("="))
+          call->isNamedAstr(astrSequals))
         if (SymExpr* dest = toSymExpr(call->get(1)))
           if (dest->symbol() == origRetSym) {
             VarSymbol* newOrigRet = newTemp("localRet", origRetSym->type);
             call->insertBefore(new DefExpr(newOrigRet));
             dest->setSymbol(newOrigRet);
-            if (call->isNamed("=")) {
+            if (call->isNamedAstr(astrSequals)) {
               // We are "initializing" localRet, not "assigning" to it.
               // An autoCopy of the r.h.s. will be inserted by a later pass.
               // David requests creating a new CallExpr instead of patching

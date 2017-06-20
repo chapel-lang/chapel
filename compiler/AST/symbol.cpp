@@ -2367,6 +2367,25 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   return s->flags & mask;
 }
 
+
+// cache some popular strings
+
+const char* astrSdot = NULL;
+const char* astrSequals = NULL;
+const char* astr_cast = NULL;
+const char* astrDeinit = NULL;
+const char* astrTag = NULL;
+const char* astrThis = NULL;
+
+void initAstrConsts() {
+  astrSdot    = astr(".");
+  astrSequals = astr("=");
+  astr_cast   = astr("_cast");
+  astrDeinit  = astr("deinit");
+  astrTag     = astr("tag");
+  astrThis    = astr("this");
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Create a temporary, with FLAG_TEMP and (optionally) FLAG_CONST.             *

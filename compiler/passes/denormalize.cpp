@@ -252,7 +252,7 @@ bool isDenormalizable(Symbol* sym,
     SafeExprAnalysis& analysisData) {
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
-    if(strcmp(sym->name, "this") != 0) { //avoid issue with --baseline
+    if(sym->name != astrThis) { //avoid issue with --baseline
       SymExpr *use = NULL;
       Expr *usePar = NULL;
       Expr *def = NULL;

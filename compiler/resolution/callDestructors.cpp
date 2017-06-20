@@ -769,7 +769,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
         CallExpr* parent   = toCallExpr(move->parentExpr);
 
         if (calledFn                    != NULL &&
-            strcmp(calledFn->name, "=") ==    0 &&
+            calledFn->name       == astrSequals &&
             // Filter out case handled above.
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
@@ -852,7 +852,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
   // If this isn't a call expression, we've got problems.
   if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
     if (FnSymbol* useFn = useCall->resolvedFunction()) {
-      if ((strcmp(useFn->name, "=") == 0 && firstUse == useCall->get(2)) ||
+      if ((useFn->name == astrSequals && firstUse == useCall->get(2)) ||
           useFn->hasFlag(FLAG_AUTO_COPY_FN)                              ||
           useFn->hasFlag(FLAG_INIT_COPY_FN)) {
         Symbol*   actual = NULL;
@@ -915,7 +915,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
 
         } else {
           // We assume the useFn is an assignment.
-          if (strcmp(useFn->name, "=") != 0) {
+          if (useFn->name != astrSequals) {
             INT_FATAL(useFn, "should be an assignment function");
             return;
           } else {
@@ -1185,7 +1185,7 @@ static void insertAutoCopyTemps() {
         CallExpr* defCall = toCallExpr(def->parentExpr);
         if (defCall->isPrimitive(PRIM_MOVE)) {
           CallExpr* rhs = toCallExpr(defCall->get(2));
-          if (!rhs || !rhs->isNamed("=")) {
+          if (!rhs || !rhs->isNamedAstr(astrSequals)) {
             // We enter this block if:
             // - rhs is a variable (!rhs), or
             // - rhs is a call but not to =
