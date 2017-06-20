@@ -1396,7 +1396,11 @@ static void buildDefaultInitializer(AggregateType* ct) {
 
             // First, ensure we have a default initializer for the parent
             if (!parent->defaultInitializer) {
-              buildDefaultInitializer(parent);
+              // ... but only if it is valid to do so
+              if (parent->wantsDefaultInitializer()) {
+                buildDefaultInitializer(parent);
+              }
+
               if (!parent->defaultInitializer) {
                 // The parent might have inherited from a class that defines
                 // any initializer but not one without arguments.  In this case,
@@ -1455,7 +1459,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
   normalize(fn);
   ct->methods.add(fn);
 
-  if (!ct->isGeneric()) {
+  if (!ct->isGeneric() && ct->isClass()) {
     FnSymbol* allocator = buildClassAllocator(fn);
     normalize(allocator);
   }
