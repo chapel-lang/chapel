@@ -673,6 +673,8 @@ memleaksfull:
     - Rank change dom dist view (#5694)
   03/23/17:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
 
 meteor:
   12/18/13:
