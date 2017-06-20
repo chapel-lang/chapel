@@ -1907,7 +1907,7 @@ void _qio_channel_destroy(qio_channel_t* ch)
 
   err = _qio_channel_final_flush_unlocked(ch);
   if( err ) {
-    fprintf(stderr, "qio_channel_final_flush returned fatal error %i\n", qio_err_to_int(err));
+    fprintf(stderr, "qio_channel_final_flush returned fatal error %i - did you close all channels?\n", qio_err_to_int(err));
     assert( !err );
     abort();
   }
