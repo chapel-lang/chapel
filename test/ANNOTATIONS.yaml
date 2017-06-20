@@ -242,6 +242,15 @@ all:
   06/08/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
       config: Single node XC, 16 node XC
+  06/10/17:
+    - bounded-coforall optimization for remote coforalls (#6419)
+      config: 16 node XC
+  06/14/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: chapcs, chap04
+  06/16/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: chapcs, chap04
 
 
 AllCompTime:
@@ -665,11 +674,13 @@ meteor:
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
 
-mg-b:
+mg.ml-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/23/17:
     - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 miniMD:
   12/21/13:
@@ -750,10 +761,14 @@ prk-stencil.ml-perf:
     - Use nonblocking transactions for strided transfers (#6262)
   06/06/17:
     - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-transpose: &transpose-base
   05/04/17:
