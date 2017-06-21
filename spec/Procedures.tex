@@ -1143,7 +1143,7 @@ defined in ~\rsec{Determining_More_Specific_Functions}.
 \item
 From the set of most specific functions, the compiler determines a best
 function for each return intent as described in
-~\rsec{Determining_Best_Function}. If there is more than one
+~\rsec{Determining_Best_Functions}. If there is more than one
 best function for a given return intent, the compiler will issue
 an error stating that the call is ambiguous. Otherwise, it will choose
 which function to call based on the calling context as described
@@ -1295,21 +1295,15 @@ is determined by the following steps:
  Otherwise neither mapping is more specific.
 \end{itemize}
 
-\subsection{Determining Best Function}
-\label{Determining_Best_Function}
+\subsection{Determining Best Functions}
+\label{Determining_Best_Functions}
 
-Given two functions $F_1$ and $F_2$, the better function is
-determined by the following steps:
-
+Given the set of most specific functions for a given return intent,
+only the following function(s) are selected as best functions:
 \begin{itemize}
-\item If $F_1$ is more specific than $F_2$, then $F_1$ is a better match.
-\item If $F_2$ is more specific than $F_1$, then $F_2$ is a better match.
-\item If $F_1$ has a where clause and $F_2$ does not have a where clause,
-then $F_1$ is a better match.
-\item If $F_2$ has a where clause and $F_1$ does not have a where clause,
-then $F_2$ is a better match.
+\item all functions, if none of them contain a \chpl{where} clause;
+\item only those functions that have a \chpl{where} clause, otherwise.
 \end{itemize}
-
 
 \subsection{Choosing Return Intent Overloads Based on Calling Context}
 \label{Choosing_Return_Intent_Overload}
