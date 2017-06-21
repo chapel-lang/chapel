@@ -1,8 +1,10 @@
+// TO REMOVE BEFORE 1.16
 class Foo {
   var x: int;
 
-  proc Foo(xVal) {
+  proc init(xVal) {
     x = xVal;
+    super.init();
   }
 }
 

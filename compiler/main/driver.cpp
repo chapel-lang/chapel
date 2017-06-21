@@ -778,7 +778,6 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
- {"user-constructor-error", ' ', NULL, "Enable [disable] errors for user code constructors", "N", &fNoUserConstructors, NULL, NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", NULL},
 
@@ -929,6 +928,7 @@ static ArgumentDescription arg_desc[] = {
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
+ {"user-constructor-error", ' ', NULL, "Enable [disable] errors for user code constructors", "N", &fNoUserConstructors, NULL, NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };

@@ -53,8 +53,6 @@ Optimization Control Options:
       --[no-]use-noinit               Enable [disable] ability to skip default
                                       initialization through the keyword
                                       noinit
-      --[no-]user-constructor-error   Enable [disable] errors for user code
-                                      constructors
       --[no-]infer-local-fields       Enable [disable] analysis to infer local
                                       fields in classes and records
                                       (experimental)

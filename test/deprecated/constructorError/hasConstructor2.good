@@ -1,0 +1,1 @@
+hasConstructor2.chpl:6: error: Type 'Foo' defined a constructor here

@@ -257,10 +257,6 @@ OPTIONS
     Enable [disable] ability to skip default initialization through the
     keyword noinit
 
-**--[no-]user-constructor-error**
-
-    Enable [disable] error message for constructors defined in user code.
-
 **--[no-]infer-local-fields**
 
     Enable [disable] analysis to infer local fields in classes and records
