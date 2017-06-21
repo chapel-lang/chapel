@@ -467,11 +467,11 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #ifdef _chplrt_H_
 
 #include "chpl-mem.h"
-#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
+#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
 #define qio_memalign(boundary, size)  chpl_memalign(boundary, size)
-#define qio_free(ptr) chpl_mem_free(ptr, 0, 0)
+#define qio_free(ptr) chpl_mem_free(ptr, __LINE__, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
 typedef chpl_bool qio_bool;
