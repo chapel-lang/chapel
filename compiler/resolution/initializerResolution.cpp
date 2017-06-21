@@ -692,6 +692,9 @@ void temporaryInitializerFixup(CallExpr* call) {
 
         if (isRefWrapperForNonGenericRecord(ct) == false &&
             ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
+          // Transitioning to a default initializer world. (Lydia note 03/14/17)
+          if (strcmp(ct->defaultInitializer->name, "init") == 0)
+            return;
 
           // This code should be removed when the compiler generates
           // initializers as the default method of construction and
@@ -755,7 +758,7 @@ void removeAggTypeFieldInfo() {
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
       // Still in the tree
-      if (at->initializerStyle == DEFINES_INITIALIZER) {
+      if (at->initializerStyle != DEFINES_CONSTRUCTOR) {
         // Defined an initializer (so we left its init and exprType information
         // in the tree)
         for_fields(field, at) {

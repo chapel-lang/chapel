@@ -1561,7 +1561,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     // The actual should only be generic when we're resolving an initializer
     // If either of these asserts fail, something is very, very wrong.
     AggregateType* at = toAggregateType(actualType);
-    INT_ASSERT(at && at->initializerStyle == DEFINES_INITIALIZER);
+    INT_ASSERT(at && at->initializerStyle != DEFINES_CONSTRUCTOR);
     INT_ASSERT(strcmp(fn->name, "init") == 0);
 
     return true;
@@ -4537,7 +4537,9 @@ static void resolveNew(CallExpr* call) {
         SET_LINENO(call);
 
         // Begin to support new-style initializers
-        if (at->initializerStyle == DEFINES_INITIALIZER) {
+        if (at->initializerStyle == DEFINES_INITIALIZER ||
+            (at->defaultInitializer &&
+             strcmp(at->defaultInitializer->name, "init") == 0)) {
           if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
             VarSymbol* newTmp = newTemp("new_temp", at);
             DefExpr*   def    = new DefExpr(newTmp);
@@ -4580,6 +4582,11 @@ static void resolveNew(CallExpr* call) {
 
         // Continue to support old-style constructors
         } else {
+          if (at->initializerStyle == DEFINES_NONE_USE_DEFAULT &&
+              at->defaultInitializer == NULL) {
+            USR_FATAL(call, "could not generate default initializer for type"
+                      " '%s', please define one", at->symbol->name);
+          }
           FnSymbol* ctInit = at->defaultInitializer;
 
           typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
@@ -5970,8 +5977,10 @@ resolveFns(FnSymbol* fn) {
       }
     }
 
-    if (ct && ct->initializerStyle == DEFINES_INITIALIZER
-        && ct->instantiatedFrom) {
+    if (ct &&
+        (ct->initializerStyle == DEFINES_INITIALIZER ||
+         ct->wantsDefaultInitializer()) &&
+        ct->instantiatedFrom) {
       // Don't instantiate the default constructor for generic types that
       // define initializers, they don't have one!
     } else {
@@ -7207,9 +7216,9 @@ isUnusedClass(AggregateType *ct) {
   if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
     return false;
 
-  // FALSE if the type defines an initializer and that initializer was
+  // FALSE if the type uses an initializer and that initializer was
   // resolved
-  if (ct->initializerStyle == DEFINES_INITIALIZER &&
+  if (ct->initializerStyle != DEFINES_CONSTRUCTOR &&
       ct->initializerResolved)
     return false;
 

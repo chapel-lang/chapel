@@ -22,6 +22,7 @@ Optimization Control Options:
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
       --fast                          Use fast default settings
       --[no-]fast-followers           Enable [disable] fast followers
+      --[no-]force-initializers       Enable [disable] default initializers
       --[no-]ieee-float               Generate code that is strict [lax] with
                                       respect to IEEE compliance
       --[no-]ignore-local-classes     Disable [enable] local classes
