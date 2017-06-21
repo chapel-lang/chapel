@@ -1241,7 +1241,11 @@ namespace {
         Function *NF = Function::Create(NFTy, F->getLinkage());
         NF->copyAttributesFrom(F);
 
+#if HAVE_LLVM_VER >= 38
         F->getParent()->getFunctionList().insert(F->getIterator(), NF);
+#else
+        F->getParent()->getFunctionList().insert(F, NF);
+#endif
         NF->takeName(F);
 
         // Loop over all callers of the function, transforming the call

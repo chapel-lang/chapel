@@ -1966,7 +1966,7 @@ void makeBinaryLLVM(void) {
 #endif
                    );
 
-#if HAVE_LLVM_VER <= 39
+#if HAVE_LLVM_VER >= 39
   if (Error)
     USR_FATAL("Could not create temporary .bc file");
 #endif
