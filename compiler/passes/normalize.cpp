@@ -2608,6 +2608,14 @@ static void updateConstructor(FnSymbol* fn) {
   // Replace it with _construct_typename
   fn->name = ct->defaultInitializer->name;
 
+  if (fNoUserConstructors) {
+    ModuleSymbol* mod = fn->getModule();
+    if (mod && mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD) {
+      USR_FATAL_CONT(fn, "Type '%s' defined a constructor here",
+                     ct->symbol->name);
+    }
+  }
+
   fn->addFlag(FLAG_CONSTRUCTOR);
 }
 
