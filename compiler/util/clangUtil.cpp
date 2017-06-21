@@ -885,6 +885,9 @@ void setupClang(GenInfo* info, std::string mainFile)
 {
   std::string clangexe = info->clangCC;
   std::vector<const char*> clangArgs;
+
+  clangArgs.push_back("<chapel clang driver invocation>");
+
   for( size_t i = 0; i < info->clangCCArgs.size(); ++i ) {
     clangArgs.push_back(info->clangCCArgs[i].c_str());
   }
@@ -898,14 +901,25 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangArgs.push_back("-c");
   clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
 
+  if (!llvmCodegen)
+    clangArgs.push_back("-fsyntax-only");
+
+  if( printSystemCommands ) {
+    for( size_t i = 0; i < clangArgs.size(); i++ ) {
+      printf("%s ", clangArgs[i]);
+    }
+    printf("\n");
+  }
+
   // Initialize LLVM targets so that the clang commands can know if the
   // target CPU supports vectorization, avx, etc, etc
   // Also important for generating assembly from this program.
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmPrinters();
-  llvm::InitializeAllAsmParsers();
-
+  if (llvmCodegen) {
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+  }
 
   // Create a compiler instance to handle the actual work.
   CompilerInstance* Clang = new CompilerInstance();
@@ -933,10 +947,13 @@ void setupClang(GenInfo* info, std::string mainFile)
   INT_ASSERT(C->getJobs().size() == 1);
 
   clang::driver::Command& j = *C->getJobs().begin();
-  /*printf("Arguments\n");
-  for ( auto a : j.getArguments() ) {
-    printf("  %s\n", a);
-  }*/
+  if( printSystemCommands ) {
+    printf("<internal clang cc> ");
+    for ( auto a : j.getArguments() ) {
+      printf("%s ", a);
+    }
+    printf("\n");
+  }
 
   // Should this run
   // TheDriver.BuildCompilation
