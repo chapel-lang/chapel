@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of some LICM improvements
+# Test performance of some jemalloc 5
 GITHUB_USER=ronawho
-GITHUB_BRANCH=improve-licm-prk-dgemm
-SHORT_NAME=licm-improve
-START_DATE=06/19/17
+GITHUB_BRANCH=upgrade-jemalloc-5.0
+SHORT_NAME=jemalloc-5
+START_DATE=06/21/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
