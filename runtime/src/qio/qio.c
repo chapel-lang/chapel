@@ -1811,9 +1811,15 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 
   if( type == QIO_CHTYPE_CLOSED ) return 0;
   if( ! ch->file ) return 0;
-  if ( ch->file->closed )
-    QIO_RETURN_CONSTANT_ERROR(EINVAL, "file closed before channel closed --"
-        " please close all channels before closing the file");
+
+  // Raise an error if the file was closed before a writing channel,
+  // because otherwise any buffered data can never be written.
+  // This error is not necessary for reading channels (and some
+  // leaves a reading channel with a buffer when the file is closed).
+  if ( ch->file->closed && (ch->flags & QIO_FDFLAG_WRITEABLE) )
+    QIO_RETURN_CONSTANT_ERROR(EINVAL,
+        "file closed before writing channel closed --"
+        " please close all writing channels before closing the file");
 
   err = _qio_channel_flush_unlocked(ch);
   if( ! err ) {
