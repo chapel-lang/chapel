@@ -280,7 +280,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
       if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
-        call->replace(new CallExpr(PRIM_ADDR_OF, use));
+        call->replace(new CallExpr(PRIM_SET_REFERENCE, use));
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
@@ -316,8 +316,9 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
         SymExpr* def = new SymExpr(fieldMap.get(member->symbol()));
         call->insertAtHead(def);
         addDef(defMap, def);
-        if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
-          call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
+        if (call->get(1)->isRef() && call->get(2)->isRef() == false) {
+          call->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
+        }
       } else {
         /*
          * If we fall into this case, it suggests that we did not
@@ -411,7 +412,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
 
           // create a temporary to hold a reference to the tuple field
           rhs = newTemp(astr(sym->name, "_"),
-                        oldrhs->typeInfo()->symbol->type->refType);
+                        oldrhs->qualType().toRef());
           sym->defPoint->insertBefore(new DefExpr(rhs));
 
           // get the reference to the field to use for the rhs
@@ -475,7 +476,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
       } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->symbol()));
-        call->replace(new CallExpr(PRIM_ADDR_OF, use));
+        call->replace(new CallExpr(PRIM_SET_REFERENCE, use));
         addUse(useMap, use);
       } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
@@ -490,8 +491,9 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         SymExpr* def = new SymExpr(fieldMap.get(member->symbol()));
         call->insertAtHead(def);
         addDef(defMap, def);
-        if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
-          call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
+        if (call->get(1)->isRef() && call->get(2)->isRef() == false) {
+          call->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
+        }
       } else {
         /*
          * If we fall into this case, it suggests that we did not
