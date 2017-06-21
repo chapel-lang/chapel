@@ -1,10 +1,10 @@
+// TO REMOVE BEFORE 1.16
 class Foo {
   var x: int;
+}
 
-  proc init(xVal) {
-    x = xVal;
-    super.init();
-  }
+proc Foo.Foo(xVal) {
+  x = xVal;
 }
 
 var foo = new Foo(10);
