@@ -1,0 +1,5 @@
+perfkeys: Avg time (s): 
+files: sparse-csr.dat
+graphkeys: CSR
+graphtitle: PRK sparse time
+ylabel: Time (seconds)
