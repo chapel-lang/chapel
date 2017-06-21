@@ -929,8 +929,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.localize().c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    const ret = replaced:string;
-    chpl_free_c_string_copy(replaced);
+    const ret = new string(replaced, needToCopy=false);
     return (ret, nreplaced);
   }
 
