@@ -365,7 +365,8 @@ proc copyFile(out error: syserr, src: string, dest: string) {
     destChnl.write(line[0..#numRead]);
   }
   if error == EEOF then error = ENOERR;
-  destChnl.flush();
+  destChnl.close();
+  srcChnl.close();
 
   srcFile.close();
   destFile.close();
