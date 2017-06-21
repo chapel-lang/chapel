@@ -32,7 +32,8 @@ Initializing Modules:
     ChapelIO
      IO
       SysError
-      Regexp
+      FormattedIO
+       Regexp
     LocaleTree
     DefaultAssociative
     ChapelTaskTable
