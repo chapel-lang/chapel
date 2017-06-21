@@ -1641,10 +1641,13 @@ proc StencilArr.shouldDoPackedUpdate() param : bool {
 //
 // TODO: allow for some kind of user-defined packing/unpacking for complicated
 // types?
+//
+// TODO: What if this is called from a locale not in targetLocales? Should
+//       we do an on-statement?
 proc StencilArr.dsiUpdateFluff() {
   if isZeroTuple(dom.fluff) then return;
 
-  if shouldDoPackedUpdate() {
+  if shouldDoPackedUpdate() && dom.dist.targetLocales.size > 1 {
     this._packedUpdate();
   } else {
     this.naiveUpdateFluff();
