@@ -1019,7 +1019,7 @@ static bool isMethodCall(CallExpr* callExpr) {
   bool retval = false;
 
   if (CallExpr* base = toCallExpr(callExpr->baseExpr)) {
-    if (base->isNamed(".") == true) {
+    if (base->isNamedAstr(astrSdot) == true) {
       if (SymExpr* lhs = toSymExpr(base->get(1))) {
         if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
           retval = arg->hasFlag(FLAG_ARG_THIS);
@@ -1094,7 +1094,7 @@ static const char* initName(CallExpr* expr) {
   const char* retval = NULL;
 
   if (expr->numActuals()                    ==    2 &&
-      expr->isNamed(".")                    == true &&
+      expr->isNamedAstr(astrSdot)           == true &&
       isStringLiteral(expr->get(2), "init") == true) {
 
     if (isSymbolThis(expr->get(1)) == true) {
@@ -1108,7 +1108,7 @@ static const char* initName(CallExpr* expr) {
       // "super" is a expr to a field accessor for classes
       } else if (CallExpr* subExpr = toCallExpr(expr->get(1))) {
         if (subExpr->numActuals()                     == 2    &&
-            subExpr->isNamed(".")                     == true &&
+            subExpr->isNamedAstr(astrSdot)            == true &&
             isSymbolThis(subExpr->get(1))             == true &&
             isStringLiteral(subExpr->get(2), "super") == true) {
           retval = "super";
@@ -1497,7 +1497,7 @@ static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
 static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
   DefExpr* retval = NULL;
 
-  if (expr->isNamed(".") == true) {
+  if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 
@@ -1584,7 +1584,7 @@ static bool isAssignment(CallExpr* callExpr) {
 static bool isSimpleAssignment(CallExpr* callExpr) {
   bool retval = false;
 
-  if (callExpr->isNamed("=") == true) {
+  if (callExpr->isNamedAstr(astrSequals) == true) {
     retval = true;
   }
 
@@ -1994,9 +1994,9 @@ static void phase1Analysis(FnSymbol* fn) {
 static
 const char* getFieldName(Expr* curExpr) {
   if (CallExpr* call = toCallExpr(curExpr)) {
-    if (call->isNamed("=")) {
+    if (call->isNamedAstr(astrSequals)) {
       if (CallExpr* inner = toCallExpr(call->get(1))) {
-        if (inner->isNamed(".")) {
+        if (inner->isNamedAstr(astrSdot)) {
           SymExpr* potenThis = toSymExpr(inner->get(1));
           if (potenThis && potenThis->symbol()->hasFlag(FLAG_ARG_THIS)) {
             // It's an access of this!
@@ -2303,7 +2303,7 @@ static InitStyle findInitStyleInner(CallExpr* call) {
   InitStyle retval = STYLE_NONE;
 
   if (call->numActuals()                    ==    2 &&
-      call->isNamed(".")                    == true &&
+      call->isNamedAstr(astrSdot)           == true &&
       isStringLiteral(call->get(2), "init") == true) {
 
     if (isSymbolThis(call->get(1)) == true) {
@@ -2317,7 +2317,7 @@ static InitStyle findInitStyleInner(CallExpr* call) {
       // "super" is a call to a field accessor for classes
       } else if (CallExpr* subCall = toCallExpr(call->get(1))) {
         if (subCall->numActuals()                     == 2    &&
-            subCall->isNamed(".")                     == true &&
+            subCall->isNamedAstr(astrSdot)            == true &&
             isSymbolThis(subCall->get(1))             == true &&
             isStringLiteral(subCall->get(2), "super") == true) {
           retval = STYLE_SUPER_INIT;

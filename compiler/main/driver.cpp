@@ -1241,6 +1241,7 @@ int main(int argc, char* argv[]) {
 
 
     initFlags();
+    initAstrConsts();
     initRootModule();
     initPrimitive();
     initPrimitiveTypes();

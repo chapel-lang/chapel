@@ -1194,8 +1194,7 @@ FnSymbol* CallExpr::theFnSymbol() const {
   return retval;
 }
 
-
-bool CallExpr::isNamed(const char* name) {
+bool CallExpr::isNamed(const char* name) const {
   if (SymExpr* base = toSymExpr(baseExpr))
     if (strcmp(base->symbol()->name, name) == 0)
       return true;
@@ -1207,6 +1206,18 @@ bool CallExpr::isNamed(const char* name) {
   return false;
 }
 
+// 'name' must be canonicalized
+bool CallExpr::isNamedAstr(const char* name) const {
+  if (SymExpr* base = toSymExpr(baseExpr))
+    if (base->symbol()->name == name)
+      return true;
+
+  if (UnresolvedSymExpr* base = toUnresolvedSymExpr(baseExpr))
+    if (base->unresolved == name)
+      return true;
+
+  return false;
+}
 
 int CallExpr::numActuals() const {
   return argList.length;
@@ -1231,7 +1242,7 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 }
 
 bool CallExpr::isCast(void) {
-  return isNamed("_cast");
+  return isNamedAstr(astr_cast);
 }
 
 Expr* CallExpr::castFrom(void) {
@@ -1248,7 +1259,7 @@ Expr* CallExpr::castTo(void) {
 
 CallExpr* createCast(BaseAST* src, BaseAST* toType)
 {
-  CallExpr* expr = new CallExpr("_cast", toType, src);
+  CallExpr* expr = new CallExpr(astr_cast, toType, src);
   return expr;
 }
 
@@ -1599,7 +1610,7 @@ Expr* ForallExpr::getFirstExpr() {
 
 NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
-  name(init_name),
+  name(astr(init_name)),
   actual(init_actual)
 {
   gNamedExprs.add(this);

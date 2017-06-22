@@ -2442,7 +2442,7 @@ buildFunctionSymbol(FnSymbol*   fn,
   fn->thisTag = thisTag;
 
   if ((fn->name[0] == '~' && fn->name[1] != '\0') ||
-      (strcmp(fn->name, "deinit") == 0))
+      (fn->name == astrDeinit))
     fn->addFlag(FLAG_DESTRUCTOR);
 
   if (receiver)

@@ -218,13 +218,13 @@ void normalize() {
         // verify the name of the destructor
         bool notTildeName = (fn->name[0] != '~') ||
                              strcmp(fn->name + 1, ct->symbol->name);
-        bool notDeinit = strcmp(fn->name, "deinit");
+        bool notDeinit = (fn->name != astrDeinit);
 
         if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
             "destructor name must match class/record name or deinit()");
         } else {
-          fn->name = astr("deinit");
+          fn->name = astrDeinit;
         }
       }
     // make sure methods don't attempt to overload operators
@@ -301,7 +301,7 @@ static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt) {
     if (FnSymbol* fn = toFnSymbol(def->sym))
       // When we retire ~classname naming for deinits,
       // we can replace this strcmp with a check for FLAG_DESTRUCTOR.
-      if (!strcmp(fn->name, "deinit"))
+      if (fn->name == astrDeinit)
         if (fn->numFormals() == 0) {
           if (mod->deinitFn) {
             // Already got one deinit() before.
@@ -1157,7 +1157,7 @@ static void applyGetterTransform(CallExpr* call) {
   //   x.f --> f(_mt, x)
   // Note:
   //   call(call or )( indicates partial
-  if (call->isNamed(".")) {
+  if (call->isNamedAstr(astrSdot)) {
     SET_LINENO(call);
 
     SymExpr* symExpr = toSymExpr(call->get(2));
@@ -1238,7 +1238,7 @@ static void insertCallTemps(CallExpr* call) {
     if (call->isNamed("super")   == true &&
 
         parentCall               != NULL &&
-        parentCall->isNamed(".") == true &&
+        parentCall->isNamedAstr(astrSdot) &&
         parentCall->get(1)       == call) {
       // We've got an access to a method or field on the super type.
       // This means we should preserve that knowledge for when we

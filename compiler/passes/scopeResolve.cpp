@@ -590,7 +590,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
   const char* name = usymExpr->unresolved;
 
-  if (strcmp(name, ".") == 0 || usymExpr->parentSymbol == NULL) {
+  if (name == astrSdot || usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
@@ -894,7 +894,7 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
 }
 
 static void resolveModuleCall(CallExpr* call) {
-  if (call->isNamed(".") == true) {
+  if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
@@ -1047,7 +1047,7 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
 static void resolveEnumeratedTypes() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isNamed(".")) {
+    if (call->isNamedAstr(astrSdot)) {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {

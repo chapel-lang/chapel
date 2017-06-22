@@ -280,7 +280,7 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
   collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed(field->name) && call->numActuals() == 2) {
+      if (call->isNamedAstr(field->name) && call->numActuals() == 2) {
         if (call->get(1)->typeInfo() == dtMethodToken &&
             call->get(2)->typeInfo() == ct) {
           Expr* arg2 = call->get(2);
@@ -796,7 +796,7 @@ static void build_enum_enumerate_function(EnumType* et) {
 
 static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
@@ -842,7 +842,7 @@ static void build_enum_cast_function(EnumType* et) {
   normalize(fn);
 
   // string to enumerated type cast function
-  fn = new FnSymbol("_cast");
+  fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
@@ -1026,7 +1026,7 @@ static void build_record_cast_function(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE))
     return;
 
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
@@ -1774,10 +1774,10 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", dtString, et))
+  if (function_exists(astr_cast, dtString, et))
     return;
 
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);

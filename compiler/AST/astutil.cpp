@@ -418,8 +418,8 @@ int isDefAndOrUse(SymExpr* se) {
 
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          (strcmp(fn->name, "=") == 0   &&
-           fn->getFormal(1)      == arg &&
+          (fn->name == astrSequals &&
+           fn->getFormal(1) == arg &&
            isRecord(arg->type))) {
 
           // special case for record-wrapped types originated in
