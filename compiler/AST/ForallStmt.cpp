@@ -119,16 +119,17 @@ void ForallStmt::verify() {
 }
 
 void ForallStmt::accept(AstVisitor* visitor) {
-/* TODO once AstVisitor is updated:
   if (visitor->enterForallStmt(this)) {
-    for_alist(next_ast, fIter)
-      next_ast->accept(visitor);
-    // not doing: fIter->accept(visitor);
-    fWith->acceptFI(visitor); // aka visitor->visitForallIntents(fWith);
-    fMBlock->accept(visitor); // includes loopBody
+    for_alist(expr, inductionVariables())
+      expr->accept(visitor);
+    for_alist(expr, iteratedExpressions())
+      expr->accept(visitor);
+    for_alist(expr, intentVariables())
+      expr->accept(visitor);
+    withClause()->acceptFI(visitor); // aka visitor->visitForallIntents(fWith);
+    fLoopBody->accept(visitor);
     visitor->exitForallStmt(this);
   }
-*/
 }
 
 Expr* ForallStmt::getFirstChild() {

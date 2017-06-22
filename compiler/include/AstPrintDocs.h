@@ -43,6 +43,7 @@ public:
   virtual void   visitVarSym      (VarSymbol*         node);
 
   virtual bool   enterBlockStmt   (BlockStmt*         node);
+  virtual bool   enterForallStmt  (ForallStmt*        node);
   virtual bool   enterWhileDoStmt (WhileDoStmt*       node);
   virtual bool   enterDoWhileStmt (DoWhileStmt*       node);
   virtual bool   enterCForLoop    (CForLoop*          node);
