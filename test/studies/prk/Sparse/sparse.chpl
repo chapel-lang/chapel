@@ -8,6 +8,7 @@ use LayoutCSR;
 use ReplicatedDist;
 use Time;
 use VisualDebug;
+use RangeChunk;
 
 param PRKVERSION = "2.17";
 
@@ -32,25 +33,22 @@ const rowDistLocDom = {0..#numLocales, 0..0};
 var rowDistLocArr: [rowDistLocDom] locale;
 rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
 
+// TODO:
+//const dist = if CHPL_COMM=='none' then CSR() else
+
 const vectorSpace = 0..#size2,
       vectorDom = {vectorSpace},
       vectorDomRepl = vectorDom dmapped Replicated(),
-      parentDom = {vectorSpace, vectorSpace} dmapped Block({vectorSpace, vectorSpace}, rowDistLocArr, sparseLayoutType=CSR);
+      vectorDomBlock = vectorDom dmapped Block(vectorDom),
+      parentDom = {vectorSpace, vectorSpace} dmapped Block({vectorSpace, vectorSpace}, targetLocales=rowDistLocArr, sparseLayoutType=CSR),
+      matrixDom: sparse subdomain(parentDom);
 
-//config const N = 8;
-//config type sparseLayoutType = DefaultDist;
-//const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N}, sparseLayoutType=sparseLayoutType);
-//var SparseDom: sparse subdomain(ParentDom);
-//var SparseMat: [SparseDom] int;
-//var diagInds: [{0..#N*2}] 2*int;
 
-//const dist = if CHPL_COMM=='none' then CSR() else
-const matrixDom: sparse subdomain(parentDom);
 
 var matrix: [matrixDom] real,
     vector: [vectorDom] real,
     vectorRepl: [vectorDomRepl] real,
-    result: [vectorDom] real;
+    result: [vectorDomBlock] real;
 
 var t = new Timer();
 
@@ -72,15 +70,17 @@ proc main() {
 
     [i in vectorDom] vector[i] += i+1;
 
-    // Replicate across all locales
-    forall (r,v) in zip(vectorRepl,vector) do r = v;
+    // Replicate vector across all locales
+    coforall loc in Locales do on loc {
+      vectorRepl = vector;
+    }
 
-    forall i in matrixDom.dim(1) {
+    forall i in vectorDomBlock {
       var temp = 0.0;
       for j in matrixDom.dimIter(2,i) {
         temp += matrix[i,j] * vectorRepl[j];
       }
-      result[i] += temp;
+    result[i] += temp;
     }
   }
   t.stop();
