@@ -27,6 +27,7 @@ tags
 /build
 /lib
 /tar
+/tmp
 
 # Compiler ignores.
 /compiler/BROWSE
