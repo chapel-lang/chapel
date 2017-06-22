@@ -154,11 +154,6 @@ OPTIONS
     Enable [disable] the fast follower optimization in which fast
     implementations of followers will be invoked for specific leaders.
 
-**--[no-]force-initializers**
-
-    Enable [disable] the generation of default initializers instead of default
-    constructors under certain circumstances.
-
 **--[no-]ieee-float**
 
     Disable [enable] optimizations that may affect IEEE floating point
