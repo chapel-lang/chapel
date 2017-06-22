@@ -197,6 +197,7 @@
 %code {
   #include "build.h"
   #include "CatchStmt.h"
+  #include "DeferStmt.h"
   #include "DoWhileStmt.h"
   #include "driver.h"
   #include "flex-chapel.h"
@@ -289,7 +290,7 @@
 //
 %token TALIGN TAS TATOMIC TBEGIN TBREAK TBY TCATCH
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN
+%token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TFORWARDING
 %token TIF TIN TINDEX TINLINE TINOUT TITER
@@ -385,6 +386,7 @@
 %type <pblockstmt> forwarding_stmt
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
+%type <pblockstmt> defer_stmt
 %type <pblockstmt> try_stmt
 %type <pblockstmt> throw_stmt
 %type <pblockstmt> catch_stmt_ls
@@ -466,6 +468,7 @@ stmt:
 | if_stmt
 | loop_stmt
 | select_stmt
+| defer_stmt
 | try_stmt
 | throw_stmt
 | return_stmt
@@ -719,6 +722,9 @@ if_stmt:
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
 ;
+
+defer_stmt:
+  TDEFER stmt             { $$ = DeferStmt::build($2); }
 
 try_stmt:
   TTRY     expr            TSEMI         { $$ = TryStmt::build(false, $2); }
