@@ -115,14 +115,20 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
-    bool   insertAfter = false;
-    size_t count       = mLocals.size();
+    Expr*  insertBeforeStmt = refStmt;
+    Expr*  noop             = NULL;
+    size_t count            = mLocals.size();
 
     // If this is a simple nested block, insert after the final stmt
+    // But always insert the destruction calls in reverse declaration order.
     // Do not get tricked by sequences of unreachable code
     if (refStmt->next == NULL) {
       if (mParent != NULL && isGotoStmt(refStmt) == false) {
-        insertAfter = true;
+        SET_LINENO(refStmt);
+        // Add a PRIM_NOOP to insert before
+        noop = new CallExpr(PRIM_NOOP);
+        refStmt->insertAfter(noop);
+        insertBeforeStmt = noop;
       }
     }
 
@@ -137,14 +143,14 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
           CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
 
-          if (insertAfter == true) {
-            refStmt->insertAfter (autoDestroy);
-          } else {
-            refStmt->insertBefore(autoDestroy);
-          }
+          insertBeforeStmt->insertBefore(autoDestroy);
         }
       }
     }
+
+    // remove the PRIM_NOOP if we added one.
+    if (noop != NULL)
+      noop->remove();
   }
 
   // Handle the formal temps
