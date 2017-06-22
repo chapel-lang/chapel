@@ -61,9 +61,9 @@ DeferStmt* DeferStmt::copyInner(SymbolMap* map) {
   return copy;
 }
 
-void DeferStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == _body) {
-    _body = toBlockStmt(new_ast);
+void DeferStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (oldAst == _body) {
+    _body = toBlockStmt(newAst);
   }
 }
 
