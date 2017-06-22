@@ -22,6 +22,7 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
 #include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"

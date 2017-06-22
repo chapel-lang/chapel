@@ -70,6 +70,7 @@
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
+  macro(DeferStmt) sep                             \
   macro(TryStmt) sep                               \
   macro(ForwardingStmt) sep                        \
   macro(CatchStmt) sep                             \
@@ -146,6 +147,7 @@ enum AstTag {
   E_ForwardingStmt,
   E_NamedExpr,
   E_UseStmt,
+  E_DeferStmt,
   E_TryStmt,
   E_CatchStmt,
   E_BlockStmt,
@@ -335,6 +337,7 @@ def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
+def_is_ast(DeferStmt)
 def_is_ast(TryStmt)
 def_is_ast(ForwardingStmt)
 def_is_ast(CatchStmt)
@@ -379,6 +382,7 @@ def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
+def_to_ast(DeferStmt)
 def_to_ast(TryStmt)
 def_to_ast(ForwardingStmt)
 def_to_ast(CatchStmt)
@@ -544,6 +548,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     break;                                                              \
   case E_ForwardingStmt:                                                \
     AST_CALL_CHILD(_a, ForwardingStmt, toFnDef, call, __VA_ARGS__);     \
+    break;                                                              \
+  case E_DeferStmt:                                                     \
+    AST_CALL_CHILD(_a, DeferStmt, body(), call, __VA_ARGS__);           \
     break;                                                              \
   case E_TryStmt:                                                       \
     AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);             \

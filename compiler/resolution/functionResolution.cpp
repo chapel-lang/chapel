@@ -33,6 +33,7 @@
 #include "callInfo.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
