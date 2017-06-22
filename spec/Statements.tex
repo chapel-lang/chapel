@@ -23,6 +23,7 @@ statement:
   continue-statement
   param-for-statement
   use-statement
+  defer-statement
   empty-statement
   return-statement
   yield-statement
@@ -824,6 +825,23 @@ For use statement rules which are only applicable to modules, please
 see~\rsec{Using_Modules}.  For more information on modules in general, please
 see~\rsec{Modules}.
 
+
+\section{The Defer Statement}
+\label{The_Defer_Statement}
+\index{statements!defer}
+
+A \chpl{defer} statement causes its body to be run when exiting a
+function. \chpl{defer} is useful because the deferred statements will
+be run no matter how the function returns. At a given place where a
+function returns, the in-scope \chpl{defer} and local variables
+that need to be de-initialized will be handled in reverse declaration
+order. The contents of each \chpl{defer} block will be run and any
+local variables of record type will be deinitialized.
+
+\begin{syntax}
+defer-statement:
+  `defer' statement
+\end{syntax}
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}
