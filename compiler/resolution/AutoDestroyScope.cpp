@@ -20,6 +20,7 @@
 #include "AutoDestroyScope.h"
 
 #include "expr.h"
+#include "DeferStmt.h"
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -52,10 +53,14 @@ AutoDestroyScope::AutoDestroyScope(const AutoDestroyScope* parent,
 
 void AutoDestroyScope::variableAdd(VarSymbol* var) {
   if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
-    mLocals.push_back(var);
+    mLocalsAndDefers.push_back(var);
   } else {
     mFormalTemps.push_back(var);
   }
+}
+
+void AutoDestroyScope::deferAdd(DeferStmt* defer) {
+  mLocalsAndDefers.push_back(defer);
 }
 
 //
@@ -117,7 +122,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;
     Expr*  noop             = NULL;
-    size_t count            = mLocals.size();
+    size_t count            = mLocalsAndDefers.size();
 
     // If this is a simple nested block, insert after the final stmt
     // But always insert the destruction calls in reverse declaration order.
@@ -133,9 +138,11 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     }
 
     for (size_t i = 1; i <= count; i++) {
-      VarSymbol* var = mLocals[count - i];
+      BaseAST*  localOrDefer = mLocalsAndDefers[count - i];
+      VarSymbol* var = toVarSymbol(localOrDefer);
+      DeferStmt* defer = toDeferStmt(localOrDefer);
 
-      if (var != excludeVar) {
+      if (var != NULL && var != excludeVar) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 
@@ -145,6 +152,13 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
           insertBeforeStmt->insertBefore(autoDestroy);
         }
+      }
+
+      if (defer != NULL) {
+        SET_LINENO(defer);
+        BlockStmt* deferBlockCopy = defer->body()->copy();
+        insertBeforeStmt->insertBefore(deferBlockCopy);
+        deferBlockCopy->flattenAndRemove();
       }
     }
 
