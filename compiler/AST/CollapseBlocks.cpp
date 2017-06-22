@@ -77,6 +77,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "ForallStmt.h"
 
 #include "alist.h"
 #include "stmt.h"
@@ -138,6 +139,10 @@ void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
   // Need to define this so CollapseBlocks is not abstract.
   // However, it should not be invoked.
   INT_ASSERT(false);
+}
+
+bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
+  return enterBlockStmt(node->loopBody());
 }
 
 
@@ -333,6 +338,11 @@ void CollapseBlocks::visitUseStmt(UseStmt* node)
 }
 
 void CollapseBlocks::exitBlockStmt(BlockStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitForallStmt(ForallStmt* node)
 {
 
 }
