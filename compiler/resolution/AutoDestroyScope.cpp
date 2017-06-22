@@ -141,6 +141,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       BaseAST*  localOrDefer = mLocalsAndDefers[count - i];
       VarSymbol* var = toVarSymbol(localOrDefer);
       DeferStmt* defer = toDeferStmt(localOrDefer);
+      // This code only handles VarSymbols and DeferStmts.
+      INT_ASSERT(var || defer);
 
       if (var != NULL && var != excludeVar) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
