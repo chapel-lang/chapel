@@ -51,4 +51,6 @@ private:
   BlockStmt*          _body;
 };
 
+void checkDefersAfterParsing();
+
 #endif
