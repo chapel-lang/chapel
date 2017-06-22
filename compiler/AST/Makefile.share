@@ -24,6 +24,7 @@ AST_SRCS =                                          \
            build.cpp                                \
            CatchStmt.cpp                            \
            checkAST.cpp                             \
+           DeferStmt.cpp                            \
            dominator.cpp                            \
            expr.cpp                                 \
            iterator.cpp                             \

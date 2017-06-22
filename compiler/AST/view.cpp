@@ -27,6 +27,7 @@
 #include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
