@@ -148,9 +148,6 @@ static void walkBlock(FnSymbol*         fn,
     if (isReturnLabel(stmt, retLabel) == true) {
       scope.insertAutoDestroys(fn, stmt);
 
-    } else if (isGotoStmt(stmt) == true) {
-      isDeadCode = true;
-
     // Be conservative about unreachable code before the epilogue
     } else if (isDeadCode == false) {
       // Collect variables that should be autoDestroyed
@@ -180,8 +177,16 @@ static void walkBlock(FnSymbol*         fn,
 
     //
     // Handle the end of a block
+    // For the purposes of this pass, a block ends either
+    // with a GotoStmt or when we run out of next statements.
     //
-    if (stmt->next == NULL) {
+    GotoStmt* gotoStmt = toGotoStmt(stmt);
+    if (gotoStmt != NULL || stmt->next == NULL) {
+
+      // Don't visit any later code in this block
+      // (don't add variable definitions, etc, above).
+      isDeadCode = true;
+
       GotoStmt* gotoStmt = toGotoStmt(stmt);
 
       // The main block for a function or a simple sub-block
