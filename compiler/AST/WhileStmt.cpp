@@ -253,9 +253,8 @@ void WhileStmt::checkConstLoops()
     {
       // There was no update of the loop condition variable in the
       // body of the loop.
-      USR_WARN(condSym,
-               "Infinite loop? The loop condition variable is never "
-               "updated within the loop.");
+      // It could be an infinite loop, or it could have a
+      // 'break' or 'return' in it.
     }
   }
 
