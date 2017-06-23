@@ -447,6 +447,11 @@ OPTIONS
     one optimization pass notes that function is unused and decides to remove
     it.
 
+**--mllvm <option>**
+    Pass an option to the LLVM optimization and transformation passes.
+    This option can be specified multiple times.
+
+
 *Compilation Trace Options*
 
 **--[no-]print-commands**
