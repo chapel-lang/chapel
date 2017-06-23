@@ -199,6 +199,7 @@ static void walkBlock(FnSymbol*         fn,
           case GOTO_RETURN:
           case GOTO_CONTINUE:
           case GOTO_BREAK:
+          case GOTO_ERROR_HANDLING:
             scope.insertAutoDestroys(fn, stmt);
             break;
 
@@ -206,7 +207,6 @@ static void walkBlock(FnSymbol*         fn,
           case GOTO_GETITER_END:
           case GOTO_ITER_RESUME:
           case GOTO_ITER_END:
-          case GOTO_ERROR_HANDLING:
            // MDN 2016/03/18 Need to revisit these cases
            break;
         }
