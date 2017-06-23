@@ -1,17 +1,18 @@
 class BaseClass {
   var a, b: int;
 
-  proc BaseClass(b: int) {
+  proc init(b: int) {
     this.b = b;
+    super.init();
   }
 }
 
 class DerivedClass: BaseClass {
   var c: int;
 
-  proc DerivedClass(b:int, c:int) {
-    this.b = b;
+  proc init(b:int, c:int) {
     this.c = c;
+    super.init(b);
   }
 }
 
