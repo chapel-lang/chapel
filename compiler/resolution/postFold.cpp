@@ -118,7 +118,7 @@ Expr* postFold(Expr* expr) {
           expr->replace(result);
         }
       }
-      if (call->isNamed("=")) {
+      if (call->isNamedAstr(astrSequals)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
             if (paramMap.get(lhs->symbol())) {
@@ -230,7 +230,7 @@ Expr* postFold(Expr* expr) {
               lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
             }
             if (FnSymbol* fn = rhs->resolvedFunction()) {
-              if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
+              if (fn->name == astrSequals && fn->retType == dtVoid) {
                 call->replace(rhs->remove());
                 result = rhs;
                 set = true;
@@ -454,7 +454,7 @@ Expr* postFold(Expr* expr) {
         //
         // The substitution usually happens before resolution, so for
         // assignment, we key off of the name :-(
-        if (call->isPrimitive(PRIM_MOVE) || call->isNamed("=")) {
+        if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSequals)) {
           if (sym->symbol()->hasFlag(FLAG_RVV)) {
             makeNoop(call);
           }

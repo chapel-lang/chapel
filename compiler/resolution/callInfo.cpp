@@ -50,7 +50,7 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly, bool initOkay) :
     bool isThis = false;
     if (NamedExpr* named = toNamedExpr(actual)) {
       actualNames.add(named->name);
-      if (initOkay && !strcmp(named->name, "this"))
+      if (initOkay && named->name == astrThis)
         isThis = true;
       actual = named->actual;
     } else {

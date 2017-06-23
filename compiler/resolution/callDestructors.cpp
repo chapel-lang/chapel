@@ -769,7 +769,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
         CallExpr* parent   = toCallExpr(move->parentExpr);
 
         if (calledFn                    != NULL &&
-            strcmp(calledFn->name, "=") ==    0 &&
+            calledFn->name       == astrSequals &&
             // Filter out case handled above.
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
@@ -852,7 +852,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
   // If this isn't a call expression, we've got problems.
   if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
     if (FnSymbol* useFn = useCall->resolvedFunction()) {
-      if ((strcmp(useFn->name, "=") == 0 && firstUse == useCall->get(2)) ||
+      if ((useFn->name == astrSequals && firstUse == useCall->get(2)) ||
           useFn->hasFlag(FLAG_AUTO_COPY_FN)                              ||
           useFn->hasFlag(FLAG_INIT_COPY_FN)) {
         Symbol*   actual = NULL;
@@ -915,7 +915,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
 
         } else {
           // We assume the useFn is an assignment.
-          if (strcmp(useFn->name, "=") != 0) {
+          if (useFn->name != astrSequals) {
             INT_FATAL(useFn, "should be an assignment function");
             return;
           } else {
@@ -1185,7 +1185,7 @@ static void insertAutoCopyTemps() {
         CallExpr* defCall = toCallExpr(def->parentExpr);
         if (defCall->isPrimitive(PRIM_MOVE)) {
           CallExpr* rhs = toCallExpr(defCall->get(2));
-          if (!rhs || !rhs->isNamed("=")) {
+          if (!rhs || !rhs->isNamedAstr(astrSequals)) {
             // We enter this block if:
             // - rhs is a variable (!rhs), or
             // - rhs is a call but not to =
@@ -1348,64 +1348,27 @@ void insertReferenceTemps(CallExpr* call) {
 //
 // also needs special treatment.
 //
-static
-void fixupNewAlias(void) {
-
+static void fixupNewAlias() {
   std::vector<CallExpr*> newAliasCalls;
   std::vector<CallExpr*> hasAliasArgInCtor;
-  const char* lookForAliasField = "chpl__aliasField_";
-  size_t lookForAliasFieldLen = strlen(lookForAliasField);
 
   forv_Vec(CallExpr, call, gCallExprs) {
     FnSymbol* calledFn = call->resolvedFunction();
-    if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
-        newAliasCalls.push_back(call);
-    }
-    if (calledFn && calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-      // Does the calledFn have a formal that starts with
-      // chpl__aliasField_ ?
 
-      // TODO -- could this use a flag?
-      for_formals(formal, calledFn) {
-        if (0 == strncmp(formal->name, lookForAliasField, lookForAliasFieldLen))
-          hasAliasArgInCtor.push_back(call);
-      }
+    if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
+      newAliasCalls.push_back(call);
     }
   }
 
   for_vector(CallExpr, call, newAliasCalls) {
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->symbol()->hasFlag(FLAG_TEMP) &&
-        se->isRef() == false) {
+
+    if (se->symbol()->hasFlag(FLAG_TEMP) && se->isRef() == false) {
       // Note: these flags are added in functionResolution's postFold
       se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
       se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+
       call->replace(se->remove());
-    }
-  }
-
-  for_vector(CallExpr, ctorCall, hasAliasArgInCtor) {
-    FnSymbol* fn = ctorCall->resolvedFunction();
-
-    for_formals_actuals(formal, actual, ctorCall) {
-
-      // TODO -- could this use a flag?
-      bool isArrayAliasField = false;
-      const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
-      for_formals(fml, fn)
-        if (fml->name == aliasFieldArg)
-          isArrayAliasField = true;
-
-      if (isArrayAliasField) {
-        SymExpr* se = toSymExpr(actual);
-        bool isTemp = se->symbol()->hasFlag(FLAG_TEMP);
-        bool isAlias = se->symbol()->hasFlag(FLAG_ARRAY_ALIAS);
-        if ((isTemp || isAlias) &&
-             se->isRef() == false) {
-          se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
-          se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-        }
-      }
     }
   }
 }
@@ -1420,22 +1383,24 @@ void fixupNewAlias(void) {
 //
 // This function simply checks that no function marked with that
 // flag is ever called and raises an error if so.
-static
-void checkForErroneousInitCopies() {
+static void checkForErroneousInitCopies() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
-        USR_FATAL_CONT(se, "copy-initialization invoked for a type"
-                           " that does not have a copy initializer");
+        USR_FATAL_CONT(se,
+                       "copy-initialization invoked for a type "
+                       "that does not have a copy initializer");
       }
     }
+
     if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
-        USR_FATAL_CONT(se, "implicit copy-initialization invoked for a type"
-                           " that does not allow it");
+        USR_FATAL_CONT(se,
+                       "implicit copy-initialization invoked for a type "
+                       "that does not allow it");
       }
     }
   }

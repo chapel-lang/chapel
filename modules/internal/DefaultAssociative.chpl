@@ -250,7 +250,7 @@ module DefaultAssociative {
         if entry.status == chpl__hash_status.full {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = _findFilledSlot(entry.idx, haveLock=true);
+            const (match, loc) = _findFilledSlot(entry.idx, needLock=false);
             if !match then halt("zippered associative domains do not match");
             idx = loc;
           }
@@ -300,12 +300,12 @@ module DefaultAssociative {
     }
 
     proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
-        haveLock = !parSafe) {
+                     needLock = parSafe) {
 
       const inSlot = slotNum;
       var retVal = 0;
       on this {
-        const shouldLock = !haveLock && parSafe;
+        const shouldLock = needLock && parSafe;
         if shouldLock then lockTable();
         var findAgain = shouldLock;
         if ((numEntries.read()+1)*2 > tableSize) {
@@ -349,10 +349,10 @@ module DefaultAssociative {
       var retval = 1;
       on this {
         if parSafe then lockTable();
-        const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
+        const (foundSlot, slotNum) = _findFilledSlot(idx, needLock=!parSafe);
         if (foundSlot) {
           for a in _arrs do
-            a.clearEntry(idx, true);
+            a.clearEntry(idx);
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -478,8 +478,8 @@ module DefaultAssociative {
     //
     // Returns true if found, along with the first open slot that may be
     // re-used for faster addition to the domain
-    proc _findFilledSlot(idx: idxType, param haveLock = false) : (bool, index(tableDom)) {
-      if parSafe && !haveLock then lockTable();
+    proc _findFilledSlot(idx: idxType, needLock = true) : (bool, index(tableDom)) {
+      if parSafe && needLock then lockTable();
       var firstOpen = -1;
       for slotNum in _lookForSlots(idx, table.domain.high+1) {
         const slotStatus = table[slotNum].status;
@@ -487,25 +487,25 @@ module DefaultAssociative {
         // be found past this point.
         if (slotStatus == chpl__hash_status.empty) {
           if firstOpen == -1 then firstOpen = slotNum;
-          if parSafe && !haveLock then unlockTable();
+          if parSafe && needLock then unlockTable();
           return (false, firstOpen);
         } else if (slotStatus == chpl__hash_status.full) {
           if (table[slotNum].idx == idx) {
-            if parSafe && !haveLock then unlockTable();
+            if parSafe && needLock then unlockTable();
             return (true, slotNum);
           }
         } else { // this entry was removed, but is the first slot we could use
           if firstOpen == -1 then firstOpen = slotNum;
         }
       }
-      if parSafe && !haveLock then unlockTable();
+      if parSafe && needLock then unlockTable();
       return (false, -1);
     }
 
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    proc _findEmptySlot(idx: idxType, haveLock = false): (bool, index(tableDom)) {
+    proc _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
       for slotNum in _lookForSlots(idx) {
         const slotStatus = table[slotNum].status;
         if (slotStatus == chpl__hash_status.empty ||
@@ -559,27 +559,40 @@ module DefaultAssociative {
   
     proc dsiGetBaseDom() return dom;
   
-    proc clearEntry(idx: idxType, haveLock = false) {
+    proc clearEntry(idx: idxType) {
       const initval: eltType;
-      dsiAccess(idx, haveLock) = initval;
+      dsiAccess(idx) = initval;
     }
 
     // ref version
-    proc dsiAccess(idx : idxType, haveLock = false) ref {
-      const shouldLock = dom.parSafe && !haveLock;
-      if shouldLock then dom.lockTable();
-      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+    proc dsiAccess(idx : idxType) ref {
+      // Attempt to look up the value
+      var (found, slotNum) = dom._findFilledSlot(idx, needLock=false);
+
+      // if an element exists for that index, return (a ref to) it
       if found {
-        if shouldLock then dom.unlockTable();
-        return data(slotNum);
-      } else if slotNum != -1 { // do an insert using the slot we found
-        if dom._arrs.length != 1 {
+        return data[slotNum];
+
+      // if the element didn't exist, then this is either:
+      //
+      // - an error if the array does not own the domain (it's
+      //   trying to get a reference to an element that doesn't exist)
+      //
+      // - an indication that we should grow the domain + array to
+      //   include the element
+      } else if slotNum != -1 {
+
+        const arrOwnsDom = dom._arrs.length == 1;
+        if !arrOwnsDom {
+          // here's the error case
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
-          const (newSlot, _) = dom._addWrapper(idx, slotNum, haveLock=true);
-          if shouldLock then dom.unlockTable();
-          return data(newSlot);
+          // grow the table
+          const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
+
+          // and return the element
+          return data[newSlot];
         }
       } else {
         halt("array index out of bounds: ", idx);
@@ -588,13 +601,10 @@ module DefaultAssociative {
     }
 
     // value version for POD types
-    proc dsiAccess(idx : idxType, haveLock = false)
+    proc dsiAccess(idx : idxType)
     where shouldReturnRvalueByValue(eltType) {
-      const shouldLock = dom.parSafe && !haveLock;
-      if shouldLock then dom.lockTable();
-      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      var (found, slotNum) = dom._findFilledSlot(idx, needLock=false);
       if found {
-        if shouldLock then dom.unlockTable();
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
@@ -602,13 +612,10 @@ module DefaultAssociative {
       }
     }
     // const ref version for strings, records with copy ctor
-    proc dsiAccess(idx : idxType, haveLock = false) const ref
+    proc dsiAccess(idx : idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
-      const shouldLock = dom.parSafe && !haveLock;
-      if shouldLock then dom.lockTable();
-      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      var (found, slotNum) = dom._findFilledSlot(idx, needLock=false);
       if found {
-        if shouldLock then dom.unlockTable();
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
@@ -674,7 +681,7 @@ module DefaultAssociative {
         if entry.status == chpl__hash_status.full {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = dom._findFilledSlot(entry.idx, haveLock=true);
+            const (match, loc) = dom._findFilledSlot(entry.idx, needLock=false);
             if !match then halt("zippered associative array does not match the iterated domain");
             idx = loc;
           }

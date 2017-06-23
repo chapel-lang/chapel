@@ -20,7 +20,9 @@
 #ifndef _AUTO_DESTROY_SCOPE_H_
 #define _AUTO_DESTROY_SCOPE_H_
 
+class BaseAST;
 class BlockStmt;
+class DeferStmt;
 class Expr;
 class FnSymbol;
 class VarSymbol;
@@ -34,6 +36,8 @@ public:
                                             const BlockStmt*        block);
 
   void                     variableAdd(VarSymbol* var);
+
+  void                     deferAdd(DeferStmt* var);
 
   bool                     handlingFormalTemps(const Expr* stmt) const;
 
@@ -49,7 +53,11 @@ private:
 
   bool                     mLocalsHandled;     // Manage function epilogue
   std::vector<VarSymbol*>  mFormalTemps;       // Temps for out/inout formals
-  std::vector<VarSymbol*>  mLocals;
+  std::vector<BaseAST*>    mLocalsAndDefers;   // VarSymbol* or DeferStmt*
+  // note: mLocalsAndDefers contains both VarSymbol and DeferStmt in
+  // order to create a single stack for cleanup operations to be executed.
+  // In particular, the ordering between defer blocks and locals matters,
+  // in addition to the ordering within each group.
 };
 
 #endif

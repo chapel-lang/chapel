@@ -567,8 +567,6 @@ static gni_cq_handle_t rf_cqh;          // completion queue handle
 static mem_region_t    rf_mreg;         // memory descriptor
 static mem_region_t*   rf_mreg_map;     // all locales' remote fork mem descs
 
-static volatile chpl_bool ready_for_polling = false;
-
 //
 // Blocking remote forks need a "remote fork done" (rf_done) flag, for
 // the remote side to set when it completes.  Such flags have to be in
@@ -2416,8 +2414,8 @@ static void make_shared_heap(void)
       // sizes only go up to 64 mb.)
       //
       if (size > max_heap_size) {
-        char pagesize_buf[5];
-        char msg[120];
+        char pagesize_buf[20];
+        char msg[140];
 
         if (page_size >= ((size_t) 1) << 20)
           sprintf(pagesize_buf, "%zdM", page_size >> 20);

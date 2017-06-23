@@ -124,12 +124,12 @@ public:
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
    */
-  Vec<Symbol*> formalIdxToActual; // note: was alignedActuals
+  std::vector<Symbol*> formalIdxToActual; // note: was alignedActuals
 
   /** The formal arguments for the candidate, aligned so that they have the same
    *  index as their corresponding actual argument in the call.
    */
-  Vec<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
+  std::vector<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
 
   /// A symbol map for substitutions that were made during the copying process.
   SymbolMap substitutions;
@@ -157,14 +157,6 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call);
 void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
                            bool buildFastFollowerChecks);
-
-typedef enum {
-  FIND_EITHER = 0,
-  FIND_REF,
-  FIND_CONST_REF,
-  FIND_NOT_REF_OR_CONST_REF, // !(ref || const_ref)
-} disambiguate_kind_t;
-
 
 /** Contextual info used by the disambiguation process.
  *
@@ -209,12 +201,20 @@ public:
 
 
 ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                                         Vec<ResolutionCandidate*>& ambiguous,
                                          DisambiguationContext DC,
-                                         disambiguate_kind_t kind);
+                                         bool ignoreWhere);
 bool isBetterMatch(ResolutionCandidate* candidate1,
                    ResolutionCandidate* candidate2,
                    const DisambiguationContext& DC,
-                   bool onlyConsiderPromotion);
+                   bool ignoreWhere);
+
+void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
+                                        Vec<ResolutionCandidate*>& ambiguous,
+                                        DisambiguationContext DC,
+                                        ResolutionCandidate*& bestRef,
+                                        ResolutionCandidate*& bestConstRef,
+                                        ResolutionCandidate*& bestValue);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);
@@ -235,8 +235,8 @@ void insertFormalTemps(FnSymbol* fn);
 void insertAndResolveCasts(FnSymbol* fn);
 void ensureInMethodList(FnSymbol* fn);
 
-FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
-void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
+FnSymbol* defaultWrap(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
+void reorderActuals(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
 void coerceActuals(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks);
 

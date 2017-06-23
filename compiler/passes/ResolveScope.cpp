@@ -459,7 +459,7 @@ Symbol* ResolveScope::lookup(Expr* expr) const {
 
   // A dotted reference (<object>.<field>) to a field in an object
   } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(".") == true) {
+    if (call->isNamedAstr(astrSdot) == true) {
       retval = getFieldFromPath(call);
 
     } else {

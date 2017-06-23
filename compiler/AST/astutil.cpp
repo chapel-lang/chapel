@@ -22,6 +22,8 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"
@@ -417,8 +419,8 @@ int isDefAndOrUse(SymExpr* se) {
 
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          (strcmp(fn->name, "=") == 0   &&
-           fn->getFormal(1)      == arg &&
+          (fn->name == astrSequals &&
+           fn->getFormal(1) == arg &&
            isRecord(arg->type))) {
 
           // special case for record-wrapped types originated in

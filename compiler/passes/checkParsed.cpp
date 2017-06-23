@@ -21,12 +21,13 @@
 
 #include "passes.h"
 
-#include "stmt.h"
-#include "expr.h"
 #include "astutil.h"
-#include "stringutil.h"
-#include "stlUtil.h"
+#include "DeferStmt.h"
 #include "docsDriver.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stlUtil.h"
+#include "stringutil.h"
 
 
 static void checkNamedArguments(CallExpr* call);
@@ -108,6 +109,8 @@ checkParsed() {
   }
 
   checkExportedNames();
+
+  checkDefersAfterParsing();
 }
 
 
@@ -130,14 +133,10 @@ checkNamedArguments(CallExpr* call) {
   }
 }
 
-static const char* dotAstr;
-static const char* deinitAstr;
 static VarSymbol*  deinitStrLiteral;
 
 static void setupForCheckExplicitDeinitCalls() {
   SET_LINENO(rootModule); // for --minimal-modules
-  dotAstr = astr(".");
-  deinitAstr = astr("deinit");
   deinitStrLiteral = new_CStringSymbol("deinit");
 }
 
@@ -152,9 +151,9 @@ static void setupForCheckExplicitDeinitCalls() {
 //
 static void checkExplicitDeinitCalls(CallExpr* call) {
   if (UnresolvedSymExpr* target = toUnresolvedSymExpr(call->baseExpr)) {
-    if (target->unresolved == deinitAstr)
+    if (target->unresolved == astrDeinit)
       USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
-    else if (target->unresolved == dotAstr)
+    else if (target->unresolved == astrSdot)
       if (SymExpr* arg2 = toSymExpr(call->get(2)))
         if (arg2->symbol() == deinitStrLiteral)
           // OK to invoke explicitly from chpl__delete()
@@ -254,7 +253,7 @@ checkFunction(FnSymbol* fn) {
     if (fn->getFormal(1)->intent != INTENT_REF)
       USR_WARN(fn, "The left operand of '=' and '<op>=' should have 'ref' intent.");
 
-  if (!strcmp(fn->name, "this") && fn->hasFlag(FLAG_NO_PARENS))
+  if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
@@ -357,5 +356,3 @@ checkExportedNames()
     names.put(name, true);
   }
 }
-
-

@@ -283,7 +283,7 @@ static const char* convertTypedef(ModuleSymbol*           module,
 void convertDeclToChpl(ModuleSymbol* module,
                        const char*   name,
                        Vec<Expr*>&   results) {
-  if (name == NULL || !externC || !strcmp(".", name) || !strcmp("", name))
+  if (name == NULL || !externC || name == astrSdot || !strcmp("", name))
    return;
 
   //If module doesn't have an extern block, we shouldn't be here.

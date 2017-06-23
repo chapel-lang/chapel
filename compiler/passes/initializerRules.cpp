@@ -313,6 +313,10 @@ public:
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
+  bool            fieldUsedBeforeInitialized(Expr*      expr)            const;
+
+  bool            fieldUsedBeforeInitialized(CallExpr* callExpr)         const;
+
   void            describe(int offset = 0)                               const;
 
 private:
@@ -465,11 +469,13 @@ Expr* InitVisitor::completePhase1(CallExpr* initStmt) {
 }
 
 void InitVisitor::initializeFieldsBefore(Expr* insertBefore) {
+
   while (mCurrField != NULL) {
     fieldInitFromField(insertBefore, mFn, *this, mCurrField);
 
     mCurrField = toDefExpr(mCurrField->next);
   }
+
 }
 
 DefExpr* InitVisitor::currField() const {
@@ -600,9 +606,50 @@ Expr* InitVisitor::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
     }
   }
 
+  // Now that omitted fields have been handled, see if RHS is OK
+  if (fieldUsedBeforeInitialized(initStmt) == true) {
+    USR_FATAL(initStmt, "Field used before it is initialized");
+  }
+
   // Now handle this field
   retval     = fieldInitFromStmt(initStmt, mFn, *this, field);
   mCurrField = toDefExpr(mCurrField->next);
+
+  return retval;
+}
+
+bool InitVisitor::fieldUsedBeforeInitialized(Expr* expr) const {
+  bool retval = false;
+
+  if (DefExpr* defExpr = toDefExpr(expr)) {
+    if (defExpr->init != NULL) {
+      retval = fieldUsedBeforeInitialized(defExpr->init);
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    retval = fieldUsedBeforeInitialized(callExpr);
+  }
+
+  return retval;
+}
+
+bool InitVisitor::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
+  bool retval = false;
+
+  if (isAssignment(callExpr) == true) {
+    retval = fieldUsedBeforeInitialized(callExpr->get(2));
+
+  } else if (DefExpr* field = toLocalField(type(), callExpr)) {
+    retval = isFieldInitialized(field) == true ? false : true;
+
+  } else {
+    for_actuals(actual, callExpr) {
+      if (fieldUsedBeforeInitialized(actual) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
 
   return retval;
 }
@@ -665,9 +712,11 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit(Expr* stmt);
+static bool      hasReferenceToThis(Expr* expr);
+static bool      isMethodCall(CallExpr* callExpr);
 
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
-  AggregateType* at = toAggregateType(fn->_this->type);
+  AggregateType* at         = toAggregateType(fn->_this->type);
   InitVisitor    state(fn);
 
   // The body contains at least one instance of this.init()
@@ -740,6 +789,10 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
   while (stmt != NULL) {
     if (isDefExpr(stmt) == true) {
+      if (state.fieldUsedBeforeInitialized(stmt) == true) {
+        USR_FATAL(stmt, "Field used before it is initialized");
+      }
+
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
@@ -835,7 +888,25 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
       // No action required
       } else {
-        stmt = stmt->next;
+        if (state.fieldUsedBeforeInitialized(stmt) == true) {
+          USR_FATAL(stmt, "Field used before it is initialized");
+
+        } else if (state.isPhase2()             == false &&
+                   hasReferenceToThis(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "can't pass \"this\" as an actual to a function "
+                    "during phase 1 of initialization");
+
+
+        } else if (state.isPhase2()       == false &&
+                   isMethodCall(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "cannot call a method "
+                    "during phase 1 of initialization");
+
+        } else {
+          stmt = stmt->next;
+        }
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
@@ -921,6 +992,46 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
   return new CallExpr(new CallExpr(".", superCall, initSym));
 }
 
+static bool hasReferenceToThis(Expr* expr) {
+  bool retval = false;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
+      retval = arg->hasFlag(FLAG_ARG_THIS);
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    for_actuals(actual, callExpr) {
+      if (hasReferenceToThis(actual) == true) {
+        retval = true;
+        break;
+      }
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+static bool isMethodCall(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (CallExpr* base = toCallExpr(callExpr->baseExpr)) {
+    if (base->isNamedAstr(astrSdot) == true) {
+      if (SymExpr* lhs = toSymExpr(base->get(1))) {
+        if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
+          retval = arg->hasFlag(FLAG_ARG_THIS);
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 *  Determine if the current stmt is one of                                    *
@@ -983,7 +1094,7 @@ static const char* initName(CallExpr* expr) {
   const char* retval = NULL;
 
   if (expr->numActuals()                    ==    2 &&
-      expr->isNamed(".")                    == true &&
+      expr->isNamedAstr(astrSdot)           == true &&
       isStringLiteral(expr->get(2), "init") == true) {
 
     if (isSymbolThis(expr->get(1)) == true) {
@@ -997,7 +1108,7 @@ static const char* initName(CallExpr* expr) {
       // "super" is a expr to a field accessor for classes
       } else if (CallExpr* subExpr = toCallExpr(expr->get(1))) {
         if (subExpr->numActuals()                     == 2    &&
-            subExpr->isNamed(".")                     == true &&
+            subExpr->isNamedAstr(astrSdot)            == true &&
             isSymbolThis(subExpr->get(1))             == true &&
             isStringLiteral(subExpr->get(2), "super") == true) {
           retval = "super";
@@ -1085,6 +1196,8 @@ static void fieldInitFromField(Expr*        insertBefore,
 *                                                                             *
 ************************************** | *************************************/
 
+static void expandLocal(Symbol* _this, Expr* expr);
+
 static void fieldInitTypeWoutInit(Expr*        stmt,
                                   FnSymbol*    fn,
                                   InitVisitor& state,
@@ -1119,6 +1232,8 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
     Symbol*    _this    = fn->_this;
     Symbol*    name     = new_CStringSymbol(field->sym->name);
 
+    expandLocal(_this, typeExpr);
+
     if (field->sym->hasFlag(FLAG_PARAM) == true) {
       typeTemp->addFlag(FLAG_PARAM);
     }
@@ -1126,6 +1241,29 @@ static void fieldInitTypeWoutInit(Expr*        stmt,
     stmt->insertBefore(new DefExpr(typeTemp));
     stmt->insertBefore(new CallExpr(PRIM_MOVE, typeTemp, initCall));
     stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, temp));
+  }
+}
+
+static void expandLocal(Symbol* _this, Expr* expr) {
+  if (CallExpr* callExpr = toCallExpr(expr)) {
+    for_actuals(actual, callExpr) {
+      expandLocal(_this, actual);
+    }
+
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
+    if (ArgSymbol* arg = toArgSymbol(_this)) {
+      DefExpr* defPoint = symExpr->symbol()->defPoint;
+      Symbol*  parent   = defPoint->parentSymbol;
+
+      if (arg->type == parent->type) {
+        const char* name = symExpr->symbol()->name;
+        Expr*       dot  = new CallExpr(".",
+                                        new SymExpr(_this),
+                                        new_CStringSymbol(name));
+
+        symExpr->replace(dot);
+      }
+    }
   }
 }
 
@@ -1359,7 +1497,7 @@ static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
 static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
   DefExpr* retval = NULL;
 
-  if (expr->isNamed(".") == true) {
+  if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 
@@ -1446,7 +1584,7 @@ static bool isAssignment(CallExpr* callExpr) {
 static bool isSimpleAssignment(CallExpr* callExpr) {
   bool retval = false;
 
-  if (callExpr->isNamed("=") == true) {
+  if (callExpr->isNamedAstr(astrSequals) == true) {
     retval = true;
   }
 
@@ -1856,9 +1994,9 @@ static void phase1Analysis(FnSymbol* fn) {
 static
 const char* getFieldName(Expr* curExpr) {
   if (CallExpr* call = toCallExpr(curExpr)) {
-    if (call->isNamed("=")) {
+    if (call->isNamedAstr(astrSequals)) {
       if (CallExpr* inner = toCallExpr(call->get(1))) {
-        if (inner->isNamed(".")) {
+        if (inner->isNamedAstr(astrSdot)) {
           SymExpr* potenThis = toSymExpr(inner->get(1));
           if (potenThis && potenThis->symbol()->hasFlag(FLAG_ARG_THIS)) {
             // It's an access of this!
@@ -2165,7 +2303,7 @@ static InitStyle findInitStyleInner(CallExpr* call) {
   InitStyle retval = STYLE_NONE;
 
   if (call->numActuals()                    ==    2 &&
-      call->isNamed(".")                    == true &&
+      call->isNamedAstr(astrSdot)           == true &&
       isStringLiteral(call->get(2), "init") == true) {
 
     if (isSymbolThis(call->get(1)) == true) {
@@ -2179,7 +2317,7 @@ static InitStyle findInitStyleInner(CallExpr* call) {
       // "super" is a call to a field accessor for classes
       } else if (CallExpr* subCall = toCallExpr(call->get(1))) {
         if (subCall->numActuals()                     == 2    &&
-            subCall->isNamed(".")                     == true &&
+            subCall->isNamedAstr(astrSdot)            == true &&
             isSymbolThis(subCall->get(1))             == true &&
             isStringLiteral(subCall->get(2), "super") == true) {
           retval = STYLE_SUPER_INIT;

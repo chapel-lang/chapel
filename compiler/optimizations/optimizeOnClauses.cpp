@@ -322,7 +322,6 @@ classifyPrimitive(CallExpr *call) {
     //
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
-  case PRIM_ARRAY_FREE_ELTS:
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 

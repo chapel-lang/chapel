@@ -26,14 +26,17 @@
 
 #include "resolution.h"
 
+#include "AstCount.h"
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "initializerResolution.h"
 #include "iterator.h"
@@ -187,15 +190,15 @@ static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& formalIdxToActual,
-                             Vec<ArgSymbol*>& actualIdxToFormal,
+                             std::vector<Symbol*>& formalIdxToActual,
+                             std::vector<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info);
 static Type*
 getInstantiationType(Type* actualType, Type* formalType);
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual,
+                   std::vector<Symbol*>& formalIdxToActual,
                    bool inInitRes);
 
 static BlockStmt* getParentBlock(Expr* expr);
@@ -272,8 +275,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
-  if (formalIdxToActual.n != 0) formalIdxToActual.clear();
-  if (actualIdxToFormal.n != 0) actualIdxToFormal.clear();
+  if (formalIdxToActual.size() != 0) formalIdxToActual.clear();
+  if (actualIdxToFormal.size() != 0) actualIdxToFormal.clear();
 
   return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
 }
@@ -575,7 +578,7 @@ const char* toString(CallInfo* info) {
   if (info->actuals.n > 1)
     if (info->actuals.head()->type == dtMethodToken)
       method = true;
-  if (!strcmp("this", info->name)) {
+  if (info->name == astrThis) {
     _this = true;
     method = false;
   }
@@ -669,7 +672,7 @@ const char* toString(FnSymbol* fn) {
       INT_FATAL(fn, "flagged as constructor but not named _construct_ or init");
     }
   } else if (fn->isPrimaryMethod()) {
-    if (!strcmp(fn->name, "this")) {
+    if (fn->name == astrThis) {
       INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type));
       start = 1;
@@ -1014,9 +1017,9 @@ static bool convertAtomicFormalTypeToRef(ArgSymbol* formal, FnSymbol* fn) {
   return (formal->intent == INTENT_BLANK &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
           isAtomicType(formal->type))
+    && fn->name != astrSequals
     && !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
     && !fn->hasFlag(FLAG_CONSTRUCTOR)
-    && strcmp(fn->name,"=") != 0
     && !fn->hasFlag(FLAG_BUILD_TUPLE);
 }
 
@@ -1527,6 +1530,7 @@ bool canCoerce(Type*     actualType,
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(),
                        NULL,
+                       // MPF: Should this be formalType->getValType() ?
                        formalType,
                        fn,
                        promotes);
@@ -1559,7 +1563,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     // The actual should only be generic when we're resolving an initializer
     // If either of these asserts fail, something is very, very wrong.
     AggregateType* at = toAggregateType(actualType);
-    INT_ASSERT(at && at->initializerStyle == DEFINES_INITIALIZER);
+    INT_ASSERT(at && at->initializerStyle != DEFINES_CONSTRUCTOR);
     INT_ASSERT(strcmp(fn->name, "init") == 0);
 
     return true;
@@ -1592,7 +1596,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   }
 
   if (fn &&
-      strcmp(fn->name, "=") &&
+      fn->name != astrSequals &&
       actualType->scalarPromotionType &&
       (canDispatch(actualType->scalarPromotionType, NULL, formalType, fn))) {
     if (promotes)
@@ -1623,23 +1627,26 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
 
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
-                             Vec<Symbol*>& formalIdxToActual,
-                             Vec<ArgSymbol*>& actualIdxToFormal,
+                             std::vector<Symbol*>& formalIdxToActual,
+                             std::vector<ArgSymbol*>& actualIdxToFormal,
                              CallInfo& info) {
-  formalIdxToActual.fill(fn->numFormals());
-  actualIdxToFormal.fill(info.actuals.n);
-
+  for (int i = 0; i < fn->numFormals(); i++) {
+    formalIdxToActual.push_back(NULL);
+  }
+  for (int i = 0; i < info.actuals.n; i++) {
+    actualIdxToFormal.push_back(NULL);
+  }
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
       int j = 0;
       for_formals(formal, fn) {
         if (!strcmp(info.actualNames.v[i], formal->name)) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = info.actuals.v[i];
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = info.actuals.v[i];
           break;
         }
         j++;
@@ -1654,16 +1661,16 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Record successful substitutions.
   int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < actualIdxToFormal.n; i++) {
+  for (int i = 0; i < info.actuals.n; i++) {
     if (!info.actualNames.v[i]) {
       bool match = false;
       while (formal) {
         if (formal->variableExpr)
           return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        if (!formalIdxToActual.v[j]) {
+        if (formalIdxToActual[j] == NULL) {
           match = true;
-          actualIdxToFormal.v[i] = formal;
-          formalIdxToActual.v[j] = info.actuals.v[i];
+          actualIdxToFormal[i] = formal;
+          formalIdxToActual[j] = info.actuals.v[i];
           formal = next_formal(formal);
           j++;
           break;
@@ -1680,7 +1687,7 @@ computeActualFormalAlignment(FnSymbol* fn,
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (!formalIdxToActual.v[j] && !formal->defaultExpr)
+    if (formalIdxToActual[j] == NULL && !formal->defaultExpr)
       // Fail if not.
       return false;
     formal = next_formal(formal);
@@ -1733,16 +1740,16 @@ getInstantiationType(Type* actualType, Type* formalType) {
 static void
 computeGenericSubs(SymbolMap &subs,
                    FnSymbol* fn,
-                   Vec<Symbol*>& formalIdxToActual,
+                   std::vector<Symbol*>& formalIdxToActual,
                    bool inInitRes) {
   int i = 0;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_PARAM) {
-      if (formalIdxToActual.v[i] && formalIdxToActual.v[i]->isParameter()) {
+      if (formalIdxToActual[i] != NULL && formalIdxToActual[i]->isParameter()) {
         if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalIdxToActual.v[i]->type, formal->type))
-          subs.put(formal, formalIdxToActual.v[i]);
-      } else if (!formalIdxToActual.v[i] && formal->defaultExpr) {
+            canInstantiate(formalIdxToActual[i]->type, formal->type))
+          subs.put(formal, formalIdxToActual[i]);
+      } else if (formalIdxToActual[i] == NULL && formal->defaultExpr) {
 
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
@@ -1768,9 +1775,9 @@ computeGenericSubs(SymbolMap &subs,
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
-      if (formalIdxToActual.v[i]) {
+      if (formalIdxToActual[i] != NULL) {
         if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
-            formalIdxToActual.v[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
+            formalIdxToActual[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
           // If the "this" arg is generic, we're resolving an initializer, and
           // the actual being passed is also still generic, don't count this as
           // a substitution.  Otherwise, we'll end up in an infinite loop if
@@ -1778,7 +1785,7 @@ computeGenericSubs(SymbolMap &subs,
           // count the this arg as a substitution and so always approach the
           // generic arg with a defaultExpr as though a substitution was going
           // to take place.
-        } else if (Type* type = getInstantiationType(formalIdxToActual.v[i]->type, formal->type)) {
+        } else if (Type* type = getInstantiationType(formalIdxToActual[i]->type, formal->type)) {
           // String literal actuals aligned with non-param generic formals of
           // type dtAny will result in an instantiation of dtStringC when the
           // function is extern. In other words, let us write:
@@ -1787,8 +1794,8 @@ computeGenericSubs(SymbolMap &subs,
           // and pass "bar" as a c_string instead of a string
           if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
               (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
-              (formalIdxToActual.v[i]->type == dtString) &&
-              (formalIdxToActual.v[i]->isImmediate())) {
+              (formalIdxToActual[i]->type == dtString) &&
+              (formalIdxToActual[i]->isImmediate())) {
             subs.put(formal, dtStringC->symbol);
           } else {
             subs.put(formal, type->symbol);
@@ -2185,26 +2192,30 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
 /** Determines if fn1 is a better match than fn2.
  *
  * This function implements the function comparison component of the
- * disambiguation procedure as detailed in section 13.14.3 of the Chapel
- * language specification (page 106).
+ * disambiguation procedure as detailed in section 13.13 of the Chapel
+ * language specification.
  *
  * \param candidate1 The function on the left-hand side of the comparison.
  * \param candidate2 The function on the right-hand side of the comparison.
  * \param DC         The disambiguation context.
+ * \param ignoreWhere Set to `true` to ignore `where` clauses when
+ *                    deciding if one match is better than another.
+ *                    This is important for resolving return intent
+ *                    overloads.
  *
  * \return True if fn1 is a more specific function than f2, false otherwise.
  */
 bool isBetterMatch(ResolutionCandidate* candidate1,
                           ResolutionCandidate* candidate2,
                           const DisambiguationContext& DC,
-                          bool onlyConsiderPromotion=false) {
+                          bool ignoreWhere=false) {
 
   DisambiguationState DS;
 
-  for (int k = 0; k < candidate1->actualIdxToFormal.n; ++k) {
+  for (int k = 0; k < DC.actuals->n; ++k) {
     Symbol* actual = DC.actuals->v[k];
-    ArgSymbol* formal1 = candidate1->actualIdxToFormal.v[k];
-    ArgSymbol* formal2 = candidate2->actualIdxToFormal.v[k];
+    ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
+    ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
 
     TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
 
@@ -2217,7 +2228,7 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
     return true;
   }
 
-  if (!onlyConsiderPromotion && !(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
+  if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
     // If the decision hasn't been made based on the argument mappings...
 
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
@@ -2236,11 +2247,11 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
       TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
 
-    } else if (candidate1->fn->where && !candidate2->fn->where) {
+    } else if (!ignoreWhere && candidate1->fn->where && !candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
       DS.fn1MoreSpecific = true;
 
-    } else if (!candidate1->fn->where && candidate2->fn->where) {
+    } else if (!ignoreWhere && !candidate1->fn->where && candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
     }
@@ -2258,14 +2269,22 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
  *
  * \param candidates A list of the candidate functions, from which the best
  *                   match is selected.
+ * \param ambiguous  On return, if there was ambiguity, this stores the
+ *                   any candidate participating in the ambiguity - that
+ *                   is, any candidate not known to be worse than another.
  * \param DC         The disambiguation context.
+ * \param ignoreWhere Set to `true` to ignore `where` clauses when
+ *                    deciding if one match is better than another.
+ *                    This is important for resolving return intent
+ *                    overloads.
  *
  * \return The result of the disambiguation process.
  */
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    Vec<ResolutionCandidate*>& ambiguous,
                     DisambiguationContext DC,
-                    disambiguate_kind_t kind) {
+                    bool ignoreWhere=false) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2279,11 +2298,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
     ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
-
-    // Only consider ref return fns in ref return part
-    if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
-    if (kind == FIND_CONST_REF && (candidate1->fn->retTag != RET_CONST_REF)) continue;
-    if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate1->fn->retTag == RET_REF || candidate1->fn->retTag == RET_CONST_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -2300,14 +2314,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
       ResolutionCandidate* candidate2 = candidates.v[j];
 
-      // Only consider ref return fns in ref return part
-      if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
-      if (kind == FIND_CONST_REF && (candidate2->fn->retTag != RET_CONST_REF)) continue;
-      if (kind == FIND_NOT_REF_OR_CONST_REF && (candidate2->fn->retTag == RET_REF || candidate2->fn->retTag == RET_CONST_REF)) continue;
-
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
-      if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j))) {
+      if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j), ignoreWhere)) {
         TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
         notBest[j] = true;
 
@@ -2329,7 +2338,149 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
   TRACE_DISAMBIGUATE_BY_MATCH("Z: No non-ambiguous best match.\n\n");
 
+  for (int i = 0; i < candidates.n; ++i) {
+    if (!notBest[i])
+      ambiguous.add(candidates.v[i]);
+  }
+
   return NULL;
+}
+
+/* Find the best return-intent overloads from a list of candidates.
+   If there was ambiguity, bestRef, bestConstRef, and bestValue will be NULL,
+   and the vector ambiguous will store any functions that participated
+   in the ambiguity (i.e. the multiple best matches).
+ */
+void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
+                                        Vec<ResolutionCandidate*>& ambiguous,
+                                        DisambiguationContext DC,
+                                        ResolutionCandidate*& bestRef,
+                                        ResolutionCandidate*& bestConstRef,
+                                        ResolutionCandidate*& bestValue) {
+
+  ResolutionCandidate* best = disambiguateByMatch(candidates,
+                                                  ambiguous,
+                                                  DC,
+                                                  true /*ignoreWhere*/);
+
+  // The common case is that there is no ambiguity because
+  // the return intent overload feature is not used.
+  if (best) {
+    if (best->fn->retTag == RET_REF)
+      bestRef = best;
+    else if(best->fn->retTag == RET_CONST_REF)
+      bestConstRef = best;
+    else
+      bestValue = best;
+    return;
+  }
+
+  // Now, if there was ambiguity, find candidates with different
+  // return intent in ambiguousCandidates. If there is only
+  // one of each, we are good to go.
+
+  int nRef = 0;
+  int nConstRef = 0;
+  int nValue = 0;
+  int nOther = 0;
+  ResolutionCandidate* refCandidate = NULL;
+  ResolutionCandidate* constRefCandidate = NULL;
+  ResolutionCandidate* valueCandidate = NULL;
+
+  // Count number of candidates in each category.
+  forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
+    RetTag retTag = candidate->fn->retTag;
+    if (retTag == RET_REF) {
+      refCandidate = candidate;
+      nRef++;
+    } else if(retTag == RET_CONST_REF) {
+      constRefCandidate = candidate;
+      nConstRef++;
+    } else if(retTag == RET_VALUE) {
+      valueCandidate = candidate;
+      nValue++;
+    } else {
+      nOther++;
+    }
+  }
+
+  int total = nRef + nConstRef + nValue + nOther;
+
+  // 0 matches -> return now, not a ref pair.
+  if (total == 0)
+    return;
+
+  // 1 match -> should have returned above (best from disambiguateByMatch)
+  INT_ASSERT(1 < total);
+
+  // Now, if there are more than 2 matches in any category,
+  // try harder to disambiguate. disambiguateByMatch might not have
+  // resolved the finer points.
+  if (nOther > 0) {
+    ambiguous.clear();
+    // If there are *any* type/param candidates, we need to cause ambiguity
+    // if they are not selected... including consideration of where clauses.
+    ResolutionCandidate* best = disambiguateByMatch(candidates,
+                                                    ambiguous,
+                                                    DC,
+                                                    false /*ignoreWhere*/);
+    // returns ambiguity if best == NULL, best match otherwise
+    bestValue = best;
+    return;
+  }
+
+  if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+
+    // Split candidates into ref, const ref, and value candidates
+    Vec<ResolutionCandidate*> refCandidates;
+    Vec<ResolutionCandidate*> constRefCandidates;
+    Vec<ResolutionCandidate*> valueCandidates;
+    Vec<ResolutionCandidate*> tmpAmbiguous;
+
+    // Move candidates to above Vecs according to return intent
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      RetTag retTag = candidate->fn->retTag;
+      if (retTag == RET_REF)
+        refCandidates.push_back(candidate);
+      else if(retTag == RET_CONST_REF)
+        constRefCandidates.push_back(candidate);
+      else if(retTag == RET_VALUE)
+        valueCandidates.push_back(candidate);
+    }
+
+    // Disambiguate each group
+    refCandidate = disambiguateByMatch(refCandidates,
+                                       tmpAmbiguous,
+                                       DC,
+                                       false /*ignoreWhere*/);
+    constRefCandidate = disambiguateByMatch(constRefCandidates,
+                                            tmpAmbiguous,
+                                            DC,
+                                            false /*ignoreWhere*/);
+    valueCandidate = disambiguateByMatch(valueCandidates,
+                                         tmpAmbiguous,
+                                         DC,
+                                         false /*ignoreWhere*/);
+
+
+    // update the counts
+    if (refCandidate != NULL)
+      nRef = 1;
+    if (constRefCandidate != NULL)
+      nConstRef = 1;
+    if (valueCandidate != NULL)
+      nValue = 1;
+  }
+
+  // Now we know there are >= 2 matches.
+  // If there are more than 2 matches in any category, fail for ambiguity.
+  if (nRef > 1 || nConstRef > 1 || nValue > 1)
+    return;
+
+  // Otherwise, return the single candidate in each slot.
+  bestRef = refCandidate;
+  bestConstRef = constRefCandidate;
+  bestValue = valueCandidate;
 }
 
 
@@ -2368,10 +2519,10 @@ userCall(CallExpr* call) {
 void
 printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
   CallExpr* call = userCall(info->call);
-  if (!strcmp("this", info->name)) {
-    USR_FATAL(call, "ambiguous access of '%s' by '%s'",
-              toString(info->actuals.v[1]->type),
-              toString(info));
+  if (info->name == astrThis) {
+    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
+                   toString(info->actuals.v[1]->type),
+                   toString(info));
   } else {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
@@ -2383,25 +2534,26 @@ printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
       str = astr(mod->name, ".", str);
     }
     USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-    if (developer) {
-      for (int i = callStack.n-1; i>=0; i--) {
-        CallExpr* cs = callStack.v[i];
-        FnSymbol* f = cs->getFunction();
-        if (f->instantiatedFrom)
-          USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-        else
-          break;
-      }
-    }
-    bool printed_one = false;
-    forv_Vec(FnSymbol, fn, candidates) {
-      USR_PRINT(fn, "%s %s",
-                printed_one ? "               " : "candidates are:",
-                toString(fn));
-      printed_one = true;
-    }
-    USR_STOP();
   }
+
+  if (developer) {
+    for (int i = callStack.n-1; i>=0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f = cs->getFunction();
+      if (f->instantiatedFrom)
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      else
+        break;
+    }
+  }
+  bool printed_one = false;
+  forv_Vec(FnSymbol, fn, candidates) {
+    USR_PRINT(fn, "%s %s",
+              printed_one ? "               " : "candidates are:",
+              toString(fn));
+    printed_one = true;
+  }
+  USR_STOP();
 }
 
 void
@@ -2447,7 +2599,7 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
     } else {
       USR_FATAL_CONT(call, "invalid tuple");
     }
-  } else if (!strcmp("=", info->name)) {
+  } else if (info->name == astrSequals) {
     if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
         info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL_CONT(call, "illegal assignment of type to value");
@@ -2462,7 +2614,7 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
                      toString(info->actuals.v[1]->type),
                      toString(info->actuals.v[0]->type));
     }
-  } else if (!strcmp("this", info->name)) {
+  } else if (info->name == astrThis) {
     Type* type = info->actuals.v[1]->getValType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
@@ -2886,7 +3038,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 // If 'fn' is the default assignment for a record type, return
 // the name of that record type; otherwise return NULL.
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
-  if (!strcmp("=", fn->name)) {
+  if (fn->name == astrSequals) {
     if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
       Type* desttype = fn->getFormal(1)->type->getValType();
       INT_ASSERT(desttype != dtUnknown); // otherwise this test is unreliable
@@ -3343,54 +3495,63 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
-  ResolutionCandidate* bestConstRef = disambiguateByMatch(candidates, DC, FIND_CONST_REF);
-  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF_OR_CONST_REF);
+  Vec<ResolutionCandidate*> ambiguous;
+  ResolutionCandidate* bestRef = NULL;
+  ResolutionCandidate* bestConstRef = NULL;
+  ResolutionCandidate* bestValue = NULL;
 
-  // If one requires more promotion than the other, this is not a ref-pair.
-  if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
-    bestValue = NULL; // Don't consider the value function.
-  }
-  if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
-    bestRef = NULL; // Don't consider the ref function.
-  }
-  if (bestRef && bestConstRef && isBetterMatch(bestRef, bestConstRef, DC, true)) {
-    bestConstRef = NULL; // Don't consider the const ref function.
-  }
-  if (bestRef && bestConstRef && isBetterMatch(bestConstRef, bestRef, DC, true)) {
-    bestRef = NULL; // Don't consider the ref function.
-  }
-  if (bestConstRef && bestValue && isBetterMatch(bestConstRef, bestValue, DC, true)) {
-    bestValue = NULL; // Don't consider the value function.
-  }
-  if (bestConstRef && bestValue && isBetterMatch(bestValue, bestConstRef, DC, true)) {
-    bestConstRef = NULL; // Don't consider the const ref function.
-  }
+  disambiguateByMatchReturnOverloads(candidates, ambiguous, DC,
+                                     bestRef, bestConstRef, bestValue);
 
   ResolutionCandidate* best = bestRef;
   if (!best && bestValue) best = bestValue;
   if (!best && bestConstRef) best = bestConstRef;
 
-  bool refPair = (bestRef && (bestValue || bestConstRef));
+  // compute a boolean indicating if we are working with
+  // a return intent overload.
+  // TODO: rename this variable.
+  bool refPair = false;
+  {
+    int nBestRef = (bestRef != NULL);
+    int nBestValue = (bestValue != NULL);
+    int nBestConstRef = (bestConstRef != NULL);
+    int nBest = nBestRef + nBestValue + nBestConstRef;
+    refPair = (nBest > 1);
+  }
 
-  // If we have both ref and value matches:
-  //  'call' will invoke the ref function best->fn
+  // If we are working with a return intent overload:
+  //  'refCall' will invoke the ref function bestRef->fn
   //  'valueCall' will invoke the value function bestValue->fn
   //  'constRefCall' will invoke the value function bestConstRef->fn
   //  we will manipulate these three side by side.
-  //  valueCall is always NULL if there aren't ref and value matches.
+  // and 'call' will be the first of these.
+  CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
 
-  if (refPair && bestValue) {
-    valueCall = call->copy();
-    call->insertAfter(valueCall);
+  if (refPair) {
+    bool first = true;
+    if (bestRef) {
+      // call will be refCall.
+      refCall = call;
+      first = false;
+    }
+    // might not have had a ref call, so maybe value is first
+    if (bestValue) {
+      if (first) {
+        valueCall = call;
+        first = false;
+      } else {
+        valueCall = call->copy();
+        call->insertAfter(valueCall);
+      }
+    }
+    // by here, usedCall must be true.
+    if (bestConstRef) {
+      constRefCall = call->copy();
+      call->insertAfter(constRefCall);
+    }
   }
-  if (refPair && bestConstRef) {
-    constRefCall = call->copy();
-    call->insertAfter(constRefCall);
-  }
-
 
   if (best && best->fn) {
     /*
@@ -3398,18 +3559,15 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      * partially instantiated.
      */
 
-    instantiateBody(best->fn);
-    if (valueCall) {
-      // If we're resolving a ref and non-ref pair,
-      // also instantiate the value version. best is the ref version.
-      INT_ASSERT(bestValue->fn);
-      instantiateBody(bestValue->fn);
-    }
-    if (constRefCall) {
-      // If we're resolving a ref and non-ref pair,
-      // also instantiate the const-ref version. best is the ref version.
-      INT_ASSERT(bestConstRef->fn);
-      instantiateBody(bestConstRef->fn);
+    if (refPair == false)
+      instantiateBody(best->fn);
+    else {
+      if (refCall)
+        instantiateBody(bestRef->fn);
+      if (valueCall)
+        instantiateBody(bestValue->fn);
+      if (constRefCall)
+        instantiateBody(bestConstRef->fn);
     }
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -3440,6 +3598,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
         if (candidates.n > 0) {
           Vec<FnSymbol*> candidateFns;
+          // MPF: we could choose to only print the best matches here
           forv_Vec(ResolutionCandidate*, candidate, candidates) {
             candidateFns.add(candidate->fn);
           }
@@ -3452,18 +3611,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
   } else {
     wrapAndCleanUpActuals(best, info, true);
-    if (valueCall) {
+    // for return intent overload, ref call must be first, so above
+    // case would handle it.
+    if (valueCall && call != valueCall) {
       // If we're resolving a ref and non-ref pair,
-      // also handle the value version. best is the ref version.
+      // also handle the value version if it wasn't already handled.
       CallInfo valueInfo(valueCall, checkonly);
-
       wrapAndCleanUpActuals(bestValue, valueInfo, false);
     }
     if (constRefCall) {
       // If we're resolving a ref and non-ref pair,
       // also handle the const ref version. best is the ref version.
       CallInfo constRefInfo(constRefCall, checkonly);
-
       wrapAndCleanUpActuals(bestConstRef, constRefInfo, false);
     }
   }
@@ -3475,8 +3634,13 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   // Only keep it a ref-pair if a ref version is present and
   // we have options that resolved.
-  if (refPair)
-    refPair = resolvedRefFn && (resolvedValueFn || resolvedConstRefFn);
+  if (refPair) {
+    int nBestRef = (resolvedRefFn != NULL);
+    int nBestValue = (resolvedValueFn != NULL);
+    int nBestConstRef = (resolvedConstRefFn != NULL);
+    int nBest = nBestRef + nBestValue + nBestConstRef;
+    refPair = (nBest > 1);
+  }
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
@@ -3494,7 +3658,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( ! checkonly ) {
     if (resolvedFn &&
-        !strcmp("=", resolvedFn->name) &&
+        resolvedFn->name == astrSequals &&
         isRecord(resolvedFn->getFormal(1)->type) &&
         resolvedFn->getFormal(2)->type == dtNil) {
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
@@ -3508,38 +3672,35 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
-    call->baseExpr->replace(new SymExpr(resolvedFn));
     if (refPair) {
+      if (refCall && resolvedRefFn)
+        refCall->baseExpr->replace(new SymExpr(resolvedRefFn));
       if (valueCall && resolvedValueFn)
         valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
       if (constRefCall && resolvedConstRefFn)
         constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
 
-      // Replace the call with a new ContextCallExpr containing 2 or 3
-      // calls, where the first returns ref and the 2nd does not.
-      // The 3 calls might be:
-      //  ref version
-      //  value version
-      //  const ref version
+      // Replace the call with a new ContextCallExpr containing 2 or 3 calls
       ContextCallExpr* contextCall = new ContextCallExpr();
       call->insertAfter(contextCall);
 
-      call->remove();
+      // note: call is one of refCall, valueCall, constRefCall
+      if (refCall) refCall->remove();
       if (valueCall) valueCall->remove();
       if (constRefCall) constRefCall->remove();
 
-      if (valueCall && constRefCall)
-        contextCall->setRefValueConstRefOptions(call, valueCall, constRefCall);
-      else
-        contextCall->setRefRValueOptions(call, valueCall?valueCall:constRefCall);
+      contextCall->setRefValueConstRefOptions(refCall, valueCall, constRefCall);
 
-    } else if (valueCall) {
-      // value call was added but didn't resolve right. Remove it.
-      valueCall->remove();
-    } else if (constRefCall) {
-      // const ref call was added but didn't resolve right. Remove it.
-      constRefCall->remove();
     } else {
+      call->baseExpr->replace(new SymExpr(resolvedFn));
+      if (valueCall && valueCall != call) {
+        // value call was added but didn't resolve right. Remove it.
+        valueCall->remove();
+      }
+      if (constRefCall && constRefCall != call) {
+        // const ref call was added but didn't resolve right. Remove it.
+        constRefCall->remove();
+      }
       // If we aren't working with a ref not-ref return intent pair,
       // adjust the returned value to have flag FLAG_REF_TO_CONST,
       // but disable this behavior for constructors, so that they
@@ -4378,7 +4539,9 @@ static void resolveNew(CallExpr* call) {
         SET_LINENO(call);
 
         // Begin to support new-style initializers
-        if (at->initializerStyle == DEFINES_INITIALIZER) {
+        if (at->initializerStyle == DEFINES_INITIALIZER ||
+            (at->defaultInitializer &&
+             strcmp(at->defaultInitializer->name, "init") == 0)) {
           if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
             VarSymbol* newTmp = newTemp("new_temp", at);
             DefExpr*   def    = new DefExpr(newTmp);
@@ -4421,6 +4584,11 @@ static void resolveNew(CallExpr* call) {
 
         // Continue to support old-style constructors
         } else {
+          if (at->initializerStyle == DEFINES_NONE_USE_DEFAULT &&
+              at->defaultInitializer == NULL) {
+            USR_FATAL(call, "could not generate default initializer for type"
+                      " '%s', please define one", at->symbol->name);
+          }
           FnSymbol* ctInit = at->defaultInitializer;
 
           typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
@@ -5080,39 +5248,77 @@ resolveExpr(Expr* expr) {
 
         cc->getCalls(refCall, valueCall, constRefCall);
 
-        FnSymbol* refFn = refCall->resolvedFunction();
+        FnSymbol* refFn = refCall?refCall->resolvedFunction():NULL;
         FnSymbol* valueFn = valueCall?valueCall->resolvedFunction():NULL;
         FnSymbol* constRefFn = constRefCall?constRefCall->resolvedFunction():NULL;
 
-        INT_ASSERT(refFn && (valueFn || constRefFn));
-        resolveFns(refFn);
-
+        if (refFn)
+          resolveFns(refFn);
         if (valueFn)
           resolveFns(valueFn);
         if (constRefFn)
           resolveFns(constRefFn);
 
-        // Produce an error if the return types do not match.
+        // TODO: pull this error checking out into a function call.
+
+        // Error checking. First, check all or none are iterators.
+        int n = 0;
+        int nIterator = 0;
+        if (refFn) {
+          n++;
+          nIterator += refFn->isIterator();
+        }
+        if (valueFn) {
+          n++;
+          nIterator += valueFn->isIterator();
+        }
+        if (constRefFn) {
+          n++;
+          nIterator += constRefFn->isIterator();
+        }
+        if (nIterator != 0 && nIterator != n) {
+          USR_FATAL_CONT(cc, "invalid ref return pair: mixing proc and iter");
+          if (refFn)
+            USR_FATAL_CONT(refFn, "here");
+          if (valueFn)
+            USR_FATAL_CONT(valueFn, "here");
+          if (constRefFn)
+            USR_FATAL_CONT(constRefFn, "here");
+        }
+        // Next, check that the return types match.
         // This error is skipped for iterators because
         // the return type of an iterator is e.g. an iterator record
         // which is not the same as the yielded type.
-        if (!refFn->isIterator()) {
-          if (valueFn &&
-              refFn->retType->getValType() != valueFn->retType->getValType()) {
-            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-            USR_FATAL_CONT(valueFn, "function returns %s",
-                           toString(valueFn->retType));
-            USR_FATAL_CONT(refFn, "function returns %s",
-                           toString(refFn->retType));
-            USR_STOP();
+        if (nIterator == 0) {
+          Type* firstType = NULL;
+          bool typeError = false;
+          if (refFn) {
+            firstType = refFn->retType->getValType();
           }
-          if (constRefFn &&
-              refFn->retType->getValType() != constRefFn->retType->getValType()) {
-            USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-            USR_FATAL_CONT(constRefFn, "function returns %s",
-                           toString(constRefFn->retType));
-            USR_FATAL_CONT(refFn, "function returns %s",
-                           toString(refFn->retType));
+          if (valueFn) {
+            Type* retType = valueFn->retType->getValType();
+            if (firstType == NULL)
+              firstType = retType;
+            if (firstType != retType)
+              typeError = true;
+          }
+          if (constRefFn) {
+            Type* retType = constRefFn->retType->getValType();
+            if (firstType != retType)
+              typeError = true;
+          }
+
+          if (typeError) {
+            USR_FATAL_CONT(cc, "invalid return intent overload: return types differ");
+            if (refFn)
+              USR_FATAL_CONT(refFn, "function returns %s",
+                             toString(refFn->retType));
+            if (valueFn)
+              USR_FATAL_CONT(valueFn, "function returns %s",
+                             toString(valueFn->retType));
+            if (constRefFn)
+              USR_FATAL_CONT(constRefFn, "function returns %s",
+                             toString(constRefFn->retType));
             USR_STOP();
           }
         }
@@ -5773,8 +5979,10 @@ resolveFns(FnSymbol* fn) {
       }
     }
 
-    if (ct && ct->initializerStyle == DEFINES_INITIALIZER
-        && ct->instantiatedFrom) {
+    if (ct &&
+        (ct->initializerStyle == DEFINES_INITIALIZER ||
+         ct->wantsDefaultInitializer()) &&
+        ct->instantiatedFrom) {
       // Don't instantiate the default constructor for generic types that
       // define initializers, they don't have one!
     } else {
@@ -6084,8 +6292,10 @@ static void resolveUses(ModuleSymbol* mod)
     resolveUses(usedMod);
 
   // Finally, myself.
-  if (fPrintModuleResolution)
-    fprintf(stderr, "%2d Resolving module %s ...", module_resolution_depth, mod->name);
+  if (fPrintModuleResolution) {
+    fprintf(stderr, "%2d Resolving module %30s ...",
+            module_resolution_depth, mod->name);
+  }
 
   FnSymbol* fn = mod->initFn;
   resolveFormals(fn);
@@ -6096,8 +6306,11 @@ static void resolveUses(ModuleSymbol* mod)
     resolveFns(defn);
   }
 
-  if (fPrintModuleResolution)
-    putc('\n', stderr);
+  if (fPrintModuleResolution) {
+    AstCount visitor = AstCount();
+    mod->accept(&visitor);
+    fprintf(stderr, " %6d asts\n", visitor.total());
+  }
 
   --module_resolution_depth;
 }
@@ -7005,9 +7218,9 @@ isUnusedClass(AggregateType *ct) {
   if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
     return false;
 
-  // FALSE if the type defines an initializer and that initializer was
+  // FALSE if the type uses an initializer and that initializer was
   // resolved
-  if (ct->initializerStyle == DEFINES_INITIALIZER &&
+  if (ct->initializerStyle != DEFINES_CONSTRUCTOR &&
       ct->initializerResolved)
     return false;
 

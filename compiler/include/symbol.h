@@ -650,6 +650,15 @@ void       verifyInTree(BaseAST* ast, const char* msg);
 const char* retTagDescrString(RetTag    retTag);
 const char* intentDescrString(IntentTag intent);
 
+// cache some popular strings
+extern const char* astrSdot;
+extern const char* astrSequals;
+extern const char* astr_cast;
+extern const char* astrDeinit;
+extern const char* astrTag;
+extern const char* astrThis;
+void initAstrConsts();
+
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);

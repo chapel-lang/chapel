@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
 #include "expr.h"
@@ -96,14 +97,7 @@ static bool          lookupThisScopeAndUses(const char*           name,
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
-static void          arrayAliasFieldsByNameCollect();
-
-static void          arrayAliasFieldsByNameApply(AggregateType* at);
-
 void scopeResolve() {
-  // Deprecated for 1.15
-  arrayAliasFieldsByNameCollect();
-
   //
   // add all program asts to the symbol table
   //
@@ -132,9 +126,6 @@ void scopeResolve() {
                        "from within a nested class.");
       }
     }
-
-    // Deprecated for 1.15
-    arrayAliasFieldsByNameApply(at);
   }
 
   //
@@ -436,6 +427,10 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         }
       }
 
+    } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
+      scopeResolve(deferStmt->body(), scope);
+
+
     } else if (isUseStmt(stmt)           == true ||
                isCallExpr(stmt)          == true ||
                isUnresolvedSymExpr(stmt) == true ||
@@ -600,7 +595,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
   const char* name = usymExpr->unresolved;
 
-  if (strcmp(name, ".") == 0 || usymExpr->parentSymbol == NULL) {
+  if (name == astrSdot || usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
@@ -904,7 +899,7 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
 }
 
 static void resolveModuleCall(CallExpr* call) {
-  if (call->isNamed(".") == true) {
+  if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
@@ -1057,7 +1052,7 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
 static void resolveEnumeratedTypes() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isNamed(".")) {
+    if (call->isNamedAstr(astrSdot)) {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {
@@ -1688,59 +1683,4 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
   }
 
   return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-* A set of names of class/record fields that are used somewhere               *
-* in the application as a target for an array alias e.g.                      *
-*                                                                             *
-* class C {                                                                   *
-*   var A: [1..5] int;                                                        *
-* }                                                                           *
-*                                                                             *
-* var c2 = new C(A=>GA);      // *** This injects the name 'A'                *
-*                                                                             *
-*    1) This is a deprecated feature for 1.15                                 *
-*    2) *Every* class/record with a field A would be impacted                 *
-*                                                                             *
-************************************** | *************************************/
-
-static std::set<const char*> sAliasFieldSet;
-
-static void arrayAliasFieldsByNameCollect() {
-  forv_Vec(NamedExpr, ne, gNamedExprs) {
-    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
-      CallExpr* pne  = toCallExpr(ne->parentExpr);
-      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
-
-      if (ppne == NULL || ppne->isPrimitive(PRIM_NEW) == false) {
-        USR_FATAL(ne,
-                  "alias-named-argument passing can only be used "
-                  "in constructor calls");
-      }
-
-      sAliasFieldSet.insert(astr(&ne->name[17]));
-    }
-  }
-}
-
-static void arrayAliasFieldsByNameApply(AggregateType* at) {
-  for_fields(field, at) {
-    if (sAliasFieldSet.find(field->name) != sAliasFieldSet.end()) {
-      SET_LINENO(field);
-
-      const char* aliasName  = astr("chpl__aliasField_", field->name);
-      Symbol*     aliasField = new VarSymbol(aliasName);
-      DefExpr*    def        = new DefExpr(aliasField);
-
-      aliasField->addFlag(FLAG_CONST);
-      aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
-
-      def->init     = new UnresolvedSymExpr("false");
-      def->exprType = new UnresolvedSymExpr("bool");
-
-      at->fields.insertAtTail(def);
-    }
-  }
 }
