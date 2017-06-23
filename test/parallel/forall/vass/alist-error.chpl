@@ -3,11 +3,13 @@
 use Random;
 class A {
   var X: domain(int);
-  proc A(N: int) {
+
+  proc init(N: int) {
     var R = new RandomStream(real, 13);
     this.X = [x in 1..N] x;
     var Y = [x in this.X] R.getNext();
     delete R;
+    super.init();
   }
 }
 var a = new A(100);
