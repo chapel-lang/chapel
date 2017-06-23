@@ -3,16 +3,18 @@ class MyClass {
   var dom: domain(1);
   var arr: [dom] int;
 
-  proc MyClass(length: int) {
+  proc init(length: int) {
     this.len = length;
     this.dom = {1..length};
+    super.init();
     forall (a,i) in zip(this.arr, 13..) do
       a = i;
   }
 
-  proc MyClass(array: [] int, length: int) {
+  proc init(array: [] int, length: int) {
     this.len = length;
     this.dom = {1..length};
+    super.init();
     forall (a,b) in zip(this.arr, array) do
       a = b;
   }
