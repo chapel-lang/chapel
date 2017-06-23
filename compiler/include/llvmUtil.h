@@ -26,6 +26,9 @@
 
 #include "llvm/Config/llvm-config.h"
 
+// This list is getting unweildy; consider replacing it with
+//   #define HAVE_LLVM_VER (LLVM_VERSION_MAJOR*10 + LLVM_VERSION_MINOR)
+// or something along those lines.
 #if   LLVM_VERSION_MAJOR>4 || (LLVM_VERSION_MAJOR==4 && LLVM_VERSION_MINOR>=0 )
 #define HAVE_LLVM_VER 40
 #elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=9 )
