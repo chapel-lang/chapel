@@ -59,6 +59,10 @@ endif
 endif
 
 
+# 
+# Added for 'nullptr' used in llvmDebug.cpp
+ONLYCXXFLAGS += -std=gnu++11
+#
 COMP_CXXFLAGS := $(COMP_CXXFLAGS) $(ONLYCXXFLAGS) $(LLVM_CXXFLAGS)
 
 

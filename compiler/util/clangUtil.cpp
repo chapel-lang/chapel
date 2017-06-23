@@ -553,9 +553,10 @@ class CCodeGenConsumer : public ASTConsumer {
       // This does setTargetTriple, setDataLayout, initialize targetData
       // and cgBuilder.
       setupClangContext(info, &Context);
-
+#if HAVE_LLVM_VER > 33
       for (size_t i = 0, e = CodeGenOpts.DependentLibraries.size(); i < e; ++i)
         HandleDependentLibrary(CodeGenOpts.DependentLibraries[i]);
+#endif
     }
 
     // ASTConsumer override:
@@ -648,8 +649,10 @@ class CCodeGenConsumer : public ASTConsumer {
       // Provide some coverage mapping even for methods that aren't emitted.
       // Don't do this for templated classes though, as they may not be
       // instantiable.
+#if HAVE_LLVM_VER > 33
       if (!D->getParent()->getDescribedClassTemplate())
         Builder->AddDeferredUnusedCoverageMapping(D);
+#endif
     }
 
      // skipped ASTConsumer HandleInterestingDecl
@@ -693,6 +696,7 @@ class CCodeGenConsumer : public ASTConsumer {
 
       Builder->UpdateCompletedType(D);
 
+#if HAVE_LLVM_VER > 33
       // For MSVC compatibility, treat declarations of static data members with
       // inline initializers as definitions.
       if (Ctx->getLangOpts().MSVCCompat) {
@@ -705,8 +709,10 @@ class CCodeGenConsumer : public ASTConsumer {
           }
         }
       }
+#endif
     }
 
+#if HAVE_LLVM_VER > 33
     // ASTConsumer override:
     // \brief This callback is invoked the first time each TagDecl is required
     // to be complete.
@@ -720,6 +726,7 @@ class CCodeGenConsumer : public ASTConsumer {
         if (const RecordDecl *RD = dyn_cast<RecordDecl>(D))
           DI->completeRequiredType(RD);
     }
+#endif
 
 
      // ASTConsumer override:
@@ -727,8 +734,10 @@ class CCodeGenConsumer : public ASTConsumer {
      // entire translation unit have been parsed.
      virtual void HandleTranslationUnit(ASTContext &Context) LLVM_CXX_OVERRIDE {
        if (Diags.hasErrorOccurred()) {
+#if HAVE_LLVM_VER > 33
          if(Builder)
            Builder->clear();
+#endif
          return;
        }
 
@@ -796,8 +805,10 @@ class CCodeGenConsumer : public ASTConsumer {
      // \brief Handle a pragma that appends to Linker Options.  Currently
      // this only exists to support Microsoft's #pragma comment(linker,
      // "/foo").
-     void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
+     void HandleLinkerOptionPragma(llvm::StringRef Opts) LLVM_CXX_OVERRIDE {
+#if HAVE_LLVM_VER > 33
        Builder->AppendLinkerOptions(Opts);
+#endif
      }
 
      // HandleLinkerOptionPragma
@@ -807,7 +818,9 @@ class CCodeGenConsumer : public ASTConsumer {
      // exists to support Microsoft's #pragma detect_mismatch.
      virtual void HandleDetectMismatch(llvm::StringRef Name,
                                                llvm::StringRef Value) LLVM_CXX_OVERRIDE {
+#if HAVE_LLVM_VER > 33
        Builder->AddDetectMismatch(Name, Value);
+#endif
      }
 
      // ASTConsumer override:
@@ -815,7 +828,9 @@ class CCodeGenConsumer : public ASTConsumer {
      /// Currently this only exists to support Microsoft's
      /// #pragma comment(lib, "/foo").
      virtual void HandleDependentLibrary(llvm::StringRef Lib) LLVM_CXX_OVERRIDE {
+#if HAVE_LLVM_VER > 33
        Builder->AddDependentLib(Lib);
+#endif
      }
 
     // undefine macros we created to help with ModuleBuilder

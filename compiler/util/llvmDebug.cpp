@@ -33,6 +33,7 @@
 #ifdef HAVE_LLVM
 #include "llvmUtil.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringRef.h"
 #include "genret.h" 
 #include "llvm/Support/Dwarf.h"
 #include "llvm/Support/raw_os_ostream.h"
@@ -124,14 +125,14 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
-  if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0) {
+  /*if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0) {
 #if HAVE_LLVM_VER >= 37
     return NULL;
 #else
     return llvm::DIType();
 #endif
 
-  }
+  }*/
   int defLine = type->symbol->linenum();
 
   if(!ty) {
@@ -234,7 +235,11 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         // dealing with classes
         AggregateType *this_class = (AggregateType *)type;
         llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 8> EltTys;
+#if HAVE_LLVM_VER > 33
         LLVM_DITYPE derivedFrom = nullptr;
+#else
+        LLVM_DITYPE derivedFrom;
+#endif
         if( type->dispatchParents.length() > 0 )
           derivedFrom = get_type(type->dispatchParents.first());
 
@@ -287,8 +292,11 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
               // if field->type is an internal type, get_type returns null
               // which is not a good type for a MemberType). At the moment it
               // uses a nullptr type as a stub, but we should change it
+#if HAVE_LLVM_VER > 33
                 fditype = this->dibuilder.createNullPtrType();
-
+#else
+                fditype = this->dibuilder.createNullPtrType(llvm::StringRef(fts->name));
+#endif
               //use the dummy type for 'BaseArr'
               mty = this->dibuilder.createMemberType(
                 get_module_scope(defModule),
@@ -326,7 +334,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   else if(ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
     llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 8> EltTys;
-    LLVM_DITYPE derivedFrom = nullptr;
+    LLVM_DITYPE derivedFrom = toDITYPE(nullptr);
     if( type->dispatchParents.length() > 0 )
       derivedFrom = get_type(type->dispatchParents.first());
 
@@ -357,7 +365,11 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
       LLVM_DITYPE fditype =  get_type(field->type);
       if(fditype == NULL)
       // See line 270 for a comment about this if
+#if HAVE_LLVM_VER > 33
         fditype = this->dibuilder.createNullPtrType();
+#else
+        fditype = this->dibuilder.createNullPtrType(llvm::StringRef(fts->name));
+#endif
 
       if(!fty){
         fty = getTypeLLVM(fts->cname);
@@ -457,7 +469,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     printf("\tllvmType is NULL\n");
   }*/
 
-  LLVM_DITYPE ret = NULL;
+  LLVM_DITYPE ret = toDITYPE(nullptr);
 
   return ret;
 }
@@ -615,8 +627,8 @@ LLVM_DIGLOBALVARIABLE debug_data::construct_global_variable(VarSymbol *gVarSym)
       !gVarSym->hasFlag(FLAG_EXPORT), /* is local to unit */
       llVal); /* must be llvm::Constant since LLVM 3.6 */
   else {
-    LLVM_DIGLOBALVARIABLE ret;
     //return an Empty dbg node if the symbol type is unresolved
+    LLVM_DIGLOBALVARIABLE ret;
 #if HAVE_LLVM_VER >= 37
     ret = NULL;
 #endif
@@ -720,4 +732,25 @@ LLVM_DIVARIABLE debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo
   }
   return toDIVARIABLE(argSym->llvmDIFormal);
 }
+
+void debug_data::createDeclare(llvm::Value* Storage, LLVM_DIVARIABLE VarInfo)
+{
+  //Hui for test ///
+  printf("createDeclare called for %s\n", VarInfo.getName().data());
+  GenInfo* info = gGenInfo; //info is universal across whole project
+  if (Storage) {
+    if (VarInfo) 
+      //llvm::Instruction *declareCall = 
+      this->dibuilder.insertDeclare(Storage, VarInfo, \
+        info->builder->GetInsertBlock());
+      //declareCall->setDebugLoc();
+    else 
+      printf("createDeclare failed for %s since VarInfo is NULL !\n", \
+        Storage->getName().data());
+  }       
+  else
+    printf("createDeclare failed for %s since Storage is NULL !\n", \
+      VarInfo.getName().data());
+}
+
 #endif

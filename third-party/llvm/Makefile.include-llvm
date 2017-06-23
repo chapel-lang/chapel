@@ -11,7 +11,7 @@ ifndef LLVM_LLVM_LIBS
 endif
 
 # Use this version for LLVM 3.4 and 3.3
-#LLVM_LLVM_LIBS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --ldflags --libs bitreader bitwriter ipo instrumentation option objcarcopts all-targets)
+LLVM_LLVM_LIBS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --ldflags --libs bitreader bitwriter ipo instrumentation option objcarcopts all-targets)
 
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
@@ -19,7 +19,7 @@ LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) -DHAVE_LLVM
 LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS) -DHAVE_LLVM
 
 LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
-LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
+LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS) -lLLVMSupport -ldl
 
 CLANG_CC=$(LLVM_BIN_DIR)/clang
 CLANG_CXX=$(LLVM_BIN_DIR)/clang++
