@@ -62,6 +62,23 @@ clobber: FORCE
 
 depend:
 
+# Third-party dependencies. If any of these files (3rd party source dirs or our
+# Makefiles) change, then rebuild the 3rd party lib. This allows us to
+# automatically rebuild on 3rd party version upgrades or if we specify
+# different option in the Makefile.
+
+SRC_FILES = -iname '*.cc'  -o -iname '*.cp'  -o -iname '*.cxx' -o -iname '*.cpp' -o  -iname '*.CPP' -o -iname '*.c++' -o  -iname '*.hh'  -o -iname '*.hp' -o -iname '*.hxx' -o -iname '*.hpp' -o -iname '*.HPP' -o -iname '*.h++' -o -iname '*.tcc' -o -iname '*.c'   -o -iname '*.h'
+AMUDPRUN_DEPEND := $(shell find $(AMUDPRUN_SRC_DIR) $(SRC_FILES) 2>/dev/null) $(AMUDPRUN_DIR)/Makefile*
+GASNET_DEPEND := $(shell find $(GASNET_SUBDIR) $(SRC_FILES) 2>/dev/null) $(GASNET_DIR)/Makefile*
+GMP_DEPEND := $(shell find $(GMP_SUBDIR) $(SRC_FILES) 2>/dev/null) $(GMP_DIR)/Makefile*
+HWLOC_DEPEND := $(shell find $(HWLOC_SUBDIR) $(SRC_FILES) 2>/dev/null) $(HWLOC_DIR)/Makefile*
+JEMALLOC_DEPEND := $(shell find $(JEMALLOC_SUBDIR) $(SRC_FILES) 2>/dev/null) $(JEMALLOC_DIR)/Makefile*
+LIBUNWIND_DEPEND := $(shell find $(LIBUNWIND_SUBDIR) $(SRC_FILES) 2>/dev/null) $(LIBUNWIND_DIR)/Makefile*
+MASSIVETHREADS_DEPEND := $(shell find $(MASSIVETHREADS_SUBDIR) $(SRC_FILES) 2>/dev/null) $(MASSIVETHREADS_DIR)/Makefile*
+QTHREAD_DEPEND := $(shell find $(QTHREAD_SUBDIR) $(SRC_FILES) 2>/dev/null) $(QTHREAD_DIR)/Makefile*
+RE2_DEPEND := $(shell find $(RE2_SUBDIR) $(SRC_FILES) 2>/dev/null) $(RE2_DIR)/Makefile*
+
+
 test-venv: $(CHPL_VENV_TEST_REQS)
 $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) test-venv
@@ -71,12 +88,14 @@ $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
 amudprun: $(AMUDPRUN_INSTALL_DIR)
-$(AMUDPRUN_INSTALL_DIR):
+$(AMUDPRUN_INSTALL_DIR): $(AMUDPRUN_DEPEND)
+	rm -rf $(AMUDPRUN_INSTALL_DIR) && rm -rf $(AMUDPRUN_BUILD_DIR)
 	cd amudprun && $(MAKE)
 
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)
-$(GASNET_INSTALL_DIR):
+$(GASNET_INSTALL_DIR): $(GASNET_DEPEND)
+	rm -rf $(GASNET_INSTALL_DIR) && rm -rf $(GASNET_BUILD_DIR)
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
 try-gmp: FORCE
@@ -88,23 +107,28 @@ else ifeq ($(wildcard $(GMP_H_FILE)),)
 endif
 
 gmp: $(GMP_H_FILE)
-$(GMP_H_FILE):
+$(GMP_H_FILE): $(GMP_DEPEND)
+	rm -rf $(GMP_INSTALL_DIR) && rm -rf $(GMP_BUILD_DIR)
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
-$(HWLOC_INSTALL_DIR):
+$(HWLOC_INSTALL_DIR): $(HWLOC_DEPEND)
+	rm -rf $(HWLOC_INSTALL_DIR) && rm -rf $(HWLOC_BUILD_DIR)
 	cd hwloc && $(MAKE)
 
 jemalloc: $(JEMALLOC_INSTALL_DIR)
-$(JEMALLOC_INSTALL_DIR):
+$(JEMALLOC_INSTALL_DIR): $(JEMALLOC_DEPEND)
+	rm -rf $(JEMALLOC_INSTALL_DIR) && rm -rf $(JEMALLOC_BUILD_DIR)
 	cd jemalloc && $(MAKE)
 
 libunwind: $(LIBUNWIND_INSTALL_DIR)
-$(LIBUNWIND_INSTALL_DIR):
+$(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
+	rm -rf $(LIBUNWIND_INSTALL_DIR) && rm -rf $(LIBUNWIND_BUILD_DIR)
 	cd libunwind && $(MAKE)
 
 massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
-$(MASSIVETHREADS_INSTALL_DIR):
+$(MASSIVETHREADS_INSTALL_DIR): $(MASSIVETHREADS_DEPEND)
+	rm -rf $(MASSIVETHREADS_INSTALL_DIR) && rm -rf $(MASSIVETHREADS_BUILD_DIR)
 	cd massivethreads && $(MAKE)
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first
@@ -117,7 +141,8 @@ endif
 QTHREAD_DEPEND_INSTALL_DIRS += $(QTHREAD_INSTALL_DIR)
 qthread: $(QTHREAD_DEPEND_INSTALL_DIRS)
 
-$(QTHREAD_INSTALL_DIR):
+$(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(HWLOC_DEPEND) $(JEMALLOC_DEPEND)
+	rm -rf $(QTHREAD_INSTALL_DIR) && rm -rf $(QTHREAD_BUILD_DIR)
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
 
@@ -138,7 +163,8 @@ endif
 endif
 
 re2: $(RE2_H_FILE)
-$(RE2_H_FILE):
+$(RE2_H_FILE): $(RE2_DEPEND)
+	rm -rf $(RE2_INSTALL_DIR) && rm -rf $(RE2_BUILD_DIR)
 	cd re2 && $(MAKE)
 
 -include Makefile.devel
