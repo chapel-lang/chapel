@@ -1,0 +1,4 @@
+error: initializing a field that is a class within an initializer
+
+For some reason, the field initialization gets munged enough that normalization
+thinks the 'new' call isn't on a type variable.
