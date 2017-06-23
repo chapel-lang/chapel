@@ -107,11 +107,16 @@ massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
 $(MASSIVETHREADS_INSTALL_DIR):
 	cd massivethreads && $(MAKE)
 
+# Qthreads may use hwloc and/or jemalloc. Ensure they are built first
 ifeq ($(CHPL_MAKE_HWLOC), hwloc)
-qthread: $(HWLOC_INSTALL_DIR) $(QTHREAD_INSTALL_DIR)
-else
-qthread: $(QTHREAD_INSTALL_DIR)
+QTHREAD_DEPEND_INSTALL_DIRS += $(HWLOC_INSTALL_DIR)
 endif
+ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
+QTHREAD_DEPEND_INSTALL_DIRS += $(JEMALLOC_INSTALL_DIR)
+endif
+QTHREAD_DEPEND_INSTALL_DIRS += $(QTHREAD_INSTALL_DIR)
+qthread: $(QTHREAD_DEPEND_INSTALL_DIRS)
+
 $(QTHREAD_INSTALL_DIR):
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
