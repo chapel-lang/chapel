@@ -21,12 +21,13 @@
 
 #include "passes.h"
 
-#include "stmt.h"
-#include "expr.h"
 #include "astutil.h"
-#include "stringutil.h"
-#include "stlUtil.h"
+#include "DeferStmt.h"
 #include "docsDriver.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stlUtil.h"
+#include "stringutil.h"
 
 
 static void checkNamedArguments(CallExpr* call);
@@ -108,6 +109,8 @@ checkParsed() {
   }
 
   checkExportedNames();
+
+  checkDefersAfterParsing();
 }
 
 
@@ -353,5 +356,3 @@ checkExportedNames()
     names.put(name, true);
   }
 }
-
-
