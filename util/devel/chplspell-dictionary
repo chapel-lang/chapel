@@ -993,6 +993,7 @@ sbrk
 scache
 schar
 sdata
+sdot
 seekdata
 seekfunction
 segbcast
@@ -1005,6 +1006,7 @@ sendto
 seqcat
 seqloopexpr
 seqn
+sequals
 sessionid
 setaffinity
 setc
@@ -4666,6 +4668,7 @@ cory
 coverity
 cppreference
 cproj
+cpuaffinity
 cpubind
 cpus
 cpuset
@@ -5814,6 +5817,7 @@ oldfd
 oldname
 oldnnz
 olson
+omnipath
 onetest
 onlinedocs
 onlinepubs
@@ -6548,6 +6552,7 @@ varname
 varsymbol
 vassily
 vdebug
+vecs
 vectorizable
 vectorizes
 vectorizing
