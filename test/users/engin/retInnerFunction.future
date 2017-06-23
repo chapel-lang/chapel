@@ -1,0 +1,5 @@
+error message: returning an inner function that uses outer-local vars
+
+When returning an inner function that uses an outer-local variable, the
+compiler crashes. Such code is user error and compiler should detect it
+before crashing (by luck?)

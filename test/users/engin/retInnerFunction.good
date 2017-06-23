@@ -1,0 +1,1 @@
+Inner functions that uses outer-local variables cannot be returned.
