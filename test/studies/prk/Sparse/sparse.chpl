@@ -2,6 +2,8 @@
    Chapel's parallel Sparse implementation
 
    Contributed by Engin Kayraklioglu (GWU)
+
+   Implementation & comments derived from MPI1 version
 */
 use BlockDist;
 use LayoutCSR;
@@ -11,6 +13,9 @@ use VisualDebug;
 use RangeChunk;
 
 param PRKVERSION = "2.17";
+
+/* Distributed version */
+config param distributed = CHPL_COMM != 'none';
 
              /* Logarithmic linear size of grid, s.t. numElements = 4**lsize */
 config const lsize = 4,
@@ -29,22 +34,33 @@ const lsize2 = 2*lsize,
       stencilSize = 4*radius+1,
       sparsity = stencilSize:real/size2;
 
+// Locales array setup -- Distributed only
 const rowDistLocDom = {0..#numLocales, 0..0};
 var rowDistLocArr: [rowDistLocDom] locale;
 rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
 
-// TODO:
-//const dist = if CHPL_COMM=='none' then CSR() else
-
+// Domains & Distributions
 const vectorSpace = 0..#size2,
       vectorDom = {vectorSpace},
+      vectorDist = if distributed then new dmap(new Block(vectorDom))
+                   else defaultDist,
+      matrixDist = if distributed then defaultDist
+                   else new dmap(new CSR()),
+      parentDist = new dmap(new Block({vectorSpace, vectorSpace},
+                                      targetLocales=rowDistLocArr,
+                                      sparseLayoutType=CSR)),
       vectorDomRepl = vectorDom dmapped Replicated(),
-      vectorDomBlock = vectorDom dmapped Block(vectorDom),
-      parentDom = {vectorSpace, vectorSpace} dmapped Block({vectorSpace, vectorSpace}, targetLocales=rowDistLocArr, sparseLayoutType=CSR),
-      matrixDom: sparse subdomain(parentDom);
+      vectorDomBlock = vectorDom dmapped vectorDist,
+      parentDom = if distributed then
+                    {vectorSpace, vectorSpace} dmapped parentDist
+                  else
+                    {vectorSpace, vectorSpace},
+      // TODO: How can these be combined? (defaultDist does not work)
+      matrixDom: if distributed then sparse subdomain(parentDom)
+                  else sparse subdomain(parentDom) dmapped CSR();
 
 
-
+// Arrays
 var matrix: [matrixDom] real,
     vector: [vectorDom] real,
     vectorRepl: [vectorDomRepl] real,
@@ -54,33 +70,45 @@ var t = new Timer();
 
 proc main() {
 
-  t.start();
   initialize();
-  t.stop();
-
-  writeln('Initialization time: ', t.elapsed());
-  t.clear();
 
   printInfo();
 
   startVdebug('kernel');
-  for niter in 0..iterations {
+  if distributed {
+    for niter in 0..iterations {
 
-    if niter == 1 then t.start();
+      if niter == 1 then t.start();
 
-    [i in vectorDom] vector[i] += i+1;
+      [i in vectorDom] vector[i] += i+1;
 
-    // Replicate vector across all locales
-    coforall loc in Locales do on loc {
-      vectorRepl = vector;
-    }
-
-    forall i in vectorDomBlock {
-      var temp = 0.0;
-      for j in matrixDom.dimIter(2,i) {
-        temp += matrix[i,j] * vectorRepl[j];
+      // Replicate vector across all locales
+      // TODO: Can I replicate vectorRepl from locale 0 to all other locales?
+      //       This could allow distributed / shared kernels to merge
+      coforall loc in Locales do on loc {
+        vectorRepl = vector;
       }
-    result[i] += temp;
+
+      forall i in vectorDomBlock {
+        var temp = 0.0;
+        // TODO: Ensure no communication occurs here
+        for j in matrixDom.dimIter(2,i) {
+          temp += matrix[i,j] * vectorRepl[j];
+        }
+      result[i] += temp;
+      }
+    }
+  } else {
+    for niter in 0..iterations {
+
+      if niter == 1 then t.start();
+      [i in vectorDom] vector[i] += i+1;
+
+      forall i in vectorDomBlock {
+        for j in matrixDom.dimIter(2,i) {
+          result[i] += matrix[i,j] * vector[j];
+        }
+      }
     }
   }
   t.stop();
@@ -91,6 +119,9 @@ proc main() {
 
 
 proc initialize() {
+  // TODO: Optimize distributed initialization
+  t.start();
+
   // Temporary index buffer for fast initialization
   const indBufDom = {0..#(size2*stencilSize)};
   var indBuf: [indBufDom] 2*int;
@@ -119,10 +150,15 @@ proc initialize() {
 
   // Initialize sparse matrix values
   [(i,j) in matrixDom] matrix[i,j] = 1.0/(j+1);
+
+  t.stop();
+  if VisualDebugOn then writeln('Initialization time: ', t.elapsed());
+  t.clear();
 }
 
 
 proc printInfo() {
+  // TODO: Match PRK reference version output exactly?
   if !correctness {
     writeln("Parallel Research Kernels Version ", PRKVERSION);
     writeln("Sparse matrix-dense vector multiplication");
@@ -137,19 +173,20 @@ proc printInfo() {
 
 
 proc verifyResult() {
-  const epsilon = 1e-8;
-  const referenceSum = 0.5 * matrixDom.numIndices * (iterations+1) *
-      (iterations+2);
-  const vectorSum = + reduce result;
-  if abs(vectorSum-referenceSum) > epsilon then
+  const epsilon = 1e-8,
+        referenceSum = 0.5 * matrixDom.numIndices * (iterations+1) *
+                       (iterations+2),
+        vectorSum = + reduce result;
+
+  if abs(vectorSum - referenceSum) > epsilon then
     halt("VALIDATION FAILED!. Reference sum = ", referenceSum,
         " Vector sum = ", vectorSum);
 
   writeln("Validation successful");
 
   if !correctness {
-    const nflop = 2.0*matrixDom.numIndices;
-    const avgTime = t.elapsed()/iterations;
+    const nflop = 2.0*matrixDom.numIndices,
+          avgTime = t.elapsed()/iterations;
     writeln("Rate (MFlops/s): ", 1e-6*nflop/avgTime, " Avg time (s): ",
         avgTime);
   }
@@ -160,6 +197,7 @@ proc verifyResult() {
 inline proc LIN(i, j) {
   return (i+(j<<lsize));
 }
+
 
 /* Code below reverses bits in unsigned integer stored in a 64-bit word.
    Bit reversal is with respect to the largest integer that is going to be
@@ -175,7 +213,7 @@ inline proc LIN(i, j) {
 proc reverse(xx) {
   if !scramble then return xx;
 
-  var x = xx:uint;
+  var x = xx: uint;
 
   x = ((x >> 1)  & 0x5555555555555555) | ((x << 1)  & 0xaaaaaaaaaaaaaaaa);
   x = ((x >> 2)  & 0x3333333333333333) | ((x << 2)  & 0xcccccccccccccccc);
@@ -183,11 +221,14 @@ proc reverse(xx) {
   x = ((x >> 8)  & 0x00ff00ff00ff00ff) | ((x << 8)  & 0xff00ff00ff00ff00);
   x = ((x >> 16) & 0x0000ffff0000ffff) | ((x << 16) & 0xffff0000ffff0000);
   x = ((x >> 32) & 0x00000000ffffffff) | ((x << 32) & 0xffffffff00000000);
-  return (x>>(64-lsize2)):int;
+  return (x>>(64-lsize2)): int;
 }
 
-// TODO add prefetch checks for fast iteration
+
+/* Iterate over NNZ values in dimension ``dim`` at index ``idx`` */
 iter SparseBlockDom.dimIter(param dim, idx) {
+  // TODO: Contribute back to SparseBlockDist
+  // TODO: add prefetch checks for fast iteration
   var targetLocRow = dist.targetLocsIdx((idx, whole.dim(dim).low));
   /*writeln("dimIter idx: ", idx, " targetLocRow ", targetLocRow);*/
   for l in dist.targetLocales.domain.dim(dim) {
@@ -196,4 +237,3 @@ iter SparseBlockDom.dimIter(param dim, idx) {
     }
   }
 }
-

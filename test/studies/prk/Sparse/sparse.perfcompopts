@@ -1,1 +1,1 @@
--s iterations=10 -s lsize=10 -s radius=4 # sparse-csr
+-s iterations=10 -s lsize=10 -s radius=4 -s VisualDebugOn=false # sparse-csr
