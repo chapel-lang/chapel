@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
 #include "expr.h"
@@ -425,6 +426,10 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
           INT_ASSERT(false);
         }
       }
+
+    } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
+      scopeResolve(deferStmt->body(), scope);
+
 
     } else if (isUseStmt(stmt)           == true ||
                isCallExpr(stmt)          == true ||
