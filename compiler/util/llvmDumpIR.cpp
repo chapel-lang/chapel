@@ -24,6 +24,8 @@
 //extern const char *llvmPrintIrCName;
 //extern llvmStageNum_t llvmPrintIrStageNum;
 
+#ifdef HAVE_LLVM
+
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
@@ -69,3 +71,5 @@ FunctionPass *createDumpIrPass(llvmStageNum_t stage)
 char DumpIR::ID = 0;
 static RegisterPass<DumpIR>
 X("dump-ir", "Dump LLVM IR from Chapel compilation");
+
+#endif

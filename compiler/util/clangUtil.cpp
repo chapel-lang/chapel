@@ -30,9 +30,11 @@
 #include <cstdio>
 #include <sstream>
 
+#ifdef HAVE_LLVM
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
+#endif
 
 #include "astutil.h"
 #include "driver.h"
