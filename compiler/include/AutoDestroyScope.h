@@ -54,6 +54,10 @@ private:
   bool                     mLocalsHandled;     // Manage function epilogue
   std::vector<VarSymbol*>  mFormalTemps;       // Temps for out/inout formals
   std::vector<BaseAST*>    mLocalsAndDefers;   // VarSymbol* or DeferStmt*
+  // note: mLocalsAndDefers contains both VarSymbol and DeferStmt in
+  // order to create a single stack for cleanup operations to be executed.
+  // In particular, the ordering between defer blocks and locals matters,
+  // in addition to the ordering within each group.
 };
 
 #endif

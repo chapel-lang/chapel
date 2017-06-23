@@ -142,6 +142,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       VarSymbol* var = toVarSymbol(localOrDefer);
       DeferStmt* defer = toDeferStmt(localOrDefer);
       // This code only handles VarSymbols and DeferStmts.
+      // It handles both in one vector because the order
+      // of interleaving matters.
       INT_ASSERT(var || defer);
 
       if (var != NULL && var != excludeVar) {
