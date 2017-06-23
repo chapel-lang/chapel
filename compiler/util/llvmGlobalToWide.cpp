@@ -152,7 +152,7 @@ namespace {
     int atomic_part = 0;
     int sync_part = 0;
     int val = 0;
-    atomic_part = ordering;
+    atomic_part = (int) ordering;
     sync_part = scope;
     sync_part *= 256;
     val = atomic_part + sync_part;
@@ -736,7 +736,11 @@ namespace {
 
               Value* wDst = callGlobalToWideFn(gDst, call);
               Value* wSrc = callGlobalToWideFn(gSrc, call);
+#if HAVE_LLVM_VER >= 39
+              Value* ctl = createLoadStoreControl(M, info, AtomicOrdering::NotAtomic, SingleThread);
+#else
               Value* ctl = createLoadStoreControl(M, info, NotAtomic, SingleThread);
+#endif
 
               Instruction* putget = NULL;
 
@@ -980,7 +984,11 @@ namespace {
     // This will update PHI nodes incoming blocks that have
     // been remapped.
     //
+#if HAVE_LLVM_VER >= 39
+    RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
+#else
     RemapInstruction(I, VM, RF_IgnoreMissingEntries, TypeMapper);
+#endif
 
     if( extraChecks ) {
       if( VM.count(I) ) {
@@ -1233,7 +1241,11 @@ namespace {
         Function *NF = Function::Create(NFTy, F->getLinkage());
         NF->copyAttributesFrom(F);
 
+#if HAVE_LLVM_VER >= 38
+        F->getParent()->getFunctionList().insert(F->getIterator(), NF);
+#else
         F->getParent()->getFunctionList().insert(F, NF);
+#endif
         NF->takeName(F);
 
         // Loop over all callers of the function, transforming the call
@@ -1342,10 +1354,15 @@ namespace {
           for (Function::arg_iterator I = F->arg_begin(), E = F->arg_end(),
                      I2 = NF->arg_begin(); I != E; ++I, ++I2) {
 
+            llvm::Argument& argRef = *I;
+            llvm::Argument* arg = &argRef;
+            llvm::Argument& nfArgRef = *I2;
+            llvm::Argument* nfArg = &nfArgRef;
+
             // if this is an unmodified argument
-            if (!containsGlobalPointers(info, I->getType())) {
-              I->replaceAllUsesWith(I2);
-              I2->takeName(I);
+            if (!containsGlobalPointers(info, arg->getType())) {
+              arg->replaceAllUsesWith(nfArg);
+              nfArg->takeName(arg);
               // AA.replaceWithNewValue(I, I2);
               continue;
             }
@@ -1353,11 +1370,11 @@ namespace {
             Instruction *New;
             Instruction* firstNonPHI = NF->getEntryBlock().getFirstNonPHI();
             assert(firstNonPHI);
-            New = fixer.callWideToGlobalFn(I2, I->getType(), firstNonPHI);
+            New = fixer.callWideToGlobalFn(nfArg, arg->getType(), firstNonPHI);
 
-            I->replaceAllUsesWith(New);
-            I2->setName(I->getName()); // + "_wide");
-            New->takeName(I);
+            arg->replaceAllUsesWith(New);
+            nfArg->setName(arg->getName()); // + "_wide");
+            New->takeName(arg);
             // AA.replaceWithNewValue(I, New);
           }
 
@@ -1397,7 +1414,11 @@ namespace {
 
       {
         ValueToValueMapTy VM;
+#if HAVE_LLVM_VER >= 39
+        RemapFlags Flags = RF_IgnoreMissingLocals;
+#else
         RemapFlags Flags = RF_IgnoreMissingEntries;
+#endif
         // iterate through all global variables
         for (Module::global_iterator GI = M.global_begin(), GE = M.global_end();
                 GI != GE; ++GI) {
@@ -1445,7 +1466,13 @@ namespace {
           }
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
-#if HAVE_LLVM_VER >= 37
+#if HAVE_LLVM_VER >= 38
+          GlobalAlias *new_alias = GlobalAlias::create(
+              llvm::PointerType::get(new_type, 0 /*addr space*/ ),
+              0, /* addr space */
+              ga->getLinkage(),
+              "", init, &M);
+#elif HAVE_LLVM_VER >= 37
           GlobalAlias *new_alias = GlobalAlias::create(
               llvm::PointerType::get(new_type, 0 /*addr space*/ ),
               ga->getLinkage(),
@@ -1472,7 +1499,11 @@ namespace {
 
       // Pass #2
       ValueToValueMapTy VM;
+#if HAVE_LLVM_VER >= 39
+      RemapFlags Flags = RF_IgnoreMissingLocals;
+#else
       RemapFlags Flags = RF_IgnoreMissingEntries;
+#endif
       SmallVector<Instruction*,16> Junk;
 
       for(Module::iterator func = M.begin(); func!= M.end(); func++)
@@ -1516,7 +1547,8 @@ namespace {
             Throw out the junk.
          */
         for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
-          BasicBlock* BB = BI;
+          BasicBlock& BBRef = *BI;
+          BasicBlock* BB = &BBRef;
           ++BI;
 
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
@@ -1566,7 +1598,8 @@ namespace {
         }
 
         for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
-          BasicBlock* BB = BI;
+          BasicBlock& BBRef = *BI;
+          BasicBlock* BB = &BBRef;
           ++BI;
   
           //if( debugPassTwo ) {
@@ -1598,7 +1631,8 @@ namespace {
         }
 
         for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
-          BasicBlock* BB = BI;
+          BasicBlock& BBRef = *BI;
+          BasicBlock* BB = &BBRef;
           ++BI;
   
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
@@ -1628,7 +1662,8 @@ namespace {
           errs() << "AFTER PASS 2 the function is:\n";
 
           for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
-            BasicBlock* BB = BI;
+            BasicBlock& BBRef = *BI;
+            BasicBlock* BB = &BBRef;
             ++BI;
   
             if( debugPassTwo ) {
