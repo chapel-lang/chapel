@@ -118,15 +118,15 @@ proc GlobalData.init(nameArg: string) {
     proc storecache(ref cache, dx, dy, slicex, slicey) {
       const ind = (ix+dx, iy+dy);
       if !gridDist.member(ind) {
-	msg1("  ", ind, "  no neighbor");
-	return;
+        msg1("  ", ind, "  no neighbor");
+        return;
       }
       const nbr = datas[ind]; // our neighbor
       on nbr {
-	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
+        msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
         pragma "no auto destroy"
-	ref slice = nbr.ldata[slicex, slicey];
-	cache = slice._value;
+          ref slice = nbr.ldata[slicex, slicey];
+        cache = slice._value;
       }
     }  // storecache()
   }  // forall
