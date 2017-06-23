@@ -116,6 +116,9 @@ public:
   virtual bool   enterForwardingStmt (ForwardingStmt*    node);
   virtual void   exitForwardingStmt  (ForwardingStmt*    node);
 
+  virtual bool   enterDeferStmt      (DeferStmt*         node);
+  virtual void   exitDeferStmt       (DeferStmt*         node);
+
   virtual bool   enterTryStmt        (TryStmt*           node);
   virtual void   exitTryStmt         (TryStmt*           node);
 
