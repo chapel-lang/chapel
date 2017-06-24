@@ -10,13 +10,16 @@ proc main(args: [] string) {
   var source = new Source(args[1]);
   source.genTokenlist();
   source.debug();
+  delete source;
 }
 
 // Asserts not valid token is found until EOL. accepts comments
 proc assertEOL() {}
 
 // Returns the most recent token and removes it 
-proc pop() {} 
+proc pop(source) {
+  //  source.tokenlist
+} 
 
 // Returns the next token on the stack ignoring comments 
 // if EOL, next line is loaded.
@@ -32,9 +35,6 @@ proc readLine() {}
 // Used for multiline arrays
 proc readNL() {}
 
-
-config const doubleQuotes = '".*?\\[^\\]?"';
-config const singleQuotes = "'.*?\\[^\\]?'";
 
 
 /*
@@ -55,16 +55,25 @@ class Source {
       splitLine(line);
     }
   }
-    
+
+
   proc splitLine(line) {
-    var pattern = compile(  (doubleQuotes) +
-		      "|" + (singleQuotes) +
-			   "|(\\[.*?\\])|" +
-                                  "(\\#)|" +
-                              "(\\]|\\[)|" +
-                                  "(\\,)|" +
-			          "(\\s=)");
-    for token in pattern.split(line) {
+    const doubleQuotes = '".*?\\[^\\]?"',
+          singleQuotes = "'.*?\\[^\\]?'",
+          bracketContents = "(\\[.*?\\])",
+          brackets = "(\\]|\\[)",
+          comments = "(\\#)",
+          commas = "(\\,)",
+          spaces = "(\\s=)";
+
+    const pattern = compile('|'.join(doubleQuotes,
+				     singleQuotes,
+				     bracketContents,
+				     brackets,
+				     comments,
+				     commas,
+				     spaces));
+  for token in pattern.split(line) {
       var linetokens: [1..0] string;
       if token.length != 0  {
 	linetokens.push_back(token);
@@ -74,19 +83,31 @@ class Source {
     }
   }
 
-  proc nextToken() {
-    return tokenList[1];
+  proc nextTokens() {
+    write(tokenlist[1]);
     tokenlist.remove(1);
 } 
 
   proc debug() {
     for token in tokenlist {
-      for toke in token.these() {
+      for toke in token {
 	write(" token: " + toke);
       }
     }
   }
+
+  proc deinit() { 
+    for token in tokenlist {
+      delete token;
+    }
+  }
+
 }
+
+
+
+
+
 
 /* Array wrapper */
 class Tokens {
