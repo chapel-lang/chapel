@@ -1038,6 +1038,18 @@ proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
 }
 
+proc DimensionalDom.dsiDestroyDom() {
+  coforall desc in localDdescs do
+    on desc do
+      delete desc;
+}
+
+proc DimensionalArr.dsiDestroyArr(isslice: bool) {
+  coforall desc in localAdescs do
+    on desc do
+      delete desc;
+}
+
 
 /// iterators ///////////////////////////////////////////////////////////////
 
