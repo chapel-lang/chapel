@@ -1745,7 +1745,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         yield (0..len-1,);
       } else {
         coforall chunk in 0..#numChunks {
-          local on here.getChild(chunk) {
+          local do on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
                 chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+
