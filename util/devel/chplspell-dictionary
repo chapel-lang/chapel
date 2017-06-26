@@ -235,6 +235,7 @@ denest
 desttype
 dgettext
 diffbytes
+diglobalvariableexpression
 dinline
 dirent
 direntptr
