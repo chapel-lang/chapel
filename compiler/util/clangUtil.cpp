@@ -2192,17 +2192,25 @@ void makeBinaryLLVM(void) {
     }
   }
 
-  // Start linker options with C args
-  // This is important to get e.g. -O3 -march=native
-  // since with LLVM we are doing link-time optimization.
-  // We know it's OK to include -I (e.g.) since we're calling
-  // clang++ to link so that it can optimize the .bc files.
-  options = cargs;
+  // Note: we used to start 'options' with 'cargs' so that
+  // we'd communicate -O3 -march=native e.g. to the "linker".
+  // That was only important when we were emitting a .bc file
+  // and currently we emit a .o.
+  // If we decide to put it back, we might also need to
+  // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
+  // to avoid unused argument errors for optimization flags.
 
   if(debugCCode) {
     options += " -g";
   }
 
+  for( size_t i = 0; i < info->clangLDArgs.size(); ++i ) {
+    options += " ";
+    options += info->clangLDArgs[i].c_str();
+  }
+
+  // note: currently ldflags are not stored into clangLDArgs.
+  // If they were, these lines would need to be removed.
   options += " ";
   options += ldflags;
 
