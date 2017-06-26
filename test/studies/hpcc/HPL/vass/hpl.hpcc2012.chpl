@@ -500,7 +500,7 @@ proc psReduce(blk, k) {
             const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
             var myResult: psRedResultT;
             myResult.initResult();
-            var locAB => Ab._value.dsiLocalSlice1((iRange, k));
+            ref locAB = Ab._value.dsiLocalSlice1((iRange, k));
             for i in iRange do myResult.updateE(i, locAB[i]);
             if myResult.absmx > maxRes.read() { // only lock if we might update
               upd$ = true;  // lock
@@ -550,8 +550,8 @@ proc psCompute(panel, blk, k, pivotVal) {
 
         // TODO: move this 'local' right after 'on'
         local {
-          var locAB => Ab._value.dsiLocalSlice1((iStart..iEnd, k..dim2end));
-          var locK => replK._value.dsiLocalSlice1((0, k..dim2end));
+          ref locAB = Ab._value.dsiLocalSlice1((iStart..iEnd, k..dim2end));
+          ref locK = replK._value.dsiLocalSlice1((0, k..dim2end));
           for i in iStart..iEnd {
             // Ab[k+1.., k..k] /= pivotVal;
             locAB[i, k] /= pivotVal;
@@ -585,13 +585,13 @@ proc psSwap(k, pr, out wasLocal) {
         if lidk1 == lidpr1 {
           // sweet, can swap locally
           local {
-            var locABk => Ab._value.dsiLocalSlice1((k, mycol));
-            var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
+            ref locABk = Ab._value.dsiLocalSlice1((k, mycol));
+            ref locABpr = Ab._value.dsiLocalSlice1((pr, mycol));
             for j in mycol do locABk[j] <=> locABpr[j];
           }
         } else {
           // need to copy the two sub-rows between two locales
-          var locABk => Ab._value.dsiLocalSlice1((k, mycol));
+          ref locABk = Ab._value.dsiLocalSlice1((k, mycol));
 
           // using a tuple for more efficient data transfer
           var tt: maxBlkSize*elemType;
@@ -605,7 +605,7 @@ proc psSwap(k, pr, out wasLocal) {
             var pp = tt;
             local {
               const myStart = mycol.low;
-              var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
+              ref locABpr = Ab._value.dsiLocalSlice1((pr, mycol));
               for j in mycol do pp[j-myStart+1] <=> locABpr[j];
             }
             tt = pp;
@@ -667,8 +667,8 @@ proc updateBlockRow(
 
     local {
       const dim2 = js..min(js+blkSize-1,n+1);
-      var locAB  => Ab._value.dsiLocalSlice1((dim1, dim2));
-      var locU   => replU._value.localArrs[here.id].arrLocalRep;
+      ref locAB  = Ab._value.dsiLocalSlice1((dim1, dim2));
+      ref locU   = replU._value.localArrs[here.id].arrLocalRep;
 
       for row in dim1 {
         const i = row, iRel = i-blk;
