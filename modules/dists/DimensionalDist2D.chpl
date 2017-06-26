@@ -907,7 +907,7 @@ proc DimensionalArr.isAlias
   return this.dom != this.allocDom;
 
 
-//== creation
+//== creation and destruction
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
@@ -928,6 +928,13 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
   assert(!result.isAlias);
   return result;
+}
+
+
+proc DimensionalDom.dsiDestroyDom() {
+  coforall desc in localDdescs do
+    on desc do
+      delete desc;
 }
 
 
@@ -1036,6 +1043,12 @@ proc DimensionalArr.dsiReallocate(d: domain) {
 
 proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
+}
+
+proc DimensionalArr.dsiDestroyArr(isslice: bool) {
+  coforall desc in localAdescs do
+    on desc do
+      delete desc;
 }
 
 

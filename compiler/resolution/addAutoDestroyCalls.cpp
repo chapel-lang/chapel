@@ -23,6 +23,7 @@
 
 #include "astutil.h"
 #include "AutoDestroyScope.h"
+#include "DeferStmt.h"
 #include "expr.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -44,6 +45,11 @@ void addAutoDestroyCalls() {
     }
 
     walkBlock(fn, NULL, fn->body);
+  }
+
+  // Finally, remove all defer statements, since they have been lowered.
+  forv_Vec(DeferStmt, defer, gDeferStmts) {
+    defer->remove();
   }
 }
 
@@ -150,6 +156,10 @@ static void walkBlock(FnSymbol*         fn,
       // Collect variables that should be autoDestroyed
       if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
         scope.variableAdd(var);
+
+      // Collect defer statements to run during cleanup
+      } else if (DeferStmt* defer = toDeferStmt(stmt)) {
+        scope.deferAdd(defer);
 
       // AutoDestroy primary locals at start of function epilogue (2)
       } else if (scope.handlingFormalTemps(stmt) == true) {

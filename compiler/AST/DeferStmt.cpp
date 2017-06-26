@@ -95,3 +95,123 @@ GenRet DeferStmt::codegen() {
   GenRet ret;
   return ret;
 }
+
+// supporting checkDefersDoNotBreakOrReturn()
+// Use an anonymous namespace to keep CheckDerefVisitor
+// local to this file.
+
+namespace {
+  class CheckDeferVisitor : public AstVisitorTraverse {
+
+  public:
+    CheckDeferVisitor();
+
+    // We are checking for 'break' or 'return'
+    virtual bool   enterCallExpr       (CallExpr*          node);
+    virtual bool   enterGotoStmt       (GotoStmt*          node);
+
+    // We don't want to enter inner functions
+    virtual bool   enterFnSym          (FnSymbol*          node);
+
+    // Track loops, so we can know if a 'break' is inside a loop or not
+    virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
+    virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
+
+    virtual bool   enterDoWhileStmt    (DoWhileStmt*       node);
+    virtual void   exitDoWhileStmt     (DoWhileStmt*       node);
+
+    virtual bool   enterCForLoop       (CForLoop*          node);
+    virtual void   exitCForLoop        (CForLoop*          node);
+
+    virtual bool   enterForLoop        (ForLoop*           node);
+    virtual void   exitForLoop         (ForLoop*           node);
+
+    virtual bool   enterParamForLoop   (ParamForLoop*      node);
+    virtual void   exitParamForLoop    (ParamForLoop*      node);
+
+  private:
+    int loopDepth;
+
+    void enterLoop() {
+      loopDepth++;
+    }
+    void exitLoop() {
+      loopDepth--;
+    }
+  };
+
+  CheckDeferVisitor::CheckDeferVisitor() {
+    loopDepth = 0;
+  }
+
+  bool CheckDeferVisitor::enterCallExpr(CallExpr* node) {
+    if (node->isPrimitive(PRIM_RETURN))
+      USR_FATAL_CONT(node, "return cannot be used within a defer statement");
+    return true;
+  }
+  bool CheckDeferVisitor::enterGotoStmt(GotoStmt* node) {
+    if (loopDepth == 0)
+      USR_FATAL_CONT(node, "break cannot be used within a defer statement");
+    return true;
+  }
+
+  bool CheckDeferVisitor::enterFnSym(FnSymbol* node) {
+    return false;
+  }
+
+  bool CheckDeferVisitor::enterWhileDoStmt(WhileDoStmt* node) {
+    enterLoop();
+    return true;
+  }
+  void CheckDeferVisitor::exitWhileDoStmt(WhileDoStmt* node) {
+    exitLoop();
+  }
+  bool CheckDeferVisitor::enterDoWhileStmt(DoWhileStmt* node) {
+    enterLoop();
+    return true;
+  }
+  void CheckDeferVisitor::exitDoWhileStmt(DoWhileStmt* node) {
+    exitLoop();
+  }
+  bool CheckDeferVisitor::enterCForLoop(CForLoop* node) {
+    enterLoop();
+    return true;
+  }
+  void CheckDeferVisitor::exitCForLoop(CForLoop* node) {
+    exitLoop();
+  }
+  bool CheckDeferVisitor::enterForLoop(ForLoop* node) {
+    enterLoop();
+    return true;
+  }
+  void CheckDeferVisitor::exitForLoop(ForLoop* node) {
+    exitLoop();
+  }
+  bool CheckDeferVisitor::enterParamForLoop(ParamForLoop* node) {
+    enterLoop();
+    return true;
+  }
+  void CheckDeferVisitor::exitParamForLoop(ParamForLoop* node) {
+    exitLoop();
+  }
+
+} // end anonymous namespace
+
+void checkDefersAfterParsing()
+{
+  forv_Vec(DeferStmt, defer, gDeferStmts) {
+  
+    // Check that there are no top-level defers;
+    // each defer must be in a function (other than module init).
+    if (isModuleSymbol(defer->parentSymbol))
+      USR_FATAL_CONT(defer, "defer can only be used within a function");
+
+    // Make sure the DeferStmt does not include a break that is outside
+    // of a loop.
+
+    // Make sure that a DeferStmt never includes a return
+
+    CheckDeferVisitor visitor;
+    defer->body()->accept(&visitor);
+  }
+}
