@@ -2689,6 +2689,10 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
   return fn;
 }
 
+BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
+  return buildIfStmt(new CallExpr("_cond_test", condExpr), 
+      buildLocalStmt(stmt->copy()), stmt);
+}
 
 BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
