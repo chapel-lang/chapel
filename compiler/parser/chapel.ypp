@@ -480,7 +480,8 @@ stmt:
 | TCONTINUE opt_ident TSEMI            { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TDELETE expr TSEMI                   { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
 | TLABEL ident stmt                    { $$ = buildLabelStmt($2, $3); }
-| TLOCAL stmt                          { $$ = buildLocalStmt($2); }
+| TLOCAL expr do_stmt                  { $$ = buildLocalStmt($2, $3); }
+| TLOCAL do_stmt                       { $$ = buildLocalStmt($2); }
 | TON expr do_stmt                     { $$ = buildOnStmt($2, $3); }
 | TSERIAL expr do_stmt                 { $$ = buildSerialStmt($2, $3); }
 | TSERIAL do_stmt                      { $$ = buildSerialStmt(new SymExpr(gTrue), $2); }
