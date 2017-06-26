@@ -219,7 +219,7 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       for_fields(field, ct) {
-        if (field->type->symbol->hasFlag(FLAG_REF)) {
+        if (field->isRef()) {
           if (isSafeToDerefField(defMap, useMap, field) == true) {
             Type* vt = field->getValType();
 
@@ -249,7 +249,7 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                 move->insertBefore(new DefExpr(tmp));
                 move->insertBefore(new CallExpr(PRIM_MOVE, tmp, value));
 
-                move->insertAtTail(new CallExpr(PRIM_ADDR_OF, tmp));
+                move->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, tmp));
 
               } else {
                 INT_FATAL(field, "unexpected case");
@@ -489,8 +489,8 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
 
     } else if (call && isDerefMove(call)) {
       use->replace(new SymExpr(arg));
-    } else if (call && call->isPrimitive(PRIM_MOVE)) {
-      use->replace(new CallExpr(PRIM_ADDR_OF, arg));
+    } else if (call && call->isPrimitive(PRIM_MOVE) && call->get(1)->isRef()) {
+      use->replace(new CallExpr(PRIM_SET_REFERENCE, arg));
 
     } else {
       Expr*      stmt   = use->getStmtExpr();
@@ -498,7 +498,7 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
 
       Expr* rhs = NULL;
       if (reref->isRef()) {
-        rhs = new CallExpr(PRIM_ADDR_OF, arg);
+        rhs = new CallExpr(PRIM_SET_REFERENCE, arg);
       } else {
         rhs = new SymExpr(arg);
       }
