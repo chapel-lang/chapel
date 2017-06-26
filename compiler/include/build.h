@@ -154,6 +154,7 @@ void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildForwardingStmt(Expr* expr);
 BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except);
 BlockStmt* buildForwardingDeclStmt(BlockStmt*);
+BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
