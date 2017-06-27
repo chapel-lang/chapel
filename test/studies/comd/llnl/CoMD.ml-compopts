@@ -1,0 +1,1 @@
+-suseBulkTransferStride -sdataParTasksPerLocale=5 -sdefaultDoRADOpt=true -sdisableAliasedBulkTransfer=false --conditional-dynamic-dispatch-limit=2 -M utils -ssimpleTimings
