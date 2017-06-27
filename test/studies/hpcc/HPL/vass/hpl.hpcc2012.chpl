@@ -216,7 +216,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   // Note: store result of backwardSub in xtemp instead of
   // returning a slice of a local variable (which is not supported).
   var xTemp = backwardSub(n); // perform the back substitution
-  var x => xTemp[0, 1..n];
+  ref x = xTemp[0, 1..n];
 
   if printArrays then
     writeln("after backwardSub, Ab=\n", Ab, "\nx=\n", x);
@@ -342,11 +342,11 @@ proc schurComplement(blk, AD, BD, Rest) {
             const blkRange = 1..blkSize;
             forall j1 in myStarts1 {
               const outerRange = j1..min(j1+blkSize-1, n);
-              var h2 => replA._value.dsiLocalSlice1((outerRange, blkRange));
+              ref h2 = replA._value.dsiLocalSlice1((outerRange, blkRange));
               forall j2 in myStarts2 {
                 const innerRange = j2..min(j2+blkSize-1, n+1);
-                var h1 => Ab._value.dsiLocalSlice1((outerRange, innerRange)),
-                    h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
+                ref h1 = Ab._value.dsiLocalSlice1((outerRange, innerRange)),
+                    h3 = replB._value.dsiLocalSlice1((blkRange, innerRange));
                 for a in outerRange {
                   for w in blkRange  {
                     const h2aw = h2[a,w];
