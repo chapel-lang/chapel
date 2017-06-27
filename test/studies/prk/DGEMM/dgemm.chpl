@@ -87,7 +87,7 @@ else {
             CC: [blockDom] dtype;
 
         for niter in 0..iterations {
-          if tid==0 && niter==1 then t.start();
+          if here.id==0 && tid==0 && niter==1 then t.start();
 
           for (jj,kk) in {myChunk by blockSize, vecRange by blockSize} {
             const jMax = min(jj+blockSize-1, myChunk.high);
