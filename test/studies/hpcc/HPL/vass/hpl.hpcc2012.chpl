@@ -174,13 +174,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   type cpuAtomicCountType = atomic_int64;
   const replPD = {0..#blkSize} dmapped new dmap(distReplicated);
 
-  // the working 'x' vector - we reuse replK
-  //
-  // Implementation consequences: (A) Need to zero it out in backwardSub().
-  // (B) If we allocated replX separately from replK, we need to
-  // replicate X where backwardSub currently invokes replicateK().
-  // 
-  //  var replX => replK;
+  // for the working 'x' vector, replX, we'll reuse replK
 
   // Allocate these arrays just once.
   // Partial sums local to each node.
@@ -404,10 +398,8 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
   pragma "no auto destroy"
-  var slice => locAdesc.myStorageArr[r1, r2];
-  pragma "no auto destroy"
-  var result: [(...reindexExpr)] => slice;
-  return result;
+  ref slice = locAdesc.myStorageArr[r1, r2];
+  return slice.reindex({(...reindexExpr)});
 }
 
 /////////////////////////////////
