@@ -1,2 +1,5 @@
-[owner]
+
+# this is a sample comment
+
+[owner]  # this is a sample inline comment
 name = "Tom Preston-Werner"

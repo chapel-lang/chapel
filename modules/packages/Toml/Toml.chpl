@@ -37,24 +37,39 @@ proc writeToml(output: channel) {}
 proc main(args: [] string) {
   var source = new Source(args[1]);
   var parser = new Parser(source);
-  parser.loadKeyValue();
-}
+  ready(source);
+  //  source.debug();
+  while(readLine(source)) {
+    var token = getToken(source).strip();
+    if token == '#' {
+      parser.parseComment();
+    }
+    else if token == '[' { //change this to regmatch i think
+      write("Array: " + token);
+    }
+    else if token == '=' {
+      write('Assignment: ' + token);
+    } 
+    else if token == '\n' { 
+      writeln();
+    }
+    else {
+      writeln(token);
+    } 
+  }
+} 
+
+
+
 
 
 class Parser {
 
   var source;
-   
+  var rDom = {1..0},
+    resultlist: [rDom] Results;
 
-  proc loadKeyValue() {
-    ready(source);
-    write(getToken(source));
-    write(getToken(source));  
-    write(getToken(source));  
-    write(getToken(source));
-    write(getToken(source));
-    write(getToken(source));
-  }
+  proc loadKeyValue() { }
   
   proc parseType() { 
     var reArray = compile("(\\[.*?\\])");
@@ -63,6 +78,9 @@ class Parser {
 
   proc parseLoop() {}
 
+  proc parseComment() {
+  }
+
 }
 
 
@@ -70,7 +88,7 @@ class Parser {
 
 
 /* Array wrapper */
-class Result {
+class Results {
   var R: domain(1);
   var rArr: [R] string;
   

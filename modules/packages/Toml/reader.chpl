@@ -9,38 +9,40 @@ use Regexp;
 proc main(args: [] string) {
   var source = new Source(args[1]);
   ready(source);
-  writeln(getToken(source));
-  writeln(getToken(source));
+  source.debug();
   delete source;
 }
 
+proc isEOF(source) {// need try catch for this and or newline
+  if source.tokenlist.isEmpty() { 
+    return true;
+  }
+  else {
+    return false;
+  }
+} 
 
 
 // Returns the next token in the current line without removing it. 
 proc top(source) {
-  var latest = source.currentLine.A[source.currentLine.D.first];
-  return latest;
+  return source.currentLine.A[source.currentLine.D.first];
 }
 
-// skips the next token from the reader. 
-proc skipToken(source) {
-  source.currentLine.skip();
-}
 
-// Updates currentline in the source class.
+// returns a boolean or wether or not another line can be read
+// Also updates the currentLine if empty
 proc readLine(source) {
-  source.nextLine();
+  return source.nextLine();
 }
 
 // retrives the next token in currentline
 proc getToken(source) {
-  return source.nextToke();
+     return source.nextToke();
 }
 
 proc ready(source) { 
   if source.ready == false { 
     source.genTokenlist();
-    source.nextLine();
     source.ready = true;
   }
 }// add throw error here
@@ -67,10 +69,12 @@ class Source {
     for line in openfile.lines() {
       splitLine(line);
     }
+    currentLine = tokenlist[tokenD.first];
   }
 
   
   proc splitLine(line) {
+    var linetokens: [1..0] string;
     const doubleQuotes = '".*?\\[^\\]?"',
           singleQuotes = "'.*?\\[^\\]?'",
           bracketContents = "(\\[.*?\\])",
@@ -86,39 +90,41 @@ class Source {
 				     comments,
 				     commas,
 				     equals));
-  for token in pattern.split(line) {
-      var linetokens: [1..0] string;
+    for token in pattern.split(line) {
       if token.length != 0  {
 	linetokens.push_back(token);
       }
-       var tokens = new Tokens(linetokens);
-       tokenlist.push_back(tokens);
     }
+      if linetokens.size != 0 {
+	var tokens = new Tokens(linetokens);
+        tokenlist.push_back(tokens);
+      }
   }
+
+
 
 
   // Reads next line into currentline
   proc nextLine() {
-    var nextTokens = tokenlist[tokenD.first];
-    if nextTokens.A.isEmpty() {
-      tokenlist.remove(tokenD.first);
-      nextLine();  // EOF issue here need try/catch
+    if currentLine.A.isEmpty() {
+      if tokenD.size == 1 {
+	return false;
+      }
+      else {
+	tokenlist.remove(tokenD.first);
+	currentLine = tokenlist[tokenD.first];
+	return true;
+      }
     }
-    else {
-      currentLine = tokenlist[tokenD.first];
-      tokenlist.remove(tokenD.first);
-    }
+    return true; 
   }
+
   
   // retrives next token in currentLine
   proc nextToke() {
-    var nexttoken = currentLine.next();
-    if nexttoken == '\n' || nexttoken == '#' {
-      nextLine();
-      nexttoken = currentLine.next();
-    }
-    return nexttoken;
+    return currentLine.next();
   }
+
 
   proc debug() {
     for line in tokenlist {
@@ -154,7 +160,7 @@ class Tokens {
     A.remove(idx);
   }
 
-  proc next() { 
+  proc next() {
     var idx =  D.first;
     var toke = A(idx);
     A.remove(idx);
