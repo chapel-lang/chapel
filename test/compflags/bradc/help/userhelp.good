@@ -103,6 +103,8 @@ LLVM Code Generation Options:
       --llvm-print-ir-stage <stage>   Specifies from which LLVM optimization
                                       stage to print function: none, basic,
                                       full
+      --mllvm <flags>                 LLVM flags (can be specified multiple
+                                      times)
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
