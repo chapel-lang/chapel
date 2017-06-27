@@ -104,12 +104,16 @@ module ArrayViewReindex {
       }
 
       var ranges : arr.dom.dsiDims().type;
-      var low , high : arr.rank*arr.idxType;
-      for param d in 1..dims.size do low(d) = dims(d).first;
-      for param d in 1..dims.size do high(d) = dims(d).last;
-
-      var actualLow = chpl_reindexConvertIdx(low);
-      var actualHigh = chpl_reindexConvertIdx(high);
+      var actualLow, actualHigh: arr.rank*arr.idxType;
+      for param d in 1..dims.size {
+        if (dims(d).size == 0) {
+          actualLow(d) = arr.dom.dsiDim(d).low;
+          actualHigh(d) = arr.dom.dsiDim(d).high;
+        } else {
+          actualLow(d) = chpl_reindexConvertIdx(dims(d).first);
+          actualHigh(d) = chpl_reindexConvertIdx(dims(d).last);
+        }
+      }
       for param d in 1..arr.rank {
         var lowered = actualLow(d)..actualHigh(d);
         // TODO: does it matter which range slices the other?
