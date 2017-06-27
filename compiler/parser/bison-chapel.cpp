@@ -5135,7 +5135,7 @@ yyreduce:
 
   case 32:
 #line 484 "chapel.ypp" /* yacc.c:1646  */
-    { (yyval.pblockstmt) = buildLocalStmt((yyvsp[0].pblockstmt)); }
+    { (yyval.pblockstmt) = buildLocalStmt(new SymExpr(gTrue), (yyvsp[0].pblockstmt)); }
 #line 5140 "bison-chapel.cpp" /* yacc.c:1646  */
     break;
 
