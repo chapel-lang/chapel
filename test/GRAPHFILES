@@ -33,6 +33,7 @@ studies/shootout/thread-ring/thread-ring.graph
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
 studies/isx/isx.graph
 release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
@@ -110,6 +111,7 @@ release/examples/benchmarks/ssca2/performance.graph
 # suite: DOE proxy apps
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
 release/examples/benchmarks/lcals/LCALS-raw-short.graph
 release/examples/benchmarks/lcals/LCALS-raw-medium.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
