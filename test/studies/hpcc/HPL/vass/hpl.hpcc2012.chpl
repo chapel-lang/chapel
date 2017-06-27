@@ -180,7 +180,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   // (B) If we allocated replX separately from replK, we need to
   // replicate X where backwardSub currently invokes replicateK().
   // 
-  var replX => replK;
+  //  var replX => replK;
 
   // Allocate these arrays just once.
   // Partial sums local to each node.
@@ -710,11 +710,11 @@ proc backwardSub(n: indexType) {
 
     // the key computation for the last (lower-right) diagonal block
     // no data dependencies - just compute X
-    // zeros out its block of replX at start
+    // zeros out its block of replK at start
     bsComputeMyXs(diaFrom_N, diaTo_N, locId1_N, locId2_N, true);
 
     // TODO: all except the block right above can be done in background
-    replicateK(diaFrom_N);  // replicates replX
+    replicateK(diaFrom_N);  // replicates replK
   }
 
   var prevLocId1 = locId1_N,
@@ -746,12 +746,12 @@ proc backwardSub(n: indexType) {
   // gather into a DR array
   // What's copied has been updated appropriately
   // because we do replication synchronously.
-  var xTemp: [(...replX.domain.dims())] elemType = replX;
+  var xTemp: [(...replK.domain.dims())] elemType = replK;
 
-  // The 'forall' below, as an alternative to 'x = replX', would
+  // The 'forall' below, as an alternative to 'x = replK', would
   // iterate over *all* locales, which is too much and also causes
   // the error 'zippered iterations have non-equal lengths'.
-  //forall (repl,locl) in zip(replX,x) do locl = repl;
+  //forall (repl,locl) in zip(replK,x) do locl = repl;
 
   return xTemp;
 }
@@ -769,13 +769,13 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
                       myPartSums, gotBlocks);
     bsOthersPartSums[locId2].avail.write(if gotBlocks then spsAV else spsNBL);
 
-    // this zeros out its block of replX at start
+    // this zeros out its block of replK at start
     bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, diaLocId2);
 
     bsComputeMyXs(diaFrom, diaTo, locId1, locId2, false);
 
     // TODO: all except the block right above can be done in background
-    replicateK(diaFrom);  // replicates replX
+    replicateK(diaFrom);  // replicates replK
 
     // Reset partial values for future use.
     local for ps in myPartSums do ps = 0;
@@ -801,7 +801,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
 proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
   const diaSlice = diaFrom..diaTo;
   ref locAB = Ab._value.dsiLocalSlice1((diaSlice, diaSlice));
-  ref locX = replX._value.dsiLocalSlice1((0, diaSlice));
+  ref locX = replK._value.dsiLocalSlice1((0, diaSlice));
 
   // because we are reusing replK for replX
   if zeroOutX then
@@ -839,7 +839,7 @@ proc bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB) {
 proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   // Apart from asserts and writeln(), everything here should be local.
   ref partSums = bsOthersPartSums._value.localArrs[here.id].arrLocalRep;
-  ref locX     = replX._value.dsiLocalSlice1((0, diaFrom..diaTo));
+  ref locX     = replK._value.dsiLocalSlice1((0, diaFrom..diaTo));
   ensureDR(partSums._value, "bsI partSums");
   ensureDR(locX._value, "bsI locX");
 
@@ -911,7 +911,7 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     for pstart in startsToProcess {
       gotBlocks = true;
       const psSlice = pstart..min(pstart+blkSize-1,n);  // iterate in dim 2
-      ref pX  = replX._value.dsiLocalSlice1((0, psSlice));
+      ref pX  = replK._value.dsiLocalSlice1((0, psSlice));
       ref pAB = Ab._value.dsiLocalSlice1((diaSlice, psSlice));
       ensureDR(pX._value, "bsCPS pX");
       ensureDR(pAB._value, "bsCPS pAB");
