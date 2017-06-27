@@ -698,6 +698,10 @@ static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) 
   setWarnTupleIteration(desc, unused);
 }
 
+static void setLogDir(const ArgumentDescription* desc, const char* arg) {
+  fLogDir = true;
+}
+
 static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
@@ -884,7 +888,7 @@ static ArgumentDescription arg_desc[] = {
  {"html-print-block-ids", ' ', NULL, "[Don't] print block IDs in HTML dumps", "N", &fdump_html_print_block_IDs, "CHPL_HTML_PRINT_BLOCK_IDS", NULL},
  {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "P", fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
  {"log", 'd', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
- {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
+ {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},

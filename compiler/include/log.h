@@ -32,7 +32,7 @@ struct ArgumentDescription;
 // runpasses uses this to configure the logger
 void logMakePassAvailable(const char* name, char shortname);
 
-// Driver uses this to configure the logger
+// Driver uses this to configure the logger.
 // arg might be a pass name or a 1-character short name (e.g. 'R')
 void logSelectPass(const char* arg);
 
@@ -46,6 +46,8 @@ bool  deletedIdON();
 
 extern char  log_dir   [FILENAME_MAX + 1];
 extern char  log_module[FILENAME_MAX + 1];
+
+extern bool  fLogDir; // was --log-dir passed?
 
 extern bool  fLog;
 extern bool  fLogNode;

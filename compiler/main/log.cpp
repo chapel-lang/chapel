@@ -37,6 +37,7 @@ char             log_dir   [FILENAME_MAX + 1]           = "./log";
 char             log_module[FILENAME_MAX + 1]           =      "";
 
 bool             fLog                                   =    false;
+bool             fLogDir                                =    false;
 bool             fLogNode                               =    false;
 bool             fLogIds                                =    true;
 
@@ -51,13 +52,15 @@ char             deletedIdFilename[FILENAME_MAX + 1]    =      "";
 
 // Keeping names of available passes
 static bool availableInitialized = false;
-std::vector<std::string> logAvailableNames;
-std::vector<char> logAvailableShortNames;
+static std::vector<std::string> logAvailableNames;
+static std::vector<char> logAvailableShortNames;
 
 // Which passes should be logged?
 static bool logAll = true;
-std::set<std::string> logOnlyName;
+static std::set<std::string> logOnlyName;
 
+// was --log-dir passed?
+static bool logDirPassed = false;
 
 void logMakePassAvailable(const char* name, char shortname)
 {
@@ -111,7 +114,7 @@ void setupLogfiles() {
   if (logOnlyName.size() > 0)
     fLog = true;
   // Enable logging if --log-dir is used
-  if (log_dir[0] != '\0')
+  if (logDirPassed == true)
     fLog = true;
 
   if (fLog || fdump_html || *deletedIdFilename) {
