@@ -110,6 +110,7 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 #include "llvm/IR/LegacyPassManager.h"
 #define LEGACY_FUNCTION_PASS_MANAGER llvm::legacy::FunctionPassManager
 #define LEGACY_PASS_MANAGER llvm::legacy::PassManagerBase
+#define LEGACY_MODULE_PASS_MANAGER llvm::legacy::PassManager
 #else
 #include "llvm/PassManager.h"
 #define LEGACY_FUNCTION_PASS_MANAGER llvm::FunctionPassManager
