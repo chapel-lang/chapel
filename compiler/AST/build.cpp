@@ -2689,11 +2689,15 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
   return fn;
 }
 
+// builds a local statement with a conditional, where the `then` block
+// is local and `else` block is not
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
-  return buildIfStmt(new CallExpr("_cond_test", condExpr), 
+  return buildIfStmt(new CallExpr("_cond_test", condExpr),
       buildLocalStmt(stmt->copy()), stmt);
 }
 
+// builds an unconditional local statement. Only used from the
+// overloaded version. i.e. parser doesn't call this directly
 BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
 
