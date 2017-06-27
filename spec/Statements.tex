@@ -830,18 +830,27 @@ see~\rsec{Modules}.
 \label{The_Defer_Statement}
 \index{statements!defer}
 
-A \chpl{defer} statement causes its body to be run when exiting a
-function. \chpl{defer} is useful because the deferred statements will
-be run no matter how the function returns. At a given place where a
-function returns, the in-scope \chpl{defer} and local variables
-that need to be de-initialized will be handled in reverse declaration
-order. The contents of each \chpl{defer} block will be run and any
-local variables of record type will be deinitialized.
+A \chpl{defer} statement declares a clean-up action to be run when
+exiting a block.
+\chpl{defer} is useful because the clean-up action will be run no
+matter how the block is exited.
 
 \begin{syntax}
 defer-statement:
   `defer' statement
 \end{syntax}
+
+At a given place where control flow exits a block, the in-scope
+\chpl{defer} statements and the local variables will be handled in
+reverse declaration order. Handling a \chpl{defer} statement consists of
+executing the contained clean-up action. Handling a local variable
+consists of running its deinitializer if it is of record type.
+
+When an iterator contains a \chpl{defer} statement at the top level, the
+associated clean-up action will be executed when the loop running the
+iterator exits.
+
+TODO: defer in a loop example?
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}
