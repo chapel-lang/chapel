@@ -2004,7 +2004,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
 
-      // Insert the arg portion of the initExpr back into tree
+      // This call must be in tree before extending argExpr
       defExpr->insertAfter(argExpr);
 
       // Convert it in to a use of the init method
@@ -2025,12 +2025,13 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNewExpr(initExpr)) {
-    // This check is necessary because the "typeForTypeSpecifier" call will not
-    // obtain a type if the typeExpr is a CallExpr, as it is for generic records
-    // and classes
+    // This check is necessary because the "typeForTypeSpecifier"
+    // call will not obtain a type if the typeExpr is a CallExpr,
+    // as it is for generic records and classes
 
-    CallExpr* origCall = toCallExpr(initExpr);
-    AggregateType* rhsType = typeForNewExpr(origCall);
+    CallExpr*      origCall = toCallExpr(initExpr);
+    AggregateType* rhsType  = typeForNewExpr(origCall);
+
     if (isGenericRecordWithInitializers(rhsType)) {
       // Create a temporary with the type specified in the lhs declaration
       VarSymbol* typeTemp = newTemp("type_tmp");
@@ -2076,6 +2077,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
 
     }
+
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
