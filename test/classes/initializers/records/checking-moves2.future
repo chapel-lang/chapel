@@ -7,3 +7,5 @@ to be because we are not validating our autoCopy function for concrete records
 with initializers (because they might not work and we only want that to be
 an issue if an autoCopy is needed), but we are not validating the autoCopy
 later either.
+
+Discussion on this future occurred in the PR that added it, #6564

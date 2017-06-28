@@ -18,5 +18,6 @@ proc useIt(): R {
 
 proc main() {
   var r: R = useIt();
+  // no copy initializer, but shouldn't the above line work without one?
   writeln(r);
 }
