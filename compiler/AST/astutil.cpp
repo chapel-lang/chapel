@@ -945,8 +945,7 @@ prune() {
 }
 
 
-// Done this way because the log letter and hence the pass name for
-// each pass must be unique.  See initLogFlags() in runpasses.cpp.
+// Done this way to make the pass name for each pass unique.
 void prune2() { prune(); } // Synonym for prune.
 
 /*
