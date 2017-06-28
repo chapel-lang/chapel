@@ -2062,7 +2062,11 @@ void makeBinaryLLVM(void) {
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
 
     // Add IR dumping pass if necessary
-    PassManagerBuilder::ExtensionPointTy point;
+    // point is initialized to a dummy value; it is set
+    // in getIrDumpExtensionPoint.
+    PassManagerBuilder::ExtensionPointTy point =
+                  PassManagerBuilder::EP_EarlyAsPossible;
+
     if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
       printf("Adding IR dump extension at %i for %s\n", point, llvmPrintIrCName);
       PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
