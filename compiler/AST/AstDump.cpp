@@ -524,6 +524,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
   return true;
 }
 
+
 //
 // ForwardingStmt
 //
@@ -534,6 +535,25 @@ bool AstDump::enterForwardingStmt(ForwardingStmt* node) {
 
 void AstDump::exitForwardingStmt(ForwardingStmt* node) {
   write(")");
+}
+
+
+//
+// DeferStmt
+//
+bool AstDump::enterDeferStmt(DeferStmt* node) {
+  newline();
+  write("Defer");
+  newline();
+  write("{");
+  ++mIndent;
+  return true;
+}
+
+void AstDump::exitDeferStmt(DeferStmt* node) {
+  --mIndent;
+  newline();
+  write("}");
 }
 
 

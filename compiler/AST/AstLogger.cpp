@@ -196,6 +196,13 @@ bool AstLogger::enterForwardingStmt(ForwardingStmt* node) {
 void AstLogger::exitForwardingStmt(ForwardingStmt* node) {
 }
 
+bool AstLogger::enterDeferStmt(DeferStmt* node) {
+  return true;
+}
+
+void AstLogger::exitDeferStmt(DeferStmt* node) {
+}
+
 bool AstLogger::enterTryStmt(TryStmt* node) {
   return true;
 }
