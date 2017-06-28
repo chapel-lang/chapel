@@ -85,15 +85,19 @@ module ArrayViewReindex {
     // indices/domains back into the original index set.
     //
 
+    inline proc chpl_reindexConvertIdxDim(i: integral, dim: int) {
+      return arr.dom.dsiDim(dim).orderToIndex(dom.dsiDim(dim).indexOrder(i));
+    }
+
     inline proc chpl_reindexConvertIdx(i: integral) {
       compilerAssert(arr.rank == 1, arr.rank:string);
-      return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
+      return chpl_reindexConvertIdxDim(i, 1);
     }
 
     inline proc chpl_reindexConvertIdx(i) {
       var ind: arr.rank*arr.idxType;
       for param d in 1..arr.rank {
-        ind(d) = arr.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
+        ind(d) = chpl_reindexConvertIdxDim(i, d);
       }
       return ind;
     }
@@ -110,8 +114,8 @@ module ArrayViewReindex {
           actualLow(d) = arr.dom.dsiDim(d).low;
           actualHigh(d) = arr.dom.dsiDim(d).high;
         } else {
-          actualLow(d) = chpl_reindexConvertIdx(dims(d).first);
-          actualHigh(d) = chpl_reindexConvertIdx(dims(d).last);
+          actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, d);
+          actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, d);
         }
       }
       for param d in 1..arr.rank {
