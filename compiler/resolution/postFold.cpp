@@ -244,7 +244,7 @@ Expr* postFold(Expr* expr) {
               !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
-                // this still semes to be necessary even if
+                // this still seems to be necessary even if
                 // isUserDefinedRecord(lhs->symbol()->type) == true
                 // see call-expr-tmp.chpl for example
                 lhs->symbol()->addFlag(FLAG_INSERT_AUTO_COPY);
