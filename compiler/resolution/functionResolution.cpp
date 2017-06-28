@@ -4799,26 +4799,34 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         fn->insertAtHead(defaultExpr);
 
       } else {
-        VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
-        VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+        AggregateType* formalAt = toAggregateType(formal->getValType());
+        if (isNonGenericRecordWithInitializers(formalAt)) {
+          fn->insertAtHead(new CallExpr("init",
+                                        gMethodToken,
+                                        tmp));
+          tmp->type = formalAt;
+        } else {
+          VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
+          VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
 
-        typeTmp->addFlag(FLAG_MAYBE_TYPE);
+          typeTmp->addFlag(FLAG_MAYBE_TYPE);
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      new CallExpr(PRIM_INIT, typeTmp)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                        tmp,
+                                        new CallExpr(PRIM_INIT, typeTmp)));
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      typeTmp,
-                                      new CallExpr(PRIM_TYPEOF, refTmp)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                        typeTmp,
+                                        new CallExpr(PRIM_TYPEOF, refTmp)));
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      refTmp,
-                                      new CallExpr(PRIM_DEREF, formal)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                        refTmp,
+                                        new CallExpr(PRIM_DEREF, formal)));
 
-        fn->insertAtHead(new DefExpr(refTmp));
+          fn->insertAtHead(new DefExpr(refTmp));
 
-        fn->insertAtHead(new DefExpr(typeTmp));
+          fn->insertAtHead(new DefExpr(typeTmp));
+        }
       }
 
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
