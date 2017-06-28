@@ -46,7 +46,6 @@
 #include "type.h"
 #include "resolution.h"
 
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -69,6 +68,14 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "none", //llvmStageNum::NONE
   "basic", //llvmStageNum::BASIC
   "full", //llvmStageNum::FULL
+  "early-as-possible",
+  "module-optimizer-early",
+  "loop-optimizer-end",
+  "scalar-optimizer-late",
+  "optimizer-last",
+  "vectorizer-start",
+  "enabled-on-opt-level0",
+  "peephole",
 };
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum) {
@@ -1260,8 +1267,10 @@ void FnSymbol::codegenDef() {
     func = getFunctionLLVM(cname);
 
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT
-            && strcmp(llvmPrintIrName, name) == 0)
+            && strcmp(llvmPrintIrName, name) == 0) {
+        func->addFnAttr(llvm::Attribute::NoInline);
         llvmPrintIrCName = cname;
+    }
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
@@ -1351,6 +1360,9 @@ void FnSymbol::codegenDef() {
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
+
+    // (note, in particular, the default pass manager's
+    //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
     if(llvmPrintIrStageNum == llvmStageNum::BASIC
             && strcmp(llvmPrintIrName, name) == 0)

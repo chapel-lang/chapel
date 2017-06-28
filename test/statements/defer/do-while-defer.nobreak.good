@@ -1,0 +1,14 @@
+creating 1
+creating 2
+defer post 2
+Destroying 2
+defer post 1
+Destroying 1
+defer pre 1
+creating 1
+creating 2
+defer post 2
+Destroying 2
+defer post 1
+Destroying 1
+defer pre 1

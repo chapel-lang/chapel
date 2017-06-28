@@ -257,6 +257,14 @@ bool AstCount::enterGotoStmt(GotoStmt* node) {
 void AstCount::exitGotoStmt(GotoStmt* node) {
 }
 
+bool AstCount::enterDeferStmt(DeferStmt* node) {
+  numDeferStmt++;
+  return true;
+}
+
+void AstCount::exitDeferStmt(DeferStmt* node) {
+}
+
 bool AstCount::enterTryStmt(TryStmt* node) {
   numTryStmt++;
   return true;

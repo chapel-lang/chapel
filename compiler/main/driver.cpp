@@ -90,7 +90,6 @@ bool widePointersStruct;
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
-static char log_flags[512] = "";
 bool fLibraryCompile = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
@@ -214,6 +213,8 @@ bool preserveInlinedLineNumbers = false;
 
 const char* compileCommand = NULL;
 char compileVersion[64];
+
+std::string llvmFlags;
 
 static
 bool fPrintChplSettings = false;
@@ -513,6 +514,17 @@ static void setLDFlags(const ArgumentDescription* desc, const char* arg) {
   ldflags += arg;
 }
 
+// similar to setCCFlags
+static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
+  // Append arg to the end of llvmFlags.
+
+  // add a space if there are already arguments here
+  if( llvmFlags.length() > 0 )
+    llvmFlags += ' ';
+
+  llvmFlags += arg;
+}
+
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
@@ -699,6 +711,15 @@ static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) 
   setWarnTupleIteration(desc, unused);
 }
 
+static void setLogDir(const ArgumentDescription* desc, const char* arg) {
+  fLogDir = true;
+}
+
+static void setLogPass(const ArgumentDescription* desc, const char* arg) {
+  logSelectPass(arg);
+}
+
+
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
@@ -815,6 +836,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmPrintIrName, "CHPL_LLVM_PRINT_IR", NULL},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
@@ -879,10 +901,12 @@ static ArgumentDescription arg_desc[] = {
  {"html-wrap-lines", ' ', NULL, "[Don't] allow wrapping lines in HTML dumps", "N", &fdump_html_wrap_lines, "CHPL_HTML_WRAP_LINES", NULL},
  {"html-print-block-ids", ' ', NULL, "[Don't] print block IDs in HTML dumps", "N", &fdump_html_print_block_IDs, "CHPL_HTML_PRINT_BLOCK_IDS", NULL},
  {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "P", fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
- {"log", 'd', "<letters>", "Dump IR in text format. See runpasses.cpp for definition of <letters>. Empty argument (\"-d=\" or \"--log=\") means \"log all passes\"", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
- {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
+ {"log", 'd', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
+ {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
+ {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
+ {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},

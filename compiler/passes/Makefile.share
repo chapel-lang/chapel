@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_HEADERS = \
+GEN_HEADERS =                                              \
         reservedSymbolNames.h
 
 PASSES_SRCS =                                              \
@@ -34,6 +34,7 @@ PASSES_SRCS =                                              \
         flattenClasses.cpp                                 \
         flattenFunctions.cpp                               \
         initializerRules.cpp                               \
+        InitNormalize.cpp                                  \
         insertLineNumbers.cpp                              \
         insertWideReferences.cpp                           \
         normalize.cpp                                      \
@@ -43,8 +44,8 @@ PASSES_SRCS =                                              \
         returnStarTuplesByRefArgs.cpp                      \
         scopeResolve.cpp
 
-SVN_SRCS = $(PASSES_SRCS)
-SRCS = $(SVN_SRCS)
+SVN_SRCS    = $(PASSES_SRCS)
+SRCS        = $(SVN_SRCS)
 
 PASSES_OBJS = \
         $(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))
