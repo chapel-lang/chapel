@@ -9,7 +9,6 @@ record MyRec {
   var z : SubRec = y;
 
   proc init() {
-    // Note this is phase 2.  SubRec.init() runs first.
     writeln('MyRec.init()');
   }
 }
@@ -25,6 +24,8 @@ record SubRec {
   }
 
   proc init(other : SubRec) {
+    writeln('SubRec.init(', other, ')');
+
     a = other.a;
     b = other.b;
 

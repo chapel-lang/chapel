@@ -21,14 +21,10 @@
 
 #include "astutil.h"
 #include "expr.h"
-#include "LoopStmt.h"
-#include "stlUtil.h"
+#include "InitNormalize.h"
 #include "stmt.h"
-#include "symbol.h"
 #include "type.h"
 #include "typeSpecifier.h"
-
-#include <map>
 
 enum InitStyle {
   STYLE_NONE,
@@ -36,8 +32,6 @@ enum InitStyle {
   STYLE_THIS_INIT,
   STYLE_BOTH
 };
-
-class InitVisitor;
 
 static bool      isInitStmt (Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
@@ -48,6 +42,13 @@ static InitStyle findInitStyle(Expr*     expr);
 
 static void      preNormalizeNonGenericInit(FnSymbol* fn);
 static void      preNormalizeGenericInit(FnSymbol* fn);
+
+static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
+static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
+
+static bool     isAssignment(CallExpr* callExpr);
+static bool     isSimpleAssignment(CallExpr* callExpr);
+static bool     isCompoundAssignment(CallExpr* callExpr);
 
 /************************************* | **************************************
 *                                                                             *
@@ -212,501 +213,12 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Expr*    fieldInitFromStmt(CallExpr*    stmt,
-                                  FnSymbol*    fn,
-                                  InitVisitor& state,
-                                  DefExpr*     field);
-
-static void     fieldInitFromField(Expr*        insertBefore,
-                                   FnSymbol*    fn,
-                                   InitVisitor& state,
-                                   DefExpr*     field);
-
-static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
-static DefExpr* toSuperField    (AggregateType* at, CallExpr* expr);
-
-static DefExpr* toSuperField    (AggregateType* at, SymExpr*  expr);
-
-static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
-static DefExpr* toLocalField    (AggregateType* at, CallExpr* expr);
-
-static DefExpr* toLocalField    (AggregateType* at, SymExpr*  expr);
-
-static SymExpr* createFieldAccess(Expr*     insertBefore,
-                                  FnSymbol* fn,
-                                  DefExpr*  field);
-
-static SymExpr* normalizeExpr(Expr*        insertBefore,
-                              InitVisitor& state,
-                              Expr*        expr);
-
-static bool     isAssignment(CallExpr* callExpr);
-static bool     isSimpleAssignment(CallExpr* callExpr);
-static bool     isCompoundAssignment(CallExpr* callExpr);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-enum InitPhase {
-  cPhase0,
-  cPhase1,
-  cPhase2
-};
-
-static const char* phaseToString(InitPhase phase) {
-  const char* retval = "?";
-
-  switch (phase) {
-    case cPhase0:
-      retval = "Phase0";
-      break;
-
-    case cPhase1:
-      retval = "Phase1";
-      break;
-
-    case cPhase2:
-      retval = "Phase2";
-      break;
-  }
-
-  return retval;
-}
-
-class InitVisitor {
-public:
-                  InitVisitor(FnSymbol*  fn);
-                  InitVisitor(BlockStmt* block, const InitVisitor& curr);
-                  InitVisitor(LoopStmt*  loop,  const InitVisitor& curr);
-                  InitVisitor(CondStmt*  cond,  const InitVisitor& curr);
-
-  void            merge(const InitVisitor& fork);
-
-  AggregateType*  type()                                                 const;
-  FnSymbol*       theFn()                                                const;
-
-  bool            isRecord()                                             const;
-  bool            isClass()                                              const;
-
-  InitPhase       startPhase(BlockStmt* block)                           const;
-  bool            isPhase0()                                             const;
-  bool            isPhase1()                                             const;
-  bool            isPhase2()                                             const;
-
-  void            checkPhase(BlockStmt* block);
-
-  Expr*           completePhase1(CallExpr* insertBefore);
-  void            initializeFieldsBefore(Expr* insertBefore);
-
-  bool            isFieldReinitialized(DefExpr* field)                   const;
-  bool            inLoopBody()                                           const;
-  bool            inCondStmt()                                           const;
-  bool            inParallelStmt()                                       const;
-
-  DefExpr*        currField()                                            const;
-
-  bool            isFieldInitialized(const DefExpr* field)               const;
-
-  Expr*           fieldInitFromInitStmt(DefExpr*  field,
-                                        CallExpr* callExpr);
-
-  bool            fieldUsedBeforeInitialized(Expr*      expr)            const;
-
-  bool            fieldUsedBeforeInitialized(CallExpr* callExpr)         const;
-
-  void            describe(int offset = 0)                               const;
-
-private:
-  enum BlockType {
-    cBlockNormal,
-    cBlockCond,
-    cBlockLoop,
-    cBlockBegin,
-    cBlockCobegin
-  };
-
-                  InitVisitor();
-
-  InitPhase       startPhase(FnSymbol*  fn)                              const;
-
-  DefExpr*        firstField(FnSymbol* fn)                               const;
-
-  FnSymbol*       mFn;
-  DefExpr*        mCurrField;
-  InitPhase       mPhase;
-  BlockType       mBlockType;
-};
-
-InitVisitor::InitVisitor(FnSymbol* fn) {
-  mFn         = fn;
-  mCurrField  = firstField(fn);
-  mPhase      = startPhase(fn);
-  mBlockType  = cBlockNormal;
-}
-
-InitVisitor::InitVisitor(BlockStmt* block, const InitVisitor& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
-
-  if (CallExpr* blockInfo = block->blockInfoGet()) {
-    if (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)   == true) {
-      mBlockType = cBlockBegin;
-
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) == true) {
-      mBlockType = cBlockCobegin;
-
-    } else {
-      INT_ASSERT(false);
-    }
-
-  } else {
-    mBlockType = curr.mBlockType;
-  }
-}
-
-InitVisitor::InitVisitor(CondStmt* cond, const InitVisitor& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
-  mBlockType  = cBlockCond;
-}
-
-InitVisitor::InitVisitor(LoopStmt* loop, const InitVisitor& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
-  mBlockType  = cBlockLoop;
-}
-
-void InitVisitor::merge(const InitVisitor& fork) {
-  mCurrField = fork.mCurrField;
-  mPhase     = fork.mPhase;
-}
-
-AggregateType* InitVisitor::type() const {
-  return mFn != NULL ? toAggregateType(mFn->_this->type) : NULL;
-}
-
-FnSymbol* InitVisitor::theFn() const {
-  return mFn;
-}
-
-bool InitVisitor::isRecord() const {
-  return ::isRecord(type());
-}
-
-bool InitVisitor::isClass() const {
-  return ::isClass(type());
-}
-
-bool InitVisitor::isPhase0() const {
-  return mPhase == cPhase0;
-}
-
-bool InitVisitor::isPhase1() const {
-  return mPhase == cPhase1;
-}
-
-bool InitVisitor::isPhase2() const {
-  return mPhase == cPhase2;
-}
-
-bool InitVisitor::isFieldReinitialized(DefExpr* field) const {
-  AggregateType* at     = toAggregateType(mFn->_this->type);
-  Expr*          ptr    = at->fields.head;
-  bool           retval = false;
-
-  while (ptr != NULL && ptr != mCurrField && retval == false) {
-    if (field == ptr) {
-      retval = true;
-    } else {
-      ptr    = ptr->next;
-    }
-  }
-
-  INT_ASSERT(ptr != NULL);
-
-  return retval;
-}
-
-bool InitVisitor::inLoopBody() const {
-  return mBlockType == cBlockLoop;
-}
-
-bool InitVisitor::inCondStmt() const {
-  return mBlockType == cBlockCond;
-}
-
-bool InitVisitor::inParallelStmt() const {
-  return mBlockType == cBlockBegin   ||
-         mBlockType == cBlockCobegin  ;
-}
-
-Expr* InitVisitor::completePhase1(CallExpr* initStmt) {
-  Expr* retval = initStmt->next;
-
-  if (isSuperInit(initStmt) == true) {
-    initializeFieldsBefore(initStmt);
-
-    if (isRecord() == true) {
-      initStmt->remove();
-    }
-
-  } else if (isThisInit(initStmt) == true) {
-    mCurrField = NULL;
-
-  } else {
-    INT_ASSERT(false);
-  }
-
-  mPhase = cPhase2;
-
-  return retval;
-}
-
-void InitVisitor::initializeFieldsBefore(Expr* insertBefore) {
-
-  while (mCurrField != NULL) {
-    fieldInitFromField(insertBefore, mFn, *this, mCurrField);
-
-    mCurrField = toDefExpr(mCurrField->next);
-  }
-
-}
-
-DefExpr* InitVisitor::currField() const {
-  return mCurrField;
-}
-
-bool InitVisitor::isFieldInitialized(const DefExpr* field) const {
-  const DefExpr* ptr    = mCurrField;
-  bool           retval = true;
-
-  while (ptr != NULL && retval == true) {
-    if (ptr == field) {
-      retval = false;
-    } else {
-      ptr = toConstDefExpr(ptr->next);
-    }
-  }
-
-  return retval;
-}
-
-InitPhase InitVisitor::startPhase(FnSymbol* fn) const {
-  return startPhase(fn->body);
-}
-
-InitPhase InitVisitor::startPhase(BlockStmt* block) const {
-  Expr*     stmt   = block->body.head;
-  InitPhase retval = cPhase2;
-
-  while (stmt != NULL && retval == cPhase2) {
-    if (isDefExpr(stmt) == true) {
-      stmt = stmt->next;
-
-    } else if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if        (isThisInit(callExpr)  == true) {
-        retval = cPhase0;
-
-      } else if (isSuperInit(callExpr) == true) {
-        retval = cPhase1;
-
-      } else {
-        stmt   = stmt->next;
-      }
-
-    } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
-        InitPhase thenPhase = startPhase(cond->thenStmt);
-
-        if (thenPhase != cPhase2) {
-          retval = thenPhase;
-        } else {
-          stmt   = stmt->next;
-        }
-
-      } else {
-        InitPhase thenPhase = startPhase(cond->thenStmt);
-        InitPhase elsePhase = startPhase(cond->elseStmt);
-
-        if        (thenPhase == cPhase0 || elsePhase == cPhase0) {
-          retval = cPhase0;
-
-        } else if (thenPhase == cPhase1 || elsePhase == cPhase1) {
-          retval = cPhase1;
-
-        } else {
-          stmt   = stmt->next;
-        }
-      }
-
-    } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      InitPhase phase = startPhase(block);
-
-      if (phase != cPhase2) {
-        retval = phase;
-      } else {
-        stmt   = stmt->next;
-      }
-
-    } else {
-      stmt = stmt->next;
-    }
-  }
-
-  return retval;
-}
-
-void InitVisitor::checkPhase(BlockStmt* block) {
-  if (mPhase == cPhase0) {
-    InitPhase newPhase = startPhase(block);
-
-    if (newPhase == cPhase1) {
-      mPhase = newPhase;
-    }
-  }
-}
-
-DefExpr* InitVisitor::firstField(FnSymbol* fn) const {
-  AggregateType* at     = toAggregateType(fn->_this->type);
-  DefExpr*       retval = toDefExpr(at->fields.head);
-
-  // Skip the pseudo-field "super"
-  if (::isClass(at) == true) {
-    retval = toDefExpr(retval->next);
-  }
-
-  // Skip the pseudo-field "outer" (if present)
-  if (retval                             != NULL &&
-      retval->exprType                   == NULL &&
-      retval->init                       == NULL &&
-      strcmp(retval->sym->name, "outer") ==    0) {
-    retval = toDefExpr(retval->next);
-  }
-
-  return retval;
-}
-
-Expr* InitVisitor::fieldInitFromInitStmt(DefExpr* field, CallExpr* initStmt) {
-  Expr* retval = NULL;
-
-  // Either a redefinition, fields out of order, or omitted fields
-  if (field != mCurrField) {
-    INT_ASSERT(isFieldReinitialized(field) == false);
-
-    while (field != mCurrField) {
-      fieldInitFromField(initStmt, mFn, *this, mCurrField);
-
-      mCurrField = toDefExpr(mCurrField->next);
-    }
-  }
-
-  // Now that omitted fields have been handled, see if RHS is OK
-  if (fieldUsedBeforeInitialized(initStmt) == true) {
-    USR_FATAL(initStmt, "Field used before it is initialized");
-  }
-
-  // Now handle this field
-  retval     = fieldInitFromStmt(initStmt, mFn, *this, field);
-  mCurrField = toDefExpr(mCurrField->next);
-
-  return retval;
-}
-
-bool InitVisitor::fieldUsedBeforeInitialized(Expr* expr) const {
-  bool retval = false;
-
-  if (DefExpr* defExpr = toDefExpr(expr)) {
-    if (defExpr->init != NULL) {
-      retval = fieldUsedBeforeInitialized(defExpr->init);
-    }
-
-  } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    retval = fieldUsedBeforeInitialized(callExpr);
-  }
-
-  return retval;
-}
-
-bool InitVisitor::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
-  bool retval = false;
-
-  if (isAssignment(callExpr) == true) {
-    retval = fieldUsedBeforeInitialized(callExpr->get(2));
-
-  } else if (DefExpr* field = toLocalField(type(), callExpr)) {
-    retval = isFieldInitialized(field) == true ? false : true;
-
-  } else {
-    for_actuals(actual, callExpr) {
-      if (fieldUsedBeforeInitialized(actual) == true) {
-        retval = true;
-        break;
-      }
-    }
-  }
-
-  return retval;
-}
-
-void InitVisitor::describe(int offset) const {
-  char pad[512];
-
-  for (int i = 0; i < offset; i++) {
-    pad[i] = ' ';
-  }
-
-  pad[offset] = '\0';
-
-  printf("%s#<InitVisitor\n", pad);
-
-  printf("%s  Phase: %s\n", pad, phaseToString(mPhase));
-
-  printf("%s  Block: ",       pad);
-
-  switch (mBlockType) {
-    case cBlockNormal:
-      printf("normal\n");
-      break;
-
-    case cBlockCond:
-      printf("cond\n");
-      break;
-
-    case cBlockLoop:
-      printf("loop\n");
-      break;
-
-    case cBlockBegin:
-      printf("begin\n");
-      break;
-
-    case cBlockCobegin:
-      printf("cobegin\n");
-      break;
-
-  }
-
-  printf("%s>\n", pad);
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static InitVisitor preNormalize(BlockStmt*  block,
-                                InitVisitor state);
-
-static InitVisitor preNormalize(BlockStmt*  block,
-                                InitVisitor state,
-                                Expr*       start);
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state);
+
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state,
+                                  Expr*         start);
 
 static CallExpr* createCallToSuperInit(FnSymbol* fn);
 
@@ -717,7 +229,7 @@ static bool      isMethodCall(CallExpr* callExpr);
 
 static void preNormalizeNonGenericInit(FnSymbol* fn) {
   AggregateType* at         = toAggregateType(fn->_this->type);
-  InitVisitor    state(fn);
+  InitNormalize  state(fn);
 
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
@@ -776,14 +288,14 @@ static void preNormalizeNonGenericInit(FnSymbol* fn) {
   }
 }
 
-static InitVisitor preNormalize(BlockStmt*  block,
-                                InitVisitor state) {
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state) {
   return preNormalize(block, state, block->body.head);
 }
 
-static InitVisitor preNormalize(BlockStmt*  block,
-                                InitVisitor state,
-                                Expr*       stmt) {
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state,
+                                  Expr*         stmt) {
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
@@ -911,18 +423,19 @@ static InitVisitor preNormalize(BlockStmt*  block,
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
       if (cond->elseStmt == NULL) {
-        InitPhase   phaseThen = state.startPhase(cond->thenStmt);
-        InitVisitor stateThen = preNormalize(cond->thenStmt,
-                                             InitVisitor(cond, state));
+        InitNormalize::InitPhase phaseThen = state.startPhase(cond->thenStmt);
+        InitNormalize            stateThen = preNormalize(
+                                                  cond->thenStmt,
+                                                  InitNormalize(cond, state));
 
         if (state.isPhase2() == false) {
           if (stateThen.isPhase2() == true) {
-            if (phaseThen == cPhase0) {
+            if (phaseThen == InitNormalize::cPhase0) {
               USR_FATAL(cond,
                         "use of this.init() in a conditional stmt "
                         "in phase 1");
 
-            } else if (phaseThen == cPhase1) {
+            } else if (phaseThen == InitNormalize::cPhase1) {
               USR_FATAL(cond,
                         "use of super.init() in a conditional stmt "
                         "in phase 1");
@@ -940,11 +453,11 @@ static InitVisitor preNormalize(BlockStmt*  block,
         }
 
       } else {
-        InitVisitor stateThen = preNormalize(cond->thenStmt,
-                                             InitVisitor(cond, state));
+        InitNormalize stateThen = preNormalize(cond->thenStmt,
+                                               InitNormalize(cond, state));
 
-        InitVisitor stateElse = preNormalize(cond->elseStmt,
-                                             InitVisitor(cond, state));
+        InitNormalize stateElse = preNormalize(cond->elseStmt,
+                                               InitNormalize(cond, state));
 
         if (state.isPhase2() == false) {
           // Only one branch contained an init
@@ -967,11 +480,11 @@ static InitVisitor preNormalize(BlockStmt*  block,
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      preNormalize((BlockStmt*) stmt, InitVisitor(loop, state));
+      preNormalize((BlockStmt*) stmt, InitNormalize(loop, state));
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      state.merge(preNormalize(block, InitVisitor(block, state)));
+      state.merge(preNormalize(block, InitNormalize(block, state)));
       stmt  = stmt->next;
 
     } else {
@@ -1122,319 +635,6 @@ static const char* initName(CallExpr* expr) {
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void fieldInitTypeWoutInit(Expr*        stmt,
-                                  FnSymbol*    fn,
-                                  InitVisitor& state,
-                                  DefExpr*     field);
-
-static void fieldInitTypeWithInit(Expr*        stmt,
-                                  FnSymbol*    fn,
-                                  InitVisitor& state,
-                                  DefExpr*     field,
-                                  Expr*        initExpr);
-
-static void fieldInitTypeInference(Expr*        insertBefore,
-                                   FnSymbol*    fn,
-                                   InitVisitor& state,
-                                   DefExpr*     field,
-                                   Expr*        initExpr);
-
-static Expr* fieldInitFromStmt(CallExpr*    stmt,
-                               FnSymbol*    fn,
-                               InitVisitor& state,
-                               DefExpr*     field) {
-  Expr* insertBefore = stmt;
-  Expr* initExpr     = stmt->get(2)->remove();
-  Expr* retval       = stmt->next;
-
-  // Initialize the field using the RHS of the source stmt
-  if (field->exprType != NULL) {
-    fieldInitTypeWithInit (insertBefore, fn, state, field, initExpr);
-
-  } else {
-    fieldInitTypeInference(insertBefore, fn, state, field, initExpr);
-  }
-
-  // Remove the (degenerate) source version of the field assignment
-  stmt->remove();
-
-  return retval;
-}
-
-static void fieldInitFromField(Expr*        insertBefore,
-                               FnSymbol*    fn,
-                               InitVisitor& state,
-                               DefExpr*     field) {
-  if        (field->exprType == NULL && field->init == NULL) {
-    INT_ASSERT(false);
-
-  } else if (field->exprType != NULL && field->init == NULL) {
-    fieldInitTypeWoutInit (insertBefore, fn, state, field);
-
-  } else if (field->exprType != NULL && field->init != NULL) {
-    Expr* initCopy = field->init->copy();
-
-    fieldInitTypeWithInit (insertBefore, fn, state, field, initCopy);
-
-  } else if (field->exprType == NULL && field->init != NULL) {
-    Expr* initCopy = field->init->copy();
-
-    fieldInitTypeInference(insertBefore, fn, state, field, initCopy);
-
-  } else {
-    INT_ASSERT(false);
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void expandLocal(Symbol* _this, Expr* expr);
-
-static void fieldInitTypeWoutInit(Expr*        stmt,
-                                  FnSymbol*    fn,
-                                  InitVisitor& state,
-                                  DefExpr*     field) {
-  SET_LINENO(stmt);
-
-  Type* type = field->sym->type;
-
-  if (isPrimitiveScalar(type) == true) {
-    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
-    SymExpr*  access = createFieldAccess(stmt, fn, field);
-
-    stmt->insertBefore(new CallExpr("=",       access,   defVal));
-
-  } else if (isNonGenericClass(type) == true) {
-    CallExpr* defVal = new CallExpr("_defaultOf", type->symbol);
-    SymExpr*  access = createFieldAccess(stmt, fn, field);
-
-    stmt->insertBefore(new CallExpr("=",       access,   defVal));
-
-  } else if (isNonGenericRecordWithInitializers(type) == true) {
-    SymExpr* access = createFieldAccess(stmt, fn, field);
-
-    stmt->insertBefore(new CallExpr("init", gMethodToken, access));
-
-  } else {
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    SymExpr*   temp     = new SymExpr(typeTemp);
-
-    Expr*      typeExpr = field->exprType->copy();
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    Symbol*    _this    = fn->_this;
-    Symbol*    name     = new_CStringSymbol(field->sym->name);
-
-    expandLocal(_this, typeExpr);
-
-    if (field->sym->hasFlag(FLAG_PARAM) == true) {
-      typeTemp->addFlag(FLAG_PARAM);
-    }
-
-    stmt->insertBefore(new DefExpr(typeTemp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, typeTemp, initCall));
-    stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, temp));
-  }
-}
-
-static void expandLocal(Symbol* _this, Expr* expr) {
-  if (CallExpr* callExpr = toCallExpr(expr)) {
-    for_actuals(actual, callExpr) {
-      expandLocal(_this, actual);
-    }
-
-  } else if (SymExpr* symExpr = toSymExpr(expr)) {
-    if (ArgSymbol* arg = toArgSymbol(_this)) {
-      DefExpr* defPoint = symExpr->symbol()->defPoint;
-      Symbol*  parent   = defPoint->parentSymbol;
-
-      if (arg->type == parent->type) {
-        const char* name = symExpr->symbol()->name;
-        Expr*       dot  = new CallExpr(".",
-                                        new SymExpr(_this),
-                                        new_CStringSymbol(name));
-
-        symExpr->replace(dot);
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isNewExpr(Expr* expr);
-
-static void fieldInitTypeWithInit(Expr*        stmt,
-                                  FnSymbol*    fn,
-                                  InitVisitor& state,
-                                  DefExpr*     field,
-                                  Expr*        initExpr) {
-  SET_LINENO(stmt);
-
-  Type* type = field->sym->type;
-
-  //
-  // e.g. const x : int     = 10;
-  //      var   y : int(32) = 20;
-  //
-  //      var   x : MyCls   = new MyCls(1, 2);
-  //
-  // Noakes 2017/03/21
-  //    Use a temp to compute the value for the init-expression and
-  //    use PRIM_MOVE to initialize x.  This simplifies const checking
-  //    for the first case and supports a current limitation for RVF
-  //
-  if (isPrimitiveScalar(type) == true ||
-      isNonGenericClass(type) == true) {
-    SymExpr* fieldAccess = createFieldAccess(stmt, fn, field);
-    SymExpr* rhs         = normalizeExpr(stmt, state, initExpr);
-
-    stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
-
-  } else if (isNonGenericRecordWithInitializers(type) == true) {
-    if (isNewExpr(initExpr) == true) {
-      CallExpr* newExpr    = toCallExpr(initExpr);
-      CallExpr* subExpr    = toCallExpr(newExpr->get(1)->remove());
-      SymExpr*  access     = createFieldAccess(stmt, fn, field);
-      int       numActuals = subExpr->numActuals();
-
-      stmt->insertBefore(subExpr);
-
-      // Convert it in to a use of the init method
-      subExpr->setUnresolvedFunction("init");
-
-      // Ensure the arguments to the init expr are normalized
-      for (int i = 1; i <= numActuals; i++) {
-        Expr*    actual  = subExpr->get(i);
-        SymExpr* symExpr = normalizeExpr(subExpr, state, actual);
-
-        if (symExpr != actual) {
-          actual->replace(symExpr);
-        }
-      }
-
-      // Add _mt and _this (insert at head in reverse order)
-      subExpr->insertAtHead(access);
-      subExpr->insertAtHead(gMethodToken);
-
-
-    } else {
-      SymExpr* rhs    = normalizeExpr(stmt, state, initExpr);
-      SymExpr* access = createFieldAccess(stmt, fn, field);
-
-      stmt->insertBefore(new CallExpr("init", gMethodToken, access, rhs));
-    }
-
-  } else {
-    Symbol*  _this = fn->_this;
-    Symbol*  name  = new_CStringSymbol(field->sym->name);
-    SymExpr* rhs   = normalizeExpr(stmt, state, initExpr);
-
-    stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, rhs));
-  }
-}
-
-static bool isNewExpr(Expr* expr) {
-  bool retval = false;
-
-  if (CallExpr* callExpr = toCallExpr(expr)) {
-    retval = callExpr->isPrimitive(PRIM_NEW);
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void fieldInitTypeInference(Expr*        stmt,
-                                   FnSymbol*    fn,
-                                   InitVisitor& state,
-                                   DefExpr*     field,
-                                   Expr*        initExpr) {
-  SET_LINENO(stmt);
-
-  // e.g.
-  //   var x = <immediate>;
-  //   var y = <identifier>;
-  if (SymExpr* initSym = toSymExpr(initExpr)) {
-    Type* type = initSym->symbol()->type;
-
-    if (isPrimitiveScalar(type) == true) {
-      SymExpr* fieldAccess = createFieldAccess(stmt, fn, field);
-      SymExpr* rhs         = normalizeExpr(stmt, state, initExpr);
-
-      stmt->insertBefore(new CallExpr("=", fieldAccess, rhs));
-
-    } else {
-      Symbol* _this = fn->_this;
-      Symbol* name  = new_CStringSymbol(field->sym->name);
-
-      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr));
-    }
-
-  // e.g.
-  //   var x = f(...);
-  //   var y = new MyRecord(...);
-  } else if (CallExpr* initCall = toCallExpr(initExpr)) {
-    if (initCall->isPrimitive(PRIM_NEW) == true) {
-#if 0
-      AggregateType* type = typeForNewExpr(initCall);
-
-      if (isNonGenericRecordWithInitializers(type) == true) {
-        Expr*     arg1    = initCall->get(1)->remove();
-        CallExpr* argExpr = toCallExpr(arg1);
-
-        // Insert the arg portion of the initExpr back into tree
-        defExpr->insertAfter(argExpr);
-
-        // Convert it in to a use of the init method
-        argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
-
-        // Add _mt and _this (insert at head in reverse order)
-        argExpr->insertAtHead(var);
-        argExpr->insertAtHead(gMethodToken);
-
-      } else {
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-      }
-
-      if (type != NULL && type->isGeneric() == false) {
-        var->type = type;
-      }
-#endif
-
-      INT_ASSERT(false);
-
-    } else {
-      Symbol*  _this = fn->_this;
-      Symbol*  name  = new_CStringSymbol(field->sym->name);
-      SymExpr* rhs   = normalizeExpr(stmt, state, initExpr);
-
-      stmt->insertBefore(new CallExpr(PRIM_INIT_FIELD, _this, name, rhs));
-    }
-
-  } else {
-    INT_ASSERT(false);
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
 * Determine if the callExpr represents an initialization for a field i.e.     *
 *                                                                             *
 *   call("=", call(".", <this>, <fieldName>), <value>);                       *
@@ -1443,36 +643,14 @@ static void fieldInitTypeInference(Expr*        stmt,
 *                                                                             *
 ************************************** | *************************************/
 
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
+
 static DefExpr* fieldByName(AggregateType* at, const char* name);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
   forv_Vec(Type, t, at->dispatchParents) {
     if (AggregateType* pt = toAggregateType(t)) {
       if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-static DefExpr* toSuperField(AggregateType* at, CallExpr* callExpr) {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, callExpr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-static DefExpr* toSuperField(AggregateType* at, SymExpr*  symExpr) {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, symExpr)) {
         return field;
       }
     }
@@ -1518,24 +696,6 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
   return retval;
 }
 
-static DefExpr* toLocalField(AggregateType* at, SymExpr* expr) {
-  Expr*    currField = at->fields.head;
-  Symbol*  sym       = expr->symbol();
-  DefExpr* retval    = NULL;
-
-  while (currField != NULL && retval == NULL) {
-    DefExpr*   defExpr = toDefExpr(currField);
-
-    if (sym == defExpr->sym) {
-      retval    = defExpr;
-    } else {
-      currField = currField->next;
-    }
-  }
-
-  return retval;
-}
-
 // Return the field with the given name
 static DefExpr* fieldByName(AggregateType* at, const char* name) {
   Expr*    currField = at->fields.head;
@@ -1553,21 +713,6 @@ static DefExpr* fieldByName(AggregateType* at, const char* name) {
   }
 
   return retval;
-}
-
-static SymExpr* createFieldAccess(Expr*     insertBefore,
-                                  FnSymbol* fn,
-                                  DefExpr*  field) {
-  VarSymbol*         tmp   = newTemp("call_tmp");
-
-  UnresolvedSymExpr* name   = new UnresolvedSymExpr(field->sym->name);
-  Symbol*            _this  = fn->_this;
-  CallExpr*          access = new CallExpr(name, gMethodToken, _this);
-
-  insertBefore->insertBefore(new DefExpr(tmp));
-  insertBefore->insertBefore(new CallExpr(PRIM_MOVE, tmp, access));
-
-  return new SymExpr(tmp);
 }
 
 static bool isAssignment(CallExpr* callExpr) {
@@ -1609,91 +754,6 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
       callExpr->isNamed(">>=") == true) {
     retval = true;
   }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static SymExpr* normalizeExpr(Expr*        insertBefore,
-                              InitVisitor& state,
-                              Expr*        expr) {
-  SymExpr* retval = NULL;
-
-  if (SymExpr* symExpr = toSymExpr(expr)) {
-    Symbol* sym = symExpr->symbol();
-
-    if (sym->isImmediate() == true) {
-      retval = symExpr;
-
-    } else if (DefExpr* field = toLocalField(state.type(), symExpr)) {
-      if (state.isFieldInitialized(field) == true) {
-        retval = createFieldAccess(insertBefore, state.theFn(), field);
-      } else {
-        USR_FATAL(expr,
-                  "'%s' used before defined (first used here)",
-                  field->sym->name);
-      }
-
-    } else if (DefExpr* field = toSuperField(state.type(), symExpr)) {
-      if (state.isPhase2() == true) {
-        retval = createFieldAccess(insertBefore, state.theFn(), field);
-      } else {
-        USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
-                  field->sym->name);
-      }
-
-    } else {
-      retval = symExpr;
-    }
-
-  } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    if (DefExpr* field = toLocalField(state.type(), callExpr)) {
-      if (state.isFieldInitialized(field) == true) {
-        retval = createFieldAccess(insertBefore, state.theFn(), field);
-      } else {
-        USR_FATAL(expr,
-                  "'%s' used before defined (first used here)",
-                  field->sym->name);
-      }
-
-    } else if (DefExpr* field = toSuperField(state.type(), callExpr)) {
-      if (state.isPhase2() == true) {
-        retval = createFieldAccess(insertBefore, state.theFn(), field);
-      } else {
-        USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
-                  field->sym->name);
-      }
-
-    } else {
-      VarSymbol*         tmp      = newTemp("call_tmp");
-      std::vector<Expr*> actuals;
-
-      while (callExpr->numActuals() > 0) {
-        actuals.push_back(callExpr->get(1)->remove());
-      }
-
-      for (size_t i = 0; i < actuals.size(); i++) {
-        callExpr->insertAtTail(normalizeExpr(insertBefore, state, actuals[i]));
-      }
-
-      insertBefore->insertBefore(new DefExpr(tmp));
-      insertBefore->insertBefore(new CallExpr(PRIM_MOVE, tmp, callExpr));
-
-      retval = new SymExpr(tmp);
-    }
-
-  } else {
-    INT_ASSERT(false);
-  }
-
-  INT_ASSERT(retval != NULL);
 
   return retval;
 }
