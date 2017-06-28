@@ -97,7 +97,7 @@ module ArrayViewReindex {
     inline proc chpl_reindexConvertIdx(i) {
       var ind: arr.rank*arr.idxType;
       for param d in 1..arr.rank {
-        ind(d) = chpl_reindexConvertIdxDim(i, d);
+        ind(d) = chpl_reindexConvertIdxDim(i(d), d);
       }
       return ind;
     }
