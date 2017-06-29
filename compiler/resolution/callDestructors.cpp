@@ -1142,123 +1142,6 @@ static void insertDestructorCalls() {
   }
 }
 
-/* For a variable marked with FLAG_INSERT_AUTO_COPY,
-   call autoCopy when there is a MOVE to that variable
-   from another expression (variable or call).
-
-   Note that FLAG_INSERT_AUTO_COPY is only ever set for
-   lhs variables in moves such as
-      move lhs, someCall()
-   where requiresImplicitDestroy(someCall). requiresImplicitDestroy is
-   described as checking "if the function requires an implicit
-   destroy of its returned value (i.e. reference count)".
-
-   The code checks:
-    - not in a "donor fn" (auto copy fn)
-    - called function returns a record or ref-counted type by ref
-    - called function does not have FLAG_NO_IMPLICIT_COPY (getter fn)
-    - called function is not an iterator
-    - called function is not returning a runtime type value
-    - called function is not a "donor fn" (autocopy fns in modules)
-    - called function is not init copy
-    - called function is not =
-    - called function is not _defaultOf
-    - called function does not have FLAG_AUTO_II
-    - called function is not a constructor
-    - called function is not a type constructor
-
-   Relevant commits are
-     3788ee34fa created
-     70d5ea4040 bug fix/workarounds
-     93d5338f8a switch to using flags
-     57a13e7c22 fix compiler warning
-     c27afd6b4f adds FLAG_NO_IMPLICIT_COPY == FLAG_RETURN_VALUE_IS_NOT_OWNED?
-     adfb566b00 FLAG_ITERATOR_FN -> isIterator
-     a43758e6aa adds check for defaultOf, "fixes 4 test failures"
-     61db88b637 flag cleanups
-
-
-   Anyway, insertAutoCopyTemps does the following:
-
-   when x has FLAG_INSERT_AUTO_COPY
-
-   move x, y
-   ->
-   move atmp, y
-   move x, autoCopy(atmp)
-
-   or
-
-   move x, someCall()      (where requiresImplicitDestroy(someCall))
-   ->
-   move atmp, someCall()
-   move x, autoCopy(atmp)
-
- */
-static void insertAutoCopyTemps() {
-  forv_Vec(VarSymbol, sym, gVarSymbols) {
-    if (sym->hasFlag(FLAG_INSERT_AUTO_COPY)) {
-      CallExpr* move = NULL;
-      for_SymbolDefs(def, sym) {
-        CallExpr* defCall = toCallExpr(def->parentExpr);
-        if (defCall->isPrimitive(PRIM_MOVE)) {
-          CallExpr* rhs = toCallExpr(defCall->get(2));
-          if (!rhs || !rhs->isNamedAstr(astrSequals)) {
-            // We enter this block if:
-            // - rhs is a variable (!rhs), or
-            // - rhs is a call but not to =
-            //
-            // I think that calls to = no longer appear
-            // in PRIM_MOVE in the AST, so I think that
-            // this is actually if (!rhs || rhs)
-            // since = used to return a value but no longer does.
-
-            // This check ensures that there is only a single PRIM_MOVE
-            // definition of a variable marked with FLAG_INSERT_AUTO_COPY.
-            INT_ASSERT(!move);
-            move = defCall;
-          }
-        }
-      }
-
-      // 2015/01/21 hilde: Workaround for incomplete implementation of
-      // SymExpr::remove() in the context of a ForLoop (as its mIndex field).
-      // This operation is required by the early operation of
-      // deadBlockElimination().
-
-      // In that case, the DefExpr for the symbol should no longer exist, so we
-      // would never reach here.  Given that it is never defined and we *do*
-      // reach here, there is no harm in not creating the autoCopy temp.  This
-      // code will probably all be deprecated when the new AMM story comes
-      // online anyway, so it would be a waste of time trying to "do things
-      // right" in this routine.
-      if (! move)
-        continue;
-
-      INT_ASSERT(move);
-      SET_LINENO(move);
-
-      // MPF 2016-10-02. This code should no longer be necessary
-      // but it is currently being run. See the comment near the call
-      // to requiresImplicitDestroy in functionResolution and the test
-      // call-expr-tmp.chpl.
-      Expr* moveOrCheckError = move;
-      if (isCheckErrorStmt(move->next))
-        moveOrCheckError = move->next;
-
-      Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
-
-      move->insertBefore(new DefExpr(tmp));
-      moveOrCheckError->insertAfter(new CallExpr(PRIM_MOVE,
-                                     sym,
-                                     new CallExpr(getAutoCopyForType(sym->type),
-                                                  tmp)));
-      move->get(1)->replace(new SymExpr(tmp));
-    }
-  }
-}
-
-
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
 // so the calling routine "owns" the returned value.
 // The copy is necessary for yielded values of record type returned by value.
@@ -1391,7 +1274,6 @@ void callDestructors() {
   fixupDestructors();
 
   insertDestructorCalls();
-  insertAutoCopyTemps();
 
   // Execute this before conversion to return by ref
   // May fail to handle reference variables as desired
