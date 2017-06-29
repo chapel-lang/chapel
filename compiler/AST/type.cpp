@@ -971,6 +971,10 @@ bool isClass(Type* t) {
   return false;
 }
 
+bool isClassOrNil(Type* t) {
+  if (t == dtNil) return true;
+  return isClass(t);
+}
 
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))

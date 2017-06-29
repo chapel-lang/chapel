@@ -439,6 +439,7 @@ bool is_enum_type(Type*);
 bool isLegalParamType(Type*);
 int  get_width(Type*);
 bool isClass(Type* t);
+bool isClassOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 
