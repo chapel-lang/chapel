@@ -194,6 +194,12 @@ static WellKnownFn sWellKnownFns[] = {
     "chpl_delete_error",
     &gChplDeleteError,
     FLAG_UNKNOWN
+  },
+
+  {
+    "printModuleInit",
+    &gPrintModuleInitFn,
+    FLAG_PRINT_MODULE_INIT_FN
   }
 };
 
