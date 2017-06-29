@@ -103,7 +103,7 @@ expression-statement:
   member-access-expression ;
   call-expression ;
   constructor-call-expression ;
-  let-expression ; 
+  let-expression ;
 \end{syntax}
 
 \section{Assignment Statements}
@@ -543,7 +543,7 @@ The \sntx{index-var-declaration} is optional and may be omitted if the
 indices do not need to be referenced in the loop.
 
 If the iteratable-expression begins with the keyword \chpl{zip} followed
-by a parenthesized expression-list, the listed expressions must support 
+by a parenthesized expression-list, the listed expressions must support
 zipper iteration.
 
 \subsection{Zipper Iteration}
@@ -835,6 +835,8 @@ exiting a block.
 \chpl{defer} is useful because the clean-up action will be run no
 matter how the block is exited.
 
+The syntax is:
+
 \begin{syntax}
 defer-statement:
   `defer' statement
@@ -848,9 +850,108 @@ consists of running its deinitializer if it is of record type.
 
 When an iterator contains a \chpl{defer} statement at the top level, the
 associated clean-up action will be executed when the loop running the
-iterator exits.
+iterator exits. \chpl{defer} actions inside a loop body are executed
+when that iteration completes.
 
-TODO: defer in a loop example?
+The following progam demonstrates a simple use of \chpl{defer}
+to create an action to be executed when returning from a function:
+
+\begin{chapelexample}{defer1.chpl}
+\begin{chapel}
+class Integer {
+  var x:int;
+}
+proc deferInFunction() {
+  var c = new Integer(1);
+  writeln("created ", c);
+  defer {
+    writeln("defer action: deleting ", c);
+    delete c;
+  }
+  // ... (function body, possibly including return statements)
+  // The defer action is executed no matter how this function returns.
+}
+deferInFunction();
+\end{chapel}
+produces the output
+\begin{chapelprintoutput}{}
+created {x = 1}
+defer action: deleting {x = 1}
+\end{chapelprintoutput}
+\end{chapelexample}
+
+
+The following example uses a nested block to demonstrate that \chpl{defer}
+is handled when exiting the block in which it is contained:
+
+
+\begin{chapelexample}{defer2.chpl}
+\begin{chapel}
+class Integer {
+  var x:int;
+}
+proc deferInNestedBlock() {
+  var i = 1;
+  writeln("before inner block");
+  {
+    var c = new Integer(i);
+    writeln("created ", c);
+    defer {
+      writeln("defer action: deleting ", c);
+      delete c;
+    }
+    writeln("in inner block");
+    // note, defer action is executed no matter how this block is exited
+  }
+  writeln("after inner block");
+}
+deferInNestedBlock();
+\end{chapel}
+produces the output
+\begin{chapelprintoutput}{}
+before inner block
+created {x = 1}
+in inner block
+defer action: deleting {x = 1}
+after inner block
+\end{chapelprintoutput}
+\end{chapelexample}
+
+Lastly, this example shows that when \chpl{defer} is used in a loop, the
+action will be executed for every loop iteration, whether or not loop
+body is exited early.
+
+\begin{chapelexample}{defer3.chpl}
+\begin{chapel}
+class Integer {
+  var x:int;
+}
+proc deferInLoop() {
+  for i in 1..10 {
+    var c = new Integer(i);
+    writeln("created ", c);
+    defer {
+      writeln("defer action: deleting ", c);
+      delete c;
+    }
+    writeln(c);
+    if i == 2 then
+      break;
+  }
+}
+deferInLoop();
+\end{chapel}
+produces the output
+\begin{chapelprintoutput}{}
+created {x = 1}
+{x = 1}
+defer action: deleting {x = 1}
+created {x = 2}
+{x = 2}
+defer action: deleting {x = 2}
+\end{chapelprintoutput}
+\end{chapelexample}
+
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}
