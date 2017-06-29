@@ -2649,6 +2649,8 @@ static void find_printModuleInit_stuff() {
       gModuleInitIndentLevel = toVarSymbol(symbol);
       INT_ASSERT(gModuleInitIndentLevel);
 
+      // TODO -- can we move setting gPrintModuleInitFn to the
+      // wellKnownFunctions in parser.cpp?
     } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
       gPrintModuleInitFn = toFnSymbol(symbol);
       INT_ASSERT(gPrintModuleInitFn);

@@ -245,4 +245,20 @@ void gatherWellKnownFns() {
   }
 }
 
+std::vector<FnSymbol*> getWellKnownFunctions()
+{
+  std::vector<FnSymbol*> fns;
+
+  int nEntries = sizeof(sWellKnownFns) / sizeof(sWellKnownFns[0]);
+
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownFn& wkfn = sWellKnownFns[i];
+    fns.push_back(*wkfn.fn);
+  }
+
+  if (gPrintModuleInitFn != NULL)
+    fns.push_back(gPrintModuleInitFn);
+
+  return fns;
+}
 

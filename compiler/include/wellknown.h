@@ -20,8 +20,14 @@
 #ifndef _WELL_KNOWN_H_
 #define _WELL_KNOWN_H_
 
+#include "symbol.h"
+
+#include <vector>
+
 void gatherIteratorTags();
 void gatherWellKnownTypes();
 void gatherWellKnownFns();
+
+std::vector<FnSymbol*> getWellKnownFunctions();
 
 #endif
