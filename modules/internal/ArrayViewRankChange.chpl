@@ -101,10 +101,6 @@ module ArrayViewRankChange {
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
  class ArrayViewRankChangeDom: BaseRectangularDom {
-    param rank;
-    type idxType;
-    param stridable;
-
     // the lower-dimensional index set that we represent upwards
     var upDom: DefaultRectangularDom(rank, idxType, stridable);
 
@@ -227,6 +223,10 @@ module ArrayViewRankChange {
       downDomLoc._value._free_when_no_arrs = true;
       downDomPid = downDomLoc._pid;
       downDomInst = downDomLoc._instance;
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     proc dsiMember(i) {
