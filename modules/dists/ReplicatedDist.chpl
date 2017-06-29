@@ -170,10 +170,6 @@ proc Replicated.dsiPrivatize(privatizeData)
 // global domain class
 //
 class ReplicatedDom : BaseRectangularDom {
-  // to support rectangular domains
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
@@ -397,6 +393,11 @@ proc ReplicatedDom.dsiDestroyDom() {
   }
 }
 
+proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  // Don't do anything for the arrays (no dsiReallocate/dsiPostReallocate)
+  this.dsiSetIndices(rhs.getIndices());
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // arrays
 
@@ -561,10 +562,12 @@ prior to calling this.dom.dsiSetIndices().
 So this needs to adjust anything in the array that won't be taken care of
 in this.dom.dsiSetIndices(). In our case, that's nothing.
 */
+/* no longer called
 proc ReplicatedArr.dsiReallocate(d: domain): void {
   if traceReplicatedDist then
     writeln("ReplicatedArr.dsiReallocate ", dom.domRep, " -> ", d, " (no-op)");
 }
+*/
 
 // Note: returns an associative array
 proc ReplicatedArr.dsiTargetLocales() {

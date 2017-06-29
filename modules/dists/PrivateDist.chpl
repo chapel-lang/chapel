@@ -87,9 +87,6 @@ class Private: BaseDist {
 }
 
 class PrivateDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   var dist: Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
@@ -119,6 +116,10 @@ class PrivateDom: BaseRectangularDom {
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
 
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    halt("cannot reassign private domain");
+  }
+
   proc dsiRequiresPrivatization() param return true;
   proc linksDistribution() param return false;
   proc dsiLinksDistribution()     return false;
@@ -136,11 +137,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMyDist() return dist;
 }
 
-class PrivateArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class PrivateArr: BaseRectangularArr {
   var dom: PrivateDom(rank, idxType, stridable);
   var data: eltType;
 }

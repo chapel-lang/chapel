@@ -253,6 +253,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiMyDist() return dist;
+
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    if !lhsPrivate then
+      halt("SparseBlock domain assignment not yet supported");
+    for i in rhs do
+      dsiAdd(i);
+  }
+
 }
 
 //

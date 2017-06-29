@@ -338,9 +338,6 @@ class LocBlock {
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class BlockDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
@@ -373,11 +370,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
@@ -925,6 +918,10 @@ proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
+proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
+}
+
 // dsiLocalSlice
 proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
@@ -1248,7 +1245,8 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-proc BlockArr.dsiReallocate(d: domain) {
+proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+{
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
