@@ -252,10 +252,6 @@ proc ReplicatedDist.dsiPrivatize(privatizeData)
 // global domain class
 //
 class OldReplicatedDom : BaseRectangularDom {
-  // to support rectangular domains
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
@@ -388,6 +384,10 @@ proc OldReplicatedDom.dsiGetIndices(): rank * range(idxType,
                                                  BoundedRangeType.bounded,
                                                  stridable) {
   return redirectee().getIndices();
+}
+
+proc OldReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 // Iterators over the domain's indices (serial, leader, follower).
