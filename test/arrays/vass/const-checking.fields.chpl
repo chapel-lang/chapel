@@ -5,9 +5,11 @@ var ARR: [1..2] int;
 record REC {
   var   arvar: [1..2] int;
   const arcst: [1..2] int;
-  proc REC() {
+
+  proc init() {
     arvar = ARR;
     arcst = ARR;
+    super.init();
     arvar[1] = 1111;
     arcst[2] = 1111;
   }
@@ -16,9 +18,11 @@ record REC {
 class CLSS {
   var   cvar: [1..2] int;
   const ccst: [1..2] int;
-  proc CLSS() {
+
+  proc init() {
     cvar = ARR;
     ccst = ARR;
+    super.init();
     cvar[1] = 1111;
     ccst[2] = 1111;
   }

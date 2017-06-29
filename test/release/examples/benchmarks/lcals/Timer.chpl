@@ -53,7 +53,7 @@ module Timer {
     var startTime: uint(64);
     var endTime: uint(64);
 
-    proc CycleTimer() {
+    proc init() {
       halt("CycleTimer not implemented");
     }
     proc start() {
