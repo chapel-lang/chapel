@@ -18,7 +18,7 @@ class E: C {
   forwarding var myD: D;
 }
 
-proc E.E() {
+proc E.init() {
   myD = new D();
 }
 
