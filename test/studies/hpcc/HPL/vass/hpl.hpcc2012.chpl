@@ -397,9 +397,13 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
     else
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
+  /*
   pragma "no auto destroy"
   ref slice = locAdesc.myStorageArr[r1, r2];
   return slice.reindex({(...reindexExpr)});
+  */
+
+  return locAdesc.myStorageArr[r1, r2].reindex({(...reindexExpr)});
 }
 
 /////////////////////////////////
@@ -1136,9 +1140,11 @@ proc gaxpyMinus(A: [],
 
 // This confirms that our intentions, for efficiency, are fulfilled.
 proc ensureDR(value, param msg) {
+  /*
   proc etest(type t) param where t : DefaultRectangularArr return true;
   proc etest(type t) param return false;
   compilerAssert(etest(chpl__getActualArray(value).type), "ensureDR ", msg, 2);
+  */
 }
 
 proc makeLocalCopyOfAb() {
