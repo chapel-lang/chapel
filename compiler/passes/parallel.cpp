@@ -151,7 +151,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 
   // add the function args as fields in the class
   int i = 0;    // Fields are numbered for uniqueness.
-  for_actuals(arg, fcall) {
+  for_formals_actuals(formal, arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->symbol(); // arg or var
 
@@ -180,7 +180,9 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
     // BHARSH TODO: This really belongs in RVF
     // BHARSH TODO: Use 'formal->isRef()' instead of the var's ref-ness
-    if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
+    if (!isRecordWrappedType(var->getValType()) && !autoCopy &&
+        // TODO - can we remove var->isRef()
+        (formal->isRef() || var->isRef())) field->qual = QUAL_REF;
 
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
