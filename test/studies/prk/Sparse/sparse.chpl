@@ -10,7 +10,6 @@ use LayoutCSR;
 use ReplicatedDist;
 use Time;
 use VisualDebug;
-use RangeChunk;
 
 param PRKVERSION = "2.17";
 
@@ -44,21 +43,19 @@ const vectorSpace = 0..#size2,
       vectorDom = {vectorSpace},
       vectorDist = if distributed then new dmap(new Block(vectorDom))
                    else defaultDist,
-      matrixDist = if distributed then defaultDist
-                   else new dmap(new CSR()),
       parentDist = new dmap(new Block({vectorSpace, vectorSpace},
-                                      targetLocales=rowDistLocArr,
-                                      sparseLayoutType=CSR)),
+                                                targetLocales=rowDistLocArr,
+                                                sparseLayoutType=CSR)),
       vectorDomRepl = vectorDom dmapped Replicated(),
       vectorDomBlock = vectorDom dmapped vectorDist,
       parentDom = if distributed then
                     {vectorSpace, vectorSpace} dmapped parentDist
                   else
                     {vectorSpace, vectorSpace},
-      // TODO: How can these be combined? (defaultDist does not work)
-      matrixDom: if distributed then sparse subdomain(parentDom)
-                  else sparse subdomain(parentDom) dmapped CSR();
+      matrixDomBlock: sparse subdomain(parentDom),
+      matrixDomCSR: sparse subdomain(parentDom) dmapped CSR();
 
+ref matrixDom = if distributed then matrixDomBlock else matrixDomCSR;
 
 // Arrays
 var matrix: [matrixDom] real,
@@ -89,7 +86,7 @@ proc main() {
         vectorRepl = vector;
       }
 
-      forall i in vectorDomBlock {
+      forall i in vectorDomBlock.localSubdomain() {
         var temp = 0.0;
         // TODO: Ensure no communication occurs here
         for j in matrixDom.dimIter(2,i) {
@@ -105,7 +102,7 @@ proc main() {
       [i in vectorDom] vector[i] += i+1;
 
       forall i in vectorDomBlock {
-        for j in matrixDom.dimIter(2,i) {
+        for j in matrixDomCSR.dimIter(2,i) {
           result[i] += matrix[i,j] * vector[j];
         }
       }
@@ -142,14 +139,22 @@ proc initialize() {
       bufIdx += 4;
     }
   }
-  matrixDom.bulkAdd(indBuf, preserveInds=false);
+  if distributed {
+    matrixDom.bulkAdd(indBuf, preserveInds=false);
+  } else {
+    matrixDomCSR.bulkAdd(indBuf, preserveInds=false);
+  }
 
   // Sanity check the number of indices in the sparse domain
   if matrixDom.numIndices != size2*stencilSize then
     halt("Incorrect number of indices created");
 
   // Initialize sparse matrix values
-  [(i,j) in matrixDom] matrix[i,j] = 1.0/(j+1);
+  if distributed {
+    [(i,j) in matrixDom] matrix[i,j] = 1.0/(j+1);
+  } else {
+    [(i,j) in matrixDomCSR] matrix[i,j] = 1.0/(j+1);
+  }
 
   t.stop();
   if VisualDebugOn then writeln('Initialization time: ', t.elapsed());
@@ -230,7 +235,6 @@ iter SparseBlockDom.dimIter(param dim, idx) {
   // TODO: Contribute back to SparseBlockDist
   // TODO: add prefetch checks for fast iteration
   var targetLocRow = dist.targetLocsIdx((idx, whole.dim(dim).low));
-  /*writeln("dimIter idx: ", idx, " targetLocRow ", targetLocRow);*/
   for l in dist.targetLocales.domain.dim(dim) {
     for idx in locDoms[(targetLocRow[1], l)].mySparseBlock.dimIter(dim, idx) {
       yield idx;
