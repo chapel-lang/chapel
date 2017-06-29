@@ -997,7 +997,10 @@ static void propagateVar(Symbol* sym) {
       if (!call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         SymExpr* actual = toSymExpr(formal_to_actual(call, sym));
         DEBUG_PRINTF("\tRef types have to match: %s (%d) in call %d\n", actual->symbol()->cname, actual->symbol()->id, call->id);
-        setValWide(sym, actual->symbol());
+        if (actual->isRefOrWideRef())
+          setValWide(sym, actual->symbol());
+        else
+          setWide(sym, actual->symbol());
       }
     }
   }
