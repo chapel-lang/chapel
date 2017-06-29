@@ -1,5 +1,5 @@
 
-# this is a sample comment
-
-[owner]  # this is a sample inline comment
+[owner]
 name = "Tom Preston-Werner"
+pseudo  = "Tommy"
+quoteint = "3"

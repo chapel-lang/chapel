@@ -20,7 +20,7 @@ proc isEOF(source) {// need try catch for this and or newline
   else {
     return false;
   }
-} 
+}
 
 
 // Returns the next token in the current line without removing it. 
@@ -46,8 +46,6 @@ proc ready(source) {
     source.ready = true;
   }
 }// add throw error here
-
-
 
 
 /*
