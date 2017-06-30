@@ -2696,8 +2696,8 @@ BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
       buildLocalStmt(stmt->copy()), stmt);
 }
 
-// builds an unconditional local statement. Only used from the
-// overloaded version. i.e. parser doesn't call this directly
+// builds an unconditional local statement. Used by the conditional
+// overload and parser
 BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
 
