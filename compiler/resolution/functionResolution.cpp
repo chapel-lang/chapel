@@ -2290,6 +2290,50 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
                     DisambiguationContext DC,
                     bool ignoreWhere=false) {
 
+#if 0
+
+  int n = candidates.n;
+  if (n == 0) return NULL;
+
+  int bj = 0; // index of best candidate
+  ResolutionCandidate* best = candidates.v[bj];
+
+  std::vector<bool> notBest(n, false);
+
+  // inspired by clang OverloadCandidateSet::BestViableFunction
+
+  // First, compare candidates finding the best one.
+  for (int i = 0; i < n; i++) {
+    ResolutionCandidate* other = candidates.v[i];
+    int cmp = compareSpecificity(other, best, DC.forPair(i, bj), ignoreWhere);
+    if (cmp == -1) {
+      // other is better than the best so far,
+      // so make it the new best option.
+      notBest[bj] = true;
+      best = other;
+      bj = i;
+    }
+    if (cmp == 1) {
+      notBest[i] = true;
+    }
+  }
+
+  // Next, find the set of candidates equally specific with best.
+  for (int i = 0; i < n; i++) {
+    ResolutionCandidate* other = candidates.v[i];
+    if (notBest[i]) continue;
+    int cmp = compareSpecificity(other, best, DC.forPair(i, bj), ignoreWhere);
+    if (cmp == 0)
+      mostSpecificSet.add(other);
+  }
+
+  if (mostSpecificSet.n == 1)
+    return best;
+  else
+    return NULL;
+
+#else
+
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
   std::vector<bool> notBest(candidates.n, false);
@@ -2358,6 +2402,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
   }
 
   return NULL;
+#endif
 }
 
 /* Find the best return-intent overloads from a list of candidates.
