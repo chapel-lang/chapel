@@ -293,11 +293,6 @@ void AstVisitorTraverse::exitTryStmt(TryStmt* node)
 
 }
 
-void AstVisitorTraverse::lowerCatchStmts(TryStmt* node)
-{
-
-}
-
 bool AstVisitorTraverse::enterCatchStmt(CatchStmt* node) {
   return true;
 }

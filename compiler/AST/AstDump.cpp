@@ -579,9 +579,6 @@ void AstDump::exitTryStmt(TryStmt* node) {
   write("}");
 }
 
-void AstDump::lowerCatchStmts(TryStmt* node) {
-}
-
 //
 // CatchStmt
 //

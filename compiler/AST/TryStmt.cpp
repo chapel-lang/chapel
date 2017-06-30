@@ -79,8 +79,6 @@ void TryStmt::accept(AstVisitor* visitor) {
       CatchStmt* catchStmt = toCatchStmt(c);
       catchStmt->accept(visitor);
     }
-
-    visitor->lowerCatchStmts(this);
   }
 }
 
