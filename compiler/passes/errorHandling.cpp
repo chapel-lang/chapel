@@ -131,11 +131,12 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCatchStmt(CatchStmt*   node);
-  virtual void exitCatchStmt (CatchStmt*   node);
-  virtual bool enterCallExpr (CallExpr*  node);
+  virtual bool enterTryStmt   (TryStmt*   node);
+  virtual void exitTryStmt    (TryStmt*   node);
+  virtual void lowerCatchStmts(TryStmt*   node);
+  virtual bool enterCatchStmt (CatchStmt* node);
+  virtual void exitCatchStmt  (CatchStmt* node);
+  virtual bool enterCallExpr  (CallExpr*  node);
 
 private:
   struct TryInfo {
@@ -146,10 +147,11 @@ private:
   std::stack<TryInfo> tryStack;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
+
+  VarSymbol*          currErrorVar;
+  BlockStmt*          currTryBlock;
   bool                insideCatch;
 
-  AList     lowerCatches      (TryStmt*   tryStmt,  VarSymbol* errorVar,
-                               TryInfo*   outerTry);
   AList     setOutGotoEpilogue(VarSymbol* error);
   AList     errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
                                BlockStmt* elseBlock = NULL);
@@ -182,29 +184,25 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   TryInfo info  = tryStack.top();
   tryStack.pop();
 
-  TryInfo* outerTry = NULL;
-  if (!tryStack.empty())
-    outerTry = & tryStack.top();
+  currErrorVar = info.errorVar;
+  currTryBlock = node->body();
 
-  BlockStmt* tryBlock = node->body();
+  currTryBlock->insertAtHead(new DefExpr(info.errorVar));
+  currTryBlock->insertAtTail(new DefExpr(info.handlerLabel));
 
-  tryBlock->insertAtHead(new DefExpr(info.errorVar));
+  currTryBlock->remove();
+  node        ->replace(currTryBlock);
 
-  tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
-  tryBlock->insertAtTail(lowerCatches(node, info.errorVar, outerTry));
-
-  tryBlock->remove();
-  node    ->replace(tryBlock);
 }
 
-AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
-                                         TryInfo* outerTry) {
+void ErrorHandlingVisitor::lowerCatchStmts(TryStmt* node) {
+  SET_LINENO(node);
+
   BlockStmt* handlers    = new BlockStmt();
-
-  bool       hasCatchAll = false;
   BlockStmt* currHandler = handlers;
+  bool       hasCatchAll = false;
 
-  for_alist(c, tryStmt->_catches) {
+  for_alist(c, node->_catches) {
     if (hasCatchAll)
       USR_FATAL(c->prev, "catchall placed before the end of a catch list");
 
@@ -214,7 +212,7 @@ AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
     BlockStmt* catchBody = catchStmt->body();
     DefExpr*   catchDef  = catchStmt->expr();
 
-    catchBody->insertAtTail(new CallExpr(gChplDeleteError, errorVar));
+    catchBody->insertAtTail(new CallExpr(gChplDeleteError, currErrorVar));
     catchBody->remove();
 
     // catchall
@@ -231,14 +229,14 @@ AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
       // named catchall
       if (errType == dtError) {
         hasCatchAll = true;
-        currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, errorVar));
+        currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, currErrorVar));
         currHandler->insertAtTail(errorCond(errSym, catchBody));
 
       // specified catch
       } else {
         CallExpr*  castError   = new CallExpr(PRIM_DYNAMIC_CAST,
                                               new SymExpr(errType->symbol),
-                                              errorVar);
+                                              currErrorVar);
         BlockStmt* nextHandler = new BlockStmt();
 
         currHandler->insertAtTail(new CallExpr(PRIM_MOVE, errSym, castError));
@@ -250,21 +248,22 @@ AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
   }
 
   if (!hasCatchAll) {
-    if (tryStmt->tryBang()) {
+    if (node->tryBang()) {
       currHandler->insertAtTail(haltExpr());
-    } else if (outerTry != NULL) {
+    } else if (!tryStack.empty()) {
+      TryInfo* outerTry = & tryStack.top();
       currHandler->insertAtTail(new CallExpr(PRIM_MOVE, outerTry->errorVar,
-                                             errorVar));
+                                             currErrorVar));
       currHandler->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                              outerTry->handlerLabel));
     } else if (outError != NULL) {
-      currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
+      currHandler->insertAtTail(setOutGotoEpilogue(currErrorVar));
     } else {
-      USR_FATAL(tryStmt, "try without a catchall in a non-throwing function");
+      USR_FATAL(node, "try without a catchall in a non-throwing function");
     }
   }
 
-  return errorCond(errorVar, handlers);
+  currTryBlock->insertAtTail(errorCond(currErrorVar, handlers));
 }
 
 bool ErrorHandlingVisitor::enterCatchStmt(CatchStmt* node) {
@@ -285,6 +284,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
       VarSymbol* errorVar    = NULL;
       BlockStmt* errorPolicy = new BlockStmt();
+      Expr*      insert      = node->getStmtExpr();
+      if (insert == NULL)
+        insert = node;
 
       if (insideTry) {
         TryInfo info = tryStack.top();
@@ -297,7 +299,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
-        node->getStmtExpr()->insertBefore(new DefExpr(errorVar));
+        insert->insertBefore(new DefExpr(errorVar));
 
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
@@ -307,7 +309,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
       // adding error to the arg list
       node->insertAtTail(errorVar);
-      node->getStmtExpr()->insertAfter(errorCond(errorVar, errorPolicy));
+      insert->insertAfter(errorCond(errorVar, errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);

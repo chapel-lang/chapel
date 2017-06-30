@@ -165,6 +165,7 @@ public:
 
   virtual bool   enterTryStmt        (TryStmt*           node) = 0;
   virtual void   exitTryStmt         (TryStmt*           node) = 0;
+  virtual void   lowerCatchStmts     (TryStmt*           node) = 0;
 
   virtual bool   enterCatchStmt      (CatchStmt*         node) = 0;
   virtual void   exitCatchStmt       (CatchStmt*         node) = 0;

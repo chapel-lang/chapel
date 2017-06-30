@@ -273,6 +273,9 @@ bool AstCount::enterTryStmt(TryStmt* node) {
 void AstCount::exitTryStmt(TryStmt* node) {
 }
 
+void AstCount::lowerCatchStmts(TryStmt* node) {
+}
+
 bool AstCount::enterCatchStmt(CatchStmt* node) {
   numCatchStmt++;
   return true;

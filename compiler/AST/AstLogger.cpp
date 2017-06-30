@@ -217,6 +217,8 @@ bool AstLogger::enterCatchStmt(CatchStmt* node) {
 void AstLogger::exitCatchStmt(CatchStmt* node) {
 }
 
+void AstLogger::lowerCatchStmts(TryStmt* node) {
+}
 
 bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
   bool first = true;

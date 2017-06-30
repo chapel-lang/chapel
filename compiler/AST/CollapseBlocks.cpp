@@ -426,6 +426,11 @@ void CollapseBlocks::exitTryStmt(TryStmt* node)
 
 }
 
+void CollapseBlocks::lowerCatchStmts(TryStmt* node)
+{
+
+}
+
 bool CollapseBlocks::enterCatchStmt(CatchStmt* node)
 {
   return true;
