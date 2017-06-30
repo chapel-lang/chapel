@@ -1,5 +1,4 @@
 #!/bin/bash
 
 exe=./samplefile
-set -x
 rm -f $exe ${exe}_real
