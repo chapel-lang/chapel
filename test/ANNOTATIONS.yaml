@@ -481,8 +481,6 @@ hpl_performance:
 hpl.hpcc2012.ml-perf:
   03/03/17:
     - Modified test as part of array views (#5338)
-  06/19/17:
-    - Reduce amount of locking in associative array dsiAccess (#6244)
 
 hpl.hpcc2012.ml-time:
   03/03/17:
@@ -772,6 +770,8 @@ prk-stencil:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil.ml-perf:
   04/08/16:
@@ -788,10 +788,14 @@ prk-stencil.ml-perf:
     - Use nonblocking transactions for strided transfers (#6262)
   06/06/17:
     - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-transpose: &transpose-base
   05/04/17:
