@@ -39,19 +39,17 @@ var rowDistLocArr: [rowDistLocDom] locale;
 rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
 
 // Domains & Distributions
-const vectorSpace = 0..#size2,
-      vectorDom = {vectorSpace},
-      vectorDist = if distributed then new dmap(new Block(vectorDom))
+const vectorSpace = {0..#size2},
+      matrixSpace = {0..#size2, 0..#size2},
+      resultDist = if distributed then new dmap(new Block(vectorSpace))
                    else defaultDist,
-      parentDist = new dmap(new Block({vectorSpace, vectorSpace},
-                                                targetLocales=rowDistLocArr,
-                                                sparseLayoutType=CSR)),
-      vectorDomRepl = vectorDom dmapped Replicated(),
-      vectorDomBlock = vectorDom dmapped vectorDist,
-      parentDom = if distributed then
-                    {vectorSpace, vectorSpace} dmapped parentDist
-                  else
-                    {vectorSpace, vectorSpace},
+      parentDist = new dmap(new Block(matrixSpace,
+                                      targetLocales=rowDistLocArr,
+                                      sparseLayoutType=CSR)),
+      vectorDom = vectorSpace dmapped Replicated(),
+      resultDom = vectorSpace dmapped resultDist,
+      parentDom = if distributed then matrixSpace dmapped parentDist
+                  else matrixSpace,
       matrixDomBlock: sparse subdomain(parentDom),
       matrixDomCSR: sparse subdomain(parentDom) dmapped CSR();
 
@@ -60,8 +58,7 @@ ref matrixDom = if distributed then matrixDomBlock else matrixDomCSR;
 // Arrays
 var matrix: [matrixDom] real,
     vector: [vectorDom] real,
-    vectorRepl: [vectorDomRepl] real,
-    result: [vectorDomBlock] real;
+    result: [resultDom] real;
 
 var t = new Timer();
 
@@ -72,40 +69,22 @@ proc main() {
   printInfo();
 
   startVdebug('kernel');
-  if distributed {
-    for niter in 0..iterations {
+  for niter in 0..iterations {
 
-      if niter == 1 then t.start();
+    if niter == 1 then t.start();
 
+    // Update vector (across locales for distributed case)
+    coforall loc in Locales do on loc {
       [i in vectorDom] vector[i] += i+1;
-
-      // Replicate vector across all locales
-      // TODO: Can I replicate vectorRepl from locale 0 to all other locales?
-      //       This could allow distributed / shared kernels to merge
-      coforall loc in Locales do on loc {
-        vectorRepl = vector;
-      }
-
-      forall i in vectorDomBlock.localSubdomain() {
-        var temp = 0.0;
-        // TODO: Ensure no communication occurs here
-        for j in matrixDom.dimIter(2,i) {
-          temp += matrix[i,j] * vectorRepl[j];
-        }
-      result[i] += temp;
-      }
     }
-  } else {
-    for niter in 0..iterations {
 
-      if niter == 1 then t.start();
-      [i in vectorDom] vector[i] += i+1;
-
-      forall i in vectorDomBlock {
-        for j in matrixDomCSR.dimIter(2,i) {
-          result[i] += matrix[i,j] * vector[j];
-        }
+    forall i in resultDom {
+      var temp = 0.0;
+      // TODO: Privatization in SparseBlockDist (this should be local)
+      for j in matrixDom.dimIter(2,i) {
+        temp += matrix[i,j] * vector[j];
       }
+    result[i] += temp;
     }
   }
   t.stop();
