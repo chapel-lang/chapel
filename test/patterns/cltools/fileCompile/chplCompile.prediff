@@ -1,0 +1,6 @@
+#!/bin/bash
+
+outfile=$2
+exe=./samplefile
+
+$exe -nl 1 >> $outfile 2>&1  &&  rm -f $exe ${exe}_real

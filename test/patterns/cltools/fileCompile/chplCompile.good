@@ -1,1 +1,2 @@
 chpl samplefile.chpl -o samplefile
+Hello World!
