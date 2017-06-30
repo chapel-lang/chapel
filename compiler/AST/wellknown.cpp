@@ -145,8 +145,9 @@ struct WellKnownFn
 };
 
 // These functions are a required part of the compiler/module interface.
-// They should generally be marked export so that they are always
-// resolved.
+// These functions will always be resolved if they are concrete.
+// (In the past, they needed to be marked 'export' but that is no longer
+//  required).
 static WellKnownFn sWellKnownFns[] = {
   {
     "chpl_here_alloc",
