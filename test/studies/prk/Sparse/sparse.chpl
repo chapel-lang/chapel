@@ -27,33 +27,19 @@ config const lsize = 4,
              /* Only print correctness string */
              correctness = false;
 
+// Constants
 const lsize2 = 2*lsize,
       size = 1<<lsize,
       size2 = size*size,
       stencilSize = 4*radius+1,
       sparsity = stencilSize:real/size2;
 
-// Locales array setup -- Distributed only
-const rowDistLocDom = {0..#numLocales, 0..0};
-var rowDistLocArr: [rowDistLocDom] locale;
-rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
-
-// Domains & Distributions
+// Domains
 const vectorSpace = {1..size2},
       matrixSpace = {1..size2, 1..size2},
-      resultDist = if distributed then new dmap(new Block(vectorSpace))
-                   else defaultDist,
-      parentDist = new dmap(new Block(matrixSpace,
-                                      targetLocales=rowDistLocArr,
-                                      sparseLayoutType=CSR)),
-      vectorDom = vectorSpace dmapped Replicated(),
-      resultDom = vectorSpace dmapped resultDist,
-      parentDom = if distributed then matrixSpace dmapped parentDist
-                  else matrixSpace,
-      matrixDomBlock: sparse subdomain(parentDom),
-      matrixDomCSR: sparse subdomain(parentDom) dmapped CSR();
-
-ref matrixDom = if distributed then matrixDomBlock else matrixDomCSR;
+      vectorDom = buildVectorDom(),
+      resultDom = buildResultDom(),
+      matrixDom = buildMatrixDom();
 
 // Arrays
 var matrix: [matrixDom] real,
@@ -94,6 +80,43 @@ proc main() {
 }
 
 
+proc buildVectorDom() {
+  if distributed then
+    return vectorSpace dmapped Replicated();
+  else
+    return vectorSpace;
+}
+
+
+proc buildResultDom() {
+  if distributed then
+    return vectorSpace dmapped Block(vectorSpace);
+  else
+    return vectorSpace;
+}
+
+
+proc buildMatrixDom() {
+  if distributed {
+    // Locales array setup
+    const rowDistLocDom = {0..#numLocales, 0..0};
+    var rowDistLocArr: [rowDistLocDom] locale;
+    rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
+
+    // SparseBlock setup
+    const SparseBlock = new dmap(new Block(matrixSpace,
+                                           targetLocales=rowDistLocArr,
+                                           sparseLayoutType=CSR));
+    const parentDom = matrixSpace dmapped SparseBlock;
+    const matrixDomSparseBlock: sparse subdomain(parentDom);
+    return matrixDomSparseBlock;
+  } else {
+    const matrixDomCSR: sparse subdomain(matrixSpace) dmapped CSR();
+    return matrixDomCSR;
+  }
+}
+
+
 proc initialize() {
   // TODO: Optimize distributed initialization
   t.start();
@@ -120,22 +143,14 @@ proc initialize() {
     }
   }
   indBuf += (1, 1);
-  if distributed {
-    matrixDom.bulkAdd(indBuf, preserveInds=false);
-  } else {
-    matrixDomCSR.bulkAdd(indBuf, preserveInds=false);
-  }
+  matrixDom.bulkAdd(indBuf, preserveInds=false);
 
   // Sanity check the number of indices in the sparse domain
   if matrixDom.numIndices != size2*stencilSize then
     halt("Incorrect number of indices created");
 
   // Initialize sparse matrix values
-  if distributed {
-    [(i,j) in matrixDom] matrix[i,j] = 1.0/(j);
-  } else {
-    [(i,j) in matrixDomCSR] matrix[i,j] = 1.0/(j);
-  }
+  [(i,j) in matrixDom] matrix[i,j] = 1.0/(j);
 
   t.stop();
   if VisualDebugOn then writeln('Initialization time: ', t.elapsed());
