@@ -1,0 +1,12 @@
+is-extern-class.chpl:6: warning: false
+is-extern-class.chpl:7: warning: true
+is-extern-class.chpl:8: warning: false
+Note: This source location is a guess.
+is-extern-class.chpl:8: warning: false
+is-extern-class.chpl:9: warning: false
+Note: This source location is a guess.
+is-extern-class.chpl:9: warning: false
+is-extern-class.chpl:10: warning: false
+Note: This source location is a guess.
+is-extern-class.chpl:10: warning: false
+is-extern-class.chpl:11: error: done
