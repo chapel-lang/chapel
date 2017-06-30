@@ -41,7 +41,7 @@ proc main() {
 
       for trial in 1..numTrials {
         const startTime = getCurrentTime();
-        local A = B + alpha * C;
+        local do A = B + alpha * C;
         allExecTime(here.id)(trial) = getCurrentTime() - startTime;
       }
 

@@ -469,7 +469,7 @@ proc panelSolve(
 
     // replicate
     on cornerLocale {
-      local
+      local do
         for j in dim2[k+1..] do
           replK[0,j] = Ab[k,j];
       replicateK(blk);
@@ -778,7 +778,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
     replicateK(diaFrom);  // replicates replX
 
     // Reset partial values for future use.
-    local for ps in myPartSums do ps = 0;
+    local do for ps in myPartSums do ps = 0;
 
   } else {
     // off the diagonal
@@ -794,7 +794,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
                    myPartSums, gotBlocks);
 
     // Reset partial values for future use.
-    local for ps in myPartSums do ps = 0;
+    local do for ps in myPartSums do ps = 0;
   }
 }
 

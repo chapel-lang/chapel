@@ -73,7 +73,7 @@ proc main() {
 
 	//initialize atom values
 	forall (i, atom) in zip(GridDist, atoms) {
-		local for param e in 1..nExtent do atom[e] = GridDist.indexOrder(i);
+		local do for param e in 1..nExtent do atom[e] = GridDist.indexOrder(i);
 	}
 	
 	t.start();
