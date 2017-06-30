@@ -305,8 +305,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
           errorPolicy->insertAtTail(haltExpr());
       }
 
+      // adding error to the arg list
       node->insertAtTail(errorVar);
-      node->insertAfter(errorCond(errorVar, errorPolicy));
+      node->getStmtExpr()->insertAfter(errorCond(errorVar, errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
