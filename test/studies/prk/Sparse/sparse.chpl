@@ -39,8 +39,8 @@ var rowDistLocArr: [rowDistLocDom] locale;
 rowDistLocArr[0..#numLocales, 0] = Locales[0..#numLocales];
 
 // Domains & Distributions
-const vectorSpace = {0..#size2},
-      matrixSpace = {0..#size2, 0..#size2},
+const vectorSpace = {1..size2},
+      matrixSpace = {1..size2, 1..size2},
       resultDist = if distributed then new dmap(new Block(vectorSpace))
                    else defaultDist,
       parentDist = new dmap(new Block(matrixSpace,
@@ -75,7 +75,7 @@ proc main() {
 
     // Update vector (across locales for distributed case)
     coforall loc in Locales do on loc {
-      [i in vectorDom] vector[i] += i+1;
+      [i in vectorDom] vector[i] += i;
     }
 
     forall i in resultDom {
@@ -103,7 +103,8 @@ proc initialize() {
   var indBuf: [indBufDom] 2*int;
 
   // Initialize sparse domain
-  for row in vectorSpace {
+  for v in vectorSpace {
+    const row = v - 1;
     const i = row%size,
           j = row/size;
 
@@ -118,6 +119,7 @@ proc initialize() {
       bufIdx += 4;
     }
   }
+  indBuf += (1, 1);
   if distributed {
     matrixDom.bulkAdd(indBuf, preserveInds=false);
   } else {
@@ -130,9 +132,9 @@ proc initialize() {
 
   // Initialize sparse matrix values
   if distributed {
-    [(i,j) in matrixDom] matrix[i,j] = 1.0/(j+1);
+    [(i,j) in matrixDom] matrix[i,j] = 1.0/(j);
   } else {
-    [(i,j) in matrixDomCSR] matrix[i,j] = 1.0/(j+1);
+    [(i,j) in matrixDomCSR] matrix[i,j] = 1.0/(j);
   }
 
   t.stop();
