@@ -262,9 +262,6 @@ std::vector<FnSymbol*> getWellKnownFunctions()
     fns.push_back(*wkfn.fn);
   }
 
-  if (gPrintModuleInitFn != NULL)
-    fns.push_back(gPrintModuleInitFn);
-
   return fns;
 }
 

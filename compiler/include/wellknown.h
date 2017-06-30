@@ -20,9 +20,9 @@
 #ifndef _WELL_KNOWN_H_
 #define _WELL_KNOWN_H_
 
-#include "symbol.h"
-
 #include <vector>
+
+class FnSymbol;
 
 void gatherIteratorTags();
 void gatherWellKnownTypes();
