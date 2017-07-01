@@ -149,11 +149,10 @@ private:
     VarSymbol* errorVar;
   };
 
-  std::stack<TryInfo> tryStack;
-  ArgSymbol*          outError;
-  LabelSymbol*        epilogue;
-
+  std::stack<TryInfo>     tryStack;
   std::stack<CatchesInfo> catchesStack;
+  ArgSymbol*              outError;
+  LabelSymbol*            epilogue;
 
   void   lowerCatches      (CatchesInfo info);
   AList  setOutGotoEpilogue(VarSymbol*  error);
@@ -204,7 +203,6 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
     tryBlock->remove();
 
   node->replace(tryBlock);
-
 }
 
 bool ErrorHandlingVisitor::enterCatchStmt(CatchStmt* node) {
