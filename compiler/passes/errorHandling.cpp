@@ -131,11 +131,11 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual bool enterTryStmt   (TryStmt*   node);
-  virtual void exitTryStmt    (TryStmt*   node);
-  virtual bool enterCatchStmt (CatchStmt* node);
-  virtual void exitCatchStmt  (CatchStmt* node);
-  virtual bool enterCallExpr  (CallExpr*  node);
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCatchStmt(CatchStmt* node);
+  virtual void exitCatchStmt (CatchStmt* node);
+  virtual bool enterCallExpr (CallExpr*  node);
 
 private:
   struct TryInfo {
