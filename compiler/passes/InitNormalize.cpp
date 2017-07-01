@@ -19,15 +19,14 @@
 
 #include "InitNormalize.h"
 
-#include "AstDumpToNode.h"
 #include "stmt.h"
 
-static bool        isSuperInit(Expr* stmt);
-static bool        isThisInit (Expr* stmt);
+static bool isSuperInit(Expr* stmt);
+static bool isThisInit (Expr* stmt);
 
-static bool        isAssignment(CallExpr* callExpr);
-static bool        isSimpleAssignment(CallExpr* callExpr);
-static bool        isCompoundAssignment(CallExpr* callExpr);
+static bool isAssignment(CallExpr* callExpr);
+static bool isSimpleAssignment(CallExpr* callExpr);
+static bool isCompoundAssignment(CallExpr* callExpr);
 
 /************************************* | **************************************
 *                                                                             *
@@ -180,7 +179,8 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
-    DefExpr* field = mCurrField;
+    DefExpr* field         = mCurrField;
+    bool     isTypeUnknown = mCurrField->sym->type == dtUnknown;
 
     if        (field->exprType == NULL && field->init == NULL) {
       INT_ASSERT(false);
@@ -188,7 +188,8 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
     } else if (field->exprType != NULL && field->init == NULL) {
       fieldInitTypeWoutInit (insertBefore, field);
 
-    } else if (field->exprType != NULL && field->init != NULL) {
+    } else if ((field->exprType != NULL  && field->init != NULL)  ||
+               (isTypeUnknown   == false && field->init != NULL)) {
       fieldInitTypeWithInit (insertBefore, field, field->init->copy());
 
     } else if (field->exprType == NULL && field->init != NULL) {
@@ -518,7 +519,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else {
-      retval = symExpr;
+      retval = true;
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
@@ -548,6 +549,9 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
         }
       }
     }
+
+  } else if (isNamedExpr(expr) == true) {
+    retval = true;
 
   } else {
     INT_ASSERT(false);
@@ -592,6 +596,8 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       }
     }
 
+  } else if (isNamedExpr(expr) == true) {
+
   } else {
     INT_ASSERT(false);
   }
@@ -617,7 +623,6 @@ bool InitNormalize::isFieldAccess(CallExpr* callExpr) const {
   return retval;
 }
 
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -626,6 +631,29 @@ bool InitNormalize::isFieldAccess(CallExpr* callExpr) const {
 
 DefExpr* InitNormalize::toLocalField(SymExpr* expr) const {
   return toLocalField(type(), expr);
+}
+
+DefExpr* InitNormalize::toLocalField(CallExpr* expr) const {
+  return toLocalField(type(), expr);
+}
+
+DefExpr* InitNormalize::toLocalField(AggregateType* at,
+                                     const char*    name) const {
+  Expr*    currField = at->fields.head;
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr*   defExpr = toDefExpr(currField);
+    VarSymbol* var     = toVarSymbol(defExpr->sym);
+
+    if (strcmp(var->name, name) == 0) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
 }
 
 DefExpr* InitNormalize::toLocalField(AggregateType* at, SymExpr* expr) const {
@@ -646,10 +674,6 @@ DefExpr* InitNormalize::toLocalField(AggregateType* at, SymExpr* expr) const {
   return retval;
 }
 
-DefExpr* InitNormalize::toLocalField(CallExpr* expr) const {
-  return toLocalField(type(), expr);
-}
-
 DefExpr* InitNormalize::toLocalField(AggregateType* at, CallExpr* expr) const {
   DefExpr* retval = NULL;
 
@@ -666,7 +690,7 @@ DefExpr* InitNormalize::toLocalField(AggregateType* at, CallExpr* expr) const {
           var                                    != NULL &&
           var->immediate                         != NULL &&
           var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = fieldByName(at, var->immediate->v_string);
+        retval = toLocalField(at, var->immediate->v_string);
       }
     }
   }
@@ -682,6 +706,19 @@ DefExpr* InitNormalize::toLocalField(AggregateType* at, CallExpr* expr) const {
 
 DefExpr* InitNormalize::toSuperField(SymExpr* expr) const {
   return toSuperField(type(), expr);
+}
+
+DefExpr* InitNormalize::toSuperField(AggregateType* at,
+                                     const char*    name) const {
+  forv_Vec(Type, t, at->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, name)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
 }
 
 DefExpr* InitNormalize::toSuperField(AggregateType* at, SymExpr*  expr) const {
@@ -706,31 +743,6 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at, CallExpr* expr) const {
   }
 
   return NULL;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-DefExpr* InitNormalize::fieldByName(AggregateType* at,
-                                    const char*    name) const {
-  Expr*    currField = at->fields.head;
-  DefExpr* retval    = NULL;
-
-  while (currField != NULL && retval == NULL) {
-    DefExpr*   defExpr = toDefExpr(currField);
-    VarSymbol* var     = toVarSymbol(defExpr->sym);
-
-    if (strcmp(var->name, name) == 0) {
-      retval    = defExpr;
-    } else {
-      currField = currField->next;
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
