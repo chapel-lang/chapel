@@ -1,3 +1,4 @@
+
 /* 
 TOML library  written in chapel and used in the chapel package manager
 */
@@ -38,30 +39,34 @@ proc main(args: [] string) {
   var source = new Source(args[1]);
   var parser = new Parser(source);
   ready(source);
-  source.debug();
   parser.parseLoop();
-  prettyPrint(parser.tables);
   delete parser;
 }
 
 
-/* Stolen from arrays primer b/c associative array writeThis sucks.. */
+/* Stolen from arrays primer*/
 proc prettyPrint(arr : [?dom], f:channel=IO.stdout) {
-  f.write("[ ");
   var first = true;
-  for k in dom.sorted() {
+  f.writeln();
+  for k in dom {
     if !first {
-      f.write(", ", k, " => ", arr[k]);
+      f.writeln();
+      f.writeln('===New Table===');
+      f.writeln();
+      f.writeln("[",k,"]", " fields:  ");
+      f.write(arr[k]); 
     } else {
-      f.write(k, " => ", arr[k]);
+      f.writeln("[",k,"]", " fields:  ");
+      f.write(arr[k]); 
       first = false;
     }
   }
-  f.write(" ]");
 }
 
 
 
+
+config const DEBUG: bool = false;
 
 class Parser {
 
@@ -69,21 +74,27 @@ class Parser {
   var D: domain(string);
   var tables: [D] Node;
   var curTable = "";
+  
+
+  const inBrackets = compile("^(\\[.*?\\])");
+  const doubleQuotes = '".*?"',
+          singleQuotes = "'.*?'",
+          digit = "\\d+",
+          keys = "^\\w+";
+  const Str = compile(doubleQuotes + '|' + singleQuotes);
+  const kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys));
+  const whitespace = compile("\\s"),
+        digits = compile("(\\d+)"),
+         comma = compile("(\\,)");
+  
 
   proc parseLoop() {
-    const inBrackets = compile("(\\[.*?\\])");
-    const doubleQuotes = '".*?"',
-      singleQuotes = "'.*?'",
-      digits = "\\d+",
-      keys = "\\w+"; 
-    const kv = compile('|'.join(doubleQuotes, singleQuotes, digits, keys));
 
     while(readLine(source)) {
-      var token = top(source).strip();
+      var token = top(source);
       
       if token == '#' {
 	parseComment();
-	token = getToken(source).strip(); // gets rid of the actual comment
       }
       else if inBrackets.match(token) {
 	parseTable();
@@ -93,84 +104,212 @@ class Parser {
       }
       else {
 	write(getToken(source));
-      } 
+      }
+      if DEBUG {
+	writeln();
+	writeln("========================= Debug Info  ==========================");
+	source.debug();
+	writeln();
+	prettyPrint(tables);
+	writeln();
+	writeln("================================================================");
+      }
     }
   }
 
 
   proc parseTable() {
     var brackets = compile('\\[|\\]');
-    var toke = getToken(source).strip();
+    var toke = getToken(source);
     var tablename = brackets.sub('', toke);
     tables[tablename] = new Node();
     curTable = tablename;
   }
 
 
+  proc parseValue(): Node {
+
+    var val = top(source);
+    // Array
+    if val == '['  {
+      source.currentLine.skip();
+      var nodeDom: domain(1);
+      var array: [nodeDom] Node;
+      while top(source) != ']' {
+	if comma.match(top(source)) {
+	  source.currentLine.skip();
+	}
+	else {
+	  var toParse = parseValue();
+	  array.push_back(toParse);
+	}
+      }
+      var nodeArray = new Node(array);
+      return nodeArray;
+    }
+    // String
+    else if Str.match(val) {
+      var stringNode = new Node(getToken(source));
+      return stringNode;
+    } 
+    // Int
+    else if digits.match(val) {
+      var toInt: int;
+      var token = getToken(source);
+      toInt = token: int;
+      var intNode = new Node(toInt);
+      return intNode;
+    } 
+    // Boolean
+    else if val == "true" || val ==  "false" {
+      var toBool: bool;
+      var token = getToken(source);
+      toBool = token: bool;
+      var boolNode = new Node(toBool);
+      return boolNode;
+    }
+    // This will eventually be an error
+    else {
+      var token = getToken(source);
+      if whitespace.match(token){
+	return parseValue();
+      }
+      else {
+	var unhandeled = new Node(token);
+	return unhandeled;
+      }
+    } 
+  }
+	
+      
   proc parseAssign() {
-    var key = getToken(source).strip();
-    var equals = getToken(source).strip(); //add expects here
-    var value = getToken(source).strip();
-    tables[curTable][key] = new Node(value);
+    var key = getToken(source);
+    var equals = getToken(source); // Add expects?
+    var value = parseValue();
+    tables[curTable][key] = value;
   } 
   
-  // do nothing
+  // Skip the line with the comment 
   proc parseComment() {
+    skipLine(source);
   }
-  
 }
 
 
 
+
 class Node {
-  // TODO: Other types:  datetime, Array
+  // TODO: Other types:  datetime, fix array
   var i: int;
   var boo: bool;
   var re: real;
   var s: string;
+  var dom: domain(1);
+  var arr: [dom] Node;
   var D: domain(string);
   var A: [D] Node;
 
+  const fieldBool = 1,
+    fieldInt = 2,
+    fieldArr = 3,
+    fieldNode = 4,
+    fieldReal = 5,
+    fieldString = 6,
+    fieldEmpty = 7;
+  var tag: int = fieldEmpty;  
+
+
   // Empty
-  proc init() {}
+  proc init() {
+    tag = fieldNode;
+  }
 
   // String
   proc init(s:string) {
     this.s = s;
+    tag = fieldString;
   }
 
   // Node
-  proc init(A: [?D] Node) {
+  proc init(A: [?D] Node) where isAssociativeDom(D) {
     this.D = D;
     this.A = A;
+    tag = fieldNode;
   }
 
   // Int
   proc init(i: int) {
     this.i = i;
+    tag = fieldInt;
   }
 
   // Boolean
   proc init(boo: bool) {
     this.boo = boo;
+    tag = fieldBool;
   }
 
   // Real
   proc init(re: real) {
     this.re = re;
+    tag = fieldReal;
+  }
+
+  // Array
+  proc init(arr: [?dom] Node)  {
+    this.dom = dom;
+    this.arr = arr;
+    tag = fieldArr;
   }
 
   proc this(idx) ref {
     return A[idx];
   }
 
+
   proc writeThis(f) {
-    if D.size > 0 {
-      prettyPrint(A, f);
-    } else {
+
+    if tag == fieldArr {
+      var first = true;
+      f.write('[');
+      for k in dom {
+	if first { 
+	  f.write(arr[k], ', ');
+	  first = false;
+	}
+	else if arr[k] == arr[dom.last] {
+	  f.write(arr[k], ']');
+	}
+	else {
+	  f.write(arr[k], ', ');
+	}
+      }
+    } 
+    else if tag == fieldNode {
+      for k in D {
+	f.writeln(k ,' => ', A[k]);}
+    }
+    else if tag == fieldInt {
+      f.write(i);
+    }
+    else if tag == fieldBool {
+      f.write(boo);
+    }
+    else if tag == fieldString {
+      f.write(s);
+    }
+    else if tag == fieldReal {
+      f.write(re);
+    }
+    else if tag == fieldEmpty {
+      f.write("empty");
+    }
+    else {
       f.write(s);
     }
   }
+
+
 
   /* Don't forget to free your memory! */
   proc deinit() {

@@ -2,4 +2,18 @@
 [owner]
 name = "Tom Preston-Werner"
 pseudo  = "Tommy"
-quoteint = "3"
+quoteint = 3
+simple = [3, 4]
+
+# for the database
+[database]
+server = "192.168.1.1" # quoted string
+ports = [8001, 8001, 8002] # array
+connection_max = 5000 # integer
+enabled = true  # boolean
+
+[servers]
+hosts = ["alpha", "omega"]
+
+[misc]
+"computer" = mac

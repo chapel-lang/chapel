@@ -5,13 +5,13 @@ Reader module for use in the Parser Class.
 
 use Regexp;
 
-// Main method
+
 proc main(args: [] string) {
   var source = new Source(args[1]);
   ready(source);
   source.debug();
-  delete source;
 }
+
 
 proc isEOF(source) {// need try catch for this and or newline
   if source.tokenlist.isEmpty() { 
@@ -28,16 +28,19 @@ proc top(source) {
   return source.currentLine.A[source.currentLine.D.first];
 }
 
-
-// returns a boolean or wether or not another line can be read
+// Returns a boolean or wether or not another line can be read
 // Also updates the currentLine if empty
 proc readLine(source) {
   return source.nextLine();
 }
 
+proc skipLine(source) {
+  source.skipROL();
+}
+
 // retrives the next token in currentline
 proc getToken(source) {
-     return source.nextToke();
+  return source.nextToke();
 }
 
 proc ready(source) { 
@@ -75,11 +78,11 @@ class Source {
     var linetokens: [1..0] string;
     const doubleQuotes = '".*?\\[^\\]?"',
           singleQuotes = "'.*?\\[^\\]?'",
-          bracketContents = "(\\[.*?\\])",
-          brackets = "(\\]|\\[)",
+          bracketContents = "(^\\[.*?\\])",
+          brackets = "(\\[)|(\\])",
           comments = "(\\#)",
           commas = "(\\,)",
-          equals = "(\\s=)";
+          equals = "(\\s=\\s)";
 
     const pattern = compile('|'.join(doubleQuotes,
 				     singleQuotes,
@@ -89,8 +92,9 @@ class Source {
 				     commas,
 				     equals));
     for token in pattern.split(line) {
-      if token.length != 0  {
-	linetokens.push_back(token);
+      var strippedToken = token.strip();
+      if strippedToken.length != 0  {
+	linetokens.push_back(strippedToken);
       }
     }
       if linetokens.size != 0 {
@@ -122,6 +126,13 @@ class Source {
   proc nextToke() {
     return currentLine.next();
   }
+
+
+  proc skipROL() { 
+    for token in currentLine {
+      currentLine.skip();
+    } 
+  } 
 
 
   proc debug() {
