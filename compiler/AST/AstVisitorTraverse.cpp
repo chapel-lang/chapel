@@ -273,6 +273,16 @@ void AstVisitorTraverse::exitForwardingStmt(ForwardingStmt* node)
 
 }
 
+bool AstVisitorTraverse::enterDeferStmt(DeferStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitDeferStmt(DeferStmt* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterTryStmt(TryStmt* node)
 {
   return true;

@@ -402,6 +402,20 @@ void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
 
 }
 
+bool CollapseBlocks::enterDeferStmt(DeferStmt* node)
+{
+  // Defer statements really need to be lowered *before*
+  // running CollapseBlocks. Otherwise, how can we know
+  // what variables or defer blocks are "in scope"?
+  INT_ASSERT("Defer statement discovered in CollapseBlocks");
+  return true;
+}
+
+void CollapseBlocks::exitDeferStmt(DeferStmt* node)
+{
+
+}
+
 bool CollapseBlocks::enterTryStmt(TryStmt* node)
 {
   return true;

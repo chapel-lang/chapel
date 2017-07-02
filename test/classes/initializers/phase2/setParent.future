@@ -1,0 +1,1 @@
+bug: compiler complains about phase 1 error despite code being in phase 2

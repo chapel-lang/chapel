@@ -216,8 +216,6 @@ static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
 static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
-static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
-                                        SymExpr* rhs);
 static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveInitVar(CallExpr* call);
@@ -4028,72 +4026,106 @@ static void resolveTupleExpand(CallExpr* call) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void handleSetMemberTypeMismatch(Type*     t,
+                                        Symbol*   fs,
+                                        CallExpr* call,
+                                        SymExpr*  rhs);
+
 static void resolveSetMember(CallExpr* call) {
   // Get the field name.
   SymExpr* sym = toSymExpr(call->get(2));
-  if (!sym)
+
+  if (sym == NULL) {
     INT_FATAL(call, "bad set member primitive");
+  }
+
   VarSymbol* var = toVarSymbol(sym->symbol());
-  if (!var || !var->immediate)
+
+  if (var == NULL || var->immediate == NULL) {
     INT_FATAL(call, "bad set member primitive");
+  }
+
   const char* name = var->immediate->v_string;
 
   // Special case: An integer field name is actually a tuple member index.
   {
-    int64_t i;
-    if (get_int(sym, &i)) {
+    int64_t i = 0;
+
+    if (get_int(sym, &i) == true) {
       name = astr("x", istr(i));
+
       call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
 
-  AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-  if (!ct)
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
+
+  if (ct == NULL) {
     INT_FATAL(call, "bad set member primitive");
+  }
 
   Symbol* fs = NULL;
+
   for_fields(field, ct) {
-    if (!strcmp(field->name, name)) {
-      fs = field; break;
+    if (strcmp(field->name, name) == 0) {
+      fs = field;
+      break;
     }
   }
 
-  if (!fs)
+  if (fs == NULL) {
     INT_FATAL(call, "bad set member primitive");
+  }
 
   Type* t = call->get(3)->typeInfo();
-  // I think this never happens, so can be turned into an assert. <hilde>
-  if (t == dtUnknown)
-    INT_FATAL(call, "Unable to resolve field type");
 
-  if (t == dtNil && fs->type == dtUnknown)
-    USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  if (t == dtUnknown) {
+    INT_FATAL(call, "Unable to resolve field type");
+  }
+
   if (fs->type == dtUnknown) {
-    // Set the field type.
-    fs->type = t;
+    if (t != dtNil) {
+      fs->type = t;
+
+    } else {
+      USR_FATAL(call->parentSymbol,
+                "unable to determine type of field from nil");
+    }
   }
 
   INT_ASSERT(isSymExpr(call->get(3)));
+
   handleSetMemberTypeMismatch(t, fs, call, toSymExpr(call->get(3)));
 }
 
-
-static void handleSetMemberTypeMismatch(Type* t, Symbol* fs, CallExpr* call,
-                                        SymExpr* rhs) {
+static void handleSetMemberTypeMismatch(Type*     t,
+                                        Symbol*   fs,
+                                        CallExpr* call,
+                                        SymExpr*  rhs) {
   if (t != fs->type && t != dtNil && t != dtObject) {
-    Symbol* actual = rhs->symbol();
-    FnSymbol* fn = toFnSymbol(call->parentSymbol);
-    if (canCoerceTuples(t, actual, fs->type, fn)) {
+    Symbol*   actual = rhs->symbol();
+    FnSymbol* fn     = toFnSymbol(call->parentSymbol);
+
+    if (canCoerceTuples(t, actual, fs->type, fn) == true) {
       // Add a PRIM_MOVE so that insertCasts will take care of it later.
       VarSymbol* tmp = newTemp("coerce_elt", fs->type);
+
       call->insertBefore(new DefExpr(tmp));
       rhs->remove();
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
       call->insertAtTail(tmp);
+
     } else {
       USR_FATAL(userCall(call),
                 "cannot assign expression of type %s to field of type %s",
-                toString(t), toString(fs->type));
+                toString(t),
+                toString(fs->type));
     }
   }
 }
@@ -4799,26 +4831,34 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         fn->insertAtHead(defaultExpr);
 
       } else {
-        VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
-        VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+        AggregateType* formalAt = toAggregateType(formal->getValType());
+        if (isNonGenericRecordWithInitializers(formalAt)) {
+          fn->insertAtHead(new CallExpr("init",
+                                        gMethodToken,
+                                        tmp));
+          tmp->type = formalAt;
+        } else {
+          VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
+          VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
 
-        typeTmp->addFlag(FLAG_MAYBE_TYPE);
+          typeTmp->addFlag(FLAG_MAYBE_TYPE);
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      new CallExpr(PRIM_INIT, typeTmp)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                        tmp,
+                                        new CallExpr(PRIM_INIT, typeTmp)));
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      typeTmp,
-                                      new CallExpr(PRIM_TYPEOF, refTmp)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                        typeTmp,
+                                        new CallExpr(PRIM_TYPEOF, refTmp)));
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      refTmp,
-                                      new CallExpr(PRIM_DEREF, formal)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                        refTmp,
+                                        new CallExpr(PRIM_DEREF, formal)));
 
-        fn->insertAtHead(new DefExpr(refTmp));
+          fn->insertAtHead(new DefExpr(refTmp));
 
-        fn->insertAtHead(new DefExpr(typeTmp));
+          fn->insertAtHead(new DefExpr(typeTmp));
+        }
       }
 
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -5994,30 +6034,29 @@ resolveFns(FnSymbol* fn) {
     //
     // resolve destructor
     //
-    if (ct) {
-      if (!ct->destructor &&
-          !ct->symbol->hasFlag(FLAG_REF) &&
-          !isTupleContainingOnlyReferences(ct)) {
-        BlockStmt* block = new BlockStmt();
-        VarSymbol* tmp   = newTemp(ct);
-        CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+    if (ct                                  != NULL  &&
+        ct->hasDestructor()                 == false &&
+        ct->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(ct) == false) {
+      BlockStmt* block = new BlockStmt();
+      VarSymbol* tmp   = newTemp(ct);
+      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-        // In case resolveCall drops other stuff into the tree ahead of the
-        // call, we wrap everything in a block for safe removal.
+      // In case resolveCall drops other stuff into the tree ahead
+      // of the call, we wrap everything in a block for safe removal.
 
-        block->insertAtHead(call);
+      block->insertAtHead(call);
 
-        fn->insertAtHead(block);
-        fn->insertAtHead(new DefExpr(tmp));
+      fn->insertAtHead(block);
+      fn->insertAtHead(new DefExpr(tmp));
 
-        resolveCallAndCallee(call);
+      resolveCallAndCallee(call);
 
-        ct->destructor = call->resolvedFunction();
+      ct->setDestructor(call->resolvedFunction());
 
-        block->remove();
+      block->remove();
 
-        tmp->defPoint->remove();
-      }
+      tmp->defPoint->remove();
     }
   }
 
@@ -6539,7 +6578,7 @@ bool propagateNotPOD(Type* t) {
         if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
             isCompilerGenerated(autoCopyMap[at])         == false ||
             isCompilerGenerated(autoDestroyMap.get(at))  == false ||
-            isCompilerGenerated(at->destructor)          == false) {
+            isCompilerGenerated(at->getDestructor())     == false) {
           retval = true;
         }
 

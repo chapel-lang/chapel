@@ -47,13 +47,13 @@ BlockStmt* DeferStmt::body() const {
 }
 
 void DeferStmt::accept(AstVisitor* visitor) {
-/*  if (visitor->enterDeferStmt(this)) {
+  if (visitor->enterDeferStmt(this)) {
     if (_body) {
       _body->accept(visitor);
     }
 
     visitor->exitDeferStmt(this);
-  }*/
+  }
 }
 
 DeferStmt* DeferStmt::copyInner(SymbolMap* map) {

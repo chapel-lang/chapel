@@ -52,6 +52,7 @@ class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
 class ForwardingStmt;
+class DeferStmt;
 class TryStmt;
 class CatchStmt;
 
@@ -158,6 +159,9 @@ public:
 
   virtual bool   enterGotoStmt       (GotoStmt*          node) = 0;
   virtual void   exitGotoStmt        (GotoStmt*          node) = 0;
+
+  virtual bool   enterDeferStmt      (DeferStmt*         node) = 0;
+  virtual void   exitDeferStmt       (DeferStmt*         node) = 0;
 
   virtual bool   enterTryStmt        (TryStmt*           node) = 0;
   virtual void   exitTryStmt         (TryStmt*           node) = 0;

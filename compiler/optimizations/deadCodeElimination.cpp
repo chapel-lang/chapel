@@ -432,46 +432,69 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 
 /************************************* | **************************************
 *                                                                             *
-* Determines if a module is dead. A module is dead if the module's init       *
-* function can only be called from module code, and the init function is      *
-* empty, and the init function is the only thing in the module, and the       *
-* module is not a nested module.                                              *
+* A module is dead if                                                         *
+*   the module's init function can only be called from module code      and   *
+*   the init function is empty                                          and   *
+*   the init function is the  only thing in the module                  and   *
+*   the module is not a nested module.                                        *
 *                                                                             *
 ************************************** | *************************************/
 
 static bool isDeadModule(ModuleSymbol* mod) {
-  bool retval = false;
+  AList body   = mod->block->body;
+  bool  retval = false;
 
-  // The main module and any module whose init function is exported
-  // should never be considered dead, as the init function can be
-  // explicitly called from the runtime, or other c code
-  if (mod                            == ModuleSymbol::mainModule() ||
-      mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+  // The main module should never be considered dead; the init function
+  // can be explicitly called from the runtime or other c code
+  if (mod == ModuleSymbol::mainModule()) {
     retval = false;
 
-  // because of the way modules are initialized, we don't want to consider a
-  // nested function as dead as its outer module and all of its uses should
-  // have their initializer called by the inner module.
-  } else if (mod->defPoint->getModule() != theProgram &&
-      mod->defPoint->getModule() != rootModule) {
+  // Ditto for an exported module
+  } else if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
     retval = false;
 
-  // if there is only one thing in the module
-  } else if (mod->block->body.length == 1) {
-    if (mod->initFn == NULL) {
-      // Prevents a segfault experienced when cleaning up a module which has
-      // only an inner module defined in it (and neither have an init function)
-      INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
-    }
+  // Because of the way modules are initialized, we never consider a nested
+  // module to be dead.
+  } else if (mod->defPoint->getModule() != rootModule &&
+             mod->defPoint->getModule() != theProgram) {
+    retval = false;
 
-    // and that thing is the init function
-    if (mod->block->body.only() == mod->initFn->defPoint) {
-      // and the init function is empty (only has a return)
-      if (mod->initFn->body->body.length == 1) {
-        // then the module is dead
-        retval = true;
+  // Any module with more than 1 module-level statement is assumed to be live
+  } else if (body.length >= 2) {
+    retval = false;
+
+  // A module might be considered to be dead if it has exactly 1 defExpr
+  } else if (body.length == 1) {
+    Expr* item = body.only();
+
+    if (DefExpr* defExpr = toDefExpr(item)) {
+      // A module is not dead if the sole definition is a type declaration
+      if (isTypeSymbol(defExpr->sym) == true) {
+        retval = false;
+
+      // A module is dead if the sole definition is an "empty" init function
+      } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+        if (mod->initFn == NULL) {
+          INT_FATAL("Expected initFn for module '%s', but was null",
+                    mod->name);
+
+        } else if (mod->initFn == fn) {
+          retval = mod->initFn->body->body.length == 1;
+
+        } else {
+          INT_ASSERT(false);
+        }
+
+      } else {
+        INT_ASSERT(false);
       }
+
+    } else {
+      INT_ASSERT(false);
     }
+
+  } else {
+    retval = false;
   }
 
   return retval;

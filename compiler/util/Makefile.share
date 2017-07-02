@@ -20,6 +20,7 @@ UTIL_SRCS = \
 	exprAnalysis.cpp \
 	files.cpp \
 	llvmAggregateGlobalOps.cpp \
+	llvmDumpIR.cpp \
 	llvmGlobalToWide.cpp \
 	llvmUtil.cpp \
 	llvmDebug.cpp \

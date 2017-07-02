@@ -42,17 +42,15 @@
 
 static bool isDerivedType(Type* type, Flag flag);
 
-Type::Type(AstTag astTag, Symbol* init_defaultVal) :
-  BaseAST(astTag),
-
-  symbol(NULL),
-  refType(NULL),
-  hasGenericDefaults(false),
-  defaultValue(init_defaultVal),
-  destructor(NULL),
-  isInternalType(false),
-  instantiatedFrom(NULL),
-  scalarPromotionType(NULL) {
+Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
+  symbol              = NULL;
+  refType             = NULL;
+  hasGenericDefaults  = false;
+  defaultValue        = iDefaultVal;
+  destructor          = NULL;
+  isInternalType      = false;
+  instantiatedFrom    = NULL;
+  scalarPromotionType = NULL;
 }
 
 Type::~Type() {
@@ -62,10 +60,9 @@ Type::~Type() {
 void Type::verify() {
 }
 
-void Type::addSymbol(TypeSymbol* newsymbol) {
-  symbol = newsymbol;
+void Type::addSymbol(TypeSymbol* newSymbol) {
+  symbol = newSymbol;
 }
-
 
 bool Type::inTree() {
   if (symbol)
@@ -101,6 +98,23 @@ Symbol* Type::getField(const char* name, bool fatal) {
   return NULL;
 }
 
+bool Type::hasDestructor() const {
+  return destructor != NULL;
+}
+
+FnSymbol* Type::getDestructor() const {
+  return destructor;
+}
+
+void Type::setDestructor(FnSymbol* fn) {
+  destructor = fn;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
   Type(E_PrimitiveType, init)
@@ -134,7 +148,6 @@ PrimitiveType::copyInner(SymbolMap* map) {
 void PrimitiveType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in PrimitiveType::replaceChild");
 }
-
 
 
 void PrimitiveType::verify() {

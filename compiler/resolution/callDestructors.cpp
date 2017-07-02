@@ -1014,27 +1014,40 @@ fixupDestructors() {
       //
       for_fields_backward(field, ct) {
         SET_LINENO(field);
-        if (field->type->destructor) {
+
+        if (field->type->hasDestructor() == true) {
           AggregateType* fct = toAggregateType(field->type);
+
           INT_ASSERT(fct);
+
           if (!isClass(fct)) {
-            bool useRefType = !isRecordWrappedType(fct);
-            VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
+            bool       useRefType = !isRecordWrappedType(fct);
+            VarSymbol* tmp        = newTemp("_field_destructor_tmp_",
+                                            useRefType ? fct->refType : fct);
+
             fn->insertIntoEpilogue(new DefExpr(tmp));
+
             fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+
             FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
-            if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
+
+            if (autoDestroyFn &&
+                autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY)) {
               fn->insertIntoEpilogue(new CallExpr(autoDestroyFn, tmp));
-            else
-              fn->insertIntoEpilogue(new CallExpr(field->type->destructor, tmp));
+            } else {
+              fn->insertIntoEpilogue(new CallExpr(field->type->getDestructor(),
+                                                  tmp));
+            }
           }
+
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
+
           fn->insertIntoEpilogue(new DefExpr(tmp));
-          fn->insertIntoEpilogue(
-                new CallExpr(PRIM_MOVE, tmp,
-                  new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE,
+                                              tmp,
+                                              new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertIntoEpilogue(new CallExpr(autoDestroyFn, tmp));
         }
       }
@@ -1043,17 +1056,20 @@ fixupDestructors() {
       // insert call to parent destructor
       //
       INT_ASSERT(ct->dispatchParents.n <= 1);
-      if (ct->dispatchParents.n >= 1 && isClass(ct)) {
-        // avoid destroying record fields more than once
-        if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
+
+      if (ct->dispatchParents.n == 1 && isClass(ct) == true) {
+        Type* parType = ct->dispatchParents.v[0];
+
+        if (FnSymbol* parDestructor = parType->getDestructor()) {
           SET_LINENO(fn);
-          Type* tmpType = isClass(ct) ?
-            ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
-          VarSymbol* tmp = newTemp("_parent_destructor_tmp_", tmpType);
+
+          VarSymbol* tmp   = newTemp("_parent_destructor_tmp_", parType);
+          Symbol*    _this = fn->_this;
+          CallExpr*  cast  = new CallExpr(PRIM_CAST, parType->symbol, _this);
+
           fn->insertIntoEpilogue(new DefExpr(tmp));
-          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_CAST, tmpType->symbol, fn->_this)));
-          fn->insertIntoEpilogue(new CallExpr(parentDestructor, tmp));
+          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE,     tmp, cast));
+          fn->insertIntoEpilogue(new CallExpr(parDestructor, tmp));
         }
       }
     }
@@ -1087,26 +1103,31 @@ static void cleanupModuleDeinitAnchor(Expr*& anchor) {
 }
 
 static void insertGlobalAutoDestroyCalls() {
-  // --ipe does not build chpl_gen_main
-  if (chpl_gen_main == NULL)
-    return;
-
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (isAlive(mod)) {
       Expr* anchor = NULL;
-      for_alist(expr, mod->block->body)
-        if (DefExpr* def = toDefExpr(expr))
-          if (VarSymbol* var = toVarSymbol(def->sym))
-            if (!var->isParameter() && !var->isType())
-              if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
+
+      for_alist(expr, mod->block->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (VarSymbol* var = toVarSymbol(def->sym)) {
+            if (!var->isParameter() && !var->isType()) {
+              if (!var->hasFlag(FLAG_NO_AUTO_DESTROY)) {
                 if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                   SET_LINENO(var);
+
                   ensureModuleDeinitFnAnchor(mod, anchor);
+
                   // destroys go after anchor in reverse order of decls
                   anchor->insertAfter(new CallExpr(autoDestroy, var));
                 }
+              }
+            }
+          }
+        }
+      }
       cleanupModuleDeinitAnchor(anchor);
     }
+  }
 }
 
 
@@ -1114,11 +1135,14 @@ static void insertDestructorCalls() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
       Type* type = call->get(1)->typeInfo();
-      if (!type->destructor) {
+
+      if (type->hasDestructor() == false) {
         call->remove();
       } else {
         SET_LINENO(call);
-        call->replace(new CallExpr(type->destructor, call->get(1)->remove()));
+
+        call->replace(new CallExpr(type->getDestructor(),
+                                   call->get(1)->remove()));
       }
     }
   }

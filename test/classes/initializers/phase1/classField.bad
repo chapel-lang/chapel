@@ -1,2 +1,0 @@
-classField.chpl:14: In initializer:
-classField.chpl:15: error: 'new' must be followed by a type expression

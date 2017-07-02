@@ -136,6 +136,9 @@ foreach_ast(decl_members);
   virtual bool   enterGotoStmt       (GotoStmt*          node);
   virtual void   exitGotoStmt        (GotoStmt*          node);
 
+  virtual bool   enterDeferStmt      (DeferStmt*         node);
+  virtual void   exitDeferStmt       (DeferStmt*         node);
+
   virtual bool   enterTryStmt        (TryStmt*           node);
   virtual void   exitTryStmt         (TryStmt*           node);
 
