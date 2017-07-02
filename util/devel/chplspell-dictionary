@@ -599,6 +599,7 @@ llapi
 lldb
 llsubmit
 llvmaggregateglobalops
+llvmdumpir
 llvmglobaltowide
 llvmutil
 lnot
@@ -1286,6 +1287,7 @@ wordlength
 wordv
 workdir
 worklist
+wout
 wrapon
 writeable
 writeback
@@ -2736,7 +2738,9 @@ FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
 rauto
 
 FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
+fsyntax
 maino
+qunused
 
 FILEID: 4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5
 sroa
@@ -3599,7 +3603,9 @@ adaptative
 binarytrees
 chapcs
 kace
+paircount
 timecomp
+twopt
 
 FILEID: b4905dc4-5f88-11e6-90f0-10ddb1d4c3d5
 synccls
@@ -5617,6 +5623,7 @@ mkdir
 mkerror
 mklroot
 mkswap
+mllvm
 mmap
 mmread
 mmreadsp
@@ -6177,6 +6184,7 @@ sherwood
 shetag
 shmem
 shortlog
+shortname
 showplus
 showpoint
 showpointzero
@@ -6555,6 +6563,7 @@ vassily
 vdebug
 vecs
 vectorizable
+vectorizer
 vectorizes
 vectorizing
 venv
