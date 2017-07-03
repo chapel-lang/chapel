@@ -123,22 +123,31 @@ class Parser {
     }
   }
 
-
   proc parseTable() {
     var toke = getToken(source);
     var tablename = brackets.sub('', toke);
     tables[tablename] = new Node();
     curTable = tablename;
   }
-
+      
+  proc parseAssign() {
+    var key = getToken(source);
+    var equals = getToken(source);
+    var value = parseValue();
+    tables[curTable][key] = value;
+  } 
+  
+  // Skip the line with the comment 
+  proc parseComment() {
+    skipLine(source);
+  }
 
 
   proc parseValue(): Node {
     var val = top(source);
-
     // Array
     if val == '['  {
-      source.currentLine.skip();     // skip '['
+      source.currentLine.skip();
       var nodeDom: domain(1);
       var array: [nodeDom] Node;
       while top(source) != ']' {
@@ -154,7 +163,7 @@ class Parser {
       var nodeArray = new Node(array);
       return nodeArray;
     }
-    // String
+    // Strings (includes multi-line) 
     else if Str.match(val) {
       if val.startsWith('"""') || val.startsWith("'''") {
 	var toStr: string;
@@ -165,8 +174,8 @@ class Parser {
 	return mlStringNode;
       }
       else {
-      var stringNode = new Node(getToken(source));
-      return stringNode;
+	var stringNode = new Node(getToken(source));
+	return stringNode;
       }
     }
     // DateTime
@@ -177,25 +186,22 @@ class Parser {
     }
     // Real
     else if realNum.match(val) {
-      var toReal: real;
       var token = getToken(source);
-      toReal = token: real;
+      var toReal = token: real;
       var realNode = new Node(toReal);
       return realNode;
     }
     // Int
     else if ints.match(val) {
-      var toInt: int;
       var token = getToken(source);
-      toInt = token: int;
+      var toInt = token: int;
       var intNode = new Node(toInt);
       return intNode;
     } 
     // Boolean
     else if val == "true" || val ==  "false" {
-      var toBool: bool;
       var token = getToken(source);
-      toBool = token: bool;
+      var toBool = token: bool;
       var boolNode = new Node(toBool);
       return boolNode;
     }
@@ -207,26 +213,10 @@ class Parser {
       return unhandeled; 
     }
   }
-	
-      
-  proc parseAssign() {
-    var key = getToken(source);
-    var equals = getToken(source); // Add expects?
-    var value = parseValue();
-    tables[curTable][key] = value;
-  } 
-  
-  // Skip the line with the comment 
-  proc parseComment() {
-    skipLine(source);
-  }
 }
 
 
-
-
 class Node {
-  // TODO: Other types:  datetime, fix array
   var i: int;
   var boo: bool;
   var re: real;
