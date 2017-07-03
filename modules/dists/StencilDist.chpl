@@ -1593,7 +1593,7 @@ proc StencilArr._packedUpdate() {
             // DefaultRectangulars into 1-dimension arrays?
             ref src = locArr[i].myElems[S];
             ref buf = locArr[i].sendBufs[sendBufIdx];
-            local for (s, i) in zip(src, buf.domain.first..#src.size) do buf[i] = s;
+            local do for (s, i) in zip(src, buf.domain.first..#src.size) do buf[i] = s;
 
             if debugStencilDist then
               writeln("Filled ", here, ".", S, " for ", dom.dist.targetLocales(recvIdx), "::", recvBufIdx);
@@ -1623,7 +1623,7 @@ proc StencilArr._packedUpdate() {
 
           ref dest = locArr[i].myElems[D];
           ref buf = locArr[i].recvBufs[recvBufIdx];
-          local for (d, i) in zip(dest, buf.domain.first..#dest.size) do d = buf[i];
+          local do for (d, i) in zip(dest, buf.domain.first..#dest.size) do d = buf[i];
         }
       }
     }
