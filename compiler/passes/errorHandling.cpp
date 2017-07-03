@@ -133,7 +133,6 @@ public:
 
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCatchStmt(CatchStmt* node);
   virtual void exitCatchStmt (CatchStmt* node);
   virtual bool enterCallExpr (CallExpr*  node);
 
@@ -141,23 +140,19 @@ private:
   struct TryInfo {
     VarSymbol*   errorVar;
     LabelSymbol* handlerLabel;
+    TryStmt*     tryStmt;
+    BlockStmt*   tryBody;
   };
 
-  struct CatchesInfo {
-    TryStmt*   tryStmt;
-    BlockStmt* tryBody;
-    VarSymbol* errorVar;
-  };
+  std::stack<TryInfo> tryStack;
+  std::stack<TryInfo> catchesStack;
+  ArgSymbol*          outError;
+  LabelSymbol*        epilogue;
 
-  std::stack<TryInfo>     tryStack;
-  std::stack<CatchesInfo> catchesStack;
-  ArgSymbol*              outError;
-  LabelSymbol*            epilogue;
-
-  void   lowerCatches      (CatchesInfo info);
-  AList  setOutGotoEpilogue(VarSymbol*  error);
-  AList  errorCond         (VarSymbol*  errorVar, BlockStmt* thenBlock,
-                            BlockStmt*  elseBlock = NULL);
+  void   lowerCatches      (TryInfo    info);
+  AList  setOutGotoEpilogue(VarSymbol* error);
+  AList  errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
+                            BlockStmt* elseBlock = NULL);
   CallExpr* haltExpr       ();
 
   ErrorHandlingVisitor();
@@ -174,7 +169,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 
   VarSymbol*   errorVar     = newTemp("error", dtError);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
-  TryInfo      info         = {errorVar, handlerLabel};
+  TryInfo      info         = {errorVar, handlerLabel, node, node->body()};
   tryStack.push(info);
 
   return true;
@@ -186,41 +181,36 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   TryInfo info = tryStack.top();
   tryStack.pop();
 
-  BlockStmt* tryBlock = node->body();
+  BlockStmt* tryBody = info.tryBody;
 
-  tryBlock->insertAtHead(new DefExpr(info.errorVar));
-  tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
+  tryBody->insertAtHead(new DefExpr(info.errorVar));
+  tryBody->insertAtTail(new DefExpr(info.handlerLabel));
 
-  CatchesInfo cInfo = {node, tryBlock, info.errorVar};
   if (node->_catches.empty()) {
-    lowerCatches(cInfo); // no exitCatchStmt, so called here
+    lowerCatches(info); // no exitCatchStmt, so called here
   } else {
-    catchesStack.push(cInfo);
+    catchesStack.push(info);
   }
 
   // may be NULL due to replacement of an enclosing try
-  if (tryBlock->parentExpr)
-    tryBlock->remove();
+  if (tryBody->parentExpr)
+    tryBody->remove();
 
-  node->replace(tryBlock);
-}
-
-bool ErrorHandlingVisitor::enterCatchStmt(CatchStmt* node) {
-  return true;
+  node->replace(tryBody);
 }
 
 void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
   // last CatchStmt to have its contents lowered; lower catches structure
   if (node->next == NULL) {
-    CatchesInfo cInfo = catchesStack.top();
+    TryInfo info = catchesStack.top();
     catchesStack.pop();
-    lowerCatches(cInfo);
+    lowerCatches(info);
   }
 }
 
-void ErrorHandlingVisitor::lowerCatches(CatchesInfo cInfo) {
-  TryStmt*   tryStmt  = cInfo.tryStmt;
-  VarSymbol* errorVar = cInfo.errorVar;
+void ErrorHandlingVisitor::lowerCatches(TryInfo info) {
+  TryStmt*   tryStmt  = info.tryStmt;
+  VarSymbol* errorVar = info.errorVar;
 
   SET_LINENO(tryStmt);
 
@@ -289,7 +279,7 @@ void ErrorHandlingVisitor::lowerCatches(CatchesInfo cInfo) {
     }
   }
 
-  cInfo.tryBody->insertAtTail(errorCond(errorVar, handlers));
+  info.tryBody->insertAtTail(errorCond(errorVar, handlers));
 }
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
