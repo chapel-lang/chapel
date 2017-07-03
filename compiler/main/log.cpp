@@ -59,9 +59,6 @@ static std::vector<char> logAvailableShortNames;
 static bool logAll = true;
 static std::set<std::string> logOnlyName;
 
-// was --log-dir passed?
-static bool logDirPassed = false;
-
 void logMakePassAvailable(const char* name, char shortname)
 {
   logAvailableNames.push_back(name);
@@ -114,7 +111,7 @@ void setupLogfiles() {
   if (logOnlyName.size() > 0)
     fLog = true;
   // Enable logging if --log-dir is used
-  if (logDirPassed == true)
+  if (fLogDir == true)
     fLog = true;
 
   if (fLog || fdump_html || *deletedIdFilename) {
@@ -154,13 +151,15 @@ void logWriteLog(const char* passName, int passNum, char logTag) {
     AstDumpToHtml::view(passName);
   }
 
-  if ((logAll == true && logTag != LOG_NEVER) ||
-      logOnlyName.count(passName) > 0) {
-    bool logNode = (fUseIPE || fLogNode);
-    if (logNode)
-      AstDumpToNode::view(passName, passNum);
-    else
-      AstDump::view(passName, passNum);
+  if (fLog) {
+    if ((logAll == true && logTag != LOG_NEVER) ||
+        logOnlyName.count(passName) > 0) {
+      bool logNode = (fUseIPE || fLogNode);
+      if (logNode)
+        AstDumpToNode::view(passName, passNum);
+      else
+        AstDump::view(passName, passNum);
+    }
   }
 }
 

@@ -30,7 +30,7 @@ proc main {
 class List {
   var head: Node;
 
-  proc List ( str: string ) { head = new Node(str); }
+  proc init ( str: string ) { head = new Node(str); }
 
   proc deinit() { delete head; }
 }

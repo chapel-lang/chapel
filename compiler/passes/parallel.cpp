@@ -318,8 +318,7 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   if (autoDestroyFn == NULL) return;
 
-  // BHARSH TODO: This seems to be (poorly) checking if arg is a ref
-  if (arg->typeInfo() != baseType)
+  if (arg->isRef())
   {
     // BHARSH: This code used to be special cased for ref counted types.
     // Some changes in support of qualified refs made it possible for syncs
@@ -447,7 +446,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr->refType);
+    taskList = newTemp(astr("_taskList", fn->name), QualifiedType(QUAL_REF, dtCVoidPtr));
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -578,7 +577,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-    if (isReferenceType(field->type)) {
+    if (field->isRef()) {
       VarSymbol* derefTmp = newTemp("endcountDeref", field->type->getValType());
       wrap_fn->insertAtTail(new DefExpr(derefTmp));
       wrap_fn->insertAtTail(
@@ -830,7 +829,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
             // expression
             CallExpr *parent = toCallExpr(se->parentExpr);
             INT_ASSERT(parent);
-            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF));
+            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF) || parent->isPrimitive(PRIM_SET_REFERENCE));
             INT_ASSERT(isCallExpr(parent->parentExpr));
             // Now start looking for the first use of the captured
             // reference
@@ -1109,7 +1108,7 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
-    // BHARSH TODO: Add a check only continue if def is not a reference
+    // BHARSH TODO: Add a check to only continue if def is not a reference
     if (!fLocal                                 &&
         isModuleSymbol(def->parentSymbol)       &&
         def->parentSymbol != rootModule         &&
@@ -1348,7 +1347,7 @@ makeHeapAllocations() {
         } else if (call->isPrimitive(PRIM_ASSIGN)) {
           // ensure what we assign into is what we expect
           INT_ASSERT(toSymExpr(call->get(1))->symbol() == var);
-          VarSymbol* tmp = newTemp(var->type->refType);
+          VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
@@ -1377,7 +1376,7 @@ makeHeapAllocations() {
 
     for_uses(use, useMap, var) {
       if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        if (call->isPrimitive(PRIM_ADDR_OF)) {
+        if (call->isPrimitive(PRIM_ADDR_OF) || call->isPrimitive(PRIM_SET_REFERENCE)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move && (move->isPrimitive(PRIM_MOVE)));
           if (move->get(1)->typeInfo() == heapType) {
@@ -1424,7 +1423,7 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
-          VarSymbol* tmp = newTemp(var->type->refType);
+          VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
@@ -1490,7 +1489,7 @@ reprivatizeIterators() {
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
           VarSymbol* valTmp = newTemp(lhs->getValType());
           move->insertBefore(new DefExpr(valTmp));
-          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_SET_REFERENCE, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
           AggregateType* ct = toAggregateType(se->symbol()->type);
