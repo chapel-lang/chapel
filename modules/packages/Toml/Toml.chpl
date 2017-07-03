@@ -5,6 +5,7 @@ TOML library  written in chapel and used in the chapel package manager
 
 use reader;
 use Regexp;
+use DateTime;
 
 /*
 parseToml takes in a channel to a .toml file as an argument and outputs an 
@@ -44,7 +45,7 @@ proc main(args: [] string) {
 }
 
 
-/* Stolen from arrays primer*/
+/* global tables print method for debugging */
 proc prettyPrint(arr : [?dom], f:channel=IO.stdout) {
   var first = true;
   f.writeln();
@@ -76,17 +77,22 @@ class Parser {
   var curTable = "";
   
 
-  const inBrackets = compile("^(\\[.*?\\])");
-  const doubleQuotes = '".*?"',
-          singleQuotes = "'.*?'",
-          digit = "\\d+",
-          keys = "^\\w+";
-  const Str = compile(doubleQuotes + '|' + singleQuotes);
-  const kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys));
-  const whitespace = compile("\\s"),
-        digits = compile("(\\d+)"),
-         comma = compile("(\\,)");
   
+  const doubleQuotes = '".*?"',
+    singleQuotes = "'.*?'",
+    digit = "\\d+",
+    keys = "^\\w+";
+  const Str = compile(doubleQuotes + '|' + singleQuotes),
+    kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
+    dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
+    realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
+    ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
+    inBrackets = compile("^(\\[.*?\\])"),
+    brackets = compile('\\[|\\]'),
+    whitespace = compile("\\s"),
+    comma = compile("(\\,)");
+
+    
 
   proc parseLoop() {
 
@@ -103,7 +109,7 @@ class Parser {
 	parseAssign();
       }
       else {
-	write(getToken(source));
+	write("Exception: ", getToken(source));
       }
       if DEBUG {
 	writeln();
@@ -119,7 +125,6 @@ class Parser {
 
 
   proc parseTable() {
-    var brackets = compile('\\[|\\]');
     var toke = getToken(source);
     var tablename = brackets.sub('', toke);
     tables[tablename] = new Node();
@@ -127,12 +132,13 @@ class Parser {
   }
 
 
-  proc parseValue(): Node {
 
+  proc parseValue(): Node {
     var val = top(source);
+
     // Array
     if val == '['  {
-      source.currentLine.skip();
+      source.currentLine.skip();     // skip '['
       var nodeDom: domain(1);
       var array: [nodeDom] Node;
       while top(source) != ']' {
@@ -144,16 +150,41 @@ class Parser {
 	  array.push_back(toParse);
 	}
       }
+      source.currentLine.skip();
       var nodeArray = new Node(array);
       return nodeArray;
     }
     // String
     else if Str.match(val) {
+      if val.startsWith('"""') || val.startsWith("'''") {
+	var toStr: string;
+	while toStr.endsWith('"""') == false && toStr.endsWith("'''") == false {
+	  toStr += " " + getToken(source);
+	}
+	var mlStringNode = new Node(toStr);
+	return mlStringNode;
+      }
+      else {
       var stringNode = new Node(getToken(source));
       return stringNode;
-    } 
+      }
+    }
+    // DateTime
+    else if dt.match(val) {
+      var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
+      var Datetime = new Node(date);
+      return Datetime;
+    }
+    // Real
+    else if realNum.match(val) {
+      var toReal: real;
+      var token = getToken(source);
+      toReal = token: real;
+      var realNode = new Node(toReal);
+      return realNode;
+    }
     // Int
-    else if digits.match(val) {
+    else if ints.match(val) {
       var toInt: int;
       var token = getToken(source);
       toInt = token: int;
@@ -171,14 +202,10 @@ class Parser {
     // This will eventually be an error
     else {
       var token = getToken(source);
-      if whitespace.match(token){
-	return parseValue();
-      }
-      else {
-	var unhandeled = new Node(token);
-	return unhandeled;
-      }
-    } 
+      var unhandeled = new Node(token);
+      writeln("Unhandeled Type: ", token);
+      return unhandeled; 
+    }
   }
 	
       
@@ -204,6 +231,7 @@ class Node {
   var boo: bool;
   var re: real;
   var s: string;
+  var dt: datetime;
   var dom: domain(1);
   var arr: [dom] Node;
   var D: domain(string);
@@ -215,7 +243,8 @@ class Node {
     fieldNode = 4,
     fieldReal = 5,
     fieldString = 6,
-    fieldEmpty = 7;
+    fieldEmpty = 7,
+    fieldDate = 8;
   var tag: int = fieldEmpty;  
 
 
@@ -235,6 +264,11 @@ class Node {
     this.D = D;
     this.A = A;
     tag = fieldNode;
+  }
+  
+  proc init(dt: datetime) {
+    this.dt = dt;
+    tag = fieldDate;
   }
 
   // Int
@@ -297,6 +331,9 @@ class Node {
     }
     else if tag == fieldString {
       f.write(s);
+    }
+    else if tag == fieldDate {
+      f.write(dt.isoformat());
     }
     else if tag == fieldReal {
       f.write(re);

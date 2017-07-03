@@ -12,20 +12,12 @@ proc main(args: [] string) {
   source.debug();
 }
 
-
-proc isEOF(source) {// need try catch for this and or newline
-  if source.tokenlist.isEmpty() { 
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-
-
 // Returns the next token in the current line without removing it. 
 proc top(source) {
-  return source.currentLine.A[source.currentLine.D.first];
+  if source.currentLine.D.size < 1 {
+    source.newLine();
+  }
+  return source.currentLine[source.currentLine.D.first];
 }
 
 // Returns a boolean or wether or not another line can be read
@@ -104,8 +96,18 @@ class Source {
   }
 
 
-
-
+  proc newLine() {
+    if nextLine() { 
+      if currentLine.D.size < 1 {
+	tokenlist.remove(tokenD.first);
+	currentLine = tokenlist[tokenD.first];
+      }
+    }
+    else {
+      writeln("Error: end of file"); //this will be an throw execption
+    }
+  }
+  
   // Reads next line into currentline
   proc nextLine() {
     if currentLine.A.isEmpty() {
@@ -124,6 +126,7 @@ class Source {
   
   // retrives next token in currentLine
   proc nextToke() {
+    newLine();
     return currentLine.next();
   }
 
