@@ -1,0 +1,5 @@
+Simulation Validation:
+   Initial energy  : -1.166063303477
+   Final energy    : -1.166049767266
+   eFinal/eInitial : 0.999988
+   Final atom count : 32000, no atoms lost
