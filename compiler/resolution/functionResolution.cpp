@@ -2188,9 +2188,9 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
  */
 static
 int compareSpecificity(ResolutionCandidate* candidate1,
-                          ResolutionCandidate* candidate2,
-                          const DisambiguationContext& DC,
-                          bool ignoreWhere=false) {
+                       ResolutionCandidate* candidate2,
+                       const DisambiguationContext& DC,
+                       bool ignoreWhere=false) {
 
   DisambiguationState DS;
   bool prefer1 = false;
