@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 var A: [1..n] int;
@@ -7,20 +7,19 @@ for a in A {
   a = 1;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 on Locales[1] {
   var sum = 0;
   for i in 1..n {
     sum += A[i];
   }
-  writeln(sum);
+  assert(sum == n);
 }
 
-stopCommDiagnostics();
+stop();
 
-writeln(A[1]);
-writeln(A[n]);
+assert(A[1] == 1);
+assert(A[n] == 1);
 
-writeln(getCommDiagnostics());
+report(maxPuts=0, maxOns=1);

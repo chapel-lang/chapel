@@ -1,0 +1,2 @@
+start_test remote-array-copy.chpl  -performance -perflabel ml-
+CRAY_MEMKIND=1
