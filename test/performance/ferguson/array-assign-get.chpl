@@ -24,4 +24,4 @@ stop();
 writeln(saveB1);
 writeln(saveBn);
 
-report(maxGets=6, maxPuts=2, maxOns=1);
+report(maxPuts=2, maxOns=1);

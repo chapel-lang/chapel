@@ -12,8 +12,6 @@ do
       ;;
     array-assign.chpl)
       ;;
-    array-assign-get.chpl)
-      ;;
     *)
       base=${name%.chpl}
       echo processing $base
@@ -54,6 +52,7 @@ do
       then
         echo ONs: >> ${base}.ml-keys
       fi
+      echo "seconds elapsed:" >> ${base}.ml-keys
 
       # regenerate .graph
       rm -f ${base}.graph

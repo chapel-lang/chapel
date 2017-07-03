@@ -1,4 +1,5 @@
 use CommDiagnostics;
+use Time;
 
 config var printCounts = false;
 config var printAllCounts = false;
@@ -6,12 +7,17 @@ config var printAllCounts = false;
 // this is a config param just so it can be in COMPOPTS
 config param checkMaxAttained = false;
 
+var timer:Timer;
+
 proc start() {
   resetCommDiagnostics();
   startCommDiagnostics();
+  timer.clear();
+  timer.start();
 }
 
 proc stop() {
+  timer.stop();
   stopCommDiagnostics();
 }
 
@@ -20,6 +26,12 @@ proc stop() {
 // Prints out all counts if 
 proc report(maxGets=max(int), maxPuts=max(int), maxOns=max(int)) {
   var counts = getCommDiagnostics();
+
+  if printAllCounts || printCounts then
+    writeln("seconds elapsed: ", timer.elapsed());
+
+  if printAllCounts then
+    writeln(counts);
 
   var gets = totalGets(counts);
   var puts = totalPuts(counts);
