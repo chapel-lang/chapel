@@ -1,5 +1,5 @@
 perfkeys: GETs:, GETs:
-files: remote-array-copy-c.dat, remote-array-copy-c-cache.dat
-graphkeys: basic GETs, cache-remote GETs
+files: remote-two-array-read-c.dat, remote-two-array-read-c-cache.dat
+graphkeys: c GETs, c-cache GETs
 ylabel: Count
-graphtitle: remote-array-read-1
+graphtitle: remote-two-array-read
