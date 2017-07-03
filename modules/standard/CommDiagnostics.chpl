@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -330,6 +330,61 @@ module CommDiagnostics
     chpl_getCommDiagnosticsHere(cd);
     return cd;
   }
+
+  /*
+    Total the number of any operation on any locale. Returns a total that still
+    splits up the operations by type.
+   */
+  proc totalCounts(D:[LocaleSpace] commDiagnostics) : commDiagnostics {
+    var t:commDiagnostics;
+    t.get = 0;
+    t.get_nb = 0;
+    t.put = 0;
+    t.put_nb = 0;
+    t.test_nb = 0;
+    t.wait_nb = 0;
+    t.try_nb = 0;
+    t.execute_on = 0;
+    t.execute_on_fast = 0;
+    t.execute_on_nb = 0;
+    for x in D {
+      t.get += x.get;
+      t.get_nb += x.get_nb;
+      t.put += x.put;
+      t.put_nb += x.put_nb;
+      t.test_nb += x.test_nb;
+      t.wait_nb += x.wait_nb;
+      t.try_nb += x.try_nb;
+      t.execute_on += x.execute_on;
+      t.execute_on_fast += x.execute_on_fast;
+      t.execute_on_nb += x.execute_on_nb;
+    }
+    return t;
+  }
+
+  /*
+    Get the total number of GET or non-blocking GET operations on any locale.
+   */
+  proc totalGets(D:[LocaleSpace] commDiagnostics) : int {
+    var t = totalCounts(D);
+    return t.get + t.get_nb;
+  }
+  /*
+    Get the total number of PUT or non-blocking PUT operations on any locale.
+   */
+  proc totalPuts(D:[LocaleSpace] commDiagnostics) : int {
+    var t = totalCounts(D);
+    return t.put + t.put_nb;
+  }
+  /*
+    Get the total number of execute_on, execute_on_fast, or execute_on_nb
+    operations on any locale.
+   */
+  proc totalOns(D:[LocaleSpace] commDiagnostics) : int {
+    var t = totalCounts(D);
+    return t.execute_on + t.execute_on_fast + t.execute_on_nb;
+  }
+
 
   /*
     If this is set, on-the-fly reporting of communication operations
