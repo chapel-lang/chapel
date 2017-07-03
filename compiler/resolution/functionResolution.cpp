@@ -6034,30 +6034,29 @@ resolveFns(FnSymbol* fn) {
     //
     // resolve destructor
     //
-    if (ct) {
-      if (!ct->destructor &&
-          !ct->symbol->hasFlag(FLAG_REF) &&
-          !isTupleContainingOnlyReferences(ct)) {
-        BlockStmt* block = new BlockStmt();
-        VarSymbol* tmp   = newTemp(ct);
-        CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+    if (ct                                  != NULL  &&
+        ct->hasDestructor()                 == false &&
+        ct->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(ct) == false) {
+      BlockStmt* block = new BlockStmt();
+      VarSymbol* tmp   = newTemp(ct);
+      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-        // In case resolveCall drops other stuff into the tree ahead of the
-        // call, we wrap everything in a block for safe removal.
+      // In case resolveCall drops other stuff into the tree ahead
+      // of the call, we wrap everything in a block for safe removal.
 
-        block->insertAtHead(call);
+      block->insertAtHead(call);
 
-        fn->insertAtHead(block);
-        fn->insertAtHead(new DefExpr(tmp));
+      fn->insertAtHead(block);
+      fn->insertAtHead(new DefExpr(tmp));
 
-        resolveCallAndCallee(call);
+      resolveCallAndCallee(call);
 
-        ct->destructor = call->resolvedFunction();
+      ct->setDestructor(call->resolvedFunction());
 
-        block->remove();
+      block->remove();
 
-        tmp->defPoint->remove();
-      }
+      tmp->defPoint->remove();
     }
   }
 
@@ -6579,7 +6578,7 @@ bool propagateNotPOD(Type* t) {
         if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
             isCompilerGenerated(autoCopyMap[at])         == false ||
             isCompilerGenerated(autoDestroyMap.get(at))  == false ||
-            isCompilerGenerated(at->destructor)          == false) {
+            isCompilerGenerated(at->getDestructor())     == false) {
           retval = true;
         }
 
