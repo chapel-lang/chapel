@@ -60,9 +60,10 @@ do
       PERFKEYS="perfkeys: "
       FILES="files: "
       GRAPHKEYS="graphkeys: "
+      echo -n "   "
       for cfg in c c-cache
       do
-        echo $cfg
+        echo -n "$cfg "
         if [ "$GETS" -eq 1 ]
         then
           PERFKEYS+="GETs:, "
@@ -82,6 +83,8 @@ do
           FILES+="${base}-${cfg}.dat, "
         fi
       done
+
+      echo
 
       # Trim off trailing comma space
       PERFKEYS=${PERFKEYS%??}
