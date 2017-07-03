@@ -15,3 +15,6 @@ class Simple : Base {
 
 var f = new Fancy();
 var s = new Simple();
+
+delete f;
+delete s;
