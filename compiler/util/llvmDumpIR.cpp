@@ -48,7 +48,7 @@ namespace {
     bool runOnFunction(Function &F) override {
       if (llvmPrintIrCName != NULL && F.getName() == llvmPrintIrCName) {
         printLlvmIr(&F, stage);
-      } else if (llvmPrintIrName != NULL && F.getName() == llvmPrintIrName) {
+      } else if (llvmPrintIrName[0] != '\0' && F.getName() == llvmPrintIrName) {
         printLlvmIr(&F, stage);
       }
       return false;
