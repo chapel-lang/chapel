@@ -647,7 +647,7 @@ proc updateBlockRow(
   // 'tl' is a Dimensional-mapped domain, so has stuff
   // on all locales, even where the index set is empty
   on cornerLocale {
-    local
+    local do
       // we do not need the last row of tl, but pruning it off seems expensive
       forall (i,j) in {dim1, dim2} do
         replU[i-blk, j-blk] = Ab[i,j];
@@ -821,7 +821,7 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
       // TODO: bulkify, unless it is already
       locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));
     }
-    local
+    local do
       bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB);
   }
 }
@@ -865,7 +865,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
     }
   } // proc ihelper
 
-  local
+  local do
     while toIncorporate > 0 {
       seenOther = false;
       // since incorporation in ihelper
