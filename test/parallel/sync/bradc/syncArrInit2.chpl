@@ -1,8 +1,9 @@
 class C {
   const irng: int;
 
-  proc C(v1: int) {
+  proc init(v1: int) {
     irng = v1;
+    super.init();
   }
 }
 
