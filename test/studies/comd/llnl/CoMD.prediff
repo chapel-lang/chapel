@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+import sys, os, shutil
+
+test_name = sys.argv[1]
+out_file  = sys.argv[2]
+tmp_file  = out_file + ".prediff.tmp"
+
+def printChunk(start, numAfter):
+    with open(tmp_file, 'a') as tf:
+        with open(out_file) as outf:
+            started = False
+            numRead = 0
+            for line in outf:
+                if start in line:
+                    tf.write(line)
+                    started = True
+                elif started and numRead < numAfter:
+                    tf.write(line)
+                    numRead += 1
+                elif numRead == numAfter:
+                    break
+printChunk("Simulation Validation:", 4)
+
+if os.getenv('CHPL_TEST_PERF') == 'on':
+    printChunk("Timings", 16)
+
+shutil.move(tmp_file, out_file)

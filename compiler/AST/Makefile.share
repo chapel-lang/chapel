@@ -40,6 +40,7 @@ AST_SRCS =                                          \
            ForallStmt.cpp                           \
            type.cpp                                 \
            view.cpp                                 \
+           wellknown.cpp                            \
                                                     \
            LoopStmt.cpp                             \
                                                     \

@@ -1,0 +1,1 @@
+bug: inheriting classes with initializers fails to compile during inlining
