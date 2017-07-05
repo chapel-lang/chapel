@@ -149,10 +149,11 @@ private:
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
 
-  void   lowerCatches      (TryInfo    info);
-  AList  setOutGotoEpilogue(VarSymbol* error);
-  AList  errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
-                            BlockStmt* elseBlock = NULL);
+  void   lowerCatches      (const TryInfo& info);
+  AList  setOutGotoEpilogue(VarSymbol*     error);
+  AList  errorCond         (VarSymbol*     errorVar,
+                            BlockStmt*     thenBlock,
+                            BlockStmt*     elseBlock = NULL);
   CallExpr* haltExpr       ();
 
   ErrorHandlingVisitor();
@@ -208,7 +209,7 @@ void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
   }
 }
 
-void ErrorHandlingVisitor::lowerCatches(TryInfo info) {
+void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
   TryStmt*   tryStmt  = info.tryStmt;
   VarSymbol* errorVar = info.errorVar;
 
