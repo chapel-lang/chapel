@@ -15,7 +15,11 @@ class mysumreduce {
     return x;
   }
 
-  proc mysumreduce(type intype, type statetype=intype, type outtype=intype) {
+  proc init(type intype, type statetype=intype, type outtype=intype) {
+    this.intype = intype;
+    this.statetype = statetype;
+    this.outtype = outtype;
+    super.init();
   }
 }
 
