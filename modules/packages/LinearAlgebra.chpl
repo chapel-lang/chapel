@@ -118,8 +118,8 @@ Promotion flattening is not expected to be an issue in future releases.
 
 module LinearAlgebra {
 
- use Norm; // TODO -- merge Norm into LinearAlgebra
- use BLAS;
+use Norm; // TODO -- merge Norm into LinearAlgebra
+use BLAS;
 // use LAPACK; // TODO -- Use LAPACK routines
 
 
@@ -312,17 +312,18 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
 */
 proc transpose(A: [?Dom] ?eltType) where Dom.rank == 2 {
-  if !isBLASType(eltType) then
-    return _transpose(A);
-  else if Dom.shape(1) == 1 then
+  if Dom.shape(1) == 1 then
     return reshape(A, transpose(Dom));
   else if Dom.shape(2) == 1 then
     return reshape(A, transpose(Dom));
   else {
-    var B: [Dom] eltType = eye(Dom, eltType=eltType);
-    var C: [transpose(Dom)] eltType;
-    // TODO -- use native algorithm (BLAS not necessary or memory-efficient)
-    gemm(A, B, C, 1:eltType, 0:eltType, opA=Op.T);
+    const rDom = {Dom.dim(2), Dom.dim(1)};
+    var C: [rDom] eltType;
+
+    [(i, j) in Dom] C[j, i] = A[i, j];
+    // Note: for sufficiently large matrices, this can be faster:
+    //    [i in Dom.dim(1)] C[.., i] = A[i, ..];
+
     return C;
   }
 }
@@ -330,19 +331,6 @@ proc transpose(A: [?Dom] ?eltType) where Dom.rank == 2 {
 
 /* Transpose vector or matrix */
 proc _array.T where this.domain.rank == 2 { return transpose(this); }
-
-
-/* Transpose matrix with native implementation */
-pragma "no doc"
-private proc _transpose(A: [?Dom] ?eltType) {
-  var C: [transpose(Dom)] eltType;
-
-  // naive algorithm
-  forall (i, j) in Dom do
-    C[j, i] = A[i, j];
-
-  return C;
-}
 
 
 /* Add matrices, maintaining dimensions */
@@ -593,12 +581,12 @@ private inline proc _raw(D: domain(1), i) {
    Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
  */
 proc diag(A: [?Adom] ?eltType, k=0){
-  //This should be printed at compile time-"This function only supports 0-based non-strided arrays, 
+  //This should be printed at compile time-"This function only supports 0-based non-strided arrays,
   //including the vectors and matrices created from this module."
 
   if(Adom.rank == 2) then{
     if(k==0) then{
-      return _diag_vec(A);  
+      return _diag_vec(A);
     }
     else{
       return _diag_vec(A, k);
@@ -707,7 +695,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   return U;
 }
 
-  
+
 
 /* Return `true` if matrix is diagonal */
 proc isDiag(A: [?D] ?eltType) {
