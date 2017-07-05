@@ -256,7 +256,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
-  Type* wideRefType = NULL;
+  Type* wideRefType = NULL; // either a wide class or a wide ref
 
   if( locale.chplType ) INT_ASSERT(locale.chplType == dtLocaleID->typeInfo());
 
@@ -354,7 +354,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   }
 
   ret.chplType = wideRefType->getValType();
-  ret.isLVPtr = GEN_WIDE_PTR;
+  // Class pointers are "values" as far as the code generator
+  // is concerned, unlike wide references.
+  if (wideRefType->symbol->hasFlag(FLAG_WIDE_CLASS))
+    ret.isLVPtr = GEN_VAL;
+  else
+    ret.isLVPtr = GEN_WIDE_PTR;
   return ret;
 }
 
@@ -3032,8 +3037,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     } else {
       // not a homogeneous tuple copy
       if( info->cfile ) {
+        GenRet value = codegenValue(from);
+        INT_ASSERT(value.c != "");
         std::string stmt = codegenValue(to_ptr).c + " = ";
-        stmt += codegenValue(from).c;
+        stmt += value.c;
         stmt += ";\n";
         info->cStatements.push_back(stmt);
       } else {
@@ -3872,7 +3879,8 @@ GenRet CallExpr::codegenPrimitive() {
 
     } else if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
                rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false) {
-      codegenAssign(lhs, codegenAddrOf(codegenWideHere(rhs)));
+      INT_ASSERT(isClassOrNil(rhsTypeSym->type));
+      codegenAssign(lhs, codegenWideHere(rhs));
 
     } else if (get(1)->isRefOrWideRef() ||
                lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
@@ -4932,7 +4940,9 @@ GenRet CallExpr::codegenPrimMove() {
     if (get(2)->isRef()) {
       rhs = codegenDeref(rhs);
     }
-    codegenAssign(get(1), codegenAddrOf(codegenWideHere(rhs)));
+    // At this point, RHS should be a class type.
+    INT_ASSERT(isClassOrNil(rhs.chplType));
+    codegenAssign(get(1), codegenWideHere(rhs));
 
   } else if (get(1)->isWideRef() == true &&
              get(2)->isRef() == true) {
@@ -4991,6 +5001,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
   CallExpr* call = toCallExpr(e);
 
   if(!call) return false;
+
+  if (call->id == breakOnCodegenID)
+    gdbShouldBreakHere();
 
   if (call->primitive) {
     switch (call->primitive->tag) {
@@ -5068,8 +5081,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           GenRet srcwide  = call->get(1);
           Type*  addrType = target->typeInfo()->getField("addr")->type;
           GenRet addr     = codegenCast(addrType, codegenRaddr(srcwide));
-          GenRet ref      = codegenAddrOf(codegenWideAddrWithAddr(srcwide,
-                                                                  addr));
+          GenRet ref      = codegenWideAddrWithAddr(srcwide, addr);
 
           ret = ref;
         } else {
@@ -5233,8 +5245,21 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_CAST: {
-      if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          call->isWideRef()) {
+      if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        GenRet tmp = call->get(2);
+        if (call->get(2)->isRef()) {
+          tmp = codegenDeref(tmp);
+        }
+
+        ret = codegenWideAddrWithAddr(tmp,
+                                      codegenCast(call->get(1)->typeInfo(),
+                                                  codegenRaddr(tmp)));
+
+        retval = true;
+      } else if (call->isWideRef()) {
+        // MPF TODO: Can we remove this case? Why would we cast
+        // a ref?
+
         GenRet tmp = call->get(2);
         // BHARSH TODO:  Should we check if we're casting to a ref?
         if (call->get(2)->isRef()) {
@@ -5262,10 +5287,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         GenRet cast         = codegenCast(type, wideFromAddr);
         GenRet nul          = codegenCast(type, codegenNullPointer());
         GenRet addr         = codegenTernary(ok, cast, nul);
-        GenRet wide         = codegenAddrOf(codegenWideAddrWithAddr(
-                                                       wideFrom,
-                                                       addr,
-                                                       call->typeInfo()));
+        GenRet wide         = codegenWideAddrWithAddr(wideFrom,
+                                                      addr,
+                                                      call->typeInfo());
 
         ret = wide;
         retval = true;
