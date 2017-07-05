@@ -1,21 +1,18 @@
 
 proc loop (A, B) {
+  var sum : int(32) = 0;
   for i in vectorizeOnly(1..511) {
     // CHECK: <4 x i32>
-    if(i < 100)
+    if(A[i] <= B[i])
     {
-      A[i] = 3*B[i];
+      sum += A[i]+5;
     }
-    else
-    {
-      A[i] = 7*B[i];
-    }
-    A[i] = 2*A[i];
   }
+  return sum;
 }
 
 var A : [0..511] int(32);
 var B : [0..511] int(32);
 
-loop(A, B);
-writeln("Sum of A is ", + reduce A);
+var res = loop(A, B);
+writeln("Result is ", res);
