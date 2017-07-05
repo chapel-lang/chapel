@@ -1,7 +1,7 @@
 class C {
   var x: int;
   var y: int;
-  proc C(b: bool) {
+  proc init(b: bool) {
     if b then
       x = 24;
     else
