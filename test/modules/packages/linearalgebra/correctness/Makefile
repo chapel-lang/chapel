@@ -1,8 +1,15 @@
-LAPACKFLAGS = $(CFLAGS) $(LDFLAGS) -llapacke -llapack -lblas -lcblas -lgfortran
-CHPLFLAGS += --ccflags -Wno-enum-conversion
+# Development Makefile
+# - assumes MKL BLAS/LAPACK
+# - assumes CFLAGS / LDFLAGS are set
+#
+LAPACKFLAGS = $(CFLAGS) $(LDFLAGS) -llapack -lblas
+CHPLFLAGS += --ccflags -Wno-enum-conversion -sisBLAS_MKL=true
 
-all: correctness
+all: correctness test_identities1
 
 correctness: correctness.chpl
-	chpl correctness.chpl ${LAPACKFLAGS} ${CHPLFLAGS} -o correctness
+	chpl $< ${LAPACKFLAGS} ${CHPLFLAGS} -o $@
+
+test_identities1: test_identities1.chpl
+	chpl $< ${LAPACKFLAGS} ${CHPLFLAGS} -o $@
 
