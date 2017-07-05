@@ -83,6 +83,12 @@ class Domain {
 //  var haloTicker1    = new Ticker("      commHaloPull");   // ticker for halo exchange  
 //  var haloTicker2    = new Ticker("      commHaloSync");   // ticker for halo exchange  
 //  var haloTicker3    = new Ticker("      commHaloUpdt");   // ticker for halo exchange  
+
+  proc deinit() {
+    for t in temps1 do delete t;
+    for t in temps2 do delete t;
+    if replicateForce then delete force;
+  }
 }
 
 const locDom  : domain(3) = {0..xproc-1, 0..yproc-1, 0..zproc-1};
