@@ -519,4 +519,10 @@ if useChplVis then pauseVdebug();
     temp.fIO   = this.fIO.replicate();
     return temp;
   }
+
+  proc deinit() {
+    delete phiIO;
+    delete rhoIO;
+    delete fIO;
+  }
 }

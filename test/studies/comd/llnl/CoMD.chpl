@@ -854,4 +854,9 @@ tArray[timerEnum.TOTAL].stop();
   writeln(); 
   yyyymmdd = getCurrentDate();
   writeln(yyyymmdd(1), "-", yyyymmdd(2), "-", yyyymmdd(3), ", ", getCurrentTime(TimeUnits.hours), " CoMD Ending");
+
+  // Cleanup
+  for g in Grid do delete g;
+  delete f;
+  for t in tArray do delete t;
 }
