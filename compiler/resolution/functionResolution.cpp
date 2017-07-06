@@ -4143,8 +4143,9 @@ static void handleSetMemberTypeMismatch(Type*     t,
 
     } else {
       USR_FATAL(userCall(call),
-                "cannot assign expression of type %s to field of type %s",
+                "cannot assign expression of type %s to field '%s' of type %s",
                 toString(t),
+                fs->name,
                 toString(fs->type));
     }
   }
@@ -4252,8 +4253,9 @@ static void resolveInitField(CallExpr* call) {
 
     } else {
       USR_FATAL(userCall(call),
-                "cannot assign expression of type %s to field of type %s",
+                "cannot assign expression of type %s to field '%s' of type %s",
                 toString(t),
+                fs->name,
                 toString(fs->type));
     }
   }
