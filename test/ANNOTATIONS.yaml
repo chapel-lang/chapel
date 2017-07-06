@@ -233,6 +233,29 @@ all:
   03/16/17:
     - text: Stop limiting the number of ugni communication domains under slurm (#5653)
       config: 16 node XC
+  03/17/17:
+    - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
+  03/20/17:
+    - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
+  05/03/17:
+    - Flag some compiler temps as const (#6154)
+  06/08/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: Single node XC, 16 node XC
+  06/10/17:
+    - text: bounded-coforall optimization for remote coforalls (#6419)
+      config: 16 node XC
+  06/14/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: chapcs, chap04
+  06/16/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: chapcs, chap04
+  06/20/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: Single node XC, 16 node XC
+  06/21/17:
+    - change tmp directory
 
 
 AllCompTime:
@@ -253,6 +276,8 @@ arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+  03/22/17:
+    - Inline DefaultRectangular 1D strided iter (#5771)
 
 arrayPerformance-2d:
   10/21/16:
@@ -265,6 +290,10 @@ array-of-strings-read:
 arr-forall:
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+
+array_iter:
+  06/19/17:
+    - Reduce amount of locking in associative array dsiAccess (#6244)
 
 arguments:
   03/10/17:
@@ -301,6 +330,8 @@ binary-trees:
     - Brad's fix of off-by-one error in checksum (#4734)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
 
 binarytrees-submitted:
   09/21/16:
@@ -309,6 +340,8 @@ binarytrees-submitted:
     - simplify init()-based implementation (#4609)
   10/10/16:
     - Brad's fix of off-by-one error in checksum (#4734)
+  04/03/17:
+    - Updated to n=21 problem size and new rules (#5907)
 
 blackscholes:
   10/21/16:
@@ -435,6 +468,8 @@ ft-a:
 hpl:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
+  03/21/17:
+    - Rank change dom dist view (#5694)
 
 hpl_performance:
   12/11/15:
@@ -520,6 +555,10 @@ knucleotide:
   10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/16/17:
+    - Let parSafe revert to default in blc study version (#6475)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -615,6 +654,12 @@ memleaks:
     - new test verifying the user's guide type aliases section (#5075)
   01/17/17:
     - new test of Sparse domain block clear functionality (#5173)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  03/23/17:
+    - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
 
 memleaksfull:
   07/08/14:
@@ -633,12 +678,34 @@ memleaksfull:
     - Fix gasnet config for recent memory leak updates (#4375)
   02/08/17:
     - Add Futures package module - lambda functions leaking (#5135)
+  03/21/17:
+    - Rank change dom dist view (#5694)
+  03/23/17:
+    - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
 
 meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
   08/10/16:
     - Updated meteor's lock to yield less frequently (#4300)
+
+mg-b:
+  05/23/17:
+    - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+  06/22/17:
+    - Only perform packed updateFluff when there are multiple locales (#6512)
+
+mg.ml-time:
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  05/23/17:
+    - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 miniMD:
   12/21/13:
@@ -703,6 +770,8 @@ prk-stencil:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil.ml-perf:
   04/08/16:
@@ -713,6 +782,26 @@ prk-stencil.ml-perf:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
   08/12/16:
     - Improve and enable strided bulk transfer optimization as default (#4318)
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  05/18/17:
+    - Use nonblocking transactions for strided transfers (#6262)
+  06/06/17:
+    - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+
+prk-stencil-time:
+  05/11/17:
+    - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+
+prk-transpose: &transpose-base
+  05/04/17:
+    - Update benchmark to track latest reference version (#6152)
+prk-transpose-time:
+  <<: *transpose-base
 
 ptrans: &ptrans-base
   01/11/17:
@@ -730,6 +819,8 @@ ra:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+  03/21/17:
+    - Rank change dom dist view (#5694)
 
 RBC:
   02/22/17:
@@ -744,6 +835,16 @@ regexdna:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
   03/12/16:
     - implemented good_alloc_size for jemalloc(#3446)
+  04/20/17:
+    - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+
+regexdna-redux:
+  04/20/17:
+    - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -801,6 +902,12 @@ stream-promoted.ml-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
       config: 16 node XC
+  03/17/17:
+    - text: Improve cullOverReferences and enable late const checking (#5624)
+      config: 16 node XC
+  03/21/17:
+    - text: Improve const inference for chpl__iterLF (#5736)
+      config: 16 node XC
 
 STREAM_study:
   10/21/16:
@@ -822,14 +929,29 @@ stream:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+  03/18/17:
+    - text: Improve inferConstRefs' canRHSBeConstRef helper function (#5710)
+      config: 16 node XC
 
 taskSpawn:
   07/24/16:
     - Stopped performing remote value forwarding on task functions (#4240)
+  03/21/17:
+    - Limit the maximum size of qthreads memory pools to 65MB (#5748)
 
 temporary-copies:
   01/14/17:
     - Likely cache effects
+  04/20/17:
+    - Update RE2 (#6024)
+
+twopt-paircount:
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+
+search:
+  04/20/17:
+    - Update RE2 (#6024)
 
 testSerialReductions:
   08/16/14:
@@ -839,6 +961,8 @@ thread-ring:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+  03/21/17:
+    - Limit the maximum size of qthreads memory pools to 65MB (#5748)
 
 time_array_vs_ddata:
   05/31/14:

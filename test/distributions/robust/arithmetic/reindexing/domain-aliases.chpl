@@ -1,11 +1,11 @@
 use driver_domains;
 
 proc main() {
-  const d1d => Dom1D;
-  const d2d => Dom2D;
-  const d3d => Dom3D;
-  const d4d => Dom4D;
-  const dd32 => Dom2D32;
+  const ref d1d = Dom1D;
+  const ref d2d = Dom2D;
+  const ref d3d = Dom3D;
+  const ref d4d = Dom4D;
+  const ref dd32 = Dom2D32;
 
   var v1d = d1d;
   var v2d = d2d;
@@ -13,11 +13,11 @@ proc main() {
   var v4d = d4d;
   var vv32 = dd32;
 
-  var r1d => v1d;
-  var r2d => v2d;
-  var r3d => v3d;
-  var r4d => v4d;
-  var rr32 => vv32;
+  ref r1d = v1d;
+  ref r2d = v2d;
+  ref r3d = v3d;
+  ref r4d = v4d;
+  ref rr32 = vv32;
 
   writeln();
 

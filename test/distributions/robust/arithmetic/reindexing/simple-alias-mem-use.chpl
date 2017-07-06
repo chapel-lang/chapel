@@ -20,16 +20,16 @@ proc testit(printit:bool) {
   var Dom1D: domain(1) dmapped Dist1D;
   var a: [Dom1D] int;
   Dom1D = Space1;
-  var b => a;
-  var c => a;
-  var cc => c;
-  var bb => b;
-  var bbb => bb;
-  var ccc => cc;
+  ref b = a;
+  ref c = a;
+  ref cc = c;
+  ref bb = b;
+  ref bbb = bb;
+  ref ccc = cc;
   Dom1D = {1..max(n1/2,10)};
-  var e => a;
-  var ee => e;
-  var eee => ee;
+  ref e = a;
+  ref ee = e;
+  ref eee = ee;
 
   ccc[3] = 333;
   a[8] = 888;

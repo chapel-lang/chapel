@@ -1,9 +1,0 @@
-bug: cast to non-type is not flagged as an error
-
-The cast on lines 18-20 is casting to the void value, not type.  It currently
-compiles and runs, but should be an error.
-
-This is the same basic problem as shown by the tests:
-  expressions/vass/cast-to-non-type-1.future
-  expressions/vass/cast-to-non-type-2.future
-

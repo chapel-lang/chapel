@@ -44,13 +44,13 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
   for (PrecedingBlockInds,CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
 
-    var U1 => A[PrecedingBlockInds,CurrentBlockInds];
-    var U2 => A[PrecedingBlockInds,TrailingBlockInds];
-    var A11 => A[CurrentBlockInds,CurrentBlockInds];
-    var A21 => A[CurrentBlockInds,TrailingBlockInds];
-    var L1 => A[CurrentBlockInds,PrecedingBlockInds];
-    var L2 => A[TrailingBlockInds,PrecedingBlockInds];
-    var A12 => A[TrailingBlockInds,CurrentBlockInds];
+    ref U1 = A[PrecedingBlockInds,CurrentBlockInds];
+    ref U2 = A[PrecedingBlockInds,TrailingBlockInds];
+    ref A11 = A[CurrentBlockInds,CurrentBlockInds];
+    ref A21 = A[CurrentBlockInds,TrailingBlockInds];
+    ref L1 = A[CurrentBlockInds,PrecedingBlockInds];
+    ref L2 = A[TrailingBlockInds,PrecedingBlockInds];
+    ref A12 = A[TrailingBlockInds,CurrentBlockInds];
 
     for j in CurrentBlockInds {
       for (i,k) in {CurrentBlockInds(j..),PrecedingBlockInds} {

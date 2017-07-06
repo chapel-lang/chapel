@@ -1,29 +1,44 @@
-explicitImplicit.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: explicitImplicit.doc
+
+explicitImplicit.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
    use explicitImplicit.doc;
 
-   proc foo(bar: int)
-      This proc has an explicit type argument of type int 
+.. function:: proc foo(bar: int)
 
-   proc foo(bar: real)
-      This proc has an explicit type argument of type real 
+   This proc has an explicit type argument of type int 
 
-   proc foo(bar: bool)
-      This proc has an explicit type argument of type bool 
+.. function:: proc foo(bar: real)
 
-   proc foo(bar: uint)
-      This proc has an explicit type argument of type uint 
+   This proc has an explicit type argument of type real 
 
-   proc foo(bar: imag)
-      This proc has an explicit type argument of type imag 
+.. function:: proc foo(bar: bool)
 
-   proc foo(bar: complex)
-      This proc has an explicit type argument of type complex 
+   This proc has an explicit type argument of type bool 
 
-   proc foo(bar: string)
-      This proc has an explicit type argument of type string 
+.. function:: proc foo(bar: uint)
 
-   proc bar(baz)
-      This proc has an implicit type argument 
+   This proc has an explicit type argument of type uint 
+
+.. function:: proc foo(bar: imag)
+
+   This proc has an explicit type argument of type imag 
+
+.. function:: proc foo(bar: complex)
+
+   This proc has an explicit type argument of type complex 
+
+.. function:: proc foo(bar: string)
+
+   This proc has an explicit type argument of type string 
+
+.. function:: proc bar(baz)
+
+   This proc has an implicit type argument 
 

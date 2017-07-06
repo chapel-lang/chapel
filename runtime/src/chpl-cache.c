@@ -267,7 +267,6 @@ use.
 //
 // See chapel-developers thread "migrating tasks" from 9/25/2013.
 // FIFO: never moves a task from one pthread to another
-// muxed: may move a task
 // massivethreads: may move a task with sync/wait/yield/etc
 // Qthreads workaround: QT_NUM_WORKERS_PER_SHEPHERD=1
 //   (on 9/26/2013 Dylan mentioned perhaps adding 'pin to worker')
@@ -281,6 +280,7 @@ use.
 #include "chpl-cache.h"
 #include "chpl-linefile-support.h"
 #include "sys.h" // sys_page_size()
+#include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-no-warning-macros.h" // No warnings for chpl_comm_get etc.
 #include <string.h> // memcpy, memset, etc.
 #include <assert.h>
@@ -1737,7 +1737,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
                              entry->base.node,
                              (void*)(entry->raddr+start),
                              got_len /*size*/, -1/*typei*/,
-                             -1, 0);
+                             CHPL_COMM_UNKNOWN_ID, -1, 0);
 
           // Save the handle in the list of pending requests.
           entry->max_put_sequence_number = pending_push(cache, handle);
@@ -1934,7 +1934,7 @@ void cache_put(struct rdcache_s* cache,
                 unsigned char* addr,
                 c_nodeid_t node, raddr_t raddr, size_t size,
                 cache_seqn_t last_acquire,
-                int ln, int32_t fn)
+                int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_first_page;
@@ -2089,7 +2089,7 @@ void cache_get(struct rdcache_s* cache,
                 c_nodeid_t node, raddr_t raddr, size_t size,
                 cache_seqn_t last_acquire,
                 int sequential_readahead_length,
-                int ln, int32_t fn);
+                int32_t commID, int ln, int32_t fn);
 
 static
 void cache_get_trigger_readahead(struct rdcache_s* cache,
@@ -2100,7 +2100,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
                                  readahead_distance_t skip,
                                  readahead_distance_t len,
                                  cache_seqn_t last_acquire,
-                                 int ln, int32_t fn)
+                                 int32_t commID, int ln, int32_t fn)
 {
   int next_ra_length;
   int ok;
@@ -2182,7 +2182,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
                 prefetch_start, prefetch_end - prefetch_start,
                 last_acquire,
                 next_ra_length,
-                ln, fn);
+                commID, ln, fn);
     } else {
       // We could not prefetch, so record a cache miss so
       //  that sequential prefetch will continue when we access
@@ -2231,7 +2231,7 @@ void cache_get(struct rdcache_s* cache,
                 c_nodeid_t node, raddr_t raddr, size_t size,
                 cache_seqn_t last_acquire,
                 int sequential_readahead_length,
-                int ln, int32_t fn)
+                int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_first_page;
@@ -2428,7 +2428,7 @@ void cache_get(struct rdcache_s* cache,
                                         readahead_skip,
                                         readahead_len,
                                         last_acquire,
-                                        ln, fn);
+                                        commID, ln, fn);
             entry = NULL; // note trigger readahead could evict entry...
           }
         }
@@ -2476,7 +2476,7 @@ void cache_get(struct rdcache_s* cache,
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                        node, (void*) ra_line,
                        ra_line_end - ra_line /*size*/, -1/*typei*/,
-                       ln, fn);
+                       commID, ln, fn);
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get2);
 #endif
@@ -2789,7 +2789,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, int32_t fn)
+                         int32_t commID, int ln, int32_t fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
@@ -2809,13 +2809,13 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   //saturating_increment(&info->put_since_release);
   //task_local->last_op = seqn_max(cache, addr, node, raddr, size);
   cache_put(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
-            ln, fn);
+            commID, ln, fn);
   return;
 }
 
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, int32_t fn)
+                         int32_t commID, int ln, int32_t fn)
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
@@ -2834,7 +2834,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 
   //saturating_increment(&info->get_since_acquire);
   cache_get(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
-            0, ln, fn);
+            0, commID, ln, fn);
 
   return;
 }
@@ -2852,12 +2852,13 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,
-            0, ln, fn);
+            0, CHPL_COMM_UNKNOWN_ID, ln, fn);
 }
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t typeIndex, int ln, int32_t fn) {
+                              int32_t typeIndex, int32_t commID,
+                              int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2870,16 +2871,17 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided get.
 #ifdef CHPL_TASK_COMM_GET_STRD
   chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, ln, fn);
+                          elemSize, typeIndex, commID, ln, fn);
 #else
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, ln, fn);
+                     elemSize, typeIndex, commID, ln, fn);
 #endif
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t typeIndex, int ln, int32_t fn) {
+                              int32_t typeIndex, int32_t commID,
+                              int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2892,10 +2894,10 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided put.
 #ifdef CHPL_TASK_COMM_PUT_STRD
   chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, ln, fn);
+                          elemSize, typeIndex, commID, ln, fn);
 #else
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, ln, fn);
+                     elemSize, typeIndex, commID, ln, fn);
 #endif
 }
 

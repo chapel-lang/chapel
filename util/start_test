@@ -172,7 +172,7 @@ def test_file(test):
         error = 0
         if not args.clean_only:
             if args.performance or not args.gen_graphs:
-                error = run(test)
+                error = run_sub_test(test)
 
             # check for errors - 173 is an internal sub_test error that would
             # have already reported.
@@ -293,11 +293,11 @@ def test_directory(test, test_type):
 
                     if not args.clean_only:
                         # run all tests in dir
-                        error = run()
+                        error = run_sub_test()
                         # check for errors - 173 is an internal sub_test 
                         # error that would have already reported.
                         if not error == 0 and not error == 173:
-                            logger.write("[Error running sub_test in {0} {1}]"
+                            logger.write("[Error {1} running sub_test in {0}]"
                                     .format(root, error))
                                 
             # let user know no tests were found
@@ -421,7 +421,7 @@ def clean(test=False):
         logger.write("[Error: sub_clean error]")
 
 
-def run(test=False):
+def run_sub_test(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
     os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
 
@@ -439,14 +439,9 @@ def run(test=False):
     if args.progress and test:
         sys.stderr.write("Testing {0} ... \n".format(test))
 
-    # sub_test and create_graphs use a Popen() call in order to give real-time
-    # output to the command line, instead of logging all output in one huge
-    # block.
     logger.write("[Starting {0} {1}]".format(sub_test, date_str))
-    p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    return p.returncode
+    status = run_and_log([sub_test, compiler])
+    return status
 
 
 def generate_graphs(test=False):
@@ -473,10 +468,7 @@ def generate_graphs(test=False):
     cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default]
     cmd += graph_files
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    status = p.returncode
+    status = run_and_log(cmd)
 
     if status == 0:
         logger.write("[Success generating graphs for graph_files in {0} in {1}"
@@ -514,10 +506,8 @@ def compiler_performance():
     cmd += start_date_t.split(" ")
     cmd += ["-g", comp_graph_list, "-t", test_dir]
     cmd += "-m all:v,examples:v -x".split(" ")
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    if p.returncode == 0:
+    status = run_and_log(cmd)
+    if status == 0:
         logger.write("[Success generating compiler performance graphs from "
                 "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
     else:
@@ -541,10 +531,7 @@ def generate_graph_files_graphs():
     cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
         exec_graph_list] 
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    printout(p.stdout)
-    p.wait()
-    status = p.returncode
+    status = run_and_log(cmd)
 
     if status == 0:
         logger.write("[Success generating graphs from {0} in {1}"
@@ -1190,6 +1177,14 @@ def check_for_duplicates():
 
 
 # END STUFF
+
+# Execute 'cmd' and return its exit code.
+# Print its output to the console in real-time and log it too.
+def run_and_log(cmd):
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    printout(p.stdout)
+    p.wait()
+    return p.returncode
 
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):

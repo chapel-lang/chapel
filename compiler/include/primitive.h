@@ -136,7 +136,6 @@ enum PrimitiveTag {
 
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
-  PRIM_ARRAY_FREE_ELTS,
   PRIM_ARRAY_GET,
   PRIM_ARRAY_GET_VALUE,
   PRIM_ARRAY_SHIFT_BASE_POINTER,
@@ -276,5 +275,7 @@ VarSymbol* newMemDesc(Type* type);
 
 
 bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
+
+void makeNoop(CallExpr* call);
 
 #endif

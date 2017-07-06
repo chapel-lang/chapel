@@ -2540,7 +2540,7 @@ class SingularValueDecomposition {
        */
 
       var aDom = {0..m-1, 0..n-1};
-      var A : [aDom] => Arg.getArrayCopy(); // alias the matrix
+      ref A = Arg.getArrayCopy().reindex(aDom); // alias the matrix
 
       /* Apparently the failing cases are only a proper subset of (m<n), 
       so let's not throw error.  Correct fix to come later?
@@ -2548,13 +2548,13 @@ class SingularValueDecomposition {
       var nu = min(m,n);
 
       sDom = {1..min(m+1,n)};
-      var S : [0..min(m+1,n)-1] => s; // chapel aliases saved the day!      
+      ref S = s.reindex({0..min(m+1,n)-1}); // chapel aliases saved the day!
 
       uDom = {1..m, 1..nu};
-      var UU : [0..m-1,0..nu-1] => U[uDom];
+      ref UU = U[uDom].reindex({0..m-1,0..nu-1});
 
       vDom = {1..n, 1..n};
-      var VV : [0..n-1, 0..n-1] => V[vDom];
+      ref VV = V[vDom].reindex({0..n-1, 0..n-1});
 
       var e : [0..n-1] real;
       var work : [0..m-1] real;

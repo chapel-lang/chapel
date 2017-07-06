@@ -52,7 +52,6 @@ typedef enum {
   QIO_FDFLAG_READABLE = 2,
   QIO_FDFLAG_WRITEABLE = 4,
   QIO_FDFLAG_SEEKABLE = 8,
-  //QIO_FDFLAG_CLOSED = 16, // means channel/file was closed.
 } qio_fdflag_t;
 
 typedef uint32_t qio_hint_t;
@@ -498,6 +497,7 @@ typedef struct qio_file_s {
   void* file_info; // Holds the file information (as a user defined struct)
 
   qio_fdflag_t fdflags;
+  bool closed;
   qio_hint_t hints;
 
   int64_t initial_length;

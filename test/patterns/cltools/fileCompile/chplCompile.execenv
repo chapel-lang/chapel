@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+sys.stdout.write("PATH=$CHPL_HOME/bin/%s:$PATH" % os.getenv("CHPL_HOST_PLATFORM"))

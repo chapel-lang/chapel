@@ -27,7 +27,8 @@ RUNTIME_SUBDIR = .
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-
+# To run this, from runtime/
+# make printstuff.helpme
 printstuff:
 	@echo MAKE_LAUNCHER = $(MAKE_LAUNCHER)
 	@echo CHPL_MAKE_PLATFORM = $(CHPL_MAKE_PLATFORM)
@@ -41,6 +42,8 @@ printstuff:
 	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
 	@echo CHPL_MAKE_TARGET_ARCH = $(CHPL_MAKE_TARGET_ARCH)
 	@echo CHPL_ORIG_TARGET_COMPILER = $(CHPL_ORIG_TARGET_COMPILER)
+	@echo CXX_STD = $(CXX_STD)
+	@echo RUNTIME_CXXFLAGS += $(RUNTIME_CXXFLAGS)
 
 
 #

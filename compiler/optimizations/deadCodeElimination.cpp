@@ -22,13 +22,14 @@
 
 #include "astutil.h"
 #include "bb.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "ModuleSymbol.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
-#include "ForLoop.h"
 
 #include <queue>
 #include <set>
@@ -79,10 +80,10 @@ static bool isDeadVariable(Symbol* var) {
 }
 
 void deadVariableElimination(FnSymbol* fn) {
-  Vec<Symbol*> symSet;
+  std::set<Symbol*> symSet;
   collectSymbolSet(fn, symSet);
 
-  forv_Vec(Symbol, sym, symSet)
+  for_set(Symbol, sym, symSet)
   {
     // We're interested only in VarSymbols.
     if (!isVarSymbol(sym))
@@ -351,7 +352,7 @@ static void deadStringLiteralElimination() {
     // There is not a principled way to determine if other passes
     // have changed in a way that would confuse this pass.
     //
-    // A quick review of a portion of test/release/examles shows that
+    // A quick review of a portion of test/release/examples shows that
     // this pass removes 85 - 95% of the string literals.  Signal an
     // error if this pass doesn't reclaim at least 10% of all string
     // literals unless this is minimal modules
@@ -431,57 +432,86 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* A module is dead if                                                         *
+*   the module's init function can only be called from module code      and   *
+*   the init function is empty                                          and   *
+*   the init function is the  only thing in the module                  and   *
+*   the module is not a nested module.                                        *
 *                                                                             *
 ************************************** | *************************************/
 
-// Determines if a module is dead. A module is dead if the module's init
-// function can only be called from module code, and the init function
-// is empty, and the init function is the only thing in the module, and the
-// module is not a nested module.
 static bool isDeadModule(ModuleSymbol* mod) {
-  // The main module and any module whose init function is exported
-  // should never be considered dead, as the init function can be
-  // explicitly called from the runtime, or other c code
-  if (mod == mainModule || mod->hasFlag(FLAG_EXPORT_INIT)) return false;
+  AList body   = mod->block->body;
+  bool  retval = false;
 
-  // because of the way modules are initialized, we don't want to consider a
-  // nested function as dead as its outer module and all of its uses should
-  // have their initializer called by the inner module.
-  if (mod->defPoint->getModule() != theProgram &&
-      mod->defPoint->getModule() != rootModule)
-    return false;
+  // The main module should never be considered dead; the init function
+  // can be explicitly called from the runtime or other c code
+  if (mod == ModuleSymbol::mainModule()) {
+    retval = false;
 
-  // if there is only one thing in the module
-  if (mod->block->body.length == 1) {
-    if (!mod->initFn) {
-      // Prevents a segfault experienced when cleaning up a module which has
-      // only an inner module defined in it (and neither have an init function)
-      INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
-    }
+  // Ditto for an exported module
+  } else if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+    retval = false;
 
-    // and that thing is the init function
-    if (mod->block->body.only() == mod->initFn->defPoint) {
-      // and the init function is empty (only has a return)
-      if (mod->initFn->body->body.length == 1) {
-        // then the module is dead
-        return true;
+  // Because of the way modules are initialized, we never consider a nested
+  // module to be dead.
+  } else if (mod->defPoint->getModule() != rootModule &&
+             mod->defPoint->getModule() != theProgram) {
+    retval = false;
+
+  // Any module with more than 1 module-level statement is assumed to be live
+  } else if (body.length >= 2) {
+    retval = false;
+
+  // A module might be considered to be dead if it has exactly 1 defExpr
+  } else if (body.length == 1) {
+    Expr* item = body.only();
+
+    if (DefExpr* defExpr = toDefExpr(item)) {
+      // A module is not dead if the sole definition is a type declaration
+      if (isTypeSymbol(defExpr->sym) == true) {
+        retval = false;
+
+      // A module is dead if the sole definition is an "empty" init function
+      } else if (FnSymbol* fn = toFnSymbol(defExpr->sym)) {
+        if (mod->initFn == NULL) {
+          INT_FATAL("Expected initFn for module '%s', but was null",
+                    mod->name);
+
+        } else if (mod->initFn == fn) {
+          retval = mod->initFn->body->body.length == 1;
+
+        } else {
+          INT_ASSERT(false);
+        }
+
+      } else {
+        INT_ASSERT(false);
       }
+
+    } else {
+      INT_ASSERT(false);
     }
+
+  } else {
+    retval = false;
   }
-  return false;
+
+  return retval;
 }
 
 
 // Eliminates all dead modules
 static void deadModuleElimination() {
   deadModuleCount = 0;
+
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (isDeadModule(mod) == true) {
       deadModuleCount++;
 
       // remove the dead module and its initFn
       mod->defPoint->remove();
+
       mod->initFn->defPoint->remove();
 
       // Inform every module about the dead module

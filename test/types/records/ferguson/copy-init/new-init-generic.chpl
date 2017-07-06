@@ -9,7 +9,7 @@ proc R.init(x)
   super.init();
 }
 
-proc R.init(from)
+proc R.init(from: R)
 {
   writeln("In R.init");
   this.x = from.x;

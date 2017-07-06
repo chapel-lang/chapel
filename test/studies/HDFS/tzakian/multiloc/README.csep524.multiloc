@@ -33,4 +33,4 @@ source setenv.multiloc-ssh.bash
 
 
 You can also refer to the official documentation in
-$CHPL_HOME/doc/multilocale.rst.
+$CHPL_HOME/doc/rst/multilocale.rst.

@@ -21,7 +21,7 @@ var st = getCurrentTime();
 coforall loc in Locales do on loc {
   const l = (here.id+1)%numLocales;
   var myA: [D] int(64);
-  var Aalias => A[l];
+  ref Aalias = A[l];
   if doCommDiag then startCommDiagnostics();
   myA = Aalias;
   if doCommDiag then stopCommDiagnostics();

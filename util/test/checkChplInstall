@@ -152,15 +152,12 @@ TEST_JOB=${TEST_JOB_BASENAME}
 chpl_comm="$($CHPL_HOME/util/chplenv/chpl_comm.py)"
 chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
 
-# Log file for compile output
-TEST_COMP_OUT=${TEST_JOB}.comp.out
-
 # Necessary to suppress warnings when WARNINGS=1 (e.g. nightly build settings)
 COMP_FLAGS="--cc-warnings"
 
 # Compile test job into temporary directory
 log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
-${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
+TEST_COMP_OUT=$( ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} 2>&1 )
 COMPILE_STATUS=$?
 
 # Check that compile was successful
@@ -169,13 +166,13 @@ log_debug "Compilation exit status was ${COMPILE_STATUS}"
 if [ ${COMPILE_STATUS} -ne 0 ]; then
     log_error "Test job failed to compile - Chapel is not installed correctly"
     log_error "Compilation output:"
-    cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    echo "${TEST_COMP_OUT}"
     log_debug "Exit \"make check\" script with status code 1"
     exit 1
-elif [ -s ${TMP_TEST_DIR}/${TEST_COMP_OUT} ]; then
+elif [ -n "${TEST_COMP_OUT}" ]; then
     log_error "Test job compiled with output - Chapel is not installed correctly"
     log_error "Compilation output:"
-    cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    echo "${TEST_COMP_OUT}"
     log_debug "Exit \"make check\" script with status code 1"
     exit 1
 else
@@ -197,7 +194,7 @@ if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chp
 else
     log_warning "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
     log_warning "This does not necessarily indicate that your Chapel installation is incorrect."
-    log_warning "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
+    log_warning "See \$CHPL_HOME/doc/rst/launcher.rst for information on manually launching Chapel programs."
     # This exit code should be recognized as a failure to complete check, but
     # not necessarily failure of build
     log_debug "Exit \"make check\" script with status code 10"
@@ -217,7 +214,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     log_info "Test job complete."
 
     # Check result
-    DIFF_OUTPUT=$(diff -q ${GOOD} ${TEST_EXEC_OUT})
+    DIFF_OUTPUT=$(diff ${GOOD} ${TEST_EXEC_OUT})
 
     # Return success code (0) if diff is good
     if [ -z "${DIFF_OUTPUT}" ]; then

@@ -1,1 +1,2 @@
-{f1 = true, f2 = 0}
+hasIfImplicit.chpl:5: In initializer:
+hasIfImplicit.chpl:8: error: cannot initialize fields in an if statement in phase 1

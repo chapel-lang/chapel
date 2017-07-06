@@ -1,1 +1,2 @@
-loopSiblingCall.chpl:13: error: use of this.init() call in loop body
+loopSiblingCall.chpl:4: In initializer:
+loopSiblingCall.chpl:7: error: Both arms of a conditional must use this.init() or super.init() in phase 1

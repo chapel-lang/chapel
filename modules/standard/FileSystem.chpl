@@ -365,7 +365,8 @@ proc copyFile(out error: syserr, src: string, dest: string) {
     destChnl.write(line[0..#numRead]);
   }
   if error == EEOF then error = ENOERR;
-  destChnl.flush();
+  destChnl.close();
+  srcChnl.close();
 
   srcFile.close();
   destFile.close();
@@ -777,7 +778,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
   use chpl_glob_c_interface;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != GLOB_NOMATCH) then
     __primitive("chpl_error", c"unhandled error in glob()");

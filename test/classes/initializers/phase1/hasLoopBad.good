@@ -1,3 +1,2 @@
 hasLoopBad.chpl:4: In initializer:
-hasLoopBad.chpl:7: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
-hasLoopBad.chpl:10: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization
+hasLoopBad.chpl:9: error: cannot initialize fields in an if statement in phase 1

@@ -1,0 +1,6 @@
+--set correctness --set order=100 --set iterations=3
+--set correctness --set order=100 --set iterations=3 --set tileSize=20
+--set correctness --set order=100 --set iterations=3                   --set compact=true
+--set correctness --set order=100 --set iterations=3 --set tileSize=20 --set compact=true
+--set correctness --set order=100 --set iterations=3 --set useBlockDist=true
+--set correctness --set order=100 --set iterations=3 --set useStencilDist=true

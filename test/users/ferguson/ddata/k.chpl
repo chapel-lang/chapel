@@ -10,4 +10,4 @@ a = _ddata_allocate(r, size);
 
 if a then writeln("OK");
 
-_ddata_free(a);
+_ddata_free(a, size);

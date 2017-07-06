@@ -1,0 +1,8 @@
+#!/bin/bash
+
+sed1='s@\(Maximum Simultaneous Allocated Memory  \)2[5-9][0-9]@\12nn@'
+sed2='s@\(Total Allocated Memory                 \)2[5-9][0-9]@\12nn@'
+sed3='s@\(Total Freed Memory                     \)[0-9][0-9]*@\1mm@'
+
+sed "$sed1;$sed2;$sed3" $2 > $2.tmp
+mv $2.tmp $2

@@ -1,1 +1,2 @@
-parallelSiblingCall.chpl:5: error: this.init() call in parallel statement
+parallelSiblingCall.chpl:4: In initializer:
+parallelSiblingCall.chpl:5: error: use of this.init() call in a parallel statement

@@ -1,1 +1,2 @@
-middleBad.chpl:6: error: field initialization not allowed with sibling initializer call
+middleBad.chpl:5: In initializer:
+middleBad.chpl:6: error: field initialization not allowed before this.init()

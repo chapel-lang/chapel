@@ -16,6 +16,10 @@ elif $CHPL_HOME/util/printchplenv --make \
   # a compopts-by-compopts basis, but we can't do that yet.
   #
   echo True
+elif [[ "$COMPOPTS" == *"--llvm"* ]] ; then
+  # Skip in --llvm configurations because either this test or
+  # static/dynamic linking doesn't work yet.
+  echo True
 else
   echo False
 fi

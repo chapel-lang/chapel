@@ -1,1 +1,1 @@
-tuplecast.chpl:5: error: illegal cast to non-type
+tuplecast.chpl:10: error: illegal cast from real(64) to 10*real(64)

@@ -21,34 +21,760 @@
 
 #include "astutil.h"
 #include "expr.h"
-#include "stlUtil.h"
+#include "InitNormalize.h"
 #include "stmt.h"
-#include "symbol.h"
 #include "type.h"
 #include "typeSpecifier.h"
 
-#include <map>
-
 enum InitStyle {
-  FOUND_NONE,
-  FOUND_SUPER_INIT,
-  FOUND_THIS_INIT,
-  FOUND_BOTH
+  STYLE_NONE,
+  STYLE_SUPER_INIT,
+  STYLE_THIS_INIT,
+  STYLE_BOTH
 };
+
+static bool      isInitStmt (Expr* stmt);
+static bool      isSuperInit(Expr* stmt);
+static bool      isThisInit (Expr* stmt);
+
+static InitStyle findInitStyle(FnSymbol* fn);
+static InitStyle findInitStyle(Expr*     expr);
+
+static void      preNormalizeNonGenericInit(FnSymbol* fn);
+static void      preNormalizeGenericInit(FnSymbol* fn);
+
+static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
+static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
+
+static bool     isAssignment(CallExpr* callExpr);
+static bool     isSimpleAssignment(CallExpr* callExpr);
+static bool     isCompoundAssignment(CallExpr* callExpr);
+
+/************************************* | **************************************
+*                                                                             *
+* Attempt to assign a type to the symbol for each field in some of the        *
+* simpler cases.                                                              *
+*                                                                             *
+* 2017/03/20 Noakes: This may set a direction for refactoring resolution in   *
+* a subsequent release.                                                       *
+*                                                                             *
+************************************** | *************************************/
+
+static Type*          typeForExpr(Expr* expr);
+static AggregateType* typeForNewExpr(CallExpr* newExpr);
+
+void preNormalizeFields(AggregateType* at) {
+  for_alist(field, at->fields) {
+    if (DefExpr* defExpr = toDefExpr(field)) {
+      Type* type = NULL;
+
+      if (Expr* typeExpr = defExpr->exprType) {
+        type = typeForTypeSpecifier(typeExpr);
+
+        // var x, y : Foo
+        //   =>
+        // var x : Foo;
+        // var y : typeof(x);       // Handle this case
+        if (type == NULL) {
+          if (CallExpr* callExpr = toCallExpr(typeExpr)) {
+            if (callExpr->isPrimitive(PRIM_TYPEOF) == true) {
+              if (SymExpr* varExpr = toSymExpr(callExpr->get(1))) {
+                Type* t = varExpr->symbol()->type;
+
+                type = (t != dtUnknown) ? t : NULL;
+              }
+            }
+          }
+        }
+
+      } else if (defExpr->init != NULL) {
+        type = typeForExpr(defExpr->init);
+      }
+
+      if (type != NULL) {
+        Symbol* sym = defExpr->sym;
+
+        if (sym->hasFlag(FLAG_CONST) == true) {
+          sym->qual = QUAL_CONST_VAL;
+          sym->type = type;
+
+        } else {
+          sym->qual = QUAL_VAL;
+          sym->type = type;
+        }
+      }
+    }
+  }
+}
+
+// Infer the type of an expression for simple cases.
+//   1) An immediate value for one of the primitive scalars
+//   2) A new expr
+static Type* typeForExpr(Expr* expr) {
+  Type* retval = NULL;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    Type* type = symExpr->symbol()->type;
+
+    if (isPrimitiveScalar(type) == true) {
+      retval = type;
+    }
+
+  } else if (CallExpr* initCall = toCallExpr(expr)) {
+    if (initCall->isPrimitive(PRIM_NEW) == true) {
+      retval = typeForNewExpr(initCall);
+    }
+  }
+
+  return retval;
+}
+
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  AggregateType* retval = NULL;
+
+  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
+      if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
+        if (AggregateType* type = toAggregateType(sym->type)) {
+          if (isClass(type) == true || isRecord(type) == true) {
+            retval = type;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isReturnVoid(FnSymbol* fn);
+
+void preNormalizeInitMethod(FnSymbol* fn) {
+  AggregateType* at = toAggregateType(fn->_this->type);
+
+  if (fn->hasFlag(FLAG_NO_PARENS)   ==  true) {
+    USR_FATAL(fn, "an initializer cannot be declared without parentheses");
+
+  } else if (isReturnVoid(fn)       == false) {
+    USR_FATAL(fn, "an initializer cannot return a non-void result");
+
+  } else if (isNonGenericRecord(at) ==  true ||
+             isNonGenericClass(at)  ==  true) {
+    preNormalizeNonGenericInit(fn);
+
+  } else {
+    preNormalizeGenericInit(fn);
+  }
+}
+
+//
+// Initializers cannot
+//   1) Declare a return type other than void
+//   2) Contain a return expression with a value
+
+static bool isReturnVoid(FnSymbol* fn) {
+  bool retval = true;
+
+  if (fn->retExprDefinesNonVoid() == true) {
+    USR_FATAL(fn, "initializers cannot declare a return type");
+    retval = false;
+
+  } else {
+    std::vector<CallExpr*> calls;
+
+    collectMyCallExprs(fn->body, calls, fn);
+
+    for (size_t i = 0; i < calls.size() && retval == true; i++) {
+      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
+        SymExpr* value = toSymExpr(calls[i]->get(1));
+
+        if (value == NULL || value->symbol()->type != dtVoid) {
+          USR_FATAL(calls[i], "initializers cannot return a value");
+          retval = false;
+        }
+      }
+    }
+  }
+
+  fn->retType = dtVoid;
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state);
+
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state,
+                                  Expr*         start);
+
+static CallExpr* createCallToSuperInit(FnSymbol* fn);
+
+static bool      isSuperInit(Expr* stmt);
+static bool      isThisInit(Expr* stmt);
+static bool      hasReferenceToThis(Expr* expr);
+static bool      isMethodCall(CallExpr* callExpr);
+
+static void preNormalizeNonGenericInit(FnSymbol* fn) {
+  AggregateType* at         = toAggregateType(fn->_this->type);
+  InitNormalize  state(fn);
+
+  // The body contains at least one instance of this.init()
+  // i.e. the body is not empty and we do not need to insert super.init()
+  if (state.isPhase0() == true) {
+    preNormalize(fn->body, state);
+
+  // The body contains at least one instance of super.init()
+  // i.e. the body is not empty and we do not need to insert super.init()
+  } else if (state.isPhase1() == true) {
+    preNormalize(fn->body, state);
+
+  // 1) Insert super.init()
+  // 2) Insert field initializers before super.init()
+  // 3) Pre-normalize the phase2 statements
+  } else if (isClass(at) == true) {
+    CallExpr* superInit = createCallToSuperInit(fn);
+
+    fn->body->insertAtHead(superInit);
+
+    state.initializeFieldsBefore(superInit);
+
+    preNormalize(fn->body, state, superInit->next);
+
+  // 1) Insert field initializers before the first statement
+  // 2) Pre-normalize the phase2 statements
+  } else if (isRecord(at) == true && fn->body->body.head != NULL) {
+    Expr* head = fn->body->body.head;
+
+    state.initializeFieldsBefore(head);
+
+    preNormalize(fn->body, state, head);
+
+  // A degenerate initializer with no body
+  // 1) Insert a NO-OP as an anchor
+  // 2) Insert field initializers before the NO-OP
+  // 3) Remove the NO-OP
+  } else if (isRecord(at) == true && fn->body->body.head == NULL) {
+    Expr* noop = new CallExpr(PRIM_NOOP);
+
+    fn->body->insertAtHead(noop);
+
+    state.initializeFieldsBefore(noop);
+
+    noop->remove();
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  // If this is a non-generic class then create a type method
+  // to wrap this initializer
+  if (isClass(at) == true && at->isGeneric() == false) {
+    buildClassAllocator(fn);
+
+    fn->addFlag(FLAG_INLINE);
+  }
+}
+
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state) {
+  return preNormalize(block, state, block->body.head);
+}
+
+static InitNormalize preNormalize(BlockStmt*    block,
+                                  InitNormalize state,
+                                  Expr*         stmt) {
+  // This sub-block may have a different phase than the parent
+  state.checkPhase(block);
+
+  while (stmt != NULL) {
+    if (isDefExpr(stmt) == true) {
+      if (state.fieldUsedBeforeInitialized(stmt) == true) {
+        USR_FATAL(stmt, "Field used before it is initialized");
+      }
+
+      stmt = stmt->next;
+
+    } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      // Stmt is super.init() or this.init()
+      if (isInitStmt(callExpr) == true) {
+        if (state.isPhase2() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of super.init() call in phase 2");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of this.init() call in phase 2");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        } else if (state.inLoopBody() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of super.init() call in loop body");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt, "use of this.init() call in loop body");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        } else if (state.inParallelStmt() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in a parallel statement");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in a parallel statement");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        } else {
+          stmt = state.completePhase1(callExpr);
+        }
+
+      // Stmt is simple/compound assignment to a local field
+      } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
+        if (state.isPhase0() == true) {
+          USR_FATAL(stmt,
+                    "field initialization not allowed before this.init()");
+
+        } else if (state.isPhase2() == true) {
+          if (field->sym->hasFlag(FLAG_CONST) == true) {
+            USR_FATAL(stmt,
+                      "cannot update a const field, \"%s\", in phase 2",
+                      field->sym->name);
+          } else {
+            stmt = stmt->next;
+          }
+
+        } else if (isCompoundAssignment(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "cannot apply compound assignment to field \"%s\" "
+                    "in phase 1",
+                    field->sym->name);
+
+        } else if (state.isFieldReinitialized(field) == true) {
+          USR_FATAL(stmt,
+                    "multiple initializations of field \"%s\"",
+                    field->sym->name);
+
+        } else if (state.inLoopBody() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "loop during phase 1 of initialization",
+                    field->sym->name);
+
+        } else if (state.inParallelStmt() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "parallel statement during phase 1 of initialization",
+                    field->sym->name);
+
+        } else {
+          stmt = state.fieldInitFromInitStmt(field, callExpr);
+        }
+
+      // Stmt is assignment to a super field
+      } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
+        // Only valid during Phase 2
+        if (state.isPhase2() == false) {
+          USR_FATAL(stmt,
+                    "can't set value of field \"%s\" from parent type "
+                    "during phase 1 of initialization",
+                    field->sym->name);
+        } else {
+          stmt = stmt->next;
+        }
+      // No action required
+      } else {
+        if (state.fieldUsedBeforeInitialized(stmt) == true) {
+          USR_FATAL(stmt, "Field used before it is initialized");
+
+        } else if (state.isPhase2()             == false &&
+                   hasReferenceToThis(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "can't pass \"this\" as an actual to a function "
+                    "during phase 1 of initialization");
+
+
+        } else if (state.isPhase2()       == false &&
+                   isMethodCall(callExpr) == true) {
+          USR_FATAL(stmt,
+                    "cannot call a method "
+                    "during phase 1 of initialization");
+
+        } else {
+          stmt = stmt->next;
+        }
+      }
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      if (cond->elseStmt == NULL) {
+        InitNormalize::InitPhase phaseThen = state.startPhase(cond->thenStmt);
+        InitNormalize            stateThen = preNormalize(
+                                                  cond->thenStmt,
+                                                  InitNormalize(cond, state));
+
+        if (state.isPhase2() == false) {
+          if (stateThen.isPhase2() == true) {
+            if (phaseThen == InitNormalize::cPhase0) {
+              USR_FATAL(cond,
+                        "use of this.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else if (phaseThen == InitNormalize::cPhase1) {
+              USR_FATAL(cond,
+                        "use of super.init() in a conditional stmt "
+                        "in phase 1");
+
+            } else {
+              INT_ASSERT(false);
+            }
+          }
+
+          if (stateThen.currField() != state.currField()) {
+            USR_FATAL(cond,
+                      "cannot initialize fields in an if statement "
+                      "in phase 1");
+          }
+        }
+
+      } else {
+        InitNormalize stateThen = preNormalize(cond->thenStmt,
+                                               InitNormalize(cond, state));
+
+        InitNormalize stateElse = preNormalize(cond->elseStmt,
+                                               InitNormalize(cond, state));
+
+        if (state.isPhase2() == false) {
+          // Only one branch contained an init
+          if (stateThen.isPhase2() != stateElse.isPhase2()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must use this.init() "
+                      "or super.init() in phase 1");
+
+          } else if (stateThen.currField() != stateElse.currField()) {
+            USR_FATAL(cond,
+                      "Both arms of a conditional must initialize the same "
+                      "fields in phase 1");
+
+          } else {
+            state.merge(stateThen);
+          }
+        }
+      }
+
+      stmt = stmt->next;
+
+    } else if (LoopStmt* loop = toLoopStmt(stmt)) {
+      preNormalize((BlockStmt*) stmt, InitNormalize(loop, state));
+      stmt = stmt->next;
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      state.merge(preNormalize(block, InitNormalize(block, state)));
+      stmt  = stmt->next;
+
+    } else {
+      stmt = stmt->next;
+    }
+  }
+
+  return state;
+}
+
+// Pre-normalized call to the function super.init with no arguments
+static CallExpr* createCallToSuperInit(FnSymbol* fn) {
+  Symbol*   superSym  = new_CStringSymbol("super");
+  CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
+
+  Symbol*   initSym   = new_CStringSymbol("init");
+
+  return new CallExpr(new CallExpr(".", superCall, initSym));
+}
+
+static bool hasReferenceToThis(Expr* expr) {
+  bool retval = false;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
+      retval = arg->hasFlag(FLAG_ARG_THIS);
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    for_actuals(actual, callExpr) {
+      if (hasReferenceToThis(actual) == true) {
+        retval = true;
+        break;
+      }
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+static bool isMethodCall(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (CallExpr* base = toCallExpr(callExpr->baseExpr)) {
+    if (base->isNamedAstr(astrSdot) == true) {
+      if (SymExpr* lhs = toSymExpr(base->get(1))) {
+        if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
+          retval = arg->hasFlag(FLAG_ARG_THIS);
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+*  Determine if the current stmt is one of                                    *
+*                                                                             *
+*     this.init(args);                                                        *
+*       => call(call(".", this,                     "init") .. args)          *
+*                                                                             *
+*     super.init(args)                                                        *
+*       => call(call(".", unresolved("super"),      "init") .. args)  or      *
+*       => call(call(".", call(".", this, "super"), "init") .. args)          *
+*                                                                             *
+************************************** | *************************************/
+
+static const char* initName(Expr*     stmt);
+static const char* initName(CallExpr* expr);
+static bool        isSymbolThis(Expr* expr);
+static bool        isStringLiteral(Expr* expr, const char* name);
+static bool        isUnresolvedSymbol(Expr* expr, const char* name);
+
+static bool isInitStmt(Expr* stmt) {
+  return isSuperInit(stmt) == true || isThisInit(stmt) == true;
+}
+
+static bool isSuperInit(Expr* stmt) {
+  const char* name = initName(stmt);
+
+  return name != NULL && strcmp(name, "super") == 0 ? true : false;
+}
+
+static bool isThisInit(Expr* stmt) {
+  const char* name = initName(stmt);
+
+  return name != NULL && strcmp(name, "this")  == 0 ? true : false;
+}
+
+static const char* initName(Expr* stmt) {
+  const char* retval = NULL;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
+      retval = initName(inner);
+    }
+  }
+
+  return retval;
+}
+
+//
+// Extract init name for the inner part of the call i.e.
+//
+//    this.init(args);
+//      => call(".", this,                     "init")
+//
+//    super.init(args)
+//      => call(".", unresolved("super"),      "init")     // records
+//      => call(".", call(".", this, "super"), "init")     // classes
+//
+
+static const char* initName(CallExpr* expr) {
+  const char* retval = NULL;
+
+  if (expr->numActuals()                    ==    2 &&
+      expr->isNamedAstr(astrSdot)           == true &&
+      isStringLiteral(expr->get(2), "init") == true) {
+
+    if (isSymbolThis(expr->get(1)) == true) {
+      retval = "this";
+
+    } else {
+      // "super" is an unresolved symbol for records
+      if (isUnresolvedSymbol(expr->get(1), "super") == true) {
+        retval = "super";
+
+      // "super" is a expr to a field accessor for classes
+      } else if (CallExpr* subExpr = toCallExpr(expr->get(1))) {
+        if (subExpr->numActuals()                     == 2    &&
+            subExpr->isNamedAstr(astrSdot)            == true &&
+            isSymbolThis(subExpr->get(1))             == true &&
+            isStringLiteral(subExpr->get(2), "super") == true) {
+          retval = "super";
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the callExpr represents an initialization for a field i.e.     *
+*                                                                             *
+*   call("=", call(".", <this>, <fieldName>), <value>);                       *
+*                                                                             *
+* If so return the field                                                      *
+*                                                                             *
+************************************** | *************************************/
+
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
+
+static DefExpr* fieldByName(AggregateType* at, const char* name);
+
+static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* callExpr) {
+  DefExpr* retval = NULL;
+
+  // The outer call has assignment syntax
+  if (at != NULL && isAssignment(callExpr) == true) {
+    if (CallExpr* lhs = toCallExpr(callExpr->get(1))) {
+      retval = toLocalField(at, lhs);
+    }
+  }
+
+  return retval;
+}
+
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
+  DefExpr* retval = NULL;
+
+  if (expr->isNamedAstr(astrSdot)) {
+    SymExpr* base = toSymExpr(expr->get(1));
+    SymExpr* name = toSymExpr(expr->get(2));
+
+    if (base != NULL && name != NULL) {
+      VarSymbol* var = toVarSymbol(name->symbol());
+
+      // The base is <this> and the slot is a fieldName
+      if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
+
+          var                                    != NULL &&
+          var->immediate                         != NULL &&
+          var->immediate->const_kind             == CONST_KIND_STRING) {
+        retval = fieldByName(at, var->immediate->v_string);
+      }
+    }
+  }
+
+  return retval;
+}
+
+// Return the field with the given name
+static DefExpr* fieldByName(AggregateType* at, const char* name) {
+  Expr*    currField = at->fields.head;
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr*   defExpr = toDefExpr(currField);
+    VarSymbol* var     = toVarSymbol(defExpr->sym);
+
+    if (strcmp(var->name, name) == 0) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
+}
+
+static bool isAssignment(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (isSimpleAssignment(callExpr)   == true ||
+      isCompoundAssignment(callExpr) == true) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static bool isSimpleAssignment(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (callExpr->isNamedAstr(astrSequals) == true) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static bool isCompoundAssignment(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (callExpr->isNamed("+=")  == true ||
+      callExpr->isNamed("-=")  == true ||
+      callExpr->isNamed("*=")  == true ||
+      callExpr->isNamed("/=")  == true ||
+      callExpr->isNamed("**=") == true ||
+      callExpr->isNamed("%=")  == true ||
+      callExpr->isNamed("&=")  == true ||
+      callExpr->isNamed("|=")  == true ||
+      callExpr->isNamed("^=")  == true ||
+      callExpr->isNamed("&&=") == true ||
+      callExpr->isNamed("||=") == true ||
+      callExpr->isNamed("<<=") == true ||
+      callExpr->isNamed(">>=") == true) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void        phase1Analysis(FnSymbol* fn);
 
-
-static bool        isReturnVoid(FnSymbol* fn);
-
-static InitStyle   findInitStyle(FnSymbol* fn);
-static InitStyle   findInitStyle(Expr* expr);
-
 static void        errorCases(AggregateType* at,
-                            DefExpr*       curField,
-                            const char*    fieldName,
-                            bool           seenField[],
-                            Expr*          call);
+                              DefExpr*       curField,
+                              const char*    fieldName,
+                              bool           seenField[],
+                              Expr*          call);
 
 static const char* getFieldName(Expr* curExpr);
 
@@ -77,108 +803,71 @@ static Expr*       getNextStmt(Expr*      curExpr,
 
 /************************************* | **************************************
 *                                                                             *
-* Attempt to assign a type to the symbol for each field in some of the        *
-* simpler cases.                                                              *
 *                                                                             *
-* 2017/03/20 Noakes: This may set a direction for refactoring resolution      *
-* in a subsequent release.                                                    *
 *                                                                             *
 ************************************** | *************************************/
 
-void preNormalizeFields(AggregateType* at) {
-  for_alist(field, at->fields) {
-    if (DefExpr* defExpr = toDefExpr(field)) {
-      if (Type* type = typeForTypeSpecifier(defExpr->exprType)) {
-        Symbol* sym = defExpr->sym;
+static void preNormalizeGenericInit(FnSymbol* fn) {
+  AggregateType* at        = toAggregateType(fn->_this->type);
+  InitStyle      initStyle = findInitStyle(fn);
 
-        if (sym->hasFlag(FLAG_CONST) == true) {
-          sym->qual = QUAL_CONST_VAL;
-          sym->type = type;
+  // The body is pure phase 2
+  if (initStyle == STYLE_NONE) {
+    SET_LINENO(fn->body);
 
-        } else {
-          sym->qual = QUAL_VAL;
-          sym->type = type;
+    Symbol*   superSym  = new_CStringSymbol("super");
+    CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
+
+    Symbol*   initSym   = new_CStringSymbol("init");
+    CallExpr* initCall  = new CallExpr(".", superCall, initSym);
+
+    CallExpr* superInit = new CallExpr(initCall);
+
+    // For classes:  we need to insert super.init();
+    // For records:  this is a transient marker for phase 1 analysis
+    fn->body->insertAtHead(superInit);
+
+    phase1Analysis(fn);
+
+    // Records should not call super.init() so remove the phase1 marker
+    if (isRecord(at) == true) {
+      superInit->remove();
+    }
+
+  // One or more uses of this.init();
+  } else if (initStyle == STYLE_THIS_INIT) {
+    phase1Analysis(fn);
+
+  // At least one use of this.init();
+  } else {
+    phase1Analysis(fn);
+
+    // 2017/03/16: Record inheritance is not fully defined yet
+    //   The user may have added super.init() to a record initializer
+    //   to separate phase 1 from phase 2.  However this will not resolve.
+    //   Remove it/them now that preNormalize is complete.
+    if (isRecord(at) == true) {
+      std::vector<CallExpr*> calls;
+
+      collectMyCallExprs(fn, calls, fn);
+
+      for (size_t i = 0; i < calls.size(); i++) {
+        if (findInitStyle(calls[i]) == STYLE_SUPER_INIT) {
+          calls[i]->remove();
         }
       }
     }
   }
-}
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void preNormalizeInitMethod(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_NO_PARENS) == true) {
-    USR_FATAL(fn, "an initializer cannot be declared without parentheses");
-
-  } else if (isReturnVoid(fn) == false) {
-    USR_FATAL(fn, "an initializer cannot return a non-void result");
-
-  } else {
-    AggregateType* at        = toAggregateType(fn->_this->type);
-    InitStyle      initStyle = findInitStyle(fn);
-
-    // The body is pure phase 2
-    if (initStyle == FOUND_NONE) {
-      SET_LINENO(fn->body);
-
-      Symbol*   superSym  = new_CStringSymbol("super");
-      CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
-
-      Symbol*   initSym   = new_CStringSymbol("init");
-      CallExpr* initCall  = new CallExpr(".", superCall, initSym);
-
-      CallExpr* superInit = new CallExpr(initCall);
-
-      // For classes:  we need to insert super.init();
-      // For records:  this is a transient marker for phase 1 analysis
-      fn->body->insertAtHead(superInit);
-
-      phase1Analysis(fn);
-
-      // Records should not call super.init() so remove the phase1 marker
-      if (isRecord(at) == true) {
-        superInit->remove();
-      }
-
-    // One or more uses of this.init();
-    } else if (initStyle == FOUND_THIS_INIT) {
-      phase1Analysis(fn);
-
-    // At least one use of this.init();
-    } else {
-      phase1Analysis(fn);
-
-      // 2017/03/16: Record inheritance is not fully defined yet
-      //   The user may have added super.init() to a record initializer
-      //   to separate phase 1 from phase 2.  However this will not resolve.
-      //   Remove it/them now that preNormalize is complete.
-      if (isRecord(at) == true) {
-        std::vector<CallExpr*> calls;
-
-        collectMyCallExprs(fn, calls, fn);
-
-        for (size_t i = 0; i < calls.size(); i++) {
-          if (findInitStyle(calls[i]) == FOUND_SUPER_INIT) {
-            calls[i]->remove();
-          }
-        }
-      }
-    }
-
-    // Insert phase 2 analysis here
+  // Insert phase 2 analysis here
 
 
-    // If this is a non-generic class then create a type method
-    // to wrap this initializer
-    if (isClass(at) == true && at->isGeneric() == false) {
-      buildClassAllocator(fn);
+  // If this is a non-generic class then create a type method
+  // to wrap this initializer
+  if (isClass(at) == true && at->isGeneric() == false) {
+    buildClassAllocator(fn);
 
-      fn->addFlag(FLAG_INLINE);
-    }
+    fn->addFlag(FLAG_INLINE);
   }
 }
 
@@ -242,7 +931,7 @@ static void phase1Analysis(FnSymbol* fn) {
     seenField[0] = true;
   }
 
-  if (isInit == FOUND_NONE) {
+  if (isInit == STYLE_NONE) {
     // solution to fence post issue of diving into nested block statements
     BlockStmt* block = toBlockStmt(curExpr);
     while (block && !block->isLoopStmt()) {
@@ -253,7 +942,7 @@ static void phase1Analysis(FnSymbol* fn) {
 
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
-  while (curField != NULL || (isInit == FOUND_NONE)) {
+  while (curField != NULL || (isInit == STYLE_NONE)) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -266,7 +955,7 @@ static void phase1Analysis(FnSymbol* fn) {
 
     // Additionally, perform the following actions:
     // - add initialization for omitted fields
-    if (curField != NULL && (isInit == FOUND_NONE)) {
+    if (curField != NULL && (isInit == STYLE_NONE)) {
       // still have phase 1 statements and fields left to traverse
 
       if (BlockStmt* block = toBlockStmt(curExpr)) {
@@ -369,9 +1058,9 @@ static void phase1Analysis(FnSymbol* fn) {
 static
 const char* getFieldName(Expr* curExpr) {
   if (CallExpr* call = toCallExpr(curExpr)) {
-    if (call->isNamed("=")) {
+    if (call->isNamedAstr(astrSequals)) {
       if (CallExpr* inner = toCallExpr(call->get(1))) {
-        if (inner->isNamed(".")) {
+        if (inner->isNamedAstr(astrSdot)) {
           SymExpr* potenThis = toSymExpr(inner->get(1));
           if (potenThis && potenThis->symbol()->hasFlag(FLAG_ARG_THIS)) {
             // It's an access of this!
@@ -563,12 +1252,12 @@ static bool loopAnalysis(BlockStmt*     loop,
         return sawInit;
       }
     }
-    if (isInit == FOUND_SUPER_INIT || isInit == FOUND_THIS_INIT) {
+    if (isInit == STYLE_SUPER_INIT || isInit == STYLE_THIS_INIT) {
       // We encountered the .init() call while traversing this loop.  Stop
       // performing Phase 1 analysis and return.
       USR_FATAL_CONT(stmt,
                      "use of %s.init() call in loop body",
-                     isInit == FOUND_SUPER_INIT ? "super" : "this");
+                     isInit == STYLE_SUPER_INIT ? "super" : "this");
 
       return true;
     }
@@ -623,7 +1312,7 @@ static InitStyle findInitStyle(FnSymbol* fn) {
   // if statements.  TODO: fix this
   Expr*      curExpr = fn->body->body.head;
   BlockStmt* block   = toBlockStmt(curExpr);
-  InitStyle  retval  = FOUND_NONE;
+  InitStyle  retval  = STYLE_NONE;
 
   // Peel off nested top-level blocks
   while (block != NULL && block->isLoopStmt() == false) {
@@ -631,8 +1320,8 @@ static InitStyle findInitStyle(FnSymbol* fn) {
     block   = toBlockStmt(curExpr);
   }
 
-  while (curExpr != NULL && retval == FOUND_NONE) {
-    if ((retval = findInitStyle(curExpr)) == FOUND_NONE) {
+  while (curExpr != NULL && retval == STYLE_NONE) {
+    if ((retval = findInitStyle(curExpr)) == STYLE_NONE) {
       curExpr = getNextStmt(curExpr, fn->body, true);
     }
   }
@@ -652,7 +1341,7 @@ static InitStyle findInitStyle(FnSymbol* fn) {
 //
 
 static InitStyle findInitStyle(Expr* stmt) {
-  InitStyle retval = FOUND_NONE;
+  InitStyle retval = STYLE_NONE;
 
   if (CallExpr* call = toCallExpr(stmt)) {
     if (CallExpr* inner = toCallExpr(call->baseExpr)) {
@@ -675,27 +1364,27 @@ static InitStyle findInitStyle(Expr* stmt) {
 //
 
 static InitStyle findInitStyleInner(CallExpr* call) {
-  InitStyle retval = FOUND_NONE;
+  InitStyle retval = STYLE_NONE;
 
   if (call->numActuals()                    ==    2 &&
-      call->isNamed(".")                    == true &&
+      call->isNamedAstr(astrSdot)           == true &&
       isStringLiteral(call->get(2), "init") == true) {
 
     if (isSymbolThis(call->get(1)) == true) {
-      retval = FOUND_THIS_INIT;
+      retval = STYLE_THIS_INIT;
 
     } else {
       // "super" is an unresolved symbol for records
       if (isUnresolvedSymbol(call->get(1), "super") == true) {
-        retval = FOUND_SUPER_INIT;
+        retval = STYLE_SUPER_INIT;
 
       // "super" is a call to a field accessor for classes
       } else if (CallExpr* subCall = toCallExpr(call->get(1))) {
         if (subCall->numActuals()                     == 2    &&
-            subCall->isNamed(".")                     == true &&
+            subCall->isNamedAstr(astrSdot)            == true &&
             isSymbolThis(subCall->get(1))             == true &&
             isStringLiteral(subCall->get(2), "super") == true) {
-          retval = FOUND_SUPER_INIT;
+          retval = STYLE_SUPER_INIT;
         }
       }
     }
@@ -740,45 +1429,6 @@ static bool isSymbolThis(Expr* expr) {
 
 /************************************* | **************************************
 *                                                                             *
-* Initializers cannot                                                         *
-*                                                                             *
-*   1) Declare a return type other than void                                  *
-*                                                                             *
-*   2) Contain a return expression with a value                               *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isReturnVoid(FnSymbol* fn) {
-  bool retval = true;
-
-  if (fn->retExprDefinesNonVoid() == true) {
-    USR_FATAL(fn, "initializers cannot declare a return type");
-    retval = false;
-
-  } else {
-    std::vector<CallExpr*> calls;
-
-    collectCallExprs(fn->body, calls);
-
-    for (size_t i = 0; i < calls.size() && retval == true; i++) {
-      if (calls[i]->isPrimitive(PRIM_RETURN) == true) {
-        SymExpr* value = toSymExpr(calls[i]->get(1));
-
-        if (value == NULL || value->symbol()->type != dtVoid) {
-          USR_FATAL(calls[i], "initializers cannot return a value");
-          retval = false;
-        }
-      }
-    }
-  }
-
-  fn->retType = dtVoid;
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
 * Consider                                                                    *
 *                                                                             *
 *   var x = new MyClass(10, 20, 30);                                          *
@@ -814,6 +1464,10 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
     initCall = new CallExpr("init", gMethodToken, newInstance);
   }
 
+  if (initMethod->where != NULL) {
+    fn->where = initMethod->where->copy();
+  }
+
   type->addFlag(FLAG_TYPE_VARIABLE);
 
   fn->addFlag(FLAG_METHOD);
@@ -839,6 +1493,12 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
       fn->insertFormalAtTail(arg);
       initCall->insertAtTail(new SymExpr(arg));
+
+      // Don't want to be referencing the argument in the initializer, want to
+      // reference our new argument.
+      if (fn->where != NULL) {
+        subSymbol(fn->where, formal, arg);
+      }
     }
 
     count = count + 1;

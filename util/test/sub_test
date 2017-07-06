@@ -408,6 +408,15 @@ def printTestVariation(compoptsnum, compoptslist,
     sys.stdout.write(')')
     return
 
+# print '[Elapsed time to compile and execute all versions of ...'
+#   in the format expected by convert_start_test_log_to_junit_xml.py.
+
+def printEndOfTestMsg(test_name, elapsedTime):
+    sys.stdout.flush()
+    print('[Elapsed time to compile and execute all versions of "{0}" - '
+        '{1:.3f} seconds]'.format(test_name, elapsedTime))
+
+
 # return true if string is an integer
 def IsInteger(str):
     try:
@@ -504,8 +513,22 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
 # Use testEnv to process skipif files, it works for executable and
 # non-executable versions
 def runSkipIf(skipifName):
-    skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
-    return skiptest
+    p = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = p.communicate()
+    status = p.returncode
+
+    stderr = stderr.strip()
+    errmsg = ""
+    if stderr:
+        errmsg = stderr
+    if status:
+        if stderr:
+            errmsg += '\n'
+        errmsg += 'exit status %d' % (status)
+    if stderr or status:
+        raise RuntimeError(errmsg)
+
+    return stdout
 
 # Start of sub_test proper
 #
@@ -1068,24 +1091,28 @@ for testname in testsrc:
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             testskipiffile=True
-            skiptest=runSkipIf(f)
             try:
                 skipme=False
+                skiptest=runSkipIf(f)
                 if skiptest.strip() != "False":
                     skipme = skiptest.strip() == "True" or int(skiptest) == 1
                 if skipme:
-                    sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,test_filename))
+                    sys.stdout.write('[Skipping test based on .skipif environment settings: %s]\n'
+                        % os.path.join(localdir, test_filename))
                     do_not_test=True
-            except ValueError:
-                sys.stdout.write('[Error processing .skipif file %s/%s]\n'%(localdir,f))
+            except (ValueError, RuntimeError) as e:
+                sys.stdout.write(str(e)+'\n')
+                sys.stdout.write('[Error processing .skipif file for %s]\n'
+                    % os.path.join(localdir, test_filename))
+                printEndOfTestMsg(os.path.join(localdir, test_filename), 0.0)
                 do_not_test=True
             if do_not_test:
                 break
 
         elif (suffix=='.suppressif' and (os.access(f, os.R_OK))):
-            suppresstest=runSkipIf(f)
             try:
                 suppressme=False
+                suppresstest=runSkipIf(f)
                 if suppresstest.strip() != "False":
                     suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
                 if suppressme:
@@ -1098,8 +1125,13 @@ for testname in testsrc:
                                 suppressline = line.replace('#','').strip()
                                 break
                     futuretest='Suppress (' + suppressline + ') '
-            except ValueError:
-                sys.stdout.write('[Error processing .suppressif file %s/%s]\n'%(localdir,f))
+            except (ValueError, RuntimeError) as e:
+                sys.stdout.write(str(e)+'\n')
+                sys.stdout.write('[Error processing .suppressif file for %s]\n'
+                    % os.path.join(localdir, test_filename))
+                printEndOfTestMsg(os.path.join(localdir, test_filename), 0.0)
+                do_not_test=True
+                break
 
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
@@ -2150,8 +2182,7 @@ for testname in testsrc:
 
     elapsedCurFileTestTime = time.time() - curFileTestStart
     test_name = os.path.join(localdir, test_filename)
-    print('[Elapsed time to compile and execute all versions of "{0}" - '
-        '{1:.3f} seconds]'.format(test_name, elapsedCurFileTestTime))
+    printEndOfTestMsg(test_name, elapsedCurFileTestTime)
 
 
 sys.exit(0)

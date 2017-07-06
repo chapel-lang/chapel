@@ -1,8 +1,16 @@
-paramMethod.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: paramMethod.doc
+
+paramMethod.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
    use paramMethod.doc;
 
-   proc param int.foo()
-      I can only be called on param versions of the type `int` 
+.. method:: proc param int.foo()
+
+   I can only be called on param versions of the type `int` 
 

@@ -143,7 +143,7 @@ proc write_subblocks(w, subblockArray: [] uint(16),
                      macroblock: int, count: int) {
   const sLow = subblockArray.domain.low;
   for block in 0..#count {
-    var vec => subblockArray[sLow + (block + macroblock*count)*MAX_POS_PADDED..#MAX_POS];
+    ref vec = subblockArray[sLow + (block + macroblock*count)*MAX_POS_PADDED..#MAX_POS];
     for elt in vec {
       write16u(w, elt);
     }
@@ -172,8 +172,8 @@ proc writeSads(filename: string, width: int, height: int, sads: [] uint(16)) {
 proc sad4CPU(blkSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), width: int, height: int) {
   for (mby, yoff) in zip(0..#height, 0.. by 256*width) {
     for mbx in 0..#width {
-      var blkOff => blkSad[(SAD_TYPE_7_IX(width*height) + (mby*width + mbx) * (SAD_TYPE_7_CT * MAX_POS_PADDED))..];
-      var frameOff => frame[(yoff + mbx*16)..];
+      ref blkOff = blkSad[(SAD_TYPE_7_IX(width*height) + (mby*width + mbx) * (SAD_TYPE_7_CT * MAX_POS_PADDED))..];
+      ref frameOff = frame[(yoff + mbx*16)..];
       sad4OneMacroblock(blkOff, frameOff, reference, mby*16, mbx*16, width, height);
     }
   }
@@ -215,9 +215,9 @@ proc largerSads(sads: [] uint(16), mbs: int) {
     for blky in 0..#2 {
       for blkx in 0..#4 {
         const xoff = SAD_TYPE_7_IX(mbs) + macroblock*SAD_TYPE_7_CT*MPP + (8*blky + blkx)*MPP;
-        var x => sads[xoff..#MAX_POS];
-        var y => sads[xoff + 4*MPP..#MAX_POS];
-        var z => sads[SAD_TYPE_6_IX(mbs) + macroblock*SAD_TYPE_6_CT*MPP + (4*blky + blkx)*MPP..#MAX_POS];
+        ref x = sads[xoff..#MAX_POS];
+        ref y = sads[xoff + 4*MPP..#MAX_POS];
+        ref z = sads[SAD_TYPE_6_IX(mbs) + macroblock*SAD_TYPE_6_CT*MPP + (4*blky + blkx)*MPP..#MAX_POS];
         //z = x + y;
         for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
       }
@@ -226,9 +226,9 @@ proc largerSads(sads: [] uint(16), mbs: int) {
     for blky in 0..#4 {
       for blkx in 0..#2 {
         const xoff = SAD_TYPE_7_IX(mbs) + macroblock*SAD_TYPE_7_CT * MPP + (4*blky + 2*blkx) * MPP;
-        var x => sads[xoff..#MAX_POS];
-        var y => sads[xoff+MPP..#MAX_POS];
-        var z => sads[SAD_TYPE_5_IX(mbs) + macroblock*SAD_TYPE_6_CT * MPP + (2*blky+blkx)*MPP..#MAX_POS];
+        ref x = sads[xoff..#MAX_POS];
+        ref y = sads[xoff+MPP..#MAX_POS];
+        ref z = sads[SAD_TYPE_5_IX(mbs) + macroblock*SAD_TYPE_6_CT * MPP + (2*blky+blkx)*MPP..#MAX_POS];
         //z = x + y;
         for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
       }
@@ -237,9 +237,9 @@ proc largerSads(sads: [] uint(16), mbs: int) {
     for blky in 0..#2 {
       for blkx in 0..#2 {
         const xoff = SAD_TYPE_5_IX(mbs) + macroblock*SAD_TYPE_5_CT * MPP + (4*blky+blkx)*MPP;
-        var x => sads[xoff..#MAX_POS];
-        var y => sads[xoff + 2*MPP..#MAX_POS];
-        var z => sads[SAD_TYPE_4_IX(mbs) + macroblock*SAD_TYPE_4_CT*MPP + (2*blky + blkx)*MPP..#MAX_POS];
+        ref x = sads[xoff..#MAX_POS];
+        ref y = sads[xoff + 2*MPP..#MAX_POS];
+        ref z = sads[SAD_TYPE_4_IX(mbs) + macroblock*SAD_TYPE_4_CT*MPP + (2*blky + blkx)*MPP..#MAX_POS];
         //z = x + y;
         for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
       }
@@ -247,43 +247,43 @@ proc largerSads(sads: [] uint(16), mbs: int) {
     /* Block type 3 */
     {
       const xoff = SAD_TYPE_4_IX(mbs) + macroblock * SAD_TYPE_4_CT * MPP;
-      var x => sads[xoff..#MAX_POS];
-      var y => sads[xoff+2*MPP..#MAX_POS];
-      var z => sads[SAD_TYPE_3_IX(mbs) + macroblock * SAD_TYPE_3_CT * MPP..#MAX_POS];
+      ref x = sads[xoff..#MAX_POS];
+      ref y = sads[xoff+2*MPP..#MAX_POS];
+      ref z = sads[SAD_TYPE_3_IX(mbs) + macroblock * SAD_TYPE_3_CT * MPP..#MAX_POS];
       //z = x + y;
       for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
     }
     {
       const xoff = SAD_TYPE_4_IX(mbs) + macroblock * SAD_TYPE_4_CT * MPP + MPP;
-      var x => sads[xoff..#MAX_POS];
-      var y => sads[xoff+2*MPP..#MAX_POS];
-      var z => sads[SAD_TYPE_3_IX(mbs) + macroblock * SAD_TYPE_3_CT * MPP + MPP..#MAX_POS];
+      ref x = sads[xoff..#MAX_POS];
+      ref y = sads[xoff+2*MPP..#MAX_POS];
+      ref z = sads[SAD_TYPE_3_IX(mbs) + macroblock * SAD_TYPE_3_CT * MPP + MPP..#MAX_POS];
       //z = x + y;
       for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
     }
     /* Block type 2 */
     {
       const xoff = SAD_TYPE_4_IX(mbs) + macroblock * SAD_TYPE_4_CT * MPP;
-      var x => sads[xoff..#MAX_POS];
-      var y => sads[xoff + MPP..#MAX_POS];
-      var z => sads[SAD_TYPE_2_IX(mbs) + macroblock * SAD_TYPE_2_CT * MPP..#MAX_POS];
+      ref x = sads[xoff..#MAX_POS];
+      ref y = sads[xoff + MPP..#MAX_POS];
+      ref z = sads[SAD_TYPE_2_IX(mbs) + macroblock * SAD_TYPE_2_CT * MPP..#MAX_POS];
       //z = x + y;
       for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
     }
     {
       const xoff = SAD_TYPE_4_IX(mbs) + macroblock * SAD_TYPE_4_CT * MPP + 2*MPP;
-      var x => sads[xoff..#MAX_POS];
-      var y => sads[xoff + MPP..#MAX_POS];
-      var z => sads[SAD_TYPE_2_IX(mbs) + macroblock * SAD_TYPE_2_CT * MPP + MPP..#MAX_POS];
+      ref x = sads[xoff..#MAX_POS];
+      ref y = sads[xoff + MPP..#MAX_POS];
+      ref z = sads[SAD_TYPE_2_IX(mbs) + macroblock * SAD_TYPE_2_CT * MPP + MPP..#MAX_POS];
       //z = x + y;
       for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
     }
     /* Block type 1 */
     {
       const xoff = SAD_TYPE_2_IX(mbs) + macroblock * SAD_TYPE_2_CT * MPP;
-      var x => sads[xoff..#MAX_POS];
-      var y => sads[xoff+MPP..#MAX_POS];
-      var z => sads[SAD_TYPE_1_IX(mbs) + macroblock * SAD_TYPE_1_CT * MPP..#MAX_POS];
+      ref x = sads[xoff..#MAX_POS];
+      ref y = sads[xoff+MPP..#MAX_POS];
+      ref z = sads[SAD_TYPE_1_IX(mbs) + macroblock * SAD_TYPE_1_CT * MPP..#MAX_POS];
       //z = x + y;
       for (zz, xx, yy) in zip(z, x, y) do zz = xx + yy;
     }

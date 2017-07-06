@@ -26,12 +26,14 @@
 #include "astutil.h"
 #include "caches.h"
 #include "chpl.h"
+#include "driver.h"
 #include "expr.h"
 #include "passes.h"
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "visibleFunctions.h"
 
 #include <cstdlib>
 #include <inttypes.h>
@@ -92,7 +94,8 @@ FnSymbol* makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
                             ModuleSymbol* tupleModule,
                             BlockStmt* instantiationPoint)
 {
-  Type *newType = newTypeSymbol->type;
+  AggregateType *newType = toAggregateType(newTypeSymbol->type);
+  INT_ASSERT(newType);
   FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
   for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
     typeCtor->insertFormalAtTail(typeCtorArgs[i]);
@@ -425,21 +428,22 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     }
 
     // Build the value constructor
-    {
-      newType->defaultInitializer = makeConstructTuple(args,
-                                                       typeCtorArgs,
-                                                       newTypeSymbol,
-                                                       tupleModule,
-                                                       instantiationPoint,
-                                                       noref,
-                                                       sizeType);
-    }
+    newType->defaultInitializer = makeConstructTuple(args,
+                                                     typeCtorArgs,
+                                                     newTypeSymbol,
+                                                     tupleModule,
+                                                     instantiationPoint,
+                                                     noref,
+                                                     sizeType);
+
 
     // Build the value destructor
     FnSymbol* dtor = makeDestructTuple(newTypeSymbol,
                                        tupleModule,
                                        instantiationPoint);
-    newType->destructor = dtor;
+
+    newType->setDestructor(dtor);
+
     newType->methods.add(dtor);
 
     // Resolve it so it stays in AST
@@ -507,7 +511,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 * so that it implements the required specialized default initialization.      *
 *                                                                             *
 * Noakes 2017/03/08: This function should be revisited when records with      *
-* initializers are complete to avoid unncessary copying i.e. it should be     *
+* initializers are complete to avoid unnecessary copying i.e. it should be    *
 * possible to invoke the initializer directly on the appropriate element.     *
 *                                                                             *
 ************************************** | *************************************/
@@ -541,7 +545,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
     Symbol*     elem    = new VarSymbol(astr("elt_", name), type);
     Symbol*     symName = new_CStringSymbol(name);
 
-    // Ensure normalize doensn't try to auto destroy this
+    // Ensure normalize doesn't try to auto destroy this
     elem->addFlag(FLAG_NO_AUTO_DESTROY);
 
     fn->body->insertAtTail(new DefExpr(elem, NULL, type->symbol));
@@ -794,17 +798,17 @@ shouldChangeTupleType(Type* elementType)
 
 
 static AggregateType*
-do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
+do_computeTupleWithIntent(bool valueOnly, IntentTag intent, AggregateType* at)
 {
-  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
-
-  FnSymbol*  typeConstructor    = t->defaultTypeConstructor;
-  BlockStmt* instantiationPoint = typeConstructor->instantiationPoint;
+  INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
 
   bool allSame = true;
-  AggregateType* at = toAggregateType(t);
+
+  FnSymbol*  typeConstructor    = at->defaultTypeConstructor;
+  BlockStmt* instantiationPoint = typeConstructor->instantiationPoint;
+
   std::vector<TypeSymbol*> args;
   int i = 0;
 
@@ -817,7 +821,9 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
       // blank-intent-is-ref types.
 
       if (useType->symbol->hasFlag(FLAG_TUPLE)) {
-        useType = do_computeTupleWithIntent(valueOnly, intent, useType);
+        AggregateType* useAt = toAggregateType(useType);
+        INT_ASSERT(useAt);
+        useType = do_computeTupleWithIntent(valueOnly, intent, useAt);
       } else if (shouldChangeTupleType(useType)) {
         if (valueOnly) {
           // already OK since we did getValType() above
@@ -853,12 +859,12 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
   }
 }
 
-AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
+AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
   return do_computeTupleWithIntent(false, intent, t);
 }
 
-AggregateType* computeNonRefTuple(Type* t)
+AggregateType* computeNonRefTuple(AggregateType* t)
 {
   return do_computeTupleWithIntent(true, INTENT_BLANK, t);
 }
@@ -984,10 +990,16 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     BlockStmt* point = getVisibilityBlock(call);
     TupleInfo info   = getTupleInfo(args, point, noref);
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-      return info.typeSymbol->type->defaultTypeConstructor;
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return info.typeSymbol->type->defaultInitializer;
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+      AggregateType* at = toAggregateType(info.typeSymbol->type);
+      INT_ASSERT(at);
+      return at->defaultTypeConstructor;
+    }
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      AggregateType* at = toAggregateType(info.typeSymbol->type);
+      INT_ASSERT(at);
+      return at->defaultInitializer;
+    }
     if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
       // is it the star tuple function?
       if (fn->hasFlag(FLAG_STAR_TUPLE))

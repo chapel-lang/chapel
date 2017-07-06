@@ -44,7 +44,7 @@ module LocaleModel {
      * A locale is a representation of system resources.
      * The alternative ways of expressing that an allocation
        should go on a particular memory seem unfortunate.
-     * It is desireable e.g. to Block distribute over
+     * It is desirable e.g. to Block distribute over
        a particular kind of memory across nodes in the system.
   */
 
@@ -70,19 +70,19 @@ module LocaleModel {
   //
   // e.g. on a 2 NUMA domain system:
   // subloc could be:
-  //   c_sublocid_any == -2 for any NUMA domain
+  //   < 0 (c_sublocid_*) for a symbolic NUMA domain
   //   0 for NUMA domain 0
   //   1 for NUMA domain 1
   // with 2 memory kinds:
   //   0 for DDR
   //   1 for HBM
   //
-  // -2 == packSublocID(2, c_sublocid_any,  0)
-  //  0 == packSublocID(2, 0,  0)
-  //  1 == packSublocID(2, 1,  0)
-  //  2 == packSublocID(2, 0,  1)
-  //  3 == packSublocID(2, 1,  1)
-  //  4 == packSublocID(2, c_sublocid_any,  1)
+  // < 0 == packSublocID(2, c_sublocid_*,  0)
+  //   0 == packSublocID(2, 0,  0)
+  //   1 == packSublocID(2, 1,  0)
+  //   2 == packSublocID(2, 0,  1)
+  //   3 == packSublocID(2, 1,  1)
+  //   4 == packSublocID(2, c_sublocid_any,  1)
   //
 
   private inline proc defaultMemoryKind() param return memoryKindDDR();
@@ -100,8 +100,8 @@ module LocaleModel {
   proc packSublocID(nNumaDomains:int, subloc:int, memoryKind:int)
   {
     var whichNuma = subloc;
-    if whichNuma == c_sublocid_none then
-      return c_sublocid_none;
+    if whichNuma == c_sublocid_none || whichNuma == c_sublocid_all then
+      return whichNuma;
 
     if whichNuma == c_sublocid_any ||
       whichNuma == numaDomainForAny(nNumaDomains) {
@@ -290,6 +290,11 @@ module LocaleModel {
       chpl_task_setSubloc(origSubloc);
     }
 
+    proc deinit() {
+      delete ddr;
+      delete hbm;
+    }
+
     proc writeThis(f) {
       parent.writeThis(f);
       f <~> '.'+ndName;
@@ -434,6 +439,13 @@ module LocaleModel {
       chpl_task_setSubloc(origSubloc);
     }
     //------------------------------------------------------------------------}
+
+    proc deinit() {
+      for loc in childLocales do
+        delete loc;
+      delete ddr;
+      delete hbm;
+    }
  }
 
   //
@@ -501,13 +513,18 @@ module LocaleModel {
     proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
-      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
-        return (myLocales[node:int]):locale;
-      else if (subloc == numaDomainForAny(
-                        (myLocales[node:int]:LocaleModel).numSublocales)) then
+      if subloc == numaDomainForAny(
+                    (myLocales[node:int]:LocaleModel).numSublocales) then
         return ((myLocales[node:int]:LocaleModel).hbm):locale;
-      else
+      else if chpl_isActualSublocID(subloc) then
         return (myLocales[node:int].getChild(subloc:int)):locale;
+      else
+        return (myLocales[node:int]):locale;
+    }
+
+    proc deinit() {
+      for loc in myLocales do
+        delete loc;
     }
   }
 

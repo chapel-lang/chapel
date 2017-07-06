@@ -190,8 +190,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  const replA => replicateD2(Ab, AD),
-        replB => replicateD1(Ab, BD);
+  const ref replA = replicateD2(Ab, AD),
+            replB = replicateD1(Ab, BD);
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {

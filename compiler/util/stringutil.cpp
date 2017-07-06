@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,12 +23,15 @@
 
 #include "stringutil.h"
 
+#include "map.h"
 #include "misc.h"
 
 #include <algorithm>
+#include <climits>
 #include <functional>
-#include <inttypes.h>
 #include <sstream>
+
+#include <inttypes.h>
 
 static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
 
@@ -85,14 +88,18 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
 
 const char* astr(const char* s1)
 {
+  const char* ss = chapelStringsTable.get(s1);
+  if (ss)
+    // return an existing entry
+    return ss;
+
+  // add a new entry - always a fresh malloc
   int len;
   len = strlen(s1);
   char* s = (char*)malloc(len+1);
   strcpy(s, s1);
-  const char* t = canonicalize_string(s);
-  if (s != t)
-    free(s);
-  return t;
+  chapelStringsTable.put(s,s);
+  return s;
 }
 
 const char* astr(const std::string& s)

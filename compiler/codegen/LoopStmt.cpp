@@ -18,7 +18,9 @@
  */
 
 #include "LoopStmt.h"
+
 #include "codegen.h"
+#include "driver.h"
 
 // If vectorization is enabled and this loop is order independent, codegen
 // CHPL_PRAGMA_IVDEP. This method is a no-op if vectorization is off, or the

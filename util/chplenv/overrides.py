@@ -33,6 +33,7 @@ chplvars = [
              'CHPL_NETWORK_ATOMICS',
              'CHPL_GMP',
              'CHPL_HWLOC',
+             'CHPL_JEMALLOC',
              'CHPL_REGEXP',
              'CHPL_WIDE_POINTERS',
              'CHPL_LLVM',

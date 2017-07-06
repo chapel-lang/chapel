@@ -69,7 +69,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TRUE 1
 #define max(x,y) ((x)>(y) ? x : y)
 
-static Vec<int> justification;
+static std::vector<int> justification;
 static int depth = 0;
 static int parens = 0;
 static int justify = 0;
@@ -136,7 +136,7 @@ static void update_state(char *line) {
       break;
     case '(':
       if (!inquote && !intick) {
-        justification.add(oldstuff);
+        justification.push_back(oldstuff);
         if (oldstuff == -1) {
           INT_FATAL("Unbalanced parentheses:\n\t%s",line);
         }
@@ -151,7 +151,8 @@ static void update_state(char *line) {
       break;
     case ')':
       if (!inquote && !intick) {
-        oldstuff = justification.pop();
+        oldstuff = justification.back();
+        justification.pop_back();
         stuff = 0;
         parens--;
       } else {
@@ -276,7 +277,7 @@ void beautify(fileinfo* origfile) {
   command = astr("mv ", tmpfile->pathname, " ", origfile->pathname);
   mysystem(command, "moving beautified file");
   
-  if (justification.n != 0) {
+  if (justification.size() != 0) {
     INT_FATAL( "Parentheses or curly braces are not balanced "
                "in codegen for %s.", origfile->pathname);
   }

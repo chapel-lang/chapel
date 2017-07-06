@@ -427,7 +427,7 @@ proc CandidateDomain.inflectionCut ()
     
     if D.dim(d).length >= 4 {
 
-      var sig => signatures(d).array;
+      ref sig = signatures(d).array;
       var stride = D.stride(d);
 
       //===> Search for cuts ===>

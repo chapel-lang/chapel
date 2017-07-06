@@ -17,17 +17,24 @@
 
 RESOLUTION_SRCS =                                              \
                   addAutoDestroyCalls.cpp                      \
+                  AutoDestroyScope.cpp                         \
                   caches.cpp                                   \
                   callDestructors.cpp                          \
                   callInfo.cpp                                 \
                   cullOverReferences.cpp                       \
+                  expandVarArgs.cpp                            \
                   implementForallIntents.cpp                   \
                   generics.cpp                                 \
                   functionResolution.cpp                       \
                   initializerResolution.cpp                    \
                   lowerIterators.cpp                           \
+                  postFold.cpp                                 \
+                  preFold.cpp                                  \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
+                  virtualDispatch.cpp                          \
+                  visibleCandidates.cpp                        \
+                  visibleFunctions.cpp                         \
                   wrappers.cpp
 
 SVN_SRCS        = $(RESOLUTION_SRCS)

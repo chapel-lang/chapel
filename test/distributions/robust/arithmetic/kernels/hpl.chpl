@@ -73,8 +73,8 @@ proc main() {
       piv: [1..n] indexType,         // a vector of pivot values
       x  : [1..n] elemType;          // the solution vector, x
 
-  var A => Ab[MatrixSpace],          // an alias for the Matrix part of Ab
-      b => Ab[.., n+1];              // an alias for the last column of Ab
+  ref A = Ab[MatrixSpace],           // an alias for the Matrix part of Ab
+      b = Ab[.., n+1];               // an alias for the last column of Ab
 
   initAB(Ab);
 
@@ -351,8 +351,8 @@ proc initAB(Ab: [] elemType) {
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(Ab, MatrixSpace, x) {
-  var A => Ab[MatrixSpace],
-      b => Ab[.., n+1];
+  ref A = Ab[MatrixSpace],
+      b = Ab[.., n+1];
 
   initAB(Ab);
   

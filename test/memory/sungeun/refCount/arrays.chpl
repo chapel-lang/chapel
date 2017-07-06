@@ -9,10 +9,10 @@ proc return_literal() {
 }
 
 proc create_alias(A: []) {
-  var A2 => A;
+  const ref A2 = A;
 }
 proc return_alias(A: []) {
-  var A2 => A;
+  const ref A2 = A;
   return A2;
 }
 

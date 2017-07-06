@@ -5,16 +5,19 @@ CHPL_FLAGS = --fast
 TARGETS = \
 	binarytrees \
 	chameneosredux \
+	chameneosredux-fast \
 	fasta \
 	fannkuchredux \
 	knucleotide \
 	mandelbrot \
+	mandelbrot-fast \
 	meteor \
 	meteor-fast \
 	nbody \
 	pidigits \
 	pidigits-fast \
 	regexdna \
+	regexdna-redux \
 	revcomp \
 	spectralnorm \
 	threadring
@@ -38,6 +41,9 @@ binarytrees: binarytrees.chpl
 chameneosredux: chameneosredux.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
+chameneosredux-fast: chameneosredux-fast.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
 fasta: fasta.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
@@ -48,6 +54,9 @@ knucleotide: knucleotide.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 mandelbrot: mandelbrot.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+mandelbrot-fast: mandelbrot-fast.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 meteor: meteor.chpl
@@ -85,6 +94,16 @@ regexdna: regexdna.chpl
 	else \
 	echo "";\
 	echo "Can't build regexdna without CHPL_REGEXP being enabled. See for details:"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
+	echo ""; \
+	fi
+
+regexdna-redux: regexdna-redux.chpl
+	@+if [ "$(CHPL_REGEXP)" != "none" ]; then \
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
+	else \
+	echo "";\
+	echo "Can't build regexdna-redux without CHPL_REGEXP being enabled. See for details:"; \
 	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
 	echo ""; \
 	fi

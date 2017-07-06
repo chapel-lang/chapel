@@ -222,16 +222,16 @@ const NeighDom = {-1..1, -1..1, -1..1};
 
 // atom positions
 var Pos: [DistSpace] [perBinSpace] v3;
-var RealPos => if useStencilDist then Pos.noFluffView()
-               else Pos[binSpace];
+ref RealPos = if useStencilDist then Pos.noFluffView()
+              else Pos[binSpace];
 
 // atom velocity, force, and neighbor lists
 var Bins: [Space] [perBinSpace] atom;
 
 // bin counts
 var Count: [DistSpace] int(32);
-var RealCount => if useStencilDist then Count.noFluffView()
-                 else Count[binSpace];
+ref RealCount = if useStencilDist then Count.noFluffView()
+                else Count[binSpace];
 
 // offsets used to wrap ghosts
 var PosOffset: [NeighDom] v3;

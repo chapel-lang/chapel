@@ -1,33 +1,20 @@
-### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..0, 0..8, 0..8)
-### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
-### chunk = 0  chunk2 = 1  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 1..1, 0..8, 0..8)
-### chunk = 0  chunk2 = 2  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 2..2, 0..8, 0..8)
-### chunk = 0  chunk2 = 3  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 3..3, 0..8, 0..8)
-### chunk = 0  chunk2 = 4  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 4..4, 0..8, 0..8)
-### chunk = 0  chunk2 = 5  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 5..5, 0..8, 0..8)
-### chunk = 0  chunk2 = 6  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 6..6, 0..8, 0..8)
-### chunk = 0  chunk2 = 7  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 7..7, 0..8, 0..8)
-### chunk = 0  chunk2 = 8  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 8..8, 0..8, 0..8)
-### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..6, 0..8, 0..8, 0..8)
-### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..0, 0..8, 0..8)
-### chunk = 1  chunk2 = 1  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 1..1, 0..8, 0..8)
-### chunk = 1  chunk2 = 1  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (7..8, 0..8, 0..8, 0..8)
-### chunk = 1  chunk2 = 2  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 2..2, 0..8, 0..8)
-### chunk = 1  chunk2 = 3  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 3..3, 0..8, 0..8)
-### chunk = 1  chunk2 = 4  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 4..4, 0..8, 0..8)
-### chunk = 1  chunk2 = 5  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 5..5, 0..8, 0..8)
-### chunk = 1  chunk2 = 6  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 6..6, 0..8, 0..8)
-### chunk = 1  chunk2 = 7  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 7..7, 0..8, 0..8)
-### chunk = 1  chunk2 = 8  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 8..8, 0..8, 0..8)
+### ignoreRunning = true
+### ignoreRunning = true
 ### ignoreRunning = true
 ### ignoreRunning = true
 ### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 19
 ### minIndicesPerTask = 19
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
-### numChunks = 2 (parDim = 1)
-### numChunks = 2 (parDim = 1)
-### numSublocs = 2
-### numSublocs = 2
-### numTasksPerSubloc = 2
-### numTasksPerSubloc = 2
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### numChunks = 3 (parDim = 1)
+### numChunks = 3 (parDim = 1)
+### numChunks = 9 (parDim = 1)
+### numChunks = 9 (parDim = 1)
+### numTasksPerLoc = 19
+### numTasksPerLoc = 19
+### numTasksPerLoc = 3
+### numTasksPerLoc = 3

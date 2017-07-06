@@ -30,6 +30,7 @@
 
  */
 module ChapelEnv {
+  use ChapelStandard;
 
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */
   param CHPL_HOME:string            = __primitive("get compiler variable", "CHPL_HOME");
@@ -93,6 +94,10 @@ module ChapelEnv {
 
   /* See :ref:`readme-chplenv.CHPL_HWLOC` for more information. */
   param CHPL_HWLOC:string           = __primitive("get compiler variable", "CHPL_HWLOC");
+
+  pragma "no doc"
+  /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
+  param CHPL_JEMALLOC:string           = __primitive("get compiler variable", "CHPL_JEMALLOC");
 
   /* See :ref:`readme-chplenv.CHPL_REGEXP` for more information. */
   param CHPL_REGEXP:string          = __primitive("get compiler variable", "CHPL_REGEXP");

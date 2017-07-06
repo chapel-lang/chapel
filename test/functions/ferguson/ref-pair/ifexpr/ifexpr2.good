@@ -1,0 +1,14 @@
+setit
+REF
+readit
+CONST REF
+1
+setit ifexpr
+CONST REF
+REF
+REF
+readit ifexpr
+CONST REF
+CONST REF
+CONST REF
+1

@@ -40,8 +40,8 @@ module analyze_torus_graphs {
     }
 
     iter FilteredNeighbors( v : index (vertices) ) {
-      const neighbors => Neighbors[v];
-      const weights => edge_weight[v];
+      const ref neighbors = Neighbors[v];
+      const ref weights = edge_weight[v];
       for n in torus_stencil do
         if (FILTERING && weights(n)%8 != 0) || !FILTERING then
           yield neighbors(n);
@@ -56,8 +56,8 @@ module analyze_torus_graphs {
 
     iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
     where tag == iterKind.follower {
-      const neighbors => Neighbors[v];
-      const weights => edge_weight[v];
+      const ref neighbors = Neighbors[v];
+      const ref weights = edge_weight[v];
       for n in torus_stencil._value.these(tag, followThis) do
         if (FILTERING && weights(n)%8 != 0) || !FILTERING then
           yield neighbors(n);
@@ -66,8 +66,8 @@ module analyze_torus_graphs {
     // iterate over all neighbor (ID, weight) pairs
 
     iter NeighborPairs( v : index (vertices) ) {
-      const neighbors => Neighbors[v];
-      const weights => edge_weight[v];
+      const ref neighbors = Neighbors[v];
+      const ref weights = edge_weight[v];
       for n in torus_stencil do
         yield (neighbors(n), weights(n));
     }
@@ -81,8 +81,8 @@ module analyze_torus_graphs {
 
     iter NeighborPairs( v : index (vertices), param tag: iterKind, followThis)
     where tag == iterKind.follower {
-      const neighbors => Neighbors[v];
-      const weights => edge_weight[v];
+      const ref neighbors = Neighbors[v];
+      const ref weights = edge_weight[v];
       for n in torus_stencil._value.these(tag, followThis) do
         yield (neighbors(n), weights(n));
     }

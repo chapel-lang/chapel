@@ -18,6 +18,7 @@
  */
 
 module NetworkAtomicTypes {
+  use NetworkAtomics;
 
   proc chpl__networkAtomicType(type base_type) type {
     if base_type==bool then return ratomicbool;

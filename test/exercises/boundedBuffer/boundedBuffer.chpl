@@ -42,12 +42,13 @@ if (numProducers > 1 || numConsumers > 1) then
 // STEP 1: When you're ready to start modifying the code, remove the
 // stopgap test + halt just above.  You may also want to change the
 // default number of producers and consumers above to avoid having to
-// set them on each run (I had good luck with 5 of each).
+// set them on every run (I had good results with 5 of each).
 //
-// STEP 2: Modify task 1 of the cobegin below such that it creates
-// 'numProducers' producers numbered 1..numProducers.  Similarly, modify
-// task 2 such that it creates 'numConsumers' consumers numbered
-// 1..numConsumers.
+// STEP 2: Modify task 1 of the cobegin below to create 'numProducers'
+// producers numbered 1..numProducers.  Similarly, modify task 2 so
+// that it creates 'numConsumers' consumers numbered 1..numConsumers.
+// While you can compile and run at this point (and should), note that
+// the program is probably not correct (see STEP 3 below).
 //
 proc main() {
   // a shared bounded buffer with the requested capacity
@@ -136,37 +137,62 @@ proc consumer(b: BoundedBuffer, cid: int) {
 
 //
 // STEP 3: The head and tail member variables below are currently
-// unsynchronized, meaning that if multiple producers and consumers
-// are running, their reads and writes to them will race.  Protect
-// against this by changing them to 'sync' or 'atomic' types.  (Hint:
-// 'sync' is easier, so start there).  In addition to changing their
-// definitions, you'll need to change the advance() helper function
-// below.
+// unsynchronized, meaning that when multiple producers and consumers
+// are running, their reads and writes to them may race.  The
+// problematic statement is the following one from 'advance()':
 //
-// STEP 4: Now try doing step 3 again using the other type (presumably
-// atomics).  Save both versions so you can compare the performance of
-// them (note: you may want to turn off the --noisy config when doing
-// timings).
+//     pos = (pos + 1) % capacity;
+//
+// Specifically, if two tasks are executing this statement
+// simultaneously, their operations may interleave as follows:
+// Task A reads pos -- let's say that it has the value '21'
+// Task B reads pos, which is still '21'
+// Task A computes the new value of pos as '22' and writes it
+// Task B also computes the value of '22' and writes it
+// each task returns '21'
+//
+// This is a race because it means that both tasks will have obtained
+// the same position rather than each getting a unique position.
+//
+// While the chances of this race are extremely slim (and slimmer in
+// --verbose=true mode because of the time required for all of the
+// printing), if this were your bank account or airline reservation,
+// you wouldn't want to take the risk of not hitting it.
+//
+// A conventional approach might be to put some sort of mutual
+// exclusion around the noted statement so that only one task could
+// execute it at a time, but in Chapel, we prefer data-centric
+// coordination between tasks.  To that end, guard against this race
+// by changing head and tail to 'sync' variables.  Note that in
+// addition to changing their definitions, you'll need to change the
+// advance() helper function below.
+//
+// STEP 4: Now try doing step 3 again by making head and tail 'atomic'
+// variables (save a copy of your 'sync' version in case you want to
+// return to it later).
 //
 // Hints for the atomic-based solution:
 //
-// (1) atomics currently can't be initialized (something we need to
-// fix in the language), so to initialize them, use a constructor of
-// the form:
+// (1) atomic variables can't currently be initialized at their
+// declaration point (something we're working on fixing in the
+// language), so to establish their initial values, add a constructor
+// within the boundeded buffer class of the form:
 //
 //   proc BoundedBuffer() {
-//     ... your code to initialize them here ...
+//     ... put your code to initialize the atomics here ...
 //   }
 //
-// (2) read(), write() and compareExchange() are going to be your
-// friends.  If you haven't worked with atomics before, ask one of
-// the helpers or refer to the online documentation:
+// (2) read(), write() and compareExchange() are going to be the most
+// useful methods on atomics for this exercise.  If you haven't worked
+// with atomics before, refer to the online documentation or ask one
+// of the helpers for a hint:
 //
 //   http://chapel.cray.com/docs/latest/builtins/Atomics.html
 //
-// STEP 5: If you were not able to complete the distributed memory
-// ray-tracer earlier, this would be a great time to try it again
-// now that you've heard more about domain maps.
+// STEP 5 (optional): Compare the performance of your two versions
+// (note: you may want to turn off the --noisy and/or --verbose
+// configs when doing timings, and as always for performance runs, be
+// sure to compile with the --fast flag).
 //
 // STEP 6 (optional): What would it take to make this bounded buffer
 // code a distributed memory program?

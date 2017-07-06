@@ -19,6 +19,7 @@
 
 #include "AstToText.h"
 
+#include "driver.h"
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -92,7 +93,7 @@ void AstToText::appendName(FnSymbol* fn)
   {
     appendThisIntent(fn);
 
-    if (strcmp(fn->name, "this") == 0)
+    if (fn->name == astrThis)
     {
       appendClassName(fn);
     }
@@ -1038,7 +1039,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         mText += "..";
       }
 
-      else if (strcmp(fnName, ".")                           == 0)
+      else if ((fnName != astrSdot)                          == 0)
       {
         SymExpr* symExpr1 = toSymExpr(expr->get(1));
         SymExpr* symExpr2 = toSymExpr(expr->get(2));
@@ -1049,7 +1050,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
           {
             ArgSymbol* sym1 = toArgSymbol(symExpr1->symbol());
 
-            if (strcmp(sym1->name, "this") == 0)
+            if (sym1->name == astrThis)
             {
               appendExpr(symExpr2, printingType);
             }
@@ -1065,7 +1066,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
           {
             VarSymbol* sym1 = toVarSymbol(symExpr1->symbol());
 
-            if (strcmp(sym1->name, "this") == 0)
+            if (sym1->name == astrThis)
             {
               appendExpr(symExpr2, printingType);
             }

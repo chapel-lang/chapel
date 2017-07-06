@@ -71,14 +71,44 @@ LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
   LoopStmt* retval = NULL;
 
   if (LoopStmt* loop = toLoopStmt(expr))
+  {
     retval = loop;
+  }
 
   else if (expr->parentExpr)
+  {
     retval = findEnclosingLoop(expr->parentExpr);
+  }
 
   else
+  {
     retval = NULL;
+  }
 
   return retval;
 
+}
+
+LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr, const char* name)
+{
+  LoopStmt* retval = LoopStmt::findEnclosingLoop(expr);
+
+  while (retval != NULL && retval->isNamed(name) == false)
+  {
+    retval = LoopStmt::findEnclosingLoop(retval->parentExpr);
+  }
+
+  return retval;
+}
+
+bool LoopStmt::isNamed(const char* name) const
+{
+  bool retval = false;
+
+  if (userLabel != NULL)
+  {
+    retval = (strcmp(userLabel, name) == 0) ? true : false;
+  }
+
+  return retval;
 }

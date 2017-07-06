@@ -32,13 +32,17 @@
 #define IFA_EXTERN_INIT(x)
 #endif
 
+//
+// NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
+// 'IF1_const_kind' enum below uses it to set values.
+//
 enum IF1_num_kind {
   NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
-  NUM_KIND_IMAG, NUM_KIND_COMPLEX
+  NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID, NUM_KIND_LAST
 };
 
 enum IF1_const_kind {
-  CONST_KIND_STRING = NUM_KIND_COMPLEX + 1, CONST_KIND_SYMBOL
+  CONST_KIND_STRING = NUM_KIND_LAST + 1, CONST_KIND_SYMBOL
 };
 
 enum IF1_string_kind {
@@ -117,12 +121,14 @@ class Immediate { public:
     const char *v_string;
   };
 
-  int64_t  int_value( void);
-  uint64_t uint_value( void);
-  uint64_t bool_value( void);
+  int64_t  int_value( void)     const;
+  int64_t  commid_value( void)  const;
+  uint64_t uint_value( void)    const;
+  uint64_t bool_value( void)    const;
+  const char* string_value( void)const;
   // calls int_value, uint_value, or bool_value as appropriate.
-  int64_t  to_int( void);
-  uint64_t to_uint( void);
+  int64_t  to_int( void)        const;
+  uint64_t to_uint( void)       const;
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
@@ -137,6 +143,8 @@ class Immediate { public:
     v_string = s;
     return *this;
   }
+
+  explicit
   Immediate(bool b) :
     const_kind(NUM_KIND_BOOL),
     string_kind(STRING_KIND_STRING),
@@ -158,13 +166,13 @@ class Immediate { public:
 };
 
 inline uint64_t
-Immediate::bool_value( void) {
+Immediate::bool_value( void) const {
   INT_ASSERT(const_kind == NUM_KIND_BOOL);
   return v_bool;
 }
 
 inline int64_t
-Immediate::int_value( void) {
+Immediate::int_value( void) const {
   int64_t val = 0;
   INT_ASSERT(const_kind == NUM_KIND_INT);
   switch (num_index) {
@@ -178,9 +186,26 @@ Immediate::int_value( void) {
   return val;
 }
 
+inline const char*
+Immediate::string_value( void) const {
+  INT_ASSERT(const_kind == CONST_KIND_STRING);
+  INT_ASSERT(string_kind == STRING_KIND_STRING ||
+             string_kind == STRING_KIND_C_STRING);
+
+  return v_string;
+}
+
+
+inline int64_t
+Immediate::commid_value( void) const {
+  INT_ASSERT(const_kind == NUM_KIND_COMMID &&
+             num_index == INT_SIZE_64);
+  return v_int64;
+}
+
 
 inline uint64_t
-Immediate::uint_value( void) {
+Immediate::uint_value( void) const {
   uint64_t val = 0;
   INT_ASSERT(const_kind == NUM_KIND_UINT);
   switch (num_index) {
@@ -195,7 +220,7 @@ Immediate::uint_value( void) {
 }
 
 inline int64_t
-Immediate::to_int( void) {
+Immediate::to_int( void) const {
   int64_t val = 0;
   switch (const_kind) {
     case NUM_KIND_INT : val = int_value();  break;
@@ -209,7 +234,7 @@ Immediate::to_int( void) {
 
 
 inline uint64_t
-Immediate::to_uint( void) {
+Immediate::to_uint( void) const {
   uint64_t val = 0;
   switch (const_kind) {
     case NUM_KIND_INT : val = int_value();  break;
@@ -264,9 +289,9 @@ ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
   return !memcmp(imm1, imm2, sizeof(*imm1));
 }
 
-int fprint_imm(FILE *fp, Immediate &imm, bool showType = false);
-int snprint_imm(char *s, size_t max, Immediate &imm);
-int snprint_imm(char *str, size_t max, char *control_string, Immediate &imm);
+int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
+int snprint_imm(char *s, size_t max, const Immediate &imm);
+int snprint_imm(char *str, size_t max, char *control_string, const Immediate &imm);
 void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);

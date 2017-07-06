@@ -1,7 +1,0 @@
-bug: the same expression twice in a row results in different values
-
-The RHS of the sec1 and sec2 assignments are identical, but their results
-are not == to each other.
-
-This test passes everywhere I've tested it except on linux32 platforms. It
-also passes on linux32 if --no-denormalize is used.

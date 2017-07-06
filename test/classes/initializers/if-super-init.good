@@ -1,0 +1,2 @@
+if-super-init.chpl:10: In initializer:
+if-super-init.chpl:11: error: use of super.init() in a conditional stmt in phase 1

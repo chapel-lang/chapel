@@ -26,7 +26,16 @@
 
 #include "llvm/Config/llvm-config.h"
 
-#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=7 )
+// This list is getting unwieldy; consider replacing it with
+//   #define HAVE_LLVM_VER (LLVM_VERSION_MAJOR*10 + LLVM_VERSION_MINOR)
+// or something along those lines.
+#if   LLVM_VERSION_MAJOR>4 || (LLVM_VERSION_MAJOR==4 && LLVM_VERSION_MINOR>=0 )
+#define HAVE_LLVM_VER 40
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=9 )
+#define HAVE_LLVM_VER 39
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=8 )
+#define HAVE_LLVM_VER 38
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=7 )
 #define HAVE_LLVM_VER 37
 #elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
 #define HAVE_LLVM_VER 36
@@ -101,6 +110,7 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 #include "llvm/IR/LegacyPassManager.h"
 #define LEGACY_FUNCTION_PASS_MANAGER llvm::legacy::FunctionPassManager
 #define LEGACY_PASS_MANAGER llvm::legacy::PassManagerBase
+#define LEGACY_MODULE_PASS_MANAGER llvm::legacy::PassManager
 #else
 #include "llvm/PassManager.h"
 #define LEGACY_FUNCTION_PASS_MANAGER llvm::FunctionPassManager

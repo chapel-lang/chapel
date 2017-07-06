@@ -23,6 +23,7 @@
 // represent slices of another array via a domain.
 //
 module ArrayViewSlice {
+  use ChapelStandard;
 
   //
   // The class representing a slice of an array.  Like other array

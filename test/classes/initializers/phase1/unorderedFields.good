@@ -1,3 +1,2 @@
 unorderedFields.chpl:6: In initializer:
-unorderedFields.chpl:9: error: field initialization out of order
-unorderedFields.chpl:9: note: initialization of fields before .init() call must be in field declaration order
+unorderedFields.chpl:9: error: multiple initializations of field "f2"

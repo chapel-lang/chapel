@@ -1,0 +1,1 @@
+intentTupleGroup.chpl:1: error: intents on tuple-grouped arguments are not yet supported

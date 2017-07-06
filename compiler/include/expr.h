@@ -41,6 +41,9 @@ public:
   virtual QualifiedType qualType();
   virtual void    verify();
 
+  void verify(AstTag expectedTag); // ensure tag is as expected, then verify()
+  void verifyParent(const Expr* child); // verify proper child->parentExpr
+
   // New interface
   virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
@@ -261,13 +264,14 @@ public:
 
   void            setUnresolvedFunction(const char* name);
 
-  FnSymbol*       isResolved()                                           const;
+  bool            isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
 
   FnSymbol*       theFnSymbol()                                          const;
 
-  bool            isNamed(const char*);
+  bool            isNamed(const char*)                                   const;
+  bool            isNamedAstr(const char*)                               const;
 
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;
@@ -297,12 +301,17 @@ private:
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
  public:
-  // The options list always contains two CallExprs.
-  // The first is the value/const ref return intent
-  // and the second is the ref return intent version of a call.
+  // The options list always contains two or three CallExprs.
+  // These are always in this order:
+  //   value return
+  //   const-ref return
+  //   ref return
   // Storing the ref call after the value call allows a
   // postorder traversal to skip the value call.
-  // The order is important also - the first is always the value.
+
+  bool hasValue;
+  bool hasConstRef;
+  bool hasRef;
   AList options;
 
   ContextCallExpr();
@@ -320,10 +329,7 @@ class ContextCallExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
   void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
-  CallExpr*       getRefCall();
-  CallExpr*       getRValueCall();
   void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
 };
 
@@ -419,7 +425,7 @@ static inline bool isTaskFun(FnSymbol* fn) {
 
 static inline FnSymbol* resolvedToTaskFun(CallExpr* call) {
   INT_ASSERT(call);
-  if (FnSymbol* cfn = call->isResolved()) {
+  if (FnSymbol* cfn = call->resolvedFunction()) {
     if (isTaskFun(cfn))
       return cfn;
   }
@@ -477,5 +483,6 @@ GenRet createTempVarWith(GenRet v);
 
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
+GenRet codegenNullPointer();
 
 #endif

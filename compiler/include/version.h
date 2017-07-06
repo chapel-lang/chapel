@@ -20,6 +20,8 @@
 #ifndef _VERSION_H_
 #define _VERSION_H_
 
-void get_version(char *);
+void get_version(char * buf);
+void get_major_minor_version(char * buf);
+const char* get_configured_prefix();
 
 #endif

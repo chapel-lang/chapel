@@ -36,12 +36,14 @@ proc main() {
   //
   forall depth in dynamic(depths, chunkSize=1) {
     const iterations = 2**(maxDepth - depth + minDepth);
-    var sum = 0;
-			
+    var   sum        = 0;
+
     for i in 1..iterations {
-      const posT = new Tree( i, depth), 
+      const posT = new Tree( i, depth),
             negT = new Tree(-i, depth);
+
       sum += posT.sum() + negT.sum();
+
       delete posT;
       delete negT;
     }
@@ -74,11 +76,13 @@ class Tree {
   // Two initializers (constructors) for a Tree object
   //
   proc init(item, left: Tree=nil, right: Tree=nil) {
-    this.item = item;
-    this.left = left;
+    this.item  = item;
+    this.left  = left;
     this.right = right;
+
+    super.init();
   }
-  
+
   proc init(item, depth) {
     if depth <= 0 then
       return new Tree(item);

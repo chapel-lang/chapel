@@ -1,24 +1,36 @@
-#!/bin/bash
+#!/usr/bin/env perl
 
-TEST=$1
-LOG=$2
-# PREDIFF: Script to execute before diff'ing output (arguments: <test
-#    executable>, <log>, <compiler executable>)
+# Collect -O* arguments on each line,
+# and uniquify the output
 
-MYLOG=""
+$testname = $ARGV[0];
+$execout = $ARGV[1];
 
-LAST=""
+open TMPFILE, "$execout" or die "can't open $execout $!";
+@lines = <TMPFILE>;
+close (TMPFILE);
 
-for word in `cat $LOG`
-  do
-    if [[ $word == -O* ]]
-      then
-        if [[ $word != $LAST ]]
-          then
-            MYLOG+=" $word"
-            LAST=$word
-          fi
-      fi
-done
+@out_lines = ( );
 
-echo $MYLOG > $LOG
+for my $line (@lines) {
+  chomp $line;
+  # find -O1 etc
+  my @opts = ($line =~ / -O[0-9a-zA-Z]/g);
+  my $opt = join('', @opts);
+  # trim leading and trailing spaces
+  $opt =~ s/^\s+|\s+$//g;
+  # accept only the 1st non-empty such line
+  # that way, this test ignores opts to linker
+  if ($opt ne '') {
+    push(@out_lines, $opt);
+    last;
+  }
+}
+
+open OUTFILE, ">$execout" or die "can't open $execout for writing $!";
+
+foreach my $line (@out_lines) {
+  print OUTFILE $line . "\n";
+}
+
+close(OUTFILE);

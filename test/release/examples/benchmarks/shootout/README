@@ -13,9 +13,11 @@ At present, this directory contains the following codes:
 
     binarytrees.chpl    : Allocates and deallocates many, many binary trees
     chameneosredux.chpl : Simulates meetings between color-changing Chameneos
+    chameneosredux-fast.chpl : A tuned version of chameneosredux.chpl
     fannkuchredux.chpl  : Performs many operations on small arrays
     knucleotide.chpl    : Count the frequencies of specific nucleotide sequences
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
+    mandelbrot-fast.chpl: An uglier but faster version of mandelbrot.chpl
     meteor.chpl         : Performs a parallel search for all solutions to a
                           puzzle
     meteor-fast.chpl    : A less readable, but much faster version of meteor.
@@ -23,11 +25,14 @@ At present, this directory contains the following codes:
     pidigits.chpl       : Computes digits of pi using bigints (if available)
     pidigits-fast.chpl  : An optimized version of the above
     regexdna.chpl       : Performs DNA matching
+    regexdna-redux.chpl : Performs DNA matching
     revcomp.chpl        : Calculate the strand to bind with a given DNA strand
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
     fasta.chpl          : Generates DNA with different nucleotide distributions
                           and a random number generator
+
+Note that chameneosredux.chpl has non-deterministic output.
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
@@ -36,11 +41,13 @@ repository under the test/studies/shootout/ directory.
 
 The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
-system.  (See doc/developer/bestPractices/TestSystem.rst in the Chapel
+system.  (See doc/rst/developer/bestPractices/TestSystem.rst in the Chapel
 git repository: http://github.com/chapel-lang/chapel)
 
-Note that chameneosredux.chpl has non-deterministic output.
-
+Other files with the same base filenames as the Chapel test programs but
+different filename extensions, are for use by the automated test system.
+For example, file fasta.execopts supports automated testing of fasta.chpl.
+$CHPL_HOME/examples/README.testing contains more information.
 
 Future work / TODO
 ==================
@@ -211,6 +218,11 @@ o tmp1/tmp2 could be declared in extract_digit(), but with a
 
 regexdna
 --------
+o no current TODOs
+
+
+regexdna-redux
+--------------
 o no current TODOs
 
 

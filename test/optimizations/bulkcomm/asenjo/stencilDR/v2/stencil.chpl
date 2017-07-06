@@ -125,7 +125,7 @@ proc GlobalData.GlobalData(nameArg: string) {
       on nbr {
 	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
         pragma "no auto destroy"
-	var slice => nbr.ldata[slicex, slicey];
+	ref slice = nbr.ldata[slicex, slicey];
 	result = slice._value;
       }
       return result;

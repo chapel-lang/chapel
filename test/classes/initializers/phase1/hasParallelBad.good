@@ -1,2 +1,2 @@
-hasParallelBad.chpl:7: error: field "a" initialized in parallel statement (fields must be initialized in order)
-hasParallelBad.chpl:8: error: field "b" initialized in parallel statement (fields must be initialized in order)
+hasParallelBad.chpl:5: In initializer:
+hasParallelBad.chpl:7: error: can't initialize field "a" inside a parallel statement during phase 1 of initialization

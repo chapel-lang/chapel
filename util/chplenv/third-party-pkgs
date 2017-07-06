@@ -65,7 +65,8 @@ for l in chplenv.split('\n'):
         var=var.strip()
         val=val.strip()
         # Ignore platform variables
-        if not var.endswith('_PLATFORM'):
+        # Ignore CHPL_MEM (use CHPL_JEMALLOC)
+        if not (var.endswith('_PLATFORM') or var == 'CHPL_MEM'):
             if third_party_pkgs.count(val)==1:
                 pkgs += val+' '
             elif val in pkg_aliases:

@@ -1,0 +1,2 @@
+# Does not currently work with multilocale
+CHPL_COMM != none

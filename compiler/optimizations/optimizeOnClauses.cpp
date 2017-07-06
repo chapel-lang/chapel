@@ -24,12 +24,16 @@
 //  the handler (rather than creating a new task).
 //
 
-#include <vector>
-#include "stlUtil.h"
-#include "astutil.h"
-#include "expr.h"
-#include "stmt.h"
 #include "passes.h"
+
+#include "astutil.h"
+#include "driver.h"
+#include "expr.h"
+#include "stlUtil.h"
+#include "stmt.h"
+
+#include <vector>
+
 
 // There are two questions:
 // 1- is the primitive/function eligible to run in a fast block?
@@ -318,7 +322,6 @@ classifyPrimitive(CallExpr *call) {
     //
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
-  case PRIM_ARRAY_FREE_ELTS:
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 
@@ -406,10 +409,10 @@ inLocalBlock(CallExpr *call) {
 }
 
 static int
-markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
+markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
 
   // First, handle functions we've already visited.
-  if (visited->in(fn)) {
+  if (visited.count(fn) != 0) {
     if (fn->hasFlag(FLAG_FAST_ON))
       return FAST_AND_LOCAL;
     if (fn->hasFlag(FLAG_LOCAL_FN))
@@ -419,7 +422,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
   // Now, add fn to the set of visited functions,
   // since we will categorize it now.
-  visited->add_exclusive(fn);
+  visited.insert(fn);
 
   // Next, classify extern functions
   if (fn->hasFlag(FLAG_EXTERN)) {
@@ -456,38 +459,48 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
     if (call->primitive) {
       int is = classifyPrimitive(call, inLocal);
+
       if (!isLocal(is)) {
         // FAST_NOT_LOCAL or NOT_FAST_NOT_LOCAL
         return NOT_FAST_NOT_LOCAL;
       }
+
       // is == FAST_AND_LOCAL requires no action
-      if (is == LOCAL_NOT_FAST)
+      if (is == LOCAL_NOT_FAST) {
         maybefast = false;
+      }
+
     } else {
       if (recurse<=0 || !call->isResolved()) {
         // didn't resolve or past too much recursion.
         // No function calls allowed
         return NOT_FAST_NOT_LOCAL;
+
       } else {
         // Handle nested 'on' statements
-        if (call->isResolved()->hasFlag(FLAG_ON_BLOCK)) {
-          if (inLocal)
+        if (call->resolvedFunction()->hasFlag(FLAG_ON_BLOCK)) {
+          if (inLocal) {
             maybefast = false;
-          else
+          } else {
             return NOT_FAST_NOT_LOCAL;
+          }
         }
 
         // is the call to a fast/local function?
-        int is = markFastSafeFn(call->isResolved(), recurse-1, visited);
+        int is = markFastSafeFn(call->resolvedFunction(),
+                                recurse - 1,
+                                visited);
 
         // Remove NOT_LOCAL parts if it's in a local block
         is = setLocal(is, inLocal);
 
-        if (!isLocal(is))
+        if (!isLocal(is)) {
           return NOT_FAST_NOT_LOCAL;
+        }
 
-        if (is == LOCAL_NOT_FAST)
+        if (is == LOCAL_NOT_FAST) {
           maybefast = false;
+        }
         // otherwise, possibly still fast.
       }
     }
@@ -499,8 +512,10 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   // We only get to this point if the function is local
   // (otherwise we would return above)
   fn->addFlag(FLAG_LOCAL_FN);
+
   if (maybefast) {
     fn->addFlag(FLAG_FAST_ON);
+
     return FAST_AND_LOCAL;
   } else {
     return LOCAL_NOT_FAST;
@@ -565,9 +580,9 @@ optimizeOnClauses(void) {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Vec<FnSymbol*> visited;
+    std::set<FnSymbol*> visited;
 
-    int is = markFastSafeFn(fn, optimize_on_clause_limit, &visited);
+    int is = markFastSafeFn(fn, optimize_on_clause_limit, visited);
 
     bool fastFork = isFast(is);
     bool removeRmemFences = isLocal(is);
