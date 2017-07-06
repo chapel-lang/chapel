@@ -45,6 +45,19 @@ class CCodeGenAction;
 
 #endif
 
+/* This class contains information helpful in generating
+ * code for nested loops. */
+struct LoopData
+{
+#ifdef HAVE_LLVM
+  LoopData(llvm::MDNode *loopMetadata, bool parallel)
+    : loopMetadata(loopMetadata), parallel(parallel)
+  { }
+  llvm::MDNode* loopMetadata;
+  bool parallel; /* There is no dependency between loops */
+#endif
+};
+
 /* GenInfo is meant to be a global variable which stores
  * the code generator state - e.g. FILE* to print C to
  * or LLVM module in which to generate.
@@ -77,6 +90,8 @@ struct GenInfo {
   llvm::Module *module;
   llvm::IRBuilder<> *builder;
   LayeredValueTable *lvt;
+
+  std::stack<LoopData> loopStack;
 
   // Clang Stuff
   std::string clangCC;

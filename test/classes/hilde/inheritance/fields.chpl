@@ -15,7 +15,7 @@ class Base {
 class Derived : Base {
   var field : string;
 
-  proc Derived(arg:string) {
+  proc init(arg:string) {
     field = "Derived " + arg;
   }
 

@@ -4,8 +4,9 @@ record myNode {
     var D: domain(1);
     var myArray: [D][1..2] uint(8);
 
-    proc myNode(w: uint(8)) {
+    proc init(w: uint(8)) {
         this.D = {0..w:int};
+        super.init();
         this.myArray[w][1] = 1;
     }
 }

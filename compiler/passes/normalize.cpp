@@ -2645,13 +2645,11 @@ static void find_printModuleInit_stuff() {
   collectSymbols(printModuleInitModule, symbols);
 
   for_vector(Symbol, symbol, symbols) {
+
+    // TODO -- move this logic to wellknown.cpp
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
       gModuleInitIndentLevel = toVarSymbol(symbol);
       INT_ASSERT(gModuleInitIndentLevel);
-
-    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-      gPrintModuleInitFn = toFnSymbol(symbol);
-      INT_ASSERT(gPrintModuleInitFn);
     }
   }
 }

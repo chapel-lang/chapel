@@ -57,45 +57,56 @@ class IteratorInfo;
 
 class Type : public BaseAST {
 public:
-  virtual Type*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual Type*          copy(SymbolMap* map      = NULL,
+                              bool       internal = false)                 = 0;
 
   // Interface for BaseAST
-  virtual GenRet   codegen();
-  virtual bool     inTree();
-  virtual QualifiedType qualType();
-  virtual void     verify();
+  virtual GenRet         codegen();
+  virtual bool           inTree();
+  virtual QualifiedType  qualType();
+  virtual void           verify();
 
-  virtual void     codegenDef();
-  virtual void     codegenPrototype();
+  virtual void           codegenDef();
+  virtual void           codegenPrototype();
 
   // only used for heterogeneous compilations in which we need to define
   // what our data structures are for the point of conversions
-  virtual int      codegenStructure(FILE* outfile, const char* baseoffset);
+  virtual int            codegenStructure(FILE*       outfile,
+                                          const char* baseoffset);
 
-  virtual Symbol*  getField(const char* name, bool fatal = true);
+  virtual Symbol*        getField(const char* name, bool fatal = true);
 
-  void             addSymbol(TypeSymbol* newSymbol);
+  void                   addSymbol(TypeSymbol* newSymbol);
 
-  bool             isDefaultIntentConst()                                const;
+  bool                   isDefaultIntentConst()                          const;
 
-  TypeSymbol*      symbol;
-  AggregateType*   refType;  // pointer to references for non-reference types
-  Vec<FnSymbol*>   methods;
+  // get/set on the type destructor
+  bool                   hasDestructor()                                 const;
+  FnSymbol*              getDestructor()                                 const;
+  void                   setDestructor(FnSymbol* fn);
 
-  bool             hasGenericDefaults; // all generic fields have defaults
+  TypeSymbol*            symbol;
 
-  Symbol*          defaultValue;
-  FnSymbol*        destructor;
+  // pointer to references for non-reference types
+  AggregateType*         refType;
+
+  Vec<FnSymbol*>         methods;
+
+  // all generic fields have defaults
+  bool                   hasGenericDefaults;
+
+  Symbol*                defaultValue;
 
   // Used only in PrimitiveType; replace with flag?
-  bool             isInternalType;
+  bool                   isInternalType;
 
-  Type*            instantiatedFrom;
-  Type*            scalarPromotionType;
+  Type*                  instantiatedFrom;
+  Type*                  scalarPromotionType;
 
-  SymbolMap        substitutions;
-  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
-  Vec<Type*>       dispatchParents;    // dispatch hierarchy
+  SymbolMap              substitutions;
+
+  Vec<Type*>             dispatchChildren;   // dispatch hierarchy
+  Vec<Type*>             dispatchParents;    // dispatch hierarchy
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
@@ -106,6 +117,8 @@ protected:
 
 private:
   virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+
+  FnSymbol*        destructor;
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -439,6 +452,7 @@ bool is_enum_type(Type*);
 bool isLegalParamType(Type*);
 int  get_width(Type*);
 bool isClass(Type* t);
+bool isClassOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 

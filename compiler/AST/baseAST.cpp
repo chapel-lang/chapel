@@ -175,11 +175,13 @@ void trace_remove(BaseAST* ast, char flag) {
 
 static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
+
   forv_Vec(ModuleSymbol, mod, modvec) {
     if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) {
       modvec.v[aliveMods++] = mod;
     }
   }
+
   modvec.n = aliveMods;
 }
 
@@ -188,29 +190,41 @@ void cleanAst() {
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    for(int i = 0; i < ts->type->methods.n; i++) {
+    for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
-      if (method && !isAliveQuick(method))
+
+      if (method && !isAliveQuick(method)) {
         ts->type->methods.v[i] = NULL;
+      }
+
       if (AggregateType* ct = toAggregateType(ts->type)) {
-        if (ct->defaultInitializer && !isAliveQuick(ct->defaultInitializer))
+        if (ct->defaultInitializer               != NULL &&
+            isAliveQuick(ct->defaultInitializer) == false) {
           ct->defaultInitializer = NULL;
-        if (ct->destructor && !isAliveQuick(ct->destructor))
-          ct->destructor = NULL;
+        }
+
+        if (ct->hasDestructor()                  == true &&
+            isAliveQuick(ct->getDestructor())    == false) {
+          ct->setDestructor(NULL);
+        }
       }
     }
+
     for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
       Type* type = ts->type->dispatchChildren.v[i];
-      if (type && !isAlive(type))
+
+      if (type && !isAlive(type)) {
         ts->type->dispatchChildren.v[i] = NULL;
+      }
     }
   }
 
   removedIterResumeLabels.clear();
+
   copiedIterResumeGotos.clear();
 
-  // clean the other module vectors, without deleting the ast instances (they
-  // will be deleted with the clean_gvec call for ModuleSymbols.)
+  // clean the other module vectors, without deleting the ast instances
+  // (they will be deleted with the clean_gvec call for ModuleSymbols.)
   clean_modvec(allModules);
   clean_modvec(userModules);
 

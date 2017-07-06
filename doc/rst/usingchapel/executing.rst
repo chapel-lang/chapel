@@ -91,6 +91,22 @@ or:
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
+Configuration values can also be passed to a Chapel program through a
+configuration file, specified by the execution time ``-f`` option. These
+configuration files can contain a whitespace- or newline-separated list of
+configuration assignments. Comments are supported with the ``#`` character.
+
+For example:
+
+    .. code-block:: sh
+
+        # hello2-module.input
+        message="Hello from a Chapel configuration file"
+
+    .. code-block:: sh
+
+        ./hello2-module -fhello2-module.input
+
 Chapel programs can also accept C-like command line arguments to their
 ``main()`` procedure in addition to the aforementioned configuration
 variables. See :ref:`readme-main` for more

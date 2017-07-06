@@ -1,0 +1,10 @@
+error message: Initializer verification is hiding an enum error message
+
+This test should generate an error message for the user, because they are
+trying to access one of the enum's constant values without either the type
+prefix or `use`ing the enum.  However, we never reach the error message that
+normally gets generated - instead, we blow up during the verification of the
+initializer.  Initializers should let this go through so the normal message is
+given.
+
+The same is also likely true of bad methods, I suspect.
