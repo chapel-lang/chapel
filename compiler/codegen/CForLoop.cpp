@@ -40,6 +40,10 @@ static llvm::MDNode* generateLoopMetadata(bool vectorize)
   auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
   args.push_back(tmpNode.get());
 
+  // llvm.loop.vectorize.enable metadata is only used to either:
+  // 1) Explicitly disable vectorization of particular loop
+  // 2) Print warning when vectorization is enabled (using metadata) and vectorization didn't occur
+  // This means enabling vectorization using this metadata is not necessary for llvm vectorizer to vectorize loop
   if(vectorize)
   {
     llvm::Metadata *loopVectorizeEnable[] = { llvm::MDString::get(ctx, "llvm.loop.vectorize.enable"),
@@ -172,7 +176,7 @@ GenRet CForLoop::codegen()
 
     llvm::MDNode* loopMetadata = nullptr;
     if(fNoVectorize == false && isOrderIndependent()) {
-      loopMetadata = generateLoopMetadata(true);
+      loopMetadata = generateLoopMetadata(false);
       info->loopStack.emplace(loopMetadata, true);
     }
 
