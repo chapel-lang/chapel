@@ -126,6 +126,11 @@ try {
 }
 */
 
+
+// Static functions
+static bool canBlockThrow(BlockStmt* blk);
+
+
 namespace {
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
@@ -399,4 +404,150 @@ void lowerErrorHandling() {
     ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
     fn->accept(&visitor);
   }
+}
+
+namespace {
+
+class CanThrowVisitor : public AstVisitorTraverse {
+
+public:
+  CanThrowVisitor       (bool inThrowingFn, bool makeCompileErrors);
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCatchStmt(CatchStmt*   node);
+  virtual void exitCatchStmt (CatchStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+  bool throws() { return canThrow; }
+
+private:
+  int                 tryDepth;
+  bool                insideCatch;
+  bool   canThrow;
+  bool errors;
+  bool fnCanThrow; // only used for error checking
+
+  bool   catchesNotExhaustive(TryStmt* tryStmt);
+
+  AList     setOutGotoEpilogue(VarSymbol* error);
+  AList     errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
+                               BlockStmt* elseBlock = NULL);
+  CallExpr* haltExpr          ();
+
+  CanThrowVisitor();
+};
+
+CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors) {
+  insideCatch = false;
+  tryDepth = 0;
+  canThrow = false;
+  errors = makeCompileErrors;
+  fnCanThrow = inThrowingFn;
+}
+
+bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void CanThrowVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  // is it an exhaustive catch?
+
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    canThrow = false;
+  } else {
+    canThrow = nonExhaustive;
+  }
+}
+
+bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
+
+  bool       hasCatchAll = false;
+
+  for_alist(c, tryStmt->_catches) {
+    if (errors && hasCatchAll)
+      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
+
+    SET_LINENO(c);
+
+    CatchStmt* catchStmt = toCatchStmt(c);
+    DefExpr*   catchDef  = catchStmt->expr();
+
+    // catchall
+    if (catchDef == NULL) {
+      hasCatchAll = true;
+    } else {
+      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
+      Type*      errType = errSym->type;
+
+      // named catchall
+      if (errType == dtError) {
+        hasCatchAll = true;
+      }
+    }
+  }
+
+  return !hasCatchAll;
+}
+
+bool CanThrowVisitor::enterCatchStmt(CatchStmt* node) {
+  insideCatch = true;
+  return true;
+}
+
+void CanThrowVisitor::exitCatchStmt(CatchStmt* node) {
+  insideCatch = false;
+}
+
+bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
+  bool insideTry = (tryDepth > 0);
+
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+    if (calledFn->throwsError()) {
+      if (insideTry) {
+        // OK
+      } else {
+        if (errors && fStrictErrorHandling) {
+          USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+        }
+        // not in a try
+        canThrow = true;
+      }
+    }
+  } else if (node->isPrimitive(PRIM_THROW)) {
+    canThrow = true;
+
+    if (insideTry && !insideCatch) {
+      // OK, handled in try handling
+    } else if (fnCanThrow == true) {
+      // OK, fn can throw
+    } else if (errors == true) {
+      USR_FATAL_CONT(node, "cannot throw in a non-throwing function");
+    }
+  }
+  return true;
+}
+
+} /* end anon namespace */
+
+
+// Returns `true` if a block can exit with an error
+//  (e.g. by calling 'throw' or a throwing function,
+//   when these are not handled by try! or catch).
+// This function is useful to infer 'throws' for
+// certain compiler-introduced functions.
+
+static bool canBlockThrow(BlockStmt* block)
+{
+  CanThrowVisitor visit(false, false);
+
+  block->accept(&visit);
+
+  return visit.throws();
 }

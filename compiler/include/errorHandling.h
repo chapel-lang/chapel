@@ -20,6 +20,8 @@
 #ifndef _ERROR_HANDLING_H_
 #define _ERROR_HANDLING_H_
 
+class BlockStmt;
+
 void lowerErrorHandling();
 
 #endif
