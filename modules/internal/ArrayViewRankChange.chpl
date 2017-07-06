@@ -91,7 +91,7 @@ module ArrayViewRankChange {
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
     proc dsiSupportsPrivatization() param
-     return downDistInst.dsiSupportsPrivatization();
+      return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
       return (downDistPid, downDistInst, collapsedDim, idx);
@@ -106,8 +106,6 @@ module ArrayViewRankChange {
 
     proc dsiDestroyDist() {
     }
-
-    // TODO: privatization
   }
 
   //
