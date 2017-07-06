@@ -1,0 +1,24 @@
+
+[servers]
+
+  [servers.alpha]
+  it = {inline = "yes", table = "yes"} 
+  dc = "eqdc10"
+  ap = 12
+
+  [servers.beta]
+  ip = "10.0.0.2"
+  dc = "eqdc11"
+
+  [servers.zeta]
+  ip = ["10.0.0.2", "10.0.0.9"] 
+
+  [servers.alpha.right]
+  please = "be"
+
+  [servers.zeta.bravo]
+  umask = 777
+
+  [servers.beta.echo]
+  ip = "11.0.0.2"
+

@@ -1,70 +1,38 @@
-
 /* 
-TOML library  written in chapel and used in the chapel package manager
+Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
+              <https://github.com/toml-lang/toml>`_. 
+This module provides support for parsing and writing toml files.
 */
+
+/*
+Receives a channel to a TOML file as a parameter and outputs an associative
+array Node.
+*/
+proc parseToml(input: channel) : Node {}
+
+/*
+Receives a string of TOML format as a parameter and outputs an associative
+array Node. 
+*/
+proc parseToml(input: string) : Node {}
+
+
 
 use reader;
 use Regexp;
 use DateTime;
 
-/*
-parseToml takes in a channel to a .toml file as an argument and outputs an 
-associative array based on the contents of the .toml file. This array
-can then be passed to a writeToml method to write to a .toml file.
-
-calls
-  - source = Source(input)
-  - parser = Parser(source)
-  - return Parser.Dict
-*/ 
-proc parseToml(input: channel) {}
-
-
-/*
-parseTomlStr takes in a string in toml format to be parse into an associative
-array. The array can be printed using the writeToml procedure. 
-*/
-proc parseTomlStr(input: string) {}
-
-
-/*
-Takes in a channel to an output file provided as an argument. The format
-for writing into the file is TOML.  
-*/
-proc writeToml(output: channel) {}
-
-
 
 // Main method
 proc main(args: [] string) {
-  var source = new Source(args[1]);
-  var parser = new Parser(source);
+  const source = new Source(args[1]);
+  const parser = new Parser(source);
   ready(source);
   parser.parseLoop();
+  writeln(parser.tables);
   delete parser;
+  delete source;
 }
-
-
-/* global tables print method for debugging */
-proc prettyPrint(arr : [?dom], f:channel=IO.stdout) {
-  var first = true;
-  f.writeln();
-  for k in dom {
-    if !first {
-      f.writeln();
-      f.writeln('===New Table===');
-      f.writeln();
-      f.writeln("[",k,"]", " fields:  ");
-      f.write(arr[k]); 
-    } else {
-      f.writeln("[",k,"]", " fields:  ");
-      f.write(arr[k]); 
-      first = false;
-    }
-  }
-}
-
-
 
 
 config const DEBUG: bool = false;
@@ -73,11 +41,11 @@ class Parser {
 
   var source;
   var D: domain(string);
-  var tables: [D] Node;
-  var curTable = "";
-  
-
-  
+  var table: [D] Node;
+  var tables = new Node(table);
+  var curTable: string;
+  var root: Node;
+    
   const doubleQuotes = '".*?"',
     singleQuotes = "'.*?'",
     digit = "\\d+",
@@ -105,20 +73,23 @@ class Parser {
       else if inBrackets.match(token) {
 	parseTable();
       }
+      else if brackets.match(token) {
+        parseSubTbl();
+      }
       else if kv.match(token) {
 	parseAssign();
       }
       else {
-	write("Exception: ", getToken(source));
+	halt("Unexpected token ->", getToken(source));
       }
       if DEBUG {
 	writeln();
 	writeln("========================= Debug Info  ==========================");
 	source.debug();
 	writeln();
-	prettyPrint(tables);
+	writeln(tables);
 	writeln();
-	writeln("================================================================");
+        writeln("================================================================");
       }
     }
   }
@@ -126,40 +97,93 @@ class Parser {
   proc parseTable() {
     var toke = getToken(source);
     var tablename = brackets.sub('', toke);
-    tables[tablename] = new Node();
+    var tblD: domain(string);
+    var tbl: [tblD] Node;
+    root = new Node(tbl);
+    tables[tablename] = root;
     curTable = tablename;
   }
-      
+
+  proc parseSubTbl() {
+    skipNext(source);
+    var tblname = getToken(source); //throw error if empty
+    skipNext(source);
+    var tblD: domain(string);
+    var tbl: [tblD] Node;
+    var (tblPath, tblLeaf) = splitTblPath(tblname);
+    tables.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+    curTable = tblname;
+  }
+  
+  proc parseInlineTbl(key: string) {
+    var tblname = '.'.join(curTable, key);
+    var tblD: domain(string);
+    var tbl: [tblD] Node;
+    var (tblPath, tblLeaf) = splitTblPath(tblname);
+    tables.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+    var temp = curTable;
+    curTable = tblname;
+    while top(source) != '}' {
+      parseAssign();
+      if top(source) == ',' {
+        skipNext(source);
+      }
+    }
+    skipNext(source);
+    curTable = temp; // resets curTable after assignments to inline
+  }
+
   proc parseAssign() {
     var key = getToken(source);
     var equals = getToken(source);
-    var value = parseValue();
-    tables[curTable][key] = value;
-  } 
+    if top(source) == '{' {
+      skipNext(source);
+      parseInlineTbl(key);
+    }
+    else {
+      var value = parseValue();
+      tables.getIdx(curTable)[key] = value;
+    }
+  }
   
   // Skip the line with the comment 
   proc parseComment() {
     skipLine(source);
+  }  
+
+  // returns leaf of embedded table
+  proc splitTblPath(s: string) {
+    var A = s.split('.');
+    var fIdx = A.domain.first;
+    var leaf = A[A.domain.last];
+    var path = '.'.join(A[..A.domain.last-1]);
+    if A.size == 1 then path = A[fIdx];
+    return (path, leaf);
   }
 
-
+  // [servers.alpha.echo] => [servers, alpha, echo]
+  proc splitName(s: string) {
+    var A = s.split('.');
+    return A;
+  }
+  
   proc parseValue(): Node {
     var val = top(source);
     // Array
     if val == '['  {
-      source.currentLine.skip();
+      skipNext(source);
       var nodeDom: domain(1);
       var array: [nodeDom] Node;
       while top(source) != ']' {
 	if comma.match(top(source)) {
-	  source.currentLine.skip();
+	  skipNext(source);
 	}
 	else {
 	  var toParse = parseValue();
 	  array.push_back(toParse);
 	}
       }
-      source.currentLine.skip();
+      skipNext(source);
       var nodeArray = new Node(array);
       return nodeArray;
     }
@@ -170,7 +194,7 @@ class Parser {
 	while toStr.endsWith('"""') == false && toStr.endsWith("'''") == false {
 	  toStr += " " + getToken(source);
 	}
-	var mlStringNode = new Node(toStr);
+        var mlStringNode = new Node(toStr);
 	return mlStringNode;
       }
       else {
@@ -226,7 +250,7 @@ class Node {
   var arr: [dom] Node;
   var D: domain(string);
   var A: [D] Node;
-
+    
   const fieldBool = 1,
     fieldInt = 2,
     fieldArr = 3,
@@ -255,7 +279,7 @@ class Node {
     this.A = A;
     tag = fieldNode;
   }
-  
+  // Datetime
   proc init(dt: datetime) {
     this.dt = dt;
     tag = fieldDate;
@@ -280,64 +304,146 @@ class Node {
   }
 
   // Array
-  proc init(arr: [?dom] Node)  {
+  proc init(arr: [?dom] Node) where isAssociativeDom(dom) == false  {
     this.dom = dom;
     this.arr = arr;
     tag = fieldArr;
   }
 
-  proc this(idx) ref {
+  proc this(idx: string) ref {
     return A[idx];
   }
 
-
-  proc writeThis(f) {
-
-    if tag == fieldArr {
-      var first = true;
-      f.write('[');
-      for k in dom {
-	if first { 
-	  f.write(arr[k], ', ');
-	  first = false;
-	}
-	else if arr[k] == arr[dom.last] {
-	  f.write(arr[k], ']');
-	}
-	else {
-	  f.write(arr[k], ', ');
-	}
+  proc getIdx(tbl: string) ref : Node {
+    var indx = tbl.split('.');
+    var top = indx.domain.first;
+    if indx.size < 2 {
+     if this.A.domain.member(tbl) == false {
+       halt("Error in getIdx 1");
+     }
+      else {
+        return this.A[tbl];
       }
     } 
-    else if tag == fieldNode {
-      for k in D {
-	f.writeln(k ,' => ', A[k]);}
-    }
-    else if tag == fieldInt {
-      f.write(i);
-    }
-    else if tag == fieldBool {
-      f.write(boo);
-    }
-    else if tag == fieldString {
-      f.write(s);
-    }
-    else if tag == fieldDate {
-      f.write(dt.isoformat());
-    }
-    else if tag == fieldReal {
-      f.write(re);
-    }
-    else if tag == fieldEmpty {
-      f.write("empty");
-    }
     else {
-      f.write(s);
+      var next = '.'.join(indx[top+1..]);
+      if this.A.domain.member(indx[top]) {
+        return this.A[indx[top]].getIdx(next);
+      }
+      else {
+        halt("Error in getIdx 2");
+      }
     }
   }
+  
+  
+  proc writeThis(f) {
+    var flatDom: domain(string);
+    var flat: [flatDom] Node;
+    this.flatten(flat);
+    printHelp(flat, f);
+  }
+  
 
+  proc flatten(flat: [?d] Node, rootKey = '') : flat.type { 
+    for (k, v) in zip(this.D, this.A) {
+      if v.tag == 4 { 
+        var fullKey = k;
+        if rootKey != '' then fullKey = '.'.join(rootKey, k);
+        flat[fullKey] = v;
+        v.flatten(flat, fullKey);
+      }
+    }
+    return flat;
+  }
 
-
+  proc printHelp(flat: [?d] Node, f:channel) {
+    for (k, v) in zip(d, flat) {
+      f.writeln('[', k, ']');
+      printValues(f, v);
+    }
+  }
+  
+  proc printValues(f: channel, v) {
+    for (key, value) in zip(v.D, v.A) {
+      select value.tag {
+        when 4 do write(""); // Table
+        when 1 {
+          f.writeln(key, ' = ', toString(value));
+        }
+        when 2 {
+          f.writeln(key, ' = ', toString(value));
+        }
+        when 3 {
+          var first = true;
+          f.write(key, ' = ');
+          f.write('[');
+          for k in value.arr {
+            if first {
+              f.write(toString(k), ', ');
+              first = false;
+            }
+            else if k == value.arr[value.arr.domain.last] {
+              f.writeln(toString(k), ']');
+            }
+            else {
+              f.write(toString(k), ', ');
+            }
+          }
+        }
+        when 5 {
+          f.writeln(key, ' = ', toString(value));
+        }
+        when 6 {
+          f.writeln(key, ' = ', toString(value));
+        }
+        when 7 {
+          halt("Keys have to have a value");
+        }
+        when 8 {
+          f.writeln(key, ' = ', toString(value));
+        }
+        otherwise { 
+          f.write("not yet supported");
+        }
+        } 
+    }
+    f.writeln();
+  }
+  
+  proc toString(val: Node) : string { 
+    select val.tag {
+      when 1 do return val.boo;
+      when 2 do return val.i;
+      when 3 {
+        var first = true;
+        var final: string;
+        for k in val.arr {
+          if first {
+            final += '[' + toString(k) + ', ';
+            first = false;
+          }
+          else if k == val.arr[val.arr.domain.last] {
+            final += toString(k) + ']';
+          }
+          else {
+            final += toString(k) + ', ';
+          }
+        }
+        return final;
+      }
+      when 5 do return val.re;
+      when 6 do return val.s;
+      when 7 do return ""; // empty
+      when 8 do return val.dt.isoformat();
+      otherwise {
+        return val;
+        writeln("something weird happened with", val);
+      }
+      }
+  }
+  
+    
   /* Don't forget to free your memory! */
   proc deinit() {
     for a in A {
@@ -345,9 +451,3 @@ class Node {
     }
   }
 }
-
-
-
-
-
-

@@ -26,6 +26,10 @@ proc readLine(source) {
   return source.nextLine();
 }
 
+proc skipNext(source) { 
+  source.currentLine.skip();
+}
+
 proc skipLine(source) {
   source.skipROL();
 }
@@ -74,7 +78,8 @@ class Source {
           brackets = "(\\[)|(\\])",
           comments = "(\\#)",
           commas = "(\\,)",
-          equals = "(\\s=\\s)";
+          equals = "(\\s=\\s)",
+          curly = "(\\{)|(\\})";
 
     const pattern = compile('|'.join(doubleQuotes,
 				     singleQuotes,
@@ -82,6 +87,7 @@ class Source {
 				     brackets,
 				     comments,
 				     commas,
+                                     curly,
 				     equals));
     for token in pattern.split(line) {
       var strippedToken = token.strip();
