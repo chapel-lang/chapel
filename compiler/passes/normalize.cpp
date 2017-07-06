@@ -2315,6 +2315,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn);
+            fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
           }
           Expr* oldWhere = fn->where->body.tail;
           CallExpr* newWhere = new CallExpr("&");
@@ -2396,6 +2397,7 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query) {
   if (!fn->where) {
     fn->where = new BlockStmt(new SymExpr(gTrue));
     insert_help(fn->where, NULL, fn);
+    fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
   }
   Expr* where = fn->where->body.tail;
   CallExpr* clause;
