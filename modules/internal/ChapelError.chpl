@@ -28,7 +28,7 @@ module ChapelError {
     }
   }
 
-  export proc chpl_delete_error(err: Error) {
+  proc chpl_delete_error(err: Error) {
     delete err;
   }
 }

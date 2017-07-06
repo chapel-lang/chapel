@@ -356,7 +356,9 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
 
   AList ret;
-  ret.insertAtTail(new CallExpr(PRIM_MOVE, outError, castError));
+  // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
+  // errors that come up in C compilation.
+  ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castError));
   ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
 
   return ret;
@@ -386,6 +388,14 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
 void lowerErrorHandling() {
   if (!fMinimalModules)
     INT_ASSERT(dtError->inTree());
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Determine if compiler-generated fns should be marked 'throws'
+    if (fn->hasFlag(FLAG_ON)) {
+      if (canBlockThrow(fn->body))
+        fn->throwsErrorInit();
+    }
+  }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
