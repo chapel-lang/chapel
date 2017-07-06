@@ -126,6 +126,8 @@ try {
 }
 */
 
+namespace {
+
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
 public:
@@ -373,6 +375,8 @@ AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
 CallExpr* ErrorHandlingVisitor::haltExpr() {
   return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
 }
+
+} /* end anon namespace */
 
 void lowerErrorHandling() {
   if (!fMinimalModules)
