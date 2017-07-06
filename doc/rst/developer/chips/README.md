@@ -22,5 +22,5 @@ See the first CHIP for an overview.
 * [18 NUMA-Aware Array Storage](18.rst)
 * [19 Dynamically Loading Chapel Code](19.rst)
 * [20 Point of Instantiation and Private Scoping](20.rst)
-* [21 GPU Language Extensions](21.rst)
+* [22 GPU Language Extensions](22.rst)
 
