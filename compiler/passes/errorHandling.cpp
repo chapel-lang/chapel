@@ -292,6 +292,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
       VarSymbol* errorVar    = NULL;
       BlockStmt* errorPolicy = new BlockStmt();
+      Expr*      insert      = node->getStmtExpr();
+      if (insert == NULL)
+        insert = node;
 
       if (insideTry) {
         TryInfo info = tryStack.top();
@@ -304,7 +307,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
-        node->getStmtExpr()->insertBefore(new DefExpr(errorVar));
+        insert->insertBefore(new DefExpr(errorVar));
 
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
@@ -312,8 +315,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
           errorPolicy->insertAtTail(haltExpr());
       }
 
-      node->insertAtTail(errorVar);
-      node->insertAfter(errorCond(errorVar, errorPolicy));
+      node->insertAtTail(errorVar); // adding error argument to call
+      insert->insertAfter(errorCond(errorVar, errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
