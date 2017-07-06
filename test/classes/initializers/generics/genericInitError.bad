@@ -1,0 +1,2 @@
+genericInitError.chpl:4: In initializer:
+genericInitError.chpl:4: error: can't omit initialization of field "t", no type or default value provided
