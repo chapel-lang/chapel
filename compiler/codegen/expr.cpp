@@ -392,6 +392,9 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
 
   if(!info->loopStack.empty()) {
     const auto &loopData = info->loopStack.top();
+    // Currently, the parallel_loop_access metadata refers to the
+    // innermost loop the instruction is in, while for some cases
+    // this could refer to the group of loops it is in.
     if(loopData.parallel)
       ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
   }

@@ -31,7 +31,7 @@
 #ifdef HAVE_LLVM
 
 
-static llvm::MDNode* generateLoopMetadata(bool vectorize)
+static llvm::MDNode* generateLoopMetadata(bool addVectorizeEnableMetadata)
 {
   GenInfo* info = gGenInfo;
   auto &ctx = info->module->getContext();
@@ -44,7 +44,7 @@ static llvm::MDNode* generateLoopMetadata(bool vectorize)
   // 1) Explicitly disable vectorization of particular loop
   // 2) Print warning when vectorization is enabled (using metadata) and vectorization didn't occur
   // This means enabling vectorization using this metadata is not necessary for llvm vectorizer to vectorize loop
-  if(vectorize)
+  if(addVectorizeEnableMetadata)
   {
     llvm::Metadata *loopVectorizeEnable[] = { llvm::MDString::get(ctx, "llvm.loop.vectorize.enable"),
                                               llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), true))};
