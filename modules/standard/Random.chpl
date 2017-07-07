@@ -331,7 +331,7 @@ module Random {
       :arg arr: The array to be filled
       :type arr: [] :type:`eltType`
     */
-    proc fillRandom(arr: [] eltType) where true {
+    proc fillRandom(arr: [] eltType) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
@@ -729,7 +729,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) where true {
+      proc fillRandom(arr: [] eltType) {
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
@@ -2216,7 +2216,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) where true {
+      proc fillRandom(arr: [] eltType) {
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
