@@ -150,9 +150,8 @@ module ArrayViewRankChange {
     //
     proc downDomType(param rank: int, type idxType, param stridable: bool) type {
       var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
-      var a = distInst.downDistInst.dsiNewRectangularDom(rank=rank, idxType,
-                                                         stridable=stridable,
-                                                         ranges);
+      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
+                                                 stridable=stridable, ranges);
       return a.type;
     }
 
