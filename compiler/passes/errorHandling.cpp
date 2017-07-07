@@ -129,6 +129,7 @@ try {
 
 // Static functions
 static bool canBlockThrow(BlockStmt* blk);
+static void checkErrorHandling(FnSymbol* fn);
 
 
 namespace {
@@ -228,7 +229,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
   for_alist(c, tryStmt->_catches) {
     if (hasCatchAll)
-      USR_FATAL(c->prev, "catchall placed before the end of a catch list");
+      INT_FATAL(c->prev, "catchall placed before the end of a catch list");
 
     SET_LINENO(c);
 
@@ -283,7 +284,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     } else if (outError != NULL) {
       currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
     } else {
-      USR_FATAL(tryStmt, "try without a catchall in a non-throwing function");
+      INT_FATAL(tryStmt, "try without a catchall in a non-throwing function");
     }
   }
 
@@ -310,7 +311,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
       } else if (fStrictErrorHandling) {
-        USR_FATAL(node, "throwing call without try or try! (strict mode)");
+        INT_FATAL(node, "throwing call without try or try! (strict mode)");
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
@@ -345,7 +346,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     } else if (outError != NULL) {
       throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
     } else {
-      USR_FATAL(node, "cannot throw in a non-throwing function");
+      INT_FATAL(node, "cannot throw in a non-throwing function");
     }
   }
   return true;
@@ -394,8 +395,14 @@ void lowerErrorHandling() {
     if (fn->hasFlag(FLAG_ON)) {
       if (canBlockThrow(fn->body))
         fn->throwsErrorInit();
+    } else {
+      // Otherwise, just check for error-handling errors.
+      checkErrorHandling(fn);
     }
   }
+
+  // Quit if fatal errors were encountered by checkErrorHandling above.
+  USR_STOP();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
@@ -432,9 +439,8 @@ public:
   bool throws() { return canThrow; }
 
 private:
-  int                 tryDepth;
-  bool                insideCatch;
-  bool   canThrow;
+  int  tryDepth;
+  bool canThrow;
   bool errors;
   bool fnCanThrow; // only used for error checking
 
@@ -449,7 +455,6 @@ private:
 };
 
 CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors) {
-  insideCatch = false;
   tryDepth = 0;
   canThrow = false;
   errors = makeCompileErrors;
@@ -473,6 +478,9 @@ void CanThrowVisitor::exitTryStmt(TryStmt* node) {
     canThrow = false;
   } else {
     canThrow = nonExhaustive;
+    if (errors && tryDepth==0 && nonExhaustive && !fnCanThrow) {
+      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
+    }
   }
 }
 
@@ -507,12 +515,10 @@ bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
 }
 
 bool CanThrowVisitor::enterCatchStmt(CatchStmt* node) {
-  insideCatch = true;
   return true;
 }
 
 void CanThrowVisitor::exitCatchStmt(CatchStmt* node) {
-  insideCatch = false;
 }
 
 bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
@@ -533,8 +539,8 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
   } else if (node->isPrimitive(PRIM_THROW)) {
     canThrow = true;
 
-    if (insideTry && !insideCatch) {
-      // OK, handled in try handling
+    if (insideTry) {
+      // OK. non-exaustive try handled in try handling.
     } else if (fnCanThrow == true) {
       // OK, fn can throw
     } else if (errors == true) {
@@ -560,4 +566,11 @@ static bool canBlockThrow(BlockStmt* block)
   block->accept(&visit);
 
   return visit.throws();
+}
+
+static void checkErrorHandling(FnSymbol* fn)
+{
+  CanThrowVisitor visit(fn->throwsError(), true);
+
+  fn->body->accept(&visit);
 }
