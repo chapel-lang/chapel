@@ -1,5 +1,0 @@
-bug: internal error due to type signature mismatches
-
-While trying to create a test case to reproduce an error message in
-the compiler, I generated this (incorrect) program which resulted in
-an internal error rather than a user-facing error.
