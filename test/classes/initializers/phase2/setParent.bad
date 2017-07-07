@@ -1,2 +1,0 @@
-setParent.chpl:11: In initializer:
-setParent.chpl:13: error: can't set value of field "parentInt" from parent type during phase 1 of initialization

@@ -1,0 +1,2 @@
+inheritance-inline.chpl:7: In initializer:
+inheritance-inline.chpl:7: error: Attempt to inline a function, 'init', that calls itself

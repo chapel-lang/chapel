@@ -58,6 +58,7 @@
 #include "virtualDispatch.h"
 #include "visibleCandidates.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 #include "WhileStmt.h"
 
 #include "../ifa/prim_data.h"
@@ -100,25 +101,6 @@ public:
     : fn1MoreSpecific(false), fn2MoreSpecific(false),
       fn1Promotes(false), fn2Promotes(false), paramPrefers(0) {}
 
-  /** Prints out information for tracing of the disambiguation process.
-   *
-   * \param DBMLoc A string representing the location in the DBM process the
-   *               message is coming from.
-   * \param DC     The disambiguation context.
-   */
-  void printSummary(const char* DBMLoc, const DisambiguationContext& DC) {
-    if (this->fn1MoreSpecific) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\n%s: Fn %d is more specific than Fn %d\n", DBMLoc, DC.i, DC.j);
-    } else {
-      TRACE_DISAMBIGUATE_BY_MATCH("\n%s: Fn %d is NOT more specific than Fn %d\n", DBMLoc, DC.i, DC.j);
-    }
-
-    if (this->fn2MoreSpecific) {
-      TRACE_DISAMBIGUATE_BY_MATCH("%s: Fn %d is more specific than Fn %d\n", DBMLoc, DC.j, DC.i);
-    } else {
-      TRACE_DISAMBIGUATE_BY_MATCH("%s: Fn %d is NOT more specific than Fn %d\n", DBMLoc, DC.j, DC.i);
-    }
-  }
 };
 
 //#
@@ -2201,14 +2183,23 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
  *                    This is important for resolving return intent
  *                    overloads.
  *
- * \return True if fn1 is a more specific function than f2, false otherwise.
+ * \return -1 if fn1 is a more specific function than f2
+ * \return 0 if fn1 and fn2 are equally specific
+ * \return 1 if fn2 is a more specific function than f1
  */
-bool isBetterMatch(ResolutionCandidate* candidate1,
-                          ResolutionCandidate* candidate2,
-                          const DisambiguationContext& DC,
-                          bool ignoreWhere=false) {
+static
+int compareSpecificity(ResolutionCandidate* candidate1,
+                       ResolutionCandidate* candidate2,
+                       const DisambiguationContext& DC,
+                       bool ignoreWhere=false) {
 
   DisambiguationState DS;
+  bool prefer1 = false;
+  bool prefer2 = false;
+
+  // Returning 0 for the same candidate simplifies the calling code
+  if (candidate1 == candidate2)
+    return 0;
 
   for (int k = 0; k < DC.actuals->n; ++k) {
     Symbol* actual = DC.actuals->v[k];
@@ -2220,43 +2211,59 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
     testArgMapping(candidate1->fn, formal1, candidate2->fn, formal2, actual, DC, DS);
   }
 
-  if (!DS.fn1Promotes && DS.fn2Promotes) {
-    TRACE_DISAMBIGUATE_BY_MATCH("\nP: Fn %d does not require argument promotion; Fn %d does\n", DC.i, DC.j);
-    DS.printSummary("P", DC);
-    return true;
-  }
-
-  if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
+  if (DS.fn1Promotes != DS.fn2Promotes) {
+    TRACE_DISAMBIGUATE_BY_MATCH("\nP: Fn %d does not require argument promotion; Fn %d does\n", DS.fn1Promotes?DC.j:DC.i, DS.fn1Promotes?DC.i:DC.j);
+    // Prefer the version that did not promote
+    prefer1 = !DS.fn1Promotes;
+    prefer2 = !DS.fn2Promotes;
+  } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
+    prefer1 = DS.fn1MoreSpecific;
+    prefer2 = DS.fn2MoreSpecific;
+  } else {
     // If the decision hasn't been made based on the argument mappings...
 
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nQ: Fn %d is more specific\n", DC.i);
-      DS.fn1MoreSpecific = true;
+      prefer1 = true;
 
     } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nR: Fn %d is more specific\n", DC.j);
-      DS.fn2MoreSpecific = true;
+      prefer2 = true;
 
     } else if (DS.paramPrefers == 1) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nS: Fn %d is more specific\n", DC.i);
-      DS.fn1MoreSpecific = true;
+      prefer1 = true;
 
     } else if (DS.paramPrefers == 2) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
-      DS.fn2MoreSpecific = true;
+      prefer2 = true;
 
     } else if (!ignoreWhere && candidate1->fn->where && !candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
-      DS.fn1MoreSpecific = true;
+      prefer1 = true;
 
     } else if (!ignoreWhere && !candidate1->fn->where && candidate2->fn->where) {
       TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
-      DS.fn2MoreSpecific = true;
+      prefer2 = true;
     }
   }
 
-  DS.printSummary("W", DC);
-  return DS.fn1MoreSpecific && !DS.fn2MoreSpecific;
+  INT_ASSERT(!(prefer1 && prefer2));
+
+  if (prefer1) {
+    TRACE_DISAMBIGUATE_BY_MATCH("\nW: Fn %d is more specific than Fn %d\n",
+                                DC.i, DC.j);
+    return -1;
+  } else if (prefer2) {
+    TRACE_DISAMBIGUATE_BY_MATCH("\nW: Fn %d is less specific than Fn %d\n",
+                                DC.i, DC.j);
+    return 1;
+  } else {
+    // Neither is more specific
+    TRACE_DISAMBIGUATE_BY_MATCH("\nW: Fn %d and Fn %d are equally specific\n",
+                                DC.i, DC.j);
+    return 0;
+  }
 }
 
 /** Find the best candidate from a list of candidates.
@@ -2267,22 +2274,25 @@ bool isBetterMatch(ResolutionCandidate* candidate1,
  *
  * \param candidates A list of the candidate functions, from which the best
  *                   match is selected.
- * \param ambiguous  On return, if there was ambiguity, this stores the
- *                   any candidate participating in the ambiguity - that
- *                   is, any candidate not known to be worse than another.
+ * \param mostSpecificSet  On return, stores the set of candidates that
+ *                         are not known to be worse than any other,
+ *                         in the event that this set has 1 member.
  * \param DC         The disambiguation context.
  * \param ignoreWhere Set to `true` to ignore `where` clauses when
  *                    deciding if one match is better than another.
  *                    This is important for resolving return intent
  *                    overloads.
  *
- * \return The result of the disambiguation process.
+ * \return NULL or the single most specific candidate
  */
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    Vec<ResolutionCandidate*>& ambiguous,
+                    Vec<ResolutionCandidate*>& mostSpecificSet,
                     DisambiguationContext DC,
                     bool ignoreWhere=false) {
+
+  // MPF note: A more straightforwardly O(n) version of this
+  // function did not appear to be faster. See history of this comment.
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2295,7 +2305,9 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
     TRACE_DISAMBIGUATE_BY_MATCH("##########################\n\n");
 
     ResolutionCandidate* candidate1 = candidates.v[i];
-    bool best = true; // is fn1 the best candidate?
+    bool singleMostSpecific = true; // is fn1 the only most specific candidate?
+                                    // if so, as an optimization,
+                                    // do not compute mostSpecific vector
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -2314,18 +2326,26 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
-      if (isBetterMatch(candidate1, candidate2, DC.forPair(i, j), ignoreWhere)) {
+      int cmp = compareSpecificity(candidate1, candidate2,
+                                   DC.forPair(i, j), ignoreWhere);
+
+      if (cmp < 0) {
         TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
         notBest[j] = true;
 
+      } else if (cmp > 0) {
+        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
+        notBest[i] = true;
+        singleMostSpecific = false;
+        break;
       } else {
-        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is NOT a better match than Fn %d\n\n\n", i, j);
-        best = false;
+        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
+        singleMostSpecific = false;
         break;
       }
     }
 
-    if (best) {
+    if (singleMostSpecific) {
       TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is the best match.\n\n\n", i);
       return candidate1;
 
@@ -2338,7 +2358,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
   for (int i = 0; i < candidates.n; ++i) {
     if (!notBest[i])
-      ambiguous.add(candidates.v[i]);
+      mostSpecificSet.add(candidates.v[i]);
   }
 
   return NULL;
@@ -4123,8 +4143,9 @@ static void handleSetMemberTypeMismatch(Type*     t,
 
     } else {
       USR_FATAL(userCall(call),
-                "cannot assign expression of type %s to field of type %s",
+                "cannot assign expression of type %s to field '%s' of type %s",
                 toString(t),
+                fs->name,
                 toString(fs->type));
     }
   }
@@ -4232,8 +4253,9 @@ static void resolveInitField(CallExpr* call) {
 
     } else {
       USR_FATAL(userCall(call),
-                "cannot assign expression of type %s to field of type %s",
+                "cannot assign expression of type %s to field '%s' of type %s",
                 toString(t),
+                fs->name,
                 toString(fs->type));
     }
   }
@@ -6710,6 +6732,12 @@ static void resolveOther() {
     // Resolve the function that will print module init order
     resolveFns(gPrintModuleInitFn);
   }
+
+  std::vector<FnSymbol*> fns = getWellKnownFunctions();
+  for_vector(FnSymbol, fn, fns) {
+    if (!fn->hasFlag(FLAG_GENERIC))
+      resolveFns(fn);
+  }
 }
 
 
@@ -7188,9 +7216,19 @@ static void removeCopyFns(Type* t) {
 }
 
 static void removeUnusedFunctions() {
+  std::set<FnSymbol*> concreteWellKnownFunctionsSet;
+
+  std::vector<FnSymbol*> fns = getWellKnownFunctions();
+  for_vector(FnSymbol, fn, fns) {
+    if (!fn->hasFlag(FLAG_GENERIC))
+      concreteWellKnownFunctionsSet.insert(fn);
+  }
+
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
+    // Do not remove concrete well-known functions
+    if (concreteWellKnownFunctionsSet.count(fn) > 0) continue;
+
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
 

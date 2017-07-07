@@ -393,11 +393,15 @@ static InitNormalize preNormalize(BlockStmt*    block,
 
       // Stmt is assignment to a super field
       } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
-        USR_FATAL(stmt,
-                  "can't set value of field \"%s\" from parent type "
-                  "during phase 1 of initialization",
-                  field->sym->name);
-
+        // Only valid during Phase 2
+        if (state.isPhase2() == false) {
+          USR_FATAL(stmt,
+                    "can't set value of field \"%s\" from parent type "
+                    "during phase 1 of initialization",
+                    field->sym->name);
+        } else {
+          stmt = stmt->next;
+        }
       // No action required
       } else {
         if (state.fieldUsedBeforeInitialized(stmt) == true) {

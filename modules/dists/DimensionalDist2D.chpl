@@ -338,6 +338,11 @@ class LocDimensionalDom {
 
   // subordinate 1-d local domain descriptors
   var doml1, doml2;
+
+  proc deinit() {
+    if isClass(doml2) then delete doml2;
+    if isClass(doml1) then delete doml1;
+  }
 }
 
 class DimensionalArr : BaseArr {
@@ -935,6 +940,9 @@ proc DimensionalDom.dsiDestroyDom() {
   coforall desc in localDdescs do
     on desc do
       delete desc;
+
+  if isClass(dom2) then delete dom2;
+  if isClass(dom1) then delete dom1;
 }
 
 

@@ -1,7 +1,7 @@
 class Foo {
   var x: int;
 
-  proc Foo(y: int) {
+  proc init(y: int) {
     x = 2*y;
   }
 }
