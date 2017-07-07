@@ -1,3 +1,0 @@
-most-specific-bug.chpl:10: error: ambiguous call 'g([domain(1,int(64),false)] int(64))'
-most-specific-bug.chpl:1: note: candidates are: g(x: _array)
-most-specific-bug.chpl:4: note:                 g(x: _array)
