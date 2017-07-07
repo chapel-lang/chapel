@@ -35,7 +35,7 @@ class MeetingPlace {
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
-  proc MeetingPlace() {
+  proc init() {
     spotsLeft$.writeXF(numMeetings*2);
   }
 
