@@ -4365,6 +4365,16 @@ replmt
 FILEID: 0196aa72-62e1-11e7-88ba-10ddb1d4c3d5
 wkfn
 
+FILEID: 45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5
+cmac
+digestbyname
+libgcrypt
+libsodium
+libtomcrypt
+saru
+tinypic
+uhvb
+
 NATURAL:
 abcd
 abcdefg
@@ -4507,6 +4517,7 @@ blockreport
 blocksize
 blockstmt
 blog
+blowfish
 bocchino
 boink
 boisvert
@@ -5462,6 +5473,7 @@ lgfortran
 lgmp
 lhdfs
 libclang
+libcrypto
 libcurl
 libedit
 libexec
@@ -5676,6 +5688,7 @@ munged
 munges
 munging
 munmap
+munshi
 muxed
 myaccountid
 myanmar
@@ -5847,6 +5860,7 @@ openreader
 opensocketdata
 opensocketfunction
 opensource
+openssl
 opentmp
 openwriter
 optimizable
@@ -5868,6 +5882,7 @@ oversubscription
 padmanabhan
 pageview
 panagiotopoulou
+panzone
 paolo
 parallelization
 parallelize
@@ -6130,6 +6145,7 @@ sandybridge
 santana
 sanz
 sapiens
+sarthak
 sassert
 saturday
 saurashtra
@@ -6475,6 +6491,7 @@ tuesday
 tupled
 tuples
 tupling
+twofish
 typdef
 typecheck
 typedefed
