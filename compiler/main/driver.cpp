@@ -90,18 +90,18 @@ bool widePointersStruct;
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
+static bool fBaseline = false;
+
 bool fLibraryCompile = false;
 bool no_codegen = false;
-int debugParserLevel = 0;
+int  debugParserLevel = 0;
 bool fVerify = false;
 bool ignore_errors = false;
 bool ignore_errors_for_pass = false;
 bool ignore_warnings = false;
-int fcg = 0;
-static bool fBaseline = false;
+int  fcg = 0;
 bool fCacheRemote = false;
 bool fFastFlag = false;
-int fConditionalDynamicDispatchLimit = 0;
 bool fUseNoinit = true;
 bool fNoUserConstructors = false;
 bool fNoCopyPropagation = false;
@@ -678,7 +678,6 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoInferLocalFields = true;         // --no-infer-local-fields
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;               // --no-denormalize
-  fConditionalDynamicDispatchLimit = 0;
 }
 
 static void setCacheEnable(const ArgumentDescription* desc, const char* unused) {
@@ -776,7 +775,6 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
  {"cache-remote", ' ', NULL, "Enable cache for remote data (must be enabled specifically)", "F", &fCacheRemote, "CHPL_CACHE_REMOTE", setCacheEnable},
- {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit on # of inline conditionals used for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
