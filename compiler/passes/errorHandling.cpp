@@ -445,13 +445,6 @@ private:
   bool fnCanThrow; // only used for error checking
 
   bool   catchesNotExhaustive(TryStmt* tryStmt);
-
-  AList     setOutGotoEpilogue(VarSymbol* error);
-  AList     errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
-                               BlockStmt* elseBlock = NULL);
-  CallExpr* haltExpr          ();
-
-  CanThrowVisitor();
 };
 
 CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors) {
