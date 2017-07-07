@@ -394,6 +394,16 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaNode;
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+
+  if(!info->loopStack.empty()) {
+    const auto &loopData = info->loopStack.top();
+    // Currently, the parallel_loop_access metadata refers to the
+    // innermost loop the instruction is in, while for some cases
+    // this could refer to the group of loops it is in.
+    if(loopData.parallel)
+      ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
+  }
+
   return ret;
 }
 
@@ -438,6 +448,13 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
     if( isConst ) tbaa = valType->symbol->llvmConstTbaaNode;
     else tbaa = valType->symbol->llvmTbaaNode;
   }
+
+  if(!info->loopStack.empty()) {
+    const auto &loopData = info->loopStack.top();
+    if(loopData.parallel)
+      ret->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
+  }
+
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
   return ret;
 }
