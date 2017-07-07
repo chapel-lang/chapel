@@ -552,7 +552,7 @@ iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterK
 
 
 /////////////////////////////////////////////////////////////////////////////
-// slicing, reindexing, etc.
+// reallocation
 
 // This supports reassignment of the array's domain.
 /*
