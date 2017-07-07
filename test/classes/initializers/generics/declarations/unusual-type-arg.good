@@ -1,0 +1,4 @@
+true
+Foo(int(64))
+Foo(string)
+Foo(int(64))

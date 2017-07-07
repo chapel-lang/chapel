@@ -1,0 +1,2 @@
+illegalValueReturn.chpl:2: In function 'helper':
+illegalValueReturn.chpl:8: error: illegal return of value where type is expected

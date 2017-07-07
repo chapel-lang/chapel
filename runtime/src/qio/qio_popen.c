@@ -23,6 +23,7 @@
 #include "chplrt.h"
 #endif
 
+#include "chpl-mem-sys.h" // need to call system allocator
 #include "qio.h"
 #include "sys.h"
 
@@ -35,9 +36,6 @@
 #include <spawn.h>
 
 #include <pthread.h>
-
-// We need to be able to call malloc, free, etc.
-#include "chpl-mem-no-warning-macros.h"
 
 // current environment variables
 extern char** environ;
@@ -57,7 +55,7 @@ extern char** environ;
 const char* qio_spawn_strdup(const char* str)
 {
   size_t len = strlen(str);
-  char* ret = malloc(len + 1);
+  char* ret = sys_malloc(len + 1);
   // note: also copies '\0' at end of string.
   memcpy(ret, str, len + 1);
   return ret;
@@ -65,18 +63,18 @@ const char* qio_spawn_strdup(const char* str)
 
 const char** qio_spawn_allocate_ptrvec(size_t count)
 {
-  char** ret = calloc(count, sizeof(char*));
+  char** ret = sys_calloc(count, sizeof(char*));
   return (const char**) ret;
 }
 
 void qio_spawn_free_ptrvec(const char** args)
 {
-  free((void*) args);
+  sys_free((void*) args);
 }
 
 void qio_spawn_free_str(const char* str)
 {
-  free((void*) str);
+  sys_free((void*) str);
 }
 
 

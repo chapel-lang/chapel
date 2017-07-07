@@ -135,7 +135,6 @@ and distributes using block-cyclic distribution in the second dimension.
     for loc in MyLocales do on loc {
 
       // The ReplicatedDim specifier always accesses the local replicand.
-      // (This differs from how the ReplicatedDist distribution works.)
       //
       // Therefore, 'forall a in A' when executed on MyLocales[loc1,loc2]
       // visits only the replicands on MyLocales[loc1,0..N_2-1].
@@ -339,6 +338,11 @@ class LocDimensionalDom {
 
   // subordinate 1-d local domain descriptors
   var doml1, doml2;
+
+  proc deinit() {
+    if isClass(doml2) then delete doml2;
+    if isClass(doml1) then delete doml1;
+  }
 }
 
 class DimensionalArr : BaseArr {
@@ -415,7 +419,7 @@ proc newDimensionalDist2D(
 ) {
   if targetLocales.rank != 1 then compilerError("newDimensionalDist2D() is provided only for 1D targetLocales arrays");
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
-  var reshapedLocales => reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
+  ref reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
   return new DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
    dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
@@ -908,7 +912,7 @@ proc DimensionalArr.isAlias
   return this.dom != this.allocDom;
 
 
-//== creation
+//== creation and destruction
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
@@ -929,6 +933,16 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
   assert(!result.isAlias);
   return result;
+}
+
+
+proc DimensionalDom.dsiDestroyDom() {
+  coforall desc in localDdescs do
+    on desc do
+      delete desc;
+
+  if isClass(dom2) then delete dom2;
+  if isClass(dom1) then delete dom1;
 }
 
 
@@ -1030,6 +1044,12 @@ proc DimensionalArr.dsiReallocate(d: domain) {
 
 proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
+}
+
+proc DimensionalArr.dsiDestroyArr(isslice: bool) {
+  coforall desc in localAdescs do
+    on desc do
+      delete desc;
 }
 
 

@@ -27,7 +27,9 @@
 #include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "log.h"
@@ -37,6 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "virtualDispatch.h"
 #include "WhileStmt.h"
 
 #include <inttypes.h>
@@ -128,6 +131,12 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   bool is_C_loop = false;
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
+    if (ForallStmt* pfs = toForallStmt(parentAst))
+      if (ast == pfs->loopBody()) {
+        printf("\n%6c", ' ');
+        for (int i = 0; i < indent; i++) printf(" ");
+        printf("do\n");
+      }
     do_list_line = !parentAst || list_line(expr, parentAst);
     if (do_list_line) {
       printf("%-7d ", expr->id);
@@ -150,6 +159,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       printf("%s{\n", block_explain);
     } else if (toCondStmt(ast)) {
       printf("if ");
+    } else if (ForallStmt* fs = toForallStmt(ast)) {
+      printf("forall in%s\n", fs->zippered() ? " zip" : "");
     } else if (CallExpr* e = toCallExpr(expr)) {
       if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
           is_C_loop = true;
@@ -245,6 +256,15 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
+    } else if (ForallStmt* fs = toForallStmt(parentAst)) {
+      if (expr == fs->iteratedExpressions().tail) {
+        printf("\n%6c", ' ');
+        for (int i = 0; i < indent; i++) printf(" ");
+        if (fs->withClause()->numVars())
+          printf("with (...)\n");
+        else
+          printf("with()");
+      }
     } else if (!toCondStmt(expr) && do_list_line) {
       DefExpr* def = toDefExpr(expr);
       if (!(def && early_newline))

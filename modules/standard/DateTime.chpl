@@ -87,6 +87,13 @@ module DateTime {
     return (tv.tv_sec, tv.tv_usec);
   }
 
+  private proc tm_zoneType type {
+    if CHPL_TARGET_PLATFORM == "darwin" then
+      return c_ptr(c_char); // char *
+    else
+      return c_string; // const char *
+  }
+
   pragma "no doc"
   extern "struct tm" record tm {
     var tm_sec:    c_int;         // seconds [0,61]
@@ -99,7 +106,7 @@ module DateTime {
     var tm_yday:   c_int;         // day of year [0,365]
     var tm_isdst:  c_int;         // daylight savings flag
     var tm_gmtoff: c_long;        // Seconds east of UTC
-    var tm_zone:   c_ptr(c_char); // Timezone abbreviation
+    var tm_zone:   tm_zoneType; // Timezone abbreviation
   }
 
   private proc getLocalTime(t: 2*int) {
@@ -629,11 +636,11 @@ module DateTime {
 
     if tzinfo != nil {
       timeStruct.tm_gmtoff = abs(utcoffset()).seconds: c_long;
-      timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), tzname().c_str());
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
       timeStruct.tm_gmtoff = 0;
-      timeStruct.tm_zone = __primitive("cast", c_ptr(c_char), "".c_str());
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
       timeStruct.tm_isdst = -1;
     }
 
@@ -1078,7 +1085,10 @@ module DateTime {
                (if minutes < 10 then "0" + minutes: string else minutes: string);
     }
 
-    return strftime("%Y-%m-%d" + sep + "%H:%M:%S" + micro + offset);
+    // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
+    // characters on its own, so do it manually.
+    var year = zeroPad(4, strftime("%Y"):int);
+    return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
   /* Create a `datetime` as described by the `date_string` and `format`
@@ -1108,7 +1118,7 @@ module DateTime {
 
     if tzinfo != nil {
       timeStruct.tm_isdst = tzinfo.dst(this).seconds: int(32);
-      timeStruct.tm_gmtoff = tzinfo.gmtoff(): c_long;
+      timeStruct.tm_gmtoff = tzinfo.utcoffset(this).seconds: c_long;
       timeStruct.tm_zone = nil;
     } else {
       timeStruct.tm_isdst = -1: int(32);

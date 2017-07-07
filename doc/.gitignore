@@ -1,11 +1,10 @@
-build
-/html
+html
+doctrees
 
-/builtins
-/modules
-/primers
-/examples
+/rst/builtins
+/rst/modules
+/rst/primers
+/rst/examples
 
-tools/chpldoc/man.rst
-tools/chplvis/examples
-usingchapel/man.rst
+man.rst
+/rst/tools/chplvis/examples

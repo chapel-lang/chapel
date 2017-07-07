@@ -31,11 +31,6 @@
  *
  */
 
-private module BaseStringType {
-  // TODO: figure out why I can't move this definition into `module String`
-  type bufferType = c_ptr(uint(8));
-}
-
 // Note - the I/O module has
 // :proc:`string.format` and :proc:`stringify`.
 // It might be worth moving them here for documentation - KB Feb 2016
@@ -61,18 +56,19 @@ private module BaseStringType {
     allowing users to specify the encoding for individual strings.
  */
 module String {
-  use BaseStringType;
+  use ChapelStandard;
   use CString;
   use SysCTypes;
   use StringCasts;
+
+  // Growth factor to use when extending the buffer for appends
+  private config param chpl_stringGrowthFactor = 1.5;
 
   //
   // Externs and constants used to implement strings
   //
 
-  private param chpl_string_min_alloc_size: int = 16;
-  // Growth factor to use when extending the buffer for appends
-  private config param chpl_stringGrowthFactor = 1.5;
+  private        param chpl_string_min_alloc_size: int = 16;
 
   // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
@@ -84,6 +80,8 @@ module String {
   // TODO: define my own mem descriptors?
   private extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
   private extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
+
+  type        bufferType         = c_ptr(uint(8));
 
   private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                            src_addr: bufferType, len: integral) {
@@ -831,9 +829,16 @@ module String {
     }
 
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      if S.size == 1 {
+      if S.size == 0 {
+        return '';
+      } else if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
-        var ret = S[S.domain.low];
+        var ret: string;
+        if (isArray(S)) {
+          ret = S[S.domain.first];
+        } else {
+          ret = S[1];
+        }
         return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
@@ -928,7 +933,7 @@ module String {
     // TODO: I could make this and other routines that use find faster by
     // making a version of search helper that only takes in local strings and
     // localizing in the calling function
-    proc partition(sep: string) : 3*string {
+    proc const partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
         return (this[..idx-1], sep, this[idx+sep.length..]);
@@ -1734,6 +1739,17 @@ module String {
       // a[1] grabs the first character as a string (making it local)
       return a[1].buff[0];
     }
+  }
+
+  /*
+     :returns: A string with the single character with the ASCII value `i`.
+  */
+  inline proc asciiToString(i: uint(8)) {
+    var buffer = chpl_here_alloc(2, CHPL_RT_MD_STR_COPY_DATA): bufferType;
+    buffer[0] = i;
+    buffer[1] = 0;
+    var s = new string(buffer, 1, 2, owned=true, needToCopy=false);
+    return s;
   }
 
 

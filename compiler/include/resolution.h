@@ -27,8 +27,17 @@
 
 class CallInfo;
 
-extern SymbolMap paramMap;
-extern Vec<CallExpr*> callStack;
+extern SymbolMap       paramMap;
+
+extern Vec<CallExpr*>  callStack;
+extern Vec<CondStmt*>  tryStack;
+
+extern Vec<CallExpr*>  inits;
+
+extern Vec<BlockStmt*> standardModuleSet;
+
+extern char            arrayUnrefName[];
+
 bool hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);
 void getAutoCopyTypeKeys(Vec<Type*> &keys); // type to chpl__autoCopy function
@@ -37,7 +46,19 @@ extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
-FnSymbol* expandVarArgs(FnSymbol* origFn, int numActuals);
+bool       propagateNotPOD(Type* t);
+
+Expr*      resolvePrimInit(CallExpr* call);
+
+bool       isTupleContainingOnlyReferences(Type* t);
+
+void       ensureEnumTypeResolved(EnumType* etype);
+
+void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
+
+bool       canInstantiate(Type* actualType, Type* formalType);
+
+bool       isInstantiation(Type* sub, Type* super);
 
 // explain call stuff
 extern int explainCallLine;
@@ -75,7 +96,7 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
 void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2);
 bool isReduceOp(Type* type);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
@@ -90,10 +111,6 @@ FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
                               CallExpr* call, SymbolMap& subs, SymbolMap& map);
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
-// visible functions
-void fillVisibleFuncVec(CallExpr* call, CallInfo &info,
-                        Vec<FnSymbol*> &visibleFns);
-
 // disambiguation
 /** A wrapper for candidates for function call resolution.
  *
@@ -107,12 +124,12 @@ public:
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
    */
-  Vec<Symbol*> formalIdxToActual; // note: was alignedActuals
+  std::vector<Symbol*> formalIdxToActual; // note: was alignedActuals
 
   /** The formal arguments for the candidate, aligned so that they have the same
    *  index as their corresponding actual argument in the call.
    */
-  Vec<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
+  std::vector<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
 
   /// A symbol map for substitutions that were made during the copying process.
   SymbolMap substitutions;
@@ -136,20 +153,10 @@ public:
   void computeSubstitutions(bool inInitRes = false);
 };
 
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
-bool checkGenericFormals(ResolutionCandidate* currCandidate);
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call);
 void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
                            bool buildFastFollowerChecks);
-
-typedef enum {
-  FIND_EITHER = 0,
-  FIND_REF,
-  FIND_CONST_REF,
-  FIND_NOT_REF_OR_CONST_REF, // !(ref || const_ref)
-} disambiguate_kind_t;
-
 
 /** Contextual info used by the disambiguation process.
  *
@@ -194,24 +201,29 @@ public:
 
 
 ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                                         Vec<ResolutionCandidate*>& ambiguous,
                                          DisambiguationContext DC,
-                                         disambiguate_kind_t kind);
-bool isBetterMatch(ResolutionCandidate* candidate1,
-                   ResolutionCandidate* candidate2,
-                   const DisambiguationContext& DC,
-                   bool onlyConsiderPromotion);
+                                         bool ignoreWhere);
+
+void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
+                                        Vec<ResolutionCandidate*>& ambiguous,
+                                        DisambiguationContext DC,
+                                        ResolutionCandidate*& bestRef,
+                                        ResolutionCandidate*& bestConstRef,
+                                        ResolutionCandidate*& bestValue);
 
 // Regular resolve functions
-void resolveFormals(FnSymbol* fn);
-void resolveBlockStmt(BlockStmt* blockStmt);
-void resolveCall(CallExpr* call);
-void resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
-void makeRefType(Type* type);
+void      resolveFormals(FnSymbol* fn);
+void      resolveBlockStmt(BlockStmt* blockStmt);
+void      resolveCall(CallExpr* call);
+void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+void      resolveFns(FnSymbol* fn);
+void      resolveDefaultGenericType(CallExpr* call);
+void      resolveReturnType(FnSymbol* fn);
+Type*     resolveTypeAlias(SymExpr* se);
+
 FnSymbol* tryResolveCall(CallExpr* call);
-void resolveFns(FnSymbol* fn);
-void resolveDefaultGenericType(CallExpr* call);
-void resolveTypedefedArgTypes(FnSymbol* fn);
-void resolveReturnType(FnSymbol* fn);
+void      makeRefType(Type* type);
 
 // FnSymbol changes
 extern bool tryFailure;
@@ -219,8 +231,8 @@ void insertFormalTemps(FnSymbol* fn);
 void insertAndResolveCasts(FnSymbol* fn);
 void ensureInMethodList(FnSymbol* fn);
 
-FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
-void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
+FnSymbol* defaultWrap(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
+void reorderActuals(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
 void coerceActuals(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks);
 
@@ -237,14 +249,18 @@ void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info);
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 void lvalueCheck(CallExpr* call);
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
+void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 // returns true if the function was handled
 bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
-AggregateType* computeNonRefTuple(Type* t);
-AggregateType* computeTupleWithIntent(IntentTag intent, Type* t);
+AggregateType* computeNonRefTuple(AggregateType* t);
+AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 
 bool evaluateWhereClause(FnSymbol* fn);
+
+
+bool isAutoDestroyedVariable(Symbol* sym);
 
 #endif

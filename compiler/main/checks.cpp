@@ -21,11 +21,13 @@
 
 #include "checks.h"
 
+#include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
+#include "PartialCopyData.h"
 #include "passes.h"
 #include "primitive.h"
 #include "resolution.h"
-#include "docsDriver.h" // for fDocs
 #include "TryStmt.h"
 
 //
@@ -436,7 +438,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
-    checkEmptyPartialCopyFnMap();
+    checkEmptyPartialCopyDataFnMap();
   }
 }
 
@@ -571,10 +573,10 @@ static void checkAggregateTypes()
 {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes)
   {
-    if (! at->defaultInitializer && at->initializerStyle != DEFINES_INITIALIZER)
+    if (! at->defaultInitializer && at->initializerStyle == DEFINES_CONSTRUCTOR)
       INT_FATAL(at, "aggregate type did not define an initializer and has no default constructor");
     if (! at->defaultTypeConstructor &&
-        at->initializerStyle != DEFINES_INITIALIZER)
+        at->initializerStyle != DEFINES_CONSTRUCTOR)
       INT_FATAL(at, "aggregate type did not define an initializer and "
                 "has no default type constructor");
   }
@@ -686,8 +688,10 @@ checkAutoCopyMap()
   {
     if (hasAutoCopyForType(key)) {
       FnSymbol* fn = getAutoCopyForType(key);
-      Type* baseType = fn->getFormal(1)->getValType();
-      INT_ASSERT(baseType == key);
+      if (fn->numFormals() > 0) {
+        Type* baseType = fn->getFormal(1)->getValType();
+        INT_ASSERT(baseType == key);
+      }
     }
   }
 }
@@ -707,7 +711,7 @@ checkFormalActualBaseTypesMatch()
     if (! call->parentSymbol->hasFlag(FLAG_RESOLVED))
       continue;
 
-    if (FnSymbol* fn = call->isResolved())
+    if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
@@ -767,7 +771,7 @@ checkFormalActualTypesMatch()
 {
   for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
-    if (FnSymbol* fn = call->isResolved())
+    if (FnSymbol* fn = call->resolvedFunction())
     {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;

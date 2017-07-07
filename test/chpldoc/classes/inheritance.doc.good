@@ -1,26 +1,45 @@
-inheritance.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: inheritance.doc
+
+inheritance.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
    use inheritance.doc;
 
-   Class: Grandparent
-      The eldest 
+.. class:: Grandparent
 
-      proc getOffMyLawn()
-         You durn kids! 
+   The eldest 
 
-      proc backInMyDay()
-   Class: Parent : Grandparent
-      Second generation 
 
-      proc goToYourRoom()
-         Grounded! 
+   .. method:: proc getOffMyLawn()
 
-      proc curfew()
-   Class: Child : Parent
-      Reaping the benefits of third generation status 
+      You durn kids! 
 
-      proc whine()
-         But I was going to go pick up some power converters! 
+   .. method:: proc backInMyDay()
 
-      proc youNeverLetMeDoAnythingFun()
+.. class:: Parent : Grandparent
+
+   Second generation 
+
+
+   .. method:: proc goToYourRoom()
+
+      Grounded! 
+
+   .. method:: proc curfew()
+
+.. class:: Child : Parent
+
+   Reaping the benefits of third generation status 
+
+
+   .. method:: proc whine()
+
+      But I was going to go pick up some power converters! 
+
+   .. method:: proc youNeverLetMeDoAnythingFun()
+

@@ -91,7 +91,7 @@ proc main(args:[] string) {
 
 
 
-proc run(todo:list(string), ref Pairs) {
+proc run(ref todo:list(string), ref Pairs) {
   var t:Timer;
   t.start();
 

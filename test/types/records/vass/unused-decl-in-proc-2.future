@@ -1,8 +1,0 @@
-bug: when a record that is defined in a proc and is unused is eliminated from the AST, its chpl__autoCopy() and chpl__initCopy() remain in the AST
-
-This is a variation on unused-decl-in-proc-1.future that adds modules,
-because I encountered the issue first in the presence of modules.
-
-main() is not essential, it just tells the compiler which module is main.
-N1, N2, N3 are minor variations on the main theme, which I believe
-are not essential either.

@@ -900,7 +900,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
     chpl_bool serial_state = chpl_task_getSerial();
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
-    assert(full_subloc != c_sublocid_none);
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 

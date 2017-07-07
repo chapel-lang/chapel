@@ -20,6 +20,8 @@
 // ChapelLocale.chpl
 //
 module ChapelLocale {
+  use ChapelBase;
+
   pragma "no doc"
   type chpl_sublocID_t = int(32);
 

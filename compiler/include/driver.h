@@ -78,6 +78,9 @@ bool useDefaultEnv(std::string key);
 extern std::map<std::string, const char*> envMap;
 
 extern char CHPL_HOME[FILENAME_MAX+1];
+extern char CHPL_RUNTIME_LIB[FILENAME_MAX+1];
+extern char CHPL_RUNTIME_INCL[FILENAME_MAX+1];
+extern char CHPL_THIRD_PARTY[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
@@ -131,6 +134,7 @@ extern bool fPrintDispatch;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fUserDefaultInitializers;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -154,6 +158,7 @@ extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fUseNoinit;
+extern bool fNoUserConstructors;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
@@ -161,7 +166,6 @@ extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
 extern char defaultDist[256];
-extern char mainModuleName[256];
 extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;
@@ -205,5 +209,8 @@ extern bool fIncrementalCompilation;
 // Set to true if we want to use the experimental
 // Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;
+
+// LLVM flags (-mllvm)
+extern std::string llvmFlags;
 
 #endif

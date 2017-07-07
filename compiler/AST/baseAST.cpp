@@ -17,18 +17,18 @@
  * limitations under the License.
  */
 
-#include <ostream>
-#include <sstream>
-#include <string>
-
 #include "baseAST.h"
 
 #include "astutil.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
+#include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "log.h"
+#include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "passes.h"
@@ -39,6 +39,10 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
+
+#include <ostream>
+#include <sstream>
+#include <string>
 
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
@@ -77,8 +81,8 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt + nTryStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kTryStmt + kForwardingStmt + kCatchStmt;
+  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
+  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -171,11 +175,13 @@ void trace_remove(BaseAST* ast, char flag) {
 
 static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
+
   forv_Vec(ModuleSymbol, mod, modvec) {
     if (isAlive(mod) || isRootModuleWithType(mod, ModuleSymbol)) {
       modvec.v[aliveMods++] = mod;
     }
   }
+
   modvec.n = aliveMods;
 }
 
@@ -184,29 +190,41 @@ void cleanAst() {
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    for(int i = 0; i < ts->type->methods.n; i++) {
+    for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
-      if (method && !isAliveQuick(method))
+
+      if (method && !isAliveQuick(method)) {
         ts->type->methods.v[i] = NULL;
+      }
+
       if (AggregateType* ct = toAggregateType(ts->type)) {
-        if (ct->defaultInitializer && !isAliveQuick(ct->defaultInitializer))
+        if (ct->defaultInitializer               != NULL &&
+            isAliveQuick(ct->defaultInitializer) == false) {
           ct->defaultInitializer = NULL;
-        if (ct->destructor && !isAliveQuick(ct->destructor))
-          ct->destructor = NULL;
+        }
+
+        if (ct->hasDestructor()                  == true &&
+            isAliveQuick(ct->getDestructor())    == false) {
+          ct->setDestructor(NULL);
+        }
       }
     }
+
     for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
       Type* type = ts->type->dispatchChildren.v[i];
-      if (type && !isAlive(type))
+
+      if (type && !isAlive(type)) {
         ts->type->dispatchChildren.v[i] = NULL;
+      }
     }
   }
 
   removedIterResumeLabels.clear();
+
   copiedIterResumeGotos.clear();
 
-  // clean the other module vectors, without deleting the ast instances (they
-  // will be deleted with the clean_gvec call for ModuleSymbols.)
+  // clean the other module vectors, without deleting the ast instances
+  // (they will be deleted with the clean_gvec call for ModuleSymbols.)
   clean_modvec(allModules);
   clean_modvec(userModules);
 
@@ -450,12 +468,20 @@ const char* BaseAST::astTagAsString() const {
       retval = "CondStmt";
       break;
 
+    case E_DeferStmt:
+      retval = "DeferStmt";
+      break;
+
     case E_GotoStmt:
       retval = "GotoStmt";
       break;
 
     case E_ForwardingStmt:
       retval = "ForwardingStmt";
+      break;
+
+    case E_ForallStmt:
+      retval = "ForallStmt";
       break;
 
     case E_ExternBlockStmt:
@@ -544,9 +570,6 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
 
 
 astlocT currentAstLoc(0,NULL);
-
-Vec<ModuleSymbol*> userModules; // Contains user + main modules
-Vec<ModuleSymbol*> allModules;  // Contains all modules
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {

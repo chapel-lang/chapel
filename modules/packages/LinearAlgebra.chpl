@@ -67,7 +67,7 @@ operator in future releases.
 
 Row and column vectors are both represented as 1D arrays and are
 indistinguishable in Chapel. In the :proc:`dot` function, matrix-vector
-multiplication assumes a column vector, vector-matrix multiplcation assumes a
+multiplication assumes a column vector, vector-matrix multiplication assumes a
 row vector, vector-vector multiplication is always treated as an inner-product,
 as the function name implies.
 An outer product can be computed with the :proc:`outer` function.
@@ -89,7 +89,7 @@ programs such as this:
   // This code would then result in an error due to rank mismatch:
   C += A;
 
-To get avoid this, you can avoid relying on inferred-types for new arrays:
+To avoid this, you can avoid relying on inferred-types for new arrays:
 
 .. code-block:: chapel
 
@@ -113,23 +113,6 @@ and return a new array:
   C += A;
 
 Promotion flattening is not expected to be an issue in future releases.
-
-
-.. LinearAlgebra Module Future TODOs:
-  - Support non-matching domains and eltTypes in matOperations
-    - check that eltTypes are coercible
-    - check domain shapes are equal
-  - Add LinearAlgebra primer
-  - Add feature table, comparing to numpy and matlab
-  - performance testing
-  - Domain maps
-    - Distributed array support
-    - Sparse support
-    - GPU support
-  - Support fully native implementations
-    - Only use the BLAS/LAPACK version when the libraries are installed
-  - Provide MKL BLAS/LAPACK with Chapel installation
-    - install with something like: CHPL_EXTRAS=MKL
 
 */
 
@@ -161,10 +144,9 @@ proc Vector(Dom: domain(1), type eltType=real) {
 
 /* Return a vector (1D array) with domain and values of ``A`` */
 proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
-  var V: [Dom] eltType = A;
+  var V: [Dom] eltType = A: eltType;
   return V;
 }
-
 
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
@@ -216,8 +198,8 @@ proc Matrix(Dom: domain(2), type eltType=real) where Dom.rank == 2 {
 
 
 /* Return a matrix (2D array) with domain and values of ``A`` */
-proc Matrix(A: [?Dom] ?eltType) where Dom.rank == 2 {
-  var M: [Dom] eltType = A;
+proc Matrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 {
+  var M: [Dom] eltType = A: eltType;
   return M;
 }
 
@@ -269,7 +251,7 @@ proc Matrix(const Arrays...?n, type eltType) {
 }
 
 
-/* Return a square identity matrix over domain ``{0..#m, 0..m}`` */
+/* Return a square identity matrix over domain ``{0..#m, 0..#m}`` */
 proc eye(m, type eltType=real) {
   var A: [{0..#m, 0..#m}] eltType;
   for i in 0..#m do A[i, i] = 1: eltType;
@@ -303,6 +285,7 @@ inline proc transpose(D: domain(1)) {
   return D;
 }
 
+pragma "no doc"
 inline proc transpose(D: domain(2)) {
   return {D.dim(2), D.dim(1)};
 }
@@ -320,7 +303,7 @@ pragma "no doc"
 proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
 
-/* Transpose vector or matrix.
+/* Transpose vector, matrix, or domain.
 
    .. note::
 
@@ -447,7 +430,10 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   var op = if trans then BLAS.Op.T
            else BLAS.Op.N;
 
-  var Y: [Xdom] eltType;
+  var Ydom = if trans then {Adom.dim(2)}
+             else {Adom.dim(1)};
+
+  var Y: [Ydom] eltType;
   gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
   return Y;
 }
@@ -500,23 +486,25 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Rank sizes are not 2 and 1");
 
-  var C: [Xdom] eltType;
+  var Ydom = if trans then {Adom.dim(2)}
+             else {Adom.dim(1)};
+
+  var Y: [Ydom] eltType;
 
   // naive algorithm
   if !trans {
     if Adom.shape(2) != Xdom.shape(1) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Xdom do
-      C[i] = + reduce (A[i,..]*X[..]);
+    forall i in Ydom do
+      Y[i] = + reduce (A[i,..]*X[..]);
   } else {
     if Adom.shape(1) != Xdom.shape(1) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Xdom do
-      C[i] = + reduce (A[.., i]*X[..]);
+    forall i in Ydom do
+      Y[i] = + reduce (A[.., i]*X[..]);
   }
 
-
-  return C;
+  return Y;
 }
 
 
@@ -526,7 +514,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where !isBLASType(eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
-    compilerError("Rank sizes are not 2 and 1");
+    compilerError("Rank sizes are not 2 and 2");
 
   var C: [Adom.dim(1), Bdom.dim(2)] eltType;
 
@@ -599,6 +587,96 @@ private inline proc _raw(D: domain(1), i) {
 // Matrix Structure
 //
 
+
+/*
+   Return a Vector containing the diagonal elements of ``A`` if the argument ``A`` is of rank 2.
+   Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
+ */
+proc diag(A: [?Adom] ?eltType, k=0){
+  //This should be printed at compile time-"This function only supports 0-based non-strided arrays, 
+  //including the vectors and matrices created from this module."
+
+  if(Adom.rank == 2) then{
+    if(k==0) then{
+      return _diag_vec(A);  
+    }
+    else{
+      return _diag_vec(A, k);
+    }
+  }
+  else if(Adom.rank == 1) then {
+    return _diag_mat(A);
+  }
+  else{
+    compilerError("A must have rank 2 or less");
+  }
+
+}
+
+private proc _diag_vec(A:[?Adom] ?eltType){
+
+  //better way to do this if type of Adom.dim(1) and Adom.dim(2) can be determined
+  if(Adom.dim(1).length<Adom.dim(2).length) then{
+    var diagonal = Vector(Adom.dim(1).length, eltType);
+    forall i in Adom.dim(1) do{
+      diagonal[i] = A[i,i];
+    }
+    return diagonal;
+  }
+  else{
+    var diagonal = Vector(Adom.dim(2).length, eltType);
+    forall i in Adom.dim(2) do{
+      diagonal[i] = A[i,i];
+    }
+    return diagonal;
+  }
+}
+
+private proc _diag_vec(A:[?Adom] ?eltType, k){
+  if(k>0){
+    //Upper diagonal
+    if(Adom.dim(2).length<k) then halt("k is out of range");
+    var length:int;
+    if((Adom.dim(2).length-k)<Adom.dim(1).length) then{
+      length = Adom.dim(2).length - k;
+    }
+    else{
+      length = Adom.dim(1).length;
+    }
+    var diagonal = Vector(length, eltType);
+    forall i in Adom.dim(1)(..length-1) do{
+      diagonal[i] = A[i,i+k];
+    }
+    return diagonal;
+  }
+  else{
+    //Lower diagonal
+    if(Adom.dim(1).length<abs(k)) then halt("k is out of range");
+    var length:int;
+    if((Adom.dim(1).length-abs(k))<Adom.dim(2).length) then {
+      length = Adom.dim(1).length - abs(k);
+    }
+    else{
+      length = Adom.dim(2).length;
+    }
+    var diagonal = Vector(length, eltType);
+    forall i in Adom.dim(1)(..length-1) do{
+      diagonal[i] = A[i+abs(k),i];
+    }
+    return diagonal;
+  }
+}
+
+private proc _diag_mat(A:[?Adom] ?eltType){
+  var diagonal = Matrix(Adom.dim(1).length, eltType);
+  forall i in Adom.dim(1) do{
+    diagonal[i, i] = A[i];
+  }
+  return diagonal;
+}
+
+
+
 /*
    Return lower triangular part of matrix, below the diagonal + ``k``,
    where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
@@ -629,6 +707,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   return U;
 }
 
+  
 
 /* Return `true` if matrix is diagonal */
 proc isDiag(A: [?D] ?eltType) {

@@ -1,8 +1,16 @@
-withUnderscore.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: withUnderscore.doc
+
+withUnderscore.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
    use withUnderscore.doc;
 
-   proc example()
-      This should end up in my_docs/withUnderscore.txt 
+.. function:: proc example()
+
+   This should end up in my_docs/_sources/modules/withUnderscore.txt 
 

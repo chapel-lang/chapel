@@ -1,5 +1,12 @@
-privateTypeAlias
+.. default-domain:: chpl
 
-Usage:
+.. module:: privateTypeAlias
+
+privateTypeAlias
+================
+**Usage**
+
+.. code-block:: chapel
+
    use privateTypeAlias;
 

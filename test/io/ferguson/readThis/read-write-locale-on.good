@@ -1,0 +1,5 @@
+in B.writeThis loc=1
+in B.writeThis on loc
+in A.writeThis loc=1
+1
+

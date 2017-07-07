@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+"""Check Chapel runtime for calls to the system allocator
+
+Generally speaking, unless the memory layer hasn't been initialized, or you
+need memory that isn't registered, the runtime should use the chapel allocator,
+not the system one. This ensures that we don't mismatch calls between our
+allocator and the system one, and ensures we don't use the system one for no
+reason as that can hurt performance (slower allocator, mem not registered)
+
+The only file that's allowed to directly call the system allocator is the sys
+alloc wrapper (chpl-mem-sys.h)
+"""
+
+import os
+import sys
+from look_for_alloc import check_for_alloc_calls
+
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+from chpl_home_utils import get_chpl_home
+
+
+def main():
+    """Check runtime (except chpl-mem-sys.h) for alloc calls"""
+    chpl_home = get_chpl_home()
+
+    runtime_dir = os.path.join(chpl_home, 'runtime')
+    exclude_paths = ['chpl-mem-sys.h']
+    return check_for_alloc_calls(runtime_dir, exclude_paths)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

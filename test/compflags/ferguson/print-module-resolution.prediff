@@ -1,0 +1,14 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+MYLOG=""
+
+LAST=""
+
+MYLOG=`grep print-module-resolution $LOG | sed 's/[0-9][0-9]*/nnnn/g'`
+
+echo $MYLOG > $LOG

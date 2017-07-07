@@ -18,7 +18,7 @@
 # put Cray PE cross-compilation gnu-specific settings here
 
 CRAYPE_GEN_CFLAGS =
-CRAYPE_COMP_CFLAGS =
+CRAYPE_COMP_CXXFLAGS =
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 

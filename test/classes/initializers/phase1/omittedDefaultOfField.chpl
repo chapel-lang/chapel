@@ -20,3 +20,4 @@ proc _defaultOf(type t) where t == imag {
 
 var r: Foo = new Foo(3);
 writeln(r);
+delete r;

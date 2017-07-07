@@ -5,7 +5,6 @@
 #endif
 
 #include <limits>
-#include <algorithm>
 #include <pthread.h>
 
   #include <stdlib.h>
@@ -19,7 +18,6 @@
   #undef printf
 
 #include "re2/re2.h"
-//#include "re2/regexp.h"
 
 using namespace re2;
 

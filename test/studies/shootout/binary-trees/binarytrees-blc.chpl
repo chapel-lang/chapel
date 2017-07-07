@@ -20,14 +20,14 @@ proc main() {
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
   //
-  const strTree = new Tree(0, strDepth);
+  const strTree = new Tree(strDepth);
   writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   delete strTree;
 
   //
   // Build the long-lived tree.
   //
-  const llTree = new Tree(0, maxDepth);
+  const llTree = new Tree(maxDepth);
 
   //
   // Iterate over the depths in parallel, dynamically assigning them
@@ -39,13 +39,11 @@ proc main() {
     var sum = 0;
 			
     for i in 1..iterations {
-      const posT = new Tree( i, depth), 
-            negT = new Tree(-i, depth);
-      sum += posT.sum() + negT.sum();
-      delete posT;
-      delete negT;
+      const t = new Tree(depth);
+      sum += t.sum();
+      delete t;
     }
-    stats[depth] = (2*iterations, sum);
+    stats[depth] = (iterations, sum);
   }
 
   //
@@ -67,29 +65,29 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  const item: int;
   const left, right: Tree;
 
   //
-  // Two initializers (constructors) for a Tree object
+  // A Tree-building initializer
   //
-  proc init(item, depth) {
-    this.item = item;
-    super.init();
+  proc init(depth) {
+    var l, r: Tree;
     if depth > 0 {
-      left = new Tree(2*item-1, depth-1);
-      right = new Tree(2*item, depth-1);
+      l = new Tree(depth-1);
+      r = new Tree(depth-1);
     }
-    // TODO: want this here    super.init();
+    left  = l;
+    right = r;
+    super.init();
   }
 
   //
   // Add up tree node, freeing as we go
   //
   proc sum(): int {
-    var sum = item;
+    var sum = 1;
     if left {
-      sum += left.sum() - right.sum();
+      sum += left.sum() + right.sum();
       delete left;
       delete right;
     }

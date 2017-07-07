@@ -5,8 +5,8 @@ record Panel2D {
     const rows : int;
     const cols : int;
 
-    var panel : [1..rows, 1..cols] =>
-        matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1];
+    ref panel =
+        matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex({1..rows, 1..cols});
 };
 
 

@@ -1,0 +1,2 @@
+cond-only-then-3.chpl:8: In initializer:
+cond-only-then-3.chpl:9: error: Both arms of a conditional must initialize the same fields in phase 1

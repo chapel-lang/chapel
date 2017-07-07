@@ -2,12 +2,11 @@
 // test/classes/constructors/generic-uninit-field-constructors.chpl
 
 /////////////////////////////////
-// user-defined initializers,
-// the compiler forces them to have formals corresponding
-// to the generic fields (see sample compiler error messages in comments)
-// (and callers to pass values to those formals,
-//  via the resolution mechanism - because they do not have defaults?)
-// the actuals DO initialize the like-formal-named fields
+// user-defined initializers.
+// Though constructors required formals corresponding to generic fields
+// which were then used to initialize the like-formal-named fields,
+// initializers do not require this.  But they are a good example of generics
+// working.
 /////////////////////////////////
 
 class A {

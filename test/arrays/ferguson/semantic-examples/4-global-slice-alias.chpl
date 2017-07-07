@@ -2,7 +2,7 @@ module bar {
   var dom = {1..10, 1..10};
   var A : [dom] int;
 
-  var R => A[1..4, 1..4]; // call_tmp = slice
+  ref R = A[1..4, 1..4]; // call_tmp = slice
   // slice freed here
 }
 

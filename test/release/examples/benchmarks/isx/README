@@ -25,16 +25,17 @@ This directory's contents are as follows:
 
   Makefile       : builds an optimized ISx
 
-  CLEANFILES     :\
-  COMPOPTS       : \
-  NUMLOCALES     :  \
-  isx.execopts   :   | Used by the Chapel testing system
-  isx.precomp    :  /
-  goods-1/       : /
-  goods-4/       :/
-
   README         : this file
 
+  Other files with the same base filename as the Chapel test program but
+  different filename extensions, are for use by the automated test system.
+  For example, file isx.execopts supports automated testing of isx.chpl.
+  Files with all-uppercase filenames like NUMLOCALES (but not "README") are
+  similar, except they are applied to all chpl tests in the directory.
+  $CHPL_HOME/examples/README.testing contains more information.
+
+  goods-1/       : used by the Chapel testing system
+  goods-4/
 
 -----------------
 Execution Options
@@ -84,11 +85,11 @@ Language TODOs
 --------------
 * The stats would be much more complete (while remaining elegant/
   efficient) if we had min/max task reduction intents...
-  
+
 * Should we be able to support scans on arrays of atomics without a
   .read()?
 
 * We really want an exclusive scan, but Chapel's is inclusive.  Wasn't
   the original plan to support both?  Does code exist for this that
   simply isn't accessible currently?
- 
+

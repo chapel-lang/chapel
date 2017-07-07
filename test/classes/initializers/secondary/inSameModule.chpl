@@ -19,4 +19,5 @@ proc main() {
   // Additionally, we expect the default constructor/initializer to never be
   // created or used. (Do we?)
   writeln(f); // expect 10, true
+  delete f;
 }

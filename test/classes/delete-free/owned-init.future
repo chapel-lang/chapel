@@ -1,0 +1,32 @@
+bug: can't seem to create arrays of owned objects
+
+I haven't been able to figure out a way to create an array of owned
+objects.
+
+Michael writes:
+
+Ah, I see the problem here.
+Since = for owned clears out the RHS (since it is an ownership transfer), = takes the RHS by ref.
+But other parts of the compiler raise an lvalue error if you pass an expression, such as `new Owned(new C(i))` as ref.
+
+The workaround is this:
+``` chapel
+var tmp = new Owned(new C(i));
+a[i] = tmp;
+```
+which works for me.
+
+We could
+ 1) relax the l-value checking in this case (and other cases?) for
+    Owned (maybe with a pragma?)
+ 2) relax l-value checking more generally (in favor of "is it const?")
+ 3) require the use of the workaround above
+
+I'm uncertain of the real value that l-value rules offer (as a
+separate concern from const-ness). I think any consideration of (1) or
+(2) needs to start by trying to understand the merits of l-value
+rules. Note that currently we don't really follow l-value rules for
+arrays (and I think that's for historical reasons rather than really
+be design at this point).
+
+

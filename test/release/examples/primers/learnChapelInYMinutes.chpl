@@ -21,16 +21,16 @@ Basic printing
 --------------
 */
 
-write( "Hello, " );
-writeln( "World!" );
+write("Hello, ");
+writeln("World!");
 
 // ``write`` and ``writeln`` can take a list of things to print.
 // Each thing is printed right next to the others, so include your spacing!
-writeln( "There are ", 3, " commas (\",\") in this line of code" );
+writeln("There are ", 3, " commas (\",\") in this line of code");
 
 // Different output channels:
-stdout.writeln( "This goes to standard output, just like plain writeln() does");
-stderr.writeln( "This goes to standard error" );
+stdout.writeln("This goes to standard output, just like plain writeln() does");
+stderr.writeln("This goes to standard error");
 
 /*
 .. primers-yminutes-vars:
@@ -65,9 +65,10 @@ var myUint: uint = 1234; // Unsigned ints
 var myReal: real = 9.876; // Floating point numbers
 var myImag: imag = 5.0i; // Imaginary numbers
 var myCplx: complex = 10 + 9i; // Complex numbers
-myCplx = myInt + myImag ; // Another way to form complex numbers
+myCplx = myInt + myImag; // Another way to form complex numbers
 var myBool: bool = false; // Booleans
 var myStr: string = "Some string..."; // Strings
+var singleQuoteStr = 'Another string...'; // String literal with single quotes
 
 // Some types can have sizes.
 var my8Int: int(8) = 10; // 8 bit (one byte) sized int;
@@ -80,8 +81,8 @@ var intFromReal2: int = myReal : int;
 // Type aliasing.
 type chroma = int;        // Type of a single hue
 type RGBColor = 3*chroma; // Type representing a full color
-var black: RGBColor = ( 0,0,0 );
-var white: RGBColor = ( 255, 255, 255 );
+var black: RGBColor = (0,0,0);
+var white: RGBColor = (255, 255, 255);
 
 /*
 .. primers-yminutes-consts-params:
@@ -93,19 +94,19 @@ Constants and Parameters
 // A ``const`` is a constant, and cannot be changed after set in runtime.
 const almostPi: real = 22.0/7.0;
 
-// A ``param`` is a constant whose value must be known statically at compile-time.
-// Their value also cannot be changed.
+// A ``param`` is a constant whose value must be known statically at
+// compile-time.
 param compileTimeConst: int = 16;
 
 // The ``config`` modifier allows values to be set at the command line.
-// Set with ``--VarName=Value`` or ``--VarName Value`` at runtime.
+// Set with ``--varCmdLineArg=Value`` or ``--varCmdLineArg Value`` at runtime.
 config var varCmdLineArg: int = -123;
 config const constCmdLineArg: int = 777;
 
-// ``config param`` can be set/changed at compile-time.
+// ``config param`` can be set at compile-time.
 // Set with ``--set paramCmdLineArg=value`` at compile-time.
 config param paramCmdLineArg: bool = false;
-writeln( varCmdLineArg, ", ", constCmdLineArg, ", ", paramCmdLineArg );
+writeln(varCmdLineArg, ", ", constCmdLineArg, ", ", paramCmdLineArg);
 
 /*
 .. primers-yminutes-refs:
@@ -114,15 +115,16 @@ References
 ----------
 */
 
-// ``ref`` operates much like a reference in C++.
+// ``ref`` operates much like a reference in C++. In Chapel, a ``ref`` cannot
+// be made to alias a variable other than the variable it is initialized with.
 // Here, ``refToActual`` refers to ``actual``.
 var actual = 10;
 ref refToActual = actual; 
-writeln( actual, " == ", refToActual ); // prints the same value
+writeln(actual, " == ", refToActual); // prints the same value
 actual = -123; // modify actual (which refToActual refers to)
-writeln( actual, " == ", refToActual ); // prints the same value
+writeln(actual, " == ", refToActual); // prints the same value
 refToActual = 99999999; // modify what refToActual refers to (which is actual)
-writeln( actual, " == ", refToActual ); // prints the same value
+writeln(actual, " == ", refToActual); // prints the same value
 
 /*
 .. primers-yminutes-ops:
@@ -160,10 +162,10 @@ a = ~thisInt;          // Bitwise-negation
 a = thisInt ^ thatInt; // Bitwise exclusive-or
 
 // Compound assignment operators:
-a += thisInt;          // Addition-equals ( a = a + thisInt;)
-a *= thatInt;          // Times-equals ( a = a * thatInt; )
-b &&= thatBool;        // Logical-and-equals ( b = b && thatBool; )
-a <<= 3;               // Left-bit-shift-equals ( a = a << 10; )
+a += thisInt;          // Addition-equals (a = a + thisInt;)
+a *= thatInt;          // Times-equals (a = a * thatInt;)
+b &&= thatBool;        // Logical-and-equals (b = b && thatBool;)
+a <<= 3;               // Left-bit-shift-equals (a = a << 10;)
 
 // Unlike other C family languages, there are no
 // pre/post-increment/decrement operators, such as:
@@ -174,7 +176,7 @@ a <<= 3;               // Left-bit-shift-equals ( a = a << 10; )
 var old_this = thisInt;
 var old_that = thatInt;
 thisInt <=> thatInt; // Swap the values of thisInt and thatInt
-writeln( (old_this == thatInt) && (old_that == thisInt) );
+writeln((old_this == thatInt) && (old_that == thisInt));
 
 // Operator overloads can also be defined, as we'll see with procedures.
 
@@ -186,24 +188,25 @@ Tuples
 */
 
 // Tuples can be of the same type or different types.
-var sameTup: 2*int = (10,-1);
+var sameTup: 2*int = (10, -1);
 var sameTup2 = (11, -6);
 var diffTup: (int,real,complex) = (5, 1.928, myCplx);
-var diffTupe2 = ( 7, 5.64, 6.0+1.5i );
+var diffTupe2 = (7, 5.64, 6.0+1.5i);
 
-// They are accessed using array bracket notation but are 1-indexed.
-writeln( "(", sameTup[1], ",", sameTup[2], ")" );
-writeln( diffTup );
+// Tuples can be accessed using square brackets or parentheses, and are
+// 1-indexed.
+writeln("(", sameTup[1], ",", sameTup(2), ")");
+writeln(diffTup);
 
 // Tuples can also be written into.
-diffTup[1] = -1;
+diffTup(1) = -1;
 
 // Tuple values can be expanded into their own variables.
 var (tupInt, tupReal, tupCplx) = diffTup;
-writeln( diffTup == (tupInt, tupReal, tupCplx) );
+writeln(diffTup == (tupInt, tupReal, tupCplx));
 
 // They are also useful for writing a list of variables, as is common in debugging.
-writeln( (a,b,thisInt,thatInt,thisBool,thatBool) );
+writeln((a,b,thisInt,thatInt,thisBool,thatBool));
 
 /*
 .. primers-yminutes-control-flow:
@@ -214,80 +217,82 @@ Control Flow
 
 // ``if`` - ``then`` - ``else`` works just like any other C-family language.
 if 10 < 100 then
-  writeln( "All is well" );
+  writeln("All is well");
 
 if -1 < 1 then
-  writeln( "Continuing to believe reality" );
+  writeln("Continuing to believe reality");
 else
-  writeln( "Send mathematician, something's wrong" );
+  writeln("Send mathematician, something's wrong");
 
-if ( 10 > 100 ) {
-  writeln( "Universe broken. Please reboot universe." );
+// You can use parentheses if you prefer.
+if (10 > 100) {
+  writeln("Universe broken. Please reboot universe.");
 }
 
-if ( a % 2 == 0 ) {
-  writeln( a, " is even." );
+if a % 2 == 0 {
+  writeln(a, " is even.");
 } else {
-  writeln( a, " is odd." );
+  writeln(a, " is odd.");
 }
 
-if ( a % 3 == 0 ) {
-  writeln( a, " is even divisible by 3." );
-} else if ( a % 3 == 1 ){
-  writeln( a, " is divided by 3 with a remainder of 1." );
+if a % 3 == 0 {
+  writeln(a, " is even divisible by 3.");
+} else if a % 3 == 1 {
+  writeln(a, " is divided by 3 with a remainder of 1.");
 } else {
-  writeln( b, " is divided by 3 with a remainder of 2." );
+  writeln(b, " is divided by 3 with a remainder of 2.");
 }
 
 // Ternary: ``if`` - ``then`` - ``else`` in a statement.
-var maximum = if ( thisInt < thatInt ) then thatInt else thisInt;
+var maximum = if thisInt < thatInt then thatInt else thisInt;
 
 // ``select`` statements are much like switch statements in other languages.
 // However, ``select`` statements don't cascade like in C or Java.
 var inputOption = "anOption";
-select( inputOption ){
-  when "anOption" do writeln( "Chose 'anOption'" );
+select inputOption {
+  when "anOption" do writeln("Chose 'anOption'");
   when "otherOption" {
-    writeln( "Chose 'otherOption'" );
-    writeln( "Which has a body" );
+    writeln("Chose 'otherOption'");
+    writeln("Which has a body");
   }
   otherwise {
-    writeln( "Any other Input" );
-    writeln( "the otherwise case doesn't need a do if the body is one line" );
+    writeln("Any other Input");
+    writeln("the otherwise case doesn't need a do if the body is one line");
   }
 }
 
-// ``while`` and ``do``-``while`` loops are basically the same as well.
+// ``while`` and ``do``-``while`` loops also behave like their C counterparts.
 var j: int = 1;
 var jSum: int = 0;
-while( j <= 1000 ){
+while (j <= 1000) {
   jSum += j;
   j += 1;
 }
-writeln( jSum );
+writeln(jSum);
 
 do {
   jSum += j;
   j += 1;
-} while ( j <= 10000 );
-writeln( jSum );
+} while (j <= 10000);
+writeln(jSum);
 
-// ``for`` loops are much like those in python in that they iterate over a range.
-// Ranges themselves are types, and can be stuffed into variables.
-for i in 1..10 do write( i , ", ") ;
-writeln( );
+// ``for`` loops are much like those in python in that they iterate over a
+// range. Ranges (like the ``1..10`` expression below) are a first-class object
+// in Chapel, and as such can be stored in variables.
+for i in 1..10 do write(i, ", ");
+writeln();
 
 var iSum: int = 0;
 for i in 1..1000 {
   iSum += i;
 }
-writeln( iSum );
+writeln(iSum);
 
 for x in 1..10 {
   for y in 1..10 {
-    write( (x,y), "\t" );
+    write((x,y), "\t");
   }
-  writeln( );
+  writeln();
 }
 
 /*
@@ -305,7 +310,7 @@ Ranges and Domains
 var range1to10: range = 1..10;  // 1, 2, 3, ..., 10
 var range2to11 = 2..11; // 2, 3, 4, ..., 11
 var rangeThisToThat: range = thisInt..thatInt; // using variables
-var rangeEmpty: range = 100..-100 ; // this is valid but contains no indices
+var rangeEmpty: range = 100..-100; // this is valid but contains no indices
 
 // Ranges can be unbounded.
 var range1toInf: range(boundedType=BoundedRangeType.boundedLow) = 1.. ; // 1, 2, 3, 4, 5, ...
@@ -313,9 +318,12 @@ var rangeNegInfTo1 = ..1; // ..., -4, -3, -2, -1, 0, 1
 
 // Ranges can be strided (and reversed) using the ``by`` operator.
 var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
-var reverse2to10by2 = 10..2 by -2; // 10, 8, 6, 4, 2
+var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 
-// Note: ``range(boundedType= ... )`` and ``range(stridable= ... )`` are only
+var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
+writeln("Size of range '", trapRange, "' = ", trapRange.length);
+
+// Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
 
 // The end point of a range can be determined using the count (``#``) operator.
@@ -323,16 +331,16 @@ var rangeCount: range = -5..#12; // range from -5 to 6
 
 // Operators can be mixed.
 var rangeCountBy: range(stridable=true) = -5..#12 by 2; // -5, -3, -1, 1, 3, 5
-writeln( rangeCountBy );
+writeln(rangeCountBy);
 
 // Properties of the range can be queried.
 // In this example, printing the first index, last index, number of indices,
 // stride, and if 2 is include in the range.
-writeln( ( rangeCountBy.first, rangeCountBy.last, rangeCountBy.length,
-           rangeCountBy.stride, rangeCountBy.member( 2 ) ) );
+writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.length,
+           rangeCountBy.stride, rangeCountBy.member(2)));
 
 for i in rangeCountBy {
-  write( i, if i == rangeCountBy.last then "\n" else ", " );
+  write(i, if i == rangeCountBy.last then "\n" else ", ");
 }
 
 // Rectangular domains are defined using the same range syntax,
@@ -342,16 +350,22 @@ var twoDimensions: domain(2) = {-2..2,0..2}; // 2D domain over product of ranges
 var thirdDim: range = 1..16;
 var threeDims: domain(3) = {thirdDim, 1..10, 5..10}; // using a range variable
 
+// Domains can also be resized
+var resizedDom = {1..10};
+writeln("before, resizedDom = ", resizedDom);
+resizedDom = {-10..#10};
+writeln("after, resizedDom = ", resizedDom);
+
 // Indices can be iterated over as tuples.
 for idx in twoDimensions do
-  write( idx , ", ");
-writeln( );
+  write(idx, ", ");
+writeln();
 
 // These tuples can also be deconstructed.
 for (x,y) in twoDimensions {
-  write( "(", x, ", ", y, ")", ", " );
+  write("(", x, ", ", y, ")", ", ");
 }
-writeln( );
+writeln();
 
 // Associative domains act like sets.
 var stringSet: domain(string); // empty set of strings
@@ -360,19 +374,22 @@ stringSet += "b";
 stringSet += "c";
 stringSet += "a"; // Redundant add "a"
 stringSet -= "c"; // Remove "c"
-writeln( stringSet.sorted() );
+writeln(stringSet.sorted());
+
+// Associative domains can also have a literal syntax
+var intSet = {1, 2, 4, 5, 100};
 
 // Both ranges and domains can be sliced to produce a range or domain with the
 // intersection of indices.
 var rangeA = 1.. ; // range from 1 to infinity
 var rangeB =  ..5; // range from negative infinity to 5
 var rangeC = rangeA[rangeB]; // resulting range is 1..5
-writeln( (rangeA, rangeB, rangeC ) );
+writeln((rangeA, rangeB, rangeC));
 
 var domainA = {1..10, 5..20};
 var domainB = {-5..5, 1..10};
 var domainC = domainA[domainB];
-writeln( (domainA, domainB, domainC) );
+writeln((domainA, domainB, domainC));
 
 /*
 .. primers-yminutes-array:
@@ -386,10 +403,10 @@ Arrays
 var intArray: [1..10] int;
 var intArray2: [{1..10}] int; // equivalent
 
-// They are accessed using bracket notation.
+// They can be accessed using either brackets or parentheses
 for i in 1..10 do
   intArray[i] = -i;
-writeln( intArray );
+writeln(intArray);
 
 // We cannot access ``intArray[0]`` because it exists outside
 // of the index set, ``{1..10}``, we defined it to have.
@@ -409,10 +426,10 @@ for i in 1..5 {
 
 // Arrays have domains as members, and can be iterated over as normal.
 for idx in realArray.domain {  // Again, idx is a 2*int tuple
-  realArray[idx] = 1 / realArray[idx[1],idx[2]]; // Access by tuple and list
+  realArray[idx] = 1 / realArray[idx[1], idx[2]]; // Access by tuple and list
 }
 
-writeln( realArray );
+writeln(realArray);
 
 // The values of an array can also be iterated directly.
 var rSum: real = 0;
@@ -420,60 +437,54 @@ for value in realArray {
   rSum += value; // Read a value
   value = rSum;  // Write a value
 }
-writeln( rSum, "\n", realArray );
+writeln(rSum, "\n", realArray);
 
 // Associative arrays (dictionaries) can be created using associative domains.
 var dictDomain: domain(string) = { "one", "two" };
-var dict: [dictDomain] int = [ "one" => 1, "two" => 2 ];
-dict["three"] = 3;
+var dict: [dictDomain] int = ["one" => 1, "two" => 2];
+dict["three"] = 3; // Adds 'three' to 'dictDomain' implicitly
 for key in dictDomain.sorted() do
-  writeln( dict[key] );
+  writeln(dict[key]);
 
 // Arrays can be assigned to each other in a few different ways.
 // These arrays will be used in the example.
-var thisArray : [{0..5}] int = [0,1,2,3,4,5];
-var thatArray : [{0..5}] int;
+var thisArray : [0..5] int = [0,1,2,3,4,5];
+var thatArray : [0..5] int;
 
-// First, simply assign one to the other. This copies ``thisArray`` into ``thatArray``,
-// instead of just creating a reference. Therefore, modifying ``thisArray`` does not
-// also modify ``thatArray``.
+// First, simply assign one to the other. This copies ``thisArray`` into
+// ``thatArray``, instead of just creating a reference. Therefore, modifying
+// ``thisArray`` does not also modify ``thatArray``.
 
 thatArray = thisArray;
 thatArray[1] = -1;
-writeln( (thisArray, thatArray) );
+writeln((thisArray, thatArray));
 
 // Assign a slice from one array to a slice (of the same size) in the other.
-thatArray[{4..5}] = thisArray[{1..2}];
-writeln( (thisArray, thatArray) );
+thatArray[4..5] = thisArray[1..2];
+writeln((thisArray, thatArray));
 
-// Operations can also be promoted to work on arrays.
+// Operations can also be promoted to work on arrays. 'thisPlusThat' is also
+// an array.
 var thisPlusThat = thisArray + thatArray;
-writeln( thisPlusThat );
+writeln(thisPlusThat);
 
 // Moving on, arrays and loops can also be expressions, where the loop
 // body's expression is the result of each iteration.
 var arrayFromLoop = for i in 1..10 do i;
-writeln( arrayFromLoop );
+writeln(arrayFromLoop);
 
 // An expression can result in nothing, such as when filtering with an if-expression.
 var evensOrFives = for i in 1..10 do if (i % 2 == 0 || i % 5 == 0) then i;
 
-writeln( arrayFromLoop );
+writeln(arrayFromLoop);
 
 // Array expressions can also be written with a bracket notation.
 // Note: this syntax uses the ``forall`` parallel concept discussed later.
-var evensOrFivesAgain = [ i in 1..10 ] if (i % 2 == 0 || i % 5 == 0) then i;
+var evensOrFivesAgain = [i in 1..10] if (i % 2 == 0 || i % 5 == 0) then i;
 
 // They can also be written over the values of the array.
-arrayFromLoop = [ value in arrayFromLoop ] value + 1;
+arrayFromLoop = [value in arrayFromLoop] value + 1;
 
-// Note: This notation can get somewhat tricky. For example, this code would break,
-// for reasons to be explained when discussing zipped iterators.
-
-/* .. code-block:: chapel
-   
-      evensOrFives = [ i in 1..10 ] if (i % 2 == 0 || i % 5 == 0) then i;
-*/
 
 /*
 .. primers-yminutes-proc:
@@ -483,92 +494,104 @@ Procedures
 */
 
 // Chapel procedures have similar syntax functions in other languages. 
-proc fibonacci( n : int ) : int {
-  if ( n <= 1 ) then return n;
-  return fibonacci( n-1 ) + fibonacci( n-2 );
+proc fibonacci(n : int) : int {
+  if n <= 1 then return n;
+  return fibonacci(n-1) + fibonacci(n-2);
 }
 
 // Input parameters can be untyped to create a generic procedure.
-proc doublePrint( thing ): void {
-  write( thing, " ", thing, "\n");
+proc doublePrint(thing): void {
+  write(thing, " ", thing, "\n");
 }
 
 // The return type can be inferred, as long as the compiler can figure it out.
-proc addThree( n ) {
+proc addThree(n) {
   return n + 3;
 }
 
-doublePrint( addThree( fibonacci( 20 ) ) );
+doublePrint(addThree(fibonacci(20)));
 
-// It is also possible to take an 'unlimited' number of parameters.
-proc maxOf( x ...?k ) {
+// It is also possible to take a variable number of parameters.
+proc maxOf(x ...?k) {
   // x refers to a tuple of one type, with k elements
   var maximum = x[1];
-  for i in 2..k do maximum = if (maximum < x[i]) then x[i] else maximum;
+  for i in 2..k do maximum = if maximum < x[i] then x[i] else maximum;
   return maximum;
 }
-writeln( maxOf( 1, -10, 189, -9071982, 5, 17, 20001, 42 ) );
+writeln(maxOf(1, -10, 189, -9071982, 5, 17, 20001, 42));
 
 // Procedures can have default parameter values, and
 // the parameters can be named in the call, even out of order.
-proc defaultsProc( x: int, y: real = 1.2634 ): (int,real) {
+proc defaultsProc(x: int, y: real = 1.2634): (int,real) {
   return (x,y);
 }
 
-writeln( defaultsProc( 10 ) );
-writeln( defaultsProc( x=11 ) );
-writeln( defaultsProc( x=12, y=5.432 ) );
-writeln( defaultsProc( y=9.876, x=13 ) );
+writeln(defaultsProc(10));
+writeln(defaultsProc(x=11));
+writeln(defaultsProc(x=12, y=5.432));
+writeln(defaultsProc(y=9.876, x=13));
 
 // The ``?`` operator is called the query operator, and is used to take
 // undetermined values like tuple or array sizes and generic types.
-// For example, taking arrays as parameters. The query operator is used to determine
-// the domain of ``A``. This is important for defining the return type,
+// For example, taking arrays as parameters. The query operator is used to
+// determine the domain of ``A``. This is useful for defining the return type,
 // though it's not required.
-proc invertArray( A: [?D] int ): [D] int{
+proc invertArray(A: [?D] int): [D] int{
   for a in A do a = -a;
   return A;
 }
 
-writeln( invertArray( intArray ) );
+writeln(invertArray(intArray));
 
 // We can query the type of arguments to generic procedures.
 // Here we define a procedure that takes two arguments of
 // the same type, yet we don't define what that type is.
-proc genericProc( arg1 : ?valueType, arg2 : valueType ): void {
-  select( valueType ){
-    when int do writeln( arg1, " and ", arg2, " are ints" );
-    when real do writeln( arg1, " and ", arg2, " are reals" );
-    otherwise writeln( arg1, " and ", arg2, " are somethings!" );
+proc genericProc(arg1 : ?valueType, arg2 : valueType): void {
+  select(valueType) {
+    when int do writeln(arg1, " and ", arg2, " are ints");
+    when real do writeln(arg1, " and ", arg2, " are reals");
+    otherwise writeln(arg1, " and ", arg2, " are somethings!");
   }
 }
 
-genericProc( 1, 2 );
-genericProc( 1.2, 2.3 );
-genericProc( 1.0+2.0i, 3.0+4.0i );
+genericProc(1, 2);
+genericProc(1.2, 2.3);
+genericProc(1.0+2.0i, 3.0+4.0i);
 
 // We can also enforce a form of polymorphism with the ``where`` clause
 // This allows the compiler to decide which function to use.
 // Note: That means that all information needs to be known at compile-time.
 // The param modifier on the arg is used to enforce this constraint.
-proc whereProc( param N : int ): void
- where ( N > 0 ) {
-  writeln( "N is greater than 0" );
+proc whereProc(param N : int): void
+ where (N > 0) {
+  writeln("N is greater than 0");
 }
 
-proc whereProc( param N : int ): void
- where ( N < 0 ) {
-  writeln( "N is less than 0" );
+proc whereProc(param N : int): void
+ where (N < 0) {
+  writeln("N is less than 0");
 }
 
-whereProc( 10 );
-whereProc( -1 );
+whereProc(10);
+whereProc(-1);
 
-// ``whereProc( 0 )`` would result in a compiler error because there
+// ``whereProc(0)`` would result in a compiler error because there
 // are no functions that satisfy the ``where`` clause's condition.
 // We could have defined a ``whereProc`` without a ``where`` clause
 // that would then have served as a catch all for all the other cases
 // (of which there is only one).
+
+// ``where`` clauses can also be used to constrain based on argument type.
+proc whereType(x: ?t) where t == int {
+  writeln("Inside 'int' version of 'whereType': ", x);
+}
+
+proc whereType(x: ?t) {
+  writeln("Inside general version of 'whereType': ", x);
+}
+
+whereType(42);
+whereType("hello");
 
 /*
 .. primers-yminutes-intent:
@@ -584,38 +607,38 @@ Intents
      * inout: copy arg in, copy arg out
      * ref: pass arg by reference
 */
-proc intentsProc( in inarg, out outarg, inout inoutarg, ref refarg ){
-  writeln( "Inside Before: ", (inarg, outarg, inoutarg, refarg) );
+proc intentsProc(in inarg, out outarg, inout inoutarg, ref refarg) {
+  writeln("Inside Before: ", (inarg, outarg, inoutarg, refarg));
   inarg = inarg + 100;
   outarg = outarg + 100;
   inoutarg = inoutarg + 100;
   refarg = refarg + 100;
-  writeln( "Inside After: ", (inarg, outarg, inoutarg, refarg) );
+  writeln("Inside After: ", (inarg, outarg, inoutarg, refarg));
 }
 
 var inVar: int = 1;
 var outVar: int = 2;
 var inoutVar: int = 3;
 var refVar: int = 4;
-writeln( "Outside Before: ", (inVar, outVar, inoutVar, refVar) );
-intentsProc( inVar, outVar, inoutVar, refVar );
-writeln( "Outside After: ", (inVar, outVar, inoutVar, refVar) );
+writeln("Outside Before: ", (inVar, outVar, inoutVar, refVar));
+intentsProc(inVar, outVar, inoutVar, refVar);
+writeln("Outside After: ", (inVar, outVar, inoutVar, refVar));
 
 // Similarly, we can define intents on the return type.
 // ``refElement`` returns a reference to an element of array.
 // This makes more practical sense for class methods where references to
 // elements in a data-structure are returned via a method or iterator.
-proc refElement( array : [?D] ?T, idx ) ref : T {
-  return array[ idx ];
+proc refElement(array : [?D] ?T, idx) ref : T {
+  return array[idx];
 }
 
 var myChangingArray : [1..5] int = [1,2,3,4,5];
-writeln( myChangingArray );
-ref refToElem = refElement( myChangingArray, 5 ); // store reference to element in ref variable
-writeln( refToElem );
+writeln(myChangingArray);
+ref refToElem = refElement(myChangingArray, 5); // store reference to element in ref variable
+writeln(refToElem);
 refToElem = -2; // modify reference which modifies actual value in array
-writeln( refToElem );
-writeln( myChangingArray );
+writeln(refToElem);
+writeln(myChangingArray);
 
 /*
 .. primers-yminutes-op-defs:
@@ -624,7 +647,7 @@ Operator Definitions
 --------------------
 */
 
-// Operator definitions are through procedures as well.
+// Chapel allows for operators to be overloaded.
 // We can define the unary operators:
 // ``+ - ! ~``
 // and the binary operators:
@@ -632,29 +655,30 @@ Operator Definitions
 // ``+= -= *= /= %= **= &= |= ˆ= <<= >>= <=>``
 
 // Boolean exclusive or operator.
-proc ^( left : bool, right : bool ): bool {
-  return (left || right) && !( left && right );
+proc ^(left : bool, right : bool): bool {
+  return (left || right) && !(left && right);
 }
 
-writeln( true  ^ true  );
-writeln( false ^ true  );
-writeln( true  ^ false );
-writeln( false ^ false );
+writeln(true  ^ true);
+writeln(false ^ true);
+writeln(true  ^ false);
+writeln(false ^ false);
 
 // Define a ``*`` operator on any two types that returns a tuple of those types.
-proc *( left : ?ltype, right : ?rtype): ( ltype, rtype ){
-  return (left, right );
+proc *(left : ?ltype, right : ?rtype): (ltype, rtype) {
+  writeln("\tIn our '*' overload!");
+  return (left, right);
 }
 
-writeln( 1 * "a" ); // Uses our ``*`` operator.
-writeln( 1 * 2 );   // Uses the default ``*`` operator.
+writeln(1 * "a"); // Uses our ``*`` operator.
+writeln(1 * 2);   // Uses the default ``*`` operator.
 
 //  Note: You could break everything if you get careless with your overloads.
 //  This here will break everything. Don't do it.
 
 /* .. code-block:: chapel
 
-      proc +( left: int, right: int ): int {
+      proc +(left: int, right: int): int {
         return left - right;
       }
 */
@@ -666,41 +690,42 @@ Iterators
 ---------
 */
 
-// Iterators are sisters to the procedure, and almost everything about procedures
-// also applies to iterators. However, instead of returning a single value,
-// iterators yield many values to a loop.
+// Iterators are sisters to the procedure, and almost everything about
+// procedures also applies to iterators. However, instead of returning a single
+// value, iterators may yield multiple values to a loop.
 //
-// This is useful when a complicated set or order of iterations is needed, as it
-// allows the code defining the iterations to be separate from the loop body.
-iter oddsThenEvens( N: int ): int {
+// This is useful when a complicated set or order of iterations is needed, as
+// it allows the code defining the iterations to be separate from the loop
+// body.
+iter oddsThenEvens(N: int): int {
   for i in 1..N by 2 do
     yield i; // yield values instead of returning.
   for i in 2..N by 2 do
     yield i;
 }
 
-for i in oddsThenEvens( 10 ) do write( i, ", " );
-writeln( );
+for i in oddsThenEvens(10) do write(i, ", ");
+writeln();
 
 // Iterators can also yield conditionally, the result of which can be nothing
-iter absolutelyNothing( N ): int {
+iter absolutelyNothing(N): int {
   for i in 1..N {
-    if ( N < i ) { // Always false
+    if N < i { // Always false
       yield i;     // Yield statement never happens
     }
   }
 }
 
-for i in absolutelyNothing( 10 ) {
-  writeln( "Woa there! absolutelyNothing yielded ", i );
+for i in absolutelyNothing(10) {
+  writeln("Woa there! absolutelyNothing yielded ", i);
 }
 
 // We can zipper together two or more iterators (who have the same number
 // of iterations) using ``zip()`` to create a single zipped iterator, where each
 // iteration of the zipped iterator yields a tuple of one value yielded
 // from each iterator.
-for (positive, negative) in zip( 1..5, -5..-1) do
-  writeln( (positive, negative) );
+for (positive, negative) in zip(1..5, -5..-1) do
+  writeln((positive, negative));
 
 // Zipper iteration is quite important in the assignment of arrays,
 // slices of arrays, and array/loop expressions.
@@ -710,24 +735,24 @@ var toThisArray : [100..#5] int;
 // Some zipper operations implement other operations.
 // The first statement and the loop are equivalent.
 toThisArray = fromThatArray;
-for (i,j) in zip( toThisArray.domain, fromThatArray.domain) {
-  toThisArray[ i ] = fromThatArray[ j ];
+for (i,j) in zip(toThisArray.domain, fromThatArray.domain) {
+  toThisArray[i] = fromThatArray[j];
 }
 
 // These two chunks are also equivalent.
-toThisArray = [ j in -100..#5 ] j;
-writeln( toThisArray );
+toThisArray = [j in -100..#5] j;
+writeln(toThisArray);
 
-for (i, j) in zip( toThisArray.domain, -100..#5 ){
+for (i, j) in zip(toThisArray.domain, -100..#5) {
   toThisArray[i] = j;
 }
-writeln( toThisArray );
+writeln(toThisArray);
 
 // This is very important in understanding why this statement exhibits a runtime error.
 
 /* .. code-block:: chapel
 
-      var iterArray : [1..10] int = [ i in 1..10 ] if ( i % 2 == 1 ) then j;
+      var iterArray : [1..10] int = [i in 1..10] if (i % 2 == 1) then i;
 */
 
 // Even though the domain of the array and the loop-expression are
@@ -753,60 +778,60 @@ class MyClass {
 // We also get the compiler-generated initializer, with one argument per field.
 // Note that soon there will be no compiler-generated initializer when we
 // define any initializer(s) explicitly.
-  proc MyClass( val : real ){
-    this.memberInt = ceil( val ): int;
+  proc MyClass(val : real) {
+    this.memberInt = ceil(val): int;
   }
 
 // Explicitly defined deinitializer.
 // If we did not write one, we would get the compiler-generated deinitializer,
 // which has an empty body.
-  proc deinit( ){
-    writeln( "MyClass deinitializer called ", (this.memberInt, this.memberBool) );
+  proc deinit() {
+    writeln("MyClass deinitializer called ", (this.memberInt, this.memberBool));
   }
 
 // Class methods.
-  proc setMemberInt( val: int ){
+  proc setMemberInt(val: int) {
     this.memberInt = val;
   }
 
-  proc setMemberBool( val: bool ){
+  proc setMemberBool(val: bool) {
     this.memberBool = val;
   }
 
-  proc getMemberInt( ): int{
+  proc getMemberInt(): int{
     return this.memberInt;
   }
 
-  proc getMemberBool( ): bool {
+  proc getMemberBool(): bool {
     return this.memberBool;
   }
 } // end MyClass
 
 // Call compiler-generated initializer, using default value for memberBool.
-var myObject = new MyClass( 10 );
-    myObject = new MyClass( memberInt = 10 ); // Equivalent
-writeln( myObject.getMemberInt( ) );
+var myObject = new MyClass(10);
+    myObject = new MyClass(memberInt = 10); // Equivalent
+writeln(myObject.getMemberInt());
 
 // Same, but provide a memberBool value explicitly.
-var myDiffObject = new MyClass( -1, true );
-    myDiffObject = new MyClass( memberInt = -1,
-                                memberBool = true ); // Equivalent
-writeln( myDiffObject );
+var myDiffObject = new MyClass(-1, true);
+    myDiffObject = new MyClass(memberInt = -1,
+                                memberBool = true); // Equivalent
+writeln(myDiffObject);
 
 // Call the initializer we wrote.
-var myOtherObject = new MyClass( 1.95 );
-    myOtherObject = new MyClass( val = 1.95 ); // Equivalent
-writeln( myOtherObject.getMemberInt( ) );
+var myOtherObject = new MyClass(1.95);
+    myOtherObject = new MyClass(val = 1.95); // Equivalent
+writeln(myOtherObject.getMemberInt());
 
 // We can define an operator on our class as well, but
 // the definition has to be outside the class definition.
-proc +( A : MyClass, B : MyClass) : MyClass {
-  return new MyClass( memberInt = A.getMemberInt( ) + B.getMemberInt( ),
-                      memberBool = A.getMemberBool( ) || B.getMemberBool( ) );
+proc +(A : MyClass, B : MyClass) : MyClass {
+  return new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
+                      memberBool = A.getMemberBool() || B.getMemberBool());
 }
 
 var plusObject = myObject + myDiffObject;
-writeln( plusObject );
+writeln(plusObject);
 
 // Destruction.
 delete myObject;
@@ -826,7 +851,7 @@ class GenericClass {
   var classArray: [classDomain] classType;
 
 // Explicit constructor.
-  proc GenericClass( type classType, elements : int ){
+  proc GenericClass(type classType, elements : int) {
     this.classDomain = {1..#elements};
   }
 
@@ -835,24 +860,24 @@ class GenericClass {
 // default to the type of the other object using the query (``?``) operator.
 // Further, we can take advantage of this to allow our copy constructor
 // to copy classes of different types and cast on the fly.
-  proc GenericClass( other : GenericClass(?otherType),
-                     type classType = otherType ) {
+  proc GenericClass(other : GenericClass(?otherType),
+                     type classType = otherType) {
     this.classDomain = other.classDomain;
     // Copy and cast
-    for idx in this.classDomain do this[ idx ] = other[ idx ] : classType;
+    for idx in this.classDomain do this[idx] = other[idx] : classType;
   }
 
 // Define bracket notation on a GenericClass
 // object so it can behave like a normal array
-// i.e. ``objVar[ i ]`` or ``objVar( i )``
-  proc this( i : int ) ref : classType {
-    return this.classArray[ i ];
+// i.e. ``objVar[i]`` or ``objVar(i)``
+  proc this(i : int) ref : classType {
+    return this.classArray[i];
   }
 
 // Define an implicit iterator for the class
 // to yield values from the array to a loop
 // i.e. ``for i in objVar do ...``
-  iter these( ) ref : classType {
+  iter these() ref : classType {
     for i in this.classDomain do
       yield this[i];
   }
@@ -860,23 +885,23 @@ class GenericClass {
 
 // We can assign to the member array of the object using the bracket
 // notation that we defined.
-var realList = new GenericClass( real, 10 );
+var realList = new GenericClass(real, 10);
 for i in realList.classDomain do realList[i] = i + 1.0;
 
 // We can iterate over the values in our list with the iterator
 // we defined.
-for value in realList do write( value, ", " );
-writeln( );
+for value in realList do write(value, ", ");
+writeln();
 
 // Make a copy of realList using the copy constructor.
-var copyList = new GenericClass( realList );
-for value in copyList do write( value, ", " );
-writeln( );
+var copyList = new GenericClass(realList);
+for value in copyList do write(value, ", ");
+writeln();
 
 // Make a copy of realList and change the type, also using the copy constructor.
-var copyNewTypeList = new GenericClass( realList, int );
-for value in copyNewTypeList do write( value, ", " );
-writeln( );
+var copyNewTypeList = new GenericClass(realList, int);
+for value in copyNewTypeList do write(value, ", ");
+writeln();
 
 
 /*
@@ -898,24 +923,24 @@ module OurModule {
   use Time;
 
 // We'll use this procedure in the parallelism section.
-  proc countdown( seconds: int ){
+  proc countdown(seconds: int) {
     for i in 1..seconds by -1 {
-      writeln( i );
-      sleep( 1 );
+      writeln(i);
+      sleep(1);
     }
   }
 
 // It is possible to create arbitrarily deep module nests.
 // i.e. submodules of OurModule
   module ChildModule {
-    proc foo(){
-      writeln( "ChildModule.foo()");
+    proc foo() {
+      writeln("ChildModule.foo()");
     }
   }
 
   module SiblingModule {
-    proc foo(){
-      writeln( "SiblingModule.foo()" );
+    proc foo() {
+      writeln("SiblingModule.foo()");
     }
   }
 } // end OurModule
@@ -925,7 +950,7 @@ module OurModule {
 use OurModule;
 
 // At this point we have not used ``ChildModule`` or ``SiblingModule`` so
-// their symbols (i.e. ``foo`` ) are not available to us. However, the module
+// their symbols (i.e. ``foo``) are not available to us. However, the module
 // names are available, and we can explicitly call ``foo()`` through them.
 SiblingModule.foo();
 OurModule.ChildModule.foo();
@@ -945,8 +970,9 @@ Parallelism
 // complicated libraries and strange class structure hierarchies.
 // Chapel has it baked right into the language.
 
-// We can declare a main procedure, but all the code above main still gets executed.
-proc main(){
+// We can declare a main procedure, but all the code above main still gets
+// executed.
+proc main() {
   writeln("PARALLELISM START");
 
 // A ``begin`` statement will spin the body of that statement off
@@ -958,28 +984,29 @@ proc main(){
     begin { // Start of new task's body
       var a = 0;
       for i in 1..1000 do a += 1;
-      writeln( "Done: ", a);
+      writeln("Done: ", a);
     } // End of new tasks body
-    writeln( "spun off a task!");
+    writeln("spun off a task!");
   }
-  writeln( "Back together" );
+  writeln("Back together");
 
-  proc printFibb( n: int ){
-    writeln( "fibonacci(",n,") = ", fibonacci( n ) );
+  proc printFibb(n: int) {
+    writeln("fibonacci(",n,") = ", fibonacci(n));
   }
 
-// A ``cobegin`` statement will spin each statement of the body into one new task
-// Notice here that the prints from each statement may happen in any order.
+// A ``cobegin`` statement will spin each statement of the body into one new
+// task. Notice here that the prints from each statement may happen in any
+// order.
   cobegin {
-    printFibb( 20 ); // new task
-    printFibb( 10 ); // new task
-    printFibb( 5 );  // new task
+    printFibb(20); // new task
+    printFibb(10); // new task
+    printFibb(5);  // new task
     {
       // This is a nested statement body and thus is a single statement
       // to the parent statement, executed by a single task.
-      writeln( "this gets" );
-      writeln( "executed as" );
-      writeln( "a whole" );
+      writeln("this gets");
+      writeln("executed as");
+      writeln("a whole");
     }
   }
 
@@ -989,18 +1016,18 @@ proc main(){
 // Using it to iterating over a structure is very a bad idea!
   var num_tasks = 10; // Number of tasks we want
   coforall taskID in 1..#num_tasks {
-    writeln( "Hello from task# ", taskID );
+    writeln("Hello from task# ", taskID);
   }
 
 // ``forall`` loops are another parallel loop, but only create a smaller number
 // of tasks, specifically ``--dataParTasksPerLocale=`` number of tasks.
   forall i in 1..100 {
-    write( i, ", ");
+    write(i, ", ");
   }
-  writeln( );
+  writeln();
 
 // Here we see that there are sections that are in order, followed by
-// a section that would not follow ( e.g. 1, 2, 3, 7, 8, 9, 4, 5, 6, ).
+// a section that would not follow (e.g. 1, 2, 3, 7, 8, 9, 4, 5, 6,).
 // This is because each task is taking on a chunk of the range 1..10
 // (1..3, 4..6, or 7..9) doing that chunk serially, but each task happens
 // in parallel. Your results may depend on your machine and configuration
@@ -1015,29 +1042,29 @@ proc main(){
   var myBigArray: [{1..4000,1..4000}] real; // Large array we will write into
 
 // Serial Experiment:
-  timer.start( ); // Start timer
+  timer.start(); // Start timer
   for (x,y) in myBigArray.domain { // Serial iteration
     myBigArray[x,y] = (x:real) / (y:real);
   }
-  timer.stop( ); // Stop timer
-  writeln( "Serial: ", timer.elapsed( ) ); // Print elapsed time
-  timer.clear( ); // Clear timer for parallel loop
+  timer.stop(); // Stop timer
+  writeln("Serial: ", timer.elapsed()); // Print elapsed time
+  timer.clear(); // Clear timer for parallel loop
 
 // Parallel Experiment:
-  timer.start( ); // start timer
+  timer.start(); // start timer
   forall (x,y) in myBigArray.domain { // Parallel iteration
     myBigArray[x,y] = (x:real) / (y:real);
   }
-  timer.stop( ); // Stop timer
-  writeln( "Parallel: ", timer.elapsed( ) ); // Print elapsed time
-  timer.clear( );
+  timer.stop(); // Stop timer
+  writeln("Parallel: ", timer.elapsed()); // Print elapsed time
+  timer.clear();
 
 // You may have noticed that (depending on how many cores you have)
 // the parallel loop went faster than the serial loop.
 
 // The bracket style loop-expression described
 // much earlier implicitly uses a ``forall`` loop.
-  [ val in myBigArray ] val = 1 / val; // Parallel operation
+  [val in myBigArray] val = 1 / val; // Parallel operation
 
 // Atomic variables, common to many languages, are ones whose operations
 // occur uninterrupted. Multiple threads can therefore modify atomic
@@ -1045,37 +1072,37 @@ proc main(){
 // Chapel atomic variables can be of type ``bool``, ``int``,
 // ``uint``, and ``real``.
   var uranium: atomic int;
-  uranium.write( 238 );      // atomically write a variable
-  writeln( uranium.read() ); // atomically read a variable
+  uranium.write(238);      // atomically write a variable
+  writeln(uranium.read()); // atomically read a variable
 
 // Atomic operations are described as functions, so you can define your own.
-  uranium.sub( 3 ); // atomically subtract a variable
-  writeln( uranium.read() );
+  uranium.sub(3); // atomically subtract a variable
+  writeln(uranium.read());
 
   var replaceWith = 239;
-  var was = uranium.exchange( replaceWith );
-  writeln( "uranium was ", was, " but is now ", replaceWith );
+  var was = uranium.exchange(replaceWith);
+  writeln("uranium was ", was, " but is now ", replaceWith);
 
   var isEqualTo = 235;
-  if ( uranium.compareExchange( isEqualTo, replaceWith ) ) {
-    writeln( "uranium was equal to ", isEqualTo,
-             " so replaced value with ", replaceWith );
+  if uranium.compareExchange(isEqualTo, replaceWith) {
+    writeln("uranium was equal to ", isEqualTo,
+             " so replaced value with ", replaceWith);
   } else {
-    writeln( "uranium was not equal to ", isEqualTo,
-             " so value stays the same...  whatever it was" );
+    writeln("uranium was not equal to ", isEqualTo,
+             " so value stays the same...  whatever it was");
   }
 
   sync {
     begin { // Reader task
-      writeln( "Reader: waiting for uranium to be ", isEqualTo );
-      uranium.waitFor( isEqualTo );
-      writeln( "Reader: uranium was set (by someone) to ", isEqualTo );
+      writeln("Reader: waiting for uranium to be ", isEqualTo);
+      uranium.waitFor(isEqualTo);
+      writeln("Reader: uranium was set (by someone) to ", isEqualTo);
     }
 
     begin { // Writer task
-      writeln( "Writer: will set uranium to the value ", isEqualTo, " in..." );
-      countdown( 3 );
-      uranium.write( isEqualTo );
+      writeln("Writer: will set uranium to the value ", isEqualTo, " in...");
+      countdown(3);
+      uranium.write(isEqualTo);
     }
   }
 
@@ -1085,14 +1112,14 @@ proc main(){
   var someSyncVar$: sync int; // varName$ is a convention not a law.
   sync {
     begin { // Reader task
-      writeln( "Reader: waiting to read." );
+      writeln("Reader: waiting to read.");
       var read_sync = someSyncVar$;
-      writeln( "Reader: value is ", read_sync );
+      writeln("Reader: value is ", read_sync);
     }
 
     begin { // Writer task
-      writeln( "Writer: will write in..." );
-      countdown( 3 );
+      writeln("Writer: will write in...");
+      countdown(3);
       someSyncVar$ = 123;
     }
   }
@@ -1102,16 +1129,16 @@ proc main(){
   var someSingleVar$: single int; // varName$ is a convention not a law.
   sync {
     begin { // Reader task
-      writeln( "Reader: waiting to read." );
+      writeln("Reader: waiting to read.");
       for i in 1..5 {
         var read_single = someSingleVar$;
-        writeln( "Reader: iteration ", i,", and the value is ", read_single );
+        writeln("Reader: iteration ", i,", and the value is ", read_single);
       }
     }
 
     begin { // Writer task
-      writeln( "Writer: will write in..." );
-      countdown( 3 );
+      writeln("Writer: will write in...");
+      countdown(3);
       someSingleVar$ = 5; // first and only write ever.
     }
   }
@@ -1121,8 +1148,8 @@ proc main(){
   var count: atomic int; // our counter
   var lock$: sync bool;   // the mutex lock
 
-  count.write( 2 );       // Only let two tasks in at a time.
-  lock$.writeXF( true );  // Set lock$ to full (unlocked)
+  count.write(2);       // Only let two tasks in at a time.
+  lock$.writeXF(true);  // Set lock$ to full (unlocked)
   // Note: The value doesnt actually matter, just the state
   // (full:unlocked / empty:locked)
   // Also, writeXF() fills (F) the sync var regardless of its state (X)
@@ -1131,17 +1158,17 @@ proc main(){
     // Create a barrier
     do {
       lock$;                 // Read lock$ (wait)
-    } while ( count.read() < 1 ); // Keep waiting until a spot opens up
+    } while (count.read() < 1); // Keep waiting until a spot opens up
 
     count.sub(1);          // decrement the counter
-    lock$.writeXF( true ); // Set lock$ to full (signal)
+    lock$.writeXF(true); // Set lock$ to full (signal)
 
     // Actual 'work'
-    writeln( "Task #", task, " doing work." );
-    sleep( 2 );
+    writeln("Task #", task, " doing work.");
+    sleep(2);
 
-    count.add( 1 );        // Increment the counter
-    lock$.writeXF( true ); // Set lock$ to full (signal)
+    count.add(1);        // Increment the counter
+    lock$.writeXF(true); // Set lock$ to full (signal)
   }
 
 // We can define the operations ``+ * & | ^ && || min max minloc maxloc``
@@ -1157,13 +1184,13 @@ proc main(){
   var (theMaxValue, idxOfMax) = maxloc reduce zip(listOfValues,
                                                   listOfValues.domain);
 
-  writeln( (sumOfValues, maxValue, idxOfMax, listOfValues[ idxOfMax ] ) );
+  writeln((sumOfValues, maxValue, idxOfMax, listOfValues[idxOfMax]));
 
 // Scans apply the operation incrementally and return an array with the
 // values of the operation at that index as it progressed through the
 // array from ``array.domain.low`` to ``array.domain.high``.
   var runningSumOfValues = + scan listOfValues;
   var maxScan = max scan listOfValues;
-  writeln( runningSumOfValues );
-  writeln( maxScan );
+  writeln(runningSumOfValues);
+  writeln(maxScan);
 } // end main()

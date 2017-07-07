@@ -258,7 +258,7 @@ module analyze_RMAT_graph_associative_array {
       // WARNING: This can't be zippered with anything other than itself
       iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
-        const neighbors => Row(v).neighborList;
+        const ref neighbors = Row(v).neighborList;
         const (low, high, wholeLow) = followThis;
         // 1-d, no stride
         const myElems = (low..high) + wholeLow;

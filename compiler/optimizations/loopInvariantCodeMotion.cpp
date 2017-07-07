@@ -24,6 +24,7 @@
 #include "bitVec.h"
 #include "CForLoop.h"
 #include "dominator.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
@@ -309,7 +310,7 @@ rhsAlias(CallExpr* call) {
   for_alist(expr, call->argList) {
     if(SymExpr* symExpr = toSymExpr(expr)) {
       Type* symType = symExpr->symbol()->type->symbol->type;
-      if(isReferenceType(symType) || isRecordWrappedType(symType)) {
+      if(symExpr->isRef() || isRecordWrappedType(symType)) {
         hasRef = true;
       }
     }
@@ -349,7 +350,8 @@ rhsAlias(CallExpr* call) {
           // instead of the field itself. We need to return the field so that
           // we note that the lhs aliases the field and not just an integer 
           return getSvecSymbol(rhsCall);
-        } else if(rhsCall->isPrimitive(PRIM_ADDR_OF)) {
+        } else if(rhsCall->isPrimitive(PRIM_ADDR_OF) ||
+                  rhsCall->isPrimitive(PRIM_SET_REFERENCE)) {
           SymExpr* rhs = toSymExpr(rhsCall->get(1));
           INT_ASSERT(rhs);
           return rhs->symbol();
@@ -438,6 +440,7 @@ static bool isLoopInvariantPrimitive(PrimitiveOp* primitiveOp)
       case PRIM_GET_SVEC_MEMBER_VALUE:        
     
       case PRIM_ADDR_OF:            
+      case PRIM_SET_REFERENCE:
       case PRIM_DEREF:    
         return true;
     default:
@@ -861,17 +864,13 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     if (isArgSymbol(symExpr->symbol()) &&
         symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
       if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
-        if(argSymbol->intent == INTENT_REF ||
-           argSymbol->intent == INTENT_CONST_REF ||
-           isReferenceType(argSymbol->type)) {
+        if(argSymbol->isRef()) {
           mightHaveBeenDeffedElseWhere = true;
         }
       }
       for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
         if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
-          if(argSymbol->intent == INTENT_REF ||
-             argSymbol->intent == INTENT_CONST_REF ||
-             isReferenceType(argSymbol->type)) {
+          if(argSymbol->isRef()) {
             mightHaveBeenDeffedElseWhere = true;
           }
         }

@@ -36,20 +36,21 @@ extern int         yystartlineno;
 extern const char* yyfilename;
 extern BlockStmt*  yyblock;
 
-ModuleSymbol*      parseFile(const char* filename,
-                             ModTag      modtype,
-                             bool        namedOnCommandLine = false);
+void               parse();
 
-ModuleSymbol*      parseMod(const char* modname,
-                            ModTag      modtype);
+void               setupModulePaths();
+
+void               addFlagModulePath(const char* newpath);
+
+void               addModuleToParseList(const char* name,
+                                        UseStmt*    newUse);
+
+const char*        pathNameForInternalFile(const char* baseName);
+
+const char*        pathNameForStandardFile(const char* baseName);
 
 BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
-
-void               addModuleToParseList(const char* name,
-                                        UseStmt*   newUse);
-
-void               parseDependentModules(ModTag modtype);
 
 #endif

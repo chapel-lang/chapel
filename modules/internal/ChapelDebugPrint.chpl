@@ -26,6 +26,7 @@
  */
 
 module ChapelDebugPrint {
+  use ChapelStandard;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";

@@ -226,9 +226,9 @@ module Buffers {
     .. note::
 
        The pointer returned by this method is only valid for the lifetime of
-       the :type:`bytes` object and will be invalid if this memory is freed.
+       the `bytes` object and will be invalid if this memory is freed.
 
-    :returns: a :type:`c_void_ptr` to the internal byte array
+    :returns: a `c_void_ptr` to the internal byte array
    */
   proc bytes.ptr(): c_void_ptr {
     return qbytes_data(this._bytes_internal);
@@ -626,15 +626,15 @@ module Buffers {
 
   /* methods to read/write basic types. */
 
-  /* Read a basic type (integral or floating point value) or :type:`string`
+  /* Read a basic type (integral or floating point value) or `string`
      from a buffer.
      For basic types, this method reads the value by copying from memory -
      so it reads a binary value in native endianness. For strings, this method
-     reads a string encoded as the string length (as :type:`int`) followed by
-     that number of bytes (as :type:`uint(8)`).
+     reads a string encoded as the string length (as `int`) followed by
+     that number of bytes (as `uint(8)`).
 
      :arg it: a :record:`buffer_iterator` where reading will start
-     :arg value: a basic type or :type:`string`
+     :arg value: a basic type or `string`
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
      :returns: a buffer iterator storing the position immediately after
@@ -693,15 +693,15 @@ module Buffers {
     return ret;
   }
 
-  /* Write a basic type (integral or floating point value) or :type:`string`
+  /* Write a basic type (integral or floating point value) or `string`
      to a buffer.
      For basic types, this method writes the value by copying to memory -
      so it writes a binary value in native endianness. For strings, this method
-     writes a string encoded as the string length (as :type:`int`) followed by
-     that number of bytes (as :type:`uint(8)`).
+     writes a string encoded as the string length (as `int`) followed by
+     that number of bytes (as `uint(8)`).
 
      :arg it: a :record:`buffer_iterator` where reading will start
-     :arg value: a basic type or :type:`string`
+     :arg value: a basic type or `string`
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
      :returns: a buffer iterator storing the position immediately after

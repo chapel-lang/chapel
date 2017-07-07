@@ -1,2 +1,2 @@
-docs/Bar.txt
-docs/toBeIgnored.txt
+docs/source/modules/Bar.rst
+docs/source/modules/toBeIgnored.rst

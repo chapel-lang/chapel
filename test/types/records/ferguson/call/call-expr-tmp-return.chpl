@@ -9,7 +9,6 @@ proc make(i:int) {
 
 proc foo(rec: R) {
   rec.verify();
-  rec.increment();
   rec.verify();
   return rec;
 }

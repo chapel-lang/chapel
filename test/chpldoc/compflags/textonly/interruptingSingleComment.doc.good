@@ -1,0 +1,6 @@
+interruptingSingleComment.doc
+
+Usage:
+   use interruptingSingleComment.doc;
+
+   proc foo()

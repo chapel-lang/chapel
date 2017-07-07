@@ -17,7 +17,7 @@
 
 PYTHON_VERSION_DIR = py$(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
 
-develall: STATUS
+develall:
 	@$(MAKE) always-build-man
 	@$(MAKE) always-build-chplspell-venv
 
@@ -36,7 +36,7 @@ man-chpldoc: FORCE
 man-chapel: FORCE
 	cd doc && $(MAKE) man-chapel
 	mkdir -p man/man3
-	cp doc/build/man/chapel.3 man/man3/chapel.3
+	cp build/doc/man/chapel.3 man/man3/chapel.3
 
 always-build-man: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_MAN" ]; then \
@@ -63,10 +63,6 @@ SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
 	./util/devel/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
-
-STATUS: STATUS.devel
-	grep -v "^\ *#" STATUS.devel > STATUS
-
 
 FUTURES:
 	cd test && find . -wholename ".svn" -prune -o \( -name \*.future \) -exec head -n 1 {} + > FUTURES

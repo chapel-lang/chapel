@@ -1,0 +1,6 @@
+illegalSizes.chpl:1: error: illegal size 13 for bool
+illegalSizes.chpl:2: error: illegal size 32 for complex
+illegalSizes.chpl:4: error: illegal size 42 for imag
+illegalSizes.chpl:5: error: illegal size 37 for int
+illegalSizes.chpl:6: error: illegal size 1 for real
+illegalSizes.chpl:7: error: illegal size 7 for uint

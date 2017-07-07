@@ -23,6 +23,7 @@
 // represent reindexings of another array via a domain.
 //
 module ArrayViewReindex {
+  use ChapelStandard;
 
   //
   // This class represents a distribution that knows how to create
@@ -100,6 +101,8 @@ module ArrayViewReindex {
     }
 
     proc dsiBuildArray(type eltType) {
+      //      writeln("New array in dsiBuildArray");
+      //      writeln(downdom.dsiDims());
       pragma "no auto destroy"
       const downarr = _newArray(downdom.dsiBuildArray(eltType));
       return new ArrayViewReindexArr(eltType  =eltType,
@@ -172,9 +175,7 @@ module ArrayViewReindex {
                                                          stridable=dist.downdomInst.stridable);
       pragma "no auto destroy"
       var downdomLoc = _newDomain(downdomclass);
-      if updomRec.size > 0 {
-        downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
-      }
+      downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
       //      writeln("downdom is: ", downdomLoc);
       downdomLoc._value._free_when_no_arrs = true;
       downdomPid = downdomLoc._pid;
@@ -308,6 +309,10 @@ module ArrayViewReindex {
     const _ArrPid;
     const _ArrInstance;
 
+    proc initialize() {
+      //      writeln("In initialize(), _ArrInstance: ", _ArrInstance.dom.dsiDims());
+    }
+    
     // If this is an array view on a DefaultRectangular array
     // (eventually...), the indexCache provides a mean of directly
     // accessing the array's ddata to avoid indirection overheads
@@ -321,6 +326,8 @@ module ArrayViewReindex {
         chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid)
       else
         _ArrInstance;
+      //      writeln("in downdom: ", arr.dom.dsiDims());
+      //      writeln("_ArrInstance: ", _ArrInstance.dom.dsiDims());
       return arr.dom;
     }
 
@@ -352,7 +359,6 @@ module ArrayViewReindex {
     proc isReindexArrayView() param {
       return true;
     }
-
 
 
     //
@@ -528,6 +534,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
+      //      writeln("New array in dsiPrivatize()");
       return new ArrayViewReindexArr(eltType=this.eltType,
                                      _DomPid=privatizeData(1),
                                      dom=privatizeData(2),
@@ -693,15 +700,22 @@ module ArrayViewReindex {
     // indices/domains back into the original index set.
     //
 
+  inline proc chpl_reindexConvertIdxDim(i: integral, updom, downdom, dim: int) {
+    //    writeln("   Converting ", i);
+    //    writeln("     from ", updom.dsiDim(dim));
+    //    writeln("     to   ", downdom.dsiDim(dim));
+    return downdom.dsiDim(dim).orderToIndex(updom.dsiDim(dim).indexOrder(i));
+  }
+  
     inline proc chpl_reindexConvertIdx(i: integral, updom, downdom) {
       compilerAssert(downdom.rank == 1, downdom.rank:string);
-      return downdom.dsiDim(1).orderToIndex(updom.dsiDim(1).indexOrder(i));
+      return chpl_reindexConvertIdxDim(i, updom, downdom, 1);
     }
 
     inline proc chpl_reindexConvertIdx(i, updom, downdom) {
       var ind: downdom.rank*downdom.idxType;
       for param d in 1..downdom.rank {
-        ind(d) = downdom.dsiDim(d).orderToIndex(updom.dsiDim(d).indexOrder(i(d)));
+        ind(d) = chpl_reindexConvertIdxDim(i, updom, downdom, d);
       }
       return ind;
     }
@@ -713,22 +727,25 @@ module ArrayViewReindex {
     }
 
     var ranges : downdom.dsiDims().type;
-    var low , high : updom.rank*updom.idxType;
-    for param d in 1..dims.size do low(d) = dims(d).first;
-    for param d in 1..dims.size do high(d) = dims(d).last;
-
-    //    writeln("low, high = ", (low, high));
-
-    var actualLow = chpl_reindexConvertIdx(low, updom, downdom);
-    var actualHigh = chpl_reindexConvertIdx(high, updom, downdom);
-
-    //    writeln("actuals = ", (actualLow, actualHigh));
-
+    var actualLow, actualHigh: downdom.rank*downdom.idxType;
+    //    writeln("Converting ", dims);
+    //    writeln("Using updom ", updom.dsiDims());
+    //    writeln("and   downdom ", downdom.dsiDims());
+    for param d in 1..dims.size {
+      //      writeln(" dim ", d, ".size = ", dims(d).size);
+      if (dims(d).size == 0) {
+        actualLow(d) = downdom.dsiDim(d).low;
+        actualHigh(d) = downdom.dsiDim(d).high;
+      } else {
+        actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, updom, downdom, d);
+        actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
+      }
+    }
+    //    writeln("converted to ", actualLow, ", ", actualHigh);
     for param d in 1..updom.rank {
       // Slicing the ranges preserves the stride
       ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
     }
-        //writeln("ranges = ", ranges);
     return {(...ranges)};
   }
 }

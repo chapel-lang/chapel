@@ -45,7 +45,6 @@ CallExpr* buildTuple(CallExpr* call);
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 
 Expr* buildNamedActual(const char* name, Expr* expr);
-Expr* buildNamedAliasActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
@@ -66,7 +65,14 @@ BlockStmt* buildRequireStmt(CallExpr* args);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs);
+
+ModuleSymbol* buildModule(const char* name,
+                          ModTag      modTag,
+                          BlockStmt*  block,
+                          const char* filename,
+                          bool        priv,
+                          const char* docs);
+
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
@@ -119,14 +125,16 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs);
 
-DefExpr*  buildClassDefExpr(const char* name,
-                            const char* cname,
-                            Type*       type,
-                            Expr*       inherit,
-                            BlockStmt*  decls,
-                            Flag        isExtern,
-                            const char* docs);
+DefExpr*  buildClassDefExpr(const char*   name,
+                            const char*   cname,
+                            AggregateTag  tag,
+                            Expr*         inherit,
+                            BlockStmt*    decls,
+                            Flag          isExtern,
+                            const char*   docs);
+
 void setupTypeIntentArg(ArgSymbol* arg);
+
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);

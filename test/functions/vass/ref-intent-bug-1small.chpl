@@ -3,7 +3,7 @@ var bbb: DefaultRectangularArr(int, 1, int, false);
 
 proc storecache(ref cache) {
   on here {
-    var slice => aaa;
+    ref slice = aaa;
     cache = slice._value;
   }
 }

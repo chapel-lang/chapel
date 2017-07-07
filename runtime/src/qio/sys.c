@@ -876,7 +876,7 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
     *num_read = 0;
     return errno;
   }
-  assert(got <= count); // can't read more than requested!
+  assert((size_t) got <= count); // can't read more than requested!
   *num_read = got;
   return 0;
 #endif
@@ -921,7 +921,7 @@ err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *nu
     *num_written = 0;
     return errno;
   }
-  assert(got <= count); // can't write more than requested!
+  assert((size_t) got <= count); // can't write more than requested!
   *num_written = got;
   return 0;
 #endif

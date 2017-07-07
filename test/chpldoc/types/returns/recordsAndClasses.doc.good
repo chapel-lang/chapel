@@ -1,13 +1,24 @@
-recordsAndClasses.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: recordsAndClasses.doc
+
+recordsAndClasses.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
    use recordsAndClasses.doc;
 
-   Record: thingy
-   proc takesAThingy(): thingy
-      This method returns a record 
+.. record:: thingy
 
-   Class: whatchamacallit
-   proc takesAWhatchamacallit(): whatchamacallit
-      This method returns a whatchamacallit 
+.. function:: proc takesAThingy(): thingy
+
+   This method returns a record 
+
+.. class:: whatchamacallit
+
+.. function:: proc takesAWhatchamacallit(): whatchamacallit
+
+   This method returns a whatchamacallit 
 

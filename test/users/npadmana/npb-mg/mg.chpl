@@ -4,7 +4,7 @@
 //   -- start with the most concise/abstract solution
 //   -- factor out the stencil convolution operation, so that we might speed that up.
 //   -- use the Stencil distribution
-//   -- NOTE : We will make a number of optimizations assuming that the third dimension is 
+//   -- NOTE : We will make a number of optimizations assuming that the third dimension is
 //             fully local. TODO : This should be enforced in the dmapped statement itself.
 use Time;
 use StencilDist;
@@ -13,17 +13,17 @@ use StencilDist;
 enum NPB {S,A,B,C}; // TODO : Make complete.
 const ProblemSizes : [NPB.S..NPB.C] int = [32, 256, 256, 512],
       ProblemIters : [NPB.S..NPB.C] int = [4, 4, 20, 20],
-      ExpectedResids : [NPB.S..NPB.C] real = [0.5307707005735e-04, 
+      ExpectedResids : [NPB.S..NPB.C] real = [0.5307707005735e-04,
                                               0.2433365309069e-05,
                                               0.1800564401355e-05,
                                               0.5706732285705e-06],
       fracGoal = 1.0e-8;
 
 config const NPBClass : NPB = NPB.S;
-config const debug=false;
-config const verifyOnly=false;
+config const debug          = false;
+config const verifyOnly     = false;
 
-param Ndim=3;
+param Ndim = 3;
 
 
 const N=ProblemSizes[NPBClass],
@@ -34,7 +34,7 @@ const N=ProblemSizes[NPBClass],
       HaloSize = (1,1,1),
       LevelDom = {1..numlevels};
 
-type coeff = [0..3] real; 
+type coeff = 4*real;
 
 // Initialize levels
 class MGLevel {
@@ -48,7 +48,7 @@ class MGLevel {
 var fluffTime : Timer;
 
 proc main() {
-  // Allocate the levels 
+  // Allocate the levels
   var Levels : [LevelDom] MGLevel;
   for ilevel in LevelDom do Levels[ilevel] = new MGLevel(2**ilevel);
 
@@ -58,7 +58,7 @@ proc main() {
   writeln("Running class : ", NPBClass);
 
   fillInit(U, V);
-  
+
   var timeit : Timer;
   timeit.clear();
   timeit.start();
@@ -94,13 +94,13 @@ proc main() {
   }
 
   for il in Levels do delete il;
-  
+
 }
 
 
 
 
-/* Multigrid step 
+/* Multigrid step
 */
 proc mgstep(U, V, Levels) {
   var t1 : Timer;
@@ -112,7 +112,7 @@ proc mgstep(U, V, Levels) {
 
   for il in 2..numlevels by -1 do restrict(Levels[il-1].R, Levels[il].R);
   debugPrint("Elapsed time after restrictions :",t1.elapsed());
-  
+
   Levels[1].Z = 0.0;
   smooth(Levels[1].Z, Levels[1].R);
 
@@ -136,13 +136,13 @@ proc norm(R) : real {
   return sqrt((+ reduce R**2)/(N:real**3));
 }
 
-/* 
-   Restriction operation 
+/*
+   Restriction operation
 
    fine is input, coarse is output
  */
 proc restrict(coarse:[?coarseDom] real, fine : [?FineDom]real) {
-  const w : coeff = [1.0/2.0, 1.0/4.0, 1.0/8.0, 1.0/16.0];
+  const w : coeff = (1.0/2.0, 1.0/4.0, 1.0/8.0, 1.0/16.0);
   fine.updateFluff();
 
   forall (i,j,k) in coarseDom {
@@ -177,55 +177,53 @@ proc restrict(coarse:[?coarseDom] real, fine : [?FineDom]real) {
   }
 }
 
-/* 
- Smoothing operator 
+/*
+ Smoothing operator
 
  z = z + S r
 */
-proc smooth(Z :[?Dom] real, R : []real) {
-  // The smoothing operator is defined differently for different classes. This is 
+proc smooth(Z :[] real, const ref R : []real) {
+  // The smoothing operator is defined differently for different classes. This is
   // the S(a) definition
   const w : coeff = smoothingCoeff(NPBClass);
 
   // Do the actual stencil convolution
-  stencilConvolve(Z, R, w, true);
+  stencilConvolve(Z, R, w);
 }
 
-/* 
- Residual operator 
+/*
+ Residual operator
 
  r = r - A z
 */
 proc resid(R:[?Dom]real, V:[]real, Z:[]real) {
-  // Negative of the coefficients, since always subtract
-  const w : coeff = [8.0/3.0, 0.0, -1.0/6.0, -1.0/12.0];
   // TODO : Why does this not optimize properly???
   // R = V;
   [ijk in Dom] R.localAccess[ijk] = V.localAccess[ijk];
-  stencilConvolve(R,Z,w,true);
+  resid(R, Z);
 }
+
 // Overload when V = R
-proc resid(R:[?Dom]real, Z:[]real) {
+proc resid(R:[?Dom]real, const ref Z:[]real) {
   // Negative of the coefficients, since always subtract
-  const w : coeff = [8.0/3.0, 0.0, -1.0/6.0, -1.0/12.0];
-  stencilConvolve(R,Z,w,true);
+  const w : coeff = (8.0/3.0, 0.0, -1.0/6.0, -1.0/12.0);
+  stencilConvolve(R,Z,w);
 }
 
-/* 
- Prolongation operator 
+/*
+ Prolongation operator
 
- We do this in a simple manner, which requires creating a temporary array. It can also 
+ We do this in a simple manner, which requires creating a temporary array. It can also
  be easily optimized at the cost of more code.
 */
 proc prolong(fine:[?fineDom]real, coarse:[?coarseDom]real) {
-  const dom = {0..1,0..1,0..1};
   coarse.updateFluff();
   // TODO : This is a horrific piece of code.
   forall (i,j,k) in coarseDom {
     const i2 = 2*i,
           j2 = 2*j,
           k2 = 2*k;
-    //var y : [dom] real;
+    //var y : [0..1, 0..1, 0..1] real;
     const y000 = coarse.localAccess[i,j,k],
           y001 = coarse.localAccess[i,j,k+1],
           y010 = coarse.localAccess[i,j+1,k],
@@ -234,7 +232,7 @@ proc prolong(fine:[?fineDom]real, coarse:[?coarseDom]real) {
           y101 = coarse.localAccess[i+1,j,k+1],
           y011 = coarse.localAccess[i,j+1,k+1],
           y111 = coarse.localAccess[i+1,j+1,k+1];
-    //for (i1,j1,k1) in dom do y[i1,j1,k1] = coarse.localAccess[i+i1,j+j1,k+k1];
+    //for (i1,j1,k1) in y.domain do y[i1,j1,k1] = coarse.localAccess[i+i1,j+j1,k+k1];
     fine.localAccess[i2,j2,k2] = y000;
     const yx = y000+y100,
           yy = y000+y010,
@@ -254,56 +252,95 @@ proc prolong(fine:[?fineDom]real, coarse:[?coarseDom]real) {
 }
 
 
-inline proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff, 
-    param inc : bool = false) {
+proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff) {
+  // Reading from 'src', need to update the local cache
   fluffTime.start();
   src.updateFluff();
   fluffTime.stop();
+
+  //
   // Do the actual stencil convolution
+  //
+  // TODO: use local slice feature when available to avoid manual calls to
+  // localAccess
+  //
   coforall loc in dest.targetLocales() {
     on loc {
-      const w0 = w[0],
-            w1 = w[1],
-            w2 = w[2],
-            w3 = w[3];
+      const (w0, w1, w2, w3) = w;
+
+      const locdom = dest.localSubdomain();
+      const outer  = {locdom.dim(1),locdom.dim(2)},
+            inner  = locdom.dim(3);
+      const (klo, khi) = (inner.low, inner.high);
       local {
-        var locdom = dest.localSubdomain();
-        var locdom2 = {locdom.dim(1),locdom.dim(2)},
-            locdom3 = locdom.dim(3);
-        const klo = locdom3.low,
-              khi = locdom3.high;
-        forall (i1,j1) in locdom2  {
-          // Zero
-          dest.localAccess[i1,j1,klo-1] = 0.0; 
-          dest.localAccess[i1,j1,khi+1] = 0.0;
-          if !inc {
-            [k1 in locdom3] dest.localAccess[i1,j1,k1] = 0.0;
+        // Helpers
+        inline proc locSrc(i,j,k) {
+          return src.localAccess[i, j, k];
+        }
+        inline proc valA(i,j,k) {
+          return locSrc[i+1, j, k] + locSrc[i-1, j, k] +
+                 locSrc[i, j+1, k] + locSrc[i, j-1, k];
+        }
+        inline proc valB(i,j,k) {
+          return locSrc[i+1,j+1,k] + locSrc[i-1,j+1,k] +
+                 locSrc[i+1,j-1,k] + locSrc[i-1,j-1,k];
+        }
+        forall (i,j) in outer  {
+          dest.localAccess[i,j,klo] += w2 * valA(i,j,klo-1) +
+                                       w3 * valB(i,j,klo-1);
+
+          for k in vectorizeOnly(klo..khi) {
+            const val1 = locSrc[i,j,k];
+            const val2 = valA(i,j,k);
+            const val3 = valB(i,j,k);
+
+            const myVal2 = val2 + locSrc[i,j,k-1] + locSrc[i,j,k+1];
+
+            dest.localAccess[i,j,k] += w0*val1 + w1*myVal2 + w2*val3;
+
+            // Update previous and next destinations with this iteration's
+            // val2 and val3
+            const temp = w2 * val2 + w3 * val3;
+            dest.localAccess[i,j,k-1] += temp;
+            dest.localAccess[i,j,k+1] += temp;
           }
-          for k1 in vectorizeOnly(klo..khi) {
-            var val = src.localAccess[i1,j1,k1];
-            var val1 = src.localAccess[i1+1,j1,k1]+src.localAccess[i1-1,j1,k1]+
-              src.localAccess[i1,j1+1,k1]+src.localAccess[i1,j1-1,k1];
-            var val2 = src.localAccess[i1+1,j1+1,k1]+src.localAccess[i1-1,j1+1,k1]+
-              src.localAccess[i1+1,j1-1,k1]+src.localAccess[i1-1,j1-1,k1];
-            dest.localAccess[i1,j1,k1] += w0*val + w1*val1 + w2*val2;
-            var tmp = w1*val + w2*val1 + w3*val2;
-            dest.localAccess[i1,j1,k1-1] += tmp;
-            dest.localAccess[i1,j1,k1+1] += tmp;
-          }
-          // Handle periodic boundary conditions
-          dest.localAccess[i1,j1,klo] += dest.localAccess[i1,j1,khi+1];
-          dest.localAccess[i1,j1,khi] += dest.localAccess[i1,j1,klo-1]; 
+
+          dest.localAccess[i,j,khi] += w2 * valA(i,j,khi+1) +
+                                       w3 * valB(i,j,khi+1);
         }
       }
     }
   }
+
+  //
+  // Our ideal loop would look something like this, but task-private arrays
+  // are currently not supported (2017-05-22)
+  //
+  //var ta, tb : [inner.expand(1)] real;
+  //forall (i, j) in outer with (in ta, in tb) {
+  //  for k in ta.domain {
+  //    ta(k) = src.localAccess[i+1, j, k] + src.localAccess[i-1, j, k] +
+  //            src.localAccess[i, j+1, k] + src.localAccess[i, j-1, k];
+  //
+  //    tb(k) = src.localAccess[i-1, j-1, k] + src.localAccess[i-1, j+1, k] +
+  //            src.localAccess[i+1, j-1, k] + src.localAccess[i+1, j+1, k];
+  //  }
+  //  for k in inner {
+  //    // TODO: param-fold zero coefficients
+  //    dest.localAccess[i, j, k] += w0 * src.localAccess[i,j,k] +
+  //      w1 * (src.localAccess[i, j, k-1] + src.localAccess[i, j, k+1] + ta[k]) +
+  //      w2 * (tb(k) + ta(k-1) + ta(k+1)) +
+  //      w3 * (tb(k-1) + tb(k+1));
+  //  }
+  //}
+  //
 }
 
 
 // This is hardcoded, for simplicity.
 proc fillInit(U, V : [?Dom]) {
   // Different cases for different classes
-  // This could be generated on the fly, but it's simpler to just copy over the 
+  // This could be generated on the fly, but it's simpler to just copy over the
   // correct values, since there are just 20 points.
   var negative, positive : [1..10] Ndim*int;
 
@@ -347,7 +384,7 @@ proc fillInit(U, V : [?Dom]) {
 inline proc increment(src : [?Dom]real, dest : []real) {
   forall ijk in Dom do dest.localAccess[ijk] += src.localAccess[ijk];
 }
-  
+
 
 inline proc debugPrint(x...) {
   if debug then writeln((...x));
@@ -355,8 +392,8 @@ inline proc debugPrint(x...) {
 
 inline proc smoothingCoeff(c : NPB) {
   if c <= NPB.A {
-    return [-3.0/8.0, 1.0/32.0, -1.0/64.0, 0.0];
+    return (-3.0/8.0, 1.0/32.0, -1.0/64.0, 0.0);
   } else {
-    return [-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0];
+    return (-3.0/17.0, 1.0/33.0, -1.0/61.0, 0.0);
   }
 }

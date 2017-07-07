@@ -19,6 +19,7 @@
 
 #include "AstDumpToNode.h"
 
+#include "CatchStmt.h"
 #include "CForLoop.h"
 #include "DoWhileStmt.h"
 #include "driver.h"
@@ -32,6 +33,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "TryStmt.h"
 #include "WhileDoStmt.h"
 
 bool        AstDumpToNode::compact      = false;
@@ -181,7 +183,8 @@ void AstDumpToNode::enterNode(BaseAST* node) const
   {
     if (FnSymbol* fn = toFnSymbol(node))
     {
-      fprintf(mFP, "%s%-10s", delimitEnter, node->astTagAsString());
+      fprintf(mFP, "%s%-12s", delimitEnter, node->astTagAsString());
+
       writeNodeID(node, true, false);
 
       if (fn->hasFlag(FLAG_GENERIC) == true)
@@ -189,9 +192,16 @@ void AstDumpToNode::enterNode(BaseAST* node) const
         fprintf(mFP, " (Generic)");
       }
     }
+
+    else if (isUnresolvedSymExpr(node) == true)
+    {
+      fprintf(mFP, "%s%-12s", delimitEnter, "UsymExpr");
+      writeNodeID(node, true, false);
+    }
+
     else
     {
-      fprintf(mFP, "%s%-10s", delimitEnter, node->astTagAsString());
+      fprintf(mFP, "%s%-12s", delimitEnter, node->astTagAsString());
       writeNodeID(node, true, false);
     }
   }
@@ -229,9 +239,10 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
   }
   else
   {
-    const char* tag = modTagDescrString(node->modTag);
+    const char* tag = ModuleSymbol::modTagToString(node->modTag);
 
     enterNode(node);
+
     fprintf(mFP, " %s", node->name);
 
     mOffset = mOffset + 2;
@@ -321,7 +332,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     next_ast->accept(this);
   }
 
-  if (node->modUses)
+  if (node->useList)
   {
     fprintf(mFP, "\n");
 
@@ -330,7 +341,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     write(false, "ModUses:", false);
     mOffset = mOffset + 2;
     newline();
-    node->modUses->accept(this);
+    node->useList->accept(this);
     mOffset = mOffset - 2;
   }
 
@@ -700,8 +711,6 @@ bool AstDumpToNode::enterParamForLoop(ParamForLoop* node)
 
 bool AstDumpToNode::enterDefExpr(DefExpr* node)
 {
-  bool isSimple = true;
-
   enterNode(node);
 
   if (node->sym                 != 0 &&
@@ -720,9 +729,6 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
 
     if (compact == false)
       mOffset = mOffset - 39;
-
-    // NOAKES 2015/02/16 Need better logic for this
-    //    isSimple = false;
   }
   else
   {
@@ -759,12 +765,7 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
     }
 
     mOffset  = mOffset - 2;
-
-    isSimple = false;
   }
-
-  if (isSimple == false)
-    newline();
 
   exitNode(node);
 
@@ -1137,7 +1138,14 @@ bool AstDumpToNode::enterCondStmt(CondStmt* node)
 void AstDumpToNode::visitEblockStmt(ExternBlockStmt* node)
 {
   enterNode(node);
-  fprintf(mFP, "(%s", node->astTagAsString());
+
+  mOffset = mOffset + 2;
+  newline();
+
+  fputs(node->c_code, mFP);
+
+  mOffset = mOffset - 2;
+  newline();
   exitNode(node);
 }
 
@@ -1206,9 +1214,55 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
   return false;
 }
 
-void AstDumpToNode::exitGotoStmt(GotoStmt* node)
+bool AstDumpToNode::enterTryStmt(TryStmt* node)
 {
+  enterNode(node);
 
+  if (node->tryBang() == true)
+  {
+    fprintf(mFP, "   Try!");
+  }
+
+
+  mOffset = mOffset + 2;
+  newline();
+
+  if (node->_body != NULL)
+  {
+    node->_body->accept(this);
+  }
+
+  for_alist(catchStmt, node->_catches) {
+    newline();
+    catchStmt->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+
+  return false;
+}
+
+bool AstDumpToNode::enterCatchStmt(CatchStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+  newline();
+
+  if (node->_body != NULL)
+  {
+    mOffset = mOffset + 2;
+    node->_body->accept(this);
+    mOffset = mOffset - 2;
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+
+  return false;
 }
 
 //
@@ -1270,16 +1324,28 @@ void AstDumpToNode::exitAggrType(AggregateType* node)
 
 bool AstDumpToNode::enterEnumType(EnumType* node)
 {
-  enterNode(node);
-  mOffset = mOffset + 2;
-  return true;
-}
+  bool firstTime = true;
 
-void AstDumpToNode::exitEnumType(EnumType* node)
-{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+  newline();
+
+  for_alist(field, node->constants)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      newline();
+
+    field->accept(this);
+  }
+
   mOffset = mOffset - 2;
   newline();
   exitNode(node);
+
+  return false;
 }
 
 //
@@ -1361,7 +1427,8 @@ bool AstDumpToNode::enterArgSym(ArgSymbol* node)
 void AstDumpToNode::visitEnumSym(EnumSymbol* node)
 {
   enterNode(node);
-  exitNode(node, true);
+  fprintf(mFP, " name: %s", node->name);
+  exitNode(node, false);
 }
 
 //

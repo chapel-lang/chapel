@@ -1,4 +1,2 @@
 record-no-copy-init-error.chpl:18: In function 'foo':
-record-no-copy-init-error.chpl:28: error: copy-initialization invoked for a type that does not have a copy initializer
-record-no-copy-init-error.chpl:13: In function 'returnRef':
-record-no-copy-init-error.chpl:15: error: copy-initialization invoked for a type that does not have a copy initializer
+record-no-copy-init-error.chpl:28: error: No copy constructor for initializer

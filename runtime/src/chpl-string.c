@@ -58,7 +58,7 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
   if (chpl_nodeID == node) {
     chpl_memcpy(addr, raddr, size);
   } else {
-    chpl_gen_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    chpl_gen_comm_get(addr, node, raddr, size, typeIndex, CHPL_COMM_UNKNOWN_ID, ln, fn);
   }
 
   // And now we copy the bytes in the string itself.
@@ -115,7 +115,7 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
     chpl_gen_comm_get((void *)&(*chpl_macro_tmp),
                       chpl_rt_nodeFromLocaleID(x->locale), (void *)(x->addr),
                       sizeof(char) * x->size, tid,
-                      lineno, filename);
+                      CHPL_COMM_UNKNOWN_ID, lineno, filename);
   *local = chpl_macro_tmp;
 }
 

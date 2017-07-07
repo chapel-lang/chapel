@@ -1,21 +1,44 @@
-surroundingModule.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: surroundingModule.doc
+
+surroundingModule.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
    use surroundingModule.doc;
 
-Submodules for this module are located in the surroundingModule.doc/ directory
+**Submodules**
 
-   proc before()
-      This comment and its proc lies before the defined module 
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
-   proc after()
-      This comment and its proc lies after the defined module 
+   surroundingModule.doc/*
+
+.. function:: proc before()
+
+   This comment and its proc lies before the defined module 
+
+.. function:: proc after()
+
+   This comment and its proc lies after the defined module 
+
+.. default-domain:: chpl
+
+.. module:: Middle
 
 Middle
+======
+**Usage**
 
-Usage:
+.. code-block:: chapel
+
    use surroundingModule.doc.Middle;
 
-   proc inside()
-      This comment and its proc lies inside the defined module 
+.. function:: proc inside()
+
+   This comment and its proc lies inside the defined module 
 

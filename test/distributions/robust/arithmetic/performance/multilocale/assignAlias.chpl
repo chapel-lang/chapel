@@ -5,7 +5,7 @@ var B: [Dom4D] 4*int;
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var AA => A;
+ref AA = A;
 stopCommDiagnostics();
 writeln(getCommDiagnostics());
 resetCommDiagnostics();

@@ -25,6 +25,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
@@ -32,6 +33,7 @@ studies/shootout/thread-ring/thread-ring.graph
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
 studies/isx/isx.graph
 release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
@@ -53,6 +55,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
@@ -72,15 +75,13 @@ performance/bradc/parOpEquals.graph
 performance/sungeun/assign.1024.graph
 performance/sungeun/init.graph
 performance/thomasvandoren/matrix-multiply.graph
-parallel/taskCompare/elliot/taskSpawn.graph
-parallel/taskCompare/elliot/serialTaskSpawn.graph
 distributions/robust/associative/performance/array_iter.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
 performance/bharshbarg/views-forall-index.graph
 performance/bharshbarg/views-forall-iter.graph
-studies/prk/stencil/prk-stencil-time.graph
+studies/prk/Stencil/prk-stencil-time.graph
 types/string/ferguson/temporary-copies.graph
 types/string/psahabu/perf/arguments.graph
 types/string/psahabu/perf/search.graph
@@ -110,6 +111,7 @@ release/examples/benchmarks/ssca2/performance.graph
 # suite: DOE proxy apps
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
 release/examples/benchmarks/lcals/LCALS-raw-short.graph
 release/examples/benchmarks/lcals/LCALS-raw-medium.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
@@ -127,6 +129,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/nbody/nbody.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
+studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
@@ -141,11 +144,11 @@ studies/shootout/submitted/meteor-submitted.graph
 studies/shootout/submitted/nbody-submitted.graph
 studies/shootout/submitted/pidigits-submitted.graph
 studies/shootout/submitted/regexdna-submitted.graph
+studies/shootout/submitted/regexdnaredux-submitted.graph
 studies/shootout/submitted/revcomp-submitted.graph
 studies/shootout/submitted/spectralnorm-submitted.graph
 studies/shootout/submitted/threadring-submitted.graph
 # suite: Shootout extras
-studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/fasta/fastaredux.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
@@ -166,10 +169,12 @@ studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
 release/examples/benchmarks/isx/isx-release.graph
 # suite: PRK benchmarks
-studies/prk/synch_p2p/prk-synch_p2p.graph
-studies/prk/stencil/prk-stencil.graph
-studies/prk/stencil/prk-stencil-time.graph
-studies/prk/transpose/prk-transpose.graph
+studies/prk/Synch_p2p/prk-synch_p2p.graph
+studies/prk/Synch_p2p/prk-synch_p2p-time.graph
+studies/prk/Stencil/prk-stencil.graph
+studies/prk/Stencil/prk-stencil-time.graph
+studies/prk/Transpose/prk-transpose.graph
+studies/prk/Transpose/prk-transpose-time.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/cg/cg-a.graph

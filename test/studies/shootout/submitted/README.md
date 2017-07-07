@@ -31,6 +31,8 @@ Benchmarks Games website.
     * Computes digits of pi using GMP, if available
 * [regexdna.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=regexdna&lang=chapel&id=1)
     * Performs DNA matching
+* [regexdna-redux.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=regexredux&lang=chapel&id=1)
+    * Performs DNA matching, modified version of the above
 * [revcomp.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=revcomp&lang=chapel&id=1)
     * Calculate the strand to bind with a given DNA strand
 * [spectralnorm.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=spectralnorm&lang=chapel&id=1)

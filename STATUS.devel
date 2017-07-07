@@ -27,7 +27,7 @@ This file contains a list of unimplemented features and known bugs in
 the Chapel implementation.  If you find additional bugs and
 unimplemented features, or if you would like to request prioritization
 of items in this file, please let us know at
-chapel-bugs@lists.sourceforge.net or chapel_info@cray.com.  Please
+http://chapel.cray.com/bugs.html or chapel_info@cray.com.  Please
 feel encouraged to err on the side of mailing us with any issues you
 run into.
 

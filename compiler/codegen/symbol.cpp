@@ -23,37 +23,85 @@
 
 #include "symbol.h"
 
-#include "astutil.h"
-#include "stlUtil.h"
+#include "AstToText.h"
 #include "bb.h"
+#include "AstVisitor.h"
+#include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "CollapseBlocks.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
+#include "llvmDebug.h"
 #include "misc.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
 
-// LLVM debugging support
-#include "llvmDebug.h"
-
-#include "AstToText.h"
-#include "AstVisitor.h"
-#include "CollapseBlocks.h"
-
 #include <algorithm>
 #include <cstdlib>
-#include <inttypes.h>
 #include <iostream>
 #include <sstream>
+
+#include <inttypes.h>
 #include <stdint.h>
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+char llvmPrintIrName[FUNC_NAME_MAX+1] = "";
+char llvmPrintIrStage[FUNC_NAME_MAX+1] = "";
+const char *llvmPrintIrCName;
+llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+const char* llvmStageName[llvmStageNum::LAST] = {
+  "", //llvmStageNum::NOPRINT
+  "none", //llvmStageNum::NONE
+  "basic", //llvmStageNum::BASIC
+  "full", //llvmStageNum::FULL
+  "early-as-possible",
+  "module-optimizer-early",
+  "loop-optimizer-end",
+  "scalar-optimizer-late",
+  "optimizer-last",
+  "vectorizer-start",
+  "enabled-on-opt-level0",
+  "peephole",
+};
+
+const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum) {
+  if(stageNum < llvmStageNum::LAST)
+    return llvmStageName[stageNum];
+  else
+    return NULL;
+}
+
+llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
+  for(int i = 0; i < llvmStageNum::LAST; i++)
+    if(strcmp(llvmStageName[i], stageName) == 0)
+      return static_cast<llvmStageNum_t>(i);
+  return llvmStageNum::NOPRINT;
+}
+
+#ifdef HAVE_LLVM
+void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage) {
+  if(func) {
+    llvm::raw_os_ostream stdOut(std::cout);
+    std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
+              << " function after " << llvmStageNameFromLlvmStageNum(numStage) << " optimization stage";
+    func->print(stdOut);
+  }
+}
+#endif
 
 /******************************** | *********************************
 *                                                                   *
@@ -137,6 +185,12 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               i->uint_value());
           break;
       }
+      break;
+    case NUM_KIND_COMMID:
+      ret = llvm::ConstantInt::get(
+          llvm::Type::getInt64Ty(info->module->getContext()),
+          i->commid_value(),
+          true);
       break;
     case NUM_KIND_INT:
       switch(i->num_index) {
@@ -312,6 +366,14 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           ret.c = castString + uint64_to_string(uconst) + ")";
         } else {
           ret.c = "UINT64(" + uint64_to_string(uconst) + ")";
+        }
+      } else if (immediate->const_kind == NUM_KIND_COMMID) {
+        int64_t iconst = immediate->commid_value();
+        if (iconst == (1ll<<63)) {
+          ret.c = "-COMMID(9223372036854775807) - COMMID(1)";
+        } else {
+          INT_ASSERT(immediate->num_index == INT_SIZE_64);
+          ret.c = "COMMID(" + int64_to_string(iconst) + ")";
         }
       } else {
         ret.c = cname; // in C, all floating point literals are (double)
@@ -1204,6 +1266,12 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     func = getFunctionLLVM(cname);
 
+    if(llvmPrintIrStageNum != llvmStageNum::NOPRINT
+            && strcmp(llvmPrintIrName, name) == 0) {
+        func->addFnAttr(llvm::Attribute::NoInline);
+        llvmPrintIrCName = cname;
+    }
+
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 
@@ -1224,10 +1292,12 @@ void FnSymbol::codegenDef() {
         continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
-        info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
+        llvm::Argument& llArg = *ai;
+        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(type));
       } else {
         GenRet gArg;
-        gArg.val = ai;
+        llvm::Argument& llArg = *ai;
+        gArg.val = &llArg;
         gArg.chplType = arg->typeInfo();
         GenRet tempVar = createTempVarWith(gArg);
 
@@ -1281,11 +1351,22 @@ void FnSymbol::codegenDef() {
         INT_FATAL("LLVM function verification failed");
       }
     }
+
+    if(llvmPrintIrStageNum == llvmStageNum::NONE
+            && strcmp(llvmPrintIrName, name) == 0)
+        printLlvmIr(func, llvmStageNum::NONE);
+
     // Now run the optimizations on that function.
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
+
+    // (note, in particular, the default pass manager's
+    //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
+    if(llvmPrintIrStageNum == llvmStageNum::BASIC
+            && strcmp(llvmPrintIrName, name) == 0)
+        printLlvmIr(func, llvmStageNum::BASIC);
 #endif
   }
 
@@ -1340,6 +1421,7 @@ void ModuleSymbol::codegenDef() {
 
   info->filename = fname();
   info->lineno   = linenum();
+  commIDMap[info->filename] = 0;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();

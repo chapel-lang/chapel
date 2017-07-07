@@ -60,7 +60,6 @@ void makeBinary();
 void normalize();
 void optimizeOnClauses();
 void parallel();
-void parse();
 void processIteratorYields();
 void prune();
 void prune2();

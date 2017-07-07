@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org
+   http://benchmarksgame.alioth.debian.org/
 
    contributed by Thomas Van Doren, Michael Noakes, Brad Chamberlain, and
      Elliot Ronaghan

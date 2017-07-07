@@ -79,6 +79,18 @@ void chpl_topo_setMemLocality(void*, size_t, chpl_bool, c_sublocid_t);
 void chpl_topo_setMemSubchunkLocality(void*, size_t, chpl_bool, size_t*);
 
 //
+// touch a block of memory, while running on a given NUMA domain
+//
+// args:
+//   base address
+//   size (bytes)
+//   onlyInside?  true: only localize pages strictly within the memory
+//                false: also localize partial pages at edges
+//   desired sublocale (NUMA domain)
+//
+void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
+
+//
 // get memory locality of (the page containing) an address
 //
 // args:

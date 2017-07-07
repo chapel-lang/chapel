@@ -19,20 +19,22 @@
 
 /*
 
-   Support for error handling.
+   This module helps handle system errors.
 
-   This module helps to handle errors. In particular, it enables routines
-   to return a syserr - encoding an error state - and then contains routines
-   that can be provided a syserr in order to print out a useful error message.
-
-   This module defines the type syserr, which can encode an error code or an
-   error message. This type can be returned from routines generating an error.
+   This module defines the type ``syserr``, which can encode an error code or
+   error message and be returned from routines generating an error. Additional
+   routines are provided to print a useful error message from a ``syserr``.
 
    The IO module uses these routines in a way that supports error inspection
-   and also rapid prototyping. Most routines in the IO module have two forms.
+   and rapid prototyping. Most routines in the IO module have two forms.
    In one form, an error (of type syserr) is returned in an out error argument.
    In the second form, no error is returned, and instead the task will halt
    with a fatal error if an error is encountered.
+
+   .. note::
+
+      This module is unrelated to the implementation of error handling in
+      Chapel generally, and is being maintained for legacy reasons.
 
  */
 module SysError {

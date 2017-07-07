@@ -9,6 +9,12 @@ else
 
 echo Unpacking LLVM
 
+# Upgrading LLVM versions?
+# Be sure to also update:
+#
+#   Makefile.share-system
+#   doc/usingchapel/chplenv.rst
+
 #tar xf llvm-3.8.1.src.tar.xz
 #tar xf cfe-3.8.1.src.tar.xz
 #mv llvm-3.8.1.src llvm

@@ -7,5 +7,5 @@ proc propError() throws {
 try {
   propError();
 } catch {
-  writeln("fail: did not fail strict mode");
+  writeln("did not fail strict mode");
 }

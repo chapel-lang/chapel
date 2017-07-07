@@ -1,0 +1,3 @@
+bug: defer not working in do-while loop containing break
+
+issue #6535

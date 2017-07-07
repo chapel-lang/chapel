@@ -70,6 +70,8 @@
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
+  macro(DeferStmt) sep                             \
+  macro(ForallStmt) sep                            \
   macro(TryStmt) sep                               \
   macro(ForwardingStmt) sep                        \
   macro(CatchStmt) sep                             \
@@ -146,11 +148,13 @@ enum AstTag {
   E_ForwardingStmt,
   E_NamedExpr,
   E_UseStmt,
+  E_DeferStmt,
   E_TryStmt,
   E_CatchStmt,
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
+  E_ForallStmt,
   E_ExternBlockStmt,
 
   E_ModuleSymbol,
@@ -301,12 +305,6 @@ public:
 };
 
 //
-// vectors of modules
-//
-extern Vec<ModuleSymbol*> allModules;  // contains all modules
-extern Vec<ModuleSymbol*> userModules; // contains user modules
-
-//
 // class test inlines: determine the dynamic type of a BaseAST*
 //
 static inline bool isExpr(const BaseAST* a)
@@ -341,6 +339,8 @@ def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
+def_is_ast(DeferStmt)
+def_is_ast(ForallStmt)
 def_is_ast(TryStmt)
 def_is_ast(ForwardingStmt)
 def_is_ast(CatchStmt)
@@ -385,6 +385,8 @@ def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
+def_to_ast(DeferStmt)
+def_to_ast(ForallStmt)
 def_to_ast(TryStmt)
 def_to_ast(ForwardingStmt)
 def_to_ast(CatchStmt)
@@ -527,7 +529,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     } else  {                                                                  \
       AST_CALL_LIST (stmt, BlockStmt,    body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, BlockStmt,    modUses,        call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    useList,        call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
       if (ForallIntents* bi = stmt->forallIntents) {                           \
         AST_CALL_STDVEC(bi->fiVars,  Expr, call, __VA_ARGS__);                 \
@@ -551,13 +553,29 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_ForwardingStmt:                                                \
     AST_CALL_CHILD(_a, ForwardingStmt, toFnDef, call, __VA_ARGS__);     \
     break;                                                              \
+  case E_DeferStmt:                                                     \
+    AST_CALL_CHILD(_a, DeferStmt, body(), call, __VA_ARGS__);           \
+    break;                                                              \
   case E_TryStmt:                                                       \
-    AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);             \
+    AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);              \
     AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);            \
     break;                                                              \
   case E_CatchStmt:                                                     \
-    AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);           \
+    AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
     break;                                                              \
+  case E_ForallStmt: {                                                  \
+    AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
+    AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
+    AST_CALL_LIST (_a, ForallStmt, intentVariables(),     call, __VA_ARGS__); \
+    ForallIntents* fi = ((ForallStmt*)_a)->withClause();                \
+    AST_CALL_STDVEC(fi->fiVars,  Expr,              call, __VA_ARGS__); \
+    AST_CALL_STDVEC(fi->riSpecs, Expr,              call, __VA_ARGS__); \
+    AST_CALL_CHILD(fi, ForallIntents, iterRec,      call, __VA_ARGS__); \
+    AST_CALL_CHILD(fi, ForallIntents, leadIdx,      call, __VA_ARGS__); \
+    AST_CALL_CHILD(fi, ForallIntents, leadIdxCopy,  call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt,    loopBody(),   call, __VA_ARGS__); \
+    break;                                                              \
+  }                                                                     \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
     break;                                                              \

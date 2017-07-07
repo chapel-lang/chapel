@@ -2,8 +2,12 @@ module bar {
   record BadBaz {
     var x = [1];
 
-    proc BadBaz(y) {
+    proc init(y) where y.type != BadBaz {
       x[1] = y;
+    }
+
+    proc init(other: BadBaz) {
+      x[1] = other.x[1];
     }
   }
 

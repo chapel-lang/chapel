@@ -1,4 +1,0 @@
-feature request: Generate a helpful error message
-
-The program requires a copy-initializer but generates an ugly
-resolution error.

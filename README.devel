@@ -25,7 +25,6 @@ description:
   QUICKSTART.rst
   README.files
   README.rst
-  STATUS
   Makefile
   bin/
   compiler/

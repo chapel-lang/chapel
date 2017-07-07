@@ -22,11 +22,11 @@ module RunBRawLoops {
         select iloop {
           when LoopKernelID.INIT3 {
             loopInit(iloop, stat);
-            var out1 => loop_data.RealArray_1D[0];
-            var out2 => loop_data.RealArray_1D[1];
-            var out3 => loop_data.RealArray_1D[2];
-            var in1  => loop_data.RealArray_1D[3];
-            var in2  => loop_data.RealArray_1D[4];
+            ref out1 = loop_data.RealArray_1D[0];
+            ref out2 = loop_data.RealArray_1D[1];
+            ref out3 = loop_data.RealArray_1D[2];
+            ref in1  = loop_data.RealArray_1D[3];
+            ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
               for i in 0..#len {
@@ -41,11 +41,11 @@ module RunBRawLoops {
           }
           when LoopKernelID.MULADDSUB {
             loopInit(iloop, stat);
-            var out1 => loop_data.RealArray_1D[0];
-            var out2 => loop_data.RealArray_1D[1];
-            var out3 => loop_data.RealArray_1D[2];
-            var in1  => loop_data.RealArray_1D[3];
-            var in2  => loop_data.RealArray_1D[4];
+            ref out1 = loop_data.RealArray_1D[0];
+            ref out2 = loop_data.RealArray_1D[1];
+            ref out3 = loop_data.RealArray_1D[2];
+            ref in1  = loop_data.RealArray_1D[3];
+            ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
               for i in 0..#len {
@@ -59,11 +59,11 @@ module RunBRawLoops {
           }
           when LoopKernelID.IF_QUAD {
             loopInit(iloop, stat);
-            var a  => loop_data.RealArray_1D[0];
-            var b  => loop_data.RealArray_1D[1];
-            var c  => loop_data.RealArray_1D[2];
-            var x1 => loop_data.RealArray_1D[3];
-            var x2 => loop_data.RealArray_1D[4];
+            ref a  = loop_data.RealArray_1D[0];
+            ref b  = loop_data.RealArray_1D[1];
+            ref c  = loop_data.RealArray_1D[2];
+            ref x1 = loop_data.RealArray_1D[3];
+            ref x2 = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
               for i in 0..#len {

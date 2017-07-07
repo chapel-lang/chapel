@@ -1,14 +1,30 @@
-recordsAndClasses.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: recordsAndClasses.doc
+
+recordsAndClasses.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
    use recordsAndClasses.doc;
 
-   Record: thingy
-   Class: whatchamacallit
-      var aThingy: thingy
-         This field contains a thingy 
-   Class: recursion
-      var aWhatchamacallit: whatchamacallit
-         This field contains a whatchamacallit 
-      var recursive: recursion
-         This field is recursive 
+.. record:: thingy
+
+.. class:: whatchamacallit
+
+   .. attribute:: var aThingy: thingy
+
+      This field contains a thingy 
+
+.. class:: recursion
+
+   .. attribute:: var aWhatchamacallit: whatchamacallit
+
+      This field contains a whatchamacallit 
+
+   .. attribute:: var recursive: recursion
+
+      This field is recursive 
+

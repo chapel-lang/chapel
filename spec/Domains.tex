@@ -69,11 +69,6 @@ value.  This identity is used to define the domain's relationship
 with subdomains, index types~(\rsec{Index_Types}),
 and arrays~(\rsec{Association_of_Arrays_to_Domains}).
 
-\begin{openissue}
-In the future, it is likely that we will support a means of creating
-domain aliases, much as we support array aliases currently.
-\end{openissue}
-
 The runtime representation of a domain is controlled by its domain map.
 Domain maps are presented in \rsec{Domain_Maps}.
 
@@ -542,8 +537,8 @@ over its indices, the sparse subdomain inherits that order.
 \index{sparse domains!literals!lack thereof}
 \index{sparse domains!initialization}
 \index{domains!sparse!initialization}
-\index{initializations!sparse domains}
-There is no literal syntax for an sparse subdomain.  However, a variable of a
+\index{initialization!sparse domains}
+There is no literal syntax for a sparse subdomain.  However, a variable of a
 sparse subdomain type can be initialized using a tuple of values
 of the parent domain's index type.
 

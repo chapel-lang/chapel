@@ -52,8 +52,7 @@ module meteor {
     NW=8,
     N=9,
     NE=10,
-    ENE=11,
-    PIVOT=12
+    ENE=11
   }
 
   use direction;  // make direction's symbols directly available to this scope
@@ -87,12 +86,12 @@ module meteor {
 
   /* Returns the direction rotated 60 degrees clockwise */
   proc rotate(dir: direction) : direction {
-    return ((dir + 2) % PIVOT): direction;
+    return ((dir + 2) % direction.size): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
   proc flip(dir: direction) : direction {
-    return ((PIVOT - dir) % PIVOT): direction;
+    return ((direction.size - dir) % direction.size): direction;
   }
 
   /* Returns the new cell index from the specified cell in the

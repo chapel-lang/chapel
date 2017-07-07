@@ -31,7 +31,7 @@ proc setupDistributions() {
     return new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3)));
 
   else if distType == DistType.replicated then
-    return new dmap(new ReplicatedDist());
+    return new dmap(new Replicated());
 
   else compilerError("unexpected 'distType': ", distType:c_string);
 }
@@ -43,8 +43,6 @@ var
   D2 = {0..d-1, 0..d-1} dmapped Dist2D,
   A1: [D1] int,
   A2: [D2] real;
-
-const mult = if distType == DistType.replicated then numLocales else 1;
 
 proc main {
   writeConfig("starting"); writeln();
@@ -152,7 +150,7 @@ proc sum0(l) return l * (l-1) / 2;  // sum(0..l-1)
 proc sum1(l) return l * (l+1) / 2;  // sum(1..l)
 
 proc check(actual, expected, ri, name) {
-  if actual == expected * mult then return; // OK!
+  if actual == expected then return; // OK!
   nErr += 1;
   writeln("ERROR: onetest(", ri, ", ", name, ")  expected ", expected,
           "  actual ", actual);

@@ -16,22 +16,22 @@ proc returnSliceGlobal() {
 }
 
 proc returnAliasGlobal() {
-  var B => A;
+  ref B = A;
   return B;
 }
 
 proc returnAliasSliceGlobal() {
-  var B => A[1..5];
+  ref B = A[1..5];
   return B;
 }
 
 proc returnAliasField() {
-  var B => globalC.field;
+  ref B = globalC.field;
   return B;
 }
 
 proc returnAliasSliceField() {
-  var B => globalC.field[1..5];
+  ref B = globalC.field[1..5];
   return B;
 }
 

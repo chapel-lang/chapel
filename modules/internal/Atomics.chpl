@@ -52,6 +52,19 @@
 */
 
 /*
+   A note about const-ness: these atomic types are records but
+   in order for record assignment to work, the read() functions
+   need to be able to work with a const RHS.
+
+   To enable that, the read/peek/waitFor/writeThis functions take in `this`
+   with const intent. That is reasonable even if the atomic is
+   implemented with a lock because the programmer can view it
+   as constant, and on good hardware it really will be. If we change
+   our mind about this, we will need to revisit the default `=`
+   generated for records containing atomic fields.
+*/
+
+/*
    Atomic variables are variables that support atomic operations. Chapel
    currently supports atomic operations for bools, all supported sizes of
    signed and unsigned integers, as well as all supported sizes of reals.
@@ -94,7 +107,7 @@ module Atomics {
   extern proc atomic_init_bool(ref obj:atomic_bool, value:bool);
   extern proc atomic_destroy_bool(ref obj:atomic_bool);
   extern proc atomic_store_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order);
-  extern proc atomic_load_explicit_bool(ref obj:atomic_bool, order:memory_order):bool;
+  extern proc atomic_load_explicit_bool(const ref obj:atomic_bool, order:memory_order):bool;
   extern proc atomic_exchange_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order):bool;
   extern proc atomic_compare_exchange_strong_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
@@ -103,7 +116,7 @@ module Atomics {
   extern proc atomic_init_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8));
   extern proc atomic_destroy_uint_least8_t(ref obj:atomic_uint_least8_t);
   extern proc atomic_store_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8), order:memory_order);
-  extern proc atomic_load_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, order:memory_order):uint(8);
+  extern proc atomic_load_explicit_uint_least8_t(const ref obj:atomic_uint_least8_t, order:memory_order):uint(8);
   extern proc atomic_exchange_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8), order:memory_order):uint(8);
   extern proc atomic_compare_exchange_strong_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
@@ -117,7 +130,7 @@ module Atomics {
   extern proc atomic_init_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16));
   extern proc atomic_destroy_uint_least16_t(ref obj:atomic_uint_least16_t);
   extern proc atomic_store_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16), order:memory_order);
-  extern proc atomic_load_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, order:memory_order):uint(16);
+  extern proc atomic_load_explicit_uint_least16_t(const ref obj:atomic_uint_least16_t, order:memory_order):uint(16);
   extern proc atomic_exchange_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16), order:memory_order):uint(16);
   extern proc atomic_compare_exchange_strong_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
@@ -132,7 +145,7 @@ module Atomics {
   extern proc atomic_init_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32));
   extern proc atomic_destroy_uint_least32_t(ref obj:atomic_uint_least32_t);
   extern proc atomic_store_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32), order:memory_order);
-  extern proc atomic_load_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, order:memory_order):uint(32);
+  extern proc atomic_load_explicit_uint_least32_t(const ref obj:atomic_uint_least32_t, order:memory_order):uint(32);
   extern proc atomic_exchange_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32), order:memory_order):uint(32);
   extern proc atomic_compare_exchange_strong_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
@@ -146,7 +159,7 @@ module Atomics {
   extern proc atomic_init_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64));
   extern proc atomic_destroy_uint_least64_t(ref obj:atomic_uint_least64_t);
   extern proc atomic_store_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64), order:memory_order);
-  extern proc atomic_load_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, order:memory_order):uint(64);
+  extern proc atomic_load_explicit_uint_least64_t(const ref obj:atomic_uint_least64_t, order:memory_order):uint(64);
   extern proc atomic_exchange_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64), order:memory_order):uint(64);
   extern proc atomic_compare_exchange_strong_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
@@ -160,7 +173,7 @@ module Atomics {
   extern proc atomic_init_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr);
   extern proc atomic_destroy_uintptr_t(ref obj:atomic_uintptr_t);
   extern proc atomic_store_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr, order:memory_order);
-  extern proc atomic_load_explicit_uintptr_t(ref obj:atomic_uintptr_t, order:memory_order):c_void_ptr;
+  extern proc atomic_load_explicit_uintptr_t(const ref obj:atomic_uintptr_t, order:memory_order):c_void_ptr;
   extern proc atomic_exchange_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr, order:memory_order):c_void_ptr;
   extern proc atomic_compare_exchange_strong_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_void_ptr, desired:c_void_ptr, order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_void_ptr, desired:c_void_ptr, order:memory_order):bool;
@@ -174,7 +187,7 @@ module Atomics {
   extern proc atomic_init_int_least8_t(ref obj:atomic_int_least8_t, value:int(8));
   extern proc atomic_destroy_int_least8_t(ref obj:atomic_int_least8_t);
   extern proc atomic_store_explicit_int_least8_t(ref obj:atomic_int_least8_t, value:int(8), order:memory_order);
-  extern proc atomic_load_explicit_int_least8_t(ref obj:atomic_int_least8_t, order:memory_order):int(8);
+  extern proc atomic_load_explicit_int_least8_t(const ref obj:atomic_int_least8_t, order:memory_order):int(8);
   extern proc atomic_exchange_explicit_int_least8_t(ref obj:atomic_int_least8_t, value:int(8), order:memory_order):int(8);
   extern proc atomic_compare_exchange_strong_explicit_int_least8_t(ref obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_int_least8_t(ref obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
@@ -188,7 +201,7 @@ module Atomics {
   extern proc atomic_init_int_least16_t(ref obj:atomic_int_least16_t, value:int(16));
   extern proc atomic_destroy_int_least16_t(ref obj:atomic_int_least16_t);
   extern proc atomic_store_explicit_int_least16_t(ref obj:atomic_int_least16_t, value:int(16), order:memory_order);
-  extern proc atomic_load_explicit_int_least16_t(ref obj:atomic_int_least16_t, order:memory_order):int(16);
+  extern proc atomic_load_explicit_int_least16_t(const ref obj:atomic_int_least16_t, order:memory_order):int(16);
   extern proc atomic_exchange_explicit_int_least16_t(ref obj:atomic_int_least16_t, value:int(16), order:memory_order):int(16);
   extern proc atomic_compare_exchange_strong_explicit_int_least16_t(ref obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_int_least16_t(ref obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
@@ -202,7 +215,7 @@ module Atomics {
   extern proc atomic_init_int_least32_t(ref obj:atomic_int_least32_t, value:int(32));
   extern proc atomic_destroy_int_least32_t(ref obj:atomic_int_least32_t);
   extern proc atomic_store_explicit_int_least32_t(ref obj:atomic_int_least32_t, value:int(32), order:memory_order);
-  extern proc atomic_load_explicit_int_least32_t(ref obj:atomic_int_least32_t, order:memory_order):int(32);
+  extern proc atomic_load_explicit_int_least32_t(const ref obj:atomic_int_least32_t, order:memory_order):int(32);
   extern proc atomic_exchange_explicit_int_least32_t(ref obj:atomic_int_least32_t, value:int(32), order:memory_order):int(32);
   extern proc atomic_compare_exchange_strong_explicit_int_least32_t(ref obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_int_least32_t(ref obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
@@ -216,7 +229,7 @@ module Atomics {
   extern proc atomic_init_int_least64_t(ref obj:atomic_int_least64_t, value:int(64));
   extern proc atomic_destroy_int_least64_t(ref obj:atomic_int_least64_t);
   extern proc atomic_store_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order);
-  extern proc atomic_load_explicit_int_least64_t(ref obj:atomic_int_least64_t, order:memory_order):int(64);
+  extern proc atomic_load_explicit_int_least64_t(const ref obj:atomic_int_least64_t, order:memory_order):int(64);
   extern proc atomic_exchange_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order):int(64);
   extern proc atomic_compare_exchange_strong_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
   extern proc atomic_compare_exchange_weak_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
@@ -230,7 +243,7 @@ module Atomics {
   extern proc atomic_destroy__real64(ref obj:atomic__real64);
   extern proc atomic_store_explicit__real64(ref obj:atomic__real64, value:real(64), order:memory_order);
   extern proc atomic_is_lock_free__real64(ref obj:atomic__real64):bool;
-  extern proc atomic_load_explicit__real64(ref obj:atomic__real64, order:memory_order):real(64);
+  extern proc atomic_load_explicit__real64(const ref obj:atomic__real64, order:memory_order):real(64);
   extern proc atomic_exchange_explicit__real64(ref obj:atomic__real64, value:real(64), order:memory_order):real(64);
   extern proc atomic_compare_exchange_strong_explicit__real64(ref obj:atomic__real64, expected:real(64), desired:real(64), order:memory_order):bool;
 
@@ -242,7 +255,7 @@ module Atomics {
   extern proc atomic_destroy__real32(ref obj:atomic__real32);
   extern proc atomic_store_explicit__real32(ref obj:atomic__real32, value:real(32), order:memory_order);
   extern proc atomic_is_lock_free__real32(ref obj:atomic__real32):bool;
-  extern proc atomic_load_explicit__real32(ref obj:atomic__real32, order:memory_order):real(32);
+  extern proc atomic_load_explicit__real32(const ref obj:atomic__real32, order:memory_order):real(32);
   extern proc atomic_exchange_explicit__real32(ref obj:atomic__real32, value:real(32), order:memory_order):real(32);
   extern proc atomic_compare_exchange_strong_explicit__real32(ref obj:atomic__real32, expected:real(32), desired:real(32), order:memory_order):bool;
 
@@ -315,7 +328,7 @@ module Atomics {
     /*
        :returns: The stored value.
     */
-    inline proc read(order:memory_order = memory_order_seq_cst):bool {
+    inline proc const read(order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_load_explicit_bool(_v, order);
       return ret;
@@ -385,7 +398,7 @@ module Atomics {
        Waits until the stored value is equal to `val`. The implementation may
        yield the running task while waiting.
     */
-    inline proc waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_bool(_v, memory_order_relaxed) != val) {
           chpl_task_yield();
@@ -400,7 +413,7 @@ module Atomics {
     /*
        :returns: Stored value using memory_order_relaxed.
     */
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
 
@@ -412,7 +425,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -431,7 +444,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_uint_least8_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):uint(8) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):uint(8) {
       var ret:uint(8);
       on this do ret = atomic_load_explicit_uint_least8_t(_v, order);
       return ret;
@@ -498,7 +511,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(8), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:uint(8), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_uint_least8_t(_v, memory_order_relaxed)
                 != val) {
@@ -508,14 +521,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:uint(8)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -534,7 +547,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_uint_least16_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):uint(16) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):uint(16) {
       var ret:uint(16);
       on this do ret = atomic_load_explicit_uint_least16_t(_v, order);
       return ret;
@@ -601,7 +614,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(16), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:uint(16), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_uint_least16_t(_v, memory_order_relaxed)
                 != val) {
@@ -611,14 +624,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:uint(16)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -637,7 +650,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_uint_least32_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):uint(32) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):uint(32) {
       var ret:uint(32);
       on this do ret = atomic_load_explicit_uint_least32_t(_v, order);
       return ret;
@@ -704,7 +717,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_uint_least32_t(_v,memory_order_relaxed)
                 != val) {
@@ -714,14 +727,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:uint(32)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -740,7 +753,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_uint_least64_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):uint(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):uint(64) {
       var ret:uint(64);
       on this do ret = atomic_load_explicit_uint_least64_t(_v, order);
       return ret;
@@ -807,7 +820,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
     }
 
-    inline proc waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_uint_least64_t(_v, memory_order_relaxed)
                  != val) {
@@ -817,14 +830,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:uint(64)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -843,7 +856,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_int_least8_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):int(8) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):int(8) {
       var ret:int(8);
       on this do ret = atomic_load_explicit_int_least8_t(_v, order);
       return ret;
@@ -910,7 +923,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(8), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:int(8), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_int_least8_t(_v, memory_order_relaxed)
                 != val) {
@@ -920,14 +933,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:int(8)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -946,7 +959,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_int_least16_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):int(16) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):int(16) {
       var ret:int(16);
       on this do ret = atomic_load_explicit_int_least16_t(_v, order);
       return ret;
@@ -1013,7 +1026,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(16), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:int(16), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_int_least16_t(_v,memory_order_relaxed)
                 != val) {
@@ -1023,14 +1036,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:int(16)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -1049,7 +1062,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy_int_least32_t(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):int(32) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):int(32) {
       var ret:int(32);
       on this do ret = atomic_load_explicit_int_least32_t(_v, order);
       return ret;
@@ -1116,7 +1129,7 @@ module Atomics {
       on this do atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
     }
 
-    inline proc waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_int_least32_t(_v, memory_order_relaxed)
                 != val) { chpl_task_yield();
@@ -1125,14 +1138,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:int(32)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -1157,7 +1170,7 @@ module Atomics {
     /*
        :returns: The stored value.
     */
-    inline proc read(order:memory_order = memory_order_seq_cst):int(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_load_explicit_int_least64_t(_v, order);
       return ret;
@@ -1321,7 +1334,7 @@ module Atomics {
        Waits until the stored value is equal to `val`. The implementation may
        yield the running task while waiting.
     */
-    inline proc waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit_int_least64_t(_v, memory_order_relaxed)
                 != val) {
@@ -1334,7 +1347,7 @@ module Atomics {
     /*
        :returns: Stored value using memory_order_relaxed.
     */
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
 
@@ -1346,7 +1359,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
 
@@ -1366,7 +1379,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy__real64(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):real(64) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):real(64) {
       var ret:real(64);
       on this do ret = atomic_load_explicit__real64(_v, order);
       return ret;
@@ -1409,7 +1422,7 @@ module Atomics {
     inline proc sub(value:real(64), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit__real64(_v, value, order);
     }
-    inline proc waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit__real64(_v, memory_order_relaxed)
                 != val) {
@@ -1419,14 +1432,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:real(64)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -1446,7 +1459,7 @@ module Atomics {
     inline proc deinit() {
       atomic_destroy__real32(_v);
     }
-    inline proc read(order:memory_order = memory_order_seq_cst):real(32) {
+    inline proc const read(order:memory_order = memory_order_seq_cst):real(32) {
       var ret:real(32);
       on this do ret = atomic_load_explicit__real32(_v, order);
       return ret;
@@ -1489,7 +1502,7 @@ module Atomics {
     inline proc sub(value:real(32), order:memory_order = memory_order_seq_cst):void {
       on this do atomic_fetch_sub_explicit__real32(_v, value, order);
     }
-    inline proc waitFor(val:real(32), order:memory_order = memory_order_seq_cst) {
+    inline proc const waitFor(val:real(32), order:memory_order = memory_order_seq_cst) {
       on this {
         while (atomic_load_explicit__real32(_v, memory_order_relaxed) != val) {
           chpl_task_yield();
@@ -1498,14 +1511,14 @@ module Atomics {
       }
     }
 
-    inline proc peek() {
+    inline proc const peek() {
       return this.read(order=memory_order_relaxed);
     }
     inline proc poke(value:real(32)) {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x) {
+    proc const writeThis(x) {
       x.write(read());
     }
   }
@@ -1520,67 +1533,67 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   //  types are records and unless explicitly defined, it will resolve
   //  to the normal record version of the function.  Sigh.
-  inline proc =(ref a:atomicbool, b:atomicbool) {
+  inline proc =(ref a:atomicbool, const ref b:atomicbool) {
     a.write(b.read());
   }
   inline proc =(ref a:atomicbool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_uint8, b:atomic_uint8) {
+  inline proc =(ref a:atomic_uint8, const ref b:atomic_uint8) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_uint8, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_uint16, b:atomic_uint16) {
+  inline proc =(ref a:atomic_uint16, const ref b:atomic_uint16) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_uint16, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_uint32, b:atomic_uint32) {
+  inline proc =(ref a:atomic_uint32, const ref b:atomic_uint32) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_uint32, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_uint64, b:atomic_uint64) {
+  inline proc =(ref a:atomic_uint64, const ref b:atomic_uint64) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_uint64, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_int8, b:atomic_int8) {
+  inline proc =(ref a:atomic_int8, const ref b:atomic_int8) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_int8, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_int16, b:atomic_int16) {
+  inline proc =(ref a:atomic_int16, const ref b:atomic_int16) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_int16, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_int32, b:atomic_int32) {
+  inline proc =(ref a:atomic_int32, const ref b:atomic_int32) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_int32, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_int64, b:atomic_int64) {
+  inline proc =(ref a:atomic_int64, const ref b:atomic_int64) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_int64, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_real32, b:atomic_real32) {
+  inline proc =(ref a:atomic_real32, const ref b:atomic_real32) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_real32, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline proc =(ref a:atomic_real64, b:atomic_real64) {
+  inline proc =(ref a:atomic_real64, const ref b:atomic_real64) {
     a.write(b.read());
   }
   inline proc =(ref a:atomic_real64, b) {

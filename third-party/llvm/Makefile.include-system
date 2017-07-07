@@ -13,7 +13,7 @@ endif
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
 # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
-# tested on that stystem after installing
+# tested on that system after installing
 #   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
 LLVM_MY_CXXFLAGS=-fno-rtti
 

@@ -415,8 +415,8 @@ void ForLoop::verify()
   if (mIterator == 0)
     INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
 
-  if (modUses   != 0)
-    INT_FATAL(this, "ForLoop::verify. modUses   is not NULL");
+  if (useList   != 0)
+    INT_FATAL(this, "ForLoop::verify. useList   is not NULL");
 
   if (byrefVars != 0)
     INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
@@ -447,8 +447,8 @@ void ForLoop::accept(AstVisitor* visitor)
     if (iteratorGet() != 0)
       iteratorGet()->accept(visitor);
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList)
+      useList->accept(visitor);
 
     if (byrefVars)
       byrefVars->accept(visitor);

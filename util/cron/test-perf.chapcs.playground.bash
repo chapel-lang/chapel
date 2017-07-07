@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of array-views branch
-GITHUB_USER=bradcray
-GITHUB_BRANCH=rankChangeDomDistView
-SHORT_NAME=arrView
-START_DATE=02/06/17
+# Test performance of some jemalloc 5
+GITHUB_USER=ronawho
+GITHUB_BRANCH=upgrade-jemalloc-5.0
+SHORT_NAME=jemalloc-5
+START_DATE=06/21/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

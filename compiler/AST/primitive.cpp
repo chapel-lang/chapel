@@ -150,7 +150,10 @@ returnInfoFirstDeref(CallExpr* call) {
   Type* type = tmp.type()->getValType();
   // if it's a tuple, also remove references in the elements
   if (type->symbol->hasFlag(FLAG_TUPLE)) {
-    type = computeNonRefTuple(type);
+    AggregateType* tupleType = toAggregateType(type);
+    INT_ASSERT(tupleType);
+
+    type = computeNonRefTuple(tupleType);
   }
   return QualifiedType(type, QUAL_VAL);
 }
@@ -564,7 +567,6 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
-  prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
@@ -738,3 +740,15 @@ bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src)
 
   return false;
 }
+
+void makeNoop(CallExpr* call) {
+  if (call->baseExpr)
+    call->baseExpr->remove();
+
+  while (call->numActuals())
+    call->get(1)->remove();
+
+  call->primitive = primitives[PRIM_NOOP];
+}
+
+

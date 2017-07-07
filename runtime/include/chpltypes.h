@@ -110,12 +110,15 @@ typedef int32_t c_sublocid_t;
 #define FORMAT_c_sublocid_t PRId32
 typedef int64_t c_localeid_t;
 
-// These are special values that mean "no sublocale and "any sublocale".
+// These are special values that mean "no", "any", and "all sublocales",
+// respectively.
 #define c_sublocid_none_val -1
 #define c_sublocid_any_val  -2
+#define c_sublocid_all_val  -3
 
 static const c_sublocid_t c_sublocid_none = c_sublocid_none_val;
 static const c_sublocid_t c_sublocid_any  = c_sublocid_any_val;
+static const c_sublocid_t c_sublocid_all  = c_sublocid_all_val;
 
 static inline int isActualSublocID(c_sublocid_t subloc) {
   return subloc >= 0;
@@ -186,6 +189,8 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
+#define COMMID( i)  ((int64_t)(INT64_C(i)))
+
 
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;
@@ -204,11 +209,13 @@ typedef struct _chpl_fn_info {
 
 // It is tempting to #undef true and false and then #define them just to be sure
 // they expand correctly, but future versions of the C standard may not allow this!
+#ifndef __cplusplus
 #ifndef false
 #define false 0
 #endif
 #ifndef  true
 #define  true 1
+#endif
 #endif
 
 typedef float               _real32;

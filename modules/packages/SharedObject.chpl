@@ -19,7 +19,7 @@
 
 /*
 
-   :record:`Shared` (along with :record:`Owned`) manage the deallocation
+   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the deallocation
    of a class instance. :record:`Shared` is meant to be used when many
    different references will exist to the object and these references
    need to keep the object alive.
@@ -181,7 +181,7 @@ module SharedObject {
        last :record:`Shared` managing that object.
        Does not return a value.
 
-       Equivalent to :proc:`Shared.retain(nil)`.
+       Equivalent to ``Shared.retain(nil)``.
      */
     proc ref clear() {
       if isClass(p) { // otherwise, let error happen on init call

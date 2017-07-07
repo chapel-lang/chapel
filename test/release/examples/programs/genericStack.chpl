@@ -82,11 +82,15 @@ record ArrayStack {
 
 
 var D: domain(2) = {1..4, 1..4};
-testStacks(new ListStack(string), new ListStack(index(D)));
-testStacks(new ArrayStack(string), new ArrayStack(index(D)));
+var s1 = new ListStack(string);
+var s2 = new ListStack(index(D));
+var s3 = new ArrayStack(string);
+var s4 = new ArrayStack(index(D));
+testStacks(s1, s2);
+testStacks(s3, s4);
 
 
-proc testStacks(stack1, stack2) {
+proc testStacks(ref stack1, ref stack2) {
   // Test: Push three strings onto a stack and then pop them off.
   stack1.push("one");
   stack1.push("two");

@@ -50,5 +50,5 @@ cProc(a);
 writeln("after cProc, a[1] is ", a[1]);
 writeln("Hello from Chapel, done");
 
-_ddata_free(a);
+_ddata_free(a, size);
 

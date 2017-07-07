@@ -1,0 +1,5 @@
+perfkeys: Rate (MB/s):, Rate (MB/s):
+files: ./transpose-serial.dat, ./transpose-defaultdist.dat
+graphkeys: Serial, DefaultDist
+graphtitle: PRK transpose
+ylabel: Rate (MB/s)

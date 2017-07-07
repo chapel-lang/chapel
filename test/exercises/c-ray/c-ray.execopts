@@ -2,6 +2,7 @@
 # basic test
 #
 --noTiming --image=image.ppm
+--noTiming --image=image.ppm --scene=scene
 --noTiming --image=image.ppm --loopStyle=1
 --noTiming --image=image.ppm --loopStyle=2
 --noTiming --image=image.ppm --loopStyle=3

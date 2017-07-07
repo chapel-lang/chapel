@@ -22,10 +22,8 @@
 
 class PhaseTracker;
 
-#include "vec.h"
-
 void runPasses(PhaseTracker& tracker, bool isChpldoc);
-void initLogFlags(Vec<char>&);
+void initPassesForLogging();
 
 extern int currentPassNo;
 
