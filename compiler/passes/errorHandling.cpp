@@ -524,7 +524,7 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
     canThrow = true;
 
     if (insideTry) {
-      // OK. non-exaustive try handled in try handling.
+      // OK, error checking for this case done in try handling
     } else if (fnCanThrow == true) {
       // OK, fn can throw
     } else if (errors == true) {
