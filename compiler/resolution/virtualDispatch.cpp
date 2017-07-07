@@ -622,10 +622,9 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 * At this point calls to class methods have been resolved to the most         *
 * specific method based on the static type of the receiver.  This phase       *
 * inspects every call to determine if 1 or more derived classes define an     *
-* override for the method.  These calls will generally be converted to the    *
-* use of PRIM_VIRTUAL_METHOD_CALL.                                            *
+* override for the method.  These calls are generally be converted to be uses *
+* of PRIM_VIRTUAL_METHOD_CALL.  There are two exceptions:                     *
 *                                                                             *
-* There are two exceptions:                                                   *
 *    1) The receiver is "super".  This is intended to allow an overriding     *
 *       method to invoke the most specific method that is being overridden    *
 *       c.f. Java and Swift. It is likely that the current implementation     *
@@ -634,12 +633,6 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 *    2) The call is to an init method.  The intent is to support uses of      *
 *       this.init(...) c.f. convenience initializers in Swift.  Note that     *
 *       super.init() is covered by exception 1.                               *
-*                                                                             *
-* 7/6/2017: The original implementation relied on a sequence of conditional   *
-* statements.  That implementation was retained as a potential performance    *
-* optimiazation under the control of a compiler configuration.  However that  *
-* path fell in to disrepair and is being removed.  It might be re-implemented *
-* one day if performance profiling dictates it.                               *
 *                                                                             *
 ************************************** | *************************************/
 
