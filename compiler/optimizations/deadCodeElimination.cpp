@@ -196,91 +196,6 @@ static bool isInCForLoopHeader(Expr* expr) {
   return retval;
 }
 
-void deadCodeElimination(FnSymbol* fn) {
-  std::map<SymExpr*, Vec<SymExpr*>*> DU;
-  std::map<SymExpr*, Vec<SymExpr*>*> UD;
-
-  std::map<Expr*,    Expr*>          exprMap;
-
-  Vec<Expr*>                         liveCode;
-  Vec<Expr*>                         workSet;
-
-  BasicBlock::buildBasicBlocks(fn);
-
-  buildDefUseChains(fn, DU, UD);
-
-  for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    for (size_t i = 0; i < bb->exprs.size(); i++) {
-      Expr*         expr        = bb->exprs[i];
-      bool          isEssential = bb->marks[i];
-
-      std::vector<BaseAST*> asts;
-
-      collect_asts(expr, asts);
-
-      for_vector(BaseAST, ast, asts) {
-        if (Expr* sub = toExpr(ast)) {
-          exprMap[sub] = expr;
-        }
-      }
-
-      if (isEssential == false) {
-        for_vector(BaseAST, ast, asts) {
-          if (CallExpr* call = toCallExpr(ast)) {
-            // mark assignments to global variables as essential
-            if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-              if (SymExpr* se = toSymExpr(call->get(1))) {
-                if (DU.count(se) == 0) {
-                  isEssential = true;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (isEssential) {
-        liveCode.set_add(expr);
-        workSet.add(expr);
-      }
-    }
-  }
-
-  forv_Vec(Expr, expr, workSet) {
-    std::vector<SymExpr*> symExprs;
-
-    collectSymExprs(expr, symExprs);
-
-    for_vector(SymExpr, se, symExprs) {
-      if (UD.count(se) != 0) {
-        Vec<SymExpr*>* defs = UD[se];
-
-        forv_Vec(SymExpr, def, *defs) {
-          INT_ASSERT(exprMap.count(def) != 0);
-
-          Expr* expr = exprMap[def];
-
-          if (!liveCode.set_in(expr)) {
-            liveCode.set_add(expr);
-            workSet.add(expr);
-          }
-        }
-      }
-    }
-  }
-
-  // This removes dead expressions from each block.
-  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
-    for_vector(Expr, expr, bb1->exprs) {
-      if (isSymExpr(expr) || isCallExpr(expr))
-        if (!liveCode.set_in(expr))
-          expr->remove();
-    }
-  }
-
-  freeDefUseChains(DU, UD);
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                      Eliminate dead string literals.                        *
@@ -537,8 +452,6 @@ void deadCodeElimination() {
       // Dead Block Elimination may convert valid loops to "malformed" loops.
       // Some of these will break BasicBlock construction. Clean them up.
       cleanupLoopBlocks(fn);
-
-      deadCodeElimination(fn);
 
       deadVariableElimination(fn);
 

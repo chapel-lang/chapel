@@ -290,10 +290,6 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
       globalCopyPropagation(fn);
       singleAssignmentRefPropagation(fn);
     }
-
-    if (!fNoDeadCodeElimination) {
-      deadCodeElimination(fn);
-    }
   }
 #endif
 }
