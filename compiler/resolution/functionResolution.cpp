@@ -2105,6 +2105,18 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     TRACE_DISAMBIGUATE_BY_MATCH("H: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
+  } else if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+             formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+             !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+    TRACE_DISAMBIGUATE_BY_MATCH("G1: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+             !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+             formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+    TRACE_DISAMBIGUATE_BY_MATCH("G2: Fn %d is more specific\n", DC.i);
+    DS.fn2MoreSpecific = true;
+
   } else if (considerParamMatches(actualType, f1Type, f2Type)) {
     TRACE_DISAMBIGUATE_BY_MATCH("In first param case\n");
     // The actual matches formal1's type, but not formal2's

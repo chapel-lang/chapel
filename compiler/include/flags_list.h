@@ -77,6 +77,7 @@ symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
 // field assignments and assignment primitives.
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_ADDED_WHERE , npr, "compiler added where" , "marks functions that have a where clause only because compiler added one" )
+
 symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , ncm )
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
 symbolFlag( FLAG_CONFIG , npr, "config" , "config variable, constant, or parameter" )
@@ -197,6 +198,8 @@ symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 
 // See FLAG_POD below
 symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
+
+symbolFlag( FLAG_NOT_FULLY_GENERIC , npr, "argument is not fully generic" , ncm)
 
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
 
