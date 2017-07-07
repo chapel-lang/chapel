@@ -432,8 +432,6 @@ public:
 
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCatchStmt(CatchStmt*   node);
-  virtual void exitCatchStmt (CatchStmt*   node);
   virtual bool enterCallExpr (CallExpr*  node);
 
   bool throws() { return canThrow; }
@@ -479,7 +477,7 @@ void CanThrowVisitor::exitTryStmt(TryStmt* node) {
 
 bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
 
-  bool       hasCatchAll = false;
+  bool hasCatchAll = false;
 
   for_alist(c, tryStmt->_catches) {
     if (errors && hasCatchAll)
@@ -505,13 +503,6 @@ bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
   }
 
   return !hasCatchAll;
-}
-
-bool CanThrowVisitor::enterCatchStmt(CatchStmt* node) {
-  return true;
-}
-
-void CanThrowVisitor::exitCatchStmt(CatchStmt* node) {
 }
 
 bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
