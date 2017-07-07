@@ -553,6 +553,10 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
   } else if (isNamedExpr(expr) == true) {
     retval = true;
 
+  } else if (isUnresolvedSymExpr(expr) == true) {
+    // Resolution will handle this case better.
+    retval = true;
+
   } else {
     INT_ASSERT(false);
   }
@@ -597,6 +601,8 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
     }
 
   } else if (isNamedExpr(expr) == true) {
+
+  } else if (isUnresolvedSymExpr(expr) == true) {
 
   } else {
     INT_ASSERT(false);
