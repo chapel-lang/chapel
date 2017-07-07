@@ -802,6 +802,7 @@ ntasks
 ntddk
 ntifs
 ntokens
+nullptr
 numberof
 numbytes
 numcores
@@ -2818,6 +2819,7 @@ ssub
 swhole
 
 FILEID: 55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5
+fhello
 smessage
 
 FILEID: a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5
@@ -4359,6 +4361,9 @@ sealedabstract
 
 FILEID: d7761e16-36bd-11e7-96a7-10ddb1d4c3d5
 replmt
+
+FILEID: 0196aa72-62e1-11e7-88ba-10ddb1d4c3d5
+wkfn
 
 NATURAL:
 abcd
@@ -6596,6 +6601,7 @@ webpages
 webserver
 wednesday
 weil
+wellknown
 westen
 westmere
 whipkey

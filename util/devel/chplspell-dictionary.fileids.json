@@ -41,6 +41,9 @@
     "compiler/AST/symbol.cpp",
     "compiler/codegen/symbol.cpp"
   ],
+  "0196aa72-62e1-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/AST/wellknown.cpp"
+  ],
   "9fb63076-1d80-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/DIRS"
   ],
