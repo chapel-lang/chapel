@@ -782,7 +782,7 @@ static void genUnwindSymbolTable(){
   if(strcmp(CHPL_UNWIND, "none") != 0){
     // Gets only user symbols
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if(strncmp(fn->name, "chpl_", 5)) {
+      if(strncmp(fn->name, "chpl_", 5) || fn->hasFlag(FLAG_MODULE_INIT)) {
         symbols.push_back(fn);
       }
     }
