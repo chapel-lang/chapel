@@ -633,7 +633,7 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 *                                                                             *
 *    2) The call is to an init method.  The intent is to support uses of      *
 *       this.init(...) c.f. convenience initializers in Swift.  Note that     *
-*       super.init() is covered by rule 1.                                    *
+*       super.init() is covered by exception 1.                               *
 *                                                                             *
 * 7/6/2017: The original implementation relied on a sequence of conditional   *
 * statements.  That implementation was retained as a potential performance    *
@@ -643,50 +643,54 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool wasSuperDot(CallExpr* call);
+
 void insertDynamicDispatchCalls() {
-  // Select resolved calls whose function appears in the virtualChildrenMap.
-  // These are the dynamically-dispatched calls.
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (!call->parentSymbol) continue;
-    if (!call->getStmtExpr()) continue;
+    if (call->parentSymbol != NULL) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
 
-    FnSymbol* key = call->resolvedFunction();
+        if (virtualChildrenMap.get(fn) != NULL  &&   // There are overrides
+            wasSuperDot(call)          == false &&   // Not super.<foo>()
+            call->isNamed("init")      == false) {   // Not an initializer
+          SET_LINENO(call);
 
-    if (!key) continue;
+          // The variable <cid> must have the same size as the type
+          // of chpl__class_id / chpl_cid_* to ensure the value is
+          // transmitted correctly for a remote class.
+          // See test/classes/sungeun/remoteDynamicDispatch.chpl
+          // (on certain machines and configurations).
+          Type*      cidType = dtInt[INT_SIZE_32];
+          VarSymbol* cid     = newTemp("_virtual_method_tmp_", cidType);
 
-    Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
+          Expr*      _this   = call->get(2);
+          CallExpr*  getCid  = new CallExpr(PRIM_GETCID, _this->copy());
 
-    if (!fns) continue;
+          Expr*      stmt    = call->getStmtExpr();
 
-    SET_LINENO(call);
+          stmt->insertBefore(new DefExpr(cid));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, cid, getCid));
 
-    // Exception 1 :- Any use of super.<method>(...);
-    if (SymExpr* base = toSymExpr(call->get(2))) {
-      if (base->symbol()->hasFlag(FLAG_SUPER_TEMP) == true) {
-        continue;
+          // Note that call->get(1) is re-defined by each insertion
+          call->get(1)->insertBefore(new SymExpr(cid));
+          call->get(1)->insertBefore(call->baseExpr->remove());
+
+          call->primitive = primitives[PRIM_VIRTUAL_METHOD_CALL];
+        }
       }
     }
-
-    // Exception 2 :- Any call to init()
-    if (call->isNamed("init") == true) continue;
-
-
-    //
-    // N.B.: The variable <cid> must have the same size as the type of
-    // chpl__class_id / chpl_cid_* -- otherwise communication will cause
-    // problems when it tries to read the cid of a remote class.
-    // See test/classes/sungeun/remoteDynamicDispatch.chpl
-    // (on certain machines and configurations).
-    VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
-
-    call->getStmtExpr()->insertBefore(new DefExpr(cid));
-    call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
-
-    call->get(1)->insertBefore(new SymExpr(cid));
-
-    call->get(1)->insertBefore(call->baseExpr->remove());
-    call->primitive = primitives[PRIM_VIRTUAL_METHOD_CALL];
   }
+}
+
+// Return true if this call was originally super.<method>()
+static bool wasSuperDot(CallExpr* call) {
+  bool retval = false;
+
+  if (SymExpr* base = toSymExpr(call->get(2))) {
+    retval = base->symbol()->hasFlag(FLAG_SUPER_TEMP);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
