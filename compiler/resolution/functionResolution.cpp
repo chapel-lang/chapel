@@ -2238,19 +2238,19 @@ int compareSpecificity(ResolutionCandidate* candidate1,
       TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
       prefer2 = true;
 
-    } else if (!ignoreWhere &&
-               candidate1->fn->where &&
-               !candidate2->fn->where &&
-               !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE)) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
-      prefer1 = true;
+    } else if (!ignoreWhere) {
+      bool fn1where = candidate1->fn->where != NULL &&
+                      !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      bool fn2where = candidate2->fn->where != NULL &&
+                      !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      if (fn1where && !fn2where) {
+        TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
+        prefer1 = true;
 
-    } else if (!ignoreWhere &&
-               !candidate1->fn->where &&
-               candidate2->fn->where &&
-               !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE)) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
-      prefer2 = true;
+      } else if (!fn1where && fn2where) {
+        TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
+        prefer2 = true;
+      }
     }
   }
 
