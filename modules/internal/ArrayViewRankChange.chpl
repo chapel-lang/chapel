@@ -77,7 +77,8 @@ module ArrayViewRankChange {
                                               stridable=stridable,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
-                                              dist=this);
+                                              distPid=this.pid,
+                                              distInst=this);
       newdom.dsiSetIndices(inds);
       return newdom;
     }
@@ -87,10 +88,24 @@ module ArrayViewRankChange {
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
 
-    proc dsiDestroyDist() {
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downDistInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (downDistPid, downDistInst, collapsedDim, idx);
     }
 
-    // TODO: privatization
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewRankChangeDist(downDistPid = privatizeData(1),
+                                         downDistInst = privatizeData(2),
+                                         collapsedDim = privatizeData(3),
+                                         idx = privatizeData(4));
+    }
+
+    proc dsiDestroyDist() {
+    }
   }
 
   //
@@ -115,7 +130,15 @@ module ArrayViewRankChange {
     const collapsedDim;
     const idx;
 
-    const dist;  // a reference back to our ArrayViewRankChangeDist
+    const distPid;  // a reference back to our ArrayViewRankChangeDist
+    const distInst;
+
+    inline proc dist {
+      if _isPrivatized(distInst) then
+        return chpl_getPrivatizedCopy(distInst.type, distPid);
+      else
+        return distInst;
+    }
 
     // the higher-dimensional domain that we're equivalent to
     var downDomPid:int;
@@ -147,8 +170,7 @@ module ArrayViewRankChange {
       pragma "no auto destroy"
       const downarr = _newArray(downDom.dsiBuildArray(eltType));
       return new ArrayViewRankChangeArr(eltType  =eltType,
-      // TODO: Update once we start privatizing vvv
-                                        _DomPid = nullPid,
+                                        _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
@@ -391,7 +413,43 @@ module ArrayViewRankChange {
         _delete_dom(downDomInst, _isPrivatized(downDomInst));
     }
 
-  } // end of class ArrayViewRankChangeDom
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downDomInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (upDom, collapsedDim, idx, distPid, distInst, downDomPid, downDomInst);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewRankChangeDom(rank = this.rank,
+                                        idxType = this.idxType,
+                                        stridable = this.stridable,
+                                        upDom = privatizeData(1),
+                                        collapsedDim = privatizeData(2),
+                                        idx = privatizeData(3),
+                                        distPid = privatizeData(4),
+                                        distInst = privatizeData(5),
+                                        downDomPid = privatizeData(6),
+                                        downDomInst = privatizeData(7));
+    }
+
+    proc dsiGetReprivatizeData() {
+      return (upDom, downDomPid, downDomInst);
+    }
+
+    proc dsiReprivatize(other, reprivatizeData) {
+      upDom = reprivatizeData(1);
+      //      collapsedDim = other.collapsedDim;
+      //      idx = other.idx;
+      //      distPid = other.distPid;
+      //      distInst = other.distInst;
+      downDomPid = reprivatizeData(2);
+      downDomInst = reprivatizeData(3);
+    }
+
+ } // end of class ArrayViewRankChangeDom
 
   //
   // The class representing a rank-change slice of an array.  Like
