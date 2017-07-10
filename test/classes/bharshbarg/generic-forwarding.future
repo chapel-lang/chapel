@@ -1,0 +1,1 @@
+bug: failure to compile invocation of forwarded method from generic field
