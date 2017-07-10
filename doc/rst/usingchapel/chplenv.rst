@@ -323,8 +323,6 @@ CHPL_TASKS
         qthreads       use Sandia's Qthreads package
         fifo           use POSIX threads
         massivethreads use U Tokyo's MassiveThreads package
-        muxed          use Cray-specific lightweight threading (with Cray
-                       pre-built module only)
         ============== ===================================================
 
    If ``CHPL_TASKS`` is not set it defaults to ``qthreads`` in all cases
@@ -341,8 +339,7 @@ CHPL_TASKS
      behavior described just above.
 
    See :ref:`readme-tasks` for more information about executing using the
-   various ``CHPL_TASKS`` options.  See also :ref:`readme-cray` for more
-   information about Cray-specific runtime layers.
+   various ``CHPL_TASKS`` options.
 
 
 .. _readme-chplenv.CHPL_COMM:
@@ -463,7 +460,8 @@ CHPL_GMP
        =======  ============================================================
        Value     Description
        =======  ============================================================
-       system   assume GMP is already installed (#include gmp.h, -lgmp)
+       system   use a system install of GMP
+                (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
        gmp      use the GMP distribution bundled with Chapel in third-party
        =======  ============================================================
@@ -492,25 +490,59 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support or using the hwloc package distributed with Chapel in
-   third-party.  Note that hwloc is only used by the qthreads tasking layer,
-   and does not need to be built for other tasking layers.  Current options
-   are:
+   no hwloc support, using the hwloc package distributed with Chapel in
+   third-party, or using a system jemalloc.
 
-       ======= ==============================================================
-       Value   Description
-       ======= ==============================================================
-       none    do not build hwloc support into the Chapel runtime
-       hwloc   use the hwloc distribution bundled with Chapel in third-party
-       ======= ==============================================================
+       ======== ==============================================================
+       Value    Description
+       ======== ==============================================================
+       none     do not build hwloc support into the Chapel runtime
+       hwloc    use the hwloc distribution bundled with Chapel in third-party
+       ======== ==============================================================
 
-   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`readme-chplenv.CHPL_TASKS` is
-   ``qthreads``.  In all other cases it defaults to ``none``.  In the unlikely
-   event the bundled hwloc distribution does not build successfully, it should
-   still be possible to use qthreads.  To do this, manually set ``CHPL_HWLOC``
-   to ``none`` and rebuild (and please file a bug with the Chapel team.) Note
-   that building without hwloc will have a negative impact on performance.
+   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if
+   :ref:`readme-chplenv.CHPL_TASKS` is ``qthreads``.  In all other cases
+   it defaults to ``none``.  In the unlikely event the bundled hwloc
+   distribution does not build successfully, it should still be possible
+   to use qthreads.  To do this, manually set ``CHPL_HWLOC`` to ``none``
+   and rebuild (and please file a bug with the Chapel team.) Note that
+   building without hwloc will have a negative impact on performance.
 
+   .. (comment) CHPL_HWLOC=system is also available but it is only
+       intended to support packaging.
+       Using CHPL_HWLOC=system is not regularly tested and may not work
+       for you. Chapel depends on hwloc features that are not available in
+       all versions. For best results, we recommend using the bundled hwloc
+       if possible.
+
+..  (comment) CHPL_JEMALLOC is not a user-facing feature
+
+   .. _readme-chplenv.CHPL_JEMALLOC:
+
+   CHPL_JEMALLOC
+   ~~~~~~~~~~~~~
+      Optionally, the ``CHPL_JEMALLOC`` environment variable can select
+      between no jemalloc, or using the jemalloc distributed with Chapel in
+      third-party. This setting is intended to elaborate upon
+      ``CHPL_MEM=jemalloc``.
+
+          ======== ==============================================================
+          Value    Description
+          ======== ==============================================================
+          none     do not build or use jemalloc
+          jemalloc use the jemalloc distribution bundled with Chapel in third-party
+          ======== ==============================================================
+
+      If unset, ``CHPL_JEMALLOC`` defaults to ``jemalloc`` if
+      :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
+      defaults to ``none``.
+
+   .. (comment) CHPL_JEMALLOC=system is also available but it is only
+       intended to support packaging.
+       Using CHPL_JEMALLOC=system is not regularly tested and may not work
+       for you. Chapel depends on jemalloc features that are not available in
+       all versions. For best results, we recommend using the bundled jemalloc
+       if possible.
 
 .. _readme-chplenv.CHPL_REGEXP:
 
@@ -721,29 +753,34 @@ Below is an example of a Chapel configuration file with comments:
 Generating Configuration Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The format of the ``printchplenv --overrides`` and ``printchplenv --simple``
-commands is compatible with Chapel configuration files.
+
+To generate a configuration file, use ``printchplenv`` or
+``./configure``.
+
+When using ``printchplenv``, run it with ``--simple`` or
+``--overrides`` to get a format compatible with Chapel configuration
+files.
 
 The ``printchplenv --overrides`` flag can be used to print the variables
 currently overridden by either environment variables or Chapel
 configuration file.
 
-A user can dump their current overrides into a Chapel configuration file:
+For example, to save the current overrides into a Chapel configuration file:
 
 .. code-block:: sh
 
     printchplenv --overrides > ~/.chplconfig
 
 The ``printchplenv --simple`` flag can be used to print all the variables
-of the current configuration.
-
-A user can dump their current configuration into a Chapel configuration file as
-well:
+of the current configuration. For example:
 
 .. code-block:: sh
 
     printchplenv --simple > ~/.chplconfig
 
+
+Alternatively, the ``./configure`` script will generate a ``chplconfig``
+file. See :ref:`readme-installing`.
 
 
 Search Paths and File Names

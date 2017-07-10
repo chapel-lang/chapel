@@ -46,10 +46,24 @@ endif
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = $(CFLAGS)
-RUNTIME_CXXFLAGS = $(CFLAGS)
+# User can provide:
+#   CPPFLAGS - C PreProcessor flags
+#   CFLAGS   - C flags
+#   CXXFLAGS - C++ flags
+#   LDFLAGS  - ld (linker) flags
+#
+# We set
+#  COMP_CXXFLAGS,                    (compiling C++ code in compiler/)
+#  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
+# in a way that respects the above user-provide-able variables.
+COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+# Appended after COMP_CXXFLAGS when compiling parser/lexer
+COMP_CXXFLAGS_NONCHPL = -Wno-error
+RUNTIME_CFLAGS = $(CPPFLAGS) $(CFLAGS)
+RUNTIME_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+# For compiling the generated code
+# Note, user-provided CPPFLAGS / CFLAGS are not provided to generated code.
+# Instead, such flags would be provided on the chpl command line.
 GEN_CFLAGS =
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
@@ -117,6 +131,12 @@ DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
+# CXX11_STD is the flag to select C++11, or "unknown" for compilers
+# we don't know how to do that with yet.
+# If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
+CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+COMP_CXXFLAGS += $(CXX_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -125,8 +145,7 @@ GEN_CFLAGS += $(C_STD)
 # Flags for turning on warnings for C++/C code
 #
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
-# decl-after-stmt for non c99 compilers. See commit message 21665
-WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
+WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 
@@ -145,15 +164,26 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 endif
 
 #
+# Avoid false positive warnings about string overflows
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
+endif
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
-# compiled with gcc 5.X.  Issue will be pursued after the release
+# compiled with gcc 5.X.
+#
+# 2017-06-14: Regression apparently fixed since gcc 5.X.  Turning
+# off VRP interferes with operation of gcc 7, especially static
+# analysis.  The test below was "-ge 5", now changing it to "-eq 5".
 #
 # Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
-COMP_CFLAGS += -fno-tree-vrp
+COMP_CXXFLAGS += -fno-tree-vrp
 endif
 
 endif
@@ -168,7 +198,7 @@ endif
 ifeq ($(GNU_GCC_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
 # (ChapelRangeBase.chpl:793) generates code which can overflow.
-GEN_CFLAGS += -Wno-strict-overflow
+SQUASH_WARN_GEN_CFLAGS += -Wno-strict-overflow
 # -fstrict-overflow was introduced in GCC 4.2 and is on by default.  When on,
 # it allows the compiler to assume that integer sums will not overflow, which
 #  can change the programs runtime behavior (when -O2 or greater is tossed).
@@ -178,9 +208,8 @@ endif
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
+COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile

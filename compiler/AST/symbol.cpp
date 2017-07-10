@@ -28,17 +28,20 @@
 #include "bb.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
 #include "optimizations.h"
+#include "PartialCopyData.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "resolution.h"
+#include "visibleCandidates.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -56,13 +59,6 @@
 //
 FnSymbol *chpl_gen_main = NULL;
 
-ModuleSymbol* rootModule = NULL;
-ModuleSymbol* theProgram = NULL;
-ModuleSymbol* mainModule = NULL;
-ModuleSymbol* baseModule = NULL;
-ModuleSymbol* stringLiteralModule = NULL;
-ModuleSymbol* standardModule = NULL;
-ModuleSymbol* printModuleInitModule = NULL;
 Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gMethodToken = NULL;
@@ -110,10 +106,11 @@ FnSymbol* gChplDeleteError = NULL;
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;
 
-Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
-Map<FnSymbol*,int> virtualMethodMap;
-Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
-Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
+void verifyInTree(BaseAST* ast, const char* msg) {
+  if (ast != NULL && ast->inTree() == false) {
+    INT_FATAL(ast, "%s is not in AST", msg);
+  }
+}
 
 /******************************** | *********************************
 *                                                                   *
@@ -142,11 +139,6 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 Symbol::~Symbol() {
   if (fieldQualifiers)
     delete [] fieldQualifiers;
-}
-
-static inline void verifyInTree(BaseAST* ast, const char* msg) {
-  if (ast && !ast->inTree())
-    INT_FATAL(ast, "%s is not in AST", msg);
 }
 
 void Symbol::verify() {
@@ -756,18 +748,8 @@ const char* retTagDescrString(RetTag retTag) {
 }
 
 
-const char* modTagDescrString(ModTag modTag) {
-  switch (modTag) {
-    case MOD_INTERNAL:  return "internal";
-    case MOD_STANDARD:  return "standard";
-    case MOD_USER:      return "user";
-    default:            return "<unknown ModTag>";
-  }
-}
-
-
 // describes this argument's intent (for use in an English sentence)
-const char* ArgSymbol::intentDescrString(void) {
+const char* ArgSymbol::intentDescrString() {
   switch (intent) {
     case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";
@@ -1111,43 +1093,6 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
 }
 
 
-// FnSymbol id -> PartialCopyData
-// Todo: this really should be a hashtable, as it accumulates lots of entries.
-static std::map<int,PartialCopyData> partialCopyFnMap;
-
-// Return the entry for 'fn' in partialCopyFnMap or NULL if it does not exist.
-PartialCopyData* getPartialCopyInfo(FnSymbol* fn) {
-  std::map<int,PartialCopyData>::iterator it = partialCopyFnMap.find(fn->id);
-  if (it == partialCopyFnMap.end()) return NULL;
-  else                              return &(it->second);
-}
-
-// Add 'fn' to partialCopyFnMap; remove the corresponding entry.
-PartialCopyData& addPartialCopyInfo(FnSymbol* fn) {
-  // A duplicate addition does not make sense, although technically possible.
-  INT_ASSERT(!partialCopyFnMap.count(fn->id));
-  return partialCopyFnMap[fn->id];
-}
-
-// Remove 'fn' from partialCopyFnMap.
-void clearPartialCopyInfo(FnSymbol* fn) {
-  size_t cnt = partialCopyFnMap.erase(fn->id);
-  INT_ASSERT(cnt == 1); // Convention: clear only what was added before.
-}
-
-void clearPartialCopyFnMap() {
-  partialCopyFnMap.clear();
-}
-
-// Since FnSymbols can get removed at pass boundaries, leaving them
-// in here may result in useless entries.
-// As of this writing, PartialCopyData is used only within resolution.
-void checkEmptyPartialCopyFnMap() {
-  if (partialCopyFnMap.size())
-    INT_FATAL("partialCopyFnMap is not empty");
-}
-
-
 /** Copy just enough of the AST to get through filter candidate and
  *  disambiguate-by-match.
  *
@@ -1161,10 +1106,11 @@ void checkEmptyPartialCopyFnMap() {
  * \param map Map from symbols in the old function to symbols in the new one
  */
 FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
-  FnSymbol* newFn = this->copyInnerCore(map);
+  FnSymbol*        newFn = this->copyInnerCore(map);
 
   // Indicate that we need to instantiate its body later.
-  PartialCopyData& pci = addPartialCopyInfo(newFn);
+  PartialCopyData& pci   = addPartialCopyData(newFn);
+
   pci.partialCopySource  = this;
 
   if (this->_this == NULL) {
@@ -1177,25 +1123,31 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
 
   } else {
     /*
-     * Case 3: _this symbol is defined in the function's body.  A new symbol is
-     * created.  This symbol will have to be used to replace some of the symbols
-     * generated from copying the function's body during finalizeCopy.
+     * Case 3: _this symbol is defined in the function's body.
+     * A new symbol is created.  This symbol will have to be used
+     * to replace some of the symbols generated from copying the
+     * function's body during finalizeCopy.
      */
+
+    DefExpr* defPoint = this->_this->defPoint;
+
     newFn->_this           = this->_this->copy(map);
     newFn->_this->defPoint = new DefExpr(newFn->_this,
-                                         COPY_INT(this->_this->defPoint->init),
-                                         COPY_INT(this->_this->defPoint->exprType));
+                                         COPY_INT(defPoint->init),
+                                         COPY_INT(defPoint->exprType));
   }
 
   // Copy and insert the where clause if it is present.
   if (this->where != NULL) {
     newFn->where = COPY_INT(this->where);
+
     insert_help(newFn->where, NULL, newFn);
   }
 
   // Copy and insert the retExprType if it is present.
   if (this->retExprType != NULL) {
     newFn->retExprType = COPY_INT(this->retExprType);
+
     insert_help(newFn->retExprType, NULL, newFn);
   }
 
@@ -1222,17 +1174,20 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
 
   } else {
     // Case 4: Function returns a symbol defined in the body.
+    DefExpr* defPoint = this->getReturnSymbol()->defPoint;
+
     newFn->retSymbol = COPY_INT(this->getReturnSymbol());
 
     newFn->retSymbol->defPoint = new DefExpr(newFn->retSymbol,
-                                             COPY_INT(this->getReturnSymbol()->defPoint->init),
-                                             COPY_INT(this->getReturnSymbol()->defPoint->exprType));
+                                             COPY_INT(defPoint->init),
+                                             COPY_INT(defPoint->exprType));
 
     update_symbols(newFn->retSymbol, map);
   }
 
   // Add a map entry from this FnSymbol to the newly generated one.
   map->put(this, newFn);
+
   // Update symbols in the sub-AST as is appropriate.
   update_symbols(newFn, map);
 
@@ -1250,8 +1205,8 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
  *
  * \param map Map from symbols in the old function to symbols in the new one
  */
-void FnSymbol::finalizeCopy(void) {
-  if (PartialCopyData* pci = getPartialCopyInfo(this)) {
+void FnSymbol::finalizeCopy() {
+  if (PartialCopyData* pci = getPartialCopyData(this)) {
     FnSymbol* const partialCopySource = pci->partialCopySource;
 
     // Make sure that the source has been finalized.
@@ -1356,23 +1311,25 @@ void FnSymbol::finalizeCopy(void) {
 
     // Replace vararg formal if appropriate.
     if (pci->varargOldFormal) {
-      substituteVarargTupleRefs(this->body, pci->varargNewFormals.size(),
-                                pci->varargOldFormal, pci->varargNewFormals);
+      substituteVarargTupleRefs(this, pci);
     }
 
     // Clean up book keeping information.
-    clearPartialCopyInfo(this);
+    clearPartialCopyData(this);
   }
 }
 
 
-void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == body) {
-    body = toBlockStmt(new_ast);
-  } else if (old_ast == where) {
-    where = toBlockStmt(new_ast);
-  } else if (old_ast == retExprType) {
-    retExprType = toBlockStmt(new_ast);
+void FnSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
+  if (oldAst == body) {
+    body = toBlockStmt(newAst);
+
+  } else if (oldAst == where) {
+    where = toBlockStmt(newAst);
+
+  } else if (oldAst == retExprType) {
+    retExprType = toBlockStmt(newAst);
+
   } else {
     INT_FATAL(this, "Unexpected case in FnSymbol::replaceChild");
   }
@@ -1605,7 +1562,7 @@ int FnSymbol::hasGenericFormals() const {
   bool resolveInit = false;
   if (this->hasFlag(FLAG_METHOD) && _this) {
     if (AggregateType* at = toAggregateType(_this->type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER  &&
+      if (at->initializerStyle != DEFINES_CONSTRUCTOR  &&
           strcmp(name, "init") == 0) {
         resolveInit = true;
       }
@@ -1852,28 +1809,26 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 EnumSymbol::EnumSymbol(const char* init_name) :
-  Symbol(E_EnumSymbol, init_name)
-{
+  Symbol(E_EnumSymbol, init_name) {
   gEnumSymbols.add(this);
 }
 
-
 void EnumSymbol::verify() {
   Symbol::verify();
+
   if (astTag != E_EnumSymbol) {
     INT_FATAL(this, "Bad EnumSymbol::astTag");
   }
 }
 
-
-EnumSymbol*
-EnumSymbol::copyInner(SymbolMap* map) {
+EnumSymbol* EnumSymbol::copyInner(SymbolMap* map) {
   EnumSymbol* copy = new EnumSymbol(this->name);
   copy->copyFlags(this);
   return copy;
@@ -1883,9 +1838,11 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
 }
 
-bool EnumSymbol::isParameter() const { return true; }
+bool EnumSymbol::isParameter() const {
+  return true;
+}
 
-Immediate* EnumSymbol::getImmediate(void) {
+Immediate* EnumSymbol::getImmediate() {
   if (SymExpr* init = toSymExpr(defPoint->init)) {
     if (VarSymbol* initvar = toVarSymbol(init->symbol())) {
       return initvar->immediate;
@@ -1898,447 +1855,11 @@ void EnumSymbol::accept(AstVisitor* visitor) {
   visitor->visitEnumSym(this);
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
-
-ModuleSymbol::ModuleSymbol(const char* iName,
-                           ModTag      iModTag,
-                           BlockStmt*  iBlock)
-  : Symbol(E_ModuleSymbol, iName),
-    modTag(iModTag),
-    block(iBlock),
-    initFn(NULL),
-    deinitFn(NULL),
-    filename(NULL),
-    doc(NULL),
-    extern_info(NULL),
-    llvmDINameSpace(NULL)
-{
-  block->parentSymbol = this;
-  registerModule(this);
-  gModuleSymbols.add(this);
-}
-
-
-ModuleSymbol::~ModuleSymbol() { }
-
-
-void ModuleSymbol::verify() {
-  Symbol::verify();
-
-  if (astTag != E_ModuleSymbol) {
-    INT_FATAL(this, "Bad ModuleSymbol::astTag");
-  }
-
-  if (block && block->parentSymbol != this)
-    INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
-
-  verifyNotOnList(block);
-
-  if (initFn) {
-    verifyInTree(initFn, "ModuleSymbol::initFn");
-    INT_ASSERT(initFn->defPoint->parentSymbol == this);
-  }
-
-  if (deinitFn) {
-    verifyInTree(deinitFn, "ModuleSymbol::deinitFn");
-    INT_ASSERT(deinitFn->defPoint->parentSymbol == this);
-    // initFn must call chpl_addModule(deinitFn) if deinitFn is present.
-    INT_ASSERT(initFn);
-  }
-}
-
-
-ModuleSymbol*
-ModuleSymbol::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
-
-  return NULL;
-}
-
-// Collect the top-level classes for this Module.
-//
-// 2014/07/25 MDN.  This function is currently only called by
-// docs.  Historically all of the top-level classes were buried
-// inside the prototypical module initFn.
-//
-// Installing The initFn is being moved forward but there are
-// still short periods of time when the classes will still be
-// buried inside the module initFn.
-//
-// Hence this function is currently able to handle the before
-// and after case.  The before case can be pulled out once the
-// construction of the initFn is cleaned up.
-//
-
-Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
-  Vec<AggregateType*> classes;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-
-      if (TypeSymbol* type = toTypeSymbol(def->sym)) {
-        if (AggregateType* cl = toAggregateType(type->type)) {
-          classes.add(cl);
-        }
-
-      // Step in to the initFn
-      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (TypeSymbol* type = toTypeSymbol(def2->sym)) {
-                if (AggregateType* cl = toAggregateType(type->type)) {
-                  classes.add(cl);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return classes;
-}
-
-
-void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs, std::string parentName) {
-  if (this->noDocGen()) {
-    return;
-  }
-
-  // Print the module directive first, for .rst mode. This will associate the
-  // Module: <name> title with the module. If the .. module:: directive comes
-  // after the title, sphinx will complain about a duplicate id error.
-  if (!fDocsTextOnly) {
-    *file << ".. default-domain:: chpl" << std::endl << std::endl;
-    *file << ".. module:: " << this->docsName() << std::endl;
-
-    if (this->doc != NULL) {
-      this->printTabs(file, tabs + 1);
-      *file << ":synopsis: ";
-      *file << firstNonEmptyLine(this->doc);
-      *file << std::endl;
-    }
-    *file << std::endl;
-  }
-
-  this->printTabs(file, tabs);
-  const char *moduleTitle = astr(this->docsName().c_str());
-  *file << moduleTitle << std::endl;
-
-  if (!fDocsTextOnly) {
-    int length = tabs * this->tabText.length() + strlen(moduleTitle);
-    for (int i = 0; i < length; i++) {
-      *file << "=";
-    }
-    *file << std::endl;
-  }
-
-  if (!fDocsTextOnly) {
-    *file << "**Usage**" << std::endl << std::endl;
-    *file << ".. code-block:: chapel" << std::endl << std::endl;
-  } else {
-    *file << std::endl;
-    *file << "Usage:" << std::endl;
-  }
-  this->printTabs(file, tabs + 1);
-  *file << "use ";
-  if (parentName != "") {
-    *file << parentName << ".";
-  }
-  *file << name << ";" << std::endl << std::endl;
-
-  // If we had submodules, be sure to link to them
-  if (hasTopLevelModule()) {
-    this->printTableOfContents(file);
-  }
-
-  if (this->doc != NULL) {
-    // Only print tabs for text only mode. The .rst prefers not to have the
-    // tabs for module level comments and leading whitespace removed.
-    unsigned int t = tabs;
-    if (fDocsTextOnly) {
-      t += 1;
-    }
-
-    this->printDocsDescription(this->doc, file, t);
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-}
-
-
-/*
- * Append 'prefix' to existing module name prefix.
- */
-void ModuleSymbol::printTableOfContents(std::ostream *file) {
-  int tabs = 1;
-  if (!fDocsTextOnly) {
-    *file << "**Submodules**" << std::endl << std::endl;
-
-    *file << ".. toctree::" << std::endl;
-    this->printTabs(file, tabs);
-    *file << ":maxdepth: 1" << std::endl;
-    this->printTabs(file, tabs);
-    *file << ":glob:" << std::endl << std::endl;
-    this->printTabs(file, tabs);
-    *file << name << "/*" << std::endl << std::endl;
-  } else {
-    *file << "Submodules for this module are located in the " << name;
-    *file << "/ directory" << std::endl << std::endl;
-  }
-}
-
-
-/*
- * Returns name of module, including any prefixes that have been set.
- */
-std::string ModuleSymbol::docsName() {
-  return this->name;
-}
-
-
-// This is intended to be called by getTopLevelConfigsVars and
-// getTopLevelVariables, since the code for them would otherwise be roughly
-// the same.
-
-// It is also private to ModuleSymbols
-//
-// See the comment on getTopLevelFunctions() for the rationale behind the AST
-// traversal
-void ModuleSymbol::getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config) {
-  if (DefExpr* def = toDefExpr(expr)) {
-
-    if (VarSymbol* var = toVarSymbol(def->sym)) {
-      if (var->hasFlag(FLAG_CONFIG) == config) {
-        // The config status of the variable matches what we are looking for
-        contain->add(var);
-      }
-
-    } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-      if (fn->hasFlag(FLAG_MODULE_INIT)) {
-        for_alist(expr2, fn->body->body) {
-          if (DefExpr* def2 = toDefExpr(expr2)) {
-            if (VarSymbol* var = toVarSymbol(def2->sym)) {
-              if (var->hasFlag(FLAG_CONFIG) == config) {
-                // The config status of the variable matches what we are
-                // looking for
-                contain->add(var);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-// Collect the top-level config variables for this Module.
-Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
-  Vec<VarSymbol*> configs;
-
-  for_alist(expr, block->body) {
-    getTopLevelConfigOrVariables(&configs, expr, true);
-  }
-
-  return configs;
-}
-
-// Collect the top-level variables that aren't configs for this Module.
-Vec<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
-  Vec<VarSymbol*> variables;
-
-  for_alist(expr, block->body) {
-    getTopLevelConfigOrVariables(&variables, expr, false);
-  }
-
-  return variables;
-}
-
-// Collect the top-level functions for this Module.
-//
-// This one is similar to getTopLevelModules() and
-// getTopLevelClasses() except that it collects any
-// functions and then steps in to initFn if it finds it.
-//
-Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
-  Vec<FnSymbol*> fns;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
-        if (includeExterns == false &&
-            fn->hasFlag(FLAG_EXTERN)) {
-          continue;
-        }
-
-        fns.add(fn);
-
-        // The following additional overhead and that present in getConfigVars
-        // and getClasses is a result of the docs pass occurring before
-        // the functions/configvars/classes are taken out of the module
-        // initializer function and put on the same level as that function.
-        // If and when that changes, the code encapsulated in this if
-        // statement may be removed.
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (includeExterns == false &&
-                    fn2->hasFlag(FLAG_EXTERN)) {
-                  continue;
-                }
-
-                fns.add(fn2);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return fns;
-}
-
-Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
-  Vec<ModuleSymbol*> mods;
-
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr))
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
-          mods.add(mod);
-      }
-  }
-
-  return mods;
-}
-
-// Intended for documentation purposes only, please don't use otherwise.
-bool ModuleSymbol::hasTopLevelModule() {
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
-      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-        if (mod->defPoint->parentExpr == block && !mod->noDocGen()) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
-  if (old_ast == block) {
-    block = toBlockStmt(new_ast);
-  } else {
-    INT_FATAL(this, "Unexpected case in ModuleSymbol::replaceChild");
-  }
-}
-
-void ModuleSymbol::accept(AstVisitor* visitor) {
-  if (visitor->enterModSym(this) == true) {
-
-    if (block)
-      block->accept(visitor);
-
-    visitor->exitModSym(this);
-  }
-}
-
-void ModuleSymbol::addDefaultUses() {
-  if (modTag != MOD_INTERNAL) {
-    ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
-    assert (parentModule != NULL);
-
-    //
-    // Don't insert 'use ChapelStandard' for nested user modules.
-    // They should get their ChapelStandard symbols from their parent.
-    //
-    if (parentModule->modTag != MOD_USER) {
-      //      printf("Inserting use of ChapelStandard into %s\n", name);
-
-      SET_LINENO(this);
-
-      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef));
-    }
-
-  // We don't currently have a good way to fetch the root module by name.
-  // Insert it directly rather than by name
-  } else if (this == baseModule) {
-    SET_LINENO(this);
-
-    block->moduleUseAdd(rootModule);
-
-    UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
-    block->insertAtHead(new UseStmt(modRef));
-  }
-}
-
-//
-// NOAKES 2014/07/22
-//
-// There is currently a problem in functionResolve that this function
-// has a "temporary" work around for.
-
-// There is somewhere within that code that believes the order of items in
-// modUseList is an indicator of "dependence order" even though this list
-// does not and cannot maintain that information.
-//
-// Fortunately there are currently no tests that expose this fallacy so
-// long at ChapelStandard always appears first in the list
-void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
-  if (mod != this && modUseList.index(mod) < 0) {
-    if (mod == standardModule) {
-      modUseList.insert(0, mod);
-    } else {
-      modUseList.add(mod);
-    }
-  }
-}
-
-// If the specified module is currently used by the target
-// then remove the module from the use-state of this module
-// but introduce references to the children of the module
-// being dropped.
-//
-// At this time this is only used for deadCodeElimination and
-// it is not clear if there will be other uses.
-void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
-  int index = modUseList.index(mod);
-
-  if (index >= 0) {
-    bool inBlock = block->moduleUseRemove(mod);
-
-    modUseList.remove(index);
-
-    // The dead module may have used other modules.  If so add them
-    // to the current module
-    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
-      if (modUseList.index(modUsedByDeadMod) < 0) {
-        SET_LINENO(this);
-
-        if (inBlock == true)
-          block->moduleUseAdd(modUsedByDeadMod);
-
-        modUseList.add(modUsedByDeadMod);
-      }
-    }
-  }
-}
-
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL),
@@ -2399,10 +1920,11 @@ void LabelSymbol::accept(AstVisitor* visitor) {
   visitor->visitLabelSym(this);
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 std::string unescapeString(const char* const str, BaseAST *astForError) {
   std::string newString = "";
@@ -2749,6 +2271,26 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
   return s;
 }
 
+VarSymbol* new_CommIDSymbol(int64_t b) {
+  IF1_int_type size = INT_SIZE_64;
+  Immediate imm;
+  imm.v_int64 = b;
+
+  imm.const_kind = NUM_KIND_COMMID;
+  imm.num_index = size;
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  PrimitiveType* dtRetType = dtInt[size];
+  if (s) {
+    return s;
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+  rootModule->block->insertAtTail(new DefExpr(s));
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  return s;
+}
+
 static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
@@ -2825,6 +2367,31 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   return s->flags & mask;
 }
 
+
+// cache some popular strings
+
+const char* astrSdot = NULL;
+const char* astrSequals = NULL;
+const char* astr_cast = NULL;
+const char* astrDeinit = NULL;
+const char* astrTag = NULL;
+const char* astrThis = NULL;
+
+void initAstrConsts() {
+  astrSdot    = astr(".");
+  astrSequals = astr("=");
+  astr_cast   = astr("_cast");
+  astrDeinit  = astr("deinit");
+  astrTag     = astr("tag");
+  astrThis    = astr("this");
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Create a temporary, with FLAG_TEMP and (optionally) FLAG_CONST.             *
+*                                                                             *
+************************************** | *************************************/
+
 VarSymbol* newTemp(const char* name, QualifiedType qt) {
   VarSymbol* vs = newTemp(name, qt.type());
   vs->qual = qt.getQual();
@@ -2847,7 +2414,30 @@ VarSymbol* newTemp(const char* name, Type* type) {
   return vs;
 }
 
-
 VarSymbol* newTemp(Type* type) {
   return newTemp((const char*)NULL, type);
+}
+
+VarSymbol* newTempConst(const char* name, Type* type) {
+  VarSymbol* result = newTemp(name, type);
+  result->addFlag(FLAG_CONST);
+  return result;
+}
+
+VarSymbol* newTempConst(Type* type) {
+  VarSymbol* result = newTemp(type);
+  result->addFlag(FLAG_CONST);
+  return result;
+}
+
+VarSymbol* newTempConst(const char* name, QualifiedType qt) {
+  VarSymbol* result = newTemp(name, qt);
+  result->addFlag(FLAG_CONST);
+  return result;
+}
+
+VarSymbol* newTempConst(QualifiedType qt) {
+  VarSymbol* result = newTemp(qt);
+  result->addFlag(FLAG_CONST);
+  return result;
 }

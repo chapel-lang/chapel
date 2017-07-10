@@ -1,0 +1,5 @@
+error message: deleting record error gives an unhelpful line number
+
+Deleting non-user-defined records, e.g. a domain, array, or distribution,
+results in an error message that points to ChapelBase.chpl. The error should
+point to the line number where the record is deleted.

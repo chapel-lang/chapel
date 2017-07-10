@@ -5,10 +5,12 @@ CHPL_FLAGS = --fast
 TARGETS = \
 	binarytrees \
 	chameneosredux \
+	chameneosredux-fast \
 	fasta \
 	fannkuchredux \
 	knucleotide \
 	mandelbrot \
+	mandelbrot-fast \
 	meteor \
 	meteor-fast \
 	nbody \
@@ -39,6 +41,9 @@ binarytrees: binarytrees.chpl
 chameneosredux: chameneosredux.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
+chameneosredux-fast: chameneosredux-fast.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
 fasta: fasta.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
@@ -49,6 +54,9 @@ knucleotide: knucleotide.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 mandelbrot: mandelbrot.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+mandelbrot-fast: mandelbrot-fast.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 meteor: meteor.chpl

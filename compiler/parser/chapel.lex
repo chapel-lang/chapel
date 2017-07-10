@@ -126,6 +126,7 @@ coforall         return processToken(yyscanner, TCOFORALL);
 config           return processToken(yyscanner, TCONFIG);
 const            return processToken(yyscanner, TCONST);
 continue         return processToken(yyscanner, TCONTINUE);
+defer            return processToken(yyscanner, TDEFER);
 delete           return processToken(yyscanner, TDELETE);
 dmapped          return processToken(yyscanner, TDMAPPED);
 do               return processToken(yyscanner, TDO);
@@ -294,6 +295,7 @@ zip              return processToken(yyscanner, TZIP);
 #include <cstring>
 #include <cctype>
 #include <string>
+#include <algorithm>
 
 static void  newString();
 static void  addString(const char* str);
@@ -711,6 +713,8 @@ static int processBlockComment(yyscan_t scanner) {
   int         labelIndex   = (len >= 2) ? 2 : 0;
 
   int         c            = 0;
+  int         d            = 1;
+  bool        badComment = false;
   int         lastc        = 0;
   int         depth        = 1;
   std::string wholeComment = "";
@@ -747,9 +751,20 @@ static int processBlockComment(yyscan_t scanner) {
       addChar(c);
     }
 
-    if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
-      depth--;
+    if (len != 0 && c == fDocsCommentLabel[len - d])
+      d++;
+    else
+      d = 1;
 
+    if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
+      if(labelIndex == len && d != len + 1) {
+        depth--;
+        badComment = true;
+      }
+      else
+        depth--;
+      
+      d = 1;
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
       // keep track of the start of the last nested comment
@@ -795,9 +810,14 @@ static int processBlockComment(yyscan_t scanner) {
 
       location = wholeComment.find("\\x09");
     }
+    if(!badComment)
+      yyLval->pch = astr(wholeComment.c_str());
+    else {
 
-    yyLval->pch = astr(wholeComment.c_str());
-
+      fprintf(stderr, "Warning:%d: chpldoc comment not closed, ignoring comment:%s\n",
+              startLine, wholeComment.c_str());
+      yyLval->pch = NULL;
+    }
   } else {
     yyLval->pch = NULL;
   }
@@ -888,3 +908,4 @@ static bool yy_has_state(yyscan_t yyscanner)
 
   return yyg->yy_start_stack_ptr > 0;
 }
+

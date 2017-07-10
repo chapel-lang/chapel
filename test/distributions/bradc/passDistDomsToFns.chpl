@@ -25,7 +25,7 @@ proc fooBC(X:[BlkCycSpace] int) {
   writeln("In fooBC!");
 }
 
-const ReplicatedSpace = Space dmapped ReplicatedDist();
+const ReplicatedSpace = Space dmapped Replicated();
 var RA: [ReplicatedSpace] int;
 fooR(RA);
 proc fooR(X:[ReplicatedSpace] int) {

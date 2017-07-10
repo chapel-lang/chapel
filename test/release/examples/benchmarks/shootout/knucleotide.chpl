@@ -74,13 +74,13 @@ proc writeCount(data, param str) {
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int, parSafe=false),
+  var freqDom: domain(int),
       freqs: [freqDom] int;
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks {
-    var myDom: domain(int, parSafe=false),
+    var myDom: domain(int),
         myArr: [myDom] int;
 
     for i in tid..(data.size-nclSize) by numTasks do

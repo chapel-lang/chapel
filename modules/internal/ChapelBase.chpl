@@ -21,6 +21,7 @@
 //
 
 module ChapelBase {
+  use ChapelStandard;
 
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
@@ -196,7 +197,7 @@ module ChapelBase {
   inline proc -(a: real(?w)) return __primitive("u-", a);
   inline proc -(a: imag(?w)) return __primitive("u-", a);
   inline proc -(a: complex(?w)) return __primitive("u-", a);
-  
+
   inline proc +(param a: int(?w)) param return a;
   inline proc +(param a: uint(?w)) param return a;
 
@@ -254,7 +255,7 @@ module ChapelBase {
   inline proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
   inline proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
   inline proc *(a: complex(?w), b: complex(w)) return __primitive("*", a, b);
-  
+
   inline proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
   inline proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
   inline proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex(w*2);
@@ -277,7 +278,7 @@ module ChapelBase {
   inline proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
   inline proc /(a: complex(?w), b: complex(w)) return __primitive("/", a, b);
-  
+
   inline proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
   inline proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
   inline proc /(a: real(?w), b: complex(w*2))
@@ -307,11 +308,29 @@ module ChapelBase {
   //
   // % on primitive types
   //
-  inline proc %(a: int(?w), b: int(w)) return __primitive("%", a, b);
-  inline proc %(a: uint(?w), b: uint(w)) return __primitive("%", a, b);
+  inline proc %(a: int(?w), b: int(w)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline proc %(a: uint(?w), b: uint(w)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
 
-  inline proc %(param a: int(?w), param b: int(w)) param return __primitive("%", a, b);
-  inline proc %(param a: uint(?w), param b: uint(w)) param return __primitive("%", a, b);
+  inline proc %(param a: int(?w), param b: int(w)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline proc %(param a: uint(?w), param b: uint(w)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
 
   //
   // ** on primitive types
@@ -375,7 +394,7 @@ module ChapelBase {
   }
 
   inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
-    if b == 0 then 
+    if b == 0 then
       return 1:a.type;
     if b < 0 then
       if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
@@ -422,9 +441,9 @@ module ChapelBase {
   //
   // bitwise operations on primitive types
   //
-  inline proc ~(a: bool) return __primitive("u~", a);
   inline proc ~(a: int(?w)) return __primitive("u~", a);
   inline proc ~(a: uint(?w)) return __primitive("u~", a);
+  inline proc ~(a: bool) { compilerError("~ is not supported on operands of boolean type"); }
 
   inline proc &(a: bool, b: bool) return __primitive("&", a, b);
   inline proc &(a: int(?w), b: int(w)) return __primitive("&", a, b);
@@ -488,9 +507,9 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { return a; }
-  inline proc _statementLevelSymbol(a: sync)  { return a.readFE(); }
-  inline proc _statementLevelSymbol(a: single) { return a.readFF(); }
+  inline proc _statementLevelSymbol(a) { }
+  inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
+  inline proc _statementLevelSymbol(a: single) { a.readFF(); }
   inline proc _statementLevelSymbol(param a) param { return a; }
   inline proc _statementLevelSymbol(type a) type { return a; }
 
@@ -570,7 +589,7 @@ module ChapelBase {
       return cimagf(this);
     }
   }
-  
+
   //
   // helper functions
   //
@@ -619,6 +638,7 @@ module ChapelBase {
   //
   // More primitive funs
   //
+  pragma "function terminates program"
   inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
   }
@@ -766,14 +786,14 @@ module ChapelBase {
                               locStyle = localizationStyle_t.locNone,
                               subloc = c_sublocid_none) {
     var ret:_ddata(eltType);
-    __primitive("array_alloc", ret, eltType, size,
+    __primitive("array_alloc", ret, size,
                 locStyle == localizationStyle_t.locSubchunks, subloc);
     init_elts(ret, size, eltType);
     return ret;
   }
 
-  inline proc _ddata_free(data: _ddata) {
-    __primitive("array_free", data);
+  inline proc _ddata_free(data: _ddata, size: integral) {
+    __primitive("array_free", data, size);
   }
 
   inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {
@@ -1293,9 +1313,15 @@ module ChapelBase {
   }
 
   inline proc %=(ref lhs:int(?w), rhs:int(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:uint(?w), rhs:uint(w)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
   inline proc %=(ref lhs:real(?w), rhs:real(w)) {
@@ -1485,9 +1511,20 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   inline proc %(a: uint(64), param b: uint(64)) {
+    if b == 0 then compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
+
+  // TODO: No longer necessary once param coercion for uints is improved
   inline proc %(param a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
+  inline proc %(a: int(64), param b: int(64)) {
+    if b == 0 then compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 

@@ -15,11 +15,19 @@ config type elt = int;
 // ARepl - the replicated array to be tested
 
 const repllocales = Locales;  // in case this changes
-var ReplBlockDist = new dmap(new ReplicatedDist());
+var ReplBlockDist = new dmap(new Replicated());
 var DRepl: domain(2) dmapped ReplBlockDist = Dsub;
 var ARepl: [DRepl] elt;
 
-proc show() { write(ARepl, "\n"); }
+proc show() {
+  for loc in Locales {
+    on loc {
+      writeln(loc, ":");
+      writeln(ARepl);
+    }
+  }
+}
+    
 
 // set everything to predetermined values
 proc reset() {

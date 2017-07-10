@@ -80,6 +80,14 @@ module ChapelLocale {
   extern const c_sublocid_none: chpl_sublocID_t;
   pragma "no doc"
   extern const c_sublocid_any: chpl_sublocID_t;
+  pragma "no doc"
+  extern const c_sublocid_all: chpl_sublocID_t;
+
+  pragma "no doc"
+  inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t)
+    return (subloc != c_sublocid_none
+            && subloc != c_sublocid_any
+            && subloc != c_sublocid_all);
 
   /*
     ``locale`` is the abstract class from which the various
@@ -161,8 +169,7 @@ module ChapelLocale {
     var callStackSize: size_t;
 
     /*
-      Get the integer identifier for the top-level locale the
-      current task is running on.
+      Get the integer identifier for this locale.
 
       :returns: locale number, in the range ``0..numLocales-1``
       :rtype: int
@@ -173,8 +180,7 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
 
     /*
-      Get the name of the top-level locale the current task is
-      running on.
+      Get the name of this locale.
 
       :returns: locale name
       :rtype: string
@@ -662,5 +668,16 @@ module ChapelLocale {
   export
   proc chpl_taskRunningCntDec() {
     here.runningTaskCntSub(1);
+  }
+
+  //
+  // Free the original root locale when the program is being torn down
+  //
+  // Be careful to free only origRootLocale, and never the copy in
+  // rootLocale, or the same locales will be torn down twice.
+  //
+  pragma "no doc"
+  proc deinit() {
+    delete origRootLocale;
   }
 }

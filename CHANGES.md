@@ -239,7 +239,7 @@ Documentation
   (see http://chapel.cray.com/docs/1.15/builtins/internal/String.html?highlight=strip#String.string.strip)
 * updated documentation regarding reference counting of files and channels
 * added an indication that IO is a module that is used by default
-* updated documents to refer to install.html rather than download.html
+* updated documents to refer to download.html rather than install.html
 * improved some entries in the "quick reference" document
   (see http://chapel.cray.com/docs/1.15/_downloads/quickReference.pdf)
 

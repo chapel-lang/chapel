@@ -23,6 +23,7 @@
 #include "bb.h"
 #include "bitVec.h"
 #include "CForLoop.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "oldCollectors.h"
@@ -825,20 +826,22 @@ buildGetValue(IteratorInfo* ii, BlockStmt* singleLoop) {
   INT_ASSERT(my_this == ii->getValue->_this);
   map.put(advance_this, my_this);
 
-  VarSymbol* tmp         = newTemp(ii->getValue->retType);
-  getValueBody->insertAtTail(new DefExpr(tmp));
 
   if (singleLoop && singleLoop->isForLoop())
   {
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
-  else
+  else if (ii->getValue->retType != dtVoid)
   {
+    VarSymbol* tmp = newTemp(ii->getValue->retType);
+    getValueBody->insertAtTail(new DefExpr(tmp));
     getValueBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
                                             new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                          my_this, ii->iclass->getField("value"))));
+    getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  } else {
+    getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   }
-  getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 
   ii->getValue->body->replace(getValueBody);
 }
@@ -1059,7 +1062,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       else if (CallExpr* call = toCallExpr(move->get(2)))
       {
         // The RHS is a function call.
-        if (FnSymbol* fn = call->isResolved()) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
           for_actuals(actual, call) {
             SymExpr* se = toSymExpr(actual);
 
@@ -1165,12 +1168,14 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
       // TODO: This forv + filter casts a wide net.
       // Try to make the filter reject as many cases as possible
       // by first matching on the callee and then testing if call == theCall.
-      if (FnSymbol* rc = call->isResolved()) {
-        if (rc == callee)
+      if (FnSymbol* rc = call->resolvedFunction()) {
+        if (rc == callee) {
           return false;
+        }
       }
     }
   }
+
   return true;
 }
 

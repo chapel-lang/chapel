@@ -146,6 +146,8 @@ module SSCA2_driver
             approximate_betweenness_centrality ( G, BC_starting_vertices, 
                                                  Between_Cent, 
                                                  Sum_Min_Dist );
+
+            delete Rand_Gen;
           }
 
 	  // --------------------------------------------------

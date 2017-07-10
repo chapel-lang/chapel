@@ -45,6 +45,19 @@ class CCodeGenAction;
 
 #endif
 
+/* This class contains information helpful in generating
+ * code for nested loops. */
+struct LoopData
+{
+#ifdef HAVE_LLVM
+  LoopData(llvm::MDNode *loopMetadata, bool parallel)
+    : loopMetadata(loopMetadata), parallel(parallel)
+  { }
+  llvm::MDNode* loopMetadata;
+  bool parallel; /* There is no dependency between loops */
+#endif
+};
+
 /* GenInfo is meant to be a global variable which stores
  * the code generator state - e.g. FILE* to print C to
  * or LLVM module in which to generate.
@@ -78,6 +91,8 @@ struct GenInfo {
   llvm::IRBuilder<> *builder;
   LayeredValueTable *lvt;
 
+  std::stack<LoopData> loopStack;
+
   // Clang Stuff
   std::string clangCC;
   std::string clangCXX;
@@ -102,13 +117,13 @@ struct GenInfo {
   std::string moduleName;
   llvm::LLVMContext llvmContext;
   clang::ASTContext *Ctx;
+
+  // After 3.3 this is llvm::DataLayout
   LLVM_TARGET_DATA *targetData;
   clang::CodeGen::CodeGenModule *cgBuilder;
   CCodeGenAction *cgAction;
 
   llvm::MDNode* tbaaRootNode;
-  llvm::MDNode* tbaaFtableNode;
-  llvm::MDNode* tbaaVmtableNode;
 
   // We stash the layout that Clang would like to use here.
   // With fLLVMWideOpt, this will be the layout that we
@@ -149,6 +164,10 @@ struct GenInfo {
 extern GenInfo* gGenInfo;
 extern int      gMaxVMT;
 extern int      gStmtCount;
+
+// Map from filename to an integer that will represent an unique ID for each
+// generated GET/PUT
+extern std::map<std::string, int> commIDMap;
 
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);

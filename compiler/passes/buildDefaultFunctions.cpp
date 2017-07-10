@@ -22,7 +22,10 @@
 #include "astutil.h"
 #include "build.h"
 #include "config.h"
+#include "driver.h"
 #include "expr.h"
+#include "initializerRules.h"
+#include "ModuleSymbol.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -33,6 +36,8 @@ static bool mainReturnsInt;
 static void build_chpl_entry_points();
 static void build_accessor(AggregateType* ct, Symbol* field, bool setter);
 static void build_accessors(AggregateType* ct, Symbol* field);
+
+static void buildDefaultInitializer(AggregateType* ct);
 
 static void buildDefaultOfFunction(AggregateType* ct);
 
@@ -76,6 +81,10 @@ void buildDefaultFunctions() {
       // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
       if (AggregateType* ct = toAggregateType(type->type)) {
         buildFieldAccessorFunctions(ct);
+
+        if (ct->wantsDefaultInitializer()) {
+          buildDefaultInitializer(ct);
+        }
 
         if (!ct->symbol->hasFlag(FLAG_REF)) {
           buildDefaultDestructor(ct);
@@ -180,16 +189,18 @@ typedef enum {
 
 static FnSymbol* function_exists(const char* name,
                                  int numFormals,
-                                 Type* formalType1 = NULL,
-                                 Type* formalType2 = NULL,
-                                 Type* formalType3 = NULL,
-                                 function_exists_kind_t kind=FIND_EITHER)
+                                 Type* formalType1,
+                                 Type* formalType2,
+                                 Type* formalType3,
+                                 Type* formalType4,
+                                 function_exists_kind_t kind)
 {
   switch(numFormals)
   {
    default:
-    INT_FATAL("function_exists checks at most 3 argument types.  Add more if needed.");
+    INT_FATAL("function_exists checks at most 4 argument types.  Add more if needed.");
     break;
+   case 4:  if (!formalType4)   INT_FATAL("Missing argument formalType4");  break;
    case 3:  if (!formalType3)   INT_FATAL("Missing argument formalType3");  break;
    case 2:  if (!formalType2)   INT_FATAL("Missing argument formalType2");  break;
    case 1:  if (!formalType1)   INT_FATAL("Missing argument formalType1");  break;
@@ -217,6 +228,10 @@ static FnSymbol* function_exists(const char* name,
       if (!type_match(formalType3, fn->getFormal(3)))
         continue;
 
+    if (formalType4)
+      if (!type_match(formalType4, fn->getFormal(4)))
+        continue;
+
     if (kind == FIND_REF && fn->retTag != RET_REF)
       continue;
 
@@ -230,6 +245,32 @@ static FnSymbol* function_exists(const char* name,
   return NULL;
 }
 
+static FnSymbol* function_exists(const char* name,
+                                 Type* formalType1,
+                                 function_exists_kind_t kind=FIND_EITHER)
+{
+  return function_exists(name, 1, formalType1, NULL, NULL, NULL, kind);
+}
+
+
+
+static FnSymbol* function_exists(const char* name,
+                                 Type* formalType1,
+                                 Type* formalType2,
+                                 function_exists_kind_t kind=FIND_EITHER)
+{
+  return function_exists(name, 2, formalType1, formalType2, NULL, NULL, kind);
+}
+
+static FnSymbol* function_exists(const char* name,
+                                 Type* formalType1,
+                                 Type* formalType2,
+                                 Type* formalType3,
+                                 function_exists_kind_t kind=FIND_EITHER)
+{
+  return function_exists(name, 3,
+                         formalType1, formalType2, formalType3, NULL, kind);
+}
 
 static void fixup_accessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
@@ -239,7 +280,7 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
   collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed(field->name) && call->numActuals() == 2) {
+      if (call->isNamedAstr(field->name) && call->numActuals() == 2) {
         if (call->get(1)->typeInfo() == dtMethodToken &&
             call->get(2)->typeInfo() == ct) {
           Expr* arg2 = call->get(2);
@@ -372,10 +413,10 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
 
-  FnSymbol *setter = function_exists(field->name, 2,
-                                     dtMethodToken, ct, NULL, FIND_REF);
-  FnSymbol *getter = function_exists(field->name, 2,
-                                     dtMethodToken, ct, NULL, FIND_NOT_REF);
+  FnSymbol *setter = function_exists(field->name,
+                                     dtMethodToken, ct, FIND_REF);
+  FnSymbol *getter = function_exists(field->name,
+                                     dtMethodToken, ct, FIND_NOT_REF);
   if (setter)
     fixup_accessor(ct, field, fieldIsConst, recordLike, setter);
   if (getter)
@@ -389,23 +430,13 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
 }
 
 static FnSymbol* chpl_gen_main_exists() {
-  FnSymbol* match = NULL;
+  bool          errorP   = false;
+  ModuleSymbol* module   = ModuleSymbol::mainModule();
+  FnSymbol*     matchFn  = NULL;
   ModuleSymbol* matchMod = NULL;
-  ModuleSymbol* module = NULL;
-
-  if (strlen(mainModuleName) != 0) {
-    forv_Vec(ModuleSymbol, mod, allModules) {
-      if (!strcmp(mainModuleName, mod->name))
-        module = mod;
-    }
-    if (!module)
-      USR_FATAL("Couldn't find module %s", mainModuleName);
-  }
-
-  bool firstProblem = true;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!strcmp("main", fn->name)) {
+    if (strcmp("main", fn->name) == 0) {
       if (fn->numFormals() == 0 ||
           (fn->numFormals() == 1 &&
            fn->getFormal(1)->typeInfo() == dtArray) ) {
@@ -413,15 +444,17 @@ static FnSymbol* chpl_gen_main_exists() {
 
         CallExpr* ret = toCallExpr(fn->body->body.last());
 
-        if (!ret || !ret->isPrimitive(PRIM_RETURN))
+        if (ret == NULL || ret->isPrimitive(PRIM_RETURN) == false) {
           INT_FATAL(fn, "function is not normalized");
+        }
 
         SymExpr* sym = toSymExpr(ret->get(1));
 
-        if (!sym)
+        if (sym == NULL) {
           INT_FATAL(fn, "function is not normalized");
+        }
 
-        if( sym->symbol() != gVoid ) {
+        if (sym->symbol() != gVoid) {
           mainReturnsInt = true;
         } else {
           mainReturnsInt = false;
@@ -429,32 +462,41 @@ static FnSymbol* chpl_gen_main_exists() {
 
         ModuleSymbol* fnMod = fn->getModule();
 
-        if ((module == NULL && 
-             fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) ||
-            fnMod == module) {
-          if (!match) {
-            match = fn;
+        if (fnMod == module) {
+          if (matchFn == NULL) {
+            matchFn  = fn;
             matchMod = fnMod;
+
           } else {
-            if (firstProblem) {
-              firstProblem = false;
-              USR_FATAL_CONT("Ambiguous main() function%s:",
-                             fnMod == matchMod ? "" : " (use --main-module to disambiguate)");
-              USR_PRINT(match, "in module %s", matchMod->name);
+            if (errorP == false) {
+              const char* info = "";
+
+              errorP = true;
+
+              if (fnMod == matchMod) {
+                info = " (use --main-module to disambiguate)";
+              }
+
+              USR_FATAL_CONT("Ambiguous main() function%s:", info);
+              USR_PRINT(matchFn, "in module %s", matchMod->name);
             }
+
             USR_PRINT(fn, "in module %s", fnMod->name);
           } // else, this is not a candidate for the main module
         }
+
       } else {
         USR_FATAL_CONT("main() function with invalid signature");
         USR_PRINT(fn, "in module %s", fn->getModule()->name);
       }
     }
   }
-  if (!firstProblem) {
+
+  if (errorP == false) {
     USR_STOP();
   }
-  return match;
+
+  return matchFn;
 }
 
 
@@ -462,69 +504,58 @@ static void build_chpl_entry_points() {
   //
   // chpl_user_main is the (user) programmatic portion of the app
   //
-  FnSymbol* chpl_user_main = chpl_gen_main_exists();
+  ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
+  FnSymbol*     chplUserMain = chpl_gen_main_exists();
 
-  if (fLibraryCompile) {
-    if (chpl_user_main)
-      INT_FATAL(chpl_user_main, "'main' found when compiling a library");
+  if (fLibraryCompile == true && chplUserMain != NULL) {
+    USR_WARN(chplUserMain,
+             "'main()' has no special meaning when compiling "
+             "in --library mode");
   }
 
-  if (!chpl_user_main) {
-    if (strlen(mainModuleName) != 0) {
-      forv_Vec(ModuleSymbol, mod, userModules) {
-        if (!strcmp(mod->name, mainModuleName))
-          mainModule = mod;
-      }
-      if (!mainModule)
-        USR_FATAL("unknown module specified in '--main-module=%s'", mainModuleName);
-    } else {
-      for_alist(expr, theProgram->block->body) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-            if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
-              if (mainModule) {
-                USR_FATAL_CONT("a program with multiple user modules requires a main function");
-                USR_PRINT("alternatively, specify a main module with --main-module");
-                USR_STOP();
-              }
-              mainModule = mod;
-            }
-          }
-        }
-      }
-    }
+  if (chplUserMain == NULL) {
     SET_LINENO(mainModule);
-    chpl_user_main = new FnSymbol("main");
-    chpl_user_main->retType = dtVoid;
-    mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
-    normalize(chpl_user_main);
+
+    chplUserMain          = new FnSymbol("main");
+    chplUserMain->retType = dtVoid;
+
+    mainModule->block->insertAtTail(new DefExpr(chplUserMain));
+
+    normalize(chplUserMain);
+
   } else {
-    if (!isModuleSymbol(chpl_user_main->defPoint->parentSymbol)) {
-      USR_FATAL(chpl_user_main, "main function must be defined at module scope");
+    if (isModuleSymbol(chplUserMain->defPoint->parentSymbol) == false) {
+      USR_FATAL(chplUserMain,
+                "main function must be defined at module scope");
     }
-    mainModule = chpl_user_main->getModule();
   }
 
-  SET_LINENO(chpl_user_main);
-  chpl_user_main->cname = "chpl_user_main";
+  SET_LINENO(chplUserMain);
+
+  chplUserMain->cname = "chpl_user_main";
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.
   // It invokes the user's code.
   //
-  chpl_gen_main = new FnSymbol("chpl_gen_main");
 
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
-  chpl_gen_main->insertFormalAtTail(arg);
-  chpl_gen_main->retType = dtInt[INT_SIZE_64];
 
-  chpl_gen_main->cname = "chpl_gen_main";
+  chpl_gen_main          = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->retType = dtInt[INT_SIZE_64];
+  chpl_gen_main->cname   = "chpl_gen_main";
+
+  chpl_gen_main->insertFormalAtTail(arg);
+
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
   chpl_gen_main->addFlag(FLAG_LOCAL_ARGS);
   chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
+
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
+
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
   VarSymbol* endCount = newTemp("_endCount");
+
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
   chpl_gen_main->insertAtTail(new DefExpr(endCount));
 
@@ -534,7 +565,11 @@ static void build_chpl_entry_points() {
   // support them).
   //
   if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             endCount,
+                                             new CallExpr("_endCountAlloc",
+                                                          gFalse)));
+
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
 
@@ -546,9 +581,10 @@ static void build_chpl_entry_points() {
 
   bool main_ret_set = false;
 
-  if (!fLibraryCompile) {
+  if (fLibraryCompile == false) {
     SET_LINENO(chpl_gen_main);
-    if (mainHasArgs) {
+
+    if (mainHasArgs == true) {
       VarSymbol* converted_args = newTemp("_main_args");
 
       converted_args->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -563,15 +599,18 @@ static void build_chpl_entry_points() {
                                                  main_ret,
                                                  new CallExpr("main", converted_args)));
         main_ret_set = true;
+
       } else {
         chpl_gen_main->insertAtTail(new CallExpr("main", converted_args));
       }
+
     } else {
       if (mainReturnsInt) {
         chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                                  main_ret,
                                                  new CallExpr("main")));
         main_ret_set = true;
+
       } else {
         chpl_gen_main->insertAtTail(new CallExpr("main"));
       }
@@ -601,7 +640,7 @@ static void build_chpl_entry_points() {
 }
 
 static void build_record_equality_function(AggregateType* ct) {
-  if (function_exists("==", 2, ct, ct))
+  if (function_exists("==", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("==");
@@ -630,7 +669,7 @@ static void build_record_equality_function(AggregateType* ct) {
 
 
 static void build_record_inequality_function(AggregateType* ct) {
-  if (function_exists("!=", 2, ct, ct))
+  if (function_exists("!=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("!=");
@@ -660,7 +699,7 @@ static void build_record_inequality_function(AggregateType* ct) {
 
 
 static void build_enum_size_function(EnumType* et) {
-  if (function_exists("size", 1, et))
+  if (function_exists("size", et))
     return;
   // Build a function that returns the length of the enum specified
   FnSymbol* fn = new FnSymbol("size");
@@ -695,7 +734,7 @@ static void build_enum_size_function(EnumType* et) {
 
 
 static void build_enum_first_function(EnumType* et) {
-  if (function_exists("chpl_enum_first", 1, et))
+  if (function_exists("chpl_enum_first", et))
     return;
   // Build a function that returns the first option for the enum
   // specified, also known as the default.
@@ -757,7 +796,7 @@ static void build_enum_enumerate_function(EnumType* et) {
 
 static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
@@ -803,7 +842,7 @@ static void build_enum_cast_function(EnumType* et) {
   normalize(fn);
 
   // string to enumerated type cast function
-  fn = new FnSymbol("_cast");
+  fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
@@ -849,7 +888,7 @@ static void build_enum_cast_function(EnumType* et) {
 
 
 static void build_enum_assignment_function(EnumType* et) {
-  if (function_exists("=", 2, et, et))
+  if (function_exists("=", et, et))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -869,7 +908,7 @@ static void build_enum_assignment_function(EnumType* et) {
 
 
 static void build_record_assignment_function(AggregateType* ct) {
-  if (function_exists("=", 2, ct, ct))
+  if (function_exists("=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -921,7 +960,7 @@ static void build_record_assignment_function(AggregateType* ct) {
 
 static void build_extern_init_function(Type* type)
 {
-  if (function_exists("_defaultOf", 1, type))
+  if (function_exists("_defaultOf", type))
     return;
 
   // In the world where initialization lived entirely within the compiler,
@@ -952,7 +991,7 @@ static void build_extern_init_function(Type* type)
 
 static void build_extern_assignment_function(Type* type)
 {
-  if (function_exists("=", 2, type, type))
+  if (function_exists("=", type, type))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -987,7 +1026,7 @@ static void build_record_cast_function(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE))
     return;
 
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
@@ -1009,7 +1048,7 @@ static void build_record_cast_function(AggregateType* ct) {
 
 // TODO: we should know what field is active after assigning unions
 static void build_union_assignment_function(AggregateType* ct) {
-  if (function_exists("=", 2, ct, ct))
+  if (function_exists("=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1043,13 +1082,13 @@ static void build_union_assignment_function(AggregateType* ct) {
 }
 
 static void build_record_copy_function(AggregateType* ct) {
-  if (function_exists("chpl__initCopy", 1, ct) != NULL) {
+  if (function_exists("chpl__initCopy", ct) != NULL) {
     return;
   }
 
   if (isNonGenericClassWithInitializers(ct)  == true ||
       isNonGenericRecordWithInitializers(ct) == true) {
-    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+    if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
       ct->symbol->addFlag(FLAG_NOT_POD);
     }
 
@@ -1062,7 +1101,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   // as an optimization, the below conditionals use ct->initializerStyle
   if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
-    if (FnSymbol* ctor = function_exists(copyCtorName, 1, ct)) {
+    if (FnSymbol* ctor = function_exists(copyCtorName, ct)) {
       // note: default ctor has 1 arg, meme
       if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME)) {
         foundUserDefinedCopy = true;
@@ -1070,7 +1109,7 @@ static void build_record_copy_function(AggregateType* ct) {
     }
 
   } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
-    if (function_exists("init", 3, dtMethodToken, ct, ct) != NULL) {
+    if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
       foundUserDefinedCopy = true;
     } else {
       // Don't try to use the compiler-generated default init fn if
@@ -1161,7 +1200,8 @@ static void build_record_copy_function(AggregateType* ct) {
       }
     }
 
-    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    if (ct->initializerStyle == DEFINES_INITIALIZER ||
+        strcmp(ct->defaultInitializer->name, "init") == 0) {
       // We want the initializer to take in the memory it will initialize
       VarSymbol* meme = newTemp("meme_tmp", ct);
 
@@ -1185,7 +1225,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
 
 static void build_record_hash_function(AggregateType *ct) {
-  if (function_exists("chpl__defaultHash", 1, ct))
+  if (function_exists("chpl__defaultHash", ct))
     return;
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
@@ -1230,17 +1270,228 @@ static void build_record_hash_function(AggregateType *ct) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void buildDefaultInitializer(AggregateType* ct) {
+  // No need to remake the default initializer if we have already made one!
+  if (ct->defaultInitializer &&
+      strcmp(ct->defaultInitializer->name, "init") == 0)
+    return;
+
+  FnSymbol* fn = new FnSymbol("init");
+  fn->cname = fn->name;
+
+  // Lydia NOTE 06/16/17: I don't think I want to add the DEFAULT_CONSTRUCTOR
+  // flag to this function, but if I do, then I will need to do something
+  // different in wrappers.cpp.
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+
+  fn->_this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(fn->_this);
+
+  std::set<const char*> fieldNamesSet;
+
+  for_fields(field1, ct) {
+    SET_LINENO(field1);
+    if (VarSymbol* field = toVarSymbol(field1)) {
+      if (!field->hasFlag(FLAG_SUPER_CLASS) /* &&
+          strcmp(field->name, "_promotionType") &&
+          strcmp(field->name, "outer")*/) {
+        // Lydia NOTE 06/16/17: The above cases are commented out because I
+        // wanted to focus on basic support first.  I suspect these will be
+        // useful when I do try to support iterators and nested classes/records
+
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK,
+                                       field->name,
+                                       dtUnknown/*,
+                                                  field->type*/);
+        // Lydia NOTE 06/16/17: I suspect that field->type (which is commented
+        // out) will not be useful to us in dtUnknown's place at this point in
+        // the compiler, but would like to leave it here in case it proves
+        // useful in the future.
+
+        fieldNamesSet.insert(field->name);
+
+        // Insert initialization for each field from the argument provided.
+        SET_LINENO(field);
+
+        if (field->hasFlag(FLAG_PARAM))
+          arg->intent = INTENT_PARAM;
+        if (field->isType())
+          arg->addFlag(FLAG_TYPE_VARIABLE);
+
+        // set up the ArgSymbol appropriately for the type and initialization
+        // from the field declaration.
+        if (!field->defPoint->init) {
+          if (field->defPoint->exprType != NULL) {
+            Expr* initVal = new SymExpr(gTypeDefaultToken);
+            arg->defaultExpr = new BlockStmt(initVal);
+          }
+        } else {
+          arg->defaultExpr = new BlockStmt(field->defPoint->init->copy());
+        }
+
+        if (!field->defPoint->exprType) {
+          arg->type = dtAny;
+
+          if (field->defPoint->init != NULL) {
+            VarSymbol* tmp = newTemp();
+
+            //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+            // Lydia NOTE 06/16/17: The default constructor adds this flag to
+            // its equivalent temporary.  I have decided not to do so and am
+            // not seeing issues so far, but may have missed something, so I
+            // am leaving it here just in case.
+
+            tmp->addFlag(FLAG_MAYBE_TYPE);
+            tmp->addFlag(FLAG_MAYBE_PARAM);
+
+            BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
+
+            typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                                field->defPoint->init->copy()));
+            // Lydia NOTE 06/16/17: I believe we don't need to make an initCopy
+            // call for the field's init (like the default constructor version
+            // attempts).  I might have missed something, though, so if it turns
+            // out we do need that initCopy, use this instead of the above
+            // statement:
+            // typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+            //                                     new CallExpr("chpl__initCopy",
+            //                                                  field->defPoint->init->copy())));
+
+            typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
+
+            arg->typeExpr = typeExpr;
+          }
+        } else {
+          arg->typeExpr = new BlockStmt(field->defPoint->exprType->copy(),
+                                        BLOCK_SCOPELESS);
+        }
+
+        fn->insertFormalAtTail(arg);
+
+        CallExpr* setField = new CallExpr(PRIM_INIT_FIELD, fn->_this,
+                                          new_CStringSymbol(field->name), arg);
+        fn->insertAtTail(setField);
+      }
+    }
+  }
+
+  // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
+  if (!ct->symbol->hasFlag(FLAG_REF) && isClass(ct)) {
+    if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
+      if (AggregateType* parent = toAggregateType(ct->dispatchParents.v[0])) {
+        if (parent->initializerStyle != DEFINES_CONSTRUCTOR) {
+          CallExpr* superPortion = new CallExpr(".",
+                                                new SymExpr(fn->_this),
+                                                new_CStringSymbol("super"));
+          SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
+          CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+          CallExpr* superCall    = new CallExpr(base);
+
+          if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+            // We want to call the compiler-generated all-fields initializer
+
+            // First, ensure we have a default initializer for the parent
+            if (!parent->defaultInitializer) {
+              // ... but only if it is valid to do so
+              if (parent->wantsDefaultInitializer()) {
+                buildDefaultInitializer(parent);
+              }
+
+              if (!parent->defaultInitializer) {
+                // The parent might have inherited from a class that defines
+                // any initializer but not one without arguments.  In this case,
+                // we shouldn't define a default initializer or constructor for
+                // this class either.
+                return;
+              }
+
+            }
+            // Otherwise, we are good to go!
+
+            // Add an argument per argument in the parent initializer
+            for_formals(formal, parent->defaultInitializer) {
+              if (formal->hasFlag(FLAG_ARG_THIS) ||
+                  formal->type == dtMethodToken ||
+                  formal->hasFlag(FLAG_IS_MEME)) {
+                continue;
+              }
+
+              // Skip arguments shadowed by this class' fields
+              if (fieldNamesSet.find(formal->name) != fieldNamesSet.end()) {
+                continue;
+              }
+
+              DefExpr* superArg = formal->defPoint->copy();
+              fn->insertFormalAtTail(superArg);
+              superCall->insertAtTail(superArg->sym);
+            }
+
+          } else {
+            INT_ASSERT(parent->initializerStyle == DEFINES_INITIALIZER);
+            // We want to call a user-defined no-argument initializer.  Insert
+            // no arguments
+          }
+
+          fn->body->insertAtTail(superCall);
+        } else {
+          USR_FATAL(ct, "Cannot create default initializer on type '%s'"
+                    ", which inherits from type '%s' that defines a "
+                    "constructor", ct->symbol->name, parent->symbol->name);
+          // The parent has defined a constructor, we cannot have a default
+          // initializer call that constructor via super.init();
+          return;
+        }
+      }
+    }
+  }
+
+  ct->defaultInitializer = fn;
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  fn->addFlag(FLAG_METHOD);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+  ct->methods.add(fn);
+
+  if (!ct->isGeneric() && ct->isClass()) {
+    FnSymbol* allocator = buildClassAllocator(fn);
+    normalize(allocator);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void buildInitializerCall(AggregateType* ct,
+                                 FnSymbol*      fn,
+                                 ArgSymbol*     arg);
+
 static void buildRecordDefaultOf(AggregateType* ct,
                                  FnSymbol*      fn,
                                  ArgSymbol*     arg);
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
-                             ArgSymbol*     formal,
+                             Symbol*        formal,
                              Flag           flag,
-                             PrimitiveTag   tag);
+                             PrimitiveTag   tag,
+                             bool           named);
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named);
 
 static void buildDefaultOfFunction(AggregateType* ct) {
   if        (isNonGenericClassWithInitializers(ct)  == true) {
@@ -1249,7 +1500,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
   } else if (isNonGenericRecordWithInitializers(ct) == true) {
 
 
-  } else if (function_exists("_defaultOf", 1, ct)     == NULL  &&
+  } else if (function_exists("_defaultOf", ct)        == NULL  &&
              ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false &&
              ct->defaultValue                         != gNil) {
 
@@ -1272,17 +1523,9 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
 
-    } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
-      VarSymbol* _this = newTemp("_this", ct);
-      CallExpr*  call  = new CallExpr("init");
-
-      fn->insertAtHead(new DefExpr(_this));
-
-      call->insertAtTail(new SymExpr(gMethodToken));
-      call->insertAtTail(new SymExpr(_this));
-
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-
+    } else if (ct->initializerStyle == DEFINES_INITIALIZER ||
+               ct->wantsDefaultInitializer()) {
+      buildInitializerCall(ct, fn, arg);
     } else {
       buildRecordDefaultOf(ct, fn, arg);
     }
@@ -1294,6 +1537,43 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     // Do not normalize until the definition has been inserted
     normalize(fn);
   }
+}
+
+static void buildInitializerCall(AggregateType* ct,
+                                 FnSymbol*      fn,
+                                 ArgSymbol*     arg) {
+  VarSymbol* _this = newTemp("_this", ct);
+  CallExpr*  call  = new CallExpr("init");
+
+  fn->insertAtHead(new DefExpr(_this));
+
+  call->insertAtTail(new SymExpr(gMethodToken));
+  call->insertAtTail(new NamedExpr("this", new SymExpr(_this)));
+
+  for_fields(field, ct) {
+    if (field->isParameter() == true) {
+      Flag         flag = FLAG_PARAM;
+      PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
+
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+
+    } else if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      Flag         flag = FLAG_TYPE_VARIABLE;
+      PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
+
+      buildRecordQuery(fn, arg, call, field, flag, tag, false);
+
+    } else if (field->defPoint->exprType == NULL &&
+               field->defPoint->init     == NULL) {
+
+      buildRecordQueryVarField(fn, arg, call, field, false);
+
+    }
+  }
+
+  fn->insertAtTail(call);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(_this)));
 }
 
 static void buildRecordDefaultOf(AggregateType* ct,
@@ -1312,60 +1592,29 @@ static void buildRecordDefaultOf(AggregateType* ct,
       Flag         flag = FLAG_PARAM;
       PrimitiveTag tag  = PRIM_QUERY_PARAM_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Flag         flag = FLAG_TYPE_VARIABLE;
       PrimitiveTag tag  = PRIM_QUERY_TYPE_FIELD;
 
-      buildRecordQuery(ct, fn, arg, call, formal, flag, tag);
+      buildRecordQuery(fn, arg, call, formal, flag, tag, true);
 
     } else if (formal->defaultExpr == NULL) {
-      VarSymbol* tmp  = newTemp(formal->name);
-      CallExpr*  init = NULL;
-
-      fn->insertAtHead(new DefExpr(tmp));
-
-      if (formal->type                  != NULL  &&
-          formal->type                  != dtAny &&
-          strcmp(formal->name, "outer") != 0) {
-        init = new CallExpr(PRIM_INIT, formal->type->symbol);
-
-      } else {
-        VarSymbol* typeTmp   = newTemp("type_tmp");
-        VarSymbol* callTmp   = newTemp("call_tmp");
-        VarSymbol* name      = new_CStringSymbol(formal->name);
-
-        CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
-        CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
-
-        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-
-        fn->insertAtHead(new DefExpr(callTmp));
-        fn->insertAtHead(new DefExpr(typeTmp));
-
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
-
-        init = new CallExpr(PRIM_INIT, typeTmp);
-      }
-
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
-
-      call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      buildRecordQueryVarField(fn, arg, call, formal, true);
     }
   }
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 }
 
-static void buildRecordQuery(AggregateType* ct,
-                             FnSymbol*      fn,
+static void buildRecordQuery(FnSymbol*      fn,
                              ArgSymbol*     arg,
                              CallExpr*      call,
-                             ArgSymbol*     formal,
+                             Symbol*        formal,
                              Flag           flag,
-                             PrimitiveTag   tag) {
+                             PrimitiveTag   tag,
+                             bool           named) {
   VarSymbol* tmp   = newTemp(formal->name);
   VarSymbol* name  = new_CStringSymbol(formal->name);
   CallExpr*  query = new CallExpr(tag, arg, name);
@@ -1375,7 +1624,47 @@ static void buildRecordQuery(AggregateType* ct,
   fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, query));
   fn->insertAtHead(new DefExpr(tmp));
 
-  call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
+}
+
+static void buildRecordQueryVarField(FnSymbol*  fn,
+                                     ArgSymbol* arg,
+                                     CallExpr*  call,
+                                     Symbol*    formal,
+                                     bool       named) {
+  VarSymbol* tmp  = newTemp(formal->name);
+  CallExpr*  init = NULL;
+
+  fn->insertAtHead(new DefExpr(tmp));
+
+  VarSymbol* typeTmp   = newTemp("type_tmp");
+  VarSymbol* callTmp   = newTemp("call_tmp");
+  VarSymbol* name      = new_CStringSymbol(formal->name);
+
+  CallExpr*  getMember = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, name);
+  CallExpr*  typeOf    = new CallExpr(PRIM_TYPEOF, callTmp);
+
+  typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->insertAtHead(new DefExpr(callTmp));
+  fn->insertAtHead(new DefExpr(typeTmp));
+
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, callTmp, getMember));
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTmp, typeOf));
+
+  init = new CallExpr(PRIM_INIT, typeTmp);
+
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, init));
+
+  if (named) {
+    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+  } else {
+    call->insertAtTail(new SymExpr(tmp));
+  }
 }
 
 /************************************* | **************************************
@@ -1399,22 +1688,25 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (function_exists("readWriteThis", 3, dtMethodToken, ct, dtAny)) {
+  if (function_exists("readWriteThis", dtMethodToken, ct, dtAny)) {
     hasReadWriteThis = true;
   }
+
+  if (function_exists("writeThis", dtMethodToken, ct, dtAny)) {
+    hasWriteThis = true;
+  }
+
+  if (function_exists("readThis", dtMethodToken, ct, dtAny)) {
+    hasReadThis = true;
+  }
+
   // We'll make a writeThis and a readThis if neither exist.
   // If only one exists, we leave just one (as some types
   // can be written but not read, for example).
-  if (function_exists("writeThis", 3, dtMethodToken, ct, dtAny)) {
-    hasWriteThis = true;
+  if (hasWriteThis || hasReadThis)
     makeReadThisAndWriteThis = false;
-  }
-  if (function_exists("readThis", 3, dtMethodToken, ct, dtAny)) {
-    hasReadThis = true;
-    makeReadThisAndWriteThis = false;
-  }
 
-  // Make writeThis if we have neither writeThis nor readThis.
+  // Make writeThis when appropriate
   if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1428,10 +1720,12 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
+
     fn->retType = dtVoid;
 
     if( hasReadWriteThis ) {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
     } else {
       fn->insertAtTail(new CallExpr("writeThisDefaultImpl", fileArg, fn->_this));
     }
@@ -1444,6 +1738,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     normalize(fn);
     ct->methods.add(fn);
   }
+
+  // Make readThis when appropriate
   if ( makeReadThisAndWriteThis && ! hasReadThis ) {
     FnSymbol* fn = new FnSymbol("readThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -1460,14 +1756,14 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->retType = dtVoid;
 
     if( hasReadWriteThis ) {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
     } else {
       fn->insertAtTail(new CallExpr("readThisDefaultImpl", fileArg, fn->_this));
     }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
-    // ? ct->methods.add(fn) ? in old code
     fn->addFlag(FLAG_METHOD);
     fn->addFlag(FLAG_METHOD_PRIMARY);
     reset_ast_loc(def, ct->symbol);
@@ -1478,10 +1774,10 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", 2, dtString, et))
+  if (function_exists(astr_cast, dtString, et))
     return;
 
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
@@ -1511,7 +1807,7 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (function_exists("deinit", 2, dtMethodToken, ct))
+  if (function_exists("deinit", dtMethodToken, ct))
     return;
 
   SET_LINENO(ct->symbol);

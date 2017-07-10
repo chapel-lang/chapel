@@ -57,9 +57,8 @@ similar, though the specific people involved are likely to change and grow).
   alert the chapel-developers_ mailing list of this as, presently, such code
   packages must be approved by Cray leadership before being committed.
 
-* Sign a Chapel contributor's agreement, located at the URL below, and send it
-  to your contact at Cray (ask for one at the chapel_admin _at_ cray.com list
-  if you don't).
+* Sign a Chapel contributor's agreement and mail it, with your GitHub
+  ID, using the instructions here:
 
   https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 

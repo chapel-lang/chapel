@@ -1,15 +1,33 @@
-hasGlobalVariables
+.. default-domain:: chpl
 
-Usage:
+.. module:: hasGlobalVariables
+   :synopsis: This module has some global scoped variables. 
+
+hasGlobalVariables
+==================
+**Usage**
+
+.. code-block:: chapel
+
    use hasGlobalVariables;
 
-   This module has some global scoped variables. 
-   var first: int
-   var second = 16
-   var third: bool = false
-   var fourth: int
-      This variable has an associated comment and a type 
-   var fifth = 16
-      This variable has an associated comment and a value 
-   var sixth: bool = false
-      This variable has an associated comment, a type, and a value 
+This module has some global scoped variables. 
+
+.. data:: var first: int
+
+.. data:: var second = 16
+
+.. data:: var third: bool = false
+
+.. data:: var fourth: int
+
+   This variable has an associated comment and a type 
+
+.. data:: var fifth = 16
+
+   This variable has an associated comment and a value 
+
+.. data:: var sixth: bool = false
+
+   This variable has an associated comment, a type, and a value 
+

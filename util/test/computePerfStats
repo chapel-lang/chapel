@@ -19,7 +19,6 @@ import string
 test_output = None
 test_output_raw = None
 data_file = None
-errors_file = None
 fatal_errors = None
 
 def main():
@@ -76,9 +75,6 @@ def find_keys(keys, date):
 
 
 def log_timeouts(keys, time_out, date): # if we timed out
-    with open(errors_file, "w") as file:
-        file.write("appending {0}\n".format(data_file))
-
     if time_out:
         print("ERROR")
         with open(data_file, "a") as file:
@@ -95,8 +91,6 @@ def validate_output(verify_keys, output_file):
     with open(output_file, "r") as file:
         test_output_raw = file.read()
         test_output = test_output_raw.split("\n")
-    with open(errors_file, "a") as file:
-        file.write("processed {0}\n".format(output_file))
 
     # check for valid output
     valid_output = True
@@ -175,18 +169,12 @@ def read_key_file(keys_file, output_dir):
                     global data_file
                     data_file = os.path.join(output_dir, comment.split()[1])
 
-    with open(errors_file, "a") as file:
-        file.write("processed {0}\n".format(keys_file))
-
     return (keys, verify_keys)
 
 
 def create_data_file(keys):
     # create and setup .dat file if not done already
     if not os.path.isfile(data_file):
-        with open(errors_file, "a") as file:
-            file.write("created {0}\n".format(data_file))
-
         with open(data_file, "a") as file:
             file.write("# Date")
             for key in keys:
@@ -270,13 +258,9 @@ def setup(args):
     else:
         args.exec_time_out == False
     
-    global data_file, errors_file, fatal_errors
+    global data_file, fatal_errors
     data_file = "{0}/{1}.dat".format(args.output_dir, args.test_name)
-    errors_file = "{0}/{1}.errors".format(args.output_dir, args.test_name)
     fatal_errors = 0
-
-    if os.path.isfile(errors_file):
-        os.remove(errors_file)
     
 
 def cleanup():

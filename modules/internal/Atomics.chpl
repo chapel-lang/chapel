@@ -53,7 +53,7 @@
 
 /*
    A note about const-ness: these atomic types are records but
-   in order for record assigment to work, the read() functions
+   in order for record assignment to work, the read() functions
    need to be able to work with a const RHS.
 
    To enable that, the read/peek/waitFor/writeThis functions take in `this`

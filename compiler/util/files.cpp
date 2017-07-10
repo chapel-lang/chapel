@@ -225,12 +225,10 @@ const char* objectFileForCFile(const char* inputFilename) {
   return objFilename;
 }
 
-static FILE* openfile(const char* filename,
-                      const char* mode  = "w",
-                      bool        fatal = true) {
-  FILE* newfile;
-
-  newfile = fopen(filename, mode);
+FILE* openfile(const char* filename,
+               const char* mode,
+               bool        fatal) {
+  FILE* newfile = fopen(filename, mode);
 
   if (newfile == NULL) {
     const char* errorstr = "opening ";
@@ -238,7 +236,7 @@ static FILE* openfile(const char* filename,
                                 filename, ": ",
                                 strerror(errno));
 
-    if (fatal) {
+    if (fatal == true) {
       USR_FATAL(errormsg);
     }
   }
@@ -247,7 +245,7 @@ static FILE* openfile(const char* filename,
 }
 
 
-static void closefile(FILE* thefile) {
+void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
     const char* errorstr = "closing file: ";
     const char* errormsg = astr(errorstr, strerror(errno));
@@ -359,7 +357,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   int cursor = numInputFiles;
   char achar;
   numInputFiles += numNewFilenames;
-  inputFilenames = (const char**)realloc(inputFilenames, 
+  inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
 
   for (int i = 0; i < numNewFilenames; i++) {
@@ -583,6 +581,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
 
 
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB);
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL);
+  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
   // Generate one variable containing all envMap information to pass to printchplenv
@@ -625,7 +626,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode);
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
-  
+
   fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS =");
 
   if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
@@ -694,163 +695,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   closeCFile(&makefile, false);
 }
 
-
-static const char* searchPath(Vec<const char*> path, const char* filename,
-                              const char* foundfile = NULL,
-                              bool noWarn = false) {
-  forv_Vec(const char*, dirname, path) {
-    //    printf("searching %s\n", dirname);
-    const char* fullfilename = astr(dirname, "/", filename);
-    FILE* file = openfile(fullfilename, "r", false);
-    if (file != NULL) {
-      closefile(file);
-      if (foundfile == NULL) {
-        foundfile = fullfilename;
-      } else if (!noWarn) {
-        USR_WARN("Ambiguous module source file -- using %s over %s",
-                 cleanFilename(foundfile),
-                 cleanFilename(fullfilename));
-      }
-    }
-  }
-  return foundfile;
-}
-
-//
-// These are lists representing the internal, standard, user, and
-// flag-based (and envvar-based) paths respectively.  The last is
-// treated somewhat differently than the others in that -M flags are
-// handled first by the compiler, but should come after the user
-// paths, so are added into usrModPath as a post-processing pass.
-//
-static Vec<const char*> intModPath;
-static Vec<const char*> stdModPath;
-static Vec<const char*> usrModPath;
-static Vec<const char*> flagModPath;
-
-
-static void addUsrDirToModulePath(const char* dir) {
-  //
-  // a set representing the unique directories added to the path to
-  // avoid duplicates (for efficiency and clarity of error messages)
-  //
-  static Vec<const char*> modPathSet;
-
-  const char* uniquedir = astr(dir);
-  if (!modPathSet.set_in(uniquedir)) {
-    usrModPath.add(uniquedir);
-    modPathSet.set_add(uniquedir);
-  }
-}
-
-
-//
-// track directories specified via -M and CHPL_MODULE_PATH.
-//
-void addFlagModulePath(const char* newpath) {
-  const char* uniquedir = astr(newpath);
-  flagModPath.add(uniquedir);
-}
-
-
-//
-// Once we've added all filename-based directories to the user module
-// search path, we'll add all unique directories specified via -M and
-// CHPL_MODULE_PATH.
-//
-void addDashMsToUserPath() {
-  forv_Vec(const char*, dirname, flagModPath) {
-    addUsrDirToModulePath(dirname);
-  }
-}
-
-
-void setupModulePaths() {
-  const char* modulesRoot = 0;
-
-  if (fMinimalModules == true)
-    modulesRoot = "modules/minimal";
-
-  else if (fUseIPE == true)
-    modulesRoot = "modules/ipe";
-
-  else
-    modulesRoot = "modules";
-
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
-                      CHPL_LOCALE_MODEL));
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasktable/",
-                      fEnableTaskTracking ? "on" : "off"));
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasks/",
-                      CHPL_TASKS));
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/comm/",
-                      CHPL_COMM));
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
-
-  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard/gen/",
-                      CHPL_TARGET_PLATFORM,
-                      "-", CHPL_TARGET_COMPILER));
-
-  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
-  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
-  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
-  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
-  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
-
-  const char* envvarpath = getenv("CHPL_MODULE_PATH");
-
-  if (envvarpath) {
-    char path[FILENAME_MAX+1];
-    strncpy(path, envvarpath, FILENAME_MAX);
-    char* colon = NULL;
-
-    do {
-      char* start = colon ? colon+1 : path;
-      colon = strchr(start, ':');
-      if (colon) {
-        *colon = '\0';
-      }
-      addFlagModulePath(start);
-    } while (colon);
-  }
-}
-
-
-void addModulePathFromFilename(const char* origfilename) {
-  char dirname[FILENAME_MAX+1];
-  strncpy(dirname, origfilename, FILENAME_MAX);
-  char* lastslash = strrchr(dirname, '/');
-  if (lastslash != NULL) {
-    *lastslash = '\0';
-    addUsrDirToModulePath(dirname);
-    *lastslash = '/';
-  } else {
-    addUsrDirToModulePath(".");
-  }
-}
-
-
-const char* modNameToFilename(const char* modName,
-                              bool        isInternal,
-                              bool*       isStandard) {
-  const char* filename = astr(modName, ".chpl");
-  const char* fullfilename;
-  if (isInternal) {
-    fullfilename = searchPath(intModPath, filename, NULL, true);
-  } else {
-    fullfilename = searchPath(usrModPath, filename);
-    *isStandard = (fullfilename == NULL);
-    fullfilename = searchPath(stdModPath, filename, fullfilename);
-  }
-  return  fullfilename;
-}
-
-// Returns either a file name or NULL if no such file was found
-// (which could happen if there's a use of an enum within the library files)
-const char* stdModNameToFilename(const char* modName) {
-  return searchPath(stdModPath, astr(modName, ".chpl"), NULL);
-}
-
 const char* filenameToModulename(const char* filename) {
   const char* moduleName = astr(filename);
   const char* firstSlash = strrchr(moduleName, '/');
@@ -862,46 +706,7 @@ const char* filenameToModulename(const char* filename) {
   return asubstr(moduleName, strrchr(moduleName, '.'));
 }
 
-//
-// Return a fully qualified path name for the internal file with the specified baseName
-//
-
-const char* pathNameForInternalFile(const char* baseName) {
-  const char* fileName = astr(baseName, ".chpl");
-
-  return searchPath(intModPath, fileName, NULL, true);
-}
-
-//
-// Return a fully qualified path name for the standard file with the specified baseName
-// Generate a warning if there is a user file that might define the same module
-//
-
-const char* pathNameForStandardFile(const char* baseName) {
-  const char* fileName     = astr(baseName, ".chpl");
-  const char* userFileName = searchPath(usrModPath, fileName, NULL, false);
-
-  return searchPath(stdModPath, fileName, userFileName, false);
-}
-
-static void helpPrintPath(Vec<const char*> path) {
-  forv_Vec(const char*, dirname, path) {
-    fprintf(stderr, "  %s\n", cleanFilename(dirname));
-  }
-}
-
-void printModuleSearchPath() {
-  fprintf(stderr, "module search dirs:\n");
-  if (developer) {
-    helpPrintPath(intModPath);
-  }
-  helpPrintPath(usrModPath);
-  helpPrintPath(stdModPath);
-  fprintf(stderr, "end of module search dirs\n");
-}
-
-void readArgsFromCommand(const char* cmd, std::vector<std::string> & args)
-{
+void readArgsFromCommand(const char* cmd, std::vector<std::string>& args) {
   // Gather information from compileline into clangArgs.
   if(FILE* fd = popen(cmd,"r")) {
     int ch;

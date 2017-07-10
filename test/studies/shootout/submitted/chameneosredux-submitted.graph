@@ -1,5 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: chameneosredux.dat, chameneosredux-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, submitted, release-fast
+files: chameneosredux.dat, chameneosredux-submitted.dat, chameneosredux-fast.dat
 graphtitle: Submitted Chameneos Redux Shootout Benchmark (n=6,000,000)
 ylabel: Time (seconds)

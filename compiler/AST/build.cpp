@@ -23,6 +23,7 @@
 #include "stlUtil.h"
 #include "baseAST.h"
 #include "config.h"
+#include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "ForLoop.h"
@@ -205,24 +206,6 @@ Expr* buildSquareCallExpr(Expr* base, CallExpr* args) {
 
 Expr* buildNamedActual(const char* name, Expr* expr) {
   return new NamedExpr(name, expr);
-}
-
-
-Expr* buildNamedAliasActual(const char* name, Expr* expr) {
-  USR_WARN(expr, "support for '=>' in constructor argument lists is deprecated"
-           " as of chpl version 1.15 and is unlikely to work as well as it "
-           "used to.  If you rely on this feature, please let the Chapel team "
-           "know.");
-  return new CallExpr(PRIM_ACTUALS_LIST,
-           new NamedExpr(name, expr),
-           // if we wanted to support expr being another variable,
-           // we could call newAlias on it. For now, the only supported
-           // actuals for this are
-           //   * a local variable declared as an alias with =>
-           //   * a call expression creating an array slice
-           // and additionally, for now the field to be initialized
-           // in this way must have a declared array type.
-           new NamedExpr(astr("chpl__aliasField_", name), new SymExpr(gTrue)));
 }
 
 
@@ -677,12 +660,19 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs) {
-  ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
+ModuleSymbol* buildModule(const char* name,
+                          ModTag      modTag,
+                          BlockStmt*  block,
+                          const char* filename,
+                          bool        priv,
+                          const char* docs) {
+  ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
+
   if (currentFileNamedOnCommandLine) {
     mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
   }
-  if (priv) {
+
+  if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
   }
 
@@ -990,7 +980,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(lifn));
 
-  VarSymbol* leaderIterator = newTemp("_leaderIterator");
+  VarSymbol* leaderIterator = newTempConst("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
   lifn->insertAtTail(new DefExpr(leaderIterator));
 
@@ -1025,7 +1015,7 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(fifn));
-  followerIterator = newTemp("_followerIterator");
+  followerIterator = newTempConst("_followerIterator");
   followerIterator->addFlag(FLAG_EXPR_TEMP);
   fifn->insertAtTail(new DefExpr(followerIterator));
 
@@ -1222,7 +1212,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   if (useThisGlobalOp) {
     globalOp = useThisGlobalOp;
   } else {
-    globalOp = newTemp("chpl__reduceGlob");
+    globalOp = newTempConst("chpl__reduceGlob");
     iterRec->defPoint->insertBefore(new DefExpr(globalOp));
   }
   // Because of this, can't just do reduceOp->replace(...).
@@ -1386,7 +1376,7 @@ buildForallLoopStmt(Expr*      indices,
   loopBody->forallIntents = forall_intents;
   // forallIntents will be processed during implementForallIntents1().
 
-  // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
+  // ensure it's normal; prevent flattenAndRemove() in cleanup.cpp
   loopBody->blockTag = BLOCK_NORMAL;
 
   // NB these copies do not get blockIntent updates below.
@@ -1521,6 +1511,11 @@ void addTaskIntent(CallExpr* ti, Expr* var, IntentTag intent, Expr* ri) {
   }
 }
 
+static CallExpr* copyByrefVars(CallExpr* byrefVarsSource) {
+  if (!byrefVarsSource) return NULL;
+  return byrefVarsSource->copy();
+}
+
 static void
 addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // nothing to do if there is no 'ref' clause
@@ -1539,6 +1534,102 @@ addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // will be automatically resolved in resolve().
 }
 
+
+// Build up a "lowered" coforall loop. We lower coforalls into for-loops with
+// explicit fork-join task creation via an EndCount.
+static BlockStmt* buildLoweredCoforall(Expr* indices,
+                                       VarSymbol* iterator,
+                                       CallExpr* byref_vars,
+                                       BlockStmt* body,
+                                       bool zippered,
+                                       bool bounded) {
+
+  BlockStmt* taskBlk = new BlockStmt();
+  taskBlk->insertAtHead(body);
+
+  VarSymbol* coforallCount = newTempConst("_coforallCount");
+  VarSymbol* numTasks = newTemp("numTasks");
+  VarSymbol* useLocalEndCount = gTrue;
+  VarSymbol* countRunningTasks = gTrue;
+
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
+  // For remote coforalls (e..g. coforall indices in iterator do on indices) we
+  // just do a remote fork instead of creating a task locally. Do not count
+  // running tasks locally, and use network atomic EndCounts if available
+  if (onBlock) {
+    onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
+    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+    addByrefVars(onBlock, byref_vars);
+    taskBlk->blockTag = BLOCK_SCOPELESS;
+    useLocalEndCount = gFalse;
+    countRunningTasks = gFalse;
+  } else {
+    taskBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
+    taskBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+    addByrefVars(taskBlk, byref_vars);
+  }
+
+  BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(iterator), taskBlk, true, zippered);
+  if (bounded) {
+    block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", iterator,  new_CStringSymbol("size"))));
+    block->insertAtHead(new DefExpr(numTasks));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
+  } else {
+    taskBlk->insertBefore(new CallExpr("_upEndCount", coforallCount, countRunningTasks));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks));
+  }
+  block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
+
+  block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", useLocalEndCount)));
+  block->insertAtHead(new DefExpr(coforallCount));
+  return block;
+}
+
+
+// Build up AST for coforalls. For something like:
+//
+//     coforall indices in iterator with (byref_vars) { body(); }
+//
+// This effectively builds up:
+//
+//     var tmpIter = iterator;
+//     param bounded = isBoundedRange(tmpIter) || isDomain(tmpIter) || isArray(tmpIter);
+//     param useLocalEndCount, countRunningTasks = !bodyContainsOnStmt();
+//     if bounded {
+//       var numTasks = tmpIter.size;
+//       var _coforallCount = _endCountAlloc(useLocalEndCount);
+//       // only bump EndCount once, instead of once per task
+//       _upEndCount(_coforallCount, countRunningTasks, numTasks);
+//       for indices in tmpIter {
+//         /* PRIM_BLOCK_COFORALL (byref_vars) */ {
+//           body();
+//           _downEndCount(_coforallCount);
+//         }
+//       }
+//       _waitEndCount(_coforallCount, countRunningTasks, numTasks);
+//       _endCountFree(_coforallCount);
+//     } else {
+//       var _coforallCount = _endCountAlloc(useLocalEndCount);
+//       for indices in tmpIter {
+//         _upEndCount(_coforallCount, countRunningTasks);
+//         /* PRIM_BLOCK_COFORALL (byref_vars) */ {
+//           body();
+//           _downEndCount(_coforallCount);
+//         }
+//       }
+//       _waitEndCount(_coforallCount, countRunningTasks);
+//       _endCountFree(_coforallCount);
+//     }
+//
+// For coforall+ons:
+//
+//     coforall indices in iterator do on indices{ body(); }
+//
+// there are some minor differences. We use network atomics for the EndCount if
+// they're available, we won't manipulate here.runningTaskCount, and we'll use
+// PRIM_BLOCK_COFORALL_ON instead of PRIM_BLOCK_COFORALL so that we just do
+// remote-forks instead of creating any tasks locally.
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
@@ -1547,108 +1638,38 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
 {
   checkControlFlow(body, "coforall statement");
 
-  //
   // insert temporary index when elided by user
-  //
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
-
   checkIndices(indices);
-
-  //
-  // detect on-statement directly inside coforall-loop
-  //
-  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
-
+  
   SET_LINENO(body);
 
-  if (onBlock) {
-    //
-    // optimization of on-statements directly inside coforall-loops
-    //
-    //   In this case, the on-statement is made into a non-blocking
-    //   on-statement and the coforall is serialized (rather than
-    //   wasting threads that would do nothing other than wait on the
-    //   on-statement.
-    //
-    VarSymbol* coforallCount = newTemp("_coforallCount");
-    BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
-    block->insertAtHead(new DefExpr(coforallCount));
-    body->insertAtHead(new CallExpr("_upEndCount", coforallCount, gFalse));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, gFalse));
-    block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-    onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
-    addByrefVars(onBlock, byref_vars);
-    BlockStmt* innerOnBlock = new BlockStmt();
-    for_alist(tmp, onBlock->body) {
-      innerOnBlock->insertAtTail(tmp->remove());
-    }
-    onBlock->insertAtHead(innerOnBlock);
-    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-    return block;
-  } else {
+  VarSymbol* tmpIter = newTemp("tmpIter");
+  tmpIter->addFlag(FLAG_EXPR_TEMP);
+  tmpIter->addFlag(FLAG_MAYBE_REF);
 
-    BlockStmt* coforallBlk = new BlockStmt();
+  BlockStmt* coforallBlk = new BlockStmt();
+  coforallBlk->insertAtTail(new DefExpr(tmpIter));
+  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
 
-    BlockStmt* vectorCoforallBlk = new BlockStmt();
-    BlockStmt* nonVectorCoforallBlk = new BlockStmt();
+  BlockStmt* vectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, copyByrefVars(byref_vars), body->copy(), zippered, /*bounded=*/true);
+  BlockStmt* nonVectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, byref_vars, body, zippered, /*bounded=*/false);
 
-    VarSymbol* tmpIter = newTemp("tmpIter");
-    tmpIter->addFlag(FLAG_EXPR_TEMP);
-    tmpIter->addFlag(FLAG_MAYBE_REF);
-    coforallBlk->insertAtTail(new DefExpr(tmpIter));
-    coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, tmpIter, iterator));
-    {
-      VarSymbol* coforallCount = newTemp("_coforallCount");
-      BlockStmt* beginBlk = new BlockStmt();
-      beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
-      addByrefVars(beginBlk, byref_vars);
-      beginBlk->insertAtHead(body);
-      beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-      BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(tmpIter), beginBlk, true, zippered);
-      block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /*forceLocalTypes=*/gTrue)));
-      block->insertAtHead(new DefExpr(coforallCount));
-      beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
-      block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
-      block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-      nonVectorCoforallBlk->insertAtTail(block);
-    }
-    {
-      VarSymbol* coforallCount = newTemp("_coforallCount");
-      BlockStmt* beginBlk = new BlockStmt();
-      beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
-      addByrefVars(beginBlk, byref_vars);
-      beginBlk->insertAtHead(body->copy());
-      beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-      VarSymbol* numTasks = newTemp("numTasks");
-      vectorCoforallBlk->insertAtTail(new DefExpr(numTasks));
-      vectorCoforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", tmpIter,  new_CStringSymbol("size"))));
-      vectorCoforallBlk->insertAtTail(new CallExpr("_upEndCount", coforallCount, /*countRunningTasks=*/gTrue, numTasks));
-      BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(tmpIter), beginBlk, true, zippered);
-      vectorCoforallBlk->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /*forceLocalTypes=*/gTrue)));
-      vectorCoforallBlk->insertAtHead(new DefExpr(coforallCount));
-      block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, /*countRunningTasks=*/gTrue, numTasks));
-      block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-      vectorCoforallBlk->insertAtTail(block);
-    }
+  VarSymbol* isRngDomArr = newTemp("isRngDomArr");
+  isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
+  coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
 
-    VarSymbol* isRngDomArr  = newTemp("isRngDomArr");
-    isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
-    coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
+  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
+                            new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
+                            new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
 
-    coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
-                              new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
-                              new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
-
-
-    coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
-                                           vectorCoforallBlk->copy(),
-                                           nonVectorCoforallBlk->copy()));
-
-    return coforallBlk;
-  }
+  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
+                                         vectorCoforallBlk,
+                                         nonVectorCoforallBlk));
+  return coforallBlk;
 }
+
 
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
   VarSymbol* indexVar = new VarSymbol(index);
@@ -1738,9 +1759,11 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       }
     }
   }
+  // TODO: Is it OK to just have an 'otherwise' ?
+  if (!condStmt) {
+    USR_FATAL(selectCond, "Select has no when clauses");
+  }
   if (otherwise) {
-    if (!condStmt)
-      USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
 
@@ -1911,7 +1934,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
     return NULL;
   }
 
-  VarSymbol* globalOp = newTemp("chpl_reduceGlob");
+  VarSymbol* globalOp = newTempConst("chpl_reduceGlob");
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   VarSymbol* result = newTemp("chpl_reduceResult");
@@ -2040,7 +2063,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   if (forallExpr)
     return forallExpr;
 
-  VarSymbol* globalOp = newTemp("chpl_globalOp");
+  VarSymbol* globalOp = newTempConst("chpl_globalOp");
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   BlockStmt* serialBlock = buildChapelStmt();
@@ -2128,7 +2151,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->insertFormalAtTail(data);
 
   VarSymbol* eltType = newTemp("chpl_eltType");
-  VarSymbol* globalOp = newTemp();
+  VarSymbol* globalOp = newTempConst();
 
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
@@ -2242,46 +2265,61 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
 }
 
 
-DefExpr*
-buildClassDefExpr(const char* name,
-                  const char* cname,
-                  Type*       type,
-                  Expr*       inherit,
-                  BlockStmt*  decls,
-                  Flag        isExtern,
-                  const char* docs) {
-  AggregateType* ct = toAggregateType(type);
+DefExpr* buildClassDefExpr(const char*  name,
+                           const char*  cname,
+                           AggregateTag tag,
+                           Expr*        inherit,
+                           BlockStmt*   decls,
+                           Flag         isExtern,
+                           const char*  docs) {
+  AggregateType* ct = new AggregateType(tag);
+
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
   if (strcmp("string", name) == 0) {
     *dtString = *ct;
-    // These fields get overwritten with `ct` by the assignment. These fields are
-    // set to `this` by the AggregateType constructor so they should still be
-    // `dtString`. Fix them back up.
-    dtString->fields.parent = dtString;
+
+    // These fields get overwritten with `ct` by the assignment.
+    // These fields are set to `this` by the AggregateType constructor
+    // so they should still be `dtString`. Fix them back up.
+    dtString->fields.parent   = dtString;
     dtString->inherits.parent = dtString;
+
     gAggregateTypes.remove(gAggregateTypes.index(ct));
+
     delete ct;
+
     ct = dtString;
   }
+
   INT_ASSERT(ct);
-  TypeSymbol* ts = new TypeSymbol(name, ct);
-  DefExpr* def = new DefExpr(ts);
+
+  TypeSymbol* ts  = new TypeSymbol(name, ct);
+  DefExpr*    def = new DefExpr(ts);
+
   ct->addDeclarations(decls);
+
   if (isExtern == FLAG_EXTERN) {
     if (cname) {
       ts->cname = astr(cname);
     }
+
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
-    if (inherit)
-      USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+
+    if (inherit != NULL)
+      USR_FATAL_CONT(inherit,
+                     "External types do not currently support inheritance");
   }
-  if (inherit)
+
+  if (inherit != NULL) {
     ct->inherits.insertAtTail(inherit);
+  }
+
   ct->doc = docs;
+
   return def;
 }
 
@@ -2404,7 +2442,7 @@ buildFunctionSymbol(FnSymbol*   fn,
   fn->thisTag = thisTag;
 
   if ((fn->name[0] == '~' && fn->name[1] != '\0') ||
-      (strcmp(fn->name, "deinit") == 0))
+      (fn->name == astrDeinit))
     fn->addFlag(FLAG_DESTRUCTOR);
 
   if (receiver)
@@ -2752,7 +2790,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     // remote_fork (node) { foo(); } // no wait();
 
     // Execute the construct "on x begin ..." asynchronously.
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTempConst();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
     beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, gFalse, tmp));
@@ -2761,7 +2799,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   } else {
     // Otherwise, wait for the "on" statement to complete before proceeding.
     BlockStmt* block = buildChapelStmt();
-    Symbol* tmp = newTemp();
+    Symbol* tmp = newTempConst();
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
@@ -2807,7 +2845,7 @@ BlockStmt*
 buildSyncStmt(Expr* stmt) {
   checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
-  VarSymbol* endCountSave = newTemp("_endCountSave");
+  VarSymbol* endCountSave = newTempConst("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
   block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
@@ -2837,15 +2875,14 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     return buildChapelStmt(block);
   }
 
-  VarSymbol* cobeginCount = newTemp("_cobeginCount");
-  cobeginCount->addFlag(FLAG_TEMP);
+  VarSymbol* cobeginCount = newTempConst("_cobeginCount");
 
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
     beginBlk->astloc = stmt->astloc;
     // the original byref_vars is dead - will be clean_gvec-ed
-    addByrefVars(beginBlk, byref_vars ? byref_vars->copy() : NULL);
+    addByrefVars(beginBlk, copyByrefVars(byref_vars));
     stmt->insertBefore(beginBlk);
     beginBlk->insertAtHead(stmt->remove());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));

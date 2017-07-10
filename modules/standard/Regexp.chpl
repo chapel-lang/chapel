@@ -42,9 +42,9 @@ in the Chapel distribution.
 
 .. note::
 
-  if re2 support is not enabled (which is the default), all features
-  described below will compile successfully, but will result in an internal
-  error at *run time*, saying "No Regexp Support".
+  if re2 support is not enabled (which is the case in quickstart configurations
+  as in :ref:`chapelhome-quickstart`), the functionality described below will
+  result in either a compile-time or a run-time error.
 
 
 Using Regular Expression Support
@@ -413,6 +413,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   opts.dotnl = dotnl;
   opts.nongreedy = nongreedy;
 
+  // TODO: At present, 'ret' is leaked
   var ret:regexp;
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
   if ! qio_regexp_ok(ret._regexp) {
@@ -660,7 +661,7 @@ record regexp {
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -690,7 +691,7 @@ record regexp {
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -740,7 +741,7 @@ record regexp {
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -770,7 +771,7 @@ record regexp {
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
     return ret;
   }
@@ -849,7 +850,7 @@ record regexp {
       if splits > maxsplits || !got then break;
     }
     on this.home {
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
   }
 
@@ -896,7 +897,7 @@ record regexp {
       cur = matches[0].offset + matches[0].len;
     }
     on this.home {
-      _ddata_free(matches);
+      _ddata_free(matches, nmatches);
     }
   }
 
@@ -928,7 +929,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.localize().c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    const ret = replaced:string;
+    const ret = new string(replaced, needToCopy=false);
     return (ret, nreplaced);
   }
 

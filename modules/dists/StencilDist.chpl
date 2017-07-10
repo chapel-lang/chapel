@@ -32,12 +32,6 @@
 // mapped to by the distribution.
 //
 
-//
-// TO DO List
-//
-// 1. refactor pid fields from distribution, domain, and array classes
-//
-
 use BlockDist;
 use DSIUtil;
 use ChapelUtil;
@@ -53,6 +47,18 @@ use CommDiagnostics;
 //
 config param debugStencilDist = false;
 config param debugStencilDistBulkTransfer = false;
+
+// TODO: part of constructor?
+config param stencilDistAllowPackedUpdateFluff = true;
+
+// Instructs the _packedUpdate method to only perform the optimized buffer
+// packing if the number of GETs/PUTs would be greater than or equal to the
+// value in this config const.
+//
+// Currently disabled until we can find a way to determine a good value.
+//
+// TODO: find better heuristic through experimentation
+config const stencilDistPackedUpdateMinChunks = 1;
 
 // Re-uses these flags from BlockDist:
 //   - disableAliasedBulkTransfer
@@ -294,13 +300,18 @@ class StencilDom: BaseRectangularDom {
 // stridable: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
+// NeighDom will be a rectangular domain where each dimension is the range
+// -1..1
+//
 class LocStencilDom {
   param rank: int;
   type idxType;
   param stridable: bool;
   var myBlock, myFluff: domain(rank, idxType, stridable);
   var NeighDom: domain(rank);
-  var Dest, Src: [NeighDom] domain(rank, idxType, stridable);
+  var bufDom : domain(1);
+  var recvDest, recvSrc,
+      sendDest, sendSrc: [NeighDom] domain(rank, idxType, stridable);
   var Neighs: [NeighDom] rank*int;
 }
 
@@ -324,6 +335,7 @@ class StencilArr: BaseArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: StencilDom(rank, idxType, stridable, ignoreFluff);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
+  pragma "local field"
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
   const SENTINEL = max(rank*idxType);
 }
@@ -345,9 +357,14 @@ class LocStencilArr {
   param stridable: bool;
   const locDom: LocStencilDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  pragma "local field"
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
+
+  // TODO: use void type when packed update is disabled
+  var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;
+  var sendRecvFlag : [locDom.NeighDom] atomic bool;
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
@@ -361,8 +378,8 @@ class LocStencilArr {
   }
 }
 
-private proc makeZero(param rank : int) {
-  var ret : rank*int;
+private proc makeZero(param rank : int, type idxType) {
+  var ret : rank*idxType;
   return ret;
 }
 //
@@ -375,7 +392,7 @@ proc Stencil.Stencil(boundingBox: domain,
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.idxType,
-                fluff: rank*idxType = makeZero(rank), 
+                fluff: rank*idxType = makeZero(rank, idxType),
                 periodic: bool = false,
                 param ignoreFluff = false) {
   if rank != boundingBox.rank then
@@ -387,7 +404,7 @@ proc Stencil.Stencil(boundingBox: domain,
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
-  this.periodic = periodic && !zeroTuple(fluff);
+  this.periodic = periodic && !isZeroTuple(fluff);
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
@@ -785,7 +802,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -870,7 +887,7 @@ proc StencilDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 proc StencilDom.setup() {
-  coforall localeIdx in dist.targetLocDom do {
+  coforall localeIdx in dist.targetLocDom {
     on dist.targetLocales(localeIdx) {
       ref myLocDom = locDoms(localeIdx);
 
@@ -886,69 +903,126 @@ proc StencilDom.setup() {
 
       if myLocDom == nil {
         myLocDom = new LocStencilDom(rank, idxType, stridable,
-                                             dist.getChunk(whole, localeIdx), NeighDom=ND);
+                                     dist.getChunk(whole, localeIdx),
+                                     NeighDom=ND);
       } else {
         myLocDom.myBlock = dist.getChunk(whole, localeIdx);
       }
 
-      if !zeroTuple(fluff) && myLocDom.myBlock.numIndices!=0 then {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.numIndices != 0 then {
         myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
-      }
-      else {
+      } else {
         myLocDom.myFluff = myLocDom.myBlock;
       }
 
-      if !zeroTuple(fluff) && myLocDom.myBlock.size > 0 {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.size > 0 {
         //
         // Recompute Src and Dest domains, later used to update fluff regions
         //
-        for (S, D, off) in zip(myLocDom.Src, myLocDom.Dest, ND) {
-          const to = if isTuple(off) then off else (off,);
-          var dr : rank*whole.dim(1).type;
-          for i in 1..rank {
-            const fa = fluff(i) * abstr(i);
-            const cur = myLocDom.myBlock.dim(i);
-            if to(i) < 0 then
-              dr(i) = cur.first - fa .. cur.first-abstr(i);
-            else if to(i) > 0 then
-              dr(i) = cur.last+abstr(i)..cur.last+fa;
-            else
-              dr(i) = cur.first..cur.last;
-            if stridable then
-              dr(i) = dr(i) by cur.stride;
-          }
-          D = {(...dr)};
-          assert(wholeFluff.member(D.first) && wholeFluff.member(D.last), "StencilDist: Error computing destination slice.");
-          if periodic then S = D;
-        }
+        const blockDims = myLocDom.myBlock.dims();
+        var bufLen = 1;
+        forall (recvS, recvD, sendS, sendD, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
+                                                         myLocDom.sendSrc, myLocDom.sendDest,
+                                                         myLocDom.Neighs, ND)
+          with ( max reduce bufLen) {
 
-        for (N, L) in zip(myLocDom.Neighs, ND) {
-          if zeroTuple(L) then continue;
-          if rank == 1 then
-            N(1) = localeIdx + L;
-          else
-            N = localeIdx + L;
-        }
-
-        if periodic {
-          for (S, D, N, L) in zip(myLocDom.Src, myLocDom.Dest, myLocDom.Neighs, ND) {
-            if zeroTuple(L) then continue; // Skip center
-
-            var offset : rank*idxType;
+          // if L is a tuple of zeroes then we are in the center, which needs
+          // no updating.
+          if !isZeroTuple(L) {
+            const to = chpl__tuplify(L);
+            var dr : rank*whole.dim(1).type;
             for i in 1..rank {
-              if S.dim(i).low > whole.dim(i).high then
-                offset(i) = -whole.dim(i).size * abstr(i);
-              else if S.dim(i).high < whole.dim(i).low then
-                offset(i) = whole.dim(i).size * abstr(i);
+              const fa = fluff(i) * abstr(i);
+              const cur = blockDims(i);
+
+              // TODO: simplify?
+              if to(i) < 0 then
+                dr(i) = cur.first - fa .. cur.first-abstr(i);
+              else if to(i) > 0 then
+                dr(i) = cur.last+abstr(i)..cur.last+fa;
+              else
+                dr(i) = cur.first..cur.last;
+
+              if stridable then
+                dr(i) = dr(i) by cur.stride;
             }
 
-            S = S.translate(offset);
-            if rank == 1 then
-              N(1) = dist.targetLocsIdx(S.first);
-            else
-              N = dist.targetLocsIdx(S.first);
-            assert(whole.member(S.first) && whole.member(S.last), "StencilDist: Failure to compute Src slice.");
-            assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
+            // destination indices in the fluff region
+            recvD = {(...dr)};
+            assert(wholeFluff.member(recvD.first) && wholeFluff.member(recvD.last), "StencilDist: Error computing destination slice.");
+
+            if whole.member(recvD.first) && whole.member(recvD.last) {
+              // sending to an adjacent locale
+              recvS = recvD;
+              N = chpl__tuplify(dist.targetLocsIdx(recvS.first));
+            } else if periodic {
+              // sending to a non-adjacent locale
+              var offset : rank*idxType;
+              for i in 1..rank {
+                const wd = whole.dim(i);
+                const rd = recvD.dim(i);
+                const mult = if rd.low > wd.high then -1
+                             else if rd.high < wd.low then 1
+                             else 0;
+                offset(i) = mult * wd.size * abstr(i);
+              }
+              recvS = recvD.translate(offset);
+              N = chpl__tuplify(dist.targetLocsIdx(recvS.first));
+
+              assert(whole.member(recvS.first) && whole.member(recvS.last), "StencilDist: Failure to compute Src slice.");
+              assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
+            } else {
+              // No communication needed in this direction
+              assert(recvS.size == 0);
+              N = chpl__tuplify(localeIdx);
+
+              // zero out recvD so we can test its size later to determine if
+              // communication needs to happen
+              recvD = recvS;
+            }
+
+            if recvS.size != 0 {
+              const offset = -1 * L * fluff * abstr;
+              sendS = recvD.translate(offset);
+              sendD = recvS.translate(offset);
+            }
+
+            bufLen = max(bufLen, recvD.size, recvS.size);
+
+            if recvS.size != 0 && debugStencilDist {
+              writeln("L = ", L, ": ");
+              writeln("RECV: ", here, ".", recvD, " = ", dist.targetLocales[N], ".", recvS);
+              writeln("SEND: ", here, ".", sendS, " = ", dist.targetLocales[N], ".", sendD);
+            }
+          }
+        }
+        myLocDom.bufDom = {1..bufLen};
+      }
+    }
+  }
+
+  // Validate the compute send/recv src/dest domains
+  if debugStencilDist {
+    coforall localeIdx in dist.targetLocDom {
+      on dist.targetLocales(localeIdx) {
+        var nearest : rank*range;
+        for param i in 1..rank do nearest(i) = -1..1;
+        const ND : domain(rank) = nearest;
+        ref myLocDom = locDoms(localeIdx);
+
+        forall (recvS, recvD, sendS, sendD, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
+                                                         myLocDom.sendSrc, myLocDom.sendDest,
+                                                         myLocDom.Neighs, ND) {
+          if !zeroTuple(L) && recvS.size != 0 {
+            var other = -1 * L;
+
+            proc checker(me, myDom, them, themDom) {
+              writeln(dist.targetLocales(me), ".", myDom, " == ", dist.targetLocales(them), ".", themDom);
+              assert(myDom == themDom, "StencilDist Error: failure to match recv and send domains.");
+            }
+
+            checker(localeIdx, recvS, N, locDoms[N].sendSrc[other]);
+            checker(localeIdx, recvD, N, locDoms[N].sendDest[other]);
           }
         }
       }
@@ -1011,9 +1085,7 @@ proc StencilArr.setupRADOpt() {
 }
 
 proc StencilArr.setup() {
-  var thisid = this.locale.id;
-  var nearest : rank*range;
-  for param i in 1..nearest.size do nearest(i) = -1..1;
+  const thisid = this.locale.id;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
@@ -1185,7 +1257,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1297,14 +1369,14 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-private inline proc zeroTuple(t) {
+private inline proc isZeroTuple(t) {
   if isTuple(t) {
     for param i in 1..t.size do
       if t(i) != 0 then return false;
   } else if isIntegral(t) {
     return t == 0;
   }
-  else compilerError("Incorrect usage of 'zeroTuple' utility function.");
+  else compilerError("Incorrect usage of 'isZeroTuple' utility function.");
   return true;
 }
 
@@ -1320,7 +1392,7 @@ iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     var LSA = locArr[i];
     ref myLocDom = LSA.locDom;
-    for (D, N, L) in zip(myLocDom.Dest, myLocDom.Neighs, myLocDom.NeighDom) {
+    for (D, N, L) in zip(myLocDom.recvDest, myLocDom.Neighs, myLocDom.NeighDom) {
       const target = i + L;
       const low = dom.dist.targetLocDom.low;
       const high = dom.dist.targetLocDom.high;
@@ -1352,7 +1424,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
     on dom.dist.targetLocales(i) {
       var LSA = locArr[i];
       ref myLocDom = LSA.locDom;
-      forall (D, N, L) in zip(myLocDom.Dest, myLocDom.Neighs, myLocDom.NeighDom) {
+      forall (D, N, L) in zip(myLocDom.recvDest, myLocDom.Neighs, myLocDom.NeighDom) {
         const target = i + L;
         const low = dom.dist.targetLocDom.low;
         const high = dom.dist.targetLocDom.high;
@@ -1434,22 +1506,156 @@ proc _array.updateFluff() {
   _value.dsiUpdateFluff();
 }
 
-// copy over into cache
-proc StencilArr.dsiUpdateFluff() {
-  if zeroTuple(dom.fluff) then return;
+//
+// On each locale, update the local cache by fetching data from neighbors.
+//
+// TODO: What's the best way to deal with the repeated `locArr[i]` expressions?
+// Note that this is actually `this.locArr[i]`, where 'this' is on the locale
+// where the coforall-on starts. What we really want is something like this:
+//
+// const curLocArr = chpl_getPrivatizedCopy(this.type, this.pid).locArr[i];
+//
+// Ideally the compiler could do something like this for us...
+//
+proc StencilArr.naiveUpdateFluff() {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
       ref myLocDom = locArr[i].locDom;
-      forall (S, D, N, L) in zip(myLocDom.Src, myLocDom.Dest,
+      forall (S, D, N, L) in zip(myLocDom.recvSrc, myLocDom.recvDest,
           myLocDom.Neighs, myLocDom.NeighDom) {
-        if !zeroTuple(L) {
-          if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
-            locArr[i].myElems[D] = locArr[N].myElems[S];
-          else if dom.dist.targetLocDom.member(N) then
-            locArr[i].myElems[D] = locArr[N].myElems[D];
+        // A source domain of size zero indicates that no communication
+        // is necessary.
+        //
+        // if "L" is zero, that indicates we are at the center of the stencil
+        // and do not need to update
+        if !isZeroTuple(L) && S.size != 0 {
+          locArr[i].myElems[D] = locArr[N].myElems[S];
         }
       }
     }
+  }
+}
+
+//
+// TODO: GET or PUT the data? Does it matter for performance?
+//
+// TODO: should we avoid doing the packed transfer for dense-ish regions?
+// e.g. {1..5, 1..100} might only require 5 GETs/PUTs
+//
+// This is an optimized variant of the naiveUpdateFluff method. This variant
+// packs elements into a buffer such that we only do one GET/PUT. This is
+// most beneficial when the communicated region would require many GETs in
+// the naive approach. For example, Let's say we have a 10x10 domain with
+// a fluff of (1,1). Our wholeFluff domain would be {0..11, 0..11}. When we go
+// to communicate the region {1..10,1..1}, the naive method requires 10 GETs or
+// PUTs, whereas the packed method requires just one.
+//
+// On each locale:
+// 1) Repeat the following for each region of data that other locales will
+//    want to fetch:
+//    a) Serialize/pack the region of data into a 1D buffer array. This is the
+//       buffer that other locales will read from.
+//    b) Write 'true' to an atomic flag on the local that intends to read from
+//       the buffer that was just populated.
+// 2) Once we have prepared our local data for reading, repeat the following
+//    for each region of data that *our* cache wants to update:
+//    a) Wait for the corresponding atomic flag to be 'true' so that we know
+//       it is safe to fetch the data from the remote locale. Reset the flag to
+//       false afterwards.
+//    b) Bulk-copy the remote buffer into a local buffer
+//    c) Copy elements from the local buffer into the cache
+//
+proc StencilArr._packedUpdate() {
+  coforall i in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(i) {
+      var myLocDom = locArr[i].locDom;
+
+      proc translateIdx(idx) {
+        return -1 * chpl__tuplify(idx);
+      }
+
+      // BHARSH TODO: can we fuse these two foralls? My current concern is that
+      // by waiting we might prevent another iteration running and possibly
+      // find ourselves in a deadlock.
+      forall (D, S, recvIdx, sendBufIdx) in zip(myLocDom.sendDest, myLocDom.sendSrc,
+                                                myLocDom.Neighs,
+                                                myLocDom.NeighDom) {
+        // If S.size == 0, no communication is required
+        if S.size != 0 {
+          const chunkSize  = max(1, S.dim(rank).length); // avoid divide by zero
+          const numChunks = S.size / chunkSize;
+          if numChunks >= stencilDistPackedUpdateMinChunks {
+            const recvBufIdx = translateIdx(sendBufIdx);
+
+            // Pack the buffer
+            //
+            // TODO: Should we have a serialization helper for N-dimensional
+            // DefaultRectangulars into 1-dimension arrays?
+            ref src = locArr[i].myElems[S];
+            ref buf = locArr[i].sendBufs[sendBufIdx];
+            local for (s, i) in zip(src, buf.domain.first..#src.size) do buf[i] = s;
+
+            if debugStencilDist then
+              writeln("Filled ", here, ".", S, " for ", dom.dist.targetLocales(recvIdx), "::", recvBufIdx);
+            locArr[recvIdx].sendRecvFlag[recvBufIdx].write(true);
+          } else {
+            // 'naive' update
+            locArr[recvIdx].myElems[D] = locArr[i].myElems[S];
+          }
+        }
+      }
+      forall (D, S, srcIdx, recvBufIdx) in zip(myLocDom.recvDest, myLocDom.recvSrc,
+                                               myLocDom.Neighs,
+                                               myLocDom.NeighDom) {
+        const chunkSize  = max(1, S.dim(rank).length); // avoid divide by zero
+        const numChunks = S.size / chunkSize;
+
+        // If we did a naive update in the previous loop, this iteration does
+        // not need to do anything.
+        if S.size != 0 && numChunks >= stencilDistPackedUpdateMinChunks {
+          const srcBufIdx = translateIdx(recvBufIdx);
+          if debugStencilDist then
+            writeln(here, "::", recvBufIdx, " WAITING");
+          locArr[i].sendRecvFlag[recvBufIdx].waitFor(true); // Can we read yet?
+          locArr[i].sendRecvFlag[recvBufIdx].write(false);  // reset for next call
+
+          locArr[i].recvBufs[recvBufIdx][1..D.size] = locArr[srcIdx].sendBufs[srcBufIdx][1..D.size];
+
+          ref dest = locArr[i].myElems[D];
+          ref buf = locArr[i].recvBufs[recvBufIdx];
+          local for (d, i) in zip(dest, buf.domain.first..#dest.size) do d = buf[i];
+        }
+      }
+    }
+  }
+}
+
+proc StencilArr.shouldDoPackedUpdate() param : bool {
+  return stencilDistAllowPackedUpdateFluff &&
+         chpl__supportedDataTypeForBulkTransfer(eltType);
+}
+
+// Update caches
+//
+// TODO: allow a bool argument here?
+//
+// TODO: allow for some kind of user-defined packing/unpacking for complicated
+// types?
+//
+// TODO: What if this is called from a locale not in targetLocales? Should
+// we do an on-statement?
+//
+// TODO: Checking for 'dom.dist.targetLocales.size' isn't the most general
+// approach. What we really want is to do a naive transfer if the periodic
+// neighbor is the current locale.
+//
+proc StencilArr.dsiUpdateFluff() {
+  if isZeroTuple(dom.fluff) then return;
+
+  if shouldDoPackedUpdate() && dom.dist.targetLocales.size > 1 {
+    this._packedUpdate();
+  } else {
+    this.naiveUpdateFluff();
   }
 }
 
@@ -1467,8 +1673,8 @@ proc StencilArr.dsiReallocate(d: domain) {
   //
 }
 
+// Call this *after* the domain has been reallocated
 proc StencilArr.dsiPostReallocate() {
-  // Call this *after* the domain has been reallocated
   if doRADOpt then setupRADOpt();
 }
 
@@ -1480,7 +1686,7 @@ proc StencilArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
-proc LocStencilArr.this(i) ref {
+inline proc LocStencilArr.this(i) ref {
   return myElems(i);
 }
 

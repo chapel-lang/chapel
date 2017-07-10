@@ -1,4 +1,7 @@
-default:
-	../../../util/devel/chips/update-readme.bash
-	../../../util/devel/chips/render.bash
+html: FORCE
+	../../../../util/run-in-venv.bash sphinx-build -b html -d ./doctrees -W . ./html
 
+update: FORCE
+	../../../util/update-readme.bash
+
+FORCE:

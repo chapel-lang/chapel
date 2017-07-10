@@ -151,7 +151,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 
   // add the function args as fields in the class
   int i = 0;    // Fields are numbered for uniqueness.
-  for_actuals(arg, fcall) {
+  for_formals_actuals(formal, arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->symbol(); // arg or var
 
@@ -178,9 +178,22 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
 
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
+    if (isRecordWrappedType(var->getValType()))
+      field->qual = QUAL_VAL;
+    // If we needed to auto-copy it, it should be stored by value
+    else if (autoCopy)
+      field->qual = QUAL_VAL; // this is a no-op
+    // If the actual is a reference, store a reference
+    else if (var->isRef())
+      field->qual = QUAL_REF;
     // BHARSH TODO: This really belongs in RVF
-    // BHARSH TODO: Use 'formal->isRef()' instead of the var's ref-ness
-    if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
+    // If the formal is constant, store a value
+    else if (formal->isConstant())
+      field->qual = QUAL_VAL;
+    // Otherwise, if the formal is a reference, store a reference.
+    // This is important for on-throw.chpl for example.
+    else if (formal->isRef())
+      field->qual = QUAL_REF;
 
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
@@ -318,8 +331,7 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   if (autoDestroyFn == NULL) return;
 
-  // BHARSH TODO: This seems to be (poorly) checking if arg is a ref
-  if (arg->typeInfo() != baseType)
+  if (arg->isRef())
   {
     // BHARSH: This code used to be special cased for ref counted types.
     // Some changes in support of qualified refs made it possible for syncs
@@ -340,7 +352,7 @@ static void
 bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
-  FnSymbol* fn = fcall->isResolved();
+  FnSymbol* fn = fcall->resolvedFunction();
 
   const bool firstCall = baData.firstCall;
   if (firstCall)
@@ -447,7 +459,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr->refType);
+    taskList = newTemp(astr("_taskList", fn->name), QualifiedType(QUAL_REF, dtCVoidPtr));
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -578,7 +590,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-    if (isReferenceType(field->type)) {
+    if (field->isRef()) {
       VarSymbol* derefTmp = newTemp("endcountDeref", field->type->getValType());
       wrap_fn->insertAtTail(new DefExpr(derefTmp));
       wrap_fn->insertAtTail(
@@ -602,7 +614,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
 {
   ModuleSymbol* mod = fcall->getModule();
-  INT_ASSERT(fn == fcall->isResolved());
+  INT_ASSERT(fn == fcall->resolvedFunction());
 
   AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
@@ -830,7 +842,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
             // expression
             CallExpr *parent = toCallExpr(se->parentExpr);
             INT_ASSERT(parent);
-            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF));
+            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF) || parent->isPrimitive(PRIM_SET_REFERENCE));
             INT_ASSERT(isCallExpr(parent->parentExpr));
             // Now start looking for the first use of the captured
             // reference
@@ -956,7 +968,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
                   varsToTrack.add(toAdd);
                 }
               }
-              else if (fnsContainingTaskll.in(call->isResolved())) {
+              else if (fnsContainingTaskll.in(call->resolvedFunction())) {
                 freeVar = false;
                 break;
               }
@@ -1038,15 +1050,13 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 // or
 //  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "fifo"
 // or
-//  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "muxed"
+//  CHPL_TASKS == "qthreads"
 //
 // true otherwise.
 //
-// The tasking layer matters because fifo and muxed allocate
-// from task stacks the communication registered heap
-// (unless stack checks is on, in which case it might not
-//  be possible because of huge pages).
-// In the future, we hope that all tasking layers do this.
+// The tasking layer matters because qthreads and fifo allocate task stacks
+// from the communication registered heap (fifo can only do so if stack checks
+// are turned off.)
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -1056,9 +1066,10 @@ needHeapVars() {
        !strcmp(CHPL_GASNET_SEGMENT, "everything")))
     return false;
 
-  if (fNoStackChecks &&
-      (0 == strcmp(CHPL_TASKS, "fifo") ||
-       0 == strcmp(CHPL_TASKS, "muxed")) )
+  if (fNoStackChecks && (0 == strcmp(CHPL_TASKS, "fifo")))
+    return false;
+
+  if (0 == strcmp(CHPL_TASKS, "qthreads"))
     return false;
 
   return true;
@@ -1110,7 +1121,7 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
-    // BHARSH TODO: Add a check only continue if def is not a reference
+    // BHARSH TODO: Add a check to only continue if def is not a reference
     if (!fLocal                                 &&
         isModuleSymbol(def->parentSymbol)       &&
         def->parentSymbol != rootModule         &&
@@ -1349,7 +1360,7 @@ makeHeapAllocations() {
         } else if (call->isPrimitive(PRIM_ASSIGN)) {
           // ensure what we assign into is what we expect
           INT_ASSERT(toSymExpr(call->get(1))->symbol() == var);
-          VarSymbol* tmp = newTemp(var->type->refType);
+          VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
@@ -1378,7 +1389,7 @@ makeHeapAllocations() {
 
     for_uses(use, useMap, var) {
       if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        if (call->isPrimitive(PRIM_ADDR_OF)) {
+        if (call->isPrimitive(PRIM_ADDR_OF) || call->isPrimitive(PRIM_SET_REFERENCE)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move && (move->isPrimitive(PRIM_MOVE)));
           if (move->get(1)->typeInfo() == heapType) {
@@ -1425,7 +1436,7 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
-          VarSymbol* tmp = newTemp(var->type->refType);
+          VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
@@ -1491,7 +1502,7 @@ reprivatizeIterators() {
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
           VarSymbol* valTmp = newTemp(lhs->getValType());
           move->insertBefore(new DefExpr(valTmp));
-          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_SET_REFERENCE, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
           AggregateType* ct = toAggregateType(se->symbol()->type);

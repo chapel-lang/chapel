@@ -1,1 +1,1 @@
--sperfTesting=true --no-ieee-float
+-soutputFormat=OutputStyle.PERF_TEST --no-ieee-float

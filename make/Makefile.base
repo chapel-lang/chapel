@@ -76,7 +76,7 @@ ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
 # Evaluate all of the definitions in CHPL_MAKE_ALL_VARS before running
 # printchplenv in order to pass the existing values from the compiler forward
 
-export CHPL_MAKE_SETTINGS_NO_NEWLINES = $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
+export CHPL_MAKE_SETTINGS_NO_NEWLINES := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
 endif
 
 # This really needs TWO newlines!
@@ -119,20 +119,32 @@ endif
 #
 # default CFLAGS, based on other settings
 #
+# Two notes about this section:
+#  1. It relies on the variables being defined with '=' vs ':='
+#     since DEPEND_CFLAGS etc is declared in the compiler
+#     section below. (But we could probably move this down...)
+#  2. CFLAGS, CXXFLAGS, and LDFLAGS can be set on the command line, like
+#        make CFLAGS=-g
+#     In that event, these append operations are ignored and the
+#     command line variable has precedence.
 ifeq ($(DEPEND), 1)
 CFLAGS += $(DEPEND_CFLAGS)
+CXXFLAGS += $(DEPEND_CFLAGS)
 endif
 
 ifeq ($(DEBUG), 1)
 CFLAGS += $(DEBUG_CFLAGS)
+CXXFLAGS += $(DEBUG_CFLAGS)
 endif
 
 ifeq ($(OPTIMIZE), 1)
 CFLAGS += $(OPT_CFLAGS)
+CXXFLAGS += $(OPT_CFLAGS)
 endif
 
 ifeq ($(PROFILE), 1)
 CFLAGS += $(PROFILE_CFLAGS)
+CXXFLAGS += $(PROFILE_CFLAGS)
 LDFLAGS += $(PROFILE_LFLAGS)
 endif
 
@@ -146,7 +158,11 @@ CHPL_MAKE_BASE_LFLAGS =
 #
 # Third-party package stuff
 #
-THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
+ifdef CHPL_MAKE_THIRD_PARTY
+  THIRD_PARTY_DIR = $(CHPL_MAKE_THIRD_PARTY)
+else
+  THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
+endif
 
 include $(THIRD_PARTY_DIR)/amudprun/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include

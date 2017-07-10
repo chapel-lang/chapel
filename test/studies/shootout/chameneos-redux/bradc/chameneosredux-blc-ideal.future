@@ -1,0 +1,8 @@
+bug: can't use forall expressions within an initializer
+
+I expect that this is the same bug as in issue #5935.  Even after this
+bug is fixed, it may be that I'm using generic fields more
+aggressively than I should be permitted to (or that our implementation
+will permit for the time being), in which case this future may need to
+be updated further.  But this is an intriguing version of the benchmark
+to strive for.

@@ -164,10 +164,9 @@ class BoundedBuffer {
   // a simple helper function for advancing the head or tail position.
   //
   inline proc advance(ref pos$: sync int) {
-    const prevPos = pos$,
-          nextPos = (prevPos + 1) % capacity;
+    const prevPos = pos$;
 
-    pos$ = nextPos;
+    pos$ = (prevPos + 1) % capacity;;
 
     return prevPos;
   }

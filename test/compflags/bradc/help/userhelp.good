@@ -15,9 +15,6 @@ Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
       --cache-remote                  Enable cache for remote data (must be
                                       enabled specifically)
-      --conditional-dynamic-dispatch-limit <limit>
-                                      Set limit on # of inline conditionals
-                                      used for dynamic dispatch
       --[no-]copy-propagation         Enable [disable] copy propagation
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
       --fast                          Use fast default settings
@@ -98,6 +95,13 @@ LLVM Code Generation Options:
       --[no-]llvm                     [Don't] use the LLVM code generator
       --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
                                       optimizations
+      --llvm-print-ir <name>          Dump LLVM Intermediate Representation of
+                                      given function to stdout
+      --llvm-print-ir-stage <stage>   Specifies from which LLVM optimization
+                                      stage to print function: none, basic,
+                                      full
+      --mllvm <flags>                 LLVM flags (can be specified multiple
+                                      times)
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
@@ -118,7 +122,8 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
-      --strict-errors                 Enable strict mode for error handling
+      --[no-]strict-errors            Enable [disable] strict mode for error
+                                      handling
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions

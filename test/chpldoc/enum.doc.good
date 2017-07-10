@@ -1,11 +1,22 @@
-enum.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: enum.doc
+
+enum.doc
+========
+**Usage**
+
+.. code-block:: chapel
+
    use enum.doc;
 
-   enum Color { Red, Yellow, Blue }
-      This is a color enum. 
+.. enum:: enum Color { Red, Yellow, Blue }
 
-   enum Months { January = 1, February, March, April, May, June, July, August, September, October, November, December }
-      Another enum with inline comments for constants. 
+   This is a color enum. 
+
+
+.. enum:: enum Months { January = 1, February, March, April, May, June, July, August, September, October, November, December }
+
+   Another enum with inline comments for constants. 
+
 

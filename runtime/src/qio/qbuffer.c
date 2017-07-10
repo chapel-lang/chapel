@@ -148,14 +148,8 @@ qioerr _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
   
-  // allocate 4K-aligned (or page size aligned)
-  // multiple of 4K
-  data = qio_valloc(qbytes_iobuf_size);
+  data = qio_memalign(sys_page_size(), qbytes_iobuf_size);
   if( !data ) return QIO_ENOMEM;
-  // We used to use posix_memalign, but that didn't work on an old Mac;
-  // also, this should be page-aligned (vs iobuf_size aligned).
-  //err_t err = posix_memalign(&data, qbytes_iobuf_size, qbytes_iobuf_size);
-  //if( err ) return err;
   memset(data, 0, qbytes_iobuf_size);
 
   // The ref count in ret is initially 1.

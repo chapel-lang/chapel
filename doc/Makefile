@@ -29,8 +29,8 @@ help-source:
 
 
 docs: FORCE
-	@../util/run-in-venv.bash $(MAKE) html-release || (echo;echo "If a documentation hierarchy change was made on the master branch, \
-	try resolving with: \`git clean "'$$CHPL_HOME'"/doc/*\`";echo)
+	@../util/run-in-venv.bash $(MAKE) html-release || $(MAKE) error_docs
+	
 
 man-chapel: FORCE
 	../util/run-in-venv.bash $(MAKE) man
@@ -114,6 +114,13 @@ clean-symlinks: FORCE
 	@echo
 	@echo "Removing all symbolic links"
 	find $(SOURCEDIR) -type l -delete
+
+error_docs: FORCE
+	@echo;
+	@echo "If a documentation hierarchy change was made on the master branch,"
+	@echo "try resolving with: \`git clean "'$$CHPL_HOME'"/doc/*\`"
+	@echo;
+	@exit 1 # Note that 'make' will return exit code of 2, despite exit 1
 
 
 FORCE:

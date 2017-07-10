@@ -110,7 +110,7 @@ record Population {
   //
   // Delete the chameneos objects.
   //
-  proc deinit {
+  proc ~Population {
     for c in chameneos do
       delete c;
   }
@@ -245,7 +245,7 @@ class MeetingPlace {
   //
   // Initialize the number of meetings that should take place
   //
-  proc MeetingPlace(numMeetings) {
+  proc init(numMeetings) {
     state.write(numMeetings << bitsPerChameneosID);
   }
 

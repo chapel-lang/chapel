@@ -23,6 +23,7 @@
 // represent reindexings of another array via a domain.
 //
 module ArrayViewReindex {
+  use ChapelStandard;
 
   //
   // The class representing a slice of an array.  Like other array
@@ -84,15 +85,19 @@ module ArrayViewReindex {
     // indices/domains back into the original index set.
     //
 
+    inline proc chpl_reindexConvertIdxDim(i: integral, dim: int) {
+      return arr.dom.dsiDim(dim).orderToIndex(dom.dsiDim(dim).indexOrder(i));
+    }
+
     inline proc chpl_reindexConvertIdx(i: integral) {
       compilerAssert(arr.rank == 1, arr.rank:string);
-      return arr.dom.dsiDim(1).orderToIndex(dom.dsiDim(1).indexOrder(i));
+      return chpl_reindexConvertIdxDim(i, 1);
     }
 
     inline proc chpl_reindexConvertIdx(i) {
       var ind: arr.rank*arr.idxType;
       for param d in 1..arr.rank {
-        ind(d) = arr.dom.dsiDim(d).orderToIndex(dom.dsiDim(d).indexOrder(i(d)));
+        ind(d) = chpl_reindexConvertIdxDim(i(d), d);
       }
       return ind;
     }
@@ -103,12 +108,16 @@ module ArrayViewReindex {
       }
 
       var ranges : arr.dom.dsiDims().type;
-      var low , high : arr.rank*arr.idxType;
-      for param d in 1..dims.size do low(d) = dims(d).first;
-      for param d in 1..dims.size do high(d) = dims(d).last;
-
-      var actualLow = chpl_reindexConvertIdx(low);
-      var actualHigh = chpl_reindexConvertIdx(high);
+      var actualLow, actualHigh: arr.rank*arr.idxType;
+      for param d in 1..dims.size {
+        if (dims(d).size == 0) {
+          actualLow(d) = arr.dom.dsiDim(d).low;
+          actualHigh(d) = arr.dom.dsiDim(d).high;
+        } else {
+          actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, d);
+          actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, d);
+        }
+      }
       for param d in 1..arr.rank {
         var lowered = actualLow(d)..actualHigh(d);
         // TODO: does it matter which range slices the other?

@@ -1,0 +1,10 @@
+feature request: define ~ on bools in user module
+
+The version of ~ on bool in ChapelBase.chpl can't be marked "compiler
+generated" i.e. last resolt because then the int versions will be called
+(with a coercion).
+
+The fact that this program generates an ambiguity instead of prefering
+the more locally scoped one in A seems to be more about module
+scopes than about ~.
+

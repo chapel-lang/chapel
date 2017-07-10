@@ -15,16 +15,17 @@ First line of every file is:
 
   In the following record definitions the following will stand
   for a number in the line:
-     nid - local node id (locale)
-     rid - remote node id
-     tid - task id
-     tv  - time of day value  (sec.usec format)
-     tu  - user time          (sec.usec format)
-     ts  - system time        (sec.usec format)
-     tnum - tag number
-     lnum - line number
+     nid    - local node id (locale)
+     rid    - remote node id
+     tid    - task id
+     tv     - time of day value  (sec.usec format)
+     tu     - user time          (sec.usec format)
+     ts     - system time        (sec.usec format)
+     tnum   - tag number
+     commiD - unique ID per generated get/put, for mapping to generated code
+     lnum   - line number
      fileno - index in the file name table
-     fid - function id number
+     fid    - function id number
 
 Lines in the file:
 
@@ -74,12 +75,12 @@ Lines in the file:
   Etask: tv nid tid
     Task has ended execution
 
-  nb_put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
-  nb_get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
-  put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
-  get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
-  st_put:  tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
-  st_get:  tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  nb_put: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
+  nb_get: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
+  put   : tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
+  get   : tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
+  st_put: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
+  st_get: tv nid rid tid addr raddr elemsize typeIndex length commID lnum fileno
     communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
     nb is non-blocking, st is strided.
 

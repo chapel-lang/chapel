@@ -534,7 +534,7 @@ writeln(defaultsProc(y=9.876, x=13));
 // The ``?`` operator is called the query operator, and is used to take
 // undetermined values like tuple or array sizes and generic types.
 // For example, taking arrays as parameters. The query operator is used to
-// determine the domain of ``A``. This is uesful for defining the return type,
+// determine the domain of ``A``. This is useful for defining the return type,
 // though it's not required.
 proc invertArray(A: [?D] int): [D] int{
   for a in A do a = -a;

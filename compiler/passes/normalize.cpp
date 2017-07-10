@@ -26,6 +26,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "driver.h"
 #include "expr.h"
 #include "initializerRules.h"
 #include "stlUtil.h"
@@ -217,13 +218,13 @@ void normalize() {
         // verify the name of the destructor
         bool notTildeName = (fn->name[0] != '~') ||
                              strcmp(fn->name + 1, ct->symbol->name);
-        bool notDeinit = strcmp(fn->name, "deinit");
+        bool notDeinit = (fn->name != astrDeinit);
 
         if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
             "destructor name must match class/record name or deinit()");
         } else {
-          fn->name = astr("deinit");
+          fn->name = astrDeinit;
         }
       }
     // make sure methods don't attempt to overload operators
@@ -300,7 +301,7 @@ static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt) {
     if (FnSymbol* fn = toFnSymbol(def->sym))
       // When we retire ~classname naming for deinits,
       // we can replace this strcmp with a check for FLAG_DESTRUCTOR.
-      if (!strcmp(fn->name, "deinit"))
+      if (fn->name == astrDeinit)
         if (fn->numFormals() == 0) {
           if (mod->deinitFn) {
             // Already got one deinit() before.
@@ -675,9 +676,9 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         } else if (isPrimitiveScalar(type) == true) {
           retval = var;
 
-        // non generic records with initializers are defined
+        // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
-          if (isNonGenericRecordWithInitializers(at) == true) {
+          if (isRecordWithInitializers(at) == true) {
             retval = var;
           }
         }
@@ -786,7 +787,7 @@ insertUseForExplicitModuleCalls(void) {
       BlockStmt* block = new BlockStmt();
       stmt->insertBefore(block);
       block->insertAtHead(stmt->remove());
-      block->moduleUseAdd(mod);
+      block->useListAdd(mod);
     }
   }
 }
@@ -864,9 +865,6 @@ static void normalizeReturns(FnSymbol* fn) {
       numYields++;
     }
   }
-
-  // If an iterator, then there is at least one nonvoid return-or-yield.
-  INT_ASSERT(isIterator == false || rets.size() > numVoidReturns);
 
   // Check if this function's returns are already normal.
   if (rets.size() == numYields + 1 && theRet == fn->body->body.last()) {
@@ -1113,10 +1111,6 @@ static void call_constructor_for_class(CallExpr* call) {
         // Call chpl__buildDistType for syntactic distributions.
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
       } else {
-        if (ct->initializerStyle == DEFINES_INITIALIZER && ct->isGeneric()) {
-          USR_FATAL_CONT(se, "Type constructors are not yet supported for generic types that define initializers.  As a workaround, try relying on type inference");
-        }
-
         // Transform C ( ... ) into _type_construct_C ( ... ) .
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
       }
@@ -1163,7 +1157,7 @@ static void applyGetterTransform(CallExpr* call) {
   //   x.f --> f(_mt, x)
   // Note:
   //   call(call or )( indicates partial
-  if (call->isNamed(".")) {
+  if (call->isNamedAstr(astrSdot)) {
     SET_LINENO(call);
 
     SymExpr* symExpr = toSymExpr(call->get(2));
@@ -1244,7 +1238,7 @@ static void insertCallTemps(CallExpr* call) {
     if (call->isNamed("super")   == true &&
 
         parentCall               != NULL &&
-        parentCall->isNamed(".") == true &&
+        parentCall->isNamedAstr(astrSdot) &&
         parentCall->get(1)       == call) {
       // We've got an access to a method or field on the super type.
       // This means we should preserve that knowledge for when we
@@ -1271,7 +1265,7 @@ static void insertCallTemps(CallExpr* call) {
       newArg->insertAtHead(tmp);
       newArg->insertAtHead(gMethodToken);
 
-      // Move the tmp.init(args) expession to before the call
+      // Move the tmp.init(args) expression to before the call
       stmt->insertBefore(newArg->remove());
 
       // Replace the degenerate new-expression with a use of the tmp variable
@@ -1402,7 +1396,7 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 // 2017/03/14 This currently runs before new expressions have been
 // normalized.
 //
-// Before normalization, a new expression is ususally
+// Before normalization, a new expression is usually
 //
 //    prim_new(MyRec(a, b, c))
 //
@@ -1868,7 +1862,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
-      if (isNonGenericRecordWithInitializers(type) == true) {
+      if (isRecordWithInitializers(type) == true) {
         Expr*     arg1    = initCall->get(1)->remove();
         CallExpr* argExpr = toCallExpr(arg1);
 
@@ -1879,14 +1873,22 @@ static void normVarTypeInference(DefExpr* defExpr) {
         argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
 
         // Add _mt and _this (insert at head in reverse order)
-        argExpr->insertAtHead(var);
+        if (isGenericRecord(type) == true) {
+          // We need the actual for the "this" argument to be named in the
+          // generic record case ...
+          argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
+        } else {
+          // ... but not in the non-generic record case
+          argExpr->insertAtHead(var);
+        }
         argExpr->insertAtHead(gMethodToken);
 
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
 
-      if (type != NULL && type->isGeneric() == false) {
+      if (type != NULL && (type->isGeneric() == false ||
+                           isGenericRecordWithInitializers(type))) {
         var->type = type;
       }
 
@@ -1972,6 +1974,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   Expr*   typeExpr = defExpr->exprType->remove();
   Expr*   initExpr = defExpr->init->remove();
   Type*   type     = typeForTypeSpecifier(typeExpr);
+  // Note: the above line will not obtain a type if the typeExpr is a CallExpr
+  // for a generic record or class, as that is a more complicated set of AST.
 
   //
   // e.g. const x : int     = 10;
@@ -2000,7 +2004,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
 
-      // Insert the arg portion of the initExpr back into tree
+      // This call must be in tree before extending argExpr
       defExpr->insertAfter(argExpr);
 
       // Convert it in to a use of the init method
@@ -2019,6 +2023,60 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     }
 
     var->type = type;
+
+  } else if (isNewExpr(initExpr)) {
+    // This check is necessary because the "typeForTypeSpecifier"
+    // call will not obtain a type if the typeExpr is a CallExpr,
+    // as it is for generic records and classes
+
+    CallExpr*      origCall = toCallExpr(initExpr);
+    AggregateType* rhsType  = typeForNewExpr(origCall);
+
+    if (isGenericRecordWithInitializers(rhsType)) {
+      // Create a temporary with the type specified in the lhs declaration
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      DefExpr*   typeDefn = new DefExpr(typeTemp);
+      CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+      CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+
+      defExpr ->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+
+      // Create a temporary to hold the result of the rhs "new" call
+      VarSymbol* initExprTemp = newTemp("init_tmp", rhsType);
+      DefExpr*   initExprDefn = new DefExpr(initExprTemp);
+      Expr*      arg          = origCall->get(1)->remove();
+      CallExpr*  argExpr      = toCallExpr(arg);
+
+      initMove    ->insertAfter(initExprDefn);
+      initExprDefn->insertAfter(argExpr);
+
+      // Modify the "new" call so that it is in the appropriate form for
+      // types with initializers
+      argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
+      argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
+      argExpr->insertAtHead(gMethodToken);
+
+      // Assign the rhs into the lhs.
+      CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);
+
+      argExpr->insertAfter(assign);
+      // Move the result into the original variable.
+      assign ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+
+    } else {
+      VarSymbol* typeTemp = newTemp("type_tmp");
+      DefExpr*   typeDefn = new DefExpr(typeTemp);
+      CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
+      CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
+      CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
+
+      defExpr ->insertAfter(typeDefn);
+      typeDefn->insertAfter(initMove);
+      initMove->insertAfter(assign);
+      assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+
+    }
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -2552,6 +2610,14 @@ static void updateConstructor(FnSymbol* fn) {
   // Replace it with _construct_typename
   fn->name = ct->defaultInitializer->name;
 
+  if (fNoUserConstructors) {
+    ModuleSymbol* mod = fn->getModule();
+    if (mod && mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD) {
+      USR_FATAL_CONT(fn, "Type '%s' defined a constructor here",
+                     ct->symbol->name);
+    }
+  }
+
   fn->addFlag(FLAG_CONSTRUCTOR);
 }
 
@@ -2579,13 +2645,11 @@ static void find_printModuleInit_stuff() {
   collectSymbols(printModuleInitModule, symbols);
 
   for_vector(Symbol, symbol, symbols) {
+
+    // TODO -- move this logic to wellknown.cpp
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
       gModuleInitIndentLevel = toVarSymbol(symbol);
       INT_ASSERT(gModuleInitIndentLevel);
-
-    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-      gPrintModuleInitFn = toFnSymbol(symbol);
-      INT_ASSERT(gPrintModuleInitFn);
     }
   }
 }

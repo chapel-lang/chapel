@@ -131,7 +131,8 @@ module main {
 
     const cache_size = 0;
     const host_name = here.name;
-    writeln("\n Running loop suite on ", host_name);
+    if outputFormat != OutputStyle.MINIMAL then
+      writeln("\n Running loop suite on ", host_name);
 
     allocateLoopSuiteRunInfo(host_name,
                              num_suite_passes,
@@ -160,12 +161,24 @@ module main {
     }
 
     writeln("\n generate reports....");
-    if !perfTesting {
-      generateTimingReport(run_variants, output_dirname);
-      generateChecksumReport(run_variants, output_dirname);
-      generateFOMReport(run_variants, output_dirname);
-    } else {
-      generatePerfTimingReport(run_variants);
+
+    select outputFormat {
+      when OutputStyle.MINIMAL {
+        // no timing or checksum output
+      }
+      when OutputStyle.REFERENCE {
+        // match what the reference code does
+        generateTimingReport(run_variants, output_dirname);
+        generateChecksumReport(run_variants, output_dirname);
+        generateFOMReport(run_variants, output_dirname);
+      }
+      when OutputStyle.PERF_TEST {
+        // format times for nightly perf testing
+        generatePerfTimingReport(run_variants);
+      }
+      otherwise {
+        writeln("Unexpected output format: ", outputFormat);
+      }
     }
 
     checkChecksums(run_variants, run_loop, run_loop_length);

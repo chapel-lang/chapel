@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of array-views branch
-GITHUB_USER=bradcray
-GITHUB_BRANCH=reindexDomDistView
-SHORT_NAME=arrView
-START_DATE=02/06/17
+# Test performance of removing deadCodeElimination(fn)
+GITHUB_USER=benharsh
+GITHUB_BRANCH=rm-dce-dev
+SHORT_NAME=rm-dce-dev
+START_DATE=07/10/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

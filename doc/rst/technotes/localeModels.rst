@@ -196,7 +196,7 @@ kind of memory is used for new allocations.  To allocate in high
 bandwidth memory, use the ``.highBandwidthMemory()`` member function.
 For example:
 
-.. code-block:: sh
+.. code-block:: chapel
 
     on here.highBandwidthMemory() {
       x = new MyObject();
@@ -205,7 +205,7 @@ For example:
 It is also possible to say "Use the same locale as variable ``y``, but
 use high bandwidth memory" as follows.
 
-.. code-block:: sh
+.. code-block:: chapel
 
     on y.locale.highBandwidthMemory() {
       // . . .
@@ -215,7 +215,7 @@ In case one is nested inside ``on`` statements and desires to get back
 to the default externally-attached memory, a ``.defaultMemory()``
 member function is available.
 
-.. code-block:: sh
+.. code-block:: chapel
 
     on x {
       // . . .

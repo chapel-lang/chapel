@@ -31,8 +31,6 @@
 $debug = 0;                            # turn on debug output
 $verbose = 0;                          # more verbose output
 
-$dirs_to_ignore = "Bin|Logs|Samples|OUTPUT|RCS";
-
 $logdir = "Logs";                      # dir under test to store logs
 $synchdir = "$logdir/.synch";          # where to store temporary metadata
 $rem_exe = "ssh -x";                   # disable X
@@ -437,7 +435,6 @@ sub find_subdirs {
     }
     
     foreach $filen (@cdir) {
-	next if ($filen =~ /$dirs_to_ignore/);
 	if (-d "$targetdir/$filen") {                 # if dir
         # .skipif does double duty here.  
         # When attached to a directory name, skips it and all descendents if the condition is true.
@@ -469,7 +466,6 @@ sub find_files {
     closedir CURRDIR;
 
     foreach $filen (@cdir) {
-	next if ($filen =~ /$dirs_to_ignore/);
 	$filepath = "$targetdir/$filen";
 	unless (-e "$targetdir/NOTEST") {             # do not ignore this dir?
 	    if ($filepath =~ /\.chpl$/) {

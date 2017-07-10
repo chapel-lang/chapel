@@ -1,3 +1,3 @@
 test_query_field11.chpl:13: error: ambiguous call 'foo(range(int(64),boundedLow,false), range(int(64),boundedLow,true))'
-test_query_field11.chpl:1: note: candidates are: foo(_e0_x: range, _e1_x: range)
-test_query_field11.chpl:9: note:                 foo(_e0_x: range, _e1_x: range)
+test_query_field11.chpl:1: note: candidates are: foo(_e1_x: range, _e2_x: range)
+test_query_field11.chpl:9: note:                 foo(_e1_x: range, _e2_x: range)

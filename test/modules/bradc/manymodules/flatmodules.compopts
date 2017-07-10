@@ -1,1 +1,1 @@
-modules/a.chpl modules/b.chpl modules/z.chpl
+modules/ModA.chpl modules/b.chpl modules/z.chpl

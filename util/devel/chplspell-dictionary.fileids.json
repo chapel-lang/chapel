@@ -9,7 +9,8 @@
     "CONTRIBUTORS.md"
   ],
   "06bdda1e-bb86-11e6-9740-843835579daa": [
-    "LICENSE"
+    "LICENSE",
+    "LICENSE.devel"
   ],
   "02edde22-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstDumpToHtml.cpp"
@@ -131,6 +132,9 @@
   "34a911f8-3901-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/filesToAST.cpp"
   ],
+  "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
+    "compiler/passes/initializerRules.cpp"
+  ],
   "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/normalize.cpp"
   ],
@@ -143,6 +147,9 @@
   "208f1cd2-0c12-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/cullOverReferences.cpp"
   ],
+  "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
+    "compiler/resolution/expandVarArgs.cpp"
+  ],
   "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/functionResolution.cpp"
   ],
@@ -151,6 +158,18 @@
   ],
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
+  ],
+  "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/postFold.cpp"
+  ],
+  "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/virtualDispatch.cpp"
+  ],
+  "f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/visibleCandidates.cpp"
+  ],
+  "01f4f6a8-2016-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/visibleFunctions.cpp"
   ],
   "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
     "compiler/resolution/wrappers.cpp"
@@ -197,6 +216,9 @@
   "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
     "doc/rst/developer/chips/18.rst"
   ],
+  "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/19.rst"
+  ],
   "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/chips/2.rst"
   ],
@@ -237,6 +259,7 @@
   ],
   "3efba760-1f11-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/dists/ReplicatedDist.rst",
+    "modules/dists/OldReplicatedDist.chpl",
     "modules/dists/ReplicatedDist.chpl"
   ],
   "347ba0d8-1f11-11e6-a3a6-10ddb1d4c3d5": [
@@ -252,15 +275,25 @@
     "doc/rst/modules/packages/Curl.rst",
     "modules/packages/Curl.chpl"
   ],
-  "7e50173a-814e-11e6-b915-843835579daa": [
-    "doc/rst/modules/packages/FFTW.rst"
+  "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/modules/packages/FFTW.rst",
+    "modules/packages/FFTW.chpl"
+  ],
+  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/rst/modules/packages/Futures.rst",
+    "modules/packages/Futures.chpl"
   ],
   "6cd27e0c-7b82-11e6-ab60-00a0cc3ee663": [
     "doc/rst/modules/packages/HDFS.rst",
     "modules/packages/HDFS.chpl"
   ],
+  "40d00fe6-1a82-11e7-980e-10ddb1d4c3d5": [
+    "doc/rst/modules/packages/LinearAlgebra.rst",
+    "modules/packages/LinearAlgebra.chpl"
+  ],
   "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/packages/MPI.rst",
+    "doc/rst/modules/packages/MPI/C_Env.rst",
     "doc/rst/modules/packages/MPI/C_MPI.rst",
     "modules/packages/MPI.chpl"
   ],
@@ -270,6 +303,10 @@
   "24a5f32a-792f-11e6-807a-843835579daa": [
     "doc/rst/modules/packages/ZMQ.rst",
     "modules/packages/ZMQ.chpl"
+  ],
+  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
+    "doc/rst/modules/standard/DateTime.rst",
+    "modules/standard/DateTime.chpl"
   ],
   "fbc85e3e-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/standard/FileSystem.rst",
@@ -292,6 +329,9 @@
   "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/modules/standard/SysBasic.rst",
     "modules/standard/SysBasic.chpl"
+  ],
+  "59b9a50c-1a83-11e7-980e-10ddb1d4c3d5": [
+    "doc/rst/platforms/arm.rst"
   ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
@@ -366,6 +406,9 @@
   "37795eb0-1f11-11e6-a3a6-10ddb1d4c3d5": [
     "modules/dists/dims/BlockDim.chpl"
   ],
+  "0e29860c-1a83-11e7-980e-10ddb1d4c3d5": [
+    "modules/internal/ArrayViewRankChange.chpl"
+  ],
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
   ],
@@ -393,12 +436,6 @@
   "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/layouts/LayoutCSR.chpl"
   ],
-  "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/packages/FFTW.chpl"
-  ],
-  "cc606fa4-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "modules/packages/Futures.chpl"
-  ],
   "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebraJama.chpl"
   ],
@@ -412,9 +449,6 @@
   ],
   "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Buffers.chpl"
-  ],
-  "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
-    "modules/standard/DateTime.chpl"
   ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
@@ -491,14 +525,15 @@
   "cd92e998-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Expressions.tex"
   ],
-  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/Functions.tex"
-  ],
   "e1d71c80-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Interoperation.tex"
   ],
   "f72f3d38-2952-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Memory_Consistency.tex"
+  ],
+  "cffdd350-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "spec/Methods.tex",
+    "spec/Procedures.tex"
   ],
   "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Modules.tex"
@@ -632,10 +667,17 @@
     "test/studies/shootout/k-nucleotide/bradc/knucleotide-blc.chpl",
     "test/studies/shootout/submitted/knucleotide.chpl"
   ],
+  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "test/release/examples/benchmarks/shootout/mandelbrot-fast.chpl",
+    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl",
+    "test/studies/shootout/submitted/mandelbrot2.chpl"
+  ],
   "4bfc193a-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/regexdna-redux.chpl",
     "test/release/examples/benchmarks/shootout/regexdna.chpl",
     "test/studies/shootout/regex-dna/bharshbarg/regexdna.chpl",
-    "test/studies/shootout/submitted/regexdna.chpl"
+    "test/studies/shootout/submitted/regexdna.chpl",
+    "test/studies/shootout/submitted/regexredux.chpl"
   ],
   "560979a4-4401-11e6-907f-843835579daa": [
     "test/release/examples/benchmarks/shootout/revcomp.chpl",
@@ -708,9 +750,6 @@
   ],
   "a70ca160-4400-11e6-907f-843835579daa": [
     "test/studies/shootout/fasta/kbrady/fasta-enum.chpl"
-  ],
-  "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
-    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl"
   ],
   "dfd55fc8-4400-11e6-907f-843835579daa": [
     "test/studies/shootout/mandelbrot/jacobnelson/mandelbrot-fancy.chpl"

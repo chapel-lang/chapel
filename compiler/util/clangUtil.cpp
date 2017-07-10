@@ -30,6 +30,12 @@
 #include <cstdio>
 #include <sstream>
 
+#ifdef HAVE_LLVM
+#include "clang/Driver/Compilation.h"
+#include "clang/Driver/Driver.h"
+#include "clang/Driver/Job.h"
+#endif
+
 #include "astutil.h"
 #include "driver.h"
 #include "expr.h"
@@ -73,6 +79,7 @@ using namespace llvm;
 
 #include "llvmGlobalToWide.h"
 #include "llvmAggregateGlobalOps.h"
+#include "llvmDumpIR.h"
 
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
@@ -196,31 +203,16 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
       Ops[0] = llvm::MDString::get(cx, "Chapel types");
       info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
     }
-    // Create type for ftable
-    {
-      LLVM_METADATA_OPERAND_TYPE* Ops[3];
-      Ops[0] = llvm::MDString::get(cx, "Chapel ftable");
-      Ops[1] = info->tbaaRootNode;
-      // and mark it as constant
-      Ops[2] = llvm_constant_as_metadata(
-          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
-
-      info->tbaaFtableNode = llvm::MDNode::get(cx, Ops);
-    }
-    {
-      LLVM_METADATA_OPERAND_TYPE* Ops[3];
-      Ops[0] = llvm::MDString::get(cx, "Chapel vmtable");
-      Ops[1] = info->tbaaRootNode;
-      // and mark it as constant
-      Ops[2] = llvm_constant_as_metadata(
-          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
-
-      info->tbaaVmtableNode = llvm::MDNode::get(cx, Ops);
-    }
-
   }
 
+#if HAVE_LLVM_VER >= 39
+  info->targetLayout =
+    info->Ctx->getTargetInfo().getDataLayout().getStringRepresentation();
+#elif HAVE_LLVM_VER >= 38
+  info->targetLayout = info->Ctx->getTargetInfo().getDataLayoutString();
+#else
   info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();
+#endif
   layout = info->targetLayout;
 
   if( fLLVMWideOpt && ! info->parseOnly ) {
@@ -241,7 +233,13 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
   if( info->module ) info->module->setDataLayout(layout);
 
   info->targetData =
+#if HAVE_LLVM_VER >= 39
+    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayout().getStringRepresentation());
+#elif HAVE_LLVM_VER >= 38
+    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayoutString());
+#else
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
+#endif
   if( ! info->parseOnly ) {
     info->cgBuilder = new CodeGen::CodeGenModule(*Ctx,
 #if HAVE_LLVM_VER >= 37
@@ -250,7 +248,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 #endif
                               info->codegenOptions,
                               *info->module,
-                              *info->targetData, *info->Diags);
+#if HAVE_LLVM_VER <= 37
+                              *info->targetData,
+#endif
+                              *info->Diags);
   }
 
 
@@ -500,7 +501,7 @@ void readMacrosClang(void) {
   // Later, if we see a use of a macro-function, we can
   //  compile it to a static/inline function with args types based an use
   // how will we know the return type?
-  //   expr->getType() stmt->getRetValue()->getType.... 
+  //   expr->getType() stmt->getRetValue()->getType....
   //     ... add function wrapping macro with wrong type
   //         parse/analyze squelching errors; get the macro expression type;
   //         correct the type and recompile to LLVM
@@ -576,8 +577,15 @@ class CCodeGenConsumer : public ASTConsumer {
       // and cgBuilder.
       setupClangContext(info, &Context);
 
+#if HAVE_LLVM_VER <= 38
       for (size_t i = 0, e = CodeGenOpts.DependentLibraries.size(); i < e; ++i)
         HandleDependentLibrary(CodeGenOpts.DependentLibraries[i]);
+#else
+      for (auto &&Lib : CodeGenOpts.DependentLibraries)
+        Builder->AddDependentLib(Lib);
+      for (auto &&Opt : CodeGenOpts.LinkerOptions)
+        Builder->AppendLinkerOptions(Opt);
+#endif
     }
 
     // ASTConsumer override:
@@ -595,7 +603,7 @@ class CCodeGenConsumer : public ASTConsumer {
     }
 
     // ASTConsumer override:
-    // 
+    //
     // HandleTopLevelDecl - Handle the specified top-level declaration.
     // This is called by the parser to process every top-level Decl*.
     //
@@ -648,6 +656,44 @@ class CCodeGenConsumer : public ASTConsumer {
        DeferredInlineMethodDefinitions.clear();
     }
 
+#if HAVE_LLVM_VER >= 39
+   // ASTConsumer override:
+   // \brief This callback is invoked each time an inline (method or friend)
+   // function definition in a class is completed.
+    void HandleInlineFunctionDefinition(FunctionDecl *D) override {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      assert(D->doesThisDeclarationHaveABody());
+
+      // Handle friend functions.
+      if (D->isInIdentifierNamespace(Decl::IDNS_OrdinaryFriend)) {
+        if (Ctx->getTargetInfo().getCXXABI().isMicrosoft()
+            && !D->getLexicalDeclContext()->isDependentContext())
+          Builder->EmitTopLevelDecl(D);
+        return;
+      }
+
+      // Otherwise, must be a method.
+      auto MD = cast<CXXMethodDecl>(D);
+
+      // We may want to emit this definition. However, that decision might be
+      // based on computing the linkage, and we have to defer that in case we
+      // are inside of something that will change the method's final linkage,
+      // e.g.
+      //   typedef struct {
+      //     void bar();
+      //     void foo() { bar(); }
+      //   } A;
+      DeferredInlineMethodDefinitions.push_back(MD);
+
+      // Provide some coverage mapping even for methods that aren't emitted.
+      // Don't do this for templated classes though, as they may not be
+      // instantiable.
+      if (!MD->getParent()->getDescribedClassTemplate())
+        Builder->AddDeferredUnusedCoverageMapping(MD);
+    }
+#else
    // ASTConsumer override:
    // \brief This callback is invoked each time an inline method
    // definition is completed.
@@ -673,6 +719,7 @@ class CCodeGenConsumer : public ASTConsumer {
       if (!D->getParent()->getDescribedClassTemplate())
         Builder->AddDeferredUnusedCoverageMapping(D);
     }
+#endif
 
      // skipped ASTConsumer HandleInterestingDecl
      // HandleTagDeclRequiredDefinition
@@ -784,7 +831,7 @@ class CCodeGenConsumer : public ASTConsumer {
        // Custom to Chapel
        if( info->parseOnly ) return;
        // End Custom to Chapel
-       
+
        Builder->EmitTentativeDefinition(D);
      }
 
@@ -812,13 +859,14 @@ class CCodeGenConsumer : public ASTConsumer {
 #endif
            );
      }
-     
+
+#if HAVE_LLVM_VER <= 38
      // ASTConsumer override:
      //
      // \brief Handle a pragma that appends to Linker Options.  Currently
      // this only exists to support Microsoft's #pragma comment(linker,
      // "/foo").
-     void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
+     virtual void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
        Builder->AppendLinkerOptions(Opts);
      }
 
@@ -839,6 +887,7 @@ class CCodeGenConsumer : public ASTConsumer {
      virtual void HandleDependentLibrary(llvm::StringRef Lib) LLVM_CXX_OVERRIDE {
        Builder->AddDependentLib(Lib);
      }
+#endif
 
     // undefine macros we created to help with ModuleBuilder
 #undef Ctx
@@ -902,6 +951,9 @@ void setupClang(GenInfo* info, std::string mainFile)
 {
   std::string clangexe = info->clangCC;
   std::vector<const char*> clangArgs;
+
+  clangArgs.push_back("<chapel clang driver invocation>");
+
   for( size_t i = 0; i < info->clangCCArgs.size(); ++i ) {
     clangArgs.push_back(info->clangCCArgs[i].c_str());
   }
@@ -912,25 +964,76 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangArgs.push_back(info->clangOtherArgs[i].c_str());
   }
 
-  if (llvmCodegen) {
-    clangArgs.push_back("-emit-llvm");
+  clangArgs.push_back("-c");
+  clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
+
+  if (!llvmCodegen)
+    clangArgs.push_back("-fsyntax-only");
+
+  if( printSystemCommands ) {
+    for( size_t i = 0; i < clangArgs.size(); i++ ) {
+      printf("%s ", clangArgs[i]);
+    }
+    printf("\n");
   }
 
-  //clangArgs.push_back("-c");
-  clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
+  // Initialize LLVM targets so that the clang commands can know if the
+  // target CPU supports vectorization, avx, etc, etc
+  // Also important for generating assembly from this program.
+  if (llvmCodegen) {
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+  }
+
+  // Create a compiler instance to handle the actual work.
+  CompilerInstance* Clang = new CompilerInstance();
+  Clang->createDiagnostics();
 
   info->diagOptions = new DiagnosticOptions();
   info->DiagClient= new TextDiagnosticPrinter(errs(),&*info->diagOptions);
   info->DiagID = new DiagnosticIDs();
+  DiagnosticsEngine* Diags = NULL;
 #if HAVE_LLVM_VER >= 32
-  info->Diags = new DiagnosticsEngine(
+  Diags = new DiagnosticsEngine(
       info->DiagID, &*info->diagOptions, info->DiagClient);
 #else
-  info->Diags = new DiagnosticsEngine(info->DiagID, info->DiagClient);
+  Diags = new DiagnosticsEngine(info->DiagID, info->DiagClient);
 #endif
+  info->Diags = Diags;
+  info->Clang = Clang;
 
-  CompilerInvocation* CI =
-    createInvocationFromCommandLine(clangArgs, info->Diags);
+  clang::driver::Driver TheDriver(clangexe, llvm::sys::getDefaultTargetTriple(), *Diags);
+
+  //   SetInstallDir(argv, TheDriver);
+
+  std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
+
+  INT_ASSERT(C->getJobs().size() == 1);
+
+  clang::driver::Command& j = *C->getJobs().begin();
+  if( printSystemCommands ) {
+    printf("<internal clang cc> ");
+    for ( auto a : j.getArguments() ) {
+      printf("%s ", a);
+    }
+    printf("\n");
+  }
+
+  // Should this run
+  // TheDriver.BuildCompilation
+  // get a Compilation?
+  //CompilerInvocation* CI =
+  //  createInvocationFromCommandLine(clangArgs, info->Diags);
+  bool success = CompilerInvocation::CreateFromArgs(
+            Clang->getInvocation(),
+           // &clangArgs.front(), &clangArgs.back(),
+            &j.getArguments().front(), (&j.getArguments().back())+1,
+            *Diags);
+  CompilerInvocation* CI = &Clang->getInvocation();
+
+  INT_ASSERT(success);
 
   // Get the codegen options from the clang command line.
   info->codegenOptions = CI->getCodeGenOpts();
@@ -984,13 +1087,19 @@ void setupClang(GenInfo* info, std::string mainFile)
 #endif
   }
 
-  // Create a compiler instance to handle the actual work.
-  info->Clang = new CompilerInstance();
-  info->Clang->setInvocation(CI);
-
   // Save the TargetOptions and LangOptions since these
   // are used during machine code generation.
   info->clangTargetOptions = info->Clang->getTargetOpts();
+
+  // For debugging, it might be useful to check that
+  // the target architecture has the right features
+  // (it has been detected correctly).
+  /*std::vector<std::string> x = info->clangTargetOptions.FeaturesAsWritten;
+  printf("target features\n");
+  for (auto  i : x) {
+    printf("%s\n", i.c_str());
+  }*/
+
   info->clangLangOptions = info->Clang->getLangOpts();
 
   // Create the compilers actual diagnostics engine.
@@ -1038,6 +1147,21 @@ void finishCodegenLLVM() {
   }
 }
 
+static
+void configurePMBuilder(PassManagerBuilder &PMBuilder) {
+  if( fFastFlag ) {
+    PMBuilder.OptLevel = 3;
+    PMBuilder.LoopVectorize = true;
+    PMBuilder.SLPVectorize = true;
+    PMBuilder.BBVectorize = true;
+    PMBuilder.DisableUnrollLoops = true;
+    // TODO: what other flags on PMBuilder should we set?
+  } else {
+    PMBuilder.OptLevel = 0;
+  }
+
+}
+
 void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
@@ -1061,10 +1185,8 @@ void prepareCodegenLLVM()
   fpm->add(new DataLayout(info->module));
 #endif
 
-  if( fFastFlag ) {
-    PMBuilder.OptLevel = 2;
-    PMBuilder.populateFunctionPassManager(*fpm);
-  }
+  configurePMBuilder(PMBuilder);
+  PMBuilder.populateFunctionPassManager(*fpm);
 
   info->FPM_postgen = fpm;
 
@@ -1117,7 +1239,7 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name)
 void runClang(const char* just_parse_filename) {
   static bool is_installed_fatal_error_handler = false;
 
-  /* TODO -- note that clang/examples/clang-interpreter/main.cpp 
+  /* TODO -- note that clang/examples/clang-interpreter/main.cpp
              includes an example for getting the executable path,
              so that we could automatically set CHPL_HOME. */
   std::string home(CHPL_HOME);
@@ -1165,7 +1287,7 @@ void runClang(const char* just_parse_filename) {
   for( size_t i = 2; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
   }
- 
+
   forv_Vec(const char*, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
@@ -1258,7 +1380,7 @@ void runClang(const char* just_parse_filename) {
     if( ! info->parseOnly ) {
       // This seems to be needed, even though it is strange.
       // (otherwise we segfault in info->builder->CreateGlobalString)
-      
+
       // Some IRBuilder methods, codegenning a string,
       // need a basic block in order to get to the module
       // so we create a dummy function to code generate into
@@ -1754,6 +1876,57 @@ void addGlobalToWide(const PassManagerBuilder &Builder,
   }
 }
 
+static
+bool getIrDumpExtensionPoint(llvmStageNum_t s,
+    PassManagerBuilder::ExtensionPointTy & dumpIrPoint)
+{
+  switch (s) {
+    case llvmStageNum::EarlyAsPossible:
+      dumpIrPoint = PassManagerBuilder::EP_EarlyAsPossible;
+      return true;
+    case llvmStageNum::ModuleOptimizerEarly:
+      dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
+      return true;
+    case llvmStageNum::LoopOptimizerEnd:
+      dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
+      return true;
+    case llvmStageNum::ScalarOptimizerLate:
+      dumpIrPoint = PassManagerBuilder::EP_ScalarOptimizerLate;
+      return true;
+    case llvmStageNum::OptimizerLast:
+      dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;
+      return true;
+    case llvmStageNum::VectorizerStart:
+#if HAVE_LLVM_VER >= 40
+      dumpIrPoint = PassManagerBuilder::EP_VectorizerStart;
+#else
+      USR_FATAL("This version of LLVM doesn't have EP_VectorizerStart");
+#endif
+      return true;
+    case llvmStageNum::EnabledOnOptLevel0:
+      dumpIrPoint = PassManagerBuilder::EP_EnabledOnOptLevel0;
+      return true;
+    case llvmStageNum::Peephole:
+      dumpIrPoint = PassManagerBuilder::EP_Peephole;
+      return true;
+    case llvmStageNum::NOPRINT:
+    case llvmStageNum::NONE:
+    case llvmStageNum::BASIC:
+    case llvmStageNum::FULL:
+    case llvmStageNum::LAST:
+      return false;
+  }
+
+  return false;
+}
+
+static
+void addDumpIrPass(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
+  PM.add(createDumpIrPass(llvmPrintIrStageNum));
+}
+
+
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers
 // (the optimization is meant to be portable to other languages)
@@ -1806,7 +1979,7 @@ void setupForGlobalToWide(void) {
   // Mark the function as external so that it will not be removed
   fn->setLinkage(llvm::GlobalValue::ExternalLinkage);
 
-  llvm::BasicBlock* block = 
+  llvm::BasicBlock* block =
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
   ginfo->builder->SetInsertPoint(block);
 
@@ -1816,11 +1989,13 @@ void setupForGlobalToWide(void) {
 
   llvm::Value* ret = llvm::Constant::getNullValue(retType);
   llvm::Function::arg_iterator args = fn->arg_begin();
-  llvm::Value* arg = args++;
+  llvm::Argument& llArg = *args;
+  llvm::Value* arg = &llArg;
+  ++args;
 
   for( int i = 0; fns[i]; i++ ) {
     llvm::Constant* f = fns[i];
-    llvm::Value* ptr = ginfo->builder->CreatePointerCast(f, retType); 
+    llvm::Value* ptr = ginfo->builder->CreatePointerCast(f, retType);
     llvm::Value* id = llvm::ConstantInt::get(argType, i);
     llvm::Value* eq = ginfo->builder->CreateICmpEQ(arg, id);
     ret = ginfo->builder->CreateSelect(eq, ptr, ret);
@@ -1844,7 +2019,7 @@ void makeBinaryLLVM(void) {
 
   GenInfo* info = gGenInfo;
 
-  std::string moduleFilename = genIntermediateFilename("chpl__module.bc");
+  std::string moduleFilename = genIntermediateFilename("chpl__module.o");
   std::string preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
 
   if( saveCDir[0] != '\0' ) {
@@ -1862,6 +2037,9 @@ void makeBinaryLLVM(void) {
     output.os().flush();
   }
 
+#if HAVE_LLVM_VER >= 39
+  std::error_code Error;
+#else
   tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
 #if HAVE_LLVM_VER >= 34
@@ -1870,24 +2048,94 @@ void makeBinaryLLVM(void) {
                              raw_fd_ostream::F_Binary
 #endif
                            );
+#endif
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
+    // Note, these global extensions currently only apply
+    // to the module-level optimization (not the "basic" function
+    // optimization we do immediately after generating LLVM IR).
+
     // Add the Global to Wide optimization if necessary.
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
     PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+
+    // Add IR dumping pass if necessary
+    // point is initialized to a dummy value; it is set
+    // in getIrDumpExtensionPoint.
+    PassManagerBuilder::ExtensionPointTy point =
+                  PassManagerBuilder::EP_EarlyAsPossible;
+
+    if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
+      printf("Adding IR dump extension at %i for %s\n", point, llvmPrintIrCName);
+      PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+    }
+
     addedGlobalExts = true;
   }
 
-  EmitBackendOutput(*info->Diags, info->codegenOptions,
+  // Set llvm options
+  if (llvmFlags != "") {
+    //split llvmFlags by spaces
+    std::stringstream argsStream(llvmFlags);
+    std::vector<std::string> vec;
+    std::string arg;
+    while(argsStream >> arg)
+        vec.push_back(arg);
+
+    std::vector<const char*> Args;
+    Args.push_back("chpl-llvm-opts");
+    for (auto & i : vec) {
+      Args.push_back(i.c_str());
+    }
+    Args.push_back(NULL);
+
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  }
+
+  // Note that EmitBackendOutput, when creating a .bc file,
+  // does *not* run vectorization. We confirmed this with clang 3.7
+  // with --save-temps (the resulting .bc file does not contain vector IR
+  // but the resulting .o file has vectorized loops).
+  //
+  // Note, as of LLVM/clang 4.0, we can call EmitBitcode
+  // and have a simpler story here...
+  EmitBackendOutput(*info->Diags,
+#if HAVE_LLVM_VER >= 40
+                    info->Clang->getHeaderSearchOpts(),
+#endif
+                    info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
+#if HAVE_LLVM_VER >= 39
+                    info->Ctx->getTargetInfo().getDataLayout(),
+#elif HAVE_LLVM_VER >= 38
+                    info->Ctx->getTargetInfo().getDataLayoutString(),
+#else
 #if HAVE_LLVM_VER >= 35
                     info->Ctx->getTargetInfo().getTargetDescription(),
 #endif
-                    info->module, Backend_EmitBC, &output.os());
+#endif
+                    info->module, Backend_EmitObj,
+#if HAVE_LLVM_VER >= 39
+                    llvm::make_unique<llvm::raw_fd_ostream>(
+                                                 moduleFilename,
+                                                 Error,
+                                                 llvm::sys::fs::F_None)
+#else
+                    &output.os()
+#endif
+                   );
+
+#if HAVE_LLVM_VER >= 39
+  if (Error)
+    USR_FATAL("Could not create temporary .bc file");
+#endif
+
+#if HAVE_LLVM_VER <= 38
   output.keep();
   output.os().flush();
+#endif
 
   //finishClang is before the call to the debug finalize
   deleteClang(info);
@@ -1948,17 +2196,25 @@ void makeBinaryLLVM(void) {
     }
   }
 
-  // Start linker options with C args
-  // This is important to get e.g. -O3 -march=native
-  // since with LLVM we are doing link-time optimization.
-  // We know it's OK to include -I (e.g.) since we're calling
-  // clang++ to link so that it can optimize the .bc files.
-  options = cargs;
+  // Note: we used to start 'options' with 'cargs' so that
+  // we'd communicate -O3 -march=native e.g. to the "linker".
+  // That was only important when we were emitting a .bc file
+  // and currently we emit a .o.
+  // If we decide to put it back, we might also need to
+  // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
+  // to avoid unused argument errors for optimization flags.
 
   if(debugCCode) {
     options += " -g";
   }
 
+  for( size_t i = 0; i < info->clangLDArgs.size(); ++i ) {
+    options += " ";
+    options += info->clangLDArgs[i].c_str();
+  }
+
+  // note: currently ldflags are not stored into clangLDArgs.
+  // If they were, these lines would need to be removed.
   options += " ";
   options += ldflags;
 
@@ -1969,7 +2225,7 @@ void makeBinaryLLVM(void) {
   // also gives us the name of the temporary place to save
   // the generated program.
   fileinfo mainfile;
-  mainfile.filename = "chpl__module.bc";
+  mainfile.filename = "chpl__module.o";
   mainfile.pathname = moduleFilename.c_str();
   const char* tmpbinname = NULL;
 
@@ -2018,6 +2274,11 @@ void makeBinaryLLVM(void) {
   }
 
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+
+#ifdef HAVE_LLVM
+  if(llvmStageNum::FULL == llvmPrintIrStageNum)
+      printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
+#endif
 }
 
 #endif

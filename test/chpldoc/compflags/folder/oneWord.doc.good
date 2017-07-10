@@ -1,8 +1,16 @@
-oneWord.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: oneWord.doc
+
+oneWord.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
    use oneWord.doc;
 
-   proc dummy()
-      Should be located in myDocs/unspecified.txt 
+.. function:: proc dummy()
+
+   Should be located in myDocs/_sources/modules/unspecified.txt 
 

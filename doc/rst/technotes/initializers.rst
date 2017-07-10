@@ -5,7 +5,7 @@ Initializers
 ============
 
 The Chapel team is implementing a new approach to user-defined
-intialization of variables with record type or instances of class
+initialization of variables with record type or instances of class
 type.  This approach relies on methods known as initializers rather
 than the original methods known as constructors.
 

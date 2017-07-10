@@ -34,6 +34,11 @@
 #include "chpltypes.h"
 #include "error.h"
 
+// disable mem warnings for this file
+// to enable warnings-free compilation
+// (malloc might be used in the system headers)
+#include "chpl-mem-no-warning-macros.h"
+
 // System headers
 
 // We need this first so we can then decide based on the existence and

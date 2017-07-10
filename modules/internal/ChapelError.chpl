@@ -18,6 +18,8 @@
  */
 
 module ChapelError {
+  use ChapelStandard;
+
   class Error {
     var msg: string;
 
@@ -26,7 +28,7 @@ module ChapelError {
     }
   }
 
-  export proc chpl_delete_error(err: Error) {
+  proc chpl_delete_error(err: Error) {
     delete err;
   }
 }

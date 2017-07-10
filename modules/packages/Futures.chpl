@@ -87,6 +87,19 @@ The following examples demonstrate such chaining of futures.
 .. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-chaining2.chpl
    :language: chapel
 
+Future Bundling
+---------------
+
+A set of futures can be bundled via :proc:`Future.waitAll()`, which takes a
+variable number of futures as arguments and returns a new future whose return
+type is a tuple of the return types of the arguments.  The returned future is
+ready only when all the future arguments are ready.
+
+The following example demonstrate bundling of futures.
+
+.. literalinclude:: ../../../../test/modules/packages/Futures/futures-doc-waitall.chpl
+   :language: chapel
+
  */
 
 module Futures {
@@ -99,11 +112,13 @@ module Futures {
 
     type retType;
 
-    var value: single retType;
     var valid: bool = false;
+    var value: retType;
+    var state: atomic bool;
 
     proc FutureClass(type retType) {
       refcnt.write(0);
+      state.clear();
     }
 
   } // class FutureClass
@@ -124,7 +139,7 @@ module Futures {
     type retType;
 
     pragma "no doc"
-    var classRef: FutureClass(retType);
+    var classRef: FutureClass(retType) = nil;
 
     pragma "no doc"
     proc Future(type retType) {
@@ -143,7 +158,16 @@ module Futures {
      */
     proc get(): retType {
       if !isValid() then halt("get() called on invalid future");
-      return classRef.value.readFF();
+      classRef.state.waitFor(true);
+      return classRef.value;
+    }
+
+    pragma "no doc"
+    proc set(value: retType) {
+      if !isValid() then halt("set() called on invalid future");
+      classRef.value = value;
+      var oldState = classRef.state.testAndSet();
+      if oldState then halt("set() called more than once on a future");
     }
 
     /*
@@ -152,8 +176,8 @@ module Futures {
       If the future is not valid, this call will :proc:`~ChapelIO.halt()`.
      */
     proc isReady(): bool {
-      if !isValid() then halt("get() called on invalid future");
-      return classRef.value.isFull;
+      if !isValid() then halt("isReady() called on invalid future");
+      return classRef.state.peek();
     }
 
     /*
@@ -161,7 +185,7 @@ module Futures {
       :ref:`see above <valid-futures>`.
      */
     inline proc isValid(): bool {
-      return ((classRef == nil) || classRef.valid);
+      return ((classRef != nil) && classRef.valid);
     }
 
     /*
@@ -181,28 +205,31 @@ module Futures {
       if !canResolveMethod(taskFn, "this", retType) then
         compilerError("andThen() task function arguments are incompatible with parent future return type");
       */
-      if !isValid() then halt("get() called on invalid future");
+      if !isValid() then halt("andThen() called on invalid future");
       if !canResolveMethod(taskFn, "retType") then
         compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
-      begin f.classRef.value.writeEF(taskFn(this.get()));
       f.classRef.valid = true;
+      begin f.set(taskFn(this.get()));
       return f;
     }
 
     pragma "no doc"
     proc acquire(newRef: FutureClass) {
+      if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
       classRef.incRefCount();
     }
 
     pragma "no doc"
     proc acquire() {
+      if classRef == nil then halt("acquire() called on nil future");
       classRef.incRefCount();
     }
 
     pragma "no doc"
     proc release() {
+      if classRef == nil then halt("release() called on nil future");
       var rc = classRef.decRefCount();
       if rc == 1 {
         delete classRef;
@@ -247,8 +274,8 @@ module Futures {
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
-    begin f.classRef.value.writeEF(taskFn());
     f.classRef.valid = true;
+    begin f.set(taskFn());
     return f;
   }
 
@@ -266,8 +293,39 @@ module Futures {
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
-    begin f.classRef.value.writeEF(taskFn((...args)));
     f.classRef.valid = true;
+    begin f.set(taskFn((...args)));
+    return f;
+  }
+
+  pragma "no doc"
+  proc getRetTypes(arg) type {
+    return (arg.retType,);
+  }
+
+  pragma "no doc"
+  proc getRetTypes(arg, args...) type {
+    return (arg.retType, (...getRetTypes((...args))));
+  }
+
+  /*
+    Bundle a set of futures and return a :record:`Future` that will hold a
+    tuple of the results of its arguments (themselves futures).
+
+    :arg futures...: A variable-length argument list of futures
+    :returns: A future with a return type that is a tuple of the return type of
+       the arguments
+   */
+  proc waitAll(futures...?N) {
+    type retTypes = getRetTypes((...futures));
+    var f: Future(retTypes);
+    f.classRef.valid = true;
+    begin {
+      var result: retTypes;
+      for param i in 1..N do
+        result[i] = futures[i].get();
+      f.set(result);
+    }
     return f;
   }
 

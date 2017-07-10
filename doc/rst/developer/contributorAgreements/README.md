@@ -20,3 +20,4 @@ There are two versions:
 
 Once completed, CLAs should be scanned as PDFs and mailed to:
 **chapel<!---deleteme-->_admin<!---deleteme-->@<!---deleteme-->cray.com**
+along with your GitHub ID.

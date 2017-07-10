@@ -800,7 +800,7 @@ void string_escape_tests()
               assert( got_len == input_len );
               assert( memcmp(got, input, got_len) == 0 );
 
-              free((void*) got);
+              qio_free((void*) got);
             }
      
             qio_channel_release(reading);
@@ -838,7 +838,7 @@ void write_65k_test()
         err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
         assert(!err);
 
-	p = (char *)calloc(1, buflen);
+	p = (char *)qio_calloc(1, buflen);
 	if(!p){ assert(0); }
 	memset(p, 'A', buflen);
 
@@ -856,7 +856,7 @@ void write_65k_test()
 			if(memcmp(out, p, buflen)!=0){
 				assert(0);
 			}
-			free((void*) out); out=NULL;
+			qio_free((void*) out); out=NULL;
 		}
 		if(err>0){ break; }
 	}
@@ -868,7 +868,7 @@ void write_65k_test()
         qio_file_release(f);
         f = NULL;
 
-	free(p);
+	qio_free(p);
 }
 
 /**
@@ -912,7 +912,7 @@ void max_width_test()
                 assert(0);
         }
 
-        free((void*) out);
+        qio_free((void*) out);
 
         qio_file_release(f);
         f = NULL;
@@ -960,7 +960,7 @@ void min_width_test()
 		assert(0);
 	}
 
-        free((void*) out);
+        qio_free((void*) out);
 
         qio_file_release(f);
         f = NULL;
@@ -1062,12 +1062,12 @@ void basicstring_test()
 
 			if(memcmp(out, string->string, string->length) != 0){
 				printf("FAIL: style %d, string='%s'\n", x, string->string);
-				free((void*) out);
+				qio_free((void*) out);
 				assert(0);
 			}
 
 			//printf("PASS: style %d\n", x);
-			if(out){ free((void*) out); out=NULL; }
+			if(out){ qio_free((void*) out); out=NULL; }
 		}
 	}
 
@@ -1454,7 +1454,7 @@ void test_quoted_string_maxlength(void)
         assert(ti.ret_chars == truncate_len);
         assert(truncate_len == strlen(got));
         assert( 0 == memcmp(got, input, truncate_len) );
-        free((void*) got);
+        qio_free((void*) got);
       }
 
       // Now, check that qio_quote_string returns the correct string.
@@ -1465,7 +1465,7 @@ void test_quoted_string_maxlength(void)
       assert(ti.ret_bytes == expect_len);
       assert(ti.ret_bytes == strlen(got));
       assert( 0 == strcmp(got, expect) );
-      free((void*) got);
+      qio_free((void*) got);
 
       // Now, check that the quoting works correctly when writing.
 

@@ -274,8 +274,8 @@ void ParamForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (modUses)
-      modUses->accept(visitor);
+    if (useList)
+      useList->accept(visitor);
 
     if (byrefVars)
       byrefVars->accept(visitor);
@@ -288,19 +288,19 @@ void ParamForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (mResolveInfo              == 0)
+  if (mResolveInfo              == NULL)
     INT_FATAL(this, "ParamForLoop::verify. mResolveInfo is NULL");
 
-  if (BlockStmt::blockInfoGet() != 0)
+  if (BlockStmt::blockInfoGet() != NULL)
     INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
 
-  if (modUses                   != 0)
-    INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
+  if (useList                   != NULL)
+    INT_FATAL(this, "ParamForLoop::verify. useList   is not NULL");
 
-  if (byrefVars                 != 0)
+  if (byrefVars                 != NULL)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
 
-  if (forallIntents             != 0)
+  if (forallIntents             != NULL)
     INT_FATAL(this, "ParamForLoop::verify. forallIntents is not NULL");
 }
 
@@ -480,26 +480,29 @@ Type* ParamForLoop::indexType()
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
   CallExpr* range    = new CallExpr("chpl_build_bounded_range",
-                                    lse->copy(), hse->copy());
+                                    lse->copy(),
+                                    hse->copy());
   Type*     idxType = 0;
 
   insertBefore(range);
 
   resolveCall(range);
 
-  if (FnSymbol* sym = range->isResolved())
+  if (FnSymbol* sym = range->resolvedFunction())
   {
     resolveFormals(sym);
 
     DefExpr* formal = toDefExpr(sym->formals.get(1));
 
-    if (toArgSymbol(formal->sym)->typeExpr)
+    if (toArgSymbol(formal->sym)->typeExpr != NULL) {
       idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-    else
+    } else {
       idxType = formal->sym->type;
+    }
 
     range->remove();
   }
+
   else
   {
     INT_FATAL("unresolved range");

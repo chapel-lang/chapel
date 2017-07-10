@@ -204,8 +204,8 @@ void check_write_read_pat(int width, int num, int pat, qio_chtype_t type, qio_hi
          width, num, pat, type,
          fhints, (int) file_hints, chhints, (int) ch_hints,  (int) reopen);
 
-  free(fhints);
-  free(chhints);
+  qio_free(fhints);
+  qio_free(chhints);
 
   if( memory ) {
     err = qio_file_open_mem_ext(&f, NULL, QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE, file_hints, NULL);

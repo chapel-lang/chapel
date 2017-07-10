@@ -21,7 +21,7 @@
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
-//  ReplicatedDist     -- Global distribution descriptor
+//  Replicated     -- Global distribution descriptor
 //  ReplicatedDom      -- Global domain descriptor
 //  LocReplicatedDom   -- Local domain descriptor
 //  ReplicatedArray    -- Global array descriptor
@@ -30,9 +30,6 @@
 // Potential extensions:
 // - support other kinds of domains
 // - allow run-time change in locales
-
-// include locale information when printing out domains and arrays
-config param printReplicatedLocales = true;
 
 // trace certain DSI methods as they are being invoked
 config param traceReplicatedDist = false;
@@ -53,7 +50,7 @@ to be replicated across the desired locales (all the locales by default).
 An array receives a distinct set of elements - a "replicand" -
 allocated on each locale.
 
-In other words, a ReplicatedDist-distributed domain has
+In other words, a Replicated-distributed domain has
 an implicit additional dimension - over the locales,
 making it behave as if there is one copy of its indices per locale.
 
@@ -62,122 +59,52 @@ That is, changes to one replicand of an array are never propagated to
 the other replicands by the distribution implementation.
 If desired, consistency needs to be maintained by the user.
 
-Replication over locales is observable when:
+When accessing a replicated domain or array from a locale *not* in the
+set of target locales, an error is reported if bounds-checking is on;
+undefined behavior occurs if it is off.
 
-* iterating over a domain or array
-
-* printing with ``writeln()`` et al.
-
-* zippering, when the replicated domain/array is
-  the first among the zippered items
-
-* assigning into the replicated array
-  (each replicand gets a copy)
-
-* inquiring about the domain's ``numIndices``
-  or the array's ``numElements``
-
-* accessing array element(s) from a locale *not* in the set of desired locales,
-  i.e. from a locale which the array is not replicated onto.
-  Upon such an access, an out-of-bounds error is reported.
-
-Only the replicand *on the current locale* is accessed
-(i.e. existence of multiple replicands is not observable) when:
-
-* examining certain domain properties:
-  ``dim(d)``, ``dims()``, ``low``, ``high``, ``stride``
-  -- not ``numIndices``
-
-* indexing into an array
-
-* zippering, when the first zippered item is not replicated
-
-* assigning to a non-replicated array,
-  i.e. the replicated array is on the right-hand side of the assignment
-
-* there is only a single locale
-  (trivially: there is only one replicand in this case)
-
-.. when slicing an array?
-
-E.g. when iterating, the number of iterations will be (the number of
-locales involved) times (the number of iterations over this domain if
-it were distributed with the default distribution).
-
-Note that the above behavior may change in the future. In particular,
-we are considering changing it so that replication is never observable.
-For example, only the local replicand would be accessed in all cases.
-
+Otherwise, only the replicand on the current locale is accessed when
+referring to the domain or array.
 
 **Example**
 
   .. code-block:: chapel
 
     const Dbase = {1..5};  // a default-distributed domain
-    const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
+    const Drepl = Dbase dmapped Replicated();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
     // only the current locale's replicand is accessed
     Arepl[3] = 4;
 
-    // these iterate over Dbase;
     // only the current locale's replicand is accessed
     forall (b,r) in zip(Abase,Arepl) do b = r;
     Abase = Arepl;
 
-    // these iterate over Drepl; each replicand of Drepl
-    // will be zippered against (and copied from) the entire Abase
-    forall (r,b) in zip(Arepl,Abase) do r = b;
-    Arepl = Abase;
-
-    // sequential zippering will detect difference in sizes
-    // (if multiple locales)
-    for (b,r) in zip(Abase,Arepl) ... // error
-    for (r,b) in zip(Arepl,Abase) ... // error
 
 
 **Constructor Arguments**
 
-The ``ReplicatedDist`` class constructor is defined as follows:
+The ``Replicated`` class constructor is defined as follows:
 
   .. code-block:: chapel
 
-    proc ReplicatedDist(
+    proc Replicated(
       targetLocales: [] locale = Locales,
-      purposeMessage: string = "used to create a ReplicatedDist")
-
-The array ``targetLocales`` must be "consistent", as defined below.
+      purposeMessage: string = "used to create a Replicated")
 
 The optional ``purposeMessage`` may be useful for debugging
 when the constructor encounters an error.
 
 
-**Features/Limitations**
+**Limitations**
 
 * Only rectangular domains are presently supported.
 
-* Serial iteration over a replicated domain (or array) visits the indices
-  (or array elements) of all replicands *from the current locale*.
-
-* When replicating over user-provided array of locales, that array
-  must be "consistent" (see below).
-
-"Consistent" array requirement:
-
-* The array of desired locales, if passed explicitly as ``targetLocales``
-  to the ReplicatedDist constructor, must be "consistent".
-
-* The array ``A`` is "consistent" if
-  for each ``ix`` in ``A.domain``, this holds: ``A[ix].id == ix``.
-
-* Tip: if the domain of your ``targetLocales`` cannot be described
-  as a rectangular domain (whether strided, multi-dimensional,
-  and/or sparse), make the domain associative over the `int` type.
-
 */
-class ReplicatedDist : BaseDist {
-  var targetLocDom : domain(Locales.idxType);
+class Replicated : BaseDist {
+  var targetLocDom : domain(here.id.type);
 
   // the desired locales (an array of locales)
   const targetLocales : [targetLocDom] locale;
@@ -186,60 +113,45 @@ class ReplicatedDist : BaseDist {
 
 // constructor: replicate over the given locales
 // (by default, over all locales)
-proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
-                 purposeMessage: string = "used to create a ReplicatedDist")
+proc Replicated.Replicated(targetLocales: [] locale = Locales,
+                 purposeMessage: string = "used to create a Replicated")
 {
-  if targetLocales.rank != 1 then
-    compilerError("ReplicatedDist only accepts a 1D targetLocales array");
-
-  for (idx, loc) in zip(targetLocales.domain, targetLocales) {
-    this.targetLocDom.add(idx);
-    this.targetLocales[idx] = loc;
+  for loc in targetLocales {
+    this.targetLocDom.add(loc.id);
+    this.targetLocales[loc.id] = loc;
   }
 
   if traceReplicatedDist then
-    writeln("ReplicatedDist constructor over ", targetLocales);
-  _localesCheckHelper(purposeMessage);
+    writeln("Replicated constructor over ", targetLocales);
 }
 
-// helper to check consistency of the locales array
-// TODO: going over all the locales - is there a scalability issue?
-proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
-  // ideally would like to make this a "eureka"
-  forall (ix, loc) in zip(targetLocDom, targetLocales) do
-    if loc.id != ix {
-      halt("The array of locales ", purposeMessage, " must be \"consistent\".",
-           " See ReplicatedDist documentation for details.");
-    }
-}
-
-proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
+proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
   return this.targetLocales.equals(that.targetLocales);
 }
 
-proc ReplicatedDist.dsiEqualDMaps(that) param {
+proc Replicated.dsiEqualDMaps(that) param {
   return false;
 }
 
-proc ReplicatedDist.dsiDestroyDist() {
+proc Replicated.dsiDestroyDist() {
   // no action necessary here
 }
 
 // privatization
 
-proc ReplicatedDist.dsiSupportsPrivatization() param return true;
+proc Replicated.dsiSupportsPrivatization() param return true;
 
-proc ReplicatedDist.dsiGetPrivatizeData() {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiGetPrivatizeData");
+proc Replicated.dsiGetPrivatizeData() {
+  if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");
 
   // TODO: Returning 'targetLocales' here results in a memory leak. Why?
   // Other distributions seem to do this 'return 0' as well...
   return 0;
 }
 
-proc ReplicatedDist.dsiPrivatize(privatizeData)
+proc Replicated.dsiPrivatize(privatizeData)
 {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiPrivatize on ", here);
+  if traceReplicatedDist then writeln("Replicated.dsiPrivatize on ", here);
 
   const otherTargetLocales = this.targetLocales;
 
@@ -247,7 +159,7 @@ proc ReplicatedDist.dsiPrivatize(privatizeData)
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
 
-  return new ReplicatedDist(privTargetLocales, "used during privatization");
+  return new Replicated(privTargetLocales, "used during privatization");
 }
 
 
@@ -265,7 +177,7 @@ class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
-  const dist : ReplicatedDist; // must be a ReplicatedDist
+  const dist : Replicated; // must be a Replicated
 
   // this is our index set; we store it here so we can get to it easily
   var domRep: domain(rank, idxType, stridable);
@@ -277,6 +189,18 @@ class ReplicatedDom : BaseRectangularDom {
   var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
+
+  //
+  // helper function to get the local domain safely
+  //
+  pragma "no doc"
+  proc chpl_myLocDom() {
+    if boundsChecking then
+      if (!dist.targetLocDom.member(here.id)) then
+        halt("locale ", here.id, " has no local replicand");
+    return localDoms[here.id];
+  }
+
 }
 
 //
@@ -345,18 +269,18 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 }
 
 
-proc ReplicatedDist.dsiClone(): this.type {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiClone");
-  return new ReplicatedDist(targetLocales);
+proc Replicated.dsiClone(): this.type {
+  if traceReplicatedDist then writeln("Replicated.dsiClone");
+  return new Replicated(targetLocales);
 }
 
 // create a new domain mapped with this distribution
-proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
+proc Replicated.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool,
                                          inds)
 {
-  if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
+  if traceReplicatedDist then writeln("Replicated.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable, inds));
 
   // Have to call the default constructor because we need to initialize 'dist'
@@ -375,8 +299,8 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
 
 // Given an index, this should return the locale that owns that index.
 // (This is the implementation of dmap.idxToLocale().)
-// For ReplicatedDist, we point it to the current locale.
-proc ReplicatedDist.dsiIndexToLocale(indexx): locale {
+// For Replicated, we point it to the current locale.
+proc Replicated.dsiIndexToLocale(indexx): locale {
   return here;
 }
 
@@ -410,31 +334,19 @@ proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
 }
 
 // Iterators over the domain's indices (serial, leader, follower).
-// Our semantics: yield each of the domain's indices once per each locale.
+// Our semantics: yield each of the local domain's indices.
 
-// Serial iterator: the compiler forces it to be completely serial
+// Serial iterator
 iter ReplicatedDom.these() {
-  // compiler does not allow 'on' here (see r16137 and nestedForall*)
-  // so instead of ...
-  //---
-  //for locDom in localDoms do
-  //  on locDom do
-  //    for i in locDom.domLocalRep do
-  //      yield i;
-  //---
-  // ... so we simply do the same a few times
   var dom = redirectee();
-  for count in 1..#numReplicands do
-    for i in dom do
-      yield i;
+  for i in dom do
+    yield i;
 }
 
 iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
-  coforall locDom in localDoms do
-    on locDom do
-      // there, for simplicity, redirect to DefaultRectangular's leader
-      for follow in locDom.domLocalRep._value.these(tag) do
-        yield follow;
+  // redirect to DefaultRectangular's leader
+  for follow in chpl_myLocDom().domLocalRep._value.these(tag) do
+    yield follow;
 }
 
 iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
@@ -447,14 +359,6 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
 proc ReplicatedDom.dsiSerialWrite(f): void {
   // redirect to DefaultRectangular
   redirectee()._value.dsiSerialWrite(f);
-  if printReplicatedLocales {
-    f.write(" replicated over ");
-    var temp : [1..0] locale;
-    for idx in dist.targetLocDom.sorted() {
-      temp.push_back(dist.targetLocales[idx]);
-    }
-    temp._value.dsiSerialWrite(f);
-  }
 }
 
 proc ReplicatedDom.dsiDims(): rank * range(idxType,
@@ -478,7 +382,7 @@ proc ReplicatedDom.dsiStride
 
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
-  return redirectee().numIndices * numReplicands;
+  return redirectee().numIndices;
 
 proc ReplicatedDom.dsiMember(indexx)
   return redirectee().member(indexx);
@@ -509,6 +413,17 @@ class ReplicatedArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetLocDom]
               LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
+
+  //
+  // helper function to get the local array safely
+  //
+  pragma "no doc"
+  proc chpl_myLocArr() {
+    if boundsChecking then
+      if (!dom.dist.targetLocDom.member(here.id)) then
+        halt("locale ", here.id, " has no local replicand");
+    return localArrs[here.id];
+  }
 }
 
 //
@@ -589,39 +504,29 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 
 // Return the array element corresponding to the index - on the current locale
 proc ReplicatedArr.dsiAccess(indexx) ref {
-  return localArrs[here.id].arrLocalRep[indexx];
+  return chpl_myLocArr().arrLocalRep[indexx];
 }
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  var neednl = false;
-  for idx in dom.dist.targetLocDom.sorted() {
-//  on locArr {  // may cause deadlock
-      if neednl then f.write("\n"); neednl = true;
-      if printReplicatedLocales then
-        f.write(localArrs[idx].locale, ":\n");
-      localArrs[idx].arrLocalRep._value.dsiSerialWrite(f);
-//  }
-  }
+  //  writeln("in dsiSerialWrite() on locale ", here.id);
+  localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialWrite(f);
+}
+
+proc ReplicatedArr.dsiSerialRead(f, loc): void {
+  localArrs[f.readWriteThisFromLocale().id].arrLocalRep._value.dsiSerialRead(f);
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr) : ReplicatedArr {
-  var neednl = false;
-  const actual = chpl__getActualArray(arr);
-  for idx in actual.dom.dist.targetLocDom.sorted() {
-    on actual.localArrs[idx] {
-      if neednl then f.write("\n"); neednl = true;
-      if printReplicatedLocales then
-        f.write(actual.localArrs[idx].locale, ":\n");
-      chpl_serialReadWriteRectangularHelper(f, arr, dom);
-    }
-  }
+  const origloc = f.readWriteThisFromLocale();
+  on origloc do
+    chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
 proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
-  coforall localeIdx in dom.dist.targetLocDom {
-    on dom.dist.targetLocales(localeIdx) do
-      delete localArrs(localeIdx);
+  coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
+    on loc do
+      delete locArr;
   }
 }
 
@@ -629,10 +534,8 @@ proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
 
 // completely serial
 iter ReplicatedArr.these() ref: eltType {
-  for idx in dom.dist.targetLocDom.sorted() do
-//  on locArr do // compiler does not allow; see r16137 and nestedForall*
-      for a in localArrs[idx].arrLocalRep do
-        yield a;
+  for a in chpl_myLocArr().arrLocalRep do
+    yield a;
 }
 
 iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
@@ -643,7 +546,7 @@ iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for a in localArrs[here.id].arrLocalRep._value.these(tag, followThis) do
+  for a in chpl_myLocArr().arrLocalRep._value.these(tag, followThis) do
     yield a;
 }
 
@@ -671,8 +574,10 @@ proc ReplicatedArr.dsiTargetLocales() {
 proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
 proc ReplicatedArr.dsiLocalSubdomain() {
-  return localArrs[here.id].myDom.domLocalRep;
+  return chpl_myLocArr().myDom.domLocalRep;
 }
 
 // todo? these two seem to work (written by analogy with DefaultRectangular)
-proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;
+proc Replicated.dsiCreateReindexDist(newSpace, oldSpace) return this;
+
+use OldReplicatedDist;

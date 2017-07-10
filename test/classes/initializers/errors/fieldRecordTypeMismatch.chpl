@@ -1,0 +1,18 @@
+record R1 {
+  var x: int;
+}
+
+record R2 {
+  var y: real;
+}
+
+class C {
+  var x: R;
+
+  proc init(y: real) {
+    x = y;
+    super.init();
+  }
+}
+
+var myC = new C(new R2(1.2));

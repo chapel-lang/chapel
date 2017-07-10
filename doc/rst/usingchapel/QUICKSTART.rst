@@ -4,7 +4,7 @@ Chapel Quickstart Instructions
 ==============================
 
 These instructions are designed to help you get started with
-a source distribution of Chapel.
+a source distribution of the latest Chapel release.
 
 In the following instructions, note that building and using Chapel as
 described in steps 2-5 disables optional and advanced features in the

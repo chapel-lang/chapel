@@ -36,6 +36,8 @@
   make it available.
  */
 module ChapelIteratorSupport {
+  use ChapelStandard;
+
   //
   // module support for iterators
   //

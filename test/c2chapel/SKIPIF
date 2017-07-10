@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+command -v c2chapel > /dev/null 2>&1 || { echo "True"; exit 0; }
+echo "False"

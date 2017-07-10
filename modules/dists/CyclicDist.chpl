@@ -621,7 +621,7 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
   for param i in 1..rank {
     // NOTE: unsigned idxType with negative stride will not work
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).low;
+    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
   }
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
@@ -784,7 +784,7 @@ inline proc _remoteAccessData.getDataIndex(
       return (0, sum);
     } else {
       const chunk = mdInd2Chunk(ind(mdParDim));
-      return (chunk, sum - mData(chunk).dataOff);
+      return (chunk, sum);
     }
   }
 }
@@ -875,7 +875,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     const      lo = (followThis(i).low * iStride):idxType,
                hi = (followThis(i).high * iStride):idxType,
            stride = (followThis(i).stride*wholestride):strType;
-    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i).alignedLow;
   }
   const myFollowThis = {(...t)};
   if fast {

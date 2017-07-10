@@ -254,7 +254,6 @@ void checkPrimitives()
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
      case PRIM_ARRAY_ALLOC:
      case PRIM_ARRAY_FREE:
-     case PRIM_ARRAY_FREE_ELTS:
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
      case PRIM_ARRAY_SHIFT_BASE_POINTER:

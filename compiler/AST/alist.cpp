@@ -75,6 +75,9 @@ Expr* AList::get(int index) const {
   return NULL;
 }
 
+bool AList::empty() {
+  return length == 0;
+}
 
 void AList::insertAtHead(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)

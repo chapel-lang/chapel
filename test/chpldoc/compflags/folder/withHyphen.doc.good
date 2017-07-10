@@ -1,8 +1,16 @@
-withHyphen.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: withHyphen.doc
+
+withHyphen.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
    use withHyphen.doc;
 
-   proc example()
-      This should end up in my-docs/withHyphen.txt 
+.. function:: proc example()
+
+   This should end up in my-docs/_sources/modules/withHyphen.txt 
 

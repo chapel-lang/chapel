@@ -14,8 +14,9 @@ Contributors to the current release
 * Michael Ferguson, [Cray Inc.]
 * Ben Harshbarger, [Cray Inc.]
 * David Iten, [Cray Inc.]
-* David Keaton, [Cray Inc.]
 * Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
+* David Keaton, [Cray Inc.]
+* Sagar Khatri, individual contributor
 * Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
@@ -26,8 +27,8 @@ Contributors to the current release
 * Sriraj Paul, [Rice University]
 * Kumar Prasun, individual contributor
 * Elliot Ronaghan, [Cray Inc.]
-* Sagar Khatri, individual contributor
 * Preston Sahabu, [Cray Inc.]
+* Marcos Cleison Silva Santana, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Greg Titus, [Cray Inc.]
 * Rob Upcraft, individual contributor

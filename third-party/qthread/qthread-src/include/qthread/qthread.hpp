@@ -14,7 +14,11 @@
 template <bool> class OnlyTrue;
 template <> class OnlyTrue<true>
 {};
+#if __cplusplus >= 201103
+#define QTHREAD_STATIC_ASSERT(X) static_assert((X), #X)
+#else
 #define QTHREAD_STATIC_ASSERT(X) (void)sizeof(OnlyTrue<(bool)(X)>)
+#endif
 #define QTHREAD_CHECKSIZE(X)     QTHREAD_STATIC_ASSERT(sizeof(X) == sizeof(aligned_t))
 
 #define QTHREAD_CHECKINTEGER(X)  QTHREAD_STATIC_ASSERT(std::numeric_limits<X>::is_integer)

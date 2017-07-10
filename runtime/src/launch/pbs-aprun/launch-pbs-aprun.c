@@ -344,7 +344,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
       break;
   }
 
-  free(aprun_cmd);
+  chpl_mem_free(aprun_cmd, 0, 0);
 
   if (generate_qsub_script) {
     fprintf(qsubScript, "\n\n");

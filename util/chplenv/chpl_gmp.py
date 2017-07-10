@@ -6,7 +6,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_3p_gmp_configs, chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_home
+from chpl_home_utils import get_chpl_third_party
 from utils import memoize
 
 
@@ -17,10 +17,9 @@ def get():
         target_platform = chpl_platform.get('target')
 
         # Detect if gmp has been built for this configuration.
-        chpl_home = get_chpl_home()
+        third_party = get_chpl_third_party()
         uniq_cfg_path = chpl_3p_gmp_configs.get_uniq_cfg_path()
-        gmp_subdir = os.path.join(chpl_home, 'third-party', 'gmp',
-                                  'install', uniq_cfg_path)
+        gmp_subdir = os.path.join(third_party, 'gmp', 'install', uniq_cfg_path)
 
         if os.path.exists(os.path.join(gmp_subdir, 'include', 'gmp.h')):
             gmp_val = 'gmp'

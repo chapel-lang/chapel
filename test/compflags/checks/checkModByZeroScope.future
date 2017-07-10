@@ -1,0 +1,15 @@
+error message: Scoped modulus zero
+
+At the time of this writing, this test yields the following output from the
+backend compiler:
+
+In file included from /var/folders/gl/n_gvpvk56gq21_7_zqbhcgvh000h70/T//chpl-<user>-12648.deleteme/_main.c:42:
+/var/folders/gl/n_gvpvk56gq21_7_zqbhcgvh000h70/T//chpl-<user>-12648.deleteme/checkModByZeroScope.c:18:37: warning: remainder by zero is undefined [-Wdivision-by-zero]
+writeln_chpl2(((int64_t)((INT64(10) % INT64(0)))), INT64(7), INT32(51));
+                                    ^ ~~~~~~~~
+                                    1 warning generated.
+
+
+This is caused by an optimization where code gen effectively treats variables
+as params where appropriate, within a scoped section. See the related issue for
+more information.

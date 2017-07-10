@@ -42,7 +42,7 @@ Limitations:
 
 .. code-block:: chapel
 
-   var replArray: [MyDomain dmapped ReplicatedDist()] real;
+   var replArray: [MyDomain dmapped Replicated()] real;
 
 .. _basic-usage:
 
@@ -83,13 +83,10 @@ modify the above variable declarations as follows:
 
 .. code-block:: chapel
 
-    var myRepVar: [rcDomainBase dmapped ReplicatedDist(myLocales,
+    var myRepVar: [rcDomainBase dmapped Replicated(myLocales,
                      "over which to replicate 'myRepVar'")] MyType;
     var collected: [myLocales.domain] MyType;
 
-``myLocales`` must be "consistent", as defined for ReplicatedDist.
-That is, for each ``ix`` in ``myLocales.domain``,
-``myLocales[ix]`` must equal ``Locales[ix]``.
 
 Tip: if the domain of the desired array of locales cannot be described
 as a rectangular domain (which could be strided, multi-dimensional,
@@ -108,11 +105,11 @@ private const rcDomainIx   = 1; // todo convert to param
    as shown :ref:`above <subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 private const rcLocales    = Locales;
-private const rcDomainMap  = new ReplicatedDist(rcLocales);
+private const rcDomainMap  = new Replicated(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
-private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped ReplicatedDist(an array of locales)'";
+private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
   where replicatedVar._value.type: ReplicatedArr
@@ -192,7 +189,8 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   // initialize all copies to 'initVal'
   rcReplicate(myRepVar, initVal);
 
-  writeln("\nafter initialization, myRepVar copies are:\n", myRepVar);
+  writeln("\nafter initialization, myRepVar copies are:");
+  writeReplicands(myRepVar, Locales); // a helper function to print each locale's copy
 
   // go to 'newLocale' and update its copy to 'newVal'
   on newLocale {
@@ -206,13 +204,25 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
     writeln("  after assignment:  ", myRepVar[1]);
   }
 
-  writeln("\nafter update, myRepVar copies are:\n", myRepVar);
+  writeln("\nafter update, myRepVar copies are:");
+  writeReplicands(myRepVar, Locales);
 
   // collect all copies of 'myRepVar' into an array
   var collected: [LocaleSpace] MyType;
   rcCollect(myRepVar, collected);
 
   writeln("\ncollected copies of myRepVar are:\n", collected);
+}
+
+// This is a helper function to print each locale's replicand, labeled
+//
+private proc writeReplicands(RV, locs) {
+  for loc in locs {
+    on loc {
+      writeln(loc, ":");
+      writeln(RV);
+    }
+  }
 }
 
 // This is the same as 'rcExample', except the user can provide
@@ -225,13 +235,14 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
 
   // declare a replicated variable
   // DIFFERENT from rcExample(): the domain in myRepVar's type
-  var myRepVar: [rcDomainBase dmapped ReplicatedDist(localesToReplicateOver,
+  var myRepVar: [rcDomainBase dmapped Replicated(localesToReplicateOver,
    "over which to replicate 'myRepVar' in rcExampleOverLocales()")] MyType;
 
   // initialize all copies to 'initVal'
   rcReplicate(myRepVar, initVal);
 
-  writeln("\nafter initialization, myRepVar copies are:\n", myRepVar);
+  writeln("\nafter initialization, myRepVar copies are:");
+  writeReplicands(myRepVar, localesToReplicateOver);
 
   // go to 'newLocale' and update its copy to 'newVal'
   on newLocale {
@@ -245,7 +256,8 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
     writeln("  after assignment:  ", myRepVar[1]);
   }
 
-  writeln("\nafter update, myRepVar copies are:\n", myRepVar);
+  writeln("\nafter update, myRepVar copies are:");
+  writeReplicands(myRepVar, localesToReplicateOver);
 
   // collect all copies of 'myRepVar' into an array
   // DIFFERENT from rcExample(): the domain in collected's type

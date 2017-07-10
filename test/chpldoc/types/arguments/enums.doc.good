@@ -1,19 +1,31 @@
-enums.doc
+.. default-domain:: chpl
 
-Usage:
+.. module:: enums.doc
+
+enums.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
    use enums.doc;
 
-   enum Color { Red, Yellow, Blue }
-      This is a color enum. 
+.. enum:: enum Color { Red, Yellow, Blue }
 
-   proc gimmeAColor(c: Color)
-      This function takes an enum as an argument 
+   This is a color enum. 
 
-   proc colorDefault(c = Color.Red)
-      This function makes an enum the default value for
-      its argument
 
-   proc defaultAndType(c: Color = Color.Blue)
-      This function has both declared that it wants an enum
-      and defined a default value for its argument 
+.. function:: proc gimmeAColor(c: Color)
+
+   This function takes an enum as an argument 
+
+.. function:: proc colorDefault(c = Color.Red)
+
+   This function makes an enum the default value for
+   its argument
+
+.. function:: proc defaultAndType(c: Color = Color.Blue)
+
+   This function has both declared that it wants an enum
+   and defined a default value for its argument 
 

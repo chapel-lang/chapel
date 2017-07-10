@@ -1,2 +1,0 @@
-reuse-init-instantiation2.chpl:15: error: unresolved call 'init(Foo, type int(64))'
-reuse-init-instantiation2.chpl:15: note: candidates are: 'init(Foo, type tVal, xVal: tVal)'

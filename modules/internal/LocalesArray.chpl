@@ -38,6 +38,8 @@
 //
 
 module LocalesArray {
+  use ChapelStandard;
+
   // Initialize the rootLocale
   chpl_init_rootLocale();
 

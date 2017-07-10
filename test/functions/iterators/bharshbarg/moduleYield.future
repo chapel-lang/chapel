@@ -1,0 +1,1 @@
+bug: compiler fails to warn about a yield outside a loop and runs into an internal error
