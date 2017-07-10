@@ -1,4 +1,5 @@
-
+//This loop shouldn't be vectorized because no parallel_loop_access
+//metadata was added. For more details look into parallel_loop.chpl
 proc loop (A, B, C, D) {
   // CHECK-NOT: <4 x i32>
   var sum : int(32) = 0;

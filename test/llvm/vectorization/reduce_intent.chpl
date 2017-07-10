@@ -1,3 +1,4 @@
+//Check if reduce intent forall loop is vectorizable
 proc loop(A) {
   var sum : int(32) = 0;
   forall a in A with (+ reduce sum) {

@@ -1,4 +1,4 @@
-
+//This test checks whether vectorization occurs for more complicated loops
 proc loop (A, B, C) {
   // CHECK: <4 x i32>
   for j in vectorizeOnly(0..511) {

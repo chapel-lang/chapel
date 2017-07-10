@@ -1,4 +1,4 @@
-
+//Check whether we add parallel_loop_access metadata for loops at all
 proc loop (A, B, n) {
   for i in vectorizeOnly(1..n) {
     // CHECK: llvm.mem.parallel_loop_access

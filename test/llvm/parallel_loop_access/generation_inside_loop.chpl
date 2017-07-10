@@ -4,7 +4,12 @@ proc while_loop() {}
 proc end_block() {}
 
 //Check whether we generate parallel_loop_access metadata
-//inside basic blocks in the loop
+//inside basic blocks in the loop like
+// - non-parallel-loops inside loop
+// - if branches
+// - basic block at start of loop
+// - basic block at the end of the loop
+
 proc loop (A, B, n) {
   for i in vectorizeOnly(1..n) {
     // CHECK-LABEL: start_block

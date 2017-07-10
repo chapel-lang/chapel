@@ -1,4 +1,4 @@
-
+//Check if zipped vectorizeOnly loop is vectorizable
 proc loop (A, B) {
   for (i,j) in vectorizeOnly(0..511, 0..511) {
     // CHECK: <4 x i32>

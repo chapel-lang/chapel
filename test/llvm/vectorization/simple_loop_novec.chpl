@@ -1,7 +1,7 @@
 // This loop shouldn't be vectorized, because
 // LLVM backend cannot check whether A and B overlap
-// And runtime check for overlap was turned off
-// And --vectorize option too
+// runtime check for overlap was turned off and --no-vectorize was set
+// to avoid adding parallel_loop_access metadata
 proc loop (A, B, n) {
   for i in vectorizeOnly(1..n) {
     // CHECK-NOT: <4 x i32>

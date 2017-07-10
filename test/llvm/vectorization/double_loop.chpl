@@ -1,4 +1,4 @@
-
+//Check whether vectorization occurs for nested loops
 proc loop (A, B) {
   for i in vectorizeOnly(0..511) {
     for j in vectorizeOnly(0..511) {
