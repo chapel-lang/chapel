@@ -788,7 +788,6 @@ void DefExpr::accept(AstVisitor* visitor) {
 *                                                                           *
 ************************************* | ************************************/
 
-
 void DefExpr::prettyPrint(std::ostream *o) {
   *o << "<DefExprType>";
 }
@@ -801,7 +800,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
   else
     INT_FATAL(call, "Bad argList in CallExpr constructor");
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1390,6 +1388,37 @@ bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
     retval = true;
 
   return retval;
+}
+
+//
+// 2017/07/09: resolveBlockStmt() currently relies on
+//
+//    void for_exprs_postorder(expr, blockStmt);
+//
+// to traverse the sub-expressions within a given block-stmt.  This
+// implementation choice complicates any transformation that would otherwise
+// replace one statement with a different one; a simple use of
+//
+//    node->replace(other);
+//
+// is likely to interfere with the internal sequencing within this macro.
+//
+// The work-around is to insert the new, fully resolved, statement
+// immediately before the "current" statement and then convert the current
+// statement in to a NOOP.  This will ensure that statements will be
+// sequenced correctly.
+//
+
+void CallExpr::convertToNoop() {
+  if (baseExpr != NULL) {
+    baseExpr->remove();
+  }
+
+  while (numActuals() > 0) {
+    get(1)->remove();
+  }
+
+  primitive = primitives[PRIM_NOOP];
 }
 
 /************************************* | **************************************
