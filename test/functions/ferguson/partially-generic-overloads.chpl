@@ -56,3 +56,12 @@ proc t4(r) where true {
 }
 
 t4(r);
+
+proc t5(r:R(int, real)) {
+  writeln("t5(r:R(int, real))");
+}
+proc t5(r:R(int, ?)) where true {
+  writeln("t5(r:R(int, ?))");
+}
+
+t5(r);
