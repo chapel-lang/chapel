@@ -965,6 +965,8 @@ static void addKnownWides() {
              call->isPrimitive(PRIM_CHPL_COMM_ARRAY_GET) ||
              call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
+      // For virtual method calls: do we need to widen the actual if the formal
+      // doesn't have the ref intent?
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (typeCanBeWide(se->symbol())) {
