@@ -5069,24 +5069,6 @@ Expr* resolvePrimInit(CallExpr* call) {
 
   SET_LINENO(call);
 
-  if (type->defaultValue ||
-      type->symbol->hasFlag(FLAG_TUPLE)) {
-    // Very special case for the method token.
-    // Unfortunately, dtAny cannot (currently) bind to dtMethodToken, so
-    // inline proc _defaultOf(type t) where t==_MT cannot be written in module
-    // code.
-    // Maybe it would be better to indicate which calls are method calls
-    // through the use of a flag.  Until then, we just fake in the needed
-    // result and short-circuit the resolution of _defaultOf(type _MT).
-    if (type == dtMethodToken) {
-      Expr* retval = new SymExpr(gMethodToken);
-
-      call->replace(retval);
-
-      return retval;
-    }
-  }
-
   if (AggregateType* at = toAggregateType(type)) {
     if (at->defaultInitializer                      != NULL &&
         type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
