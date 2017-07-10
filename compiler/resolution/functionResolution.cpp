@@ -5027,97 +5027,45 @@ Type* resolveTypeAlias(SymExpr* se)
   return resolveTypeAlias(tse);
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Handles PRIM_INIT or PRIM_NO_INIT                                           *
+*                                                                             *
+* Returns NULL if no substitution was made.                                   *
+* Otherwise remove the primitive and return the new expression.               *
+*                                                                             *
+* ('init'    foo) --> A default value or the result of an initializer call.   *
+* ('no_init' foo) --> Ditto, only in some cases a simpler default value.      *
+*                                                                             *
+************************************** | *************************************/
 
-//
-// Make sure that 'type' is sufficiently non-generic to declare a
-// variable over it in the context of 'call'.
-//
-static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
-  TypeSymbol* typeSym = type->symbol;
+static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type);
 
-  //
-  // This function only cares about generic types
-  //
-  if (typeSym->hasFlag(FLAG_GENERIC)) {
-    bool unsafeGeneric = true;  // Assume the worst until proven otherwise
-
-    //
-    // Grab the generic type's constructor if it has one.  Things like
-    // classes and records should.  Things like 'integral' will not.
-    //
-    FnSymbol* typeCons = NULL;
-    if (AggregateType* at = toAggregateType(type)) {
-      typeCons = at->defaultTypeConstructor;
-
-      if (typeCons) {
-        //
-        // If it had one, create a zero-argument call to the type
-        // constructor, insert it into the code point in question,
-        // and try to resolve it (saving the answer).
-        //
-        CallExpr* typeConsCall = new CallExpr(typeCons->name);
-        call->replace(typeConsCall);
-        unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
-
-        //
-        // Put things back the way they were.
-        //
-        typeConsCall->replace(call);
-      }
-    }
-
-    //
-    // If the generic was unresolved (either because its type
-    // constructor couldn't be called with zero arguments or because
-    // it didn't have a type constructor), print a message.
-    // Specialize it based on whether or not it had a type
-    // constructor.
-    //
-    if (unsafeGeneric) {
-      USR_FATAL(call,
-                "Variables can't be declared using %s generic types like '%s'",
-                (typeCons ? "not-fully-instantiated" : "abstract"),
-                typeSym->name);
-    }
-  }
-}
-
-
-// Returns NULL if no substitution was made.  Otherwise, returns the expression
-// that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
-// Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
-// longer in the tree.
-Expr* resolvePrimInit(CallExpr* call)
-{
-  Expr* result = NULL;
-
-  // ('init' foo) --> A default value or the result of an initializer call.
-  // ('no_init' foo) --> Ditto, only in some cases a simpler default value.
-
-  // The argument is expected to be a type variable.
+Expr* resolvePrimInit(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
-  INT_ASSERT(se);
-  if (!se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+
+  if (se == NULL) {
+    INT_FATAL(call, "Actual 1 is not a sym expr");
+  }
+
+  if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
     USR_FATAL(call, "invalid type specification");
+  }
 
   Type* type = resolveTypeAlias(se);
 
-  // Do not resolve PRIM_INIT on extern types.
-  // These are removed later.
-  // It is useful to leave them in the tree, because PRIM_INIT behaves like an
-  // expression and has a type.
-  if (type->symbol->hasFlag(FLAG_EXTERN)) {
+  if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
     CallExpr* stmt = toCallExpr(call->parentExpr);
 
     INT_ASSERT(stmt->isPrimitive(PRIM_MOVE));
 
-    return result;
+    return NULL;
   }
 
-  // Do not resolve runtime type values yet.
-  // Let these flow through to replaceInitPrims().
-  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-    return result;
+  // These are handled in replaceInitPrims().
+  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+    return NULL;
+  }
 
   SET_LINENO(call);
 
@@ -5130,36 +5078,82 @@ Expr* resolvePrimInit(CallExpr* call)
     // Maybe it would be better to indicate which calls are method calls
     // through the use of a flag.  Until then, we just fake in the needed
     // result and short-circuit the resolution of _defaultOf(type _MT).
-    if (type == dtMethodToken)
-    {
-      result = new SymExpr(gMethodToken);
-      call->replace(result);
-      return result;
+    if (type == dtMethodToken) {
+      Expr* retval = new SymExpr(gMethodToken);
+
+      call->replace(retval);
+
+      return retval;
     }
   }
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->defaultInitializer) {
-      if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-        // defaultInitializers for iterator record types cannot be called as
-        // default constructors.  So give up now!
-        return result;
+    if (at->defaultInitializer                      != NULL &&
+        type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
+      // defaultInitializers for iterator record types cannot be called as
+      // default constructors.
+      return NULL;
     }
   }
 
-  //
-  // Catch the case of declaring a variable over an uninstantiated
-  // generic type in order to print out a useful error message before
-  // we get too deep into resolution.
-  //
+  // Generate a more specific USR_FATAL if resolution would fail
   ensureGenericSafeForDeclarations(call, type);
 
   CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+
   call->replace(defOfCall);
+
   resolveCallAndCallee(defOfCall);
-  result = postFold(defOfCall);
-  return result;
+
+  return postFold(defOfCall);
 }
+
+// Ensure that 'type' is sufficiently non-generic to declare a variable
+// over it in the context of 'call'.
+static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
+  if (type->symbol->hasFlag(FLAG_GENERIC) == true) {
+    SET_LINENO(call);
+
+    bool      unsafeGeneric = true;
+    FnSymbol* typeCons      = NULL;
+
+    if (AggregateType* at = toAggregateType(type)) {
+      typeCons = at->defaultTypeConstructor;
+
+      if (typeCons != NULL) {
+        // Swap in a call to the default type constructor and try to resolve it
+        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+
+        call->replace(typeConsCall);
+
+        unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
+
+        // Put things back the way they were.
+        typeConsCall->replace(call);
+      }
+    }
+
+    //
+    // If the generic was unresolved (either because its type
+    // constructor couldn't be called with zero arguments or because
+    // it didn't have a type constructor), print a message.
+    // Specialize it based on whether or not it had a type
+    // constructor.
+    //
+    if (unsafeGeneric == true) {
+      USR_FATAL(call,
+                "Variables can't be declared using %s generic types like '%s'",
+                (typeCons ? "not-fully-instantiated" : "abstract"),
+                type->symbol->name);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 bool isInstantiation(Type* sub, Type* super) {
   Type* cur = sub->instantiatedFrom;
