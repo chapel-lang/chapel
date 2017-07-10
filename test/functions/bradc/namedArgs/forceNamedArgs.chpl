@@ -1,5 +1,5 @@
 class dummyarg {
-  proc dummyarg() {
+  proc init() {
     compilerError("can't create an object of type 'dummyarg' -- use named argument passing to call this routine");
   }
 }

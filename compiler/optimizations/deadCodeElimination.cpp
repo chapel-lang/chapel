@@ -30,6 +30,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
+#include "DoWhileStmt.h"
 
 #include <queue>
 #include <set>
@@ -646,25 +647,30 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
       if (toDefExpr(expr))
         continue;
 
-      CondStmt*  condStmt  = toCondStmt(expr->parentExpr);
-      WhileStmt* whileStmt = toWhileStmt(expr->parentExpr);
-      ForLoop*   forLoop   = toForLoop(expr->parentExpr);
+      CondStmt*    condStmt    = toCondStmt(expr->parentExpr);
+      DoWhileStmt* doWhileStmt = toDoWhileStmt(expr->parentExpr);
+      WhileStmt*   whileStmt   = toWhileStmt(expr->parentExpr);
+      ForLoop*     forLoop     = toForLoop(expr->parentExpr);
 
       if (condStmt && condStmt->condExpr == expr)
         // If the expr is the condition expression of an if statement,
         // then remove the entire if. (NOTE 1)
         condStmt->remove();
 
-      else if (whileStmt && whileStmt->condExprGet() == expr)
+      else if (doWhileStmt && doWhileStmt->condExprGet() == expr)
+        // Do nothing. (NOTE 3)
+        ;
+
+      else if (whileStmt   && whileStmt->condExprGet()   == expr)
         // If the expr is the condition expression of a while statement,
         // then remove the entire While. (NOTE 1)
         whileStmt->remove();
 
-      else if (forLoop   && forLoop->indexGet()      == expr)
+      else if (forLoop     && forLoop->indexGet()         == expr)
         // Do nothing. (NOTE 2)
         ;
 
-      else if (forLoop   && forLoop->iteratorGet()   == expr)
+      else if (forLoop     && forLoop->iteratorGet()      == expr)
         // Do nothing. (NOTE 2)
         ;
 
@@ -785,3 +791,7 @@ static void deadGotoElimination(FnSymbol* fn)
 //#    of the iterator index is dead.  (It's probably a safer bet when the
 //#    iterator expression is dead.)
 //#
+//# 3. Even if the condition of a DoWhileLoop is dead, the loop cannot be
+//#    removed because a DoWhileLoop must execute at least once. We _could_
+//#    remove the condition variable, but the compiler expects a non-null expr
+//#    to be there.

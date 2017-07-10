@@ -128,14 +128,6 @@ OPTIONS
     read ahead. This cache is not enabled by any other optimization
     *options* such as **--fast**.
 
-**--conditional-dynamic-dispatch-limit**
-
-    When greater than zero, this limit controls when the compiler will
-    generate code to handle dynamic dispatch with conditional statements. If
-    the number of possible method calls is less than or equal to this limit,
-    a (possibly nested) conditional statement will be used for dynamic
-    dispatch instead of the virtual method table. The default is zero.
-
 **--[no-]copy-propagation**
 
     Enable [disable] copy propagation.

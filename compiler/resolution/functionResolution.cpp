@@ -3993,9 +3993,12 @@ static void resolveTupleAndExpand(CallExpr* call) {
                    new CallExpr("&", tmp3, tmp)));
     tmp = tmp4;
   }
+
   call->replace(new SymExpr(tmp));
+
   noop->replace(call); // put call back in ast for function resolution
-  makeNoop(call);
+
+  call->convertToNoop();
 }
 
 static void resolveTupleExpand(CallExpr* call) {
@@ -4037,9 +4040,13 @@ static void resolveTupleExpand(CallExpr* call) {
     call->getStmtExpr()->insertBefore(move);
     call->insertBefore(new SymExpr(tmp));
   }
+
   call->remove();
+
   noop->replace(call); // put call back in ast for function resolution
-  makeNoop(call);
+
+  call->convertToNoop();
+
   // increase tuple rank
   if (parent && parent->isNamed("_type_construct__tuple")) {
     parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
@@ -5099,12 +5106,11 @@ Expr* resolvePrimInit(CallExpr* call)
   // These are removed later.
   // It is useful to leave them in the tree, because PRIM_INIT behaves like an
   // expression and has a type.
-  if (type->symbol->hasFlag(FLAG_EXTERN))
-  {
+  if (type->symbol->hasFlag(FLAG_EXTERN)) {
     CallExpr* stmt = toCallExpr(call->parentExpr);
+
     INT_ASSERT(stmt->isPrimitive(PRIM_MOVE));
-//    makeNoop(stmt);
-//    result = stmt;
+
     return result;
   }
 
@@ -6678,9 +6684,13 @@ static void resolveRecordInitializers() {
           }
         }
       }
+
       init->get(1)->replace(res);
+
       resolveCall(res);
-      makeNoop(toCallExpr(init->parentExpr));
+
+      toCallExpr(init->parentExpr)->convertToNoop();
+
       // Now that we've resolved the type constructor and thus resolved the
       // generic type of the variable we were assigning to, the outer move
       // is no longer needed, so remove it and continue to the next init.
@@ -7861,8 +7871,7 @@ static void replaceReturnedValuesWithRuntimeTypes()
 }
 
 
-static void replaceInitPrims(std::vector<BaseAST*>& asts)
-{
+static void replaceInitPrims(std::vector<BaseAST*>& asts) {
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       // We are only interested in INIT primitives.
@@ -7870,11 +7879,12 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
         FnSymbol* parent = toFnSymbol(call->parentSymbol);
 
         // Call must be in the tree and lie in a resolved function.
-        if (! parent || ! parent->isResolved())
+        if (! parent || ! parent->isResolved()) {
           continue;
+        }
 
         SymExpr* se = toSymExpr(call->get(1));
-        Type* rt = se->symbol()->type;
+        Type*    rt = se->symbol()->type;
 
         if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
           // ('init' foo), where typeof(foo) has flag "runtime type value"
@@ -7902,10 +7912,12 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);
           }
+
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
           call->replace(new SymExpr(tmp));
+
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle
@@ -7919,13 +7931,11 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
           // keyword; it should be removed when possible
           //
           call->getStmtExpr()->remove();
-        }
-        else
-        {
+
+        } else {
           Expr* expr = resolvePrimInit(call);
 
-          if (! expr)
-          {
+          if (! expr) {
             // This PRIM_INIT could not be resolved.
 
             // But that's OK if it's an extern type.
@@ -7934,10 +7944,11 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
             // Maybe we can avoid adding PRIM_INIT for these cases in the first
             // place....
             if (rt->symbol->hasFlag(FLAG_EXTERN) ||
-                rt->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-            {
+                rt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
               INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
-              makeNoop(toCallExpr(call->parentExpr));
+
+              toCallExpr(call->parentExpr)->convertToNoop();
+
               continue;
             }
 

@@ -277,6 +277,8 @@ public:
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
 
+  void            convertToNoop();
+
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();

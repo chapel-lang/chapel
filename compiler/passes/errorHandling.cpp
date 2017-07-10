@@ -126,6 +126,14 @@ try {
 }
 */
 
+
+// Static functions
+static bool canBlockThrow(BlockStmt* blk);
+static void checkErrorHandling(FnSymbol* fn);
+
+
+namespace {
+
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
 public:
@@ -221,7 +229,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
   for_alist(c, tryStmt->_catches) {
     if (hasCatchAll)
-      USR_FATAL(c->prev, "catchall placed before the end of a catch list");
+      INT_FATAL(c->prev, "catchall placed before the end of a catch list");
 
     SET_LINENO(c);
 
@@ -276,7 +284,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     } else if (outError != NULL) {
       currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
     } else {
-      USR_FATAL(tryStmt, "try without a catchall in a non-throwing function");
+      INT_FATAL(tryStmt, "try without a catchall in a non-throwing function");
     }
   }
 
@@ -303,7 +311,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
       } else if (fStrictErrorHandling) {
-        USR_FATAL(node, "throwing call without try or try! (strict mode)");
+        INT_FATAL(node, "throwing call without try or try! (strict mode)");
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
@@ -338,7 +346,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     } else if (outError != NULL) {
       throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
     } else {
-      USR_FATAL(node, "cannot throw in a non-throwing function");
+      INT_FATAL(node, "cannot throw in a non-throwing function");
     }
   }
   return true;
@@ -349,7 +357,9 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
 
   AList ret;
-  ret.insertAtTail(new CallExpr(PRIM_MOVE, outError, castError));
+  // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
+  // errors that come up in C compilation.
+  ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castError));
   ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
 
   return ret;
@@ -374,9 +384,25 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
   return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
 }
 
+} /* end anon namespace */
+
 void lowerErrorHandling() {
   if (!fMinimalModules)
     INT_ASSERT(dtError->inTree());
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Determine if compiler-generated fns should be marked 'throws'
+    if (fn->hasFlag(FLAG_ON)) {
+      if (canBlockThrow(fn->body))
+        fn->throwsErrorInit();
+    } else {
+      // Otherwise, just check for error-handling errors.
+      checkErrorHandling(fn);
+    }
+  }
+
+  // Quit if fatal errors were encountered by checkErrorHandling above.
+  USR_STOP();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
@@ -395,4 +421,140 @@ void lowerErrorHandling() {
     ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
     fn->accept(&visitor);
   }
+}
+
+namespace {
+
+class CanThrowVisitor : public AstVisitorTraverse {
+
+public:
+  CanThrowVisitor       (bool inThrowingFn, bool makeCompileErrors);
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+  bool throws() { return canThrow; }
+
+private:
+  int  tryDepth;
+  bool canThrow;
+  bool errors;
+  bool fnCanThrow; // only used for error checking
+
+  bool   catchesNotExhaustive(TryStmt* tryStmt);
+};
+
+CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors) {
+  tryDepth = 0;
+  canThrow = false;
+  errors = makeCompileErrors;
+  fnCanThrow = inThrowingFn;
+}
+
+bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void CanThrowVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  // is it an exhaustive catch?
+
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    canThrow = false;
+  } else {
+    canThrow = nonExhaustive;
+    if (errors && tryDepth==0 && nonExhaustive && !fnCanThrow) {
+      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
+    }
+  }
+}
+
+bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
+
+  bool hasCatchAll = false;
+
+  for_alist(c, tryStmt->_catches) {
+    if (errors && hasCatchAll)
+      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
+
+    SET_LINENO(c);
+
+    CatchStmt* catchStmt = toCatchStmt(c);
+    DefExpr*   catchDef  = catchStmt->expr();
+
+    // catchall
+    if (catchDef == NULL) {
+      hasCatchAll = true;
+    } else {
+      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
+      Type*      errType = errSym->type;
+
+      // named catchall
+      if (errType == dtError) {
+        hasCatchAll = true;
+      }
+    }
+  }
+
+  return !hasCatchAll;
+}
+
+bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
+  bool insideTry = (tryDepth > 0);
+
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+    if (calledFn->throwsError()) {
+      if (insideTry) {
+        // OK
+      } else {
+        if (errors && fStrictErrorHandling) {
+          USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+        }
+        // not in a try
+        canThrow = true;
+      }
+    }
+  } else if (node->isPrimitive(PRIM_THROW)) {
+    canThrow = true;
+
+    if (insideTry) {
+      // OK, error checking for this case done in try handling
+    } else if (fnCanThrow == true) {
+      // OK, fn can throw
+    } else if (errors == true) {
+      USR_FATAL_CONT(node, "cannot throw in a non-throwing function");
+    }
+  }
+  return true;
+}
+
+} /* end anon namespace */
+
+
+// Returns `true` if a block can exit with an error
+//  (e.g. by calling 'throw' or a throwing function,
+//   when these are not handled by try! or catch).
+// This function is useful to infer 'throws' for
+// certain compiler-introduced functions.
+
+static bool canBlockThrow(BlockStmt* block)
+{
+  CanThrowVisitor visit(false, false);
+
+  block->accept(&visit);
+
+  return visit.throws();
+}
+
+static void checkErrorHandling(FnSymbol* fn)
+{
+  CanThrowVisitor visit(fn->throwsError(), true);
+
+  fn->body->accept(&visit);
 }
