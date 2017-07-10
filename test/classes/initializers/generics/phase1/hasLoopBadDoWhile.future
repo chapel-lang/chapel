@@ -1,0 +1,4 @@
+feature request: support initializer analysis on generic fields
+
+Some initializer analysis was only applied to concrete fields.  We would like
+generic fields to be subject to the same rules.
