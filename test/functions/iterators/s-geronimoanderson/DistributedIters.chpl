@@ -46,6 +46,10 @@ config param debugDistributedIters:bool=false;
                      input range length divided by ``numLocales``.
   :type minChunkSize: `int`
 
+  :arg coordinated: Have locale 0 coordinate task distribution only; disallow
+                    it from receiving work. (If true and multi-locale.)
+  :type coordinated: `bool`
+
   :yields: Indices in the range ``c``.
 
   This iterator is equivalent to a distributed version of the guided policy of
@@ -64,7 +68,7 @@ config param debugDistributedIters:bool=false;
 // Serial version.
 iter guidedDistributed(c:range(?),
                        numTasks:int=0,
-                       minChunkSize:int=0)
+                       coordinated:bool=false)
 {
   if debugDistributedIters
   then writeln("Serial guided iterator, working with range ", c);
@@ -77,16 +81,15 @@ pragma "no doc"
 iter guidedDistributed(param tag:iterKind,
                        c:range(?),
                        numTasks:int=0,
-                       minChunkSize:int=0)
+                       coordinated:bool=false)
 where tag == iterKind.leader
 {
-  assert(minChunkSize >= 0, "minChunkSize must be a positive integer");
-
   const iterCount=c.length;
+
   if iterCount == 0 then halt("The range is empty");
 
   type cType=c.type;
-  var remain:cType=densify(c,c);
+  const denseRange:cType=densify(c,c);
 
   if iterCount == 1 || numTasks == 1 && numLocales == 1
   then
@@ -94,80 +97,65 @@ where tag == iterKind.leader
     if debugDistributedIters
     then writeln("Distributed guided iterator: serial execution due to ",
                  "insufficient work or compute resources");
-    yield (remain,);
+    yield (denseRange,);
   }
   else
   {
-    const chunkThreshold:int=if minChunkSize == 0
-                             then divceilpos(iterCount, numLocales):int
-                             else minChunkSize;
-    const factor=numLocales;
-    const masterLocale=here.locale;
-    var lock:vlock;
-    var moreWork=true;
+    const denseRangeHigh:int = denseRange.high;
+    const masterLocale = here.locale;
+    const nLocales = if coordinated && numLocales > 1
+                     then numLocales-1
+                     else numLocales;
+    var meitneriumIndex:atomic int;
+
+    if debugDistributedIters
+    then writeln("iterCount = ", iterCount,
+                 ", nLocales = ", nLocales);
 
     coforall L in Locales
-    with (ref lock, ref moreWork, ref remain) do
+    with (ref meitneriumIndex) do
     on L do
     {
-      if L != masterLocale || numLocales == 1
+      if numLocales == 1
+         || !coordinated
+         || L != masterLocale // coordinated == true
       then
       {
-
-        var getMoreWork=true;
-        var localIterCount:int;
-        var localWork:cType;
-
-        while getMoreWork do
+        var localeStage:int = meitneriumIndex.fetchAdd(1);
+        var localeRange:cType = guidedSubrange(denseRange,
+                                               nLocales,
+                                               localeStage);
+        while localeRange.high <= denseRangeHigh do
         {
-          if moreWork
-          then
+          const localeRangeHigh:int = localeRange.high;
+          const nTasks = min(localeRange.length, defaultNumTasks(numTasks));
+          var plutoniumIndex:atomic int;
+
+          coforall tid in 0..#nTasks
+          with (ref plutoniumIndex) do
           {
-            localWork=adaptSplit(remain,
-                                 factor,
-                                 moreWork,
-                                 lock,
-                                 profThreshold=chunkThreshold);
-            localIterCount=localWork.length;
-            if localIterCount == 0 then getMoreWork=false;
-          }
-          else getMoreWork=false;
-
-          if getMoreWork then
-          {
-            const nTasks=min(localIterCount, defaultNumTasks(numTasks));
-            const localFactor=nTasks;
-
-            // TODO: Why if we define these just after "if L != masterLocale
-            // ..." do we get an erroneous iteration?
-            var localLock:vlock;
-            var moreLocalWork=true;
-
-            // TODO: Can we simply employ the single-locale guided iterator
-            // here? (Tried once and failed correctness test.)
-            coforall tid in 0..#nTasks
-            with (ref localLock, ref localWork, ref moreLocalWork) do
+            var taskStage:int = plutoniumIndex.fetchAdd(1);
+            var taskRange:cType = guidedSubrange(localeRange,
+                                                 nTasks,
+                                                 taskStage);
+            while taskRange.high <= localeRangeHigh do
             {
-              while moreLocalWork do
-              {
-                const current:cType=adaptSplit(localWork,
-                                               localFactor,
-                                               moreLocalWork,
-                                               localLock);
-                if current.length != 0 then
-                {
-                  if debugDistributedIters
-                  then writeln("Distributed guided iterator (leader): ",
-                               here.locale, ", tid ", tid, ": yielding range ",
-                               unDensify(current,localWork),
-                               " (", current.length, "/", localIterCount, ")",
-                               " as ", current);
+              if debugDistributedIters
+              then writeln("Distributed guided iterator (leader): ",
+                           here.locale, ", tid ", tid, ": yielding ",
+                           unDensify(taskRange,c),
+                           " (", taskRange.length,
+                           "/", localeRange.length,
+                           " locale-owned of ", iterCount, " total)",
+                           " as ", taskRange);
+              yield (taskRange,);
 
-                  yield (current,);
-                }
-              }
+              taskStage = plutoniumIndex.fetchAdd(1);
+              taskRange = guidedSubrange(localeRange, nTasks, taskStage);
             }
           }
+          localeStage = meitneriumIndex.fetchAdd(1);
+          localeRange = guidedSubrange(denseRange, nLocales, localeStage);
         }
       }
     }
@@ -177,7 +165,7 @@ pragma "no doc"
 iter guidedDistributed(param tag:iterKind,
                        c:range(?),
                        numTasks:int,
-                       minChunkSize:int=0,
+                       coordinated:bool=false,
                        followThis)
 where tag == iterKind.follower
 {
@@ -208,60 +196,44 @@ private proc defaultNumTasks(nTasks:int)
   return dnTasks;
 }
 
-// An atomic test-and-set lock.
-pragma "no doc"
-record vlock
+private proc guidedSubrange(c:range(?), workerCount:int, stage:int)
+/*
+  :arg c: The range from which to retrieve a guided subrange.
+  :type c: `range(?)`
+
+  :arg workerCount: The number of workers (locales, tasks) to assume are
+                    working on ``c``. This (along with stage) determines the
+                    subrange length.
+  :type workerCount: `int`
+
+  :arg stage: The number of guided subranges to skip before returning a guided
+              subrange.
+  :type stage: `int`
+
+  :returns: A subrange of ``c``.
+
+  This function takes a range, a worker count, and a stage, and simulates
+  performing OpenMP's guided schedule on the range with the given worker count
+  until reaching the given stage. It then returns the subrange that the guided
+  schedule would have produced at that point.
+*/
 {
-  var l: atomic bool;
-  proc lock()
+  assert(workerCount > 0, "'workerCount' must be positive");
+  const cLength = c.length;
+  var low:int = c.low;
+  var chunkSize:int = cLength / workerCount;
+  var remainder:int = cLength - chunkSize;
+  for unused in 1..#stage do
   {
-    on this
-    do while l.testAndSet() != false
-       do chpl_task_yield();
+    low += chunkSize;
+    chunkSize = remainder / workerCount;
+    chunkSize = if chunkSize >= 1
+                then chunkSize
+                else 1;
+    remainder -= chunkSize;
   }
-  proc unlock()
-  {
-    l.write(false);
-  }
-}
-
-private proc adaptSplit(ref rangeToSplit:range(?),
-                        splitFactor:int,
-                        ref itLeft:bool,
-                        ref lock:vlock,
-                        splitTail:bool=false,
-                        profThreshold:int=1)
-{
-  type rType=rangeToSplit.type;
-  type lenType=rangeToSplit.length.type;
-
-  var initialSubrange:rType;
-  var totLen, size : lenType;
-
-  lock.lock();
-  totLen=rangeToSplit.length;
-  if totLen > profThreshold
-  then size=max(totLen/splitFactor, profThreshold);
-  else
-  {
-    size = totLen;
-    itLeft = false;
-  }
-  if size == totLen
-  then
-  {
-    itLeft = false;
-    initialSubrange = rangeToSplit;
-    rangeToSplit = 1..0;
-  }
-  else
-  {
-    const direction = if splitTail then -1 else 1;
-    initialSubrange = rangeToSplit#(direction*size);
-    rangeToSplit = rangeToSplit#(direction*(size-totLen));
-  }
-  lock.unlock();
-  return initialSubrange;
+  const subrange:c.type = low..#chunkSize;
+  return subrange;
 }
 
 } // End of module.
