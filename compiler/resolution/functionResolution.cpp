@@ -5044,53 +5044,47 @@ static bool primInitIsIteratorRecord(Type* type);
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
 
 Expr* resolvePrimInit(CallExpr* call) {
-  SymExpr* se = toSymExpr(call->get(1));
+  SymExpr* se     = toSymExpr(call->get(1));
+  Expr*    retval = NULL;
 
   if (se == NULL) {
     INT_FATAL(call, "Actual 1 is not a sym expr");
-  }
 
-  if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+  } else if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
     USR_FATAL(call, "invalid type specification");
+
+  } else {
+    Type* type = resolveTypeAlias(se);
+
+    // These are handled later
+    if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
+      INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+
+    // These are handled in replaceInitPrims().
+    } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+
+    // Initializers for IteratorRecords cannot be used as constructors
+    } else if (primInitIsIteratorRecord(type)               == true) {
+
+    // Generate a more specific USR_FATAL if resolution would fail
+    } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
+      INT_FATAL(call, "primInitIsUnacceptableGeneric should not return true");
+
+    } else {
+      SET_LINENO(call);
+
+      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+
+      call->replace(defOfCall);
+
+      resolveCallAndCallee(defOfCall);
+
+      retval = postFold(defOfCall);
+    }
   }
 
-  Type* type = resolveTypeAlias(se);
-
-  if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
-    CallExpr* stmt = toCallExpr(call->parentExpr);
-
-    INT_ASSERT(stmt->isPrimitive(PRIM_MOVE));
-
-    return NULL;
-  }
-
-  // These are handled in replaceInitPrims().
-  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    return NULL;
-  }
-
-  SET_LINENO(call);
-
-  if (primInitIsIteratorRecord(type) == true) {
-    return NULL;
-  }
-
-  // Generate a more specific USR_FATAL if resolution would fail
-  if (primInitIsUnacceptableGeneric(call, type) == true) {
-    INT_FATAL(call, "primInitIsUnacceptbleGeneric should not return true");
-  }
-
-  CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-
-  call->replace(defOfCall);
-
-  resolveCallAndCallee(defOfCall);
-
-  return postFold(defOfCall);
+  return retval;
 }
-
-// defaultInitializers for iterator record types
-// cannot be called as default constructors.
 
 static bool primInitIsIteratorRecord(Type* type) {
   bool retval = false;
