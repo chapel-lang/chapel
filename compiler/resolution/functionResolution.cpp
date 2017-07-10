@@ -5042,6 +5042,7 @@ Type* resolveTypeAlias(SymExpr* se)
 static bool primInitIsIteratorRecord(Type* type);
 
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
+static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
 
 Expr* resolvePrimInit(CallExpr* call) {
   SymExpr* se     = toSymExpr(call->get(1));
@@ -5068,7 +5069,7 @@ Expr* resolvePrimInit(CallExpr* call) {
 
     // Generate a more specific USR_FATAL if resolution would fail
     } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-      INT_FATAL(call, "primInitIsUnacceptableGeneric should not return true");
+      primInitHaltForUnacceptableGeneric(call, type);
 
     } else {
       SET_LINENO(call);
@@ -5099,48 +5100,46 @@ static bool primInitIsIteratorRecord(Type* type) {
   return retval;
 }
 
-//
-// NB. This function returns false or generates a USR_FATAL
-//
-// Generate a useful USR_FATAL if the variable is generic
-// and resolution will fail.
-//
+// Return true if this type is generic *and* resolution will fail
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
-  if (type->symbol->hasFlag(FLAG_GENERIC) == true) {
-    SET_LINENO(call);
+  bool retval = type->symbol->hasFlag(FLAG_GENERIC);
 
-    const char* tag = NULL;
-
+  // If it is generic then try to resolve the default type constructor
+  if (retval == true) {
     if (AggregateType* at = toAggregateType(type)) {
       if (FnSymbol* typeCons = at->defaultTypeConstructor) {
+        SET_LINENO(call);
+
         // Swap in a call to the default type constructor and try to resolve it
         CallExpr* typeConsCall = new CallExpr(typeCons->name);
 
         call->replace(typeConsCall);
 
-        if (tryResolveCall(typeConsCall) == NULL) {
-          tag = "not-fully-instantiated";
-        }
+        retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
 
         // Put things back the way they were.
         typeConsCall->replace(call);
-      } else {
-        tag = "abstract";
       }
-
-    } else {
-      tag = "abstract";
-    }
-
-    if (tag != NULL) {
-      USR_FATAL(call,
-                "Variables can't be declared using %s generic types like '%s'",
-                tag,
-                type->symbol->name);
     }
   }
 
-  return false;
+  return retval;
+}
+
+// Generate a useful USR_FATAL for an unacceptable Generic
+static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
+  const char* label = "abstract";
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->defaultTypeConstructor != NULL) {
+      label = "not-fully-instantiated";
+    }
+  }
+
+  USR_FATAL(call,
+            "Variables can't be declared using %s generic types like '%s'",
+            label,
+            type->symbol->name);
 }
 
 /************************************* | **************************************
