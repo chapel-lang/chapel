@@ -83,8 +83,17 @@ void deadVariableElimination(FnSymbol* fn) {
   std::set<Symbol*> symSet;
   collectSymbolSet(fn, symSet);
 
-  for_set(Symbol, sym, symSet)
-  {
+  // Use 'symSet' and 'todo' together for a unique queue of symbols to process
+  std::queue<Symbol*> todo;
+  for_set(Symbol, sym, symSet) {
+    todo.push(sym);
+  }
+
+  while(todo.empty() == false) {
+    Symbol* sym = todo.front();
+    todo.pop();
+    symSet.erase(sym);
+
     // We're interested only in VarSymbols.
     if (!isVarSymbol(sym))
       continue;
@@ -94,24 +103,36 @@ void deadVariableElimination(FnSymbol* fn) {
       continue;
 
     if (isDeadVariable(sym)) {
+      std::set<Symbol*> potentiallyChanged;
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        //INT_ASSERT(call &&
-        //           (call->isPrimitive(PRIM_MOVE) ||
-        //            call->isPrimitive(PRIM_ASSIGN)));
-        //Expr* rhs = call->get(2)->remove();
+        collectSymbolSet(call->getStmtExpr(), potentiallyChanged);
         INT_ASSERT(call);
+
         Expr* dest = NULL;
         Expr* rhs = NULL;
         bool ok = getSettingPrimitiveDstSrc(call, &dest, &rhs);
         INT_ASSERT(ok);
+
         rhs->remove();
-        if (!isSymExpr(rhs))
+        CallExpr* rhsCall = toCallExpr(rhs);
+        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))) {
+          // RHS might have side-effects, leave it alone
           call->replace(rhs);
-        else
+        } else {
           call->remove();
+        }
       }
       sym->defPoint->remove();
+
+      // If we just removed a symbol, let's (re)visit the other symbols in
+      // this statement in case they are now dead.
+      for_set(Symbol, otherSym, potentiallyChanged) {
+        if (otherSym != sym && symSet.find(otherSym) == symSet.end()) {
+          symSet.insert(otherSym);
+          todo.push(otherSym);
+        }
+      }
     }
   }
 }
