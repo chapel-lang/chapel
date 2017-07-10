@@ -5039,7 +5039,9 @@ Type* resolveTypeAlias(SymExpr* se)
 *                                                                             *
 ************************************** | *************************************/
 
-static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type);
+static bool primInitIsIteratorRecord(Type* type);
+
+static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
 
 Expr* resolvePrimInit(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
@@ -5069,17 +5071,14 @@ Expr* resolvePrimInit(CallExpr* call) {
 
   SET_LINENO(call);
 
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->defaultInitializer                      != NULL &&
-        type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
-      // defaultInitializers for iterator record types cannot be called as
-      // default constructors.
-      return NULL;
-    }
+  if (primInitIsIteratorRecord(type) == true) {
+    return NULL;
   }
 
   // Generate a more specific USR_FATAL if resolution would fail
-  ensureGenericSafeForDeclarations(call, type);
+  if (primInitIsUnacceptableGeneric(call, type) == true) {
+    INT_FATAL(call, "primInitIsUnacceptbleGeneric should not return true");
+  }
 
   CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
 
@@ -5090,45 +5089,64 @@ Expr* resolvePrimInit(CallExpr* call) {
   return postFold(defOfCall);
 }
 
-// Ensure that 'type' is sufficiently non-generic to declare a variable
-// over it in the context of 'call'.
-static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
+// defaultInitializers for iterator record types
+// cannot be called as default constructors.
+
+static bool primInitIsIteratorRecord(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->defaultInitializer                      != NULL &&
+        type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+//
+// NB. This function returns false or generates a USR_FATAL
+//
+// Generate a useful USR_FATAL if the variable is generic
+// and resolution will fail.
+//
+static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   if (type->symbol->hasFlag(FLAG_GENERIC) == true) {
     SET_LINENO(call);
 
-    bool      unsafeGeneric = true;
-    FnSymbol* typeCons      = NULL;
+    const char* tag = NULL;
 
     if (AggregateType* at = toAggregateType(type)) {
-      typeCons = at->defaultTypeConstructor;
-
-      if (typeCons != NULL) {
+      if (FnSymbol* typeCons = at->defaultTypeConstructor) {
         // Swap in a call to the default type constructor and try to resolve it
         CallExpr* typeConsCall = new CallExpr(typeCons->name);
 
         call->replace(typeConsCall);
 
-        unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
+        if (tryResolveCall(typeConsCall) == NULL) {
+          tag = "not-fully-instantiated";
+        }
 
         // Put things back the way they were.
         typeConsCall->replace(call);
+      } else {
+        tag = "abstract";
       }
+
+    } else {
+      tag = "abstract";
     }
 
-    //
-    // If the generic was unresolved (either because its type
-    // constructor couldn't be called with zero arguments or because
-    // it didn't have a type constructor), print a message.
-    // Specialize it based on whether or not it had a type
-    // constructor.
-    //
-    if (unsafeGeneric == true) {
+    if (tag != NULL) {
       USR_FATAL(call,
                 "Variables can't be declared using %s generic types like '%s'",
-                (typeCons ? "not-fully-instantiated" : "abstract"),
+                tag,
                 type->symbol->name);
     }
   }
+
+  return false;
 }
 
 /************************************* | **************************************
