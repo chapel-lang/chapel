@@ -1,2 +1,1 @@
-IfInit(10)
-{f1 = true}
+IfInit(true,10)
