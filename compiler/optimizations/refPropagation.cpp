@@ -24,6 +24,7 @@
 #include "astutil.h"
 #include "driver.h"
 #include "expr.h"
+#include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
