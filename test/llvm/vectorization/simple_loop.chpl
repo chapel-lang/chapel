@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1
+// NOEXEC
+
 //Check whether vectorization occurs at all
 //This loop is trivial case for loop vectorizer and if
 //vectorization shouldn't happen it definitely won't happen in this case

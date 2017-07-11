@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1 --mllvm -runtime-memory-check-threshold=0
+// NOEXEC
+
 //This test checks whether vectorization occurs for more complicated loops
 proc loop (A, B, C) {
   // CHECK: <4 x i32>

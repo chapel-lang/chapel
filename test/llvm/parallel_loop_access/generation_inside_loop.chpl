@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage none
+// NOEXEC
+
 proc start_block() {}
 proc if_branch() {}
 proc while_loop() {}

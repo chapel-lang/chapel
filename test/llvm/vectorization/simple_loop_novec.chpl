@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --no-vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1 --mllvm -runtime-memory-check-threshold=0
+// NOEXEC
+
 // This loop shouldn't be vectorized, because
 // LLVM backend cannot check whether A and B overlap
 // runtime check for overlap was turned off and --no-vectorize was set

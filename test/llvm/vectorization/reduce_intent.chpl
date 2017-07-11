@@ -1,3 +1,6 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1
+
 //Check if reduce intent forall loop is vectorizable
 proc loop(A) {
   var sum : int(32) = 0;
