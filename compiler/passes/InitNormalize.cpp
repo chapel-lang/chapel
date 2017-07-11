@@ -314,15 +314,27 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 
   Type* type = field->sym->type;
 
-  if (isPrimitiveScalar(type) == true ||
-      isNonGenericClass(type) == true) {
+  if (isParam == true) {
+    CallExpr* cast     = createCast(initExpr, field->exprType->copy());
+
+    Symbol*   name     = new_CStringSymbol(field->sym->name);
+    Symbol*   _this    = mFn->_this;
+
+    CallExpr* fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, cast);
+
+    if (isFieldAccessible(initExpr) == false) {
+      INT_ASSERT(false);
+    }
+
+    updateFieldsMember(initExpr);
+
+    insertBefore->insertBefore(fieldSet);
+
+  } else if (isPrimitiveScalar(type) == true ||
+             isNonGenericClass(type) == true) {
     VarSymbol* tmp      = newTemp("tmp", type);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr("=", tmp, initExpr);
-
-    if (isParam == true) {
-      tmp->addFlag(FLAG_PARAM);
-    }
 
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     Symbol*    _this    = mFn->_this;
@@ -342,10 +354,6 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
     if (isNewExpr(initExpr) == true) {
       VarSymbol* tmp      = newTemp("tmp", type);
       DefExpr*   tmpDefn  = new DefExpr(tmp);
-
-      if (isParam == true) {
-        tmp->addFlag(FLAG_PARAM);
-      }
 
       Expr*      arg      = toCallExpr(initExpr)->get(1)->remove();
       CallExpr*  argExpr  = toCallExpr(arg);
@@ -379,10 +387,6 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
       DefExpr*   tmpDefn  = new DefExpr(tmp);
       CallExpr*  tmpInit  = new CallExpr("init", gMethodToken, tmp, initExpr);
 
-      if (isParam == true) {
-        tmp->addFlag(FLAG_PARAM);
-      }
-
       Symbol*    name     = new_CStringSymbol(field->sym->name);
       Symbol*    _this    = mFn->_this;
       CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
@@ -401,10 +405,6 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
   } else {
     VarSymbol* tmp       = newTemp("tmp", type);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
-
-    if (isParam == true) {
-      tmp->addFlag(FLAG_PARAM);
-    }
 
     // Applies a type to TMP
     CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, field->exprType->copy());
