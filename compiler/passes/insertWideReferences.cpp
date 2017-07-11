@@ -965,7 +965,7 @@ static void addKnownWides() {
       int i = 0;
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
-          if (i > 1 && actual_to_formal(se)->isRef()) {
+          if (i > 1 && actual_to_formal(se)->isRefOrWideRef()) {
             setWide(call, se->symbol());
           }
         }
