@@ -1471,8 +1471,7 @@ bool canCoerce(Type*     actualType,
     return true;
 
   if (is_real_type(formalType)) {
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
+    if ((is_int_type(actualType) || is_uint_type(actualType)))
       return true;
     if (is_real_type(actualType) &&
         get_width(actualType) < get_width(formalType))
@@ -1981,6 +1980,12 @@ static bool considerParamMatches(Type* actualType,
     // Otherwise, have bool cast to default-sized integer over a smaller size
     if (is_bool_type(actualType)) {
       return considerParamMatches(dtInt[INT_SIZE_DEFAULT],
+                                  arg1Type,
+                                  arg2Type);
+    }
+
+    if (is_int_type(actualType)) {
+      return considerParamMatches(dtReal[FLOAT_SIZE_DEFAULT],
                                   arg1Type,
                                   arg2Type);
     }
