@@ -445,7 +445,8 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
                                                   DefExpr* field,
                                                   Expr*    initExpr) const {
-  bool isParam = field->sym->hasFlag(FLAG_PARAM);
+  bool isParam   = field->sym->hasFlag(FLAG_PARAM);
+  bool isTypeVar = field->sym->hasFlag(FLAG_TYPE_VARIABLE);
 
   SET_LINENO(insertBefore);
 
@@ -462,6 +463,8 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
+      } else if (isTypeVar == true) {
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*     name      = new_CStringSymbol(field->sym->name);
@@ -485,6 +488,8 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
+      } else if (isTypeVar == true) {
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*    _this    = mFn->_this;
@@ -516,6 +521,8 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
+      } else if (isTypeVar == true) {
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*    _this    = mFn->_this;
