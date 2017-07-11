@@ -540,6 +540,13 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       insertBefore->insertBefore(fieldSet);
     }
 
+  } else if (isUnresolvedSymExpr(initExpr)) {
+    // Don't worry too much about it, resolution will handle this.
+    Symbol*   _this    = mFn->_this;
+    Symbol*   name     = new_CStringSymbol(field->sym->name);
+    CallExpr* fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
+
+    insertBefore->insertBefore(fieldSet);
   } else {
     INT_ASSERT(false);
   }
