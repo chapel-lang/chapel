@@ -169,7 +169,9 @@ void preNormalizeInitMethod(FnSymbol* fn) {
     preNormalizeNonGenericInit(fn);
 
   } else {
-    preNormalizeGenericInit(fn);
+    preNormalizeNonGenericInit(fn);
+    if (false)
+      preNormalizeGenericInit(fn);
   }
 }
 
