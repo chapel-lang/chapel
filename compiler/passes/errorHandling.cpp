@@ -310,8 +310,6 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
-      } else if (fStrictErrorHandling) {
-        INT_FATAL(node, "throwing call without try or try! (strict mode)");
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
@@ -514,7 +512,18 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
         // OK
       } else {
         if (errors && fStrictErrorHandling) {
-          USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+
+          bool inCompilerGeneratedFn = false;
+          if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+            // Don't check wrapper functions in strict mode.
+            if (parentFn->hasFlag(FLAG_WRAPPER))
+              inCompilerGeneratedFn = true;
+            // TODO or on, begin, ...
+          }
+
+          if (!inCompilerGeneratedFn) {
+            USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+          }
         }
         // not in a try
         canThrow = true;
