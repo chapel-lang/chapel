@@ -3148,6 +3148,26 @@ typeUsesForwarding(Type* t) {
   return false;
 }
 
+// Collect methods with a particular name from a type and from
+// any type it's instantiated from.
+static
+void collectMethodsNamed(Type* t,
+                         const char* name_astr,
+                         std::vector<FnSymbol*>  & methods)
+{
+  forv_Vec(FnSymbol, method, t->methods) {
+    // Skip any methods with a different name
+    // TODO: this could be more efficient if methods were a map
+    if (method->name != name_astr)
+      continue;
+
+    methods.push_back(method);
+  }
+  // Collect also methods from whatever type t is instantiated from
+  if (t->instantiatedFrom != NULL)
+    collectMethodsNamed(t->instantiatedFrom, name_astr, methods);
+}
+
 static bool
 populateForwardingMethods(Type* t,
                           const char* calledName,
@@ -3257,11 +3277,13 @@ populateForwardingMethods(Type* t,
 
     // Now, forward all methods named 'methodName' as 'calledName'.
     // Forward generic functions as generic functions.
-    forv_Vec(FnSymbol, method, delegate->type->methods) {
-      // Skip any methods with a different name
-      // TODO: this could be more efficient if methods were a map
-      if (method->name != methodName)
-        continue;
+
+    std::vector<FnSymbol*> methods;
+    collectMethodsNamed(delegate->type, methodName, methods);
+
+    for_vector(FnSymbol, method, methods) {
+      // Name should already be filtered out
+      INT_ASSERT(method->name == methodName);
 
       // Skip any methods that don't match parentheses-less
       // vs parentheses-ful vs the call.
