@@ -66,6 +66,14 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr);
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
     if (DefExpr* defExpr = toDefExpr(field)) {
+
+      // Don't do anything about type or param fields.  Generic var/const
+      // fields are okay, though.
+      if (defExpr->sym->hasFlag(FLAG_PARAM) ||
+          defExpr->sym->hasFlag(FLAG_TYPE_VARIABLE))
+        continue;
+
+
       Type* type = NULL;
 
       if (Expr* typeExpr = defExpr->exprType) {

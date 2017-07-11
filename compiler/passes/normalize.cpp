@@ -133,8 +133,8 @@ void normalize() {
   lowerReduceAssign();
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
-    if (isNonGenericClassWithInitializers(at)  == true ||
-        isNonGenericRecordWithInitializers(at) == true) {
+    if (isClassWithInitializers(at)  == true ||
+        isRecordWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
   }
