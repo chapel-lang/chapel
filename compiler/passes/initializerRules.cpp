@@ -360,6 +360,17 @@ static InitNormalize preNormalize(BlockStmt*    block,
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", in phase 2",
                       field->sym->name);
+
+          } else if (field->sym->hasFlag(FLAG_PARAM) == true) {
+            USR_FATAL(stmt,
+                      "cannot update a param field, \"%s\", in phase 2",
+                      field->sym->name);
+
+          } else if (field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL(stmt,
+                      "cannot update a type field, \"%s\", in phase 2",
+                      field->sym->name);
+
           } else {
             stmt = stmt->next;
           }
