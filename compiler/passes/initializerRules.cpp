@@ -160,17 +160,11 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
 static bool isReturnVoid(FnSymbol* fn);
 
 void preNormalizeInitMethod(FnSymbol* fn) {
-  AggregateType* at = toAggregateType(fn->_this->type);
-
   if (fn->hasFlag(FLAG_NO_PARENS)   ==  true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
   } else if (isReturnVoid(fn)       == false) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
-
-  } else if (isNonGenericRecord(at) ==  true ||
-             isNonGenericClass(at)  ==  true) {
-    preNormalize(fn);
 
   } else {
     preNormalize(fn);
