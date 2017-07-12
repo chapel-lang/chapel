@@ -1647,6 +1647,8 @@ module ChapelBase {
       isArrayType(t)  ||
       isRangeType(t)  ||
       isTupleType(t)  ||
+      isSyncType(t)   ||
+      isSingleType(t) ||
       isAtomicType(t)
     then
       return false;
