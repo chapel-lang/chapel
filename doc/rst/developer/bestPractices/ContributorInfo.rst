@@ -20,7 +20,7 @@ Overview:
 #. `Discuss design`_ changes or big development efforts
 #. `Set up a branch for development`_
 
-   #. `Fork repo on github`_
+   #. `Set up repository`_
    #. `Create new branch`_
 
 #. `Develop and test contributions locally`_
@@ -73,10 +73,10 @@ to be similar, though the specific people involved are likely to change and
 grow).
 
 #. `Set up a github account`_. The "Free" plan is sufficient for contributing to
-  Chapel.
+   Chapel.
 
 #. Make sure you have configured your environment to work with git. See
-  `initial git setup`_ instructions.
+   `initial git setup`_ instructions.
 
 #. Use the GitHub web interface to create a fork of the Chapel repo by visiting
    https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
@@ -287,7 +287,7 @@ Submit pull request
 
   Your pull request will be available at a URL like:
 
-    ``https://github.com/chapel-lang/chapel/pull/<number>``
+  ``https://github.com/chapel-lang/chapel/pull/<number>``
 
   and you can discuss the patch with your reviewers there.
 
@@ -389,11 +389,11 @@ pull request:
 
 go to
 
-  https://github.com/chapel-lang/chapel/pulls
+https://github.com/chapel-lang/chapel/pulls
 
 or
 
-  ``https://github.com/chapel-lang/chapel/pull/<number>``
+``https://github.com/chapel-lang/chapel/pull/<number>``
 
 and click the friendly green button "Merge pull request" (it is possible to
 merge the pull request from the command line also and the pull request page has
@@ -435,11 +435,11 @@ Initial Git Setup
 
 Follow the GitHub directions to setup a new account.
 
-  https://help.github.com/categories/53/articles
+https://help.github.com/categories/53/articles
 
 If you plan to use ssh to push/pull, setup SSH keys.
 
-  https://help.github.com/categories/56/articles
+https://help.github.com/categories/56/articles
 
 
 
@@ -722,7 +722,7 @@ Suppose you have figured out that a particular commit is causing a problem
 and you'd like to view the pull request discussion on GitHub. You can go
 to
 
-  ``https://github.com/chapel-lang/chapel/commit/<commit-hash>``
+``https://github.com/chapel-lang/chapel/commit/<commit-hash>``
 
 and GitHub shows the pull request number at the bottom of the commit message
 complete with a link to the pull request page.
