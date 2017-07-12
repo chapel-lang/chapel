@@ -316,7 +316,7 @@ static void setupChplHome(const char* argv0) {
       int rc;
       rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
                   get_configured_prefix(), // e.g. /usr
-                  "/share/chapel",
+                  "share/chapel",
                   majMinorVers);
       if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
