@@ -4255,6 +4255,10 @@ static bool hasCopyConstructor(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool  moveIsAcceptable(CallExpr* call);
+
+static void  moveHaltThisMoveIsUnacceptable(CallExpr* call);
+
 static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs);
 
 static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
@@ -4267,6 +4271,15 @@ static void resolveMove(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
+
+
+  if (moveIsAcceptable(call) == false) {
+    // NB: This call will not return
+    moveHaltThisMoveIsUnacceptable(call);
+  }
+
+
+
   Expr*     rhs           = call->get(2);
   bool      rhsIsTypeExpr = isTypeExpr(rhs);
   Type*     rhsType       = rhs->typeInfo();
@@ -4276,33 +4289,6 @@ static void resolveMove(CallExpr* call) {
 
   FnSymbol* fn            = toFnSymbol(call->parentSymbol);
   bool      isReturn      = fn ? lhs == fn->getReturnSymbol() : false;
-
-  if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == true && rhsIsTypeExpr == false) {
-    if (isReturn == true) {
-      if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) == false)
-        USR_FATAL(call, "illegal return of value where type is expected");
-
-    } else {
-      USR_FATAL(call, "illegal assignment of value to type");
-    }
-  }
-
-  if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-      lhs->hasFlag(FLAG_MAYBE_TYPE)    == false &&
-      rhsIsTypeExpr                    == true) {
-    if (isReturn == true) {
-      USR_FATAL(call, "illegal return of type where value is expected");
-
-    } else {
-      if (lhs->hasFlag(FLAG_CHPL__ITER) == true) {
-        USR_FATAL(call,
-                  "unable to iterate over type '%s'",
-                  toString(rhs->getValType()));
-      } else {
-        USR_FATAL(call, "illegal assignment of type to value");
-      }
-    }
-  }
 
   // do not resolve function return type yet except for constructors
   if (isReturn         == true            &&
@@ -4510,6 +4496,72 @@ static void resolveMove(CallExpr* call) {
                       toString(rhsType));
           }
         }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+static bool moveIsAcceptable(CallExpr* call) {
+  Symbol* lhs    = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs    = call->get(2);
+  bool    retval = true;
+
+  if (isTypeExpr(rhs) == false) {
+    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      FnSymbol* fn = toFnSymbol(call->parentSymbol);
+
+      if (fn->getReturnSymbol()                  != lhs    ||
+          fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) == false) {
+        retval = false;
+      }
+    }
+
+  } else {
+    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+        lhs->hasFlag(FLAG_MAYBE_TYPE)    == false) {
+      retval = false;
+    }
+  }
+
+  return retval;
+}
+
+static void moveHaltThisMoveIsUnacceptable(CallExpr* call) {
+  Symbol* lhs = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs = call->get(2);
+
+  if (isTypeExpr(rhs) == false) {
+    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      FnSymbol* fn = toFnSymbol(call->parentSymbol);
+
+      if (fn->getReturnSymbol() != lhs) {
+        USR_FATAL(call, "illegal assignment of value to type");
+
+      } else if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) == false) {
+        USR_FATAL(call, "illegal return of value where type is expected");
+      }
+    }
+
+  } else {
+    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+        lhs->hasFlag(FLAG_MAYBE_TYPE)    == false) {
+      FnSymbol* fn = toFnSymbol(call->parentSymbol);
+
+      if (fn->getReturnSymbol() == lhs) {
+        USR_FATAL(call, "illegal return of type where value is expected");
+
+      } else if (lhs->hasFlag(FLAG_CHPL__ITER) == true) {
+        USR_FATAL(call,
+                  "unable to iterate over type '%s'",
+                  toString(rhs->getValType()));
+
+      } else {
+        USR_FATAL(call, "illegal assignment of type to value");
       }
     }
   }
