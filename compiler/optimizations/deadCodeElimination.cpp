@@ -30,6 +30,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
+#include "DoWhileStmt.h"
 
 #include <queue>
 #include <set>
@@ -83,8 +84,17 @@ void deadVariableElimination(FnSymbol* fn) {
   std::set<Symbol*> symSet;
   collectSymbolSet(fn, symSet);
 
-  for_set(Symbol, sym, symSet)
-  {
+  // Use 'symSet' and 'todo' together for a unique queue of symbols to process
+  std::queue<Symbol*> todo;
+  for_set(Symbol, sym, symSet) {
+    todo.push(sym);
+  }
+
+  while(todo.empty() == false) {
+    Symbol* sym = todo.front();
+    todo.pop();
+    symSet.erase(sym);
+
     // We're interested only in VarSymbols.
     if (!isVarSymbol(sym))
       continue;
@@ -94,24 +104,36 @@ void deadVariableElimination(FnSymbol* fn) {
       continue;
 
     if (isDeadVariable(sym)) {
+      std::set<Symbol*> potentiallyChanged;
       for_SymbolDefs(se, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        //INT_ASSERT(call &&
-        //           (call->isPrimitive(PRIM_MOVE) ||
-        //            call->isPrimitive(PRIM_ASSIGN)));
-        //Expr* rhs = call->get(2)->remove();
+        collectSymbolSet(call->getStmtExpr(), potentiallyChanged);
         INT_ASSERT(call);
+
         Expr* dest = NULL;
         Expr* rhs = NULL;
         bool ok = getSettingPrimitiveDstSrc(call, &dest, &rhs);
         INT_ASSERT(ok);
+
         rhs->remove();
-        if (!isSymExpr(rhs))
+        CallExpr* rhsCall = toCallExpr(rhs);
+        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))) {
+          // RHS might have side-effects, leave it alone
           call->replace(rhs);
-        else
+        } else {
           call->remove();
+        }
       }
       sym->defPoint->remove();
+
+      // If we just removed a symbol, let's (re)visit the other symbols in
+      // this statement in case they are now dead.
+      for_set(Symbol, otherSym, potentiallyChanged) {
+        if (otherSym != sym && symSet.find(otherSym) == symSet.end()) {
+          symSet.insert(otherSym);
+          todo.push(otherSym);
+        }
+      }
     }
   }
 }
@@ -194,91 +216,6 @@ static bool isInCForLoopHeader(Expr* expr) {
   }
 
   return retval;
-}
-
-void deadCodeElimination(FnSymbol* fn) {
-  std::map<SymExpr*, Vec<SymExpr*>*> DU;
-  std::map<SymExpr*, Vec<SymExpr*>*> UD;
-
-  std::map<Expr*,    Expr*>          exprMap;
-
-  Vec<Expr*>                         liveCode;
-  Vec<Expr*>                         workSet;
-
-  BasicBlock::buildBasicBlocks(fn);
-
-  buildDefUseChains(fn, DU, UD);
-
-  for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    for (size_t i = 0; i < bb->exprs.size(); i++) {
-      Expr*         expr        = bb->exprs[i];
-      bool          isEssential = bb->marks[i];
-
-      std::vector<BaseAST*> asts;
-
-      collect_asts(expr, asts);
-
-      for_vector(BaseAST, ast, asts) {
-        if (Expr* sub = toExpr(ast)) {
-          exprMap[sub] = expr;
-        }
-      }
-
-      if (isEssential == false) {
-        for_vector(BaseAST, ast, asts) {
-          if (CallExpr* call = toCallExpr(ast)) {
-            // mark assignments to global variables as essential
-            if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-              if (SymExpr* se = toSymExpr(call->get(1))) {
-                if (DU.count(se) == 0) {
-                  isEssential = true;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (isEssential) {
-        liveCode.set_add(expr);
-        workSet.add(expr);
-      }
-    }
-  }
-
-  forv_Vec(Expr, expr, workSet) {
-    std::vector<SymExpr*> symExprs;
-
-    collectSymExprs(expr, symExprs);
-
-    for_vector(SymExpr, se, symExprs) {
-      if (UD.count(se) != 0) {
-        Vec<SymExpr*>* defs = UD[se];
-
-        forv_Vec(SymExpr, def, *defs) {
-          INT_ASSERT(exprMap.count(def) != 0);
-
-          Expr* expr = exprMap[def];
-
-          if (!liveCode.set_in(expr)) {
-            liveCode.set_add(expr);
-            workSet.add(expr);
-          }
-        }
-      }
-    }
-  }
-
-  // This removes dead expressions from each block.
-  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
-    for_vector(Expr, expr, bb1->exprs) {
-      if (isSymExpr(expr) || isCallExpr(expr))
-        if (!liveCode.set_in(expr))
-          expr->remove();
-    }
-  }
-
-  freeDefUseChains(DU, UD);
 }
 
 /************************************* | **************************************
@@ -538,8 +475,6 @@ void deadCodeElimination() {
       // Some of these will break BasicBlock construction. Clean them up.
       cleanupLoopBlocks(fn);
 
-      deadCodeElimination(fn);
-
       deadVariableElimination(fn);
 
       // 2014/10/17   Noakes and Elliot
@@ -646,25 +581,33 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
       if (toDefExpr(expr))
         continue;
 
-      CondStmt*  condStmt  = toCondStmt(expr->parentExpr);
-      WhileStmt* whileStmt = toWhileStmt(expr->parentExpr);
-      ForLoop*   forLoop   = toForLoop(expr->parentExpr);
+      CondStmt*    condStmt    = toCondStmt(expr->parentExpr);
+      DoWhileStmt* doWhileStmt = toDoWhileStmt(expr->parentExpr);
+      WhileStmt*   whileStmt   = toWhileStmt(expr->parentExpr);
+      ForLoop*     forLoop     = toForLoop(expr->parentExpr);
 
       if (condStmt && condStmt->condExpr == expr)
         // If the expr is the condition expression of an if statement,
         // then remove the entire if. (NOTE 1)
         condStmt->remove();
 
-      else if (whileStmt && whileStmt->condExprGet() == expr)
+      else if (doWhileStmt && doWhileStmt->condExprGet() == expr)
+        if (doWhileStmt->length() == 0)
+          doWhileStmt->remove();
+        else
+          // Do nothing. (NOTE 3)
+          ;
+
+      else if (whileStmt   && whileStmt->condExprGet()   == expr)
         // If the expr is the condition expression of a while statement,
         // then remove the entire While. (NOTE 1)
         whileStmt->remove();
 
-      else if (forLoop   && forLoop->indexGet()      == expr)
+      else if (forLoop     && forLoop->indexGet()         == expr)
         // Do nothing. (NOTE 2)
         ;
 
-      else if (forLoop   && forLoop->iteratorGet()   == expr)
+      else if (forLoop     && forLoop->iteratorGet()      == expr)
         // Do nothing. (NOTE 2)
         ;
 
@@ -785,3 +728,7 @@ static void deadGotoElimination(FnSymbol* fn)
 //#    of the iterator index is dead.  (It's probably a safer bet when the
 //#    iterator expression is dead.)
 //#
+//# 3. Even if the condition of a DoWhileLoop is dead, the loop cannot be
+//#    removed because a DoWhileLoop must execute at least once. We _could_
+//#    remove the condition variable, but the compiler expects a non-null expr
+//#    to be there. However, if the loop body is empty, we can remove it.

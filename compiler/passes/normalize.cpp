@@ -133,8 +133,8 @@ void normalize() {
   lowerReduceAssign();
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
-    if (isNonGenericClassWithInitializers(at)  == true ||
-        isNonGenericRecordWithInitializers(at) == true) {
+    if (isClassWithInitializers(at)  == true ||
+        isRecordWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
   }
@@ -2315,7 +2315,9 @@ static void fixup_array_formals(FnSymbol* fn) {
           if (!fn->where) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
             insert_help(fn->where, NULL, fn);
+            fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
           }
+          arg->addFlag(FLAG_NOT_FULLY_GENERIC);
           Expr* oldWhere = fn->where->body.tail;
           CallExpr* newWhere = new CallExpr("&");
           oldWhere->replace(newWhere);
@@ -2396,7 +2398,9 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query) {
   if (!fn->where) {
     fn->where = new BlockStmt(new SymExpr(gTrue));
     insert_help(fn->where, NULL, fn);
+    fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
   }
+  formal->addFlag(FLAG_NOT_FULLY_GENERIC);
   Expr* where = fn->where->body.tail;
   CallExpr* clause;
   query->insertAtHead(formal);

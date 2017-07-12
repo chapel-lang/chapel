@@ -150,7 +150,7 @@ proc populate (size : int) {
   const colorsDefault10  = (color.blue, color.red, color.yellow, color.red,
                             color.yellow, color.blue, color.red, color.yellow,
                             color.red, color.blue);
-  const D : domain(1) = [1..size];
+  const D : domain(1) = {1..size};
   var population : [D] Chameneos;
 
   if (size == 10) {
@@ -245,11 +245,8 @@ proc main() {
 
     const forest : MeetingPlace = new MeetingPlace();
 
-    const D : domain(1) = [1..numMeetings];
-    const meetingPlaces : [D] MeetingPlace;
-    for i in D {
-      meetingPlaces(i) = new MeetingPlace();
-    }
+    const D : domain(1) = {1..numMeetings};
+    const meetingPlaces : [D] MeetingPlace = [i in D] new MeetingPlace();
 
     const population1 = populate(numChameneos1);
     const population2 = populate(numChameneos2);
