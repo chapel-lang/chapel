@@ -164,12 +164,23 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 endif
 
 #
+# Avoid false positive warnings about string overflows
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
+endif
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
-# compiled with gcc 5.X.  Issue will be pursued after the release
+# compiled with gcc 5.X.
+#
+# 2017-06-14: Regression apparently fixed since gcc 5.X.  Turning
+# off VRP interferes with operation of gcc 7, especially static
+# analysis.  The test below was "-ge 5", now changing it to "-eq 5".
 #
 # Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
 COMP_CXXFLAGS += -fno-tree-vrp
@@ -187,7 +198,7 @@ endif
 ifeq ($(GNU_GCC_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
 # (ChapelRangeBase.chpl:793) generates code which can overflow.
-GEN_CFLAGS += -Wno-strict-overflow
+SQUASH_WARN_GEN_CFLAGS += -Wno-strict-overflow
 # -fstrict-overflow was introduced in GCC 4.2 and is on by default.  When on,
 # it allows the compiler to assume that integer sums will not overflow, which
 #  can change the programs runtime behavior (when -O2 or greater is tossed).

@@ -218,13 +218,13 @@ void normalize() {
         // verify the name of the destructor
         bool notTildeName = (fn->name[0] != '~') ||
                              strcmp(fn->name + 1, ct->symbol->name);
-        bool notDeinit = strcmp(fn->name, "deinit");
+        bool notDeinit = (fn->name != astrDeinit);
 
         if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
             "destructor name must match class/record name or deinit()");
         } else {
-          fn->name = astr("deinit");
+          fn->name = astrDeinit;
         }
       }
     // make sure methods don't attempt to overload operators
@@ -301,7 +301,7 @@ static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt) {
     if (FnSymbol* fn = toFnSymbol(def->sym))
       // When we retire ~classname naming for deinits,
       // we can replace this strcmp with a check for FLAG_DESTRUCTOR.
-      if (!strcmp(fn->name, "deinit"))
+      if (fn->name == astrDeinit)
         if (fn->numFormals() == 0) {
           if (mod->deinitFn) {
             // Already got one deinit() before.
@@ -1157,7 +1157,7 @@ static void applyGetterTransform(CallExpr* call) {
   //   x.f --> f(_mt, x)
   // Note:
   //   call(call or )( indicates partial
-  if (call->isNamed(".")) {
+  if (call->isNamedAstr(astrSdot)) {
     SET_LINENO(call);
 
     SymExpr* symExpr = toSymExpr(call->get(2));
@@ -1238,7 +1238,7 @@ static void insertCallTemps(CallExpr* call) {
     if (call->isNamed("super")   == true &&
 
         parentCall               != NULL &&
-        parentCall->isNamed(".") == true &&
+        parentCall->isNamedAstr(astrSdot) &&
         parentCall->get(1)       == call) {
       // We've got an access to a method or field on the super type.
       // This means we should preserve that knowledge for when we
@@ -2004,7 +2004,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
 
-      // Insert the arg portion of the initExpr back into tree
+      // This call must be in tree before extending argExpr
       defExpr->insertAfter(argExpr);
 
       // Convert it in to a use of the init method
@@ -2025,12 +2025,13 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNewExpr(initExpr)) {
-    // This check is necessary because the "typeForTypeSpecifier" call will not
-    // obtain a type if the typeExpr is a CallExpr, as it is for generic records
-    // and classes
+    // This check is necessary because the "typeForTypeSpecifier"
+    // call will not obtain a type if the typeExpr is a CallExpr,
+    // as it is for generic records and classes
 
-    CallExpr* origCall = toCallExpr(initExpr);
-    AggregateType* rhsType = typeForNewExpr(origCall);
+    CallExpr*      origCall = toCallExpr(initExpr);
+    AggregateType* rhsType  = typeForNewExpr(origCall);
+
     if (isGenericRecordWithInitializers(rhsType)) {
       // Create a temporary with the type specified in the lhs declaration
       VarSymbol* typeTemp = newTemp("type_tmp");
@@ -2076,6 +2077,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
 
     }
+
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
@@ -2608,6 +2610,14 @@ static void updateConstructor(FnSymbol* fn) {
   // Replace it with _construct_typename
   fn->name = ct->defaultInitializer->name;
 
+  if (fNoUserConstructors) {
+    ModuleSymbol* mod = fn->getModule();
+    if (mod && mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD) {
+      USR_FATAL_CONT(fn, "Type '%s' defined a constructor here",
+                     ct->symbol->name);
+    }
+  }
+
   fn->addFlag(FLAG_CONSTRUCTOR);
 }
 
@@ -2635,13 +2645,11 @@ static void find_printModuleInit_stuff() {
   collectSymbols(printModuleInitModule, symbols);
 
   for_vector(Symbol, symbol, symbols) {
+
+    // TODO -- move this logic to wellknown.cpp
     if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
       gModuleInitIndentLevel = toVarSymbol(symbol);
       INT_ASSERT(gModuleInitIndentLevel);
-
-    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-      gPrintModuleInitFn = toFnSymbol(symbol);
-      INT_ASSERT(gPrintModuleInitFn);
     }
   }
 }

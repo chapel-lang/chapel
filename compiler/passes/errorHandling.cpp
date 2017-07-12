@@ -126,34 +126,43 @@ try {
 }
 */
 
+
+// Static functions
+static bool canBlockThrow(BlockStmt* blk);
+static void checkErrorHandling(FnSymbol* fn);
+
+
+namespace {
+
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCatchStmt(CatchStmt*   node);
-  virtual void exitCatchStmt (CatchStmt*   node);
-  virtual bool enterCallExpr (CallExpr*  node);
+  virtual bool enterTryStmt (TryStmt*   node);
+  virtual void exitTryStmt  (TryStmt*   node);
+  virtual void exitCatchStmt(CatchStmt* node);
+  virtual bool enterCallExpr(CallExpr*  node);
 
 private:
   struct TryInfo {
     VarSymbol*   errorVar;
     LabelSymbol* handlerLabel;
+    TryStmt*     tryStmt;
+    BlockStmt*   tryBody;
   };
 
   std::stack<TryInfo> tryStack;
+  std::stack<TryInfo> catchesStack;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
-  bool                insideCatch;
 
-  AList     lowerCatches      (TryStmt*   tryStmt,  VarSymbol* errorVar,
-                               TryInfo*   outerTry);
-  AList     setOutGotoEpilogue(VarSymbol* error);
-  AList     errorCond         (VarSymbol* errorVar, BlockStmt* thenBlock,
-                               BlockStmt* elseBlock = NULL);
-  CallExpr* haltExpr          ();
+  void   lowerCatches      (const TryInfo& info);
+  AList  setOutGotoEpilogue(VarSymbol*     error);
+  AList  errorCond         (VarSymbol*     errorVar,
+                            BlockStmt*     thenBlock,
+                            BlockStmt*     elseBlock = NULL);
+  CallExpr* haltExpr       ();
 
   ErrorHandlingVisitor();
 };
@@ -162,7 +171,6 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
                                            LabelSymbol* _epilogue) {
   outError = _outError;
   epilogue = _epilogue;
-  insideCatch = false;
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -170,7 +178,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 
   VarSymbol*   errorVar     = newTemp("error", dtError);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
-  TryInfo      info         = {errorVar, handlerLabel};
+  TryInfo      info         = {errorVar, handlerLabel, node, node->body()};
   tryStack.push(info);
 
   return true;
@@ -179,34 +187,49 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
-  TryInfo info  = tryStack.top();
+  TryInfo info = tryStack.top();
   tryStack.pop();
 
-  TryInfo* outerTry = NULL;
-  if (!tryStack.empty())
-    outerTry = & tryStack.top();
+  BlockStmt* tryBody = info.tryBody;
 
-  BlockStmt* tryBlock = node->body();
+  tryBody->insertAtHead(new DefExpr(info.errorVar));
+  tryBody->insertAtTail(new DefExpr(info.handlerLabel));
 
-  tryBlock->insertAtHead(new DefExpr(info.errorVar));
+  if (node->_catches.empty()) {
+    lowerCatches(info); // no exitCatchStmt, so called here
+  } else {
+    catchesStack.push(info);
+  }
 
-  tryBlock->insertAtTail(new DefExpr(info.handlerLabel));
-  tryBlock->insertAtTail(lowerCatches(node, info.errorVar, outerTry));
+  // may be NULL due to replacement of an enclosing try
+  if (tryBody->parentExpr)
+    tryBody->remove();
 
-  tryBlock->remove();
-  node    ->replace(tryBlock);
+  node->replace(tryBody);
 }
 
-AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
-                                         TryInfo* outerTry) {
-  BlockStmt* handlers    = new BlockStmt();
+void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
+  // last CatchStmt to have its contents lowered; lower catches structure
+  if (node->next == NULL) {
+    TryInfo info = catchesStack.top();
+    catchesStack.pop();
+    lowerCatches(info);
+  }
+}
 
-  bool       hasCatchAll = false;
+void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
+  TryStmt*   tryStmt  = info.tryStmt;
+  VarSymbol* errorVar = info.errorVar;
+
+  SET_LINENO(tryStmt);
+
+  BlockStmt* handlers    = new BlockStmt();
   BlockStmt* currHandler = handlers;
+  bool       hasCatchAll = false;
 
   for_alist(c, tryStmt->_catches) {
     if (hasCatchAll)
-      USR_FATAL(c->prev, "catchall placed before the end of a catch list");
+      INT_FATAL(c->prev, "catchall placed before the end of a catch list");
 
     SET_LINENO(c);
 
@@ -252,7 +275,8 @@ AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
       currHandler->insertAtTail(haltExpr());
-    } else if (outerTry != NULL) {
+    } else if (!tryStack.empty()) {
+      TryInfo* outerTry = & tryStack.top();
       currHandler->insertAtTail(new CallExpr(PRIM_MOVE, outerTry->errorVar,
                                              errorVar));
       currHandler->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
@@ -260,20 +284,11 @@ AList ErrorHandlingVisitor::lowerCatches(TryStmt* tryStmt, VarSymbol* errorVar,
     } else if (outError != NULL) {
       currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
     } else {
-      USR_FATAL(tryStmt, "try without a catchall in a non-throwing function");
+      INT_FATAL(tryStmt, "try without a catchall in a non-throwing function");
     }
   }
 
-  return errorCond(errorVar, handlers);
-}
-
-bool ErrorHandlingVisitor::enterCatchStmt(CatchStmt* node) {
-  insideCatch = true;
-  return true;
-}
-
-void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
-  insideCatch = false;
+  info.tryBody->insertAtTail(errorCond(errorVar, handlers));
 }
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
@@ -285,6 +300,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
       VarSymbol* errorVar    = NULL;
       BlockStmt* errorPolicy = new BlockStmt();
+      Expr*      insert      = node->getStmtExpr();
+      if (insert == NULL)
+        insert = node;
 
       if (insideTry) {
         TryInfo info = tryStack.top();
@@ -293,11 +311,11 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
                                                info.handlerLabel));
       } else if (fStrictErrorHandling) {
-        USR_FATAL(node, "throwing call without try or try! (strict mode)");
+        INT_FATAL(node, "throwing call without try or try! (strict mode)");
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
-        node->getStmtExpr()->insertBefore(new DefExpr(errorVar));
+        insert->insertBefore(new DefExpr(errorVar));
 
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
@@ -305,8 +323,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
           errorPolicy->insertAtTail(haltExpr());
       }
 
-      node->insertAtTail(errorVar);
-      node->insertAfter(errorCond(errorVar, errorPolicy));
+      node->insertAtTail(errorVar); // adding error argument to call
+      insert->insertAfter(errorCond(errorVar, errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -317,7 +335,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
-    if (insideTry && !insideCatch) {
+    if (insideTry) {
       TryInfo   info      = tryStack.top();
       CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol,
                                          thrownError);
@@ -328,7 +346,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     } else if (outError != NULL) {
       throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
     } else {
-      USR_FATAL(node, "cannot throw in a non-throwing function");
+      INT_FATAL(node, "cannot throw in a non-throwing function");
     }
   }
   return true;
@@ -339,7 +357,9 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
 
   AList ret;
-  ret.insertAtTail(new CallExpr(PRIM_MOVE, outError, castError));
+  // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
+  // errors that come up in C compilation.
+  ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castError));
   ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
 
   return ret;
@@ -364,9 +384,25 @@ CallExpr* ErrorHandlingVisitor::haltExpr() {
   return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
 }
 
+} /* end anon namespace */
+
 void lowerErrorHandling() {
   if (!fMinimalModules)
     INT_ASSERT(dtError->inTree());
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Determine if compiler-generated fns should be marked 'throws'
+    if (fn->hasFlag(FLAG_ON)) {
+      if (canBlockThrow(fn->body))
+        fn->throwsErrorInit();
+    } else {
+      // Otherwise, just check for error-handling errors.
+      checkErrorHandling(fn);
+    }
+  }
+
+  // Quit if fatal errors were encountered by checkErrorHandling above.
+  USR_STOP();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     ArgSymbol*   outError = NULL;
@@ -385,4 +421,140 @@ void lowerErrorHandling() {
     ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
     fn->accept(&visitor);
   }
+}
+
+namespace {
+
+class CanThrowVisitor : public AstVisitorTraverse {
+
+public:
+  CanThrowVisitor       (bool inThrowingFn, bool makeCompileErrors);
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+  bool throws() { return canThrow; }
+
+private:
+  int  tryDepth;
+  bool canThrow;
+  bool errors;
+  bool fnCanThrow; // only used for error checking
+
+  bool   catchesNotExhaustive(TryStmt* tryStmt);
+};
+
+CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors) {
+  tryDepth = 0;
+  canThrow = false;
+  errors = makeCompileErrors;
+  fnCanThrow = inThrowingFn;
+}
+
+bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void CanThrowVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  // is it an exhaustive catch?
+
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    canThrow = false;
+  } else {
+    canThrow = nonExhaustive;
+    if (errors && tryDepth==0 && nonExhaustive && !fnCanThrow) {
+      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
+    }
+  }
+}
+
+bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
+
+  bool hasCatchAll = false;
+
+  for_alist(c, tryStmt->_catches) {
+    if (errors && hasCatchAll)
+      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
+
+    SET_LINENO(c);
+
+    CatchStmt* catchStmt = toCatchStmt(c);
+    DefExpr*   catchDef  = catchStmt->expr();
+
+    // catchall
+    if (catchDef == NULL) {
+      hasCatchAll = true;
+    } else {
+      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
+      Type*      errType = errSym->type;
+
+      // named catchall
+      if (errType == dtError) {
+        hasCatchAll = true;
+      }
+    }
+  }
+
+  return !hasCatchAll;
+}
+
+bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
+  bool insideTry = (tryDepth > 0);
+
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+    if (calledFn->throwsError()) {
+      if (insideTry) {
+        // OK
+      } else {
+        if (errors && fStrictErrorHandling) {
+          USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+        }
+        // not in a try
+        canThrow = true;
+      }
+    }
+  } else if (node->isPrimitive(PRIM_THROW)) {
+    canThrow = true;
+
+    if (insideTry) {
+      // OK, error checking for this case done in try handling
+    } else if (fnCanThrow == true) {
+      // OK, fn can throw
+    } else if (errors == true) {
+      USR_FATAL_CONT(node, "cannot throw in a non-throwing function");
+    }
+  }
+  return true;
+}
+
+} /* end anon namespace */
+
+
+// Returns `true` if a block can exit with an error
+//  (e.g. by calling 'throw' or a throwing function,
+//   when these are not handled by try! or catch).
+// This function is useful to infer 'throws' for
+// certain compiler-introduced functions.
+
+static bool canBlockThrow(BlockStmt* block)
+{
+  CanThrowVisitor visit(false, false);
+
+  block->accept(&visit);
+
+  return visit.throws();
+}
+
+static void checkErrorHandling(FnSymbol* fn)
+{
+  CanThrowVisitor visit(fn->throwsError(), true);
+
+  fn->body->accept(&visit);
 }

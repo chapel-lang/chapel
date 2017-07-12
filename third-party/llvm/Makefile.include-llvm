@@ -8,6 +8,8 @@ LLVM_CLANG_CODEGEN_INCLUDE_DIR=$(LLVM_DIR)/$(LLVM_SUBDIR)/tools/clang/lib/CodeGe
 
 ifndef LLVM_LLVM_LIBS
   export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets)
+  #3.7 does'nt have coverage
+#export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage)
 endif
 
 # Use this version for LLVM 3.4 and 3.3

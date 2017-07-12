@@ -239,6 +239,23 @@ all:
     - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
   05/03/17:
     - Flag some compiler temps as const (#6154)
+  06/08/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: Single node XC, 16 node XC
+  06/10/17:
+    - text: bounded-coforall optimization for remote coforalls (#6419)
+      config: 16 node XC
+  06/14/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: chapcs, chap04
+  06/16/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: chapcs, chap04
+  06/20/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: Single node XC, 16 node XC
+  06/21/17:
+    - change tmp directory
 
 
 AllCompTime:
@@ -273,6 +290,10 @@ array-of-strings-read:
 arr-forall:
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+
+array_iter:
+  06/19/17:
+    - Reduce amount of locking in associative array dsiAccess (#6244)
 
 arguments:
   03/10/17:
@@ -534,6 +555,10 @@ knucleotide:
   10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/16/17:
+    - Let parSafe revert to default in blc study version (#6475)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -633,6 +658,8 @@ memleaks:
     - Rank change dom dist view (#5694)
   03/23/17:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
 
 memleaksfull:
   07/08/14:
@@ -655,6 +682,8 @@ memleaksfull:
     - Rank change dom dist view (#5694)
   03/23/17:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
 
 meteor:
   12/18/13:
@@ -663,10 +692,20 @@ meteor:
     - Updated meteor's lock to yield less frequently (#4300)
 
 mg-b:
+  05/23/17:
+    - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+  06/22/17:
+    - Only perform packed updateFluff when there are multiple locales (#6512)
+
+mg.ml-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/23/17:
     - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 miniMD:
   12/21/13:
@@ -731,6 +770,8 @@ prk-stencil:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil.ml-perf:
   04/08/16:
@@ -745,10 +786,16 @@ prk-stencil.ml-perf:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/18/17:
     - Use nonblocking transactions for strided transfers (#6262)
+  06/06/17:
+    - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-transpose: &transpose-base
   05/04/17:
@@ -790,10 +837,14 @@ regexdna:
     - implemented good_alloc_size for jemalloc(#3446)
   04/20/17:
     - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 regexdna-redux:
   04/20/17:
     - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -893,6 +944,10 @@ temporary-copies:
     - Likely cache effects
   04/20/17:
     - Update RE2 (#6024)
+
+twopt-paircount:
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 search:
   04/20/17:

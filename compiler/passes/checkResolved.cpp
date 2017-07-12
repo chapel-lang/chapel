@@ -26,6 +26,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "TryStmt.h"
 
 #include "iterator.h"
 
@@ -170,6 +171,14 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
   if (isGotoStmt(expr))
     return 0;
+
+  // bodies of Defer statements will be moved, so treat them as
+  // not defining anything
+  if (isDeferStmt(expr))
+    return 0;
+
+  if (TryStmt* tryStmt = toTryStmt(expr))
+    return isDefinedAllPaths(tryStmt->body(), ret, refs);
 
   if (BlockStmt* block = toBlockStmt(expr))
   {

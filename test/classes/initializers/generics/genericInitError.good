@@ -1,0 +1,2 @@
+genericInitError.chpl:4: In initializer:
+genericInitError.chpl:4: error: can't initialize type fields like `t` in phase 2 of an initializer

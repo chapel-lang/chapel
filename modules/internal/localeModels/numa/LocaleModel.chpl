@@ -267,10 +267,10 @@ module LocaleModel {
     proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
-      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
-        return (myLocales[node:int]):locale;
-      else
+      if chpl_isActualSublocID(subloc) then
         return (myLocales[node:int].getChild(subloc:int)):locale;
+      else
+        return (myLocales[node:int]):locale;
     }
 
     proc deinit() {

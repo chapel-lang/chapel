@@ -42,6 +42,7 @@ class UnresolvedSymExpr;
 class UseStmt;
 class BlockStmt;
 class ForallIntents;
+class ForallStmt;
 class WhileDoStmt;
 class DoWhileStmt;
 class CForLoop;
@@ -51,6 +52,7 @@ class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
 class ForwardingStmt;
+class DeferStmt;
 class TryStmt;
 class CatchStmt;
 
@@ -129,6 +131,8 @@ public:
   virtual void   exitBlockStmt       (BlockStmt*         node) = 0;
 
   virtual void   visitForallIntents  (ForallIntents*   clause) = 0;
+  virtual bool   enterForallStmt     (ForallStmt*        node) = 0;
+  virtual void   exitForallStmt      (ForallStmt*        node) = 0;
 
   virtual bool   enterWhileDoStmt    (WhileDoStmt*       node) = 0;
   virtual void   exitWhileDoStmt     (WhileDoStmt*       node) = 0;
@@ -155,6 +159,9 @@ public:
 
   virtual bool   enterGotoStmt       (GotoStmt*          node) = 0;
   virtual void   exitGotoStmt        (GotoStmt*          node) = 0;
+
+  virtual bool   enterDeferStmt      (DeferStmt*         node) = 0;
+  virtual void   exitDeferStmt       (DeferStmt*         node) = 0;
 
   virtual bool   enterTryStmt        (TryStmt*           node) = 0;
   virtual void   exitTryStmt         (TryStmt*           node) = 0;

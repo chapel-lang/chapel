@@ -519,6 +519,12 @@ module SSCA2_kernels
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
             var level = al[here.id];
+            var prev = level.previous;
+            while prev != nil {
+              var p2 = prev.previous;
+              delete prev;
+              prev = p2;
+            }
             while level != nil {
                 var l2 = level.next;
                 delete level;

@@ -264,7 +264,7 @@ bool UseStmt::isValid(Expr* expr) const {
     retval = true;
 
   } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(".") == true) {
+    if (call->isNamedAstr(astrSdot) == true) {
       if (isValid(call->get(1)) == true) {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           VarSymbol* v = toVarSymbol(rhs->symbol());

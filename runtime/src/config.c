@@ -451,8 +451,16 @@ void parseConfigFile(const char* configFilename,
     char setConfigBuffer[_default_string_length];
     numScans = fscanf(argFile, _default_format_read_string, setConfigBuffer);
     if (numScans == 1) {
-      if (!aParsedString(argFile, setConfigBuffer, 0,
-                         CHPL_FILE_IDX_SAVED_FILENAME)) {
+     if (*setConfigBuffer == '#') {
+        if (!feof(argFile)) {
+          do {
+            char ch = fgetc(argFile);
+            if (ch == '\n')
+              break;
+          } while (!feof(argFile));
+        }
+      } else if (!aParsedString(argFile, setConfigBuffer, 0,
+                                CHPL_FILE_IDX_SAVED_FILENAME)) {
         char* equalsSign;
         const char* moduleName;
         char* varName;

@@ -136,7 +136,6 @@ enum PrimitiveTag {
 
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
-  PRIM_ARRAY_FREE_ELTS,
   PRIM_ARRAY_GET,
   PRIM_ARRAY_GET_VALUE,
   PRIM_ARRAY_SHIFT_BASE_POINTER,
@@ -254,29 +253,31 @@ enum PrimitiveTag {
 };
 
 class PrimitiveOp { public:
-  PrimitiveTag tag;
-  const char *name;
+  PrimitiveTag  tag;
+  const char*   name;
   QualifiedType (*returnInfo)(CallExpr*);
-  bool isEssential; // has effects visible outside of the function
-  bool passLineno;  // pass line number and filename to this primitive
+  bool          isEssential; // has effects visible outside of the function
+  bool          passLineno;  // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, const char *aname, QualifiedType (*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag  atag,
+              const char*   aname,
+              QualifiedType (*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
-extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
-
-void printPrimitiveCounts(const char* passName);
-void initPrimitive();
+extern PrimitiveOp*     primitives[NUM_KNOWN_PRIMS];
 
 extern Vec<const char*> memDescsVec;
+
+void       printPrimitiveCounts(const char* passName);
+
+void       initPrimitive();
+
 VarSymbol* newMemDesc(const char* str);
+
 VarSymbol* newMemDesc(Type* type);
 
-
-bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
-
-void makeNoop(CallExpr* call);
+bool       getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
 
 #endif

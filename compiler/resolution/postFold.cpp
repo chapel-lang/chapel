@@ -118,7 +118,7 @@ Expr* postFold(Expr* expr) {
           expr->replace(result);
         }
       }
-      if (call->isNamed("=")) {
+      if (call->isNamedAstr(astrSequals)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
             if (paramMap.get(lhs->symbol())) {
@@ -179,36 +179,54 @@ Expr* postFold(Expr* expr) {
               if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
                 if (rhsVar->immediate) {
                   paramMap.put(lhs->symbol(), rhsVar);
+
                   lhs->symbol()->defPoint->remove();
-                  makeNoop(call);
+
+                  call->convertToNoop();
+
                   set = true;
                 }
               }
+
               if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
                 paramMap.put(lhs->symbol(), rhsv);
+
                 lhs->symbol()->defPoint->remove();
-                makeNoop(call);
+
+                call->convertToNoop();
+
                 set = true;
               }
             }
           }
+
           if (Symbol* lhsSym = lhs->symbol()) {
             if (lhsSym->isParameter()) {
               if (!lhsSym->hasFlag(FLAG_TEMP)) {
                 if (!isLegalParamType(lhsSym->type)) {
-                  USR_FATAL_CONT(call, "'%s' is not of a supported param type", lhsSym->name);
+                  USR_FATAL_CONT(call,
+                                 "'%s' is not of a supported param type",
+                                 lhsSym->name);
+
                 } else if (!set) {
-                  USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
+                  USR_FATAL_CONT(call,
+                                 "Initializing parameter '%s' to value "
+                                 "not known at compile time",
+                                 lhsSym->name);
                   lhs->symbol()->removeFlag(FLAG_PARAM);
                 }
+
               } else /* this is a compiler temp */ {
                 if (lhsSym->hasFlag(FLAG_RVV) && !set) {
-                  USR_FATAL_CONT(call, "'param' functions cannot return non-'param' values");
+                  USR_FATAL_CONT(call,
+                                 "'param' functions cannot return "
+                                 "non-'param' values");
                 }
               }
             }
           }
         }
+
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {
             // Add FLAG_TYPE_VARIABLE when relevant
@@ -230,7 +248,7 @@ Expr* postFold(Expr* expr) {
               lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
             }
             if (FnSymbol* fn = rhs->resolvedFunction()) {
-              if (!strcmp(fn->name, "=") && fn->retType == dtVoid) {
+              if (fn->name == astrSequals && fn->retType == dtVoid) {
                 call->replace(rhs->remove());
                 result = rhs;
                 set = true;
@@ -244,7 +262,7 @@ Expr* postFold(Expr* expr) {
               !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
-                // this still semes to be necessary even if
+                // this still seems to be necessary even if
                 // isUserDefinedRecord(lhs->symbol()->type) == true
                 // see call-expr-tmp.chpl for example
                 lhs->symbol()->addFlag(FLAG_INSERT_AUTO_COPY);
@@ -260,6 +278,7 @@ Expr* postFold(Expr* expr) {
             // TODO -- remove this? Or explain its purpose?
             lhs->symbol()->removeFlag(FLAG_EXPR_TEMP);
         }
+
         if (!set) {
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIM_NO_INIT)) {
@@ -268,12 +287,13 @@ Expr* postFold(Expr* expr) {
               // further and so this statement can't be removed until
               // resolveRecordInitializers
               if (!isAggregateType(rhs->get(1)->getValType())) {
-                makeNoop(call);
+                call->convertToNoop();
               }
             }
           }
         }
       }
+
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       Type* baseType = call->get(1)->getValType();
       const char* memberName = get_string(call->get(2));
@@ -454,16 +474,19 @@ Expr* postFold(Expr* expr) {
         //
         // The substitution usually happens before resolution, so for
         // assignment, we key off of the name :-(
-        if (call->isPrimitive(PRIM_MOVE) || call->isNamed("=")) {
+        if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSequals)) {
           if (sym->symbol()->hasFlag(FLAG_RVV)) {
-            makeNoop(call);
+            call->convertToNoop();
           }
+
           return result;
         }
       }
 
-      if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
+      if (sym->symbol()->type != dtUnknown &&
+          sym->symbol()->type != val->type) {
         Symbol* toSym = sym->symbol();
+
         if (!toSym->hasFlag(FLAG_TYPE_VARIABLE)) {
           // This assertion is here to ensure compatibility with old code.
           // Todo: remove after 1.15 release.

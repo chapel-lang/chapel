@@ -31,13 +31,6 @@
  *
  */
 
-private module BaseStringType {
-  use ChapelStandard;
-
-  // TODO: figure out why I can't move this definition into `module String`
-  type bufferType = c_ptr(uint(8));
-}
-
 // Note - the I/O module has
 // :proc:`string.format` and :proc:`stringify`.
 // It might be worth moving them here for documentation - KB Feb 2016
@@ -63,18 +56,19 @@ private module BaseStringType {
     allowing users to specify the encoding for individual strings.
  */
 module String {
-  use BaseStringType;
+  use ChapelStandard;
   use CString;
   use SysCTypes;
   use StringCasts;
+
+  // Growth factor to use when extending the buffer for appends
+  private config param chpl_stringGrowthFactor = 1.5;
 
   //
   // Externs and constants used to implement strings
   //
 
-  private param chpl_string_min_alloc_size: int = 16;
-  // Growth factor to use when extending the buffer for appends
-  private config param chpl_stringGrowthFactor = 1.5;
+  private        param chpl_string_min_alloc_size: int = 16;
 
   // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
@@ -86,6 +80,8 @@ module String {
   // TODO: define my own mem descriptors?
   private extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
   private extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
+
+  type        bufferType         = c_ptr(uint(8));
 
   private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                            src_addr: bufferType, len: integral) {

@@ -35,5 +35,5 @@ proc main {
     writeln("ddata ", t.elapsed());
   }
 
-  _ddata_free(AA);
+  _ddata_free(AA, n);
 }

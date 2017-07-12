@@ -2,8 +2,10 @@ class C {
   type ct;
   var x: ct;
 
-  proc C(type ct, y: ct) {
+  proc init(type ctVal, y: ctVal) {
+    ct = ctVal;
     x = y;
+    super.init();
   }
 }
 

@@ -176,16 +176,16 @@ static void extractReferences(Expr* expr,
   if (CallExpr* call = toCallExpr(expr))
   {
     // Consider primitives that can create aliases:
-    // 1. An assign or move primitive that has ref variables on both sides.
+    // 1. A move primitive that has ref variables on both sides.
     // 2. An assign or move that has an 'addr of' primitive on its rhs.
     // 3. A field assignment or extraction that has ref variables on both
     //    sides. (not implemented)
     // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
     //    implemented)
     // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
-    // BHARSH TODO: Is this actually accurate for PRIM_ASSIGN? ASSIGN should do
-    // a content-copy for (= ref ref), not a pointer-copy
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+    bool okAssign = call->isPrimitive(PRIM_ASSIGN) &&
+                    !(call->get(1)->isRef() && call->get(2)->isRef());
+    if (call->isPrimitive(PRIM_MOVE) || okAssign)
     {
       SymExpr* lhe = toSymExpr(call->get(1)); // Left-Hand Expression
       Symbol* lhs = lhe->symbol(); // Left-Hand Symbol
@@ -228,7 +228,7 @@ static void extractReferences(Expr* expr,
 
       if (CallExpr* rhc = toCallExpr(call->get(2)))
       {
-        if (rhc->isPrimitive(PRIM_ADDR_OF))
+        if (rhc->isPrimitive(PRIM_ADDR_OF) || rhc->isPrimitive(PRIM_SET_REFERENCE))
         {
           SymExpr* rhe = toSymExpr(rhc->get(1));
 
@@ -330,9 +330,9 @@ static bool isDef(SymExpr* se)
       // The move primitive automatically dereferences the LHS if it is of
       // reference type and the RHS is not.  In which case it is not a def (the
       // referenced value changes, but the reference itself does not.
-      if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
+      if (se->isRef())
       {
-        if (! call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
+        if (! call->get(2)->isRef())
         {
           // This is the version of move that applies the deref on the lhs
           // As a result the value of the lhs is not updated.  To be precise,
@@ -384,7 +384,7 @@ static bool isDef(SymExpr* se)
       // consideration in copy propagation.
       if (se == call->get(1))
       {
-        if (!se->typeInfo()->symbol->hasFlag(FLAG_REF))
+        if (!se->isRef())
         {
           // We select just the case where the referent is passed by value,
           // because in the other case, the address of the object is not
@@ -479,6 +479,7 @@ static bool isUse(SymExpr* se)
 
      case PRIM_ARRAY_ALLOC:
      case PRIM_ADDR_OF:
+     case PRIM_SET_REFERENCE:
       return false; // See Note #2.
 
      case PRIM_PRIVATE_BROADCAST:
@@ -524,7 +525,7 @@ static bool isUse(SymExpr* se)
      case PRIM_GET_MEMBER_VALUE:
       if (se == call->get(1))
       {
-        if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
+        if (se->isRef())
         {
           // If two refs are equal, then one may substitute for the other.
           return true;
@@ -595,7 +596,7 @@ static bool isRefUse(SymExpr* se)
       return false;
     }
 
-    if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
+    if (se->isRef())
     {
       return true;
     }
@@ -625,7 +626,7 @@ static bool isRefUse(SymExpr* se)
 
   else // A primitive.
   {
-    if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
+    if (se->isRef())
     {
       // For a *(ref) to be defined through a primitive, the primitive must
       // accept a ref argument in that position, such that it may update the
@@ -662,7 +663,7 @@ static bool isRefUse(SymExpr* se)
           return true;
         }
 
-        if (se == call->get(1) && se->typeInfo()->symbol->hasFlag(FLAG_REF))
+        if (se == call->get(1) && se->isRef())
         {
           return true;
         }
@@ -745,7 +746,9 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     // If we encounter an ADDR_OF with a symbol, do not allow further
     // replacements in case the reference is used to modify the symbol's data.
     if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-      if (parent->isPrimitive(PRIM_ADDR_OF) || parent->isPrimitive(PRIM_ARRAY_ALLOC)) {
+      if (parent->isPrimitive(PRIM_ADDR_OF) ||
+          parent->isPrimitive(PRIM_SET_REFERENCE) ||
+          parent->isPrimitive(PRIM_ARRAY_ALLOC)) {
         AvailableMap::iterator ami = available.find(se->symbol());
         if (ami != available.end()) {
           available.erase(ami);
@@ -1511,7 +1514,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   // Walk the asts in this function, and build lists of reference variables and sym exprs.
   for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
-      if (isReferenceType(var->type)) {
+      if (var->isRef()) {
         refVec.add(var);
         refSet.set_add(var);
       }
@@ -1532,7 +1535,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
       if (CallExpr* move = findRefDef(defMap, var)) {
         if (SymExpr* rhs = toSymExpr(move->get(2))) {
           // If it is defined from another reference, these two are mutual aliases.
-          if (isReferenceType(rhs->symbol()->type)) {
+          if (rhs->isRef()) {
             // Replace each use of the new name with the old name.
             for_uses(se, useMap, var) {
               if (se->parentExpr) {

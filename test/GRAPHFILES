@@ -33,6 +33,7 @@ studies/shootout/thread-ring/thread-ring.graph
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
 studies/isx/isx.graph
 release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
@@ -80,7 +81,7 @@ performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
 performance/bharshbarg/views-forall-index.graph
 performance/bharshbarg/views-forall-iter.graph
-studies/prk/stencil/prk-stencil-time.graph
+studies/prk/Stencil/prk-stencil-time.graph
 types/string/ferguson/temporary-copies.graph
 types/string/psahabu/perf/arguments.graph
 types/string/psahabu/perf/search.graph
@@ -110,6 +111,7 @@ release/examples/benchmarks/ssca2/performance.graph
 # suite: DOE proxy apps
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+studies/comd/llnl/CoMD.graph
 release/examples/benchmarks/lcals/LCALS-raw-short.graph
 release/examples/benchmarks/lcals/LCALS-raw-medium.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
@@ -167,12 +169,12 @@ studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
 release/examples/benchmarks/isx/isx-release.graph
 # suite: PRK benchmarks
-studies/prk/synch_p2p/prk-synch_p2p.graph
-studies/prk/synch_p2p/prk-synch_p2p-time.graph
-studies/prk/stencil/prk-stencil.graph
-studies/prk/stencil/prk-stencil-time.graph
-studies/prk/transpose/prk-transpose.graph
-studies/prk/transpose/prk-transpose-time.graph
+studies/prk/Synch_p2p/prk-synch_p2p.graph
+studies/prk/Synch_p2p/prk-synch_p2p-time.graph
+studies/prk/Stencil/prk-stencil.graph
+studies/prk/Stencil/prk-stencil-time.graph
+studies/prk/Transpose/prk-transpose.graph
+studies/prk/Transpose/prk-transpose-time.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/cg/cg-a.graph

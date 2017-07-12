@@ -1,0 +1,4 @@
+Error-handling WIP: When a potentially-throwing method may return a value,
+an error thrown by that method does not immediately jump to the catch block
+and subsequent statements in the try block execute.
+

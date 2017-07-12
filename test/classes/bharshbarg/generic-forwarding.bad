@@ -1,0 +1,2 @@
+generic-forwarding.chpl:16: error: unresolved call 'Upper(int(64)).something(Upper(int(64)))'
+generic-forwarding.chpl:4: note: candidates are: Lower.something(foo)

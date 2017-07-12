@@ -20,6 +20,7 @@
 #include "AutoDestroyScope.h"
 
 #include "expr.h"
+#include "DeferStmt.h"
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -52,10 +53,14 @@ AutoDestroyScope::AutoDestroyScope(const AutoDestroyScope* parent,
 
 void AutoDestroyScope::variableAdd(VarSymbol* var) {
   if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
-    mLocals.push_back(var);
+    mLocalsAndDefers.push_back(var);
   } else {
     mFormalTemps.push_back(var);
   }
+}
+
+void AutoDestroyScope::deferAdd(DeferStmt* defer) {
+  mLocalsAndDefers.push_back(defer);
 }
 
 //
@@ -115,21 +120,33 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
-    bool   insertAfter = false;
-    size_t count       = mLocals.size();
+    Expr*  insertBeforeStmt = refStmt;
+    Expr*  noop             = NULL;
+    size_t count            = mLocalsAndDefers.size();
 
     // If this is a simple nested block, insert after the final stmt
+    // But always insert the destruction calls in reverse declaration order.
     // Do not get tricked by sequences of unreachable code
     if (refStmt->next == NULL) {
       if (mParent != NULL && isGotoStmt(refStmt) == false) {
-        insertAfter = true;
+        SET_LINENO(refStmt);
+        // Add a PRIM_NOOP to insert before
+        noop = new CallExpr(PRIM_NOOP);
+        refStmt->insertAfter(noop);
+        insertBeforeStmt = noop;
       }
     }
 
     for (size_t i = 1; i <= count; i++) {
-      VarSymbol* var = mLocals[count - i];
+      BaseAST*  localOrDefer = mLocalsAndDefers[count - i];
+      VarSymbol* var = toVarSymbol(localOrDefer);
+      DeferStmt* defer = toDeferStmt(localOrDefer);
+      // This code only handles VarSymbols and DeferStmts.
+      // It handles both in one vector because the order
+      // of interleaving matters.
+      INT_ASSERT(var || defer);
 
-      if (var != excludeVar) {
+      if (var != NULL && var != excludeVar) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 
@@ -137,14 +154,21 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
           CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
 
-          if (insertAfter == true) {
-            refStmt->insertAfter (autoDestroy);
-          } else {
-            refStmt->insertBefore(autoDestroy);
-          }
+          insertBeforeStmt->insertBefore(autoDestroy);
         }
       }
+
+      if (defer != NULL) {
+        SET_LINENO(defer);
+        BlockStmt* deferBlockCopy = defer->body()->copy();
+        insertBeforeStmt->insertBefore(deferBlockCopy);
+        deferBlockCopy->flattenAndRemove();
+      }
     }
+
+    // remove the PRIM_NOOP if we added one.
+    if (noop != NULL)
+      noop->remove();
   }
 
   // Handle the formal temps

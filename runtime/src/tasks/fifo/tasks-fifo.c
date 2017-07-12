@@ -627,7 +627,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   task_pool_p curr_ptask = get_current_ptask();
   bool serial_state = curr_ptask->bundle.serial_state;
 
-  assert(subloc == 0 || subloc == c_sublocid_any);
+  assert(subloc == c_sublocid_any);
 
   if (serial_state) {
     (*chpl_ftable[fid])(arg);

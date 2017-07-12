@@ -573,10 +573,10 @@ static void checkAggregateTypes()
 {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes)
   {
-    if (! at->defaultInitializer && at->initializerStyle != DEFINES_INITIALIZER)
+    if (! at->defaultInitializer && at->initializerStyle == DEFINES_CONSTRUCTOR)
       INT_FATAL(at, "aggregate type did not define an initializer and has no default constructor");
     if (! at->defaultTypeConstructor &&
-        at->initializerStyle != DEFINES_INITIALIZER)
+        at->initializerStyle != DEFINES_CONSTRUCTOR)
       INT_FATAL(at, "aggregate type did not define an initializer and "
                 "has no default type constructor");
   }
@@ -688,8 +688,10 @@ checkAutoCopyMap()
   {
     if (hasAutoCopyForType(key)) {
       FnSymbol* fn = getAutoCopyForType(key);
-      Type* baseType = fn->getFormal(1)->getValType();
-      INT_ASSERT(baseType == key);
+      if (fn->numFormals() > 0) {
+        Type* baseType = fn->getFormal(1)->getValType();
+        INT_ASSERT(baseType == key);
+      }
     }
   }
 }

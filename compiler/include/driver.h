@@ -33,7 +33,6 @@ extern int  instantiation_limit;
 
 // optimization control flags
 extern bool fFastFlag;
-extern int  fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
@@ -134,6 +133,7 @@ extern bool fPrintDispatch;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fUserDefaultInitializers;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -157,6 +157,7 @@ extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fUseNoinit;
+extern bool fNoUserConstructors;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
@@ -207,5 +208,8 @@ extern bool fIncrementalCompilation;
 // Set to true if we want to use the experimental
 // Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;
+
+// LLVM flags (-mllvm)
+extern std::string llvmFlags;
 
 #endif

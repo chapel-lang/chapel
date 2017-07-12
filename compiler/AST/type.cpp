@@ -42,17 +42,15 @@
 
 static bool isDerivedType(Type* type, Flag flag);
 
-Type::Type(AstTag astTag, Symbol* init_defaultVal) :
-  BaseAST(astTag),
-
-  symbol(NULL),
-  refType(NULL),
-  hasGenericDefaults(false),
-  defaultValue(init_defaultVal),
-  destructor(NULL),
-  isInternalType(false),
-  instantiatedFrom(NULL),
-  scalarPromotionType(NULL) {
+Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
+  symbol              = NULL;
+  refType             = NULL;
+  hasGenericDefaults  = false;
+  defaultValue        = iDefaultVal;
+  destructor          = NULL;
+  isInternalType      = false;
+  instantiatedFrom    = NULL;
+  scalarPromotionType = NULL;
 }
 
 Type::~Type() {
@@ -62,10 +60,9 @@ Type::~Type() {
 void Type::verify() {
 }
 
-void Type::addSymbol(TypeSymbol* newsymbol) {
-  symbol = newsymbol;
+void Type::addSymbol(TypeSymbol* newSymbol) {
+  symbol = newSymbol;
 }
-
 
 bool Type::inTree() {
   if (symbol)
@@ -101,6 +98,23 @@ Symbol* Type::getField(const char* name, bool fatal) {
   return NULL;
 }
 
+bool Type::hasDestructor() const {
+  return destructor != NULL;
+}
+
+FnSymbol* Type::getDestructor() const {
+  return destructor;
+}
+
+void Type::setDestructor(FnSymbol* fn) {
+  destructor = fn;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
   Type(E_PrimitiveType, init)
@@ -134,7 +148,6 @@ PrimitiveType::copyInner(SymbolMap* map) {
 void PrimitiveType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in PrimitiveType::replaceChild");
 }
-
 
 
 void PrimitiveType::verify() {
@@ -971,6 +984,10 @@ bool isClass(Type* t) {
   return false;
 }
 
+bool isClassOrNil(Type* t) {
+  if (t == dtNil) return true;
+  return isClass(t);
+}
 
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
@@ -1324,7 +1341,11 @@ bool isNonGenericClassWithInitializers(Type* type) {
 
   if (isNonGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1350,7 +1371,11 @@ bool isGenericClassWithInitializers(Type* type) {
 
   if (isGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1363,7 +1388,8 @@ bool isClassWithInitializers(Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isClass()                    == true  &&
         at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        at->initializerStyle             == DEFINES_INITIALIZER) {
+        (at->initializerStyle == DEFINES_INITIALIZER ||
+         at->wantsDefaultInitializer())) {
       retval = true;
     }
   }
@@ -1390,7 +1416,11 @@ bool isNonGenericRecordWithInitializers(Type* type) {
 
   if (isNonGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1416,7 +1446,11 @@ bool isGenericRecordWithInitializers(Type* type) {
 
   if (isGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1429,7 +1463,8 @@ bool isRecordWithInitializers(Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
         at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        at->initializerStyle             == DEFINES_INITIALIZER) {
+        (at->initializerStyle == DEFINES_INITIALIZER ||
+         at->wantsDefaultInitializer())) {
       retval = true;
     }
   }

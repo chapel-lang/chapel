@@ -127,7 +127,7 @@ Expr* preFold(CallExpr* call) {
     }
   }
 
-  if (call->isNamed("this")) {
+  if (call->isNamedAstr(astrThis)) {
     SymExpr* base = toSymExpr(call->get(2));
     if (!base) {
       if (NamedExpr* nb = toNamedExpr(call->get(2)))

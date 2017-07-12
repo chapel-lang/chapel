@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
 #include "expr.h"
@@ -64,14 +65,6 @@
 //
 static std::map<BlockStmt*, Vec<UseStmt*>*>   moduleUsesCache;
 static bool                                   enableModuleUsesCache = false;
-
-//
-// The aliasFieldSet is a set of names of fields for which arrays may
-// be passed in by named argument as aliases, as in new C(A=>GA) (see
-// test/arrays/deitz/test_array_alias_field.chpl).
-//
-static Vec<const char*>                       aliasFieldSet;
-
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
@@ -122,49 +115,15 @@ void scopeResolve() {
   }
 
   //
-  // determine fields (by name) that may be passed in arrays to alias
-  //
-  forv_Vec(NamedExpr, ne, gNamedExprs) {
-    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
-      CallExpr* pne  = toCallExpr(ne->parentExpr);
-      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
-
-      if (!ppne || !ppne->isPrimitive(PRIM_NEW)) {
-        USR_FATAL(ne,
-                  "alias-named-argument passing can only be used "
-                  "in constructor calls");
-      }
-
-      aliasFieldSet.set_add(astr(&ne->name[17]));
-    }
-  }
-
-  //
   // add implicit fields for implementing alias-named-argument passing
   //
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    for_fields(field, ct) {
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    for_fields(field, at) {
       if (strcmp(field->name, "outer") == 0) {
         USR_FATAL_CONT(field,
                        "Cannot have a field named 'outer'. "
                        "'outer' is used to refer to an outer class "
                        "from within a nested class.");
-      }
-
-      if (aliasFieldSet.set_in(field->name)) {
-        SET_LINENO(field);
-
-        const char* aliasName  = astr("chpl__aliasField_", field->name);
-        Symbol*     aliasField = new VarSymbol(aliasName);
-        DefExpr*    def        = new DefExpr(aliasField);
-
-        aliasField->addFlag(FLAG_CONST);
-        aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
-
-        def->init     = new UnresolvedSymExpr("false");
-        def->exprType = new UnresolvedSymExpr("bool");
-
-        ct->fields.insertAtTail(def);
       }
     }
   }
@@ -468,6 +427,10 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         }
       }
 
+    } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
+      scopeResolve(deferStmt->body(), scope);
+
+
     } else if (isUseStmt(stmt)           == true ||
                isCallExpr(stmt)          == true ||
                isUnresolvedSymExpr(stmt) == true ||
@@ -632,7 +595,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
   const char* name = usymExpr->unresolved;
 
-  if (strcmp(name, ".") == 0 || usymExpr->parentSymbol == NULL) {
+  if (name == astrSdot || usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
@@ -936,7 +899,7 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
 }
 
 static void resolveModuleCall(CallExpr* call) {
-  if (call->isNamed(".") == true) {
+  if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
@@ -1089,7 +1052,7 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
 static void resolveEnumeratedTypes() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isNamed(".")) {
+    if (call->isNamedAstr(astrSdot)) {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {

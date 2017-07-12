@@ -118,6 +118,7 @@ public:
                               // default-initializer.
                               // It provides initial values for the
                               // fields in an aggregate type.
+  bool                        wantsDefaultInitializer();
 
   InitializerStyle            initializerStyle;
 
@@ -162,6 +163,7 @@ private:
   AggregateType*              discoverParentAndCheck(Expr* storesName);
   void                        buildTypeConstructor();
   void                        buildConstructor();
+  bool                        needsConstructor();
   void                        moveConstructorToOuter(FnSymbol* fn);
 
   std::vector<AggregateType*> instantiations;

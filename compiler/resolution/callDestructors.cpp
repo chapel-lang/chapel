@@ -769,7 +769,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
         CallExpr* parent   = toCallExpr(move->parentExpr);
 
         if (calledFn                    != NULL &&
-            strcmp(calledFn->name, "=") ==    0 &&
+            calledFn->name       == astrSequals &&
             // Filter out case handled above.
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
@@ -852,7 +852,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
   // If this isn't a call expression, we've got problems.
   if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
     if (FnSymbol* useFn = useCall->resolvedFunction()) {
-      if ((strcmp(useFn->name, "=") == 0 && firstUse == useCall->get(2)) ||
+      if ((useFn->name == astrSequals && firstUse == useCall->get(2)) ||
           useFn->hasFlag(FLAG_AUTO_COPY_FN)                              ||
           useFn->hasFlag(FLAG_INIT_COPY_FN)) {
         Symbol*   actual = NULL;
@@ -915,7 +915,7 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
 
         } else {
           // We assume the useFn is an assignment.
-          if (strcmp(useFn->name, "=") != 0) {
+          if (useFn->name != astrSequals) {
             INT_FATAL(useFn, "should be an assignment function");
             return;
           } else {
@@ -1003,6 +1003,9 @@ static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
+      if (fn->_this == NULL) {
+        continue;
+      }
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 
@@ -1011,27 +1014,40 @@ fixupDestructors() {
       //
       for_fields_backward(field, ct) {
         SET_LINENO(field);
-        if (field->type->destructor) {
+
+        if (field->type->hasDestructor() == true) {
           AggregateType* fct = toAggregateType(field->type);
+
           INT_ASSERT(fct);
+
           if (!isClass(fct)) {
-            bool useRefType = !isRecordWrappedType(fct);
-            VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
+            bool       useRefType = !isRecordWrappedType(fct);
+            VarSymbol* tmp        = newTemp("_field_destructor_tmp_",
+                                            useRefType ? fct->refType : fct);
+
             fn->insertIntoEpilogue(new DefExpr(tmp));
+
             fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+
             FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
-            if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
+
+            if (autoDestroyFn &&
+                autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY)) {
               fn->insertIntoEpilogue(new CallExpr(autoDestroyFn, tmp));
-            else
-              fn->insertIntoEpilogue(new CallExpr(field->type->destructor, tmp));
+            } else {
+              fn->insertIntoEpilogue(new CallExpr(field->type->getDestructor(),
+                                                  tmp));
+            }
           }
+
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
+
           fn->insertIntoEpilogue(new DefExpr(tmp));
-          fn->insertIntoEpilogue(
-                new CallExpr(PRIM_MOVE, tmp,
-                  new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE,
+                                              tmp,
+                                              new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertIntoEpilogue(new CallExpr(autoDestroyFn, tmp));
         }
       }
@@ -1040,17 +1056,20 @@ fixupDestructors() {
       // insert call to parent destructor
       //
       INT_ASSERT(ct->dispatchParents.n <= 1);
-      if (ct->dispatchParents.n >= 1 && isClass(ct)) {
-        // avoid destroying record fields more than once
-        if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
+
+      if (ct->dispatchParents.n == 1 && isClass(ct) == true) {
+        Type* parType = ct->dispatchParents.v[0];
+
+        if (FnSymbol* parDestructor = parType->getDestructor()) {
           SET_LINENO(fn);
-          Type* tmpType = isClass(ct) ?
-            ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
-          VarSymbol* tmp = newTemp("_parent_destructor_tmp_", tmpType);
+
+          VarSymbol* tmp   = newTemp("_parent_destructor_tmp_", parType);
+          Symbol*    _this = fn->_this;
+          CallExpr*  cast  = new CallExpr(PRIM_CAST, parType->symbol, _this);
+
           fn->insertIntoEpilogue(new DefExpr(tmp));
-          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_CAST, tmpType->symbol, fn->_this)));
-          fn->insertIntoEpilogue(new CallExpr(parentDestructor, tmp));
+          fn->insertIntoEpilogue(new CallExpr(PRIM_MOVE,     tmp, cast));
+          fn->insertIntoEpilogue(new CallExpr(parDestructor, tmp));
         }
       }
     }
@@ -1084,26 +1103,31 @@ static void cleanupModuleDeinitAnchor(Expr*& anchor) {
 }
 
 static void insertGlobalAutoDestroyCalls() {
-  // --ipe does not build chpl_gen_main
-  if (chpl_gen_main == NULL)
-    return;
-
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (isAlive(mod)) {
       Expr* anchor = NULL;
-      for_alist(expr, mod->block->body)
-        if (DefExpr* def = toDefExpr(expr))
-          if (VarSymbol* var = toVarSymbol(def->sym))
-            if (!var->isParameter() && !var->isType())
-              if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
+
+      for_alist(expr, mod->block->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (VarSymbol* var = toVarSymbol(def->sym)) {
+            if (!var->isParameter() && !var->isType()) {
+              if (!var->hasFlag(FLAG_NO_AUTO_DESTROY)) {
                 if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                   SET_LINENO(var);
+
                   ensureModuleDeinitFnAnchor(mod, anchor);
+
                   // destroys go after anchor in reverse order of decls
                   anchor->insertAfter(new CallExpr(autoDestroy, var));
                 }
+              }
+            }
+          }
+        }
+      }
       cleanupModuleDeinitAnchor(anchor);
     }
+  }
 }
 
 
@@ -1111,11 +1135,14 @@ static void insertDestructorCalls() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
       Type* type = call->get(1)->typeInfo();
-      if (!type->destructor) {
+
+      if (type->hasDestructor() == false) {
         call->remove();
       } else {
         SET_LINENO(call);
-        call->replace(new CallExpr(type->destructor, call->get(1)->remove()));
+
+        call->replace(new CallExpr(type->getDestructor(),
+                                   call->get(1)->remove()));
       }
     }
   }
@@ -1182,7 +1209,7 @@ static void insertAutoCopyTemps() {
         CallExpr* defCall = toCallExpr(def->parentExpr);
         if (defCall->isPrimitive(PRIM_MOVE)) {
           CallExpr* rhs = toCallExpr(defCall->get(2));
-          if (!rhs || !rhs->isNamed("=")) {
+          if (!rhs || !rhs->isNamedAstr(astrSequals)) {
             // We enter this block if:
             // - rhs is a variable (!rhs), or
             // - rhs is a call but not to =
@@ -1345,64 +1372,27 @@ void insertReferenceTemps(CallExpr* call) {
 //
 // also needs special treatment.
 //
-static
-void fixupNewAlias(void) {
-
+static void fixupNewAlias() {
   std::vector<CallExpr*> newAliasCalls;
   std::vector<CallExpr*> hasAliasArgInCtor;
-  const char* lookForAliasField = "chpl__aliasField_";
-  size_t lookForAliasFieldLen = strlen(lookForAliasField);
 
   forv_Vec(CallExpr, call, gCallExprs) {
     FnSymbol* calledFn = call->resolvedFunction();
-    if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
-        newAliasCalls.push_back(call);
-    }
-    if (calledFn && calledFn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-      // Does the calledFn have a formal that starts with
-      // chpl__aliasField_ ?
 
-      // TODO -- could this use a flag?
-      for_formals(formal, calledFn) {
-        if (0 == strncmp(formal->name, lookForAliasField, lookForAliasFieldLen))
-          hasAliasArgInCtor.push_back(call);
-      }
+    if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
+      newAliasCalls.push_back(call);
     }
   }
 
   for_vector(CallExpr, call, newAliasCalls) {
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->symbol()->hasFlag(FLAG_TEMP) &&
-        se->isRef() == false) {
+
+    if (se->symbol()->hasFlag(FLAG_TEMP) && se->isRef() == false) {
       // Note: these flags are added in functionResolution's postFold
       se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
       se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+
       call->replace(se->remove());
-    }
-  }
-
-  for_vector(CallExpr, ctorCall, hasAliasArgInCtor) {
-    FnSymbol* fn = ctorCall->resolvedFunction();
-
-    for_formals_actuals(formal, actual, ctorCall) {
-
-      // TODO -- could this use a flag?
-      bool isArrayAliasField = false;
-      const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
-      for_formals(fml, fn)
-        if (fml->name == aliasFieldArg)
-          isArrayAliasField = true;
-
-      if (isArrayAliasField) {
-        SymExpr* se = toSymExpr(actual);
-        bool isTemp = se->symbol()->hasFlag(FLAG_TEMP);
-        bool isAlias = se->symbol()->hasFlag(FLAG_ARRAY_ALIAS);
-        if ((isTemp || isAlias) &&
-             se->isRef() == false) {
-          se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
-          se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-        }
-      }
     }
   }
 }
@@ -1417,22 +1407,24 @@ void fixupNewAlias(void) {
 //
 // This function simply checks that no function marked with that
 // flag is ever called and raises an error if so.
-static
-void checkForErroneousInitCopies() {
+static void checkForErroneousInitCopies() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
-        USR_FATAL_CONT(se, "copy-initialization invoked for a type"
-                           " that does not have a copy initializer");
+        USR_FATAL_CONT(se,
+                       "copy-initialization invoked for a type "
+                       "that does not have a copy initializer");
       }
     }
+
     if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
-        USR_FATAL_CONT(se, "implicit copy-initialization invoked for a type"
-                           " that does not allow it");
+        USR_FATAL_CONT(se,
+                       "implicit copy-initialization invoked for a type "
+                       "that does not allow it");
       }
     }
   }

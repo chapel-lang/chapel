@@ -15,9 +15,6 @@ Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
       --cache-remote                  Enable cache for remote data (must be
                                       enabled specifically)
-      --conditional-dynamic-dispatch-limit <limit>
-                                      Set limit on # of inline conditionals
-                                      used for dynamic dispatch
       --[no-]copy-propagation         Enable [disable] copy propagation
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
       --fast                          Use fast default settings
@@ -103,6 +100,8 @@ LLVM Code Generation Options:
       --llvm-print-ir-stage <stage>   Specifies from which LLVM optimization
                                       stage to print function: none, basic,
                                       full
+      --mllvm <flags>                 LLVM flags (can be specified multiple
+                                      times)
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands

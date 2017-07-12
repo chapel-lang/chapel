@@ -8,4 +8,4 @@ if nil == a {
   writeln("OK");
 }
 
-_ddata_free(a);
+_ddata_free(a, size);

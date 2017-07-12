@@ -256,7 +256,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
-  Type* wideRefType = NULL;
+  Type* wideRefType = NULL; // either a wide class or a wide ref
 
   if( locale.chplType ) INT_ASSERT(locale.chplType == dtLocaleID->typeInfo());
 
@@ -354,7 +354,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   }
 
   ret.chplType = wideRefType->getValType();
-  ret.isLVPtr = GEN_WIDE_PTR;
+  // Class pointers are "values" as far as the code generator
+  // is concerned, unlike wide references.
+  if (wideRefType->symbol->hasFlag(FLAG_WIDE_CLASS))
+    ret.isLVPtr = GEN_VAL;
+  else
+    ret.isLVPtr = GEN_WIDE_PTR;
   return ret;
 }
 
@@ -389,6 +394,16 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaNode;
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
+
+  if(!info->loopStack.empty()) {
+    const auto &loopData = info->loopStack.top();
+    // Currently, the parallel_loop_access metadata refers to the
+    // innermost loop the instruction is in, while for some cases
+    // this could refer to the group of loops it is in.
+    if(loopData.parallel)
+      ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
+  }
+
   return ret;
 }
 
@@ -433,6 +448,13 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
     if( isConst ) tbaa = valType->symbol->llvmConstTbaaNode;
     else tbaa = valType->symbol->llvmTbaaNode;
   }
+
+  if(!info->loopStack.empty()) {
+    const auto &loopData = info->loopStack.top();
+    if(loopData.parallel)
+      ret->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
+  }
+
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
   return ret;
 }
@@ -3032,8 +3054,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     } else {
       // not a homogeneous tuple copy
       if( info->cfile ) {
+        GenRet value = codegenValue(from);
+        INT_ASSERT(value.c != "");
         std::string stmt = codegenValue(to_ptr).c + " = ";
-        stmt += codegenValue(from).c;
+        stmt += value.c;
         stmt += ";\n";
         info->cStatements.push_back(stmt);
       } else {
@@ -3412,10 +3436,9 @@ GenRet CallExpr::codegenPrimitive() {
 
   case PRIM_ARRAY_ALLOC: {
     // get(1): return symbol
-    // get(2): element type
-    // get(3): number of elements
-    // get(4): localize subchunks?
-    // get(5): desired sublocale
+    // get(2): number of elements
+    // get(3): localize subchunks?
+    // get(4): desired sublocale
     GenRet dst = get(1);
     GenRet alloced;
 
@@ -3427,12 +3450,12 @@ GenRet CallExpr::codegenPrimitive() {
       GenRet  locale  = codegenRlocale(dst);
       GenRet  call    = codegenCallExpr("chpl_mem_wide_array_alloc",
                                         codegenRnode(dst),
-                                        codegenValue(get(3)),
+                                        codegenValue(get(2)),
                                         codegenSizeof(eltType),
+                                        get(3),
                                         get(4),
                                         get(5),
-                                        get(6),
-                                        get(7));
+                                        get(6));
 
       call.chplType = get(1)->typeInfo();
       alloced       = codegenAddrOf(codegenWideAddr(locale,
@@ -3443,12 +3466,12 @@ GenRet CallExpr::codegenPrimitive() {
       Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
 
       alloced = codegenCallExpr("chpl_mem_array_alloc",
-                                codegenValue(get(3)),
+                                codegenValue(get(2)),
                                 codegenSizeof(eltType),
+                                get(3),
                                 get(4),
                                 get(5),
-                                get(6),
-                                get(7));
+                                get(6));
     }
 
     codegenAssign(dst, alloced);
@@ -3457,27 +3480,31 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_ARRAY_FREE: {
+    // get(1): memory address
+    // get(2): number of elements
     if (fNoMemoryFrees == false) {
       GenRet data = get(1);
+      GenRet numElts;
+      if (get(2)->isRefOrWideRef()) {
+        numElts = codegenDeref(get(2));
+      } else {
+        numElts = codegenValue(get(2));
+      }
 
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet node = codegenRnode(data);
         GenRet ptr  = codegenRaddr(data);
-
-        codegenCall("chpl_mem_wide_array_free", node, ptr, get(2), get(3));
+        Symbol* addr    = get(1)->typeInfo()->getField("addr");
+        Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
+        codegenCall("chpl_mem_wide_array_free", node, ptr,
+                    numElts, codegenSizeof(eltType),
+                    get(3), get(4));
       } else {
-        codegenCall("chpl_mem_array_free", data, get(2), get(3));
+        Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
+        codegenCall("chpl_mem_array_free", data,
+                    numElts, codegenSizeof(eltType),
+                    get(3), get(4));
       }
-    }
-
-    break;
-  }
-
-  case PRIM_ARRAY_FREE_ELTS: {
-    if (fNoMemoryFrees == false) {
-      // This used to run a macro like this:
-      // for(i = 0; i < (x)->size; i++) call
-      INT_FATAL("PRIM_ARRAY_FREE_ELTS");
     }
 
     break;
@@ -3541,6 +3568,7 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
+  case PRIM_SET_REFERENCE:
   case PRIM_ADDR_OF: {
     // Special handling for reference variables
     // These variables have value type so PRIM_ADDR_OF
@@ -3868,7 +3896,8 @@ GenRet CallExpr::codegenPrimitive() {
 
     } else if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == true &&
                rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false) {
-      codegenAssign(lhs, codegenAddrOf(codegenWideHere(rhs)));
+      INT_ASSERT(isClassOrNil(rhsTypeSym->type));
+      codegenAssign(lhs, codegenWideHere(rhs));
 
     } else if (get(1)->isRefOrWideRef() ||
                lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
@@ -4922,31 +4951,15 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(get(1), specRet);
     }
 
-  } else if (isCallExpr(get(2)) &&
-             toCallExpr(get(2))->isPrimitive(PRIM_SET_REFERENCE)) {
-      SymExpr*    lhsSe      = toSymExpr(get(1));
-      VarSymbol*  var        = toVarSymbol(lhsSe->symbol());
-      CallExpr*   call       = toCallExpr(get(2));
-      Expr*       from       = call->get(1);
-      QualifiedType  q       = var->qualType();
-
-      INT_ASSERT(q.isRef() || q.isWideRef());
-
-      GenRet lhs = var->codegenVarSymbol(true);
-      GenRet rhs = from;
-      if (!from->isRefOrWideRef()) {
-        rhs = codegenAddrOf(rhs);
-      }
-
-      codegenAssign(lhs, rhs);
-
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false ) {
     GenRet rhs = get(2);
     if (get(2)->isRef()) {
       rhs = codegenDeref(rhs);
     }
-    codegenAssign(get(1), codegenAddrOf(codegenWideHere(rhs)));
+    // At this point, RHS should be a class type.
+    INT_ASSERT(isClassOrNil(rhs.chplType));
+    codegenAssign(get(1), codegenWideHere(rhs));
 
   } else if (get(1)->isWideRef() == true &&
              get(2)->isRef() == true) {
@@ -5005,6 +5018,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
   CallExpr* call = toCallExpr(e);
 
   if(!call) return false;
+
+  if (call->id == breakOnCodegenID)
+    gdbShouldBreakHere();
 
   if (call->primitive) {
     switch (call->primitive->tag) {
@@ -5082,8 +5098,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           GenRet srcwide  = call->get(1);
           Type*  addrType = target->typeInfo()->getField("addr")->type;
           GenRet addr     = codegenCast(addrType, codegenRaddr(srcwide));
-          GenRet ref      = codegenAddrOf(codegenWideAddrWithAddr(srcwide,
-                                                                  addr));
+          GenRet ref      = codegenWideAddrWithAddr(srcwide, addr);
 
           ret = ref;
         } else {
@@ -5247,8 +5262,21 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_CAST: {
-      if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          call->isWideRef()) {
+      if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        GenRet tmp = call->get(2);
+        if (call->get(2)->isRef()) {
+          tmp = codegenDeref(tmp);
+        }
+
+        ret = codegenWideAddrWithAddr(tmp,
+                                      codegenCast(call->get(1)->typeInfo(),
+                                                  codegenRaddr(tmp)));
+
+        retval = true;
+      } else if (call->isWideRef()) {
+        // MPF TODO: Can we remove this case? Why would we cast
+        // a ref?
+
         GenRet tmp = call->get(2);
         // BHARSH TODO:  Should we check if we're casting to a ref?
         if (call->get(2)->isRef()) {
@@ -5276,10 +5304,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         GenRet cast         = codegenCast(type, wideFromAddr);
         GenRet nul          = codegenCast(type, codegenNullPointer());
         GenRet addr         = codegenTernary(ok, cast, nul);
-        GenRet wide         = codegenAddrOf(codegenWideAddrWithAddr(
-                                                       wideFrom,
-                                                       addr,
-                                                       call->typeInfo()));
+        GenRet wide         = codegenWideAddrWithAddr(wideFrom,
+                                                      addr,
+                                                      call->typeInfo());
 
         ret = wide;
         retval = true;

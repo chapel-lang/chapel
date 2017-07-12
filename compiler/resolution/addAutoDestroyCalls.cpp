@@ -23,6 +23,7 @@
 
 #include "astutil.h"
 #include "AutoDestroyScope.h"
+#include "DeferStmt.h"
 #include "expr.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -44,6 +45,11 @@ void addAutoDestroyCalls() {
     }
 
     walkBlock(fn, NULL, fn->body);
+  }
+
+  // Finally, remove all defer statements, since they have been lowered.
+  forv_Vec(DeferStmt, defer, gDeferStmts) {
+    defer->remove();
   }
 }
 
@@ -142,14 +148,15 @@ static void walkBlock(FnSymbol*         fn,
     if (isReturnLabel(stmt, retLabel) == true) {
       scope.insertAutoDestroys(fn, stmt);
 
-    } else if (isGotoStmt(stmt) == true) {
-      isDeadCode = true;
-
     // Be conservative about unreachable code before the epilogue
     } else if (isDeadCode == false) {
       // Collect variables that should be autoDestroyed
       if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
         scope.variableAdd(var);
+
+      // Collect defer statements to run during cleanup
+      } else if (DeferStmt* defer = toDeferStmt(stmt)) {
+        scope.deferAdd(defer);
 
       // AutoDestroy primary locals at start of function epilogue (2)
       } else if (scope.handlingFormalTemps(stmt) == true) {
@@ -170,8 +177,16 @@ static void walkBlock(FnSymbol*         fn,
 
     //
     // Handle the end of a block
+    // For the purposes of this pass, a block ends either
+    // with a GotoStmt or when we run out of next statements.
     //
-    if (stmt->next == NULL) {
+    GotoStmt* gotoStmt = toGotoStmt(stmt);
+    if (gotoStmt != NULL || stmt->next == NULL) {
+
+      // Don't visit any later code in this block
+      // (don't add variable definitions, etc, above).
+      isDeadCode = true;
+
       GotoStmt* gotoStmt = toGotoStmt(stmt);
 
       // The main block for a function or a simple sub-block
@@ -184,6 +199,7 @@ static void walkBlock(FnSymbol*         fn,
           case GOTO_RETURN:
           case GOTO_CONTINUE:
           case GOTO_BREAK:
+          case GOTO_ERROR_HANDLING:
             scope.insertAutoDestroys(fn, stmt);
             break;
 
@@ -191,7 +207,6 @@ static void walkBlock(FnSymbol*         fn,
           case GOTO_GETITER_END:
           case GOTO_ITER_RESUME:
           case GOTO_ITER_END:
-          case GOTO_ERROR_HANDLING:
            // MDN 2016/03/18 Need to revisit these cases
            break;
         }
