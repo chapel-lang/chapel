@@ -229,7 +229,7 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
 
 void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
                                                  DefExpr* field) const {
-  bool isParam = field->sym->hasFlag(FLAG_PARAM);
+  INT_ASSERT(field->sym->hasFlag(FLAG_PARAM));
 
   SET_LINENO(insertBefore);
 
@@ -242,9 +242,7 @@ void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
     CallExpr*  tmpExpr  = new CallExpr("_defaultOf", type->symbol);
     CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, tmpExpr);
 
-    if (isParam == true) {
-      tmp->addFlag(FLAG_PARAM);
-    }
+    tmp->addFlag(FLAG_PARAM);
 
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     Symbol*    _this    = mFn->_this;
@@ -259,9 +257,7 @@ void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr("init", gMethodToken, tmp);
 
-    if (isParam == true) {
-      tmp->addFlag(FLAG_PARAM);
-    }
+    tmp->addFlag(FLAG_PARAM);
 
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     Symbol*    _this    = mFn->_this;
@@ -277,9 +273,7 @@ void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
     CallExpr*  tmpExpr  = new CallExpr(PRIM_INIT, field->exprType->copy());
     CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, tmpExpr);
 
-    if (isParam == true) {
-      tmp->addFlag(FLAG_PARAM);
-    }
+    tmp->addFlag(FLAG_PARAM);
 
     Symbol*    _this    = mFn->_this;
     Symbol*    name     = new_CStringSymbol(field->sym->name);
