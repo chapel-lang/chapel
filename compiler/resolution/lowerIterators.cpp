@@ -2253,8 +2253,6 @@ void lowerIterators() {
       if (!fNoCopyPropagation)
         localCopyPropagation(fn);
 
-      if (!fNoDeadCodeElimination)
-        deadCodeElimination(fn);
 #endif
     }
   }

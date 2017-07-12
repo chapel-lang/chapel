@@ -2777,7 +2777,9 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   // it for side effects, and then evaluate the body directly.
   if (!requireOutlinedOn()) {
     BlockStmt* block = new BlockStmt(stmt);
-    block->insertAtHead(onExpr); // evaluate the expression for side effects
+    Symbol* tmp = newTempConst();
+    block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
+    block->insertAtHead(new DefExpr(tmp));
     return buildChapelStmt(block);
   }
 

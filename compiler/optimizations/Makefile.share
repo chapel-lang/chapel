@@ -25,7 +25,6 @@ OPTIMIZATIONS_SRCS = \
 	localizeGlobals.cpp \
 	loopInvariantCodeMotion.cpp \
 	optimizeOnClauses.cpp \
-	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \
 	removeEmptyRecords.cpp \
 	removeUnnecessaryAutoCopyCalls.cpp \

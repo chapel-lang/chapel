@@ -721,7 +721,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   for_fields(field, ctype)
   {
     // Skip runtime header
-    if (i > 0) {
+    if (i > 0 && baData.needsDestroy[i]) {
       // insert auto destroy calls
       VarSymbol* tmp = newTemp(field->name, field->qualType());
       wrap_fn->insertAtTail(new DefExpr(tmp));
@@ -729,8 +729,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
           new CallExpr(PRIM_MOVE, tmp,
           new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-      if (baData.needsDestroy[i])
-        insertAutoDestroyForVar(tmp, wrap_fn);
+      insertAutoDestroyForVar(tmp, wrap_fn);
     }
 
     i++;
