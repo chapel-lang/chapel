@@ -716,7 +716,7 @@ To view commits grouped by author (for example, show me commits by author from
 
 
 Finding a Pull Request by Commit
---------------------------------
+++++++++++++++++++++++++++++++++
 
 Suppose you have figured out that a particular commit is causing a problem
 and you'd like to view the pull request discussion on GitHub. You can go
