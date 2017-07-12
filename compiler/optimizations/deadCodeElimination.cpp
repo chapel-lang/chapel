@@ -658,8 +658,11 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
         condStmt->remove();
 
       else if (doWhileStmt && doWhileStmt->condExprGet() == expr)
-        // Do nothing. (NOTE 3)
-        ;
+        if (doWhileStmt->length() == 0)
+          doWhileStmt->remove();
+        else
+          // Do nothing. (NOTE 3)
+          ;
 
       else if (whileStmt   && whileStmt->condExprGet()   == expr)
         // If the expr is the condition expression of a while statement,
@@ -794,4 +797,4 @@ static void deadGotoElimination(FnSymbol* fn)
 //# 3. Even if the condition of a DoWhileLoop is dead, the loop cannot be
 //#    removed because a DoWhileLoop must execute at least once. We _could_
 //#    remove the condition variable, but the compiler expects a non-null expr
-//#    to be there.
+//#    to be there. However, if the loop body is empty, we can remove it.

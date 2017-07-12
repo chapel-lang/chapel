@@ -235,6 +235,7 @@ denest
 desttype
 dgettext
 diffbytes
+diglobalvariableexpression
 dinline
 dirent
 direntptr
@@ -598,6 +599,7 @@ llapi
 lldb
 llsubmit
 llvmaggregateglobalops
+llvmdumpir
 llvmglobaltowide
 llvmutil
 lnot
@@ -800,6 +802,7 @@ ntasks
 ntddk
 ntifs
 ntokens
+nullptr
 numberof
 numbytes
 numcores
@@ -993,6 +996,7 @@ sbrk
 scache
 schar
 sdata
+sdot
 seekdata
 seekfunction
 segbcast
@@ -1005,6 +1009,7 @@ sendto
 seqcat
 seqloopexpr
 seqn
+sequals
 sessionid
 setaffinity
 setc
@@ -1283,6 +1288,7 @@ wordlength
 wordv
 workdir
 worklist
+wout
 wrapon
 writeable
 writeback
@@ -2733,7 +2739,9 @@ FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
 rauto
 
 FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
+fsyntax
 maino
+qunused
 
 FILEID: 4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5
 sroa
@@ -2811,6 +2819,7 @@ ssub
 swhole
 
 FILEID: 55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5
+fhello
 smessage
 
 FILEID: a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5
@@ -3596,7 +3605,9 @@ adaptative
 binarytrees
 chapcs
 kace
+paircount
 timecomp
+twopt
 
 FILEID: b4905dc4-5f88-11e6-90f0-10ddb1d4c3d5
 synccls
@@ -4351,6 +4362,23 @@ sealedabstract
 FILEID: d7761e16-36bd-11e7-96a7-10ddb1d4c3d5
 replmt
 
+FILEID: 0196aa72-62e1-11e7-88ba-10ddb1d4c3d5
+wkfn
+
+FILEID: 45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5
+cmac
+digestbyname
+libgcrypt
+libsodium
+libtomcrypt
+saru
+tinypic
+uhvb
+
+FILEID: 554af092-652a-11e7-88ba-10ddb1d4c3d5
+arglist
+targetlocale
+
 NATURAL:
 abcd
 abcdefg
@@ -4493,6 +4521,7 @@ blockreport
 blocksize
 blockstmt
 blog
+blowfish
 bocchino
 boink
 boisvert
@@ -4666,6 +4695,7 @@ cory
 coverity
 cppreference
 cproj
+cpuaffinity
 cpubind
 cpus
 cpuset
@@ -5149,6 +5179,7 @@ gurmukhi
 hacky
 hadoop
 hamdist
+hamidouche
 hangul
 hannah
 hanunoo
@@ -5385,6 +5416,7 @@ keygen
 keypair
 keypasswd
 keytype
+khaled
 kharoshthi
 khatri
 khmer
@@ -5447,6 +5479,7 @@ lgfortran
 lgmp
 lhdfs
 libclang
+libcrypto
 libcurl
 libedit
 libexec
@@ -5613,6 +5646,7 @@ mkdir
 mkerror
 mklroot
 mkswap
+mllvm
 mmap
 mmread
 mmreadsp
@@ -5660,6 +5694,7 @@ munged
 munges
 munging
 munmap
+munshi
 muxed
 myaccountid
 myanmar
@@ -5814,6 +5849,7 @@ oldfd
 oldname
 oldnnz
 olson
+omnipath
 onetest
 onlinedocs
 onlinepubs
@@ -5830,6 +5866,7 @@ openreader
 opensocketdata
 opensocketfunction
 opensource
+openssl
 opentmp
 openwriter
 optimizable
@@ -5851,6 +5888,7 @@ oversubscription
 padmanabhan
 pageview
 panagiotopoulou
+panzone
 paolo
 parallelization
 parallelize
@@ -6113,6 +6151,7 @@ sandybridge
 santana
 sanz
 sapiens
+sarthak
 sassert
 saturday
 saurashtra
@@ -6172,6 +6211,7 @@ sherwood
 shetag
 shmem
 shortlog
+shortname
 showplus
 showpoint
 showpointzero
@@ -6207,6 +6247,7 @@ sigvtalrm
 sigxcpu
 sigxfsz
 silva
+simd
 singh
 singlecls
 singlevar
@@ -6457,6 +6498,7 @@ tuesday
 tupled
 tuples
 tupling
+twofish
 typdef
 typecheck
 typedefed
@@ -6548,7 +6590,9 @@ varname
 varsymbol
 vassily
 vdebug
+vecs
 vectorizable
+vectorizer
 vectorizes
 vectorizing
 venv
@@ -6581,6 +6625,7 @@ webpages
 webserver
 wednesday
 weil
+wellknown
 westen
 westmere
 whipkey

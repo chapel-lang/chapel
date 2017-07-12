@@ -29,24 +29,41 @@ def run_command_wrapper(command):
     return output_lines
 
 
-def get_num_exclusive_nodes():
+def expand_hostnames(hostname):
     """
-    Get the number of nodes reserved exclusively on the chapel partition
+    Expand a possibly shorthand nodelist into all the full hostnames. e.g
+    expands 'chapcs[07-08]' to '[chapcs07, chapcs08]'
     """
-    # Grab the "SHARED,NODES" info for all jobs. For each exclusive (SHARED=no)
-    # job add up the number of nodes it's using
+    scontrol_cmd = ['scontrol', 'show', 'hostname', hostname]
+    scontrol_out = run_command_wrapper(scontrol_cmd)
+    return scontrol_out
+
+
+def get_exclusive_nodes():
+    """
+    Get the nodes reserved exclusively on the chapel partition. Returns tuple
+    of (num_exclusive_nodes, exclusive_hostnames)
+    """
+    # Grab the "SHARED;NODES;NODELIST;REQ_NODES" info for all jobs. For each
+    # exclusive (SHARED=no) job, track the nodes allocated/requested or the
+    # number of nodes requested if no specific nodes were allocated/requested.
     squeue_cmd = ['squeue',
                   '--partition=chapel',
                   '--noheader',
-                  '--format="%h,%D"']
+                  '--format="%h;%D;%N;%n"']
     squeue_out = run_command_wrapper(squeue_cmd)
     num_exclusive_nodes = 0
+    exclusive_hostnames = set()
     for line in squeue_out:
-        shared, num_nodes = line.split(',')
+        shared, num_nodes, nodelist, req_nodes = line.split(';')
         if shared == 'no':
-            num_exclusive_nodes += int(num_nodes)
-
-    return num_exclusive_nodes
+            nodes = nodelist or req_nodes
+            if nodes:
+                exclusive_hostnames.update(expand_hostnames(nodes))
+            else:
+                num_exclusive_nodes += int(num_nodes)
+    num_exclusive_nodes += len(exclusive_hostnames)
+    return (num_exclusive_nodes, exclusive_hostnames)
 
 
 def get_num_non_exclusive_nodes():
@@ -61,7 +78,7 @@ def get_num_non_exclusive_nodes():
                  '--format="%D"']
     sinfo_out = run_command_wrapper(sinfo_cmd)
     num_online_nodes = int(sinfo_out[0])
-    num_non_exclusive_nodes = num_online_nodes - get_num_exclusive_nodes()
+    num_non_exclusive_nodes = num_online_nodes - get_exclusive_nodes()[0]
     return num_non_exclusive_nodes
 
 
@@ -108,10 +125,14 @@ def run_paratest(args):
 
     salloc_cmd = ['salloc',
                   '--nodes={0}'.format(num_free_nodes),
-                  '--immediate',
+                  '--immediate=60',
                   '--partition=chapel',
                   '--share',
                   '--nice']
+
+    exclude_set = get_exclusive_nodes()[1]
+    if exclude_set:
+        salloc_cmd.append('--exclude={0}'.format(','.join(exclude_set)))
 
     paratest_path = os.path.join(os.path.dirname(__file__), 'paratest.server')
 
