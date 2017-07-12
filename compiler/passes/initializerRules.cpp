@@ -37,7 +37,7 @@ static bool      isInitStmt (Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit (Expr* stmt);
 
-static void      preNormalizeNonGenericInit(FnSymbol* fn);
+static void      preNormalize(FnSymbol* fn);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
@@ -170,10 +170,10 @@ void preNormalizeInitMethod(FnSymbol* fn) {
 
   } else if (isNonGenericRecord(at) ==  true ||
              isNonGenericClass(at)  ==  true) {
-    preNormalizeNonGenericInit(fn);
+    preNormalize(fn);
 
   } else {
-    preNormalizeNonGenericInit(fn);
+    preNormalize(fn);
   }
 }
 
@@ -231,7 +231,7 @@ static bool      isThisInit(Expr* stmt);
 static bool      hasReferenceToThis(Expr* expr);
 static bool      isMethodCall(CallExpr* callExpr);
 
-static void preNormalizeNonGenericInit(FnSymbol* fn) {
+static void preNormalize(FnSymbol* fn) {
   AggregateType* at         = toAggregateType(fn->_this->type);
   InitNormalize  state(fn);
 
