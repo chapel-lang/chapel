@@ -1269,12 +1269,12 @@ is determined by the following steps:
 \item
  If $F1$ is generic over all types and $F2$ is not generic over all
  types, $M_2$ is more specific.
- \item
- If $F1$ is partially concrete generic and $F2$ is generic and not
- partially concrete, $M_1$ is more specific.
 \item
- If $F1$ is generic and not partially concrete  and $F2$ is partially
- concrete generic, $M_2$ is more specific.
+ If $F1$ and $F2$ are both generic, and $F1$ is partially concrete but
+ $F2$ is not, then $M_1$ is more specific.
+\item
+ If $F1$ and $F2$ are both generic, and $F2$ is partially concrete but
+ $F1$ is not, then $M_2$ is more specific.
 \item
  If $T_A$ and $T_{F1}$ are the same type and $T_A$ and $T_{F2}$ are
  not the same type, $M_1$ is more specific.
