@@ -4255,9 +4255,11 @@ static bool hasCopyConstructor(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  moveIsAcceptable(CallExpr* call);
+static bool moveIsAcceptable(CallExpr* call);
 
-static void  moveHaltThisMoveIsUnacceptable(CallExpr* call);
+static void moveHaltThisMoveIsUnacceptable(CallExpr* call);
+
+static bool moveImplementsUnresolvedReturn(CallExpr* call);
 
 static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs);
 
@@ -4280,25 +4282,19 @@ static void resolveMove(CallExpr* call) {
 
 
 
+  // Ignore moves to RVV unless this is a constructor
+  if (moveImplementsUnresolvedReturn(call) == true) {
+    return;
+  }
+
+
+
   Expr*     rhs           = call->get(2);
   bool      rhsIsTypeExpr = isTypeExpr(rhs);
   Type*     rhsType       = rhs->typeInfo();
 
   Symbol*   lhs           = toSymExpr(call->get(1))->symbol();
   Type*     lhsType       = lhs->type;
-
-  FnSymbol* fn            = toFnSymbol(call->parentSymbol);
-  bool      isReturn      = fn ? lhs == fn->getReturnSymbol() : false;
-
-  // do not resolve function return type yet except for constructors
-  if (isReturn         == true            &&
-      fn->retType      == dtUnknown       &&
-
-      call->parentExpr != fn->where       &&
-      call->parentExpr != fn->retExprType &&
-      fn->_this        != lhs) {
-    return;
-  }
 
   // This is a workaround for order-of-resolution problems with
   // extern type aliases
@@ -4565,6 +4561,26 @@ static void moveHaltThisMoveIsUnacceptable(CallExpr* call) {
       }
     }
   }
+}
+
+// Do not use a PRIM_MOVE to resolve the type of RVV
+// unless this is a constructor
+static bool moveImplementsUnresolvedReturn(CallExpr* call) {
+  bool retval = false;
+
+  if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
+    Symbol* lhs = toSymExpr(call->get(1))->symbol();
+
+    if (fn->retType           == dtUnknown       && // Return type unresolved
+        fn->getReturnSymbol() == lhs             && // LHS is the RVV
+        fn->_this             != lhs             && // Not a constructor
+        call->parentExpr      != fn->where       &&
+        call->parentExpr      != fn->retExprType) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
