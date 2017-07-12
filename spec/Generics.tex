@@ -168,11 +168,12 @@ writeln(x.type:string);
 \subsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
 \index{formal arguments!generic}
+\index{formal arguments!partially concrete}
 
 If the type of a formal argument is a generic type, the type of the
 formal argument is taken to be the type of the actual argument passed
 to the function at the call site with the constraint that the type of
-the actual argument is an instantiation of the generic type.  A copy
+the actual argument is an instantiation of the generic type. A copy
 of the function is instantiated for each unique actual type.
 \begin{example}
 The following code defines a function \chpl{writeTop} that takes an
@@ -216,8 +217,8 @@ proc g(c: C(?)) {
 
 \index{where@\chpl{where}!implicit}
 The generic type may be specified with some queries and some exact
-values.  These exact values result in \emph{implicit where clauses}
-for the purpose of function resolution.
+values.  Using exact values in this manner makes the argument
+\emph{partially concrete} for the purpose of function resolution.
 \begin{example}
 Given the class definition
 \begin{chapel}
@@ -232,16 +233,10 @@ proc f(c: C(?t,real)) {
   // body
 }
 \end{chapel}
-is equivalent to
-\begin{chapel}
-proc f(c: C(?t,?tt)) where tt == real {
-  // body
-}
-\end{chapel}
+specifies that \chpl{f} should be chosen only when \chpl{c.tt==real}.
 \end{example}
-For tuples with query arguments, an implicit where clause is always
-created to ensure that the size of the actual tuple matches the
-implicitly specified size of the formal tuple.
+Similarly, a tuple type with query arguments
+forms a \emph{partially concrete} argument.
 \begin{example}
 The function definition
 \begin{chapel}
@@ -249,12 +244,22 @@ proc f(tuple: (?t,real)) {
   // body
 }
 \end{chapel}
-is equivalent to
+specifies that \chpl{tuple.size == 2 && tuple(2).type == real}.
+\end{example}
+Note that specifying a tuple consisting entirely of queried types
+does create a \emph{partially concrete argument} because the size
+of the tuple is constrained.
+\begin{example}
+The following program results in an ambiguity error:
 \begin{chapel}
-proc f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
-  // body
+proc f(tuple: (?,real)) {
 }
+proc f(tuple: (?,?)) {
+}
+f( (1.0, 2.0) );
 \end{chapel}
+since the \chpl{tuple} arguments in both versions of \chpl{f} are
+\emph{partially concrete}.
 \end{example}
 
 \begin{chapelexample}{query.chpl}
