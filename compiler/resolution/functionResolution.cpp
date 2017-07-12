@@ -4255,17 +4255,21 @@ static bool hasCopyConstructor(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool moveIsAcceptable(CallExpr* call);
+static bool  moveIsAcceptable(CallExpr* call);
 
-static void moveHaltThisMoveIsUnacceptable(CallExpr* call);
+static void  moveHaltThisMoveIsUnacceptable(CallExpr* call);
 
-static bool moveImplementsUnresolvedReturn(CallExpr* call);
+static bool  moveImplementsUnresolvedReturn(CallExpr* call);
 
-static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs);
+static Type* moveRhsType(CallExpr* call, Expr** rhsOut);
 
-static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
-                                               CallExpr* rhsCall,
-                                               FnSymbol* resolvedFn);
+static Type* moveLhsType(CallExpr* call, Type*  rhsType);
+
+static void  moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs);
+
+static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
+                                                CallExpr* rhsCall,
+                                                FnSymbol* resolvedFn);
 
 
 static void resolveMove(CallExpr* call) {
@@ -4289,77 +4293,14 @@ static void resolveMove(CallExpr* call) {
 
 
 
-  Expr*     rhs           = call->get(2);
-  bool      rhsIsTypeExpr = isTypeExpr(rhs);
-  Type*     rhsType       = rhs->typeInfo();
 
-  Symbol*   lhs           = toSymExpr(call->get(1))->symbol();
-  Type*     lhsType       = lhs->type;
+  Expr*   rhs        = call->get(2);
+  Type*   rhsType    = moveRhsType(call, &rhs);
+  Type*   rhsValType = rhsType->getValType();
 
-  // This is a workaround for order-of-resolution problems with
-  // extern type aliases
-  if (rhsIsTypeExpr   == true      &&
-      rhs->typeInfo() == dtUnknown &&
-      isSymExpr(rhs)  == true) {
-    // Try resolving type aliases now.
-    rhsType = resolveTypeAlias(toSymExpr(rhs));
-  }
-
-  if (rhsType == dtVoid) {
-    if (CallExpr* rhsCall = toCallExpr(rhs)) {
-      if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
-        if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) == true) {
-          USR_FATAL(userCall(call),
-                    "illegal use of function that does not "
-                    "return a value: '%s'",
-                    rhsFn->name);
-        }
-      }
-    }
-  }
-
-  // This is a workaround for problems where the _iterator
-  // in buildForLoopExpr would be an _array instead of a ref(_array)
-  // in 4-init-array-forexpr.chpl. This could be improved with
-  // QualifiedType.
-  if (lhs->hasFlag(FLAG_MAYBE_REF) == true &&
-      isReferenceType(rhsType)     == false) {
-    if (SymExpr* se = toSymExpr(rhs)) {
-      if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
-        if (concreteIntent(arg->intent, arg->type) & INTENT_FLAG_REF) {
-          makeRefType(rhsType);
-
-          rhsType = rhsType->refType;
-
-          // Add PRIM_ADDR_OF
-          //  (this won't be necessary with QualifiedType/PRIM_SET_REFERENCE)
-          VarSymbol* addrOfTmp = newTemp("moveAddr", rhsType);
-          SymExpr*   newRhs    = new SymExpr(addrOfTmp);
-
-          call->insertBefore(new DefExpr(addrOfTmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE,
-                                          addrOfTmp,
-                                          new CallExpr(PRIM_ADDR_OF,
-                                                       rhs->copy())));
-
-          rhs->replace(newRhs);
-
-          rhs = newRhs;
-        }
-      }
-    }
-  }
-
-  if (lhs->type == dtUnknown || lhs->type == dtNil) {
-    if (lhs->id == breakOnResolveID) {
-      gdbShouldBreakHere();
-    }
-
-    INT_ASSERT(rhsType);
-
-    lhs->type = rhsType;
-    lhsType   = rhsType;
-  }
+  Symbol* lhs        = toSymExpr(call->get(1))->symbol();
+  Type*   lhsType    = moveLhsType(call, rhsType);
+  Type*   lhsValType = lhsType->getValType();
 
   moveSetConstFlagsAndCheck(lhs, rhs);
 
@@ -4384,9 +4325,9 @@ static void resolveMove(CallExpr* call) {
               toString(lhsType));
   }
 
-  Type* lhsBaseType     = lhsType->getValType();
-  Type* rhsBaseType     = rhsType->getValType();
-  bool  isChplHereAlloc = false;
+
+
+  bool isChplHereAlloc = false;
 
   if (CallExpr* rhsCall = toCallExpr(rhs)) {
     if (rhsCall->isPrimitive(PRIM_SIZEOF)) {
@@ -4424,10 +4365,10 @@ static void resolveMove(CallExpr* call) {
 
 
 
-  if (isChplHereAlloc                            == false       &&
-      rhsType                                    != dtNil       &&
-      rhsBaseType                                != lhsBaseType &&
-      isDispatchParent(rhsBaseType, lhsBaseType) == false) {
+  if (isChplHereAlloc                          == false      &&
+      rhsType                                  != dtNil      &&
+      rhsValType                               != lhsValType &&
+      isDispatchParent(rhsValType, lhsValType) == false) {
     USR_FATAL(userCall(call),
               "type mismatch in assignment from %s to %s",
               toString(rhsType),
@@ -4441,14 +4382,14 @@ static void resolveMove(CallExpr* call) {
 
     call->insertAtTail(new CallExpr(PRIM_CAST, lhs->type->symbol,   tmp));
 
-  } else if (rhsType                                    != lhsType &&
-             isDispatchParent(rhsBaseType, lhsBaseType) == true) {
+  } else if (rhsType                                  != lhsType &&
+             isDispatchParent(rhsValType, lhsValType) == true) {
     Symbol* tmp = newTemp("cast_tmp", rhsType);
 
     call->insertBefore(new DefExpr(tmp));
     call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
 
-    call->insertAtTail(new CallExpr(PRIM_CAST, lhsBaseType->symbol, tmp));
+    call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
   }
 
 
@@ -4563,6 +4504,10 @@ static void moveHaltThisMoveIsUnacceptable(CallExpr* call) {
   }
 }
 
+
+
+
+
 // Do not use a PRIM_MOVE to resolve the type of RVV
 // unless this is a constructor
 static bool moveImplementsUnresolvedReturn(CallExpr* call) {
@@ -4582,6 +4527,91 @@ static bool moveImplementsUnresolvedReturn(CallExpr* call) {
 
   return retval;
 }
+
+
+
+
+
+// Determine type of RHS.
+// NB: This function may update the RHS
+static Type* moveRhsType(CallExpr* call, Expr** rhsOut) {
+  Symbol* lhs    = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs    = call->get(2);
+  Type*   retval = rhs->typeInfo();
+
+  // Workaround for order-of-resolution problems with extern type aliases
+  if (retval == dtUnknown) {
+    bool rhsIsTypeExpr = isTypeExpr(rhs);
+
+    if (rhsIsTypeExpr == true && isSymExpr(rhs) == true) {
+      // Try resolving type aliases now.
+      retval = resolveTypeAlias(toSymExpr(rhs));
+    }
+  }
+
+  if (retval == dtVoid) {
+    if (CallExpr* rhsCall = toCallExpr(rhs)) {
+      if (FnSymbol* rhsFn = rhsCall->resolvedFunction()) {
+        if (rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) == true) {
+          USR_FATAL(userCall(call),
+                    "illegal use of function that does not "
+                    "return a value: '%s'",
+                    rhsFn->name);
+        }
+      }
+    }
+  }
+
+  // Workaround for problems where the _iterator in buildForLoopExpr would
+  // be an _array instead of a ref(_array) in 4-init-array-forexpr.chpl.
+  // This could be improved with QualifiedType.
+  if (lhs->hasFlag(FLAG_MAYBE_REF) ==  true &&
+      isReferenceType(retval)      == false) {
+    if (SymExpr* se = toSymExpr(rhs)) {
+      if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
+        if (concreteIntent(arg->intent, arg->type) & INTENT_FLAG_REF) {
+          makeRefType(retval);
+
+          retval = retval->refType;
+
+          // Add PRIM_ADDR_OF
+          // (this won't be necessary with QualifiedType/PRIM_SET_REFERENCE)
+          VarSymbol* addrOfTmp = newTemp("moveAddr", retval);
+          CallExpr*  addrOf    = new CallExpr(PRIM_ADDR_OF, rhs->copy());
+          SymExpr*   newRhs    = new SymExpr(addrOfTmp);
+
+          call->insertBefore(new DefExpr(addrOfTmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, addrOfTmp, addrOf));
+
+          rhs->replace(newRhs);
+
+          *rhsOut = newRhs;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+static Type* moveLhsType(CallExpr* call, Type* rhsType) {
+  Symbol* lhs    = toSymExpr(call->get(1))->symbol();
+  Type*   retval = lhs->type;
+
+  if (lhs->type == dtUnknown || lhs->type == dtNil) {
+    if (lhs->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
+
+    lhs->type = rhsType;
+    retval    = rhsType;
+  }
+
+  return retval;
+}
+
+
+
 
 static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
   // If this assigns into a loop index variable from a non-var iterator,
