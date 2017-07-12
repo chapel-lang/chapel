@@ -1,7 +1,7 @@
 use samples;
 proc f() {
   var A:[1..4] R;
-  var B => A;
+  ref B = A;
   return B;
 }
 
