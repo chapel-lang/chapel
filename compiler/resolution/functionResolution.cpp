@@ -4342,7 +4342,17 @@ static void resolveMove(CallExpr* call) {
   bool isChplHereAlloc = false;
 
   if (CallExpr* rhsCall = toCallExpr(rhs)) {
-    if (rhsCall->isPrimitive(PRIM_SIZEOF)) {
+    if (rhsCall->resolvedFunction() == gChplHereAlloc) {
+      Symbol* tmp = newTemp("cast_tmp", rhsType);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+
+      call->insertAtTail(new CallExpr(PRIM_CAST, lhs->type->symbol, tmp));
+
+      isChplHereAlloc = true;
+
+    } else if (rhsCall->isPrimitive(PRIM_SIZEOF)) {
       // Fix up arg to sizeof(), as we may not have known the type earlier
       SymExpr* sizeSym = toSymExpr(rhsCall->get(1));
 
@@ -4369,39 +4379,34 @@ static void resolveMove(CallExpr* call) {
         rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR,
                                       new SymExpr(derefTmp)));
       }
-
-    } else if (rhsCall->resolvedFunction() == gChplHereAlloc) {
-      isChplHereAlloc = true;
     }
   }
 
 
 
-  if (isChplHereAlloc                          == false      &&
-      rhsType                                  != dtNil      &&
-      rhsValType                               != lhsValType &&
-      isDispatchParent(rhsValType, lhsValType) == false) {
-    USR_FATAL(userCall(call),
-              "type mismatch in assignment from %s to %s",
-              toString(rhsType),
-              toString(lhsType));
 
-  } else if (isChplHereAlloc == true) {
-    Symbol* tmp = newTemp("cast_tmp", rhsType);
 
-    call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+  if (isChplHereAlloc == false) {
+    if (isDispatchParent(rhsValType, lhsValType) == true) {
+      if (rhsType != lhsType) {
+        Symbol* tmp = newTemp("cast_tmp", rhsType);
 
-    call->insertAtTail(new CallExpr(PRIM_CAST, lhs->type->symbol,   tmp));
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
 
-  } else if (rhsType                                  != lhsType &&
-             isDispatchParent(rhsValType, lhsValType) == true) {
-    Symbol* tmp = newTemp("cast_tmp", rhsType);
+        call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
+      }
 
-    call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
-
-    call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
+    } else {
+      if (rhsValType != lhsValType) {
+        if (rhsType != dtNil) {
+          USR_FATAL(userCall(call),
+                    "type mismatch in assignment from %s to %s",
+                    toString(rhsType),
+                    toString(lhsType));
+        }
+      }
+    }
   }
 
 
