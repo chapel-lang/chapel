@@ -9,6 +9,8 @@ The git repository for the project is hosted on Github at
 
 See the `Developer Workflow`_ instructions below for setting up a github
 account, signing the contributor agreement, and submitting pull requests.
+This document contains a mixture of tips for git beginners and specific
+Chapel workflow recommendations.
 
 Developer Workflow
 ------------------
@@ -22,12 +24,23 @@ Overview:
    #. `Create new branch`_
 
 #. `Develop and test contributions locally`_
+
+   #. `Test your feature`_
+
 #. `Request feedback on your changes`_
+
+   #. `Push your work`_
+   #. `Ask for feedback early`_ (optional)
+   #. `Submit pull request`_
+   #. `Find a reviewer`_
+   #. `Work with your reviewers`_
+
 #. `Test changes`_ (can be done by team at Cray)
 #. `Merge changes in to master`_
 #. `Watch automatic testing`_ and address issues
 
 `HOWTO/Git/GitHub details`_
+
 `Policy details`_
 
 .. _Discuss design:
@@ -45,55 +58,55 @@ ensure that you are aware of any parallel efforts in that area.
 Set up a branch for development
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This consists of two steps.  The first, `Fork repo on github`_, only needs to
-happen once per developer.  The second, `Create new branch`_, should happen
-for every new effort.
+This consists of two sets of operations.  The first (`Set up repository`_) only
+needs to happen once per developer.  The second (`Create new branch`_) should
+happen for every new effort.
 
-.. _Fork repo on github:
+.. _Set up repository:
 
-Fork repo on github
-+++++++++++++++++++
+Set up repository
++++++++++++++++++
 
-These are expected to evolve over time as the governance of Chapel is migrated
-from Cray to an external/community body (the major elements are likely to be
-similar, though the specific people involved are likely to change and grow).
+Note: these are expected to evolve over time as the governance of Chapel is
+migrated from Cray to an external/community body (the major elements are likely
+to be similar, though the specific people involved are likely to change and
+grow).
 
-* `Set up a github account`_. The "Free" plan is sufficient for contributing to
+#. `Set up a github account`_. The "Free" plan is sufficient for contributing to
   Chapel.
 
-* Make sure you have configured your environment to work with git. See
-  `initial_git_setup`_ instructions.
+#. Make sure you have configured your environment to work with git. See
+  `initial git setup`_ instructions.
 
-* Use the GitHub web interface to create a fork of the Chapel repo by visiting
-  https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
-  also `Fork the repo`_).  Then `configure your local git`_ and check out your
-  fork
+#. Use the GitHub web interface to create a fork of the Chapel repo by visiting
+   https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
+   also `Fork the repo`_).  Then `configure your local git`_ and check out your
+   fork
 
-* If you will need commit/push access to the main repository,
-  `chapel-lang/chapel`_, send a request including your github username to
-  chapel_admin _at_ cray.com.
+#. If you will need commit/push access to the main repository,
+   `chapel-lang/chapel`_, send a request including your github username to
+   chapel_admin _at_ cray.com.
 
-  .. note::
+   Note: You do not need commit/push access to the main repo in order to
+   contribute code. Reviewers on the core team can pull, review, and merge your
+   pull requests.
 
-    You do not need commit/push access to the main repo in order to contribute
-    code. Reviewers on the core team can pull, review, and merge your pull
-    requests.
+#. If you're working on a long-term effort, announce it on the
+   chapel-developers_ mailing list to make sure toes are not being stepped on,
+   work is not being pursued redundantly, etc.  Similarly, fundamental changes
+   to the language or architecture should be circulated to the
+   chapel-developers_ and/or chapel-users_ lists to make sure effort is not
+   wasted.
 
-* If you're working on a long-term effort, announce it on the
-  chapel-developers_ to make sure toes are not being stepped on, work is not
-  being pursued redundantly, etc.  Similarly, fundamental changes to the
-  language or architecture should be circulated to the chapel-developers_
-  and/or chapel-users_ lists to make sure effort is not wasted.
+#. If your work will require committing any third-party code that you are not
+   developing yourself (or code that you've developed as a standalone package),
+   alert the chapel-developers_ mailing list of this as, presently, such code
+   packages must be approved by Cray leadership before being committed.
 
-* If your work will require committing any third-party code that you are not
-  developing yourself (or code that you've developed as a standalone package),
-  alert the chapel-developers_ mailing list of this as, presently, such code
-  packages must be approved by Cray leadership before being committed.
+#. Sign a Chapel contributor's agreement and mail it, with your GitHub
+   ID, using the instructions here:
 
-* Sign a Chapel contributor's agreement and mail it, with your GitHub
-  ID, using the instructions here:
-
-  https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+   https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
 .. _Create new branch:
 
@@ -142,11 +155,14 @@ commit`` to finish the merge process.
 If you want to understand the changes that occurred upstream, see `Read commit
 messages`_ below.
 
+.. _Test your feature:
+
 Test your feature
------------------
++++++++++++++++++
 
 You will probably need to create new tests for your feature. See `Test System`_
-for more information on this process.  To do the most basic testing, you'd do:
+for more information on this process.  To do the most basic testing, you would
+do one of:
 
 .. code-block:: bash
 
@@ -156,7 +172,7 @@ for more information on this process.  To do the most basic testing, you'd do:
     # run tests that end up in $CHPL_HOME/examples
     start_test test/release/examples
 
-    # run all tests
+    # run all tests.  This will take a long time on a single desktop
     start_test test/
 
 Any addition/change to the Chapel test system should pass testing when that
@@ -164,7 +180,7 @@ test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
 Contributors should be reasonably confident in the testing done on their code
-before asking for a review.  Should additional testing resources be need, you
+before asking for a review.  Should additional testing resources be needed, you
 can request help from a member of the core Chapel team when creating your pull
 request.
 
@@ -172,37 +188,35 @@ request.
 
 Testing your patch:
 
-  * Changes to the Chapel implementation should not cause
-    regressions. Developers are responsible for doing a degree of testing
-    that's appropriate for their change (see guidance below) and then can rely
-    on nightly regression testing to worry about the full cross-product of
-    configurations.
+* Changes to the Chapel implementation should not cause regressions. Developers
+  are responsible for doing a degree of testing that's appropriate for their
+  change (described in the following bullets) and then can rely on nightly
+  regression testing to worry about the full cross-product of configurations.
 
-    * At a minimum, patches should pass correctness testing for the full test/
-      directory hierarchy for:
+  * At a minimum, patches should pass correctness testing for the full test/
+    directory hierarchy for:
 
-      * ``CHPL_*_PLATFORM=linux64``
-      * ``CHPL_*_COMPILER=gnu``
-      * ``CHPL_COMM=none``
-      * ``CHPL_TASKS=<default>``
+    * ``CHPL_*_PLATFORM=linux64``
+    * ``CHPL_*_COMPILER=gnu``
+    * ``CHPL_COMM=none``
+    * ``CHPL_TASKS=<default>``
 
-    * Most developers will start by focusing on a subdirectory of tests that
-      exercise the features they changed, or test/release/ as a suite of tests
-      that exercises a rich and important slice of the language.
+  * Most developers will start by focusing on a subdirectory of tests that
+    exercise the features they changed, or test/release/ as a suite of tests
+    that exercises a rich and important slice of the language.
 
-    * Changes that are likely to affect multi-locale executions should also be
-      tested against tests that exercise multi-locale capabilities with
-      ``CHPL_COMM=gasnet``.  A common subset is: ``test/release/``,
-      ``test/multilocale/``, and ``test/distributions/``.
+  * Changes that are likely to affect multi-locale executions should also be
+    tested against tests that exercise multi-locale capabilities with
+    ``CHPL_COMM=gasnet``.  A common subset is: ``test/release/``,
+    ``test/multilocale/``, and ``test/distributions/``.
 
-    * Changes that are likely to cause portability issues should be tested
-      against different platforms and compilers to avoid fallout in the nightly
-      testing to the extent possible.
+  * Changes that are likely to cause portability issues should be tested against
+    different platforms and compilers to avoid fallout in the nightly testing to
+    the extent possible.
 
-  * Note that the quickest way to do testing is to use the parallel testing
-    system across a large number of workstations.  If you have limited testing
-    resources available to you, you can request that a member of the core
-    Chapel team help.
+* Note that the quickest way to do testing is to use the parallel testing system
+  across a large number of workstations.  If you have limited testing resources
+  available to you, you can request that a member of the core Chapel team help.
 
 .. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
 
@@ -215,7 +229,7 @@ Request feedback on your changes
 .. _Push your work:
 
 Push your work to your feature branch
--------------------------------------
++++++++++++++++++++++++++++++++++++++
 
 Push your changes to your feature branch on GitHub
 
@@ -238,8 +252,10 @@ update the pull request.
 
 This will enable others to see your work.
 
+.. _Ask for feedback early:
+
 Ask for feedback on your branch early (optional)
-------------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++++++
 
 Not ready to merge yours changes, but still want to see if your work is going
 in the right direction?  Feel free to ask for early feedback!
@@ -248,40 +264,42 @@ in the right direction?  Feel free to ask for early feedback!
 .. _Submit pull request:
 
 Submit pull request
--------------------
++++++++++++++++++++
 
 * `Submit a pull request`_ with your changes (make sure you have `synced with
   the main repo`_).
 
-  * To do this, after pushing your changes to your feature branch on GitHub,
-    you can use the GitHub web interface to create a pull request. Visit
+  To do this, after pushing your changes to your feature branch on GitHub,
+  you can use the GitHub web interface to create a pull request. Visit
 
-    https://github.com/<username>/chapel
+  ``https://github.com/<username>/chapel``
 
-    and look for a "Compare & pull request" button for your feature branch.
-    Alternatively, navigate to your feature branch, and click the green icon
-    next to the branch dropdown to "Compare, review, create a pull request".
+  and look for a "Compare & pull request" button for your feature branch.
+  Alternatively, navigate to your feature branch, and click the green icon next
+  to the branch dropdown to "Compare, review, create a pull request".
 
-    Next, put in a message to your reviewer about the purpose of your pull
-    request and give the pull request a useful title. It's a good time to draft
-    the commit message that you will need when merging the pull request.  See
-    `Final merge message`_ for recommendations on what that commit message
-    should look like.
+  Next, put in a message to your reviewer about the purpose of your pull request
+  and give the pull request a useful title. It's a good time to draft the commit
+  message that you will need when merging the pull request.  See `Final merge
+  message`_ for recommendations on what that commit message should look like.
 
-    You will have to have signed a contributors agreement.
+  You will have to have signed a contributors agreement.
 
-    Your pull request will be available at a URL like:
-      https://github.com/chapel-lang/chapel/pull/<number>
+  Your pull request will be available at a URL like:
 
-    and you can discuss the patch with your reviewers there.
+    ``https://github.com/chapel-lang/chapel/pull/<number>``
 
-    In working with your reviewers, you will no doubt change your pull request.
-    Just do your local development and then update your feature branch as in
-    `Push your work`_
+  and you can discuss the patch with your reviewers there.
 
-* In order for a pull request to be accepted and merged, it should a) pass
-  testing and b) be reviewed by a member of the core Chapel team (currently, a
-  member of the Cray Chapel team).
+  In working with your reviewers, you will no doubt change your pull request.
+  Just do your local development and then update your feature branch as in `Push
+  your work`_
+
+* In order for a pull request to be accepted and merged, it should
+
+  a) pass testing and
+  b) be reviewed by a member of the core Chapel team (currently, a member of the
+     Cray Chapel team).
 
 * It is considered good practice to keep PRs (pull requests) to a reasonable
   size. This ensures that the PR will be reviewed in a timely manner and will
@@ -301,29 +319,31 @@ Submit pull request
     1000-line PR is acceptable, while a set of new tests introduced as a
     1000-line PR is not.
 
+.. _Find a reviewer:
+
 Find a reviewer
----------------
++++++++++++++++
 
-* When you believe your pull request is ready for review, send it to a member
-  of the core Chapel team (or chapel-developers_ if there isn't an obvious
-  person to review it). To make it easy to spot, please include `[PR]` prior to
-  the subject of your email.  Even the developers that have write access to the
-  Chapel repository need to have all non-trivial changes reviewed. Developers
-  who have been given write access can merge trivial changes (e.g. small bug
-  fixes, documentation changes) without review.
+* When you believe your pull request is ready for review, send it to a member of
+  the core Chapel team (or to the chapel-developers_ list if there isn't an
+  obvious person to review it). To make it easy to spot, please include `[PR]`
+  prior to the subject of your email.  Even the developers that have write
+  access to the Chapel repository need to have all non-trivial changes
+  reviewed. Developers who have been given write access can merge trivial
+  changes (e.g. small bug fixes, documentation changes) without review.
 
-  .. note::
-
-    Ideally, someone should volunteer to review your pull request within a day
-    or two. If this doesn't happen, feel free to make some noise. Ideally the
-    review should take place within a few days, though timing may vary
-    depending on other deadlines.
+  Note: Ideally, someone should volunteer to review your pull request within a
+  day or two. If this doesn't happen, feel free to make some noise. Ideally the
+  review should take place within a few days, though timing may vary depending
+  on other deadlines.
 
 * See `Reviewer responsibilities`_ for details on what performing a review on
   another contributor's code entails.
 
+.. _Work with your reviewers:
+
 Work with your reviewers
-------------------------
+++++++++++++++++++++++++
 
 * Iterate with the reviewer until you're both satisfied. If you can't come to
   agreement, one of you should bring other developers (individually or via
@@ -354,13 +374,11 @@ Merge changes in to master
   either the reviewer or developer (given sufficient permissions), as decided
   between the two of them.
 
-  .. note::
-
-    Recall that while git history can be rewritten, it is both difficult and
-    does not remove any local copies that have been pulled down. So be very
-    careful not to commit anything that you might regret later (e.g., sensitive
-    code, code owned by anyone other than yourself). Ideally, the review will
-    catch such issues, but the ultimate responsibility is on the developer.
+  Note: Recall that while git history can be rewritten, it is difficult and does
+  not remove any local copies that have been pulled down. So be very careful not
+  to commit anything that you might regret later (e.g., sensitive code, code
+  owned by anyone other than yourself). Ideally, the review will catch such
+  issues, but the ultimate responsibility is on the developer.
 
 * If you are reviewing code from an external contributor without push
   privileges, please look through the `Reviewer responsibilities`_ once more
@@ -370,9 +388,12 @@ After the final version of the change has been agreed upon, navigate to the
 pull request:
 
 go to
+
   https://github.com/chapel-lang/chapel/pulls
+
 or
-  https://github.com/chapel-lang/chapel/pull/<number>
+
+  ``https://github.com/chapel-lang/chapel/pull/<number>``
 
 and click the friendly green button "Merge pull request" (it is possible to
 merge the pull request from the command line also and the pull request page has
@@ -407,10 +428,10 @@ Watch automatic testing and address issues
 HOWTO/Git/GitHub details
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _initial_git_setup:
+.. _initial git setup:
 
 Initial Git Setup
------------------
++++++++++++++++++
 
 Follow the GitHub directions to setup a new account.
 
@@ -425,7 +446,7 @@ If you plan to use ssh to push/pull, setup SSH keys.
 .. _Configure your local git:
 
 Configure your local git
-------------------------
+++++++++++++++++++++++++
 
 Here is the uncommented version of the commands:
 
@@ -463,7 +484,7 @@ Here is the uncommented version of the commands:
 .. _Development commands:
 
 Development commands
---------------------
+++++++++++++++++++++
 
 Stage a file/dir for commit:
 
@@ -550,10 +571,8 @@ Fixing a commit message:
 
     git commit --amend
 
-.. note::
-
-    This should only ever be done to commits that **have not been pushed** to
-    a remote repository.
+Note: This should only ever be done to commits that **have not been pushed** to
+a remote repository.
 
 Un-do the last commit (leaving changed files in your working directory)
 
@@ -561,15 +580,13 @@ Un-do the last commit (leaving changed files in your working directory)
 
     git reset --soft HEAD~1
 
-.. note::
-
-    This should only ever be done to commits that **have not been pushed** to
-    a remote repository.
+Note: This should only ever be done to commits that **have not been pushed** to
+a remote repository.
 
 .. _Read commit messages:
 
 Read commit messages for changes from the main Chapel project
--------------------------------------------------------------
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 To view only the commits that happened on master (in other words, the old svn
 commits and the merge commits for pull requests):
@@ -592,7 +609,7 @@ More logging commands are described in `Other logging commands`_ below.
 
 
 More information on using git
------------------------------
++++++++++++++++++++++++++++++
 
 Additional docs available online at: http://git-scm.com/docs/
 
@@ -603,7 +620,7 @@ Git help pages can be viewed with:
     git help <command>
 
 Other git commands
-------------------
+++++++++++++++++++
 
 Update to HEAD:
 
@@ -676,7 +693,7 @@ should be kept:
 .. _Other logging commands:
 
 Other logging commands
-----------------------
+++++++++++++++++++++++
 
 To view commits grouped by author (for example, show me commits by author from
 1.9.0.1 tag to now):
@@ -704,7 +721,9 @@ Finding a Pull Request by Commit
 Suppose you have figured out that a particular commit is causing a problem
 and you'd like to view the pull request discussion on GitHub. You can go
 to
-  https://github.com/chapel-lang/chapel/commit/<commit-hash>
+
+  ``https://github.com/chapel-lang/chapel/commit/<commit-hash>``
+
 and GitHub shows the pull request number at the bottom of the commit message
 complete with a link to the pull request page.
 
@@ -718,19 +737,19 @@ Policy details
 .. _Final merge message:
 
 Final merge message
--------------------
++++++++++++++++++++
 
- - start with a single topic line with at most 75 characters
- - then have a blank line
- - then have a more detailed explanation including motivation for the
-   change and how it changes the previous behavior
- - use present tense (e.g. "Fix file iterator bug")
- - manually wrap long lines in the explanation to 75 or 80 characters
+- start with a single topic line with at most 75 characters
+- then have a blank line
+- then have a more detailed explanation including motivation for the
+  change and how it changes the previous behavior
+- use present tense (e.g. "Fix file iterator bug")
+- manually wrap long lines in the explanation to 75 or 80 characters
 
 .. _Reviewer responsibilities:
 
 Reviewer responsibilities
--------------------------
++++++++++++++++++++++++++
 
 * If you're reviewing a commit from a developer outside the Chapel core
   team, be sure they have signed the contributor's agreement (see the
