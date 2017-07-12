@@ -1,5 +1,0 @@
-error message: Setting a type field during Phase 2 of initialization
-
-Though it is correct to error when setting a type field during Phase 2 of
-initialization, the current error message is very unclear about what the exact
-problem is.

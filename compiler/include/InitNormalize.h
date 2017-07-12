@@ -97,6 +97,17 @@ private:
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
+  void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
+                                               DefExpr* field)           const;
+
+  void            genericFieldInitTypeWithInit(Expr*    insertBefore,
+                                               DefExpr* field,
+                                               Expr*    initExpr)        const;
+
+  void            genericFieldInitTypeInference(Expr*    insertBefore,
+                                                DefExpr* field,
+                                                Expr*    initExpr)       const;
+
   void            fieldInitTypeWoutInit(Expr*    insertBefore,
                                         DefExpr* field)                  const;
 
