@@ -255,6 +255,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TYPE_TO_STRING:
   case PRIM_ENUM_MIN_BITS:
   case PRIM_ENUM_IS_SIGNED:
+  case PRIM_IS_EXTERN_CLASS_TYPE:
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
   case PRIM_IS_TUPLE_TYPE:
