@@ -4275,7 +4275,7 @@ static bool hasCopyConstructor(AggregateType* ct) {
 
 static bool  moveIsAcceptable(CallExpr* call);
 
-static void  moveHaltThisMoveIsUnacceptable(CallExpr* call);
+static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveImplementsUnresolvedReturn(CallExpr* call);
 
@@ -4289,6 +4289,12 @@ static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                 CallExpr* rhsCall,
                                                 FnSymbol* resolvedFn);
 
+static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
+
+static void  moveHaltForUnacceptableTypes(Type*     lhsType,
+                                          Type*     rhsType,
+                                          CallExpr* call);
+
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID) {
@@ -4299,7 +4305,7 @@ static void resolveMove(CallExpr* call) {
 
   if (moveIsAcceptable(call) == false) {
     // NB: This call will not return
-    moveHaltThisMoveIsUnacceptable(call);
+    moveHaltMoveIsUnacceptable(call);
   }
 
 
@@ -4322,26 +4328,14 @@ static void resolveMove(CallExpr* call) {
 
   moveSetConstFlagsAndCheck(lhs, rhs);
 
-  if (CallExpr* call = toCallExpr(rhs)) {
-    if (FnSymbol* fn = call->resolvedFunction()) {
-      if (rhsType == dtUnknown) {
-        USR_FATAL_CONT(fn,
-                       "unable to resolve return type of function '%s'",
-                       fn->name);
-        USR_FATAL(rhs, "called recursively at this point");
-      }
-    }
+
+
+  if (moveTypesAreAcceptable(lhsType, rhsType) == false) {
+    // NB: This call will not return
+    moveHaltForUnacceptableTypes(lhsType, rhsType, call);
   }
 
-  if (rhsType == dtUnknown) {
-    USR_FATAL(call, "unable to resolve type");
-  }
 
-  if (rhsType == dtNil && lhsType != dtNil && isClass(lhsType) == false) {
-    USR_FATAL(userCall(call),
-              "type mismatch in assignment from nil to %s",
-              toString(lhsType));
-  }
 
 
 
@@ -4486,7 +4480,7 @@ static bool moveIsAcceptable(CallExpr* call) {
   return retval;
 }
 
-static void moveHaltThisMoveIsUnacceptable(CallExpr* call) {
+static void moveHaltMoveIsUnacceptable(CallExpr* call) {
   Symbol* lhs = toSymExpr(call->get(1))->symbol();
   Expr*   rhs = call->get(2);
 
@@ -4748,6 +4742,58 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
     }
   }
 }
+
+
+
+
+
+
+
+
+static bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
+  bool retval = true;
+
+  if (rhsType == dtUnknown) {
+    retval = false;
+
+  } else if (rhsType == dtNil) {
+    if (lhsType != dtNil && isClass(lhsType) == false) {
+      retval = false;
+    }
+  }
+
+  return retval;
+}
+
+static void moveHaltForUnacceptableTypes(Type*     lhsType,
+                                         Type*     rhsType,
+                                         CallExpr* call) {
+  if (rhsType == dtUnknown) {
+    Expr* rhs = call->get(2);
+
+    if (CallExpr* rhsCall = toCallExpr(rhs)) {
+      if (FnSymbol* fn = rhsCall->resolvedFunction()) {
+        USR_FATAL_CONT(fn,
+                       "unable to resolve return type of function '%s'",
+                       fn->name);
+        USR_FATAL(rhs, "called recursively at this point");
+      }
+    }
+
+    USR_FATAL(call, "unable to resolve type");
+
+  } else if (rhsType == dtNil) {
+    if (lhsType != dtNil && isClass(lhsType) == false) {
+      USR_FATAL(userCall(call),
+                "type mismatch in assignment from nil to %s",
+                toString(lhsType));
+    }
+  }
+}
+
+
+
+
 
 /************************************* | **************************************
 *                                                                             *
