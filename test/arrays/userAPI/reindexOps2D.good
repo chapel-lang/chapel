@@ -69,9 +69,9 @@ X is:
 13.8 14.8 15.8 16.8
 
 target locales: LOCALE0
-local subdomain: {0..3, 2..9 by 2}
+local subdomain: {0..3, 2..8 by 2}
 local subdomains:
-{0..3, 2..9 by 2}
+{0..3, 2..8 by 2}
 
 is empty: false
 head: 1.8
