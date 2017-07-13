@@ -124,7 +124,10 @@ module ChapelBase {
   inline proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
+  // also for sync/single of class types; todo: sync/single of extern class types
   inline proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
+  // incl. for extern class types
+  inline proc ==(a, b) where isClass(a) && isClass(b) return __primitive("ptr_eq", a, b);
 
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
   inline proc !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
@@ -133,6 +136,7 @@ module ChapelBase {
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
   inline proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
+  inline proc !=(a, b) where isClass(a) && isClass(b) return __primitive("ptr_neq", a, b);
 
   inline proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
   inline proc ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
@@ -1637,6 +1641,8 @@ module ChapelBase {
   }
 
   proc isClassType(type t) param where t:object return true;
+  proc isClassType(type t) param where t == _nilType return true;
+  proc isClassType(type t) param where isExternClassType(t) return true;
   proc isClassType(type t) param return false;
 
   proc isRecordType(type t) param where t: value {
@@ -1654,6 +1660,8 @@ module ChapelBase {
       return true;
   }
   proc isRecordType(type t) param return false;
+
+  proc isExternClassType(type t) param return __primitive("is extern class type", t);
 
   proc isUnionType(type t) param return __primitive("is union type", t);
 
