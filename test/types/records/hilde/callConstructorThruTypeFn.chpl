@@ -5,12 +5,12 @@
 
 record R {
   var _i : int;
-  proc R(i : int) { _i = i; }
+  proc init(i : int) { _i = i; }
 }
 
 record S : R {
   var _r : real;
-  proc S(i : int) { _i = i; _r = 3.1416; }
+  proc init(i : int) { _r = 3.1416; super.init(i); }
 }
 
 proc chooseARecordType(param derived = false) type {
