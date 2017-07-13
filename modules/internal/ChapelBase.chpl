@@ -1637,6 +1637,7 @@ module ChapelBase {
   }
 
   proc isClassType(type t) param where t:object return true;
+  proc isClassType(type t) param where t == _nilType return true;
   proc isClassType(type t) param return false;
 
   proc isRecordType(type t) param where t: value {
@@ -1662,6 +1663,31 @@ module ChapelBase {
   proc isAtomicType(type t) param return __primitive("is atomic type", t);
 
   proc isRefIterType(type t) param return __primitive("is ref iter type", t);
+
+  proc isExternClassType(type t) param return __primitive("is extern class type", t);
+
+  // extern class operations
+  inline proc =(ref a, b: a.type) where isExternClassType(a.type)
+  { __primitive("=", a, b); }
+
+  // analogously to proc =(ref a, b:_nilType) where isClassType(a.type)
+  pragma "compiler generated"
+  inline proc =(ref a, b:_nilType) where isExternClassType(a.type)
+  { __primitive("=", a, nil); }
+
+  inline proc ==(a, b: a.type) where isExternClassType(a.type)
+    return __primitive("ptr_eq", a, b);
+  inline proc ==(a, b: _nilType) where isExternClassType(a.type)
+    return __primitive("ptr_eq", a, b);
+  inline proc ==(a: _nilType, b) where isExternClassType(b.type)
+    return __primitive("ptr_eq", a, b);
+
+  inline proc !=(a, b: a.type) where isExternClassType(a.type)
+    return __primitive("ptr_neq", a, b);
+  inline proc !=(a, b: _nilType) where isExternClassType(a.type)
+    return __primitive("ptr_neq", a, b);
+  inline proc !=(a: _nilType, b) where isExternClassType(b.type)
+    return __primitive("ptr_neq", a, b);
 
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.
