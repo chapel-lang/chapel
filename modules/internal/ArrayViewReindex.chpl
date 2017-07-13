@@ -29,9 +29,8 @@ module ArrayViewReindex {
   // This class represents a distribution that knows how to create
   // reindexed domains and arrays similar to the one that caused
   // it to be created.  It stores a pointer down to the distribution
-  // that it creates lower-dimensional views of, and two tuples
-  // indicating which dimensions were collapsed by the reindexed
-  // and what the indices of those dimensions are.
+  // that it creates reindexed views of, and a down-facing and up-facing
+  // domain indicating the old and new index sets, respectively.
   //
   class ArrayViewReindexDist: BaseDist {
     const downdist;
@@ -74,10 +73,10 @@ module ArrayViewReindex {
     type idxType;
     param stridable;  // TODO: relax this when possible?
 
-    // the lower-dimensional index set that we represent upwards
+    // the new reindexed index set that we represent upwards
     var updom: DefaultRectangularDom(rank, idxType, stridable);
 
-    // the higher-dimensional domain that we're equivalent to
+    // the old original index set that we're equivalent to
     var downdomPid;
     var downdomInst; //: downdomtype(rank, idxType, stridable);
 
@@ -251,12 +250,6 @@ module ArrayViewReindex {
     }
 
     proc dsiTargetLocales() {
-      //
-      // BLC: To tighten this up, we'd need to query the distribution to
-      // see what subset of target locales the reindexed slice hit vs.
-      // not.
-      //
-      //      compilerWarning("Calls to .targetLocales() on reindexed slices may currently return a superset of the locales targeted.");
       return downdom.dsiTargetLocales();
     }
 
