@@ -2,11 +2,14 @@
    Chapel's parallel PIC implementation
 
    Contributed by Engin Kayraklioglu (GWU)
+
+   TODO: More documentation
 */
 
 require "random_draw.h", "random_draw.c";
 use Time;
 
+// TODO: Can we use Chapel's random library?
 // use random_draw library from PRK repo
 extern proc LCG_init();
 extern proc random_draw(x: c_double): uint(64);
@@ -74,95 +77,112 @@ record particle {
   var m: int;
 }
 
-if !correctness {
-  writeln("Parallel Research Kernels Version ", PRKVERSION);
-  writeln("Chapel Particle-in-Cell execution on 2D grid");
-  writeln("Max parallelism                = ", here.maxTaskPar);
-  writeln("Grid Size                      = ", L);
-  writeln("Number of particles requested  = ", n);
-  writeln("Number of time steps           = ", iterations);
-  writeln("Initialization mode            = ", particleMode);
-  select particleMode {
-    when "GEOMETRIC" do
-      writeln("\tAttenuation factor           = ", rho);
-    when "LINEAR" {
-      writeln("\tNegative Slope               = ", alpha);
-      writeln("\tOffset                       = ", beta);
-    }
-    when "PATCH" {
-      writeln("\tBounding box                 = ", (patch.left,
-                                                    patch.right,
-                                                    patch.top,
-                                                    patch.bottom));
-    }
-  }
-  writeln("Particle charge semi-increment = ", k);
-  writeln("Vertical velocity              = ", m);
-}
 const Qgrid = initializeGrid(L);
 
 var particleDom = {1..0};
 var particles: [particleDom] particle;
 
-select particleMode {
-  when "GEOMETRIC" do initializeGeometric();
-  when "SINUSOIDAL" do initializeSinusoidal();
-  when "LINEAR" do initializeLinear();
-  when "PATCH" do initializePatch();
-  otherwise do halt("Unknown particle mode: ", particleMode);
-}
-
-finishDistribution();
-
-if !correctness {
-  writeln("Number of particles placed : ", particles.size);
-}
-
 var t = new Timer();
 
-for niter in 0..iterations {
+proc main() {
 
-  if niter == 1 then t.start();
+  initialize();
 
-  forall particle in particles {
+  printInfo();
 
-    // TODO: tuples for (x,y)
-    var x0:real, y0:real; // for debug mode
+  for niter in 0..iterations {
 
-    const (fx, fy) = computeTotalForce(particle);
-    const (ax, ay) = (fx * MASS_INV, fy * MASS_INV);
+    if niter == 1 then t.start();
 
-    if debug then
-      (x0,y0) = (particle.x, particle.y);
+    forall particle in particles {
 
-    particle.x = mod(particle.x + particle.v_x*DT +
-                         0.5*ax*DT*DT + L, L);
-    particle.y = mod(particle.y + particle.v_y*DT +
-                         0.5*ay*DT*DT + L, L);
+      // TODO: tuples representation?
+      var x0:real, y0:real; // for debug mode
 
-    if debug then
-      writeln("Force acting on particle: ", (fx,fy),
-              "\n\tParticle moved from ", (x0,y0), " to ",
-                                    (particle.x, particle.y));
+      const (fx, fy) = computeTotalForce(particle);
+      const (ax, ay) = (fx * MASS_INV, fy * MASS_INV);
 
-    particle.v_x += ax * DT;
-    particle.v_y += ay * DT;
+      if debug then
+        (x0,y0) = (particle.x, particle.y);
+
+      particle.x = mod(particle.x + particle.v_x*DT +
+                           0.5*ax*DT*DT + L, L);
+      particle.y = mod(particle.y + particle.v_y*DT +
+                           0.5*ay*DT*DT + L, L);
+
+      if debug then
+        writeln("Force acting on particle: ", (fx,fy),
+                "\n\tParticle moved from ", (x0,y0), " to ",
+                                      (particle.x, particle.y));
+
+      particle.v_x += ax * DT;
+      particle.v_y += ay * DT;
+    }
+  }
+  t.stop();
+
+  verifyResult();
+}
+
+proc initialize() {
+  select particleMode {
+    when "GEOMETRIC" do initializeGeometric();
+    when "SINUSOIDAL" do initializeSinusoidal();
+    when "LINEAR" do initializeLinear();
+    when "PATCH" do initializePatch();
+    otherwise do halt("Unknown particle mode: ", particleMode);
+  }
+
+  finishDistribution();
+
+}
+
+proc printInfo() {
+  if !correctness {
+    writeln("Parallel Research Kernels Version ", PRKVERSION);
+    writeln("Chapel Particle-in-Cell execution on 2D grid");
+    writeln("Max parallelism                = ", here.maxTaskPar);
+    writeln("Grid Size                      = ", L);
+    writeln("Number of particles requested  = ", n);
+    writeln("Number of time steps           = ", iterations);
+    writeln("Initialization mode            = ", particleMode);
+    select particleMode {
+      when "GEOMETRIC" do
+        writeln("\tAttenuation factor           = ", rho);
+      when "LINEAR" {
+        writeln("\tNegative Slope               = ", alpha);
+        writeln("\tOffset                       = ", beta);
+      }
+      when "PATCH" {
+        writeln("\tBounding box                 = ", (patch.left,
+                                                      patch.right,
+                                                      patch.top,
+                                                      patch.bottom));
+      }
+    }
+    writeln("Particle charge semi-increment = ", k);
+    writeln("Vertical velocity              = ", m);
+  }
+
+  if !correctness {
+    writeln("Number of particles placed : ", particles.size);
   }
 }
-t.stop();
 
+proc verifyResult() {
+  for particle in particles {
+    if !verifyParticle(particle) then
+      halt("VALIDATION FAILED!");
+  }
 
-for particle in particles {
-  if !verifyParticle(particle) then
-    halt("VALIDATION FAILED!");
+  writeln("Validation successful");
+
+  if !correctness {
+    const avgTime = t.elapsed()/iterations;
+    writeln("Rate (Mparticles_moved/s): ", 1.0e-6*(n/avgTime));
+  }
 }
 
-writeln("Validation successful");
-
-if !correctness {
-  const avgTime = t.elapsed()/iterations;
-  writeln("Rate (Mparticles_moved/s): ", 1.0e-6*(n/avgTime));
-}
 
 proc initializeGrid(L) {
   var grid: [gridDomOuter] real;
@@ -306,24 +326,23 @@ proc initializePatch() {
 
 proc finishDistribution() {
   for p in particles {
-    var x_coord = p.x;
-    var y_coord = p.y;
-    var rel_x = mod(x_coord, 1.0);
-    var rel_y = mod(y_coord, 1.0);
-
-    var x = x_coord:uint;
-    var r1_sq = rel_y * rel_y + rel_x * rel_x;
-    var r2_sq = rel_y * rel_y + (1.0-rel_x) * (1.0-rel_x);
-    var cos_theta = rel_x/sqrt(r1_sq);
-    var cos_phi = (1.0-rel_x)/sqrt(r2_sq);
-    var base_charge = 1.0 / ((DT*DT) * Q * (cos_theta/r1_sq +
-          cos_phi/r2_sq));
+    const x_coord = p.x,
+          y_coord = p.y,
+          rel_x = mod(x_coord, 1.0),
+          rel_y = mod(y_coord, 1.0),
+          x = x_coord:uint,
+          r1_sq = rel_y * rel_y + rel_x * rel_x,
+          r2_sq = rel_y * rel_y + (1.0-rel_x) * (1.0-rel_x),
+          cos_theta = rel_x/sqrt(r1_sq),
+          cos_phi = (1.0-rel_x)/sqrt(r2_sq),
+          base_charge = 1.0 / ((DT*DT) * Q * (cos_theta/r1_sq +
+                        cos_phi/r2_sq));
 
     p.v_x = 0.0;
     p.v_y = p.m/DT;
 
     p.q = if (x%2 == 0) then (2*p.k+1) * base_charge
-      else -1.0 * (2*p.k+1) * base_charge ;
+          else -1.0 * (2*p.k+1) * base_charge ;
     p.x0 = x_coord;
     p.y0 = y_coord;
   }
@@ -331,44 +350,38 @@ proc finishDistribution() {
 
 inline proc computeCoulomb(x_dist, y_dist, q1, q2) {
 
-  const r2 = x_dist**2 + y_dist**2;
-  const r = sqrt(r2);
-  const f_coulomb = q1*q2/r2;
+  const r2 = x_dist**2 + y_dist**2,
+        r = sqrt(r2),
+        f_coulomb = q1*q2/r2;
 
-  const fx = f_coulomb * x_dist/r;
-  const fy = f_coulomb * y_dist/r;
+  const fx = f_coulomb * x_dist/r,
+        fy = f_coulomb * y_dist/r;
 
   return (fx, fy);
 }
 
 proc computeTotalForce(p) {
 
-  const x = floor(p.x):int;
-  const y = floor(p.y):int;
+  const x = floor(p.x):int,
+        y = floor(p.y):int;
 
-  const rel_x = p.x-x;
-  const rel_y = p.y-y;
+  // TODO: tuple representation?
+  const rel_x = p.x-x,
+        rel_y = p.y-y;
 
-  var tmp_fx = 0.0;
-  var tmp_fy = 0.0;
-
-  (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,    rel_y, p.q, Qgrid[y  ,x  ]);
-  var tmp_res_x = tmp_fx;
-  var tmp_res_y = tmp_fy;
+  var (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,    rel_y, p.q, Qgrid[y  ,x  ]);
+  var res_xy = (tmp_fx, tmp_fy);
 
   (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,1.0-rel_y, p.q, Qgrid[y+1,x  ]);
-  tmp_res_x += tmp_fx;
-  tmp_res_y -= tmp_fy;
+  res_xy  += (tmp_fx, -tmp_fy);
 
   (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x,    rel_y, p.q, Qgrid[y  ,x+1]);
-  tmp_res_x -= tmp_fx;
-  tmp_res_y += tmp_fy;
+  res_xy += (-tmp_fx, tmp_fy);
 
   (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x,1.0-rel_y, p.q, Qgrid[y+1,x+1]);
-  tmp_res_x -= tmp_fx;
-  tmp_res_y -= tmp_fy;
+  res_xy += (-tmp_fx, -tmp_fy);
 
-  return (tmp_res_x, tmp_res_y);
+  return res_xy;
 }
 
 proc verifyParticle(p) {
