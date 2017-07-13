@@ -2607,12 +2607,6 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
                      toString(info->actuals.v[1]->type),
                      toString(info->actuals.v[0]->type));
     }
-  } else if (!strcmp("free", info->name)) {
-    if (info->actuals.n > 0 &&
-        isRecord(info->actuals.v[2]->type))
-      USR_FATAL_CONT(call, "delete not allowed on records");
-    else
-      needToReport = true;
   } else if (!strcmp("these", info->name)) {
     if (info->actuals.n == 2 &&
         info->actuals.v[0]->type == dtMethodToken) {

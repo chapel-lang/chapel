@@ -1,0 +1,1 @@
+domain-delete.chpl:4: error: 'delete' is not allowed on non-class type domain(1,int(64),false)
