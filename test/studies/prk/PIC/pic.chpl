@@ -56,6 +56,10 @@ const patch = new bbox(initPatchLeft,
 
 const gridPatch = new bbox(0, (L+1), 0, (L+1));
 
+// TODO: 1-based indexing?
+const gridDomOuter = {0..#(L+1), 0..#(L+1)},
+      gridDomInner = {0..#L, 0..#L};
+
 record particle {
   var x: real;
   var y: real;
@@ -95,7 +99,7 @@ if !correctness {
   writeln("Particle charge semi-increment = ", k);
   writeln("Vertical velocity              = ", m);
 }
-var Qgrid = initializeGrid(L);
+const Qgrid = initializeGrid(L);
 
 var particleDom = {1..0};
 var particles: [particleDom] particle;
@@ -120,35 +124,36 @@ for niter in 0..iterations {
 
   if niter == 1 then t.start();
 
-  forall i in 0..#particles.size {
+  forall particle in particles {
 
+    // TODO: tuples for (x,y)
     var x0:real, y0:real; // for debug mode
 
-    const (fx, fy) = computeTotalForce(particles[i]);
+    const (fx, fy) = computeTotalForce(particle);
     const (ax, ay) = (fx * MASS_INV, fy * MASS_INV);
 
     if debug then
-      (x0,y0) = (particles[i].x, particles[i].y);
+      (x0,y0) = (particle.x, particle.y);
 
-    particles[i].x = mod(particles[i].x + particles[i].v_x*DT +
+    particle.x = mod(particle.x + particle.v_x*DT +
                          0.5*ax*DT*DT + L, L);
-    particles[i].y = mod(particles[i].y + particles[i].v_y*DT +
+    particle.y = mod(particle.y + particle.v_y*DT +
                          0.5*ay*DT*DT + L, L);
 
     if debug then
-      writeln("Force acting on particle " , i, " ", (fx,fy),
+      writeln("Force acting on particle: ", (fx,fy),
               "\n\tParticle moved from ", (x0,y0), " to ",
-                                    (particles[i].x,particles[i].y));
+                                    (particle.x, particle.y));
 
-    particles[i].v_x += ax * DT;
-    particles[i].v_y += ay * DT;
+    particle.v_x += ax * DT;
+    particle.v_y += ay * DT;
   }
 }
 t.stop();
 
 
-for i in 0..#particles.size {
-  if !verifyParticle(particles[i]) then
+for particle in particles {
+  if !verifyParticle(particle) then
     halt("VALIDATION FAILED!");
 }
 
@@ -160,8 +165,7 @@ if !correctness {
 }
 
 proc initializeGrid(L) {
-  const gridDom = {0..#(L+1), 0..#(L+1)};
-  var grid: [gridDom] real;
+  var grid: [gridDomOuter] real;
 
   for (x,y) in grid.domain {
     grid[y,x] = if x%2==0 then Q else -Q;
@@ -177,7 +181,7 @@ proc initializeGeometric() {
 
 
   var nPlaced = 0:uint;
-  for (x,y) in {0..#L, 0..#L} do
+  for (x,y) in gridDomInner do
     nPlaced += random_draw(getSeed(x));
 
   particleDom = {0..#nPlaced};
@@ -185,7 +189,7 @@ proc initializeGeometric() {
   LCG_init();
 
   var pIdx = 0;
-  for (x,y) in {0..#L, 0..#L} {
+  for (x,y) in gridDomInner {
     const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
@@ -203,7 +207,7 @@ proc initializeSinusoidal() {
 
   var nPlaced = 0:uint;
 
-  for (x,y) in {0..#L, 0..#L} do
+  for (x,y) in gridDomInner do
     nPlaced += random_draw(getSeed(x));
 
   particleDom = {0..#nPlaced};
@@ -212,7 +216,7 @@ proc initializeSinusoidal() {
 
   // pIdx = pi in OpenMP code
   var pIdx = 0;
-  for (x,y) in {0..#L, 0..#L} {
+  for (x,y) in gridDomInner {
     const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
@@ -231,7 +235,7 @@ proc initializeLinear() {
 
   LCG_init();
 
-  for (x,y) in {0..#L, 0..#L} do
+  for (x,y) in gridDomInner do
     nPlaced += random_draw(getSeed(x));
 
   particleDom = {0..#nPlaced};
@@ -239,7 +243,7 @@ proc initializeLinear() {
   LCG_init();
 
   var pIdx = 0;
-  for (x,y) in {0..#L, 0..#L} {
+  for (x,y) in gridDomInner {
     const actual_particles = random_draw(getSeed(x));
     placeParticles(pIdx, actual_particles, x, y);
   }
@@ -261,7 +265,7 @@ proc initializePatch() {
   var nPlaced = 0:uint;
   LCG_init();
 
-  for (x,y) in {0..#L, 0..#L} {
+  for (x,y) in gridDomInner {
     const actual_particles = random_draw(particles_per_cell);
     if !outsidePatch(x, y) then
       nPlaced += actual_particles;
@@ -272,7 +276,7 @@ proc initializePatch() {
   LCG_init();
 
   var pIdx = 0;
-  for (x,y) in {0..#L, 0..#L} {
+  for (x,y) in gridDomInner {
     // TODO without cast this creates a seg fault and overflow
     // warning with no --fast. Investigate for possible bug. Engin
     const actual_particles = random_draw(particles_per_cell);
