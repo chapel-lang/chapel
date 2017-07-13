@@ -63,7 +63,7 @@ class AMRHierarchy {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  proc AMRHierarchy (
+  proc init (
     x_low:             dimension*real,
     x_high:            dimension*real,
     n_coarsest_cells:  dimension*int,
@@ -79,10 +79,11 @@ class AMRHierarchy {
     this.x_high            = x_high;
     this.n_coarsest_cells  = n_coarsest_cells;
     this.n_ghost_cells     = n_ghost_cells;
-    this.max_n_levels      = max_n_levels;
     this.ref_ratio         = ref_ratio;
-    this.target_efficiency = target_efficiency;
+    this.max_n_levels      = max_n_levels;
     this.flagger           = flagger;
+    this.target_efficiency = target_efficiency;
+    super.init();
 
 
     //---- Create the base level ----
@@ -572,7 +573,7 @@ class PhysicalBoundary
   //| >    constructor    | >
   //|/....................|/
   
-  proc PhysicalBoundary ( level: Level ) 
+  proc init ( level: Level ) 
   {
     for grid in level.grids {
 
@@ -660,7 +661,7 @@ class Flagger {
 // parameters to be changed without recompiling the code.
 //-----------------------------------------------------------------
 
-proc AMRHierarchy.AMRHierarchy (
+proc AMRHierarchy.init (
   file_name:  string,
   flagger:    Flagger,
   inputIC:    func(dimension*real,real))
@@ -694,16 +695,16 @@ proc AMRHierarchy.AMRHierarchy (
   parameter_file.close();
 
   //==== Create and return hierarchy ====
-  delete this;
-  this = new AMRHierarchy(x_low,
-                          x_high,
-			  n_coarsest_cells,
-			  n_ghost_cells,
-			  max_n_levels,
-			  ref_ratio,
-			  target_efficiency,
-			  flagger,
-			  inputIC);
+  this.init(
+            x_low,
+            x_high,
+            n_coarsest_cells,
+            n_ghost_cells,
+            max_n_levels,
+            ref_ratio,
+            target_efficiency,
+            flagger,
+            inputIC);
 
 }
 // /|"""""""""""""""""""""""""""""""""""""""""""""/|

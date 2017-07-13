@@ -28,10 +28,11 @@ class GridSolution {
   //| >    constructor    | >
   //|/....................|/
   
-  proc GridSolution (grid: Grid) {
+  proc init (grid: Grid) {
     this.grid = grid;
     old_data =     new GridVariable(grid = grid);
     current_data = new GridVariable(grid = grid);
+    super.init();
   }
   // /|''''''''''''''''''''/|
   //< |    constructor    < |

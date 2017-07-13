@@ -19,8 +19,9 @@ class LevelSolution {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  proc LevelSolution(level: Level) {
+  proc init(level: Level) {
     this.level  = level;
+    super.init();
     old_data     = new LevelVariable(level = level);
     current_data = new LevelVariable(level = level);
   }

@@ -37,8 +37,8 @@ class Level {
   // the level.
   //--------------------------------------------------------------
   
+  const possible_cells:       domain(dimension, stridable=true);
   const possible_ghost_cells: domain(dimension, stridable=true);
-  const possible_cells:       subdomain(possible_ghost_cells);
 
 
   //==== Child grid info ====
@@ -62,7 +62,7 @@ class Level {
   //| >    constructor    | >
   //|/....................|/
 
-  proc Level(
+  proc init(
     x_low: dimension*real,
     x_high: dimension*real,
     n_cells: dimension*int,
@@ -90,7 +90,8 @@ class Level {
     // must be multiplied by 2 because a cell is 2 indices wide.
     //---------------------------------------------------------------
 
-    possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);    
+    possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);
+    super.init();
 
   }
   // /|''''''''''''''''''''/|
@@ -321,7 +322,7 @@ class SiblingGhostRegion {
   //| >    constructor    | >
   //|/....................|/
   
-  proc SiblingGhostRegion (
+  proc init (
     level: Level,
     grid:  Grid)
   {

@@ -33,7 +33,7 @@ class GridInvalidRegion {
   //| >    constructor    | >
   //|/....................|/
   
-  proc GridInvalidRegion (
+  proc init (
     grid:         Grid,
     parent_level: Level,
     fine_level:   Level )

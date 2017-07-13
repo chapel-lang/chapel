@@ -21,8 +21,8 @@ class GridCFGhostRegion {
   //|/...............|/
 
   const grid:             Grid;
-  const coarse_neighbors: domain(Grid);
-  const transfer_regions:  [coarse_neighbors] MultiDomain(dimension,stridable=true);
+  var coarse_neighbors: domain(Grid);
+  var transfer_regions:  [coarse_neighbors] MultiDomain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -34,13 +34,14 @@ class GridCFGhostRegion {
   //| >    constructor    | >
   //|/....................|/
   
-  proc GridCFGhostRegion (
+  proc init (
     grid:         Grid,
     parent_level: Level,
     coarse_level: Level)
   {
         
     this.grid = grid;
+    super.init();
     
     
     //==== Calculate refinement ratio ====
