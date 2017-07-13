@@ -4295,6 +4295,8 @@ static void  moveHaltForUnacceptableTypes(Type*     lhsType,
                                           Type*     rhsType,
                                           CallExpr* call);
 
+static void  moveCast(CallExpr* call, Expr* rhs, Type* lhsType, Type* rhsType);
+
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID) {
@@ -4320,11 +4322,9 @@ static void resolveMove(CallExpr* call) {
 
   Expr*   rhs        = call->get(2);
   Type*   rhsType    = moveRhsType(call, &rhs);
-  Type*   rhsValType = rhsType->getValType();
 
   Symbol* lhs        = toSymExpr(call->get(1))->symbol();
   Type*   lhsType    = moveLhsType(call, rhsType);
-  Type*   lhsValType = lhsType->getValType();
 
   moveSetConstFlagsAndCheck(lhs, rhs);
 
@@ -4339,9 +4339,11 @@ static void resolveMove(CallExpr* call) {
 
 
 
-  bool isChplHereAlloc = false;
 
-  if (CallExpr* rhsCall = toCallExpr(rhs)) {
+  if (isSymExpr(rhs) == true) {
+    moveCast(call, rhs, lhsType, rhsType);
+
+  } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
     if (rhsCall->resolvedFunction() == gChplHereAlloc) {
       Symbol* tmp = newTemp("cast_tmp", rhsType);
 
@@ -4350,108 +4352,74 @@ static void resolveMove(CallExpr* call) {
 
       call->insertAtTail(new CallExpr(PRIM_CAST, lhs->type->symbol, tmp));
 
-      isChplHereAlloc = true;
-
-    } else if (rhsCall->isPrimitive(PRIM_SIZEOF)) {
+    } else if (rhsCall->isPrimitive(PRIM_SIZEOF) == true) {
       // Fix up arg to sizeof(), as we may not have known the type earlier
-      SymExpr* sizeSym = toSymExpr(rhsCall->get(1));
+      SymExpr* sizeSym  = toSymExpr(rhsCall->get(1));
+      Type*    sizeType = sizeSym->symbol()->typeInfo();
 
-      INT_ASSERT(sizeSym);
+      rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
 
-      rhs->replace(new CallExpr(PRIM_SIZEOF,
-                                sizeSym->symbol()->typeInfo()->symbol));
-      return;
-
-    } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR)) {
+    } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
       if (isReferenceType(rhsCall->get(1)->typeInfo())) {
         // Add a dereference as needed, as we did not have complete
         // type information earlier
-        SymExpr*   castVar  = toSymExpr(rhsCall->get(1));
-        VarSymbol* derefTmp = newTemp("castDeref",
-                                      castVar->typeInfo()->getValType());
+        SymExpr*   castVar   = toSymExpr(rhsCall->get(1));
+        Type*      castType  = castVar->typeInfo()->getValType();
+
+        VarSymbol* derefTmp  = newTemp("castDeref", castType);
+        CallExpr*  derefCall = new CallExpr(PRIM_DEREF, castVar->symbol());
 
         call->insertBefore(new DefExpr(derefTmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE,
-                                        derefTmp,
-                                        new CallExpr(PRIM_DEREF,
-                                                     new SymExpr(castVar->symbol()))));
+        call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, derefCall));
 
-        rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR,
-                                      new SymExpr(derefTmp)));
-      }
-    }
-  }
-
-
-
-
-
-  if (isChplHereAlloc == false) {
-    if (isDispatchParent(rhsValType, lhsValType) == true) {
-      if (rhsType != lhsType) {
-        Symbol* tmp = newTemp("cast_tmp", rhsType);
-
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
-
-        call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
+        rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
       }
 
-    } else {
-      if (rhsValType != lhsValType) {
-        if (rhsType != dtNil) {
-          USR_FATAL(userCall(call),
-                    "type mismatch in assignment from %s to %s",
-                    toString(rhsType),
-                    toString(lhsType));
-        }
-      }
-    }
-  }
+      moveCast(call, rhs, lhsType, rhsType);
 
+    // Fix up PRIM_COERCE : remove it if it has a param RHS.
+    } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
+      moveCast(call, rhs, lhsType, rhsType);
 
-
-
-  // Fix up PRIM_COERCE : remove it if it has a param RHS.
-  if (CallExpr* rhsCall = toCallExpr(rhs)) {
-    if (rhsCall->isPrimitive(PRIM_COERCE)) {
-      if (SymExpr* toCoerceSE = toSymExpr(rhsCall->get(1))) {
-        Symbol* toCoerceSym = toCoerceSE->symbol();
-        bool    promotes    = false;
+      if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
+        Symbol* coerceSym = coerceSE->symbol();
 
         // This transformation is normally handled in insertCasts
         // but we need to do it earlier for parameters. We can't just
         // call insertCasts here since that would dramatically change the
         // resolution order (and would be apparently harder to get working).
-        if (toCoerceSym->isParameter() ||
-            toCoerceSym->hasFlag(FLAG_TYPE_VARIABLE) ) {
+        if (coerceSym->isParameter()               == true  ||
+            coerceSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
           // Can we coerce from the argument to the function return type?
-          // Note that rhsType here is the function return type (since
-          // that is what the primitive returns as its type).
-          if (toCoerceSym->type == rhsType ||
-              canParamCoerce(toCoerceSym->type, toCoerceSym, rhsType)) {
-            // Replacing the arguments to the move works, but for
-            // some reason replacing the whole move doesn't.
+          // Note that rhsType here is the function return type
+          // (since that is what the primitive returns as its type).
+          Type* coerceType = coerceSym->type;
+
+          if (coerceType                                     == rhsType ||
+              canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
             call->get(1)->replace(new SymExpr(lhs));
-            call->get(2)->replace(new SymExpr(toCoerceSym));
+            call->get(2)->replace(new SymExpr(coerceSym));
 
-          } else if (canCoerce(toCoerceSym->type,
-                               toCoerceSym,
-                               rhsType,
-                               NULL,
-                               &promotes) == true) {
+          } else if (canCoerce(coerceType, coerceSym, rhsType, NULL) == true) {
 
-            // any case that doesn't param coerce but does coerce will
-            // be handled in insertCasts later.
+            // any case that doesn't param coerce but that does coerce
+            // will be handled in insertCasts.
+
           } else {
             USR_FATAL(userCall(call),
                       "type mismatch in return from %s to %s",
-                      toString(toCoerceSym->type),
+                      toString(coerceType),
                       toString(rhsType));
           }
         }
       }
+
+    } else {
+      moveCast(call, rhs, lhsType, rhsType);
     }
+
+  } else {
+    INT_ASSERT(false);
   }
 }
 
@@ -4544,6 +4512,8 @@ static bool moveImplementsUnresolvedReturn(CallExpr* call) {
 
   return retval;
 }
+
+
 
 
 
@@ -4799,6 +4769,32 @@ static void moveHaltForUnacceptableTypes(Type*     lhsType,
 
 
 
+
+static void moveCast(CallExpr* call, Expr* rhs, Type* lhsType, Type* rhsType) {
+  Type* rhsValType = rhsType->getValType();
+  Type* lhsValType = lhsType->getValType();
+
+  if (isDispatchParent(rhsValType, lhsValType) == true) {
+    if (rhsType != lhsType) {
+      Symbol* tmp = newTemp("cast_tmp", rhsType);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+
+      call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
+    }
+
+  } else {
+    if (rhsValType != lhsValType) {
+      if (rhsType != dtNil) {
+        USR_FATAL(userCall(call),
+                  "type mismatch in assignment from %s to %s",
+                  toString(rhsType),
+                  toString(lhsType));
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
