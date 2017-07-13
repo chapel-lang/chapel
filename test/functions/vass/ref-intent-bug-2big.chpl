@@ -66,7 +66,7 @@ class GlobalInfo {
 }
 
 // constructor for GlobalInfo
-proc GlobalInfo.GlobalInfo() {
+proc GlobalInfo.init() {
   coforall ((ix,iy), inf) in zip(gridDist, infos) do on inf {
     inf = new LocalInfo(mygx=ix, mygy=iy);
   }
@@ -96,8 +96,9 @@ class GlobalData {
 }
 
 // constructor for GlobalData
-proc GlobalData.GlobalData(nameArg: string) {
+proc GlobalData.init(nameArg: string) {
   name=nameArg;
+  super.init();
   coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) do on loc {
     dat = new LocalData(inf);
     // sanity checks
