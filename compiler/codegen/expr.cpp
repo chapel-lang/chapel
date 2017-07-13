@@ -146,6 +146,7 @@ GenRet SymExpr::codegen() {
         INT_FATAL(this, "!!!!!!! UNHANDLED SYM EXPR !!!!!!!");
       }
     }
+    ret.canBeMarkedAsConstAfterStore = var->isConstValWillNotChange();
 #endif
   }
   return ret;
@@ -385,17 +386,13 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 #define USE_TBAA 1
 
 
-void codegenInvariantStart(llvm::Value *val, llvm::Constant *addr);
-
 void codegenInvariantStart(llvm::Value *val, llvm::Constant *addr)
 {
   GenInfo *info = gGenInfo;
-  // Generate address space 0 invariantStart intrinsic
-  llvm::Type *int8PtrTy = llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
-  //llvm::Type *objectPtr[1] = { int8PtrTy };
+  llvm::Type *int8PtrTy =
+    llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
   llvm::Function *invariantStart =
-    llvm::Intrinsic::getDeclaration(info->module,
-                                    llvm::Intrinsic::invariant_start);
+    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start);
 
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
@@ -421,7 +418,7 @@ static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
                                   Type* valType = NULL,
-                                  bool isConst = true)
+                                  bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->builder->CreateStore(val, ptr);
@@ -438,12 +435,13 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
       ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
   }
 
-  if(isConst)
+  if(addInvariantStart)
     if(llvm::Constant *addr = llvm::dyn_cast<llvm::Constant>(ptr))
       codegenInvariantStart(val, addr);
 
   return ret;
 }
+
 
 
 static
@@ -470,11 +468,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  //bool isConst = val.chplType->symbol->isConstValWillNotChange();
-  bool isConst = false;
-  if(val.chplType)
-    isConst = val.chplType->isDefaultIntentConst();
-  return codegenStoreLLVM(val.val, ptr.val, valType, isConst);
+  return codegenStoreLLVM(val.val, ptr.val, valType, val.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
