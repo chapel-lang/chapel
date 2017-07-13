@@ -51,4 +51,51 @@ module LocaleTree {
   }
 
   chpl_initLocaleTree();
+
+  iter localeTree(root = here, parent = here) : locale {
+    halt("DONT USE SERIAL ITER");
+    yield parent;
+  }
+
+  /*
+   Logarithmic gather iterator
+   */
+  iter localeTree(param tag:iterKind, root = here, parent = here) : locale where tag == iterKind.standalone {
+    on root {
+      cobegin {
+        if chpl_localeTree.left {
+          for i in localeTree(tag=iterKind.standalone, chpl_localeTree.left, root) do yield i;
+        }
+        if chpl_localeTree.right {
+          for i in localeTree(tag=iterKind.standalone, chpl_localeTree.right, root) do yield i;
+        }
+      }
+      if parent != root then yield parent;
+    }
+  }
+
+  iter localeTreeDown(root = here) : locale {
+    halt("DONT USE SERIAL ITER");
+    yield root;
+  }
+
+  /*
+    Logarithmic broadcast iterator
+   */
+  iter localeTreeDown(param tag:iterKind, root = here) : locale where tag == iterKind.standalone {
+    on root {
+      cobegin {
+        if chpl_localeTree.left {
+          yield chpl_localeTree.left;
+          for i in localeTreeDown(tag=iterKind.standalone, chpl_localeTree.left) do yield i;
+        }
+        if chpl_localeTree.right {
+          yield chpl_localeTree.right;
+          for i in localeTreeDown(tag=iterKind.standalone, chpl_localeTree.right) do yield i;
+        }
+      }
+    }
+  }
+
+
 }
