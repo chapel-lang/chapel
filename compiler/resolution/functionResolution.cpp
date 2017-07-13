@@ -4279,7 +4279,7 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveImplementsUnresolvedReturn(CallExpr* call);
 
-static Type* moveRhsType(CallExpr* call, Expr** rhsOut);
+static Type* moveRhsType(CallExpr* call);
 
 static Type* moveLhsType(CallExpr* call, Type*  rhsType);
 
@@ -4295,7 +4295,7 @@ static void  moveHaltForUnacceptableTypes(Type*     lhsType,
                                           Type*     rhsType,
                                           CallExpr* call);
 
-static void  moveCast(CallExpr* call, Expr* rhs, Type* lhsType, Type* rhsType);
+static void  moveCast(CallExpr* call, Type* lhsType, Type* rhsType);
 
 
 static void resolveMove(CallExpr* call) {
@@ -4320,11 +4320,12 @@ static void resolveMove(CallExpr* call) {
 
 
 
-  Expr*   rhs        = call->get(2);
-  Type*   rhsType    = moveRhsType(call, &rhs);
+  Type*   rhsType = moveRhsType(call);
+  Type*   lhsType = moveLhsType(call, rhsType);
 
-  Symbol* lhs        = toSymExpr(call->get(1))->symbol();
-  Type*   lhsType    = moveLhsType(call, rhsType);
+  Symbol* lhs     = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs     = call->get(2);
+
 
   moveSetConstFlagsAndCheck(lhs, rhs);
 
@@ -4341,7 +4342,7 @@ static void resolveMove(CallExpr* call) {
 
 
   if (isSymExpr(rhs) == true) {
-    moveCast(call, rhs, lhsType, rhsType);
+    moveCast(call, lhsType, rhsType);
 
   } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
     if (rhsCall->resolvedFunction() == gChplHereAlloc) {
@@ -4375,11 +4376,11 @@ static void resolveMove(CallExpr* call) {
         rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
       }
 
-      moveCast(call, rhs, lhsType, rhsType);
+      moveCast(call, lhsType, rhsType);
 
     // Fix up PRIM_COERCE : remove it if it has a param RHS.
     } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
-      moveCast(call, rhs, lhsType, rhsType);
+      moveCast(call, lhsType, rhsType);
 
       if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
         Symbol* coerceSym = coerceSE->symbol();
@@ -4415,7 +4416,7 @@ static void resolveMove(CallExpr* call) {
       }
 
     } else {
-      moveCast(call, rhs, lhsType, rhsType);
+      moveCast(call, lhsType, rhsType);
     }
 
   } else {
@@ -4521,7 +4522,7 @@ static bool moveImplementsUnresolvedReturn(CallExpr* call) {
 
 // Determine type of RHS.
 // NB: This function may update the RHS
-static Type* moveRhsType(CallExpr* call, Expr** rhsOut) {
+static Type* moveRhsType(CallExpr* call) {
   Symbol* lhs    = toSymExpr(call->get(1))->symbol();
   Expr*   rhs    = call->get(2);
   Type*   retval = rhs->typeInfo();
@@ -4571,8 +4572,6 @@ static Type* moveRhsType(CallExpr* call, Expr** rhsOut) {
           call->insertBefore(new CallExpr(PRIM_MOVE, addrOfTmp, addrOf));
 
           rhs->replace(newRhs);
-
-          *rhsOut = newRhs;
         }
       }
     }
@@ -4770,12 +4769,13 @@ static void moveHaltForUnacceptableTypes(Type*     lhsType,
 
 
 
-static void moveCast(CallExpr* call, Expr* rhs, Type* lhsType, Type* rhsType) {
+static void moveCast(CallExpr* call, Type* lhsType, Type* rhsType) {
   Type* rhsValType = rhsType->getValType();
   Type* lhsValType = lhsType->getValType();
 
   if (isDispatchParent(rhsValType, lhsValType) == true) {
     if (rhsType != lhsType) {
+      Expr*   rhs = call->get(2);
       Symbol* tmp = newTemp("cast_tmp", rhsType);
 
       call->insertBefore(new DefExpr(tmp));
