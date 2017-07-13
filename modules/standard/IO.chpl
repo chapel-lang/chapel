@@ -1381,10 +1381,10 @@ proc file.close(out error:syserr) {
 
 // documented in error= version
 pragma "no doc"
-proc file.close() {
+proc file.close() throws {
   var err:syserr = ENOERR;
   this.close(err);
-  if err then ioerror(err, "in file.close", this.tryGetPath());
+  if err then try ioerror(err, "in file.close", this.tryGetPath());
 }
 
 /*
@@ -1411,10 +1411,10 @@ proc file.fsync(out error:syserr) {
 
 // documented in the error= version
 pragma "no doc"
-proc file.fsync() {
+proc file.fsync() throws {
   var err:syserr = ENOERR;
   this.fsync(err);
-  if err then ioerror(err, "in file.fsync", this.tryGetPath());
+  if err then try ioerror(err, "in file.fsync", this.tryGetPath());
 }
 
 
@@ -1469,11 +1469,11 @@ proc file.tryGetPath() : string {
 Get the path to an open file. Halt if there is an error getting the path.
 
 */
-proc file.path : string {
+proc file.path : string throws {
   var err:syserr = ENOERR;
   var ret:string;
   ret = this.getPath(err);
-  if err then ioerror(err, "in file.path");
+  if err then try ioerror(err, "in file.path");
   return ret;
 }
 
@@ -1485,13 +1485,13 @@ change if other channels, tasks or programs are writing to the file.
 :returns: the current file length
 
 */
-proc file.length():int(64) {
+proc file.length():int(64) throws {
   var err:syserr = ENOERR;
   var len:int(64) = 0;
   on this.home {
     err = qio_file_length(this._file_internal, len);
   }
-  if err then ioerror(err, "in file.length()");
+  if err then try ioerror(err, "in file.length()");
   return len;
 }
 
@@ -1591,6 +1591,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var (host, port, file_path) = parse_hdfs_path(url);
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
+      // psahabu: strict mode should be complaining about this
       if error then ioerror(error, "Unable to connect to HDFS", host);
       /* TODO: This code is an alternative to the above line, which breaks the
          function's original invariant of not generating errors within itself.
@@ -1664,10 +1665,10 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
 // documented in open(error=) version
 pragma "no doc"
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
-    defaultIOStyle(), url:string=""):file {
+    defaultIOStyle(), url:string=""):file throws {
   var err:syserr = ENOERR;
   var ret = open(err, path, mode, hints, style, url);
-  if err then ioerror(err, "in open", path);
+  if err then try ioerror(err, "in open", path);
   return ret;
 }
 
@@ -1826,10 +1827,10 @@ proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaul
 
 // documented in the error= version
 pragma "no doc"
-proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var err:syserr = ENOERR;
   var ret = opentmp(err, hints, style);
-  if err then ioerror(err, "in opentmp");
+  if err then try ioerror(err, "in opentmp");
   return ret;
 }
 
@@ -1866,10 +1867,10 @@ proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
 
 // documented in the error= version
 pragma "no doc"
-proc openmem(style:iostyle = defaultIOStyle()):file {
+proc openmem(style:iostyle = defaultIOStyle()):file throws {
   var err:syserr = ENOERR;
   var ret = openmem(err, style);
-  if err then ioerror(err, "in openmem");
+  if err then try ioerror(err, "in openmem");
   return ret;
 }
 
@@ -2140,10 +2141,10 @@ inline proc channel.lock(out error:syserr) {
 
 // documented in error= version
 pragma "no doc"
-inline proc channel.lock() {
+inline proc channel.lock() throws {
   var err:syserr = ENOERR;
   this.lock(err);
-  if err then this._ch_ioerror(err, "in lock");
+  if err then try this._ch_ioerror(err, "in lock");
 }
 
 /*
@@ -2169,7 +2170,7 @@ inline proc channel.unlock() {
 proc channel.offset():int(64) {
   var ret:int(64);
   on this.home {
-    this.lock();
+    try! this.lock();
     ret = qio_channel_offset_unlocked(_channel_internal);
     this.unlock();
   }
@@ -2194,7 +2195,7 @@ proc channel.offset():int(64) {
  */
 proc channel.advance(amount:int(64), ref error:syserr) {
   on this.home {
-    this.lock();
+    try! this.lock();
     error = qio_channel_advance(false, _channel_internal, amount);
     this.unlock();
   }
@@ -2202,11 +2203,11 @@ proc channel.advance(amount:int(64), ref error:syserr) {
 
 // documented with the error= version
 pragma "no doc"
-proc channel.advance(amount:int(64)) {
+proc channel.advance(amount:int(64)) throws {
   on this.home {
-    this.lock();
+    try! this.lock();
     var err = qio_channel_advance(false, _channel_internal, amount);
-    if err then this._ch_ioerror(err, "in advance");
+    if err then try this._ch_ioerror(err, "in advance");
     this.unlock();
   }
 }
@@ -2409,10 +2410,10 @@ proc openreader(out err: syserr, path:string="", param kind=iokind.dynamic, para
 pragma "no doc"
 proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""):channel(false, kind, locking) {
+    url:string=""):channel(false, kind, locking) throws {
   var err:syserr = ENOERR;
   var reader = openreader(err=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
-  if err then ioerror(err, "in openreader()");
+  if err then try ioerror(err, "in openreader()");
   return reader;
 }
 
@@ -2472,10 +2473,10 @@ proc openwriter(out err: syserr, path:string="", param kind=iokind.dynamic, para
 pragma "no doc"
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-    url:string=""): channel(true, kind, locking) {
+    url:string=""): channel(true, kind, locking) throws {
   var err: syserr = ENOERR;
   var writer = openwriter(err=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
-  if err then ioerror(err, "in openwriter()");
+  if err then try ioerror(err, "in openwriter()");
   return writer;
 }
 
@@ -2567,10 +2568,10 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, 
 
 // documented in the error= version
 pragma "no doc"
-proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) {
+proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style) throws {
   var err:syserr = ENOERR;
   var ret = this.lines(err, locking, start, end, hints, style);
-  if err then ioerror(err, "in file.lines", this.tryGetPath());
+  if err then try ioerror(err, "in file.lines", this.tryGetPath());
   return ret;
 }
 
@@ -3046,7 +3047,7 @@ proc channel.readIt(ref x) {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var error:syserr;
     error = qio_channel_error(_channel_internal);
     if ! error {
@@ -3062,7 +3063,7 @@ proc channel.writeIt(x) {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var error:syserr;
     error = qio_channel_error(_channel_internal);
     if ! error {
@@ -3196,7 +3197,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
     var ret:syserr;
     on this.home {
       var local_error:syserr;
-      this.lock();
+      try! this.lock();
       local_error = qio_channel_error(_channel_internal);
       this.unlock();
       ret = local_error;
@@ -3210,7 +3211,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   proc channel.setError(e:syserr) {
     on this.home {
       var error = e;
-      this.lock();
+      try! this.lock();
       _qio_channel_set_error_unlocked(_channel_internal, error);
       this.unlock();
     }
@@ -3221,7 +3222,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
    */
   proc channel.clearError() {
     on this.home {
-      this.lock();
+      try! this.lock();
       qio_channel_clear_error(_channel_internal);
       this.unlock();
     }
@@ -3233,7 +3234,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   proc channel.writeBytes(x, len:ssize_t) {
     // TODO -- do nothing if error in channel?
     on this.home {
-      this.lock();
+      try! this.lock();
       var err:syserr;
       err = qio_channel_write_amt(false, _channel_internal, x, len);
       _qio_channel_set_error_unlocked(_channel_internal, err);
@@ -3249,7 +3250,7 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     for param i in 1..k {
       if !error {
         if args[i].locale == here {
@@ -3431,9 +3432,9 @@ inline proc channel.read(ref args ...?k):bool throws {
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.read(" +
-                     _args_to_proto((...args), preArg="ref ") +
-                     ")");
+    try this._ch_ioerror(e, "in channel.read(" +
+                         _args_to_proto((...args), preArg="ref ") +
+                         ")");
     return false;
   }
 }
@@ -3463,7 +3464,7 @@ proc channel.read(ref args ...?k,
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
@@ -3479,16 +3480,15 @@ proc channel.read(ref args ...?k,
 
 // documented in the style= error= version
 pragma "no doc"
-proc channel.read(ref args ...?k,
-                  style:iostyle):bool {
+proc channel.read(ref args ...?k, style:iostyle):bool throws {
   var e:syserr = ENOERR;
   this.read((...args), style=style, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.read(" +
-                        _args_to_proto((...args), preArg="ref ") +
-                        "style:iostyle)");
+    try this._ch_ioerror(e, "in channel.read(" +
+                         _args_to_proto((...args), preArg="ref ") +
+                         "style:iostyle)");
     return false;
   }
 }
@@ -3496,14 +3496,14 @@ proc channel.read(ref args ...?k,
 // documented in the error= version
 pragma "no doc"
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start + 1) : bool
-where arg.rank == 1 && isRectangularArr(arg)
+  throws where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
   var got = this.readline(arg, numRead, start, amount, error=e);
   if !e && got then return true;
   else if e == EEOF || !got then return false;
   else {
-    this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
+    try this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
     return false;
   }
 }
@@ -3530,7 +3530,7 @@ where arg.rank == 1 && isRectangularArr(arg)
   if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount - 1 > arg.domain.high)  then return false;
 
   on this.home {
-    this.lock();
+    try! this.lock();
     param newLineChar = 0x0A;
     var got : int;
     var i = start;
@@ -3563,7 +3563,7 @@ proc channel.readline(ref arg:string, out error:syserr):bool {
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var save_style = this._style();
     var mystyle = save_style.text();
     mystyle.string_format = QIO_STRING_FORMAT_TOEND;
@@ -3578,13 +3578,13 @@ proc channel.readline(ref arg:string, out error:syserr):bool {
 
 // documented in error= version
 pragma "no doc"
-proc channel.readline(ref arg:string):bool {
+proc channel.readline(ref arg:string):bool throws {
   var e:syserr = ENOERR;
   this.readline(arg, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.readline(ref arg:string)");
+    try this._ch_ioerror(e, "in channel.readline(ref arg:string)");
     return false;
   }
 }
@@ -3616,7 +3616,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
       if ssize_t != int(64) then assert( len == uselen );
     }
 
-    this.lock();
+    try! this.lock();
 
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -3648,13 +3648,13 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
 // documented in the error= version
 pragma "no doc"
-proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
+proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var e:syserr = ENOERR;
   this.readstring(str_out, len, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.readstring(ref str_out:string, len:int(64))");
+    try this._ch_ioerror(e, "in channel.readstring(ref str_out:string, len:int(64))");
     return false;
   }
 }
@@ -3694,13 +3694,13 @@ inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):b
 
 // documented in the error= version
 pragma "no doc"
-proc channel.readbits(out v:integral, nbits:integral):bool {
+proc channel.readbits(out v:integral, nbits:integral):bool throws {
   var e:syserr = ENOERR;
   this.readbits(v, nbits, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.readbits(out v:uint(64), nbits:int(8))");
+    try this._ch_ioerror(e, "in channel.readbits(out v:uint(64), nbits:int(8))");
     return false;
   }
 }
@@ -3730,12 +3730,12 @@ inline proc channel.writebits(v:integral, nbits:integral, out error:syserr):bool
 
 // documented in the error= version
 pragma "no doc"
-proc channel.writebits(v:integral, nbits:integral):bool {
+proc channel.writebits(v:integral, nbits:integral):bool throws {
   var e:syserr = ENOERR;
   this.writebits(v, nbits, error=e);
   if !e then return true;
   else {
-    this._ch_ioerror(e, "in channel.writebits(v:uint(64), nbits:int(8))");
+    try this._ch_ioerror(e, "in channel.writebits(v:uint(64), nbits:int(8))");
     return false;
   }
 }
@@ -3827,11 +3827,11 @@ proc channel.readln(ref args ...?k,
    :arg t: the type to read
    :returns: the value read
  */
-proc channel.read(type t) {
+proc channel.read(type t) throws {
   var tmp:t;
   var e:syserr = ENOERR;
   this.read(tmp, error=e);
-  if e then this._ch_ioerror(e, "in channel.read(type)");
+  if e then try this._ch_ioerror(e, "in channel.read(type)");
   return tmp;
 }
 
@@ -3849,11 +3849,11 @@ proc channel.read(type t) {
    :arg t: the type to read
    :returns: the value read
  */
-proc channel.readln(type t) {
+proc channel.readln(type t) throws {
   var tmp:t;
   var e:syserr = ENOERR;
   this.readln(tmp, error=e);
-  if e then this._ch_ioerror(e, "in channel.readln(type)");
+  if e then try this._ch_ioerror(e, "in channel.readln(type)");
   return tmp;
 }
 
@@ -3894,7 +3894,7 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     for param i in 1..k {
       if !error {
         error = _write_one_internal(_channel_internal, kind, args(i), origLocale);
@@ -3907,14 +3907,14 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
 
 // documented in style= error= version
 pragma "no doc"
-inline proc channel.write(const args ...?k):bool {
+inline proc channel.write(const args ...?k):bool throws {
   var e:syserr = ENOERR;
   this.write((...args), error=e);
   if !e then return true;
   else {
-    this._ch_ioerror(e, "in channel.write(" +
-                        _args_to_proto((...args), preArg="") +
-                        ")");
+    try this._ch_ioerror(e, "in channel.write(" +
+                         _args_to_proto((...args), preArg="") +
+                         ")");
     return false;
   }
 }
@@ -3943,7 +3943,7 @@ proc channel.write(const args ...?k,
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var save_style = this._style();
     this._set_style(style);
     for param i in 1..k {
@@ -3959,15 +3959,14 @@ proc channel.write(const args ...?k,
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.write(const args ...?k,
-                   style:iostyle):bool {
+proc channel.write(const args ...?k, style:iostyle):bool throws {
   var e:syserr = ENOERR;
   this.write((...args), style=style, error=e);
   if !e then return true;
   else {
-    this._ch_ioerror(e, "in channel.write(" +
-                        _args_to_proto((...args), preArg="") +
-                        "style:iostyle)");
+    try this._ch_ioerror(e, "in channel.write(" +
+                         _args_to_proto((...args), preArg="") +
+                         "style:iostyle)");
     return false;
   }
 }
@@ -3992,8 +3991,10 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln(const args ...?k):bool {
-  return this.write((...args), new ioNewline());
+proc channel.writeln(const args ...?k):bool throws {
+  try {
+    return this.write((...args), new ioNewline());
+  }
 }
 
 // documented in style= error= version
@@ -4050,10 +4051,10 @@ proc channel.flush(out error:syserr) {
 }
 // documented in error= version
 pragma "no doc"
-proc channel.flush() {
+proc channel.flush() throws {
   var e:syserr = ENOERR;
   this.flush(error=e);
-  if e then this._ch_ioerror(e, "in channel.flush");
+  if e then try this._ch_ioerror(e, "in channel.flush");
 }
 
 /* Assert that a channel has reached end-of-file.
@@ -4063,15 +4064,15 @@ proc channel.flush() {
    :arg error: an optional string argument which will be printed
                out if the assert fails. The default prints "Not at EOF".
  */
-proc channel.assertEOF(error:string) {
+proc channel.assertEOF(error:string) throws {
   if writing {
-    this._ch_ioerror(EINVAL, "assertEOF on writing channel");
+    try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
   } else {
     var tmp:uint(8);
     var err:syserr;
     this.read(tmp, error=err);
     if err != EEOF {
-      this._ch_ioerror("assert failed", error);
+      try this._ch_ioerror("assert failed", error);
     }
   }
 }
@@ -4098,10 +4099,10 @@ proc channel.close(out error:syserr) {
 }
 
 pragma "no doc"
-proc channel.close() {
+proc channel.close() throws {
   var e:syserr = ENOERR;
   this.close(error=e);
-  if e then this._ch_ioerror(e, "in channel.close");
+  if e then try this._ch_ioerror(e, "in channel.close");
 }
 
 /*
@@ -4127,10 +4128,10 @@ proc channel.readBytes(x, len:ssize_t, out error:syserr) {
 }
 
 pragma "no doc"
-proc channel.readBytes(x, len:ssize_t) {
+proc channel.readBytes(x, len:ssize_t) throws {
   var e:syserr = ENOERR;
   this.readBytes(x, len, error=e);
-  if e then this._ch_ioerror(e, "in channel.readBytes");
+  if e then try this._ch_ioerror(e, "in channel.readBytes");
 }
 
 /*
@@ -4260,7 +4261,7 @@ proc write(const args ...?n) {
 }
 /* Equivalent to stdout.writeln. See :proc:`channel.writeln` */
 proc writeln(const args ...?n) {
-  stdout.writeln((...args));
+  try! stdout.writeln((...args));
 }
 
 // documented in the arguments version.
@@ -4309,10 +4310,10 @@ proc unlink(path:string, out error:syserr) {
 
 // documented in the error= version
 pragma "no doc"
-proc unlink(path:string) {
+proc unlink(path:string) throws {
   var err:syserr = ENOERR;
   unlink(path, err);
-  if err then ioerror(err, "in unlink", path);
+  if err then try ioerror(err, "in unlink", path);
 }
 
 /*
@@ -4332,13 +4333,13 @@ private extern const FTYPE_LUSTRE : c_int;
 private extern const FTYPE_CURL   : c_int;
 
 pragma "no doc"
-proc file.fstype():int {
+proc file.fstype():int throws {
   var t:c_int;
   var err:syserr = ENOERR;
   on this.home {
     err = qio_get_fs_type(this._file_internal, t);
   }
-  if err then ioerror(err, "in file.fstype()");
+  if err then try ioerror(err, "in file.fstype()");
   return t:int;
 }
 
@@ -4355,7 +4356,7 @@ proc file.fstype():int {
              in chunkStart..chunkEnd-1 are stored in a manner that makes
              reading that chunk at a time most efficient
  */
-proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
+proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) throws {
   var err:syserr = ENOERR;
   var s = 0;
   var e = 0;
@@ -4365,7 +4366,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
     var len:int(64);
 
     err = qio_get_chunk(this._file_internal, len);
-    if err then ioerror(err, "in file.getchunk(start:int(64), end:int(64))");
+    if err then try ioerror(err, "in file.getchunk(start:int(64), end:int(64))");
 
     if (len != 0 && (real_end > start)) {
       // TAKZ - Note that we are only wanting to return an inclusive range -- i.e., we
@@ -6071,7 +6072,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6228,7 +6229,7 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
   if !writing then compilerError("writef on read-only channel");
   error = ENOERR;
   on this.home {
-    this.lock();
+    try! this.lock();
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6287,7 +6288,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
-    this.lock();
+    try! this.lock();
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6529,7 +6530,7 @@ proc channel.readf(fmtStr:string, out error:syserr):bool {
   if writing then compilerError("readf on write-only channel");
   error = ENOERR;
   on this.home {
-    this.lock();
+    try! this.lock();
     var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
@@ -6575,51 +6576,51 @@ proc channel.readf(fmtStr:string, out error:syserr):bool {
 
 // documented in string error= version
 pragma "no doc"
-proc channel.writef(fmt: string, const args ...?k) {
+proc channel.writef(fmt: string, const args ...?k) throws {
   var e:syserr = ENOERR;
   this.writef(fmt, (...args), error=e);
   if !e then return true;
   else {
-    this._ch_ioerror(e, "in channel.writef(fmt:string, ...)");
+    try this._ch_ioerror(e, "in channel.writef(fmt:string, ...)");
     return false;
   }
 }
 
 // documented in string error= version
 pragma "no doc"
-proc channel.writef(fmt: string) {
+proc channel.writef(fmt: string) throws {
   var e:syserr = ENOERR;
   this.writef(fmt, error=e);
   if !e then return true;
   else {
-    this._ch_ioerror(e, "in channel.writef(fmt:string, ...)");
+    try this._ch_ioerror(e, "in channel.writef(fmt:string, ...)");
     return false;
   }
 }
 
 // documented in string error= version
 pragma "no doc"
-proc channel.readf(fmt:string, ref args ...?k) {
+proc channel.readf(fmt:string, ref args ...?k) throws {
   var e:syserr = ENOERR;
   this.readf(fmt, (...args), error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
-    this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
+    try this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
     return false;
   }
 }
 
 // documented in string error= version
 pragma "no doc"
-proc channel.readf(fmt:string) {
+proc channel.readf(fmt:string) throws {
   var e:syserr = ENOERR;
   this.readf(fmt, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else if e == EFORMAT then return false;
   else {
-    this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
+    try this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
     return false;
   }
 }
@@ -6665,7 +6666,7 @@ proc readf(fmt:string):bool {
  */
 proc channel.skipField(out error:syserr) {
   on this.home {
-    this.lock();
+    try! this.lock();
     var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
     if st == QIO_AGGREGATE_FORMAT_JSON {
       error = qio_channel_skip_json_field(false, _channel_internal);
@@ -6676,10 +6677,10 @@ proc channel.skipField(out error:syserr) {
   }
 }
 pragma "no doc"
-proc channel.skipField() {
+proc channel.skipField() throws {
   var err:syserr;
   this.skipField(err);
-  if err then this._ch_ioerror(err, "in skipField");
+  if err then try this._ch_ioerror(err, "in skipField");
 }
 
 
@@ -6841,20 +6842,20 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
  */
 proc channel.extractMatch(m:reMatch, ref arg, ref error:syserr) {
   on this.home {
-    this.lock();
+    try! this.lock();
     _extractMatch(m, arg, error);
     this.unlock();
   }
 }
 // documented in error= version
 pragma "no doc"
-proc channel.extractMatch(m:reMatch, ref arg) {
+proc channel.extractMatch(m:reMatch, ref arg) throws {
   on this.home {
-    this.lock();
+    try! this.lock();
     var err:syserr = ENOERR;
     _extractMatch(m, arg, err);
     if err {
-      this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
+      try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
                              arg.type:string + ")");
     }
     this.unlock();
@@ -6880,7 +6881,7 @@ proc channel.search(re:regexp, ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
-    this.lock();
+    try! this.lock();
     var nm = 1;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
@@ -6917,11 +6918,11 @@ proc channel.search(re:regexp, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.search(re:regexp):reMatch
+proc channel.search(re:regexp):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.search(re, error=e);
-  if e then this._ch_ioerror(e, "in channel.search");
+  if e then try this._ch_ioerror(e, "in channel.search");
   return ret;
 }
 
@@ -6946,7 +6947,7 @@ proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
-    this.lock();
+    try! this.lock();
     var nm = captures.size + 1;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
@@ -6985,11 +6986,11 @@ proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.search(re:regexp, ref captures ...?k):reMatch
+proc channel.search(re:regexp, ref captures ...?k):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.search(re, (...captures), error=e);
-  if e then this._ch_ioerror(e, "in channel.search");
+  if e then try this._ch_ioerror(e, "in channel.search");
   return ret;
 }
 
@@ -7000,7 +7001,7 @@ proc channel.match(re:regexp, ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
-    this.lock();
+    try! this.lock();
     var nm = 1;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
@@ -7036,11 +7037,11 @@ proc channel.match(re:regexp, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp):reMatch
+proc channel.match(re:regexp):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, error=e);
-  if e then this._ch_ioerror(e, "in channel.match");
+  if e then try this._ch_ioerror(e, "in channel.match");
   return ret;
 }
 
@@ -7066,7 +7067,7 @@ proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
-    this.lock();
+    try! this.lock();
     var nm = 1 + captures.size;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
     error = qio_channel_mark(false, _channel_internal);
@@ -7104,11 +7105,11 @@ proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 }
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp, ref captures ...?k):reMatch
+proc channel.match(re:regexp, ref captures ...?k):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, (...captures), error=e);
-  if e then this._ch_ioerror(e, "in channel.match");
+  if e then try this._ch_ioerror(e, "in channel.match");
   return ret;
 }
 
@@ -7142,7 +7143,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
             is the whole pattern.  The tuples will have 1+captures elements.
 
  */
-iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
+iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int)) throws
 {
   var m:reMatch;
   var go = true;
@@ -7153,7 +7154,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
   lock();
   on this.home do error = _mark();
-  if error then this._ch_ioerror(error, "in channel.matches mark");
+  if error then try this._ch_ioerror(error, "in channel.matches mark");
 
   while go && i < maxmatches {
     on this.home {
@@ -7197,7 +7198,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = ENOERR;
-  if error then this._ch_ioerror(error, "in channel.matches");
+  if error then try this._ch_ioerror(error, "in channel.matches");
 }
 
 } /* end of FormattedIO module */
