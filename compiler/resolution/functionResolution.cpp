@@ -6984,8 +6984,10 @@ static void resolveOther() {
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
   for_vector(FnSymbol, fn, fns) {
-    if (!fn->hasFlag(FLAG_GENERIC))
+    if (!fn->hasFlag(FLAG_GENERIC)) {
+      resolveFormals(fn);
       resolveFns(fn);
+    }
   }
 }
 
@@ -7467,10 +7469,19 @@ static void removeCopyFns(Type* t) {
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
 
+  // Generic well-known functions will no longer be
+  // well-known (since after resolution they can't be
+  // instantiated, and the generic fn is removed).
+  // So remove generic well-known functions from the list.
+  clearGenericWellKnownFunctions();
+
+  // Concrete well-known functions need to be preserved,
+  // so track them in a set.
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
   for_vector(FnSymbol, fn, fns) {
-    if (!fn->hasFlag(FLAG_GENERIC))
-      concreteWellKnownFunctionsSet.insert(fn);
+    // These should have just been removed
+    INT_ASSERT(!fn->hasFlag(FLAG_GENERIC));
+    concreteWellKnownFunctionsSet.insert(fn);
   }
 
   // Remove unused functions

@@ -29,5 +29,6 @@ void gatherWellKnownTypes();
 void gatherWellKnownFns();
 
 std::vector<FnSymbol*> getWellKnownFunctions();
+void clearGenericWellKnownFunctions();
 
 #endif

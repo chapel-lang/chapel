@@ -260,9 +260,21 @@ std::vector<FnSymbol*> getWellKnownFunctions()
 
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
-    fns.push_back(*wkfn.fn);
+    if (*wkfn.fn != NULL)
+      fns.push_back(*wkfn.fn);
   }
 
   return fns;
+}
+
+void clearGenericWellKnownFunctions()
+{
+  int nEntries = sizeof(sWellKnownFns) / sizeof(sWellKnownFns[0]);
+
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownFn& wkfn = sWellKnownFns[i];
+    if ((*wkfn.fn)->hasFlag(FLAG_GENERIC))
+      *wkfn.fn = NULL;
+  }
 }
 
