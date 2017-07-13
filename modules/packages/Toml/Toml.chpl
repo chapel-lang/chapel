@@ -229,12 +229,9 @@ class Parser {
       var boolNode = new Node(toBool);
       return boolNode;
     }
-    // This will eventually be an error
+    // Error
     else {
-      var token = getToken(source);
-      var unhandeled = new Node(token);
-      writeln("Unhandeled Type: ", token);
-      return unhandeled; 
+      halt("Unexpected Token: ", "'", val, "'");
     }
   }
 }
@@ -358,9 +355,9 @@ class Node {
   }
 
   proc printHelp(flat: [?d] Node, f:channel) {
-    for (k, v) in zip(d, flat) {
+    for k in d.sorted() {
       f.writeln('[', k, ']');
-      printValues(f, v);
+      printValues(f, flat[k]);
     }
   }
   
