@@ -27,15 +27,15 @@ RecordSmall (rec1)  isRecord  isRecordValue  isRecordType  .
 UnionType (unn)  isUnion  isUnionValue  isUnionType  .
 range (rng1)  isRange  isRangeValue  isRangeType  .
 range(uint(8), BoundedRangeType.boundedNone, true) (rng2)  isRange  isRangeValue  isRangeType  .
-new dmap(new DefaultDist()) (dmp)  isDmap  isDmapValue  isDmapType  .
+defaultDist (dmp)  isDmap  isDmapValue  isDmapType  .
 DomType1 (dom1)  isDomain  isDomainValue  isDomainType  .
 DomType2 (dom2)  isDomain  isDomainValue  isDomainType  .
 ArrType1 (arr1)  isArray  isArrayValue  isArrayType  .
 ArrType2 (arr2)  isArray  isArrayValue  isArrayType  .
-sync int (syInt)  isRecord  isRecordValue  isRecordType  isSync  isSyncValue  isSyncType  .
-sync real (syReal)  isRecord  isRecordValue  isRecordType  isSync  isSyncValue  isSyncType  .
-single int (siInt)  isRecord  isRecordValue  isRecordType  isSingle  isSingleValue  isSingleType  .
-single real (siReal)  isRecord  isRecordValue  isRecordType  isSingle  isSingleValue  isSingleType  .
+sync int (syInt)  isSync  isSyncValue  isSyncType  .
+sync real (syReal)  isSync  isSyncValue  isSyncType  .
+single int (siInt)  isSingle  isSingleValue  isSingleType  .
+single real (siReal)  isSingle  isSingleValue  isSingleType  .
 atomic int (aInt)  isAtomic  isAtomicValue  isAtomicType  .
 atomic real (aReal)  isAtomic  isAtomicValue  isAtomicType  .
 
