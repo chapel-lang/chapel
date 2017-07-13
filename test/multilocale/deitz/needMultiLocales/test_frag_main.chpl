@@ -73,3 +73,9 @@ proc chpl_recv_int(out data: int, loc) {
     b.signal$.writeXF(true);
   b.lock$;
 }
+
+proc deinit() {
+  forall p in PrivateSpace do
+    forall l in LocaleSpace do
+      delete buffer[p][l];
+}
