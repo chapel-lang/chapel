@@ -1,4 +1,5 @@
 /*
+ * Copyright 2017 Advanced Micro Devices, Inc.
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -680,13 +681,13 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
  * Then a is an alias for b. The current alias analysis is extremely conservative. If there is only one def
  * of a variable check if it is composed of loop invariant operands and operations. 
  */
-static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
-    loop, symToVecSymExprMap& localDefMap, FnSymbol* fn) {
- 
+static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
+    std::set<Symbol*>& defsInLoop, Loop* loop, symToVecSymExprMap& localDefMap,
+    FnSymbol* fn) {
+
   // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
   std::vector<SymExpr*> loopSymExprs;
-  std::set<Symbol*> defsInLoop;
   std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
@@ -1172,7 +1173,8 @@ void loopInvariantCodeMotion(void) {
       //and use the defUseMaps to compute loop invariants 
       startTimer(computeLoopInvariantsTimer);
       std::vector<SymExpr*> loopInvariants;
-      computeLoopInvariants(loopInvariants, curLoop, localDefMap, fn);
+      std::set<Symbol*> defsInLoop;
+      computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, fn);
       stopTimer(computeLoopInvariantsTimer);
 
       //For each invariant, only move it if its def, dominates all uses and all exits 
@@ -1180,6 +1182,9 @@ void loopInvariantCodeMotion(void) {
         if(CallExpr* call = toCallExpr(symExpr->parentExpr)) {
           if(defDominatesAllUses(curLoop, symExpr, dominators, localMap, localUseMap)) {
             if(defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
+              if(defsInLoop.count(symExpr->symbol()) == 1) {
+                curLoop->insertBefore(symExpr->symbol()->defPoint);
+              }
               curLoop->insertBefore(call);
             }
           }   
