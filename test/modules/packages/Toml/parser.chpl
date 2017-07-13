@@ -1,21 +1,6 @@
 /* 
-Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
-              <https://github.com/toml-lang/toml>`_. 
-This module provides support for parsing and writing toml files.
+Parser module with the Node class for the Chapel TOML library.
 */
-
-/*
-Receives a channel to a TOML file as a parameter and outputs an associative
-array Node.
-*/
-proc parseToml(input: channel) : Node {}
-
-/*
-Receives a string of TOML format as a parameter and outputs an associative
-array Node. 
-*/
-proc parseToml(input: string) : Node {}
-
 
 
 use reader;
@@ -28,8 +13,7 @@ proc main(args: [] string) {
   const source = new Source(args[1]);
   const parser = new Parser(source);
   ready(source);
-  parser.parseLoop();
-  writeln(parser.tables);
+  writeln(parser.parseLoop());
   delete parser;
   delete source;
 }
@@ -62,7 +46,7 @@ class Parser {
 
     
 
-  proc parseLoop() {
+  proc parseLoop() : Node {
 
     while(readLine(source)) {
       var token = top(source);
@@ -92,6 +76,7 @@ class Parser {
         writeln("================================================================");
       }
     }
+    return tables;
   }
 
   proc parseTable() {
@@ -116,11 +101,18 @@ class Parser {
   }
   
   proc parseInlineTbl(key: string) {
-    var tblname = '.'.join(curTable, key);
+    var tblname: string;
     var tblD: domain(string);
     var tbl: [tblD] Node;
-    var (tblPath, tblLeaf) = splitTblPath(tblname);
-    tables.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+    if curTable.isEmptyString() {
+      tblname = key;
+      tables[key] = new Node(tbl);
+    }
+    else {
+      tblname = '.'.join(curTable, key);
+      var (tblPath, tblLeaf) = splitTblPath(tblname);
+      tables.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+    }
     var temp = curTable;
     curTable = tblname;
     while top(source) != '}' {
@@ -142,7 +134,8 @@ class Parser {
     }
     else {
       var value = parseValue();
-      tables.getIdx(curTable)[key] = value;
+      if curTable.isEmptyString() then tables[key] = value;
+      else tables.getIdx(curTable)[key] = value;
     }
   }
   
@@ -207,7 +200,8 @@ class Parser {
         return mlStringNode;
       }
       else {
-	var stringNode = new Node(getToken(source));
+        toStr = getToken(source).strip('"').strip("'");
+	var stringNode = new Node(toStr);
 	return stringNode;
       }
     }
@@ -324,9 +318,9 @@ class Node {
     var indx = tbl.split('.');
     var top = indx.domain.first;
     if indx.size < 2 {
-     if this.A.domain.member(tbl) == false {
-       halt("Error in getIdx 1");
-     }
+      if this.A.domain.member(tbl) == false {
+        halt("Error in getIdx 1");
+      }
       else {
         return this.A[tbl];
       }
@@ -346,14 +340,17 @@ class Node {
   proc writeThis(f) {
     var flatDom: domain(string);
     var flat: [flatDom] Node;
-    this.flatten(flat);
-    printHelp(flat, f);
+    this.flatten(flat);       // Flattens containing Node
+    printValues(f, this);     // Prints key values in containing Node
+    printHelp(flat, f);       // Prints tables in containg Node
   }
-  
 
+  /*
+   * Flatten tables and print in sorted order.
+   */
   proc flatten(flat: [?d] Node, rootKey = '') : flat.type { 
     for (k, v) in zip(this.D, this.A) {
-      if v.tag == 4 { 
+      if v.tag == 4 {
         var fullKey = k;
         if rootKey != '' then fullKey = '.'.join(rootKey, k);
         flat[fullKey] = v;
@@ -373,7 +370,7 @@ class Node {
   proc printValues(f: channel, v) {
     for (key, value) in zip(v.D, v.A) {
       select value.tag {
-        when 4 do write(""); // Table
+        when 4 do continue; // Table
         when 1 {
           f.writeln(key, ' = ', toString(value));
         }
@@ -401,7 +398,7 @@ class Node {
           f.writeln(key, ' = ', toString(value));
         }
         when 6 {
-          f.writeln(key, ' = ', '"', toString(value), '"');
+          f.writeln(key, ' = ', toString(value));
         }
         when 7 {
           halt("Keys have to have a value");
@@ -439,7 +436,7 @@ class Node {
         return final;
       }
       when 5 do return val.re;
-      when 6 do return val.s;
+      when 6 do return ('"' + val.s + '"');
       when 7 do return ""; // empty
       when 8 do return val.dt.isoformat();
       otherwise {

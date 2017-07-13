@@ -1,8 +1,0 @@
-[A]
-  [A.B]
-  name = "sam"
-  job = "programmer"
-  number = 7
-  [A.C]
-  name = "Ben"
-  job = "Acutal programmer"

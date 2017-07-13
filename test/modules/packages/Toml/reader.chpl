@@ -53,15 +53,15 @@ This class helps the Parser read and consume the toml file, and is provided
 as an instance variable to the Parser class.
 */
 class Source {
-
+  
   var file;
+  var openfile = open(file, iomode.r);
   var tokenD = {1..0},
     tokenlist: [tokenD] Tokens;
-  var openfile = open(file, iomode.r);
   var currentLine: Tokens;
   var ready = false;
   
-  // generates list of Token objects(array of strings)
+  // generates list of Token objects
   proc genTokenlist() {
     for line in openfile.lines() {
       splitLine(line);
