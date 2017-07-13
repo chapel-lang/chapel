@@ -4289,6 +4289,12 @@ static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                 CallExpr* rhsCall,
                                                 FnSymbol* resolvedFn);
 
+
+static void  moveSetFlagsForConstAccess(Symbol*   lhs,
+                                        CallExpr* rhsCall,
+                                        Symbol*   baseSym,
+                                        bool      refConstWCT);
+
 static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 static void  moveHaltForUnacceptableTypes(Type*     lhsType,
@@ -4604,7 +4610,7 @@ static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
   // mark the variable constant.
   if (SymExpr* rhsSE = toSymExpr(rhs)) {
     // If RHS is this special variable...
-    if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+    if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
       Type* rhsType = rhsSE->symbol()->type;
 
       INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
@@ -4624,8 +4630,8 @@ static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
   } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
     if (rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* rhsBase = toSymExpr(rhsCall->get(1))) {
-        if (rhsBase->symbol()->hasFlag(FLAG_CONST) ||
-            rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST)) {
+        if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
+            rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
           lhs->addFlag(FLAG_REF_TO_CONST);
         }
 
@@ -4645,17 +4651,20 @@ static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
 static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                CallExpr* rhsCall,
                                                FnSymbol* resolvedFn) {
-  bool    refConst = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
-  bool    constWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-  Symbol* baseSym  = NULL;
+  bool refConst    = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
+  bool refConstWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 
-  INT_ASSERT(refConst == false || constWCT == false);
+  INT_ASSERT(refConst == false || refConstWCT == false);
 
   if (refConst == true) {
+    Symbol* baseSym = NULL;
+
     if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)    == true &&
         resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER) == false) {
       baseSym = getBaseSymForConstCheck(rhsCall);
     }
+
+    moveSetFlagsForConstAccess(lhs, rhsCall, baseSym, false);
 
   } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) == true &&
              lhs->hasFlag(FLAG_ARRAY_ALIAS)         == true) {
@@ -4673,51 +4682,43 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
       }
     }
 
-  } else if (constWCT == true) {
-    baseSym = getBaseSymForConstCheck(rhsCall);
+  } else if (refConstWCT == true) {
+    Symbol* baseSym = getBaseSymForConstCheck(rhsCall);
 
     if (baseSym->isConstant()               == true ||
-        baseSym->hasFlag(FLAG_REF_TO_CONST) == true ||
-        baseSym->hasFlag(FLAG_CONST)        == true) {
-      refConst = true;
-
-    } else {
-      baseSym = NULL;
+        baseSym->hasFlag(FLAG_CONST)        == true ||
+        baseSym->hasFlag(FLAG_REF_TO_CONST) == true) {
+      moveSetFlagsForConstAccess(lhs, rhsCall, baseSym, true);
     }
 
   } else if (lhs->hasFlag(FLAG_ARRAY_ALIAS)         == true &&
              resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) == true) {
     INT_ASSERT(false);
   }
+}
+
+static void moveSetFlagsForConstAccess(Symbol*   lhs,
+                                       CallExpr* rhsCall,
+                                       Symbol*   baseSym,
+                                       bool      refConstWCT) {
+  bool isArgThis = baseSym != NULL && baseSym->hasFlag(FLAG_ARG_THIS) == true;
 
   // Do not consider it const if it is an access to 'this' in a constructor.
-  if (baseSym) {
-    if (baseSym->hasFlag(FLAG_ARG_THIS)   == true &&
-        isInConstructorLikeFunction(rhsCall) == true) {
-      refConst = false;
-    }
-  }
+  if (isArgThis == false || isInConstructorLikeFunction(rhsCall) == false) {
 
-  if (refConst) {
     if (isReferenceType(lhs->type) == true) {
       lhs->addFlag(FLAG_REF_TO_CONST);
     } else {
       lhs->addFlag(FLAG_CONST);
     }
 
-    if (baseSym != NULL && baseSym->hasFlag(FLAG_ARG_THIS) == true) {
-      // 'call' can be a field accessor or an array element accessor or ?
-      lhs->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-    }
-
-    if (constWCT                                           == true &&
-        baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS) == true) {
+    if (isArgThis == true ||
+        (refConstWCT                                        == true &&
+         baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS) == true)) {
       lhs->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
     }
   }
 }
-
-
 
 
 
