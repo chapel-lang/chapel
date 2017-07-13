@@ -189,13 +189,22 @@ class Parser {
     }
     // Strings (includes multi-line) 
     else if Str.match(val) {
-      if val.startsWith('"""') || val.startsWith("'''") {
-	var toStr: string;
-	while toStr.endsWith('"""') == false && toStr.endsWith("'''") == false {
+      var toStr: string;
+      if val.startsWith('"""') {
+        toStr += getToken(source).strip('"""', true, false);
+        while toStr.endsWith('"""') == false {
 	  toStr += " " + getToken(source);
-	}
-        var mlStringNode = new Node(toStr);
-	return mlStringNode;
+        }
+        var mlStringNode = new Node(toStr.strip('"""'));
+        return mlStringNode;
+      }
+      else if val.startsWith("'''") {
+        toStr += getToken(source).strip("'''", true, false);
+        while toStr.endsWith("'''") == false {
+          toStr += " " + getToken(source);
+        }
+        var mlStringNode = new Node(toStr.strip("'''"));
+        return mlStringNode;
       }
       else {
 	var stringNode = new Node(getToken(source));
@@ -392,7 +401,7 @@ class Node {
           f.writeln(key, ' = ', toString(value));
         }
         when 6 {
-          f.writeln(key, ' = ', toString(value));
+          f.writeln(key, ' = ', '"', toString(value), '"');
         }
         when 7 {
           halt("Keys have to have a value");
