@@ -25,7 +25,7 @@ Overview:
 
 #. `Develop and test contributions locally`_
 
-   #. `Test your feature`_
+   #. `Adding new tests`_
 
 #. `Request feedback on your changes`_
 
@@ -35,8 +35,8 @@ Overview:
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
 
-#. `Test changes`_ (can be done by team at Cray)
-#. `Merge changes in to master`_
+#. `Test changes`_
+#. `Getting ready to merge`_
 #. `Watch automatic testing`_ and address issues
 
 `HOWTO/Git/GitHub details`_
@@ -48,10 +48,12 @@ Overview:
 Discuss design changes or big development efforts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before performing major work on the language, please open an issue on the git
-repository and/or send an email to chapel-developers_ with a prefix of
-``[Design]`` in the subject header for discussion with the community and to
-ensure that you are aware of any parallel efforts in that area.
+Before embarking on a big project, please open an issue on the git repository
+and/or send an email to chapel-developers_ with a prefix of ``[Design]`` in the
+subject header for discussion with the community and to ensure that you are
+aware of any parallel efforts in that area.  If the change will impact the user
+experience, it would be appropriate to additionally send this email to
+chapel-users_.
 
 .. _Set up a branch for development:
 
@@ -83,13 +85,8 @@ grow).
    also `Fork the repo`_).  Then `configure your local git`_ and check out your
    fork
 
-#. If you will need commit/push access to the main repository,
-   `chapel-lang/chapel`_, send a request including your github username to
-   chapel_admin _at_ cray.com.
-
-   Note: You do not need commit/push access to the main repo in order to
-   contribute code. Reviewers on the core team can pull, review, and merge your
-   pull requests.
+#. You do not need commit/push access to the main repo in order to
+   contribute code.  See `Who has commit access`_ for questions.
 
 #. If you're working on a long-term effort, announce it on the
    chapel-developers_ mailing list to make sure toes are not being stepped on,
@@ -98,10 +95,8 @@ grow).
    chapel-developers_ and/or chapel-users_ lists to make sure effort is not
    wasted.
 
-#. If your work will require committing any third-party code that you are not
-   developing yourself (or code that you've developed as a standalone package),
-   alert the chapel-developers_ mailing list of this as, presently, such code
-   packages must be approved by Cray leadership before being committed.
+#. Third-party code requires additional approvals, see the policy details on
+   `Third-party code`_.
 
 #. Sign a Chapel contributor's agreement and mail it, with your GitHub
    ID, using the instructions here:
@@ -113,14 +108,8 @@ grow).
 Create new branch
 +++++++++++++++++
 
-* Develop your feature, bug fix, etc on your fork.  To create a new branch, use
-  the following command:
-
-.. code-block:: bash
-
-    git checkout -b <branch_name>
-
-  Using a concisely named branch is encouraged.
+Develop your feature, bug fix, etc on your fork.  To create a new branch, use
+the `New branch command`.  Using a concisely named branch is encouraged.
 
 .. _Develop and test contributions locally:
 
@@ -152,28 +141,16 @@ If there are conflicts, you will be asked to resolve them. Once the affected
 files have been fixed, stage them with ``git add``, and then call ``git
 commit`` to finish the merge process.
 
-If you want to understand the changes that occurred upstream, see `Read commit
-messages`_ below.
+If you want to understand the changes that occurred upstream, see
+`Read commit messages`_ below.
 
-.. _Test your feature:
+.. _Adding new tests:
 
-Test your feature
-+++++++++++++++++
+Adding new tests
+++++++++++++++++
 
 You will probably need to create new tests for your feature. See `Test System`_
-for more information on this process.  To do the most basic testing, you would
-do one of:
-
-.. code-block:: bash
-
-    # run Hello tests
-    make check
-
-    # run tests that end up in $CHPL_HOME/examples
-    start_test test/release/examples
-
-    # run all tests.  This will take a long time on a single desktop
-    start_test test/
+for more information on this process.
 
 Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
@@ -279,9 +256,10 @@ Submit pull request
   to the branch dropdown to "Compare, review, create a pull request".
 
   Next, put in a message to your reviewer about the purpose of your pull request
-  and give the pull request a useful title. It's a good time to draft the commit
-  message that you will need when merging the pull request.  See `Final merge
-  message`_ for recommendations on what that commit message should look like.
+  and give the pull request a useful title.  Your PR message will introduce the
+  changes to reviewers and form the basis for the merge message.  See `Final
+  merge message`_ for recommendations on what that commit message should look
+  like.
 
   You will have to have signed a contributors agreement.
 
@@ -365,10 +343,17 @@ testing is.
 
 
 
-.. _Merge changes in to master:
+.. _Getting ready to merge:
 
-Merge changes in to master
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Getting ready to merge
+~~~~~~~~~~~~~~~~~~~~~~
+
+Before the change can be merged, ensure:
+- all design changes have been discussed
+- the PR has been reviewed
+- the contributor agreement has been signed
+- the history in the PR does not contain anything not to be in the repo
+- relevant configurations pass testing
 
 * Once the pull request is approved, it can be merged. This can be done by
   either the reviewer or developer (given sufficient permissions), as decided
@@ -480,6 +465,15 @@ Here is the uncommented version of the commands:
     git remote set-url --push upstream no_push 
     # Optionally add remotes for commonly viewed branches
     git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
+
+.. _New branch command:
+
+New branch command
+++++++++++++++++++
+
+.. code-block:: bash
+
+    git checkout -b <branch_name>
 
 .. _Development commands:
 
@@ -734,6 +728,29 @@ complete with a link to the pull request page.
 Policy details
 ~~~~~~~~~~~~~~
 
+.. _Who has commit access:
+
+Who has/needs commit access to the main repository?
++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Core team members have commit access to the main repository.  Reviewers on the
+core team can pull, review, and merge your pull requests.
+
+If you will need commit/push access to the main repository,
+`chapel-lang/chapel`_, send a request including your github username to
+chapel_admin _at_ cray.com.
+
+.. _Third-party code:
+
+Third-party code
+++++++++++++++++
+
+If your work will require committing any third-party code that you are not
+developing yourself (or code that you've developed as a standalone package),
+alert the chapel-developers_ mailing list of this as, presently, such code
+packages must be approved by Cray leadership before being committed.
+
+
 .. _Final merge message:
 
 Final merge message
@@ -745,6 +762,12 @@ Final merge message
   change and how it changes the previous behavior
 - use present tense (e.g. "Fix file iterator bug")
 - manually wrap long lines in the explanation to 75 or 80 characters
+
+It is good practice for the pull request title to match the topic line, and the
+detailed explanation to match the pull request description.  For contributors
+without merge permissions, this will allow the reviewer to merge changes with
+minimal additional support.
+
 
 .. _Reviewer responsibilities:
 
