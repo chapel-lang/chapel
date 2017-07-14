@@ -72,7 +72,7 @@ X is:
 91.4 92.4 93.4 94.4 95.4 96.4 97.4 98.4 99.4 100.4
 
 low element is: 1.4
-high element is: 45.4
+high element is: 100.4
 
 X is:
 1.5 2.5 3.5 4.5 5.5 6.5 7.5 8.5 9.5 10.5
@@ -122,11 +122,10 @@ X is:
 81.8 82.8 83.8 84.8 85.8 86.8 87.8 88.8 89.8 90.8
 91.8 92.8 93.8 94.8 95.8 96.8 97.8 98.8 99.8 100.8
 
-target locales: LOCALE0 LOCALE1
-LOCALE2 LOCALE3
-local subdomain: {0..4, 1..9 by 2}
+target locales: LOCALE0
+local subdomain: {0..9, 1..19 by 2}
 local subdomains:
-{0..4, 1..9 by 2}
+{0..9, 1..19 by 2}
 
 is empty: false
 head: 1.8
