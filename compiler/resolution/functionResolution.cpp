@@ -1587,14 +1587,6 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   return false;
 }
 
-bool
-isDispatchParent(Type* t, Type* pt) {
-  forv_Vec(Type, p, t->dispatchParents)
-    if (p == pt || isDispatchParent(p, pt))
-      return true;
-  return false;
-}
-
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
   if (canDispatch(actualType, NULL, formalType, fn))
@@ -4293,35 +4285,33 @@ static bool  moveIsAcceptable(CallExpr* call);
 
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
-static bool  moveImplementsUnresolvedReturn(CallExpr* call);
+static bool  moveSupportsUnresolvedFunctionReturn(CallExpr* call);
 
-static Type* moveRhsType(CallExpr* call);
+static Type* moveDetermineRhsType(CallExpr* call);
 
-static Type* moveLhsType(CallExpr* call, Type*  rhsType);
-
-static void  moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs);
-
-static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
-                                                CallExpr* rhsCall,
-                                                FnSymbol* resolvedFn);
-
-
-static void  moveSetFlagsForConstAccess(Symbol*   lhs,
-                                        CallExpr* rhsCall,
-                                        Symbol*   baseSym,
-                                        bool      refConstWCT);
+static Type* moveDetermineLhsType(CallExpr* call);
 
 static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
-static void  moveHaltForUnacceptableTypes(Type*     lhsType,
-                                          Type*     rhsType,
-                                          CallExpr* call);
+static void  moveHaltForUnacceptableTypes(CallExpr* call);
 
 static void  resolveMoveForRhsSymExpr(CallExpr* call);
 
 static void  resolveMoveForRhsCallExpr(CallExpr* call);
 
-static void  moveCast(CallExpr* call, Type* lhsType, Type* rhsType);
+static void  moveSetConstFlagsAndCheck(CallExpr* call);
+
+static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
+                                                CallExpr* rhs,
+                                                FnSymbol* resolvedFn);
+
+static void  moveSetFlagsForConstAccess(Symbol*   lhs,
+                                        CallExpr* rhs,
+                                        Symbol*   baseSym,
+                                        bool      refConstWCT);
+
+static void  moveFinalize(CallExpr* call);
+
 
 
 static void resolveMove(CallExpr* call) {
@@ -4330,30 +4320,24 @@ static void resolveMove(CallExpr* call) {
   }
 
 
-
   if (moveIsAcceptable(call) == false) {
     // NB: This call will not return
     moveHaltMoveIsUnacceptable(call);
 
 
-
   // Ignore moves to RVV unless this is a constructor
-  } else if (moveImplementsUnresolvedReturn(call) == true) {
+  } else if (moveSupportsUnresolvedFunctionReturn(call) == true) {
 
 
   } else {
     // These calls might modify the fields in call
-    Type*   rhsType = moveRhsType(call);
-    Type*   lhsType = moveLhsType(call, rhsType);
-
-    Symbol* lhs     = toSymExpr(call->get(1))->symbol();
-    Expr*   rhs     = call->get(2);
-
-    moveSetConstFlagsAndCheck(lhs, rhs);
+    Type* rhsType = moveDetermineRhsType(call);
+    Type* lhsType = moveDetermineLhsType(call);
+    Expr* rhs     = call->get(2);
 
     if (moveTypesAreAcceptable(lhsType, rhsType) == false) {
       // NB: This call will not return
-      moveHaltForUnacceptableTypes(lhsType, rhsType, call);
+      moveHaltForUnacceptableTypes(call);
 
     } else if (isSymExpr(rhs)  == true) {
       resolveMoveForRhsSymExpr(call);
@@ -4367,29 +4351,28 @@ static void resolveMove(CallExpr* call) {
   }
 }
 
-
-
-
-
+//
+//
+//
 
 static bool moveIsAcceptable(CallExpr* call) {
-  Symbol* lhs    = toSymExpr(call->get(1))->symbol();
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
   Expr*   rhs    = call->get(2);
   bool    retval = true;
 
   if (isTypeExpr(rhs) == false) {
-    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
-      if (fn->getReturnSymbol()                  != lhs    ||
+      if (fn->getReturnSymbol()                  != lhsSym ||
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) == false) {
         retval = false;
       }
     }
 
   } else {
-    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-        lhs->hasFlag(FLAG_MAYBE_TYPE)    == false) {
+    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+        lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
       retval = false;
     }
   }
@@ -4398,14 +4381,14 @@ static bool moveIsAcceptable(CallExpr* call) {
 }
 
 static void moveHaltMoveIsUnacceptable(CallExpr* call) {
-  Symbol* lhs = toSymExpr(call->get(1))->symbol();
-  Expr*   rhs = call->get(2);
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs    = call->get(2);
 
   if (isTypeExpr(rhs) == false) {
-    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
-      if (fn->getReturnSymbol() != lhs) {
+      if (fn->getReturnSymbol() != lhsSym) {
         USR_FATAL(call, "illegal assignment of value to type");
 
       } else if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) == false) {
@@ -4414,14 +4397,14 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
     }
 
   } else {
-    if (lhs->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-        lhs->hasFlag(FLAG_MAYBE_TYPE)    == false) {
+    if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+        lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
-      if (fn->getReturnSymbol() == lhs) {
+      if (fn->getReturnSymbol() == lhsSym) {
         USR_FATAL(call, "illegal return of type where value is expected");
 
-      } else if (lhs->hasFlag(FLAG_CHPL__ITER) == true) {
+      } else if (lhsSym->hasFlag(FLAG_CHPL__ITER) == true) {
         USR_FATAL(call,
                   "unable to iterate over type '%s'",
                   toString(rhs->getValType()));
@@ -4433,21 +4416,19 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
   }
 }
 
-
-
-
-
-// Do not use a PRIM_MOVE to resolve the type of RVV
-// unless this is a constructor
-static bool moveImplementsUnresolvedReturn(CallExpr* call) {
+//
+// Return true if the move supports a return from a function.
+// NB this does not include a constructor
+//
+static bool moveSupportsUnresolvedFunctionReturn(CallExpr* call) {
   bool retval = false;
 
   if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-    Symbol* lhs = toSymExpr(call->get(1))->symbol();
+    Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
 
     if (fn->retType           == dtUnknown       && // Return type unresolved
-        fn->getReturnSymbol() == lhs             && // LHS is the RVV
-        fn->_this             != lhs             && // Not a constructor
+        fn->getReturnSymbol() == lhsSym          && // LHS is the RVV
+        fn->_this             != lhsSym          && // Not a constructor
         call->parentExpr      != fn->where       &&
         call->parentExpr      != fn->retExprType) {
       retval = true;
@@ -4457,16 +4438,14 @@ static bool moveImplementsUnresolvedReturn(CallExpr* call) {
   return retval;
 }
 
-
-
-
-
-
+//
+//
+//
 
 // Determine type of RHS.
 // NB: This function may update the RHS
-static Type* moveRhsType(CallExpr* call) {
-  Symbol* lhs    = toSymExpr(call->get(1))->symbol();
+static Type* moveDetermineRhsType(CallExpr* call) {
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
   Expr*   rhs    = call->get(2);
   Type*   retval = rhs->typeInfo();
 
@@ -4496,8 +4475,8 @@ static Type* moveRhsType(CallExpr* call) {
   // Workaround for problems where the _iterator in buildForLoopExpr would
   // be an _array instead of a ref(_array) in 4-init-array-forexpr.chpl.
   // This could be improved with QualifiedType.
-  if (lhs->hasFlag(FLAG_MAYBE_REF) ==  true &&
-      isReferenceType(retval)      == false) {
+  if (lhsSym->hasFlag(FLAG_MAYBE_REF) ==  true &&
+      isReferenceType(retval)         == false) {
     if (SymExpr* se = toSymExpr(rhs)) {
       if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
         if (concreteIntent(arg->intent, arg->type) & INTENT_FLAG_REF) {
@@ -4523,139 +4502,23 @@ static Type* moveRhsType(CallExpr* call) {
   return retval;
 }
 
-static Type* moveLhsType(CallExpr* call, Type* rhsType) {
-  Symbol* lhs    = toSymExpr(call->get(1))->symbol();
-  Type*   retval = lhs->type;
+static Type* moveDetermineLhsType(CallExpr* call) {
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
 
-  if (lhs->type == dtUnknown || lhs->type == dtNil) {
-    if (lhs->id == breakOnResolveID) {
+  if (lhsSym->type == dtUnknown || lhsSym->type == dtNil) {
+    if (lhsSym->id == breakOnResolveID) {
       gdbShouldBreakHere();
     }
 
-    lhs->type = rhsType;
-    retval    = rhsType;
+    lhsSym->type = call->get(2)->typeInfo();
   }
 
-  return retval;
+  return lhsSym->type;
 }
 
 
 
 
-static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
-  // If this assigns into a loop index variable from a non-var iterator,
-  // mark the variable constant.
-  if (SymExpr* rhsSE = toSymExpr(rhs)) {
-    // If RHS is this special variable...
-    if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
-      Type* rhsType = rhsSE->symbol()->type;
-
-      INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
-
-      // ... and not of a reference type
-      // ... and not an array (arrays are always yielded by reference)
-      // todo: differentiate based on ref-ness, not _ref type
-      // todo: not all const if it is zippered and one of iterators is var
-      if (isReferenceType(rhsType)                           == false &&
-          isTupleContainingAnyReferences(rhsType)            == false &&
-          rhsSE->symbol()->type->symbol->hasFlag(FLAG_ARRAY) == false) {
-        // ... then mark LHS constant.
-        lhs->addFlag(FLAG_CONST);
-      }
-    }
-
-  } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
-    if (rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
-      if (SymExpr* rhsBase = toSymExpr(rhsCall->get(1))) {
-        if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
-            rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
-          lhs->addFlag(FLAG_REF_TO_CONST);
-        }
-
-      } else {
-        INT_ASSERT(false); // PRIM_GET_MEMBER of a non-SymExpr??
-      }
-
-    } else if (FnSymbol* resolvedFn = rhsCall->resolvedFunction()) {
-      moveSetFlagsAndCheckForConstAccess(lhs, rhsCall, resolvedFn);
-    }
-  }
-}
-
-// If 'call' is an access to a const thing, for example a const field
-// or a field of a const record, set const flag(s) on the symbol
-// that stores the result of 'call'.
-static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
-                                               CallExpr* rhsCall,
-                                               FnSymbol* resolvedFn) {
-  bool refConst    = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
-  bool refConstWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-
-  INT_ASSERT(refConst == false || refConstWCT == false);
-
-  if (refConst == true) {
-    Symbol* baseSym = NULL;
-
-    if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)    == true &&
-        resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER) == false) {
-      baseSym = getBaseSymForConstCheck(rhsCall);
-    }
-
-    moveSetFlagsForConstAccess(lhs, rhsCall, baseSym, false);
-
-  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) == true &&
-             lhs->hasFlag(FLAG_ARRAY_ALIAS)         == true) {
-    if (lhs->isConstant() == false) {
-      // We are creating a var alias - ensure aliasee is not const either.
-      SymExpr* aliaseeSE = toSymExpr(rhsCall->get(2));
-
-      INT_ASSERT(aliaseeSE);
-
-      if (aliaseeSE->symbol()->isConstant() == true) {
-        USR_FATAL_CONT(rhsCall,
-                       "creating a non-const alias '%s' of a const array "
-                       "or domain",
-                       lhs->name);
-      }
-    }
-
-  } else if (refConstWCT == true) {
-    Symbol* baseSym = getBaseSymForConstCheck(rhsCall);
-
-    if (baseSym->isConstant()               == true ||
-        baseSym->hasFlag(FLAG_CONST)        == true ||
-        baseSym->hasFlag(FLAG_REF_TO_CONST) == true) {
-      moveSetFlagsForConstAccess(lhs, rhsCall, baseSym, true);
-    }
-
-  } else if (lhs->hasFlag(FLAG_ARRAY_ALIAS)         == true &&
-             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) == true) {
-    INT_ASSERT(false);
-  }
-}
-
-static void moveSetFlagsForConstAccess(Symbol*   lhs,
-                                       CallExpr* rhsCall,
-                                       Symbol*   baseSym,
-                                       bool      refConstWCT) {
-  bool isArgThis = baseSym != NULL && baseSym->hasFlag(FLAG_ARG_THIS) == true;
-
-  // Do not consider it const if it is an access to 'this' in a constructor.
-  if (isArgThis == false || isInConstructorLikeFunction(rhsCall) == false) {
-
-    if (isReferenceType(lhs->type) == true) {
-      lhs->addFlag(FLAG_REF_TO_CONST);
-    } else {
-      lhs->addFlag(FLAG_CONST);
-    }
-
-    if (isArgThis == true ||
-        (refConstWCT                                        == true &&
-         baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS) == true)) {
-      lhs->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-    }
-  }
-}
 
 //
 //
@@ -4676,9 +4539,10 @@ static bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
   return retval;
 }
 
-static void moveHaltForUnacceptableTypes(Type*     lhsType,
-                                         Type*     rhsType,
-                                         CallExpr* call) {
+static void moveHaltForUnacceptableTypes(CallExpr* call) {
+  Type* lhsType = call->get(1)->typeInfo();
+  Type* rhsType = call->get(2)->typeInfo();
+
   if (rhsType == dtUnknown) {
     Expr* rhs = call->get(2);
 
@@ -4708,40 +4572,57 @@ static void moveHaltForUnacceptableTypes(Type*     lhsType,
 //
 
 static void resolveMoveForRhsSymExpr(CallExpr* call) {
-  Type* lhsType = call->get(1)->typeInfo();
-  Type* rhsType = call->get(2)->typeInfo();
+  SymExpr* rhs = toSymExpr(call->get(2));
 
-  moveCast(call, lhsType, rhsType);
+  // If this assigns into a loop index variable from a non-var iterator,
+  // mark the variable constant.
+  // If RHS is this special variable...
+  if (rhs->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
+    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+    Type*   rhsType = rhs->typeInfo();
+
+    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR));
+
+    // ... and not of a reference type
+    // ... and not an array (arrays are always yielded by reference)
+    // todo: differentiate based on ref-ness, not _ref type
+    // todo: not all const if it is zippered and one of iterators is var
+    if (isReferenceType(rhsType)                == false &&
+        isTupleContainingAnyReferences(rhsType) == false &&
+        rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
+      // ... then mark LHS constant.
+      lhsSym->addFlag(FLAG_CONST);
+    }
+  }
+
+  moveFinalize(call);
 }
 
 static void resolveMoveForRhsCallExpr(CallExpr* call) {
-  Expr*     lhs     = call->get(1);
-  Expr*     rhs     = call->get(2);
-  CallExpr* rhsCall = toCallExpr(rhs);
+  CallExpr* rhs = toCallExpr(call->get(2));
 
-  Type*     lhsType = lhs->typeInfo();
-  Type*     rhsType = rhs->typeInfo();
+  moveSetConstFlagsAndCheck(call);
 
-  if (rhsCall->resolvedFunction() == gChplHereAlloc) {
-    Symbol* tmp = newTemp("cast_tmp", rhsType);
+  if (rhs->resolvedFunction() == gChplHereAlloc) {
+    Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
+    Symbol*  tmp     = newTemp("cast_tmp", rhs->typeInfo());
 
     call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+    call->insertBefore(new CallExpr(PRIM_MOVE, tmp,     rhs->remove()));
+    call->insertAtTail(new CallExpr(PRIM_CAST, lhsType, tmp));
 
-    call->insertAtTail(new CallExpr(PRIM_CAST, lhsType->symbol, tmp));
-
-  } else if (rhsCall->isPrimitive(PRIM_SIZEOF) == true) {
+  } else if (rhs->isPrimitive(PRIM_SIZEOF) == true) {
     // Fix up arg to sizeof(), as we may not have known the type earlier
-    SymExpr* sizeSym  = toSymExpr(rhsCall->get(1));
+    SymExpr* sizeSym  = toSymExpr(rhs->get(1));
     Type*    sizeType = sizeSym->symbol()->typeInfo();
 
     rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
 
-  } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
-    if (isReferenceType(rhsCall->get(1)->typeInfo())) {
+  } else if (rhs->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
+    if (isReferenceType(rhs->get(1)->typeInfo())) {
       // Add a dereference as needed, as we did not have complete
       // type information earlier
-      SymExpr*   castVar   = toSymExpr(rhsCall->get(1));
+      SymExpr*   castVar   = toSymExpr(rhs->get(1));
       Type*      castType  = castVar->typeInfo()->getValType();
 
       VarSymbol* derefTmp  = newTemp("castDeref", castType);
@@ -4750,16 +4631,16 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
       call->insertBefore(new DefExpr(derefTmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, derefCall));
 
-      rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
+      rhs->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
     }
 
-    moveCast(call, lhsType, rhsType);
+    moveFinalize(call);
 
-    // Fix up PRIM_COERCE : remove it if it has a param RHS.
-  } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
-    moveCast(call, lhsType, rhsType);
+  // Fix up PRIM_COERCE : remove it if it has a param RHS.
+  } else if (rhs->isPrimitive(PRIM_COERCE) == true) {
+    moveFinalize(call);
 
-    if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
+    if (SymExpr* coerceSE = toSymExpr(rhs->get(1))) {
       Symbol* coerceSym = coerceSE->symbol();
 
       // This transformation is normally handled in insertCasts
@@ -4772,9 +4653,12 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         // Note that rhsType here is the function return type
         // (since that is what the primitive returns as its type).
         Type* coerceType = coerceSym->type;
+        Type* rhsType    = rhs->typeInfo();
 
         if (coerceType                                     == rhsType ||
             canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
+          SymExpr* lhs = toSymExpr(call->get(1));
+
           call->get(1)->replace(lhs->copy());
           call->get(2)->replace(new SymExpr(coerceSym));
 
@@ -4793,14 +4677,117 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     }
 
   } else {
-    moveCast(call, lhsType, rhsType);
+    moveFinalize(call);
   }
 }
 
 
-static void moveCast(CallExpr* call, Type* lhsType, Type* rhsType) {
-  Type* rhsValType = rhsType->getValType();
+static void moveSetConstFlagsAndCheck(CallExpr* call) {
+  CallExpr* rhs    = toCallExpr(call->get(2));
+
+  if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+    if (SymExpr* rhsBase = toSymExpr(rhs->get(1))) {
+      if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
+          rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
+        toSymExpr(call->get(1))->symbol()->addFlag(FLAG_REF_TO_CONST);
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+
+  } else if (FnSymbol* resolvedFn = rhs->resolvedFunction()) {
+    Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+
+    moveSetFlagsAndCheckForConstAccess(lhsSym, rhs, resolvedFn);
+  }
+}
+
+// If 'call' is an access to a const thing, for example a const field
+// or a field of a const record, set const flag(s) on the symbol
+// that stores the result of 'call'.
+static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhsSym,
+                                               CallExpr* rhs,
+                                               FnSymbol* resolvedFn) {
+  bool refConst    = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
+  bool refConstWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+
+  INT_ASSERT(refConst == false || refConstWCT == false);
+
+  if (refConst == true) {
+    Symbol* baseSym = NULL;
+
+    if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)    == true &&
+        resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER) == false) {
+      baseSym = getBaseSymForConstCheck(rhs);
+    }
+
+    moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, false);
+
+  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) == true &&
+             lhsSym->hasFlag(FLAG_ARRAY_ALIAS)      == true) {
+    if (lhsSym->isConstant() == false) {
+      // We are creating a var alias - ensure aliasee is not const either.
+      SymExpr* aliaseeSE = toSymExpr(rhs->get(2));
+
+      INT_ASSERT(aliaseeSE);
+
+      if (aliaseeSE->symbol()->isConstant() == true) {
+        USR_FATAL_CONT(rhs,
+                       "creating a non-const alias '%s' of a const array "
+                       "or domain",
+                       lhsSym->name);
+      }
+    }
+
+  } else if (refConstWCT == true) {
+    Symbol* baseSym = getBaseSymForConstCheck(rhs);
+
+    if (baseSym->isConstant()               == true ||
+        baseSym->hasFlag(FLAG_CONST)        == true ||
+        baseSym->hasFlag(FLAG_REF_TO_CONST) == true) {
+      moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, true);
+    }
+
+  } else if (lhsSym->hasFlag(FLAG_ARRAY_ALIAS)      == true &&
+             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) == true) {
+    INT_ASSERT(false);
+  }
+}
+
+static void moveSetFlagsForConstAccess(Symbol*   lhsSym,
+                                       CallExpr* rhs,
+                                       Symbol*   baseSym,
+                                       bool      refConstWCT) {
+  bool isArgThis = baseSym != NULL && baseSym->hasFlag(FLAG_ARG_THIS) == true;
+
+  // Do not consider it const if it is an access to 'this' in a constructor.
+  if (isArgThis == false || isInConstructorLikeFunction(rhs) == false) {
+
+    if (isReferenceType(lhsSym->type) == true) {
+      lhsSym->addFlag(FLAG_REF_TO_CONST);
+    } else {
+      lhsSym->addFlag(FLAG_CONST);
+    }
+
+    if (isArgThis == true ||
+        (refConstWCT                                        == true &&
+         baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS) == true)) {
+      lhsSym->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+    }
+  }
+}
+
+//
+//
+//
+
+static void moveFinalize(CallExpr* call) {
+  Type* lhsType    = call->get(1)->typeInfo();
+  Type* rhsType    = call->get(2)->typeInfo();
+
   Type* lhsValType = lhsType->getValType();
+  Type* rhsValType = rhsType->getValType();
 
   if (isDispatchParent(rhsValType, lhsValType) == true) {
     if (rhsType != lhsType) {
@@ -4823,6 +4810,23 @@ static void moveCast(CallExpr* call, Type* lhsType, Type* rhsType) {
       }
     }
   }
+}
+
+//
+//
+//
+
+bool isDispatchParent(Type* t, Type* pt) {
+  bool retval = false;
+
+  forv_Vec(Type, p, t->dispatchParents) {
+    if (p == pt || isDispatchParent(p, pt) == true) {
+      retval = true;
+      break;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
