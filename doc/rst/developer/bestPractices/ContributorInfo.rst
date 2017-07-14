@@ -156,48 +156,6 @@ Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
-Contributors should be reasonably confident in the testing done on their code
-before asking for a review.  Should additional testing resources be needed, you
-can request help from a member of the core Chapel team when creating your pull
-request.
-
-.. _Testing guidance:
-
-Testing your patch:
-
-* Changes to the Chapel implementation should not cause regressions. Developers
-  are responsible for doing a degree of testing that's appropriate for their
-  change (described in the following bullets) and then can rely on nightly
-  regression testing to worry about the full cross-product of configurations.
-
-  * At a minimum, patches should pass correctness testing for the full test/
-    directory hierarchy for:
-
-    * ``CHPL_*_PLATFORM=linux64``
-    * ``CHPL_*_COMPILER=gnu``
-    * ``CHPL_COMM=none``
-    * ``CHPL_TASKS=<default>``
-
-  * Most developers will start by focusing on a subdirectory of tests that
-    exercise the features they changed, or test/release/ as a suite of tests
-    that exercises a rich and important slice of the language.
-
-  * Changes that are likely to affect multi-locale executions should also be
-    tested against tests that exercise multi-locale capabilities with
-    ``CHPL_COMM=gasnet``.  A common subset is: ``test/release/``,
-    ``test/multilocale/``, and ``test/distributions/``.
-
-  * Changes that are likely to cause portability issues should be tested against
-    different platforms and compilers to avoid fallout in the nightly testing to
-    the extent possible.
-
-* Note that the quickest way to do testing is to use the parallel testing system
-  across a large number of workstations.  If you have limited testing resources
-  available to you, you can request that a member of the core Chapel team help.
-
-.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
-
-
 .. _Request feedback on your changes:
 
 Request feedback on your changes
@@ -208,34 +166,30 @@ Request feedback on your changes
 Push your work to your feature branch
 +++++++++++++++++++++++++++++++++++++
 
-Push your changes to your feature branch on GitHub
-
-.. code-block:: bash
-
-    git push origin <branch_name>
-
-    # or if you don't like typing your complicated branch name,
-    # you can use this command to push the current branch:
-    git push origin HEAD
-
-    # if you forgot your branch name, you can get it by running
-    git branch
-
-    # it is the starred one...
-
-Note that if you have already created a pull request from a
-feature branch, pushing your work to that feature branch will
-update the pull request.
-
-This will enable others to see your work.
+Push your changes to your feature branch on GitHub will enable others to see
+your work (see `How to push`_ for command details).  Note that if you have
+already created a pull request from a feature branch, pushing your work to that
+feature branch will update the pull request.
 
 .. _Ask for feedback early:
 
 Ask for feedback on your branch early (optional)
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-Not ready to merge yours changes, but still want to see if your work is going
-in the right direction?  Feel free to ask for early feedback!
+Not ready to merge yours changes, but still want to see if your work is going in
+the right direction?  Feel free to ask for early feedback!  Exposing the code is
+generally done by:
+
+- Pointing someone to your feature branch on Github, or
+- Creating a `WIP PR`_ for your feature branch.  See the `Submit pull request`_
+  section below for how to do this.
+
+Discussion can take place in:
+- the `WIP PR`_
+- a separate Github issue
+- the chapel-developers_ mailing list
+- a private communication
+- some other strategy agreed upon by all involved parties
 
 
 .. _Submit pull request:
@@ -257,9 +211,9 @@ Submit pull request
 
   Next, put in a message to your reviewer about the purpose of your pull request
   and give the pull request a useful title.  Your PR message will introduce the
-  changes to reviewers and form the basis for the merge message.  See `Final
-  merge message`_ for recommendations on what that commit message should look
-  like.
+  changes to reviewers and form the basis for the merge message.  See
+  `Final merge message`_ for recommendations on what that commit message should
+  look like.
 
   You will have to have signed a contributors agreement.
 
@@ -268,6 +222,11 @@ Submit pull request
   ``https://github.com/chapel-lang/chapel/pull/<number>``
 
   and you can discuss the patch with your reviewers there.
+
+  Contributors should be reasonably confident in the testing done on their code
+  before asking for a final review.  Should additional testing resources be
+  needed, you can request help from a member of the core Chapel team when
+  creating your pull request.
 
   In working with your reviewers, you will no doubt change your pull request.
   Just do your local development and then update your feature branch as in `Push
@@ -279,23 +238,7 @@ Submit pull request
   b) be reviewed by a member of the core Chapel team (currently, a member of the
      Cray Chapel team).
 
-* It is considered good practice to keep PRs (pull requests) to a reasonable
-  size. This ensures that the PR will be reviewed in a timely manner and will
-  receive a higher level of attention per line of code during review.
-
-  * When submitting a PR, the contributor should ask themselves if their
-    contribution can be separated into smaller logical chunks or independent
-    parts. Reviewers will also be pondering the same question and may request a
-    break up of the contribution into smaller PRs.
-
-  * Breaking up a PR can sometimes require a great deal of effort and
-    creativity, and may not be feasible at all, due to the intertwined nature
-    of the code.
-
-  * Ideally, the size of the PR should be proportional to the expected value to
-    the developer and user community. For example, a new module introduced as a
-    1000-line PR is acceptable, while a set of new tests introduced as a
-    1000-line PR is not.
+* It's a good idea to keep PRs `reasonably sized`_.
 
 .. _Find a reviewer:
 
@@ -323,12 +266,15 @@ Find a reviewer
 Work with your reviewers
 ++++++++++++++++++++++++
 
-* Iterate with the reviewer until you're both satisfied. If you can't come to
-  agreement, one of you should bring other developers (individually or via
-  chapel-developers_) into the conversation to get a broader opinion (one of
-  the jobs of the reviewer is to serve as a proxy for other developers, or to
-  bring those developers into the conversation if they feel unqualified to do
-  so).
+* Iterate with the reviewer until you're both satisfied.  One should generally
+  try to do whatever their reviewer asks.  Sometimes, a reviewer will ask for
+  something really hard.  Try to make sure they understand the magnitude of the
+  request, and try to discuss if it's really necessary to do before merging.  If
+  you can't come to agreement, one of you should bring other developers
+  (individually or via chapel-developers_) into the conversation to get a
+  broader opinion (one of the jobs of the reviewer is to serve as a proxy for
+  other developers, or to bring those developers into the conversation if they
+  feel unqualified to do so).
 
 
 .. _Test changes:
@@ -337,11 +283,13 @@ Test changes
 ~~~~~~~~~~~~
 
 If you did not have the resources to perform at least a full correctness test
-run, this is the point at which a reviewer would do so for you.  See
-`Testing guidance`_ above for more details on what an appropriate amount of
-testing is.
+run, this is the point at which a reviewer would do so for you.  Contributors
+are expected to have verified any new tests work before asking a reviewer to do
+this.
 
-
+Details on how to run tests may be found at `Test System`_, and details on the
+appropriate amount of testing before merging the final PR may be found at
+`Testing guidance`_.
 
 .. _Getting ready to merge:
 
@@ -359,11 +307,11 @@ Before the change can be merged, ensure:
   either the reviewer or developer (given sufficient permissions), as decided
   between the two of them.
 
-  Note: Recall that while git history can be rewritten, it is difficult and does
-  not remove any local copies that have been pulled down. So be very careful not
-  to commit anything that you might regret later (e.g., sensitive code, code
-  owned by anyone other than yourself). Ideally, the review will catch such
-  issues, but the ultimate responsibility is on the developer.
+  Note: It's not generally possible to completely remove a commit from git by
+  the time it makes it in to the master branch. So be very careful not to commit
+  anything that you might regret later (e.g., sensitive code, code owned by
+  anyone other than yourself). Ideally, the review will catch such issues, but
+  the ultimate responsibility is on the developer.
 
 * If you are reviewing code from an external contributor without push
   privileges, please look through the `Reviewer responsibilities`_ once more
@@ -398,15 +346,10 @@ Watch automatic testing and address issues
 
 * For the day or two after the commit has gone in, check the
   chapel-test-results-regressions_ mailing list to ensure that there are no new
-  failures (or that they are due to a commit other than yours).  Use the
-  chapel-developers_ mailing list if you are unsure (a member of the core
-  Chapel team will be tasked with diagnosing any testing failures on any given
-  night, but it's nice when developers notice the issue first themselves to
-  save wasted effort).
-
-* In general, all changes will go through a pull request and have a review. We
-  have intentionally made the process as lightweight as possible, so it can be
-  used for changes big and small alike.
+  failures caused by your commit.  Use the chapel-developers_ mailing list if
+  you are unsure (a member of the core Chapel team will be tasked with
+  diagnosing any testing failures on any given night, but it's nice when
+  developers notice the issue first themselves to save wasted effort).
 
 .. _HOWTO/Git/GitHub details:
 
@@ -600,7 +543,23 @@ commits and the merge commits for pull requests):
 
 More logging commands are described in `Other logging commands`_ below.
 
+.. _How to push:
 
+How to push
++++++++++++
+
+.. code-block:: bash
+
+    git push origin <branch_name>
+
+    # or if you don't like typing your complicated branch name,
+    # you can use this command to push the current branch:
+    git push origin HEAD
+
+    # if you forgot your branch name, you can get it by running
+    git branch
+
+    # it is the starred one...
 
 More information on using git
 +++++++++++++++++++++++++++++
@@ -750,6 +709,86 @@ developing yourself (or code that you've developed as a standalone package),
 alert the chapel-developers_ mailing list of this as, presently, such code
 packages must be approved by Cray leadership before being committed.
 
+.. _Testing guidance:
+
+Testing your patch
+++++++++++++++++++
+* Changes to the Chapel implementation should not cause regressions. Developers
+  are responsible for doing a degree of testing that's appropriate for their
+  change (described in the following bullets) and then can rely on nightly
+  regression testing to worry about the full cross-product of configurations.
+
+  * At a minimum, patches should pass correctness testing for the full test/
+    directory hierarchy for:
+
+    * ``CHPL_*_PLATFORM=linux64``
+    * ``CHPL_*_COMPILER=gnu``
+    * ``CHPL_COMM=none``
+    * ``CHPL_TASKS=<default>``
+
+  * Most developers will start by focusing on a subdirectory of tests that
+    exercise the features they changed, or test/release/ as a suite of tests
+    that exercises a rich and important slice of the language.
+
+  * Changes that are likely to affect multi-locale executions should also be
+    tested against tests that exercise multi-locale capabilities with
+    ``CHPL_COMM=gasnet``.  A common subset is: ``test/release/``,
+    ``test/multilocale/``, and ``test/distributions/``.
+
+  * Changes that are likely to cause portability issues should be tested against
+    different platforms and compilers to avoid fallout in the nightly testing to
+    the extent possible.
+
+* Note that the quickest way to do testing is to use the parallel testing system
+  across a large number of workstations.  If you have limited testing resources
+  available to you, you can request that a member of the core Chapel team help.
+
+.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
+
+.. _WIP PR:
+
+Work-in-progress pull requests (WIP PRs)
+++++++++++++++++++++++++++++++++++++++++
+
+This is a special kind of pull request that is not yet intended to be merged.
+Such PRs are created to take advantage of what the Github PR interface provides,
+such as public comment history and quick links between the WIP PR and other
+related issues and pull requests.  They allow the developer to get early
+feedback on a change.
+
+The status of the WIP PR should be clearly stated, including what steps need to
+be taken before the PR is ready for final review.
+
+It is generally advisable to "close" such PRs until they are ready for
+final review and testing, as their development can span a large period of time
+and would thus add clutter to the list of open PRs.
+
+It is perfectly acceptable to abandon such PRs (especially in favor of a cleaned
+up version of the code) when the git history becomes too large, so long as a
+link to the original PR is provided when the change is eventually merged.
+
+.. _reasonably sized:
+
+Pull request guidance
++++++++++++++++++++++
+
+* It is considered good practice to keep PRs (pull requests) to a reasonable
+  size. This ensures that the PR will be reviewed in a timely manner and will
+  receive a higher level of attention per line of code during review.
+
+  * When submitting a PR, the contributor should ask themselves if their
+    contribution can be separated into smaller logical chunks or independent
+    parts. Reviewers will also be pondering the same question and may request a
+    break up of the contribution into smaller PRs.
+
+  * Breaking up a PR can sometimes require a great deal of effort and
+    creativity, and may not be feasible at all, due to the intertwined nature
+    of the code.
+
+  * Ideally, the size of the PR should be proportional to the expected value to
+    the developer and user community. For example, a new module introduced as a
+    1000-line PR is acceptable, while a set of new tests introduced as a
+    1000-line PR is not.
 
 .. _Final merge message:
 
