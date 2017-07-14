@@ -2,8 +2,8 @@
 
 pragma "no copy return"
 proc slicer(A: []) {
-  var rankChange => A[1, ..];
-  var slice => rankChange[1..5];
+  ref rankChange = A[1, ..];
+  ref slice = rankChange[1..5];
   return slice;
 
   // Oops, 'rankChange' will be autoDestroyed as it goes out of scope!
@@ -21,6 +21,6 @@ proc slicer(A: []) {
 proc main() {
   var A : [1..10, 1..10] int;
   for i in 1..10 do A[i, ..] = i;
-  var S => slicer(A);
+  ref S = slicer(A);
   writeln(S);
 }
