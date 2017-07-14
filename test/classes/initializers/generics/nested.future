@@ -1,0 +1,4 @@
+bug: nested classes cause problems with initializers
+
+This test seems like it should work, but it seems to have trouble
+resolving the initializer for the nested class.
