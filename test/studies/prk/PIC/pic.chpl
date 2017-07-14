@@ -62,7 +62,6 @@ config const initPatchLeft = 1,     // Reference uses: 0
              initPatchTop= 1,       // Reference uses: 100
              initPatchBottom = 2;   // Reference uses: 200
 
-// TODO: 1-based indexing
 const gridDomOuter = {0..#(L+1), 0..#(L+1)},
       gridDomInner = {0..#L, 0..#L};
 
