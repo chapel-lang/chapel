@@ -3,16 +3,22 @@
 
    Contributed by Engin Kayraklioglu (GWU)
 
-   TODO: More documentation
 */
+
+// TODO: More docstrings in general
 
 require "random_draw.h", "random_draw.c";
 use Time;
 
 // TODO: Can we use Chapel's random library?
-// use random_draw library from PRK repo
+
+// Use random_draw library from PRK repo
 extern proc LCG_init();
 extern proc random_draw(x: c_double): uint(64);
+
+enum Mode {GEOMETRIC, SINUSOIDAL, LINEAR, PATCH};
+
+use Mode;
 
 param PRKVERSION = "2.17";
 
@@ -23,59 +29,39 @@ param REL_X = 0.5,
       MASS_INV = 1.0,
       epsilon = 0.000001;
 
-config const L = 10, // grid size
-             n = 10, // particles requested
+             /* Grid size */
+config const L = 10,
+             /* Number of particles requested */
+             n = 10,
+             /* Particle charge semi-increment */
              k = 1,
+             /* Vertical velocity */
              m = 1,
+             /* Number of iterations */
              iterations = 10,
+             /* Debug output */
              debug = false,
-             correctness = false, //being run in start_test
-             particleMode = "SINUSOIDAL"; //how to initialize the input
+             /* How to initialize particle distribution */
+             particleMode = SINUSOIDAL,
+             /* Used for verifying correctness in testing */
+             correctness = false;
 
-// for geomteric initialization
+/* Geometric initializiation */
 config const rho = 0.99;
 
-// for linear initialization
-config const alpha = 1.0;
-config const beta = 3.0;
+/* Linear initialization */
+config const alpha = 1.0,
+             beta = 3.0;
 
-// for patch initialization
-record bbox {
-  var left: int,
-      right: int,
-      bottom: int,
-      top: int;
-}
+/* Patch initialization */
+config const initPatchLeft = 1,     // Reference uses: 0
+             initPatchRight = 2,    // Reference uses: 200
+             initPatchTop= 1,       // Reference uses: 100
+             initPatchBottom = 2;   // Reference uses: 200
 
-config const initPatchLeft = 1;     // Reference: 0
-config const initPatchRight = 2;    // Reference: 200
-config const initPatchTop= 1;       // Reference: 100
-config const initPatchBottom = 2;   // Reference: 200
-
-const patch = new bbox(initPatchLeft,
-                       initPatchRight,
-                       initPatchTop,
-                       initPatchBottom);
-
-const gridPatch = new bbox(0, (L+1), 0, (L+1));
-
-// TODO: 1-based indexing?
+// TODO: 1-based indexing
 const gridDomOuter = {0..#(L+1), 0..#(L+1)},
       gridDomInner = {0..#L, 0..#L};
-
-record particle {
-  var x: real;
-  var y: real;
-  var v_x: real;
-  var v_y: real;
-  var q: real;
-
-  var x0: real;
-  var y0: real;
-
-  var k: int;
-  var m: int;
-}
 
 const Qgrid = initializeGrid(L);
 
@@ -96,19 +82,17 @@ proc main() {
 
     forall particle in particles {
 
-      // TODO: tuples representation?
-      var x0:real, y0:real; // for debug mode
-
       const (fx, fy) = computeTotalForce(particle);
       const (ax, ay) = (fx * MASS_INV, fy * MASS_INV);
+
+      // For debug only
+      var x0, y0:real;
 
       if debug then
         (x0,y0) = (particle.x, particle.y);
 
-      particle.x = mod(particle.x + particle.v_x*DT +
-                           0.5*ax*DT*DT + L, L);
-      particle.y = mod(particle.y + particle.v_y*DT +
-                           0.5*ay*DT*DT + L, L);
+      particle.x = mod(particle.x + particle.v_x*DT + 0.5*ax*DT*DT + L, L);
+      particle.y = mod(particle.y + particle.v_y*DT + 0.5*ay*DT*DT + L, L);
 
       if debug then
         writeln("Force acting on particle: ", (fx,fy),
@@ -124,18 +108,36 @@ proc main() {
   verifyResult();
 }
 
+
+// TODO: Tuples?
+record particle {
+  var x: real;
+  var y: real;
+  var v_x: real;
+  var v_y: real;
+  var q: real;
+
+  var x0: real;
+  var y0: real;
+
+  var k: int;
+  var m: int;
+}
+
+
 proc initialize() {
   select particleMode {
-    when "GEOMETRIC" do initializeGeometric();
-    when "SINUSOIDAL" do initializeSinusoidal();
-    when "LINEAR" do initializeLinear();
-    when "PATCH" do initializePatch();
+    when GEOMETRIC do initializeGeometric();
+    when SINUSOIDAL do initializeSinusoidal();
+    when LINEAR do initializeLinear();
+    when PATCH do initializePatch();
     otherwise do halt("Unknown particle mode: ", particleMode);
   }
 
   finishDistribution();
 
 }
+
 
 proc printInfo() {
   if !correctness {
@@ -146,20 +148,7 @@ proc printInfo() {
     writeln("Number of particles requested  = ", n);
     writeln("Number of time steps           = ", iterations);
     writeln("Initialization mode            = ", particleMode);
-    select particleMode {
-      when "GEOMETRIC" do
-        writeln("\tAttenuation factor           = ", rho);
-      when "LINEAR" {
-        writeln("\tNegative Slope               = ", alpha);
-        writeln("\tOffset                       = ", beta);
-      }
-      when "PATCH" {
-        writeln("\tBounding box                 = ", (patch.left,
-                                                      patch.right,
-                                                      patch.top,
-                                                      patch.bottom));
-      }
-    }
+    writeParticleModeInfo();
     writeln("Particle charge semi-increment = ", k);
     writeln("Vertical velocity              = ", m);
   }
@@ -167,7 +156,26 @@ proc printInfo() {
   if !correctness {
     writeln("Number of particles placed : ", particles.size);
   }
+
+  /* Write info specific to particleMode chosen */
+  proc writeParticleModeInfo() {
+    select particleMode {
+      when GEOMETRIC {
+        writeln("\tAttenuation factor           = ", rho);
+      }
+      when LINEAR {
+        writeln("\tNegative Slope               = ", alpha);
+        writeln("\tOffset                       = ", beta);
+      }
+      when PATCH {
+        writeln("\tBounding box                 = ",
+               (initPatchLeft, initPatchRight, initPatchTop, initPatchBottom));
+      }
+    }
+
+  }
 }
+
 
 proc verifyResult() {
   for particle in particles {
@@ -184,21 +192,27 @@ proc verifyResult() {
 }
 
 
+/* Initialize grid to such that even columns are +Q, odd columns are -Q */
 proc initializeGrid(L) {
   var grid: [gridDomOuter] real;
 
-  for (x,y) in grid.domain {
-    grid[y,x] = if x%2==0 then Q else -Q;
+  grid = -Q;
+
+  for column in gridDomOuter.dim(1) {
+    // Set even columns to +Q
+    if column % 2 == 0 then
+      grid[.., column] = Q;
   }
+
   return grid;
 }
+
 
 proc initializeGeometric() {
 
   const A = n * ((1.0-rho) / (1.0-(rho**L))) / L;
 
   LCG_init();
-
 
   var nPlaced = 0:uint;
   for (x,y) in gridDomInner do
@@ -211,6 +225,7 @@ proc initializeGeometric() {
   var pIdx = 0;
   for (x,y) in gridDomInner {
     const actual_particles = random_draw(getSeed(x));
+    // pIdx -> particles[pIdx..#actual_particles]
     placeParticles(pIdx, actual_particles, x, y);
   }
 
@@ -218,6 +233,7 @@ proc initializeGeometric() {
     return A * (rho**x);
   }
 }
+
 
 proc initializeSinusoidal() {
 
@@ -246,6 +262,7 @@ proc initializeSinusoidal() {
   }
 }
 
+
 proc initializeLinear() {
 
   const step = 1.0/L;
@@ -273,7 +290,22 @@ proc initializeLinear() {
   }
 }
 
+
 proc initializePatch() {
+
+  record bbox {
+    var left: int,
+        right: int,
+        bottom: int,
+        top: int;
+  }
+
+  const patch = new bbox(initPatchLeft,
+                         initPatchRight,
+                         initPatchTop,
+                         initPatchBottom);
+
+  const gridPatch = new bbox(0, (L+1), 0, (L+1));
 
   if badPatch(patch, gridPatch) then
     halt("Bad patch given");
@@ -324,6 +356,7 @@ proc initializePatch() {
   }
 }
 
+
 proc finishDistribution() {
   for p in particles {
     const x_coord = p.x,
@@ -348,6 +381,7 @@ proc finishDistribution() {
   }
 }
 
+
 inline proc computeCoulomb(x_dist, y_dist, q1, q2) {
 
   const r2 = x_dist**2 + y_dist**2,
@@ -360,6 +394,7 @@ inline proc computeCoulomb(x_dist, y_dist, q1, q2) {
   return (fx, fy);
 }
 
+
 proc computeTotalForce(p) {
 
   const x = floor(p.x):int,
@@ -369,6 +404,7 @@ proc computeTotalForce(p) {
   const rel_x = p.x-x,
         rel_y = p.y-y;
 
+  // TODO: More elegant? Less shuffling data around, sum of 4 things or iteration over 0..1, 0..1 w/ + reduce
   var (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,    rel_y, p.q, Qgrid[y  ,x  ]);
   var res_xy = (tmp_fx, tmp_fy);
 
@@ -384,10 +420,11 @@ proc computeTotalForce(p) {
   return res_xy;
 }
 
+
 proc verifyParticle(p) {
 
-  const y = p.y0:int;
-  const x = p.x0:int;
+  const y = p.y0:int,
+        x = p.x0:int;
 
   const disp = (iterations+1):real*(2*p.k+1);
   const x_final = if (p.q * Qgrid[y,x])>0 then p.x0+disp else p.x0-disp;
@@ -405,6 +442,8 @@ proc verifyParticle(p) {
   return true;
 }
 
+
+// TODO: Cleanup call-sites and body (use slicing of particles)
 inline proc placeParticles(ref pIdx, n, x, y) {
   for 1..n {
     particles[pIdx].x = x + REL_X;
