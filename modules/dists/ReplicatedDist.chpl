@@ -70,19 +70,23 @@ referring to the domain or array.
 
   .. code-block:: chapel
 
-    const Dbase = {1..5};  // a default-distributed domain
+    const Dbase = {1..5};  // A default-distributed domain
     const Drepl = Dbase dmapped Replicated();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
-    // only the current locale's replicand is accessed
+    // Only the current locale's replicand is accessed
     Arepl[3] = 4;
 
-    // only the current locale's replicand is accessed
+    // Only the current locale's replicand is accessed
     forall (b,r) in zip(Abase,Arepl) do b = r;
     Abase = Arepl;
 
+    // Access other locales' replicand with the replicand(loc) method
+    Arepl.replicand(Locales[1]) = Arepl;
 
+See the :ref:`primers-distributions` primer for more examples of the Replicated
+distribution.
 
 **Constructor Arguments**
 
@@ -434,6 +438,7 @@ class ReplicatedArr : BaseArr {
 }
 
 pragma "no doc"
+// TODO: Placeholder until we can do forwarding on _value fields
 proc _array.replicand(loc: locale) ref {
   return _value.replicand(loc);
 }
