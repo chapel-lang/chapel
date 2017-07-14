@@ -689,6 +689,7 @@ Expr* preFold(CallExpr* call) {
     result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
                           new_CStringSymbol(name));
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
     AggregateType* classtype =
       toAggregateType(toSymExpr(call->get(1))->symbol()->type);
@@ -718,8 +719,8 @@ Expr* preFold(CallExpr* call) {
       }
     }
     result = new SymExpr(new_IntSymbol(num));
-
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_CALL_RESOLVES) ||
              call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
     Expr* fnName = NULL;
@@ -739,6 +740,7 @@ Expr* preFold(CallExpr* call) {
       fnName = call->get(1);
       first_arg = 2;
     }
+
     VarSymbol* var = toVarSymbol(toSymExpr(fnName)->symbol());
     INT_ASSERT( var != NULL );
     // the rest are arguments.
@@ -784,13 +786,12 @@ Expr* preFold(CallExpr* call) {
     tryCall->remove();
 
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
     EnumType* et = toEnumType(toSymExpr(call->get(1))->symbol()->type);
-
-
     ensureEnumTypeResolved(et);
-
     result = NULL;
+
     if( call->isPrimitive(PRIM_ENUM_MIN_BITS) ) {
       result = new SymExpr(new_IntSymbol(get_width(et->integerType)));
     } else if( call->isPrimitive(PRIM_ENUM_IS_SIGNED) ) {
@@ -800,6 +801,16 @@ Expr* preFold(CallExpr* call) {
         result = new SymExpr(gFalse);
     }
     call->replace(result);
+
+  } else if (call->isPrimitive(PRIM_IS_EXTERN_CLASS_TYPE)) {
+    AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
+
+    if (isClass(classtype) && classtype->symbol->hasFlag(FLAG_EXTERN))
+      result = new SymExpr(gTrue);
+    else
+      result = new SymExpr(gFalse);
+    call->replace(result);
+
   } else if (call->isPrimitive(PRIM_IS_UNION_TYPE)) {
     AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
 
@@ -822,6 +833,7 @@ Expr* preFold(CallExpr* call) {
     else
       result = new SymExpr(gFalse);
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_IS_POD)) {
     Type* t = call->get(1)->typeInfo();
     // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
@@ -831,6 +843,7 @@ Expr* preFold(CallExpr* call) {
     else
       result = new SymExpr(gFalse);
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_IS_TUPLE_TYPE)) {
     Type* tupleType = call->get(1)->typeInfo();
     if (tupleType->symbol->hasFlag(FLAG_TUPLE))
@@ -838,6 +851,7 @@ Expr* preFold(CallExpr* call) {
     else
       result = new SymExpr(gFalse);
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
     Type* tupleType = call->get(1)->typeInfo();
     // If the type isn't a tuple, it definitely isn't a homogeneous tuple!
@@ -847,6 +861,7 @@ Expr* preFold(CallExpr* call) {
     else
       result = new SymExpr(gFalse);
     call->replace(result);
+
   } else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
     // Convert these to PRIM_GET_SVEC_MEMBER_VALUE if the
     // field in question is a reference.

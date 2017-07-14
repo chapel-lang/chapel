@@ -2607,12 +2607,6 @@ printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
                      toString(info->actuals.v[1]->type),
                      toString(info->actuals.v[0]->type));
     }
-  } else if (!strcmp("free", info->name)) {
-    if (info->actuals.n > 0 &&
-        isRecord(info->actuals.v[2]->type))
-      USR_FATAL_CONT(call, "delete not allowed on records");
-    else
-      needToReport = true;
   } else if (!strcmp("these", info->name)) {
     if (info->actuals.n == 2 &&
         info->actuals.v[0]->type == dtMethodToken) {
@@ -3088,6 +3082,26 @@ typeUsesForwarding(Type* t) {
   return false;
 }
 
+// Collect methods with a particular name from a type and from
+// any type it's instantiated from.
+static
+void collectMethodsNamed(Type* t,
+                         const char* name_astr,
+                         std::vector<FnSymbol*>  & methods)
+{
+  forv_Vec(FnSymbol, method, t->methods) {
+    // Skip any methods with a different name
+    // TODO: this could be more efficient if methods were a map
+    if (method->name != name_astr)
+      continue;
+
+    methods.push_back(method);
+  }
+  // Collect also methods from whatever type t is instantiated from
+  if (t->instantiatedFrom != NULL)
+    collectMethodsNamed(t->instantiatedFrom, name_astr, methods);
+}
+
 static bool
 populateForwardingMethods(Type* t,
                           const char* calledName,
@@ -3197,11 +3211,13 @@ populateForwardingMethods(Type* t,
 
     // Now, forward all methods named 'methodName' as 'calledName'.
     // Forward generic functions as generic functions.
-    forv_Vec(FnSymbol, method, delegate->type->methods) {
-      // Skip any methods with a different name
-      // TODO: this could be more efficient if methods were a map
-      if (method->name != methodName)
-        continue;
+
+    std::vector<FnSymbol*> methods;
+    collectMethodsNamed(delegate->type, methodName, methods);
+
+    for_vector(FnSymbol, method, methods) {
+      // Name should already be filtered out
+      INT_ASSERT(method->name == methodName);
 
       // Skip any methods that don't match parentheses-less
       // vs parentheses-ful vs the call.
@@ -4279,7 +4295,7 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 static bool  moveImplementsUnresolvedReturn(CallExpr* call);
 
-static Type* moveRhsType(CallExpr* call, Expr** rhsOut);
+static Type* moveRhsType(CallExpr* call);
 
 static Type* moveLhsType(CallExpr* call, Type*  rhsType);
 
@@ -4289,11 +4305,19 @@ static void  moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                 CallExpr* rhsCall,
                                                 FnSymbol* resolvedFn);
 
+
+static void  moveSetFlagsForConstAccess(Symbol*   lhs,
+                                        CallExpr* rhsCall,
+                                        Symbol*   baseSym,
+                                        bool      refConstWCT);
+
 static bool  moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 static void  moveHaltForUnacceptableTypes(Type*     lhsType,
                                           Type*     rhsType,
                                           CallExpr* call);
+
+static void  moveCast(CallExpr* call, Type* lhsType, Type* rhsType);
 
 
 static void resolveMove(CallExpr* call) {
@@ -4318,13 +4342,12 @@ static void resolveMove(CallExpr* call) {
 
 
 
-  Expr*   rhs        = call->get(2);
-  Type*   rhsType    = moveRhsType(call, &rhs);
-  Type*   rhsValType = rhsType->getValType();
+  Type*   rhsType = moveRhsType(call);
+  Type*   lhsType = moveLhsType(call, rhsType);
 
-  Symbol* lhs        = toSymExpr(call->get(1))->symbol();
-  Type*   lhsType    = moveLhsType(call, rhsType);
-  Type*   lhsValType = lhsType->getValType();
+  Symbol* lhs     = toSymExpr(call->get(1))->symbol();
+  Expr*   rhs     = call->get(2);
+
 
   moveSetConstFlagsAndCheck(lhs, rhs);
 
@@ -4339,9 +4362,11 @@ static void resolveMove(CallExpr* call) {
 
 
 
-  bool isChplHereAlloc = false;
 
-  if (CallExpr* rhsCall = toCallExpr(rhs)) {
+  if (isSymExpr(rhs) == true) {
+    moveCast(call, lhsType, rhsType);
+
+  } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
     if (rhsCall->resolvedFunction() == gChplHereAlloc) {
       Symbol* tmp = newTemp("cast_tmp", rhsType);
 
@@ -4350,108 +4375,74 @@ static void resolveMove(CallExpr* call) {
 
       call->insertAtTail(new CallExpr(PRIM_CAST, lhs->type->symbol, tmp));
 
-      isChplHereAlloc = true;
-
-    } else if (rhsCall->isPrimitive(PRIM_SIZEOF)) {
+    } else if (rhsCall->isPrimitive(PRIM_SIZEOF) == true) {
       // Fix up arg to sizeof(), as we may not have known the type earlier
-      SymExpr* sizeSym = toSymExpr(rhsCall->get(1));
+      SymExpr* sizeSym  = toSymExpr(rhsCall->get(1));
+      Type*    sizeType = sizeSym->symbol()->typeInfo();
 
-      INT_ASSERT(sizeSym);
+      rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
 
-      rhs->replace(new CallExpr(PRIM_SIZEOF,
-                                sizeSym->symbol()->typeInfo()->symbol));
-      return;
-
-    } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR)) {
+    } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
       if (isReferenceType(rhsCall->get(1)->typeInfo())) {
         // Add a dereference as needed, as we did not have complete
         // type information earlier
-        SymExpr*   castVar  = toSymExpr(rhsCall->get(1));
-        VarSymbol* derefTmp = newTemp("castDeref",
-                                      castVar->typeInfo()->getValType());
+        SymExpr*   castVar   = toSymExpr(rhsCall->get(1));
+        Type*      castType  = castVar->typeInfo()->getValType();
+
+        VarSymbol* derefTmp  = newTemp("castDeref", castType);
+        CallExpr*  derefCall = new CallExpr(PRIM_DEREF, castVar->symbol());
 
         call->insertBefore(new DefExpr(derefTmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE,
-                                        derefTmp,
-                                        new CallExpr(PRIM_DEREF,
-                                                     new SymExpr(castVar->symbol()))));
+        call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, derefCall));
 
-        rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR,
-                                      new SymExpr(derefTmp)));
-      }
-    }
-  }
-
-
-
-
-
-  if (isChplHereAlloc == false) {
-    if (isDispatchParent(rhsValType, lhsValType) == true) {
-      if (rhsType != lhsType) {
-        Symbol* tmp = newTemp("cast_tmp", rhsType);
-
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
-
-        call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
+        rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
       }
 
-    } else {
-      if (rhsValType != lhsValType) {
-        if (rhsType != dtNil) {
-          USR_FATAL(userCall(call),
-                    "type mismatch in assignment from %s to %s",
-                    toString(rhsType),
-                    toString(lhsType));
-        }
-      }
-    }
-  }
+      moveCast(call, lhsType, rhsType);
 
+    // Fix up PRIM_COERCE : remove it if it has a param RHS.
+    } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
+      moveCast(call, lhsType, rhsType);
 
-
-
-  // Fix up PRIM_COERCE : remove it if it has a param RHS.
-  if (CallExpr* rhsCall = toCallExpr(rhs)) {
-    if (rhsCall->isPrimitive(PRIM_COERCE)) {
-      if (SymExpr* toCoerceSE = toSymExpr(rhsCall->get(1))) {
-        Symbol* toCoerceSym = toCoerceSE->symbol();
-        bool    promotes    = false;
+      if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
+        Symbol* coerceSym = coerceSE->symbol();
 
         // This transformation is normally handled in insertCasts
         // but we need to do it earlier for parameters. We can't just
         // call insertCasts here since that would dramatically change the
         // resolution order (and would be apparently harder to get working).
-        if (toCoerceSym->isParameter() ||
-            toCoerceSym->hasFlag(FLAG_TYPE_VARIABLE) ) {
+        if (coerceSym->isParameter()               == true  ||
+            coerceSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
           // Can we coerce from the argument to the function return type?
-          // Note that rhsType here is the function return type (since
-          // that is what the primitive returns as its type).
-          if (toCoerceSym->type == rhsType ||
-              canParamCoerce(toCoerceSym->type, toCoerceSym, rhsType)) {
-            // Replacing the arguments to the move works, but for
-            // some reason replacing the whole move doesn't.
+          // Note that rhsType here is the function return type
+          // (since that is what the primitive returns as its type).
+          Type* coerceType = coerceSym->type;
+
+          if (coerceType                                     == rhsType ||
+              canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
             call->get(1)->replace(new SymExpr(lhs));
-            call->get(2)->replace(new SymExpr(toCoerceSym));
+            call->get(2)->replace(new SymExpr(coerceSym));
 
-          } else if (canCoerce(toCoerceSym->type,
-                               toCoerceSym,
-                               rhsType,
-                               NULL,
-                               &promotes) == true) {
+          } else if (canCoerce(coerceType, coerceSym, rhsType, NULL) == true) {
 
-            // any case that doesn't param coerce but does coerce will
-            // be handled in insertCasts later.
+            // any case that doesn't param coerce but that does coerce
+            // will be handled in insertCasts.
+
           } else {
             USR_FATAL(userCall(call),
                       "type mismatch in return from %s to %s",
-                      toString(toCoerceSym->type),
+                      toString(coerceType),
                       toString(rhsType));
           }
         }
       }
+
+    } else {
+      moveCast(call, lhsType, rhsType);
     }
+
+  } else {
+    INT_ASSERT(false);
   }
 }
 
@@ -4549,9 +4540,11 @@ static bool moveImplementsUnresolvedReturn(CallExpr* call) {
 
 
 
+
+
 // Determine type of RHS.
 // NB: This function may update the RHS
-static Type* moveRhsType(CallExpr* call, Expr** rhsOut) {
+static Type* moveRhsType(CallExpr* call) {
   Symbol* lhs    = toSymExpr(call->get(1))->symbol();
   Expr*   rhs    = call->get(2);
   Type*   retval = rhs->typeInfo();
@@ -4601,8 +4594,6 @@ static Type* moveRhsType(CallExpr* call, Expr** rhsOut) {
           call->insertBefore(new CallExpr(PRIM_MOVE, addrOfTmp, addrOf));
 
           rhs->replace(newRhs);
-
-          *rhsOut = newRhs;
         }
       }
     }
@@ -4635,7 +4626,7 @@ static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
   // mark the variable constant.
   if (SymExpr* rhsSE = toSymExpr(rhs)) {
     // If RHS is this special variable...
-    if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+    if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
       Type* rhsType = rhsSE->symbol()->type;
 
       INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
@@ -4655,8 +4646,8 @@ static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
   } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
     if (rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* rhsBase = toSymExpr(rhsCall->get(1))) {
-        if (rhsBase->symbol()->hasFlag(FLAG_CONST) ||
-            rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST)) {
+        if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
+            rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
           lhs->addFlag(FLAG_REF_TO_CONST);
         }
 
@@ -4676,17 +4667,20 @@ static void moveSetConstFlagsAndCheck(Symbol* lhs, Expr* rhs) {
 static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
                                                CallExpr* rhsCall,
                                                FnSymbol* resolvedFn) {
-  bool    refConst = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
-  bool    constWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-  Symbol* baseSym  = NULL;
+  bool refConst    = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
+  bool refConstWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 
-  INT_ASSERT(refConst == false || constWCT == false);
+  INT_ASSERT(refConst == false || refConstWCT == false);
 
   if (refConst == true) {
+    Symbol* baseSym = NULL;
+
     if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR)    == true &&
         resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER) == false) {
       baseSym = getBaseSymForConstCheck(rhsCall);
     }
+
+    moveSetFlagsForConstAccess(lhs, rhsCall, baseSym, false);
 
   } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) == true &&
              lhs->hasFlag(FLAG_ARRAY_ALIAS)         == true) {
@@ -4704,51 +4698,43 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhs,
       }
     }
 
-  } else if (constWCT == true) {
-    baseSym = getBaseSymForConstCheck(rhsCall);
+  } else if (refConstWCT == true) {
+    Symbol* baseSym = getBaseSymForConstCheck(rhsCall);
 
     if (baseSym->isConstant()               == true ||
-        baseSym->hasFlag(FLAG_REF_TO_CONST) == true ||
-        baseSym->hasFlag(FLAG_CONST)        == true) {
-      refConst = true;
-
-    } else {
-      baseSym = NULL;
+        baseSym->hasFlag(FLAG_CONST)        == true ||
+        baseSym->hasFlag(FLAG_REF_TO_CONST) == true) {
+      moveSetFlagsForConstAccess(lhs, rhsCall, baseSym, true);
     }
 
   } else if (lhs->hasFlag(FLAG_ARRAY_ALIAS)         == true &&
              resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) == true) {
     INT_ASSERT(false);
   }
+}
+
+static void moveSetFlagsForConstAccess(Symbol*   lhs,
+                                       CallExpr* rhsCall,
+                                       Symbol*   baseSym,
+                                       bool      refConstWCT) {
+  bool isArgThis = baseSym != NULL && baseSym->hasFlag(FLAG_ARG_THIS) == true;
 
   // Do not consider it const if it is an access to 'this' in a constructor.
-  if (baseSym) {
-    if (baseSym->hasFlag(FLAG_ARG_THIS)   == true &&
-        isInConstructorLikeFunction(rhsCall) == true) {
-      refConst = false;
-    }
-  }
+  if (isArgThis == false || isInConstructorLikeFunction(rhsCall) == false) {
 
-  if (refConst) {
     if (isReferenceType(lhs->type) == true) {
       lhs->addFlag(FLAG_REF_TO_CONST);
     } else {
       lhs->addFlag(FLAG_CONST);
     }
 
-    if (baseSym != NULL && baseSym->hasFlag(FLAG_ARG_THIS) == true) {
-      // 'call' can be a field accessor or an array element accessor or ?
-      lhs->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-    }
-
-    if (constWCT                                           == true &&
-        baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS) == true) {
+    if (isArgThis == true ||
+        (refConstWCT                                        == true &&
+         baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS) == true)) {
       lhs->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
     }
   }
 }
-
-
 
 
 
@@ -4799,6 +4785,33 @@ static void moveHaltForUnacceptableTypes(Type*     lhsType,
 
 
 
+
+static void moveCast(CallExpr* call, Type* lhsType, Type* rhsType) {
+  Type* rhsValType = rhsType->getValType();
+  Type* lhsValType = lhsType->getValType();
+
+  if (isDispatchParent(rhsValType, lhsValType) == true) {
+    if (rhsType != lhsType) {
+      Expr*   rhs = call->get(2);
+      Symbol* tmp = newTemp("cast_tmp", rhsType);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+
+      call->insertAtTail(new CallExpr(PRIM_CAST, lhsValType->symbol, tmp));
+    }
+
+  } else {
+    if (rhsValType != lhsValType) {
+      if (rhsType != dtNil) {
+        USR_FATAL(userCall(call),
+                  "type mismatch in assignment from %s to %s",
+                  toString(rhsType),
+                  toString(lhsType));
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *

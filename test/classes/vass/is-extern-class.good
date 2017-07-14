@@ -1,0 +1,10 @@
+is-extern-class.chpl:23: warning: should be false:
+is-extern-class.chpl:23: warning: false
+is-extern-class.chpl:23: warning: false
+is-extern-class.chpl:23: warning: false
+is-extern-class.chpl:23: warning: false
+is-extern-class.chpl:23: warning: testing EE:
+is-extern-class.chpl:23: warning: true
+is-extern-class.chpl:23: warning: false
+is-extern-class.chpl:23: warning: false
+is-extern-class.chpl:23: error: done.

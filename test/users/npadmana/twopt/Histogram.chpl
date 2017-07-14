@@ -11,7 +11,9 @@ module Histogram {
     var lo, hi,dx, invdx : [1..dim] real;
     var arr : [Dhist] atomic real;
 
-    proc UniformBins(param dim : int, nbins : dim*int, limits : dim*(real,real)) {
+    proc init(param dim : int, nbins : dim*int, limits : dim*(real,real)) {
+      this.dim = dim;
+      super.init();
       var dd : dim*range;
       this.nbins = nbins;
       for param ii in 1..dim {

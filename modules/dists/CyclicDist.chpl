@@ -345,27 +345,6 @@ proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable:
   return dom;
 } 
 
-proc Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
-  proc anyStridable(space, param i=1) param
-    return if i == space.size
-      then space(i).stridable
-      else space(i).stridable || anyStridable(space, i+1);
-
-  if anyStridable(newSpace) || anyStridable(oldSpace) then
-    compilerWarning("reindexing stridable Cyclic arrays is not yet fully supported");
-
-  var newLow: rank*idxType;
-  for param i in 1..rank {
-    newLow(i) = newSpace(i).low - oldSpace(i).low + startIdx(i);
-  }
-  var newDist = new Cyclic(rank=rank, idxType=idxType, startIdx=newLow,
-                           targetLocales=targetLocs,
-                           dataParTasksPerLocale=dataParTasksPerLocale,
-                           dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
-                           dataParMinGranularity=dataParMinGranularity);
-  return newDist;
-}
-
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:

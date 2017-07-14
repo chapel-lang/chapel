@@ -552,7 +552,7 @@ iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterK
 
 
 /////////////////////////////////////////////////////////////////////////////
-// slicing, reindexing, etc.
+// reallocation
 
 // This supports reassignment of the array's domain.
 /*
@@ -576,8 +576,5 @@ proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 proc ReplicatedArr.dsiLocalSubdomain() {
   return chpl_myLocArr().myDom.domLocalRep;
 }
-
-// todo? these two seem to work (written by analogy with DefaultRectangular)
-proc Replicated.dsiCreateReindexDist(newSpace, oldSpace) return this;
 
 use OldReplicatedDist;
