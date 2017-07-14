@@ -468,6 +468,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
+  val.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, val.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -505,7 +506,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, isConst);
+  return codegenLoadLLVM(ptr.val, valType, ptr.canBeMarkedAsConstAfterStore && ptr.alreadyStored);
 }
 
 #endif

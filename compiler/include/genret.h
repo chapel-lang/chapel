@@ -102,6 +102,9 @@ public:
   // Specifically: use "llvm.invariant.start"
   bool canBeMarkedAsConstAfterStore;
 
+  // Mark as true when store to memory has been already done
+  bool alreadyStored;
+
 
   // always set if available
   // note that the chplType of a GenRet corresponds to the Chapel
@@ -124,16 +127,22 @@ public:
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
                    
-  GenRet() : c(), val(NULL), type(NULL), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false), canBeMarkedAsConstAfterStore(false) { }
+  GenRet() : c(), val(NULL), type(NULL), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);
+    canBeMarkedAsConstAfterStore = false;
+    alreadyStored = false;
   }
   GenRet(int x) {
     *this = baseASTCodegenInt(x);
+    canBeMarkedAsConstAfterStore = false;
+    alreadyStored = false;
   }
   GenRet(const char* str) {
     *this = baseASTCodegenString(str);
+    canBeMarkedAsConstAfterStore = false;
+    alreadyStored = false;
   }
 
   // Return true if this GenRet is empty
