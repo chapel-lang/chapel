@@ -3263,7 +3263,9 @@ module ChapelArray {
       if !a.stridable && b.stridable then
         compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
 
-    a._instance.dsiAssignDomain(b, lhsPrivate=false);
+    // distributions/robust/arithmetic/resizing/resizeFromOtherLocale.chpl
+    // fails if this uses b._instance instead of b._value
+    a._value.dsiAssignDomain(b, lhsPrivate=false);
 
     if _isPrivatized(a._instance) {
       _reprivatize(a._value);
@@ -3677,7 +3679,9 @@ module ChapelArray {
 
     // No need to lock b since it's not exposed anywhere yet
     // No need to handle arrays over b either for the same reason.
-    b._instance.dsiAssignDomain(a, lhsPrivate=true);
+    // distributions/robust/arithmetic/resizing/resizeFromOtherLocale.chpl
+    // fails if this uses b._instance instead of b._value
+    b._value.dsiAssignDomain(a, lhsPrivate=true);
 
     return b;
   }
