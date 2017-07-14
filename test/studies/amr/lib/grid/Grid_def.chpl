@@ -49,7 +49,7 @@ class Grid {
 
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
   proc init (
@@ -129,19 +129,19 @@ class Grid {
 
   }
   // /|''''''''''''''''''''/|
-  //< |    Constructor    < |
+  //< |    Initializer    < |
   // \|....................\|
 
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
 
   proc deinit () { delete ghost_domains; }
   
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -151,7 +151,7 @@ class Grid {
   //|/..........................|/
 
   //--------------------------------------------------------------
-  // Performs some basic sanity checks on the constructor inputs.
+  // Performs some basic sanity checks on the initializer inputs.
   //--------------------------------------------------------------
 
   proc sanityChecks () {

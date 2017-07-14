@@ -31,7 +31,7 @@ class GridCFGhostRegion {
 
   
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
   proc init (
@@ -85,13 +85,13 @@ class GridCFGhostRegion {
 
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
 
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit ()
@@ -99,7 +99,7 @@ class GridCFGhostRegion {
     for multidomain in transfer_regions do delete multidomain;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
 
@@ -179,7 +179,7 @@ class LevelCFGhostRegion {
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit ()
@@ -187,7 +187,7 @@ class LevelCFGhostRegion {
     for region in grid_cf_ghost_regions do delete region;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   
@@ -305,7 +305,7 @@ class GridCFGhostSolution {
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit () {
@@ -316,7 +316,7 @@ class GridCFGhostSolution {
 
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -450,7 +450,7 @@ class LevelCFGhostSolution {
  
  
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit () 
@@ -458,7 +458,7 @@ class LevelCFGhostSolution {
     for solution in grid_cf_ghost_solutions do delete solution;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
   

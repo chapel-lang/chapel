@@ -30,7 +30,7 @@ class GridInvalidRegion {
     
   
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
   proc init (
@@ -53,7 +53,7 @@ class GridInvalidRegion {
     }
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
   
   
@@ -74,13 +74,13 @@ class GridInvalidRegion {
   
   
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit () {}
 
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
 }
@@ -137,7 +137,7 @@ class LevelInvalidRegion {
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit ()
@@ -145,7 +145,7 @@ class LevelInvalidRegion {
     for region in grid_invalid_regions do delete region;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
   
 

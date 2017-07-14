@@ -41,7 +41,7 @@ class LevelVariable {
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
 
   proc deinit ()
@@ -50,7 +50,7 @@ class LevelVariable {
   }
 
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 

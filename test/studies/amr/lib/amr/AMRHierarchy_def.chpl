@@ -61,7 +61,7 @@ class AMRHierarchy {
 
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   proc init (
     x_low:             dimension*real,
@@ -149,11 +149,11 @@ class AMRHierarchy {
 
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
 
   //|\''''''''''''''''''''|\
-  //| >     destructor    | >
+  //| >   deinitializer   | >
   //|/....................|/
 
   proc deinit() {
@@ -166,7 +166,7 @@ class AMRHierarchy {
   }
 
   // /|''''''''''''''''''''/|
-  //< |     destructor    < |
+  //< |   deinitializer   < |
   // \|....................\|
 
 
@@ -570,7 +570,7 @@ class PhysicalBoundary
 
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
   proc init ( level: Level ) 
@@ -591,13 +591,13 @@ class PhysicalBoundary
 
   }
   // /|''''''''''''''''''''/|
-  //< |    constructor    < |
+  //< |    initializer    < |
   // \|....................\|
 
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
   
   proc deinit () 
@@ -605,7 +605,7 @@ class PhysicalBoundary
     for multidomain in multidomains do delete multidomain;
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -652,11 +652,11 @@ class Flagger {
 
 
 //|\"""""""""""""""""""""""""""""""""""""""""""""|\
-//| >    AMRHierarchy constructor, file-based    | >
+//| >    AMRHierarchy initializer, file-based    | >
 //|/_____________________________________________|/
 //
 //-----------------------------------------------------------------
-// Alternate constructor in which all numerical parameters for the
+// Alternate initializer in which all numerical parameters for the
 // hierarchy are provided using an input file.  This allows those
 // parameters to be changed without recompiling the code.
 //-----------------------------------------------------------------
@@ -708,7 +708,7 @@ proc AMRHierarchy.init (
 
 }
 // /|"""""""""""""""""""""""""""""""""""""""""""""/|
-//< |    AMRHierarchy constructor, file-based    < |
+//< |    AMRHierarchy initializer, file-based    < |
 // \|_____________________________________________\|
 
 

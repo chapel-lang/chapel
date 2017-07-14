@@ -160,7 +160,7 @@ class CandidateDomain {
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
 
   proc deinit ()
@@ -168,7 +168,7 @@ class CandidateDomain {
     for i in 1..rank do delete signatures(i);
   }
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
