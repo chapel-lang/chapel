@@ -1006,6 +1006,10 @@ module ChapelDistribution {
       var eCast = e:arrType;
       on e do eCast.dsiPostReallocate();
     }
+
+    if lhs.dsiSupportsPrivatization() {
+      _reprivatize(lhs);
+    }
   }
 
 
