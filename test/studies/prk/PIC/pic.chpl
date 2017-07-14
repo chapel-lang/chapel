@@ -5,15 +5,14 @@
 
 */
 
-// TODO: More docstrings in general
-
 require "random_draw.h", "random_draw.c";
 use Time;
 
-// TODO: Can we use Chapel's random library?
+// TODO: Use Random module?
 
-// Use random_draw library from PRK repo
+/* Initialize generator */
 extern proc LCG_init();
+/* Generate random number */
 extern proc random_draw(x: c_double): uint(64);
 
 enum Mode {GEOMETRIC, SINUSOIDAL, LINEAR, PATCH};
@@ -39,10 +38,10 @@ config const L = 10,
              m = 1,
              /* Number of iterations */
              iterations = 10,
-             /* Debug output */
-             debug = false,
              /* How to initialize particle distribution */
              particleMode = SINUSOIDAL,
+             /* Debug output */
+             debug = false,
              /* Used for verifying correctness in testing */
              correctness = false;
 
@@ -66,7 +65,7 @@ const gridDomOuter = {0..#(L+1), 0..#(L+1)},
 const Qgrid = initializeGrid(L);
 
 var particleDom = {1..0};
-var particles: [particleDom] particle;
+var particles: [particleDom] Particle;
 
 var t = new Timer();
 
@@ -109,8 +108,7 @@ proc main() {
 }
 
 
-// TODO: Tuples?
-record particle {
+record Particle {
   var x: real;
   var y: real;
   var v_x: real;
@@ -122,6 +120,29 @@ record particle {
 
   var k: int;
   var m: int;
+
+  proc Particle(x: real, y: real, k: int, m: int) {
+    this.x = x;
+    this.y = y;
+    this.k = k;
+    this.m = m;
+
+    const rel_x = mod(this.x, 1.0),
+          rel_y = mod(this.y, 1.0),
+          r1_sq = rel_y * rel_y + rel_x * rel_x,
+          r2_sq = rel_y * rel_y + (1.0-rel_x) * (1.0-rel_x),
+          cos_theta = rel_x/sqrt(r1_sq),
+          cos_phi = (1.0-rel_x)/sqrt(r2_sq),
+          base_charge = 1.0 / ((DT*DT) * Q * (cos_theta/r1_sq + cos_phi/r2_sq));
+
+    this.v_x = 0.0;
+    this.v_y = this.m/DT;
+
+    this.q = if ((this.x:uint)%2 == 0) then (2*this.k+1) * base_charge
+             else -1.0 * (2*this.k+1) * base_charge ;
+    this.x0 = this.x;
+    this.y0 = this.y;
+  }
 }
 
 
@@ -133,9 +154,6 @@ proc initialize() {
     when PATCH do initializePatch();
     otherwise do halt("Unknown particle mode: ", particleMode);
   }
-
-  finishDistribution();
-
 }
 
 
@@ -224,9 +242,9 @@ proc initializeGeometric() {
 
   var pIdx = 0;
   for (x,y) in gridDomInner {
-    const actual_particles = random_draw(getSeed(x));
-    // pIdx -> particles[pIdx..#actual_particles]
-    placeParticles(pIdx, actual_particles, x, y);
+    const actual_particles = random_draw(getSeed(x)):int;
+    placeParticles(particles[pIdx..#actual_particles], x, y);
+    pIdx += actual_particles;
   }
 
   inline proc getSeed(x) {
@@ -253,8 +271,10 @@ proc initializeSinusoidal() {
   // pIdx = pi in OpenMP code
   var pIdx = 0;
   for (x,y) in gridDomInner {
-    const actual_particles = random_draw(getSeed(x));
-    placeParticles(pIdx, actual_particles, x, y);
+    const actual_particles = random_draw(getSeed(x)):int;
+    placeParticles(particles[pIdx..#actual_particles], x, y);
+    pIdx += actual_particles;
+    //placeParticles(pIdx, actual_particles, x, y);
   }
 
   inline proc getSeed(x) {
@@ -281,8 +301,9 @@ proc initializeLinear() {
 
   var pIdx = 0;
   for (x,y) in gridDomInner {
-    const actual_particles = random_draw(getSeed(x));
-    placeParticles(pIdx, actual_particles, x, y);
+    const actual_particles = random_draw(getSeed(x)):int;
+    placeParticles(particles[pIdx..#actual_particles], x, y);
+    pIdx += actual_particles;
   }
 
   inline proc getSeed(x) {
@@ -331,9 +352,11 @@ proc initializePatch() {
   for (x,y) in gridDomInner {
     // TODO without cast this creates a seg fault and overflow
     // warning with no --fast. Investigate for possible bug. Engin
-    const actual_particles = random_draw(particles_per_cell);
+    const actual_particles = random_draw(particles_per_cell):int;
     if !outsidePatch(x, y) {
-      placeParticles(pIdx, actual_particles, x, y);
+      placeParticles(particles[pIdx..#actual_particles], x, y);
+      pIdx += actual_particles;
+      //placeParticles(pIdx, actual_particles, x, y);
     }
   }
 
@@ -356,30 +379,13 @@ proc initializePatch() {
   }
 }
 
-
-proc finishDistribution() {
-  for p in particles {
-    const x_coord = p.x,
-          y_coord = p.y,
-          rel_x = mod(x_coord, 1.0),
-          rel_y = mod(y_coord, 1.0),
-          x = x_coord:uint,
-          r1_sq = rel_y * rel_y + rel_x * rel_x,
-          r2_sq = rel_y * rel_y + (1.0-rel_x) * (1.0-rel_x),
-          cos_theta = rel_x/sqrt(r1_sq),
-          cos_phi = (1.0-rel_x)/sqrt(r2_sq),
-          base_charge = 1.0 / ((DT*DT) * Q * (cos_theta/r1_sq +
-                        cos_phi/r2_sq));
-
-    p.v_x = 0.0;
-    p.v_y = p.m/DT;
-
-    p.q = if (x%2 == 0) then (2*p.k+1) * base_charge
-          else -1.0 * (2*p.k+1) * base_charge ;
-    p.x0 = x_coord;
-    p.y0 = y_coord;
-  }
+/* Initialize particles */
+inline proc placeParticles(particles, x, y) {
+  [particle in particles] particle = new Particle(x + REL_X, y + REL_Y, k, m);
 }
+
+
+proc finishDistribution() { }
 
 
 inline proc computeCoulomb(x_dist, y_dist, q1, q2) {
@@ -443,13 +449,3 @@ proc verifyParticle(p) {
 }
 
 
-// TODO: Cleanup call-sites and body (use slicing of particles)
-inline proc placeParticles(ref pIdx, n, x, y) {
-  for 1..n {
-    particles[pIdx].x = x + REL_X;
-    particles[pIdx].y = y + REL_Y;
-    particles[pIdx].k = k;
-    particles[pIdx].m = m;
-    pIdx += 1;
-  }
-}
