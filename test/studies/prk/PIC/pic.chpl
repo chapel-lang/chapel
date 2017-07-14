@@ -19,6 +19,10 @@ enum Mode {GEOMETRIC, SINUSOIDAL, LINEAR, PATCH};
 
 use Mode;
 
+//
+// Globals
+//
+
 param PRKVERSION = "2.17";
 
 param REL_X = 0.5,
@@ -81,25 +85,25 @@ proc main() {
 
     forall particle in particles {
 
-      const (fx, fy) = computeTotalForce(particle);
-      const (ax, ay) = (fx * MASS_INV, fy * MASS_INV);
+      const f = computeTotalForce(particle),
+            a = MASS_INV*f;
 
       // For debug only
-      var x0, y0:real;
+      var xy0: 2*real;
 
       if debug then
-        (x0,y0) = (particle.x, particle.y);
+        xy0 = (particle.x, particle.y);
 
-      particle.x = mod(particle.x + particle.v_x*DT + 0.5*ax*DT*DT + L, L);
-      particle.y = mod(particle.y + particle.v_y*DT + 0.5*ay*DT*DT + L, L);
+      particle.x = mod(particle.x + particle.v_x*DT + 0.5*a(1)*DT*DT + L, L);
+      particle.y = mod(particle.y + particle.v_y*DT + 0.5*a(2)*DT*DT + L, L);
 
       if debug then
-        writeln("Force acting on particle: ", (fx,fy),
-                "\n\tParticle moved from ", (x0,y0), " to ",
+        writeln("Force acting on particle: ", f,
+                "\n\tParticle moved from ", xy0, " to ",
                                       (particle.x, particle.y));
 
-      particle.v_x += ax * DT;
-      particle.v_y += ay * DT;
+      particle.v_x += a(1) * DT;
+      particle.v_y += a(2) * DT;
     }
   }
   t.stop();
@@ -108,19 +112,59 @@ proc main() {
 }
 
 
+/* Compute x & y components of total force on particle p */
+proc computeTotalForce(p) {
+
+  const x = floor(p.x):int,
+        y = floor(p.y):int;
+
+  const rel_x = p.x-x,
+        rel_y = p.y-y;
+
+  var force: 2*real;
+
+  /*
+     Stencil pattern used for computing total force:
+        (x,y)     (x+1, y)
+        (x, y+1)  (x+y, y+1)
+   */
+  for (i, j) in {0..1, 0..1} {
+    var (tmp_fx, tmp_fy) = computeCoulomb(((-1)**i) * rel_x + i,
+                                          ((-1)**j) * rel_y + j,
+                                          p.q,
+                                          Qgrid[y+j, x+i]);
+    force += (((-1)**i) * tmp_fx, ((-1)**j) * tmp_fy);
+  }
+
+  return force;
+}
+
+
+/* Compute x and y components of Coulomb force between 2 charges, q1 & q2 */
+inline proc computeCoulomb(x_dist, y_dist, q1, q2) {
+
+  const r2 = x_dist**2 + y_dist**2,
+        r = sqrt(r2),
+        f_coulomb = q1*q2/r2;
+
+  return (f_coulomb * x_dist/r, f_coulomb * y_dist/r);
+}
+
+
+/* Particle record */
 record Particle {
-  var x: real;
-  var y: real;
-  var v_x: real;
-  var v_y: real;
-  var q: real;
+  var x: real,
+      y: real,
+      v_x: real,
+      v_y: real,
+      q: real,
+      x0: real,
+      y0: real;
 
-  var x0: real;
-  var y0: real;
+  var k: int,
+      m: int;
 
-  var k: int;
-  var m: int;
-
+  /* Particle constructor */
   proc Particle(x: real, y: real, k: int, m: int) {
     this.x = x;
     this.y = y;
@@ -268,13 +312,11 @@ proc initializeSinusoidal() {
 
   LCG_init();
 
-  // pIdx = pi in OpenMP code
   var pIdx = 0;
   for (x,y) in gridDomInner {
     const actual_particles = random_draw(getSeed(x)):int;
     placeParticles(particles[pIdx..#actual_particles], x, y);
     pIdx += actual_particles;
-    //placeParticles(pIdx, actual_particles, x, y);
   }
 
   inline proc getSeed(x) {
@@ -285,8 +327,8 @@ proc initializeSinusoidal() {
 
 proc initializeLinear() {
 
-  const step = 1.0/L;
-  const total_weight = beta*L-alpha*0.5*step*L*(L-1);
+  const step = 1.0/L,
+        total_weight = beta*L-alpha*0.5*step*L*(L-1);
 
   var nPlaced = 0:uint; // random_draw is a uint proc
 
@@ -324,18 +366,18 @@ proc initializePatch() {
   const patch = new bbox(initPatchLeft,
                          initPatchRight,
                          initPatchTop,
-                         initPatchBottom);
-
-  const gridPatch = new bbox(0, (L+1), 0, (L+1));
+                         initPatchBottom),
+        gridPatch = new bbox(0, (L+1), 0, (L+1));
 
   if badPatch(patch, gridPatch) then
     halt("Bad patch given");
 
   const total_cells  = (patch.right - patch.left+1)*(patch.top -
-      patch.bottom+1);
-  const particles_per_cell = (n/total_cells):real;
+                        patch.bottom+1),
+        particles_per_cell = (n/total_cells): real;
 
-  var nPlaced = 0:uint;
+  var nPlaced = 0: uint;
+
   LCG_init();
 
   for (x,y) in gridDomInner {
@@ -350,13 +392,10 @@ proc initializePatch() {
 
   var pIdx = 0;
   for (x,y) in gridDomInner {
-    // TODO without cast this creates a seg fault and overflow
-    // warning with no --fast. Investigate for possible bug. Engin
     const actual_particles = random_draw(particles_per_cell):int;
     if !outsidePatch(x, y) {
       placeParticles(particles[pIdx..#actual_particles], x, y);
       pIdx += actual_particles;
-      //placeParticles(pIdx, actual_particles, x, y);
     }
   }
 
@@ -379,51 +418,10 @@ proc initializePatch() {
   }
 }
 
+
 /* Initialize particles */
 inline proc placeParticles(particles, x, y) {
   [particle in particles] particle = new Particle(x + REL_X, y + REL_Y, k, m);
-}
-
-
-proc finishDistribution() { }
-
-
-inline proc computeCoulomb(x_dist, y_dist, q1, q2) {
-
-  const r2 = x_dist**2 + y_dist**2,
-        r = sqrt(r2),
-        f_coulomb = q1*q2/r2;
-
-  const fx = f_coulomb * x_dist/r,
-        fy = f_coulomb * y_dist/r;
-
-  return (fx, fy);
-}
-
-
-proc computeTotalForce(p) {
-
-  const x = floor(p.x):int,
-        y = floor(p.y):int;
-
-  // TODO: tuple representation?
-  const rel_x = p.x-x,
-        rel_y = p.y-y;
-
-  // TODO: More elegant? Less shuffling data around, sum of 4 things or iteration over 0..1, 0..1 w/ + reduce
-  var (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,    rel_y, p.q, Qgrid[y  ,x  ]);
-  var res_xy = (tmp_fx, tmp_fy);
-
-  (tmp_fx, tmp_fy) = computeCoulomb(    rel_x,1.0-rel_y, p.q, Qgrid[y+1,x  ]);
-  res_xy  += (tmp_fx, -tmp_fy);
-
-  (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x,    rel_y, p.q, Qgrid[y  ,x+1]);
-  res_xy += (-tmp_fx, tmp_fy);
-
-  (tmp_fx, tmp_fy) = computeCoulomb(1.0-rel_x,1.0-rel_y, p.q, Qgrid[y+1,x+1]);
-  res_xy += (-tmp_fx, -tmp_fy);
-
-  return res_xy;
 }
 
 
