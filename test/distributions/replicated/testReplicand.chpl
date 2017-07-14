@@ -10,5 +10,5 @@ coforall loc in Locales do on loc {
 }
 
 for loc in Locales {
-  writeln(A.replicand(loc.id));
+  writeln(A.replicand(loc));
 }

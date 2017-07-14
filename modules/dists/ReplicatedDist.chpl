@@ -425,15 +425,17 @@ class ReplicatedArr : BaseArr {
     return localArrs[here.id];
   }
 
-  /* Access another locale's local array representation by locale id */
-  proc replicand(id: here.id.type) ref {
-    return localArrs[id].arrLocalRep;
+  //
+  // Access another locale's local array representation
+  //
+  proc replicand(loc: locale) ref {
+    return localArrs[loc.id].arrLocalRep;
   }
 }
 
 pragma "no doc"
-proc _array.replicand(id : here.id.type) ref {
-  return _value.replicand(id);
+proc _array.replicand(loc: locale) ref {
+  return _value.replicand(loc);
 }
 
 //
