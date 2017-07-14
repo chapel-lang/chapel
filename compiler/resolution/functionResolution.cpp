@@ -4317,6 +4317,10 @@ static void  moveHaltForUnacceptableTypes(Type*     lhsType,
                                           Type*     rhsType,
                                           CallExpr* call);
 
+static void  resolveMoveForRhsSymExpr(CallExpr* call);
+
+static void  resolveMoveForRhsCallExpr(CallExpr* call);
+
 static void  moveCast(CallExpr* call, Type* lhsType, Type* rhsType);
 
 
@@ -4330,119 +4334,36 @@ static void resolveMove(CallExpr* call) {
   if (moveIsAcceptable(call) == false) {
     // NB: This call will not return
     moveHaltMoveIsUnacceptable(call);
-  }
 
 
 
   // Ignore moves to RVV unless this is a constructor
-  if (moveImplementsUnresolvedReturn(call) == true) {
-    return;
-  }
+  } else if (moveImplementsUnresolvedReturn(call) == true) {
 
-
-
-
-  Type*   rhsType = moveRhsType(call);
-  Type*   lhsType = moveLhsType(call, rhsType);
-
-  Symbol* lhs     = toSymExpr(call->get(1))->symbol();
-  Expr*   rhs     = call->get(2);
-
-
-  moveSetConstFlagsAndCheck(lhs, rhs);
-
-
-
-  if (moveTypesAreAcceptable(lhsType, rhsType) == false) {
-    // NB: This call will not return
-    moveHaltForUnacceptableTypes(lhsType, rhsType, call);
-  }
-
-
-
-
-
-
-  if (isSymExpr(rhs) == true) {
-    moveCast(call, lhsType, rhsType);
-
-  } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
-    if (rhsCall->resolvedFunction() == gChplHereAlloc) {
-      Symbol* tmp = newTemp("cast_tmp", rhsType);
-
-      call->insertBefore(new DefExpr(tmp));
-      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
-
-      call->insertAtTail(new CallExpr(PRIM_CAST, lhs->type->symbol, tmp));
-
-    } else if (rhsCall->isPrimitive(PRIM_SIZEOF) == true) {
-      // Fix up arg to sizeof(), as we may not have known the type earlier
-      SymExpr* sizeSym  = toSymExpr(rhsCall->get(1));
-      Type*    sizeType = sizeSym->symbol()->typeInfo();
-
-      rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
-
-    } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
-      if (isReferenceType(rhsCall->get(1)->typeInfo())) {
-        // Add a dereference as needed, as we did not have complete
-        // type information earlier
-        SymExpr*   castVar   = toSymExpr(rhsCall->get(1));
-        Type*      castType  = castVar->typeInfo()->getValType();
-
-        VarSymbol* derefTmp  = newTemp("castDeref", castType);
-        CallExpr*  derefCall = new CallExpr(PRIM_DEREF, castVar->symbol());
-
-        call->insertBefore(new DefExpr(derefTmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, derefCall));
-
-        rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
-      }
-
-      moveCast(call, lhsType, rhsType);
-
-    // Fix up PRIM_COERCE : remove it if it has a param RHS.
-    } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
-      moveCast(call, lhsType, rhsType);
-
-      if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
-        Symbol* coerceSym = coerceSE->symbol();
-
-        // This transformation is normally handled in insertCasts
-        // but we need to do it earlier for parameters. We can't just
-        // call insertCasts here since that would dramatically change the
-        // resolution order (and would be apparently harder to get working).
-        if (coerceSym->isParameter()               == true  ||
-            coerceSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          // Can we coerce from the argument to the function return type?
-          // Note that rhsType here is the function return type
-          // (since that is what the primitive returns as its type).
-          Type* coerceType = coerceSym->type;
-
-          if (coerceType                                     == rhsType ||
-              canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
-            call->get(1)->replace(new SymExpr(lhs));
-            call->get(2)->replace(new SymExpr(coerceSym));
-
-          } else if (canCoerce(coerceType, coerceSym, rhsType, NULL) == true) {
-
-            // any case that doesn't param coerce but that does coerce
-            // will be handled in insertCasts.
-
-          } else {
-            USR_FATAL(userCall(call),
-                      "type mismatch in return from %s to %s",
-                      toString(coerceType),
-                      toString(rhsType));
-          }
-        }
-      }
-
-    } else {
-      moveCast(call, lhsType, rhsType);
-    }
 
   } else {
-    INT_ASSERT(false);
+    // These calls might modify the fields in call
+    Type*   rhsType = moveRhsType(call);
+    Type*   lhsType = moveLhsType(call, rhsType);
+
+    Symbol* lhs     = toSymExpr(call->get(1))->symbol();
+    Expr*   rhs     = call->get(2);
+
+    moveSetConstFlagsAndCheck(lhs, rhs);
+
+    if (moveTypesAreAcceptable(lhsType, rhsType) == false) {
+      // NB: This call will not return
+      moveHaltForUnacceptableTypes(lhsType, rhsType, call);
+
+    } else if (isSymExpr(rhs)  == true) {
+      resolveMoveForRhsSymExpr(call);
+
+    } else if (isCallExpr(rhs) == true) {
+      resolveMoveForRhsCallExpr(call);
+
+    } else {
+      INT_ASSERT(false);
+    }
   }
 }
 
@@ -4736,10 +4657,9 @@ static void moveSetFlagsForConstAccess(Symbol*   lhs,
   }
 }
 
-
-
-
-
+//
+//
+//
 
 static bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType) {
   bool retval = true;
@@ -4783,7 +4703,99 @@ static void moveHaltForUnacceptableTypes(Type*     lhsType,
 }
 
 
+//
+//
+//
 
+static void resolveMoveForRhsSymExpr(CallExpr* call) {
+  Type* lhsType = call->get(1)->typeInfo();
+  Type* rhsType = call->get(2)->typeInfo();
+
+  moveCast(call, lhsType, rhsType);
+}
+
+static void resolveMoveForRhsCallExpr(CallExpr* call) {
+  Expr*     lhs     = call->get(1);
+  Expr*     rhs     = call->get(2);
+  CallExpr* rhsCall = toCallExpr(rhs);
+
+  Type*     lhsType = lhs->typeInfo();
+  Type*     rhsType = rhs->typeInfo();
+
+  if (rhsCall->resolvedFunction() == gChplHereAlloc) {
+    Symbol* tmp = newTemp("cast_tmp", rhsType);
+
+    call->insertBefore(new DefExpr(tmp));
+    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+
+    call->insertAtTail(new CallExpr(PRIM_CAST, lhsType->symbol, tmp));
+
+  } else if (rhsCall->isPrimitive(PRIM_SIZEOF) == true) {
+    // Fix up arg to sizeof(), as we may not have known the type earlier
+    SymExpr* sizeSym  = toSymExpr(rhsCall->get(1));
+    Type*    sizeType = sizeSym->symbol()->typeInfo();
+
+    rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
+
+  } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
+    if (isReferenceType(rhsCall->get(1)->typeInfo())) {
+      // Add a dereference as needed, as we did not have complete
+      // type information earlier
+      SymExpr*   castVar   = toSymExpr(rhsCall->get(1));
+      Type*      castType  = castVar->typeInfo()->getValType();
+
+      VarSymbol* derefTmp  = newTemp("castDeref", castType);
+      CallExpr*  derefCall = new CallExpr(PRIM_DEREF, castVar->symbol());
+
+      call->insertBefore(new DefExpr(derefTmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, derefCall));
+
+      rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
+    }
+
+    moveCast(call, lhsType, rhsType);
+
+    // Fix up PRIM_COERCE : remove it if it has a param RHS.
+  } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
+    moveCast(call, lhsType, rhsType);
+
+    if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
+      Symbol* coerceSym = coerceSE->symbol();
+
+      // This transformation is normally handled in insertCasts
+      // but we need to do it earlier for parameters. We can't just
+      // call insertCasts here since that would dramatically change the
+      // resolution order (and would be apparently harder to get working).
+      if (coerceSym->isParameter()               == true  ||
+          coerceSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        // Can we coerce from the argument to the function return type?
+        // Note that rhsType here is the function return type
+        // (since that is what the primitive returns as its type).
+        Type* coerceType = coerceSym->type;
+
+        if (coerceType                                     == rhsType ||
+            canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
+          call->get(1)->replace(lhs->copy());
+          call->get(2)->replace(new SymExpr(coerceSym));
+
+        } else if (canCoerce(coerceType, coerceSym, rhsType, NULL) == true) {
+
+          // any case that doesn't param coerce but that does coerce
+          // will be handled in insertCasts.
+
+        } else {
+          USR_FATAL(userCall(call),
+                    "type mismatch in return from %s to %s",
+                    toString(coerceType),
+                    toString(rhsType));
+        }
+      }
+    }
+
+  } else {
+    moveCast(call, lhsType, rhsType);
+  }
+}
 
 
 static void moveCast(CallExpr* call, Type* lhsType, Type* rhsType) {
