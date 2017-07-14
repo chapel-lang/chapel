@@ -387,7 +387,7 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 
 
 static
-void codegenInvariantStart(llvm::Value *val, llvm::Constant *addr)
+void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
 {
   GenInfo *info = gGenInfo;
   llvm::Type *int8PtrTy =
@@ -403,12 +403,12 @@ void codegenInvariantStart(llvm::Value *val, llvm::Constant *addr)
   else
     return;
 
+  llvm::Value *castedAddr = info->builder->CreateBitCast(addr, int8PtrTy);
   llvm::Value *args[2] =
     {
       llvm::ConstantInt::getSigned(llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes),
-      llvm::ConstantExpr::getBitCast(addr, int8PtrTy)
+      castedAddr
     };
-
   info->builder->CreateCall(invariantStart, args);
 }
 
@@ -437,8 +437,7 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   }
 
   if(addInvariantStart)
-    if(llvm::Constant *addr = llvm::dyn_cast<llvm::Constant>(ptr))
-      codegenInvariantStart(val, addr);
+    codegenInvariantStart(val, ptr);
 
   return ret;
 }
@@ -469,7 +468,6 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  val.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -507,7 +505,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, ptr.canBeMarkedAsConstAfterStore && ptr.alreadyStored);
+  return codegenLoadLLVM(ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
 }
 
 #endif
