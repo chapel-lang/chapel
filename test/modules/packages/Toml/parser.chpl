@@ -2,13 +2,13 @@
 Parser module with the Node class for the Chapel TOML library.
 */
 
-
 use reader;
 use Regexp;
 use DateTime;
 
 
-// Main method
+
+// Main method primarily for debugging
 proc main(args: [] string) {
   const source = new Source(args[1]);
   const parser = new Parser(source);
@@ -18,31 +18,32 @@ proc main(args: [] string) {
   delete source;
 }
 
-
+// Prints a line by line output of parsing process
 config const DEBUG: bool = false;
+
 
 class Parser {
 
   var source;
   var D: domain(string);
   var table: [D] Node;
-  var tables = new Node(table);
+  var rootTable = new Node(table);
   var curTable: string;
-  var root: Node;
-    
+
+  // Regex constants to match Tokens
   const doubleQuotes = '".*?"',
-    singleQuotes = "'.*?'",
-    digit = "\\d+",
-    keys = "^\\w+";
+        singleQuotes = "'.*?'",
+        digit = "\\d+",
+        keys = "^\\w+";
   const Str = compile(doubleQuotes + '|' + singleQuotes),
-    kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
-    dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
-    realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
-    ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
-    inBrackets = compile("^(\\[.*?\\])"),
-    brackets = compile('\\[|\\]'),
-    whitespace = compile("\\s"),
-    comma = compile("(\\,)");
+        kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
+        dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
+        realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
+        ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
+        inBrackets = compile("^(\\[.*?\\])"),
+        brackets = compile('\\[|\\]'),
+        whitespace = compile("\\s"),
+        comma = compile("(\\,)");
 
     
 
@@ -71,12 +72,12 @@ class Parser {
 	writeln("========================= Debug Info  ==========================");
 	source.debug();
 	writeln();
-	writeln(tables);
+	writeln(rootTable);
 	writeln();
         writeln("================================================================");
       }
     }
-    return tables;
+    return rootTable;
   }
 
   proc parseTable() {
@@ -84,19 +85,18 @@ class Parser {
     var tablename = brackets.sub('', toke);
     var tblD: domain(string);
     var tbl: [tblD] Node;
-    root = new Node(tbl);
-    tables[tablename] = root;
+    rootTable[tablename] = new Node(tbl);
     curTable = tablename;
   }
 
   proc parseSubTbl() {
     skipNext(source);
-    var tblname = getToken(source); //throw error if empty
+    var tblname = getToken(source);
     skipNext(source);
     var tblD: domain(string);
     var tbl: [tblD] Node;
     var (tblPath, tblLeaf) = splitTblPath(tblname);
-    tables.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+    rootTable.getIdx(tblPath)[tblLeaf] = new Node(tbl);
     curTable = tblname;
   }
   
@@ -106,12 +106,12 @@ class Parser {
     var tbl: [tblD] Node;
     if curTable.isEmptyString() {
       tblname = key;
-      tables[key] = new Node(tbl);
+      rootTable[key] = new Node(tbl);
     }
     else {
       tblname = '.'.join(curTable, key);
       var (tblPath, tblLeaf) = splitTblPath(tblname);
-      tables.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+      rootTable.getIdx(tblPath)[tblLeaf] = new Node(tbl);
     }
     var temp = curTable;
     curTable = tblname;
@@ -134,8 +134,8 @@ class Parser {
     }
     else {
       var value = parseValue();
-      if curTable.isEmptyString() then tables[key] = value;
-      else tables.getIdx(curTable)[key] = value;
+      if curTable.isEmptyString() then rootTable[key] = value;
+      else rootTable.getIdx(curTable)[key] = value;
     }
   }
   
@@ -144,7 +144,7 @@ class Parser {
     skipLine(source);
   }  
 
-  // returns leaf of embedded table
+  // Returns leaf of embedded table
   proc splitTblPath(s: string) {
     var A = s.split('.');
     var fIdx = A.domain.first;
@@ -159,6 +159,7 @@ class Parser {
     var A = s.split('.');
     return A;
   }
+  
   
   proc parseValue(): Node {
     var val = top(source);
@@ -240,6 +241,10 @@ class Parser {
 }
 
 
+/*
+ Class to hold various types parsed from input
+ Used to recursivly hold tables and respective values
+ */
 class Node {
   var i: int;
   var boo: bool;
@@ -250,7 +255,8 @@ class Node {
   var arr: [dom] Node;
   var D: domain(string);
   var A: [D] Node;
-    
+  
+  // Tags to identify type
   const fieldBool = 1,
     fieldInt = 2,
     fieldArr = 3,
@@ -314,6 +320,7 @@ class Node {
     return A[idx];
   }
 
+  // Returns the index of the tbl path given as a parameter
   proc getIdx(tbl: string) ref : Node {
     var indx = tbl.split('.');
     var top = indx.domain.first;
@@ -346,7 +353,7 @@ class Node {
   }
 
   /*
-   * Flatten tables and print in sorted order.
+   Flatten tables into flat associative array for writing
    */
   proc flatten(flat: [?d] Node, rootKey = '') : flat.type { 
     for (k, v) in zip(this.D, this.A) {
@@ -367,6 +374,10 @@ class Node {
     }
   }
   
+  /*
+   Send values from table to toString for writing
+   Skip tables
+   */
   proc printValues(f: channel, v) {
     for (key, value) in zip(v.D, v.A) {
       select value.tag {
