@@ -4572,41 +4572,57 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 //
 
 static void resolveMoveForRhsSymExpr(CallExpr* call) {
-  moveSetConstFlagsAndCheck(call);
+  SymExpr* rhs = toSymExpr(call->get(2));
+
+  // If this assigns into a loop index variable from a non-var iterator,
+  // mark the variable constant.
+  // If RHS is this special variable...
+  if (rhs->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
+    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+    Type*   rhsType = rhs->typeInfo();
+
+    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR));
+
+    // ... and not of a reference type
+    // ... and not an array (arrays are always yielded by reference)
+    // todo: differentiate based on ref-ness, not _ref type
+    // todo: not all const if it is zippered and one of iterators is var
+    if (isReferenceType(rhsType)                == false &&
+        isTupleContainingAnyReferences(rhsType) == false &&
+        rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
+      // ... then mark LHS constant.
+      lhsSym->addFlag(FLAG_CONST);
+    }
+  }
 
   moveFinalize(call);
 }
 
 static void resolveMoveForRhsCallExpr(CallExpr* call) {
-  Expr*     lhs     = call->get(1);
-  Expr*     rhs     = call->get(2);
-  CallExpr* rhsCall = toCallExpr(rhs);
-
-  Type*     lhsType = lhs->typeInfo();
-  Type*     rhsType = rhs->typeInfo();
+  CallExpr* rhs = toCallExpr(call->get(2));
 
   moveSetConstFlagsAndCheck(call);
 
-  if (rhsCall->resolvedFunction() == gChplHereAlloc) {
-    Symbol* tmp = newTemp("cast_tmp", rhsType);
+  if (rhs->resolvedFunction() == gChplHereAlloc) {
+    Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
+    Symbol*  tmp     = newTemp("cast_tmp", rhs->typeInfo());
 
     call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+    call->insertBefore(new CallExpr(PRIM_MOVE, tmp,     rhs->remove()));
+    call->insertAtTail(new CallExpr(PRIM_CAST, lhsType, tmp));
 
-    call->insertAtTail(new CallExpr(PRIM_CAST, lhsType->symbol, tmp));
-
-  } else if (rhsCall->isPrimitive(PRIM_SIZEOF) == true) {
+  } else if (rhs->isPrimitive(PRIM_SIZEOF) == true) {
     // Fix up arg to sizeof(), as we may not have known the type earlier
-    SymExpr* sizeSym  = toSymExpr(rhsCall->get(1));
+    SymExpr* sizeSym  = toSymExpr(rhs->get(1));
     Type*    sizeType = sizeSym->symbol()->typeInfo();
 
     rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
 
-  } else if (rhsCall->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
-    if (isReferenceType(rhsCall->get(1)->typeInfo())) {
+  } else if (rhs->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
+    if (isReferenceType(rhs->get(1)->typeInfo())) {
       // Add a dereference as needed, as we did not have complete
       // type information earlier
-      SymExpr*   castVar   = toSymExpr(rhsCall->get(1));
+      SymExpr*   castVar   = toSymExpr(rhs->get(1));
       Type*      castType  = castVar->typeInfo()->getValType();
 
       VarSymbol* derefTmp  = newTemp("castDeref", castType);
@@ -4615,16 +4631,16 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
       call->insertBefore(new DefExpr(derefTmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, derefCall));
 
-      rhsCall->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
+      rhs->replace(new CallExpr(PRIM_CAST_TO_VOID_STAR, derefTmp));
     }
 
     moveFinalize(call);
 
   // Fix up PRIM_COERCE : remove it if it has a param RHS.
-  } else if (rhsCall->isPrimitive(PRIM_COERCE) == true) {
+  } else if (rhs->isPrimitive(PRIM_COERCE) == true) {
     moveFinalize(call);
 
-    if (SymExpr* coerceSE = toSymExpr(rhsCall->get(1))) {
+    if (SymExpr* coerceSE = toSymExpr(rhs->get(1))) {
       Symbol* coerceSym = coerceSE->symbol();
 
       // This transformation is normally handled in insertCasts
@@ -4637,9 +4653,12 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         // Note that rhsType here is the function return type
         // (since that is what the primitive returns as its type).
         Type* coerceType = coerceSym->type;
+        Type* rhsType    = rhs->typeInfo();
 
         if (coerceType                                     == rhsType ||
             canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
+          SymExpr* lhs = toSymExpr(call->get(1));
+
           call->get(1)->replace(lhs->copy());
           call->get(2)->replace(new SymExpr(coerceSym));
 
@@ -4664,45 +4683,23 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
 
 
 static void moveSetConstFlagsAndCheck(CallExpr* call) {
-  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
-  Expr*   rhs    = call->get(2);
+  CallExpr* rhs    = toCallExpr(call->get(2));
 
-  // If this assigns into a loop index variable from a non-var iterator,
-  // mark the variable constant.
-  if (SymExpr* rhsSE = toSymExpr(rhs)) {
-    // If RHS is this special variable...
-    if (rhsSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
-      Type* rhsType = rhsSE->symbol()->type;
-
-      INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR));
-
-      // ... and not of a reference type
-      // ... and not an array (arrays are always yielded by reference)
-      // todo: differentiate based on ref-ness, not _ref type
-      // todo: not all const if it is zippered and one of iterators is var
-      if (isReferenceType(rhsType)                           == false &&
-          isTupleContainingAnyReferences(rhsType)            == false &&
-          rhsSE->symbol()->type->symbol->hasFlag(FLAG_ARRAY) == false) {
-        // ... then mark LHS constant.
-        lhsSym->addFlag(FLAG_CONST);
-      }
-    }
-
-  } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
-    if (rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
-      if (SymExpr* rhsBase = toSymExpr(rhsCall->get(1))) {
-        if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
-            rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
-          lhsSym->addFlag(FLAG_REF_TO_CONST);
-        }
-
-      } else {
-        INT_ASSERT(false);
+  if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+    if (SymExpr* rhsBase = toSymExpr(rhs->get(1))) {
+      if (rhsBase->symbol()->hasFlag(FLAG_CONST)        == true  ||
+          rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
+        toSymExpr(call->get(1))->symbol()->addFlag(FLAG_REF_TO_CONST);
       }
 
-    } else if (FnSymbol* resolvedFn = rhsCall->resolvedFunction()) {
-      moveSetFlagsAndCheckForConstAccess(lhsSym, rhsCall, resolvedFn);
+    } else {
+      INT_ASSERT(false);
     }
+
+  } else if (FnSymbol* resolvedFn = rhs->resolvedFunction()) {
+    Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+
+    moveSetFlagsAndCheckForConstAccess(lhsSym, rhs, resolvedFn);
   }
 }
 
