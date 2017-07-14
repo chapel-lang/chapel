@@ -205,6 +205,7 @@ proc PrivateArr.dsiSerialWrite(x) {
 const privateDist = new Private();
 const PrivateSpace: domain(1) dmapped new dmap(privateDist);
 
+pragma "no doc"
 proc deinit() {
   delete privateDist;
 }
