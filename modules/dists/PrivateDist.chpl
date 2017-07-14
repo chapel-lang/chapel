@@ -202,4 +202,9 @@ proc PrivateArr.dsiSerialWrite(x) {
   }
 }
 
-const PrivateSpace: domain(1) dmapped new dmap(new Private());
+const privateDist = new Private();
+const PrivateSpace: domain(1) dmapped new dmap(privateDist);
+
+proc deinit() {
+  delete privateDist;
+}
