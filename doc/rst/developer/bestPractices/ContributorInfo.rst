@@ -20,7 +20,7 @@ Overview:
 #. `Discuss design`_ changes or big development efforts
 #. `Set up a branch for development`_
 
-   #. `Set up repository`_
+   #. `Getting set up`_
    #. `Create new branch`_
 
 #. `Develop and test contributions locally`_
@@ -60,14 +60,14 @@ chapel-users_.
 Set up a branch for development
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This consists of two sets of operations.  The first (`Set up repository`_) only
+This consists of two sets of operations.  The first (`Getting set up`_) only
 needs to happen once per developer.  The second (`Create new branch`_) should
 happen for every new effort.
 
-.. _Set up repository:
+.. _Getting set up:
 
-Set up repository
-+++++++++++++++++
+Getting set up
+++++++++++++++
 
 Note: these are expected to evolve over time as the governance of Chapel is
 migrated from Cray to an external/community body (the major elements are likely
@@ -85,9 +85,6 @@ grow).
    also `Fork the repo`_).  Then `configure your local git`_ and check out your
    fork
 
-#. You do not need commit/push access to the main repo in order to
-   contribute code.  See `Who has commit access`_ for questions.
-
 #. If you're working on a long-term effort, announce it on the
    chapel-developers_ mailing list to make sure toes are not being stepped on,
    work is not being pursued redundantly, etc.  Similarly, fundamental changes
@@ -95,13 +92,16 @@ grow).
    chapel-developers_ and/or chapel-users_ lists to make sure effort is not
    wasted.
 
-#. Third-party code requires additional approvals, see the policy details on
-   `Third-party code`_.
-
 #. Sign a Chapel contributor's agreement and mail it, with your GitHub
    ID, using the instructions here:
 
    https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+
+* You do not need commit/push access to the main repo in order to
+  contribute code.  See `Who has commit access`_ for questions.
+
+* Third-party code requires additional approvals, see the policy details on
+  `Third-party code`_.
 
 .. _Create new branch:
 
@@ -109,7 +109,7 @@ Create new branch
 +++++++++++++++++
 
 Develop your feature, bug fix, etc on your fork.  To create a new branch, use
-the `New branch command`.  Using a concisely named branch is encouraged.
+the `New branch command`_.  Using a concisely named branch is encouraged.
 
 .. _Develop and test contributions locally:
 
@@ -124,25 +124,8 @@ the feature.  See `Development commands`_ for how to perform some common
 operations during development.
 
 As you work, you will want to periodically bring in changes from the main Chapel
-project to your feature branch:
-
-.. code-block:: bash
-
-    git fetch upstream
-    git merge upstream/master
-
-    # or:
-    git pull upstream <branch_name>
-
-    # with feature branch checked out:
-    git merge [--no-ff] upstream/master
-
-If there are conflicts, you will be asked to resolve them. Once the affected
-files have been fixed, stage them with ``git add``, and then call ``git
-commit`` to finish the merge process.
-
-If you want to understand the changes that occurred upstream, see
-`Read commit messages`_ below.
+project to your feature branch (described in `Development commands`_), to avoid
+code drift.
 
 .. _Adding new tests:
 
@@ -197,61 +180,30 @@ Discussion can take place in:
 Submit pull request
 +++++++++++++++++++
 
-* `Submit a pull request`_ with your changes (make sure you have `synced with
-  the main repo`_).
+See `How to open a PR`_ for the sequence of steps necessary.
 
-  To do this, after pushing your changes to your feature branch on GitHub,
-  you can use the GitHub web interface to create a pull request. Visit
+Contributors should be reasonably confident in the testing done on their code
+before asking for a final review.  Should additional testing resources be
+needed, you can request help from a member of the core Chapel team when creating
+your pull request.
 
-  ``https://github.com/<username>/chapel``
+In working with your reviewers, you will no doubt change your pull request.
+Just do your local development and then update your feature branch as in
+`Push your work`_
 
-  and look for a "Compare & pull request" button for your feature branch.
-  Alternatively, navigate to your feature branch, and click the green icon next
-  to the branch dropdown to "Compare, review, create a pull request".
-
-  Next, put in a message to your reviewer about the purpose of your pull request
-  and give the pull request a useful title.  Your PR message will introduce the
-  changes to reviewers and form the basis for the merge message.  See
-  `Final merge message`_ for recommendations on what that commit message should
-  look like.
-
-  You will have to have signed a contributors agreement.
-
-  Your pull request will be available at a URL like:
-
-  ``https://github.com/chapel-lang/chapel/pull/<number>``
-
-  and you can discuss the patch with your reviewers there.
-
-  Contributors should be reasonably confident in the testing done on their code
-  before asking for a final review.  Should additional testing resources be
-  needed, you can request help from a member of the core Chapel team when
-  creating your pull request.
-
-  In working with your reviewers, you will no doubt change your pull request.
-  Just do your local development and then update your feature branch as in `Push
-  your work`_
-
-* In order for a pull request to be accepted and merged, it should
-
-  a) pass testing and
-  b) be reviewed by a member of the core Chapel team (currently, a member of the
-     Cray Chapel team).
-
-* It's a good idea to keep PRs `reasonably sized`_.
+It's a good idea to keep PRs `reasonably sized`_.
 
 .. _Find a reviewer:
 
 Find a reviewer
 +++++++++++++++
 
-* When you believe your pull request is ready for review, send it to a member of
-  the core Chapel team (or to the chapel-developers_ list if there isn't an
-  obvious person to review it). To make it easy to spot, please include `[PR]`
-  prior to the subject of your email.  Even the developers that have write
-  access to the Chapel repository need to have all non-trivial changes
-  reviewed. Developers who have been given write access can merge trivial
-  changes (e.g. small bug fixes, documentation changes) without review.
+* Once your PR is ready, you'll need to request a review.  If you know who you'd
+  like to review it, @ mention them in a comment on the PR and ask them to have
+  a look.  If you don't know their Github id, you can find them in the chat room
+  or send them an email.  If you don't know who should review the change, send
+  an email to the chapel-developers_ list requesting a review and linking to the
+  PR.  Such an email should have a subject line starting with `[PR]`.
 
   Note: Ideally, someone should volunteer to review your pull request within a
   day or two. If this doesn't happen, feel free to make some noise. Ideally the
@@ -305,7 +257,7 @@ Before the change can be merged, ensure:
 
 * Once the pull request is approved, it can be merged. This can be done by
   either the reviewer or developer (given sufficient permissions), as decided
-  between the two of them.
+  between the two of them.  See `How to merge a PR`_ for steps to perform this.
 
   Note: It's not generally possible to completely remove a commit from git by
   the time it makes it in to the master branch. So be very careful not to commit
@@ -317,22 +269,9 @@ Before the change can be merged, ensure:
   privileges, please look through the `Reviewer responsibilities`_ once more
   before merging the change.
 
-After the final version of the change has been agreed upon, navigate to the
-pull request:
+After the final version of the change has been agreed upon, the person making
+the merge should follow the steps for `How to merge a PR`_.
 
-go to
-
-https://github.com/chapel-lang/chapel/pulls
-
-or
-
-``https://github.com/chapel-lang/chapel/pull/<number>``
-
-and click the friendly green button "Merge pull request" (it is possible to
-merge the pull request from the command line also and the pull request page has
-details). When you click "Merge pull request", you will need to enter a commit
-message. See `Final merge message`_ for a reminder on what that commit message
-should entail.
 
 .. _Watch automatic testing:
 
@@ -502,6 +441,26 @@ Committing staged changes:
     # similar to:
     svn commit [-m <message>]
 
+Bring in changes from the main Chapel project:
+
+.. code-block:: bash
+
+    git fetch upstream
+    git merge upstream/master
+
+    # or:
+    git pull upstream <branch_name>
+
+    # with feature branch checked out:
+    git merge [--no-ff] upstream/master
+
+If there are conflicts, you will be asked to resolve them. Once the affected
+files have been fixed, stage them with ``git add``, and then call ``git
+commit`` to finish the merge process.
+
+If you want to understand the changes that occurred upstream, see
+`Read commit messages`_ below.
+
 Fixing a commit message:
 
 .. code-block:: bash
@@ -560,6 +519,59 @@ How to push
     git branch
 
     # it is the starred one...
+
+.. _How to open a PR:
+
+How to open a PR:
++++++++++++++++++
+
+* `Submit a pull request`_ with your changes (make sure you have `synced with
+  the main repo`_).
+
+  To do this, after pushing your changes to your feature branch on GitHub,
+  you can use the GitHub web interface to create a pull request. Visit
+
+  ``https://github.com/<username>/chapel``
+
+  and look for a "Compare & pull request" button for your feature branch.
+  Alternatively, navigate to your feature branch, and click the green icon next
+  to the branch dropdown to "Compare, review, create a pull request".
+
+  Next, put in a message to your reviewer about the purpose of your pull request
+  and give the pull request a useful title.  Your PR message will introduce the
+  changes to reviewers and form the basis for the merge message.  See
+  `Final merge message`_ for recommendations on what that commit message should
+  look like.
+
+  You will have to have signed a contributors agreement.  See https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+
+  Your pull request will be available at a URL like:
+
+  ``https://github.com/chapel-lang/chapel/pull/<number>``
+
+  and you can discuss the patch with your reviewers there.
+
+.. _How to merge a PR:
+
+How to merge a PR:
+++++++++++++++++++
+
+If you have commit privileges (see `Who has commit access`_), navigate to the
+pull request:
+
+go to
+
+https://github.com/chapel-lang/chapel/pulls
+
+or
+
+``https://github.com/chapel-lang/chapel/pull/<number>``
+
+and click the friendly green button "Merge pull request" (it is possible to
+merge the pull request from the command line also and the pull request page has
+details). When you click "Merge pull request", you will need to enter a commit
+message. See `Final merge message`_ for a reminder on what that commit message
+should entail.
 
 More information on using git
 +++++++++++++++++++++++++++++
@@ -693,7 +705,10 @@ Who has/needs commit access to the main repository?
 +++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Core team members have commit access to the main repository.  Reviewers on the
-core team can pull, review, and merge your pull requests.
+core team can pull, review, and merge your pull requests.  Even the developers
+that have write access to the Chapel repository need to have all non-trivial
+changes reviewed. Developers who have been given write access can merge trivial
+changes (e.g. small bug fixes, documentation changes) without review.
 
 If you will need commit/push access to the main repository,
 `chapel-lang/chapel`_, send a request including your github username to
