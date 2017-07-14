@@ -131,18 +131,12 @@ public:
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);
-    canBeMarkedAsConstAfterStore = false;
-    alreadyStored = false;
   }
   GenRet(int x) {
     *this = baseASTCodegenInt(x);
-    canBeMarkedAsConstAfterStore = false;
-    alreadyStored = false;
   }
   GenRet(const char* str) {
     *this = baseASTCodegenString(str);
-    canBeMarkedAsConstAfterStore = false;
-    alreadyStored = false;
   }
 
   // Return true if this GenRet is empty

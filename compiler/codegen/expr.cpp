@@ -146,9 +146,9 @@ GenRet SymExpr::codegen() {
         INT_FATAL(this, "!!!!!!! UNHANDLED SYM EXPR !!!!!!!");
       }
     }
-    ret.canBeMarkedAsConstAfterStore = var->isConstValWillNotChange();
 #endif
   }
+  ret.canBeMarkedAsConstAfterStore = var->isConstValWillNotChange();
   return ret;
 }
 
@@ -386,6 +386,7 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 #define USE_TBAA 1
 
 
+static
 void codegenInvariantStart(llvm::Value *val, llvm::Constant *addr)
 {
   GenInfo *info = gGenInfo;
@@ -469,7 +470,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   }
 
   val.alreadyStored = true;
-  return codegenStoreLLVM(val.val, ptr.val, valType, val.canBeMarkedAsConstAfterStore);
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
