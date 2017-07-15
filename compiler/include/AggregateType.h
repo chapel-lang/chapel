@@ -120,6 +120,8 @@ public:
                               // fields in an aggregate type.
   bool                        wantsDefaultInitializer();
 
+  AggregateType*              instantiatedFrom;
+
   InitializerStyle            initializerStyle;
 
   bool                        initializerResolved;

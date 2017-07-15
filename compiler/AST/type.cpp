@@ -49,7 +49,6 @@ Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
   defaultValue        = iDefaultVal;
   destructor          = NULL;
   isInternalType      = false;
-  instantiatedFrom    = NULL;
   scalarPromotionType = NULL;
 }
 
