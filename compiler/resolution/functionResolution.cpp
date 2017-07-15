@@ -8129,6 +8129,11 @@ Expr* resolvePrimInit(CallExpr* call) {
     } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
       primInitHaltForUnacceptableGeneric(call, type);
 
+    // NonGeneric records with initializers do not support _defaultOf
+    } else if (isNonGenericRecordWithInitializers(type)     == true &&
+               type->instantiatedFrom                       == NULL) {
+      // Parent PRIM_MOVE will be updated to init() later in resolution
+
     } else {
       SET_LINENO(call);
 
