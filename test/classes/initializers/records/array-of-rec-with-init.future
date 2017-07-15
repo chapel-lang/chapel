@@ -1,5 +1,0 @@
-bug: declaring array of records fails to compile if the record has an initializer
-
-At this time the compiler seems unable to find the correct _defaultOf for
-the record temporary created in ChapelBase as a default value for the array
-elements.
