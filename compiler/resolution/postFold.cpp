@@ -33,7 +33,9 @@ static void foldEnumOp(int         op,
                        EnumSymbol* e1,
                        EnumSymbol* e2,
                        Immediate*  imm);
+
 static bool isSubTypeOrInstantiation(Type* sub, Type* super);
+
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
 
 #define FOLD_CALL1(prim)                                                \
@@ -315,17 +317,37 @@ Expr* postFold(Expr* expr) {
           }
         }
       }
+
+
+
+
     } else if (call->isPrimitive(PRIM_IS_SUBTYPE)) {
-      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
+      if (isTypeExpr(call->get(1)) == true  ||
+          isTypeExpr(call->get(2)) == true)  {
         Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->getValType();
-        if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
-            rt != dtAny && !lt->symbol->hasFlag(FLAG_GENERIC)) {
-          bool is_true = isSubTypeOrInstantiation(lt, rt);
-          result = (is_true) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+
+        if (lt                                != dtUnknown &&
+            rt                                != dtUnknown &&
+
+            lt                                != dtAny     &&
+            rt                                != dtAny     &&
+
+            lt->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+          if (isSubTypeOrInstantiation(lt, rt) == true) {
+            result = new SymExpr(gTrue);
+
+          } else {
+            result = new SymExpr(gFalse);
+          }
+
           call->replace(result);
         }
       }
+
+
+
     } else if (call->isPrimitive(PRIM_CAST)) {
       Type* t= call->get(1)->typeInfo();
       if (t == dtUnknown)
@@ -608,17 +630,22 @@ static void foldEnumOp(int         op,
 }
 
 static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  if (sub == super)
+  if (sub == super) {
     return true;
-
-  forv_Vec(Type, parent, sub->dispatchParents) {
-    if (isSubTypeOrInstantiation(parent, super))
-      return true;
   }
 
-  if (sub->instantiatedFrom &&
-      isSubTypeOrInstantiation(sub->instantiatedFrom, super))
-    return true;
+  forv_Vec(Type, parent, sub->dispatchParents) {
+    if (isSubTypeOrInstantiation(parent, super) == true) {
+      return true;
+    }
+  }
+
+  if (AggregateType* at = toAggregateType(sub)) {
+    if (at->instantiatedFrom                                  != NULL &&
+        isSubTypeOrInstantiation(at->instantiatedFrom, super) == true) {
+      return true;
+    }
+  }
 
   return false;
 }

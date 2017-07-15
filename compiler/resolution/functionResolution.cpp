@@ -1287,36 +1287,70 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType)
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
 bool canInstantiate(Type* actualType, Type* formalType) {
-  if (actualType == dtMethodToken)
+  if (actualType == dtMethodToken) {
     return false;
-  if (formalType == dtAny)
+  }
+
+  if (formalType == dtAny) {
     return true;
-  if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
+  }
+
+  if (formalType == dtIntegral &&
+      (is_int_type(actualType) || is_uint_type(actualType))) {
     return true;
-  if (formalType == dtAnyEnumerated && (is_enum_type(actualType)))
+  }
+
+  if (formalType == dtAnyEnumerated && is_enum_type(actualType)) {
     return true;
+  }
+
   if (formalType == dtNumeric &&
-      (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) ||
-       is_real_type(actualType) || is_complex_type(actualType)))
+      (is_int_type(actualType)  ||
+       is_uint_type(actualType) ||
+       is_imag_type(actualType) ||
+       is_real_type(actualType) ||
+       is_complex_type(actualType))) {
     return true;
-  if (formalType == dtAnyComplex && (is_complex_type(actualType)))
+  }
+
+  if (formalType == dtAnyComplex && is_complex_type(actualType)) {
     return true;
-  if (formalType == dtString && actualType==dtStringC)
+  }
+
+  if (formalType == dtString && actualType == dtStringC) {
     return true;
-  if (formalType == dtStringC && actualType==dtStringCopy)
+  }
+
+  if (formalType == dtStringC && actualType == dtStringCopy) {
     return true;
-  if (formalType == dtIteratorRecord && actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+  }
+
+  if (formalType                                        == dtIteratorRecord &&
+      actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
     return true;
-  if (formalType == dtIteratorClass && actualType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+  }
+
+  if (formalType                                        == dtIteratorClass &&
+      actualType->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == true) {
     return true;
-  if (actualType == formalType)
+  }
+
+  if (actualType == formalType) {
     return true;
-  if (actualType->instantiatedFrom && canInstantiate(actualType->instantiatedFrom, formalType))
-    return true;
-  if (actualType->instantiatedFrom &&
-      formalType->symbol->hasFlag(FLAG_GENERIC) &&
-      getConcreteParentForGenericFormal(actualType, formalType))
-    return true;
+  }
+
+  if (AggregateType* atActual = toAggregateType(actualType)) {
+    if (AggregateType* atFrom = atActual->instantiatedFrom) {
+      if (canInstantiate(atFrom, formalType) == true) {
+        return true;
+      }
+
+      if (formalType->symbol->hasFlag(FLAG_GENERIC)                 == true &&
+          getConcreteParentForGenericFormal(actualType, formalType) != NULL) {
+        return true;
+      }
+    }
+  }
 
   return false;
 }
@@ -1327,18 +1361,27 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 // in a compile-time coercion; this is a subset of canCoerce below as,
 // for example, real(32) cannot be coerced to real(64) at compile-time
 //
-static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType) {
-  if (is_bool_type(formalType) && is_bool_type(actualType))
+static bool canParamCoerce(Type*   actualType,
+                           Symbol* actualSym,
+                           Type*   formalType) {
+  if (is_bool_type(formalType) && is_bool_type(actualType)) {
     return true;
+  }
+
   if (is_int_type(formalType)) {
-    if (is_bool_type(actualType))
+    if (is_bool_type(actualType)) {
       return true;
+    }
+
     if (is_int_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
+        get_width(actualType) < get_width(formalType)) {
       return true;
+    }
+
     if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
+        get_width(actualType) < get_width(formalType)) {
       return true;
+    }
 
     //
     // If the actual is an enum, check to see if *all* its values
@@ -1346,8 +1389,10 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
     //
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
-      if (get_width(etype->getIntegerType()) <= get_width(formalType))
+
+      if (get_width(etype->getIntegerType()) <= get_width(formalType)) {
         return true;
+      }
     }
 
     //
@@ -1356,13 +1401,17 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
     // this argument?
     //
     if (get_width(formalType) < 64) {
-      if (VarSymbol* var = toVarSymbol(actualSym))
-        if (var->immediate)
-          if (fits_in_int(get_width(formalType), var->immediate))
+      if (VarSymbol* var = toVarSymbol(actualSym)) {
+        if (var->immediate) {
+          if (fits_in_int(get_width(formalType), var->immediate)) {
             return true;
+          }
+        }
+      }
 
       if (EnumType* etype = toEnumType(actualType)) {
         ensureEnumTypeResolved(etype);
+
         if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
           if (Immediate* enumval = enumsym->getImmediate()) {
             if (fits_in_int(get_width(formalType), enumval)) {
@@ -1373,22 +1422,33 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
       }
     }
   }
+
   if (is_uint_type(formalType)) {
-    if (is_bool_type(actualType))
+    if (is_bool_type(actualType)) {
       return true;
+    }
+
     if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
+        get_width(actualType) < get_width(formalType)) {
       return true;
-    if (VarSymbol* var = toVarSymbol(actualSym))
-      if (var->immediate)
-        if (fits_in_uint(get_width(formalType), var->immediate))
+    }
+
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (fits_in_uint(get_width(formalType), var->immediate)) {
           return true;
+        }
+      }
+    }
   }
+
   // param strings can coerce between string and c_string
   if ((formalType == dtString || formalType == dtStringC) &&
-      (actualType == dtString || actualType == dtStringC))
-    if (actualSym && actualSym->isImmediate())
+      (actualType == dtString || actualType == dtStringC)) {
+    if (actualSym && actualSym->isImmediate()) {
       return true;
+    }
+  }
 
   return false;
 }
@@ -1532,22 +1592,35 @@ bool canCoerce(Type*     actualType,
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
 // fn is the function being called
-bool
-canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
-  if (promotes)
+bool canDispatch(Type*     actualType,
+                 Symbol*   actualSym,
+                 Type*     formalType,
+                 FnSymbol* fn,
+                 bool*     promotes,
+                 bool      paramCoerce) {
+  if (promotes) {
     *promotes = false;
-  if (actualType == formalType)
-    return true;
-  if (actualType->symbol->hasFlag(FLAG_GENERIC) &&
-      actualType == formalType->instantiatedFrom) {
-    // The actual should only be generic when we're resolving an initializer
-    // If either of these asserts fail, something is very, very wrong.
-    AggregateType* at = toAggregateType(actualType);
-    INT_ASSERT(at && at->initializerStyle != DEFINES_CONSTRUCTOR);
-    INT_ASSERT(strcmp(fn->name, "init") == 0);
+  }
 
+  if (actualType == formalType) {
     return true;
   }
+
+  if (AggregateType* atFormal = toAggregateType(formalType)) {
+    if (actualType->symbol->hasFlag(FLAG_GENERIC) == true &&
+        atFormal->instantiatedFrom                == actualType) {
+      // The actual should only be generic when we're resolving an initializer
+      // If either of these asserts fail, something is very, very wrong.
+      AggregateType* at = toAggregateType(actualType);
+
+      INT_ASSERT(at                       != NULL);
+      INT_ASSERT(at->initializerStyle     != DEFINES_CONSTRUCTOR);
+      INT_ASSERT(strcmp(fn->name, "init") == 0);
+
+      return true;
+    }
+  }
+
   //
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
@@ -1556,31 +1629,45 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   // autocopy(x) and the autocopy(x: atomic int) (represented as
   // autocopy(x: ref(atomic int)) internally).
   //
-  if (actualType == dtNil && isClass(formalType) &&
-      !formalType->symbol->hasFlag(FLAG_REF))
+  if (actualType                            == dtNil  &&
+      isClass(formalType)                   == true   &&
+      formalType->symbol->hasFlag(FLAG_REF) == false) {
     return true;
+  }
+
   if (actualType->refType == formalType &&
       // This is a workaround for type problems with tuples
       // in implement forall intents...
-      !(fn && fn->hasFlag(FLAG_BUILD_TUPLE) && fn->hasFlag(FLAG_ALLOW_REF)))
+      !(fn && fn->hasFlag(FLAG_BUILD_TUPLE) && fn->hasFlag(FLAG_ALLOW_REF))) {
     return true;
-  if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, promotes))
+  }
+
+  if (paramCoerce == false &&
+      canCoerce(actualType, actualSym, formalType, fn, promotes) == true) {
     return true;
-  if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
+  }
+
+  if (paramCoerce == true  &&
+      canParamCoerce(actualType, actualSym, formalType) == true) {
     return true;
+  }
 
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, NULL, formalType, fn, promotes)) {
+    if (parent                                              == formalType ||
+        canDispatch(parent, NULL, formalType, fn, promotes) == true) {
       return true;
     }
   }
 
-  if (fn &&
-      fn->name != astrSequals &&
-      actualType->scalarPromotionType &&
-      (canDispatch(actualType->scalarPromotionType, NULL, formalType, fn))) {
-    if (promotes)
+  if (fn                              != NULL        &&
+      fn->name                        != astrSequals &&
+      actualType->scalarPromotionType != NULL        &&
+      canDispatch(actualType->scalarPromotionType, NULL, formalType, fn)) {
+
+    if (promotes) {
       *promotes = true;
+    }
+
     return true;
   }
 
@@ -1691,17 +1778,17 @@ getBasicInstantiationType(Type* actualType, Type* formalType) {
   return NULL;
 }
 
-static Type*
-getInstantiationType(Type* actualType, Type* formalType) {
-  Type *ret = getBasicInstantiationType(actualType, formalType);
+static Type* getInstantiationType(Type* actualType, Type* formalType) {
+  Type* ret = getBasicInstantiationType(actualType, formalType);
 
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
-  if (ret->instantiatedFrom &&
-      formalType->symbol->hasFlag(FLAG_GENERIC)) {
-    Type* concrete = getConcreteParentForGenericFormal(ret, formalType);
-    if (concrete) {
-      ret = concrete;
+  if (AggregateType* at = toAggregateType(ret)) {
+    if (at->instantiatedFrom                      != NULL  &&
+        formalType->symbol->hasFlag(FLAG_GENERIC) == true) {
+      if (Type* concrete = getConcreteParentForGenericFormal(at, formalType)) {
+        ret = concrete;
+      }
     }
   }
 
@@ -3076,22 +3163,21 @@ typeUsesForwarding(Type* t) {
 
 // Collect methods with a particular name from a type and from
 // any type it's instantiated from.
-static
-void collectMethodsNamed(Type* t,
-                         const char* name_astr,
-                         std::vector<FnSymbol*>  & methods)
-{
+static void collectMethodsNamed(Type*                   t,
+                                const char*             nameAstr,
+                                std::vector<FnSymbol*>& methods) {
   forv_Vec(FnSymbol, method, t->methods) {
-    // Skip any methods with a different name
-    // TODO: this could be more efficient if methods were a map
-    if (method->name != name_astr)
-      continue;
-
-    methods.push_back(method);
+    if (method->name == nameAstr) {
+      methods.push_back(method);
+    }
   }
+
   // Collect also methods from whatever type t is instantiated from
-  if (t->instantiatedFrom != NULL)
-    collectMethodsNamed(t->instantiatedFrom, name_astr, methods);
+  if (AggregateType* at = toAggregateType(t)) {
+    if (at->instantiatedFrom != NULL) {
+      collectMethodsNamed(at->instantiatedFrom, nameAstr, methods);
+    }
+  }
 }
 
 static bool
@@ -5306,13 +5392,21 @@ Type* resolveTypeAlias(SymExpr* se)
 ************************************** | *************************************/
 
 bool isInstantiation(Type* sub, Type* super) {
-  Type* cur = sub->instantiatedFrom;
+  bool retval = false;
 
-  while (cur && cur != super) {
-    cur = cur->instantiatedFrom;
+  INT_ASSERT(super != NULL);
+
+  if (AggregateType* at = toAggregateType(sub)) {
+    AggregateType* cur = at->instantiatedFrom;
+
+    while (cur != NULL && cur != super) {
+      cur = cur->instantiatedFrom;
+    }
+
+    retval = cur == super;
   }
 
-  return cur == super;
+  return retval;
 }
 
 
@@ -6191,12 +6285,13 @@ resolveFns(FnSymbol* fn) {
       }
     }
 
-    if (ct &&
-        (ct->initializerStyle == DEFINES_INITIALIZER ||
-         ct->wantsDefaultInitializer()) &&
-        ct->instantiatedFrom) {
+    if (ct                   != NULL &&
+        ct->instantiatedFrom != NULL &&
+        (ct->initializerStyle          == DEFINES_INITIALIZER ||
+         ct->wantsDefaultInitializer() == true)) {
       // Don't instantiate the default constructor for generic types that
       // define initializers, they don't have one!
+
     } else {
       // This instantiates the default constructor
       // for  the corresponding type constructor.
@@ -8132,7 +8227,8 @@ Expr* resolvePrimInit(CallExpr* call) {
     USR_FATAL(call, "invalid type specification");
 
   } else {
-    Type* type = resolveTypeAlias(se);
+    Type*          type = resolveTypeAlias(se);
+    AggregateType* at   = toAggregateType(type);
 
     // These are handled later
     if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
@@ -8149,8 +8245,9 @@ Expr* resolvePrimInit(CallExpr* call) {
       primInitHaltForUnacceptableGeneric(call, type);
 
     // NonGeneric records with initializers do not support _defaultOf
-    } else if (isNonGenericRecordWithInitializers(type)     == true &&
-               type->instantiatedFrom                       == NULL) {
+    } else if (at                                           != NULL &&
+               at->instantiatedFrom                         == NULL &&
+               isNonGenericRecordWithInitializers(at)       == true) {
       // Parent PRIM_MOVE will be updated to init() later in resolution
 
     } else {
@@ -8310,32 +8407,34 @@ static void expandInitFieldPrims()
 }
 
 
-static void
-fixTypeNames(AggregateType* ct)
-{
-  const char default_domain_name[] = "DefaultRectangularDom";
+static void fixTypeNames(AggregateType* at) {
+  const char defaultDomainName[] = "DefaultRectangularDom";
 
-  if (!ct->symbol->hasFlag(FLAG_BASE_ARRAY) && isArrayClass(ct))
-  {
-    const char* domain_type = ct->getField("dom")->type->symbol->name;
-    const char* elt_type = ct->getField("eltType")->type->symbol->name;
-    ct->symbol->name = astr("[", domain_type, "] ", elt_type);
+  if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
+      isArrayClass(at)                     ==  true) {
+    const char* domainType = at->getField("dom")->type->symbol->name;
+    const char* eltType    = at->getField("eltType")->type->symbol->name;
+
+    at->symbol->name = astr("[", domainType, "] ", eltType);
   }
-  if (ct->instantiatedFrom &&
-      !strcmp(ct->instantiatedFrom->symbol->name, default_domain_name)) {
-    ct->symbol->name = astr("domain", ct->symbol->name+strlen(default_domain_name));
+
+  if (at->instantiatedFrom                                          != NULL &&
+      strcmp(at->instantiatedFrom->symbol->name, defaultDomainName) == 0) {
+    at->symbol->name = astr("domain",
+                            at->symbol->name + strlen(defaultDomainName));
   }
-  if (isRecordWrappedType(ct)) {
-    ct->symbol->name = ct->getField("_instance")->type->symbol->name;
+
+  if (isRecordWrappedType(at) == true) {
+    at->symbol->name = at->getField("_instance")->type->symbol->name;
   }
 }
 
 
-static void
-setScalarPromotionType(AggregateType* ct) {
-  for_fields(field, ct) {
-    if (!strcmp(field->name, "_promotionType"))
-      ct->scalarPromotionType = field->type;
+static void setScalarPromotionType(AggregateType* at) {
+  for_fields(field, at) {
+    if (strcmp(field->name, "_promotionType") == 0) {
+      at->scalarPromotionType = field->type;
+    }
   }
 }
 

@@ -72,13 +72,18 @@ static bool isSubType(Type* sub, Type* super);
 ************************************** | *************************************/
 
 static void buildVirtualMaps();
+
 static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
+
 static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
+
 static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         Type*           ct,
+                                         AggregateType*  at,
                                          FnSymbol*       pfn);
-static void collectInstantiatedAggregateTypes(std::vector<AggregateType*>& icts,
-                                              AggregateType*               ct);
+
+static void collectInstantiatedAggregateTypes(
+                                        std::vector<AggregateType*>& icts,
+                                        AggregateType*               at);
 
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
@@ -296,7 +301,7 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   collectMethodsForVirtualMaps(methods, ct, pfn);
 
   forv_Vec(FnSymbol, cfn, methods) {
-    if (cfn && !cfn->instantiatedFrom) {
+    if (cfn != NULL && cfn->instantiatedFrom == NULL) {
       std::vector<AggregateType*> types;
 
       if (ct->symbol->hasFlag(FLAG_GENERIC)) {
@@ -439,19 +444,20 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 // but does not add instantiated generics, since addToVirtualMaps
 // will instantiate again.
 static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         Type*           ct,
+                                         AggregateType*  ct,
                                          FnSymbol*       pfn) {
   Vec<FnSymbol*>      tmp;
   std::set<FnSymbol*> generics;
 
   // Gather the generic, concrete, instantiated methods
-  for (Type* fromType = ct;
+  for (AggregateType* fromType = ct;
        fromType != NULL;
        fromType = fromType->instantiatedFrom) {
 
     forv_Vec(FnSymbol, cfn, fromType->methods) {
-      if (cfn && possibleSignatureMatch(pfn, cfn))
+      if (cfn != NULL && possibleSignatureMatch(pfn, cfn) == true) {
         tmp.add(cfn);
+      }
     }
   }
 
@@ -460,17 +466,17 @@ static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
   // re-instantiate.
 
   // So, gather a set of generic versions.
-  forv_Vec(FnSymbol, cfn, tmp)
-    if (cfn->hasFlag(FLAG_GENERIC))
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->hasFlag(FLAG_GENERIC) == true) {
       generics.insert(cfn);
+    }
+  }
 
   // Then, add anything not instantiated from something in
   // the set.
   forv_Vec(FnSymbol, cfn, tmp) {
-    if (cfn->instantiatedFrom && generics.count(cfn->instantiatedFrom)) {
-      // skip it
-    } else {
-      // add it
+    if (cfn->instantiatedFrom                 == NULL ||
+        generics.count(cfn->instantiatedFrom) ==    0) {
       methods.add(cfn);
     }
   }
@@ -479,19 +485,22 @@ static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
 //
 // add to vector icts all types instantiated from ct
 //
-static void collectInstantiatedAggregateTypes(std::vector<AggregateType*>& icts,
-                                              AggregateType* ct) {
+static void collectInstantiatedAggregateTypes(
+                                        std::vector<AggregateType*>& icts,
+                                        AggregateType*               at) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    AggregateType* instanceT = toAggregateType(ts->type);
-    if (instanceT && instanceT->defaultTypeConstructor)
-      if (!ts->hasFlag(FLAG_GENERIC) &&
-          instanceT->defaultTypeConstructor->instantiatedFrom ==
-          ct->defaultTypeConstructor) {
-        icts.push_back(instanceT);
+    if (AggregateType* instanceT = toAggregateType(ts->type)) {
 
-        INT_ASSERT(isInstantiation(instanceT, ct));
-        INT_ASSERT(instanceT->instantiatedFrom == ct);
+      if (FnSymbol* fn = instanceT->defaultTypeConstructor) {
+        if (ts->hasFlag(FLAG_GENERIC) == false &&
+            fn->instantiatedFrom      == at->defaultTypeConstructor) {
+          icts.push_back(instanceT);
+
+          INT_ASSERT(isInstantiation(instanceT, at));
+          INT_ASSERT(instanceT->instantiatedFrom == at);
+        }
       }
+    }
   }
 }
 
