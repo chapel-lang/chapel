@@ -3267,6 +3267,17 @@ inline proc channel.read(ref args ...?k,
   return !error;
 }
 
+/* Iterate over all of the lines in a channel.
+    Only serial iteration is supported.
+
+   :returns: an object which yields strings read from the file
+ */
+proc channel.lines() {
+  var ret = new ItemReader(string, channel.kind, channel.locking, this);
+  return ret;
+}
+
+
 pragma "no doc"
 proc _can_stringify_direct(t) param : bool {
   if (t.type == string ||
