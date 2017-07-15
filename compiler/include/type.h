@@ -100,7 +100,8 @@ public:
   // Used only in PrimitiveType; replace with flag?
   bool                   isInternalType;
 
-  Type*                  instantiatedFrom;
+  AggregateType*         instantiatedFrom;
+
   Type*                  scalarPromotionType;
 
   SymbolMap              substitutions;
