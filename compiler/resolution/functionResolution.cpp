@@ -5282,121 +5282,6 @@ Type* resolveTypeAlias(SymExpr* se)
 
 /************************************* | **************************************
 *                                                                             *
-* Handles PRIM_INIT or PRIM_NO_INIT                                           *
-*                                                                             *
-* Returns NULL if no substitution was made.                                   *
-* Otherwise remove the primitive and return the new expression.               *
-*                                                                             *
-* ('init'    foo) --> A default value or the result of an initializer call.   *
-* ('no_init' foo) --> Ditto, only in some cases a simpler default value.      *
-*                                                                             *
-************************************** | *************************************/
-
-static bool primInitIsIteratorRecord(Type* type);
-
-static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
-static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
-
-Expr* resolvePrimInit(CallExpr* call) {
-  SymExpr* se     = toSymExpr(call->get(1));
-  Expr*    retval = NULL;
-
-  if (se == NULL) {
-    INT_FATAL(call, "Actual 1 is not a sym expr");
-
-  } else if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-    USR_FATAL(call, "invalid type specification");
-
-  } else {
-    Type* type = resolveTypeAlias(se);
-
-    // These are handled later
-    if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
-      INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
-
-    // These are handled in replaceInitPrims().
-    } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-
-    // Initializers for IteratorRecords cannot be used as constructors
-    } else if (primInitIsIteratorRecord(type)               == true) {
-
-    // Generate a more specific USR_FATAL if resolution would fail
-    } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-      primInitHaltForUnacceptableGeneric(call, type);
-
-    } else {
-      SET_LINENO(call);
-
-      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-
-      call->replace(defOfCall);
-
-      resolveCallAndCallee(defOfCall);
-
-      retval = postFold(defOfCall);
-    }
-  }
-
-  return retval;
-}
-
-static bool primInitIsIteratorRecord(Type* type) {
-  bool retval = false;
-
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->defaultInitializer                      != NULL &&
-        type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
-      retval = true;
-    }
-  }
-
-  return retval;
-}
-
-// Return true if this type is generic *and* resolution will fail
-static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
-  bool retval = type->symbol->hasFlag(FLAG_GENERIC);
-
-  // If it is generic then try to resolve the default type constructor
-  if (retval == true) {
-    if (AggregateType* at = toAggregateType(type)) {
-      if (FnSymbol* typeCons = at->defaultTypeConstructor) {
-        SET_LINENO(call);
-
-        // Swap in a call to the default type constructor and try to resolve it
-        CallExpr* typeConsCall = new CallExpr(typeCons->name);
-
-        call->replace(typeConsCall);
-
-        retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
-
-        // Put things back the way they were.
-        typeConsCall->replace(call);
-      }
-    }
-  }
-
-  return retval;
-}
-
-// Generate a useful USR_FATAL for an unacceptable Generic
-static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
-  const char* label = "abstract";
-
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->defaultTypeConstructor != NULL) {
-      label = "not-fully-instantiated";
-    }
-  }
-
-  USR_FATAL(call,
-            "Variables can't be declared using %s generic types like '%s'",
-            label,
-            type->symbol->name);
-}
-
-/************************************* | **************************************
-*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -8200,6 +8085,127 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Handles PRIM_INIT or PRIM_NO_INIT                                           *
+*                                                                             *
+* Returns NULL if no substitution was made.                                   *
+* Otherwise remove the primitive and return the new expression.               *
+*                                                                             *
+* ('init'    foo) --> A default value or the result of an initializer call.   *
+* ('no_init' foo) --> Ditto, only in some cases a simpler default value.      *
+*                                                                             *
+************************************** | *************************************/
+
+static bool primInitIsIteratorRecord(Type* type);
+
+static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
+static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
+
+Expr* resolvePrimInit(CallExpr* call) {
+  SymExpr* se     = toSymExpr(call->get(1));
+  Expr*    retval = NULL;
+
+  if (se == NULL) {
+    INT_FATAL(call, "Actual 1 is not a sym expr");
+
+  } else if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+    USR_FATAL(call, "invalid type specification");
+
+  } else {
+    Type* type = resolveTypeAlias(se);
+
+    // These are handled later
+    if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
+      INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+
+    // These are handled in replaceInitPrims().
+    } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+
+    // Initializers for IteratorRecords cannot be used as constructors
+    } else if (primInitIsIteratorRecord(type)               == true) {
+
+    // Generate a more specific USR_FATAL if resolution would fail
+    } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
+      primInitHaltForUnacceptableGeneric(call, type);
+
+    } else {
+      SET_LINENO(call);
+
+      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+
+      call->replace(defOfCall);
+
+      resolveCallAndCallee(defOfCall);
+
+      retval = postFold(defOfCall);
+    }
+  }
+
+  return retval;
+}
+
+
+static bool primInitIsIteratorRecord(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->defaultInitializer                      != NULL &&
+        type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+// Return true if this type is generic *and* resolution will fail
+static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
+  bool retval = type->symbol->hasFlag(FLAG_GENERIC);
+
+  // If it is generic then try to resolve the default type constructor
+  if (retval == true) {
+    if (AggregateType* at = toAggregateType(type)) {
+      if (FnSymbol* typeCons = at->defaultTypeConstructor) {
+        SET_LINENO(call);
+
+        // Swap in a call to the default type constructor and try to resolve it
+        CallExpr* typeConsCall = new CallExpr(typeCons->name);
+
+        call->replace(typeConsCall);
+
+        retval = (tryResolveCall(typeConsCall) == NULL) ? true : false;
+
+        // Put things back the way they were.
+        typeConsCall->replace(call);
+      }
+    }
+  }
+
+  return retval;
+}
+
+// Generate a useful USR_FATAL for an unacceptable Generic
+static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
+  const char* label = "abstract";
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->defaultTypeConstructor != NULL) {
+      label = "not-fully-instantiated";
+    }
+  }
+
+  USR_FATAL(call,
+            "Variables can't be declared using %s generic types like '%s'",
+            label,
+            type->symbol->name);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void insertRuntimeInitTemps() {
   std::vector<BaseAST*> asts;
