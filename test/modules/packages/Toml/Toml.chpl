@@ -16,8 +16,6 @@ proc parseToml(input: file) : Node {
   const parser = new Parser(source);
   ready(source);
   return parser.parseLoop();
-  delete parser;
-  delete source;
 }
 
 /*

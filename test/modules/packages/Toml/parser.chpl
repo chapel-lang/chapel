@@ -40,9 +40,10 @@ class Parser {
         dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
         realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
         ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
-        inBrackets = compile("^(\\[.*?\\])"),
+        inBrackets = compile("(\\[.*?\\])"),
         brackets = compile('\\[|\\]'),
         whitespace = compile("\\s"),
+        comment = compile("(\\#)"),
         comma = compile("(\\,)");
 
     
@@ -85,7 +86,9 @@ class Parser {
     var tablename = brackets.sub('', toke);
     var tblD: domain(string);
     var tbl: [tblD] Node;
-    rootTable[tablename] = new Node(tbl);
+    if !rootTable.pathExists(tablename) {
+      rootTable[tablename] = new Node(tbl);
+    }
     curTable = tablename;
   }
 
@@ -96,10 +99,33 @@ class Parser {
     var tblD: domain(string);
     var tbl: [tblD] Node;
     var (tblPath, tblLeaf) = splitTblPath(tblname);
+    if !rootTable.pathExists(tblPath) then makePath(tblPath);
     rootTable.getIdx(tblPath)[tblLeaf] = new Node(tbl);
     curTable = tblname;
   }
-  
+
+  proc makePath(tblPath: string) {
+    var path = tblPath.split('.');
+    var firstIn = path.domain.first;
+    var first = true;
+    var i: int = 0;
+    for parent in path {
+      if first {
+        var tblD: domain(string);
+        var tbl: [tblD] Node;
+        rootTable[parent] = new Node(tbl);
+        first = false;
+      }
+      else {
+        var tblD: domain(string);
+        var tbl: [tblD] Node;
+        var grandParent = '.'.join(path[..firstIn+i]);
+        rootTable.getIdx(grandParent)[parent] = new Node(tbl);
+        i+=1;
+      }
+    }
+  }
+
   proc parseInlineTbl(key: string) {
     var tblname: string;
     var tblD: domain(string);
@@ -172,6 +198,9 @@ class Parser {
 	if comma.match(top(source)) {
 	  skipNext(source);
 	}
+        else if comment.match(top(source)) {
+          skipLine(source);
+        }
 	else {
 	  var toParse = parseValue();
 	  array.push_back(toParse);
@@ -233,6 +262,10 @@ class Parser {
       var boolNode = new Node(toBool);
       return boolNode;
     }
+    else if val == '#' {
+      skipLine(source);
+      return parseValue();
+     }
     // Error
     else {
       halt("Unexpected Token: ", "'", val, "'");
@@ -270,7 +303,7 @@ class Node {
 
   // Empty
   proc init() {
-    tag = fieldNode;
+    tag = fieldEmpty;
   }
 
   // String
@@ -326,7 +359,7 @@ class Node {
     var top = indx.domain.first;
     if indx.size < 2 {
       if this.A.domain.member(tbl) == false {
-        halt("Error in getIdx 1");
+        halt("Error in getIdx '", tbl, "' does not exist");
       }
       else {
         return this.A[tbl];
@@ -338,7 +371,30 @@ class Node {
         return this.A[indx[top]].getIdx(next);
       }
       else {
-        halt("Error in getIdx 2");
+        halt("Error in getIdx2");
+      }
+    }
+  }
+
+
+  proc pathExists(tblpath: string) : bool {
+    var path = tblpath.split('.');
+    var top = path.domain.first;
+    if path.size < 2 {
+      if this.A.domain.member(tblpath) == false {
+        return false;
+      }
+      else {
+        return true;
+      }
+    }
+    else {
+      var next = '.'.join(path[top+1..]);
+      if this.A.domain.member(path[top]) {
+        return this.A[path[top]].pathExists(next);
+      }
+      else {
+        return false;
       }
     }
   }
@@ -389,21 +445,19 @@ class Node {
           f.writeln(key, ' = ', toString(value));
         }
         when 3 {
-          var first = true;
+          var final: string;
           f.write(key, ' = ');
-          f.write('[');
+          final += '[';
           for k in value.arr {
-            if first {
-              f.write(toString(k), ', ');
-              first = false;
-            }
-            else if k == value.arr[value.arr.domain.last] {
-              f.writeln(toString(k), ']');
+            if value.arr.domain.size == 1 || k == value.arr[value.arr.domain.last] {
+              final += toString(k);
             }
             else {
-              f.write(toString(k), ', ');
+              final += toString(k) + ', ';
             }
           }
+          final += ']';
+          f.writeln(final);
         }
         when 5 {
           f.writeln(key, ' = ', toString(value));
@@ -430,20 +484,17 @@ class Node {
       when 1 do return val.boo;
       when 2 do return val.i;
       when 3 {
-        var first = true;
         var final: string;
+        final += '[';
         for k in val.arr {
-          if first {
-            final += '[' + toString(k) + ', ';
-            first = false;
-          }
-          else if k == val.arr[val.arr.domain.last] {
-            final += toString(k) + ']';
+          if val.arr.domain.size == 1 || k == val.arr[val.arr.domain.last] {
+            final += toString(k);
           }
           else {
             final += toString(k) + ', ';
           }
         }
+        final += ']';
         return final;
       }
       when 5 do return val.re;

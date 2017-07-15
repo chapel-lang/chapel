@@ -54,8 +54,8 @@ as an instance variable to the Parser class.
 */
 class Source {
   
-  var file;
-  var openfile = open(file, iomode.r);
+  var input;
+  var openfile = open(input, iomode.r);
   var tokenD = {1..0},
     tokenlist: [tokenD] Tokens;
   var currentLine: Tokens;
@@ -74,11 +74,11 @@ class Source {
     var linetokens: [1..0] string;
     const doubleQuotes = '".*?\\[^\\]?"',
           singleQuotes = "'.*?\\[^\\]?'",
-          bracketContents = "(^\\[.*?\\])",
+          bracketContents = "(\\[\\w+\\])",
           brackets = "(\\[)|(\\])",
           comments = "(\\#)",
           commas = "(\\,)",
-          equals = "(\\s=\\s)",
+          equals = "(\\=)",
           curly = "(\\{)|(\\})";
 
     const pattern = compile('|'.join(doubleQuotes,
@@ -145,10 +145,14 @@ class Source {
 
 
   proc debug() {
+    var lineCounter: int = 1;
     for line in tokenlist {
+      write("line: ",lineCounter);
       for token in line {
 	write(" token: " + token);
       }
+      lineCounter += 1;
+      writeln();
     }
   }
 
