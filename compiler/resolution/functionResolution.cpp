@@ -4636,6 +4636,25 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
 
     moveFinalize(call);
 
+  } else if (rhs->isPrimitive(PRIM_INIT) == true) {
+    moveFinalize(call);
+
+    if (SymExpr* se = toSymExpr(rhs->get(1))) {
+      Type* seType = se->symbol()->type;
+
+      if (isNonGenericRecordWithInitializers(seType) == true) {
+        Expr*     callLhs  = call->get(1)->remove();
+        CallExpr* callInit = new CallExpr("init", gMethodToken, callLhs);
+
+        // This juggling is required by use of
+        // for_exprs_postorder() in resolveBlockStmt
+        call->insertBefore(callInit);
+        call->convertToNoop();
+
+        resolveCallAndCallee(callInit);
+      }
+    }
+
   // Fix up PRIM_COERCE : remove it if it has a param RHS.
   } else if (rhs->isPrimitive(PRIM_COERCE) == true) {
     moveFinalize(call);
