@@ -778,7 +778,7 @@ class MyClass {
 // We also get the compiler-generated initializer, with one argument per field.
 // Note that soon there will be no compiler-generated initializer when we
 // define any initializer(s) explicitly.
-  proc MyClass(val : real) {
+  proc init(val : real) {
     this.memberInt = ceil(val): int;
   }
 
@@ -850,19 +850,25 @@ class GenericClass {
   var classDomain: domain(1);
   var classArray: [classDomain] classType;
 
-// Explicit constructor.
-  proc GenericClass(type classType, elements : int) {
+// Explicit initializer.
+  proc init(type classType, elements : int) {
+    this.classType = classType;
     this.classDomain = {1..#elements};
+    // all generic and const fields must be initialized in "phase 1" prior
+    // to a call to the superclass initializer.
+    super.init(); 
   }
 
-// Copy constructor.
+// Copy initializer.
 // Note: We still have to put the type as an argument, but we can
 // default to the type of the other object using the query (``?``) operator.
 // Further, we can take advantage of this to allow our copy constructor
 // to copy classes of different types and cast on the fly.
-  proc GenericClass(other : GenericClass(?otherType),
-                     type classType = otherType) {
+  proc init(other : GenericClass(?otherType),
+            type classType = otherType) {
+    this.classType = other.classType;
     this.classDomain = other.classDomain;
+    super.init();
     // Copy and cast
     for idx in this.classDomain do this[idx] = other[idx] : classType;
   }

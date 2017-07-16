@@ -131,9 +131,7 @@ class BoundedBuffer {
   // Set up the atomics; in the future we should be able to initialize
   // these in their field declarations.
   //
-  proc BoundedBuffer() {
-    head.write(0);
-    tail.write(0);
+  proc init() {
   }
 
   //

@@ -143,11 +143,12 @@ class UndirectedEdge : Edge {
 
 class Graph {
 
-  proc Graph(nd:domain(1),ed:domain(1), ns, es){
+  proc init(nd:domain(1),ed:domain(1), ns, es){
     NodeDom = nd;
     EdgeDom = ed;
     nodes = ns;
     edges = es;
+    super.init();
     writeln("Graph constructor");
     preprocess();
   }
