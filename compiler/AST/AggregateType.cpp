@@ -57,6 +57,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   iteratorInfo           = NULL;
   doc                    = NULL;
 
+  instantiatedFrom       = NULL;
+
   fields.parent          = this;
   inherits.parent        = this;
 
