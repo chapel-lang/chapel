@@ -44,9 +44,15 @@ use SysBasic;
 class SystemError : Error {
   var err: syserr;
 
-  proc init(err: syserr, msg: string) {
+  proc SystemError(err: syserr, msg: string) {
     this.err = err;
-    super.init(msg);
+    this.msg = msg;
+    //super.init(msg);
+  }
+
+  proc writeThis(f) {
+    // TODO: syserr has no writeThis()
+    f.write("syserr: " + msg);
   }
 }
 
