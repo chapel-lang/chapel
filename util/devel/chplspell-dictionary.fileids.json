@@ -105,6 +105,9 @@
   "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/loopInvariantCodeMotion.cpp"
   ],
+  "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/optimizations/refPropagation.cpp"
+  ],
   "93e7af94-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/remoteValueForwarding.cpp"
   ],
