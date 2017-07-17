@@ -85,7 +85,7 @@ referring to the domain or array.
     // Access other locales' replicand with the replicand(loc) method
     Arepl.replicand(Locales[1]) = Arepl;
 
-See the :ref:`primers-distributions` primer for more examples of the Replicated
+See the :ref:`primers-replicated` primer for more examples of the Replicated
 distribution.
 
 **Constructor Arguments**
