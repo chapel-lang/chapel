@@ -8,7 +8,6 @@ use Regexp;
 
 proc main(args: [] string) {
   var source = new Source(args[1]);
-  ready(source);
   source.debug();
 }
 
@@ -39,13 +38,6 @@ proc getToken(source) {
   return source.nextToke();
 }
 
-proc ready(source) { 
-  if source.ready == false { 
-    source.genTokenlist();
-    source.ready = true;
-  }
-}// add throw error here
-
 
 /*
 The source class reads a file given as an instance variable upon init.
@@ -54,16 +46,35 @@ as an instance variable to the Parser class.
 */
 class Source {
   
-  var input;
-  var openfile = open(input, iomode.r);
+  var tomlFile: file;
+  var tomlStr: string;
   var tokenD = {1..0},
     tokenlist: [tokenD] Tokens;
   var currentLine: Tokens;
-  var ready = false;
   
+  
+  proc init(tomlFile: file) {
+    this.tomlFile = tomlFile;
+    this.genTokenlist(tomlFile);
+  }
+  
+  proc init(tomlStr: string) {
+    this.tomlStr = tomlStr;
+    this.genTokenlist(tomlStr);
+  }
+
+
   // generates list of Token objects
-  proc genTokenlist() {
-    for line in openfile.lines() {
+  proc genTokenlist(input: file) {
+    var openFile = open(file, iomode.r);
+    for line in openFile.lines() {
+      splitLine(line);
+    }
+    currentLine = tokenlist[tokenD.first];
+  }
+
+  proc genTokenlist(input: string) {
+    for line in input.split('\n') {
       splitLine(line);
     }
     currentLine = tokenlist[tokenD.first];

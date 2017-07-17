@@ -14,7 +14,6 @@ array Node.
 proc parseToml(input: file) : Node {
   const source = new Source(input);
   const parser = new Parser(source);
-  ready(source);
   return parser.parseLoop();
 }
 
@@ -22,4 +21,8 @@ proc parseToml(input: file) : Node {
 Receives a string of TOML format as a parameter and outputs an associative
 array Node.
 */
-proc parseToml(input: string) : Node {}
+proc parseToml(input: string) : Node {
+  const source = new Source(input);
+  const parser = new Parser(source);
+  return parser.parseLoop();
+}

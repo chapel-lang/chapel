@@ -12,7 +12,6 @@ use DateTime;
 proc main(args: [] string) {
   const source = new Source(args[1]);
   const parser = new Parser(source);
-  ready(source);
   writeln(parser.parseLoop());
   delete parser;
   delete source;
