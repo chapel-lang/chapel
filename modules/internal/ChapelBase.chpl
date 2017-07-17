@@ -675,7 +675,7 @@ module ChapelBase {
       initMethod = ArrayInit.noInit;
     } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
-      // current heuristic really just checks that we have a numeric array that's
+      // current heuristic really just checks that we have a POD array that's
       // at least 2MB. This value was chosen experimentally: Any smaller and the
       // cost of a forall (mostly the task creation) outweighs the benefit of
       // using multiple tasks. This was tested on a 2 core laptop, 8 core
@@ -686,19 +686,18 @@ module ChapelBase {
       // arrays of aggregate types where at one field is an array. The issue is
       // basically that an array's domain stores a linked list of all its arrays
       // and removal becomes expensive when addition and removal occur in
-      // different orders. We don't currently have a good way to check if an
-      // aggregate type contains arrays, so we limit parallel init to numeric
-      // types.
+      // different orders.
       //
       // Long term we probably want to store the domain's arrays as an
       // associative domain or some data structure with < log(n) find/add/remove
       // times. Currently we can't do that because the domain's arrays are part
-      // of the base domain, so we have a circular reference. As a stepping
-      // stone, we could do parallel init for plain old data (POD) types.
-      if !isNumericType(t) {
+      // of the base domain, so we have a circular reference.
+      if !isPODType(t) {
         initMethod = ArrayInit.serialInit;
       } else {
-        param elemsizeInBytes = numBytes(t);
+        extern proc sizeof(type t): size_t;
+        const elemsizeInBytes = if isNumericType(t) then numBytes(t)
+                                else sizeof(t).safeCast(int);
         const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
         param heuristicThresh = 2 * 1024 * 1024;
         const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
@@ -1212,19 +1211,27 @@ module ChapelBase {
   }
 
   // implements 'delete' statement
-  inline proc chpl__delete(arg) {
+  inline proc chpl__delete(arg)
+    where isClassType(arg.type) || isExternClassType(arg.type)
+  {
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
-    // Todo: enable this check. Can't do it now because
-    // isClassType() returns 'false' on extern class types.
-    //if !isClassType(arg.type) then
-    //  compilerError("can delete only class types: ", arg.type:string);
-    if (isRecord(arg)) then
-      compilerError("delete not allowed on records");
+    if arg.type == _nilType then
+      compilerError("should not delete 'nil'");
 
     arg.deinit();
     on arg do
       chpl_here_free(__primitive("_wide_get_addr", arg));
+  }
+
+  // report an error when 'delete' is inappropriate
+  proc chpl__delete(arg) {
+    if isRecord(arg) then
+      // special case for records as a more likely occurrence
+      compilerError("'delete' is not allowed on records");
+    else
+      compilerError("'delete' is not allowed on non-class type ",
+                    arg.type:string);
   }
 
   // c_void_ptr operations
@@ -1637,6 +1644,7 @@ module ChapelBase {
   }
 
   proc isClassType(type t) param where t:object return true;
+  proc isClassType(type t) param where t == _nilType return true;
   proc isClassType(type t) param return false;
 
   proc isRecordType(type t) param where t: value {
@@ -1647,6 +1655,8 @@ module ChapelBase {
       isArrayType(t)  ||
       isRangeType(t)  ||
       isTupleType(t)  ||
+      isSyncType(t)   ||
+      isSingleType(t) ||
       isAtomicType(t)
     then
       return false;
@@ -1660,6 +1670,31 @@ module ChapelBase {
   proc isAtomicType(type t) param return __primitive("is atomic type", t);
 
   proc isRefIterType(type t) param return __primitive("is ref iter type", t);
+
+  proc isExternClassType(type t) param return __primitive("is extern class type", t);
+
+  // extern class operations
+  inline proc =(ref a, b: a.type) where isExternClassType(a.type)
+  { __primitive("=", a, b); }
+
+  // analogously to proc =(ref a, b:_nilType) where isClassType(a.type)
+  pragma "compiler generated"
+  inline proc =(ref a, b:_nilType) where isExternClassType(a.type)
+  { __primitive("=", a, nil); }
+
+  inline proc ==(a, b: a.type) where isExternClassType(a.type)
+    return __primitive("ptr_eq", a, b);
+  inline proc ==(a, b: _nilType) where isExternClassType(a.type)
+    return __primitive("ptr_eq", a, b);
+  inline proc ==(a: _nilType, b) where isExternClassType(b.type)
+    return __primitive("ptr_eq", a, b);
+
+  inline proc !=(a, b: a.type) where isExternClassType(a.type)
+    return __primitive("ptr_neq", a, b);
+  inline proc !=(a, b: _nilType) where isExternClassType(a.type)
+    return __primitive("ptr_neq", a, b);
+  inline proc !=(a: _nilType, b) where isExternClassType(b.type)
+    return __primitive("ptr_neq", a, b);
 
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.

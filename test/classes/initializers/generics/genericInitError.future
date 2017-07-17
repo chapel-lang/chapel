@@ -1,0 +1,12 @@
+error message: tailor generic initialization error messages to note phase 2
+
+This test is incorrect because it does not initialize generic field
+'t' in phase 1 of its initializer.  However, the current error message
+only says that an initialization of 't' is required and not found,
+suggesting that only the first phase of the initializer was examined.
+I think that this will be confusing to someone unfamiliar with phase 1
+vs. 2 semantics who will look at the code and say "of course it's
+initialized!"  It may also be an argument for either (a) making phase
+1 the default or (b) permitting generic fieldst to be initialized in
+either phase given that they're compile-time evaluated (so effectively
+a phase 0?)

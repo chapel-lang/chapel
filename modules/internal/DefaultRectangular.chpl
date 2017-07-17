@@ -82,8 +82,6 @@ module DefaultRectangular {
 
     proc dsiAssign(other: this.type) { }
 
-    proc dsiCreateReindexDist(newSpace, oldSpace) return this;
-
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
 
@@ -333,7 +331,7 @@ module DefaultRectangular {
           }
         } else {
           coforall chunk in 0..#numChunks { // make sure coforall on can trigger
-            local on here.getChild(chunk) {
+            local do on here.getChild(chunk) {
               if debugDataParNuma {
                 if chunk!=chpl_getSubloc() then
                   chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
@@ -1387,7 +1385,7 @@ module DefaultRectangular {
                            "### dom.dsiDims = ", dom.dsiDims());
       }
       coforall chunk in 0..#mdNumChunks { // make sure coforall on can trigger
-        local on here.getChild(chunk) { // eventually, on dataChunk(chunk).locale
+        local do on here.getChild(chunk) { // eventually, on dataChunk(chunk).locale
           if debugDataParMultiDData {
             if chunk != chpl_getSubloc() then
               writeln("*** ERROR: multiDD:  ON WRONG SUBLOC (should be ",
@@ -1416,7 +1414,7 @@ module DefaultRectangular {
             chpl_debug_writeln("### multiDD: chunk ", chunk,
                                ", followMe ", followMe,
                                ", numChunks2 ", numChunks2);
-          coforall chunk2 in 0..#numChunks2 do local on here {
+          coforall chunk2 in 0..#numChunks2 do local do on here {
             var locBlock2: rank*range(idxType);
             for param i in 1..rank do
               locBlock2(i) = followMe(i).low..followMe(i).high;
@@ -1598,7 +1596,7 @@ module DefaultRectangular {
                                        else localizationStyle_t.locSubchunks);
         } else {
           var dataOff: idxType = 0;
-          for i in 0..#mdNumChunks do local on here.getChild(i) {
+          for i in 0..#mdNumChunks do local do on here.getChild(i) {
             mData(i).dataOff = dataOff;
             const (lo, hi) = mdChunk2Ind(i);
             if stridable then
@@ -1996,7 +1994,7 @@ module DefaultRectangular {
 
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     for i in viewDom {
-      const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
+      const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
                       else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;
       const info = if chpl__isArrayView(arr) then arr.arr else arr;

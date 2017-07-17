@@ -57,45 +57,55 @@ class IteratorInfo;
 
 class Type : public BaseAST {
 public:
-  virtual Type*    copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual Type*          copy(SymbolMap* map      = NULL,
+                              bool       internal = false)                 = 0;
 
   // Interface for BaseAST
-  virtual GenRet   codegen();
-  virtual bool     inTree();
-  virtual QualifiedType qualType();
-  virtual void     verify();
+  virtual GenRet         codegen();
+  virtual bool           inTree();
+  virtual QualifiedType  qualType();
+  virtual void           verify();
 
-  virtual void     codegenDef();
-  virtual void     codegenPrototype();
+  virtual void           codegenDef();
+  virtual void           codegenPrototype();
 
   // only used for heterogeneous compilations in which we need to define
   // what our data structures are for the point of conversions
-  virtual int      codegenStructure(FILE* outfile, const char* baseoffset);
+  virtual int            codegenStructure(FILE*       outfile,
+                                          const char* baseoffset);
 
-  virtual Symbol*  getField(const char* name, bool fatal = true);
+  virtual Symbol*        getField(const char* name, bool fatal = true);
 
-  void             addSymbol(TypeSymbol* newSymbol);
+  void                   addSymbol(TypeSymbol* newSymbol);
 
-  bool             isDefaultIntentConst()                                const;
+  bool                   isDefaultIntentConst()                          const;
 
-  TypeSymbol*      symbol;
-  AggregateType*   refType;  // pointer to references for non-reference types
-  Vec<FnSymbol*>   methods;
+  // get/set on the type destructor
+  bool                   hasDestructor()                                 const;
+  FnSymbol*              getDestructor()                                 const;
+  void                   setDestructor(FnSymbol* fn);
 
-  bool             hasGenericDefaults; // all generic fields have defaults
+  TypeSymbol*            symbol;
 
-  Symbol*          defaultValue;
-  FnSymbol*        destructor;
+  // pointer to references for non-reference types
+  AggregateType*         refType;
+
+  Vec<FnSymbol*>         methods;
+
+  // all generic fields have defaults
+  bool                   hasGenericDefaults;
+
+  Symbol*                defaultValue;
 
   // Used only in PrimitiveType; replace with flag?
-  bool             isInternalType;
+  bool                   isInternalType;
 
-  Type*            instantiatedFrom;
-  Type*            scalarPromotionType;
+  Type*                  scalarPromotionType;
 
-  SymbolMap        substitutions;
-  Vec<Type*>       dispatchChildren;   // dispatch hierarchy
-  Vec<Type*>       dispatchParents;    // dispatch hierarchy
+  SymbolMap              substitutions;
+
+  Vec<Type*>             dispatchChildren;   // dispatch hierarchy
+  Vec<Type*>             dispatchParents;    // dispatch hierarchy
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
@@ -106,6 +116,8 @@ protected:
 
 private:
   virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+
+  FnSymbol*        destructor;
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
@@ -377,52 +389,49 @@ private:
 #endif
 
 // internal types
-TYPE_EXTERN Type* dtAny;
-TYPE_EXTERN Type* dtIteratorRecord;
-TYPE_EXTERN Type* dtIteratorClass;
-TYPE_EXTERN Type* dtIntegral;
-TYPE_EXTERN Type* dtAnyComplex;
-TYPE_EXTERN Type* dtNumeric;
-TYPE_EXTERN Type* dtAnyEnumerated;
-TYPE_EXTERN PrimitiveType* dtNil;
-TYPE_EXTERN PrimitiveType* dtUnknown;
-TYPE_EXTERN PrimitiveType* dtVoid;
-TYPE_EXTERN PrimitiveType* dtValue;
-TYPE_EXTERN PrimitiveType* dtMethodToken;
-TYPE_EXTERN PrimitiveType* dtTypeDefaultToken;
-TYPE_EXTERN PrimitiveType* dtModuleToken;
+TYPE_EXTERN Type*             dtAny;
+TYPE_EXTERN Type*             dtIteratorRecord;
+TYPE_EXTERN Type*             dtIteratorClass;
+TYPE_EXTERN Type*             dtIntegral;
+TYPE_EXTERN Type*             dtAnyComplex;
+TYPE_EXTERN Type*             dtNumeric;
+TYPE_EXTERN Type*             dtAnyEnumerated;
+
+TYPE_EXTERN PrimitiveType*    dtNil;
+TYPE_EXTERN PrimitiveType*    dtUnknown;
+TYPE_EXTERN PrimitiveType*    dtVoid;
+TYPE_EXTERN PrimitiveType*    dtValue;
+TYPE_EXTERN PrimitiveType*    dtMethodToken;
+TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
+TYPE_EXTERN PrimitiveType*    dtModuleToken;
 
 // primitive types
 // Anything declared as PrimitiveType* can now also be declared as Type*
 // This change was made to allow dtComplex to be represented by a record.
-TYPE_EXTERN PrimitiveType* dtBool;
-TYPE_EXTERN PrimitiveType* dtBools[BOOL_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtSymbol;
-TYPE_EXTERN PrimitiveType* dtFile;
-TYPE_EXTERN PrimitiveType* dtOpaque;
-TYPE_EXTERN PrimitiveType* dtTaskID;
-TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
-TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
+TYPE_EXTERN PrimitiveType*    dtBool;
+TYPE_EXTERN PrimitiveType*    dtBools[BOOL_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtSymbol;
+TYPE_EXTERN PrimitiveType*    dtFile;
+TYPE_EXTERN PrimitiveType*    dtOpaque;
+TYPE_EXTERN PrimitiveType*    dtTaskID;
+TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
+TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
-TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
-TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
-TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
-TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
+TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
+TYPE_EXTERN PrimitiveType*    dtStringCopy; // the type of a C string (owned)
+TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
+TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 
-// base object type (for all classes)
-TYPE_EXTERN Type* dtObject;
+TYPE_EXTERN Type*             dtComplex[COMPLEX_SIZE_NUM];
 
-
-TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
-TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
+TYPE_EXTERN Map<Type*, Type*> wideClassMap; // class -> wide class
+TYPE_EXTERN Map<Type*, Type*> wideRefMap;   // reference -> wide reference
 
 void     initPrimitiveTypes();
-DefExpr* defineObjectClass();
 void     initChplProgram(DefExpr* objectDef);
 void     initCompilerGlobals();
 
@@ -435,10 +444,10 @@ bool is_real_type(Type*);
 bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
-#define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 bool isLegalParamType(Type*);
 int  get_width(Type*);
 bool isClass(Type* t);
+bool isClassOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 
@@ -493,11 +502,23 @@ bool isPOD(Type* t);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
+
+
+
+
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define LOCALE_TYPE dtLocale->typeInfo()
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+
+#define is_arithmetic_type(t)                        \
+        (is_int_type(t)        ||                    \
+         is_uint_type(t)       ||                    \
+         is_real_type(t)       ||                    \
+         is_imag_type(t)       ||                    \
+         is_complex_type(t))
+
 
 #endif

@@ -124,13 +124,13 @@ proc schurComplement(blk) {
   //showCurrTime("AbSlices");
 
   forall (ab, ra) in zip(AbSlice1, replA) do
-    local
+    local do
       ra = ab;
 
   replicateA(blk);
 
   forall (ab, rb) in zip(AbSlice2, replB) do
-    local
+    local do
       rb = ab;
 
   replicateB(blk);

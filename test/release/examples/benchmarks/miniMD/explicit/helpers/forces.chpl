@@ -373,7 +373,7 @@ class ForceLJ : Force {
         // by using an atomic variable, we can make the outer loop parallel
         var eng, vir : atomic real;
 
-        forall (b,p,c) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real], Me.Real) {
+        forall (b,p,c) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real]) {
           for (a, x) in zip(b[1..c],p[1..c]) {
             for(n,i) in a.neighs[1..a.ncount] {
               const del = x - Me.Pos[n][i];

@@ -42,17 +42,14 @@
 
 static bool isDerivedType(Type* type, Flag flag);
 
-Type::Type(AstTag astTag, Symbol* init_defaultVal) :
-  BaseAST(astTag),
-
-  symbol(NULL),
-  refType(NULL),
-  hasGenericDefaults(false),
-  defaultValue(init_defaultVal),
-  destructor(NULL),
-  isInternalType(false),
-  instantiatedFrom(NULL),
-  scalarPromotionType(NULL) {
+Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
+  symbol              = NULL;
+  refType             = NULL;
+  hasGenericDefaults  = false;
+  defaultValue        = iDefaultVal;
+  destructor          = NULL;
+  isInternalType      = false;
+  scalarPromotionType = NULL;
 }
 
 Type::~Type() {
@@ -62,10 +59,9 @@ Type::~Type() {
 void Type::verify() {
 }
 
-void Type::addSymbol(TypeSymbol* newsymbol) {
-  symbol = newsymbol;
+void Type::addSymbol(TypeSymbol* newSymbol) {
+  symbol = newSymbol;
 }
-
 
 bool Type::inTree() {
   if (symbol)
@@ -101,6 +97,23 @@ Symbol* Type::getField(const char* name, bool fatal) {
   return NULL;
 }
 
+bool Type::hasDestructor() const {
+  return destructor != NULL;
+}
+
+FnSymbol* Type::getDestructor() const {
+  return destructor;
+}
+
+void Type::setDestructor(FnSymbol* fn) {
+  destructor = fn;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
   Type(E_PrimitiveType, init)
@@ -134,7 +147,6 @@ PrimitiveType::copyInner(SymbolMap* map) {
 void PrimitiveType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in PrimitiveType::replaceChild");
 }
-
 
 
 void PrimitiveType::verify() {
@@ -755,40 +767,6 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-DefExpr* defineObjectClass() {
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an int32_t field identifying the classes
-  //  in the program.  We never create the actual field within the
-  //  IR (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      NULL,
-                                      AGGREGATE_CLASS,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
-
-  retval->sym->addFlag(FLAG_OBJECT_CLASS);
-
-  // Prevents removal in pruneResolvedTree().
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
-  retval->sym->addFlag(FLAG_NO_OBJECT);
-
-  dtObject = retval->sym->type;
-
-  return retval;
-}
-
 void initChplProgram(DefExpr* objectDef) {
   theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
@@ -971,6 +949,10 @@ bool isClass(Type* t) {
   return false;
 }
 
+bool isClassOrNil(Type* t) {
+  if (t == dtNil) return true;
+  return isClass(t);
+}
 
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))

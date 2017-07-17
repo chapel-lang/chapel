@@ -415,31 +415,6 @@ checkReturnPaths(FnSymbol* fn) {
   }
 }
 
-
-// This test must be run after resolution, since it depends on the knowledge of
-// whether the type of delete's operand is a record type.
-// But it cannot be run after the compiler adds its own record deletes
-// TODO: This violates the "no magic" principle, so the check and associated
-// language in the spec should be considered for removal.
-// In addition, the ability for user code to explicitly call deletes on fields
-// of record type may be necessary for UMM, but this is yet to be demonstrated.
-static void
-checkNoRecordDeletes(CallExpr* call)
-{
-  FnSymbol* fn = call->resolvedFunction();
-
-  // Note that fn can (legally) be null if the call is primitive.
-  if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {
-    // Statements of the form 'delete x' (PRIM_DELETE) are replaced
-    //  during the normalize pass with a call to the destructor
-    //  followed by a call to chpl_mem_free(), so here we just check
-    //  if the type of the variable being passed to chpl_mem_free()
-    //  is a record.
-    if (isRecord(call->get(1)->typeInfo()->getValType()))
-      USR_FATAL_CONT(call, "delete not allowed on records");
-  }
-}
-
 static void
 checkBadAddrOf(CallExpr* call)
 {
@@ -480,10 +455,7 @@ static void
 checkCalls()
 {
   forv_Vec(CallExpr, call, gCallExprs)
-  {
-    checkNoRecordDeletes(call);
     checkBadAddrOf(call);
-  }
 }
 
 

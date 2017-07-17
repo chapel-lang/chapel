@@ -23,11 +23,6 @@
 
 // TODO
 //
-// * Implement reindexing and rank change directly within Dimensional.
-//  That will probably be more efficient than going through WrapperDist.
-//  For that, will need allow Dimensional to have smaller rank.
-//  Can use "reindexing" dimension specifiers - will only
-//  need two - one for replicated and one for any non-replicated.
 // * Ensure that reallocation works with block-cyclic 1-d distribution
 //  when the domain's stride changes.
 
@@ -338,6 +333,11 @@ class LocDimensionalDom {
 
   // subordinate 1-d local domain descriptors
   var doml1, doml2;
+
+  proc deinit() {
+    if isClass(doml2) then delete doml2;
+    if isClass(doml1) then delete doml1;
+  }
 }
 
 class DimensionalArr : BaseArr {
@@ -935,6 +935,9 @@ proc DimensionalDom.dsiDestroyDom() {
   coforall desc in localDdescs do
     on desc do
       delete desc;
+
+  if isClass(dom2) then delete dom2;
+  if isClass(dom1) then delete dom1;
 }
 
 
@@ -1005,7 +1008,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
 }
 
 
-/// slicing, reindexing, rank change, reallocation //////////////////////////
+/// local slicing, reallocation //////////////////////////
 
 pragma "no copy return"
 proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
@@ -1027,13 +1030,6 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   return locAdesc.myStorageArr[r1, r2];
 }
 
-/* The following are using the standalone WrapperDist, currently not provided.
-
-proc DimensionalDist2D.dsiCreateReindexDist(newSpace, oldSpace) {
-  return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
-}
-
-*/
 /* do not use the above comment for chpldoc */
 
 proc DimensionalArr.dsiReallocate(d: domain) {

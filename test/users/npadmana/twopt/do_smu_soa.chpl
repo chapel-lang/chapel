@@ -50,7 +50,7 @@ class Particle3D {
   var _tmp : [Dpart] real;
   var _n1, _ndx : [Dpart] int;
 
-  proc Particle3D(npart1 : int, random : bool = false) {
+  proc init(npart1 : int, random : bool = false) {
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};

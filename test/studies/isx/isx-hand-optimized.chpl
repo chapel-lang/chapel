@@ -195,7 +195,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   }
 
   var bucketSizes: [0..#numTasks] int;
-  local countLocalBucketSizes(myKeys, bucketSizes);
+  local do countLocalBucketSizes(myKeys, bucketSizes);
   if debug then writeln(taskID, ": bucketSizes = ", bucketSizes);
 
   if subtime {
@@ -215,7 +215,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   }
 
   var myBucketedKeys: [0..#keysPerTask] keyType;
-  local bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys);
+  local do bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys);
 
   if subtime {
     bucketizeTime.localAccess[taskID][trial] = subTimer.elapsed();
@@ -233,7 +233,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const keysInMyBucket = recvOffset[taskID].read();
   const myMinKeyVal = taskID * bucketWidth;
   var myLocalKeyCounts: [myMinKeyVal..#bucketWidth] int;
-  local countLocalKeys(taskID, keysInMyBucket, myLocalKeyCounts);
+  local do countLocalKeys(taskID, keysInMyBucket, myLocalKeyCounts);
 
   if time {
     if subtime then

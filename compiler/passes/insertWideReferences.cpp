@@ -961,6 +961,17 @@ static void addKnownWides() {
         }
       }
     }
+    else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      int i = 0;
+      for_actuals(actual, call) {
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (i > 1 && actual_to_formal(se)->isRefOrWideRef()) {
+            setWide(call, se->symbol());
+          }
+        }
+        ++i;
+      }
+    }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
              call->isPrimitive(PRIM_CHPL_COMM_ARRAY_GET) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
@@ -997,7 +1008,10 @@ static void propagateVar(Symbol* sym) {
       if (!call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         SymExpr* actual = toSymExpr(formal_to_actual(call, sym));
         DEBUG_PRINTF("\tRef types have to match: %s (%d) in call %d\n", actual->symbol()->cname, actual->symbol()->id, call->id);
-        setValWide(sym, actual->symbol());
+        if (actual->isRefOrWideRef())
+          setValWide(sym, actual->symbol());
+        else
+          setWide(sym, actual->symbol());
       }
     }
   }

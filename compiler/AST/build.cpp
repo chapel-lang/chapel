@@ -2689,7 +2689,15 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
   return fn;
 }
 
+// builds a local statement with a conditional, where the `then` block
+// is local and `else` block is not
+BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
+  return buildIfStmt(new CallExpr("_cond_test", condExpr),
+      buildLocalStmt(stmt->copy()), stmt);
+}
 
+// builds an unconditional local statement. Used by the conditional
+// overload and parser
 BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
 
@@ -2777,7 +2785,9 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   // it for side effects, and then evaluate the body directly.
   if (!requireOutlinedOn()) {
     BlockStmt* block = new BlockStmt(stmt);
-    block->insertAtHead(onExpr); // evaluate the expression for side effects
+    Symbol* tmp = newTempConst();
+    block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
+    block->insertAtHead(new DefExpr(tmp));
     return buildChapelStmt(block);
   }
 

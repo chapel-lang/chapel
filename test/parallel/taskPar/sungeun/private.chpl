@@ -87,3 +87,5 @@ for l in 0..#numLocales {
   if y != nPerLocale then
     halt("localePrivate[",l,"].temps[].y value is incorrect! (y=",y,")");
 }
+
+forall l in localePrivate do delete l;

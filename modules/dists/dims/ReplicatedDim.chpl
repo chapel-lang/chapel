@@ -223,13 +223,6 @@ proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc ReplicatedDim.toString()
   return "ReplicatedDim(" + numLocales:string + ")";
 
-// REQ-2 create a 1-d global distribution descriptor that
-// describes a reindexing of 'this' from 'oldRange' to 'newRange'.
-// This is the 1-d counterpart of dsiCreateReindexDist().
-proc ReplicatedDim.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
-  return this;
-}
-
 // REQ is this a replicated distribution?
 proc Replicated1dom.dsiIsReplicated1d() param return true;
 

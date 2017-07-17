@@ -59,8 +59,6 @@ public:
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
 
-
-
   void            checkPhase(BlockStmt* block);
 
   Expr*           completePhase1(Expr* insertBefore);
@@ -99,6 +97,17 @@ private:
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
+  void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
+                                               DefExpr* field)           const;
+
+  void            genericFieldInitTypeWithInit(Expr*    insertBefore,
+                                               DefExpr* field,
+                                               Expr*    initExpr)        const;
+
+  void            genericFieldInitTypeInference(Expr*    insertBefore,
+                                                DefExpr* field,
+                                                Expr*    initExpr)       const;
+
   void            fieldInitTypeWoutInit(Expr*    insertBefore,
                                         DefExpr* field)                  const;
 
@@ -125,15 +134,15 @@ private:
   DefExpr*        toLocalField(SymExpr*  expr)                           const;
   DefExpr*        toLocalField(CallExpr* expr)                           const;
 
-  DefExpr*        toLocalField(AggregateType* at, SymExpr*  expr)        const;
-  DefExpr*        toLocalField(AggregateType* at, CallExpr* expr)        const;
+  DefExpr*        toLocalField(AggregateType* at, const char* name)      const;
+  DefExpr*        toLocalField(AggregateType* at, SymExpr*    expr)      const;
+  DefExpr*        toLocalField(AggregateType* at, CallExpr*   expr)      const;
 
   DefExpr*        toSuperField(SymExpr* expr)                            const;
 
-  DefExpr*        toSuperField(AggregateType* at, SymExpr*  expr)        const;
-  DefExpr*        toSuperField(AggregateType* at, CallExpr* expr)        const;
-
-  DefExpr*        fieldByName(AggregateType* at,  const char*  name)     const;
+  DefExpr*        toSuperField(AggregateType* at, const char* name)      const;
+  DefExpr*        toSuperField(AggregateType* at, SymExpr*    expr)      const;
+  DefExpr*        toSuperField(AggregateType* at, CallExpr*   expr)      const;
 
   const char*     phaseToString(InitPhase phase)                         const;
 

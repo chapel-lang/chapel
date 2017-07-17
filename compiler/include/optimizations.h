@@ -51,7 +51,6 @@ void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 size_t singleAssignmentRefPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
-void deadCodeElimination(FnSymbol* fn);
 
 void liveVariableAnalysis(FnSymbol* fn,
                           Vec<Symbol*>& locals,
@@ -59,13 +58,6 @@ void liveVariableAnalysis(FnSymbol* fn,
                           Vec<SymExpr*>& useSet,
                           Vec<SymExpr*>& defSet,
                           std::vector<BitVec*>& OUT);
-
-void buildDefUseChains(FnSymbol*                           fn,
-                       std::map<SymExpr*, Vec<SymExpr*>*>& DU,
-                       std::map<SymExpr*, Vec<SymExpr*>*>& UD);
-
-void freeDefUseChains(std::map<SymExpr*, Vec<SymExpr*>*>& DU,
-                      std::map<SymExpr*, Vec<SymExpr*>*>& UD);
 
 void remoteValueForwarding();
 

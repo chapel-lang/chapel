@@ -33,7 +33,9 @@ static void foldEnumOp(int         op,
                        EnumSymbol* e1,
                        EnumSymbol* e2,
                        Immediate*  imm);
+
 static bool isSubTypeOrInstantiation(Type* sub, Type* super);
+
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
 
 #define FOLD_CALL1(prim)                                                \
@@ -179,36 +181,54 @@ Expr* postFold(Expr* expr) {
               if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
                 if (rhsVar->immediate) {
                   paramMap.put(lhs->symbol(), rhsVar);
+
                   lhs->symbol()->defPoint->remove();
-                  makeNoop(call);
+
+                  call->convertToNoop();
+
                   set = true;
                 }
               }
+
               if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
                 paramMap.put(lhs->symbol(), rhsv);
+
                 lhs->symbol()->defPoint->remove();
-                makeNoop(call);
+
+                call->convertToNoop();
+
                 set = true;
               }
             }
           }
+
           if (Symbol* lhsSym = lhs->symbol()) {
             if (lhsSym->isParameter()) {
               if (!lhsSym->hasFlag(FLAG_TEMP)) {
                 if (!isLegalParamType(lhsSym->type)) {
-                  USR_FATAL_CONT(call, "'%s' is not of a supported param type", lhsSym->name);
+                  USR_FATAL_CONT(call,
+                                 "'%s' is not of a supported param type",
+                                 lhsSym->name);
+
                 } else if (!set) {
-                  USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", lhsSym->name);
+                  USR_FATAL_CONT(call,
+                                 "Initializing parameter '%s' to value "
+                                 "not known at compile time",
+                                 lhsSym->name);
                   lhs->symbol()->removeFlag(FLAG_PARAM);
                 }
+
               } else /* this is a compiler temp */ {
                 if (lhsSym->hasFlag(FLAG_RVV) && !set) {
-                  USR_FATAL_CONT(call, "'param' functions cannot return non-'param' values");
+                  USR_FATAL_CONT(call,
+                                 "'param' functions cannot return "
+                                 "non-'param' values");
                 }
               }
             }
           }
         }
+
         if (!set) {
           if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {
             // Add FLAG_TYPE_VARIABLE when relevant
@@ -260,6 +280,7 @@ Expr* postFold(Expr* expr) {
             // TODO -- remove this? Or explain its purpose?
             lhs->symbol()->removeFlag(FLAG_EXPR_TEMP);
         }
+
         if (!set) {
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             if (rhs->isPrimitive(PRIM_NO_INIT)) {
@@ -268,12 +289,13 @@ Expr* postFold(Expr* expr) {
               // further and so this statement can't be removed until
               // resolveRecordInitializers
               if (!isAggregateType(rhs->get(1)->getValType())) {
-                makeNoop(call);
+                call->convertToNoop();
               }
             }
           }
         }
       }
+
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       Type* baseType = call->get(1)->getValType();
       const char* memberName = get_string(call->get(2));
@@ -295,17 +317,37 @@ Expr* postFold(Expr* expr) {
           }
         }
       }
+
+
+
+
     } else if (call->isPrimitive(PRIM_IS_SUBTYPE)) {
-      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
+      if (isTypeExpr(call->get(1)) == true  ||
+          isTypeExpr(call->get(2)) == true)  {
         Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->getValType();
-        if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
-            rt != dtAny && !lt->symbol->hasFlag(FLAG_GENERIC)) {
-          bool is_true = isSubTypeOrInstantiation(lt, rt);
-          result = (is_true) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+
+        if (lt                                != dtUnknown &&
+            rt                                != dtUnknown &&
+
+            lt                                != dtAny     &&
+            rt                                != dtAny     &&
+
+            lt->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+          if (isSubTypeOrInstantiation(lt, rt) == true) {
+            result = new SymExpr(gTrue);
+
+          } else {
+            result = new SymExpr(gFalse);
+          }
+
           call->replace(result);
         }
       }
+
+
+
     } else if (call->isPrimitive(PRIM_CAST)) {
       Type* t= call->get(1)->typeInfo();
       if (t == dtUnknown)
@@ -456,14 +498,17 @@ Expr* postFold(Expr* expr) {
         // assignment, we key off of the name :-(
         if (call->isPrimitive(PRIM_MOVE) || call->isNamedAstr(astrSequals)) {
           if (sym->symbol()->hasFlag(FLAG_RVV)) {
-            makeNoop(call);
+            call->convertToNoop();
           }
+
           return result;
         }
       }
 
-      if (sym->symbol()->type != dtUnknown && sym->symbol()->type != val->type) {
+      if (sym->symbol()->type != dtUnknown &&
+          sym->symbol()->type != val->type) {
         Symbol* toSym = sym->symbol();
+
         if (!toSym->hasFlag(FLAG_TYPE_VARIABLE)) {
           // This assertion is here to ensure compatibility with old code.
           // Todo: remove after 1.15 release.
@@ -585,17 +630,22 @@ static void foldEnumOp(int         op,
 }
 
 static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  if (sub == super)
+  if (sub == super) {
     return true;
-
-  forv_Vec(Type, parent, sub->dispatchParents) {
-    if (isSubTypeOrInstantiation(parent, super))
-      return true;
   }
 
-  if (sub->instantiatedFrom &&
-      isSubTypeOrInstantiation(sub->instantiatedFrom, super))
-    return true;
+  forv_Vec(Type, parent, sub->dispatchParents) {
+    if (isSubTypeOrInstantiation(parent, super) == true) {
+      return true;
+    }
+  }
+
+  if (AggregateType* at = toAggregateType(sub)) {
+    if (at->instantiatedFrom                                  != NULL &&
+        isSubTypeOrInstantiation(at->instantiatedFrom, super) == true) {
+      return true;
+    }
+  }
 
   return false;
 }

@@ -24,8 +24,44 @@
 #include "build.h"
 #include "codegen.h"
 #include "ForLoop.h"
+#include "driver.h"
 
 #include <algorithm>
+
+#ifdef HAVE_LLVM
+
+
+static llvm::MDNode* generateLoopMetadata(bool addVectorizeEnableMetadata)
+{
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+
+  std::vector<llvm::Metadata*> args;
+  auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
+  args.push_back(tmpNode.get());
+
+  // llvm.loop.vectorize.enable metadata is only used to either:
+  // 1) Explicitly disable vectorization of particular loop
+  // 2) Print warning when vectorization is enabled (using metadata) and vectorization didn't occur
+  // This means enabling vectorization using this metadata is not necessary for llvm vectorizer to vectorize loop
+  if(addVectorizeEnableMetadata)
+  {
+    llvm::Metadata *loopVectorizeEnable[] = { llvm::MDString::get(ctx, "llvm.loop.vectorize.enable"),
+                                              llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), true))};
+    args.push_back(llvm::MDNode::get(ctx, loopVectorizeEnable));
+  }
+
+  llvm::MDNode *loopMetadata = llvm::MDNode::get(ctx, args);
+  loopMetadata->replaceOperandWith(0, loopMetadata);
+  return loopMetadata;
+}
+
+static void addLoopMetadata(llvm::Instruction* instruction, llvm::MDNode* loopMetadata)
+{
+  instruction->setMetadata("llvm.loop", loopMetadata);
+}
+
+#endif
 
 /************************************ | *************************************
 *                                                                           *
@@ -138,7 +174,16 @@ GenRet CForLoop::codegen()
     info->builder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
 
+    llvm::MDNode* loopMetadata = nullptr;
+    if(fNoVectorize == false && isOrderIndependent()) {
+      loopMetadata = generateLoopMetadata(false);
+      info->loopStack.emplace(loopMetadata, true);
+    }
+
     body.codegen("");
+
+    if(loopMetadata)
+      info->loopStack.pop();
 
     info->lvt->removeLayer();
 
@@ -154,7 +199,10 @@ GenRet CForLoop::codegen()
                                                FNAME("condition"));
 
     // Create the conditional branch
-    info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+    llvm::Instruction* endLoopBranch = info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+
+    if(loopMetadata)
+      addLoopMetadata(endLoopBranch, loopMetadata);
 
     func->getBasicBlockList().push_back(blockStmtEnd);
 

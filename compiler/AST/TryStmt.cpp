@@ -73,12 +73,12 @@ void TryStmt::accept(AstVisitor* visitor) {
       _body->accept(visitor);
     }
 
+    visitor->exitTryStmt(this);
+
     for_alist(c, _catches) {
       CatchStmt* catchStmt = toCatchStmt(c);
       catchStmt->accept(visitor);
     }
-
-    visitor->exitTryStmt(this);
   }
 }
 

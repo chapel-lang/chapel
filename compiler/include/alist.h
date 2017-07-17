@@ -46,6 +46,8 @@ class AList {
   Expr* only(void);            // return the single element in a list
   Expr* get(int index)  const; // get the index-th element in a list
 
+  bool empty();
+
   // add element(s) at beginning of list
   void insertAtHead(Expr* new_ast);
 

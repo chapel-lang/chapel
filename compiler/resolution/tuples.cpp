@@ -428,21 +428,22 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     }
 
     // Build the value constructor
-    {
-      newType->defaultInitializer = makeConstructTuple(args,
-                                                       typeCtorArgs,
-                                                       newTypeSymbol,
-                                                       tupleModule,
-                                                       instantiationPoint,
-                                                       noref,
-                                                       sizeType);
-    }
+    newType->defaultInitializer = makeConstructTuple(args,
+                                                     typeCtorArgs,
+                                                     newTypeSymbol,
+                                                     tupleModule,
+                                                     instantiationPoint,
+                                                     noref,
+                                                     sizeType);
+
 
     // Build the value destructor
     FnSymbol* dtor = makeDestructTuple(newTypeSymbol,
                                        tupleModule,
                                        instantiationPoint);
-    newType->destructor = dtor;
+
+    newType->setDestructor(dtor);
+
     newType->methods.add(dtor);
 
     // Resolve it so it stays in AST

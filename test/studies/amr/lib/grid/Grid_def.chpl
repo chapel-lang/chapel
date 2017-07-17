@@ -40,8 +40,8 @@ class Grid {
 
   const dx: dimension*real;
           
+  const cells:          domain(dimension, stridable=true);
   const extended_cells: domain(dimension, stridable=true);
-  const cells:          subdomain(extended_cells);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
   const ghost_domains: List( domain(dimension, stridable=true) );
@@ -49,10 +49,10 @@ class Grid {
 
 
   //|\''''''''''''''''''''|\
-  //| >    constructor    | >
+  //| >    initializer    | >
   //|/....................|/
   
-  proc Grid (
+  proc init (
     x_low:         dimension*real,
     x_high:        dimension*real,
     i_low:         dimension*int,
@@ -66,9 +66,6 @@ class Grid {
     this.i_low         = i_low;
     this.n_cells       = n_cells;
     this.n_ghost_cells = n_ghost_cells;
-
-    //==== Sanity check ====
-    sanityChecks();
 
     //==== dx ====
     dx = (x_high - x_low) / n_cells;
@@ -103,6 +100,10 @@ class Grid {
     //-------------------------------------------------------------
 
     ghost_domains = new List( domain(dimension,stridable=true) );
+    super.init();
+
+    //==== Sanity check ====
+    sanityChecks();
 
     var inner_location: dimension*int;
     for d in dimensions do inner_location(d) = loc1d.inner;
@@ -128,19 +129,19 @@ class Grid {
 
   }
   // /|''''''''''''''''''''/|
-  //< |    Constructor    < |
+  //< |    Initializer    < |
   // \|....................\|
 
 
 
   //|\'''''''''''''''''''|\
-  //| >    destructor    | >
+  //| >  deinitializer   | >
   //|/...................|/
 
   proc deinit () { delete ghost_domains; }
   
   // /|'''''''''''''''''''/|
-  //< |    destructor    < |
+  //< |  deinitializer   < |
   // \|...................\|
 
 
@@ -150,7 +151,7 @@ class Grid {
   //|/..........................|/
 
   //--------------------------------------------------------------
-  // Performs some basic sanity checks on the constructor inputs.
+  // Performs some basic sanity checks on the initializer inputs.
   //--------------------------------------------------------------
 
   proc sanityChecks () {
