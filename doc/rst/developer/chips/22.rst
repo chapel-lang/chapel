@@ -111,7 +111,7 @@ traditional Chapel ways to synchronize between tasks using the
 sync or future concepts, users can create a dependency between the
 tasks that calls chpl_launch.
 
-Further more, in order to optimize the execution on GPU, users can
+Furthermore, in order to optimize the execution on GPU, users can
 provide the "GPU execution parameters" (workgroup size and grid
 size) to the chpl_launch function using the **with** clause. The
 following sections will provide more information on how to pass such
@@ -130,11 +130,11 @@ a string, chpl_launch can be overloaded with this signature as well. ::
 
 Example: ::
 
-	var kernel = string(“_kernel_ helloword(){ “\\
+	var kernel = string(“_kernel_ helloworld(){ “\\
 
 			    “int id=get_local_id(0); ”\\
 
-			    “printf(“Hello from thread %d/n”,id);\\
+			    “printf(“Hello from thread %d\n”,id);\\
 
 			    “}”);
 
@@ -271,9 +271,9 @@ kernel.
 	timing of the set to the call itself.
 
 	To do so, we propose to rely on the **with clause** as a way to
-	provide the workroup and the grid size for the kernel. In other
+	provide the workgroup and the grid size for the kernel. In other
 	words the Intent concept needs to be extended to support a new class
-	defined as **Execution Parameters** that includes workgoup and grid
+	defined as **Execution Parameters** that includes workgroup and grid
 	concepts. These concepts can be of type **tuples** to represent
 	up-to three dimensions ::
 
@@ -548,7 +548,7 @@ For instance, while it is not common, but it is allowed to write: ::
 
 **Note: Error detection:**
 
-Assume the user writes an I/O callsinside a block statement that
+Assume the user writes an I/O call inside a block statement that
 the compiler tries to generate both CPU and GPU version. As I/O
 functions are not supported from GPU, compiler can choose two
 options
@@ -581,7 +581,7 @@ The proposed extensions to support GPUs within Chapel are three folds:
    recognize these calls. It also needed to have default implementation
    for CPU execution for these functions.
 
--  **Invocation and launching extension**: to provide and easy and
+-  **Invocation and launching extension**: to provide an easy and
    smooth interoperability with OpenCL specific codes for GPU, we
    propose to introduce a chpl_launch function to call and manage a
    kernel execution.
@@ -629,7 +629,7 @@ distribution perspective, a sublocale is equivalent to a locale. ::
 
 **Example:**
 
-Distribute the data among the 2\ :sup:`nd` sublocale on each local (
+Distribute the data among the 2\ :sup:`nd` sublocale on each locale (
 data will be allocated on GPU buffers)
 
 MySublocale is my targetLocales to pass to the distribution ({node,
@@ -641,10 +641,10 @@ sublocale})
 
 	const Space={1..n}
 
-	SublocalBlockSpace = Space dmapped Block(boundingBox=Space,
+	SublocaleBlockSpace = Space dmapped Block(boundingBox=Space,
 						  targetLocales=MySublocales);
 
-	var A : [SublocalBloclSpace] int; 
+	var A : [SublocaleBlockSpace] int; 
 	// A will be distributed on evenly between the different nodes and the 
 	// data will be allocated/mapped to the GPU memory. In other words, on 
 	// each sublocale1 (GPU) of each node, a block of (n/numLocales) is 
