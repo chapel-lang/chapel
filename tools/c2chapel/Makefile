@@ -28,7 +28,8 @@ endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-link=$(CHPL_BIN_DIR)/c2chapel
+bdir=$(CHPL_BIN_DIR)
+link=$(bdir)/c2chapel
 
 VERSION=2.17
 TAR=release_v$(VERSION).tar.gz
@@ -81,4 +82,5 @@ ifneq ($(wildcard $(link)),)
 	@echo
 endif
 	@echo "Installing symbolic link..."
+	mkdir -p $(bdir)
 	ln -s $(shell pwd)/c2chapel $(link)
