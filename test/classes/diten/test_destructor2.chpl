@@ -6,7 +6,7 @@ record R {
 // private:
   var c, c2: C;
 // public:
-  proc R(a:int, b:int) {
+  proc init(a:int, b:int) {
     writeln("R");
     c = new C(a, b);
   }
