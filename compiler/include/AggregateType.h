@@ -182,6 +182,8 @@ private:
   bool                        mIsGeneric;
 };
 
+extern AggregateType* dtObject;
+
 extern AggregateType* dtString;
 extern AggregateType* dtArray;
 extern AggregateType* dtBaseArr;
@@ -194,5 +196,7 @@ extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtError;
+
+DefExpr* defineObjectClass();
 
 #endif

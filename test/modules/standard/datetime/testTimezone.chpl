@@ -4,7 +4,14 @@ class FixedOffset: TZInfo {
   var offset: timedelta;
   var name: string;
   var dstoffset: timedelta;
-  proc FixedOffset(offset: int, name, dstoffset:int=42) {
+
+  proc init(offset: timedelta, name: string, dstoffset: timedelta=new timedelta(42)) {
+    this.offset = offset;
+    this.name = name;
+    this.dstoffset = dstoffset;
+  }
+
+  proc init(offset: int, name, dstoffset:int=42) {
     this.offset = new timedelta(minutes=offset);
     this.name = name;
     this.dstoffset = new timedelta(minutes=dstoffset);
@@ -147,7 +154,7 @@ proc test_mixed_compare() {
   class Varies: TZInfo {
     var offset: timedelta;
     var name = "Var";
-    proc Varies() {
+    proc init() {
       offset = new timedelta(minutes=22);
     }
     proc utcoffset(dt: datetime) {

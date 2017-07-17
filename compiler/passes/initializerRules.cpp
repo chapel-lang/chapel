@@ -880,7 +880,16 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
       ArgSymbol* arg = formal->copy();
 
       fn->insertFormalAtTail(arg);
-      initCall->insertAtTail(new SymExpr(arg));
+
+      if (arg->variableExpr != NULL) {
+        // The argument is a vararg.  If we pass it in plainly, it will be
+        // treated as a single argument instead of the multiple arguments that
+        // we want it to be treated as.  Expand the tuple before passing it in.
+        initCall->insertAtTail(new CallExpr(PRIM_TUPLE_EXPAND,
+                                            new SymExpr(arg)));
+      } else {
+        initCall->insertAtTail(new SymExpr(arg));
+      }
 
       // Don't want to be referencing the argument in the initializer, want to
       // reference our new argument.

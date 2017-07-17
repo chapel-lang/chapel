@@ -389,52 +389,49 @@ private:
 #endif
 
 // internal types
-TYPE_EXTERN Type* dtAny;
-TYPE_EXTERN Type* dtIteratorRecord;
-TYPE_EXTERN Type* dtIteratorClass;
-TYPE_EXTERN Type* dtIntegral;
-TYPE_EXTERN Type* dtAnyComplex;
-TYPE_EXTERN Type* dtNumeric;
-TYPE_EXTERN Type* dtAnyEnumerated;
-TYPE_EXTERN PrimitiveType* dtNil;
-TYPE_EXTERN PrimitiveType* dtUnknown;
-TYPE_EXTERN PrimitiveType* dtVoid;
-TYPE_EXTERN PrimitiveType* dtValue;
-TYPE_EXTERN PrimitiveType* dtMethodToken;
-TYPE_EXTERN PrimitiveType* dtTypeDefaultToken;
-TYPE_EXTERN PrimitiveType* dtModuleToken;
+TYPE_EXTERN Type*             dtAny;
+TYPE_EXTERN Type*             dtIteratorRecord;
+TYPE_EXTERN Type*             dtIteratorClass;
+TYPE_EXTERN Type*             dtIntegral;
+TYPE_EXTERN Type*             dtAnyComplex;
+TYPE_EXTERN Type*             dtNumeric;
+TYPE_EXTERN Type*             dtAnyEnumerated;
+
+TYPE_EXTERN PrimitiveType*    dtNil;
+TYPE_EXTERN PrimitiveType*    dtUnknown;
+TYPE_EXTERN PrimitiveType*    dtVoid;
+TYPE_EXTERN PrimitiveType*    dtValue;
+TYPE_EXTERN PrimitiveType*    dtMethodToken;
+TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
+TYPE_EXTERN PrimitiveType*    dtModuleToken;
 
 // primitive types
 // Anything declared as PrimitiveType* can now also be declared as Type*
 // This change was made to allow dtComplex to be represented by a record.
-TYPE_EXTERN PrimitiveType* dtBool;
-TYPE_EXTERN PrimitiveType* dtBools[BOOL_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtSymbol;
-TYPE_EXTERN PrimitiveType* dtFile;
-TYPE_EXTERN PrimitiveType* dtOpaque;
-TYPE_EXTERN PrimitiveType* dtTaskID;
-TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
-TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
+TYPE_EXTERN PrimitiveType*    dtBool;
+TYPE_EXTERN PrimitiveType*    dtBools[BOOL_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType*    dtSymbol;
+TYPE_EXTERN PrimitiveType*    dtFile;
+TYPE_EXTERN PrimitiveType*    dtOpaque;
+TYPE_EXTERN PrimitiveType*    dtTaskID;
+TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
+TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
-TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
-TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
-TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
-TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
+TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
+TYPE_EXTERN PrimitiveType*    dtStringCopy; // the type of a C string (owned)
+TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
+TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 
-// base object type (for all classes)
-TYPE_EXTERN Type* dtObject;
+TYPE_EXTERN Type*             dtComplex[COMPLEX_SIZE_NUM];
 
-
-TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
-TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
+TYPE_EXTERN Map<Type*, Type*> wideClassMap; // class -> wide class
+TYPE_EXTERN Map<Type*, Type*> wideRefMap;   // reference -> wide reference
 
 void     initPrimitiveTypes();
-DefExpr* defineObjectClass();
 void     initChplProgram(DefExpr* objectDef);
 void     initCompilerGlobals();
 
@@ -447,7 +444,6 @@ bool is_real_type(Type*);
 bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
-#define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 bool isLegalParamType(Type*);
 int  get_width(Type*);
 bool isClass(Type* t);
@@ -506,11 +502,23 @@ bool isPOD(Type* t);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
+
+
+
+
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define LOCALE_TYPE dtLocale->typeInfo()
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+
+#define is_arithmetic_type(t)                        \
+        (is_int_type(t)        ||                    \
+         is_uint_type(t)       ||                    \
+         is_real_type(t)       ||                    \
+         is_imag_type(t)       ||                    \
+         is_complex_type(t))
+
 
 #endif
