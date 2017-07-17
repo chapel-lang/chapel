@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+use OwnedObject only Owned;
+
 //
 // Private Distribution, Domain, and Array
 //  Defines PrivateSpace, an instance of PrivateDom
@@ -202,10 +204,5 @@ proc PrivateArr.dsiSerialWrite(x) {
   }
 }
 
-const privateDist = new Private();
-const PrivateSpace: domain(1) dmapped new dmap(privateDist);
-
-pragma "no doc"
-proc deinit() {
-  delete privateDist;
-}
+const privateDist = new Owned(new Private());
+const PrivateSpace: domain(1) dmapped new dmap(privateDist.borrow());
