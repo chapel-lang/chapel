@@ -1,14 +1,16 @@
-bug: compiler-generated constructors are insufficiently generic for arrays
+bug: compiler-generated initializers are insufficiently generic for arrays
 
-This test, in combination with arrayField-userCtor.chpl, suggests that
-compiler-generated constructors are too strict with respect to array
+This test, in combination with arrayField-userInit.chpl, suggests that
+compiler-generated initializers are too strict with respect to array
 fields as compared to what you would expect the construcer signature
 to look like (as illustrated in userCtor.chpl -- the initializer there
 is more simplistic than what the compiler would introduce, but doesn't
-seem to be the problem/difference as far as I can tell.
+seem to be the problem/difference as far as I can tell).
 
-In the current compiler, this seems to be because array fields are
-skipped in normalize.cpp w.r.t. the fixup_array_formals() call whereas
-traditional methods (including constructors) enter this code path.
+This was historically a problem with constructors as well (issue
+#5289), but I've retired that since we're working on retiring
+constructors.  I'd been hoping that when we i introduced compiler
+initializers, the rewrite would cause the problem to go away as well,
+but no such luck it seems.
 
-This is logged in issue #5289.
+This is logged in issue #6711.
