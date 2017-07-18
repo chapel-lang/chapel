@@ -202,10 +202,6 @@ proc PrivateArr.dsiSerialWrite(x) {
   }
 }
 
-const privateDist = new Private();
-const PrivateSpace: domain(1) dmapped new dmap(privateDist);
+// TODO: Fix 'new Private()' leak -- Discussed in #6726
+const PrivateSpace: domain(1) dmapped new dmap(new Private());
 
-pragma "no doc"
-proc deinit() {
-  delete privateDist;
-}
