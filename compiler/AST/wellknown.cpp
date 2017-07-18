@@ -273,7 +273,7 @@ void clearGenericWellKnownFunctions()
 
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
-    if ((*wkfn.fn)->hasFlag(FLAG_GENERIC))
+    if (*wkfn.fn != NULL && (*wkfn.fn)->hasFlag(FLAG_GENERIC))
       *wkfn.fn = NULL;
   }
 }
