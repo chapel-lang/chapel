@@ -563,6 +563,73 @@ static void insertWrappedCall(FnSymbol* fn,
 
 /************************************* | **************************************
 *                                                                             *
+* reorder the actuals to match the order of the formals                       *
+*                                                                             *
+************************************** | *************************************/
+
+static void reorderActuals(FnSymbol*                fn,
+                           std::vector<ArgSymbol*>* actualFormals,
+                           CallInfo*                info) {
+  int numArgs = actualFormals->size();
+
+  if (numArgs > 1) {
+    std::vector<int> formalsToFormals(numArgs);
+    bool             needToReorder = false;
+    int              i = 0;
+
+    for_formals(formal, fn) {
+      int j = 0;
+
+      i++;
+
+      for_vector(ArgSymbol, af, *actualFormals ) {
+        j++;
+
+        if (af == formal) {
+          if (i != j) {
+            needToReorder = true;
+          }
+
+          formalsToFormals[i - 1] = j - 1;
+        }
+      }
+    }
+
+    if (needToReorder == true) {
+      std::vector<Expr*>       savedActuals(numArgs);
+      std::vector<Symbol*>     ciActuals(numArgs);
+      std::vector<const char*> ciActualNames(numArgs);
+      int                      index = 0;
+
+      // remove all actuals in an order
+      for_actuals(actual, info->call) {
+        savedActuals[index++] = actual->remove();
+      }
+
+      // reinsert them in the desired order
+      for (int i = 0; i < numArgs; i++) {
+        info->call->insertAtTail(savedActuals[formalsToFormals[i]]);
+      }
+
+      // reorder CallInfo data as well
+      // ideally this would be encapsulated in within the CallInfo class
+      INT_ASSERT(info->actuals.n == numArgs);
+
+      for (int i = 0; i < numArgs; i++) {
+        ciActuals[i]     = info->actuals.v[i];
+        ciActualNames[i] = info->actualNames.v[i];
+      }
+
+      for (int i = 0; i < numArgs; i++) {
+        info->actuals.v[i]     = ciActuals[formalsToFormals[i]];
+        info->actualNames.v[i] = ciActualNames[formalsToFormals[i]];
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -625,58 +692,6 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
     wrapperFormal->intent = INTENT_BLANK;
   }
   return wrapperFormal;
-}
-
-
-////
-//// reorder the actuals to match the order of the formals
-////
-
-static void reorderActuals(FnSymbol*                fn,
-                           std::vector<ArgSymbol*>* actualFormals,
-                           CallInfo*                info) {
-  int numArgs = actualFormals->size();
-  if (numArgs <= 1)
-    return;  // no way we will need to reorder
-
-  bool need_to_reorder = false;
-  std::vector<int> formals_to_formals(numArgs);
-  int i = 0;
-  for_formals(formal, fn) {
-    i++;
-
-    int j = 0;
-    for_vector(ArgSymbol, af, *actualFormals ) {
-      j++;
-      if (af == formal) {
-        if (i != j)
-          need_to_reorder = true;
-        formals_to_formals[i-1] = j-1;
-      }
-    }
-  }
-  if (need_to_reorder) {
-    std::vector<Expr*> savedActuals(numArgs);
-    int i = 0;
-    // remove all actuals in an order
-    for_actuals(actual, info->call)
-      savedActuals[i++] = actual->remove();
-    // reinsert them in the desired order
-    for (i = 0; i < numArgs; i++)
-      info->call->insertAtTail(savedActuals[formals_to_formals[i]]);
-    // reorder CallInfo data as well
-    // ideally this would be encapsulated in within the CallInfo class
-    INT_ASSERT(info->actuals.n == numArgs);
-    std::vector<Symbol*> ciActuals(numArgs);
-    std::vector<const char*> ciActualNames(numArgs);
-    for (i = 0; i < numArgs; i++)
-      ciActuals[i] = info->actuals.v[i],
-      ciActualNames[i] = info->actualNames.v[i];
-    for (i = 0; i < numArgs; i++)
-      info->actuals.v[i] = ciActuals[formals_to_formals[i]],
-      info->actualNames.v[i] = ciActualNames[formals_to_formals[i]];
-  }
-  return;
 }
 
 static IntentTag getIntent(ArgSymbol* formal)
