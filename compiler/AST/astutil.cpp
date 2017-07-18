@@ -784,11 +784,10 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
     if (fn->hasFlag(FLAG_EXPORT))
       pruneVisit(fn, fns, types);
 
-  // Mark non-generic well-known functions as visible
+  // Mark well-known functions as visible
   std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
   for_vector(FnSymbol, fn, wellKnownFns) {
-    if (!fn->hasFlag(FLAG_GENERIC))
-      pruneVisit(fn, fns, types);
+    pruneVisit(fn, fns, types);
   }
 
   pruneVisitFn(gAddModuleFn, fns, types);
