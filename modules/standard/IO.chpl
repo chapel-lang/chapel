@@ -3267,14 +3267,25 @@ inline proc channel.read(ref args ...?k,
   return !error;
 }
 
+
 /* Iterate over all of the lines in a channel.
     Only serial iteration is supported.
 
    :returns: an object which yields strings read from the file
  */
-proc channel.lines() {
-  var ret = new ItemReader(string, channel.kind, channel.locking, this);
-  return ret;
+iter channel.lines() {
+  var local_style: iostyle;
+
+  // Update local_style to iterate over newlines
+  qio_channel_get_style(this._channel_internal, local_style);
+  local_style.string_format = QIO_STRING_FORMAT_TOEND;
+  local_style.string_end = 0x0a; // '\n'
+  qio_channel_set_style(this._channel_internal, local_style);
+
+  var lineReader = new ItemReader(string, this.kind, this.locking, this);
+  for line in this.itemReader(string, this.kind) {
+    yield line;
+  }
 }
 
 
