@@ -381,4 +381,23 @@ module CPtr {
     extern proc memcmp(const s1: c_void_ptr, const s2: c_ptr, n: size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
+
+  /*
+    Fill bytes of memory with a particular byte value.
+
+    This is a simple wrapper over the C memset() function.
+
+    :arg b: the destination memory area to fill
+    :arg c: the byte value to use
+    :arg n: the number of bytes of b to fill
+
+    :returns: b
+   */
+  inline proc c_memset(b, c:integral, n: integral)
+  where isAnyCPtr(s1.type) && isAnyCPtr(s2.type) {
+    extern proc memset(b: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
+    memset(b, c:c_int, n.safeCast(size_t));
+    return b;
+  }
+
 }
