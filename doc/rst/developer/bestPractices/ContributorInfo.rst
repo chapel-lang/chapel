@@ -18,11 +18,8 @@ Developer Workflow
 Overview:
 
 #. `Discuss design`_ changes or big development efforts
-#. `Set up a branch for development`_
-
-   #. `Getting set up`_
-   #. `Create new branch`_
-
+#. `Getting set up`_
+#. `Create new branch`_
 #. `Develop and test contributions locally`_
 
    #. `Adding new tests`_
@@ -35,7 +32,6 @@ Overview:
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
 
-#. `Test changes`_
 #. `Getting ready to merge`_
 #. `Watch automatic testing`_ and address issues
 
@@ -54,19 +50,12 @@ subject header for discussion with the community and to ensure that you are
 aware of any parallel efforts in that area.  It may also be a good idea to ask
 for input from the user community via the chapel-users_ mailing list.
 
-.. _Set up a branch for development:
-
-Set up a branch for development
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This consists of two sets of operations.  The first (`Getting set up`_) only
-needs to happen once per developer.  The second (`Create new branch`_) should
-happen for every new effort.
-
 .. _Getting set up:
 
 Getting set up
-++++++++++++++
+~~~~~~~~~~~~~~
+
+This should only need to happen once per developer.
 
 Note: these are expected to evolve over time as the governance of Chapel is
 migrated from Cray to an external/community body (the major elements are likely
@@ -105,7 +94,9 @@ grow).
 .. _Create new branch:
 
 Create new branch
-+++++++++++++++++
+~~~~~~~~~~~~~~~~~
+
+This should happen once for every new effort.
 
 Develop your feature, bug fix, etc on your fork.  To create a new branch, use
 the `New branch command`_.  Using a concisely named branch is encouraged.
@@ -228,21 +219,6 @@ Work with your reviewers
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
 
-
-.. _Test changes:
-
-Test changes
-~~~~~~~~~~~~
-
-If you did not have the resources to perform at least a full correctness test
-run, this is the point at which a reviewer would do so for you.  Contributors
-are expected to have verified any new tests work before asking a reviewer to do
-this.
-
-Details on how to run tests may be found at `Test System`_, and details on the
-appropriate amount of testing before merging the final PR may be found at
-`Testing guidance`_.
-
 .. _Getting ready to merge:
 
 Getting ready to merge
@@ -253,22 +229,24 @@ Before the change can be merged, go through this checklist to ensure:
 - all design changes have been discussed
 - the PR has been reviewed
 - the contributor agreement has been signed
-- the history in the PR does not contain anything not to be in the repo
+- the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
+
+If you did not have the resources to perform at least a full correctness test
+run, this is the point at which a reviewer would do so for you.  Contributors
+are expected to have verified any new tests work before asking a reviewer to do
+this.
+
+Details on how to run tests may be found at `Test System`_, and details on the
+appropriate amount of testing before merging the final PR may be found at
+`Testing guidance`_.
 
 * Once the pull request is approved, it can be merged. This can be done by
   either the reviewer or developer (given sufficient permissions), as decided
   between the two of them.  See `How to merge a PR`_ for steps to perform this.
 
-  Note: It's not generally possible to completely remove a commit from git by
-  the time it makes it in to the master branch. So be very careful not to commit
-  anything that you might regret later (e.g., sensitive code, code owned by
-  anyone other than yourself). Ideally, the review will catch such issues, but
-  the ultimate responsibility is on the developer.
-
 * If you are reviewing code from an external contributor without push
-  privileges, please look through the `Reviewer responsibilities`_ once more
-  before merging the change.
+  privileges, go through the checklist once more before merging the change.
 
 After the final version of the change has been agreed upon, the person making
 the merge should follow the steps for `How to merge a PR`_.
@@ -452,14 +430,19 @@ commit`` to finish the merge process.
 If you want to understand the changes that occurred upstream, see
 `Read commit messages`_ below.
 
+.. _How to modify git history:
+
+How to modify git history
++++++++++++++++++++++++++
+
+The following commands are **unsafe** if the changes they overwrite have been
+pulled by other repositories.
+
 Fixing a commit message:
 
 .. code-block:: bash
 
     git commit --amend
-
-Note: This should only ever be done to commits that **have not been pushed** to
-a remote repository.
 
 Un-do the last commit (leaving changed files in your working directory)
 
@@ -467,8 +450,12 @@ Un-do the last commit (leaving changed files in your working directory)
 
     git reset --soft HEAD~1
 
-Note: This should only ever be done to commits that **have not been pushed** to
-a remote repository.
+Pushing such changes to your repository (again, **this is unsafe** if other
+repositories have pulled the changes):
+
+.. code-block:: bash
+
+    git push -f origin <branch_name>
 
 .. _Read commit messages:
 
@@ -510,6 +497,9 @@ How to push
     git branch
 
     # it is the starred one...
+
+Note that ``-f`` is necessary if you've modified changes on your feature branch
+(see `How to modify git history`_).
 
 .. _How to open a PR:
 
@@ -581,8 +571,8 @@ Other git commands
 Update to HEAD:
 
 (If you use this command on a feature branch, you'll just be updating to the
-latest work stored on github. See `Develop and test contributions locally`_ for
-how to update a feature branch with new changes from the main Chapel project)
+latest work stored on github. See `Development commands`_ for how to update a
+feature branch with new changes from the main Chapel project)
 
 .. code-block:: bash
 
@@ -808,9 +798,18 @@ Final merge message
 - manually wrap long lines in the explanation to 75 or 80 characters
 
 It is good practice for the pull request title to match the topic line, and the
-detailed explanation to match the pull request description.  For contributors
-without merge permissions, this will allow the reviewer to merge changes with
-minimal additional support.
+detailed explanation to match the pull request description.
+
+.. _Git history is clear:
+
+Git history is clear
+++++++++++++++++++++
+
+It's not generally possible to completely remove a commit from git by the time
+it makes it in to the master branch. So be very careful not to commit anything
+that you might regret later (e.g., sensitive code, code owned by anyone other
+than yourself). Ideally, the review will catch such issues, but the ultimate
+responsibility is on the developer.
 
 
 .. _Reviewer responsibilities:
