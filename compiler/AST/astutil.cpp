@@ -34,6 +34,7 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"
+#include "wellknown.h"
 #include "WhileStmt.h"
 
 #include "oldCollectors.h" // Deprecated. To be removed.
@@ -782,6 +783,12 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   forv_Vec(FnSymbol, fn, gFnSymbols)
     if (fn->hasFlag(FLAG_EXPORT))
       pruneVisit(fn, fns, types);
+
+  // Mark well-known functions as visible
+  std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
+  for_vector(FnSymbol, fn, wellKnownFns) {
+    pruneVisit(fn, fns, types);
+  }
 
   pruneVisitFn(gAddModuleFn, fns, types);
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
