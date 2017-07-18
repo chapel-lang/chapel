@@ -51,9 +51,8 @@ Discuss design changes or big development efforts
 Before embarking on a big project, please open an issue on the git repository
 and/or send an email to chapel-developers_ with a prefix of ``[Design]`` in the
 subject header for discussion with the community and to ensure that you are
-aware of any parallel efforts in that area.  If the change will impact the user
-experience, it would be appropriate to additionally send this email to
-chapel-users_.
+aware of any parallel efforts in that area.  It may also be a good idea to ask
+for input from the user community via the chapel-users_ mailing list.
 
 .. _Set up a branch for development:
 
@@ -98,7 +97,7 @@ grow).
    https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
 * You do not need commit/push access to the main repo in order to
-  contribute code.  See `Who has commit access`_ for questions.
+  contribute code.  See `Who has commit access`_.
 
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
@@ -149,10 +148,10 @@ Request feedback on your changes
 Push your work to your feature branch
 +++++++++++++++++++++++++++++++++++++
 
-Push your changes to your feature branch on GitHub will enable others to see
-your work (see `How to push`_ for command details).  Note that if you have
-already created a pull request from a feature branch, pushing your work to that
-feature branch will update the pull request.
+Push your changes to your feature branch on GitHub to enable others to see your
+work (see `How to push`_ for command details).  Note that if you have already
+created a pull request from a feature branch, pushing your work to that feature
+branch will update the pull request.
 
 .. _Ask for feedback early:
 
@@ -168,6 +167,7 @@ generally done by:
   section below for how to do this.
 
 Discussion can take place in:
+
 - the `WIP PR`_
 - a separate Github issue
 - the chapel-developers_ mailing list
@@ -224,9 +224,9 @@ Work with your reviewers
   request, and try to discuss if it's really necessary to do before merging.  If
   you can't come to agreement, one of you should bring other developers
   (individually or via chapel-developers_) into the conversation to get a
-  broader opinion (one of the jobs of the reviewer is to serve as a proxy for
+  broader opinion.  One of the jobs of the reviewer is to serve as a proxy for
   other developers, or to bring those developers into the conversation if they
-  feel unqualified to do so).
+  feel unqualified to do so.
 
 
 .. _Test changes:
@@ -248,7 +248,8 @@ appropriate amount of testing before merging the final PR may be found at
 Getting ready to merge
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Before the change can be merged, ensure:
+Before the change can be merged, go through this checklist to ensure:
+
 - all design changes have been discussed
 - the PR has been reviewed
 - the contributor agreement has been signed
@@ -315,8 +316,6 @@ https://help.github.com/categories/56/articles
 Configure your local git
 ++++++++++++++++++++++++
 
-Here is the uncommented version of the commands:
-
 .. code-block:: bash
 
     git config --global user.name 'Thomas Van Doren'
@@ -368,8 +367,7 @@ Stage a file/dir for commit:
 
     git add path/to/file
 
-    # (sort of) similar to:
-    svn add path/to/file
+    # (sort of) similar to: svn add path/to/file
 
 Delete a file/dir and stage the change for commit:
 
@@ -377,8 +375,7 @@ Delete a file/dir and stage the change for commit:
 
     git rm [-r] path/to/dir/or/file
 
-    # similar to:
-    svn delete path/to/dir/or/file
+    # similar to: svn delete path/to/dir/or/file
 
 Move a file/dir:
 
@@ -386,8 +383,7 @@ Move a file/dir:
 
     git mv orig/path/a.txt new/path/to/b.txt
 
-    # similar to:
-    svn move orig/path/a.txt new/path/to/b.txt
+    # similar to: svn move orig/path/a.txt new/path/to/b.txt
 
 Copy a file/dir and stage target for commit:
 
@@ -396,8 +392,7 @@ Copy a file/dir and stage target for commit:
     cp <src> <target>
     git add <target>
 
-    # similar to:
-    svn copy <src> <target>
+    # similar to: svn copy <src> <target>
 
 Get the status of files/dirs (staged and unstaged):
 
@@ -405,8 +400,7 @@ Get the status of files/dirs (staged and unstaged):
 
     git status
 
-    # similar to:
-    svn status
+    # similar to: svn status
 
 Get the diff of unstaged changes:
 
@@ -414,8 +408,7 @@ Get the diff of unstaged changes:
 
     git diff
 
-    # similar to:
-    svn diff
+    # similar to: svn diff
 
 Get the diff of staged changes (those that were staged with ``git add``):
 
@@ -429,8 +422,7 @@ Backing out unstaged changes:
 
     git checkout path/to/file/a.txt
 
-    # similar to:
-    svn revert path/to/file/a.txt
+    # similar to: svn revert path/to/file/a.txt
 
 Committing staged changes:
 
@@ -438,8 +430,7 @@ Committing staged changes:
 
     git commit [-m <message>]
 
-    # similar to:
-    svn commit [-m <message>]
+    # similar to: svn commit [-m <message>]
 
 Bring in changes from the main Chapel project:
 
@@ -571,7 +562,7 @@ and click the friendly green button "Merge pull request" (it is possible to
 merge the pull request from the command line also and the pull request page has
 details). When you click "Merge pull request", you will need to enter a commit
 message. See `Final merge message`_ for a reminder on what that commit message
-should entail.
+should entail (generally, this will closely resemble the PR message).
 
 More information on using git
 +++++++++++++++++++++++++++++
@@ -601,8 +592,7 @@ how to update a feature branch with new changes from the main Chapel project)
     git fetch origin
     git merge origin/master # replace master with whatever branch you're on
 
-    # similar to:
-    svn update
+    # similar to: svn update
 
 Update to specific revision number:
 
@@ -610,8 +600,7 @@ Update to specific revision number:
 
     git checkout <commit sha1>
 
-    # similar to:
-    svn update -r<revision number>
+    # similar to: svn update -r<revision number>
 
 To view "dirty" files, or all those files that are not tracked (includes
 ignored files):
@@ -780,7 +769,8 @@ and would thus add clutter to the list of open PRs.
 
 It is perfectly acceptable to abandon such PRs (especially in favor of a cleaned
 up version of the code) when the git history becomes too large, so long as a
-link to the original PR is provided when the change is eventually merged.
+link to the original PR is provided when the change is eventually merged, to
+preserve the discussion.
 
 .. _reasonably sized:
 
