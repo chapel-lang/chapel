@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyrighth 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -583,10 +583,13 @@ module Random {
         :type parSafe: `bool`
 
       */
-      proc RandomStream(type eltType,
+      proc init(type eltType,
                         seed: int(64) = SeedGenerator.currentTime,
                         param parSafe: bool = true) {
+        this.eltType = eltType;
+        this.parSafe = parSafe;
         this.seed = seed;
+        super.init();
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
@@ -597,11 +600,14 @@ module Random {
       // remove this deprecation version when appropriate
       pragma "no doc"
       pragma "compiler generated"
-      proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64)) {
-        compilerWarning("Deprecated call to RandomStream constructor. Please fix by passing eltType as the first argument.");
+      proc init(seed: int(64) = SeedGenerator.currentTime,
+                param parSafe: bool = true,
+                type eltType = real(64)) {
+        this.eltType = eltType;
+        this.parSafe = parSafe;
         this.seed = seed;
+        super.init();
+        compilerWarning("Deprecated call to RandomStream constructor. Please fix by passing eltType as the first argument.");
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
@@ -2068,10 +2074,11 @@ module Random {
         :type parSafe: `bool`
 
       */
-      proc NPBRandomStream(type eltType,
-                           seed: int(64) = SeedGenerator.oddCurrentTime,
-                           param parSafe: bool = true) {
-
+      proc init(type eltType,
+                seed: int(64) = SeedGenerator.oddCurrentTime,
+                param parSafe: bool = true) {
+        this.eltType = eltType;
+        this.parSafe = parSafe;
         // The mod operation is written in these steps in order
         // to work around an apparent PGI compiler bug.
         // See test/portability/bigmod.test.c
@@ -2085,7 +2092,7 @@ module Random {
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
-
+        super.init();
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
           halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
 
@@ -2100,25 +2107,26 @@ module Random {
 
       pragma "no doc"
       pragma "compiler generated"
-      proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                           param parSafe: bool = true,
-                           type eltType = real(64)) {
-
-        compilerWarning("Deprecated call to NPBRandomStream constructor. Please fix by passing eltType as the first argument.");
-
+      proc init(seed: int(64) = SeedGenerator.oddCurrentTime,
+                param parSafe: bool = true,
+                type eltType = real(64)) {
+        this.eltType = eltType;
+        this.parSafe = parSafe;
+        var useed = seed:uint(64);
+        var mod:uint(64);
         // The mod operation is written in these steps in order
         // to work around an apparent PGI compiler bug.
         // See test/portability/bigmod.test.c
         var one:uint(64) = 1;
         var two_46:uint(64) = one << 46;
         var two_46_mask:uint(64) = two_46 - 1;
-        var useed = seed:uint(64);
-        var mod:uint(64);
         if useed % 2 == 0 then
           halt("NPBRandomStream seed must be an odd integer");
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
+        super.init();
+        compilerWarning("Deprecated call to NPBRandomStream constructor. Please fix by passing eltType as the first argument.");
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
           halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
