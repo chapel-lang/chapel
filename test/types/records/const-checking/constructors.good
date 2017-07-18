@@ -2,14 +2,10 @@ Note: this test is about record field accesses, not about
 how constructors and initialize() are currently invoked.
 If/when the latter changes, the .good should be adjusted.
 
-RECTYPE.initialize()
-RECTYPE.initRT()
 RECTYPE constructor
 RECTYPE.initRT()
 (VARFIELD = 401, CONSTFIELD = 901)
 
-RECTYPE.initialize()
-RECTYPE.initRT()
 RECTYPE constructor
 RECTYPE.initRT()
 (VARFIELD = 401, CONSTFIELD = 901)
