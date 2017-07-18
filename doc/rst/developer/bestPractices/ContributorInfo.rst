@@ -440,8 +440,8 @@ If you want to understand the changes that occurred upstream, see
 How to modify git history
 +++++++++++++++++++++++++
 
-The following commands are **unsafe** if the changes they overwrite have been
-pulled by other repositories.
+The following commands are **may cause problems** if the changes they overwrite
+have been pulled by other repositories.
 
 Fixing a commit message:
 
@@ -455,8 +455,8 @@ Un-do the last commit (leaving changed files in your working directory)
 
     git reset --soft HEAD~1
 
-Pushing such changes to your repository (again, **this is unsafe** if other
-repositories have pulled the changes):
+Pushing such changes to your repository (again, **this may cause problems** if
+other repositories have pulled the changes):
 
 .. code-block:: bash
 
