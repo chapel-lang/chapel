@@ -397,7 +397,7 @@ module CPtr {
   where isAnyCPtr(s.type) {
     extern proc memset(s: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
     memset(s, c.safeCast(c_int), n.safeCast(size_t));
-    return b;
+    return s;
   }
 
 }
