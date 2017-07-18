@@ -455,7 +455,7 @@ Parser module with the Node class for the Chapel TOML library.
    Send values from table to toString for writing
    Skip tables
    */
-     proc printValues(f: channel, v) {
+     proc printValues(f: channel, v: Node) {
        for (key, value) in zip(v.D, v.A) {
          select value.tag {
            when 4 do continue; // Table
@@ -528,7 +528,11 @@ Parser module with the Node class for the Chapel TOML library.
          }
          }
      }
-     
+
+      proc toString() : string { 
+        return toString(this);
+     }
+
      
      /* Don't forget to free your memory! */
      proc deinit() {
