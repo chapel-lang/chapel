@@ -122,8 +122,9 @@ code drift.
 Adding new tests
 ++++++++++++++++
 
-You will probably need to create new tests for your feature. See `Test System`_
-for more information on this process.
+You will probably need to create new tests for your feature. See
+`Creating a Simple Test`_ in `Test System`_ for more information on this
+process.
 
 Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
