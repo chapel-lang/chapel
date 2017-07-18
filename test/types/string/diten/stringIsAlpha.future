@@ -1,0 +1,1 @@
+bug: string.isAlpha() returns true for non-alphabetic characters
