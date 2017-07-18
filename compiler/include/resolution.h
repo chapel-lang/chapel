@@ -155,8 +155,6 @@ public:
 
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
                             CallInfo& info, CallExpr* call);
-void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
-                           bool buildFastFollowerChecks);
 
 /** Contextual info used by the disambiguation process.
  *
@@ -231,10 +229,7 @@ void insertFormalTemps(FnSymbol* fn);
 void insertAndResolveCasts(FnSymbol* fn);
 void ensureInMethodList(FnSymbol* fn);
 
-FnSymbol* defaultWrap(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
-void reorderActuals(FnSymbol* fn, std::vector<ArgSymbol*>* actualFormals,  CallInfo* info);
-void coerceActuals(FnSymbol* fn, CallInfo* info);
-FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks);
+
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
