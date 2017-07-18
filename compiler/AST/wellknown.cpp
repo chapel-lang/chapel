@@ -201,7 +201,20 @@ static WellKnownFn sWellKnownFns[] = {
     "printModuleInit",
     &gPrintModuleInitFn,
     FLAG_PRINT_MODULE_INIT_FN
-  }
+  },
+
+  {
+    "chpl_task_getDynamicEndCount",
+    &gGetDynamicEndCount,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_task_setDynamicEndCount",
+    &gSetDynamicEndCount,
+    FLAG_UNKNOWN
+  },
+
 };
 
 void gatherWellKnownFns() {

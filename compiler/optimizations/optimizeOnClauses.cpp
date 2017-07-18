@@ -326,12 +326,15 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 
+  case PRIM_GET_END_COUNT:
+  case PRIM_SET_END_COUNT:
+  case PRIM_GET_DYNAMIC_END_COUNT:
+  case PRIM_SET_DYNAMIC_END_COUNT:
+    return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
-  case PRIM_GET_END_COUNT:
-  case PRIM_SET_END_COUNT:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:

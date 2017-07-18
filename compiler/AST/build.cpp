@@ -2823,20 +2823,24 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   //
   BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
+  // Note: parallel might be looking for the argument to _downEndCount
   if (onBlock) {
-    body->insertAtHead(new CallExpr("_upEndCount", gFalse));
-    onBlock->insertAtTail(new CallExpr("_downEndCount"));
+    body->insertAtHead(new CallExpr("_upDynamicEndCount", gFalse));
+    onBlock->insertAtTail(new CallExpr("_downDynamicEndCount"));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);
     return body;
   } else {
     BlockStmt* block = buildChapelStmt();
-    block->insertAtTail(new CallExpr("_upEndCount"));
+    VarSymbol* endCount = newTempConst("_endCount");
+    block->insertAtTail(new DefExpr(endCount));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+    block->insertAtTail(new CallExpr("_upEndCount", endCount));
     BlockStmt* beginBlock = new BlockStmt();
     beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN));
     addByrefVars(beginBlock, byref_vars);
     beginBlock->insertAtHead(stmt);
-    beginBlock->insertAtTail(new CallExpr("_downEndCount"));
+    beginBlock->insertAtTail(new CallExpr("_downEndCount", endCount));
     block->insertAtTail(beginBlock);
     return block;
   }
@@ -2849,12 +2853,12 @@ buildSyncStmt(Expr* stmt) {
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTempConst("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
   block->insertAtTail(stmt);
-  block->insertAtTail(new CallExpr("_waitEndCount"));
-  block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCountSave));
+  block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
+  block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
   return block;
 }
 

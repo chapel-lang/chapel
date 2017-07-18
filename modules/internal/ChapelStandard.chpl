@@ -60,6 +60,7 @@ module ChapelStandard {
   use ChapelUtil;
   use ChapelError;
   use ChapelDynDispHack;
+  use ChapelTaskData;
 
   // Standard modules.
   use Assert;
