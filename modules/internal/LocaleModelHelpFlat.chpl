@@ -107,12 +107,18 @@ module LocaleModelHelpFlat {
     //
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
+      // TODO -- these variations may not be necessary
       if __primitive("task_get_serial") then
         // don't call the runtime nb execute_on function if we can stay local
         chpl_ftable_call(fn, args);
       else
         chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_any);
     } else {
+      // Note, task local dta is requested twice in this configuration
+      // once here
+      // once in gasnet execute_on_common
+      // TODO: pull out task-local data sooner.
+      // TODO: copy this information to the chpl_comm_on_bundle_p here
       if __primitive("task_get_serial") then
         chpl_comm_execute_on(node, c_sublocid_any, fn, args, args_size);
       else

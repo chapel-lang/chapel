@@ -151,6 +151,8 @@ module LocaleModelHelpRuntime {
                               ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
+    // TODO: could we get task-local storage pointer once, and add it to
+    // chpl_task_bundle_p before calling this?
     chpl_task_addToTaskList(fn, args, args_size,
                             subloc_id, tlist, tlist_node_id, false);
    }

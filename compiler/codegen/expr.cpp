@@ -4232,6 +4232,20 @@ GenRet CallExpr::codegenPrimitive() {
     codegenCall("chpl_task_setSerial", codegenValue(get(1)));
     break;
 
+  case PRIM_GET_DYNAMIC_END_COUNT:
+    {
+      CallExpr* call = new CallExpr(gGetDynamicEndCount);
+      ret = call->codegen();
+      break;
+    }
+
+  case PRIM_SET_DYNAMIC_END_COUNT:
+    {
+      CallExpr* call = new CallExpr(gSetDynamicEndCount, get(1)->copy());
+      ret = call->codegen();
+      break;
+    }
+
   case PRIM_CHPL_COMM_GET:
   case PRIM_CHPL_COMM_PUT:
   case PRIM_CHPL_COMM_ARRAY_GET:

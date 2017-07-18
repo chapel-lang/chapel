@@ -210,7 +210,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_METHOD_CALL_RESOLVES:
     case PRIM_ENUM_MIN_BITS:
     case PRIM_ENUM_IS_SIGNED:
-    case PRIM_GET_COMPILER_VAR:k
+    case PRIM_GET_COMPILER_VAR:
 */
 bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
   PrimitiveOp* prim = ce->primitive;
@@ -281,6 +281,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_STACK_ALLOCATE_CLASS:
+    case PRIM_GET_DYNAMIC_END_COUNT:
       return true;
     case PRIM_UNKNOWN:
       if(strcmp(prim->name, "string_length") == 0 ||

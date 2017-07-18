@@ -570,7 +570,7 @@ static void build_chpl_entry_points() {
                                              new CallExpr("_endCountAlloc",
                                                           gFalse)));
 
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
   }
 
   chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
@@ -630,7 +630,7 @@ static void build_chpl_entry_points() {
   // endcount (see comment above)
   //
   if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
+    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
     chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
   }
 

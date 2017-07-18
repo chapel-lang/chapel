@@ -490,7 +490,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
   chpl_task_startMovedTask(fid, chpl_ftable[fid],
                            chpl_comm_on_bundle_task_bundle(arg), arg_size,
-                           subloc, chpl_nullTaskID, false);
+                           subloc, chpl_nullTaskID);
 }
 
 // Same as chpl_comm_execute_on()
