@@ -3268,10 +3268,11 @@ inline proc channel.read(ref args ...?k,
 }
 
 
-/* Iterate over all of the lines in a channel.
-    Only serial iteration is supported.
+/*
+  Iterate over all of the lines in a channel.
+  Only serial iteration is supported.
 
-   :returns: an object which yields strings read from the file
+  :returns: an object which yields strings read from the file
  */
 iter channel.lines() {
   var local_style: iostyle;
