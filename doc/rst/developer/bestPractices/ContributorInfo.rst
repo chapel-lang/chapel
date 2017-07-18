@@ -17,7 +17,7 @@ Developer Workflow
 
 Overview:
 
-#. `Discuss design`_ changes or big development efforts
+#. `Discuss design changes or big development efforts`_
 #. `Getting set up`_
 #. `Create new branch`_
 #. `Develop and test contributions locally`_
@@ -26,20 +26,20 @@ Overview:
 
 #. `Request feedback on your changes`_
 
-   #. `Push your work`_
-   #. `Ask for feedback early`_ (optional)
+   #. `Push your work to your feature branch`_
+   #. `Ask for feedback on your branch early (optional)`_
    #. `Submit pull request`_
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
 
 #. `Getting ready to merge`_
-#. `Watch automatic testing`_ and address issues
+#. `Watch automatic testing and address issues`_
 
-`HOWTO/Git/GitHub details`_
+`HOWTO and Git details`_
 
 `Policy details`_
 
-.. _Discuss design:
+.. _Discuss design changes or big development efforts:
 
 Discuss design changes or big development efforts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,7 +86,8 @@ grow).
    https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
 * You do not need commit/push access to the main repo in order to
-  contribute code.  See `Who has commit access`_.
+  contribute code.  See
+  `Who has or needs commit access to the main repository?`_.
 
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
@@ -138,7 +139,7 @@ pass testing for ``start_test -performance``).
 Request feedback on your changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _Push your work:
+.. _Push your work to your feature branch:
 
 Push your work to your feature branch
 +++++++++++++++++++++++++++++++++++++
@@ -148,7 +149,7 @@ work (see `How to push`_ for command details).  Note that if you have already
 created a pull request from a feature branch, pushing your work to that feature
 branch will update the pull request.
 
-.. _Ask for feedback early:
+.. _Ask for feedback on your branch early (optional):
 
 Ask for feedback on your branch early (optional)
 ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -158,12 +159,12 @@ the right direction?  Feel free to ask for early feedback!  Exposing the code is
 generally done by:
 
 - Pointing someone to your feature branch on Github, or
-- Creating a `WIP PR`_ for your feature branch.  See the `Submit pull request`_
-  section below for how to do this.
+- Creating a `Work-in-progress pull request`_ for your feature branch.  See the
+  `Submit pull request`_ section below for how to do this.
 
 Discussion can take place in:
 
-- the `WIP PR`_
+- the `Work-in-progress pull request`_
 - a separate Github issue
 - the chapel-developers_ mailing list
 - a private communication
@@ -184,9 +185,9 @@ your pull request.
 
 In working with your reviewers, you will no doubt change your pull request.
 Just do your local development and then update your feature branch as in
-`Push your work`_
+`Push your work to your feature branch`_
 
-It's a good idea to keep PRs `reasonably sized`_.
+Please follow the `Pull request guidance`_ and keep PRs reasonably sized.
 
 .. _Find a reviewer:
 
@@ -243,7 +244,7 @@ this.
 
 Details on how to run tests may be found at `Test System`_, and details on the
 appropriate amount of testing before merging the final PR may be found at
-`Testing guidance`_.
+`Testing your patch`_.
 
 * Once the pull request is approved, it can be merged. This can be done by
   either the reviewer or developer (given sufficient permissions), as decided
@@ -256,7 +257,7 @@ After the final version of the change has been agreed upon, the person making
 the merge should follow the steps for `How to merge a PR`_.
 
 
-.. _Watch automatic testing:
+.. _Watch automatic testing and address issues:
 
 Watch automatic testing and address issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -273,10 +274,10 @@ Watch automatic testing and address issues
   diagnosing any testing failures on any given night, but it's nice when
   developers notice the issue first themselves to save wasted effort).
 
-.. _HOWTO/Git/GitHub details:
+.. _HOWTO and Git details:
 
-HOWTO/Git/GitHub details
-~~~~~~~~~~~~~~~~~~~~~~~~
+HOWTO and Git details
+~~~~~~~~~~~~~~~~~~~~~
 
 .. _initial git setup:
 
@@ -285,11 +286,11 @@ Initial Git Setup
 
 Follow the GitHub directions to setup a new account.
 
-https://help.github.com/categories/53/articles
+https://help.github.com/articles/signing-up-for-a-new-github-account/
 
 If you plan to use ssh to push/pull, setup SSH keys.
 
-https://help.github.com/categories/56/articles
+https://help.github.com/articles/connecting-to-github-with-ssh/
 
 
 
@@ -432,7 +433,7 @@ files have been fixed, stage them with ``git add``, and then call ``git
 commit`` to finish the merge process.
 
 If you want to understand the changes that occurred upstream, see
-`Read commit messages`_ below.
+`Read commit messages for changes from the main Chapel project`_ below.
 
 .. _How to modify git history:
 
@@ -461,7 +462,7 @@ repositories have pulled the changes):
 
     git push -f origin <branch_name>
 
-.. _Read commit messages:
+.. _Read commit messages for changes from the main Chapel project:
 
 Read commit messages for changes from the main Chapel project
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -541,7 +542,8 @@ How to open a PR:
 How to merge a PR:
 ++++++++++++++++++
 
-If you have commit privileges (see `Who has commit access`_), navigate to the
+If you have commit privileges (see
+`Who has or needs commit access to the main repository?`_), navigate to the
 pull request:
 
 go to
@@ -682,10 +684,10 @@ complete with a link to the pull request page.
 Policy details
 ~~~~~~~~~~~~~~
 
-.. _Who has commit access:
+.. _Who has or needs commit access to the main repository?:
 
-Who has/needs commit access to the main repository?
-+++++++++++++++++++++++++++++++++++++++++++++++++++
+Who has or needs commit access to the main repository?
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Core team members have commit access to the main repository.  Reviewers on the
 core team can pull, review, and merge your pull requests.  Even the developers
@@ -707,7 +709,7 @@ developing yourself (or code that you've developed as a standalone package),
 alert the chapel-developers_ mailing list of this as, presently, such code
 packages must be approved by Cray leadership before being committed.
 
-.. _Testing guidance:
+.. _Testing your patch:
 
 Testing your patch
 ++++++++++++++++++
@@ -743,10 +745,10 @@ Testing your patch
 
 .. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
 
-.. _WIP PR:
+.. _Work-in-progress pull request:
 
-Work-in-progress pull requests (WIP PRs)
-++++++++++++++++++++++++++++++++++++++++
+Work-in-progress pull request
++++++++++++++++++++++++++++++
 
 This is a special kind of pull request that is not yet intended to be merged.
 Such PRs are created to take advantage of what the Github PR interface provides,
@@ -766,7 +768,7 @@ up version of the code) when the git history becomes too large, so long as a
 link to the original PR is provided when the change is eventually merged, to
 preserve the discussion.
 
-.. _reasonably sized:
+.. _Pull request guidance:
 
 Pull request guidance
 +++++++++++++++++++++
