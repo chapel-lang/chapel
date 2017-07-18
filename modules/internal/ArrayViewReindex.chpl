@@ -536,6 +536,7 @@ module ArrayViewReindex {
       if dims.size != dom.rank {
         compilerError("Error while composing view domain for reindex view.");
       }
+      writeln("Converting ", dims, " from ", dom.dsiDims(), " to ", downdom.dsiDims());
       const goodDims = chpl_reindexConvertDom(dims, dom, downdom).dims();
       if _containsRCRE() {
         var nextView = arr._getRCREView();
@@ -706,6 +707,9 @@ module ArrayViewReindex {
     var ranges : downdom.dsiDims().type;
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 1..dims.size {
+      writeln("Working on dimension ", d);
+      writeln("size = ", dims(d).size);
+      writeln("low, high = ", (downdom.dsiDim(d).low, downdom.dsiDim(d).high));
       if (dims(d).size == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
