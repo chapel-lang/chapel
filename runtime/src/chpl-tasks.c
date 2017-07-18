@@ -207,3 +207,16 @@ size_t chpl_task_getDefaultCallStackSize(void)
 
   return deflt;
 }
+
+chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b)
+{
+  // this code assumes each chpl_task_bundle_t has a state field
+  // of type chpl_task_ChapelData_t.
+  return &b->state;
+}
+
+chpl_task_ChapelData_t* chpl_task_getChapelData(void)
+{
+  chpl_task_bundle_t* prv = chpl_task_getPrvBundle();
+  return chpl_task_getBundleChapelData(prv);
+}

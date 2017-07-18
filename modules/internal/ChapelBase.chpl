@@ -836,14 +836,19 @@ module ChapelBase {
 
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
 
+  // Parent class for _EndCount instances so that it's easy
+  // to add non-generic fields here.
+  class _EndCountBase {
+    var taskList: c_void_ptr = _defaultOf(c_void_ptr);
+  }
+
   pragma "end count"
   pragma "no default functions"
-  class _EndCount {
+  class _EndCount : _EndCountBase {
     type iType;
     type taskType;
-    var i: iType,
-        taskCnt: taskType,
-        taskList: c_void_ptr = _defaultOf(c_void_ptr);
+    var i: iType;
+    var taskCnt: taskType;
   }
 
   // This function is called once by the initiating task.  No on
@@ -860,9 +865,11 @@ module ChapelBase {
     type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
                                            else int;
     if forceLocalTypes {
-      return new _EndCount(chpl__processorAtomicType(int), taskCntType);
+      return new _EndCount(iType=chpl__processorAtomicType(int),
+                           taskType=taskCntType);
     } else {
-      return new _EndCount(chpl__atomicType(int), taskCntType);
+      return new _EndCount(iType=chpl__atomicType(int),
+                           taskType=taskCntType);
     }
   }
 
@@ -914,12 +921,15 @@ module ChapelBase {
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
   pragma "dont disable remote value forwarding"
+  pragma "down end count fn"
   proc _downEndCount(e: _EndCount) {
+    // inform anybody waiting that we're done
     e.i.sub(1, memory_order_release);
   }
 
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
+  // called for implicit sync at end of main
   pragma "dont disable remote value forwarding"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
     // See if we can help with any of the started tasks
@@ -943,6 +953,7 @@ module ChapelBase {
     }
   }
 
+  // called for cobegin/coforall
   pragma "dont disable remote value forwarding"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
     // See if we can help with any of the started tasks
@@ -956,18 +967,21 @@ module ChapelBase {
     }
   }
 
-  proc _upEndCount(param countRunningTasks=true) {
-    var e = __primitive("get end count");
+  proc _upDynamicEndCount(param countRunningTasks=true) {
+    var e = __primitive("get dynamic end count");
     _upEndCount(e, countRunningTasks);
   }
 
-  proc _downEndCount() {
-    var e = __primitive("get end count");
+  // MPF - should this have
+  //pragma "dont disable remote value forwarding"
+  pragma "down end count fn"
+  proc _downDynamicEndCount() {
+    var e = __primitive("get dynamic end count");
     _downEndCount(e);
   }
 
-  proc _waitEndCount(param countRunningTasks=true) {
-    var e = __primitive("get end count");
+  proc _waitDynamicEndCount(param countRunningTasks=true) {
+    var e = __primitive("get dynamic end count");
     _waitEndCount(e, countRunningTasks);
   }
 

@@ -110,6 +110,9 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
+  PRIM_GET_DYNAMIC_END_COUNT,  // get/set end count for 'begin' -
+  PRIM_SET_DYNAMIC_END_COUNT,  // manipulates task-local storage
+
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 

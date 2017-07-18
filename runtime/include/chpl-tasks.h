@@ -199,8 +199,8 @@ void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry
                               chpl_task_bundle_t*,// function arg
                               size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
-                              chpl_taskID_t,      // task identifier
-                              chpl_bool);         // serial state
+                              chpl_taskID_t      // task identifier
+                             );
 
 //
 // Get and set the current task's sublocale.  Setting the sublocale
@@ -255,6 +255,7 @@ void chpl_task_sleep(double);
 //
 // Get and set dynamic serial state.
 //
+// TODO -- moving to generated code.
 chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
 
@@ -265,7 +266,17 @@ void      chpl_task_setSerial(chpl_bool);
 // Get pointer to task private data.
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
 chpl_task_prvData_t* chpl_task_getPrvData(void);
+chpl_task_bundle_t* chpl_task_getPrvBundle(void);
 #endif
+
+//
+// Chapel module-code managed task private data
+//
+chpl_task_ChapelData_t* chpl_task_getChapelData(void);
+
+// Get the Chapel module-code managed task private data portion
+// of a task bundle.
+chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b);
 
 //
 // Can this tasking layer support remote caching?

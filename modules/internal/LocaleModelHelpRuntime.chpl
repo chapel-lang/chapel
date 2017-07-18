@@ -41,6 +41,7 @@ module LocaleModelHelpRuntime {
     // to see its contents.
   };
 
+  // bundles and task-local storage
   extern record chpl_comm_on_bundle_t {
   };
 
@@ -105,6 +106,7 @@ module LocaleModelHelpRuntime {
                                          args: chpl_comm_on_bundle_p, args_size: size_t,
                                          subloc_id: int): void;
   extern proc chpl_ftable_call(fn: int, args: chpl_comm_on_bundle_p): void;
+  extern proc chpl_ftable_call(fn: int, args: chpl_task_bundle_p): void;
 
   //////////////////////////////////////////
   //
@@ -134,8 +136,15 @@ module LocaleModelHelpRuntime {
                              ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
-    chpl_task_addToTaskList(fn, args, args_size,
-                            subloc_id, tlist, tlist_node_id, true);
+    var tls = chpl_task_getChapelData();
+    var isSerial = chpl_task_data_getSerial(tls);
+    if isSerial {
+      chpl_ftable_call(fn, args);
+    } else {
+      chpl_task_data_setup(args, tls);
+      chpl_task_addToTaskList(fn, args, args_size,
+                              subloc_id, tlist, tlist_node_id, true);
+    }
   }
 
   //
@@ -151,9 +160,16 @@ module LocaleModelHelpRuntime {
                               ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
-    chpl_task_addToTaskList(fn, args, args_size,
-                            subloc_id, tlist, tlist_node_id, false);
-   }
+    var tls = chpl_task_getChapelData();
+    var isSerial = chpl_task_data_getSerial(tls);
+    if isSerial {
+      chpl_ftable_call(fn, args);
+    } else {
+      chpl_task_data_setup(args, tls);
+      chpl_task_addToTaskList(fn, args, args_size,
+                              subloc_id, tlist, tlist_node_id, false);
+     }
+  }
 
   //
   // make sure all tasks in a list have an opportunity to run
