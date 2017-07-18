@@ -773,7 +773,10 @@ record ReverseComparator {
       data is sorted.
 
    */
-  proc ReverseComparator(comparator:?rec=defaultComparator) {}
+  proc init(comparator:?rec=defaultComparator) {
+    this.comparator = comparator;
+    super.init();
+  }
 
   /*
    Reversed compare method defined based on ``comparator.key`` if defined,
