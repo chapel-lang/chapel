@@ -121,18 +121,9 @@ class BoundedBuffer {
         sentinel: eltType = -1.0;          // the sentinel value
 
   var buff$: [0..#capacity] sync eltType,  // the sync values, empty by default
-      head: atomic int,                    // the head's cursor position
-      tail: atomic int;                    // the tail's cursor position
+      head, tail: atomic int;             // the cursor positions, 0 by default
 
   var rng = new RandomStream(real);
-
-
-  //
-  // Set up the atomics; in the future we should be able to initialize
-  // these in their field declarations.
-  //
-  proc init() {
-  }
 
   //
   // Place an item at the head position of the buffer, assuming

@@ -121,8 +121,7 @@ class BoundedBuffer {
         sentinel: eltType = -1.0;          // the sentinel value
 
   var buff$: [0..#capacity] sync eltType,  // the sync values, empty by default
-      head$: sync int = 0,                  // the head's cursor position
-      tail$: sync int = 0;                  // the tail's cursor position
+      head$, tail$: sync int = 0;      // the cursor positions, full by default
 
   var rng = new RandomStream(real);
 
