@@ -387,9 +387,28 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 
 
 static
+bool isPointerToPointerType(llvm::Type* type)
+{
+  llvm::PointerType *ptrType = llvm::dyn_cast<llvm::PointerType>(type);
+
+  if(!ptrType)
+    return false;
+
+  llvm::PointerType *ptrToPtrType = llvm::dyn_cast<llvm::PointerType>(ptrType->getElementType());
+  if(!ptrToPtrType)
+    return false;
+  return true;
+}
+
+static
 void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
 {
   GenInfo *info = gGenInfo;
+
+  if(isPointerToPointerType(addr->getType()))
+    return;
+
+
   llvm::Type *int8PtrTy =
     llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
   llvm::Function *invariantStart =
