@@ -58,7 +58,6 @@ typedef uint64_t chpl_taskID_t;
 // Task layer private area argument bundle header
 //
 typedef struct {
-  chpl_bool serial_state;
   chpl_bool countRunning;
   chpl_bool is_executeOn;
   int lineno;
@@ -67,6 +66,7 @@ typedef struct {
   chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
   chpl_taskID_t id;
+  chpl_task_ChapelData_t state;
 } chpl_task_bundle_t;
 
 
