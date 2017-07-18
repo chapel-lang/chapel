@@ -105,111 +105,92 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol*
-buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
-  FnSymbol* wrapper = new FnSymbol(fn->name);
-  // TODO: Make this less verbose by bulk-copying flags from the original
-  // function and then negating flags we don't want.
-  wrapper->addFlag(FLAG_WRAPPER);
-  wrapper->addFlag(FLAG_INVISIBLE_FN);
-  wrapper->addFlag(FLAG_INLINE);
-  if (fn->hasFlag(FLAG_INIT_COPY_FN))
-    wrapper->addFlag(FLAG_INIT_COPY_FN);
-  if (fn->hasFlag(FLAG_AUTO_COPY_FN))
-    wrapper->addFlag(FLAG_AUTO_COPY_FN);
-  if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-    wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
-  if (fn->hasFlag(FLAG_DONOR_FN))
-    wrapper->addFlag(FLAG_DONOR_FN);
-  if (fn->hasFlag(FLAG_NO_PARENS))
-    wrapper->addFlag(FLAG_NO_PARENS);
-  if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    wrapper->addFlag(FLAG_CONSTRUCTOR);
-  if (fn->hasFlag(FLAG_FIELD_ACCESSOR))
-    wrapper->addFlag(FLAG_FIELD_ACCESSOR);
-  if (fn->hasFlag(FLAG_REF_TO_CONST))
-    wrapper->addFlag(FLAG_REF_TO_CONST);
-  if (!fn->isIterator()) { // getValue is var, not iterator
-    wrapper->retTag = fn->retTag;
+static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
+                                     Vec<Symbol*>* defaults,
+                                     SymbolMap*    paramMap,
+                                     CallInfo*     info);
+
+static void      insertWrappedCall(FnSymbol* fn,
+                                   FnSymbol* wrapper,
+                                   CallExpr* call);
+
+static FnSymbol* defaultWrap(FnSymbol*                fn,
+                             std::vector<ArgSymbol*>* actualFormals,
+                             CallInfo*                info) {
+  FnSymbol* wrapper = fn;
+
+  if (fn->numFormals() > int(actualFormals->size())) {
+    Vec<Symbol*> defaults;
+    int          j = 1;
+
+    for_formals(formal, fn) {
+      bool used = false;
+
+      for_vector(ArgSymbol, arg, *actualFormals) {
+        if (arg == formal) {
+          used = true;
+        }
+      }
+
+      if (used == false) {
+        defaults.add(formal);
+      }
+    }
+
+    wrapper = checkCache(defaultsCache, fn, &defaults);
+
+    if (wrapper == NULL) {
+      wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, info);
+
+      addCache(defaultsCache, fn, wrapper, &defaults);
+    }
+
+    resolveFormals(wrapper);
+
+    // update actualFormals for use in reorderActuals
+    for_formals(formal, fn) {
+      for (size_t i = 0; i < actualFormals->size(); i++) {
+        if ((*actualFormals)[i] == formal) {
+          ArgSymbol* newFormal = wrapper->getFormal(j);
+
+          (*actualFormals)[i] = newFormal;
+
+          j++;
+        }
+      }
+    }
   }
-  if (fn->hasFlag(FLAG_METHOD))
-    wrapper->addFlag(FLAG_METHOD);
-  if (fn->hasFlag(FLAG_METHOD_PRIMARY))
-    wrapper->addFlag(FLAG_METHOD_PRIMARY);
-  if (fn->hasFlag(FLAG_ASSIGNOP))
-    wrapper->addFlag(FLAG_ASSIGNOP);
-  wrapper->instantiationPoint = getVisibilityBlock(info->call);
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-    wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
-  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
-    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
-  wrapper->addFlag(FLAG_COMPILER_GENERATED);
+
   return wrapper;
 }
 
-
-//
-// copy a formal and make the copy have blank intent. If the formal to copy has
-// out intent or inout intent, flag the copy to make sure it is a reference
-// If the formal is ref intent, leave it as ref on the wrapper formal.
-//
-static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
-  ArgSymbol* wrapperFormal = formal->copy();
-  if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT ||
-      formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)) {
-    wrapperFormal->addFlag(FLAG_WRAP_WRITTEN_FORMAL);
-  }
-  if (formal->intent != INTENT_REF && formal->intent != INTENT_CONST_REF) {
-    wrapperFormal->intent = INTENT_BLANK;
-  }
-  return wrapperFormal;
-}
-
-
-static void
-insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
-  if (fn->getReturnSymbol() == gVoid || fn->retType == dtVoid) {
-    wrapper->insertAtTail(call);
-  } else {
-    Symbol* tmp = newTemp("wrap_call_tmp");
-    tmp->addFlag(FLAG_EXPR_TEMP);
-    tmp->addFlag(FLAG_MAYBE_PARAM);
-    tmp->addFlag(FLAG_MAYBE_TYPE);
-    wrapper->insertAtTail(new DefExpr(tmp));
-    wrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, call));
-    wrapper->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
-  }
-  fn->defPoint->insertAfter(new DefExpr(wrapper));
-}
-
-
-////
-//// default wrapper code
-////
-
-
-static FnSymbol*
-buildDefaultWrapper(FnSymbol* fn,
-                    Vec<Symbol*>* defaults,
-                    SymbolMap* paramMap,
-                    CallInfo* info) {
-  if (FnSymbol* cached = checkCache(defaultsCache, fn, defaults))
+static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
+                                     Vec<Symbol*>* defaults,
+                                     SymbolMap*    paramMap,
+                                     CallInfo*     info) {
+  if (FnSymbol* cached = checkCache(defaultsCache, fn, defaults)) {
     return cached;
+  }
+
   SET_LINENO(fn);
+
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
+
   // Prevent name-clash in generated code.
   // Also, provide a hint where this fcn came from.
   wrapper->cname = astr("_default_wrap_", fn->cname);
 
   // Mimic return type.
-  if (!fn->isIterator())
+  if (!fn->isIterator()) {
     wrapper->retType = fn->retType;
+  }
 
   SymbolMap copy_map;
 
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
+
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_COMPILER_GENERATED);
     wrapper->_this = fn->_this->copy();
@@ -284,7 +265,9 @@ buildDefaultWrapper(FnSymbol* fn,
         // to write this? When does this code fire? Shouldn't it be
         // using the ref intent instead?
         temp = newTemp("wrap_ref_arg");
+
         temp->addFlag(FLAG_MAYBE_PARAM);
+
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            temp,
@@ -294,11 +277,13 @@ buildDefaultWrapper(FnSymbol* fn,
       } else if (specializeDefaultConstructor &&
                  wrapper_formal->typeExpr     &&
                  isRecordWrappedType(wrapper_formal->type)) {
+        AggregateType* _thisType = toAggregateType(fn->_this->type);
+
         // Formal has a type expression attached and is array/dom/dist
         temp = newTemp("wrap_type_arg");
 
-        if (Symbol* field = fn->_this->type->getField(formal->name, false)) {
-          if (field->defPoint->parentSymbol == fn->_this->type->symbol) {
+        if (Symbol* field = _thisType->getField(formal->name, false)) {
+          if (field->defPoint->parentSymbol == _thisType->symbol) {
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
           }
         }
@@ -337,11 +322,12 @@ buildDefaultWrapper(FnSymbol* fn,
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             !paramMap->get(formal)               &&
             formal->type != dtMethodToken) {
-          if (Symbol* field = wrapper->_this->type->getField(formal->name,
-                                                             false)) {
+          AggregateType* thisType = toAggregateType(wrapper->_this->type);
+
+          if (Symbol* field = thisType->getField(formal->name, false)) {
             Symbol* parent = field->defPoint->parentSymbol;
 
-            if (parent == wrapper->_this->type->symbol) {
+            if (parent == thisType->symbol) {
               Symbol* copyTemp = newTemp("wrap_arg");
 
               wrapper->insertAtTail(new DefExpr(copyTemp));
@@ -381,20 +367,25 @@ buildDefaultWrapper(FnSymbol* fn,
       formal->type = wrapper->_this->type;
 
       call->insertAtTail(wrapper->_this);
+
     } else {
-
       // The formal was not supplied. We need to use a default value.
-
       const char* temp_name = astr("default_arg", formal->name);
-      VarSymbol* temp = newTemp(temp_name);
+      VarSymbol*  temp      = newTemp(temp_name);
+
       if (intent != INTENT_INOUT && intent != INTENT_OUT) {
         temp->addFlag(FLAG_MAYBE_PARAM);
         temp->addFlag(FLAG_EXPR_TEMP);
       }
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         temp->addFlag(FLAG_TYPE_VARIABLE);
+      }
+
       copy_map.put(formal, temp);
+
       wrapper->insertAtTail(new DefExpr(temp));
+
       if (intent == INTENT_OUT ||
           !formal->defaultExpr ||
           (formal->defaultExpr->body.length == 1 &&
@@ -403,13 +394,17 @@ buildDefaultWrapper(FnSymbol* fn,
         // use default value for type as default value for formal argument
         if (formal->typeExpr) {
           BlockStmt* typeExpr = formal->typeExpr->copy();
+
           for_alist(expr, typeExpr->body) {
             wrapper->insertAtTail(expr->remove());
           }
+
           Expr* lastExpr = wrapper->body->body.tail;
-          if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+
+          if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
-          else {
+
+          } else {
             //
             // 2016-07-18: benharsh: I was encountering an issue where we were
             // attempting to wrap a function where we had inserted return temps
@@ -428,21 +423,28 @@ buildDefaultWrapper(FnSymbol* fn,
             // Compiled with -suseBulkTransferStride
             //
             CallExpr* lastCall = toCallExpr(lastExpr);
+
             if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE)) {
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastCall->get(1)->copy())));
+
             } else {
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastExpr->remove())));
             }
           }
+
         } else {
-          if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+          if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new SymExpr(formal->type->symbol)));
-          else
+
+          } else {
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
+          }
         }
+
       } else {
         // use argument default for the formal argument
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
+
         for_alist(expr, defaultExpr->body) {
           wrapper->insertAtTail(expr->remove());
         }
@@ -459,27 +461,35 @@ buildDefaultWrapper(FnSymbol* fn,
           // Copy construct from the default value.
           // Sometimes, normalize has already added an initCopy in the
           // defaultExpr. But if it didn't, we need to add a copy.
-          Expr* fromExpr = wrapper->body->body.tail->remove();
-          bool needsInitCopy = true;
+          Expr* fromExpr      = wrapper->body->body.tail->remove();
+          bool  needsInitCopy = true;
+
           if (CallExpr* fromCall = toCallExpr(fromExpr)) {
             Expr* base = fromCall->baseExpr;
+
             if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(base)) {
               if (0 == strcmp(urse->unresolved, "chpl__initCopy") ||
-                  0 == strcmp(urse->unresolved, "_createFieldDefault"))
+                  0 == strcmp(urse->unresolved, "_createFieldDefault")) {
                 needsInitCopy = false;
+              }
+
             } else {
               INT_ASSERT(0); // if resolved, check for FLAG_INIT_COPY_FN
             }
           }
-          if (needsInitCopy)
+
+          if (needsInitCopy) {
             fromExpr = new CallExpr("chpl__initCopy", fromExpr);
+          }
 
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
+
         } else {
           // Otherwise, just pass it in
           if (intent & INTENT_FLAG_REF) {
             // For a ref intent argument, pass in address
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper->body->body.tail->remove())));
+
           } else {
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
           }
@@ -490,6 +500,7 @@ buildDefaultWrapper(FnSymbol* fn,
           temp->removeFlag(FLAG_MAYBE_PARAM);
         }
       }
+
       call->insertAtTail(temp);
 
 
@@ -500,63 +511,120 @@ buildDefaultWrapper(FnSymbol* fn,
       // See arrayDomInClassRecord2.chpl.
       // In the future, it would probably be better to initialize the
       // fields in order in favor of calling the default constructor.
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
-        if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
-          if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
-            if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              wrapper->insertAtTail(
-                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_CStringSymbol(formal->name), temp));
+      if (specializeDefaultConstructor          == true &&
+          strcmp(fn->name, "_construct__tuple") != 0) {
+        if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+          AggregateType* type = toAggregateType(wrapper->_this->type);
 
-    }
-  }
-  update_symbols(wrapper->body, &copy_map);
+          if (Symbol* field = type->getField(formal->name, false)) {
+            if (field->defPoint->parentSymbol == type->symbol) {
+              VarSymbol* name = new_CStringSymbol(formal->name);
 
-  insertWrappedCall(fn, wrapper, call);
-  normalize(wrapper);
-  return wrapper;
-}
-
-
-static FnSymbol* defaultWrap(FnSymbol*                fn,
-                             std::vector<ArgSymbol*>* actualFormals,
-                             CallInfo*                info) {
-  FnSymbol* wrapper = fn;
-  int num_actuals = actualFormals->size();
-  int num_formals = fn->numFormals();
-  if (num_formals > num_actuals) {
-    Vec<Symbol*> defaults;
-    for_formals(formal, fn) {
-      bool used = false;
-      for_vector(ArgSymbol, arg, *actualFormals) {
-        if (arg == formal)
-          used = true;
-      }
-      if (!used)
-        defaults.add(formal);
-    }
-
-    wrapper = checkCache(defaultsCache, fn, &defaults);
-    if (wrapper == NULL) {
-      wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, info);
-      addCache(defaultsCache, fn, wrapper, &defaults);
-    }
-
-    resolveFormals(wrapper);
-
-    // update actualFormals for use in reorderActuals
-    int j = 1;
-    for_formals(formal, fn) {
-      for(unsigned i = 0; i < actualFormals->size(); i++) {
-        if ((*actualFormals)[i] == formal) {
-          ArgSymbol* newFormal = wrapper->getFormal(j);
-          (*actualFormals)[i] = newFormal;
-          j++;
+              wrapper->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                                 wrapper->_this,
+                                                 name,
+                                                 temp));
+            }
+          }
         }
       }
     }
   }
+
+  update_symbols(wrapper->body, &copy_map);
+
+  insertWrappedCall(fn, wrapper, call);
+
+  normalize(wrapper);
+
   return wrapper;
+}
+
+static void insertWrappedCall(FnSymbol* fn,
+                              FnSymbol* wrapper,
+                              CallExpr* call) {
+  if (fn->getReturnSymbol() == gVoid || fn->retType == dtVoid) {
+    wrapper->insertAtTail(call);
+
+  } else {
+    Symbol* tmp = newTemp("wrap_call_tmp");
+
+    tmp->addFlag(FLAG_EXPR_TEMP);
+    tmp->addFlag(FLAG_MAYBE_PARAM);
+    tmp->addFlag(FLAG_MAYBE_TYPE);
+
+    wrapper->insertAtTail(new DefExpr(tmp));
+    wrapper->insertAtTail(new CallExpr(PRIM_MOVE,   tmp, call));
+    wrapper->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  }
+
+  fn->defPoint->insertAfter(new DefExpr(wrapper));
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static FnSymbol*
+buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
+  FnSymbol* wrapper = new FnSymbol(fn->name);
+  // TODO: Make this less verbose by bulk-copying flags from the original
+  // function and then negating flags we don't want.
+  wrapper->addFlag(FLAG_WRAPPER);
+  wrapper->addFlag(FLAG_INVISIBLE_FN);
+  wrapper->addFlag(FLAG_INLINE);
+  if (fn->hasFlag(FLAG_INIT_COPY_FN))
+    wrapper->addFlag(FLAG_INIT_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN))
+    wrapper->addFlag(FLAG_AUTO_COPY_FN);
+  if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+    wrapper->addFlag(FLAG_AUTO_DESTROY_FN);
+  if (fn->hasFlag(FLAG_DONOR_FN))
+    wrapper->addFlag(FLAG_DONOR_FN);
+  if (fn->hasFlag(FLAG_NO_PARENS))
+    wrapper->addFlag(FLAG_NO_PARENS);
+  if (fn->hasFlag(FLAG_CONSTRUCTOR))
+    wrapper->addFlag(FLAG_CONSTRUCTOR);
+  if (fn->hasFlag(FLAG_FIELD_ACCESSOR))
+    wrapper->addFlag(FLAG_FIELD_ACCESSOR);
+  if (fn->hasFlag(FLAG_REF_TO_CONST))
+    wrapper->addFlag(FLAG_REF_TO_CONST);
+  if (!fn->isIterator()) { // getValue is var, not iterator
+    wrapper->retTag = fn->retTag;
+  }
+  if (fn->hasFlag(FLAG_METHOD))
+    wrapper->addFlag(FLAG_METHOD);
+  if (fn->hasFlag(FLAG_METHOD_PRIMARY))
+    wrapper->addFlag(FLAG_METHOD_PRIMARY);
+  if (fn->hasFlag(FLAG_ASSIGNOP))
+    wrapper->addFlag(FLAG_ASSIGNOP);
+  wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+    wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
+  wrapper->addFlag(FLAG_COMPILER_GENERATED);
+  return wrapper;
+}
+
+
+//
+// copy a formal and make the copy have blank intent. If the formal to copy has
+// out intent or inout intent, flag the copy to make sure it is a reference
+// If the formal is ref intent, leave it as ref on the wrapper formal.
+//
+static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
+  ArgSymbol* wrapperFormal = formal->copy();
+  if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT ||
+      formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)) {
+    wrapperFormal->addFlag(FLAG_WRAP_WRITTEN_FORMAL);
+  }
+  if (formal->intent != INTENT_REF && formal->intent != INTENT_CONST_REF) {
+    wrapperFormal->intent = INTENT_BLANK;
+  }
+  return wrapperFormal;
 }
 
 
