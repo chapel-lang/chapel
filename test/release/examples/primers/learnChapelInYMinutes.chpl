@@ -326,7 +326,8 @@ writeln("Size of range '", trapRange, "' = ", trapRange.length);
 // Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
 
-// The end point of a range can be determined using the count (``#``) operator.
+// The end point of a range can be computed by specifying the total size
+// of the range using the count (``#``) operator.
 var rangeCount: range = -5..#12; // range from -5 to 6
 
 // Operators can be mixed.
@@ -361,7 +362,7 @@ for idx in twoDimensions do
   write(idx, ", ");
 writeln();
 
-// These tuples can also be deconstructed.
+// These tuples can also be destructured.
 for (x,y) in twoDimensions {
   write("(", x, ", ", y, ")", ", ");
 }
@@ -774,13 +775,16 @@ class MyClass {
   var memberInt : int;
   var memberBool : bool = true;
 
-// Explicitly defined initializer.
-// We also get the compiler-generated initializer, with one argument per field.
-// Note that soon there will be no compiler-generated initializer when we
-// define any initializer(s) explicitly.
+// By default, any class that doesn't define an initializer gets a
+// compiler-generated initializer, with one argument per field and
+// the field's initial value as the argument's default value.
+// Alternatively, the user can define initializers manually as shown
+// in the following commented-out routine:
+/*
   proc init(val : real) {
     this.memberInt = ceil(val): int;
   }
+*/
 
 // Explicitly defined deinitializer.
 // If we did not write one, we would get the compiler-generated deinitializer,
@@ -818,10 +822,17 @@ var myDiffObject = new MyClass(-1, true);
                                 memberBool = true); // Equivalent
 writeln(myDiffObject);
 
-// Call the initializer we wrote.
+// Similar, but rely on the default value of memberInt, passing in memberBool.
+var myThirdObject = new MyClass(memberBool = true);
+writeln(myThirdObject);
+
+// If the user-defined initializer above had been uncommented, we could
+// make the following calls:
+/*
 var myOtherObject = new MyClass(1.95);
     myOtherObject = new MyClass(val = 1.95); // Equivalent
 writeln(myOtherObject.getMemberInt());
+*/
 
 // We can define an operator on our class as well, but
 // the definition has to be outside the class definition.
@@ -833,10 +844,10 @@ proc +(A : MyClass, B : MyClass) : MyClass {
 var plusObject = myObject + myDiffObject;
 writeln(plusObject);
 
-// Destruction.
+// Destruction of an object: calls the deinit() routine and frees its memory
 delete myObject;
 delete myDiffObject;
-delete myOtherObject;
+delete myThirdObject;
 delete plusObject;
 
 // Classes can inherit from one or more parent classes
@@ -853,20 +864,19 @@ class GenericClass {
 // Explicit initializer.
   proc init(type classType, elements : int) {
     this.classType = classType;
-    this.classDomain = {1..#elements};
+    this.classDomain = {1..elements};
     // all generic and const fields must be initialized in "phase 1" prior
     // to a call to the superclass initializer.
     super.init(); 
   }
 
-// Copy initializer.
-// Note: We still have to put the type as an argument, but we can
-// default to the type of the other object using the query (``?``) operator.
-// Further, we can take advantage of this to allow our copy constructor
-// to copy classes of different types and cast on the fly.
-  proc init(other : GenericClass(?otherType),
-            type classType = otherType) {
-    this.classType = other.classType;
+// Copy-style initializer.
+// Note: We include a type argument whose default is the type of the first
+// argument.  This lets our initializer copy classes of different
+// types and cast on the fly.
+  proc init(other : GenericClass(?),
+            type classType = other.classType) {
+    this.classType = classType;
     this.classDomain = other.classDomain;
     super.init();
     // Copy and cast
@@ -899,12 +909,12 @@ for i in realList.classDomain do realList[i] = i + 1.0;
 for value in realList do write(value, ", ");
 writeln();
 
-// Make a copy of realList using the copy constructor.
+// Make a copy of realList using the copy initializer.
 var copyList = new GenericClass(realList);
 for value in copyList do write(value, ", ");
 writeln();
 
-// Make a copy of realList and change the type, also using the copy constructor.
+// Make a copy of realList and change the type, also using the copy initializer.
 var copyNewTypeList = new GenericClass(realList, int);
 for value in copyNewTypeList do write(value, ", ");
 writeln();
@@ -1021,7 +1031,7 @@ proc main() {
 // NOTE: ``coforall`` should be used only for creating tasks!
 // Using it to iterating over a structure is very a bad idea!
   var num_tasks = 10; // Number of tasks we want
-  coforall taskID in 1..#num_tasks {
+  coforall taskID in 1..num_tasks {
     writeln("Hello from task# ", taskID);
   }
 
@@ -1160,7 +1170,7 @@ proc main() {
   // (full:unlocked / empty:locked)
   // Also, writeXF() fills (F) the sync var regardless of its state (X)
 
-  coforall task in 1..#5 { // Generate tasks
+  coforall task in 1..5 { // Generate tasks
     // Create a barrier
     do {
       lock$;                 // Read lock$ (wait)
