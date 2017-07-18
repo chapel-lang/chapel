@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-// wrappers.cpp
 //////////////////////////////////////////////////////////////////////////////
+//
 // Wrappers are used to lower the Chapel idea of a function call to something
 // implementable in C.
 //  default wrapper -- supplies a value for every argument in the called
@@ -37,19 +37,20 @@
 //  promotion wrapper -- replaces implicit array traversals with explicit
 //      array traversals.
 //      (C has no notion of scalar operator promotion.)
+//
 //////////////////////////////////////////////////////////////////////////////
 
-#include "resolution.h"
+#include "wrappers.h"
 
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
-#include "chpl.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "passes.h"
+#include "resolution.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -57,31 +58,52 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 
-//########################################################################
-//# Static Function Forward Declarations
-//########################################################################
-static FnSymbol*
-buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
+static FnSymbol*  defaultWrap(FnSymbol*                fn,
+                              std::vector<ArgSymbol*>* actuaIdxToFormal,
+                              CallInfo*                info);
+
+static void       reorderActuals(FnSymbol*                fn,
+                                 std::vector<ArgSymbol*>* actualIdxToFormal,
+                                 CallInfo*                info);
+
+static void       coerceActuals(FnSymbol* fn,
+                                CallInfo* info);
+
+static FnSymbol*  promotionWrap(FnSymbol* fn,
+                                CallInfo* info,
+                                bool      buildFastFollowerChecks);
+
+static FnSymbol*  buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
 
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
 
-static void
-insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call);
+/************************************* | **************************************
+*                                                                             *
+* The argument actualIdxToFormals[] contains the actuals for the call but     *
+* shuffled, if necessary, to be in the same order as the formals.             *
+*                                                                             *
+************************************** | *************************************/
 
-static FnSymbol*
-buildDefaultWrapper(FnSymbol* fn,
-                    Vec<Symbol*>* defaults,
-                    SymbolMap* paramMap,
-                    CallInfo* info);
+FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
+                                CallInfo&                info,
+                                std::vector<ArgSymbol*>* actualIdxToFormal,
+                                bool                     fastFollowerChecks) {
+  FnSymbol* retval = fn;
 
-static FnSymbol*
-buildPromotionWrapper(FnSymbol* fn,
-                      SymbolMap* promotion_subs,
-                      CallInfo* info,
-                      bool buildFastFollowerChecks);
+  retval = defaultWrap(retval, actualIdxToFormal, &info);
 
-//########################################################################
+  reorderActuals(retval, actualIdxToFormal, &info);
 
+  coerceActuals(retval, &info);
+
+  return promotionWrap(retval, &info, fastFollowerChecks);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
@@ -496,10 +518,9 @@ buildDefaultWrapper(FnSymbol* fn,
 }
 
 
-FnSymbol*
-defaultWrap(FnSymbol* fn,
-            std::vector<ArgSymbol*>* actualFormals,
-            CallInfo* info) {
+static FnSymbol* defaultWrap(FnSymbol*                fn,
+                             std::vector<ArgSymbol*>* actualFormals,
+                             CallInfo*                info) {
   FnSymbol* wrapper = fn;
   int num_actuals = actualFormals->size();
   int num_formals = fn->numFormals();
@@ -541,12 +562,11 @@ defaultWrap(FnSymbol* fn,
 
 ////
 //// reorder the actuals to match the order of the formals
-//// (this function is here because it used to create a wrapper)
 ////
 
-void reorderActuals(FnSymbol* fn,
-                    std::vector<ArgSymbol*>* actualFormals,
-                    CallInfo* info) {
+static void reorderActuals(FnSymbol*                fn,
+                           std::vector<ArgSymbol*>* actualFormals,
+                           CallInfo*                info) {
   int numArgs = actualFormals->size();
   if (numArgs <= 1)
     return;  // no way we will need to reorder
@@ -747,7 +767,7 @@ static void addArgCoercion(FnSymbol*  fn,
 //// (this function is here because it used to create a wrapper)
 ////
 
-void coerceActuals(FnSymbol* fn, CallInfo* info) {
+static void coerceActuals(FnSymbol* fn, CallInfo* info) {
   if (info->actuals.n < 1)
     return; // nothing to do
 
@@ -1121,10 +1141,11 @@ buildPromotionWrapper(FnSymbol* fn,
 }
 
 
-FnSymbol*
-promotionWrap(FnSymbol* fn, CallInfo* info, bool buildFastFollowerChecks) {
-
+static FnSymbol* promotionWrap(FnSymbol* fn,
+                               CallInfo* info,
+                               bool      buildFastFollowerChecks) {
   Vec<Symbol*>* actuals = &info->actuals;
+
   if (fn->name == astrSequals)
     return fn;
   // Don't try to promotion wrap _ref type constructor

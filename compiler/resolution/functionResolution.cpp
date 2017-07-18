@@ -60,6 +60,7 @@
 #include "visibleFunctions.h"
 #include "wellknown.h"
 #include "WhileStmt.h"
+#include "wrappers.h"
 
 #include "../ifa/prim_data.h"
 
@@ -252,6 +253,10 @@ static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
+
+static void wrapAndCleanUpActuals(ResolutionCandidate* best,
+                                  CallInfo&            info,
+                                  bool                 fastFollowerChecks);
 
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
@@ -3805,13 +3810,13 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
   }
 }
 
-void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
-                           bool buildFastFollowerChecks) {
-  INT_ASSERT(best->fn);
-  best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
-  reorderActuals(best->fn, &best->actualIdxToFormal, &info);
-  coerceActuals(best->fn, &info);
-  best->fn = promotionWrap(best->fn, &info, buildFastFollowerChecks);
+static void wrapAndCleanUpActuals(ResolutionCandidate* best,
+                                  CallInfo&            info,
+                                  bool                 fastFollowerChecks) {
+  best->fn = wrapAndCleanUpActuals(best->fn,
+                                   info,
+                                   &best->actualIdxToFormal,
+                                   fastFollowerChecks);
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
