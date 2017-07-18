@@ -130,6 +130,9 @@ Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
+.. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
+
+
 .. _Request feedback on your changes:
 
 Request feedback on your changes
