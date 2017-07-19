@@ -10,6 +10,7 @@
 // expression symbolically.
 
 #include <stdint.h>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -211,8 +212,7 @@ class Prog {
 
   // Returns the set of kEmpty flags that are in effect at
   // position p within context.
-  template<typename StrPiece>
-  static uint32_t EmptyFlags(const StrPiece& context, typename StrPiece::ptr_rd_type p);
+  static uint32_t EmptyFlags(const StringPiece& context, const char* p);
 
   // Returns whether byte c is a word character: ASCII only.
   // Used by the implementation of \b and \B.
@@ -243,10 +243,9 @@ class Prog {
   // match anything.  Either way, match[i] == NULL.
 
   // Search using NFA: can find submatches but kind of slow.
-  template<typename StrPiece>
-  bool SearchNFA(const StrPiece& text, const StrPiece& context,
+  bool SearchNFA(const StringPiece& text, const StringPiece& context,
                  Anchor anchor, MatchKind kind,
-                 StrPiece* match, int nmatch);
+                 StringPiece* match, int nmatch);
 
   // Search using DFA: much faster than NFA but only finds
   // end of match and can use a lot more memory.
@@ -258,11 +257,22 @@ class Prog {
                  Anchor anchor, MatchKind kind, StringPiece* match0,
                  bool* failed, std::vector<int>* matches);
 
-  // Build the entire DFA for the given match kind.  FOR TESTING ONLY.
+  // The callback issued after building each DFA state with BuildEntireDFA().
+  // If next is null, then the memory budget has been exhausted and building
+  // will halt. Otherwise, the state has been built and next points to an array
+  // of bytemap_range()+1 slots holding the next states as per the bytemap and
+  // kByteEndText. The number of the state is implied by the callback sequence:
+  // the first callback is for state 0, the second callback is for state 1, ...
+  // match indicates whether the state is a matching state.
+  using DFAStateCallback = std::function<void(const int* next, bool match)>;
+
+  // Build the entire DFA for the given match kind.
   // Usually the DFA is built out incrementally, as needed, which
-  // avoids lots of unnecessary work.  This function is useful only
-  // for testing purposes.  Returns number of states.
-  int BuildEntireDFA(MatchKind kind);
+  // avoids lots of unnecessary work.
+  // If cb is not empty, it receives one callback per state built.
+  // Returns the number of states built.
+  // FOR TESTING OR EXPERIMENTAL PURPOSES ONLY.
+  int BuildEntireDFA(MatchKind kind, const DFAStateCallback& cb);
 
   // Controls whether the DFA should bail out early if the NFA would be faster.
   // FOR TESTING ONLY.
@@ -282,11 +292,9 @@ class Prog {
   // but much faster than NFA (competitive with PCRE)
   // for those expressions.
   bool IsOnePass();
-
-  template<typename StrPiece>
-  bool SearchOnePass(const StrPiece& text, const StrPiece& context,
+  bool SearchOnePass(const StringPiece& text, const StringPiece& context,
                      Anchor anchor, MatchKind kind,
-                     StrPiece* match, int nmatch);
+                     StringPiece* match, int nmatch);
 
   // Bit-state backtracking.  Fast on small cases but uses memory
   // proportional to the product of the program size and the text size.

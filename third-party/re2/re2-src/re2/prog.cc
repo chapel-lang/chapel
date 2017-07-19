@@ -288,8 +288,7 @@ static bool IsMatch(Prog* prog, Prog::Inst* ip) {
   }
 }
 
-template<typename StrPiece>
-uint32_t Prog::EmptyFlags(const StrPiece& text, typename StrPiece::ptr_rd_type p) {
+uint32_t Prog::EmptyFlags(const StringPiece& text, const char* p) {
   int flags = 0;
 
   // ^ and \A
@@ -322,12 +321,6 @@ uint32_t Prog::EmptyFlags(const StrPiece& text, typename StrPiece::ptr_rd_type p
 
   return flags;
 }
-
-template
-uint32_t Prog::EmptyFlags<StringPiece>(const StringPiece& text, const char* p);
-
-template
-uint32_t Prog::EmptyFlags<FilePiece>(const FilePiece& text, FilePiece::ptr_rd_type p);
 
 // ByteMapBuilder implements a coloring algorithm.
 //
@@ -547,7 +540,7 @@ void Prog::ComputeByteMap() {
 // dominator of the instructions reachable from some "successor root" (i.e. it
 // has an unreachable predecessor) and is considered a "dominator root". Since
 // only Alt instructions can be "dominator roots" (other instructions would be
-// "leaves"), only Alt instructions require their predecessors to be computed.
+// "leaves"), only Alt instructions are required to be marked as predecessors.
 //
 // Dividing the Prog into "trees" comprises two passes: marking the "successor
 // roots" and the predecessors; and marking the "dominator roots". Sorting the
