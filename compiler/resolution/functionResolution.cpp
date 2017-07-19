@@ -158,8 +158,7 @@ std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 //#
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
-                                       bool checkonly=false);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static FnSymbol*
@@ -338,7 +337,7 @@ resolveUninsertedCall(BlockStmt* insideBlock,
 
 // Resolve a call to do with a particular type.
 static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
+resolveUninsertedCall(Type* type, CallExpr* call) {
 
   BlockStmt* insideBlock = NULL;
   Expr* beforeExpr = NULL;
@@ -354,7 +353,7 @@ resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
     insideBlock = chpl_gen_main->body;
   }
 
-  return resolveUninsertedCall(insideBlock, beforeExpr, call, checkonly);
+  return resolveUninsertedCall(insideBlock, beforeExpr, call, false);
 }
 
 //
