@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,19 +70,23 @@ referring to the domain or array.
 
   .. code-block:: chapel
 
-    const Dbase = {1..5};  // a default-distributed domain
+    const Dbase = {1..5};  // A default-distributed domain
     const Drepl = Dbase dmapped Replicated();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
-    // only the current locale's replicand is accessed
+    // Only the current locale's replicand is accessed
     Arepl[3] = 4;
 
-    // only the current locale's replicand is accessed
+    // Only the current locale's replicand is accessed
     forall (b,r) in zip(Abase,Arepl) do b = r;
     Abase = Arepl;
 
+    // Access other locales' replicand with the replicand(loc) method
+    Arepl.replicand(Locales[1]) = Arepl;
 
+See the :ref:`primers-replicated` primer for more examples of the Replicated
+distribution.
 
 **Constructor Arguments**
 
@@ -424,6 +428,19 @@ class ReplicatedArr : BaseArr {
         halt("locale ", here.id, " has no local replicand");
     return localArrs[here.id];
   }
+
+  //
+  // Access another locale's local array representation
+  //
+  proc replicand(loc: locale) ref {
+    return localArrs[loc.id].arrLocalRep;
+  }
+}
+
+pragma "no doc"
+// TODO: Placeholder until we can do forwarding on _value fields
+proc _array.replicand(loc: locale) ref {
+  return _value.replicand(loc);
 }
 
 //

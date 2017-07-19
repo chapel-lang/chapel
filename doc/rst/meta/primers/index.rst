@@ -61,6 +61,7 @@ Data Parallelism
    Opaque Domains and Arrays <opaque>
    Reductions <reductions>
    Distributions <distributions>
+   Replicated Distribution <replicated>
 
 Library Utilities
 -----------------
