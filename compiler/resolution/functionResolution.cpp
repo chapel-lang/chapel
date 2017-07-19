@@ -6694,8 +6694,8 @@ static void insertRuntimeTypeTemps() {
 ************************************** | *************************************/
 
 static void        resolveAutoCopyEtc(AggregateType* at);
-static const char* autoCopyFnForType(Type* type);
-static FnSymbol*   autoMemoryFunction(Type* type, const char* fnName);
+static const char* autoCopyFnForType(AggregateType* at);
+static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -6751,30 +6751,30 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
 // records shouldn't be defining chpl__initCopy or chpl__autoCopy
 // and certainly shouldn't rely on the differences between the two.
-static const char* autoCopyFnForType(Type* type) {
+static const char* autoCopyFnForType(AggregateType* at) {
   const char* retval = "chpl__autoCopy";
 
-  if (isUserDefinedRecord(type)                == true  &&
+  if (isUserDefinedRecord(at)                == true  &&
 
-      type->symbol->hasFlag(FLAG_TUPLE)        == false &&
-      isRecordWrappedType(type)                == false &&
-      isSyncType(type)                         == false &&
-      isSingleType(type)                       == false &&
-      type->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
+      at->symbol->hasFlag(FLAG_TUPLE)        == false &&
+      isRecordWrappedType(at)                == false &&
+      isSyncType(at)                         == false &&
+      isSingleType(at)                       == false &&
+      at->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
     retval = "chpl__initCopy";
   }
 
   return retval;
 }
 
-static FnSymbol* autoMemoryFunction(Type* type, const char* fnName) {
-  VarSymbol*  tmp    = newTemp(type);
-  CallExpr*   call   = new CallExpr(fnName, tmp);
-  FnSymbol*   retval = NULL;
+static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
+  VarSymbol* tmp    = newTemp(at);
+  CallExpr*  call   = new CallExpr(fnName, tmp);
+  FnSymbol*  retval = NULL;
 
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
-  retval = resolveUninsertedCall(type, call);
+  retval = resolveUninsertedCall(at, call);
 
   resolveFns(retval);
 
