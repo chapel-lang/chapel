@@ -59,7 +59,7 @@ module ChapelTaskData {
     var i = chpl_offset_endCount;
     // Using memcpy to avoid pointer type punning
     c_memcpy(c_ptrTo(ret), c_ptrTo(prv[i]), 16);
-    
+
     // workaround to make ret always wide
     if neverExecuted {
       on Locales[numLocales-1] do

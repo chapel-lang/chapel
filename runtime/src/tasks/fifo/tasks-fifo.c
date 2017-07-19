@@ -606,16 +606,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              chpl_bool is_begin_stmt,
                              int lineno,
                              int32_t filename) {
-  // Copy task-local data to the new task
-  arg->state = *chpl_task_getChapelData();
-
   assert(subloc == c_sublocid_any);
-
-  // TODO -- move serial_state check to locale models
-  /*if (serial_state) {
-    (*chpl_ftable[fid])(arg);
-    return;
-  }*/
 
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
@@ -649,12 +640,8 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
   task_pool_p curr_ptask;
   task_pool_p child_ptask;
 
-  //
-  // If we're serial, all the tasks have already been executed.
-  //
-  // TODO -- move check to locale models
-  //if (chpl_task_getSerial())
-  //  return;
+  // Note: this function needs to tolerate an empty task
+  // list. That will happen for coforalls inside a serial block, say.
 
   curr_ptask = get_current_ptask();
 
@@ -743,9 +730,6 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,
                         chpl_task_bundle_t* arg, size_t arg_size,
                         c_sublocid_t subloc,
                         int lineno, int32_t filename) {
-  // Copy task-local data to the new task
-  arg->state = *chpl_task_getChapelData();
-
   taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 

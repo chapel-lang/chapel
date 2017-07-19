@@ -252,13 +252,6 @@ void chpl_task_yield(void);
 //
 void chpl_task_sleep(double);
 
-//
-// Get and set dynamic serial state.
-//
-// TODO -- moving to generated code.
-chpl_bool chpl_task_getSerial(void);
-void      chpl_task_setSerial(chpl_bool);
-
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support
 // proper initialization order with a task model .h

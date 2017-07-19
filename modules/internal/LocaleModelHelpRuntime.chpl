@@ -41,7 +41,7 @@ module LocaleModelHelpRuntime {
     // to see its contents.
   };
 
-  // bundles and task-local storage
+  // runtime stuff about argument bundles
   extern record chpl_comm_on_bundle_t {
   };
 
@@ -177,6 +177,9 @@ module LocaleModelHelpRuntime {
   pragma "insert line file info"
   export
   proc chpl_taskListExecute(ref task_list: c_void_ptr) {
+    // note: if we're serial, all of the tasks have already
+    // been executed. Tasking layers should tolerate empty task
+    // lists for this reason.
     chpl_task_executeTasksInList(task_list);
   }
 

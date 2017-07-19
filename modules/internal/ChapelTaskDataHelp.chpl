@@ -26,7 +26,7 @@ module ChapelTaskDataHelp {
   extern type chpl_task_ChapelData_t;
   extern proc chpl_task_getChapelData(): c_ptr(chpl_task_ChapelData_t);
   extern proc chpl_task_getBundleChapelData(args: chpl_task_bundle_p):c_ptr(chpl_task_ChapelData_t);
-  
+
   // This function is called to set up the Chapel-managed portion
   // of task-local storage in the argument bundle when creating
   // a new task.
