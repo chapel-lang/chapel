@@ -3368,22 +3368,21 @@ static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
                                        CallExpr*  call);
 
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
-  AggregateType* at          = toAggregateType(type);
-  BlockStmt*     insideBlock = NULL;
-  Expr*          beforeExpr  = NULL;
+  AggregateType* at     = toAggregateType(type);
+  FnSymbol*      retval = NULL;
 
   if (at && at->defaultInitializer) {
-    if (at->defaultInitializer->instantiationPoint) {
-      insideBlock = at->defaultInitializer->instantiationPoint;
+    if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
+      retval = resolveUninsertedCall(point, NULL, call);
     } else {
-      beforeExpr = at->symbol->defPoint;
+      retval = resolveUninsertedCall(NULL, at->symbol->defPoint, call);
     }
 
   } else {
-    insideBlock = chpl_gen_main->body;
+    retval = resolveUninsertedCall(chpl_gen_main->body, NULL, call);
   }
 
-  return resolveUninsertedCall(insideBlock, beforeExpr, call);
+  return retval;
 }
 
 static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
@@ -3398,7 +3397,7 @@ static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
     beforeExpr->insertBefore(block);
 
   } else {
-    INT_ASSERT(insideBlock != NULL || beforeExpr != NULL);
+    INT_ASSERT(false);
   }
 
   block->insertAtHead(call);
