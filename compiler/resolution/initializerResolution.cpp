@@ -36,6 +36,7 @@
 #include "view.h"
 #include "visibleCandidates.h"
 #include "visibleFunctions.h"
+#include "wrappers.h"
 
 static
 void resolveInitCall(CallExpr* call);
@@ -568,20 +569,16 @@ void resolveMatch(FnSymbol* fn) {
 // calls are wrapped by the "_new" function, and appropriate wrappers will
 // be created for it, so we don't need to wrap the initializer itself.
 static void makeRecordInitWrappers(CallExpr* call) {
-  CallInfo info(call, false, false);
-
+  CallInfo                info(call, false, false);
   std::vector<ArgSymbol*> actualIdxToFormal;
+  FnSymbol*               wrap = NULL;
+
   makeActualsVector(call, info, actualIdxToFormal);
 
-
-  FnSymbol* wrap = call->resolvedFunction();
-
-  // Taken from wrapAndCleanUpActuals (modified to not need a
-  // ResolutionCandidate by recreating the necessary pieces)
-  wrap = defaultWrap(wrap, &actualIdxToFormal, &info);
-  reorderActuals(wrap, &actualIdxToFormal, &info);
-  coerceActuals(wrap, &info);
-  wrap = promotionWrap(wrap, &info, true);
+  wrap = wrapAndCleanUpActuals(call->resolvedFunction(),
+                               info,
+                               &actualIdxToFormal,
+                               true);
 
   call->baseExpr->replace(new SymExpr(wrap));
 

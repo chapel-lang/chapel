@@ -60,6 +60,7 @@
 #include "visibleFunctions.h"
 #include "wellknown.h"
 #include "WhileStmt.h"
+#include "wrappers.h"
 
 #include "../ifa/prim_data.h"
 
@@ -252,6 +253,10 @@ static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
+
+static void wrapAndCleanUpActuals(ResolutionCandidate* best,
+                                  CallInfo&            info,
+                                  bool                 fastFollowerChecks);
 
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
@@ -3805,13 +3810,13 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
   }
 }
 
-void wrapAndCleanUpActuals(ResolutionCandidate* best, CallInfo& info,
-                           bool buildFastFollowerChecks) {
-  INT_ASSERT(best->fn);
-  best->fn = defaultWrap(best->fn, &best->actualIdxToFormal, &info);
-  reorderActuals(best->fn, &best->actualIdxToFormal, &info);
-  coerceActuals(best->fn, &info);
-  best->fn = promotionWrap(best->fn, &info, buildFastFollowerChecks);
+static void wrapAndCleanUpActuals(ResolutionCandidate* best,
+                                  CallInfo&            info,
+                                  bool                 fastFollowerChecks) {
+  best->fn = wrapAndCleanUpActuals(best->fn,
+                                   info,
+                                   &best->actualIdxToFormal,
+                                   fastFollowerChecks);
 }
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
@@ -6984,8 +6989,10 @@ static void resolveOther() {
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
   for_vector(FnSymbol, fn, fns) {
-    if (!fn->hasFlag(FLAG_GENERIC))
+    if (!fn->hasFlag(FLAG_GENERIC)) {
+      resolveFormals(fn);
       resolveFns(fn);
+    }
   }
 }
 
@@ -7467,10 +7474,19 @@ static void removeCopyFns(Type* t) {
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
 
+  // Generic well-known functions will no longer be
+  // well-known (since after resolution they can't be
+  // instantiated, and the generic fn is removed).
+  // So remove generic well-known functions from the list.
+  clearGenericWellKnownFunctions();
+
+  // Concrete well-known functions need to be preserved,
+  // so track them in a set.
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
   for_vector(FnSymbol, fn, fns) {
-    if (!fn->hasFlag(FLAG_GENERIC))
-      concreteWellKnownFunctionsSet.insert(fn);
+    // These should have just been removed
+    INT_ASSERT(!fn->hasFlag(FLAG_GENERIC));
+    concreteWellKnownFunctionsSet.insert(fn);
   }
 
   // Remove unused functions

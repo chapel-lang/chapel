@@ -1,6 +1,0 @@
-feature request: restore varargs capability to initializers on generic types
-
-In making the switch over to unify generic and concrete types with initializers,
-this test regressed.  I believe it is because there was previously an error with
-varargs for concrete types that hadn't been exposed.  I'm going to fix that
-independent of this change, so hopefully it won't fail for long.

@@ -342,15 +342,40 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
-    if (isPrimitiveScalar(type) == true) {
+    if (isTypeVar == true) {
+      VarSymbol*  tmp;
+
+      if (type == dtAny) {
+        tmp = newTemp("tmp");
+      } else {
+        tmp = newTemp("tmp", type);
+      }
+      DefExpr*    tmpDefn   = new DefExpr(tmp);
+      CallExpr*   tmpInit   = new CallExpr(PRIM_MOVE, tmp, initExpr);
+
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+
+      Symbol*    _this    = mFn->_this;
+      Symbol*    name     = new_CStringSymbol(field->sym->name);
+      CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
+
+      if (isFieldAccessible(initExpr) == false) {
+        INT_ASSERT(false);
+      }
+
+      updateFieldsMember(initExpr);
+
+      insertBefore->insertBefore(tmpDefn);
+      insertBefore->insertBefore(tmpInit);
+      insertBefore->insertBefore(fieldSet);
+
+    } else if (isPrimitiveScalar(type) == true) {
       VarSymbol*  tmp       = newTemp("tmp", type);
       DefExpr*    tmpDefn   = new DefExpr(tmp);
       CallExpr*   tmpInit   = new CallExpr(PRIM_MOVE, tmp, initExpr);
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
-      } else if (isTypeVar == true) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*     name      = new_CStringSymbol(field->sym->name);
@@ -374,8 +399,6 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
-      } else if (isTypeVar == true) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*    _this    = mFn->_this;
@@ -400,6 +423,27 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       INT_ASSERT(false);
 
+    } else if (isTypeVar == true) {
+      VarSymbol* tmp      = newTemp("tmp");
+      DefExpr*   tmpDefn  = new DefExpr(tmp);
+      CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, initExpr);
+
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+
+      Symbol*    _this    = mFn->_this;
+      Symbol*    name     = new_CStringSymbol(field->sym->name);
+      CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
+
+      if (isFieldAccessible(initExpr) == false) {
+        INT_ASSERT(false);
+      }
+
+      updateFieldsMember(initExpr);
+
+      insertBefore->insertBefore(tmpDefn);
+      insertBefore->insertBefore(tmpInit);
+      insertBefore->insertBefore(fieldSet);
+
     } else {
       VarSymbol* tmp      = newTemp("tmp");
       DefExpr*   tmpDefn  = new DefExpr(tmp);
@@ -407,8 +451,6 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
-      } else if (isTypeVar == true) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*    _this    = mFn->_this;

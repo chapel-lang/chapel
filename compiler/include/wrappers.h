@@ -17,18 +17,18 @@
  * limitations under the License.
  */
 
-#ifndef _WELL_KNOWN_H_
-#define _WELL_KNOWN_H_
+#ifndef _WRAPPERS_H_
+#define _WRAPPERS_H_
 
 #include <vector>
 
+class ArgSymbol;
+class CallInfo;
 class FnSymbol;
 
-void gatherIteratorTags();
-void gatherWellKnownTypes();
-void gatherWellKnownFns();
-
-std::vector<FnSymbol*> getWellKnownFunctions();
-void clearGenericWellKnownFunctions();
+FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
+                                CallInfo&                info,
+                                std::vector<ArgSymbol*>* actualIdxToFormal,
+                                bool                     fastFollowerChecks);
 
 #endif

@@ -4,7 +4,12 @@ class FixedOffset: TZInfo {
   var offset: timedelta;
   var name: string;
   var dstoffset: timedelta;
-  proc FixedOffset(offset: int, name, dstoffset:int=42) {
+  proc init(offset: timedelta, name: string, dstoffset: timedelta = new timedelta(minutes=42)) {
+    this.offset = offset;
+    this.name = name;
+    this.dstoffset = dstoffset;
+  }
+  proc init(offset: int, name, dstoffset:int=42) {
     this.offset = new timedelta(minutes=offset);
     this.name = name;
     this.dstoffset = new timedelta(minutes=dstoffset);
@@ -247,7 +252,7 @@ proc test_tzinfo_timetuple() {
   // DST flag.
   class DST: TZInfo {
     var dstvalue: timedelta;
-    proc DST(i) {
+    proc init(i) {
       dstvalue = new timedelta(minutes=i);
     }
     proc dst(dt) {
@@ -277,7 +282,7 @@ proc test_tzinfo_timetuple() {
 proc test_utctimetuple() {
   class DST: TZInfo {
     var dstvalue: timedelta;
-    proc DST(dstvalue) {
+    proc init(dstvalue) {
       this.dstvalue = new timedelta(minutes=dstvalue);
     }
     proc dst(dt) {
@@ -287,9 +292,9 @@ proc test_utctimetuple() {
 
   class UOFS: DST {
     var uofs: timedelta;
-    proc UOFS(uofs, dofs=0) {
-      this.dstvalue = new timedelta(dofs);
+    proc init(uofs, dofs=0) {
       this.uofs = new timedelta(minutes=uofs);
+      super.init(dofs);
     }
     proc utcoffset(dt) {
       return uofs;
@@ -506,7 +511,7 @@ proc test_mixed_compare() {
   // In datetime w/ identical tzinfo objects, utcoffset is ignored.
   class Varies: TZInfo {
     var offset: timedelta;
-    proc Varies() {
+    proc init() {
       offset = new timedelta(minutes=22);
     }
     proc utcoffset(dt: datetime) {

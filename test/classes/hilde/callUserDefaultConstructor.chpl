@@ -3,7 +3,7 @@
 
 class C
 {
-  proc C() { writeln("Called C()."); }
+  proc init() { writeln("Called C()."); }
   proc deinit() { writeln("Called ~C()."); }
 }
 
