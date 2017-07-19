@@ -53,7 +53,10 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) == true) {
       mBlockType = cBlockCobegin;
 
-    } else {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) == true) {
+      mBlockType = cBlockCoforall;
+
+    } else{
       INT_ASSERT(false);
     }
 
@@ -147,6 +150,10 @@ bool InitNormalize::inCondStmt() const {
 bool InitNormalize::inParallelStmt() const {
   return mBlockType == cBlockBegin   ||
          mBlockType == cBlockCobegin  ;
+}
+
+bool InitNormalize::inCoforall() const {
+  return mBlockType == cBlockCoforall;
 }
 
 /************************************* | **************************************
@@ -1284,6 +1291,9 @@ void InitNormalize::describe(int offset) const {
       printf("cobegin\n");
       break;
 
+    case cBlockCoforall:
+      printf("coforall\n");
+      break;
   }
 
   printf("%s>\n", pad);
