@@ -18,7 +18,7 @@ array.
  proc parseToml(input) : Toml {
    const source = new Source(input);
    const parser = new Parser(source);
-   var TomlFile =  parser.parseLoop();
+   const TomlFile =  parser.parseLoop();
    delete parser;
    delete source;
    return TomlFile;
@@ -30,7 +30,7 @@ array.
  proc parseToml(input: string) : Toml {
    const source = new Source(input);
    const parser = new Parser(source);
-   var TomlFile =  parser.parseLoop();
+   const TomlFile =  parser.parseLoop();
    delete parser;
    delete source;
    return TomlFile;
@@ -46,7 +46,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
 
    // Prints a line by line output of parsing process
-   config const DEBUG: bool = false;
+   config const debugToml: bool = false;
 
    
    class Parser {
@@ -94,14 +94,8 @@ Parser module with the Toml class for the Chapel TOML library.
          else {
            halt("Unexpected token ->", getToken(source));
          }
-         if DEBUG {
-           writeln();
-           writeln("========================= Debug Info  ==========================");
-           source.debug();
-           writeln();
-           writeln(rootTable);
-           writeln();
-           writeln("================================================================");
+         if debugToml {
+           debugPrint();
          }
        }
        return rootTable;
@@ -205,11 +199,7 @@ Parser module with the Toml class for the Chapel TOML library.
        if A.size == 1 then path = A[fIdx];
        return (path, leaf);
      }
-     
-     proc splitName(s: string) {
-       var A = s.split('.');
-       return A;
-     }
+
 
      /* Creates and returns a Toml parsed from tokens into respective type */
      proc parseValue(): Toml {
@@ -296,6 +286,16 @@ Parser module with the Toml class for the Chapel TOML library.
        else {
          halt("Unexpected Token: ", "'", val, "'");
        }
+     }
+
+     proc debugPrint() {
+       writeln();
+       writeln("========================= Debug Info  ==========================");
+       source.debug();
+       writeln();
+       writeln(rootTable);
+       writeln();
+       writeln("================================================================");
      }
    }
    
