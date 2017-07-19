@@ -295,59 +295,6 @@ static bool typeHasRefField(Type *type) {
   return false;
 }
 
-// Temporarily add a call, resolve it, then remove it.
-// Return the function that the call resolved to, or NULL if it didn't.
-// Either insideBlock or beforeExpr must be != NULL and
-// indicate where the call should be added.
-static FnSymbol*
-resolveUninsertedCall(BlockStmt* insideBlock,
-                      Expr* beforeExpr,
-                      CallExpr* call) {
-
-  // In case resolveCall drops other stuff into the tree ahead of the
-  // call, we wrap everything in a block for safe removal.
-  BlockStmt* block = new BlockStmt();
-
-  if (insideBlock) {
-    insideBlock->insertAtHead(block);
-  } else if(beforeExpr) {
-    beforeExpr->insertBefore(block);
-  } else {
-    INT_ASSERT(insideBlock != NULL || beforeExpr != NULL);
-  }
-
-  INT_ASSERT(block->parentSymbol);
-
-  block->insertAtHead(call);
-
-  resolveCall(call);
-
-  block->remove();
-
-  return call->resolvedFunction();
-}
-
-// Resolve a call to do with a particular type.
-static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call) {
-
-  BlockStmt* insideBlock = NULL;
-  Expr* beforeExpr = NULL;
-
-  AggregateType* at = toAggregateType(type);
-
-  if (at && at->defaultInitializer) {
-    if (at->defaultInitializer->instantiationPoint)
-      insideBlock = at->defaultInitializer->instantiationPoint;
-    else
-      beforeExpr = at->symbol->defPoint;
-  } else {
-    insideBlock = chpl_gen_main->body;
-  }
-
-  return resolveUninsertedCall(insideBlock, beforeExpr, call);
-}
-
 //
 // Invoke resolveFns(fn), while having 'call' be on the top of 'callStack'.
 //
@@ -3409,6 +3356,65 @@ populateForwardingMethods(Type* t,
 
   return addedAny;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
+                                       Expr*      beforeExpr,
+                                       CallExpr*  call);
+
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+  AggregateType* at          = toAggregateType(type);
+  BlockStmt*     insideBlock = NULL;
+  Expr*          beforeExpr  = NULL;
+
+  if (at && at->defaultInitializer) {
+    if (at->defaultInitializer->instantiationPoint) {
+      insideBlock = at->defaultInitializer->instantiationPoint;
+    } else {
+      beforeExpr = at->symbol->defPoint;
+    }
+
+  } else {
+    insideBlock = chpl_gen_main->body;
+  }
+
+  return resolveUninsertedCall(insideBlock, beforeExpr, call);
+}
+
+static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
+                                       Expr*      beforeExpr,
+                                       CallExpr*  call) {
+  BlockStmt* block = new BlockStmt();
+
+  if (insideBlock) {
+    insideBlock->insertAtHead(block);
+
+  } else if (beforeExpr) {
+    beforeExpr->insertBefore(block);
+
+  } else {
+    INT_ASSERT(insideBlock != NULL || beforeExpr != NULL);
+  }
+
+  block->insertAtHead(call);
+
+  resolveCall(call);
+
+  block->remove();
+
+  return call->resolvedFunction();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
