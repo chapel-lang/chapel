@@ -10,9 +10,9 @@ const localesAcross = sqrt(numLocales) : int;
 const blkSize = n / localesAcross : int;
 
 record WrappedArray {
-    proc WrappedArray() { }
+    proc init() { }
 
-    proc WrappedArray(row, col, numRows, numCols) {
+    proc init(row, col, numRows, numCols) {
         dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
