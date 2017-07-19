@@ -8,8 +8,7 @@ module TOML {
 
 use TomlParser;
 use TomlReader;
-use Regexp;
-use DateTime;
+
 
 /*
 Receives a channel to a TOML file as a parameter and outputs an associative
@@ -43,10 +42,12 @@ array.
 Parser module with the Toml class for the Chapel TOML library.
 */
  module TomlParser {
-
+   
+   use Regexp;
+   use DateTime;
 
    // Prints a line by line output of parsing process
-   config const debugToml: bool = false;
+   config const debugTomlParser: bool = false;
 
    
    class Parser {
@@ -94,7 +95,7 @@ Parser module with the Toml class for the Chapel TOML library.
          else {
            halt("Unexpected token ->", getToken(source));
          }
-         if debugToml {
+         if debugTomlParser {
            debugPrint();
          }
        }
@@ -557,11 +558,12 @@ Parser module with the Toml class for the Chapel TOML library.
 Reader module for use in the Parser Class. 
 */
  module TomlReader {
- 
-   
+
+   use Regexp;
+      
    /* Returns the next token in the current line without removing it */
    proc top(source) {
-     if source.currentLine.D.size < 1 {
+     if source.currentLine.isEmpty() {
        source.newLine();
      }
      return source.currentLine[source.currentLine.D.first];
@@ -661,7 +663,7 @@ Reader module for use in the Parser Class.
      
      proc newLine() {
        if nextLine() { 
-         if currentLine.D.size < 1 {
+         if currentLine.isEmpty() {
            tokenlist.remove(tokenD.first);
            currentLine = tokenlist[tokenD.first];
          }
@@ -673,7 +675,7 @@ Reader module for use in the Parser Class.
      
      /* Reads next line into currentline */
      proc nextLine() {
-       if currentLine.A.isEmpty() {
+       if currentLine.isEmpty() {
          if tokenD.size == 1 {
            return false;
          }
@@ -742,6 +744,10 @@ Reader module for use in the Parser Class.
        var toke = A(idx);
        A.remove(idx);
        return toke;
+     }
+
+     proc isEmpty(): bool {
+       return this.A.isEmpty();
      }
 
      proc this(idx) ref {
