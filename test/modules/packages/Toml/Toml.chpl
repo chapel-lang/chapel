@@ -42,14 +42,14 @@ array.
 Parser module with the Toml class for the Chapel TOML library.
 */
  module TomlParser {
-   
+
    use Regexp;
    use DateTime;
 
    // Prints a line by line output of parsing process
    config const debugTomlParser: bool = false;
 
-   
+
    class Parser {
 
      var source;
@@ -76,10 +76,10 @@ Parser module with the Toml class for the Chapel TOML library.
 
 
      proc parseLoop() : Toml {
-       
+
        while(readLine(source)) {
          var token = top(source);
-         
+
          if token == '#' {
            parseComment();
          }
@@ -101,7 +101,7 @@ Parser module with the Toml class for the Chapel TOML library.
        }
        return rootTable;
      }
-     
+
      proc parseTable() {
        var toke = getToken(source);
        var tablename = brackets.sub('', toke);
@@ -112,7 +112,7 @@ Parser module with the Toml class for the Chapel TOML library.
        }
        curTable = tablename;
      }
-     
+
      proc parseSubTbl() {
        skipNext(source);
        var tblname = getToken(source);
@@ -124,7 +124,7 @@ Parser module with the Toml class for the Chapel TOML library.
        rootTable.getIdx(tblPath)[tblLeaf] = new Toml(tbl);
        curTable = tblname;
      }
-     
+
      /* Creates a path to a sub-table when no parent has been initialized */
      proc makePath(tblPath: string) {
        var path = tblPath.split('.');
@@ -147,7 +147,7 @@ Parser module with the Toml class for the Chapel TOML library.
          }
        }
      }
-     
+
      proc parseInlineTbl(key: string) {
        var tblname: string;
        var tblD: domain(string);
@@ -172,7 +172,7 @@ Parser module with the Toml class for the Chapel TOML library.
        skipNext(source);
        curTable = temp; // resets curTable after assignments to inline
      }
-     
+
      proc parseAssign() {
        var key = getToken(source);
        var equals = getToken(source);
@@ -189,8 +189,8 @@ Parser module with the Toml class for the Chapel TOML library.
      
      proc parseComment() {
        skipLine(source);
-     }  
-     
+     }
+
      /* Returns leaf of embedded table */
      proc splitTblPath(s: string) {
        var A = s.split('.');
@@ -299,8 +299,8 @@ Parser module with the Toml class for the Chapel TOML library.
        writeln("================================================================");
      }
    }
-   
-   
+
+
  /*
  Class to hold various types parsed from input
  Used to recursivly hold tables and respective values
@@ -315,7 +315,7 @@ Parser module with the Toml class for the Chapel TOML library.
      var arr: [dom] Toml;
      var D: domain(string);
      var A: [D] Toml;
-     
+
      // Tags to identify type
      const fieldBool = 1,
        fieldInt = 2,
@@ -326,60 +326,61 @@ Parser module with the Toml class for the Chapel TOML library.
        fieldEmpty = 7,
        fieldDate = 8;
      var tag: int = fieldEmpty;  
-     
-     
+
+
      // Empty
      proc init() {
        tag = fieldEmpty;
      }
-     
+
      // String
      proc init(s:string) {
        this.s = s;
        tag = fieldString;
      }
-     
+
      // Toml
      proc init(A: [?D] Toml) where isAssociativeDom(D) {
        this.D = D;
        this.A = A;
        tag = fieldToml;
      }
+
      // Datetime
      proc init(dt: datetime) {
        this.dt = dt;
        tag = fieldDate;
      }
-     
+
      // Int
      proc init(i: int) {
        this.i = i;
        tag = fieldInt;
      }
-     
+
      // Boolean
      proc init(boo: bool) {
        this.boo = boo;
        tag = fieldBool;
      }
-     
+
      // Real
      proc init(re: real) {
        this.re = re;
        tag = fieldReal;
      }
-     
+
      // Array
      proc init(arr: [?dom] Toml) where isAssociativeDom(dom) == false  {
        this.dom = dom;
        this.arr = arr;
        tag = fieldArr;
      }
-     
+
      proc this(idx: string) ref {
        return A[idx];
      }
-     
+
      /* Returns the index of the table path given as a parameter */
      proc getIdx(tbl: string) ref : Toml {
        var indx = tbl.split('.');
@@ -402,7 +403,7 @@ Parser module with the Toml class for the Chapel TOML library.
          }
        }
      }
-     
+
      /* Returns true if table path exists in rootTable */
      proc pathExists(tblpath: string) : bool {
        var path = tblpath.split('.');
@@ -425,7 +426,7 @@ Parser module with the Toml class for the Chapel TOML library.
          }
        }
      }
-     
+
      /* Write a Table */
      proc writeThis(f) {
        var flatDom: domain(string);
@@ -449,14 +450,14 @@ Parser module with the Toml class for the Chapel TOML library.
        return flat;
      }
 
-     
+
      proc printHelp(flat: [?d] Toml, f:channel) {
        for k in d.sorted() {
          f.writeln('[', k, ']');
          printValues(f, flat[k]);
        }
      }
-     
+
 
      /* Send values from table to toString for writing  */
      proc printValues(f: channel, v: Toml) {
@@ -499,11 +500,12 @@ Parser module with the Toml class for the Chapel TOML library.
            otherwise { 
              f.write("not yet supported");
            }
-           } 
+           }
        }
        f.writeln();
      }
-     
+
+
      /* Return String representation of a value in a node */
      proc toString(val: Toml) : string { 
        select val.tag {
@@ -543,24 +545,24 @@ Parser module with the Toml class for the Chapel TOML library.
         return toString(this);
      }
 
-     
+
      proc deinit() {
        for a in A {
          delete a;
        }
      }
-   } 
+   }
  }
 
 
 
-/*
-Reader module for use in the Parser Class. 
-*/
+ /*
+ Reader module for use in the Parser Class.
+ */
  module TomlReader {
 
    use Regexp;
-      
+
    /* Returns the next token in the current line without removing it */
    proc top(source) {
      if source.currentLine.isEmpty() {
@@ -568,35 +570,35 @@ Reader module for use in the Parser Class.
      }
      return source.currentLine[source.currentLine.D.first];
    }
-   
+
    /* Returns a boolean or wether or not another line can be read
    /  Also updates the currentLine if empty */
    proc readLine(source) {
      return source.nextLine();
    }
-   
-   proc skipNext(source) { 
+
+   proc skipNext(source) {
      source.currentLine.skip();
    }
-   
+
    proc skipLine(source) {
      source.skipROL();
    }
-   
+
    /* retrives the next token in currentline */
    proc getToken(source) {
      return source.nextToke();
    }
-   
+
 
    class Source {
-     
+
      var tomlFile: string;
      var tokenD = {1..0},
        tokenlist: [tokenD] Tokens;
      var currentLine: Tokens;
-     
-     
+
+
      proc init(tomlFile: string) {
        this.tomlFile = tomlFile;
        var openFile = open(tomlFile, iomode.r);
@@ -604,13 +606,13 @@ Reader module for use in the Parser Class.
      }
 
 
-     /* 
+     /*
      proc init(tomlStr: string) {
       this.tomlStr = tomlStr;
       this.genTokenlist(tomlStr);
      }
       */
-     
+
      /* generates list of Token objects */
      proc genTokenlist(input) {
        for line in input.lines() {
@@ -618,7 +620,7 @@ Reader module for use in the Parser Class.
        }
        currentLine = tokenlist[tokenD.first];
      }
-     
+
      /*
      proc genTokenlist(input: string) {
        for line in input.split('\n') {
@@ -627,7 +629,7 @@ Reader module for use in the Parser Class.
       currentLine = tokenlist[tokenD.first];
      } 
      */
-  
+
      proc splitLine(line) {
        var linetokens: [1..0] string;
        const doubleQuotes = '".*?\\[^\\]?"',
@@ -640,13 +642,13 @@ Reader module for use in the Parser Class.
           curly = "(\\{)|(\\})";
 
        const pattern = compile('|'.join(doubleQuotes,
-				     singleQuotes,
-				     bracketContents,
-				     brackets,
-				     comments,
-				     commas,
+                                     singleQuotes,
+                                     bracketContents,
+                                     brackets,
+                                     comments,
+                                     commas,
                                      curly,
-				     equals));
+                                     equals));
 
        for token in pattern.split(line) {
          var strippedToken = token.strip();
@@ -659,8 +661,8 @@ Reader module for use in the Parser Class.
          tokenlist.push_back(tokens);
        }
      }
-     
-     
+
+
      proc newLine() {
        if nextLine() { 
          if currentLine.isEmpty() {
@@ -672,7 +674,7 @@ Reader module for use in the Parser Class.
          halt("Error: end of file");
        }
      }
-     
+
      /* Reads next line into currentline */
      proc nextLine() {
        if currentLine.isEmpty() {
@@ -685,21 +687,21 @@ Reader module for use in the Parser Class.
            return true;
          }
        }
-       return true; 
+       return true;
      }
-     
-     
+
+
      /* retrives next token in currentLine */
      proc nextToke() {
        newLine();
        return currentLine.next();
      }
 
-     proc skipROL() { 
+     proc skipROL() {
        for token in currentLine {
          currentLine.skip();
-       } 
-     } 
+       }
+     }
 
 
      proc debug() {
@@ -727,7 +729,7 @@ Reader module for use in the Parser Class.
    class Tokens {
      var D: domain(1);
      var A: [D] string;
-     
+
      proc init(A: [?D] string) {
        this.D = D;
        this.A = A;
@@ -738,7 +740,7 @@ Reader module for use in the Parser Class.
        var toke = A(idx);
        A.remove(idx);
      }
-     
+
      proc next() {
        var idx =  D.first;
        var toke = A(idx);
@@ -759,7 +761,7 @@ Reader module for use in the Parser Class.
          yield a;
        }
      }
-     
+
      /* This makes the writeln(tokens) == writeln(tokens.A) */
      proc readWriteThis(f) {
        f <~> this.A;
