@@ -1,5 +1,5 @@
 
-use Toml;
+use TOML;
 
 config const file: string;
 
@@ -9,14 +9,14 @@ proc main() {
 
   // New Table
   var tblD: domain(string);
-  var tbl: [tblD] Node;
+  var tbl: [tblD] Toml;
 
   // Table indexed into and new table added
-  tomlFile.getIdx("A.B")["C"] = new Node(tbl);
+  tomlFile.getIdx("A.B")["C"] = new Toml(tbl);
 
   // Add elements to new table C
   var toAdd: bool = true;
-  tomlFile.getIdx("A.B.C")["new-key-added"] = new Node(toAdd);
+  tomlFile.getIdx("A.B.C")["new-key-added"] = new Toml(toAdd);
 
   writeln("After Mutation: ", tomlFile);
 

@@ -3,7 +3,7 @@ Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
               <https://github.com/toml-lang/toml>`_.
 This module provides support for parsing and writing toml files.
 */
-module Toml {
+module TOML {
 
 
 use TomlParser;
@@ -13,9 +13,9 @@ use DateTime;
 
 /*
 Receives a channel to a TOML file as a parameter and outputs an associative
-array Node.
+array.
 */
- proc parseToml(input) : Node {
+ proc parseToml(input) : Toml {
    const source = new Source(input);
    const parser = new Parser(source);
    var TomlFile =  parser.parseLoop();
@@ -26,8 +26,8 @@ array Node.
  
 /*
 Receives a string of TOML format as a parameter and outputs an associative
-array Node.
- proc parseToml(input: string) : Node {
+array.
+ proc parseToml(input: string) : Toml {
    const source = new Source(input);
    const parser = new Parser(source);
    var TomlFile =  parser.parseLoop();
@@ -40,7 +40,7 @@ array Node.
 
 
 /* 
-Parser module with the Node class for the Chapel TOML library.
+Parser module with the Toml class for the Chapel TOML library.
 */
  module TomlParser {
 
@@ -53,8 +53,8 @@ Parser module with the Node class for the Chapel TOML library.
 
      var source;
      var D: domain(string);
-     var table: [D] Node;
-     var rootTable = new Node(table);
+     var table: [D] Toml;
+     var rootTable = new Toml(table);
      var curTable: string;
 
      const doubleQuotes = '".*?"',
@@ -74,7 +74,7 @@ Parser module with the Node class for the Chapel TOML library.
 
 
 
-     proc parseLoop() : Node {
+     proc parseLoop() : Toml {
        
        while(readLine(source)) {
          var token = top(source);
@@ -111,9 +111,9 @@ Parser module with the Node class for the Chapel TOML library.
        var toke = getToken(source);
        var tablename = brackets.sub('', toke);
        var tblD: domain(string);
-       var tbl: [tblD] Node;
+       var tbl: [tblD] Toml;
        if !rootTable.pathExists(tablename) {
-         rootTable[tablename] = new Node(tbl);
+         rootTable[tablename] = new Toml(tbl);
        }
        curTable = tablename;
      }
@@ -123,10 +123,10 @@ Parser module with the Node class for the Chapel TOML library.
        var tblname = getToken(source);
        skipNext(source);
        var tblD: domain(string);
-       var tbl: [tblD] Node;
+       var tbl: [tblD] Toml;
        var (tblPath, tblLeaf) = splitTblPath(tblname);
        if !rootTable.pathExists(tblPath) then makePath(tblPath);
-       rootTable.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+       rootTable.getIdx(tblPath)[tblLeaf] = new Toml(tbl);
        curTable = tblname;
      }
      
@@ -139,15 +139,15 @@ Parser module with the Node class for the Chapel TOML library.
        for parent in path {
          if first { 
            var tblD: domain(string);
-           var tbl: [tblD] Node;
-           rootTable[parent] = new Node(tbl);
+           var tbl: [tblD] Toml;
+           rootTable[parent] = new Toml(tbl);
            first = false;
          }
          else {
            var tblD: domain(string);
-           var tbl: [tblD] Node;
+           var tbl: [tblD] Toml;
            var grandParent = '.'.join(path[..firstIn+i]);
-           rootTable.getIdx(grandParent)[parent] = new Node(tbl);
+           rootTable.getIdx(grandParent)[parent] = new Toml(tbl);
            i+=1;
          }
        }
@@ -156,15 +156,15 @@ Parser module with the Node class for the Chapel TOML library.
      proc parseInlineTbl(key: string) {
        var tblname: string;
        var tblD: domain(string);
-       var tbl: [tblD] Node;
+       var tbl: [tblD] Toml;
        if curTable.isEmptyString() {
          tblname = key;
-         rootTable[key] = new Node(tbl);
+         rootTable[key] = new Toml(tbl);
        }
        else {
          tblname = '.'.join(curTable, key);
          var (tblPath, tblLeaf) = splitTblPath(tblname);
-         rootTable.getIdx(tblPath)[tblLeaf] = new Node(tbl);
+         rootTable.getIdx(tblPath)[tblLeaf] = new Toml(tbl);
        }
        var temp = curTable;
        curTable = tblname;
@@ -211,14 +211,14 @@ Parser module with the Node class for the Chapel TOML library.
        return A;
      }
 
-     /* Creates and returns a Node parsed from tokens into respective type */
-     proc parseValue(): Node {
+     /* Creates and returns a Toml parsed from tokens into respective type */
+     proc parseValue(): Toml {
        var val = top(source);
        // Array
        if val == '['  {
          skipNext(source);
          var nodeDom: domain(1);
-         var array: [nodeDom] Node;
+         var array: [nodeDom] Toml;
          while top(source) != ']' {
            if comma.match(top(source)) {
              skipNext(source);
@@ -232,7 +232,7 @@ Parser module with the Node class for the Chapel TOML library.
            }
          }
          skipNext(source);
-         var nodeArray = new Node(array);
+         var nodeArray = new Toml(array);
          return nodeArray;
        }
        // Strings (includes multi-line) 
@@ -243,49 +243,49 @@ Parser module with the Node class for the Chapel TOML library.
            while toStr.endsWith('"""') == false {
              toStr += " " + getToken(source);
            }
-           var mlStringNode = new Node(toStr.strip('"""'));
-           return mlStringNode;
+           var mlString = new Toml(toStr.strip('"""'));
+           return mlString;
          }
          else if val.startsWith("'''") {
            toStr += getToken(source).strip("'''", true, false);
            while toStr.endsWith("'''") == false {
              toStr += " " + getToken(source);
            }
-           var mlStringNode = new Node(toStr.strip("'''"));
-           return mlStringNode;
+           var mlString = new Toml(toStr.strip("'''"));
+           return mlString;
          }
          else {
            toStr = getToken(source).strip('"').strip("'");
-           var stringNode = new Node(toStr);
-           return stringNode;
+           var tomlStr = new Toml(toStr);
+           return tomlStr;
          }
        }
        // DateTime
        else if dt.match(val) {
          var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
-         var Datetime = new Node(date);
+         var Datetime = new Toml(date);
          return Datetime;
        }
        // Real
        else if realNum.match(val) {
          var token = getToken(source);
          var toReal = token: real;
-         var realNode = new Node(toReal);
-         return realNode;
+         var realToml = new Toml(toReal);
+         return realToml;
        }
        // Int
        else if ints.match(val) {
          var token = getToken(source);
          var toInt = token: int;
-         var intNode = new Node(toInt);
-         return intNode;
+         var intToml = new Toml(toInt);
+         return intToml;
        } 
        // Boolean
        else if val == "true" || val ==  "false" {
          var token = getToken(source);
          var toBool = token: bool;
-         var boolNode = new Node(toBool);
-         return boolNode;
+         var boolToml = new Toml(toBool);
+         return boolToml;
        }
        // Comments within arrays
        else if val == '#' {
@@ -304,22 +304,22 @@ Parser module with the Node class for the Chapel TOML library.
  Class to hold various types parsed from input
  Used to recursivly hold tables and respective values
  */
-   class Node {
+   class Toml {
      var i: int;
      var boo: bool;
      var re: real;
      var s: string;
      var dt: datetime;
      var dom: domain(1);
-     var arr: [dom] Node;
+     var arr: [dom] Toml;
      var D: domain(string);
-     var A: [D] Node;
+     var A: [D] Toml;
      
      // Tags to identify type
      const fieldBool = 1,
        fieldInt = 2,
        fieldArr = 3,
-       fieldNode = 4,
+       fieldToml = 4,
        fieldReal = 5,
        fieldString = 6,
        fieldEmpty = 7,
@@ -338,11 +338,11 @@ Parser module with the Node class for the Chapel TOML library.
        tag = fieldString;
      }
      
-     // Node
-     proc init(A: [?D] Node) where isAssociativeDom(D) {
+     // Toml
+     proc init(A: [?D] Toml) where isAssociativeDom(D) {
        this.D = D;
        this.A = A;
-       tag = fieldNode;
+       tag = fieldToml;
      }
      // Datetime
      proc init(dt: datetime) {
@@ -369,7 +369,7 @@ Parser module with the Node class for the Chapel TOML library.
      }
      
      // Array
-     proc init(arr: [?dom] Node) where isAssociativeDom(dom) == false  {
+     proc init(arr: [?dom] Toml) where isAssociativeDom(dom) == false  {
        this.dom = dom;
        this.arr = arr;
        tag = fieldArr;
@@ -380,7 +380,7 @@ Parser module with the Node class for the Chapel TOML library.
      }
      
      /* Returns the index of the table path given as a parameter */
-     proc getIdx(tbl: string) ref : Node {
+     proc getIdx(tbl: string) ref : Toml {
        var indx = tbl.split('.');
        var top = indx.domain.first;
        if indx.size < 2 {
@@ -428,15 +428,15 @@ Parser module with the Node class for the Chapel TOML library.
      /* Write a Table */
      proc writeThis(f) {
        var flatDom: domain(string);
-       var flat: [flatDom] Node;
-       this.flatten(flat);       // Flattens containing Node
-       printValues(f, this);     // Prints key values in containing Node
-       printHelp(flat, f);       // Prints tables in containg Node
+       var flat: [flatDom] Toml;
+       this.flatten(flat);       // Flattens containing Toml
+       printValues(f, this);     // Prints key values in containing Toml
+       printHelp(flat, f);       // Prints tables in containg Toml
      }
 
      
      /* Flatten tables into flat associative array for writing */
-     proc flatten(flat: [?d] Node, rootKey = '') : flat.type { 
+     proc flatten(flat: [?d] Toml, rootKey = '') : flat.type { 
        for (k, v) in zip(this.D, this.A) {
          if v.tag == 4 {
            var fullKey = k;
@@ -449,7 +449,7 @@ Parser module with the Node class for the Chapel TOML library.
      }
 
      
-     proc printHelp(flat: [?d] Node, f:channel) {
+     proc printHelp(flat: [?d] Toml, f:channel) {
        for k in d.sorted() {
          f.writeln('[', k, ']');
          printValues(f, flat[k]);
@@ -458,7 +458,7 @@ Parser module with the Node class for the Chapel TOML library.
      
 
      /* Send values from table to toString for writing  */
-     proc printValues(f: channel, v: Node) {
+     proc printValues(f: channel, v: Toml) {
        for (key, value) in zip(v.D, v.A) {
          select value.tag {
            when 4 do continue; // Table
@@ -504,7 +504,7 @@ Parser module with the Node class for the Chapel TOML library.
      }
      
      /* Return String representation of a value in a node */
-     proc toString(val: Node) : string { 
+     proc toString(val: Toml) : string { 
        select val.tag {
          when 1 do return val.boo;
          when 2 do return val.i;
@@ -536,7 +536,7 @@ Parser module with the Node class for the Chapel TOML library.
 
      /* 
       For the user to write values of a node as follows:
-      Node[key].toString()
+      Toml[key].toString()
      */
       proc toString() : string { 
         return toString(this);
