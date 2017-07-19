@@ -3291,8 +3291,7 @@ iter channel.lines() {
     this._set_style(newline_style);
 
     // Iterate over lines
-    var lineReader = new ItemReader(string, this.kind, this.locking, this);
-    for line in lineReader {
+    for line in this.itemReader(string, this.kind) {
       yield line;
     }
 
