@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -194,7 +194,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // task bundle as requested_fid and requested_fn respectively. If both
 // are provided, the function pointer will be used. In this way,
 // the comms layer can use task-wrapper functions.
-void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry 
+void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry
                               chpl_fn_p,          // function to call
                               chpl_task_bundle_t*,// function arg
                               size_t,             // length of arg in bytes
@@ -259,17 +259,32 @@ void chpl_task_sleep(double);
 // Get pointer to task private data.
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
 chpl_task_prvData_t* chpl_task_getPrvData(void);
+#endif
+
+#ifndef CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL
 chpl_task_bundle_t* chpl_task_getPrvBundle(void);
 #endif
 
-//
-// Chapel module-code managed task private data
-//
-chpl_task_ChapelData_t* chpl_task_getChapelData(void);
-
 // Get the Chapel module-code managed task private data portion
 // of a task bundle.
-chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b);
+static inline
+chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b)
+{
+  // this code assumes each chpl_task_bundle_t has a state field
+  // of type chpl_task_ChapelData_t.
+  return &b->state;
+}
+
+//
+// Get Chapel module-code managed task private data
+//
+static inline
+chpl_task_ChapelData_t* chpl_task_getChapelData(void)
+{
+  chpl_task_bundle_t* prv = chpl_task_getPrvBundle();
+  return chpl_task_getBundleChapelData(prv);
+}
+
 
 //
 // Can this tasking layer support remote caching?
