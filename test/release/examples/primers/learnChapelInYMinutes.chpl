@@ -780,10 +780,12 @@ class MyClass {
 // the field's initial value as the argument's default value.
 // Alternatively, the user can define initializers manually as shown
 // in the following commented-out routine:
-/*
-  proc init(val : real) {
-    this.memberInt = ceil(val): int;
-  }
+//
+/* .. code-block:: chapel
+
+      // proc init(val : real) {
+      //   this.memberInt = ceil(val): int;
+      // }
 */
 
 // Explicitly defined deinitializer.
@@ -828,10 +830,12 @@ writeln(myThirdObject);
 
 // If the user-defined initializer above had been uncommented, we could
 // make the following calls:
-/*
-var myOtherObject = new MyClass(1.95);
-    myOtherObject = new MyClass(val = 1.95); // Equivalent
-writeln(myOtherObject.getMemberInt());
+//
+/* .. code-block:: chapel
+
+      // var myOtherObject = new MyClass(1.95);
+      //     myOtherObject = new MyClass(val = 1.95);
+      // writeln(myOtherObject.getMemberInt());
 */
 
 // We can define an operator on our class as well, but
