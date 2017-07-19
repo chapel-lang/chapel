@@ -10,6 +10,8 @@ class Force {
 
   var wipetime, maintime: real;
 
+  proc init() { }
+
   proc compute(store : bool) : void {}
 }
 
@@ -50,7 +52,7 @@ class ForceEAM : Force  {
 
   var funcfl : Funcfl;
 
-  proc ForceEAM(cf : real) {
+  proc init(cf : real) {
     // use the fluff domain already calculated for communication
     coforall ijk in LocaleGridDom {
       on LocaleGrid[ijk] {
@@ -334,7 +336,7 @@ class ForceEAM : Force  {
 
 // Lennard-Jones potential
 class ForceLJ : Force {
-  proc ForceLJ(cf : real) {
+  proc init(cf : real) {
     cutforcesq = cf * cf;
   }
 
