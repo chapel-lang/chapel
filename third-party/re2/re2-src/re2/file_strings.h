@@ -12,7 +12,7 @@ extern "C" {
 namespace re2 {
 
 // Read a byte. Returns a byte in [0..255] if everything
-// is OK, or a negative number for EOF or an error. 
+// is OK, or a negative number for EOF or an error.
 // getc is an example of such a function. The first
 // argument is a file pointer (e.g. FILE* or something else).
 typedef int (*read_byte_fn_t)(void*);
@@ -119,14 +119,14 @@ struct ReadingFileSearchPtr {
     this->offset = advance_file_to(fi, offset, 1);
     return ret;
   }
-  // += 
+  // +=
   ReadingFileSearchPtr operator+=(int amt) {
     assert( offset != std::numeric_limits<int64_t>::max() );
 
     this->offset = advance_file_to(fi, offset, amt);
     return *this;
   }
-  // = 
+  // =
   ReadingFileSearchPtr operator=(const FileSearchPtr & p) {
     offset = get_fileptr_offset(p);
     this->offset = advance_file_to(fi, offset, 0);
@@ -180,12 +180,12 @@ struct FileSearchPtr {
     this->offset++;
     return ret;
   }
-  // += 
+  // +=
   FileSearchPtr operator+=(int amt) {
     offset += amt;
     return *this;
   }
-  // = 
+  // =
   FileSearchPtr operator=(const ReadingFileSearchPtr & p) {
     offset = p.offset;
     return *this;
@@ -205,7 +205,7 @@ int64_t operator-(FileSearchPtr lhs, FileSearchPtr rhs)
 
   // If lhs is unbounded, return unbounded.
   if( lhs.offset == std::numeric_limits<int64_t>::max() ) return lhs.offset;
- 
+
   return lhs.offset - rhs.offset;
 }
 
@@ -216,7 +216,7 @@ FileSearchPtr operator-(FileSearchPtr lhs, int rhs)
   assert( lhs.offset != std::numeric_limits<int64_t>::max() );
   // If lhs is unbounded, return unbounded.
   if( lhs.offset == std::numeric_limits<int64_t>::max() ) return lhs;
- 
+
   FileSearchPtr ret;
   ret.offset = lhs.offset - rhs;
   return ret;
@@ -227,7 +227,7 @@ FileSearchPtr operator+(FileSearchPtr lhs, int rhs)
   assert( lhs.offset != std::numeric_limits<int64_t>::max() );
   // If lhs is unbounded, return unbounded.
   if( lhs.offset == std::numeric_limits<int64_t>::max() ) return lhs;
- 
+
   FileSearchPtr ret;
   ret.offset = lhs.offset + rhs;
   return ret;
@@ -276,7 +276,7 @@ bool operator!=(FileSearchPtr a, FileSearchPtr b)
 static inline
 bool operator==(FileSearchPtr lhs, void* rhs)
 {
-  return lhs.offset == -1; 
+  return lhs.offset == -1;
 }
 
 FileSearchPtr file_memchr_ptr_end(ReadingFileSearchPtr s, FileSearchPtr end, int c);
@@ -365,7 +365,7 @@ struct FilePiece {
   ReadingFileSearchPtr begin_reading() const {
     ReadingFileSearchPtr ret;
     ret.offset = start;
-    ret.fi = fi; 
+    ret.fi = fi;
     advance_file_to(fi, start, 0);
     return ret;
   }
