@@ -6702,12 +6702,12 @@ static void resolveAutoCopies() {
     if (ts->defPoint->parentSymbol               != NULL   &&
         ts->hasFlag(FLAG_GENERIC)                == false  &&
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
-      if (isRecord(ts->type) == true) {
-        resolveAutoCopyEtc(ts->type);
-        propagateNotPOD(ts->type);
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (isRecord(at) == true) {
+          resolveAutoCopyEtc(at);
+        }
 
-      } else if (isAggregateType(ts->type) == true) {
-        propagateNotPOD(ts->type);
+        propagateNotPOD(at);
       }
     }
   }
