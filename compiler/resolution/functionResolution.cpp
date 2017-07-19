@@ -158,8 +158,7 @@ std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 //#
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
-                                       bool checkonly=false);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static FnSymbol*
@@ -294,67 +293,6 @@ static bool typeHasRefField(Type *type) {
     }
   }
   return false;
-}
-
-// Temporarily add a call, resolve it, then remove it.
-// Return the function that the call resolved to, or NULL if it didn't.
-// Either insideBlock or beforeExpr must be != NULL and
-// indicate where the call should be added.
-static FnSymbol*
-resolveUninsertedCall(BlockStmt* insideBlock,
-                      Expr* beforeExpr,
-                      CallExpr* call,
-                      bool checkonly) {
-
-  // In case resolveCall drops other stuff into the tree ahead of the
-  // call, we wrap everything in a block for safe removal.
-  BlockStmt* block = new BlockStmt();
-
-  if (insideBlock) {
-    insideBlock->insertAtHead(block);
-  } else if(beforeExpr) {
-    beforeExpr->insertBefore(block);
-  } else {
-    INT_ASSERT(insideBlock != NULL || beforeExpr != NULL);
-  }
-
-  INT_ASSERT(block->parentSymbol);
-
-  block->insertAtHead(call);
-  if (checkonly && !call->primitive) {
-    resolveNormalCall(call, checkonly);
-  } else {
-    if (checkonly) {
-      INT_FATAL(call, "checkonly is being discarded because the call is a "
-                "primitive.\nIf that is not intended, please extend "
-                "resolveCall");
-    }
-    resolveCall(call);
-  }
-  block->remove();
-
-  return call->resolvedFunction();
-}
-
-// Resolve a call to do with a particular type.
-static FnSymbol*
-resolveUninsertedCall(Type* type, CallExpr* call, bool checkonly) {
-
-  BlockStmt* insideBlock = NULL;
-  Expr* beforeExpr = NULL;
-
-  AggregateType* at = toAggregateType(type);
-
-  if (at && at->defaultInitializer) {
-    if (at->defaultInitializer->instantiationPoint)
-      insideBlock = at->defaultInitializer->instantiationPoint;
-    else
-      beforeExpr = at->symbol->defPoint;
-  } else {
-    insideBlock = chpl_gen_main->body;
-  }
-
-  return resolveUninsertedCall(insideBlock, beforeExpr, call, checkonly);
 }
 
 //
@@ -3418,6 +3356,62 @@ populateForwardingMethods(Type* t,
 
   return addedAny;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
+
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+  AggregateType* at     = toAggregateType(type);
+  FnSymbol*      retval = NULL;
+
+  if (at == NULL || at->defaultInitializer == NULL) {
+    retval = resolveUninsertedCall(chpl_gen_main->body, call);
+
+  } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
+    retval = resolveUninsertedCall(point, call);
+
+  } else {
+    retval = resolveUninsertedCall(at->symbol->defPoint, call);
+  }
+
+  return retval;
+}
+
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call) {
+  BlockStmt* block = new BlockStmt(call);
+
+  insert->insertAtHead(block);
+
+  resolveCall(call);
+
+  block->remove();
+
+  return call->resolvedFunction();
+}
+
+static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call) {
+  BlockStmt* block = new BlockStmt(call);
+
+  insert->insertBefore(block);
+
+  resolveCall(call);
+
+  block->remove();
+
+  return call->resolvedFunction();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -6627,15 +6621,17 @@ static void resolveUses(ModuleSymbol* mod)
 }
 
 static void resolveSupportForModuleDeinits() {
-  // We will need these in addInitGuards.cpp
   SET_LINENO(chpl_gen_main);
-  Expr*    modNameDum = buildCStringLiteral("");
-  VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
-  CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
-  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
+
+  Expr*      modNameDum = buildCStringLiteral("");
+  VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
+  CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
+
+  resolveUninsertedCall(chpl_gen_main->body, addModule);
+
   gAddModuleFn = addModule->resolvedFunction();
+
   resolveFns(gAddModuleFn);
-  // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
 
 static void resolveExports() {
