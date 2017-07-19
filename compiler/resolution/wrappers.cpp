@@ -630,6 +630,286 @@ static void reorderActuals(FnSymbol*                fn,
 
 /************************************* | **************************************
 *                                                                             *
+* add coercions on the actuals                                                *
+*                                                                             *
+************************************** | *************************************/
+
+static bool      needToAddCoercion(Type*      actualType,
+                                   Symbol*    actualSym,
+                                   ArgSymbol* formal,
+                                   FnSymbol*  fn);
+
+static IntentTag getIntent(ArgSymbol* formal);
+
+static void      addArgCoercion(FnSymbol*  fn,
+                                CallExpr*  call,
+                                ArgSymbol* formal,
+                                Expr*&     actualExpr,
+                                Symbol*&   actualSym,
+                                bool&      checkAgain);
+
+static void coerceActuals(FnSymbol* fn, CallInfo* info) {
+  if (info->actuals.n < 1) {
+    return; // nothing to do
+  }
+
+  if (fn->retTag == RET_PARAM) {
+    //
+    // This call will be tossed in postFold(), so why bother with coercions?
+    //
+    // Most importantly, we don't want a readFE-like coercion in this case,
+    // because the coercion will stick around even if the call is removed.
+    //
+    // Todo: postFold() will remove some other calls, too. However we don't
+    // know which - until 'fn' is resolved, which here it may not be, yet.
+    // So for now we act only if fn has the param retTag.
+    //
+    // The runner-up todo would be 'type' functions, which actually
+    // may need to be invoked at run time if they return a runtime type.
+    // Therefore "coercions" might also be needed, e.g., to readFE from
+    // a sync var actual to determine the size of the array type's domain.
+    // So we will keep the coercions uniformly for now, as if they are
+    // a part of type functions' semantics.
+    //
+    return;
+  }
+
+  int   j          = -1;
+  Expr* currActual = info->call->get(1);
+
+  for_formals(formal, fn) {
+    j++;
+    Symbol* actualSym  = info->actuals.v[j];
+    Type*   formalType = formal->type;
+    bool    c2         = false;
+    int     checksLeft = 6;
+
+    // There does not seem to be a limit of how many coercions will be
+    // needed for a given actual. For example, in myExpr.someFun(...),
+    // each level of _syncvar(T) in myExpr's type adds two coercions,
+    // PRIM_DEREF and CallExpr("value",...), to the coercions needed by T.
+    //
+    // Note: if we take away the special handling of a sync/single actual
+    // when it is the receiver to 'fn' (the "value" case above), fewer
+    // coercions will suffice for the same number of _syncvar layers.
+    //
+    // We could have the do-loop below terminate only upon !c2. For now,
+    // I am putting a limit on the number of iterations just in case.
+    // I am capping it at 6 arbitrarily. This allows for the 5 coercions
+    // plus 1 last check in the case of a receiver actual of the type
+    // _ref(_syncvar(_syncvar(int))), e.g. an array element "sync sync int".
+    // -vass 8'2014
+    //
+
+    do {
+      Type* actualType = actualSym->type;
+
+      c2 = false;
+
+      if (needToAddCoercion(actualType, actualSym, formal, fn)) {
+        if (formalType               == dtStringC &&
+            actualType               == dtString  &&
+            actualSym->isImmediate() == true) {
+          // We do this swap since we know the string is a valid literal
+          // There also is no cast defined for string->c_string on purpose (you
+          // need to use .c_str()) so the common case below does not work.
+          VarSymbol*  var       = toVarSymbol(actualSym);
+          const char* str       = var->immediate->v_string;
+          SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
+
+          currActual->replace(newActual);
+
+          currActual = newActual;
+
+        } else {
+          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        }
+      }
+    } while (c2 && --checksLeft > 0);
+
+    INT_ASSERT(c2 == false);
+
+    currActual = currActual->next;
+  }
+}
+
+// do we need to add some coercion from the actual to the formal?
+static bool needToAddCoercion(Type*      actualType,
+                              Symbol*    actualSym,
+                              ArgSymbol* formal,
+                              FnSymbol*  fn) {
+  Type* formalType = formal->type;
+  bool  retval     = false;
+
+  if (actualType == formalType) {
+    retval = false;
+
+  // If we have an actual of ref(formalType) and
+  // a REF or CONST REF argument intent, no coercion is necessary.
+  } else if (actualType == formalType->getRefType() &&
+             (getIntent(formal) & INTENT_FLAG_REF) != 0) {
+    retval = false;
+
+  } else if (canCoerce(actualType, actualSym, formalType, fn) == true) {
+    retval =  true;
+
+  } else if (isDispatchParent(actualType, formalType)         == true) {
+    retval =  true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+static IntentTag getIntent(ArgSymbol* formal) {
+  IntentTag retval = formal->intent;
+
+  if (retval == INTENT_BLANK || retval == INTENT_CONST) {
+    if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+      retval = concreteIntentForArg(formal);
+    }
+  }
+
+  return retval;
+}
+
+// Add a coercion; replace prevActual and actualSym - the actual to 'call' -
+// with the result of the coercion.
+static void addArgCoercion(FnSymbol*  fn,
+                           CallExpr*  call,
+                           ArgSymbol* formal,
+                           Expr*&     actualExpr,
+                           Symbol*&   actualSym,
+                           bool&      checkAgain) {
+  SET_LINENO(actualExpr);
+
+  Expr*       prevActual = actualExpr;
+  TypeSymbol* ats        = actualSym->type->symbol;
+  TypeSymbol* fts        = formal->type->symbol;
+  CallExpr*   castCall   = NULL;
+  VarSymbol*  castTemp   = newTemp("coerce_tmp"); // ..., formal->type ?
+  Expr*       newActual  = new SymExpr(castTemp);
+
+  castTemp->addFlag(FLAG_COERCE_TEMP);
+
+  // gotta preserve this-ness, so can write to this's fields in constructors
+  if (actualSym->hasFlag(FLAG_ARG_THIS) &&
+      isDispatchParent(actualSym->type, formal->type)) {
+    castTemp->addFlag(FLAG_ARG_THIS);
+  }
+
+  if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
+    // preserve the named portion
+    Expr* newCurrActual = namedActual->actual;
+
+    newCurrActual->replace(newActual);
+
+    newActual  = prevActual;
+    prevActual = newCurrActual;
+
+  } else {
+    prevActual->replace(newActual);
+  }
+
+  // Now 'prevActual' has been removed+replaced and is ready to be passed
+  // as an actual to a cast or some such.
+  // We can update addArgCoercion's caller right away.
+  actualExpr = newActual;
+  actualSym  = castTemp;
+
+  // Here we will often strip the type of its sync-ness.
+  // After that we may need another coercion(s), e.g.
+  //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
+  // or
+  //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
+  //
+  // We warn addArgCoercion's caller about that via checkAgain:
+  if (isSyncType(ats->type) == true) {
+    checkAgain = true;
+    castCall   = new CallExpr("readFE", gMethodToken, prevActual);
+
+  } else if (isSingleType(ats->type) == true) {
+    checkAgain = true;
+
+    castCall   = new CallExpr("readFF", gMethodToken, prevActual);
+
+  } else if (ats->hasFlag(FLAG_REF) &&
+             !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+               formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
+    //
+    // dereference a reference actual
+    //
+    // after dereferencing we may need another coercion, e.g.
+    //   _ref(int)  --coerce->  int  --coerce->  real
+    // or
+    //   _ref(_syncvar(int)) --> _syncvar(int) --> _ref(int) --> int --> real
+    //
+    checkAgain = true;
+
+    // MPF - this call here is suspect because dereferencing should
+    // call a record's copy-constructor (e.g. autoCopy).
+    castCall   = new CallExpr(PRIM_DEREF, prevActual);
+
+    if (SymExpr* prevSE = toSymExpr(prevActual)) {
+      if (prevSE->symbol()->hasFlag(FLAG_REF_TO_CONST)) {
+        castTemp->addFlag(FLAG_CONST);
+
+        if (prevSE->symbol()->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS)) {
+          castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+        }
+      }
+    }
+
+  } else {
+    // There was code to handle the case when the flag *is* present.
+    // I deleted that code. The assert ensures it wouldn't apply anyway.
+    INT_ASSERT(!actualSym->hasFlag(FLAG_INSTANTIATED_PARAM));
+
+    castCall = NULL;
+  }
+
+  if (castCall == NULL) {
+    // the common case
+    castCall = createCast(prevActual, fts);
+
+    if (isString(fts)) {
+      castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
+  }
+
+  // move the result to the temp
+  CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
+
+  call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
+  call->getStmtExpr()->insertBefore(castMove);
+
+  resolveCallAndCallee(castCall, true);
+
+  if (FnSymbol* castTarget = castCall->resolvedFunction()) {
+    // Perhaps equivalently, we could check "if (tryToken)",
+    // except tryToken is not visible in this file.
+    if (!castTarget->hasFlag(FLAG_RESOLVED)) {
+      // This happens e.g. when castTarget itself has an error.
+      // Todo: in this case, we should report the error at the point
+      // where it arises, supposedly within resolveFns(castTarget).
+      // Why is it not reported there?
+      USR_FATAL_CONT(call,
+                     "Error resolving a cast from %s to %s",
+                     ats->name,
+                     fts->name);
+
+      USR_PRINT(castTarget, "  the troublesome function is here");
+      USR_STOP();
+    }
+  }
+
+  resolveCall(castMove);
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -693,237 +973,6 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   }
   return wrapperFormal;
 }
-
-static IntentTag getIntent(ArgSymbol* formal)
-{
-  IntentTag intent = formal->intent;
-  if ((intent == INTENT_BLANK || intent == INTENT_CONST) &&
-      !formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    intent = concreteIntentForArg(formal);
-  return intent;
-}
-
-// do we need to add some coercion from the actual to the formal?
-static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
-                              ArgSymbol* formal, FnSymbol* fn) {
-  Type* formalType = formal->type;
-  if (actualType == formalType)
-    return false;
-  // If we have an actual of ref(formalType) and
-  // a REF or CONST REF argument intent, no coercion is necessary.
-  else if(actualType == formalType->getRefType() &&
-          (getIntent(formal) & INTENT_FLAG_REF) != 0)
-    return false;
-  else
-    return canCoerce(actualType, actualSym, formalType, fn) ||
-           isDispatchParent(actualType, formalType);
-}
-
-// Add a coercion; replace prevActual and actualSym - the actual to 'call' -
-// with the result of the coercion.
-static void addArgCoercion(FnSymbol*  fn,
-                           CallExpr*  call,
-                           ArgSymbol* formal,
-                           Expr*&     actualExpr,
-                           Symbol*&   actualSym,
-                           bool&      checkAgain)
-{
-  SET_LINENO(actualExpr);
-
-  Expr*       prevActual = actualExpr;
-  TypeSymbol* ats        = actualSym->type->symbol;
-  TypeSymbol* fts        = formal->type->symbol;
-  CallExpr*   castCall   = NULL;
-  VarSymbol*  castTemp   = newTemp("coerce_tmp"); // ..., formal->type ?
-
-  castTemp->addFlag(FLAG_COERCE_TEMP);
-
-  // gotta preserve this-ness, so can write to this's fields in constructors
-  if (actualSym->hasFlag(FLAG_ARG_THIS) &&
-      isDispatchParent(actualSym->type, formal->type))
-    castTemp->addFlag(FLAG_ARG_THIS);
-
-  Expr* newActual = new SymExpr(castTemp);
-
-  if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
-    // preserve the named portion
-    Expr* newCurrActual = namedActual->actual;
-
-    newCurrActual->replace(newActual);
-
-    newActual  = prevActual;
-    prevActual = newCurrActual;
-  } else {
-    prevActual->replace(newActual);
-  }
-
-  // Now 'prevActual' has been removed+replaced and is ready to be passed
-  // as an actual to a cast or some such.
-  // We can update addArgCoercion's caller right away.
-  actualExpr = newActual;
-  actualSym  = castTemp;
-
-  // Here we will often strip the type of its sync-ness.
-  // After that we may need another coercion(s), e.g.
-  //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
-  // or
-  //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
-  //
-  // We warn addArgCoercion's caller about that via checkAgain:
-  if (isSyncType(ats->type) == true) {
-    checkAgain = true;
-    castCall   = new CallExpr("readFE", gMethodToken, prevActual);
-
-  } else if (isSingleType(ats->type) == true) {
-    checkAgain = true;
-    castCall   = new CallExpr("readFF", gMethodToken, prevActual);
-
-  } else if (ats->hasFlag(FLAG_REF) &&
-             !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
-               formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
-    //
-    // dereference a reference actual
-    //
-    // after dereferencing we may need another coercion, e.g.
-    //   _ref(int)  --coerce->  int  --coerce->  real
-    // or
-    //   _ref(_syncvar(int)) --> _syncvar(int) --> _ref(int) --> int --> real
-    //
-    checkAgain = true;
-
-    // MPF - this call here is suspect because dereferencing should
-    // call a record's copy-constructor (e.g. autoCopy).
-    castCall   = new CallExpr(PRIM_DEREF, prevActual);
-
-    if (SymExpr* prevSE = toSymExpr(prevActual))
-      if (prevSE->symbol()->hasFlag(FLAG_REF_TO_CONST)) {
-        castTemp->addFlag(FLAG_CONST);
-
-        if (prevSE->symbol()->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
-          castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-      }
-
-  } else {
-    // There was code to handle the case when the flag *is* present.
-    // I deleted that code. The assert ensures it wouldn't apply anyway.
-    INT_ASSERT(!actualSym->hasFlag(FLAG_INSTANTIATED_PARAM));
-    castCall = NULL;
-  }
-
-  if (castCall == NULL) {
-    // the common case
-    castCall = createCast(prevActual, fts);
-
-    if (isString(fts))
-      castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  }
-
-  // move the result to the temp
-  CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
-
-  call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
-  call->getStmtExpr()->insertBefore(castMove);
-
-  resolveCallAndCallee(castCall, true);
-  if (FnSymbol* castTarget = castCall->resolvedFunction()) {
-
-    // Perhaps equivalently, we could check "if (tryToken)",
-    // except tryToken is not visible in this file.
-    if (!castTarget->hasFlag(FLAG_RESOLVED)) {
-      // This happens e.g. when castTarget itself has an error.
-      // Todo: in this case, we should report the error at the point
-      // where it arises, supposedly within resolveFns(castTarget).
-      // Why is it not reported there?
-      USR_FATAL_CONT(call, "Error resolving a cast from %s to %s",
-                     ats->name, fts->name);
-      USR_PRINT(castTarget, "  the troublesome function is here");
-      USR_STOP();
-    }
-  }
-
-  resolveCall(castMove);
-}
-
-
-////
-//// add coercions on the actuals
-//// (this function is here because it used to create a wrapper)
-////
-
-static void coerceActuals(FnSymbol* fn, CallInfo* info) {
-  if (info->actuals.n < 1)
-    return; // nothing to do
-
-  if (fn->retTag == RET_PARAM)
-    //
-    // This call will be tossed in postFold(), so why bother with coercions?
-    //
-    // Most importantly, we don't want a readFE-like coercion in this case,
-    // because the coercion will stick around even if the call is removed.
-    //
-    // Todo: postFold() will remove some other calls, too. However we don't
-    // know which - until 'fn' is resolved, which here it may not be, yet.
-    // So for now we act only if fn has the param retTag.
-    //
-    // The runner-up todo would be 'type' functions, which actually
-    // may need to be invoked at run time if they return a runtime type.
-    // Therefore "coercions" might also be needed, e.g., to readFE from
-    // a sync var actual to determine the size of the array type's domain.
-    // So we will keep the coercions uniformly for now, as if they are
-    // a part of type functions' semantics.
-    //
-    return;
-
-  int j = -1;
-  Expr* currActual = info->call->get(1);
-  for_formals(formal, fn) {
-    j++;
-    Symbol* actualSym = info->actuals.v[j];
-    Type* formalType = formal->type;
-    bool c2; // will we need to check again?
-
-    // There does not seem to be a limit of how many coercions will be
-    // needed for a given actual. For example, in myExpr.someFun(...),
-    // each level of _syncvar(T) in myExpr's type adds two coercions,
-    // PRIM_DEREF and CallExpr("value",...), to the coercions needed by T.
-    //
-    // Note: if we take away the special handling of a sync/single actual
-    // when it is the receiver to 'fn' (the "value" case above), fewer
-    // coercions will suffice for the same number of _syncvar layers.
-    //
-    // We could have the do-loop below terminate only upon !c2. For now,
-    // I am putting a limit on the number of iterations just in case.
-    // I am capping it at 6 arbitrarily. This allows for the 5 coercions
-    // plus 1 last check in the case of a receiver actual of the type
-    // _ref(_syncvar(_syncvar(int))), e.g. an array element "sync sync int".
-    // -vass 8'2014
-    //
-    int checksLeft = 6;
-
-    do {
-      c2 = false;
-      Type* actualType = actualSym->type;
-      if (needToAddCoercion(actualType, actualSym, formal, fn)) {
-        if (formalType == dtStringC && actualType == dtString && actualSym->isImmediate()) {
-          // We do this swap since we know the string is a valid literal
-          // There also is no cast defined for string->c_string on purpose (you
-          // need to use .c_str()) so the common case below does not work.
-          VarSymbol *var = toVarSymbol(actualSym);
-          SymExpr *newActual = new SymExpr(new_CStringSymbol(var->immediate->v_string));
-          currActual->replace(newActual);
-          currActual = newActual;
-        } else {
-          // addArgCoercion() updates currActual, actualSym, c2
-          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
-        }
-      }
-    } while (c2 && --checksLeft > 0);
-
-    INT_ASSERT(!c2); // otherwise need to increase checksLeft
-    currActual = currActual->next;
-  }
-}  // coerceActuals()
-
 
 ////
 //// promotion wrapper code
