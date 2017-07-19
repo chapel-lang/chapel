@@ -83,7 +83,6 @@ volatile int chpl_qthread_done_initializing;
 // Task layer private area argument bundle header
 //
 typedef struct {
-  chpl_bool serial_state;
   chpl_bool countRunning;
   chpl_bool is_executeOn;
   int lineno;
@@ -92,6 +91,7 @@ typedef struct {
   chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
   chpl_taskID_t id;
+  chpl_task_ChapelData_t state;
 } chpl_task_bundle_t;
 
 // Structure of task-local storage
@@ -152,6 +152,22 @@ static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
     assert(data);
     return NULL;
 }
+
+#ifdef CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL
+#error "CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL 1
+#endif
+static inline chpl_task_bundle_t* chpl_task_getPrvBundle(void)
+{
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+    if (data && data->bundle) {
+        return data->bundle;
+    }
+    assert(data && data->bundle);
+    return NULL;
+}
+
 
 //
 // Sublocale support
