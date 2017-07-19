@@ -325,8 +325,7 @@ static void setup_main_thread_private_data(void)
   tp->ptask->next         = NULL;
   tp->ptask->prev         = NULL;
 
-  // serial_state starts out true; it is set to false in chpl_std_module_init().
-  tp->ptask->bundle.serial_state    = true;
+  tp->ptask->bundle.serial_state    = false;
   tp->ptask->bundle.countRunning    = false;
   tp->ptask->bundle.is_executeOn    = false;
   tp->ptask->bundle.lineno          = 0;

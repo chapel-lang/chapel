@@ -222,9 +222,6 @@ void chpl_std_module_init(void) {
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
 
   if (chpl_nodeID == 0) {
-    // OK, we can create tasks now.
-    chpl_task_setSerial(false);
-
     //
     // This just sets all of the initialization predicates to false.
     // Must occur before any other call to a chpl__init_<foo> function.
