@@ -6693,55 +6693,55 @@ static void insertRuntimeTypeTemps() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void        resolveAutoCopyEtc(Type* type);
-static const char* autoCopyFnForType(Type* type);
-static FnSymbol*   autoMemoryFunction(Type* type, const char* fnName);
+static void        resolveAutoCopyEtc(AggregateType* at);
+static const char* autoCopyFnForType(AggregateType* at);
+static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentSymbol               != NULL   &&
         ts->hasFlag(FLAG_GENERIC)                == false  &&
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
-      if (isRecord(ts->type) == true) {
-        resolveAutoCopyEtc(ts->type);
-        propagateNotPOD(ts->type);
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (isRecord(at) == true) {
+          resolveAutoCopyEtc(at);
+        }
 
-      } else if (isAggregateType(ts->type) == true) {
-        propagateNotPOD(ts->type);
+        propagateNotPOD(at);
       }
     }
   }
 }
 
-static void resolveAutoCopyEtc(Type* type) {
-  SET_LINENO(type->symbol);
+static void resolveAutoCopyEtc(AggregateType* at) {
+  SET_LINENO(at->symbol);
 
-  if (isNonGenericRecordWithInitializers(type) == false) {
+  if (isNonGenericRecordWithInitializers(at) == false) {
     // resolve autoCopy
-    if (hasAutoCopyForType(type) == false) {
-      FnSymbol* fn = autoMemoryFunction(type, autoCopyFnForType(type));
+    if (hasAutoCopyForType(at) == false) {
+      FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
 
-      autoCopyMap[type] = fn;
+      autoCopyMap[at] = fn;
     }
   }
 
   // resolve autoDestroy
-  if (autoDestroyMap.get(type) == NULL) {
-    FnSymbol* fn = autoMemoryFunction(type, "chpl__autoDestroy");
+  if (autoDestroyMap.get(at) == NULL) {
+    FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
 
     fn->addFlag(FLAG_AUTO_DESTROY_FN);
 
-    autoDestroyMap.put(type, fn);
+    autoDestroyMap.put(at, fn);
   }
 
   // resolve unalias
   // We make the 'unalias' hook available to all user records,
   // but for now it only applies to array/domain/distribution
   // in order to minimize the changes.
-  if (unaliasMap.get(type) == NULL && isRecordWrappedType(type) == true) {
-    FnSymbol* fn = autoMemoryFunction(type, "chpl__unalias");
+  if (unaliasMap.get(at) == NULL && isRecordWrappedType(at) == true) {
+    FnSymbol* fn = autoMemoryFunction(at, "chpl__unalias");
 
-    unaliasMap.put(type, fn);
+    unaliasMap.put(at, fn);
   }
 }
 
@@ -6751,30 +6751,30 @@ static void resolveAutoCopyEtc(Type* type) {
 // marked with FLAG_ERRONEOUS_INITCOPY. Additionally, user-defined
 // records shouldn't be defining chpl__initCopy or chpl__autoCopy
 // and certainly shouldn't rely on the differences between the two.
-static const char* autoCopyFnForType(Type* type) {
+static const char* autoCopyFnForType(AggregateType* at) {
   const char* retval = "chpl__autoCopy";
 
-  if (isUserDefinedRecord(type)                == true  &&
+  if (isUserDefinedRecord(at)                == true  &&
 
-      type->symbol->hasFlag(FLAG_TUPLE)        == false &&
-      isRecordWrappedType(type)                == false &&
-      isSyncType(type)                         == false &&
-      isSingleType(type)                       == false &&
-      type->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
+      at->symbol->hasFlag(FLAG_TUPLE)        == false &&
+      isRecordWrappedType(at)                == false &&
+      isSyncType(at)                         == false &&
+      isSingleType(at)                       == false &&
+      at->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
     retval = "chpl__initCopy";
   }
 
   return retval;
 }
 
-static FnSymbol* autoMemoryFunction(Type* type, const char* fnName) {
-  VarSymbol*  tmp    = newTemp(type);
-  CallExpr*   call   = new CallExpr(fnName, tmp);
-  FnSymbol*   retval = NULL;
+static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
+  VarSymbol* tmp    = newTemp(at);
+  CallExpr*  call   = new CallExpr(fnName, tmp);
+  FnSymbol*  retval = NULL;
 
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
-  retval = resolveUninsertedCall(type, call);
+  retval = resolveUninsertedCall(at, call);
 
   resolveFns(retval);
 
