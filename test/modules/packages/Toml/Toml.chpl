@@ -18,7 +18,10 @@ array Node.
  proc parseToml(input) : Node {
    const source = new Source(input);
    const parser = new Parser(source);
-   return parser.parseLoop();
+   var TomlFile =  parser.parseLoop();
+   delete parser;
+   delete source;
+   return TomlFile;
  }
  
 /*
@@ -27,7 +30,10 @@ array Node.
  proc parseToml(input: string) : Node {
    const source = new Source(input);
    const parser = new Parser(source);
-   return parser.parseLoop();
+   var TomlFile =  parser.parseLoop();
+   delete parser;
+   delete source;
+   return TomlFile;
  }
 */
 
