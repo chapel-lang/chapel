@@ -284,7 +284,17 @@ module CPtr {
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 
   /*
-    Return the size in bytes of a type.
+    Return the size in bytes of a type, as with the C `sizeof` built-in.
+
+    .. warning::
+
+      This method is intendend for C interoporability. To enhance
+      flexibility, it is possible to request the sizes of Chapel types.
+      However, be aware:
+
+         * Chapel types are not necessarily stored in contiguous memory
+         * Behavior of `c_sizeof` with Chapel types may change
+         * Behavior given a Chapel class type is not well-defined
    */
   inline proc c_sizeof(type x): size_t {
     extern proc sizeof(type x): size_t;
