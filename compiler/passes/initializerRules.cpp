@@ -343,6 +343,19 @@ static InitNormalize preNormalize(BlockStmt*    block,
             INT_ASSERT(false);
           }
 
+        } else if (state.inCoforall() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in a coforall loop body");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in a coforall loop body");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
         } else {
           stmt = state.completePhase1(callExpr);
         }
@@ -395,6 +408,13 @@ static InitNormalize preNormalize(BlockStmt*    block,
                     "can't initialize field \"%s\" inside a "
                     "parallel statement during phase 1 of initialization",
                     field->sym->name);
+
+        } else if (state.inCoforall() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "coforall during phase 1 of initialization",
+                    field->sym->name);
+
 
         } else {
           stmt = state.fieldInitFromInitStmt(field, callExpr);
