@@ -3363,41 +3363,42 @@ populateForwardingMethods(Type* t,
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
-                                       Expr*      beforeExpr,
-                                       CallExpr*  call);
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
 
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
   AggregateType* at     = toAggregateType(type);
   FnSymbol*      retval = NULL;
 
   if (at == NULL || at->defaultInitializer == NULL) {
-    retval = resolveUninsertedCall(chpl_gen_main->body, NULL, call);
+    retval = resolveUninsertedCall(chpl_gen_main->body, call);
 
   } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
-    retval = resolveUninsertedCall(point, NULL, call);
+    retval = resolveUninsertedCall(point, call);
 
   } else {
-    retval = resolveUninsertedCall(NULL, at->symbol->defPoint, call);
+    retval = resolveUninsertedCall(at->symbol->defPoint, call);
   }
 
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insideBlock,
-                                       Expr*      beforeExpr,
-                                       CallExpr*  call) {
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call) {
   BlockStmt* block = new BlockStmt(call);
 
-  if (insideBlock) {
-    insideBlock->insertAtHead(block);
+  insert->insertAtHead(block);
 
-  } else if (beforeExpr) {
-    beforeExpr->insertBefore(block);
+  resolveCall(call);
 
-  } else {
-    INT_ASSERT(false);
-  }
+  block->remove();
+
+  return call->resolvedFunction();
+}
+
+static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call) {
+  BlockStmt* block = new BlockStmt(call);
+
+  insert->insertBefore(block);
 
   resolveCall(call);
 
@@ -6626,7 +6627,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
   CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
 
-  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule);
+  resolveUninsertedCall(chpl_gen_main->body, addModule);
 
   gAddModuleFn = addModule->resolvedFunction();
 
