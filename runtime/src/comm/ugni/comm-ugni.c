@@ -681,10 +681,11 @@ typedef struct {
   c_sublocid_t  subloc;  // target sublocale
   unsigned char fast:          1;
   unsigned char blocking:      1;
-  unsigned char serial_state:  1;
   unsigned char payload_size;
   chpl_fn_int_t fid;
 
+  // TODO: is there a way to "compress" this?
+  chpl_task_ChapelData_t state;
 } fork_small_call_info_t;
 
 // Note: fork_small_call_info_t.payload_size must be able to store
@@ -2758,6 +2759,9 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       size_t bundle_size;
       chpl_fn_p fn;
 
+      // Copy task state (e.g. serial state) to space.
+      on_bundle->task.state = f_c->state;
+
       // Copy the payload to space.
       // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
       // and it refers to the memory just after that structure.
@@ -2789,8 +2793,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
                                  chpl_comm_on_bundle_task_bundle(on_bundle),
                                  bundle_size,
                                  f_c->subloc,
-                                 chpl_nullTaskID,
-                                 f_c->serial_state);
+                                 chpl_nullTaskID);
 
         release_req_buf(req_li, req_cdi, req_rbi);
       }
@@ -2806,6 +2809,9 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       // Create a task bundle to complete a large call
       fork_large_call_task_t bundle;
 
+      // Copy task state (e.g. serial state) to space.
+      bundle.task.state = f_c->state;
+
       // copy the fork_large_call_info_t to it
       bundle.large = *f_lc;
 
@@ -2813,8 +2819,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
                                (chpl_fn_p) fork_call_wrapper_large,
                                &bundle.task, sizeof(fork_large_call_task_t),
                                f_c->subloc,
-                               chpl_nullTaskID,
-                               f_c->serial_state);
+                               chpl_nullTaskID);
 
       release_req_buf(req_li, req_cdi, req_rbi);
     }
@@ -5538,7 +5543,6 @@ void fork_call_common(int locale, c_sublocid_t subloc,
   chpl_comm_on_bundle_t *large_arg = NULL;
   fork_base_info_t *req = NULL;
   rf_done_t **blockhere = NULL;
-  chpl_bool serial_state = chpl_task_getSerial();
   fork_t f;
 
 
@@ -5552,7 +5556,6 @@ void fork_call_common(int locale, c_sublocid_t subloc,
                                 .subloc       = subloc,
                                 .fast         = do_fast_fork,
                                 .blocking     = blocking,
-                                .serial_state = serial_state,
                                 .payload_size = payload_size,
                                 .fid          = fid };
 
