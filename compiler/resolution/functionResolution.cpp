@@ -6693,7 +6693,7 @@ static void insertRuntimeTypeTemps() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void        resolveAutoCopyEtc(Type* type);
+static void        resolveAutoCopyEtc(AggregateType* at);
 static const char* autoCopyFnForType(Type* type);
 static FnSymbol*   autoMemoryFunction(Type* type, const char* fnName);
 
@@ -6713,35 +6713,35 @@ static void resolveAutoCopies() {
   }
 }
 
-static void resolveAutoCopyEtc(Type* type) {
-  SET_LINENO(type->symbol);
+static void resolveAutoCopyEtc(AggregateType* at) {
+  SET_LINENO(at->symbol);
 
-  if (isNonGenericRecordWithInitializers(type) == false) {
+  if (isNonGenericRecordWithInitializers(at) == false) {
     // resolve autoCopy
-    if (hasAutoCopyForType(type) == false) {
-      FnSymbol* fn = autoMemoryFunction(type, autoCopyFnForType(type));
+    if (hasAutoCopyForType(at) == false) {
+      FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
 
-      autoCopyMap[type] = fn;
+      autoCopyMap[at] = fn;
     }
   }
 
   // resolve autoDestroy
-  if (autoDestroyMap.get(type) == NULL) {
-    FnSymbol* fn = autoMemoryFunction(type, "chpl__autoDestroy");
+  if (autoDestroyMap.get(at) == NULL) {
+    FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
 
     fn->addFlag(FLAG_AUTO_DESTROY_FN);
 
-    autoDestroyMap.put(type, fn);
+    autoDestroyMap.put(at, fn);
   }
 
   // resolve unalias
   // We make the 'unalias' hook available to all user records,
   // but for now it only applies to array/domain/distribution
   // in order to minimize the changes.
-  if (unaliasMap.get(type) == NULL && isRecordWrappedType(type) == true) {
-    FnSymbol* fn = autoMemoryFunction(type, "chpl__unalias");
+  if (unaliasMap.get(at) == NULL && isRecordWrappedType(at) == true) {
+    FnSymbol* fn = autoMemoryFunction(at, "chpl__unalias");
 
-    unaliasMap.put(type, fn);
+    unaliasMap.put(at, fn);
   }
 }
 
