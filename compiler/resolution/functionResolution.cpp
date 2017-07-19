@@ -4985,7 +4985,13 @@ static void resolveNew(CallExpr* call) {
             if (isBlockStmt(call->parentExpr) == true) {
               call->insertBefore(def);
             } else {
-              call->parentExpr->insertBefore(def);
+              Expr* parent = call->parentExpr;
+              parent->insertBefore(def);
+
+              if (isClass(at) == false) {
+                call->replace(new SymExpr(newTmp));
+                parent->insertBefore(call);
+              }
             }
 
             if (isClass(at) == true) {
