@@ -430,7 +430,8 @@ static bool isUse(SymExpr* se)
 
 // Perform updates that effect the copyPropagation transformation.
 static void propagateCopies(std::vector<SymExpr*>& symExprs,
-                            AvailableMap& available)
+                            AvailableMap& available,
+                            std::set<Symbol*>& liveRefs)
 {
   // Scan the SymExprs in the current block, looking for ones that can be replaced.
   for_vector(SymExpr, se, symExprs)
@@ -443,8 +444,9 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     {
       // See if there is an (alias,def) pair.
       AvailableMap::iterator alias_def_pair = available.find(se->symbol());
+      const bool hasLiveRef = liveRefs.find(se->symbol()) != liveRefs.end();
       // If so, replace the alias with its definition.
-      if (alias_def_pair != available.end())
+      if (alias_def_pair != available.end() && hasLiveRef == false)
       {
         DEBUG_COPYPROP("Replacing %s[%d] with %s[%d]\n",
                alias_def_pair->first->name, alias_def_pair->first->id,
@@ -459,9 +461,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
     // If we encounter an ADDR_OF with a symbol, do not allow further
     // replacements in case the reference is used to modify the symbol's data.
     //
-    // TODO: We shouldn't attempt to propagate a variable once we encounter an
-    // addr-of, so we should not create pairs for 'se->symbol()' after this
-    // point.
+    // TODO: what about ref-intent?
     if (CallExpr* parent = toCallExpr(se->parentExpr)) {
       if (parent->isPrimitive(PRIM_ADDR_OF) ||
           parent->isPrimitive(PRIM_SET_REFERENCE) ||
@@ -470,6 +470,7 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
         if (ami != available.end()) {
           available.erase(ami);
         }
+        liveRefs.insert(se->symbol());
       }
     }
   }
@@ -624,7 +625,8 @@ static void extractCopies(Expr* expr,
 static void
 localCopyPropagationCore(BasicBlock*          bb,
                          AvailableMap&        available,
-                         ReverseAvailableMap& ravailable)
+                         ReverseAvailableMap& ravailable,
+                         std::set<Symbol*>&   liveRefs)
 {
   for_vector(Expr, expr, bb->exprs)
   {
@@ -638,7 +640,7 @@ localCopyPropagationCore(BasicBlock*          bb,
     // TODO: do not collect references or symbols that are not LcnSymbols
     collectSymExprs(expr, symExprs);
 
-    propagateCopies(symExprs, available);
+    propagateCopies(symExprs, available, liveRefs);
 
     removeKilledSymbols(symExprs, available, ravailable);
 
@@ -656,11 +658,13 @@ size_t localCopyPropagation(FnSymbol* fn)
 
   s_repl_count     = 0;
 
+  std::set<Symbol*> liveRefs;
+
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     AvailableMap available;
     ReverseAvailableMap ravailable;
-    localCopyPropagationCore(bb1, available, ravailable);
+    localCopyPropagationCore(bb1, available, ravailable, liveRefs);
   }
 
   return s_repl_count;
@@ -695,14 +699,15 @@ static void destroyPairSet(std::vector<BitVec*> set)
 // The ending index for each block is stored in ends[i].
 static void extractAvailablePairs(FnSymbol* fn,
                                   std::vector<AvailablePair>& availablePairs, 
-                                  std::vector<size_t>& ends)
+                                  std::vector<size_t>& ends,
+                                  std::set<Symbol*>& liveRefs)
 {
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     // Run local copy propagation to extract live pairs at the end of each block.
     AvailableMap available;
     ReverseAvailableMap ravailable;
-    localCopyPropagationCore(bb1, available, ravailable);
+    localCopyPropagationCore(bb1, available, ravailable, liveRefs);
 
     // Record those live pairs in successive elements in availablePairs.
     for (AvailableMap::iterator i = available.begin();
@@ -837,12 +842,14 @@ static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 size_t globalCopyPropagation(FnSymbol* fn) {
   BasicBlock::buildBasicBlocks(fn);
 
+  std::set<Symbol*>          liveRefs;
+
   size_t                     nbbs = fn->basicBlocks->size();
 
   std::vector<AvailablePair> availablePairs;
   std::vector<size_t>        ends;
 
-  extractAvailablePairs(fn, availablePairs, ends);
+  extractAvailablePairs(fn, availablePairs, ends, liveRefs);
 
   size_t size = availablePairs.size();
 
@@ -920,7 +927,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
 
     if (available.size() > 0)
     {
-      localCopyPropagationCore(bb, available, ravailable);
+      localCopyPropagationCore(bb, available, ravailable, liveRefs);
       // Here, as a check, we could subtract from available the pairs
       // corresponding to the true bits in OUT[i].  The expectation is that all
       // and only those pairs remain.
