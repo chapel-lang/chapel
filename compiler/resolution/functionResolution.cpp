@@ -302,8 +302,7 @@ static bool typeHasRefField(Type *type) {
 static FnSymbol*
 resolveUninsertedCall(BlockStmt* insideBlock,
                       Expr* beforeExpr,
-                      CallExpr* call,
-                      bool checkonly) {
+                      CallExpr* call) {
 
   // In case resolveCall drops other stuff into the tree ahead of the
   // call, we wrap everything in a block for safe removal.
@@ -320,16 +319,9 @@ resolveUninsertedCall(BlockStmt* insideBlock,
   INT_ASSERT(block->parentSymbol);
 
   block->insertAtHead(call);
-  if (checkonly && !call->primitive) {
-    resolveNormalCall(call, checkonly);
-  } else {
-    if (checkonly) {
-      INT_FATAL(call, "checkonly is being discarded because the call is a "
-                "primitive.\nIf that is not intended, please extend "
-                "resolveCall");
-    }
-    resolveCall(call);
-  }
+
+  resolveCall(call);
+
   block->remove();
 
   return call->resolvedFunction();
@@ -353,7 +345,7 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
     insideBlock = chpl_gen_main->body;
   }
 
-  return resolveUninsertedCall(insideBlock, beforeExpr, call, false);
+  return resolveUninsertedCall(insideBlock, beforeExpr, call);
 }
 
 //
@@ -6626,15 +6618,17 @@ static void resolveUses(ModuleSymbol* mod)
 }
 
 static void resolveSupportForModuleDeinits() {
-  // We will need these in addInitGuards.cpp
   SET_LINENO(chpl_gen_main);
-  Expr*    modNameDum = buildCStringLiteral("");
-  VarSymbol* fnPtrDum = newTemp("fnPtr", dtCFnPtr);
-  CallExpr* addModule = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
-  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule, false);
+
+  Expr*      modNameDum = buildCStringLiteral("");
+  VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
+  CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
+
+  resolveUninsertedCall(chpl_gen_main->body, NULL, addModule);
+
   gAddModuleFn = addModule->resolvedFunction();
+
   resolveFns(gAddModuleFn);
-  // Also in buildDefaultFunctions.cpp: new CallExpr("chpl_deinitModules")
 }
 
 static void resolveExports() {
