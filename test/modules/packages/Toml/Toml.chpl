@@ -15,7 +15,7 @@ use DateTime;
 Receives a channel to a TOML file as a parameter and outputs an associative
 array Node.
 */
- proc parseToml(input: string) : Node {
+ proc parseToml(input) : Node {
    const source = new Source(input);
    const parser = new Parser(source);
    return parser.parseLoop();
@@ -51,13 +51,12 @@ Parser module with the Node class for the Chapel TOML library.
      var rootTable = new Node(table);
      var curTable: string;
 
-     // Regex constants to match Tokens
      const doubleQuotes = '".*?"',
        singleQuotes = "'.*?'",
        digit = "\\d+",
-        keys = "^\\w+";
+       keys = "^\\w+";
      const Str = compile(doubleQuotes + '|' + singleQuotes),
-        kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
+       kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
        dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
        realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
        ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
@@ -66,8 +65,8 @@ Parser module with the Node class for the Chapel TOML library.
        whitespace = compile("\\s"),
        comment = compile("(\\#)"),
        comma = compile("(\\,)");
-     
-     
+
+
 
      proc parseLoop() : Node {
        
@@ -125,6 +124,7 @@ Parser module with the Node class for the Chapel TOML library.
        curTable = tblname;
      }
      
+     /* Creates a path to a sub-table when no parent has been initialized */
      proc makePath(tblPath: string) {
        var path = tblPath.split('.');
        var firstIn = path.domain.first;
@@ -186,12 +186,11 @@ Parser module with the Node class for the Chapel TOML library.
        }
      }
      
-     // Skip the line with the comment 
      proc parseComment() {
        skipLine(source);
      }  
      
-     // Returns leaf of embedded table
+     /* Returns leaf of embedded table */
      proc splitTblPath(s: string) {
        var A = s.split('.');
        var fIdx = A.domain.first;
@@ -201,13 +200,12 @@ Parser module with the Node class for the Chapel TOML library.
        return (path, leaf);
      }
      
-     // [servers.alpha.echo] => [servers, alpha, echo]
      proc splitName(s: string) {
        var A = s.split('.');
        return A;
      }
-     
-     
+
+     /* Creates and returns a Node parsed from tokens into respective type */
      proc parseValue(): Node {
        var val = top(source);
        // Array
@@ -283,6 +281,7 @@ Parser module with the Node class for the Chapel TOML library.
          var boolNode = new Node(toBool);
          return boolNode;
        }
+       // Comments within arrays
        else if val == '#' {
          skipLine(source);
          return parseValue();
@@ -295,7 +294,7 @@ Parser module with the Node class for the Chapel TOML library.
    }
    
    
-   /*
+ /*
  Class to hold various types parsed from input
  Used to recursivly hold tables and respective values
  */
@@ -374,7 +373,7 @@ Parser module with the Node class for the Chapel TOML library.
        return A[idx];
      }
      
-     // Returns the index of the tbl path given as a parameter
+     /* Returns the index of the table path given as a parameter */
      proc getIdx(tbl: string) ref : Node {
        var indx = tbl.split('.');
        var top = indx.domain.first;
@@ -397,7 +396,7 @@ Parser module with the Node class for the Chapel TOML library.
        }
      }
      
-     
+     /* Returns true if table path exists in rootTable */
      proc pathExists(tblpath: string) : bool {
        var path = tblpath.split('.');
        var top = path.domain.first;
@@ -420,7 +419,7 @@ Parser module with the Node class for the Chapel TOML library.
        }
      }
      
-     
+     /* Write a Table */
      proc writeThis(f) {
        var flatDom: domain(string);
        var flat: [flatDom] Node;
@@ -428,10 +427,9 @@ Parser module with the Node class for the Chapel TOML library.
        printValues(f, this);     // Prints key values in containing Node
        printHelp(flat, f);       // Prints tables in containg Node
      }
+
      
-     /*
-   Flatten tables into flat associative array for writing
-   */
+     /* Flatten tables into flat associative array for writing */
      proc flatten(flat: [?d] Node, rootKey = '') : flat.type { 
        for (k, v) in zip(this.D, this.A) {
          if v.tag == 4 {
@@ -443,6 +441,7 @@ Parser module with the Node class for the Chapel TOML library.
        }
        return flat;
      }
+
      
      proc printHelp(flat: [?d] Node, f:channel) {
        for k in d.sorted() {
@@ -451,10 +450,8 @@ Parser module with the Node class for the Chapel TOML library.
        }
      }
      
-   /*
-   Send values from table to toString for writing
-   Skip tables
-   */
+
+     /* Send values from table to toString for writing  */
      proc printValues(f: channel, v: Node) {
        for (key, value) in zip(v.D, v.A) {
          select value.tag {
@@ -500,6 +497,7 @@ Parser module with the Node class for the Chapel TOML library.
        f.writeln();
      }
      
+     /* Return String representation of a value in a node */
      proc toString(val: Node) : string { 
        select val.tag {
          when 1 do return val.boo;
@@ -529,12 +527,16 @@ Parser module with the Node class for the Chapel TOML library.
          }
      }
 
+
+     /* 
+      For the user to write values of a node as follows:
+      Node[key].toString()
+     */
       proc toString() : string { 
         return toString(this);
      }
 
      
-     /* Don't forget to free your memory! */
      proc deinit() {
        for a in A {
          delete a;
@@ -545,13 +547,13 @@ Parser module with the Node class for the Chapel TOML library.
 
 
 
- /*
+/*
 Reader module for use in the Parser Class. 
 */
  module TomlReader {
  
    
-   // Returns the next token in the current line without removing it. 
+   /* Returns the next token in the current line without removing it */
    proc top(source) {
      if source.currentLine.D.size < 1 {
        source.newLine();
@@ -559,8 +561,8 @@ Reader module for use in the Parser Class.
      return source.currentLine[source.currentLine.D.first];
    }
    
-   // Returns a boolean or wether or not another line can be read
-   // Also updates the currentLine if empty
+   /* Returns a boolean or wether or not another line can be read
+   /  Also updates the currentLine if empty */
    proc readLine(source) {
      return source.nextLine();
    }
@@ -573,21 +575,15 @@ Reader module for use in the Parser Class.
      source.skipROL();
    }
    
-   // retrives the next token in currentline
+   /* retrives the next token in currentline */
    proc getToken(source) {
      return source.nextToke();
    }
    
 
-   /*
-The source class reads a file given as an instance variable upon init.
-This class helps the Parser read and consume the toml file, and is provided
-as an instance variable to the Parser class.
-*/
    class Source {
      
      var tomlFile: string;
-     //var tomlStr: string;
      var tokenD = {1..0},
        tokenlist: [tokenD] Tokens;
      var currentLine: Tokens;
@@ -598,14 +594,16 @@ as an instance variable to the Parser class.
        var openFile = open(tomlFile, iomode.r);
        this.genTokenlist(openFile);
      }
+
+
      /* 
-  proc init(tomlStr: string) {
-    this.tomlStr = tomlStr;
-    this.genTokenlist(tomlStr);
-  }
-*/
+     proc init(tomlStr: string) {
+      this.tomlStr = tomlStr;
+      this.genTokenlist(tomlStr);
+     }
+      */
      
-     // generates list of Token objects
+     /* generates list of Token objects */
      proc genTokenlist(input) {
        for line in input.lines() {
          splitLine(line);
@@ -614,13 +612,13 @@ as an instance variable to the Parser class.
      }
      
      /*
-  proc genTokenlist(input: string) {
-    for line in input.split('\n') {
-      splitLine(line);
-    }
-    currentLine = tokenlist[tokenD.first];
-  }
-*/
+     proc genTokenlist(input: string) {
+       for line in input.split('\n') {
+         splitLine(line);
+       }
+      currentLine = tokenlist[tokenD.first];
+     } 
+     */
   
      proc splitLine(line) {
        var linetokens: [1..0] string;
@@ -663,11 +661,11 @@ as an instance variable to the Parser class.
          }
        }
        else {
-         writeln("Error: end of file"); //this will be an throw execption
+         halt("Error: end of file");
        }
      }
      
-     // Reads next line into currentline
+     /* Reads next line into currentline */
      proc nextLine() {
        if currentLine.A.isEmpty() {
          if tokenD.size == 1 {
@@ -683,7 +681,7 @@ as an instance variable to the Parser class.
      }
      
      
-     // retrives next token in currentLine
+     /* retrives next token in currentLine */
      proc nextToke() {
        newLine();
        return currentLine.next();
