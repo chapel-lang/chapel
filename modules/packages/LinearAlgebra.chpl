@@ -122,6 +122,7 @@ use Norm; // TODO -- merge Norm into LinearAlgebra
 use BLAS;
 // use LAPACK; // TODO -- Use LAPACK routines
 
+// TODO: compilerError if matrices are distributed
 
 //
 // Matrix and Vector Initializers
