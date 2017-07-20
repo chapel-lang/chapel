@@ -1,0 +1,2 @@
+new-on-prim.chpl:1: In function 'main':
+new-on-prim.chpl:2: error: invalid use of 'new' on primitive int(64)
