@@ -3267,6 +3267,42 @@ inline proc channel.read(ref args ...?k,
   return !error;
 }
 
+
+/*
+  Iterate over all of the lines ending in ``\n`` in a channel - the channel
+  lock will be held while iterating over the lines.
+
+  Only serial iteration is supported.
+
+  :yields: lines ending in ``\n`` in channel
+ */
+iter channel.lines() {
+
+  on this.home {
+    this.lock();
+
+    // Save iostyle
+    const saved_style: iostyle = this._style();
+
+    // Update iostyle
+    var newline_style: iostyle = this._style();
+    newline_style.string_format = QIO_STRING_FORMAT_TOEND;
+    newline_style.string_end = 0x0a; // '\n'
+    this._set_style(newline_style);
+
+    // Iterate over lines
+    for line in this.itemReader(string, this.kind) {
+      yield line;
+    }
+
+    // Set the iostyle back to original state
+    this._set_style(saved_style);
+
+    this.unlock();
+  }
+}
+
+
 pragma "no doc"
 proc _can_stringify_direct(t) param : bool {
   if (t.type == string ||
