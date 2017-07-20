@@ -1093,8 +1093,8 @@ module String {
 
     /*
      Checks if all the characters in the string are printable. Characters are
-     defined as being printable if they are not within the range of `0x00-0x1f`
-     and are not `0x7f`.
+     defined as being printable if they are within the range of `0x20 - 0x7e`
+     including the bounds.
 
       :returns: * `true`  -- when the characters are printable.
                 * `false` -- otherwise
