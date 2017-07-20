@@ -838,7 +838,8 @@ static void *comm_task_wrapper(void *arg)
 // not use methods that require task context (e.g., task-local storage).
 void chpl_task_callMain(void (*chpl_main)(void))
 {
-    main_wrapper_bundle_t arg;
+    // Be sure to initialize Chapel managed task-local state with zeros
+    main_wrapper_bundle_t arg = { .chpl_main = NULL };
 
     arg.arg.countRunning      = false;
     arg.arg.is_executeOn      = false;

@@ -30,10 +30,10 @@ module ChapelTaskData {
 
   // Chapel task-local data format:
   // 16 bytes of wide pointer for _remoteEndCountType
-  // 1 byte of bool for serial_state
+  // 1 byte for serial_state
   private const chpl_offset_endCount = 0:size_t;
   private const  chpl_offset_serial = 16:size_t;
-  private const     chpl_offset_end = chpl_offset_serial+sizeof(bool);
+  private const     chpl_offset_end = chpl_offset_serial+1;
 
   // workaround to make sure some things are wide
   private var neverExecuted = false;
@@ -69,19 +69,28 @@ module ChapelTaskData {
     return ret;
   }
 
-  proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_ChapelData_t), in makeSerial: bool) : void {
+  proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_ChapelData_t), makeSerial: bool) : void {
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
+    var v:uint(8) = 0;
+    if makeSerial then
+      v = 1;
     // Using memcpy to avoid pointer type punning
-    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(makeSerial), sizeof(bool));
+    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), sizeof(uint(8)));
   }
   proc chpl_task_data_getSerial(tls:c_ptr(chpl_task_ChapelData_t)) : bool {
     var ret:bool = false;
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
+    var v:uint(8) = 0;
     // Using memcpy to avoid pointer type punning
-    c_memcpy(c_ptrTo(ret), c_ptrTo(prv[i]), sizeof(bool));
-    return ret;
+    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), sizeof(uint(8)));
+    // check we got 1 or 0 if bounds checking is on
+    // (to detect runtime implementation errors where this part of
+    //  the argument bundle is stack trash)
+    if boundsChecking then
+      assert(v == 0 || v == 1);
+    return v == 1;
   }
 
 
