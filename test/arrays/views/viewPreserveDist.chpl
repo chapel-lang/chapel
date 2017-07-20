@@ -10,7 +10,7 @@ foo(A1);
 foo(A1[2..8]);
 foo(A2[.., 3]);
 foo(A2[7, ..]);
-foo(A1.reindex({0..15 by 2}));
+foo(A1.reindex(0..15 by 2));
 
 proc foo(X: [?D] real) {
   writeln("D is: ", D);

@@ -46,5 +46,5 @@ proc test(A: [], id : string) {
 
 test(data, "non-view");
 test(data[1..n], "slice");
-test(data.reindex({0..#n}), "reindex");
+test(data.reindex(0..#n), "reindex");
 test(multiDim[1, ..], "rankchange");

@@ -2345,28 +2345,56 @@ module ChapelArray {
              "  Actual domain is: ", this.domain);
     }
 
+    // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
     /*
-       Return an array view over a new domain, provided that the new
-       domain is of the same rank and size as the original.
+       Return an array view over a new domain. The new domain must be
+       of the same rank and size as the original array's domain.
 
        For example:
 
        .. code-block:: chapel
 
           var A: [1..10] int;
-          var B = A.reindex(6..15);
-
+          const D = {6..15};
+          ref reA = A.reindex(D);
+          reA[6] = 1; // updates A[1]
     */
     pragma "fn returns aliasing array"
-    proc reindex(d: domain)
-      where isRectangularDom(this.domain) && isRectangularDom(d)
+    inline proc reindex(newDomain: domain)
+      where isRectangularDom(this.domain) && isRectangularDom(newDomain)
+    return reindex((...newDomain.dims()));
+
+    // The reason `newDims` arg is untyped is that it needs to allow
+    // ranges of various types, ex. a mix of stridable and not.
+    //
+    // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
+    /*
+       Return an array view over a new domain defined implicitly
+       by one or more `newDims`, which must be ranges. The new domain must be
+       of the same rank and size as the original array's domain.
+
+       For example:
+
+       .. code-block:: chapel
+
+          var A: [3..4, 5..6] int;
+          ref reA = A.reindex(13..14, 15..16);
+          reA[13,15] = 1; // updates A[3,5]
+    */
+    pragma "fn returns aliasing array"
+    proc reindex(newDims...)
+      where isRectangularDom(this.domain)
     {
-      if rank != d.rank then
-        compilerError("rank mismatch: cannot reindex() from " + rank +
-                      " dimension(s) to " + d.rank);
+      for param i in 1..newDims.size do
+        if !isRange(newDims(i)) then
+          compilerError("cannot reindex() a rectangular array to a tuple containing non-ranges");
+
+      if this.rank != newDims.size then
+        compilerError("rank mismatch: cannot reindex() from " + this.rank +
+                      " dimension(s) to " + newDims.size);
 
       for param i in 1..rank do
-        if d.dim(i).length != _value.dom.dsiDim(i).length then
+        if newDims(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
       //
@@ -2380,7 +2408,7 @@ module ChapelArray {
       const (dom, dompid) = (thisDomClass, thisDomClass.pid);
 
       pragma "no auto destroy"
-      const updom = {(...d.dims())};
+      const updom = {(...newDims)};
 
       const redist = new ArrayViewReindexDist(downdist = _getDistribution(thisDomClass.dist),
                                               updom = updom._value,
@@ -2389,9 +2417,10 @@ module ChapelArray {
       const redistRec = _newDistribution(redist);
       // redist._free_when_no_doms = true;
       const redomclass = redistRec.newRectangularDom(rank=rank,
-                                                     idxType=d.idxType,
-                                                     stridable=d.stridable,
-                                                     d.dims());
+        // 'updom' serves as a common denominator of newDims's ranges
+                                                     idxType=updom.idxType,
+                                                     stridable=updom.stridable,
+                                                     updom.dims());
 
       pragma "no auto destroy" const newDom = _newDomain(redomclass);
       newDom._value._free_when_no_arrs = true;

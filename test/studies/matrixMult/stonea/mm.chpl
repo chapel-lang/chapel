@@ -139,9 +139,9 @@ proc matrixMult_tensored_no_indices(
     const calcRange = 1..(B.domain.dim(1).high - B.domain.dim(1).low)+1;
 
     // reindexed versions of A, B, and C
-    ref Aprime = A.reindex({rowRange,  calcRange});
-    ref Bprime = B.reindex({calcRange, colRange});
-    ref Cprime = C.reindex({rowRange,  colRange});
+    ref Aprime = A.reindex(rowRange,  calcRange);
+    ref Bprime = B.reindex(calcRange, colRange);
+    ref Cprime = C.reindex(rowRange,  colRange);
 
     C = 0;
 
@@ -198,7 +198,7 @@ proc main() {
     checkMult("mult kij (with saxpy): ", C, D);
     C = 2;
 
-    matrixMult_tensored(m, p, n, A.reindex({1..m, 1..p}), B.reindex({1..p, 1..n}), C.reindex({1..m, 1..n}));
+    matrixMult_tensored(m, p, n, A.reindex(1..m, 1..p), B.reindex(1..p, 1..n), C.reindex(1..m, 1..n));
     checkMult("mult tensored: ", C, D);
     C = 2;
 
