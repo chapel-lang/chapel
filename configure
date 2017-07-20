@@ -168,9 +168,12 @@ echo
 echo "  If the configuration above is appropriate, build Chapel with:"
 echo
 echo "make"
-echo "make check"
 echo
 echo "  and possibly install it with"
 echo
 echo "make install"
+echo
+echo "  Once Chapel is in your PATH, you can verify basic functionality with:"
+echo
+echo "make check"
 echo
