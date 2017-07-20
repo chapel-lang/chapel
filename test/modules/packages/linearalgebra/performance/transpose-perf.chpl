@@ -12,7 +12,9 @@ use Time;
 
 config const m=1000,
              iters=10,
-             reference=false;
+             reference=false,
+             correctness=false;
+
 
 config type eltType = real;
 
@@ -26,13 +28,15 @@ proc main() {
 
   var t: Timer;
 
-  writeln('==========================');
-  writeln('Transpose Performance Test');
-  writeln('==========================');
-  writeln('iters : ', iters);
-  writeln('m     : ', m);
-  writeln('MB    : ', (bytes*m*m) / 10**6);
-  writeln();
+  if !correctness {
+    writeln('==========================');
+    writeln('Transpose Performance Test');
+    writeln('==========================');
+    writeln('iters : ', iters);
+    writeln('m     : ', m);
+    writeln('MB    : ', (bytes*m*m) / 10**6);
+    writeln();
+  }
 
   for 1..iters {
     t.start();
@@ -40,7 +44,8 @@ proc main() {
     t.stop();
   }
 
-  writeln('LinearAlgebra.transpose: ', t.elapsed() / iters);
+  if !correctness then
+    writeln('LinearAlgebra.transpose: ', t.elapsed() / iters);
   t.clear();
 
   if reference {
@@ -50,7 +55,8 @@ proc main() {
       t.stop();
     }
 
-    writeln('BLAS.transpose: ', t.elapsed() / iters);
+    if !correctness then
+      writeln('BLAS.transpose: ', t.elapsed() / iters);
     t.clear();
   }
 }
