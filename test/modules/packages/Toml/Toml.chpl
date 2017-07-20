@@ -301,6 +301,18 @@ Parser module with the Toml class for the Chapel TOML library.
    }
 
 
+
+
+enum fieldtag {fieldBool,
+               fieldInt,
+               fieldArr,
+               fieldToml,
+               fieldReal,
+               fieldString,
+               fieldEmpty,
+               fieldDate};
+ use fieldtag;
+
  /*
  Class to hold various types parsed from input
  Used to recursivly hold tables and respective values
@@ -315,66 +327,55 @@ Parser module with the Toml class for the Chapel TOML library.
      var arr: [dom] Toml;
      var D: domain(string);
      var A: [D] Toml;
-
-     // Tags to identify type
-     const fieldBool = 1,
-       fieldInt = 2,
-       fieldArr = 3,
-       fieldToml = 4,
-       fieldReal = 5,
-       fieldString = 6,
-       fieldEmpty = 7,
-       fieldDate = 8;
-     var tag: int = fieldEmpty;  
-
+     var tag: fieldtag; 
 
      // Empty
      proc init() {
-       tag = fieldEmpty;
+       this.tag = fieldEmpty;
      }
 
      // String
      proc init(s:string) {
        this.s = s;
-       tag = fieldString;
+       this.tag = fieldString;
      }
 
      // Toml
      proc init(A: [?D] Toml) where isAssociativeDom(D) {
        this.D = D;
        this.A = A;
-       tag = fieldToml;
+       this.tag = fieldToml;
      }
 
      // Datetime
      proc init(dt: datetime) {
        this.dt = dt;
-       tag = fieldDate;
+       this.tag = fieldDate;
      }
 
      // Int
      proc init(i: int) {
        this.i = i;
-       tag = fieldInt;
+       this.tag = fieldInt;
      }
 
      // Boolean
      proc init(boo: bool) {
        this.boo = boo;
-       tag = fieldBool;
+       this.tag = fieldBool;
      }
 
      // Real
      proc init(re: real) {
        this.re = re;
-       tag = fieldReal;
+       this.tag = fieldReal;
      }
 
      // Array
      proc init(arr: [?dom] Toml) where isAssociativeDom(dom) == false  {
        this.dom = dom;
        this.arr = arr;
-       tag = fieldArr;
+       this.tag = fieldArr;
      }
 
      proc this(idx: string) ref {
@@ -440,7 +441,7 @@ Parser module with the Toml class for the Chapel TOML library.
      /* Flatten tables into flat associative array for writing */
      proc flatten(flat: [?d] Toml, rootKey = '') : flat.type { 
        for (k, v) in zip(this.D, this.A) {
-         if v.tag == 4 {
+         if v.tag == fieldToml {
            var fullKey = k;
            if rootKey != '' then fullKey = '.'.join(rootKey, k);
            flat[fullKey] = v;
@@ -463,14 +464,14 @@ Parser module with the Toml class for the Chapel TOML library.
      proc printValues(f: channel, v: Toml) {
        for (key, value) in zip(v.D, v.A) {
          select value.tag {
-           when 4 do continue; // Table
-           when 1 {
+           when fieldToml do continue; // Table
+           when fieldBool {
              f.writeln(key, ' = ', toString(value));
            }
-           when 2 {
+           when fieldInt {
              f.writeln(key, ' = ', toString(value));
            }
-           when 3 {
+           when fieldArr {
              var final: string;
              f.write(key, ' = ');
              final += '[';
@@ -485,16 +486,16 @@ Parser module with the Toml class for the Chapel TOML library.
              final += ']';
              f.writeln(final);
            }
-           when 5 {
+           when fieldReal {
              f.writeln(key, ' = ', toString(value));
            }
-           when 6 {
+           when fieldString {
              f.writeln(key, ' = ', toString(value));
            }
-           when 7 {
+           when fieldEmpty {
              halt("Keys have to have a value");
            }
-           when 8 {
+           when fieldDate {
              f.writeln(key, ' = ', toString(value));
            }
            otherwise { 
@@ -509,9 +510,9 @@ Parser module with the Toml class for the Chapel TOML library.
      /* Return String representation of a value in a node */
      proc toString(val: Toml) : string { 
        select val.tag {
-         when 1 do return val.boo;
-         when 2 do return val.i;
-         when 3 {
+         when fieldBool do return val.boo;
+         when fieldInt do return val.i;
+         when fieldArr {
            var final: string;
            final += '[';
            for k in val.arr {
@@ -525,13 +526,12 @@ Parser module with the Toml class for the Chapel TOML library.
            final += ']';
            return final;
          }
-         when 5 do return val.re;
-         when 6 do return ('"' + val.s + '"');
-         when 7 do return ""; // empty
-         when 8 do return val.dt.isoformat();
+         when fieldReal do return val.re;
+         when fieldString do return ('"' + val.s + '"');
+         when fieldEmpty do return ""; // empty
+         when fieldDate do return val.dt.isoformat();
          otherwise {
-           return val;
-           writeln("something weird happened with", val);
+           halt("Error in printing '", val, "'");
          }
          }
      }
