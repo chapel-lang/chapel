@@ -286,9 +286,6 @@ module CPtr {
   /*
     Return the size in bytes of a type, as with the C `sizeof` built-in.
 
-    This method is not available for all Chapel types; classes, ranges, domains,
-    distributions, arrays, sync, single, and atomic are excluded.
-
     .. warning::
 
       This method is intendend for C interoporability. To enhance
@@ -299,12 +296,9 @@ module CPtr {
          * Behavior of `c_sizeof` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
-  inline proc c_sizeof(type t): size_t
-  where !(isClass(t) || isRange(t) ||
-          isDmap(t) || isDomain(t) || isArray(t) ||
-          isSync(t) || isSingle(t) || isAtomic(t)) {
-    extern proc sizeof(type t): size_t;
-    return sizeof(t);
+  inline proc c_sizeof(type x): size_t {
+    extern proc sizeof(type x): size_t;
+    return sizeof(x);
   }
 
   /*
