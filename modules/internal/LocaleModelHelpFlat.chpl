@@ -110,10 +110,10 @@ module LocaleModelHelpFlat {
     // non-blocking "on" in order to serialize the execute_ons.
     //
     const node = chpl_nodeFromLocaleID(loc);
+    var tls = chpl_task_getChapelData();
+    var isSerial = chpl_task_data_getSerial(tls);
     if (node == chpl_nodeID) {
       // don't call the runtime nb execute_on function if we can stay local
-      var tls = chpl_task_getChapelData();
-      var isSerial = chpl_task_data_getSerial(tls);
       if isSerial {
         chpl_ftable_call(fn, args);
       } else {
@@ -121,8 +121,6 @@ module LocaleModelHelpFlat {
         chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_any);
       }
     } else {
-      var tls = chpl_task_getChapelData();
-      var isSerial = chpl_task_data_getSerial(tls);
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       if isSerial {
         chpl_comm_execute_on(node, c_sublocid_any, fn, args, args_size);
