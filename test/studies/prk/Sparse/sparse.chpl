@@ -7,6 +7,7 @@
 */
 use BlockDist;
 use LayoutCSR;
+use RangeChunk;
 use ReplicatedDist;
 use Time;
 use VisualDebug;
@@ -46,6 +47,12 @@ var matrix: [matrixDom] real,
     vector: [vectorDom] real,
     result: [resultDom] real;
 
+// Chunk array
+var locChunks: [0..#numLocales] range;
+for (locChunk, c) in zip(locChunks, chunks(vectorSpace.dim(1), numLocales)) do 
+  locChunk = c;
+
+// Timer
 var t = new Timer();
 
 proc main() {
@@ -61,7 +68,19 @@ proc main() {
 
     // Update vector (across locales for distributed case)
     coforall loc in Locales do on loc {
-      [i in vectorDom] vector[i] += i;
+      [i in locChunks[loc.id]] vector[i] += i;
+    }
+
+    if distributed {
+      // Naive gather from all -> 0
+      coforall loc in Locales[1..] {
+        vector[locChunks[loc.id]] = vector.replicand(loc)[locChunks[loc.id]];
+      }
+
+      // Naive broadcast from 0 -> all
+      coforall loc in Locales[1..] {
+        vector.replicand(loc) = vector;
+      }
     }
 
     forall i in resultDom {
