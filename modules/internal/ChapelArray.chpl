@@ -2345,26 +2345,42 @@ module ChapelArray {
              "  Actual domain is: ", this.domain);
     }
 
+    // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
     /*
-       Return an array view over a new domain, provided that the new
-       domain is of the same rank and size as the original.
-
-       The argument can also be a range or a tuple of ranges.
+       Return an array view over a new domain. The new domain must be
+       of the same rank and size as the original array's domain.
 
        For example:
 
        .. code-block:: chapel
 
           var A: [1..10] int;
-          var B = A.reindex(6..15);
-
+          const D = {6..15};
+          ref reA = A.reindex(D);
+          reA[6] = 1; // updates A[1]
     */
     pragma "fn returns aliasing array"
     inline proc reindex(newDomain: domain)
       where isRectangularDom(this.domain) && isRectangularDom(newDomain)
     return reindex((...newDomain.dims()));
 
-    pragma "no doc"
+    // The reason `newDims` arg is untyped is that it needs to allow
+    // ranges of various types, ex. a mix of stridable and not.
+    //
+    // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
+    /*
+       Return an array view over a new domain defined implicitly
+       by one or more `newDims`, which must be ranges. The new domain must be
+       of the same rank and size as the original array's domain.
+
+       For example:
+
+       .. code-block:: chapel
+
+          var A: [3..4, 5..6] int;
+          ref reA = A.reindex(13..14, 15..16);
+          reA[13,15] = 1; // updates A[3,5]
+    */
     pragma "fn returns aliasing array"
     proc reindex(newDims...)
       where isRectangularDom(this.domain)
