@@ -354,7 +354,9 @@ proc isTuple(e)     param  return isTupleValue(e);
 /* Returns `true` if the argument is a homogeneous tuple.
    The argument must be a tuple or any type. */
 proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
-/* Returns `true` if the argument is a class type or value. */
+/* Returns `true` if the argument is a class type or value
+   that inherits from `object`, or when the argument is ``nil``.
+   Returns `false`, among others, for ``extern`` classes. */
 proc isClass(e)     param  return isClassValue(e);
 /* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
