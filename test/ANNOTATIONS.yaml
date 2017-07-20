@@ -351,6 +351,10 @@ blackscholes_promote:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
+build-associative:
+  07/14/17:
+    - Extend parallel array initialization to POD arrays (#6675)
+
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
@@ -660,6 +664,8 @@ memleaks:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
   06/19/17:
     - Close some user-level memory leaks in SSCA2 (#6494)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
 
 memleaksfull:
   07/08/14:
@@ -684,6 +690,8 @@ memleaksfull:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
   06/19/17:
     - Close some user-level memory leaks in SSCA2 (#6494)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
 
 meteor:
   12/18/13:
