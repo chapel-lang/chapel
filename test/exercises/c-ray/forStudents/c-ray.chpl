@@ -479,7 +479,7 @@ proc loadScene() {
   const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
 
   // loop over the lines from the input file, counting them
-  for (rawLine, lineno) in zip(infile.readlines(), 1..) {
+  for (rawLine, lineno) in zip(infile.lines(), 1..) {
     // drop any comments (text following '#')
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
           line = linePlusComment[1];
@@ -585,11 +585,4 @@ inline proc crossProduct(v1, v2) {
   return (v1(Y)*v2(Z) - v1(Z)*v2(Y),
           v1(Z)*v2(X) - v1(X)*v2(Z),
           v1(X)*v2(Y) - v1(Y)*v2(X));
-}
-
-iter channel.readlines() {
-  var line: string;
-
-  while (this.readline(line)) do
-    yield line;
 }
