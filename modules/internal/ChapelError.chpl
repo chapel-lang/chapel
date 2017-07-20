@@ -20,14 +20,138 @@
 module ChapelError {
   use ChapelStandard;
 
+  // Base class for errors
+  // TODO: should base class Error have a string message at all?
+  // TODO: should Error include list pointers for ErrorGroup?
   class Error {
     var msg: string;
 
-    proc Error(_msg: string) {
+    proc init() {
+    }
+
+    proc init(_msg: string) {
       msg = _msg;
+      super.init();
+    }
+
+    proc writeThis(f) {
+      f <~> "Error: " <~> msg;
+    }
+
+    pragma "no doc"
+    var _next: Error; // managed by lock in record ErrorGroupRecord
+  }
+
+  // Used by the runtime to accumulate errors. Needs
+  // only support adding errors concurrently. Errors
+  // will be read from this after all tasks that can add
+  // errors have completed; then it no longer needs
+  // to be parallel-safe.
+  pragma "no doc"
+  record chpl_ErrorGroup {
+    var _head: Error;
+    var _errorsLock: atomicbool;
+    // this atomic controls:
+    //  - _head
+    //  - all list elements ->_next
+
+    inline proc _lockErrors() {
+      // WARNING: If you are calling this function directly from
+      // a remote locale, you should consider wrapping the call in
+      // an on clause to avoid excessive remote forks due to the
+      // testAndSet()
+      while (_errorsLock.testAndSet()) do chpl_task_yield();
+    }
+    inline proc _unlockErrors() {
+      _errorsLock.clear();
+    }
+    proc append(err: Error) {
+      on this {
+        _lockErrors();
+        var tmp = _head;
+        err._next = tmp;
+        _head = err;
+        _unlockErrors();
+      }
+    }
+    proc empty() {
+      return _head == nil;
     }
   }
 
+  // stores multiple errors when they can come up.
+  class ErrorGroup : Error {
+    var _head: Error;
+
+    pragma "no doc"
+    proc init(ref group:chpl_ErrorGroup) {
+      _head = group._head;
+      group._head = nil;
+      super.init("error group");
+    }
+    proc init() {
+      _head = nil;
+    }
+
+    iter these() {
+      var e = _head;
+      while e != nil {
+	yield e;
+	e = e._next;
+      }
+    }
+
+    proc deinit() {
+      var e = _head;
+      var todelete: Error;
+      while e != nil {
+        todelete = e;
+	e = e._next;
+        delete todelete;
+      }
+    }
+
+    proc writeThis(f) {
+      f <~> "ErrorGroup with ";
+
+      var Msgs:domain(string);
+      var byMsg:[Msgs] list(Error);
+      var n = 0;
+
+      for e in these() {
+        Msgs += e.msg;
+        byMsg[e.msg].append(e);
+        n += 1;
+      }
+
+      if n > 1 then
+        f <~> n <~> " errors";
+
+
+      var first:Error;
+      var last:Error;
+      for msg in Msgs.sorted() {
+        const ref errs = byMsg[msg];
+        for e in errs {
+          if first == nil then
+            first = e;
+          last = e;
+        }
+      }
+
+      var nMsgs = Msgs.size;
+
+      if nMsgs > 1 then
+        f <~> " and " <~> nMsgs <~> " messages:: ";
+
+      if first != last then
+        f <~> first <~> " ... " <~> last;
+      else
+        f <~> first;
+    }
+  }
+
+  pragma "no doc"
   proc chpl_delete_error(err: Error) {
     delete err;
   }

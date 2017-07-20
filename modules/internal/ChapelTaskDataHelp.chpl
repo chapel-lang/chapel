@@ -35,4 +35,10 @@ module ChapelTaskDataHelp {
     c_memcpy(bundleData, tls, c_sizeof(chpl_task_ChapelData_t));
   }
 
+  // Propagate an error from a task to its caller / sync point.
+  proc chpl_save_task_error(e: _EndCountBase, err: Error) {
+    if err != nil {
+      e.errors.append(err);
+    }
+  }
 }

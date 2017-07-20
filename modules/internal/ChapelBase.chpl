@@ -836,8 +836,10 @@ module ChapelBase {
 
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
+  // to get 'errors' field from any generic instantiation.
   pragma "no default functions"
   class _EndCountBase {
+    var errors: chpl_ErrorGroup;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
 
@@ -921,16 +923,20 @@ module ChapelBase {
   // fork (on) if needed.
   pragma "dont disable remote value forwarding"
   pragma "down end count fn"
-  proc _downEndCount(e: _EndCount) {
+  proc _downEndCount(e: _EndCount, err: Error) {
+    // save the task error
+    chpl_save_task_error(e, err);
     // inform anybody waiting that we're done
     e.i.sub(1, memory_order_release);
   }
 
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
-  // called for sync blocks (implicit or explicit), unbounded coforalls, cobegins.
+  //
+  // This version is called for implicit sync at end of main.
   pragma "dont disable remote value forwarding"
-  proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
+  pragma "unchecked throws"
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true) throws {
     // See if we can help with any of the started tasks
     chpl_taskListExecute(e.taskList);
 
@@ -950,11 +956,16 @@ module ChapelBase {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
     }
+
+    // Throw any error raised by a task this is waiting for
+    if ! e.errors.empty() then
+      throw new ErrorGroup(e.errors);
   }
 
   // called for bounded coforalls
   pragma "dont disable remote value forwarding"
-  proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
+  pragma "unchecked throws"
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
     // See if we can help with any of the started tasks
     chpl_taskListExecute(e.taskList);
 
@@ -964,6 +975,10 @@ module ChapelBase {
     if countRunningTasks {
       here.runningTaskCntSub(numTasks:int-1);
     }
+
+    // Throw any error raised by a task this is waiting for
+    if ! e.errors.empty() then
+      throw new ErrorGroup(e.errors);
   }
 
   proc _upDynamicEndCount(param countRunningTasks=true) {
@@ -973,14 +988,20 @@ module ChapelBase {
 
   pragma "dont disable remote value forwarding"
   pragma "down end count fn"
-  proc _downDynamicEndCount() {
+  proc _downDynamicEndCount(err: Error) {
     var e = __primitive("get dynamic end count");
-    _downEndCount(e);
+    _downEndCount(e, err);
   }
 
-  proc _waitDynamicEndCount(param countRunningTasks=true) {
+  // This version is called for normal sync blocks.
+  pragma "unchecked throws"
+  proc _waitDynamicEndCount(param countRunningTasks=true) throws {
     var e = __primitive("get dynamic end count");
     _waitEndCount(e, countRunningTasks);
+
+    // Throw any error raised by a task this sync statement is waiting for
+    if ! e.errors.empty() then
+      throw new ErrorGroup(e.errors);
   }
 
   pragma "command line setting"

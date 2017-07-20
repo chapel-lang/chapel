@@ -92,6 +92,9 @@ typedef struct {
   AggregateType* ctype;
   FnSymbol*  wrap_fn;
   std::vector<uint8_t> needsDestroy;
+  bool adjustErrors;
+  // TODO -- more directly record the mapping between
+  // actuals, formals, and bundle class fields
 } BundleArgsFnData;
 
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
@@ -155,7 +158,6 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   for_formals_actuals(formal, arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->symbol(); // arg or var
-
     //
     // If we need to do an autoCopy for a BEGIN, and the result is placed on
     // the stack, then we need to copy that result into the arg bundle even
@@ -176,7 +178,16 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
       // reference.
       var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
     }
+
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
+
+    // Mark error variables with flag, so we can remove them later.
+    // the rest of parallel.cpp is less
+    // confusing if there's still a slot for them.
+    // Error variables aren't actually used in the bundle.
+    if (var->hasFlag(FLAG_ERROR_VARIABLE)) {
+      field->addFlag(FLAG_ERROR_VARIABLE);
+    }
 
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
     if (isRecordWrappedType(var->getValType()))
@@ -204,6 +215,13 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   mod->block->insertAtHead(new DefExpr(new_c));
 
   baData.ctype = ctype;
+
+  // Also set adjustErrors to 'true' for any nonblocking
+  // task/on that throws.
+  baData.adjustErrors = fn->throwsError() &&
+                        (fn->hasFlag(FLAG_NON_BLOCKING) ||
+                         fn->hasFlag(FLAG_BEGIN) ||
+                         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
 }
 
 /// Optionally autoCopies an argument being inserted into an argument bundle.
@@ -376,6 +394,17 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   int i = 1;
   for_actuals(arg, fcall)
   {
+    // For anything nonblocking, don't bundle error variables,
+    // handle them directly
+    if (baData.adjustErrors) {
+      if (SymExpr* se = toSymExpr(arg)) {
+        if (se->symbol()->hasFlag(FLAG_ERROR_VARIABLE)) {
+          baData.needsDestroy.push_back(false);
+          continue;
+        }
+      }
+    }
+
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls (and some other cases).
     Symbol  *var = NULL;
@@ -484,6 +513,19 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   // call wrapper-function
   call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
   baData.firstCall = false;
+
+  // Remove any error fields - they shouldn't be code-generated
+  // since the errors are handled directly.
+  if (baData.adjustErrors) {
+    AggregateType* ctype = baData.ctype;
+    Symbol* toRemove = NULL;
+    for_fields(field, ctype) {
+      if (field->hasFlag(FLAG_ERROR_VARIABLE))
+        toRemove = field;
+    }
+    if (toRemove != NULL)
+      toRemove->defPoint->remove();
+  }
 }
 
 static CallExpr* helpFindDownEndCount(BlockStmt* block)
@@ -535,7 +577,8 @@ static bool isGetDynamicEndCount(CallExpr* call)
 // this point?
 
 // Returns the EndCount variable used in the wrapper.
-static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, AggregateType* ctype)
+static
+void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, AggregateType* ctype, Symbol* error)
 {
   if (fn->hasFlag(FLAG_NON_BLOCKING) ||
       fn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
@@ -547,9 +590,13 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 
     FnSymbol* downEndCountFn = downEndCount->resolvedFunction();
 
-    if (downEndCount->numActuals() == 0) {
+    if (downEndCount->numActuals() == 1) {
       // Call downEndCount in the wrapper.
       CallExpr* call = new CallExpr(downEndCountFn);
+      if (error != NULL)
+        call->insertAtTail(error);
+      else
+        call->insertAtTail(gNil);
 
       wrap_fn->insertAtTail(call);
 
@@ -641,6 +688,10 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 
     // Call downEndCount in the wrapper.
     CallExpr* call = new CallExpr(downEndCountFn, localEndCount);
+    if (error != NULL)
+      call->insertAtTail(error);
+    else
+      call->insertAtTail(gNil);
 
     wrap_fn->insertAtTail(call);
 
@@ -659,6 +710,16 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
+
+  Symbol* error = NULL;
+
+  // Create error variable, but not for blocking on statement
+  // This function will handle errors for non-blocking tasks/on
+  if (baData.adjustErrors) {
+    // Create an error variable
+    error = newTemp("error", dtError);
+    wrap_fn->insertAtTail(new DefExpr(error));
+  }
 
   // Add a special flag to the wrapper-function as appropriate.
   // These control aspects of code generation.
@@ -732,23 +793,29 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   {
     // Skip runtime header
     if (i > 0) {
-      // insert args
-      VarSymbol* tmp = newTemp(field->name, field->qualType());
-      wrap_fn->insertAtTail(new DefExpr(tmp));
-      wrap_fn->insertAtTail(
-          new CallExpr(PRIM_MOVE, tmp,
-          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+      if (error != NULL && field->hasFlag(FLAG_ERROR_VARIABLE)) {
+        // Add the error argument
+        INT_ASSERT(error != NULL);
+        call_orig->insertAtTail(error);
+      } else {
+        // insert args
+        VarSymbol* tmp = newTemp(field->name, field->qualType());
+        wrap_fn->insertAtTail(new DefExpr(tmp));
+        wrap_fn->insertAtTail(
+            new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-      // Special case:
-      // If this is an on block, remember the first field,
-      // but don't add to the list of actuals passed to the original on_fn.
-      // It contains the locale on which the new task is launched.
-      if (first && fn->hasFlag(FLAG_ON))
-        /* no-op */;
-      else
-        call_orig->insertAtTail(tmp);
+        // Special case:
+        // If this is an on block, remember the first field,
+        // but don't add to the list of actuals passed to the original on_fn.
+        // It contains the locale on which the new task is launched.
+        if (first && fn->hasFlag(FLAG_ON))
+          /* no-op */;
+        else
+          call_orig->insertAtTail(tmp);
 
-      first = false;
+        first = false;
+      }
     }
 
     i++;
@@ -776,10 +843,9 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     i++;
   }
 
-
   // Move the downEndCount at the tail of fn, if any,
   // to the wrapper.
-  moveDownEndCountToWrapper(fn, wrap_fn, wrap_c, ctype);
+  moveDownEndCountToWrapper(fn, wrap_fn, wrap_c, ctype, error);
 
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
