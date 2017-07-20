@@ -2760,7 +2760,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       chpl_fn_p fn;
 
       // Copy task state (e.g. serial state) to space.
-      on_bundle->task.state = f_c->state;
+      on_bundle->task_bundle.state = f_c->state;
 
       // Copy the payload to space.
       // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
@@ -2849,7 +2849,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) fork_get_wrapper,
                                &bundle.task, sizeof(fork_xfer_task_t),
-                               c_sublocid_any, chpl_nullTaskID, true);
+                               c_sublocid_any, chpl_nullTaskID);
     }
     break;
 
@@ -5426,6 +5426,8 @@ void chpl_comm_execute_on(int locale, c_sublocid_t subloc,
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   if (locale == chpl_nodeID) {
+    assert(0); // locale model code should prevent this...
+
     chpl_ftable_call(fid, arg);
     return;
   }
@@ -5457,6 +5459,9 @@ void chpl_comm_execute_on_nb(int locale, c_sublocid_t subloc,
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   if (locale == chpl_nodeID) {
+
+    assert(0); // locale model code should prevent this...
+
     // No copy of the argument is necessary for a local fork
     // since the tasking layer will do whatever it takes
     // to copy the argument to chpl_task_startMovedTask.
@@ -5464,8 +5469,7 @@ void chpl_comm_execute_on_nb(int locale, c_sublocid_t subloc,
     chpl_task_startMovedTask(fid, chpl_ftable[fid],
                              chpl_comm_on_bundle_task_bundle(arg), arg_size,
                              subloc,
-                             chpl_nullTaskID,
-                             false);
+                             chpl_nullTaskID);
     return;
   }
 
@@ -5497,6 +5501,7 @@ void chpl_comm_execute_on_fast(int locale, c_sublocid_t subloc,
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
   if (locale == chpl_nodeID) {
+    assert(0); // locale model code should prevent this...
     chpl_ftable_call(fid, arg);
     return;
   }
