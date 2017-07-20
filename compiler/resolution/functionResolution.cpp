@@ -4948,106 +4948,53 @@ bool isDispatchParent(Type* t, Type* pt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static SymExpr* primNewTypeExpr(CallExpr* call);
+static SymExpr* resolveNewTypeExpr(CallExpr* call);
+
+static bool     resolveNewHasInitializer(AggregateType* at);
+
+static void     resolveNewHandleInitializer(CallExpr*      call,
+                                            AggregateType* at,
+                                            SymExpr*       typeExpr);
+
+static void     resolveNewHandleConstructor(CallExpr*      call,
+                                            AggregateType* at,
+                                            SymExpr*       typeExpr);
+
+static void     resolveNewHalt(CallExpr* call);
 
 static void resolveNew(CallExpr* call) {
-  if (SymExpr* typeExpr = primNewTypeExpr(call)) {
+  if (SymExpr* typeExpr = resolveNewTypeExpr(call)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
-        SET_LINENO(call);
+        if (resolveNewHasInitializer(at) == true) {
+          resolveNewHandleInitializer(call, at, typeExpr);
 
-        // Begin to support new-style initializers
-        if (at->initializerStyle == DEFINES_INITIALIZER ||
-            (at->defaultInitializer &&
-             strcmp(at->defaultInitializer->name, "init") == 0)) {
-          if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-            VarSymbol* newTmp = newTemp("new_temp", at);
-            DefExpr*   def    = new DefExpr(newTmp);
-
-            if (isClass(at) == true) {
-              typeExpr->replace(new UnresolvedSymExpr("_new"));
-            } else {
-              typeExpr->replace(new UnresolvedSymExpr("init"));
-            }
-
-            // Convert the PRIM_NEW to a normal call
-            call->primitive = NULL;
-            call->baseExpr  = call->get(1)->remove();
-
-            parent_insert_help(call, call->baseExpr);
-
-            if (isBlockStmt(call->parentExpr) == true) {
-              call->insertBefore(def);
-            } else {
-              Expr* parent = call->parentExpr;
-              parent->insertBefore(def);
-
-              if (isClass(at) == false) {
-                call->replace(new SymExpr(newTmp));
-                parent->insertBefore(call);
-              }
-            }
-
-            if (isClass(at) == true) {
-              // Invoking a type  method
-              call->insertAtHead(new SymExpr(at->symbol));
-
-            } else {
-              // Invoking an instance method
-              call->insertAtHead(new SymExpr(newTmp));
-              call->insertAtHead(new SymExpr(gMethodToken));
-            }
-
-            resolveExpr(call);
-
-          } else {
-            typeExpr->replace(new UnresolvedSymExpr("init"));
-            // call special case function for generic initializers
-            modAndResolveInitCall(call, at);
-          }
-
-        // Continue to support old-style constructors
         } else {
-          if (at->initializerStyle == DEFINES_NONE_USE_DEFAULT &&
-              at->defaultInitializer == NULL) {
-            USR_FATAL(call, "could not generate default initializer for type"
-                      " '%s', please define one", at->symbol->name);
-          }
-          FnSymbol* ctInit = at->defaultInitializer;
-
-          typeExpr->replace(new UnresolvedSymExpr(ctInit->name));
-
-          // Convert the PRIM_NEW to a normal call
-          call->primitive = NULL;
-          call->baseExpr  = call->get(1)->remove();
-
-          parent_insert_help(call, call->baseExpr);
-
-          resolveExpr(call);
+          resolveNewHandleConstructor(call, at, typeExpr);
         }
+
+      } else if (PrimitiveType* pt = toPrimitiveType(type)) {
+        const char* name = pt->symbol->name;
+
+        USR_FATAL(call, "invalid use of 'new' on primitive %s", name);
+
+      } else if (EnumType* et = toEnumType(type)) {
+        const char* name = et->symbol->name;
+
+        USR_FATAL(call, "invalid use of 'new' on enum %s", name);
+
+      } else {
+        USR_FATAL(call, "new must be applied to a record or class");
       }
     }
 
   } else {
-    if (Expr* arg = call->get(1)) {
-      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
-        USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
-        return;
-
-      } else if (CallExpr* subCall = toCallExpr(arg)) {
-        if (FnSymbol* fn = subCall->resolvedFunction()) {
-          USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
-          return;
-        }
-      }
-    }
-
-    USR_FATAL(call, "invalid use of 'new'");
+    resolveNewHalt(call);
   }
 }
 
 // Find the SymExpr that captures the type
-static SymExpr* primNewTypeExpr(CallExpr* call) {
+static SymExpr* resolveNewTypeExpr(CallExpr* call) {
   Expr*    arg1   = call->get(1);
   SymExpr* retval = NULL;
 
@@ -5064,6 +5011,122 @@ static SymExpr* primNewTypeExpr(CallExpr* call) {
   }
 
   return retval;
+}
+
+static bool resolveNewHasInitializer(AggregateType* at) {
+  FnSymbol* di     = at->defaultInitializer;
+  bool      retval = false;
+
+  if (at->initializerStyle == DEFINES_INITIALIZER) {
+    retval = true;
+
+  } else if (di != NULL && strcmp(di->name, "init") == 0) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static void resolveNewHandleInitializer(CallExpr*      call,
+                                        AggregateType* at,
+                                        SymExpr*       typeExpr) {
+  SET_LINENO(call);
+
+  if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
+    VarSymbol* newTmp = newTemp("new_temp", at);
+    DefExpr*   def    = new DefExpr(newTmp);
+
+    if (isClass(at) == true) {
+      typeExpr->replace(new UnresolvedSymExpr("_new"));
+
+    } else {
+      typeExpr->replace(new UnresolvedSymExpr("init"));
+    }
+
+    // Convert the PRIM_NEW to a normal call
+    call->primitive = NULL;
+    call->baseExpr  = call->get(1)->remove();
+
+    parent_insert_help(call, call->baseExpr);
+
+    if (isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(def);
+
+    } else {
+      Expr* parent = call->parentExpr;
+
+      parent->insertBefore(def);
+
+      if (isClass(at) == false) {
+        call->replace(new SymExpr(newTmp));
+        parent->insertBefore(call);
+      }
+    }
+
+    if (isClass(at) == true) {
+      // Invoking a type  method
+      call->insertAtHead(new SymExpr(at->symbol));
+
+    } else {
+      // Invoking an instance method
+      call->insertAtHead(new SymExpr(newTmp));
+      call->insertAtHead(new SymExpr(gMethodToken));
+    }
+
+    resolveExpr(call);
+
+  } else {
+    typeExpr->replace(new UnresolvedSymExpr("init"));
+
+    modAndResolveInitCall(call, at);
+  }
+}
+
+static void resolveNewHandleConstructor(CallExpr*      call,
+                                        AggregateType* at,
+                                        SymExpr*       typeExpr) {
+  SET_LINENO(call);
+
+  FnSymbol* atInit = at->defaultInitializer;
+
+  if (atInit == NULL && at->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+    USR_FATAL(call,
+              "could not generate default initializer for type "
+              "'%s', please define one",
+              at->symbol->name);
+
+  } else {
+    typeExpr->replace(new UnresolvedSymExpr(atInit->name));
+
+    // Convert the PRIM_NEW to a normal call
+    call->primitive = NULL;
+    call->baseExpr  = call->get(1)->remove();
+
+    parent_insert_help(call, call->baseExpr);
+
+    resolveExpr(call);
+  }
+}
+
+static void resolveNewHalt(CallExpr* call) {
+  const char* name = NULL;
+
+  if (Expr* arg = call->get(1)) {
+    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+      name = urse->unresolved;
+
+    } else if (CallExpr* subCall = toCallExpr(arg)) {
+      if (FnSymbol* fn = subCall->resolvedFunction()) {
+        name = fn->name;
+      }
+    }
+  }
+
+  if (name == NULL) {
+    USR_FATAL(call, "invalid use of 'new'");
+  } else {
+    USR_FATAL(call, "invalid use of 'new' on %s", name);
+  }
 }
 
 /************************************* | **************************************
