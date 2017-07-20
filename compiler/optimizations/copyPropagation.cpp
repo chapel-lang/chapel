@@ -168,7 +168,7 @@ static unsigned debug = 0;
 // isRefUse() for that case.
 // To be conservative, the routine should return true by default and then
 // select the cases where we are sure nothing has changed.
-static bool needsKilling(SymExpr* se)
+static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 {
   INT_ASSERT(se->isRef() == false);
   if (toGotoStmt(se->parentExpr)) {
@@ -204,6 +204,7 @@ static bool needsKilling(SymExpr* se)
         arg->intent == INTENT_REF   ||  // and this.
         arg->hasFlag(FLAG_ARG_THIS))    // We need this case.
     {
+      liveRefs.insert(se->symbol());
       return true;
     }
 
@@ -273,6 +274,7 @@ static bool needsKilling(SymExpr* se)
     if (call->isPrimitive(PRIM_ADDR_OF) ||
         call->isPrimitive(PRIM_SET_REFERENCE) ||
         call->isPrimitive(PRIM_ARRAY_ALLOC)) {
+      liveRefs.insert(se->symbol());
       return true;
     }
 
@@ -323,8 +325,14 @@ static bool isUse(SymExpr* se)
     // A "normal" call.
     ArgSymbol* arg = actual_to_formal(se);
 
-    if (arg->intent == INTENT_OUT)
+    if (arg->intent == INTENT_OUT ||
+        arg->intent == INTENT_REF)
     {
+      return false;
+    } else if (arg->intent == INTENT_CONST_REF &&
+               isRecord(arg->type)) {
+      // We can currently return a const reference to a field in a record
+      // passed by const ref.
       return false;
     }
   }
@@ -506,7 +514,8 @@ removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
 // can be assigned.
 static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
                                 AvailableMap& available,
-                                ReverseAvailableMap& ravailable)
+                                ReverseAvailableMap& ravailable,
+                                std::set<Symbol*>& liveRefs)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -518,7 +527,7 @@ static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
       continue;
     if (se->isRef()) continue;
 
-    if (needsKilling(se))
+    if (needsKilling(se, liveRefs))
       removeAvailable(available, ravailable, se->symbol());
   }
 }
@@ -559,7 +568,8 @@ static bool maybeVolatile(SymExpr* se)
 // Insert pairs into available copies map
 static void extractCopies(Expr* expr,
                           AvailableMap& available,
-                          ReverseAvailableMap& ravailable)
+                          ReverseAvailableMap& ravailable,
+                          std::set<Symbol*>& liveRefs)
 {
   // We're only interested in call expressions.
   if (CallExpr* call = toCallExpr(expr))
@@ -589,11 +599,14 @@ static void extractCopies(Expr* expr,
         if (maybeVolatile(lhe) || maybeVolatile(rhe))
           return; // Not a reliable pair.
 
-        // Create the pair lhs <- rhs.
-        DEBUG_COPYPROP("Creating pair (%s[%d], %s[%d])\n",
-               lhs->name, lhs->id, rhs->name, rhs->id);
-        available.insert(AvailableMapElem(lhs, rhs));
-        ravailable[rhs].push_back(lhs);
+        if (liveRefs.find(lhs) == liveRefs.end() &&
+            liveRefs.find(rhs) == liveRefs.end()) {
+          // Create the pair lhs <- rhs.
+          DEBUG_COPYPROP("Creating pair (%s[%d], %s[%d])\n",
+                 lhs->name, lhs->id, rhs->name, rhs->id);
+          available.insert(AvailableMapElem(lhs, rhs));
+          ravailable[rhs].push_back(lhs);
+        }
       }
     }
   }
@@ -613,7 +626,8 @@ static void extractCopies(Expr* expr,
 static void
 localCopyPropagationCore(BasicBlock*          bb,
                          AvailableMap&        available,
-                         ReverseAvailableMap& ravailable)
+                         ReverseAvailableMap& ravailable,
+                         std::set<Symbol*>& liveRefs)
 {
   for_vector(Expr, expr, bb->exprs)
   {
@@ -629,9 +643,9 @@ localCopyPropagationCore(BasicBlock*          bb,
 
     propagateCopies(symExprs, available);
 
-    removeKilledSymbols(symExprs, available, ravailable);
+    removeKilledSymbols(symExprs, available, ravailable, liveRefs);
 
-    extractCopies(expr, available, ravailable);
+    extractCopies(expr, available, ravailable, liveRefs);
   }
 }
 
@@ -642,6 +656,7 @@ localCopyPropagationCore(BasicBlock*          bb,
 size_t localCopyPropagation(FnSymbol* fn)
 {
   BasicBlock::buildBasicBlocks(fn);
+  std::set<Symbol*> liveRefs;
 
   s_repl_count     = 0;
 
@@ -649,7 +664,7 @@ size_t localCopyPropagation(FnSymbol* fn)
   {
     AvailableMap available;
     ReverseAvailableMap ravailable;
-    localCopyPropagationCore(bb1, available, ravailable);
+    localCopyPropagationCore(bb1, available, ravailable, liveRefs);
   }
 
   return s_repl_count;
@@ -686,12 +701,13 @@ static void extractAvailablePairs(FnSymbol* fn,
                                   std::vector<AvailablePair>& availablePairs, 
                                   std::vector<size_t>& ends)
 {
+  std::set<Symbol*> liveRefs;
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     // Run local copy propagation to extract live pairs at the end of each block.
     AvailableMap available;
     ReverseAvailableMap ravailable;
-    localCopyPropagationCore(bb1, available, ravailable);
+    localCopyPropagationCore(bb1, available, ravailable, liveRefs);
 
     // Record those live pairs in successive elements in availablePairs.
     for (AvailableMap::iterator i = available.begin();
@@ -714,7 +730,8 @@ static void extractAvailablePairs(FnSymbol* fn,
 // that is defined later.
 static void computeKillSets(FnSymbol* fn,
                             std::vector<AvailablePair>& availablePairs,
-                            std::vector<BitVec*>& KILL)
+                            std::vector<BitVec*>& KILL,
+                            std::set<Symbol*>& liveRefs)
 {
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; ++i)
@@ -732,7 +749,7 @@ static void computeKillSets(FnSymbol* fn,
       {
         if (se->isRef()) continue;
         // Invalidate a symbol if it is redefined.
-        if (needsKilling(se))
+        if (needsKilling(se, liveRefs))
           killSet.insert(se->symbol());
       }
     }
@@ -825,6 +842,7 @@ static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 //
 size_t globalCopyPropagation(FnSymbol* fn) {
   BasicBlock::buildBasicBlocks(fn);
+  std::set<Symbol*> liveRefs;
 
   size_t                     nbbs = fn->basicBlocks->size();
 
@@ -857,7 +875,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
 
   initCopySets(COPY, ends, nbbs);
 
-  computeKillSets(fn, availablePairs, KILL);
+  computeKillSets(fn, availablePairs, KILL, liveRefs);
 
   initInSets(IN, fn);
 
@@ -909,7 +927,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
 
     if (available.size() > 0)
     {
-      localCopyPropagationCore(bb, available, ravailable);
+      localCopyPropagationCore(bb, available, ravailable, liveRefs);
       // Here, as a check, we could subtract from available the pairs
       // corresponding to the true bits in OUT[i].  The expectation is that all
       // and only those pairs remain.
