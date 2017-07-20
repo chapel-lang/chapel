@@ -41,21 +41,51 @@
 
 #include "comm-ofi-internal.h"
 
+static struct ofi_stuff* ofi = NULL;
+void ofi_put_get_init(struct ofi_stuff* _ofi) {
+  if (ofi == NULL) {
+    ofi = _ofi;
+  } else {
+    chpl_warning("ofi put/get already initialized.  Ignoring", 0, 0);
+  }
+}
+
+static __thread int sep_index = -1;
+static inline int get_sep_index(int num_ctxs) {
+  if (sep_index == -1) {
+    sep_index = chpl_task_getId() % num_ctxs;
+  }
+  return sep_index;
+}
+
+// Consider making the contexts and cqs thread local variables
+static inline struct fid_ep* get_rx_ep(void);
+static inline struct fid_ep* get_tx_ep(void);
+
+static inline struct fid_ep* get_rx_ep() {
+  return ofi->rx_ep[get_sep_index(ofi->num_rx_ctx)];
+}
+
+static inline struct fid_ep* get_tx_ep() {
+  return ofi->tx_ep[get_sep_index(ofi->num_tx_ctx)];
+}
+
+
 static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
 					    void *addr, c_nodeid_t node,
 					    void* raddr, size_t size,
-					    int32_t typeIndex,
+					    int32_t typeIndex, int32_t commID,
 					    int ln, int32_t fn);
 
 static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
 					    void *addr, c_nodeid_t node,
 					    void* raddr, size_t size,
-					    int32_t typeIndex,
+					    int32_t typeIndex, int32_t commID,
 					    int ln, int32_t fn);
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
 				       void* raddr, size_t size,
-				       int32_t typeIndex,
+				       int32_t typeIndex, int32_t commID,
                                        int ln, int32_t fn) {
   if (node == chpl_nodeID) {
     memmove(raddr, addr, size);
@@ -65,11 +95,12 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node,
   CHPL_COMM_DIAGS_INC(put_nb);
 
   return ofi_put(chpl_comm_cb_event_kind_put_nb,
-		 addr, node, raddr, size, typeIndex, ln, fn);
+		 addr, node, raddr, size, typeIndex, commID, ln, fn);
 }
 
-chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t size, int32_t typeIndex,
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
+				       void* raddr, size_t size,
+				       int32_t typeIndex, int32_t commID,
                                        int ln, int32_t fn) {
   if (node == chpl_nodeID) {
     memmove(addr, raddr, size);
@@ -79,7 +110,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   CHPL_COMM_DIAGS_INC(get_nb);
 
   return ofi_get(chpl_comm_cb_event_kind_get_nb,
-		 addr, node, raddr, size, typeIndex, ln, fn);
+		 addr, node, raddr, size, typeIndex, commID, ln, fn);
 }
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
@@ -108,7 +139,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
+                    size_t size, int32_t typeIndex, int32_t commID,
                     int ln, int32_t fn) {
   chpl_comm_nb_handle_t handle;
 
@@ -120,14 +151,14 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   CHPL_COMM_DIAGS_INC(put);
 
   handle = ofi_put(chpl_comm_cb_event_kind_put,
-		   addr, node, raddr, size, typeIndex, ln, fn);
+		   addr, node, raddr, size, typeIndex, commID, ln, fn);
   if (handle) {
     // fi_cq_read
   }
 }
 
 void  chpl_comm_get(void* addr, int32_t node, void* raddr,
-                    size_t size, int32_t typeIndex,
+                    size_t size, int32_t typeIndex, int32_t commID,
                     int ln, int32_t fn) {
   chpl_comm_nb_handle_t handle;
 
@@ -139,7 +170,7 @@ void  chpl_comm_get(void* addr, int32_t node, void* raddr,
   CHPL_COMM_DIAGS_INC(get);
 
   handle = ofi_get(chpl_comm_cb_event_kind_get,
-		   addr, node, raddr, size, typeIndex, ln, fn);
+		   addr, node, raddr, size, typeIndex, commID, ln, fn);
   if (handle) {
     // fi_cq_read
   }
@@ -148,7 +179,7 @@ void  chpl_comm_get(void* addr, int32_t node, void* raddr,
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                         int ln, int32_t fn) {
+                         int32_t commID, int ln, int32_t fn) {
   // Copied from comm none.  Would be nice to share code.
 
   const size_t strlvls = (size_t)stridelevels;
@@ -307,7 +338,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstno
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_put_strd, chpl_nodeID, dstnode,
        .iu.comm_strd={srcaddr_arg, srcstrides, dstaddr_arg, dststrides, count,
-		      stridelevels, elemSize, typeIndex, ln, fn}};
+		      stridelevels, elemSize, typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 }
@@ -315,7 +346,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t dstno
 void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcnode,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                         int ln, int32_t fn) {
+                         int32_t commID, int ln, int32_t fn) {
   // Copied from comm none.  Would be nice to share code.
 
   const size_t strlvls = (size_t)stridelevels;
@@ -473,7 +504,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcno
     chpl_comm_cb_info_t cb_data =
       {chpl_comm_cb_event_kind_get_strd, chpl_nodeID, srcnode,
        .iu.comm_strd={srcaddr_arg, srcstrides, dstaddr_arg, dststrides, count,
-                      stridelevels, elemSize, typeIndex, ln, fn}};
+                      stridelevels, elemSize, typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 }
@@ -482,13 +513,13 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcno
 static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
 					    void *addr, c_nodeid_t node,
 					    void* raddr, size_t size,
-					    int32_t typeIndex,
+					    int32_t typeIndex, int32_t commID,
 					    int ln, int32_t fn) {
 
   if (chpl_comm_have_callbacks(etype)) {
     chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
 				   .iu.comm={addr, raddr, size,
-					     typeIndex, ln, fn}};
+					     typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 
@@ -502,12 +533,12 @@ static inline chpl_comm_nb_handle_t ofi_put(chpl_comm_cb_event_kind_t etype,
 static inline chpl_comm_nb_handle_t ofi_get(chpl_comm_cb_event_kind_t etype,
 					    void *addr, c_nodeid_t node,
 					    void* raddr, size_t size,
-					    int32_t typeIndex,
+					    int32_t typeIndex, int32_t commID,
 					    int ln, int32_t fn) {
   if (chpl_comm_have_callbacks(etype)) {
     chpl_comm_cb_info_t cb_data = {etype, chpl_nodeID, node,
 				   .iu.comm={addr, raddr, size,
-					     typeIndex, ln, fn}};
+					     typeIndex, commID, ln, fn}};
     chpl_comm_do_callbacks (&cb_data);
   }
 

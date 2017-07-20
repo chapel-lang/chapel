@@ -22,3 +22,9 @@
 
 GEN_LFLAGS += -L$(LIBFABRIC_LIB_DIR) -Wl,-rpath,$(LIBFABRIC_LIB_DIR)
 LIBS += -lfabric -ldl
+
+#
+# Conservatively use CXX as the linker, in case regexp (or other C++
+# code) is being linked in.
+#
+LD = $(CXX)

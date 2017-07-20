@@ -61,6 +61,11 @@ struct ofi_stuff {
 
 };
 
+void ofi_put_get_init(struct ofi_stuff*);
+void ofi_am_init(struct ofi_stuff*);
+
+void ofi_am_handler(struct fi_cq_data_entry*);
+
 /* Comm diagnostics stuff */
 /* Dupe of the version in chpl-comm.h except with atomics */
 struct commDiagnostics_atomic {
@@ -90,5 +95,15 @@ void chpl_commDiagnosticsInc(atomic_uint_least64_t *val);
   } while (0)
 
 #define OFICHKERR(fncall) OFICHKRET(fncall, FI_SUCCESS)
+
+struct ofi_am_info {
+  c_nodeid_t node;
+  c_sublocid_t subloc;
+  chpl_bool serial_state; // To prevent creation of new tasks
+  chpl_bool fast;
+  chpl_bool blocking;
+  chpl_fn_int_t fid;
+  void* ack;
+};
 
 #endif

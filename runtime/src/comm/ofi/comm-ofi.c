@@ -24,6 +24,7 @@
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-mem.h"
+// #include "chpl-cache.h"
 #include "chpl-tasks.h"
 #include "chpl-gen-includes.h"
 #include "chplsys.h"
@@ -33,24 +34,41 @@
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
 
+#include <pthread.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <sys/uio.h> /* for struct iovec */
 
 #include "comm-ofi-internal.h"
+
+// same as ofi.num_am_ctx, for now
+#define num_progress_threads 1
+struct progress_thread_info {
+  int id;
+};
+static struct progress_thread_info pti[num_progress_threads];
+static volatile chpl_bool progress_threads_please_exit = false;
+static atomic_uint_least32_t progress_thread_count;
+static void progress_thread(void *);
+static inline chpl_bool progress_threads_running(void);
+static inline chpl_bool progress_threads_running() {
+  if (atomic_load_uint_least32_t(&progress_thread_count) == num_progress_threads) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 static struct ofi_stuff ofi;
 
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
-
-  // Use of FI_MR_SCALABLE could cover entire address space, but
-  // there's no way to know whether the page is allocated already
-
-  return 1;
+  // No way to know if the page is mapped on the remote (without a round trip)
+  return 0;
 }
 
 int32_t chpl_comm_getMaxThreads(void) {
@@ -61,6 +79,8 @@ int32_t chpl_comm_getMaxThreads(void) {
 static void oob_init(void);
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
+  atomic_init_uint_least32_t(&progress_thread_count, 0);
+
   oob_init();
   chpl_resetCommDiagnosticsHere();
 }
@@ -129,13 +149,27 @@ static int get_comm_concurrency(void);
 static void libfabric_init(void);
 
 void chpl_comm_post_task_init(void) {
+  int i;
+
   if (chpl_numNodes == 1) {
     // return;
   }
 
   libfabric_init();
+  ofi_put_get_init(&ofi);
+  ofi_am_init(&ofi);
 
-  // Start polling task
+  // Start progress thread(s)
+  for (i = 0; i < num_progress_threads; i++) {
+    pti[i]. id = i;
+    if (chpl_task_createCommTask(progress_thread, (void *) &pti[i]) != 0) {
+      chpl_internal_error("unable to start progress thread");
+    }
+  }
+
+  // Initialize the caching layer, if it is active.
+  // chpl_cache_init();
+
 }
 
 static int get_comm_concurrency() {
@@ -220,7 +254,7 @@ static void libfabric_init() {
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
-  hints->domain_attr->control_progress = FI_PROGRESS_AUTO;
+  hints->domain_attr->control_progress = FI_PROGRESS_MANUAL;
   hints->domain_attr->data_progress = FI_PROGRESS_MANUAL;
   hints->domain_attr->av_type = FI_AV_TABLE;
   hints->domain_attr->mr_mode = FI_MR_SCALABLE;
@@ -275,7 +309,7 @@ static void libfabric_init() {
   /* set up tx and rx contexts */
   cq_attr.format = FI_CQ_FORMAT_CONTEXT;
   cq_attr.size = 1024; /* ??? */
-  cq_attr.wait_obj = FI_WAIT_NONE;
+  cq_attr.wait_obj = FI_WAIT_UNSPEC;
   ofi.tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_tx_ctx,
 						   sizeof(ofi.tx_ep[0]),
 						   CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -407,6 +441,8 @@ static void libfabric_init() {
 
   fi_freeinfo(info);  /* No error returned */
   fi_freeinfo(hints); /* No error returned */
+
+  chpl_msg(2, "%d: completed libfabric initialization\n", chpl_nodeID);
 }
 
 void chpl_comm_rollcall(void) {
@@ -459,14 +495,30 @@ void chpl_comm_barrier(const char *msg) {
     return;
   }
 
+  if (!progress_threads_running()) {
+    // Comm layer setup is not complete yet
 #ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-  // Use PMI_Barrier if helper thread not spawned yet
+    if (PMI_Barrier() != PMI_SUCCESS) {
+      chpl_internal_error("PMI_Barrier failed");
+    }
 #else /* CHPL_TARGET_PLATFORM_CRAY_XC */
+#error "Out-of-band barrier not yet implemented"
 #endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
+  } else {
+    //  Use PMI_Barrier() for now
+#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
+    if (PMI_Barrier() != PMI_SUCCESS) {
+      chpl_internal_error("PMI_Barrier failed");
+    }
+#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
+#error "Out-of-band barrier not yet implemented"
+#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
+  }
+
 }
 
 void chpl_comm_pre_task_exit(int all) {
-  // Tear down the polling thread
+  // Tear down the progress thread
 }
 
 static void exit_all(int status);
@@ -546,10 +598,65 @@ static void exit_all(int status) {
 }
 
 static void exit_any(int status) {
-  // Should we tear down the polling thread?
+  // Should we tear down the progress thread?
 }
 
-int chpl_comm_numPollingTasks(void) { return 0; }
+int chpl_comm_numPollingTasks(void) { return 1; }
 
 void chpl_comm_make_progress(void) { }
 
+// In comm-ofi-am.c
+void am_handler(struct fi_cq_data_entry* cqe);
+
+/*
+ * Set up the progress thread
+ */
+static void progress_thread(void *args) {
+  struct progress_thread_info* pti = args;
+  const int id = pti->id;
+  const int num_rbufs = 2;
+  struct iovec iov[num_rbufs];
+  struct fi_msg msg[num_rbufs];
+  struct ofi_am_info* dst_buf[num_rbufs];
+  const int rbuf_len = 10;
+  const size_t rbuf_size = rbuf_len*sizeof(dst_buf[0][0]);
+  const int num_cqes = rbuf_len;
+  struct fi_cq_data_entry cqes[num_cqes];
+  int num_read;
+  
+  int i;
+
+  for (i = 0; i < num_rbufs; i++) {
+    dst_buf[i] = chpl_mem_allocMany(rbuf_len, sizeof(dst_buf[i][0]),
+				    CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+    iov[i].iov_base = dst_buf[i];
+    iov[i].iov_len = rbuf_size;
+    msg[i].msg_iov = &iov[i];
+    msg[i].desc = (void **) fi_mr_desc(ofi.mr);
+    msg[i].iov_count = 1;
+    msg[i].addr = FI_ADDR_UNSPEC;
+    msg[i].context = (void *) (uint64_t) i;
+    msg[i].data = 0x0;
+    OFICHKERR(fi_recvmsg(ofi.am_rx_ep[id], &msg[i], FI_MULTI_RECV));
+  }
+
+  atomic_fetch_add_uint_least32_t(&progress_thread_count, 1);
+
+  // Wait for events
+  while (!progress_threads_please_exit) {
+    num_read = fi_cq_read(ofi.rx_cq[id], cqes, num_cqes);
+    if (num_read > 0) {
+      for (i = 0; i < num_read; i++) {
+	ofi_am_handler(&cqes[i]);
+	// send ack
+      }
+    } else {
+      if (num_read != -FI_EAGAIN) {
+	chpl_internal_error(fi_strerror(-num_read));
+      }      
+    }
+  }
+
+  atomic_fetch_sub_uint_least32_t(&progress_thread_count, 1);
+
+}

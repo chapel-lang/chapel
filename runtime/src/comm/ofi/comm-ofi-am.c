@@ -41,19 +41,24 @@
 
 #include "comm-ofi-internal.h"
 
-typedef struct {
-  chpl_bool     serial_state; // To prevent creation of new tasks
-  chpl_fn_int_t fid;
-  int           arg_size;
-  char          arg[0];       // variable-sized data here
-} fork_t;
+static struct ofi_stuff* ofi = NULL;
+void ofi_put_get_init(struct ofi_stuff* _ofi) {
+  if (ofi == NULL) {
+    ofi = _ofi;
+  } else {
+    chpl_warning("ofi AM already initialized.  Ignoring", 0, 0);
+  }
+}
+
+static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
+			      chpl_fn_int_t fid,
+			      chpl_comm_on_bundle_t* arg, size_t arg_size,
+			      chpl_bool fast, chpl_bool blocking);
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
                           chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node != chpl_nodeID); // handled by the locale model
-
-  chpl_internal_error("Remote ons not yet implemented");
 
   CHPL_COMM_DIAGS_INC(execute_on);
 
@@ -64,6 +69,7 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     chpl_comm_do_callbacks (&cb_data);
   }
 
+  execute_on_common(node, subloc, fid, arg, arg_size, false, true);
 }
 
 #ifdef BLAH
@@ -77,8 +83,6 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node != chpl_nodeID); // handled by the locale model
 
-  chpl_internal_error("Remote ons not yet implemented");
-
   CHPL_COMM_DIAGS_INC(execute_on_nb);
 
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
@@ -87,14 +91,14 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
        .iu.executeOn={subloc, fid, arg, arg_size}};
     chpl_comm_do_callbacks (&cb_data);
   }
+
+  execute_on_common(node, subloc, fid, arg, arg_size, false, false);
 }
 
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
                                chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node != chpl_nodeID); // handled by the locale model
-
-  chpl_internal_error("Remote ons not yet implemented");
 
   CHPL_COMM_DIAGS_INC(execute_on_fast);
 
@@ -104,4 +108,25 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
        .iu.executeOn={subloc, fid, arg, arg_size}};
     chpl_comm_do_callbacks (&cb_data);
   }
+
+  execute_on_common(node, subloc, fid, arg, arg_size, true, true);
+}
+
+static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
+			      chpl_fn_int_t fid,
+			      chpl_comm_on_bundle_t* arg, size_t arg_size,
+			      chpl_bool fast, chpl_bool blocking)
+{
+  chpl_internal_error("Remote ons not yet implemented");
+
+  // bundle args
+  // send to remote AM port
+}
+
+//
+//
+//
+
+void ofi_am_handler(struct fi_cq_data_entry* cqe) {
+
 }
