@@ -302,16 +302,17 @@ Parser module with the Toml class for the Chapel TOML library.
 
 
 
-
-enum fieldtag {fieldBool,
-               fieldInt,
-               fieldArr,
-               fieldToml,
-               fieldReal,
-               fieldString,
-               fieldEmpty,
-               fieldDate};
- use fieldtag;
+ // Enum for Toml class field: tag 
+  enum fieldtag {
+    fieldBool,
+    fieldInt,
+    fieldArr,
+    fieldToml,
+    fieldReal,
+    fieldString,
+    fieldEmpty,
+    fieldDate };
+  use fieldtag;
 
  /*
  Class to hold various types parsed from input
