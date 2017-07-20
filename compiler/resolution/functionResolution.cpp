@@ -5025,6 +5025,19 @@ static void resolveNew(CallExpr* call) {
 
           resolveExpr(call);
         }
+
+      } else if (PrimitiveType* pt = toPrimitiveType(type)) {
+        const char* name = pt->symbol->name;
+
+        USR_FATAL(call, "invalid use of 'new' on primitive %s", name);
+
+      } else if (EnumType* et = toEnumType(type)) {
+        const char* name = et->symbol->name;
+
+        USR_FATAL(call, "invalid use of 'new' on enum %s", name);
+
+      } else {
+        USR_FATAL(call, "new must be applied to a record or class");
       }
     }
 
