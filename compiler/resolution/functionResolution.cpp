@@ -4948,18 +4948,20 @@ bool isDispatchParent(Type* t, Type* pt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static SymExpr* primNewTypeExpr(CallExpr* call);
+static SymExpr* resolveNewTypeExpr(CallExpr* call);
+
+static bool     resolveNewHasInitializer(AggregateType* at);
+
+static void     resolveNewHalt(CallExpr* call);
 
 static void resolveNew(CallExpr* call) {
-  if (SymExpr* typeExpr = primNewTypeExpr(call)) {
+  if (SymExpr* typeExpr = resolveNewTypeExpr(call)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
         SET_LINENO(call);
 
         // Begin to support new-style initializers
-        if (at->initializerStyle == DEFINES_INITIALIZER ||
-            (at->defaultInitializer &&
-             strcmp(at->defaultInitializer->name, "init") == 0)) {
+        if (resolveNewHasInitializer(at) == true) {
           if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
             VarSymbol* newTmp = newTemp("new_temp", at);
             DefExpr*   def    = new DefExpr(newTmp);
@@ -5042,25 +5044,12 @@ static void resolveNew(CallExpr* call) {
     }
 
   } else {
-    if (Expr* arg = call->get(1)) {
-      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
-        USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
-        return;
-
-      } else if (CallExpr* subCall = toCallExpr(arg)) {
-        if (FnSymbol* fn = subCall->resolvedFunction()) {
-          USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
-          return;
-        }
-      }
-    }
-
-    USR_FATAL(call, "invalid use of 'new'");
+    resolveNewHalt(call);
   }
 }
 
 // Find the SymExpr that captures the type
-static SymExpr* primNewTypeExpr(CallExpr* call) {
+static SymExpr* resolveNewTypeExpr(CallExpr* call) {
   Expr*    arg1   = call->get(1);
   SymExpr* retval = NULL;
 
@@ -5077,6 +5066,41 @@ static SymExpr* primNewTypeExpr(CallExpr* call) {
   }
 
   return retval;
+}
+
+static bool resolveNewHasInitializer(AggregateType* at) {
+  FnSymbol* di     = at->defaultInitializer;
+  bool      retval = false;
+
+  if (at->initializerStyle == DEFINES_INITIALIZER) {
+    retval = true;
+
+  } else if (di != NULL && strcmp(di->name, "init") == 0) {
+    retval = true;
+  }
+
+  return retval;
+}
+
+static void resolveNewHalt(CallExpr* call) {
+  const char* name = NULL;
+
+  if (Expr* arg = call->get(1)) {
+    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+      name = urse->unresolved;
+
+    } else if (CallExpr* subCall = toCallExpr(arg)) {
+      if (FnSymbol* fn = subCall->resolvedFunction()) {
+        name = fn->name;
+      }
+    }
+  }
+
+  if (name == NULL) {
+    USR_FATAL(call, "invalid use of 'new'");
+  } else {
+    USR_FATAL(call, "invalid use of 'new' on %s", name);
+  }
 }
 
 /************************************* | **************************************
