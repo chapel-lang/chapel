@@ -321,8 +321,6 @@ proc transpose(A: [?Dom] ?eltType) where Dom.rank == 2 {
     var C: [rDom] eltType;
 
     [(i, j) in Dom] C[j, i] = A[i, j];
-    // Note: for sufficiently large matrices, this can be faster:
-    //    [i in Dom.dim(1)] C[.., i] = A[i, ..];
 
     return C;
   }
