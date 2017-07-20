@@ -4,11 +4,11 @@ var A: [D] real;
 forall (i,j) in D do
   A[i,j] = i + j/10.0;
 
-printArray(A.reindex({0..1, 0..1}));
-printArray2(A.reindex({0..1, 0..1}));
-printArray3(A.reindex({0..1, 0..1}));
-printArray4(A.reindex({0..1, 0..1}));
-printArray5(A.reindex({0..1, 0..1}));
+printArray(A.reindex(0..1, 0..1));
+printArray2(A.reindex(0..1, 0..1));
+printArray3(A.reindex(0..1, 0..1));
+printArray4(A.reindex(0..1, 0..1));
+printArray5(A.reindex(0..1, 0..1));
 
 proc printArray(X) {
   writeln(X);

@@ -37,12 +37,12 @@ record Panel2D {
 
     proc panel {
         ref pnl : [1..rows, 1..cols] =
-            matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex({1..rows, 1..cols});
+            matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex(1..rows, 1..cols);
         return pnl;
     }
 
     //ref panel =
-        //matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex({1..rows, 1..cols});
+        //matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex(1..rows, 1..cols);
 };
 
 

@@ -408,7 +408,7 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
     else
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
-  ref result = locAdesc.myStorageArr[r1, r2].reindex({(...reindexExpr)});;
+  ref result = locAdesc.myStorageArr[r1, r2].reindex(reindexExpr);
   return result;
 }
 

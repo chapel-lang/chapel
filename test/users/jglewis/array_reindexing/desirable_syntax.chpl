@@ -18,7 +18,7 @@ module desirable_syntax {
 
     print_A (A);
 
-    ref A_reindexed = A.reindex({0..#n, 0..#n});
+    ref A_reindexed = A.reindex(0..#n, 0..#n);
 
     print_A (A_reindexed);
 

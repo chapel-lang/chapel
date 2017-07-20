@@ -17,7 +17,7 @@ ref AA2 = AA(Space3.expand(-1));   // slice A3D[2..4, 2..4, 2..4]
 [aa2 in AA2] aa2 = 2;
 writeToString();
 
-ref AA3 = AA2.reindex({1..3, 4..6, 7..9}); // reindex A3D[2..4, 2..4, 2..4]
+ref AA3 = AA2.reindex(1..3, 4..6, 7..9); // reindex A3D[2..4, 2..4, 2..4]
 [aa3 in AA3] aa3 = 3;
 writeToString();
 
@@ -33,7 +33,7 @@ ref AA6 = AA5(5..6, 8..9);         // slice A3D[3, 3..4, 3..4]
 [aa6 in AA6] aa6 = 6;
 writeToString();
 
-ref AA7 = AA6.reindex({10..11, 1..2});     // reindex A3D[3, 3..4, 3..4]
+ref AA7 = AA6.reindex(10..11, 1..2);     // reindex A3D[3, 3..4, 3..4]
 [aa7 in AA7] aa7 = 7;
 writeToString();
 

@@ -15,7 +15,7 @@ use arrayAPItest;
 {
   var A: [1:uint..4:uint, 1:uint..4:uint] real;
 
-  testArrayAPI2D("Reindex of array with unsigned domain", A.reindex({0:uint..3:uint, 2:uint..9:uint by 2:uint}), {1:uint..2:uint, 6:uint..9:uint by 2:uint}, {1:uint..8:uint by 2:uint, 2:uint..5:uint});
+  testArrayAPI2D("Reindex of array with unsigned domain", A.reindex( 0:uint..3:uint, 2:uint..9:uint by 2:uint) , {1:uint..2:uint, 6:uint..9:uint by 2:uint}, {1:uint..8:uint by 2:uint, 2:uint..5:uint});
 }
 
 {

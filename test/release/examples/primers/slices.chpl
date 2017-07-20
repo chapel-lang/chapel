@@ -100,7 +100,7 @@ proc main() {
   writeln("Initializing the diagonal blocks of A.");
   writeln("Reindexing of array argument in init procedure definition. ");
   for subvec in blockIter(vec,blk) {
-    ref Ablock = A[subvec,subvec].reindex({1..blk, 1..blk});
+    ref Ablock = A[subvec,subvec].reindex(1..blk, 1..blk);
     initBlock2(Ablock);
   }
 
