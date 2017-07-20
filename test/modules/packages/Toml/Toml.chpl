@@ -121,7 +121,7 @@ Parser module with the Toml class for the Chapel TOML library.
        var tbl: [tblD] Toml;
        var (tblPath, tblLeaf) = splitTblPath(tblname);
        if !rootTable.pathExists(tblPath) then makePath(tblPath);
-       rootTable.getIdx(tblPath)[tblLeaf] = new Toml(tbl);
+       rootTable[tblPath][tblLeaf] = new Toml(tbl);
        curTable = tblname;
      }
 
@@ -142,7 +142,7 @@ Parser module with the Toml class for the Chapel TOML library.
            var tblD: domain(string);
            var tbl: [tblD] Toml;
            var grandParent = '.'.join(path[..firstIn+i]);
-           rootTable.getIdx(grandParent)[parent] = new Toml(tbl);
+           rootTable[grandParent][parent] = new Toml(tbl);
            i+=1;
          }
        }
@@ -159,7 +159,7 @@ Parser module with the Toml class for the Chapel TOML library.
        else {
          tblname = '.'.join(curTable, key);
          var (tblPath, tblLeaf) = splitTblPath(tblname);
-         rootTable.getIdx(tblPath)[tblLeaf] = new Toml(tbl);
+         rootTable[tblPath][tblLeaf] = new Toml(tbl);
        }
        var temp = curTable;
        curTable = tblname;
@@ -183,7 +183,7 @@ Parser module with the Toml class for the Chapel TOML library.
        else {
          var value = parseValue();
          if curTable.isEmptyString() then rootTable[key] = value;
-         else rootTable.getIdx(curTable)[key] = value;
+         else rootTable[curTable][key] = value;
        }
      }
      
@@ -378,26 +378,18 @@ enum fieldtag {fieldBool,
        this.tag = fieldArr;
      }
 
-     proc this(idx: string) ref {
-       return A[idx];
-     }
 
      /* Returns the index of the table path given as a parameter */
-     proc getIdx(tbl: string) ref : Toml {
-       var indx = tbl.split('.');
+     proc this(tbl: string) ref : Toml {
+       const indx = tbl.split('.');
        var top = indx.domain.first;
        if indx.size < 2 {
-         if this.A.domain.member(tbl) == false {
-           halt("Error in getIdx '", tbl, "' does not exist");
-         }
-         else {
-           return this.A[tbl];
-         }
+         return this.A[tbl];
        } 
        else {
          var next = '.'.join(indx[top+1..]);
          if this.A.domain.member(indx[top]) {
-           return this.A[indx[top]].getIdx(next);
+           return this.A[indx[top]][next];
          }
          else {
            halt("Error in getIdx2");
