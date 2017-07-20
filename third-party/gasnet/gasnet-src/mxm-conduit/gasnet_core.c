@@ -16,16 +16,6 @@
 GASNETI_IDENT(gasnetc_IdentString_Version, "$GASNetCoreLibraryVersion: " GASNET_CORE_VERSION_STR " $");
 GASNETI_IDENT(gasnetc_IdentString_Name,    "$GASNetCoreLibraryName: " GASNET_CORE_NAME_STR " $");
 
-#if HAVE_SSH_SPAWNER
-GASNETI_IDENT(gasnetc_IdentString_HaveSSHSpawner, "$GASNetSSHSpawner: 1 $");
-#endif
-#if HAVE_MPI_SPAWNER
-GASNETI_IDENT(gasnetc_IdentString_HaveMPISpawner, "$GASNetMPISpawner: 1 $");
-#endif
-#if HAVE_PMI_SPAWNER
-GASNETI_IDENT(gasnetc_IdentString_HavePMISpawner, "$GASNetPMISpawner: 1 $");
-#endif
-
 gasnet_handlerentry_t const *gasnetc_get_handlertable(void);
 #if HAVE_ON_EXIT
 static void gasnetc_on_exit(int, void*);
@@ -139,14 +129,7 @@ static gasneti_atomic_t gasnetc_exit_role = gasneti_atomic_init(GASNETC_EXIT_ROL
 
 /* -------------------------------------------------------------------------- */
 
-void (*gasneti_bootstrapFini_p)(void) = NULL;
-void (*gasneti_bootstrapAbort_p)(int exitcode) = NULL;
-void (*gasneti_bootstrapBarrier_p)(void) = NULL;
-void (*gasneti_bootstrapExchange_p)(void *src, size_t len, void *dest) = NULL;
-void (*gasneti_bootstrapAlltoall_p)(void *src, size_t len, void *dest) = NULL;
-void (*gasneti_bootstrapBroadcast_p)(void *src, size_t len, void *dest, int rootnode) = NULL;
-void (*gasneti_bootstrapSNodeCast_p)(void *src, size_t len, void *dest, int rootnode) = NULL;
-void (*gasneti_bootstrapCleanup_p)(void) = NULL;
+gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
 #if GASNET_TRACE
 static unsigned int	gasnetc_pinned_blocks = 0;
@@ -166,19 +149,6 @@ static void gasnetc_check_config(void) {
      * and/or segment sizes */
 }
 
-static void gasnetc_bootstrapBarrier(void) {
-    /* (###) add code here to implement an external barrier
-       this barrier should not rely on AM or the GASNet API because it's used
-        during bootstrapping before such things are fully functional
-       It need not be particularly efficient, because we only call it a few times
-        and only during bootstrapping - it just has to work correctly
-       If your underlying spawning or batch system provides barrier functionality,
-        that would probably be a good choice for this
-     */
-    /* using internal function instead */
-    gasneti_bootstrapBarrier();
-}
-
 /* -------------------------------------------------------------------------- */
 
 size_t gasneti_AMMaxMedium(void)
@@ -187,89 +157,6 @@ size_t gasneti_AMMaxMedium(void)
     /*          (sizeof(gasnet_handlerarg_t) * GASNETC_MAX_ARGS));*/
     return gasnet_mxm_module.max_am_med;
 }
-
-/* -------------------------------------------------------------------------- */
-
-static int gasneti_bootstrapInit(
-    int *argc_p, char ***argv_p,
-    gasnet_node_t *nodes_p,
-    gasnet_node_t *mynode_p)
-{
-    const char *not_set = "(not set)";
-    char *spawner = gasneti_getenv_withdefault("GASNET_SPAWNER", not_set);
-    int res = GASNET_ERR_NOT_INIT;
-
-#if HAVE_SSH_SPAWNER
-    /* Sigh.  We can't assume GASNET_SPAWNER has been set except in the master.
-     * However, gasneti_bootstrapInit_ssh() verifies the command line args and
-     * returns GASNET_ERR_NOT_INIT on failure witout any noise on stderr.
-     * So, when the env var is not set, we try ssh-based spawn first.
-     */
-    if (GASNET_OK != res && (!strcmp(spawner, "ssh") || (spawner == not_set)) &&
-        GASNET_OK == (res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p))) {
-        gasneti_bootstrapFini_p     = &gasneti_bootstrapFini_ssh;
-        gasneti_bootstrapAbort_p    = &gasneti_bootstrapAbort_ssh;
-        gasneti_bootstrapBarrier_p  = &gasneti_bootstrapBarrier_ssh;
-        gasneti_bootstrapExchange_p = &gasneti_bootstrapExchange_ssh;
-        gasneti_bootstrapAlltoall_p = &gasneti_bootstrapAlltoall_ssh;
-        gasneti_bootstrapBroadcast_p= &gasneti_bootstrapBroadcast_ssh;
-        gasneti_bootstrapSNodeCast_p= &gasneti_bootstrapSNodeBroadcast_ssh;
-        gasneti_bootstrapCleanup_p  = &gasneti_bootstrapCleanup_ssh;
-    }
-#endif
-
-#if HAVE_MPI_SPAWNER
-    /* Only try MPI-based spawn when spawner == "mpi".
-     * Otherwise things could hang or fail in "messy" ways here.
-     */
-    if (GASNET_OK != res && !strcmp(spawner, "mpi") && 
-        GASNET_OK == (res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p))) {
-        gasneti_bootstrapFini_p	    = &gasneti_bootstrapFini_mpi;
-        gasneti_bootstrapAbort_p	= &gasneti_bootstrapAbort_mpi;
-        gasneti_bootstrapBarrier_p	= &gasneti_bootstrapBarrier_mpi;
-        gasneti_bootstrapExchange_p	= &gasneti_bootstrapExchange_mpi;
-        gasneti_bootstrapAlltoall_p	= &gasneti_bootstrapAlltoall_mpi;
-        gasneti_bootstrapBroadcast_p= &gasneti_bootstrapBroadcast_mpi;
-        gasneti_bootstrapSNodeCast_p= &gasneti_bootstrapSNodeBroadcast_mpi;
-        gasneti_bootstrapCleanup_p  = &gasneti_bootstrapCleanup_mpi;
-    }
-#endif
-
-#if HAVE_PMI_SPAWNER
-    /* Don't really expect GASNET_SPAWNER set if launched directly by srun, mpirun, yod, etc.
-     * So, when the env var is not set, we try pmi-based spawn last.
-     */
-    if (GASNET_OK != res && (!strcmp(spawner, "pmi") || (spawner == not_set)) &&
-        GASNET_OK == (res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p))) {
-        gasneti_bootstrapFini_p = &gasneti_bootstrapFini_pmi;
-        gasneti_bootstrapAbort_p    = &gasneti_bootstrapAbort_pmi;
-        gasneti_bootstrapBarrier_p  = &gasneti_bootstrapBarrier_pmi;
-        gasneti_bootstrapExchange_p = &gasneti_bootstrapExchange_pmi;
-        gasneti_bootstrapAlltoall_p = &gasneti_bootstrapAlltoall_pmi;
-        gasneti_bootstrapBroadcast_p= &gasneti_bootstrapBroadcast_pmi;
-        gasneti_bootstrapSNodeCast_p= &gasneti_bootstrapSNodeBroadcast_pmi;
-        gasneti_bootstrapCleanup_p  = &gasneti_bootstrapCleanup_pmi;
-    }
-#endif
-
-    if (GASNET_OK != res
-#if HAVE_SSH_SPAWNER
-        && strcmp(spawner, "ssh")
-#endif
-#if HAVE_MPI_SPAWNER
-        && strcmp(spawner, "mpi")
-#endif
-#if HAVE_PMI_SPAWNER
-        && strcmp(spawner, "pmi")
-#endif
-        )
-    {
-        gasneti_fatalerror("Requested spawner \"%s\" is unknown or not supported in this build", spawner);
-    }
-
-    return res;
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -686,15 +573,16 @@ static int gasnetc_init(int *argc, char ***argv)
      * Using existing bootstrap init via SSH.
      * This also initializes gasneti_nodes and gasneti_mynode globals.
      */
-    res = gasneti_bootstrapInit(argc, argv, &gasneti_nodes, &gasneti_mynode);
-    if (res != GASNET_OK) {
-        return res;
-    }
+    gasneti_spawner = gasneti_spawnerInit(argc, argv, NULL, &gasneti_nodes, &gasneti_mynode);
+    if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
     gasneti_init_done = 1; /* enable early to allow tracing */
 
     /* Now enable tracing of all the following steps */
     gasneti_trace_init(argc, argv);
+
+    /* Ensure uniform MXM_* env vars */
+    gasneti_propagate_env("MXM_", GASNETI_PROPAGATE_ENV_PREFIX);
 
     /*
      * Process the environment for configuration/settings.
@@ -1009,10 +897,6 @@ static int gasnetc_init(int *argc, char ***argv)
        If your job system already always propagates environment variables to all the compute
         nodes, then you probably don't need this.
      */
-    /*
-     * gasneti_setupGlobalEnvironment(gasneti_nodes, gasneti_mynode,
-     *                                gasnetc_bootstrapExchange, gasnetc_bootstrapBroadcast);
-     */
     gasneti_setupGlobalEnvironment(gasneti_nodes, gasneti_mynode,
                                    gasneti_bootstrapExchange, gasneti_bootstrapBroadcast);
 #endif
@@ -1048,7 +932,7 @@ static int gasnetc_init(int *argc, char ***argv)
     /*
      * wait for all the nodes to complete bootstrap
      */
-    gasnetc_bootstrapBarrier();
+    gasneti_bootstrapBarrier();
 
     gasneti_auxseg_init(); /* adjust max seg values based on auxseg */
     return GASNET_OK;
@@ -1059,59 +943,12 @@ static int gasnetc_init(int *argc, char ***argv)
 extern int gasnet_init(int *argc, char ***argv) {
     int retval = gasnetc_init(argc, argv);
     if (retval != GASNET_OK) GASNETI_RETURN(retval);
+#if 0 /* Already done in gasnetc_init() to allow tracing of init steps */
     gasneti_trace_init(argc, argv);
+#endif
     return GASNET_OK;
 }
 
-/* ------------------------------------------------------------------------------------ */
-
-static char checkuniqhandler[256] = { 0 };
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-    int i;
-    *numregistered = 0;
-    for (i = 0; i < numentries; i++) {
-        int newindex;
-
-        if ((table[i].index == 0 && !dontcare) ||
-                (table[i].index && dontcare)) continue;
-        else if (table[i].index) newindex = table[i].index;
-        else { /* deterministic assignment of dontcare indexes */
-            for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-                if (!checkuniqhandler[newindex]) break;
-            }
-            if (newindex > highlimit) {
-                char s[255];
-                sprintf(s,"Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-                GASNETI_RETURN_ERRR(BAD_ARG, s);
-            }
-        }
-
-        /*  ensure handlers fall into the proper range of pre-assigned values */
-        if (newindex < lowlimit || newindex > highlimit) {
-            char s[255];
-            sprintf(s, "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-            GASNETI_RETURN_ERRR(BAD_ARG, s);
-        }
-
-        /* discover duplicates */
-        if (checkuniqhandler[newindex] != 0)
-            GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-        checkuniqhandler[newindex] = 1;
-
-        /* register the handler */
-        gasnetc_handler[(gasnet_handler_t)newindex] = (gasneti_handler_fn_t)table[i].fnptr;
-
-        /* The check below for !table[i].index is redundant and present
-         * only to defeat the over-aggressive optimizer in pathcc 2.1
-         */
-        if (dontcare && !table[i].index) table[i].index = newindex;
-
-        (*numregistered)++;
-    }
-    return GASNET_OK;
-}
 /* ------------------------------------------------------------------------------------ */
 extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
@@ -1154,7 +991,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
         int numreg = 0;
         gasneti_assert(ctable);
         while (ctable[len].fnptr) len++; /* calc len */
-        if (gasnetc_reghandlers(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
+        if (gasneti_amregister(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
             GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
         gasneti_assert(numreg == len);
     }
@@ -1165,7 +1002,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
         int numreg = 0;
         gasneti_assert(etable);
         while (etable[len].fnptr) len++; /* calc len */
-        if (gasnetc_reghandlers(etable, len, 64, 127, 0, &numreg) != GASNET_OK)
+        if (gasneti_amregister(etable, len, 64, 127, 0, &numreg) != GASNET_OK)
             GASNETI_RETURN_ERRR(RESOURCE,"Error registering extended API handlers");
         gasneti_assert(numreg == len);
     }
@@ -1175,12 +1012,12 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
         int numreg2 = 0;
 
         /*  first pass - assign all fixed-index handlers */
-        if (gasnetc_reghandlers(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
+        if (gasneti_amregister(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
             GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
 
         /*  second pass - fill in dontcare-index handlers */
-        if (gasnetc_reghandlers(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
-            GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
+        if (gasneti_amregister(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
+            GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
 
         gasneti_assert(numreg1 + numreg2 == numentries);
     }
@@ -1306,7 +1143,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     /* ------------------------------------------------------------------------------------ */
     /*  primary attach complete */
     gasneti_attach_done = 1;
-    gasnetc_bootstrapBarrier();
+    gasneti_bootstrapBarrier();
 
     GASNETI_TRACE_PRINTF(C,("gasnetc_attach(): primary attach complete"));
 
@@ -1320,7 +1157,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     gasneti_nodemapFini();
 
     /* ensure extended API is initialized across nodes */
-    gasnetc_bootstrapBarrier();
+    gasneti_bootstrapBarrier();
 
   #if 0 /* Cleanup would prevent use of gasneti_bootstrapBarrier for "oob exit barrier" */
     gasneti_bootstrapCleanup();

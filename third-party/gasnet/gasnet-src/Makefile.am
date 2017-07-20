@@ -77,9 +77,6 @@ headers =                  	\
 
 EXTRA_DIST =              		\
 	README				\
-	README-devel			\
-	README-git			\
-	README-release			\
  	README-tools 			\
 	ChangeLog	  		\
 	license.txt       		\
@@ -96,15 +93,12 @@ EXTRA_DIST =              		\
 
 include_HEADERS = $(headers)
 
+# deliberately omitted git-only docs: README-devel README-git README-release
 INSTALL_DOCS =			\
 	README			\
-	README-devel		\
-	README-git		\
-	README-release		\
 	README-tools		\
 	license.txt		\
 	docs/autotuner.txt	\
-	docs/pshm-design.txt	\
 	docs/gasnet.txt		\
 	docs/gasnet.html	\
 	docs/gasnet.pdf		\
@@ -119,14 +113,17 @@ if BUILD_SEQ_LIBS
 libgasnet_tools_seq_a_SOURCES =
 libraries_seq = libgasnet_tools-seq.a 
 fragments_seq = gasnet_tools-seq.mak
+pkgconfig_seq = gasnet_tools-seq.pc
 endif
 if BUILD_PAR_LIBS
 libgasnet_tools_par_a_SOURCES =
 libraries_par = libgasnet_tools-par.a 
 fragments_par = gasnet_tools-par.mak
+pkgconfig_par = gasnet_tools-par.pc
 endif
 libraries = $(libraries_seq) $(libraries_par)
 fragments = $(fragments_seq) $(fragments_par)
+pkgconfig = $(pkgconfig_seq) $(pkgconfig_par)
 
 # leading - prevents distclean failures
 -include $(top_builddir)/other/Makefile-libgasnet.mak
@@ -211,10 +208,11 @@ else
 TOOLSONLY_CHECK = run-tests
 TOOLSONLY_TESTS = testtools
 test: tests
-tests: force
+tests: $(TOOLSONLY_TESTS)
+$(TOOLSONLY_TESTS): force
 	@$(MAKE) -f $(top_builddir)/tests/Makefile \
 	        GASNET_INCLUDES="-I@TOP_BUILDDIR@ -I@TOP_SRCDIR@ -I@TOP_SRCDIR@/other" \
-		$(TOOLSONLY_TESTS)
+		$@
 run-tests: tests
 	./testtools
 CLEANFILES = $(TOOLSONLY_TESTS)
@@ -240,11 +238,11 @@ recurse_special:
 	    cd $$dir && $(MAKE) $(DO_WHAT) || exit $$? ; \
 	  fi ; \
 	 done
-all-local: $(lib_LIBRARIES) $(fragments)
+all-local: $(lib_LIBRARIES) $(fragments) $(pkgconfig)
 	@$(MAKE) $(recurse_local) DO_WHAT=$${DO_WHAT=all}
 	@$(MAKE) recurse_special  DO_WHAT=$${DO_WHAT=all}
 clean-local:
-	rm -f $(fragments)
+	rm -f $(fragments) $(pkgconfig)
 	@if test -f Makefile -a -f smp-conduit/Makefile; then \
 	  $(MAKE) $(recurse_local) DO_WHAT=clean || exit $$? ; \
 	 fi
@@ -252,6 +250,7 @@ clean-local:
 	  $(MAKE) recurse_special DO_WHAT=clean ;    \
 	 fi
 check-local: check-exports $(TOOLSONLY_CHECK)
+	$(MAKE) check-pkgconfig CHECK_FILES="$(pkgconfig)"
 seq par parsync:
 	@$(MAKE) $(recurse_local) DO_WHAT=$@
 check tests-clean:
@@ -278,11 +277,17 @@ install-data-local:
 	    $(INSTALL_DATA) $(top_srcdir)/$$file $(DESTDIR)$(docdir)/`basename $$file` || exit $$? ; \
 	  fi ; \
 	done
+	$(mkinstalldirs) $(DESTDIR)$(libdir)/pkgconfig
 	@list='$(fragments)'; for p in $$list; do \
           if test -f $$p; then \
             filename=`basename $$p`; \
-            echo @GASNET_INSTALL_CMD@ " < $$p > $(DESTDIR)$(includedir)/$$filename"; \
-            @GASNET_INSTALL_CMD@ < $$p > $(DESTDIR)$(includedir)/$$filename || exit $$? ; \
+            destmak="$(DESTDIR)$(includedir)/$$filename"; \
+            echo @GASNET_INSTALL_CMD@ " < $$p > $$destmak"; \
+            @GASNET_INSTALL_CMD@ < $$p > $$destmak || exit $$? ; \
+            thread_model=`echo "$$filename" | sed 's/^.*-\(.*\)\.mak$$/\1/'` ; \
+            destpc="$(DESTDIR)$(libdir)/pkgconfig/gasnet_tools-$$thread_model.pc"; \
+            $(MAKE) do-pkgconfig-tools thread_model=$$thread_model pkgconfig_file="$$destpc" FRAGMENT="$$destmak" || exit $$? ; \
+            chmod 644 "$$destpc" || exit $$? ; \
           else :; fi; \
         done
 	for file in @PATCHED_HEADER@ DUMMY ; do \
@@ -317,6 +322,7 @@ uninstall-local:
 	for file in $(fragments) ; do \
 	  rm -f $(DESTDIR)$(includedir)/$$file ; \
 	done
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/gasnet_tools-*.pc
 	for file in @PATCHED_HEADER@ ; do \
 	  rm -f $(DESTDIR)$(includedir)/patched-headers/$$file ; \
 	done
@@ -353,7 +359,7 @@ endif
 dist-hook:
 	if test -d $(srcdir)/.git ; then \
 	  GASNET_DESC=`$${GIT=git} --git-dir=$(srcdir)/.git describe` || exit $$? ; \
-	  $(PERL) -pi -e "s/no-version-control-info/$$GASNET_DESC/;" -- $(distdir)/configure || exit $$? ; \
+	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure || exit $$? ; \
 	  echo $$GASNET_DESC > $(distdir)/version.git || exit $$? ; \
 	fi
 	if test -f $(distdir)/docs/Makefile ; then \

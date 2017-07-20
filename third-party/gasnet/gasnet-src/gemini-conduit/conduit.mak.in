@@ -10,3 +10,7 @@
 CONDUIT_INCLUDES = -DGASNET_CONDUIT_GEMINI
 
 CONDUIT_LIBS = @GNI_LIBS@
+
+# gemini-conduit currently only supports pmi spawning
+GASNET_SPAWNER_DEFAULT = pmi
+GASNET_SPAWNER_PMI = 1

@@ -68,7 +68,7 @@ gasnet_handlerentry_t htable[] = {
 
     
 int _havereport = 0;
-char _reportstr[255];
+char _reportstr[644];
 const char *getreport(void) {
   if (_havereport) {
     _havereport = 0;
@@ -196,7 +196,6 @@ PGFIGHT(get_put_active, gasnet_get(&tmp, peer, peerseg, 8), gasnet_put(peer, pee
 PGFIGHT(get_get_active, gasnet_get(&tmp, peer, peerseg, 8), gasnet_get(&tmp, peer, peerseg, 8))
 
 void * poll_passive(void *args) {
-  GASNETT_UNUSED
   int mythread = ARG2THREAD(args);
   signal_done = 0;
   thread_barrier();
@@ -205,7 +204,6 @@ void * poll_passive(void *args) {
   return NULL;
 }
 void * block_passive(void *args) {
-  GASNETT_UNUSED
   int mythread = ARG2THREAD(args);
   signal_done = 0;
   thread_barrier();

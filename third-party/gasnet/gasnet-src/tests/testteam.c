@@ -8,7 +8,6 @@
 
 #include <gasnet.h>
 #include <gasnet_coll.h>
-#include <gasnet_coll_team.h>
 
 #define SEG_PER_THREAD (2*1024*1024)
 #define TEST_SEGSZ_EXPR (SEG_PER_THREAD)

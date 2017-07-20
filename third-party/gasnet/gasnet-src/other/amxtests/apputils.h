@@ -11,10 +11,6 @@
 #endif
 
 #include <errno.h>
-#ifdef WIN32
-  #include <windows.h>  
-  #define sleep(x) Sleep(1000*x)
-#endif
 
 #if defined(AMUDP)
   #include <amudp.h>
@@ -122,11 +118,7 @@ void setupUtilHandlers(ep_t activeep, eb_t activeeb);
 void printGlobalStats(void);
 
 
-#ifdef UETH
-  #define getCurrentTimeMicrosec() ueth_getustime()
-#else
-  extern int64_t getCurrentTimeMicrosec(void);
-#endif
+extern int64_t getCurrentTimeMicrosec(void);
 extern void outputTimerStats(void);
 
 #define TEST_32BIT_ONLY() do {                                         \

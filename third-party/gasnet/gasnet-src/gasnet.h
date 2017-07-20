@@ -117,6 +117,8 @@
 /* basic utilities used in the headers */
 #include <gasnet_basic.h>
 
+GASNETI_BEGIN_NOWARN
+
 /* ------------------------------------------------------------------------------------ */
 /* check segment configuration */
 
@@ -514,18 +516,11 @@ extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *table, int numentr
                                        uintptr_t segsize, uintptr_t minheapoffset);
 
 #if defined(GASNET_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
-  #ifndef _IN_GASNET_TESTS_DELAY_C
-  /* NOTICE: The override switch for this check has recently changed names
-   * because the override is being removed in the next release of GASNet.  
-   * If you believe this override is important to you, please contact the
-   * GASNet developers: upc-devel@lbl.gov
-   */
     #error Tried to compile GASNet client code with optimization enabled but also GASNET_DEBUG (which seriously hurts performance). Reconfigure/rebuild GASNet without --enable-debug
-  #endif
 #endif
 
 /* ------------------------------------------------------------------------------------ */
-
+GASNETI_END_NOWARN
 GASNETI_END_EXTERNC
 
 #undef _IN_GASNET_H

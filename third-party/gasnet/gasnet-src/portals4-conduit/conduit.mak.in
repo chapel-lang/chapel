@@ -9,3 +9,7 @@
 
 CONDUIT_LIBDIRS = -L@PORTALS4_LIBDIR@
 CONDUIT_LIBS = @PORTALS4_LIBS@
+
+# portals4-conduit currently only supports pmi spawning
+GASNET_SPAWNER_DEFAULT = pmi
+GASNET_SPAWNER_PMI = 1

@@ -12,16 +12,10 @@
 CC='cc'  # vanilla target C compiler
 CXX='CC' # vanilla target C++ compiler
 
-# Default optimization on ICC is an irritation:
-# -wd10120 suppresses "command line warning #10120: overriding '-O0' with '-O3'"
-if test x"$PE_ENV" = xINTEL &&
-    ( $CC -dM -E /dev/null | grep __OPTIMIZE__ ) >& /dev/null; then
-  CC="$CC -O0 -wd10120"
-  CXX="$CXX -O0 -wd10120"
-fi
-
 export CC
 export CXX
+
+XTPE_INFO_MESSAGE_OFF=1 ; export XTPE_INFO_MESSAGE_OFF  # magic variable to disable Cray cc's target INFO warning
 
 # Host C compiler
 # NOTE: you may need to set GCC_EXEC_PREFIX=/usr/bin/
@@ -39,7 +33,7 @@ MPI_CC="$CC" ; export MPI_CC     # MPI-enabled C compiler
 #MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
 MPIRUN_CMD="${APRUN:-aprun} -n %N %C" ; export MPIRUN_CMD  # launch command for MPI jobs
-EXTRA_CONFIGURE_ARGS="--disable-auto-conduit-detect --enable-mpi --enable-smp --enable-aries --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
+EXTRA_CONFIGURE_ARGS="--disable-udp --disable-ibv --enable-mpi --enable-smp --enable-gemini --with-ofi-provider=gni --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
 # OS string for test harness purposes
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_cnl"
 # minimal backtracing support

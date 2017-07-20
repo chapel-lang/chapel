@@ -667,7 +667,6 @@ void gasnetc_ProcessRecvSelf(gasnetc_category_t category,
     token.is_request      = is_request;
     token.is_sync_request = is_sync_request;
     token.msg_num         = msg_num;
-    numargs               = numargs;
     sys_msg_type          = SYSTEM_MSG_NA;
 
     switch (category) {

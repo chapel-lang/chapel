@@ -264,7 +264,7 @@ int main(int argc, char **argv)
     int iters = 0;
     int arg;
     void *myseg;
-    void *alloc;
+    void *alloc = NULL;
     int firstlastmode = 0;
     int fullduplexmode = 0;
     int crossmachinemode = 0;
@@ -419,9 +419,7 @@ int main(int argc, char **argv)
 	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters);
 
         BARRIER();
-        if (!insegment) {
-	    test_free(alloc);
-	}
+        if (alloc) test_free(alloc);
 
     gasnet_exit(0);
 

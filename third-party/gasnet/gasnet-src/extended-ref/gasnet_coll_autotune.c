@@ -2212,7 +2212,6 @@ void gasnete_coll_tune_generic_op(gasnet_team_handle_t team, gasnet_coll_optype_
   uint32_t loc_best_param_list[GASNET_COLL_NUM_PARAM_TYPES];
   uint32_t sync_flags = (flags &  GASNET_COLL_SYNC_FLAG_MASK); /*strip the sync flags off the flags*/
   uint32_t req_flags = (flags & (~GASNET_COLL_SYNC_FLAG_MASK));
-  GASNETI_UNUSED_UNLESS_DEBUG
   gasnete_coll_threaddata_t *td = GASNETE_COLL_MYTHREAD;
   char *loc_best_tree;
 

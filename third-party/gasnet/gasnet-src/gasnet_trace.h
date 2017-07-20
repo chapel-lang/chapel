@@ -207,7 +207,7 @@
 
 #if GASNETI_STATS_OR_TRACE
 #define GASNETI_TRACE_PUT_NAMED(name,locality,node,dest,src,nbytes) do {                       \
-  GASNETI_UNUSED void *_src = (src);  /* workaround for CrayC warning, unused if !TRACE */     \
+  void *_src = (src);  /* workaround for CrayC warning */                                      \
   _GASNETI_STAT_EVENT_VAL (P, name, (nbytes));                                                 \
   GASNETI_TRACE_GETPUT_##locality(P, name, (nbytes), node);                                    \
   GASNETI_TRACE_PRINTF(D,(#name ": " GASNETI_RADDRFMT" <- " GASNETI_LADDRFMT" (%llu bytes): %s", \

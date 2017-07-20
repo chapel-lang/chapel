@@ -33,8 +33,13 @@ int main(int argc, char **argv)
   size = gasnet_nodes();
 
   argi = 1;
-  if ((argi < argc) && !strcmp(argv[argi], "-m")) {
-    segsz = gasnet_getMaxLocalSegmentSize();
+  if (argi < argc) {
+    if (!strcmp(argv[argi], "-m")) {
+      segsz = gasnet_getMaxLocalSegmentSize();
+    } else {
+      size_t tmp = atol(argv[argi]);
+      if (tmp) segsz = tmp;
+    }
     ++argi;
   }
     

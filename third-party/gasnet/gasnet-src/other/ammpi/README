@@ -1,7 +1,7 @@
 AMMPI Documentation
 ===================
 Author: Dan Bonachea
-Contact email: upc-devel@lbl.gov
+Contact email: gasnet-devel@lbl.gov
 Home page: http://gasnet.lbl.gov/ammpi
 
 AMMPI is an implementation of the AM-2 specification over MPI-1.

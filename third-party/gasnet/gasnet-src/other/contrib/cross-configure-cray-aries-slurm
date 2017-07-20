@@ -9,11 +9,13 @@
 # NOTE: this relies on module-established PATH setting to automatically 
 # select the GCC or PGI-based MPI compilers, based on which PrgEnv is currently loaded
 # The same PrgEnv *must* be loaded when building and using the GASNet install
-CC="${CC:-cc}"   # vanilla target C compiler
-CXX="${CXX:-CC}" # vanilla target C++ compiler
+CC='cc'  # vanilla target C compiler
+CXX='CC' # vanilla target C++ compiler
 
 export CC
 export CXX
+
+XTPE_INFO_MESSAGE_OFF=1 ; export XTPE_INFO_MESSAGE_OFF  # magic variable to disable Cray cc's target INFO warning
 
 # Host C compiler
 # NOTE: you may need to set GCC_EXEC_PREFIX=/usr/bin/
@@ -30,8 +32,8 @@ HOST_CXXFLAGS='' ; export HOST_CXXFLAGS
 MPI_CC="$CC" ; export MPI_CC     # MPI-enabled C compiler
 #MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
-MPIRUN_CMD="${APRUN:-aprun} -n %N %C" ; export MPIRUN_CMD  # launch command for MPI jobs
-EXTRA_CONFIGURE_ARGS="--disable-auto-conduit-detect --enable-smp --enable-udp --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
+MPIRUN_CMD="${SRUN:-srun} -K0 -W60 %V -mblock -n %N %C" ; export MPIRUN_CMD  # launch command for MPI jobs
+EXTRA_CONFIGURE_ARGS="--disable-udp --disable-ibv --enable-mpi --enable-smp --enable-aries --with-ofi-provider=gni --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
 # OS string for test harness purposes
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_cnl"
 # minimal backtracing support
@@ -39,7 +41,7 @@ EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-backtrace-execinfo"
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
 #   by running config-aux/config.guess on the target machine
-TARGET_ID='aarch64-cnl-linux-gnu'
+TARGET_ID='x86_64-cnl-linux-gnu'
 
 # 3. Review the automatically-detected settings below and make corrections as necessary.
 

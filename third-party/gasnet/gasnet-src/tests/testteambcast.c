@@ -9,7 +9,6 @@
 
 #include <gasnet.h>
 #include <gasnet_coll.h>
-#include <gasnet_coll_team.h>
 
 #define MAX_SIZE 8192
 #define SCRATCH_SIZE (4*1024*1024)

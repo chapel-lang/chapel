@@ -26,10 +26,10 @@
  * For more information about AMUDP, visit our home page at:
  *  http://gasnet.lbl.gov/amudp
  * Or send email to:
- *  upc-devel@lbl.gov
+ *  gasnet-devel@lbl.gov
  *
  * Source code contributions (fixes, patches, extensions etc.) should be 
- * sent to <upc-devel@lbl.gov> to be reviewed for acceptance into the
+ * sent to <gasnet-devel@lbl.gov> to be reviewed for acceptance into the
  * primary distribution. Contributions are most likely to be accepted if they
  * are provided as public domain, or under a BSD-style license such as 
  * the one above.

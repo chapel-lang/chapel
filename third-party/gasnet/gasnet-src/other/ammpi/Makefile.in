@@ -102,9 +102,8 @@ LIBRARIES = $(lib_LIBRARIES)
 ARFLAGS = cru
 libammpi_a_AR = $(AR) $(ARFLAGS)
 libammpi_a_LIBADD =
-am__objects_1 =
-am_libammpi_a_OBJECTS = $(am__objects_1) ammpi_ep.$(OBJEXT) \
-	ammpi_reqrep.$(OBJEXT) ammpi_spmd.$(OBJEXT)
+am_libammpi_a_OBJECTS = ammpi_ep.$(OBJEXT) ammpi_reqrep.$(OBJEXT) \
+	ammpi_spmd.$(OBJEXT)
 libammpi_a_OBJECTS = $(am_libammpi_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
@@ -145,8 +144,6 @@ CC = @MPI_CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CC_UNWRAPPED = @CC_UNWRAPPED@
-CC_WRAPPED = @CC_WRAPPED@
 CFLAGS = @MPI_CFLAGS@ $(MANUAL_MPICFLAGS) $(apputils_flags) $(strict_proto_flags)
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
@@ -162,8 +159,6 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
-CXX_UNWRAPPED = @CXX_UNWRAPPED@
-CXX_WRAPPED = @CXX_WRAPPED@
 CYGPATH_W = @CYGPATH_W@
 DBX_PATH = @DBX_PATH@
 DEBUGMALLOC = @DEBUGMALLOC@
@@ -185,9 +180,9 @@ FCA_LIBDIR = @FCA_LIBDIR@
 FCA_LIBS = @FCA_LIBS@
 FH_CFLAGS = @FH_CFLAGS@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
+GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
 GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
-GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
 GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
@@ -210,7 +205,7 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
-IBV_INCLUDE = @IBV_INCLUDE@
+IBV_INCLUDES = @IBV_INCLUDES@
 IBV_LIBCFLAGS = @IBV_LIBCFLAGS@
 IBV_LIBDIR = @IBV_LIBDIR@
 IBV_LIBS = @IBV_LIBS@
@@ -240,17 +235,14 @@ MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
-MPI_CC_UNWRAPPED = @MPI_CC_UNWRAPPED@
-MPI_CC_WRAPPED = @MPI_CC_WRAPPED@
 MPI_CFLAGS = @MPI_CFLAGS@
-MPI_DEFINES = @MPI_DEFINES@
 MPI_LIBS = @MPI_LIBS@
 MXM_INCLUDE = @MXM_INCLUDE@
 MXM_LIBDIR = @MXM_LIBDIR@
 MXM_LIBS = @MXM_LIBS@
 NM = @NM@
 OBJEXT = @OBJEXT@
-OFI_INCLUDE = @OFI_INCLUDE@
+OFI_INCLUDES = @OFI_INCLUDES@
 OFI_LIBCFLAGS = @OFI_LIBCFLAGS@
 OFI_LIBDIR = @OFI_LIBDIR@
 OFI_LIBS = @OFI_LIBS@
@@ -270,6 +262,7 @@ PATCHED_HEADER = @PATCHED_HEADER@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
+PMIRUN_CMD = @PMIRUN_CMD@
 PMI_SPAWNER_INCLUDES = @PMI_SPAWNER_INCLUDES@
 PMI_SPAWNER_LIBDIR = @PMI_SPAWNER_LIBDIR@
 PMI_SPAWNER_LIBS = @PMI_SPAWNER_LIBS@
@@ -339,12 +332,14 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+fi_info = @fi_info@
 gasnet_cv__gfp_fullprogname_CC = @gasnet_cv__gfp_fullprogname_CC@
 gasnet_cv__gfp_fullprogname_CPP = @gasnet_cv__gfp_fullprogname_CPP@
 gasnet_cv__gfp_fullprogname_CXX = @gasnet_cv__gfp_fullprogname_CXX@
 gasnet_cv__gfp_fullprogname_CXXCPP = @gasnet_cv__gfp_fullprogname_CXXCPP@
 gasnet_cv__gfp_fullprogname_MPIRUN_CMD = @gasnet_cv__gfp_fullprogname_MPIRUN_CMD@
 gasnet_cv__gfp_fullprogname_MPI_CC = @gasnet_cv__gfp_fullprogname_MPI_CC@
+gasnet_cv__gfp_fullprogname_PMIRUN_CMD = @gasnet_cv__gfp_fullprogname_PMIRUN_CMD@
 have_mpcc_r = @have_mpcc_r@
 host = @host@
 host_alias = @host_alias@
@@ -362,6 +357,7 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+mxm_dump_config = @mxm_dump_config@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
 prefix = @prefix@
@@ -386,31 +382,30 @@ apputils_flags =
 @BUILDCONFIG_DEBUG_TRUE@BUILDCONFIG_DEFINES = -DAMMPI_DEBUG=1
 @USE_STRICT_PROTOTYPES_FALSE@strict_proto_flags = 
 @USE_STRICT_PROTOTYPES_TRUE@strict_proto_flags = -DGASNET_USE_STRICT_PROTOTYPES
-platform_defines = @GASNET_MACHINE_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
 platform_libraries = @LIBS@ @MPI_LIBS@
 testdir = $(srcdir)/../amxtests
 altincdir = $(srcdir)/..
-INCLUDES = -I$(srcdir) -I$(altincdir) $(platform_defines)
+INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
 link = $(CC) $(CFLAGS) $(LDFLAGS) $(platform_defines) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
+@USE_AMMPI_TRUE@BUILT_SOURCES = ammpi_portable_platform.h
 @USE_AMMPI_TRUE@lib_LIBRARIES = libammpi.a
 headers = \
     ammpi.h          \
     ammpi_internal.h \
     ammpi_spmd.h
 
+allheaders = $(BUILT_SOURCES) $(headers)
 libammpi_a_SOURCES = \
-    $(headers)       \
     ammpi_ep.c       \
     ammpi_reqrep.c   \
     ammpi_spmd.c     
 
-libammpi_a_DEPENDENCIES = $(libammpi_a_SOURCES:%.c=%.o)
+libammpi_a_DEPENDENCIES = $(libammpi_a_SOURCES:%.c=%.o)  
 EXTRA_DIST = \
-	Makefile.common 	\
-	Makefile.generic 	\
-	Makefile.standalone 	\
+        $(headers)              \
 	Makefile.tests  	\
 	Makefile.titanium.in	\
 	license.txt
@@ -434,9 +429,9 @@ TEST_NODES = 2
 TESTLOG = `pwd`/.test-results
 TEST_LINE = ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 AMMPI_RUNCMD_EXP = \
-      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  \
-      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` \
-      TEST_RUN_D=`pwd` \
+      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'` ; \
+      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` ; \
+      TEST_RUN_D=`pwd` ; \
       TEST_DOIT=`echo $(AMMPI_RUNCMD) | sed 's/%N/$(TEST_NODES)/;s/%M/$(TEST_NODES)/;s@%C@'"$$TEST_RUN"'@;s@%P@'"$$TEST_RUN_P"'@;s@%A@'"$$TEST_RUN_A"'@;s@%D@'"$$TEST_RUN_D"'@;s@%H@'"$${GASNET_NODEFILE:-$$PBS_NODEFILE}"'@;s/%V//'`
 
 TEST_RUNCMD = ; $(AMMPI_RUNCMD_EXP) ; 				\
@@ -463,9 +458,10 @@ TEST_DEPTH = 32
 TEST_DUPLEX = H
 AMMPI_NETWORKDEPTH = $(TEST_DEPTH)
 @USE_AMMPI_FALSE@clean_local_files = 
-@USE_AMMPI_TRUE@clean_local_files = libammpi.a *.o core .test-results
+@USE_AMMPI_TRUE@clean_local_files = libammpi.a *.o core .test-results $(BUILT_SOURCES)
 CLEANFILES = $(clean_local_files)
-all: all-am
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .o .obj
@@ -631,13 +627,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LIBRARIES)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -668,6 +666,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libLIBRARIES clean-local mostlyclean-am
@@ -735,7 +734,7 @@ ps-am:
 
 uninstall-am: uninstall-libLIBRARIES
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
 	clean-libLIBRARIES clean-local ctags distclean \
@@ -751,12 +750,17 @@ uninstall-am: uninstall-libLIBRARIES
 	tags uninstall uninstall-am uninstall-libLIBRARIES
 
 
+ammpi_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+	cp -f $< $@
+
+$(libammpi_a_DEPENDENCIES): $(allheaders)
+
 tests: apputils.o $(testprograms)
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(headers)
+test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
 	$(compile) -DAMMPI -I$(testdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(headers)
+apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
 	$(compile) -DAMMPI -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
 
 test%: test%.o apputils.o libammpi.a 
@@ -765,7 +769,7 @@ test%: test%.o apputils.o libammpi.a
 tests-clean:
 	rm -f $(testprograms)
 run-tests: tests
-	@rm -f .test-results ; touch $(TESTLOG)
+	@rm -f $(TESTLOG) ; touch $(TESTLOG)
 	@echo $(TEST_LINE)
 	@echo  Running AMMPI tests...
 	@echo  If this fails to spawn a job, you may need to re-run with a
@@ -781,23 +785,28 @@ run-tests: tests
 	@TEST_RUN="./testgetput $(TEST_ITERS)" $(TEST_RUNCMD)
 	@TEST_RUN="./testreadwrite $(TEST_ITERS)" $(TEST_RUNCMD)
 	@echo TESTS COMPLETE
+	@cat $(TESTLOG) ; rm -f $(TESTLOG)
 
 # make a distribution
 amxdist:
 	@sh -x -c ' \
          VERSION=`grep "#define AMMPI_LIBRARY_VERSION" $(srcdir)/ammpi.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
          export VERSION ; \
+	 distdir=ammpi$${VERSION} ; \
          echo "+++ Building distribution for AMMPI version $${VERSION} +++" && \
-         rm -Rf ammpi$${VERSION}.tar.gz ammpi$${VERSION} && \
-         mkdir ammpi$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch]* $(testdir)/*.[ch]* \
-	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
-	    ammpi$${VERSION} && \
-         rm -f ammpi$${VERSION}/Makefile.in ammpi$${VERSION}/Makefile.titanium && \
-         mv ammpi$${VERSION}/Makefile.standalone ammpi$${VERSION}/Makefile && \
-         tar -cvhf ammpi$${VERSION}.tar ammpi$${VERSION} && gzip -9 ammpi$${VERSION}.tar && \
-         rm -Rf ammpi$${VERSION} && \
-         echo "+++ ammpi$${VERSION}.tar.gz is ready for distribution +++" \
+         rm -Rf $$distdir.tar.gz $$distdir && \
+         mkdir $$distdir && \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch] $(testdir)/*.[ch] \
+	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
+	    $$distdir && \
+	 cd $$distdir && \
+	 mv gasnet_portable_platform.h ammpi_portable_platform.h && \
+         rm -f Makefile.in Makefile.am Makefile.titanium* && \
+         mv Makefile.standalone Makefile && \
+	 cd .. && \
+         tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
+         rm -Rf $$distdir && \
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" \
         '
 
 %.o: %.c ammpi.h ammpi_spmd.h ammpi_internal.h
@@ -806,10 +815,15 @@ amxdist:
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@check-exports: libammpi.a
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@	@echo Checking libammpi exports...
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@	@lib=libammpi.a ; \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@	    if test x$(CHECK_EXPORTS) = x0; then                                    \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@	      echo Skipped by user request ;                                        \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@	      exit 0 ;                                                              \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@	    fi ;                                                                    \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@            @NM@ --defined-only $$lib |                                             \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@            grep -v -e ' [\._]*ammpi_' -e ' [\._]*AMMPI_' -e ' [\._]*AM_'           \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
-@GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e 'get_pc_thunk'                                               \
+@GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e ' [\._][\._]*debug_' -e 'get_pc_thunk'                       \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@                    -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@            @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
 @GNU_NM_TRUE@@USE_AMMPI_TRUE@          if test -s .$$lib.exp ; then                                              \

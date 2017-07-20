@@ -18,6 +18,11 @@
 #include "sockutil.h"
 #include "sig.h"
 
+#ifndef if_pf /* for stand-alone mode without gasnet_tools */
+#define if_pf(cond) if(cond)
+#define if_pt(cond) if(cond)
+#endif
+
 bool endianconvert = false;
 
 //-------------------------------------------------------------------------------------

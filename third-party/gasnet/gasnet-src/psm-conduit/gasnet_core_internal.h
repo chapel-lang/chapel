@@ -39,17 +39,6 @@ typedef enum {
     gasnetc_Long=2
 } gasnetc_category_t;
 
-
-#if HAVE_SSH_SPAWNER
-#include <ssh-spawner/gasnet_bootstrap_internal.h>
-#endif
-#if HAVE_MPI_SPAWNER
-#include <mpi-spawner/gasnet_bootstrap_internal.h>
-#endif
-#if HAVE_PMI_SPAWNER
-#include <pmi-spawner/gasnet_bootstrap_internal.h>
-#endif
-
 /*
  * Multi-thread support
  * psm2 is not thread-safe, so all psm2 calls must be wrapped by a lock.
@@ -70,20 +59,16 @@ typedef enum {
 /*
  * Bootstrap support
  */
-extern void (*gasneti_bootstrapFini_p)(void);
-extern void (*gasneti_bootstrapAbort_p)(int exitcode);
-extern void (*gasneti_bootstrapBarrier_p)(void);
-extern void (*gasneti_bootstrapExchange_p)(void *src, size_t len, void *dest);
-extern void (*gasneti_bootstrapAlltoall_p)(void *src, size_t len, void *dest);
-extern void (*gasneti_bootstrapBroadcast_p)(void *src, size_t len, void *dest, int rootnode);
-extern void (*gasneti_bootstrapCleanup_p)(void);
-#define gasneti_bootstrapFini           (*gasneti_bootstrapFini_p)
-#define gasneti_bootstrapAbort          (*gasneti_bootstrapAbort_p)
-#define gasneti_bootstrapBarrier        (*gasneti_bootstrapBarrier_p)
-#define gasneti_bootstrapExchange       (*gasneti_bootstrapExchange_p)
-#define gasneti_bootstrapAlltoall       (*gasneti_bootstrapAlltoall_p)
-#define gasneti_bootstrapBroadcast      (*gasneti_bootstrapBroadcast_p)
-#define gasneti_bootstrapCleanup        (*gasneti_bootstrapCleanup_p)
+extern gasneti_spawnerfn_t const *gasneti_spawner;
+
+#define gasneti_bootstrapBarrier        (*(gasneti_spawner->Barrier))
+#define gasneti_bootstrapExchange       (*(gasneti_spawner->Exchange))
+#define gasneti_bootstrapBroadcast      (*(gasneti_spawner->Broadcast))
+#define gasneti_bootstrapSNodeBroadcast (*(gasneti_spawner->SNodeBroadcast))
+#define gasneti_bootstrapAlltoall       (*(gasneti_spawner->Alltoall))
+#define gasneti_bootstrapAbort          (*(gasneti_spawner->Abort))
+#define gasneti_bootstrapCleanup        (*(gasneti_spawner->Cleanup))
+#define gasneti_bootstrapFini           (*(gasneti_spawner->Fini))
 
 #define AM_HANDLER_SHORT    0 /* gasnetc_handler_short */
 #define AM_HANDLER_MED      1 /* gasnetc_handler_med */
@@ -93,7 +78,8 @@ extern void (*gasneti_bootstrapCleanup_p)(void);
 #define AM_HANDLER_GET_REPLY   5 /* gasnete_handler_get_reply */
 #define AM_HANDLER_LONG_PUT 6 /* gasnete_handler_long_put */
 #define AM_HANDLER_LONG_GET 7 /* gasnete_handler_long_get */
-#define AM_HANDLER_NUM      8
+#define AM_HANDLER_LONG_PUT_REPLY 8 /* gasnete_handler_long_put_reply */
+#define AM_HANDLER_NUM      9
 
 /* Set this bit in the handler index argument to indicate reply. */
 #define REQUEST_BIT 0x100
@@ -118,6 +104,15 @@ typedef struct _gasnete_transfer {
     uint32_t optype;
 } gasnete_transfer_t;
 
+typedef struct _gasnetc_posted_mq_reqs {
+    psm2_mq_req_t posted_reqs;
+    uint64_t label;
+    uint8_t completion;
+    int32_t optype;
+    psm2_epaddr_t peer;
+    int transfer_id;
+} gasnetc_posted_mq_reqs_t;
+
 /* -------------------------------------------------------------------------- */
 /* General psm conduit state */
 
@@ -140,9 +135,12 @@ typedef struct _gasnetc_psm_state {
     gasnetc_list_t pending_mq_ops;
 
     /* List of outstanding MQ requests to be completed */
-    psm2_mq_req_t *posted_reqs;
+    gasnetc_posted_mq_reqs_t *posted_mq_reqs;
     int posted_reqs_length;
     int posted_reqs_alloc;
+
+    /* Queue of pending MQ ACKS recieved to be completed */
+    gasnetc_list_t pending_ack;
 
     /* List of transfers to be completed */
     gasnete_transfer_t *transfers;
@@ -187,8 +185,9 @@ GASNETI_HOT
 GASNETI_INLINE(gasnetc_psm_poll_periodic)
 void gasnetc_psm_poll_periodic(void)
 {
+    /* Use of ">= 32" below renders any multi-threaded race on "+=" harmless */
     gasnetc_psm_state.periodic_poll += 1;
-    if(gasnetc_psm_state.periodic_poll == 32) {
+    if(gasnetc_psm_state.periodic_poll >= 32) {
         gasnetc_psm_state.periodic_poll = 0;
         gasnetc_AMPoll();
     }
@@ -201,6 +200,8 @@ GASNETI_COLD GASNETI_NORETURN
 void gasnetc_do_exit(void);
 
 int gasnete_long_msg_init(void);
+
+void gasnete_post_pending_ack(void);
 
 void gasnete_post_pending_mq_ops(void);
 

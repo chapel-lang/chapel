@@ -258,6 +258,7 @@ int main(int argc, char **argv) {
       fflush(stdout);
   }
 #if GASNET_PAR
+  TEST_SET_WAITMODE(pollers+1);
   if (pollers)
     test_createandjoin_pthreads(pollers+1,doAll,NULL,0);
   else

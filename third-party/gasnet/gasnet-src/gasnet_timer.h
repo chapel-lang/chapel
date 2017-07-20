@@ -280,13 +280,14 @@
   }
 /* ------------------------------------------------------------------------------------ */
 #elif PLATFORM_ARCH_POWERPC && \
-      ( PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_XLC || PLATFORM_COMPILER_CLANG ) && \
+      ( PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_XLC || \
+        PLATFORM_COMPILER_CLANG || PLATFORM_COMPILER_PGI ) && \
       ( PLATFORM_OS_LINUX || PLATFORM_OS_BGQ)
   /* Use the 64-bit "timebase" register on both 32- and 64-bit PowerPC CPUs */
   #include <sys/types.h>
   #include <dirent.h>
   typedef uint64_t gasneti_tick_t;
- #if PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_CLANG || \
+ #if PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_CLANG || PLATFORM_COMPILER_PGI || \
      (PLATFORM_COMPILER_XLC && GASNETI_HAVE_GCC_ASM && !GASNETI_HAVE_XLC_ASM)
   #if PLATFORM_COMPILER_CLANG /* or something to force? */
     /* Clang's integrated assembler (correctly) warns that mftb* are deprecated */
@@ -387,15 +388,18 @@
 	}
       } while (de);
       if (!de) gasneti_fatalerror("*** ERROR: Failure to find a PowerPC CPU in /proc/device-tree/cpus");
-      snprintf(fname, sizeof(fname), "/proc/device-tree/cpus/%s/timebase-frequency", de->d_name);
+      snprintf(fname, sizeof(fname), "/proc/device-tree/cpus/%.*s/timebase-frequency", 24, de->d_name);
       closedir(dp);
       fp = fopen(fname, "r");
       if (!fp) gasneti_fatalerror("*** ERROR: Failure in fopen('%s','r'): %s\n",fname,strerror(errno));
       if (fread((void *)(&freq), sizeof(uint32_t), 1, fp) != 1) 
         gasneti_fatalerror("*** ERROR: Failure to read timebase frequency from '%s': %s", fname, strerror(errno));
-     #if PLATFORM_ARCH_LITTLE_ENDIAN
-      freq = __builtin_bswap32(freq); /* value is always big-endian */
-     #endif
+    #if PLATFORM_ARCH_LITTLE_ENDIAN /* value is always big-endian */
+      freq = ((freq & 0x000000ff) << 24) |
+             ((freq & 0x0000ff00) <<  8) |
+             ((freq & 0x00ff0000) >>  8) |
+             ((freq & 0xff000000) >> 24);
+    #endif
       fclose(fp);
       if (freq == 0) { /* Playstation3 */
         char input[255];
@@ -470,6 +474,35 @@
       firsttime = 0;
     } else gasneti_sync_reads();
     return (uint64_t)(st * freq);
+  }
+/* ------------------------------------------------------------------------------------ */
+#elif GASNETI_HAVE_AARCH64_CNTVCT_EL0 /* AARCH64/ARMv8 Virtual Timer Count register */
+  #include <sys/times.h>
+  typedef uint64_t gasneti_tick_t;
+  GASNETI_INLINE(gasneti_ticks_now)
+  gasneti_tick_t gasneti_ticks_now(void) {
+    gasneti_tick_t ret;
+
+    __asm__ __volatile__ ("isb\n\t"
+                          "mrs %0,CNTVCT_EL0" :
+                          "=r" (ret) :
+                          /* no inputs */ :
+                          "memory");
+    return ret;
+  }
+
+  GASNETI_INLINE(gasneti_ticks_to_ns)
+  uint64_t gasneti_ticks_to_ns(gasneti_tick_t st) {
+    static int firsttime = 1;
+    static double adjust = 0;
+    if_pf (firsttime) {
+      uint64_t freq;
+      __asm__ __volatile__ ("mrs %0,CNTFRQ_EL0" : "=r" (freq));
+      adjust = 1.0E9/freq;
+      gasneti_sync_writes();
+      firsttime = 0;
+    } else gasneti_sync_reads();
+    return (uint64_t)(st * adjust);
   }
 /* ------------------------------------------------------------------------------------ */
 #elif PLATFORM_ARCH_MICROBLAZE && (defined(MB_CC) || defined(MB_FSL_CC))

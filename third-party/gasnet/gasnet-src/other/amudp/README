@@ -1,7 +1,7 @@
 AMUDP Documentation
 ===================
 Author: Dan Bonachea and Dan Hettena
-Contact email: upc-devel@lbl.gov
+Contact email: gasnet-devel@lbl.gov
 Home page: http://gasnet.lbl.gov/amudp
 
 AMUDP is an implementation of the AM-2 specification over UDP/IP. 

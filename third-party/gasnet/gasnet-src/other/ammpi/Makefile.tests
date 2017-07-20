@@ -3,9 +3,9 @@ TEST_NODES=2
 TESTLOG=`pwd`/.test-results
 TEST_LINE=++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 AMMPI_RUNCMD_EXP=\
-      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  \
-      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` \
-      TEST_RUN_D=`pwd` \
+      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'` ; \
+      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` ; \
+      TEST_RUN_D=`pwd` ; \
       TEST_DOIT=`echo $(AMMPI_RUNCMD) | sed 's/%N/$(TEST_NODES)/;s/%M/$(TEST_NODES)/;s@%C@'"$$TEST_RUN"'@;s@%P@'"$$TEST_RUN_P"'@;s@%A@'"$$TEST_RUN_A"'@;s@%D@'"$$TEST_RUN_D"'@;s@%H@'"$${GASNET_NODEFILE:-$$PBS_NODEFILE}"'@;s/%V//'`
 TEST_RUNCMD= ; $(AMMPI_RUNCMD_EXP) ; 				\
 	 testname=`basename $$TEST_RUN_P` ;                     \
@@ -30,7 +30,7 @@ TEST_DEPTH=32
 TEST_DUPLEX=H
 AMMPI_NETWORKDEPTH=$(TEST_DEPTH)
 run-tests: tests
-	@rm -f .test-results ; touch $(TESTLOG)
+	@rm -f $(TESTLOG) ; touch $(TESTLOG)
 	@echo $(TEST_LINE)
 	@echo  Running AMMPI tests...
 	@echo  If this fails to spawn a job, you may need to re-run with a
@@ -46,22 +46,27 @@ run-tests: tests
 	@TEST_RUN="./testgetput $(TEST_ITERS)" $(TEST_RUNCMD)
 	@TEST_RUN="./testreadwrite $(TEST_ITERS)" $(TEST_RUNCMD)
 	@echo TESTS COMPLETE
+	@cat $(TESTLOG) ; rm -f $(TESTLOG)
 
 # make a distribution
 amxdist:
 	@sh -x -c ' \
          VERSION=`grep "#define AMMPI_LIBRARY_VERSION" $(srcdir)/ammpi.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
          export VERSION ; \
+	 distdir=ammpi$${VERSION} ; \
          echo "+++ Building distribution for AMMPI version $${VERSION} +++" && \
-         rm -Rf ammpi$${VERSION}.tar.gz ammpi$${VERSION} && \
-         mkdir ammpi$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch]* $(testdir)/*.[ch]* \
-	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
-	    ammpi$${VERSION} && \
-         rm -f ammpi$${VERSION}/Makefile.in ammpi$${VERSION}/Makefile.titanium && \
-         mv ammpi$${VERSION}/Makefile.standalone ammpi$${VERSION}/Makefile && \
-         tar -cvhf ammpi$${VERSION}.tar ammpi$${VERSION} && gzip -9 ammpi$${VERSION}.tar && \
-         rm -Rf ammpi$${VERSION} && \
-         echo "+++ ammpi$${VERSION}.tar.gz is ready for distribution +++" \
+         rm -Rf $$distdir.tar.gz $$distdir && \
+         mkdir $$distdir && \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.[ch] $(testdir)/*.[ch] \
+	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
+	    $$distdir && \
+	 cd $$distdir && \
+	 mv gasnet_portable_platform.h ammpi_portable_platform.h && \
+         rm -f Makefile.in Makefile.am Makefile.titanium* && \
+         mv Makefile.standalone Makefile && \
+	 cd .. && \
+         tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
+         rm -Rf $$distdir && \
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" \
         '
 

@@ -14,24 +14,6 @@ extern void _gasnete_iop_check(gasnete_iop_t *iop) { gasnete_iop_check(iop); }
 
 /* ------------------------------------------------------------------------------------ */
 /*
-  Tuning Parameters
-  =================
-  Conduits may choose to override the default tuning parameters below by defining them
-  in their gasnet_core_fwd.h
-*/
-
-/* the size threshold where gets/puts stop using medium messages and start using longs */
-#ifndef GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD
-#define GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD   gasnet_AMMaxMedium()
-#endif
-
-/* true if we should try to use Long replies in gets (only possible if dest falls in segment) */
-#ifndef GASNETE_USE_LONG_GETS
-#define GASNETE_USE_LONG_GETS 1
-#endif
-
-/* ------------------------------------------------------------------------------------ */
-/*
   Op management
   =============
 */
@@ -274,17 +256,10 @@ void gasnete_iop_free(gasnete_iop_t *iop) {
 /* called at startup to check configuration sanity */
 static void gasnete_check_config(void) {
   gasneti_check_config_postattach();
-
-  gasneti_assert_always(GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD <= gasnet_AMMaxMedium());
   gasneti_assert_always(gasnete_eopaddr_isnil(EOPADDR_NIL));
-
-  /* The next two ensure nbytes in AM-based Gets will fit in handler_arg_t (bug 2770) */
-  gasneti_assert_always(gasnet_AMMaxMedium() <= (size_t)0xffffffff);
-  gasneti_assert_always(gasnet_AMMaxLongReply() <= (size_t)0xffffffff);
 }
 
 extern void gasnete_init(void) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   static int firstcall = 1;
   GASNETI_TRACE_PRINTF(C,("gasnete_init()"));
   gasneti_assert(firstcall); /*  make sure we haven't been called before */
@@ -387,7 +362,7 @@ extern gasnet_handle_t gasnete_get_nb_bulk (void *dest, gasnet_node_t node, void
 	{
 		gasnete_eop_t *op = _gasnete_eop_new(GASNETE_MYTHREAD);
 		op->ofi.type = OFI_TYPE_EGET;
-		gasnetc_rdma_get(dest, node, src, nbytes, (void *) &op->ofi);
+		gasnetc_rdma_get(dest, node, src, nbytes, &op->ofi);
 		return (gasnet_handle_t)op;
 	}
 }
@@ -398,9 +373,14 @@ extern gasnet_handle_t gasnete_put_nb      (gasnet_node_t node, void *dest, void
 	{
 		gasnete_eop_t *op = _gasnete_eop_new(GASNETE_MYTHREAD);
 		op->ofi.type = OFI_TYPE_EPUT;
-		gasnetc_rdma_put(node, dest, src, nbytes, (void *) &op->ofi);
-		gasnetc_rdma_put_wait((gasnet_handle_t) op);
-		return (gasnet_handle_t)op;
+        /* Try to submit this in a non-blocking way. If we can't, block for 
+         * it for correctness */
+		if (gasnetc_rdma_put_non_bulk(node, dest, src, nbytes, &op->ofi)) {
+		    gasnetc_rdma_put_wait((gasnet_handle_t) op);
+            gasnete_eop_free (op);
+            return GASNET_INVALID_HANDLE;
+        }
+        return (gasnet_handle_t)op;
 	}
 }
 
@@ -410,7 +390,7 @@ extern gasnet_handle_t gasnete_put_nb_bulk (gasnet_node_t node, void *dest, void
 	{
 		gasnete_eop_t *op = _gasnete_eop_new(GASNETE_MYTHREAD);
 		op->ofi.type = OFI_TYPE_EPUT;
-		gasnetc_rdma_put(node, dest, src, nbytes, (void *) &op->ofi);
+		gasnetc_rdma_put(node, dest, src, nbytes, &op->ofi);
 		return (gasnet_handle_t)op;
 	}
 }
@@ -535,12 +515,26 @@ extern void gasnete_put_nbi      (gasnet_node_t node, void *dest, void *src, siz
 {
 	GASNETI_CHECKPSHM_PUT(ALIGNED,V);
 	{
+        /* If we know we will definitely submit this non-blocking op as
+         * a blocking one, simply call the put function to avoid messing
+         * with eops and iops. Note that if this branch is not taken, that
+         * doesn't mean that gasnetc_rdma_put_non_bulk will not still block.
+         * See below. */
+        if (gasnetc_rdma_put_will_block(nbytes)) {
+            gasnete_put(node, dest, src, nbytes GASNETE_THREAD_PASS);
+            return;
+        }
+
 		gasnete_threaddata_t * const mythread = GASNETE_MYTHREAD;
 		gasnete_iop_t *op = mythread->current_iop;
 		op->initiated_put_cnt++;
 		op->put_ofi.type = OFI_TYPE_IPUT;
-		gasnetc_rdma_put(node, dest, src, nbytes, (void *) &op->put_ofi);
-		gasnetc_rdma_put_wait((gasnet_handle_t) op);
+        /* Try to submit this in a non-blocking way. If we can't, block for 
+         * it for correctness. Note that the blocking case will only be hit
+         * if there are not enough available boucne buffers. In that case,
+         * we may oversynchronize by finishing all iops prior to this one. */
+		if_pf (gasnetc_rdma_put_non_bulk(node, dest, src, nbytes, &op->put_ofi))
+		    gasnetc_rdma_put_wait((gasnet_handle_t) op);
 	}
 }
 
@@ -552,7 +546,7 @@ extern void gasnete_put_nbi_bulk (gasnet_node_t node, void *dest, void *src, siz
 		gasnete_iop_t *op = mythread->current_iop;
 		op->initiated_put_cnt++;
 		op->put_ofi.type = OFI_TYPE_IPUT;
-		gasnetc_rdma_put(node, dest, src, nbytes, (void *) &op->put_ofi);
+		gasnetc_rdma_put(node, dest, src, nbytes, &op->put_ofi);
 	}
 }
 
@@ -638,38 +632,6 @@ extern gasnet_handle_t gasnete_end_nbi_accessregion(GASNETE_THREAD_FARG_ALONE) {
   mythread->current_iop = iop->next;
   iop->next = NULL;
   return (gasnet_handle_t)iop;
-}
-
-/* ------------------------------------------------------------------------------------ */
-/*
-  Blocking memory-to-memory transfers
-  ===================================
-*/
-
-extern void gasnete_get_bulk (void *dest, gasnet_node_t node, void *src,
-		size_t nbytes GASNETE_THREAD_FARG) {
-	GASNETI_CHECKPSHM_GET(UNALIGNED,V);
-	{
-		gasnete_threaddata_t * const mythread = GASNETE_MYTHREAD;
-		gasnete_iop_t *op = mythread->current_iop;
-		op->initiated_get_cnt++;
-		op->get_ofi.type = OFI_TYPE_IGET;
-		gasnetc_rdma_get(dest, node, src, nbytes, (void *) &op->get_ofi);
-		gasnetc_rdma_get_wait((gasnet_handle_t) op);
-	}
-}
-
-extern void gasnete_put_bulk (gasnet_node_t node, void* dest, void *src,
-		size_t nbytes GASNETE_THREAD_FARG) {
-	GASNETI_CHECKPSHM_PUT(UNALIGNED,V);
-	{
-		gasnete_threaddata_t * const mythread = GASNETE_MYTHREAD;
-		gasnete_iop_t *op = mythread->current_iop;
-		op->initiated_put_cnt++;
-		op->put_ofi.type = OFI_TYPE_IPUT;
-		gasnetc_rdma_put(node, dest, src, nbytes, (void *) &op->put_ofi);
-		gasnetc_rdma_put_wait((gasnet_handle_t) op);
-	}
 }
 
 /* ------------------------------------------------------------------------------------ */
