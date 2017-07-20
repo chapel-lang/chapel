@@ -47,16 +47,17 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
   mPhase      = curr.mPhase;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
-    if (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)   == true) {
+    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true) {
       mBlockType = cBlockBegin;
 
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) == true) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     == true) {
       mBlockType = cBlockCobegin;
 
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) == true) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) == true) {
       mBlockType = cBlockCoforall;
 
-    } else{
+    } else {
       INT_ASSERT(false);
     }
 
