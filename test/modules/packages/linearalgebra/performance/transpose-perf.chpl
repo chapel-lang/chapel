@@ -58,6 +58,9 @@ proc main() {
     if !correctness then
       writeln('BLAS.transpose: ', t.elapsed() / iters);
     t.clear();
+  } else {
+    if !correctness then
+      writeln('BLAS.transpose: -1');
   }
 }
 
