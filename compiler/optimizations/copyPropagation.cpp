@@ -217,19 +217,19 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
   }
   else
   {
-    const bool isFirst = call->get(1) == se;
+    const bool isFirstActual = call->get(1) == se;
     if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-        && isFirst)
+        && isFirstActual)
     {
       return true;
     }
 
-    if (isOpEqualPrim(call) && isFirst)
+    if (isOpEqualPrim(call) && isFirstActual)
     {
       return true;
     }
 
-    if (call->isPrimitive(PRIM_SET_MEMBER) && isFirst)
+    if (call->isPrimitive(PRIM_SET_MEMBER) && isFirstActual)
     {
       return true;
     }
@@ -237,7 +237,7 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
     if (call->isPrimitive(PRIM_ARRAY_SET) ||
         call->isPrimitive(PRIM_ARRAY_SET_FIRST))
     {
-      if (isFirst)
+      if (isFirstActual)
       {
         return true;
       }
@@ -259,7 +259,7 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
       // For now, we treat subfield extraction as evidence of a future change
       // to the symbol itself, and use that fact to remove it from
       // consideration in copy propagation.
-      if (isFirst)
+      if (isFirstActual)
       {
         // We select just the case where the referent is passed by value,
         // because in the other case, the address of the object is not
@@ -340,7 +340,7 @@ static bool isUse(SymExpr* se)
   else
   {
     INT_ASSERT(call->primitive);
-    const bool isFirst = call->get(1) == se;
+    const bool isFirstActual = call->get(1) == se;
 
     switch(call->primitive->tag)
     {
@@ -359,7 +359,7 @@ static bool isUse(SymExpr* se)
      case PRIM_AND_ASSIGN:
      case PRIM_OR_ASSIGN:
      case PRIM_XOR_ASSIGN:
-      if (isFirst)
+      if (isFirstActual)
       {
         return false;
       }
@@ -394,7 +394,7 @@ static bool isUse(SymExpr* se)
       // comm prefetch locale widePtr len
       // second argument is an address
       // first and third are values.
-      if (isFirst || se == call->get(3))
+      if (isFirstActual || se == call->get(3))
       {
         return true;
       }
@@ -411,7 +411,7 @@ static bool isUse(SymExpr* se)
 
      case PRIM_GET_MEMBER:
      case PRIM_GET_MEMBER_VALUE:
-      if (isFirst)
+      if (isFirstActual)
       {
         return false;
       }
@@ -422,7 +422,7 @@ static bool isUse(SymExpr* se)
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
       // The first operand is treated like a reference.
-      if (isFirst)
+      if (isFirstActual)
       {
         return false;
       }
@@ -430,7 +430,7 @@ static bool isUse(SymExpr* se)
 
      case PRIM_SET_UNION_ID:
       // The first operand is treated like a reference.
-      if (isFirst)
+      if (isFirstActual)
       {
         return false;
       }
