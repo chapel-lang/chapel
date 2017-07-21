@@ -25,6 +25,7 @@
 #include "DeferStmt.h"
 #include "docsDriver.h"
 #include "expr.h"
+#include "files.h"
 #include "stmt.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -36,6 +37,7 @@ static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
+static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void setupForCheckExplicitDeinitCalls();
 
@@ -105,6 +107,8 @@ checkParsed() {
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    nestedName(mod);
+
     checkModule(mod);
   }
 
@@ -311,6 +315,21 @@ checkFunction(FnSymbol* fn) {
       fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
     USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
+  }
+}
+
+static void nestedName(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  ModuleSymbol* parent = mod->defPoint->getModule();
+  if (parent != mod &&
+      strcmp(mod->name, parent->name) == 0 &&
+      strcmp(parent->name, filenameToModulename(parent->filename)) == 0) {
+    USR_WARN(mod->defPoint,
+             "module '%s' has the same name as the implicit file module",
+             mod->name);
   }
 }
 
