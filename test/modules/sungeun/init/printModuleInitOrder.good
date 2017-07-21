@@ -13,6 +13,7 @@ Initializing Modules:
     ChapelThreads
     ChapelTuple
     ChapelRange
+    ChapelTaskDataHelp
     LocaleModel
      LocaleModelHelpFlat
       LocaleModelHelpSetup
@@ -41,6 +42,7 @@ Initializing Modules:
     ChapelUtil
     ChapelError
     ChapelDynDispHack
+    ChapelTaskData
     Assert
     AlignedTSupport
     RangeChunk
