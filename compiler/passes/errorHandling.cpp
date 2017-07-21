@@ -244,9 +244,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     BlockStmt* catchBody = catchStmt->body();
     DefExpr*   catchDef  = catchStmt->expr();
 
-    // TODO - find a better way
-    // maybe mark task wrapper functions as not needing errors to be deleted?
-    //catchBody->insertAtTail(new CallExpr(gChplDeleteError, errorVar));
+    catchBody->insertAtTail(new CallExpr(gChplDeleteError, errorVar));
     catchBody->remove();
 
     // catchall
@@ -410,6 +408,10 @@ void lowerErrorHandling() {
 
   std::map<BaseAST*, BaseAST*> reasons;
 
+  // TODO: I don't think this is good enough, for a case like
+  // coforall ... { coforall ... { throw }}
+  //
+  // -> use a set + determine functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // Determine if compiler-generated fns should be marked 'throws'
     if (isTaskFunction(fn)) {
