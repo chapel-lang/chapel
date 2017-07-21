@@ -3274,6 +3274,12 @@ inline proc channel.read(ref args ...?k,
 
   Only serial iteration is supported.
 
+  .. warning::
+
+    This iterator executes on the current locale. This may impact multilocale
+    performance if the current locale is not the same locale on which the
+    channel was created.
+
   :yields: lines ending in ``\n`` in channel
  */
 iter channel.lines() {
