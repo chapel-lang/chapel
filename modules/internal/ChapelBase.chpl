@@ -838,6 +838,7 @@ module ChapelBase {
 
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
+  pragma "no default functions"
   class _EndCountBase {
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
