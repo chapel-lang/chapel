@@ -10,31 +10,34 @@ use TomlParser;
 use TomlReader;
 
 
-/*
-Receives a channel to a TOML file as a parameter and outputs an associative
-array.
-*/
- proc parseToml(input) : Toml {
-   const source = new Source(input);
-   const parser = new Parser(source);
-   const TomlFile =  parser.parseLoop();
-   delete parser;
-   delete source;
-   return TomlFile;
+/* Receives a TOML file as a parameter and outputs an associative
+array */
+ proc parseToml(input: file) : Toml {
+   var tomlStr: string;
+   var tomlFile = openreader(input);
+   tomlFile.readstring(tomlStr);
+   return parseToml(tomlStr);
+ }
+
+/* Receives a channel to a TOML file as a parameter and outputs an associative
+array. */
+ proc parseToml(input: channel) : Toml {
+   var tomlStr: string;
+   input.readstring(tomlStr);
+   return parseToml(tomlStr);
  }
  
-/*
-Receives a string of TOML format as a parameter and outputs an associative
-array.
+ /* Receives a string of TOML format as a parameter and outputs an associative
+array. */
  proc parseToml(input: string) : Toml {
    const source = new Source(input);
    const parser = new Parser(source);
-   const TomlFile =  parser.parseLoop();
+   const tomlData =  parser.parseLoop();
    delete parser;
    delete source;
-   return TomlFile;
+   return tomlData;
  }
-*/
+
 
 
 
@@ -393,7 +396,7 @@ Parser module with the Toml class for the Chapel TOML library.
            return this.A[indx[top]][next];
          }
          else {
-           halt("Error in getIdx2");
+           halt("Error - no index found for ", tbl);
          }
        }
      }
@@ -586,42 +589,23 @@ Parser module with the Toml class for the Chapel TOML library.
 
    class Source {
 
-     var tomlFile: string;
+     var tomlStr: string;
      var tokenD = {1..0},
        tokenlist: [tokenD] Tokens;
      var currentLine: Tokens;
 
 
-     proc init(tomlFile: string) {
-       this.tomlFile = tomlFile;
-       var openFile = open(tomlFile, iomode.r);
-       this.genTokenlist(openFile);
-     }
-
-
-     /*
      proc init(tomlStr: string) {
       this.tomlStr = tomlStr;
-      this.genTokenlist(tomlStr);
-     }
-      */
-
-     /* generates list of Token objects */
-     proc genTokenlist(input) {
-       for line in input.lines() {
-         splitLine(line);
-       }
-       currentLine = tokenlist[tokenD.first];
+      genTokenlist(tomlStr);
      }
 
-     /*
      proc genTokenlist(input: string) {
        for line in input.split('\n') {
          splitLine(line);
        }
       currentLine = tokenlist[tokenD.first];
      } 
-     */
 
      proc splitLine(line) {
        var linetokens: [1..0] string;
@@ -646,8 +630,7 @@ Parser module with the Toml class for the Chapel TOML library.
        for token in pattern.split(line) {
          var strippedToken = token.strip();
          if strippedToken.length != 0  {
-           linetokens.push_back(strippedToken);
-         }
+           linetokens.push_back(strippedToken);}
        }
        if linetokens.size != 0 {
          var tokens = new Tokens(linetokens);
@@ -660,11 +643,10 @@ Parser module with the Toml class for the Chapel TOML library.
        if nextLine() { 
          if currentLine.isEmpty() {
            tokenlist.remove(tokenD.first);
-           currentLine = tokenlist[tokenD.first];
-         }
+           currentLine = tokenlist[tokenD.first];}
        }
        else {
-         halt("Error: end of file");
+         halt("Error: unexpectedly reached end of file");
        }
      }
 
@@ -755,7 +737,6 @@ Parser module with the Toml class for the Chapel TOML library.
        }
      }
 
-     /* This makes the writeln(tokens) == writeln(tokens.A) */
      proc readWriteThis(f) {
        f <~> this.A;
      }
