@@ -66,6 +66,9 @@ extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
+extern const char* CHPL_RUNTIME_LIB;
+extern const char* CHPL_RUNTIME_INCL;
+extern const char* CHPL_THIRD_PARTY;
 extern const int CHPL_STACK_CHECKS;
 extern const int CHPL_CACHE_REMOTE;
 
