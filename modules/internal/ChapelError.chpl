@@ -26,12 +26,13 @@ module ChapelError {
   class Error {
     var msg: string;
 
-    proc init() {
+    proc Error() {
+      _next = nil;
     }
 
-    proc init(_msg: string) {
+    proc Error(_msg: string) {
       msg = _msg;
-      super.init();
+      _next = nil;
     }
 
     proc writeThis(f) {
@@ -39,7 +40,7 @@ module ChapelError {
     }
 
     pragma "no doc"
-    var _next: Error; // managed by lock in record ErrorGroupRecord
+    var _next: Error = nil; // managed by lock in record ErrorGroupRecord
   }
 
   // Used by the runtime to accumulate errors. Needs
@@ -81,15 +82,14 @@ module ChapelError {
 
   // stores multiple errors when they can come up.
   class ErrorGroup : Error {
-    var _head: Error;
+    var _head: Error = nil;
 
     pragma "no doc"
-    proc init(ref group:chpl_ErrorGroup) {
+    proc ErrorGroup(ref group:chpl_ErrorGroup) {
       _head = group._head;
       group._head = nil;
-      super.init("error group");
     }
-    proc init() {
+    proc ErrorGroup() {
       _head = nil;
     }
 
