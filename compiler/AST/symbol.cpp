@@ -1073,6 +1073,8 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
    * method.
    */
   newFn->copyFlags(this);
+  if (this->throwsError())
+    newFn->throwsErrorInit();
 
   for_formals(formal, this) {
     newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
