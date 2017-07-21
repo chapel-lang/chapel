@@ -176,6 +176,9 @@ enum PrimitiveTag {
 
   PRIM_LOGICAL_FOLDER,          // Help fold logical && and ||
 
+  PRIM_WIDE_MAKE,               // create a wide pointer from
+                                // (type, localeID, addr)
+
   PRIM_WIDE_GET_LOCALE,         // Returns the "locale" portion of a wide pointer.
 
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.

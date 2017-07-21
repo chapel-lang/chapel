@@ -958,6 +958,9 @@ static void addKnownWides() {
               setWide(cause, lhs);
             }
           }
+        } else if (rhs->isPrimitive(PRIM_WIDE_MAKE)) {
+          INT_ASSERT(isObj(lhs));
+          setWide(rhs, lhs);
         }
       }
     }

@@ -3531,6 +3531,23 @@ GenRet CallExpr::codegenPrimitive() {
     codegenIsSpecialPrimitive(NULL, this, ret);
     break;
 
+  case PRIM_WIDE_MAKE: {
+    // (type, localeID, addr)
+    Type* narrowType = get(1)->typeInfo();
+    GenRet locale = get(2)->codegen();
+    GenRet raddr = codegenValue(get(3)->codegen());
+
+    INT_ASSERT(!narrowType->symbol->hasFlag(FLAG_WIDE_CLASS));
+
+    ret = codegenCast(narrowType, raddr, true);
+    if (fLocal == false) {
+      ret = codegenWideAddr(locale, ret);
+    }
+
+    break;
+  }
+
+
   case PRIM_WIDE_GET_LOCALE: {
     if (get(1)->isWideRef() ||
         get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
