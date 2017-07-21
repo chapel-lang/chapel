@@ -261,10 +261,13 @@ static void setChplHomeDerivedVars() {
 
 static void saveChplHomeDerivedInEnv() {
   int rc;
+  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB);
   rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
+  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL);
   rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
+  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY);
   rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
