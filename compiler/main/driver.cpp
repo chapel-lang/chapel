@@ -249,13 +249,13 @@ static bool isMaybeChplHome(const char* path)
 static void setChplHomeDerivedVars() {
   int rc;
   rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
-		CHPL_HOME, "lib");
+                CHPL_HOME, "lib");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
   rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s",
-		CHPL_HOME, "runtime/include");
+                CHPL_HOME, "runtime/include");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
   rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s",
-		CHPL_HOME, "third-party");
+                CHPL_HOME, "third-party");
   if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
 }
 
