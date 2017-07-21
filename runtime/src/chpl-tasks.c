@@ -207,5 +207,3 @@ size_t chpl_task_getDefaultCallStackSize(void)
 
   return deflt;
 }
-
-
