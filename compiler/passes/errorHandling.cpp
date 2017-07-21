@@ -128,15 +128,21 @@ try {
 */
 
 
-namespace {
+typedef std::map<BaseAST*, BaseAST*> implicitThrowsReasons_t;
 
 // Static functions
-static bool canBlockThrow(BlockStmt* blk, BaseAST*& reason);
-static void checkErrorHandling(FnSymbol* fn, std::map<BaseAST*, BaseAST*> *
-    reasons);
+static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
+static bool isTaskFunction(FnSymbol* fn);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
-static bool isTaskFunction(FnSymbol* fn);
+static bool canBlockThrow(BlockStmt* blk, BaseAST*& reason);
+
+namespace {
+
+
+// Static class helper functions
+static bool catchesNotExhaustive(TryStmt* tryStmt);
+static bool shouldEnforceStrict(CallExpr* node);
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
@@ -399,7 +405,7 @@ CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
   return new CallExpr(gChplUncaughtError, errorVar);
 }
 
-static void printReason(BaseAST* node, std::map<BaseAST*, BaseAST*>* reasons)
+static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
 {
   if (reasons == NULL)
     return;
@@ -417,80 +423,12 @@ static void printReason(BaseAST* node, std::map<BaseAST*, BaseAST*>* reasons)
   }
 }
 
-
-class CanThrowVisitor : public AstVisitorTraverse {
-
-public:
-  CanThrowVisitor       (bool inThrowingFn, bool makeCompileErrors,
-      std::map<BaseAST*, BaseAST*>* inReasons);
-
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCallExpr (CallExpr*  node);
-
-  bool throws() { return canThrow; }
-  BaseAST* getReason() { return reason; }
-
-private:
-  // TODO -- split CanThrowVisitor into 2, one is CheckErrors
-  // map used for printing out errors
-  std::map<BaseAST*, BaseAST*>* reasons;
-
-  BaseAST* reason; // one of the reasons it throws, for errors
-
-  int  tryDepth;
-  bool canThrow;
-  bool errors;
-  bool fnCanThrow; // only used for error checking
-
-  bool   catchesNotExhaustive(TryStmt* tryStmt);
-};
-
-CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors,
-    std::map<BaseAST*, BaseAST*>* inReasons) {
-  tryDepth = 0;
-  canThrow = false;
-  errors = makeCompileErrors;
-  fnCanThrow = inThrowingFn;
-  reasons = inReasons;
-  reason = NULL;
-}
-
-bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
-  tryDepth++;
-
-  return true;
-}
-
-void CanThrowVisitor::exitTryStmt(TryStmt* node) {
-  tryDepth--;
-
-  // is it an exhaustive catch?
-
-  bool nonExhaustive = catchesNotExhaustive(node);
-
-  if (node->tryBang()) {
-    canThrow = false;
-  } else {
-    canThrow = nonExhaustive;
-    if (reason == NULL)
-      reason = node;
-    if (errors && tryDepth==0 && nonExhaustive && !fnCanThrow) {
-      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
-    }
-  }
-}
-
-bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
+// Returns true if the catches don't cover all of the cases.
+static bool catchesNotExhaustive(TryStmt* tryStmt) {
 
   bool hasCatchAll = false;
 
   for_alist(c, tryStmt->_catches) {
-    if (errors && hasCatchAll)
-      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
-
-    SET_LINENO(c);
-
     CatchStmt* catchStmt = toCatchStmt(c);
     DefExpr*   catchDef  = catchStmt->expr();
 
@@ -511,6 +449,71 @@ bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
   return !hasCatchAll;
 }
 
+// Returns true if we should raise strict-mode errors
+// for this call.
+static bool shouldEnforceStrict(CallExpr* node) {
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+    bool inCompilerGeneratedFn = false;
+    if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+      // Don't check wrapper functions in strict mode.
+      inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn);
+    }
+    bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
+    bool strictError = !(inCompilerGeneratedFn || callsUncheckedThrowsFn);
+
+    return strictError;
+  }
+  return false;
+}
+
+
+class CanThrowVisitor : public AstVisitorTraverse {
+
+public:
+  CanThrowVisitor();
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+  bool throws() { return canThrow; }
+  BaseAST* reason() { return reasonThrows; }
+
+private:
+
+  int  tryDepth;
+  bool canThrow;
+  BaseAST* reasonThrows; // one of the reasons it throws, for errors
+};
+
+CanThrowVisitor::CanThrowVisitor() {
+  tryDepth = 0;
+  canThrow = false;
+  reasonThrows = NULL;
+}
+
+bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void CanThrowVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  // is it an exhaustive catch?
+
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    canThrow = false;
+  } else {
+    canThrow = nonExhaustive;
+    if (reasonThrows == NULL)
+      reasonThrows = node;
+  }
+}
+
 bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
@@ -519,22 +522,10 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
       if (insideTry) {
         // OK
       } else {
-        bool inCompilerGeneratedFn = false;
-        if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-          // Don't check wrapper functions in strict mode.
-          inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn);
-        }
-        bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
-        bool strictError = !(inCompilerGeneratedFn || callsUncheckedThrowsFn);
 
-        if (strictError) {
-          if (errors && fStrictErrorHandling) {
-            USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
-            printReason(node, reasons);
-          }
-
-          if (reason == NULL)
-            reason = node;
+        if (shouldEnforceStrict(node)) {
+          if (reasonThrows == NULL)
+            reasonThrows = node;
         }
 
         // not in a try
@@ -543,21 +534,115 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     canThrow = true;
-    if (reason == NULL)
-      reason = node;
+    if (reasonThrows == NULL)
+      reasonThrows = node;
+  }
+  return true;
+}
 
+
+class ErrorCheckingVisitor : public AstVisitorTraverse {
+
+public:
+  ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* reasons);
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+private:
+  implicitThrowsReasons_t* reasons;
+
+  int  tryDepth;
+  bool fnCanThrow;
+
+  void checkCatches(TryStmt* tryStmt);
+};
+
+ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* inReasons) {
+  tryDepth = 0;
+  fnCanThrow = inThrowingFn;
+  reasons = inReasons;
+}
+
+bool ErrorCheckingVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void ErrorCheckingVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  checkCatches(node);
+
+  // is it an exhaustive catch?
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    // OK
+  } else {
+    if (tryDepth==0 && nonExhaustive && !fnCanThrow) {
+      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
+    }
+  }
+}
+
+void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
+
+  bool hasCatchAll = false;
+
+  for_alist(c, tryStmt->_catches) {
+    if (hasCatchAll)
+      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
+
+    CatchStmt* catchStmt = toCatchStmt(c);
+    DefExpr*   catchDef  = catchStmt->expr();
+
+    // catchall
+    if (catchDef == NULL) {
+      hasCatchAll = true;
+    } else {
+      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
+      Type*      errType = errSym->type;
+
+      // named catchall
+      if (errType == dtError) {
+        hasCatchAll = true;
+      }
+    }
+  }
+}
+
+bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
+  bool insideTry = (tryDepth > 0);
+
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+    if (calledFn->throwsError()) {
+      if (insideTry) {
+        // OK
+      } else {
+        if (shouldEnforceStrict(node)) {
+          if (fStrictErrorHandling) {
+            USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+            printReason(node, reasons);
+          }
+        }
+      }
+    }
+  } else if (node->isPrimitive(PRIM_THROW)) {
     if (insideTry) {
       // OK, error checking for this case done in try handling
     } else if (fnCanThrow == true) {
       // OK, fn can throw
-    } else if (errors == true) {
+    } else {
       USR_FATAL_CONT(node, "cannot throw in a non-throwing function");
     }
   }
   return true;
 }
 
-
+} /* end anon namespace */
 
 // Returns `true` if a block can exit with an error
 //  (e.g. by calling 'throw' or a throwing function,
@@ -567,17 +652,17 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
 
 static bool canBlockThrow(BlockStmt* block, BaseAST*& reason)
 {
-  CanThrowVisitor visit(false, false, NULL);
+  CanThrowVisitor visit;
 
   block->accept(&visit);
 
-  reason = visit.getReason();
+  reason = visit.reason();
   return visit.throws();
 }
 
-static void checkErrorHandling(FnSymbol* fn, std::map<BaseAST*, BaseAST*> * reasons)
+static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
-  CanThrowVisitor visit(fn->throwsError(), true, reasons);
+  ErrorCheckingVisitor visit(fn->throwsError(), reasons);
 
   fn->body->accept(&visit);
 }
@@ -639,7 +724,6 @@ static bool isUncheckedThrowsFunction(FnSymbol* fn)
   return fn->hasFlag(FLAG_UNCHECKED_THROWS);
 }
 
-} /* end anon namespace */
 
 void lowerErrorHandling() {
   if (!fMinimalModules)
