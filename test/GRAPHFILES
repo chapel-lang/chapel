@@ -261,6 +261,7 @@ types/string/psahabu/perf/substring.graph
 # suite: Standard Library
 modules/packages/Sort/performance/sorts-linearithmic.graph
 modules/packages/Sort/performance/sorts-quadratic.graph
+modules/packages/linearalgebra/performance/linearalgebra-perf.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
