@@ -128,6 +128,8 @@ try {
 */
 
 
+namespace {
+
 // Static functions
 static bool canBlockThrow(BlockStmt* blk, BaseAST*& reason);
 static void checkErrorHandling(FnSymbol* fn, std::map<BaseAST*, BaseAST*> *
@@ -135,9 +137,6 @@ static void checkErrorHandling(FnSymbol* fn, std::map<BaseAST*, BaseAST*> *
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
 static bool isTaskFunction(FnSymbol* fn);
-
-
-namespace {
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
@@ -400,57 +399,6 @@ CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
   return new CallExpr(gChplUncaughtError, errorVar);
 }
 
-} /* end anon namespace */
-
-void lowerErrorHandling() {
-  if (!fMinimalModules)
-    INT_ASSERT(dtError->inTree());
-
-  std::map<BaseAST*, BaseAST*> reasons;
-
-  // TODO: I don't think this is good enough, for a case like
-  // coforall ... { coforall ... { throw }}
-  //
-  // -> use a set + determine functions
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // Determine if compiler-generated fns should be marked 'throws'
-    if (isTaskFunction(fn)) {
-      BaseAST* reason = NULL;
-      if (canBlockThrow(fn->body, reason)) {
-        fn->throwsErrorInit();
-        reasons[fn] = reason;
-      }
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // Otherwise, just check for error-handling errors.
-    checkErrorHandling(fn, &reasons);
-  }
-
-  // Quit if fatal errors were encountered by checkErrorHandling above.
-  USR_STOP();
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    ArgSymbol*   outError = NULL;
-    LabelSymbol* epilogue = NULL;
-
-    if (fn->throwsError()) {
-      SET_LINENO(fn);
-
-      outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
-      outError->addFlag(FLAG_ERROR_VARIABLE);
-      fn->insertFormalAtTail(outError);
-
-      epilogue = fn->getOrCreateEpilogueLabel();
-      INT_ASSERT(epilogue); // throws requires an epilogue
-    }
-
-    ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
-    fn->accept(&visitor);
-  }
-}
-
 static void printReason(BaseAST* node, std::map<BaseAST*, BaseAST*>* reasons)
 {
   if (reasons == NULL)
@@ -469,9 +417,6 @@ static void printReason(BaseAST* node, std::map<BaseAST*, BaseAST*>* reasons)
   }
 }
 
-
-
-namespace {
 
 class CanThrowVisitor : public AstVisitorTraverse {
 
@@ -612,7 +557,6 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
-} /* end anon namespace */
 
 
 // Returns `true` if a block can exit with an error
@@ -694,3 +638,56 @@ static bool isUncheckedThrowsFunction(FnSymbol* fn)
 {
   return fn->hasFlag(FLAG_UNCHECKED_THROWS);
 }
+
+} /* end anon namespace */
+
+void lowerErrorHandling() {
+  if (!fMinimalModules)
+    INT_ASSERT(dtError->inTree());
+
+  std::map<BaseAST*, BaseAST*> reasons;
+
+  // TODO: I don't think this is good enough, for a case like
+  // coforall ... { coforall ... { throw }}
+  //
+  // -> use a set + determine functions
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Determine if compiler-generated fns should be marked 'throws'
+    if (isTaskFunction(fn)) {
+      BaseAST* reason = NULL;
+      if (canBlockThrow(fn->body, reason)) {
+        fn->throwsErrorInit();
+        reasons[fn] = reason;
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Otherwise, just check for error-handling errors.
+    checkErrorHandling(fn, &reasons);
+  }
+
+  // Quit if fatal errors were encountered by checkErrorHandling above.
+  USR_STOP();
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    ArgSymbol*   outError = NULL;
+    LabelSymbol* epilogue = NULL;
+
+    if (fn->throwsError()) {
+      SET_LINENO(fn);
+
+      outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
+      outError->addFlag(FLAG_ERROR_VARIABLE);
+      fn->insertFormalAtTail(outError);
+
+      epilogue = fn->getOrCreateEpilogueLabel();
+      INT_ASSERT(epilogue); // throws requires an epilogue
+    }
+
+    ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
+    fn->accept(&visitor);
+  }
+}
+
+
