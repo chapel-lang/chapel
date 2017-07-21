@@ -23,9 +23,13 @@
 #include "chpl-mem.h"
 #include "error.h"
 
+// To get CHPL_THIRD_PARTY from chpl invocation
+#include "chplcgfns.h"
+
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
+
 
 extern char** environ;
 static void add_env_options(int* argc, char** argv[]) {
@@ -92,9 +96,9 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 }
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("amudprun") + 1;
+  int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("amudprun") + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  snprintf(cmd, len, "%samudprun", WRAP_TO_STR(LAUNCH_PATH));
+  snprintf(cmd, len, "%s/%samudprun", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH));
 
   return chpl_launch_using_exec(cmd,
                                 chpl_launch_create_argv(cmd, argc, argv,
