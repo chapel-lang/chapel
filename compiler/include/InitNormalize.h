@@ -69,6 +69,7 @@ public:
   bool            inCondStmt()                                           const;
   bool            inParallelStmt()                                       const;
   bool            inCoforall()                                           const;
+  bool            inOn()                                                 const;
 
   DefExpr*        currField()                                            const;
 
@@ -90,7 +91,8 @@ private:
     cBlockLoop,
     cBlockBegin,
     cBlockCobegin,
-    cBlockCoforall
+    cBlockCoforall,
+    cBlockOn
   };
 
                   InitNormalize();

@@ -356,6 +356,19 @@ static InitNormalize preNormalize(BlockStmt*    block,
             INT_ASSERT(false);
           }
 
+        } else if (state.inOn() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in an on block");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in an on block");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
         } else {
           stmt = state.completePhase1(callExpr);
         }
@@ -413,6 +426,13 @@ static InitNormalize preNormalize(BlockStmt*    block,
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "coforall during phase 1 of initialization",
+                    field->sym->name);
+
+
+        } else if (state.inOn() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside an "
+                    "on block during phase 1 of initialization",
                     field->sym->name);
 
 
