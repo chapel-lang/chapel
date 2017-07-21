@@ -131,11 +131,11 @@ try {
 typedef std::map<BaseAST*, BaseAST*> implicitThrowsReasons_t;
 
 // Static functions
+static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
 static bool isTaskFunction(FnSymbol* fn);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
-static bool canBlockThrow(BlockStmt* blk, BaseAST*& reason);
 
 namespace {
 
@@ -470,7 +470,7 @@ static bool shouldEnforceStrict(CallExpr* node) {
 class CanThrowVisitor : public AstVisitorTraverse {
 
 public:
-  CanThrowVisitor();
+  CanThrowVisitor(std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
 
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
@@ -484,12 +484,16 @@ private:
   int  tryDepth;
   bool canThrow;
   BaseAST* reasonThrows; // one of the reasons it throws, for errors
+  std::set<FnSymbol*>* visited;
+  implicitThrowsReasons_t* reasons;
 };
 
-CanThrowVisitor::CanThrowVisitor() {
+CanThrowVisitor::CanThrowVisitor(std::set<FnSymbol*>* visitedIn, implicitThrowsReasons_t* reasonsIn) {
   tryDepth = 0;
   canThrow = false;
   reasonThrows = NULL;
+  visited = visitedIn;
+  reasons = reasonsIn;
 }
 
 bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
@@ -518,6 +522,9 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
+
+    markImplicitThrows(calledFn, visited, reasons);
+
     if (calledFn->throwsError()) {
       if (insideTry) {
         // OK
@@ -650,14 +657,30 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 // This function is useful to infer 'throws' for
 // certain compiler-introduced functions.
 
-static bool canBlockThrow(BlockStmt* block, BaseAST*& reason)
+static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
-  CanThrowVisitor visit;
+  // Currently, only task functions can be implicitly throws.
+  if (!isTaskFunction(fn))
+    return;
 
-  block->accept(&visit);
+  // If we already visited this function, don't visit it again.
+  if (visited->count(fn) > 0)
+    return;
 
-  reason = visit.reason();
-  return visit.throws();
+  // Add to visited set first thing to prevent infinite recursion
+  // if there ever is a cycle of calls.
+  visited->insert(fn);
+
+  CanThrowVisitor visit(visited, reasons);
+
+  // Note that this function can recurse because
+  // the CanThrowVisitor will call markImplicitThrows.
+  fn->body->accept(&visit);
+
+  if (visit.throws()) {
+    (*reasons)[fn] = visit.reason();
+    fn->throwsErrorInit();
+  }
 }
 
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
@@ -729,21 +752,12 @@ void lowerErrorHandling() {
   if (!fMinimalModules)
     INT_ASSERT(dtError->inTree());
 
-  std::map<BaseAST*, BaseAST*> reasons;
+  std::set<FnSymbol*> visited;
+  implicitThrowsReasons_t reasons;
 
-  // TODO: I don't think this is good enough, for a case like
-  // coforall ... { coforall ... { throw }}
-  //
-  // -> use a set + determine functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // Determine if compiler-generated fns should be marked 'throws'
-    if (isTaskFunction(fn)) {
-      BaseAST* reason = NULL;
-      if (canBlockThrow(fn->body, reason)) {
-        fn->throwsErrorInit();
-        reasons[fn] = reason;
-      }
-    }
+    markImplicitThrows(fn, &visited, &reasons);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
