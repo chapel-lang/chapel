@@ -70,12 +70,12 @@ void findVisibleCandidates(CallInfo&                  info,
 
 static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
-                             bool                       compilerGenerated,
+                             bool                       lastResort,
                              Vec<ResolutionCandidate*>& candidates) {
   forv_Vec(FnSymbol, fn, visibleFns) {
     // Consider either the user-defined functions or the compiler-generated
     // functions based on the input 'compilerGenerated'.
-    if (fn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
+    if (fn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
 
       // Consider
       //

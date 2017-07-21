@@ -623,6 +623,7 @@ module ChapelArray {
 
   // pragma is a workaround for ref-pair vs generic/specific overload resolution
   pragma "compiler generated"
+  pragma "last resort"
   proc chpl__ensureDomainExpr(x...) {
     return chpl__buildDomainExpr((...x));
   }

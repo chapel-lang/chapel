@@ -69,14 +69,14 @@ symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores
 symbolFlag( FLAG_CODEGENNED , npr, "codegenned" , "code has been generated for this type" )
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )
 symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
-// The compiler-generated flag is already overloaded in three ways.  We may
-// want to split it if this becomes cumbersome:
-// 1. In resolution, functions marked as compiler-generated are considered only if
-// no functions without that flag (i.e. user-supplied) functions are found.
-// 2. In printing filename/lineno information in error messages (when developer
-// == false), the callstack is searched ignoring compiler-generated functions.
-// 3. Assignment operations flagged as 'compiler generated' shall contain only
-// field assignments and assignment primitives.
+// The compiler-generated flag has these meanings:
+// 1. In various parts of the compiler, when printing printing filename/lineno
+//    information in error messages, callstack locations marked
+//    compiler-generated may be ignored when developer == false.
+// 2. In relation to determination of POD types when "compiler generated"
+//    applies to assignment, copy, initialization routines
+// 3. When additional checking for user-written code can be relaxed
+//    for functions added by the compiler (e.g. with error handling)
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_ADDED_WHERE , npr, "compiler added where" , "marks functions that have a where clause only because compiler added one" )
 
@@ -155,6 +155,10 @@ symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
+// In resolution, functions marked as last-resort are considered only if
+// no functions without that flag are found. This usually is used to create
+// a pattern enabling user-supplied replacement of default behavior.
+symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
 symbolFlag( FLAG_LOCALE_PRIVATE , ypr, "locale private" , ncm )

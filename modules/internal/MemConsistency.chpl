@@ -29,7 +29,7 @@ module MemConsistency {
   //  return memory_order_seq_cst;
 
   pragma "no instantiation limit"
-  pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t == memory_order {
     pragma "no doc"

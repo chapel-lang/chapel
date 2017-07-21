@@ -128,18 +128,21 @@ module CPtr {
 
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t == c_void_ptr {
       return __primitive("cast", t, nil);
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t:c_ptr {
       return __primitive("cast", t, nil);
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t == c_fn_ptr {
       return __primitive("cast", t, nil);

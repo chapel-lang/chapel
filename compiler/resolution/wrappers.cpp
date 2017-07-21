@@ -1458,6 +1458,10 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   }
 
+  if (fn->hasFlag(FLAG_LAST_RESORT)) {
+    wrapper->addFlag(FLAG_LAST_RESORT);
+  }
+
   if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
     wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   }

@@ -98,13 +98,13 @@ module ChapelTuple {
     // body inserted during generic instantiation
   }
 
-  pragma "compiler generated"
+  pragma "last resort"
   proc *(type t, param p: int) {
     compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
   }
 
-  // compiler generated since if this resolves some other way, OK
-  pragma "compiler generated"
+  // last resort since if this resolves some other way, OK
+  pragma "last resort"
   proc *(p: int, type t) type {
     compilerError("tuple size must be static");
   }
@@ -147,6 +147,7 @@ module ChapelTuple {
   // tuple assignment
   //
   pragma "compiler generated"
+  pragma "last resort"
   inline proc =(ref x: _tuple, y: _tuple) where x.size == y.size {
     for param i in 1..x.size do
       x(i) = y(i);
