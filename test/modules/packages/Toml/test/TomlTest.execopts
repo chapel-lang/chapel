@@ -8,3 +8,4 @@
 --file arrays.good # arrays
 --file grandchild.good # grandchild
 --file childInitParent.good # childInitParent
+--file arrayCorner.good # arrayCorner

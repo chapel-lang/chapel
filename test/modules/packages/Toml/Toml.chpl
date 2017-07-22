@@ -63,6 +63,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
      const doubleQuotes = '".*?"',
        singleQuotes = "'.*?'",
+       bracket = '\\[|\\]',
        digit = "\\d+",
        keys = "^\\w+";
      const Str = compile(doubleQuotes + '|' + singleQuotes),
@@ -71,6 +72,7 @@ Parser module with the Toml class for the Chapel TOML library.
        realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
        ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
        inBrackets = compile("(\\[.*?\\])"),
+       corner = compile("(\\[.+\\])"),
        brackets = compile('\\[|\\]'),
        whitespace = compile("\\s"),
        comment = compile("(\\#)"),
@@ -284,6 +286,13 @@ Parser module with the Toml class for the Chapel TOML library.
        // Comments within arrays
        else if val == '#' {
          skipLine(source);
+         return parseValue();
+       }
+       else if corner.match(val) {
+         var token = getToken(source);
+         var value =  token.strip(bracket);
+         var toAdd = ['[', value, ']'];
+         addToken(source, toAdd);
          return parseValue();
        }
        // Error
@@ -577,6 +586,11 @@ Parser module with the Toml class for the Chapel TOML library.
      source.currentLine.skip();
    }
 
+   proc addToken(source, tokensToAdd: [?dom] string) {
+     var tokens = new Tokens(tokensToAdd);
+     source.currentLine = tokens;
+   }
+
    proc skipLine(source) {
      source.skipROL();
    }
@@ -677,7 +691,6 @@ Parser module with the Toml class for the Chapel TOML library.
          currentLine.skip();
        }
      }
-
 
      proc debug() {
        var lineCounter: int = 1;
