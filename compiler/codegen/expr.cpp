@@ -385,29 +385,10 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 // Set USE_TBAA to 1 to emit TBAA metadata with loads and stores.
 #define USE_TBAA 1
 
-
-static
-bool isPointerToPointerType(llvm::Type* type)
-{
-  llvm::PointerType *ptrType = llvm::dyn_cast<llvm::PointerType>(type);
-
-  if(!ptrType)
-    return false;
-
-  llvm::PointerType *ptrToPtrType = llvm::dyn_cast<llvm::PointerType>(ptrType->getElementType());
-  if(!ptrToPtrType)
-    return false;
-  return true;
-}
-
 static
 void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
 {
   GenInfo *info = gGenInfo;
-
-  if(isPointerToPointerType(addr->getType()))
-    return;
-
 
   llvm::Type *int8PtrTy =
     llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
@@ -524,7 +505,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
+  return codegenLoadLLVM(ptr.val, valType);
 }
 
 #endif
