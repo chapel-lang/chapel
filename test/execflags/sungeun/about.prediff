@@ -41,6 +41,9 @@ with open(goodfile, 'w') as gfh:
     p = subprocess.Popen([printchplenv, '--simple'],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     chplenv = p.communicate()[0]
+    chplenv += "CHPL_RUNTIME_INCL="+chpl_home+"/runtime/include\n"
+    chplenv += "CHPL_RUNTIME_LIB="+chpl_home+"/lib\n"
+    chplenv += "CHPL_THIRD_PARTY="+chpl_home+"/third-party\n"
     for env in sorted(chplenv.split()):
         tenv = env.split('=')
         gfh.write('  %s: %s\n'%(tenv[0], tenv[1]))
