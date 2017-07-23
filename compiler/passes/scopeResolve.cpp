@@ -898,6 +898,14 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym);
+
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -926,6 +934,12 @@ static void resolveModuleCall(CallExpr* call) {
                   parent->insertAtHead(gModuleToken);
                 }
 
+              } else if (resolveModuleIsNewExpr(call, sym) == true) {
+                call->replace(new SymExpr(sym));
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
+
               } else {
                 call->replace(new SymExpr(sym));
               }
@@ -943,9 +957,7 @@ static void resolveModuleCall(CallExpr* call) {
           }
 
 #ifdef HAVE_LLVM
-        } else if (tryCResolve(call->getModule(), mbrName) == true) {
-          // Try to resolve again now that the symbol should
-          // be in the table
+        } else if (tryCResolve(currModule, mbrName) == true) {
           resolveModuleCall(call);
 #endif
 
@@ -958,6 +970,22 @@ static void resolveModuleCall(CallExpr* call) {
       }
     }
   }
+}
+
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym) {
+  bool retval = false;
+
+  if (TypeSymbol* ts = toTypeSymbol(sym)) {
+    if (isAggregateType(ts->type) == true) {
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (CallExpr* gpCall = toCallExpr(parentCall->parentExpr)) {
+          retval = gpCall->isPrimitive(PRIM_NEW);
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 #ifdef HAVE_LLVM
@@ -1043,7 +1071,6 @@ static bool tryCResolve(ModuleSymbol*                     module,
 }
 
 #endif
-
 
 /************************************* | **************************************
 *                                                                             *
