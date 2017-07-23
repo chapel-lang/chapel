@@ -904,6 +904,8 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
 *                                                                             *
 ************************************** | *************************************/
 
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym);
+
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -931,6 +933,12 @@ static void resolveModuleCall(CallExpr* call) {
                   parent->insertAtHead(mod);
                   parent->insertAtHead(gModuleToken);
                 }
+
+              } else if (resolveModuleIsNewExpr(call, sym) == true) {
+                call->replace(new SymExpr(sym));
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
 
               } else {
                 call->replace(new SymExpr(sym));
@@ -962,6 +970,22 @@ static void resolveModuleCall(CallExpr* call) {
       }
     }
   }
+}
+
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym) {
+  bool retval = false;
+
+  if (TypeSymbol* ts = toTypeSymbol(sym)) {
+    if (isAggregateType(ts->type) == true) {
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
+          retval = grandParentCall->isPrimitive(PRIM_NEW);
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 #ifdef HAVE_LLVM
