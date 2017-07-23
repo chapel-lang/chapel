@@ -392,8 +392,15 @@ void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
 
   llvm::Type *int8PtrTy =
     llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
+
+  #if HAVE_LLVM_VER >= 40
+  llvm::Type *objectPtr = { int8PtrTy };
+  llvm::Function *invariantStart =
+    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start, objectPtr);
+  #else
   llvm::Function *invariantStart =
     llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start);
+  #endif
 
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
@@ -468,6 +475,8 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
+  INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
+  ptr.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
