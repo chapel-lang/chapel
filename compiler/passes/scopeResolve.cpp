@@ -645,7 +645,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
     updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
-    if (externC == true && tryCResolve(usymExpr->getModule(), name) == true) {
+    if (tryCResolve(usymExpr->getModule(), name) == true) {
       // Try resolution again since the symbol should exist now
       resolveUnresolvedSymExpr(usymExpr);
     }
@@ -946,8 +946,7 @@ static void resolveModuleCall(CallExpr* call) {
           }
 
 #ifdef HAVE_LLVM
-        } else if (externC                                 == true &&
-                   tryCResolve(call->getModule(), mbrName) == true) {
+        } else if (tryCResolve(call->getModule(), mbrName) == true) {
           // Try to resolve again now that the symbol should
           // be in the table
           resolveModuleCall(call);
@@ -970,9 +969,15 @@ static bool tryCResolve(ModuleSymbol*                     module,
                         llvm::SmallSet<ModuleSymbol*, 24> visited);
 
 static bool tryCResolve(ModuleSymbol* module, const char* name) {
-  llvm::SmallSet<ModuleSymbol*, 24> visited;
+  bool retval = false;
 
-  return tryCResolve(module, name, visited);
+  if (externC == true) {
+    llvm::SmallSet<ModuleSymbol*, 24> visited;
+
+    retval = tryCResolve(module, name, visited);
+  }
+
+  return retval;
 }
 
 static bool tryCResolve(ModuleSymbol*                     module,
