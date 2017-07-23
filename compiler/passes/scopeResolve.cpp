@@ -898,6 +898,12 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -912,21 +918,22 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
           if (sym->isVisible(call) == true) {
-            if (FnSymbol* fn = toFnSymbol(sym)) {
-              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
-                call->replace(new CallExpr(fn));
+            if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+                  call->replace(new CallExpr(fn));
+
+                } else {
+                  UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
+
+                  call->replace(se);
+
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                }
 
               } else {
-                UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
-
-                call->replace(se);
-
-                CallExpr*          parent = toCallExpr(se->parentExpr);
-
-                INT_ASSERT(parent);
-
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                call->replace(new SymExpr(sym));
               }
 
             } else {
@@ -934,8 +941,6 @@ static void resolveModuleCall(CallExpr* call) {
             }
 
           } else {
-            // The symbol is not visible at this scope because it is
-            // private to mod!  Error out
             USR_FATAL(call,
                       "Cannot access '%s', '%s' is private to '%s'",
                       mbrName,
@@ -945,8 +950,6 @@ static void resolveModuleCall(CallExpr* call) {
 
 #ifdef HAVE_LLVM
         } else if (tryCResolve(currModule, mbrName) == true) {
-          // Try to resolve again now that the symbol should
-          // be in the table
           resolveModuleCall(call);
 #endif
 
@@ -1044,7 +1047,6 @@ static bool tryCResolve(ModuleSymbol*                     module,
 }
 
 #endif
-
 
 /************************************* | **************************************
 *                                                                             *
