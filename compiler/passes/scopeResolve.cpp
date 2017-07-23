@@ -904,45 +904,40 @@ static void resolveModuleCall(CallExpr* call) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
 
-        ModuleSymbol* enclosingModule = call->getModule();
-        Symbol*       sym             = NULL;
-        const char*   mbrName         = get_string(call->get(2));
+        ModuleSymbol* currModule = call->getModule();
+        ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
+        const char*   mbrName    = get_string(call->get(2));
 
-        enclosingModule->moduleUseAdd(mod);
+        if (Symbol* sym = scope->lookupNameLocally(mbrName)) {
+          if (sym->isVisible(call) == true) {
+            currModule->moduleUseAdd(mod);
 
-        if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookupNameLocally(mbrName);
-        }
+            if (FnSymbol* fn = toFnSymbol(sym)) {
+              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
+                call->replace(new CallExpr(fn));
 
-        if (sym != NULL) {
-          if (sym->isVisible(call) == false) {
-            // The symbol is not visible at this scope because it is
-            // private to mod!  Error out
+              } else {
+                UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
+                CallExpr*          parent = toCallExpr(call->parentExpr);
+
+                call->replace(se);
+
+                INT_ASSERT(parent);
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
+              }
+
+            } else {
+              call->replace(new SymExpr(sym));
+            }
+
+          } else {
             USR_FATAL(call,
                       "Cannot access '%s', '%s' is private to '%s'",
                       mbrName,
                       mbrName,
                       mod->name);
-
-          } else if (FnSymbol* fn = toFnSymbol(sym)) {
-            if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
-              call->replace(new CallExpr(fn));
-
-            } else {
-              UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
-
-              call->replace(se);
-
-              CallExpr*          parent = toCallExpr(se->parentExpr);
-
-              INT_ASSERT(parent);
-
-              parent->insertAtHead(mod);
-              parent->insertAtHead(gModuleToken);
-            }
-
-          } else {
-            call->replace(new SymExpr(sym));
           }
 
 #ifdef HAVE_LLVM
