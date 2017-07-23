@@ -912,20 +912,22 @@ static void resolveModuleCall(CallExpr* call) {
           if (sym->isVisible(call) == true) {
             currModule->moduleUseAdd(mod);
 
-            if (FnSymbol* fn = toFnSymbol(sym)) {
-              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
-                call->replace(new CallExpr(fn));
+            if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+                  call->replace(new CallExpr(fn));
+
+                } else {
+                  UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
+
+                  call->replace(se);
+
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                }
 
               } else {
-                UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
-                CallExpr*          parent = toCallExpr(call->parentExpr);
-
-                call->replace(se);
-
-                INT_ASSERT(parent);
-
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                call->replace(new SymExpr(sym));
               }
 
             } else {
