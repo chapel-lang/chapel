@@ -904,18 +904,36 @@ static void resolveModuleCall(CallExpr* call) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
 
-        ModuleSymbol* enclosingModule = call->getModule();
-        Symbol*       sym             = NULL;
-        const char*   mbrName         = get_string(call->get(2));
+        ModuleSymbol* currModule = call->getModule();
+        ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
+        const char*   mbrName    = get_string(call->get(2));
 
-        enclosingModule->moduleUseAdd(mod);
+        currModule->moduleUseAdd(mod);
 
-        if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookupNameLocally(mbrName);
-        }
+        if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
+          if (sym->isVisible(call) == true) {
+            if (FnSymbol* fn = toFnSymbol(sym)) {
+              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
+                call->replace(new CallExpr(fn));
 
-        if (sym != NULL) {
-          if (sym->isVisible(call) == false) {
+              } else {
+                UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
+
+                call->replace(se);
+
+                CallExpr*          parent = toCallExpr(se->parentExpr);
+
+                INT_ASSERT(parent);
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
+              }
+
+            } else {
+              call->replace(new SymExpr(sym));
+            }
+
+          } else {
             // The symbol is not visible at this scope because it is
             // private to mod!  Error out
             USR_FATAL(call,
@@ -923,30 +941,10 @@ static void resolveModuleCall(CallExpr* call) {
                       mbrName,
                       mbrName,
                       mod->name);
-
-          } else if (FnSymbol* fn = toFnSymbol(sym)) {
-            if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
-              call->replace(new CallExpr(fn));
-
-            } else {
-              UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
-
-              call->replace(se);
-
-              CallExpr*          parent = toCallExpr(se->parentExpr);
-
-              INT_ASSERT(parent);
-
-              parent->insertAtHead(mod);
-              parent->insertAtHead(gModuleToken);
-            }
-
-          } else {
-            call->replace(new SymExpr(sym));
           }
 
 #ifdef HAVE_LLVM
-        } else if (tryCResolve(call->getModule(), mbrName) == true) {
+        } else if (tryCResolve(currModule, mbrName) == true) {
           // Try to resolve again now that the symbol should
           // be in the table
           resolveModuleCall(call);
