@@ -1464,6 +1464,9 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
 
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
 
+  if (fn->throwsError())
+    wrapper->throwsErrorInit();
+
   return wrapper;
 }
 
