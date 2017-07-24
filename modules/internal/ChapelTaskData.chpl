@@ -23,9 +23,6 @@ module ChapelTaskData {
 
   use ChapelStandard;
 
-  // use ChapelError
-  // use CPtr
-
   private extern proc sizeof(type t):size_t;
   private extern proc memcpy(dst:c_ptr, src:c_ptr, n:size_t);
 
@@ -36,61 +33,49 @@ module ChapelTaskData {
   private const  chpl_offset_serial = sizeof_endcount_ptr();
   private const     chpl_offset_end = chpl_offset_serial+1;
 
-  // workaround to make sure some things are wide
-  private var neverExecuted = false;
-
   // What is the size of a wide _EndCount pointer?
   private
   proc sizeof_endcount_ptr() {
-    if _local {
-      return sizeof(c_void_ptr);
-    } else {
-      extern type wide_ptr_t;
-      return sizeof(wide_ptr_t);
-    }
-  }
-
-  // Copy a single wide _EndCount pointer from src to dst
-  private
-  proc memcpy_endcount_ptr(dst, src)
-  {
-    if _local {
-      memcpy(dst, src, sizeof(c_void_ptr));
-    } else {
-      extern type wide_ptr_t;
-      memcpy(dst, src, sizeof(wide_ptr_t));
-    }
+    return sizeof(chpl_localeID_t) + sizeof(c_void_ptr);
   }
 
   // These functions get/set parts of the Chapel managed
   // task local storage starting from a pointer to the tls region.
   proc chpl_task_data_setDynamicEndCount(tls:c_ptr(chpl_task_ChapelData_t), end: _remoteEndCountType) {
     var prv = tls:c_ptr(c_uchar);
-    var i = chpl_offset_endCount;
+    var i:size_t;
 
-    var tmpEnd = end;
-    // workaround to make tmpEnd always wide
-    if neverExecuted {
-      on Locales[numLocales-1] do
-        tmpEnd = _endCountAlloc(false);
-    }
+    // Get the wide pointer components
+    var loc = __primitive("_wide_get_locale", end);
+    var adr = __primitive("_wide_get_addr", end);
 
-    // Using memcpy to avoid pointer type punning
-    memcpy_endcount_ptr(c_ptrTo(prv[i]), c_ptrTo(tmpEnd));
+    // Copy the localeID
+    i = chpl_offset_endCount;
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(loc), sizeof(chpl_localeID_t));
+
+    // Copy the address
+    i += sizeof(chpl_localeID_t);
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), sizeof(c_void_ptr));
   }
+
   proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_ChapelData_t)) {
     var prv = tls:c_ptr(c_uchar);
-    var i = chpl_offset_endCount;
+    var i:size_t;
 
-    var ret:_remoteEndCountType = nil;
-    // workaround to make ret always wide
-    if neverExecuted {
-      on Locales[numLocales-1] do
-        ret = _endCountAlloc(false);
-    }
+    var loc:chpl_localeID_t;
+    var adr:c_void_ptr;
 
-    // Using memcpy to avoid pointer type punning
-    memcpy_endcount_ptr(c_ptrTo(ret), c_ptrTo(prv[i]));
+    // Copy the localeID
+    i = chpl_offset_endCount;
+    memcpy(c_ptrTo(loc), c_ptrTo(prv[i]), sizeof(chpl_localeID_t));
+
+    // Copy the address
+    i += sizeof(chpl_localeID_t);
+    memcpy(c_ptrTo(adr), c_ptrTo(prv[i]), sizeof(c_void_ptr));
+
+    // Construct a pointer to return.
+    var ret:_remoteEndCountType;
+    ret = __primitive("_wide_make", _remoteEndCountType, loc, adr);
 
     return ret;
   }
