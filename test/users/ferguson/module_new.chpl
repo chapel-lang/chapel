@@ -7,5 +7,9 @@ module M {
 module Y {
   proc main() {
     var y = new M.X(1);
+
+    writeln('y = ', y);
+
+    delete y;
   }
 }
