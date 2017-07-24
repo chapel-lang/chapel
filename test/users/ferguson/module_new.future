@@ -1,6 +1,0 @@
-bug: error with new for type in other module
-
-Believe this a a legal program but get an error like:
-
-zz.chpl:8: In function 'main':
-zz.chpl:9: error: unresolved call '_construct_X(1)' [functionResolution.cpp:1804]
