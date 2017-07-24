@@ -31,10 +31,8 @@ module ChapelTaskDataHelp {
   // of task-local storage in the argument bundle when creating
   // a new task.
   proc chpl_task_data_setup(args: chpl_task_bundle_p, tls:c_ptr(chpl_task_ChapelData_t)) {
-    extern proc sizeof(type t):size_t;
-    extern proc memcpy(dst:c_ptr(chpl_task_ChapelData_t), src:c_ptr(chpl_task_ChapelData_t), size_t);
     var bundleData = chpl_task_getBundleChapelData(args);
-    c_memcpy(bundleData, tls, sizeof(chpl_task_ChapelData_t));
+    c_memcpy(bundleData, tls, c_sizeof(chpl_task_ChapelData_t));
   }
 
 }
