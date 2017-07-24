@@ -61,6 +61,19 @@ returnInfoStringCopy(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoWideMake(CallExpr* call) {
+  Type* t1 = call->get(1)->typeInfo();
+  if (t1->symbol->hasFlag(FLAG_REF))
+    INT_FATAL("ref not supported here yet");
+
+  if (wideClassMap.get(t1))
+    t1 = wideClassMap.get(t1);
+
+  return QualifiedType(t1, QUAL_VAL);
+}
+
+
+static QualifiedType
 returnInfoLocaleID(CallExpr* call) {
   return QualifiedType(dtLocaleID, QUAL_VAL);
 }
@@ -604,6 +617,7 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
+  prim_def(PRIM_WIDE_MAKE, "_wide_make", returnInfoWideMake, false, true);
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
   // MPF - 10/9/2015 - neither _wide_get_node nor _wide_get_addr
   // is used in the module or test code. insertWideReferences uses

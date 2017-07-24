@@ -176,6 +176,9 @@ classifyPrimitive(CallExpr *call) {
       return FAST_NOT_LOCAL;
     }
 
+  case PRIM_WIDE_MAKE:
+    return FAST_NOT_LOCAL;
+
 // I think these can always return true. <hilde>
 // But that works only if the remote get is removed from code generation.
   case PRIM_WIDE_GET_LOCALE:
