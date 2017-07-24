@@ -5033,15 +5033,6 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   return retval;
 }
 
-
-
-
-
-
-
-
-
-
 static void resolveNewHandleInitializer(CallExpr*      call,
                                         AggregateType* at,
                                         SymExpr*       typeExpr) {
