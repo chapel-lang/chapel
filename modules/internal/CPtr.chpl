@@ -388,7 +388,7 @@ module CPtr {
    */
   inline proc c_memcmp(const s1, const s2, n: integral)
   where isAnyCPtr(s1.type) && isAnyCPtr(s2.type) {
-    extern proc memcmp(const s1: c_void_ptr, const s2: c_ptr, n: size_t) : c_int;
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
 
