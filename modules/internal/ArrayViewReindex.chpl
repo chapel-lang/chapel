@@ -82,13 +82,16 @@ module ArrayViewReindex {
 
     var dist;
 
+    var ownsDownDomInst = false;
+
     //
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
     //
     proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
-      var a = dist.downdist.newRectangularDom(rank=rank, idxType=idxType,
-                                              stridable=stridable);
+      var ranges : rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var a = dist.downdist.dsiNewRectangularDom(rank=rank, idxType=idxType,
+                                              stridable=stridable, ranges);
       return a.type;
     }
 
@@ -165,16 +168,28 @@ module ArrayViewReindex {
     proc dsiSetIndices(inds) {
       pragma "no auto destroy"
       var updomRec = {(...inds)};
+
+      // Free the old updom
+      if updom != nil then
+        _delete_dom(updom, false);
       updom = updomRec._value;
-      var downdomclass = dist.downdist.newRectangularDom(rank=rank,
+
+      var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
+      var downdomclass = dist.downdist.dsiNewRectangularDom(rank=rank,
                                                          idxType=idxType,
-                                                         stridable=dist.downdomInst.stridable);
+                                                         stridable=dist.downdomInst.stridable, ranges);
       pragma "no auto destroy"
       var downdomLoc = _newDomain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
       downdomLoc._value._free_when_no_arrs = true;
+
+      if downdomInst != nil && ownsDownDomInst {
+        _delete_dom(downdomInst, _isPrivatized(downdomInst));
+      }
+
       downdomPid = downdomLoc._pid;
       downdomInst = downdomLoc._instance;
+      ownsDownDomInst = true;
     }
 
     proc dsiMember(i) {
