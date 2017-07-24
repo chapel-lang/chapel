@@ -971,44 +971,49 @@ Expr* CallExpr::getNextExpr(Expr* expr) {
 }
 
 void CallExpr::verify() {
+  int fieldIndex       = 1;
+
+  // If the methodToken is present, it is usually in slot 1
+  int methodTokenIndex = 1;
+
   Expr::verify(E_CallExpr);
 
-  if (! parentExpr)
+  if (parentExpr == NULL) {
     INT_FATAL(this, "Every CallExpr is expected to have a parentExpr");
+  }
 
-  if (argList.parent != this)
+  if (argList.parent != this) {
     INT_FATAL(this, "Bad AList::parent in CallExpr");
+  }
 
   verifyParent(baseExpr);
-
-  if (normalized && isPrimitive(PRIM_RETURN)) {
-    FnSymbol* fn  = toFnSymbol(parentSymbol);
-    SymExpr*  sym = toSymExpr(get(1));
-
-    if (!fn)
-      INT_FATAL(this, "Return is not in a function.");
-
-    if (fn->body->body.last() != this)
-      INT_FATAL(this, "Return is in middle of function.");
-
-    if (!sym)
-      INT_FATAL(this, "Return does not return a symbol.");
-  }
 
   for_actuals(actual, this) {
     verifyParent(actual);
 
-    if (isSymExpr(actual)                           &&
-        toSymExpr(actual)->symbol() == gMethodToken &&
-        actual != this->get(1))
-      INT_FATAL(this,
-                "If present, the method token must be the first argument.");
+    if (SymExpr* se = toSymExpr(actual)) {
+      Symbol* sym = se->symbol();
+
+      if (sym == gModuleToken) {
+        // If the moduleToken exists, the methodToken is moved to slot 3
+        if (fieldIndex == 1) {
+          methodTokenIndex = 3;
+
+        } else {
+          INT_FATAL(this, "The module token must be the 1st argument.");
+        }
+
+      } else if (sym == gMethodToken) {
+        if (fieldIndex != methodTokenIndex) {
+          INT_FATAL(this, "The method token is in the wrong slot.");
+        }
+      }
+    }
+
+    fieldIndex = fieldIndex + 1;
   }
 
-  if (primitive) {
-    if (!(PRIM_UNKNOWN <= primitive->tag && primitive->tag < NUM_KNOWN_PRIMS))
-      INT_FATAL(this, "invalid primitive->tag");
-
+  if (primitive != NULL) {
     switch (primitive->tag) {
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
@@ -1022,19 +1027,20 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COBEGIN_ON:
     case PRIM_BLOCK_COFORALL_ON:
     case PRIM_BLOCK_LOCAL:
-      if (toBlockStmt(parentExpr)) {
-
-      } else {
+      if (isBlockStmt(parentExpr) == false) {
         INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
       }
       break;
+
     case PRIM_BLOCK_UNLOCAL:
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
       break;
+
     case PRIM_TYPE_INIT:
       // A "type init" call is always expected to have a parent.
       INT_ASSERT(toCallExpr(this->parentExpr));
       break;
+
     default:
       break; // do nothing
     }
