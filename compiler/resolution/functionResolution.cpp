@@ -5000,7 +5000,13 @@ static SymExpr* resolveNewTypeExpr(CallExpr* call) {
 
   // The common case e.g new MyClass(1, 2, 3);
   if (SymExpr* se = toSymExpr(arg1)) {
-    retval = se;
+    if (se->symbol() != gModuleToken) {
+      retval = se;
+
+    } else {
+      retval = toSymExpr(call->get(3));
+      INT_ASSERT(retval != NULL);
+    }
 
   // 'new' (call (partial) R2 _mt this), call_tmp0, call_tmp1, ...
   // due to nested classes (i.e. R2 is a nested class type)
@@ -5027,6 +5033,15 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   return retval;
 }
 
+
+
+
+
+
+
+
+
+
 static void resolveNewHandleInitializer(CallExpr*      call,
                                         AggregateType* at,
                                         SymExpr*       typeExpr) {
@@ -5037,43 +5052,49 @@ static void resolveNewHandleInitializer(CallExpr*      call,
     DefExpr*   def    = new DefExpr(newTmp);
 
     if (isClass(at) == true) {
-      typeExpr->replace(new UnresolvedSymExpr("_new"));
+      // Convert the PRIM_NEW to a normal call
+      call->primitive = NULL;
+      call->baseExpr  = new UnresolvedSymExpr("_new");
+      parent_insert_help(call, call->baseExpr);
+
+      if (isBlockStmt(call->parentExpr) == true) {
+        call->insertBefore(def);
+
+      } else {
+        call->parentExpr->insertBefore(def);
+      }
+
+      resolveExpr(call);
 
     } else {
-      typeExpr->replace(new UnresolvedSymExpr("init"));
-    }
+      // Convert the PRIM_NEW to a normal call
+      call->primitive = NULL;
+      call->baseExpr  = new UnresolvedSymExpr("init");
 
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = call->get(1)->remove();
+      parent_insert_help(call, call->baseExpr);
 
-    parent_insert_help(call, call->baseExpr);
+      if (isBlockStmt(call->parentExpr) == true) {
+        call->insertBefore(def);
 
-    if (isBlockStmt(call->parentExpr) == true) {
-      call->insertBefore(def);
+      } else {
+        Expr* parent = call->parentExpr;
 
-    } else {
-      Expr* parent = call->parentExpr;
-
-      parent->insertBefore(def);
-
-      if (isClass(at) == false) {
+        // NB: This removes the "init" call from the tree
         call->replace(new SymExpr(newTmp));
+
+        // Insert <def> and then re-insert the "init" call
+        parent->insertBefore(def);
         parent->insertBefore(call);
       }
-    }
 
-    if (isClass(at) == true) {
-      // Invoking a type  method
-      call->insertAtHead(new SymExpr(at->symbol));
+      typeExpr->remove();
 
-    } else {
       // Invoking an instance method
       call->insertAtHead(new SymExpr(newTmp));
       call->insertAtHead(new SymExpr(gMethodToken));
-    }
 
-    resolveExpr(call);
+      resolveExpr(call);
+    }
 
   } else {
     typeExpr->replace(new UnresolvedSymExpr("init"));
@@ -5089,22 +5110,31 @@ static void resolveNewHandleConstructor(CallExpr*      call,
 
   FnSymbol* atInit = at->defaultInitializer;
 
-  if (atInit == NULL && at->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-    USR_FATAL(call,
-              "could not generate default initializer for type "
-              "'%s', please define one",
-              at->symbol->name);
+  if (atInit != NULL) {
+    Expr* baseExpr = NULL;
 
-  } else {
     typeExpr->replace(new UnresolvedSymExpr(atInit->name));
 
     // Convert the PRIM_NEW to a normal call
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      baseExpr = (se->symbol() == gModuleToken) ? call->get(3) : call->get(1);
+
+    } else {
+      baseExpr = call->get(1);
+    }
+
     call->primitive = NULL;
-    call->baseExpr  = call->get(1)->remove();
+    call->baseExpr  = baseExpr->remove();
 
     parent_insert_help(call, call->baseExpr);
 
     resolveExpr(call);
+
+  } else {
+    USR_FATAL(call,
+              "could not generate default initializer for type "
+              "'%s', please define one",
+              at->symbol->name);
   }
 }
 
