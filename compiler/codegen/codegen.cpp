@@ -1888,6 +1888,12 @@ void codegen(void) {
       USR_WARN("C code generation for packed pointers not supported");
   }
 
+  // Set the executable name if it isn't set already.
+  if (executableFilename[0] == '\0') {
+    ModuleSymbol* mainMod = ModuleSymbol::mainModule();
+    strncpy(executableFilename, mainMod->name, sizeof(executableFilename));
+  }
+
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
