@@ -973,8 +973,7 @@ module ChapelBase {
     _upEndCount(e, countRunningTasks);
   }
 
-  // MPF - should this have
-  //pragma "dont disable remote value forwarding"
+  pragma "dont disable remote value forwarding"
   pragma "down end count fn"
   proc _downDynamicEndCount() {
     var e = __primitive("get dynamic end count");
