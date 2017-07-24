@@ -1,2 +1,3 @@
 ./modSameNameAsFileBad.chpl:3: warning: module 'modSameNameAsFileBad' has the same name as the implicit file module
+./modSameNameAsFileBad.chpl:3: note: move all statements within the module to avoid this
 test-modSameNameBad.chpl:3: error: 'inner' undeclared (first use this function)

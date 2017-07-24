@@ -323,12 +323,13 @@ static void nestedName(ModuleSymbol* mod) {
   }
 
   ModuleSymbol* parent = mod->defPoint->getModule();
-  if (parent != mod &&
-      strcmp(mod->name, parent->name) == 0 &&
+  if (mod->name == parent->name &&
       parent->hasFlag(FLAG_IMPLICIT_MODULE)) {
     USR_WARN(mod->defPoint,
              "module '%s' has the same name as the implicit file module",
              mod->name);
+    USR_PRINT(mod->defPoint,
+              "move all statements within the module to avoid this");
   }
 }
 
