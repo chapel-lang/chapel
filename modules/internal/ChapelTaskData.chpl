@@ -27,8 +27,8 @@ module ChapelTaskData {
   // up to 16 bytes of wide pointer for _remoteEndCountType
   // 1 byte for serial_state
   private const chpl_offset_endCount = 0:size_t;
-  private const  chpl_offset_serial = sizeof_endcount_ptr();
-  private const     chpl_offset_end = chpl_offset_serial+1;
+  private const chpl_offset_serial = sizeof_endcount_ptr();
+  private const chpl_offset_end = chpl_offset_serial+1;
 
   // What is the size of a wide _EndCount pointer?
   private
