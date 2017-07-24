@@ -49,12 +49,13 @@ Parser module with the Toml class for the Chapel TOML library.
    use Regexp;
    use DateTime;
 
-   // Prints a line by line output of parsing process
+   /* Prints a line by line output of parsing process */
    config const debugTomlParser: bool = false;
 
-
+   pragma "no doc"
    class Parser {
 
+     
      var source;
      var D: domain(string);
      var table: [D] Toml;
@@ -77,7 +78,6 @@ Parser module with the Toml class for the Chapel TOML library.
        whitespace = compile("\\s"),
        comment = compile("(\\#)"),
        comma = compile("(\\,)");
-
 
 
      proc parseLoop() : Toml {
@@ -313,7 +313,7 @@ Parser module with the Toml class for the Chapel TOML library.
    }
 
 
-
+ pragma "no doc"
  // Enum for Toml class field: tag 
   enum fieldtag {
     fieldBool,
@@ -331,16 +331,18 @@ Parser module with the Toml class for the Chapel TOML library.
  Used to recursivly hold tables and respective values
  */
    class Toml {
-     var i: int;
-     var boo: bool;
-     var re: real;
-     var s: string;
-     var dt: datetime;
-     var dom: domain(1);
-     var arr: [dom] Toml;
-     var D: domain(string);
-     var A: [D] Toml;
-     var tag: fieldtag; 
+
+     pragma "no doc"
+     var i: int,
+       boo: bool,
+       re: real,
+       s: string,
+       dt: datetime,
+       dom: domain(1),
+       arr: [dom] Toml,
+       D: domain(string),
+       A: [D] Toml,
+       tag: fieldtag;
 
      // Empty
      proc init() {
@@ -410,6 +412,7 @@ Parser module with the Toml class for the Chapel TOML library.
        }
      }
 
+     pragma "no doc"
      /* Returns true if table path exists in rootTable */
      proc pathExists(tblpath: string) : bool {
        var path = tblpath.split('.');
@@ -433,7 +436,7 @@ Parser module with the Toml class for the Chapel TOML library.
        }
      }
 
-     /* Write a Table */
+     /* Write a Table to channel f. f defaults to stdout */
      proc writeThis(f) {
        var flatDom: domain(string);
        var flat: [flatDom] Toml;
@@ -442,7 +445,7 @@ Parser module with the Toml class for the Chapel TOML library.
        printHelp(flat, f);       // Prints tables in containg Toml
      }
 
-     
+     pragma "no doc"
      /* Flatten tables into flat associative array for writing */
      proc flatten(flat: [?d] Toml, rootKey = '') : flat.type { 
        for (k, v) in zip(this.D, this.A) {
@@ -456,7 +459,7 @@ Parser module with the Toml class for the Chapel TOML library.
        return flat;
      }
 
-
+     pragma "no doc"
      proc printHelp(flat: [?d] Toml, f:channel) {
        for k in d.sorted() {
          f.writeln('[', k, ']');
@@ -464,7 +467,7 @@ Parser module with the Toml class for the Chapel TOML library.
        }
      }
 
-
+     pragma "no doc"
      /* Send values from table to toString for writing  */
      proc printValues(f: channel, v: Toml) {
        for (key, value) in zip(v.D, v.A) {
@@ -511,7 +514,7 @@ Parser module with the Toml class for the Chapel TOML library.
        f.writeln();
      }
 
-
+     pragma "no doc"
      /* Return String representation of a value in a node */
      proc toString(val: Toml) : string { 
        select val.tag {
@@ -550,7 +553,7 @@ Parser module with the Toml class for the Chapel TOML library.
         return toString(this);
      }
 
-
+     pragma "no doc"
      proc deinit() {
        for a in A {
          delete a;
@@ -560,7 +563,7 @@ Parser module with the Toml class for the Chapel TOML library.
  }
 
 
-
+pragma "no doc"
  /*
  Reader module for use in the Parser Class.
  */
@@ -710,7 +713,6 @@ Parser module with the Toml class for the Chapel TOML library.
        }
      }
    }
-
 
 
    /* Array wrapper */
