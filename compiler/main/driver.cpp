@@ -55,7 +55,7 @@ std::map<std::string, const char*> envMap;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
 
-// These are more specific that CHPL_HOME, to work in
+// These are more specific than CHPL_HOME, to work in
 // settings where Chapel is installed.
 char CHPL_RUNTIME_LIB[FILENAME_MAX+1] = "";
 char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
@@ -246,6 +246,32 @@ static bool isMaybeChplHome(const char* path)
   return ret;
 }
 
+static void setChplHomeDerivedVars() {
+  int rc;
+  rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
+                CHPL_HOME, "lib");
+  if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+  rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s",
+                CHPL_HOME, "runtime/include");
+  if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+  rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s",
+                CHPL_HOME, "third-party");
+  if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+}
+
+static void saveChplHomeDerivedInEnv() {
+  int rc;
+  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB);
+  rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
+  if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
+  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL);
+  rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
+  if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
+  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY);
+  rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
+  if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
+}
+
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
@@ -379,28 +405,13 @@ static void setupChplHome(const char* argv0) {
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
   } else {
-    int rc;
-    rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
-                  CHPL_HOME, "lib");
-    if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-    rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s",
-                  CHPL_HOME, "runtime/include");
-    if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-    rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s",
-                  CHPL_HOME, "third-party");
-    if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-
+    setChplHomeDerivedVars();
   }
 
   // and setenv the derived enviro vars for use by called scripts/Makefiles
   {
     int rc;
-    rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
-    if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
-    rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
-    if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
-    rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
-    if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
+    saveChplHomeDerivedInEnv();
 
     if (installed) {
       char CHPL_CONFIG[FILENAME_MAX+1] = "";
@@ -461,6 +472,9 @@ static void setHome(const ArgumentDescription* desc, const char* arg) {
   } else {
     USR_FATAL("CHPL_HOME argument too long");
   }
+
+  setChplHomeDerivedVars();
+  saveChplHomeDerivedInEnv();
 }
 
 static void setEnv(const ArgumentDescription* desc, const char* arg) {

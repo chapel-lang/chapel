@@ -70,7 +70,7 @@ static void find_printModuleInit_stuff();
 static void processSyntacticDistributions(CallExpr* call);
 static void normalize(BaseAST* base);
 static void normalizeReturns(FnSymbol* fn);
-static void call_constructor_for_class(CallExpr* call);
+static void callConstructorForClass(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insertCallTemps(CallExpr* call);
 
@@ -537,7 +537,7 @@ static void normalize(BaseAST* base) {
   }
 
   for_vector(CallExpr, call, calls2) {
-    call_constructor_for_class(call);
+    callConstructorForClass(call);
   }
 }
 
@@ -772,53 +772,82 @@ moveGlobalDeclarationsToModuleScope() {
   }
 }
 
-static void
-insertUseForExplicitModuleCalls(void) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void insertUseForExplicitModuleCalls() {
   forv_Vec(SymExpr, se, gSymExprs) {
     if (se->parentSymbol && se->symbol() == gModuleToken) {
       SET_LINENO(se);
-      CallExpr* call = toCallExpr(se->parentExpr);
+
+      CallExpr*     call  = toCallExpr(se->parentExpr);
       INT_ASSERT(call);
-      SymExpr* mse = toSymExpr(call->get(2));
+
+      SymExpr*      mse   = toSymExpr(call->get(2));
       INT_ASSERT(mse);
-      ModuleSymbol* mod = toModuleSymbol(mse->symbol());
+
+      ModuleSymbol* mod   = toModuleSymbol(mse->symbol());
       INT_ASSERT(mod);
-      Expr* stmt = se->getStmtExpr();
-      BlockStmt* block = new BlockStmt();
+
+      Expr*         stmt  = se->getStmtExpr();
+      BlockStmt*    block = new BlockStmt();
+
       stmt->insertBefore(block);
+
       block->insertAtHead(stmt->remove());
       block->useListAdd(mod);
     }
   }
 }
 
-// Two cases are handled here:
-// 1. ('new' (dmap arg)) ==> (chpl__buildDistValue arg)
-// 2. (chpl__distributed (Dist args)) ==>
-//     (chpl__distributed (chpl__buildDistValue ('new' (Dist args)))),
-//     where isDistClass(Dist).
-// In 1., the only type that has FLAG_SYNTACTIC_DISTRIBUTION on it is "dmap".
-// This is a dummy record type that must be replaced.  The call to
-// chpl__buildDistValue() performs this task, returning _newDistribution(x),
-// where x is a distribution.
-static void
-processSyntacticDistributions(CallExpr* call) {
+/************************************* | **************************************
+*                                                                             *
+* Two cases are handled here:                                                 *
+*    1. ('new' (dmap arg)) ==> (chpl__buildDistValue arg)                     *
+*    2. (chpl__distributed (Dist args)) ==>                                   *
+*       (chpl__distributed (chpl__buildDistValue ('new' (Dist args)))),       *
+*        where isDistClass(Dist).                                             *
+*                                                                             *
+*  In 1., the only type that has FLAG_SYNTACTIC_DISTRIBUTION on it is "dmap". *
+*  This is a dummy record type that must be replaced.  The call to            *
+*  chpl__buildDistValue() performs this task, returning _newDistribution(x),  *
+*  where x is a distribution.                                                 *
+*                                                                             *
+************************************** | *************************************/
+
+static void processSyntacticDistributions(CallExpr* call) {
   SET_LINENO(call);
-  if (call->isPrimitive(PRIM_NEW))
-    if (CallExpr* type = toCallExpr(call->get(1)))
-      if (SymExpr* base = toSymExpr(type->baseExpr))
-        if (base->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-          type->baseExpr->replace(new UnresolvedSymExpr("chpl__buildDistValue"));
+
+  if (call->isPrimitive(PRIM_NEW) == true) {
+    if (CallExpr* type = toCallExpr(call->get(1))) {
+      if (SymExpr* base = toSymExpr(type->baseExpr)) {
+        if (base->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
+          const char* name = "chpl__buildDistValue";
+
+          type->baseExpr->replace(new UnresolvedSymExpr(name));
+
           call->replace(type->remove());
         }
-  if (call->isNamed("chpl__distributed"))
-    if (CallExpr* distCall = toCallExpr(call->get(1)))
-      if (SymExpr* distClass = toSymExpr(distCall->baseExpr))
-        if (TypeSymbol* ts = toTypeSymbol(distClass->symbol()))
-          if (isDistClass(ts->type))
-            call->insertAtHead(
-              new CallExpr("chpl__buildDistValue",
-                new CallExpr(PRIM_NEW, distCall->remove())));
+      }
+    }
+  }
+
+  if (call->isNamed("chpl__distributed")) {
+    if (CallExpr* distCall = toCallExpr(call->get(1))) {
+      if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
+        if (TypeSymbol* ts = toTypeSymbol(distClass->symbol())) {
+          if (isDistClass(ts->type) == true) {
+            CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
+
+            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+          }
+        }
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -1038,85 +1067,94 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
-static TypeSymbol* resolveTypeAlias(SymExpr* se)
-{
-  while (se)
-  {
+static TypeSymbol* resolveTypeAlias(SymExpr* se) {
+  TypeSymbol* retval = NULL;
+
+  while (se != NULL && retval == NULL) {
     Symbol* sym = se->symbol();
 
-    if (TypeSymbol* ts = toTypeSymbol(sym))
-      return ts;
+    if (TypeSymbol* ts = toTypeSymbol(sym)) {
+      retval = ts;
 
-    // By default, we break out of the loop
-    se = NULL;
-
-    // Unless we can find a new se to check.
-    if (VarSymbol* vs = toVarSymbol(sym))
-    {
-      if (vs->isType())
-      {
-        // We expect to find its definition in the init field of its declaration.
+    } else if (VarSymbol* vs = toVarSymbol(sym)) {
+      if (vs->isType() == true) {
+        // The definition in the init field of its declaration.
         DefExpr* def = vs->defPoint;
 
-        // Only bother with simple sym expressions.
         se = toSymExpr(def->init);
+
+      } else {
+        se = NULL;
       }
+
+    } else {
+      se = NULL;
     }
   }
-  return NULL;
+
+  return retval;
 }
 
 
-/*
-   Normalize constructor/type constructor calls.
-    * a call whose base expression is a symbol referring to an aggregate
-      type is converted to a call to the default type constructor for
-      that class, unless it's in a 'new' expression
-    * calls to such aggregate types in a 'new' expression are transformed
-      to put the call arguments directly into the PRIM_NEW in order to
-      improve function resolution's ability to handle them.
-    * if the type is "dmap" (syntactic distribution), it is replaced by a
-      call to chpl_buildDistType().
+/************************************* | **************************************
+*                                                                             *
+* Normalize constructor/type constructor calls.                               *
+*   a call whose base expression is a symbol referring to an aggregate type   *
+*   is converted to a call to the default type constructor for that class,    *
+*   unless it's in a 'new' expression                                         *
+*                                                                             *
+*   calls to such aggregate types in a 'new' expression are transformed to    *
+*   put the call arguments directly into the PRIM_NEW in order to improve     *
+*   function resolution's ability to handle them.                             *
+*                                                                             *
+*   if the type is "dmap" (syntactic distribution), it is replaced by a call  *
+*   to chpl_buildDistType().                                                  *
+*                                                                             *
+************************************** | *************************************/
 
- */
-static void call_constructor_for_class(CallExpr* call) {
+static void callConstructorForClass(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-
-    CallExpr* parent = toCallExpr(call->parentExpr);
-    CallExpr* parentParent = NULL;
-    if (parent)
-      parentParent = toCallExpr(parent->parentExpr);
-
-    AggregateType* ct = NULL;
-    if (TypeSymbol* ts = resolveTypeAlias(se))
-      ct = toAggregateType(ts->type);
-
-    CallExpr* primNewToFix = NULL;
-
-    // Select symExprs of class (or record) type.
-
     SET_LINENO(call);
 
-    if (parent && parent->isPrimitive(PRIM_NEW) ) {
-      if (!call->partialTag) { // avoid normalizing PRIM_NEW twice
+    CallExpr*      parent       = toCallExpr(call->parentExpr);
+    CallExpr*      parentParent = NULL;
+    AggregateType* at           = NULL;
+    CallExpr*      primNewToFix = NULL;
+
+    if (parent != NULL) {
+      parentParent = toCallExpr(parent->parentExpr);
+    }
+
+    if (TypeSymbol* ts = resolveTypeAlias(se)) {
+      at = toAggregateType(ts->type);
+    }
+
+    if (parent != NULL && parent->isPrimitive(PRIM_NEW) == true) {
+      if (call->partialTag == false) {
         primNewToFix = parent;
+
         INT_ASSERT(primNewToFix->get(1) == call);
       }
-    } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
-             call->partialTag) {
+
+    } else if (parentParent                        != NULL &&
+               parentParent->isPrimitive(PRIM_NEW) == true &&
+               call->partialTag                    == true) {
       primNewToFix = parentParent;
+
       INT_ASSERT(primNewToFix->get(1) == parent);
-    } else if (ct) {
-      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+
+    } else if (at != NULL) {
+      if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
         // Call chpl__buildDistType for syntactic distributions.
         se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+
       } else {
         // Transform C ( ... ) into _type_construct_C ( ... ) .
-        se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+        se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
       }
     }
 
-    if (primNewToFix) {
+    if (primNewToFix != NULL) {
       // Transform   new (call C args...) args2...
       //      into   new C args... args2...
 
@@ -1128,25 +1166,51 @@ static void call_constructor_for_class(CallExpr* call) {
       // to no longer be a call with a type baseExpr in order
       // to make better sense to function resolution.
 
-      CallExpr* callInNew = toCallExpr(primNewToFix->get(1));
+      CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
+      CallExpr* newNew       = new CallExpr(PRIM_NEW);
+      Expr*     exprModToken = NULL;
+      Expr*     exprMod      = NULL;
+
+      if (callInNew->numActuals() > 2) {
+        if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
+          if (se1->symbol() == gModuleToken) {
+            exprModToken = callInNew->get(1)->remove();
+            exprMod      = callInNew->get(1)->remove();
+          }
+        }
+      }
+
       callInNew->remove();
-      CallExpr *newNew = new CallExpr(PRIM_NEW);
+
       primNewToFix->replace(newNew);
 
       newNew->insertAtHead(callInNew->baseExpr);
+
       // Move the actuals from the call to the new PRIM_NEW
       for_actuals(actual, callInNew) {
         newNew->insertAtTail(actual->remove());
       }
+
       // Move actual from the PRIM_NEW as well
       // This is not the expected AST form, but keeping this
       // code here adds some resiliency.
       for_actuals(actual, primNewToFix) {
         newNew->insertAtTail(actual->remove());
       }
+
+      if (exprModToken != NULL) {
+        newNew->insertAtHead(exprMod);
+        newNew->insertAtHead(exprModToken);
+      }
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void applyGetterTransform(CallExpr* call) {
   // Most generally:
@@ -1863,8 +1927,20 @@ static void normVarTypeInference(DefExpr* defExpr) {
       AggregateType* type = typeForNewExpr(initCall);
 
       if (isRecordWithInitializers(type) == true) {
-        Expr*     arg1    = initCall->get(1)->remove();
-        CallExpr* argExpr = toCallExpr(arg1);
+        Expr*     arg1     = initCall->get(1)->remove();
+        CallExpr* argExpr  = toCallExpr(arg1);
+
+        SymExpr*  modToken = NULL;
+        SymExpr*  modValue = NULL;
+
+        if (argExpr->numActuals() >= 2) {
+          if (SymExpr* se = toSymExpr(argExpr->get(1))) {
+            if (se->symbol() == gModuleToken) {
+              modToken = toSymExpr(argExpr->get(1)->remove());
+              modValue = toSymExpr(argExpr->get(1)->remove());
+            }
+          }
+        }
 
         // Insert the arg portion of the initExpr back into tree
         defExpr->insertAfter(argExpr);
@@ -1877,18 +1953,26 @@ static void normVarTypeInference(DefExpr* defExpr) {
           // We need the actual for the "this" argument to be named in the
           // generic record case ...
           argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
+
         } else {
           // ... but not in the non-generic record case
           argExpr->insertAtHead(var);
         }
+
         argExpr->insertAtHead(gMethodToken);
+
+        if (modToken != NULL) {
+          argExpr->insertAtHead(modValue);
+          argExpr->insertAtHead(modToken);
+        }
 
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
       }
 
-      if (type != NULL && (type->isGeneric() == false ||
-                           isGenericRecordWithInitializers(type))) {
+      if (type != NULL &&
+          (type->isGeneric()                     == false ||
+           isGenericRecordWithInitializers(type) == true)) {
         var->type = type;
       }
 

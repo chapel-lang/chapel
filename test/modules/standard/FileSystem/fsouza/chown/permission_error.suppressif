@@ -1,2 +1,9 @@
+#!/usr/bin/env bash
+
 # Fails when run as a windows service, see JIRA issue 81
-SERVICE_ID == jenkinsslave-c__jenkins_chapel-ci
+
+if test "$OS" = Windows_NT -a -n "$SERVICE_ID"; then
+  echo 1
+else
+  echo 0
+fi

@@ -283,7 +283,20 @@ module CPtr {
 
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 
-  private inline proc c_sizeof(type x): size_t {
+  /*
+    Return the size in bytes of a type, as with the C `sizeof` built-in.
+
+    .. warning::
+
+      This method is intendend for C interoporability. To enhance
+      flexibility, it is possible to request the sizes of Chapel types.
+      However, be aware:
+
+         * Chapel types are not necessarily stored in contiguous memory
+         * Behavior of `c_sizeof` with Chapel types may change
+         * Behavior given a Chapel class type is not well-defined
+   */
+  inline proc c_sizeof(type x): size_t {
     extern proc sizeof(type x): size_t;
     return sizeof(x);
   }
@@ -324,6 +337,13 @@ module CPtr {
     chpl_here_free(data);
   }
 
+  /* Returns true if t is a c_ptr type or c_void_ptr.
+   */
+  proc isAnyCPtr(type t) param where t:c_ptr return true;
+  pragma "no doc"
+  proc isAnyCPtr(type t) param where t:c_void_ptr return true;
+  pragma "no doc"
+  proc isAnyCPtr(type t) param return false;
 
   /*
     Copies n (potentially overlapping) bytes from memory area src to memory
@@ -335,7 +355,8 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
-  inline proc c_memmove(dest: c_ptr, const src: c_ptr, n: integral) {
+  inline proc c_memmove(dest, const src, n: integral)
+  where isAnyCPtr(dest.type) && isAnyCPtr(src.type) {
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memmove(dest, src, n.safeCast(size_t));
   }
@@ -350,7 +371,8 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
-  inline proc c_memcpy(dest: c_ptr, const src: c_ptr, n: integral) {
+  inline proc c_memcpy(dest, const src, n: integral)
+  where isAnyCPtr(dest.type) && isAnyCPtr(src.type) {
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memcpy(dest, src, n.safeCast(size_t));
   }
@@ -364,8 +386,28 @@ module CPtr {
               the first n bytes of s1 are found, respectively, to be less than,
               to match, or be greater than the first n bytes of s2.
    */
-  inline proc c_memcmp(const s1: c_ptr, const s2: c_ptr, n: integral) {
-    extern proc memcmp(const s1: c_void_ptr, const s2: c_ptr, n: size_t) : c_int;
+  inline proc c_memcmp(const s1, const s2, n: integral)
+  where isAnyCPtr(s1.type) && isAnyCPtr(s2.type) {
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
+
+  /*
+    Fill bytes of memory with a particular byte value.
+
+    This is a simple wrapper over the C memset() function.
+
+    :arg s: the destination memory area to fill
+    :arg c: the byte value to use
+    :arg n: the number of bytes of b to fill
+
+    :returns: b
+   */
+  inline proc c_memset(s, c:integral, n: integral)
+  where isAnyCPtr(s.type) {
+    extern proc memset(s: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
+    memset(s, c.safeCast(c_int), n.safeCast(size_t));
+    return s;
+  }
+
 }
