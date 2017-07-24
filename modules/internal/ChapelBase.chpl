@@ -930,7 +930,7 @@ module ChapelBase {
 
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
-  // called for implicit sync at end of main
+  // called for sync blocks (implicit or explicit), unbounded coforalls, cobegins.
   pragma "dont disable remote value forwarding"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
     // See if we can help with any of the started tasks
@@ -954,7 +954,7 @@ module ChapelBase {
     }
   }
 
-  // called for cobegin/coforall
+  // called for bounded coforalls
   pragma "dont disable remote value forwarding"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
     // See if we can help with any of the started tasks
