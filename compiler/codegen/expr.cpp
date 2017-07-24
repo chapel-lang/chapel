@@ -3534,10 +3534,13 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_WIDE_MAKE: {
     // (type, localeID, addr)
     Type* narrowType = get(1)->typeInfo();
+    if (narrowType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      narrowType = narrowType->getField("addr")->typeInfo();
+    }
+    INT_ASSERT(!narrowType->symbol->hasFlag(FLAG_WIDE_CLASS));
     GenRet locale = get(2)->codegen();
     GenRet raddr = codegenValue(get(3)->codegen());
 
-    INT_ASSERT(!narrowType->symbol->hasFlag(FLAG_WIDE_CLASS));
 
     ret = codegenCast(narrowType, raddr, true);
     if (fLocal == false) {
