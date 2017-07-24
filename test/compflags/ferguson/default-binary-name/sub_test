@@ -60,3 +60,10 @@ run("test-default-binary-name.chpl", "test-default-binary-name", [], "Hello")
 run("test-default-binary-name.chpl", "test_exe", ["-o", "test_exe"], "Hello")
 run("test-default-binary-name-main-module.chpl", "M1", ["--main-module", "M1"], "M1 main")
 run("test-default-binary-name-main-module.chpl", "M2", ["--main-module", "M2"], "M2 main")
+
+# finally, test with setting the binary name with the enivronment variable.
+# this is last so we don't have to worry about restoring the environment
+# variable.
+#
+os.environ["CHPL_EXE_NAME"] = "test_exe_env"
+run("test-default-binary-name.chpl", "test_exe_env", [], "Hello")
