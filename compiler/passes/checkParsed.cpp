@@ -25,7 +25,6 @@
 #include "DeferStmt.h"
 #include "docsDriver.h"
 #include "expr.h"
-#include "files.h"
 #include "stmt.h"
 #include "stlUtil.h"
 #include "stringutil.h"
