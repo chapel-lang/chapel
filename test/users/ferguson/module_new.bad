@@ -1,2 +1,0 @@
-module_new.chpl:8: In function 'main':
-module_new.chpl:9: error: invalid use of 'new' on primitive tmodule=

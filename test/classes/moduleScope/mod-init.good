@@ -1,0 +1,7 @@
+A.init(10)
+
+M1.A.init(20)
+M2.A.A(30)
+
+M3.A.init(40)
+M2.A.A(50)
