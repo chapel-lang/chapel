@@ -898,57 +898,66 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym);
+
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
 
-        ModuleSymbol* enclosingModule = call->getModule();
-        Symbol*       sym             = NULL;
-        const char*   mbrName         = get_string(call->get(2));
+        ModuleSymbol* currModule = call->getModule();
+        ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
+        const char*   mbrName    = get_string(call->get(2));
 
-        enclosingModule->moduleUseAdd(mod);
+        currModule->moduleUseAdd(mod);
 
-        if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookupNameLocally(mbrName);
-        }
+        if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
+          if (sym->isVisible(call) == true) {
+            if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+                  call->replace(new CallExpr(fn));
 
-        if (sym != NULL) {
-          if (sym->isVisible(call) == false) {
-            // The symbol is not visible at this scope because it is
-            // private to mod!  Error out
+                } else {
+                  UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
+
+                  call->replace(se);
+
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                }
+
+              } else if (resolveModuleIsNewExpr(call, sym) == true) {
+                call->replace(new SymExpr(sym));
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
+
+              } else {
+                call->replace(new SymExpr(sym));
+              }
+
+            } else {
+              call->replace(new SymExpr(sym));
+            }
+
+          } else {
             USR_FATAL(call,
                       "Cannot access '%s', '%s' is private to '%s'",
                       mbrName,
                       mbrName,
                       mod->name);
-
-          } else if (FnSymbol* fn = toFnSymbol(sym)) {
-            if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
-              call->replace(new CallExpr(fn));
-
-            } else {
-              UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
-
-              call->replace(se);
-
-              CallExpr*          parent = toCallExpr(se->parentExpr);
-
-              INT_ASSERT(parent);
-
-              parent->insertAtHead(mod);
-              parent->insertAtHead(gModuleToken);
-            }
-
-          } else {
-            call->replace(new SymExpr(sym));
           }
 
 #ifdef HAVE_LLVM
-        } else if (tryCResolve(call->getModule(), mbrName) == true) {
-          // Try to resolve again now that the symbol should
-          // be in the table
+        } else if (tryCResolve(currModule, mbrName) == true) {
           resolveModuleCall(call);
 #endif
 
@@ -961,6 +970,22 @@ static void resolveModuleCall(CallExpr* call) {
       }
     }
   }
+}
+
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym) {
+  bool retval = false;
+
+  if (TypeSymbol* ts = toTypeSymbol(sym)) {
+    if (isAggregateType(ts->type) == true) {
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
+          retval = grandParentCall->isPrimitive(PRIM_NEW);
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 #ifdef HAVE_LLVM
@@ -1046,7 +1071,6 @@ static bool tryCResolve(ModuleSymbol*                     module,
 }
 
 #endif
-
 
 /************************************* | **************************************
 *                                                                             *
