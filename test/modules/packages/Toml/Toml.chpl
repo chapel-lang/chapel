@@ -30,9 +30,12 @@ array. */
  /* Receives a string of TOML format as a parameter and outputs an associative
 array. */
  proc parseToml(input: string) : Toml {
+   var D: domain(string);
+   var table: [D] Toml;
+   var rootTable = new Toml(table);
    const source = new Source(input);
-   const parser = new Parser(source);
-   const tomlData =  parser.parseLoop();
+   const parser = new Parser(source, rootTable);
+   const tomlData = parser.parseLoop();
    delete parser;
    delete source;
    return tomlData;
@@ -55,11 +58,8 @@ Parser module with the Toml class for the Chapel TOML library.
    pragma "no doc"
    class Parser {
 
-     
      var source;
-     var D: domain(string);
-     var table: [D] Toml;
-     var rootTable = new Toml(table);
+     var rootTable;
      var curTable: string;
 
      const doubleQuotes = '".*?"',
@@ -113,7 +113,7 @@ Parser module with the Toml class for the Chapel TOML library.
        var tblD: domain(string);
        var tbl: [tblD] Toml;
        if !rootTable.pathExists(tablename) {
-         rootTable[tablename] = new Toml(tbl);
+         rootTable[tablename] = tbl;
        }
        curTable = tablename;
      }
@@ -126,7 +126,7 @@ Parser module with the Toml class for the Chapel TOML library.
        var tbl: [tblD] Toml;
        var (tblPath, tblLeaf) = splitTblPath(tblname);
        if !rootTable.pathExists(tblPath) then makePath(tblPath);
-       rootTable[tblPath][tblLeaf] = new Toml(tbl);
+       rootTable[tblPath][tblLeaf] = tbl;
        curTable = tblname;
      }
 
@@ -140,14 +140,14 @@ Parser module with the Toml class for the Chapel TOML library.
          if first { 
            var tblD: domain(string);
            var tbl: [tblD] Toml;
-           rootTable[parent] = new Toml(tbl);
+           rootTable[parent] = tbl;
            first = false;
          }
          else {
            var tblD: domain(string);
            var tbl: [tblD] Toml;
            var grandParent = '.'.join(path[..firstIn+i]);
-           rootTable[grandParent][parent] = new Toml(tbl);
+           rootTable[grandParent][parent] = tbl;
            i+=1;
          }
        }
@@ -159,12 +159,12 @@ Parser module with the Toml class for the Chapel TOML library.
        var tbl: [tblD] Toml;
        if curTable.isEmptyString() {
          tblname = key;
-         rootTable[key] = new Toml(tbl);
+         rootTable[key] = tbl;
        }
        else {
          tblname = '.'.join(curTable, key);
          var (tblPath, tblLeaf) = splitTblPath(tblname);
-         rootTable[tblPath][tblLeaf] = new Toml(tbl);
+         rootTable[tblPath][tblLeaf] = tbl;
        }
        var temp = curTable;
        curTable = tblname;
@@ -213,8 +213,8 @@ Parser module with the Toml class for the Chapel TOML library.
        // Array
        if val == '['  {
          skipNext(source);
-         var nodeDom: domain(1);
-         var array: [nodeDom] Toml;
+         var Dom: domain(1);
+         var array: [Dom] Toml;
          while top(source) != ']' {
            if comma.match(top(source)) {
              skipNext(source);
@@ -228,8 +228,8 @@ Parser module with the Toml class for the Chapel TOML library.
            }
          }
          skipNext(source);
-         var nodeArray = new Toml(array);
-         return nodeArray;
+         var tomlArray: Toml = array;
+         return tomlArray;
        }
        // Strings (includes multi-line) 
        else if Str.match(val) {
@@ -239,7 +239,7 @@ Parser module with the Toml class for the Chapel TOML library.
            while toStr.endsWith('"""') == false {
              toStr += " " + getToken(source);
            }
-           var mlString = new Toml(toStr.strip('"""'));
+           var mlString: Toml = toStr.strip('"""');
            return mlString;
          }
          else if val.startsWith("'''") {
@@ -247,40 +247,40 @@ Parser module with the Toml class for the Chapel TOML library.
            while toStr.endsWith("'''") == false {
              toStr += " " + getToken(source);
            }
-           var mlString = new Toml(toStr.strip("'''"));
+           var mlString: Toml = toStr.strip("'''");
            return mlString;
          }
          else {
            toStr = getToken(source).strip('"').strip("'");
-           var tomlStr = new Toml(toStr);
+           var tomlStr: Toml = toStr;
            return tomlStr;
          }
        }
        // DateTime
        else if dt.match(val) {
          var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
-         var Datetime = new Toml(date);
+         var Datetime: Toml = date;
          return Datetime;
        }
        // Real
        else if realNum.match(val) {
          var token = getToken(source);
          var toReal = token: real;
-         var realToml = new Toml(toReal);
+         var realToml: Toml = toReal;
          return realToml;
        }
        // Int
        else if ints.match(val) {
          var token = getToken(source);
          var toInt = token: int;
-         var intToml = new Toml(toInt);
+         var intToml: Toml = toInt;
          return intToml;
        } 
        // Boolean
        else if val == "true" || val ==  "false" {
          var token = getToken(source);
          var toBool = token: bool;
-         var boolToml = new Toml(toBool);
+         var boolToml: Toml = toBool;
          return boolToml;
        }
        // Comments within arrays
@@ -325,6 +325,35 @@ Parser module with the Toml class for the Chapel TOML library.
     fieldEmpty,
     fieldDate };
   use fieldtag;
+
+  pragma "no doc"
+  proc =(ref t: Toml, s: string) {
+    t = new Toml(s);}
+
+  pragma "no doc"
+  proc =(ref t: Toml, i: int) {
+    t = new Toml(i);}
+
+  pragma "no doc"
+  proc =(ref t: Toml, b: bool) {
+    t = new Toml(b);}
+
+  pragma "no doc"
+  proc =(ref t: Toml, r: real) {
+    t = new Toml(r);}
+
+  pragma "no doc"
+  proc =(ref t: Toml, dt: datetime) {
+    t = new Toml(dt);}
+
+  pragma "no doc"
+  proc =(ref t: Toml, A: [?D] Toml) where isAssociativeDom(D) {
+    t = new Toml(A);}
+
+  pragma "no doc"
+  proc =(ref t: Toml, arr: [?dom] Toml) where !isAssociativeDom(dom){
+    t = new Toml(arr);}
+
 
  /*
  Class to hold various types parsed from input

@@ -13,11 +13,11 @@ proc main() {
   var tbl: [tblD] Toml;
 
   // Table indexed into and new table added
-  tomlData["A.B"]["C"] = new Toml(tbl);
+  tomlData["A.B"]["C"] = tbl;
 
   // Add elements to new table C
   var toAdd: bool = true;
-  tomlData["A.B.C"]["new-key-added"] = new Toml(toAdd);
+  tomlData["A.B.C"]["new-key-added"] = toAdd;
 
   writeln("After Mutation: ", tomlData);
 

@@ -9,3 +9,4 @@
 --file grandchild.good # grandchild
 --file childInitParent.good # childInitParent
 --file arrayCorner.good # arrayCorner
+--file actual.good # actual
