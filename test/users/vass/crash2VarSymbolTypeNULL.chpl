@@ -77,10 +77,6 @@ class DimensionalDist : BaseDist {
 // class LocDimensionalDist - no local distribution descriptor - for now
 
 class DimensionalDom : BaseRectangularDom {
-  // required
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   var dist; // not reprivatized
 
   // convenience
@@ -103,9 +99,6 @@ class DimensionalDom : BaseRectangularDom {
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
-
-  // for privatization
-  var pid: int = -1;
 }
 
 class LocDimensionalDom {
@@ -536,6 +529,10 @@ proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
   _dsiSetIndicesHelper(newRanges);
 }
 
+proc DimensionalDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
+}
+
 // not part of DSI
 proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   _traceddd(this, ".dsiSetIndices", newRanges);
@@ -567,9 +564,9 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
            myBlock, "  storage ", myRange1.length, "*", myRange2.length);
 }
 
-proc DimensionalDom.dsiGetIndices(): domainT {
+proc DimensionalDom.dsiGetIndices() {
   _traceddd(this, ".dsiGetIndices");
-  return whole;
+  return whole.dims();
 }
 
 proc DimensionalDom.dsiDims() return whole.dims();

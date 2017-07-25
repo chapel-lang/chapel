@@ -437,10 +437,6 @@ class LocCyclic {
 
 
 class CyclicDom : BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-
   const dist: Cyclic(rank, idxType);
 
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
@@ -517,6 +513,10 @@ proc CyclicDom.dsiSetIndices(x: domain) {
 proc CyclicDom.dsiSetIndices(x) {
   whole.setIndices(x);
   setup();
+}
+
+proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 proc CyclicDom.dsiSerialWrite(x) {
@@ -646,11 +646,7 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
-class CyclicArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: CyclicDom(rank, idxType, stridable);
 
@@ -919,7 +915,7 @@ proc CyclicArr.dsiSerialWrite(f) {
   }
 }
 
-proc CyclicArr.dsiReallocate(d: domain) {
+proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
   // The reallocation happens when the LocCyclicDom.myBlock field is changed
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }
