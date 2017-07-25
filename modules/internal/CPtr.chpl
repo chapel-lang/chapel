@@ -43,10 +43,10 @@ module CPtr {
     Represents a local C pointer for the purpose of C integration. This class
     represents the equivalent to a C language pointer. Instances of this class
     support assignment to other instances or nil, == or != comparison with a
-    `c_void_ptr` or with `nil`, and casting to another `c_ptr` type or to the
-    `c_void_ptr` type.
+    ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
+    the ``c_void_ptr`` type.
 
-    As with a Chapel class, a `c_ptr` can be tested non-nil simply
+    As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
     by including it in an if statement conditional, like so:
 
     .. code-block:: chapel
@@ -233,7 +233,7 @@ module CPtr {
     Returns a :type:`c_ptr` to a Chapel rectangular array.  Note that the
     existence of this :type:`c_ptr` has no impact on the lifetime of the array.
     The returned pointer will be invalid if the original array is freed or even
-    reallocated. Domain assignment could make this c_ptr invalid. If
+    reallocated. Domain assignment could make this :type:`c_ptr` invalid. If
     the array's data is stored in more than one chunk the procedure will halt
     the program with an error message.
 
@@ -264,7 +264,7 @@ module CPtr {
   }
 
   /* Returns a :type:`c_ptr` to any Chapel object.
-    Note that the existence of the c_ptr has no impact of the lifetime
+    Note that the existence of the :type:`c_ptr` has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
     could go out of scope even if this :type:`c_ptr` remains.
 
@@ -301,7 +301,7 @@ module CPtr {
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 
   /*
-    Return the size in bytes of a type, as with the C `sizeof` built-in.
+    Return the size in bytes of a type, as with the C ``sizeof`` built-in.
 
     .. warning::
 
@@ -310,7 +310,7 @@ module CPtr {
       However, be aware:
 
          * Chapel types are not necessarily stored in contiguous memory
-         * Behavior of `c_sizeof` with Chapel types may change
+         * Behavior of ``c_sizeof`` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
   inline proc c_sizeof(type x): size_t {
@@ -366,7 +366,7 @@ module CPtr {
     Copies n potentially overlapping bytes from memory area src to memory
     area dest.
 
-    This is a simple wrapper over the C memmove() function.
+    This is a simple wrapper over the C ``memmove()`` function.
 
     :arg dest: the destination memory area to copy to
     :arg src: the source memory area to copy from
@@ -397,7 +397,7 @@ module CPtr {
   /*
     Compares the first n bytes of memory areas s1 and s2
 
-    This is a simple wrapper over the C memcmp() function.
+    This is a simple wrapper over the C ``memcmp()`` function.
 
     :returns: returns an integer less than, equal to, or greater than zero if
               the first n bytes of s1 are found, respectively, to be less than,
@@ -412,7 +412,7 @@ module CPtr {
   /*
     Fill bytes of memory with a particular byte value.
 
-    This is a simple wrapper over the C memset() function.
+    This is a simple wrapper over the C ``memset()`` function.
 
     :arg s: the destination memory area to fill
     :arg c: the byte value to use
