@@ -18,9 +18,7 @@ def get():
         arch_val = chpl_arch.get('target', get_lcd=True)
 
         if comm_val == 'gasnet':
-            if platform_val == 'cray-xt':
-                substrate_val = 'mpi'
-            elif platform_val == 'cray-xe':
+            if platform_val == 'cray-xe':
                 substrate_val = 'gemini'
             elif platform_val == 'cray-xk':
                 substrate_val = 'gemini'
