@@ -1156,8 +1156,14 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
       } else {
         // put other global constants and all global variables on the heap
-        varSet.set_add(def->sym);
-        varVec.add(def->sym);
+        // ... but not type variables without a runtime type component
+        Symbol* sym = def->sym;
+        if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+            !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // Don't add type variables without runtime type
+          varSet.set_add(sym);
+          varVec.add(sym);
+        }
       }
     }
   }
