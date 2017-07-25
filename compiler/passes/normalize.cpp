@@ -70,7 +70,7 @@ static void find_printModuleInit_stuff();
 static void processSyntacticDistributions(CallExpr* call);
 static void normalize(BaseAST* base);
 static void normalizeReturns(FnSymbol* fn);
-static void callConstructorForClass(CallExpr* call);
+static void callConstructor(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insertCallTemps(CallExpr* call);
 
@@ -217,16 +217,19 @@ void normalize() {
 
         // verify the name of the destructor
         bool notTildeName = (fn->name[0] != '~') ||
-                             strcmp(fn->name + 1, ct->symbol->name);
-        bool notDeinit = (fn->name != astrDeinit);
+                             strcmp(fn->name + 1, ct->symbol->name) != 0;
+        bool notDeinit    = (fn->name != astrDeinit);
 
         if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
-            "destructor name must match class/record name or deinit()");
+                    "destructor name must match class/record name "
+                    "or deinit()");
+
         } else {
           fn->name = astrDeinit;
         }
       }
+
     // make sure methods don't attempt to overload operators
     } else if (isalpha(fn->name[0])         == 0   &&
                fn->name[0]                  != '_' &&
@@ -478,6 +481,7 @@ static void normalize(BaseAST* base) {
     processSyntacticDistributions(call);
   }
 
+
   //
   // Phase 2
   //
@@ -490,6 +494,7 @@ static void normalize(BaseAST* base) {
       normalizeReturns(fn);
     }
   }
+
 
   //
   // Phase 3
@@ -537,7 +542,7 @@ static void normalize(BaseAST* base) {
   }
 
   for_vector(CallExpr, call, calls2) {
-    callConstructorForClass(call);
+    callConstructor(call);
   }
 }
 
@@ -1112,7 +1117,7 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void callConstructorForClass(CallExpr* call) {
+static void callConstructor(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     SET_LINENO(call);
 
@@ -1171,7 +1176,7 @@ static void callConstructorForClass(CallExpr* call) {
       Expr*     exprModToken = NULL;
       Expr*     exprMod      = NULL;
 
-      if (callInNew->numActuals() > 2) {
+      if (callInNew->numActuals() >= 2) {
         if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
           if (se1->symbol() == gModuleToken) {
             exprModToken = callInNew->get(1)->remove();
