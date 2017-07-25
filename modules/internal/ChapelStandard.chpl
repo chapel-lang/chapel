@@ -43,6 +43,7 @@ module ChapelStandard {
   use ChapelRange;
   use ChapelReduce;
   use ChapelSyncvar;
+  use ChapelTaskDataHelp;
   use LocaleModel;
   use ChapelLocale;
   use DefaultRectangular; // This might be able to go just after Atomics
@@ -60,6 +61,7 @@ module ChapelStandard {
   use ChapelUtil;
   use ChapelError;
   use ChapelDynDispHack;
+  use ChapelTaskData;
 
   // Standard modules.
   use Assert;

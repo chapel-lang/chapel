@@ -171,10 +171,11 @@ typedef struct {
 
   void*         ack;
 
-  chpl_bool     serial_state; // true if not allowed to spawn new threads
   chpl_fn_int_t fid;
   uint16_t      payload_size;
 
+  // TODO: is there a way to "compress" this?
+  chpl_task_ChapelData_t state;
 } small_fork_hdr_t;
 
 typedef struct {
@@ -273,6 +274,9 @@ size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t
   chpl_comm_on_bundle_t *bptr  = &dst->bundle;
   size_t payload_size = nbytes - sizeof(small_fork_hdr_t);
 
+  // Copy task-local data to the new task
+  bundle.task_bundle.state = f->state;
+
   dst->bundle = bundle;
 
   // Copy the payload into the special task
@@ -289,6 +293,9 @@ size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nby
                                    .ack    = f->hdr.ack };
   chpl_comm_on_bundle_t bundle = { .comm =  comm };
   chpl_comm_on_bundle_t *bptr  = &dst->bundle;
+
+  // Copy task-local data to the new task
+  bundle.task_bundle.state = f->hdr.state;
 
   dst->bundle = bundle;
   // Copy the large fork info into the task bundle
@@ -328,8 +335,7 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_task_startMovedTask(f->task_bundle.requested_fid,
                            (chpl_fn_p)fork_wrapper,
                            chpl_comm_on_bundle_task_bundle(f), nbytes,
-                           f->task_bundle.requestedSubloc, chpl_nullTaskID,
-                           f->task_bundle.serial_state);
+                           f->task_bundle.requestedSubloc, chpl_nullTaskID);
 }
 
 static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -344,8 +350,7 @@ static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr),
                            size,
-                           f->subloc, chpl_nullTaskID,
-                           f->serial_state);
+                           f->subloc, chpl_nullTaskID);
 }
 
 
@@ -397,8 +402,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
 
   chpl_task_startMovedTask(f->hdr.fid, (chpl_fn_p)fork_large_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
-                           f->hdr.subloc, chpl_nullTaskID,
-                           f->hdr.serial_state);
+                           f->hdr.subloc, chpl_nullTaskID);
 }
 
 static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
@@ -413,8 +417,7 @@ static void AM_fork_nb(gasnet_token_t  token,
   chpl_task_startMovedTask(f->task_bundle.requested_fid,
                            (chpl_fn_p)fork_nb_wrapper,
                            chpl_comm_on_bundle_task_bundle(f), nbytes,
-                           f->task_bundle.requestedSubloc, chpl_nullTaskID,
-                           f->task_bundle.serial_state);
+                           f->task_bundle.requestedSubloc, chpl_nullTaskID);
 }
 
 static void AM_fork_nb_small(gasnet_token_t  token,
@@ -430,8 +433,7 @@ static void AM_fork_nb_small(gasnet_token_t  token,
  
   chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
-                           f->subloc, chpl_nullTaskID,
-                           f->serial_state);
+                           f->subloc, chpl_nullTaskID);
 }
 
 
@@ -479,8 +481,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
 
   chpl_task_startMovedTask(f->hdr.fid, (chpl_fn_p)fork_nb_large_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
-                           f->hdr.subloc, chpl_nullTaskID,
-                           f->hdr.serial_state);
+                           f->hdr.subloc, chpl_nullTaskID);
 }
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
@@ -1433,7 +1434,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 
   int op;
 
-  chpl_bool serial_state = chpl_task_getSerial();
+  chpl_task_ChapelData_t state = *chpl_task_getChapelData();
 
   if (blocking)
     init_done_obj(&done, 1);
@@ -1469,7 +1470,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
     small_fork_hdr_t hdr = { .caller = chpl_nodeID,
                              .subloc = subloc,
                              .ack = blocking ? &done : NULL,
-                             .serial_state = serial_state,
+                             .state = state,
                              .fid = fid,
                              .payload_size = payload_size };
 
@@ -1520,7 +1521,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     // Neither small nor large
 
-    arg->task_bundle.serial_state = serial_state;
+    arg->task_bundle.state = state;
     arg->task_bundle.requestedSubloc = subloc;
     arg->task_bundle.requested_fid = fid;
     arg->comm.caller = chpl_nodeID;
@@ -1570,17 +1571,7 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                         chpl_comm_on_bundle_t *arg, size_t arg_size) {
 
   if (chpl_nodeID == node) {
-    chpl_bool serial_state = chpl_task_getSerial();
-
     assert(0); // locale model code should prevent this...
-
-    if (serial_state)
-      chpl_ftable_call(fid, arg);
-    else
-      chpl_task_startMovedTask(fid, (chpl_fn_p)fork_nb_wrapper,
-                               chpl_comm_on_bundle_task_bundle(arg), arg_size,
-                               subloc, chpl_nullTaskID,
-                               serial_state);
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {

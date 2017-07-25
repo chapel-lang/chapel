@@ -349,9 +349,6 @@ typedef chpl_sync_aux_t chpl_single_aux_t;
 //   the tasking layer
 //
 
-/* the key used to set/get task specific serial state */
-static myth_key_t myth_key_serial_state = -1;
-
 void chpl_task_init(void) {
   size_t css;
   int _ = enter_();
@@ -373,9 +370,6 @@ void chpl_task_init(void) {
 #endif
   }
   myth_init_ex(attr);
-  r = myth_key_create(&myth_key_serial_state, 0);
-  assert(r == 0);
-  (void)r;
   return_from_();
 }
 
@@ -398,6 +392,8 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
   myth_create((myth_func_t)fn, arg);
   return 0;
 }
+
+static chpl_task_bundle_t main_bundle;
 
 //
 // Have the tasking layer call the 'chpl_main' function pointer
@@ -436,17 +432,13 @@ void chpl_task_setSerial(chpl_bool state);
 
 static void * myth_chpl_wrap(void * a_) {
   chpl_task_bundle_t * arg = myth_wsapi_get_hint_ptr(0);
-  
+
   chpl_fn_int_t fid = arg->requested_fid;
   int32_t filename = arg->filename;
   int lineno = arg->lineno;
   chpl_taskID_t id = arg->id;
   chpl_bool is_executeOn = arg->is_executeOn;
-  chpl_bool serial_state = arg->serial_state;
-  
-  if (serial_state) {
-    chpl_task_setSerial(serial_state);
-  }
+
   chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                          fid,
                          filename,
@@ -463,8 +455,7 @@ static void * myth_chpl_wrap(void * a_) {
   return 0;
 }
 
-void myth_chpl_create(chpl_bool serial_state,
-                      chpl_bool is_executeOn, 
+void myth_chpl_create(chpl_bool is_executeOn,
                       int lineno,
                       int32_t filename,
                       c_sublocid_t subloc,
@@ -472,8 +463,7 @@ void myth_chpl_create(chpl_bool serial_state,
                       chpl_taskID_t id,
                       chpl_task_bundle_t* arg, size_t arg_size);
 
-void myth_chpl_create(chpl_bool serial_state,
-                      chpl_bool is_executeOn, 
+void myth_chpl_create(chpl_bool is_executeOn,
                       int lineno,
                       int32_t filename,
                       c_sublocid_t subloc,
@@ -488,7 +478,6 @@ void myth_chpl_create(chpl_bool serial_state,
                          lineno,
                          id,
                          is_executeOn);
-  arg->serial_state = serial_state;
   arg->countRunning = false;
   arg->is_executeOn = is_executeOn;
   arg->lineno = lineno;
@@ -499,7 +488,7 @@ void myth_chpl_create(chpl_bool serial_state,
   arg->id = id;
   //arg->arg_size = arg_size;
   assert(arg_size > 0);
-  
+
   myth_thread_attr_init(attr);
   attr->custom_data_size = arg_size;
   attr->custom_data = arg;
@@ -525,14 +514,9 @@ void chpl_task_addToTaskList(
          int lineno,                // line at which function begins
          int32_t filename) { // name of file containing function
   enter_();
-  if (chpl_task_getSerial()) {
-    chpl_ftable[fid](arg);
-  } else {
-    myth_chpl_create(/* serial_state = */ false,
-                     /* is_executeOn = */ false,
-                     lineno, filename, 
-                     subloc, fid, get_next_task_id(), arg, arg_size);
-  }
+  myth_chpl_create(/* is_executeOn = */ false,
+                   lineno, filename,
+                   subloc, fid, get_next_task_id(), arg, arg_size);
   return_from_();
 }
 
@@ -552,14 +536,9 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,          // function to call
                               int lineno,                // line at which function begins
                               int32_t filename) {           // name of file containing function
   enter_();
-  if (chpl_task_getSerial()) {
-    chpl_ftable[fid](arg);
-  } else {
-    myth_chpl_create(/* serial_state = */ false,
-                     /* is_executeOn = */ false,
-                     lineno, filename, 
-                     subloc, fid, get_next_task_id(), arg, arg_size);
-  }
+  myth_chpl_create(/* is_executeOn = */ false,
+                   lineno, filename,
+                   subloc, fid, get_next_task_id(), arg, arg_size);
   return_from_();
 }
 
@@ -574,17 +553,12 @@ void chpl_task_startMovedTask(chpl_fn_int_t fid,          // function to call
                               chpl_task_bundle_t* arg,// function arg
                               size_t arg_size, // length of arg in bytes
                               c_sublocid_t subloc,       // desired sublocale
-                              chpl_taskID_t id,      // task identifier
-                              chpl_bool serial_state) {         // serial state
+                              chpl_taskID_t id      // task identifier
+                             ) {
   enter_();
-  if (chpl_task_getSerial()) {
-    chpl_ftable[fid](arg);
-  } else {
-    myth_chpl_create(/* serial_state = */ false,
-                     /* is_executeOn = */ true,
-                     0, CHPL_FILE_IDX_UNKNOWN, 
-                     subloc, fid, id, arg, arg_size);
-  }
+  myth_chpl_create(/* is_executeOn = */ true,
+                   0, CHPL_FILE_IDX_UNKNOWN,
+                   subloc, fid, id, arg, arg_size);
   return_from_();
 }
 
@@ -672,23 +646,6 @@ void chpl_task_sleep(double secs) {
   return_from_();
 }
 
-//
-// Get and set dynamic serial state.
-//
-chpl_bool chpl_task_getSerial(void) {
-  void * r;
-  enter_();
-  r = myth_getspecific(myth_key_serial_state);
-  return_from_();
-  return (chpl_bool)r;
-}
-
-void chpl_task_setSerial(chpl_bool state) {
-  enter_();
-  myth_setspecific(myth_key_serial_state, (void *)state);
-  return_from_();
-}
-
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support
 // proper initialization order with a task model .h
@@ -697,6 +654,7 @@ void chpl_task_setSerial(chpl_bool state) {
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
 #if 0
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
+  chpl_task_bundle_t * arg = myth_wsapi_get_hint_ptr(0);
   static chpl_task_prvData_t prvData[1] = { { .serial_state = false } };
   enter_();
   return_from_();
@@ -704,6 +662,18 @@ chpl_task_prvData_t* chpl_task_getPrvData(void) {
 }
 #endif
 #endif
+
+
+chpl_task_bundle_t* chpl_task_getPrvBundle(void) {
+  chpl_task_bundle_t * arg;
+  enter_();
+  arg = myth_wsapi_get_hint_ptr(0);
+  if (arg == NULL)
+    arg = &main_bundle;
+  return_from_();
+  return arg;
+}
+
 
 //
 // Can this tasking layer support remote caching?
