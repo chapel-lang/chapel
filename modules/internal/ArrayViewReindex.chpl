@@ -69,10 +69,6 @@ module ArrayViewReindex {
   // BaseRectangularDom.
   //
  class ArrayViewReindexDom: BaseRectangularDom {
-    param rank;
-    type idxType;
-    param stridable;  // TODO: relax this when possible?
-
     // the new reindexed index set that we represent upwards
     var updom: DefaultRectangularDom(rank, idxType, stridable);
 
@@ -274,6 +270,10 @@ module ArrayViewReindex {
     proc dsiLocalSubdomain() {
       const dims = downdom.dsiLocalSubdomain().dims();
       return chpl_reindexConvertDom(dims, downdom, updom);
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     proc isReindexDomainView() param {
