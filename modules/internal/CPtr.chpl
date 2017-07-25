@@ -17,7 +17,13 @@
  * limitations under the License.
  */
 
-/* A Chapel version of a C pointer. */
+/*
+   This module contains Chapel types that can serve as C pointer
+   types for the purposes of interoperability and methods to work
+   with them.
+
+   See also :ref:`readme-extern`.
+ */
 module CPtr {
   use ChapelStandard;
 
@@ -26,16 +32,22 @@ module CPtr {
 
   // To generate legal C prototypes, we have to manually instantiate this
   // prototype for each pointer type that might be associated with 'x'.
+
   /* :returns: true if the passed value is a NULL pointer (ie 0) */
   pragma "no prototype"
+  pragma "no doc"
   extern proc is_c_nil(x):bool;
 
   /*
-    A local C pointer class used in C integration. This class represents the
-    equivalent to a C language pointer. Instances of this class support
-    assignment to other instances or nil, == or != comparison with a c_void_ptr
-    or with nil, and casting to another c_ptr type or to the c_void_ptr type.
-    In addition, c_ptr works within an if statement directly like so:
+
+    Represents a local C pointer for the purpose of C integration. This class
+    represents the equivalent to a C language pointer. Instances of this class
+    support assignment to other instances or nil, == or != comparison with a
+    c_void_ptr or with nil, and casting to another c_ptr type or to the
+    c_void_ptr type.
+
+    As with a Chapel class, a c_ptr can be tested non-nil simply
+    by including it in an if statement conditional, like so:
 
     .. code-block:: chapel
 
@@ -216,12 +228,14 @@ module CPtr {
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
 
-  /* Returns a :type:`c_ptr` to a Chapel rectangular array.
-    Note that the existence of this c_ptr has no impact on the lifetime of the
-    array. The returned pointer will be invalid if the original array is
-    freed or even reallocated. Any domain assignment will probably make
-    this c_ptr invalid. If the array's data is stored in more than one chunk
-    the procedure will halt the program with an error message.
+  /*
+
+    Returns a :type:`c_ptr` to a Chapel rectangular array.  Note that the
+    existence of this :type:`c_ptr` has no impact on the lifetime of the array.
+    The returned pointer will be invalid if the original array is freed or even
+    reallocated. Domain assignment could make this c_ptr invalid. If
+    the array's data is stored in more than one chunk the procedure will halt
+    the program with an error message.
 
     :arg arr: the array for which we should retrieve a pointer
     :returns: a pointer to the array data
@@ -252,7 +266,7 @@ module CPtr {
   /* Returns a :type:`c_ptr` to any Chapel object.
     Note that the existence of the c_ptr has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
-    could go out of scope even if this c_ptr remains.
+    could go out of scope even if this :type:`c_ptr` remains.
 
     :arg x: the by-reference argument to get a pointer to. The argument should
             not be an array or domain (there is a different overload for arrays).
@@ -270,12 +284,15 @@ module CPtr {
     return c_pointer_return(x);
   }
 
+  pragma "no doc"
   inline proc c_ptrTo(x: c_fn_ptr) {
     return x;
   }
+  pragma "no doc"
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "no doc"
   proc c_fn_ptr.this(args...) {
     compilerError("Can't call a C function pointer within Chapel");
   }
@@ -346,7 +363,7 @@ module CPtr {
   proc isAnyCPtr(type t) param return false;
 
   /*
-    Copies n (potentially overlapping) bytes from memory area src to memory
+    Copies n potentially overlapping bytes from memory area src to memory
     area dest.
 
     This is a simple wrapper over the C memmove() function.
@@ -362,7 +379,7 @@ module CPtr {
   }
 
   /*
-    Copies n (non-overlapping) bytes from memory area src to memory
+    Copies n non-overlapping bytes from memory area src to memory
     area dest. Use :proc:`c_memmove` if memory areas do overlap.
 
     This is a simple wrapper over the C memcpy() function.
@@ -401,7 +418,7 @@ module CPtr {
     :arg c: the byte value to use
     :arg n: the number of bytes of b to fill
 
-    :returns: b
+    :returns: s
    */
   inline proc c_memset(s, c:integral, n: integral)
   where isAnyCPtr(s.type) {
