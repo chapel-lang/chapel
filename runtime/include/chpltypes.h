@@ -29,6 +29,8 @@
 #include <sys/time.h> // for struct timeval
 #ifndef __cplusplus
 #include <complex.h>
+// undefine I since it's a common symbol
+#undef I
 #endif
 
 // C types usable from Chapel.
