@@ -614,6 +614,8 @@ static ModuleSymbol* parseFile(const char* path,
 
       ModuleSymbol::addTopLevelModule(retval);
 
+      retval->addFlag(FLAG_IMPLICIT_MODULE);
+
       addModuleToDoneList(retval);
     }
 

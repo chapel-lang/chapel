@@ -36,6 +36,7 @@ static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
+static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void setupForCheckExplicitDeinitCalls();
 
@@ -105,6 +106,8 @@ checkParsed() {
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    nestedName(mod);
+
     checkModule(mod);
   }
 
@@ -311,6 +314,22 @@ checkFunction(FnSymbol* fn) {
       fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
     USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
+  }
+}
+
+static void nestedName(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  ModuleSymbol* parent = mod->defPoint->getModule();
+  if (mod->name == parent->name &&
+      parent->hasFlag(FLAG_IMPLICIT_MODULE)) {
+    USR_WARN(mod->defPoint,
+             "module '%s' has the same name as the implicit file module",
+             mod->name);
+    USR_PRINT(mod->defPoint,
+              "did you mean to include all statements in the module declaration?");
   }
 }
 
