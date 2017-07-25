@@ -401,7 +401,7 @@ module CPtr {
     :arg c: the byte value to use
     :arg n: the number of bytes of b to fill
 
-    :returns: b
+    :returns: s
    */
   inline proc c_memset(s, c:integral, n: integral)
   where isAnyCPtr(s.type) {
