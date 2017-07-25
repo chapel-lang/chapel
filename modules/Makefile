@@ -128,19 +128,20 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCSR.chpl \
 
-INTERNAL_MODULES_TO_DOCUMENT =          \
+INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelIO.chpl                \
 	internal/ChapelIteratorSupport.chpl   \
-	internal/ChapelLocale.chpl    \
+	internal/ChapelLocale.chpl            \
 	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl \
-	internal/ChapelEnv.chpl
+	internal/ChapelTuple.chpl             \
+	internal/ChapelEnv.chpl               \
+	internal/CPtr.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
