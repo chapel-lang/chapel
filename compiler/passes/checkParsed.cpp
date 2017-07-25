@@ -329,7 +329,7 @@ static void nestedName(ModuleSymbol* mod) {
              "module '%s' has the same name as the implicit file module",
              mod->name);
     USR_PRINT(mod->defPoint,
-              "move all statements within the module to avoid this");
+              "did you mean to include all statements in the module declaration?");
   }
 }
 
