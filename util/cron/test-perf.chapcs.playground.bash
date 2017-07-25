@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of using TLS for sync/begin parallelism
-GITHUB_USER=mppf
-GITHUB_BRANCH=fire-and-forget-dynamic-end-count
-SHORT_NAME=dyn-end-count
-START_DATE=07/20/17
+# Test performance of new forall-stmt work
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=introduce-ForallStmt
+SHORT_NAME=forall-stmt
+START_DATE=07/24/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
