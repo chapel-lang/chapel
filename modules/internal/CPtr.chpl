@@ -43,15 +43,15 @@ module CPtr {
     Represents a local C pointer for the purpose of C integration. This class
     represents the equivalent to a C language pointer. Instances of this class
     support assignment to other instances or nil, == or != comparison with a
-    c_void_ptr or with nil, and casting to another c_ptr type or to the
-    c_void_ptr type.
+    `c_void_ptr` or with `nil`, and casting to another `c_ptr` type or to the
+    `c_void_ptr` type.
 
-    As with a Chapel class, a c_ptr can be tested non-nil simply
+    As with a Chapel class, a `c_ptr` can be tested non-nil simply
     by including it in an if statement conditional, like so:
 
     .. code-block:: chapel
 
-      var x: c_ptr;
+      var x: c_ptr = c_ptrTo(...);
       if x then do writeln("x is not nil");
       if !x then do writeln("x is nil");
 
