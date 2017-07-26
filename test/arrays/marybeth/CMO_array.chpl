@@ -57,6 +57,10 @@ class CMODom: BaseRectangularDom {
     }
   }
 
+  iter these(param tag, followThis) ref where tag == iterKind.follower {
+    yield followThis;
+  }
+
   proc dsiAccess(dim : int)
     return ranges(dim);
 
@@ -230,6 +234,15 @@ class CMOArr:BaseArr {
     for i in dom do {
       yield dsiAccess(i);
     }
+  }
+
+  iter these(param tag) where tag == iterKind.leader {
+    for i in dom do
+      yield i;
+  }
+
+  iter these(param tag, followThis) ref where tag == iterKind.follower {
+    yield dsiAccess(followThis);
   }
 
   proc dsiAccess(ind : rank*idxType) ref {

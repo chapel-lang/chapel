@@ -226,6 +226,7 @@ class GotoStmt : public Stmt {
   LabelSymbol*        gotoTarget()                                     const;
 };
 
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -310,6 +311,7 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+// Serving ForallStmt and forall intents.
 bool isDirectlyUnderBlockStmt(const Expr* expr);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,

@@ -1107,6 +1107,12 @@ module ChapelArray {
       return _value.these();
     }
 
+    pragma "no doc"
+    inline proc these(param tag) where
+        (tag == iterKind.leader || tag == iterKind.standalone) &&
+        __primitive("method call resolves", _value, "these", tag=tag)
+      return _value.these(tag=tag);
+
     // see comments for the same method in _array
     //
     // domain slicing by domain
@@ -2272,6 +2278,12 @@ module ChapelArray {
     inline proc these() {
       return _value.these();
     }
+
+    pragma "no doc"
+    inline proc these(param tag) where
+        (tag == iterKind.leader || tag == iterKind.standalone) &&
+        __primitive("method call resolves", _value, "these", tag=tag)
+      return _value.these(tag=tag);
 
     // 1/5/10: do we need this since it always returns domain.numIndices?
     /* Return the number of elements in the array */

@@ -112,6 +112,7 @@ void insertReferenceTemps(CallExpr* call);
 
 // normalize.cpp
 void normalize(FnSymbol* fn);
+void normalize(Expr* expr);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

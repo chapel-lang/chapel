@@ -1,6 +1,8 @@
-bug: internal error due to bad call to standalone iterator
+error message: clarify that user cannot pass iterKind tag explicitly ...
 
-This is a test motivated by issue #6337 in which we generate an
+... to the iterator that's being iterated over in a forall loop.
+
+This is a test motivated by issue #6337 in which we used to generate an
 internal error because, in resolving a standalone iterator, there's a
 mismatch between the formals and actuals.  It seems as though this
 internal error could be changed to a user error as a starting point,
@@ -8,3 +10,5 @@ but I couldn't quickly figure out where that was happening.  Better
 would be to give the user a more specific error message pointing out
 that they don't need to / can't supply the iterKind argument -- that
 the compiler will fill that in.
+
+See #6342

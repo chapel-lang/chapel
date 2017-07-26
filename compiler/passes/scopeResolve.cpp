@@ -25,16 +25,14 @@
 #include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
-#include "expr.h"
 #include "externCResolve.h"
+#include "ForallStmt.h"
 #include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "ResolveScope.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "TryStmt.h"
 #include "visibleFunctions.h"
 
@@ -377,10 +375,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
     }
   }
 
-
   // Should process use statements here
-
-
 
   // Process the remaining statements
   for_alist(stmt, alist) {
@@ -427,9 +422,24 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         }
       }
 
+    } else if (ForallStmt* forallStmt = toForallStmt(stmt)) {
+      BlockStmt* fBody = forallStmt->loopBody();
+      // or, we could construct ResolveScope specifically for forallStmt
+      ResolveScope* bodyScope = new ResolveScope(fBody, scope);
+      // cf. scopeResolve(FnSymbol*,parent)
+      for_alist(ivdef, forallStmt->inductionVariables()) {
+        Symbol* sym = toDefExpr(ivdef)->sym;
+        // "chpl__tuple_blank" indicates the underscore placeholder for
+        // the induction variable. Do not add it. Because if there are two
+        // (legally) ex. "forall (_,_) in ...", we get an error.
+        if (strcmp(sym->name, "chpl__tuple_blank"))
+          bodyScope->extend(sym);
+      }
+
+      scopeResolve(fBody->body, bodyScope);
+
     } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
       scopeResolve(deferStmt->body(), scope);
-
 
     } else if (isUseStmt(stmt)           == true ||
                isCallExpr(stmt)          == true ||
@@ -870,15 +880,14 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a forall loop.
-  if (BlockStmt* parent = toBlockStmt(exprInAst->parentExpr)) {
-    if (ForallIntents* fi = parent->forallIntents) {
+  if (ForallStmt* parent = toForallStmt(exprInAst->parentExpr)) {
+      ForallIntents* fi = parent->withClause();
       for_vector(Expr, fiVar, fi->fiVars) {
         if (exprInAst == fiVar) {
           errorDotInsideWithClause(origUSE, "forall loop");
           return;
         }
       }
-    }
   }
 
   // A 'with' clause for a task construct.
