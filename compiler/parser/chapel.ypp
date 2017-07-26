@@ -201,6 +201,7 @@
   #include "DoWhileStmt.h"
   #include "driver.h"
   #include "flex-chapel.h"
+  #include "ForallStmt.h"
   #include "ForLoop.h"
   #include "parser.h"
   #include "stmt.h"
@@ -667,49 +668,49 @@ loop_stmt:
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
 | TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
 | TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
-| TFORALL expr TIN expr                                 do_stmt    { $$ = buildForallLoopStmt($2, $4, NULL, $5); }
-| TFORALL expr TIN expr            forall_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, $4, $5,   $6); }
-| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = buildForallLoopStmt($2, zipToTuple($4), NULL, $5, true); }
-| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = buildForallLoopStmt($2, zipToTuple($4), $5,   $6, true); }
-| TFORALL expr                                          do_stmt    { $$ = buildForallLoopStmt(NULL, $2, NULL, $3); }
-| TFORALL expr                     forall_intent_clause do_stmt    { $$ = buildForallLoopStmt(NULL, $2, $3,   $4); }
+| TFORALL expr TIN expr                                 do_stmt    { $$ = ForallStmt::build($2, $4, NULL, $5); }
+| TFORALL expr TIN expr            forall_intent_clause do_stmt    { $$ = ForallStmt::build($2, $4, $5,   $6); }
+| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = ForallStmt::build($2, $4, NULL, $5, true); }
+| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build($2, $4, $5,   $6, true); }
+| TFORALL expr                                          do_stmt    { $$ = ForallStmt::build(NULL, $2, NULL, $3); }
+| TFORALL expr                     forall_intent_clause do_stmt    { $$ = ForallStmt::build(NULL, $2, $3,   $4); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, NULL, new BlockStmt($6));
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6));
     }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, $5,   new BlockStmt($7));
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7));
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), zipToTuple($4), NULL, new BlockStmt($6), true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true);
     }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), zipToTuple($4), $5,   new BlockStmt($7), true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true);
     }
 | TLSBR expr_ls TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4));
+        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4));
       else
-        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), NULL, new BlockStmt($4));
+        $$ = ForallStmt::build(NULL, $2->get(1)->remove(), NULL, new BlockStmt($4));
     }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3,   new BlockStmt($5));
+        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3,   new BlockStmt($5));
       else
-        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), $3,   new BlockStmt($5));
+        $$ = ForallStmt::build(NULL, $2->get(1)->remove(), $3,   new BlockStmt($5));
     }
 ;
 

@@ -265,14 +265,22 @@ module ArrayViewRankChange {
       }
     }
 
-    iter these(param tag: iterKind) where tag == iterKind.standalone && !localeModelHasSublocales {
-      if chpl__isDROrDRView(downDom) {
-        for i in upDom.these(tag) do
-          yield i;
-      } else {
-        for i in downDom.these(tag) do
-          yield downIdxToUpIdx(i);
-      }
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !localeModelHasSublocales
+      && chpl__isDROrDRView(downDom)
+      && __primitive("method call resolves", upDom, "these", tag)
+    {
+      for i in upDom.these(tag) do
+        yield i;
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !localeModelHasSublocales
+      && !chpl__isDROrDRView(downDom)
+      && __primitive("method call resolves", downDom, "these", tag)
+    {
+      for i in downDom.these(tag) do
+        yield downIdxToUpIdx(i);
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -539,7 +547,8 @@ module ArrayViewRankChange {
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
     iter these(param tag: iterKind) ref
-      where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && !localeModelHasSublocales &&
+           __primitive("method call resolves", privDom, "these", tag) {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getDataIndex(i))

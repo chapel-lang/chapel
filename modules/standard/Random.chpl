@@ -2253,6 +2253,18 @@ module Random {
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
       }
 
+      // Forward the leader iterator as well.
+      pragma "no doc"
+      proc iterate(D: domain, param tag, type resultType=real)
+        where tag == iterKind.leader
+      {
+        // Note that proc iterate() for the serial case (i.e. the one above)
+        // is going to be invoked as well, so we should not be taking
+        // any actions here other than the forwarding.
+        const start = NPBRandomStreamPrivate_count;
+        return NPBRandomPrivate_iterate(resultType, D, seed, start, tag);
+      }
+
       pragma "no doc"
       proc writeThis(f) {
         f <~> "NPBRandomStream(eltType=";
