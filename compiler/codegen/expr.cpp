@@ -3543,7 +3543,8 @@ GenRet CallExpr::codegenPrimitive() {
 
 
     ret = codegenCast(narrowType, raddr, true);
-    if (fLocal == false) {
+
+    if (requireWideReferences()) {
       ret = codegenWideAddr(locale, ret);
     }
 
