@@ -2111,6 +2111,11 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
           error = false;
         }
 
+        // A 'const' record should be able to be initialized
+        if (calledFn->name == astrInit) {
+          error = false;
+        }
+
         // For now, ignore errors with tuple construction/build_tuple
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
             (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
