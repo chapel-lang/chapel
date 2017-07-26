@@ -880,15 +880,11 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a forall loop.
-  if (ForallStmt* parent = toForallStmt(exprInAst->parentExpr)) {
-      ForallIntents* fi = parent->withClause();
-      for_vector(Expr, fiVar, fi->fiVars) {
-        if (exprInAst == fiVar) {
-          errorDotInsideWithClause(origUSE, "forall loop");
-          return;
-        }
-      }
-  }
+  if (ForallIntent* fi = toForallIntent(exprInAst->parentExpr))
+    if (exprInAst == fi->variable()) {
+      errorDotInsideWithClause(origUSE, "forall loop");
+      return;
+    }
 
   // A 'with' clause for a task construct.
   if (Expr* parent1 = exprInAst->parentExpr) {

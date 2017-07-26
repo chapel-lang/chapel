@@ -2177,21 +2177,17 @@ static Symbol* handleRISpec(ForallStmt* fs, Expr* fiVar, Expr* riSpec) {
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
 // Same as markOuterVarsWithIntents() in createTaskFunctions.cpp,
 // except uses ForallIntents.
-static void markOuterVarsWithIntentsNew(ForallStmt* fs, ForallIntents* fi,
-                                     SymbolMap& uses)
-{
-  int nv = fi->numVars();
-
-  for (int i = 0; i < nv; i++) {
+static void markOuterVarsWithIntentsNew(ForallStmt* fs, SymbolMap& uses) {
+  for_forall_intents(fi, temp, fs) {
     Symbol* marker = NULL;
-    if (fi->isReduce(i))
-      marker = handleRISpec(fs, fi->fiVars[i], fi->riSpecs[i]);
+    if (fi->isReduce())
+      marker = handleRISpec(fs, fi->variable(), fi->reduceExpr());
     else
       // TODO: avoid this wrapper, which is here for historical reasons.
       // Requires using something fancier than SymbolMap.
-      marker = tiMarkForTFIntent((int)(fi->fIntents[i]));
+      marker = tiMarkForTFIntent((int)(fi->intent()));
 
-    Symbol* var = toSymExpr(fi->fiVars[i])->symbol();
+    Symbol* var = toSymExpr(fi->variable())->symbol();
     SymbolMapElem* elem = uses.get_record(var);
     if (elem) {
       elem->value = marker;
@@ -2199,20 +2195,17 @@ static void markOuterVarsWithIntentsNew(ForallStmt* fs, ForallIntents* fi,
       if (isVarSymbol(marker)) {
         // this is a globalOp created in setupOneReduceIntent()
         INT_ASSERT(!strcmp(marker->name, "chpl__reduceGlob"));
-        USR_WARN(fi->riSpecs[i], "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
+        USR_WARN(fi->reduceExpr(), "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
       }
     }
   }
 }
 
-static void getOuterVarsNew(BlockStmt* body, ForallIntents* fi, SymbolMap& uses,
-                         ForallStmt* fs)
+static void getOuterVarsNew(BlockStmt* body, SymbolMap& uses, ForallStmt* fs)
 {
-  INT_ASSERT(fi);
-
   // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
   findOuterVarsNew(fs, body, uses);
-  markOuterVarsWithIntentsNew(fs, fi, uses);
+  markOuterVarsWithIntentsNew(fs, uses);
   pruneThisArg(body->parentSymbol, uses); // create pruneThisArgNew() ?
 }
 
@@ -2303,7 +2296,7 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall) {
   SymbolMap uses1;
   BlockStmt* forallBody1 = userLoop(fs);
 
-  getOuterVarsNew(forallBody1, fs->withClause(), uses1, fs);
+  getOuterVarsNew(forallBody1, uses1, fs);
 
   std::vector<Symbol*> outerVars;
   std::vector<Symbol*> shadowVars;
