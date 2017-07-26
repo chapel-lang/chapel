@@ -178,6 +178,16 @@ void AstVisitorTraverse::visitForallIntents(ForallIntents* clause)
 
 }
 
+bool AstVisitorTraverse::enterForallIntent(ForallIntent* intent)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitForallIntent(ForallIntent* intent)
+{
+
+}
+
 bool AstVisitorTraverse::enterForallStmt(ForallStmt* node)
 {
   return true;
