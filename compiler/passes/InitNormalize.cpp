@@ -52,6 +52,8 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
       mBlockType = cBlockBegin;
 
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     == true) {
+      // Lydia NOTE 2017/07/26: If PRIM_BLOCK_COBEGIN_ONs are ever made, we
+      // should match against them here
       mBlockType = cBlockCobegin;
 
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    == true ||
