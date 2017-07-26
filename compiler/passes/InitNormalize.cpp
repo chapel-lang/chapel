@@ -47,7 +47,8 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
   mPhase      = curr.mPhase;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
-    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true) {
+    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_BEGIN_ON)    == true) {
       mBlockType = cBlockBegin;
 
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     == true) {
