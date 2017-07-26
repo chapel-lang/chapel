@@ -920,29 +920,26 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
           if (sym->isVisible(call) == true) {
-            if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-              if (FnSymbol* fn = toFnSymbol(sym)) {
-                if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
-                  call->replace(new CallExpr(fn));
+            if (FnSymbol* fn = toFnSymbol(sym)) {
+              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+                call->replace(new CallExpr(fn));
 
-                } else {
-                  UnresolvedSymExpr* se = new UnresolvedSymExpr(mbrName);
+              } else {
+                CallExpr* parent = toCallExpr(call->parentExpr);
 
-                  call->replace(se);
-
-                  parent->insertAtHead(mod);
-                  parent->insertAtHead(gModuleToken);
-                }
-
-              } else if (resolveModuleIsNewExpr(call, sym) == true) {
-                call->replace(new SymExpr(sym));
+                call->replace(new UnresolvedSymExpr(mbrName));
 
                 parent->insertAtHead(mod);
                 parent->insertAtHead(gModuleToken);
-
-              } else {
-                call->replace(new SymExpr(sym));
               }
+
+            } else if (resolveModuleIsNewExpr(call, sym) == true) {
+              CallExpr* parent = toCallExpr(call->parentExpr);
+
+              call->replace(new SymExpr(sym));
+
+              parent->insertAtHead(mod);
+              parent->insertAtHead(gModuleToken);
 
             } else {
               call->replace(new SymExpr(sym));
@@ -979,6 +976,7 @@ static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym) {
     if (isAggregateType(ts->type) == true) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
+
           retval = grandParentCall->isPrimitive(PRIM_NEW);
         }
       }
