@@ -191,6 +191,7 @@
 #include "stringutil.h"
 #include "timer.h"
 #include "view.h"
+#include "wellknown.h"
 
 #include <map>
 #include <queue>

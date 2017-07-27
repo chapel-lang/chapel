@@ -33,6 +33,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()

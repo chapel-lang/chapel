@@ -34,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "wellknown.h"
 #include "WhileStmt.h"
 
 

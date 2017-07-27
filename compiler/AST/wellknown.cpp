@@ -23,6 +23,34 @@
 #include "expr.h"
 #include "symbol.h"
 
+// The well-known types
+AggregateType* dtArray;
+AggregateType* dtBaseArr;
+AggregateType* dtBaseDom;
+AggregateType* dtDist;
+AggregateType* dtError;
+AggregateType* dtLocale;
+AggregateType* dtLocaleID;
+AggregateType* dtMainArgument;
+AggregateType* dtOnBundleRecord;
+AggregateType* dtTaskBundleRecord;
+AggregateType* dtTuple;
+
+
+// The well-known functions
+FnSymbol *gChplHereAlloc;
+FnSymbol *gChplHereFree;
+FnSymbol *gChplDoDirectExecuteOn;
+FnSymbol *gBuildTupleType;
+FnSymbol *gBuildTupleTypeNoRef;
+FnSymbol *gBuildStarTupleType;
+FnSymbol *gBuildStarTupleTypeNoRef;
+FnSymbol *gChplDeleteError;
+FnSymbol *gPrintModuleInitFn;
+FnSymbol *gGetDynamicEndCount;
+FnSymbol *gSetDynamicEndCount;
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -66,15 +94,15 @@ struct WellKnownType
 // These types are a required part of the compiler/module interface.
 static WellKnownType sWellKnownTypes[] = {
   { "_array",                &dtArray,            false },
-  { "_tuple",                &dtTuple,            false },
-  { "locale",                &dtLocale,           true  },
-  { "chpl_localeID_t",       &dtLocaleID,         false },
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
+  { "locale",                &dtLocale,           true  },
+  { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
+  { "_tuple",                &dtTuple,            false },
   { "Error",                 &dtError,            true  }
 };
 

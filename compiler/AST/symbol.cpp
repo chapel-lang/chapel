@@ -87,21 +87,10 @@ VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
-FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gAddModuleFn = NULL;
-FnSymbol* gChplHereAlloc = NULL;
-FnSymbol* gChplHereFree = NULL;
-FnSymbol* gChplDoDirectExecuteOn = NULL;
 FnSymbol *gGenericTupleTypeCtor = NULL;
 FnSymbol *gGenericTupleInit = NULL;
 FnSymbol *gGenericTupleDestroy = NULL;
-FnSymbol *gBuildTupleType = NULL;
-FnSymbol *gBuildStarTupleType = NULL;
-FnSymbol *gBuildTupleTypeNoRef = NULL;
-FnSymbol *gBuildStarTupleTypeNoRef = NULL;
-FnSymbol* gChplDeleteError = NULL;
-FnSymbol *gGetDynamicEndCount = NULL;
-FnSymbol *gSetDynamicEndCount = NULL;
 
 
 std::map<FnSymbol*,int> ftableMap;

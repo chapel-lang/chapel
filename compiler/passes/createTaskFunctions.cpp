@@ -24,6 +24,7 @@
 #include "resolution.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "wellknown.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol*           markPruned      = NULL;

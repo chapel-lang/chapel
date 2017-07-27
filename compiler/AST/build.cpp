@@ -33,6 +33,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "wellknown.h"
 
 #include <map>
 #include <utility>

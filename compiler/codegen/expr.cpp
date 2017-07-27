@@ -34,6 +34,7 @@
 #include "type.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
+#include "wellknown.h"
 
 
 #ifndef __STDC_FORMAT_MACROS

@@ -33,6 +33,7 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
+#include "wellknown.h"
 
 #include <cctype>
 #include <set>
