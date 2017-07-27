@@ -64,6 +64,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SET_MAX_PROBE           5
 #define SET_INITIAL_INDEX       2
 
+template<typename T>
+uintptr_t _vec_hasher(T obj) {
+  return (uintptr_t)obj;
+}
+
 template <class C, int S = VEC_INTEGRAL_SIZE>  // S must be a power of 2
 class Vec {
  public:
@@ -393,7 +398,7 @@ template <class C, int S> C *
 Vec<C,S>::set_add_internal(C c) {
   int j, k;
   if (n) {
-    uintptr_t h = (uintptr_t)c;
+    uintptr_t h = _vec_hasher(c);
     h = h % n;
     for (k = h, j = 0;
          k < n && j < SET_MAX_PROBE;
@@ -418,7 +423,7 @@ template <class C, int S> C *
 Vec<C,S>::set_in_internal(C c) {
   int j, k;
   if (n) {
-    uintptr_t h = (uintptr_t)c;
+    uintptr_t h = _vec_hasher(c);
     h = h % n;
     for (k = h, j = 0;
          k < n && j < SET_MAX_PROBE;

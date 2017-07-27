@@ -75,7 +75,7 @@ template <class K, class C> class MapElem {
   C     value;
   bool operator==(MapElem &e) { return e.key == key; }
 
-  operator uintptr_t()     { return (uintptr_t) key; }
+  operator uintptr_t()     { return _vec_hasher(key); }
 
   MapElem()                 : key(0)                     { }
   MapElem(K akey, C avalue) : key(akey),  value(avalue)  { }
