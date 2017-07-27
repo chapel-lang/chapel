@@ -185,17 +185,6 @@ private:
 extern AggregateType* dtObject;
 
 extern AggregateType* dtString;
-extern AggregateType* dtArray;
-extern AggregateType* dtBaseArr;
-extern AggregateType* dtBaseDom;
-extern AggregateType* dtDist;
-extern AggregateType* dtTuple;
-extern AggregateType* dtLocale;
-extern AggregateType* dtLocaleID;
-extern AggregateType* dtMainArgument;
-extern AggregateType* dtOnBundleRecord;
-extern AggregateType* dtTaskBundleRecord;
-extern AggregateType* dtError;
 
 DefExpr* defineObjectClass();
 

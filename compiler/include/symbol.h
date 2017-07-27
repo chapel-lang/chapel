@@ -702,24 +702,11 @@ extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
-extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gAddModuleFn;
-extern FnSymbol *gChplHereAlloc;
-extern FnSymbol *gChplHereFree;
-extern FnSymbol *gChplDoDirectExecuteOn;
+
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
-extern FnSymbol *gChplDeleteError;
-extern FnSymbol *gGetDynamicEndCount;
-extern FnSymbol *gSetDynamicEndCount;
-
-// These global symbols point to generic functions that
-// will be instantiated.
-extern FnSymbol *gBuildTupleType;
-extern FnSymbol *gBuildStarTupleType;
-extern FnSymbol *gBuildTupleTypeNoRef;
-extern FnSymbol *gBuildStarTupleTypeNoRef;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
