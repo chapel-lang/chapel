@@ -1,5 +1,0 @@
-const-record.chpl:10: error: const actual is passed to 'ref' formal 'this' of init()
-const-record.chpl:2: note: to formal of type Foo
-const-record.chpl:6: note: passed as ref here
-const-record.chpl:3: note: to ref formal here
-const-record.chpl:6: note: passed as ref here
