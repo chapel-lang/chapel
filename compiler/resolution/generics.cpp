@@ -521,6 +521,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       if (newFn->numFormals()       >  1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
+        // MPF: should only visible functions go in to type->methods?
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
