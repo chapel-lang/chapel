@@ -67,49 +67,35 @@ void AstToText::appendName(FnSymbol* fn)
     mText += "top-level module statements for ";
     mText += (fn->name + 11);
   }
-
   else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
   {
     INT_ASSERT(strncmp(fn->name, "_type_construct_", 16) == 0);
 
     mText += (fn->name + 16);
   }
-
   else if (fn->hasFlag(FLAG_CONSTRUCTOR))
   {
     INT_ASSERT(strncmp(fn->name, "_construct_",      11) == 0);
 
     mText += (fn->name + 11);
+    // todo: should this also include ".init" ?
   }
-
-  else if (fn->hasFlag(FLAG_DESTRUCTOR) == true)
-  {
-    appendClassName(fn);
-    mText += ".~";
-    appendClassName(fn);
-  }
-
   else if (fn->hasFlag(FLAG_METHOD))
   {
     appendThisIntent(fn);
 
-    if (fn->name == astrThis)
-    {
-      appendClassName(fn);
-    }
-
-    else if (fn->isPrimaryMethod())
-    {
-      mText += fn->name;
-    }
-    else
-    {
+    if (!fn->isPrimaryMethod()) {
       appendClassName(fn);
       mText += '.';
-      mText += fn->name;
     }
-  }
 
+    const char* fnName = fn->name;
+
+    if (fn->hasFlag(FLAG_DESTRUCTOR))
+      fnName = "deinit";
+
+    mText += fnName;
+  }
   else
     mText += fn->name;
 }
