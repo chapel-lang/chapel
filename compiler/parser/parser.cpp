@@ -684,10 +684,15 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
       moduleDefs == 1) {
     const char* stmtKind;
 
-    if (hasUses == true)
+    if (hasUses == true && hasRequires == true) {
+      stmtKind = "require' and 'use";
+
+    } else if (hasUses == true) {
       stmtKind = "use";
-    else
+
+    } else {
       stmtKind = "require";
+    }
 
     USR_WARN(lastModSymStmt,
              "as written, '%s' is a sub-module of the module created for "
