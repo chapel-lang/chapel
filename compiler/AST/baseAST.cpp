@@ -57,45 +57,28 @@ static int uid = 1;
 
 #define sum_gvecs(type) g##type##s.n
 
+// Increment ID by one to avoid weird edge case where 'obj' somehow has an
+// AST ID of zero. Our home-grown Vec will do something like "!v[k]" on a
+// MapElem, where 'k' is a BaseAST*. If we return zero here when 'k' is not
+// NULL, Vec will stop searching before the correct MapElem is found.
+//
+// TODO: how can something have an AST ID of zero? Uninitialized memory??
+// For future reference, the 'arrays.chpl' primer would fail if we did not
+// increment here.
 #define def_vec_hash(SomeType) \
     template<> \
     uintptr_t _vec_hasher(SomeType* obj) { \
       if (obj == NULL) { \
         return 0; \
       } else { \
-        return (uintptr_t)((BaseAST*)obj)->id; \
+        return 1 + (uintptr_t)((BaseAST*)obj)->id; \
       } \
     }
 
-def_vec_hash(SymExpr)
-def_vec_hash(UnresolvedSymExpr)
-def_vec_hash(DefExpr)
-def_vec_hash(ContextCallExpr)
-def_vec_hash(ForallExpr)
-def_vec_hash(NamedExpr)
-def_vec_hash(UseStmt)
-def_vec_hash(BlockStmt)
-def_vec_hash(CondStmt)
-def_vec_hash(GotoStmt)
-def_vec_hash(DeferStmt)
-def_vec_hash(ForallStmt)
-def_vec_hash(TryStmt)
-def_vec_hash(ForwardingStmt)
-def_vec_hash(CatchStmt)
-def_vec_hash(ExternBlockStmt)
-def_vec_hash(Expr)
-def_vec_hash(ModuleSymbol)
-def_vec_hash(VarSymbol)
-def_vec_hash(ArgSymbol)
-def_vec_hash(TypeSymbol)
-def_vec_hash(FnSymbol)
-def_vec_hash(EnumSymbol)
-def_vec_hash(LabelSymbol)
-def_vec_hash(Symbol)
-def_vec_hash(PrimitiveType)
-def_vec_hash(EnumType)
-def_vec_hash(AggregateType)
-def_vec_hash(Type)
+foreach_ast(def_vec_hash);
+def_vec_hash(Symbol);
+def_vec_hash(Type);
+def_vec_hash(BaseAST);
 
 #undef def_vec_hash
 

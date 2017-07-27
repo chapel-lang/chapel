@@ -83,6 +83,7 @@
 #define for_alive_in_Vec(TYPE, VAR, VEC)           \
   forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
 
+class BaseAST;
 class AstVisitor;
 class Expr;
 class GenRet;
@@ -104,6 +105,17 @@ class QualifiedType;
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
+
+#define def_vec_hash(SomeType) \
+    template<> \
+    uintptr_t _vec_hasher(SomeType* obj);
+
+foreach_ast(def_vec_hash);
+def_vec_hash(Symbol);
+def_vec_hash(Type);
+def_vec_hash(BaseAST);
+
+#undef def_vec_hash
 
 //
 // declare global vectors for all AST node types
@@ -457,43 +469,15 @@ def_hash_ast(EnumType)
 def_hash_ast(AggregateType)
 def_hash_ast(Type)
 
+def_hash_ast(LoopStmt);
+def_hash_ast(WhileStmt);
+def_hash_ast(WhileDoStmt);
+def_hash_ast(DoWhileStmt);
+def_hash_ast(ForLoop);
+def_hash_ast(CForLoop);
+def_hash_ast(ParamForLoop);
+
 #undef def_hash_ast
-
-#define def_vec_hash(SomeType) \
-    template<> \
-    uintptr_t _vec_hasher(SomeType* obj);
-
-def_vec_hash(SymExpr)
-def_vec_hash(UnresolvedSymExpr)
-def_vec_hash(DefExpr)
-def_vec_hash(ContextCallExpr)
-def_vec_hash(ForallExpr)
-def_vec_hash(NamedExpr)
-def_vec_hash(UseStmt)
-def_vec_hash(BlockStmt)
-def_vec_hash(CondStmt)
-def_vec_hash(GotoStmt)
-def_vec_hash(DeferStmt)
-def_vec_hash(ForallStmt)
-def_vec_hash(TryStmt)
-def_vec_hash(ForwardingStmt)
-def_vec_hash(CatchStmt)
-def_vec_hash(ExternBlockStmt)
-def_vec_hash(Expr)
-def_vec_hash(ModuleSymbol)
-def_vec_hash(VarSymbol)
-def_vec_hash(ArgSymbol)
-def_vec_hash(TypeSymbol)
-def_vec_hash(FnSymbol)
-def_vec_hash(EnumSymbol)
-def_vec_hash(LabelSymbol)
-def_vec_hash(Symbol)
-def_vec_hash(PrimitiveType)
-def_vec_hash(EnumType)
-def_vec_hash(AggregateType)
-def_vec_hash(Type)
-
-#undef def_vec_hash
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {

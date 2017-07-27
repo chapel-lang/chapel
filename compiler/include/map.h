@@ -83,6 +83,11 @@ template <class K, class C> class MapElem {
   MapElem(unsigned long x)                               { assert(!x); key = 0; }
 };
 
+template<class K, class C>
+uintptr_t _vec_hasher(MapElem<K,C> obj) {
+  return _vec_hasher(obj.key);
+}
+
 template <class K, class C> class Map : public Vec<MapElem<K,C> > {
  public:
   using Vec<MapElem<K, C> >::n;
@@ -247,8 +252,7 @@ template <class K, class C> inline void
 Map<K,C>::get_values(Vec<C> &values) {
   for (int i = 0; i < n; i++)
     if (v[i].key)
-      values.set_add(v[i].value);
-  values.set_to_vec();
+      values.add(v[i].value);
 }
 
 template <class K, class C> inline MapElem<K,C> *
