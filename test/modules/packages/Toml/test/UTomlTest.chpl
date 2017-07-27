@@ -1,10 +1,9 @@
-
 use TOML;
 
-config const file: string;
+config const f: string;
 
 proc main() {
-  var tomlChannel = openreader(file);
+  var tomlChannel = openreader(f);
   var tomlData = parseToml(tomlChannel);
   writeln("Before Mutation: ", tomlData);
 
@@ -30,4 +29,7 @@ proc main() {
   // write a random table to stdout
   writeln("KV pairs in table A.C");
   writeln(tomlData["A.C"]);
+
+  delete tomlData;
+  tomlChannel.close();
 }

@@ -16,6 +16,7 @@ array */
    var tomlStr: string;
    var tomlFile = openreader(input);
    tomlFile.readstring(tomlStr);
+   tomlFile.close();
    return parseToml(tomlStr);
  }
 
@@ -26,7 +27,7 @@ array. */
    input.readstring(tomlStr);
    return parseToml(tomlStr);
  }
- 
+
  /* Receives a string of TOML format as a parameter and outputs an associative
 array. */
  proc parseToml(input: string) : Toml {
@@ -44,13 +45,14 @@ array. */
 
 
 
-/* 
+/*
 Parser module with the Toml class for the Chapel TOML library.
 */
  module TomlParser {
 
    use Regexp;
    use DateTime;
+   use OwnedObject;
 
    /* Prints a line by line output of parsing process */
    config const debugTomlParser: bool = false;
@@ -58,8 +60,8 @@ Parser module with the Toml class for the Chapel TOML library.
    pragma "no doc"
    class Parser {
 
-     var source;
-     var rootTable;
+     var source: Source;
+     var rootTable: Toml;
      var curTable: string;
 
      const doubleQuotes = '".*?"',
@@ -137,7 +139,7 @@ Parser module with the Toml class for the Chapel TOML library.
        var first = true;
        var i: int = 0;
        for parent in path {
-         if first { 
+         if first {
            var tblD: domain(string);
            var tbl: [tblD] Toml;
            rootTable[parent] = tbl;
@@ -191,7 +193,7 @@ Parser module with the Toml class for the Chapel TOML library.
          else rootTable[curTable][key] = value;
        }
      }
-     
+
      proc parseComment() {
        skipLine(source);
      }
@@ -205,7 +207,6 @@ Parser module with the Toml class for the Chapel TOML library.
        if A.size == 1 then path = A[fIdx];
        return (path, leaf);
      }
-
 
      /* Creates and returns a Toml parsed from tokens into respective type */
      proc parseValue(): Toml {
@@ -224,14 +225,17 @@ Parser module with the Toml class for the Chapel TOML library.
            }
            else {
              var toParse = parseValue();
-             array.push_back(toParse);
+             // Temporary work-around for push_back(Owned(C))
+             //     See #6841 for more info
+             Dom = {Dom.low..Dom.high+1};
+             array[Dom.high] = toParse;
            }
          }
          skipNext(source);
          var tomlArray: Toml = array;
          return tomlArray;
        }
-       // Strings (includes multi-line) 
+       // Strings (includes multi-line)
        else if Str.match(val) {
          var toStr: string;
          if val.startsWith('"""') {
@@ -275,7 +279,7 @@ Parser module with the Toml class for the Chapel TOML library.
          var toInt = token: int;
          var intToml: Toml = toInt;
          return intToml;
-       } 
+       }
        // Boolean
        else if val == "true" || val ==  "false" {
          var token = getToken(source);
@@ -310,11 +314,12 @@ Parser module with the Toml class for the Chapel TOML library.
        writeln();
        writeln("================================================================");
      }
+
    }
 
 
  pragma "no doc"
- // Enum for Toml class field: tag 
+ // Enum for Toml class field: tag
   enum fieldtag {
     fieldBool,
     fieldInt,
@@ -328,31 +333,38 @@ Parser module with the Toml class for the Chapel TOML library.
 
   pragma "no doc"
   proc =(ref t: Toml, s: string) {
-    t = new Toml(s);}
+    t = new Toml(s);
+  }
 
   pragma "no doc"
   proc =(ref t: Toml, i: int) {
-    t = new Toml(i);}
+    t = new Toml(i);
+  }
 
   pragma "no doc"
   proc =(ref t: Toml, b: bool) {
-    t = new Toml(b);}
+    t = new Toml(b);
+  }
 
   pragma "no doc"
   proc =(ref t: Toml, r: real) {
-    t = new Toml(r);}
+    t = new Toml(r);
+  }
 
   pragma "no doc"
   proc =(ref t: Toml, dt: datetime) {
-    t = new Toml(dt);}
+    t = new Toml(dt);
+  }
 
   pragma "no doc"
   proc =(ref t: Toml, A: [?D] Toml) where isAssociativeDom(D) {
-    t = new Toml(A);}
+    t = new Toml(A);
+  }
 
   pragma "no doc"
   proc =(ref t: Toml, arr: [?dom] Toml) where !isAssociativeDom(dom){
-    t = new Toml(arr);}
+    t = new Toml(arr);
+  }
 
 
  /*
@@ -429,7 +441,7 @@ Parser module with the Toml class for the Chapel TOML library.
        var top = indx.domain.first;
        if indx.size < 2 {
          return this.A[tbl];
-       } 
+       }
        else {
          var next = '.'.join(indx[top+1..]);
          if this.A.domain.member(indx[top]) {
@@ -476,7 +488,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
      pragma "no doc"
      /* Flatten tables into flat associative array for writing */
-     proc flatten(flat: [?d] Toml, rootKey = '') : flat.type { 
+     proc flatten(flat: [?d] Toml, rootKey = '') : flat.type {
        for (k, v) in zip(this.D, this.A) {
          if v.tag == fieldToml {
            var fullKey = k;
@@ -535,7 +547,7 @@ Parser module with the Toml class for the Chapel TOML library.
            when fieldDate {
              f.writeln(key, ' = ', toString(value));
            }
-           otherwise { 
+           otherwise {
              f.write("not yet supported");
            }
            }
@@ -545,7 +557,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
      pragma "no doc"
      /* Return String representation of a value in a node */
-     proc toString(val: Toml) : string { 
+     proc toString(val: Toml) : string {
        select val.tag {
          when fieldBool do return val.boo;
          when fieldInt do return val.i;
@@ -574,19 +586,18 @@ Parser module with the Toml class for the Chapel TOML library.
      }
 
 
-     /* 
+     /*
       For the user to write values of a node as follows:
       Toml[key].toString()
      */
-      proc toString() : string { 
+      proc toString() : string {
         return toString(this);
      }
 
      pragma "no doc"
      proc deinit() {
-       for a in A {
-         delete a;
-       }
+       for a in A do delete a;
+       for a in arr do delete a;
      }
    }
  }
@@ -598,6 +609,7 @@ pragma "no doc"
  */
  module TomlReader {
 
+   use OwnedObject;
    use Regexp;
 
    /* Returns the next token in the current line without removing it */
@@ -619,7 +631,7 @@ pragma "no doc"
    }
 
    proc addToken(source, tokensToAdd: [?dom] string) {
-     var tokens = new Tokens(tokensToAdd);
+     var tokens = new Owned(new Tokens(tokensToAdd));
      source.currentLine = tokens;
    }
 
@@ -637,8 +649,8 @@ pragma "no doc"
 
      var tomlStr: string;
      var tokenD = {1..0},
-       tokenlist: [tokenD] Tokens;
-     var currentLine: Tokens;
+       tokenlist: [tokenD] Owned(Tokens);
+     var currentLine: Owned(Tokens);
 
 
      proc init(tomlStr: string) {
@@ -651,7 +663,7 @@ pragma "no doc"
          splitLine(line);
        }
       currentLine = tokenlist[tokenD.first];
-     } 
+     }
 
      proc splitLine(line) {
        var linetokens: [1..0] string;
@@ -678,15 +690,18 @@ pragma "no doc"
          if strippedToken.length != 0  {
            linetokens.push_back(strippedToken);}
        }
-       if linetokens.size != 0 {
-         var tokens = new Tokens(linetokens);
-         tokenlist.push_back(tokens);
+       if !linetokens.isEmpty() {
+         var tokens = new Owned(new Tokens(linetokens));
+         // Temporary work-around for push_back(Owned(C))
+         //     See #6841 for more info
+         tokenD = {tokenD.low..tokenD.high+1};
+         tokenlist[tokenD.high] = tokens;
        }
      }
 
 
      proc newLine() {
-       if nextLine() { 
+       if nextLine() {
          if currentLine.isEmpty() {
            tokenlist.remove(tokenD.first);
            currentLine = tokenlist[tokenD.first];}
@@ -733,12 +748,6 @@ pragma "no doc"
          }
          lineCounter += 1;
          writeln();
-       }
-     }
-
-     proc deinit() { 
-       for token in tokenlist {
-         delete token;
        }
      }
    }
