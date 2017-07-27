@@ -47,10 +47,13 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
   mPhase      = curr.mPhase;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
-    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true) {
+    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_BEGIN_ON)    == true) {
       mBlockType = cBlockBegin;
 
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     == true) {
+      // Lydia NOTE 2017/07/26: If PRIM_BLOCK_COBEGIN_ONs are ever made, we
+      // should match against them here
       mBlockType = cBlockCobegin;
 
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    == true ||
