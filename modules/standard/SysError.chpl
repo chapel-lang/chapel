@@ -41,6 +41,33 @@ module SysError {
 
 use SysBasic;
 
+class SystemError : Error {
+  var err: syserr;
+
+  proc init(err: syserr, msg: string) {
+    this.err = err;
+    super.init(msg);
+  }
+}
+
+  /*
+  proc fromSyserr(err: syserr): Error type {
+    if err == EEOF {
+      return new EOFError();
+    }
+    return new SystemError(err);
+  }
+   */
+
+/*
+class EOFError : SystemError {
+  proc init() {
+    super.init(EEOF);
+  }
+}
+ */
+
+
 // here's what we need from Sys
 private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:err_t):c_string;
 
@@ -75,14 +102,14 @@ proc quote_string(s:string, len:ssize_t) {
    :arg error: the error object
    :arg msg: extra information to print after the error description
  */
-proc ioerror(error:syserr, msg:string)
+proc ioerror(error:syserr, msg:string) throws
 {
   if( error ) {
     var errstr:c_string;
     var strerror_err:err_t = ENOERR;
     errstr = sys_strerror_syserr_str(error, strerror_err);
     const err_msg: string = errstr:string + " " + msg;
-    __primitive("chpl_error", err_msg.c_str());
+    throw new SystemError(error, err_msg);
   }
 }
 
@@ -96,14 +123,14 @@ proc ioerror(error:syserr, msg:string)
    :arg msg: extra information to print after the error description
    :arg path: a path to print out that is related to the error
  */
-proc ioerror(error:syserr, msg:string, path:string)
+proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if( error ) {
     var strerror_err:err_t = ENOERR;
     const errstr = sys_strerror_syserr_str(error, strerror_err):string;
     const quotedpath = quote_string(path, path.length:ssize_t):string;
     const err_msg: string = errstr + " " + msg + " with path " + quotedpath;
-    __primitive("chpl_error", err_msg.c_str());
+    throw new SystemError(error, err_msg);
   }
 }
 
@@ -118,14 +145,14 @@ proc ioerror(error:syserr, msg:string, path:string)
    :arg path: a path to print out that is related to the error
    :arg offset: an offset to print out that is related to the error
  */
-proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
+proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if( error ) {
     var strerror_err:err_t = ENOERR;
     const errstr = sys_strerror_syserr_str(error, strerror_err): string;
     const quotedpath = quote_string(path, path.length:ssize_t): string;
     const err_msg: string = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-    __primitive("chpl_error", err_msg.c_str());
+    throw new SystemError(error, err_msg);
   }
 }
 
@@ -143,11 +170,14 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
    :arg path: a path to print out that is related to the error
    :arg offset: an offset to print out that is related to the error
  */
-proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
+proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
+  compilerError("is this ioerror ever called?");
+  /*
   const quotedpath = quote_string(path, path.length:ssize_t): string;
   const err_msg = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-  __primitive("chpl_error", err_msg.c_str());
+  throw new SystemError(error, err_msg);
+  */
 }
 
 /* Convert a syserr error code to a human-readable string describing that

@@ -1719,7 +1719,7 @@ proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle
 
 // documented in the error= version
 pragma "no doc"
-proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
@@ -1728,7 +1728,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     e2 = qio_file_path_for_fd(fd, path_cs);
     var path = if e2 then "unknown"
                      else new string(path_cs, needToCopy=false);
-    ioerror(err, "in openfd", path);
+    try ioerror(err, "in openfd", path);
   }
   return ret;
 }
@@ -1774,7 +1774,7 @@ proc openfp(fp: _file, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyl
 
 // documented in the error= version
 pragma "no doc"
-proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
@@ -1783,7 +1783,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     e2 = qio_file_path_for_fp(fp, path_cs);
     var path = if e2 then "unknown"
                      else new string(path_cs, needToCopy=false);
-    ioerror(err, "in openfp", path);
+    try ioerror(err, "in openfp", path);
   }
   return ret;
 }
@@ -2085,7 +2085,7 @@ inline proc _cast(type t, x: ioBits) where t == string {
 
 
 pragma "no doc"
-proc channel._ch_ioerror(error:syserr, msg:string) {
+proc channel._ch_ioerror(error:syserr, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
@@ -2098,12 +2098,12 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
       offset = tmp_offset;
     }
   }
-  ioerror(error, msg, path, offset);
+  try ioerror(error, msg, path, offset);
   // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
-proc channel._ch_ioerror(errstr:string, msg:string) {
+proc channel._ch_ioerror(errstr:string, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
@@ -2116,7 +2116,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
       offset = tmp_offset;
     }
   }
-  ioerror(errstr, msg, path, offset);
+  try ioerror(errstr, msg, path, offset);
   // c_string tmp_path leaked, but ioerror will exit
 }
 
@@ -2536,10 +2536,10 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
 
 // documented in the error= version
 pragma "no doc"
-proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) {
+proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) throws {
   var err:syserr = ENOERR;
   var ret = this.reader(err, kind, locking, start, end, hints, style);
-  if err then ioerror(err, "in file.reader", this.tryGetPath());
+  if err then try ioerror(err, "in file.reader", this.tryGetPath());
   return ret;
 }
 
@@ -2636,12 +2636,12 @@ proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true
 
 // documented in error= version
 pragma "no doc"
-proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking)
+proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) throws
 {
   var err:syserr = ENOERR;
   var ret = this.writer(err, kind, locking, start, end, hints, style);
 
-  if err then ioerror(err, "in file.writer", this.tryGetPath());
+  if err then try ioerror(err, "in file.writer", this.tryGetPath());
   return ret;
 }
 
@@ -3242,10 +3242,9 @@ inline proc channel.readwrite(ref x) where !this.writing {
   }
 
 
-/* Returns true if we read all the args,
-   false if we encountered EOF (or possibly another error and didn't halt)*/
-inline proc channel.read(ref args ...?k,
-                  out error:syserr):bool {
+/* returns true if read successfully, false if we encountered EOF
+   (or possibly another error and didn't halt)*/
+inline proc channel.read(ref args ...?k, out error:syserr): bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
   const origLocale = this.getLocaleOfIoRequest();
@@ -3426,15 +3425,15 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 
 // documented in the style= error= version
 pragma "no doc"
-inline proc channel.read(ref args ...?k):bool {
+inline proc channel.read(ref args ...?k):bool throws {
   var e:syserr = ENOERR;
   this.read((...args), error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
     this._ch_ioerror(e, "in channel.read(" +
-                        _args_to_proto((...args), preArg="ref ") +
-                        ")");
+                     _args_to_proto((...args), preArg="ref ") +
+                     ")");
     return false;
   }
 }
@@ -4231,11 +4230,29 @@ proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
 // And now, the toplevel items.
 
 /* standard input, otherwise known as file descriptor 0 */
-const stdin:channel(false, iokind.dynamic, true) = openfd(0).reader();
+const stdin:channel(false, iokind.dynamic, true) = stdinInit();
 /* standard output, otherwise known as file descriptor 1 */
-const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer();
+const stdout:channel(true, iokind.dynamic, true) = stdoutInit();
 /* standard error, otherwise known as file descriptor 2 */
-const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer();
+const stderr:channel(true, iokind.dynamic, true) = stderrInit();
+
+proc stdinInit() {
+  try! {
+    return openfd(0).reader();
+  }
+}
+
+proc stdoutInit() {
+ try! {
+   return openfp(chpl_cstdout()).writer();
+ }
+}
+
+proc stderrInit() {
+ try! {
+   return openfp(chpl_cstderr()).writer();
+ }
+}
 
 /* Equivalent to stdout.write. See :proc:`channel.write` */
 proc write(const args ...?n) {
