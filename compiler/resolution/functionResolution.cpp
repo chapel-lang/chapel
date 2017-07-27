@@ -3303,11 +3303,18 @@ populateForwardingMethods(Type* t,
       CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
       CallExpr* wrapCall = new CallExpr(new UnresolvedSymExpr(method->name), gMethodToken, tgt);
 
+      // Create an argument symbol that we're about to replace
+      // with a call to fnGetTgt.
+      // This enables forwarding a function that used 'this' in
+      // its argument type or default value declarations.
+      ArgSymbol* dummyThis = new ArgSymbol(INTENT_BLANK, "dummyThis", dtUnknown);
+      fn->insertFormalAtHead(dummyThis);
+
       SymbolMap map;
 
-      // Add mt, _this to SymbolMap since these were computed above
+      // Add mt, dummyThis to SymbolMap since these were computed above
       map.put(method->getFormal(1), mt);
-      map.put(method->getFormal(2), _this);
+      map.put(method->getFormal(2), dummyThis);
 
       // Add the arguments to the wrapper function
       // Add the arguments to the call
@@ -3323,10 +3330,47 @@ populateForwardingMethods(Type* t,
         i++;
       }
 
-      // Adjust the where clause
+      // copy the where clause
       if (method->where != NULL) {
         fn->where = method->where->copy(&map);
       }
+
+      // Add forwarding method to the tree so that
+      // for_SymbolSymExprs below will work.
+      at->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+      std::map<BlockStmt*, VarSymbol*> addedTgts;
+
+      // Fix up any uses of dummyThis to call fnGetTgt.
+      for_SymbolSymExprs(se, dummyThis) {
+        // Find the parent BlockStmt to insert fixTgt in to.
+        Expr* insert = se;
+        while ( insert->parentExpr != NULL ) {
+          insert = insert->parentExpr;
+        }
+        INT_ASSERT(insert && isBlockStmt(insert));
+        BlockStmt* block = toBlockStmt(insert);
+
+        VarSymbol* fixTgt = NULL;
+        // does this BlockStmt already have a call?
+        if (addedTgts.count(block)) {
+          fixTgt = addedTgts[block];
+        } else {
+          // add the call to fnGetTgt and DefExpr for fixTgt.
+          fixTgt = newTemp("tgt");
+          fixTgt->addFlag(FLAG_MAYBE_REF);
+          CallExpr* fixGetTgt = new CallExpr(fnGetTgt, gMethodToken, _this);
+          CallExpr* fixSetTgt = new CallExpr(PRIM_MOVE, fixTgt, fixGetTgt);
+
+          block->insertAtHead(fixSetTgt);
+          block->insertAtHead(new DefExpr(fixTgt));
+          addedTgts[block] = fixTgt;
+        }
+        se->replace(new SymExpr(fixTgt));
+      }
+
+      // Remove dummyThis from the function
+      dummyThis->defPoint->remove();
 
       // at this point, we don't know the return type for
       // wrapCall, and we don't want to resolve it yet.
@@ -3342,7 +3386,6 @@ populateForwardingMethods(Type* t,
       fn->body->insertAtTail(setTgt);
       fn->body->insertAtTail(new CallExpr(PRIM_MOVE, retval, wrapCall));
       fn->body->insertAtTail(new CallExpr(PRIM_RETURN, retval));
-      at->symbol->defPoint->insertBefore(new DefExpr(fn));
 
       // Add the new function as a method.
       at->methods.add(fn);
