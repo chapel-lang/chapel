@@ -202,14 +202,20 @@ module ArrayViewReindex {
       }
     }
 
-    iter these(param tag: iterKind) where tag == iterKind.standalone {
-      if chpl__isDROrDRView(downdom) {
-        for i in updom.these(tag) do
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && chpl__isDROrDRView(downdom)
+      && __primitive("method call resolves", updom, "these", tag)
+    {
+      for i in updom.these(tag) do
           yield i;
-      } else {
-        for i in downdom.these(tag) do
-          yield downIdxToUpIdx(i);
-      }
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !chpl__isDROrDRView(downdom)
+      && __primitive("method call resolves", downdom, "these", tag)
+    {
+      for i in downdom.these(tag) do
+        yield downIdxToUpIdx(i);
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -369,7 +375,8 @@ module ArrayViewReindex {
     }
 
     iter these(param tag: iterKind) ref
-      where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && !localeModelHasSublocales &&
+           __primitive("method call resolves", privDom, "these", tag) {
       for i in privDom.these(tag) {
         if shouldUseIndexCache() {
           const dataIdx = indexCache.getDataIndex(i);

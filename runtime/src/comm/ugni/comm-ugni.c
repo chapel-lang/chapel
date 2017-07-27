@@ -5562,7 +5562,8 @@ void fork_call_common(int locale, c_sublocid_t subloc,
                                 .fast         = do_fast_fork,
                                 .blocking     = blocking,
                                 .payload_size = payload_size,
-                                .fid          = fid };
+                                .fid          = fid,
+                                .state        = arg->task_bundle.state };
 
   fork_small_call_info_t *f_sc = &f.sc;
 

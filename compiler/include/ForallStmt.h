@@ -50,8 +50,10 @@ public:
 
   // for the parser
   static BlockStmt* build(Expr* indices, Expr* iterator, ForallIntents* fi,
-                          BlockStmt* body, bool zippered);
+                          BlockStmt* body, bool zippered = false);
   // helpers
+  Expr* firstIteratedExpr() const;
+  int   numIteratedExprs() const;
   bool isIteratedExpression(Expr* expr);
   int  reduceIntentIdx(Symbol* var); // todo: replace with LoopIntentVars
 
@@ -66,13 +68,24 @@ private:
   ForallStmt(bool zippered, BlockStmt* body, ForallIntents* with);
 };
 
-ForallStmt* enclosingForallStmt(Expr* expr);
-
+// accessor implementations
 inline bool   ForallStmt::zippered() const       { return fZippered; }
 inline AList& ForallStmt::inductionVariables()   { return fIterVars; }
 inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs; }
 inline AList& ForallStmt::intentVariables()      { return fIntentVars; }
 inline BlockStmt*     ForallStmt::loopBody()   const { return fLoopBody; }
 inline ForallIntents* ForallStmt::withClause() const { return fWith; }
+
+// conveniences
+inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head; }
+inline int   ForallStmt::numIteratedExprs() const { return fIterExprs.length; }
+
+// helpers
+ForallStmt* enclosingForallStmt(Expr* expr);
+
+// used for lowering ForallStmt and forall intents
+VarSymbol* parIdxVar(const ForallStmt* fs);
+VarSymbol* parIdxCopyVar(const ForallStmt* fs);
+BlockStmt* userLoop(const ForallStmt* fs);
 
 #endif

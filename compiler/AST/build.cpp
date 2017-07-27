@@ -1351,6 +1351,9 @@ buildStandaloneForallLoopStmt(Expr* indices,
  *       for idx in iter(follower, block) do
  *         body(idx);
  *   }
+ *
+ * This is still used to build forall loops for reduce expressions
+ * and promotion wrappers. TODO replace with ForallStmt or new AST node(s).
  */
 BlockStmt*
 buildForallLoopStmt(Expr*      indices,

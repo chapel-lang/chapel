@@ -35,7 +35,6 @@
 #include "CForLoop.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "expr.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "initializerResolution.h"
@@ -49,9 +48,7 @@
 #include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "TryStmt.h"
 #include "typeSpecifier.h"
 #include "view.h"
@@ -110,6 +107,7 @@ public:
 bool            resolved         = false;
 int             explainCallLine  = 0;
 bool            tryFailure       = false;
+bool            beforeLoweringForallStmts = true;
 
 char            arrayUnrefName[] = "array_unref_ret_tmp";
 
@@ -5599,13 +5597,18 @@ resolveExpr(Expr* expr) {
     if (se->symbol()) {
       makeRefType(se->symbol()->type);
     }
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+      if (pfs->isIteratedExpression(expr))
+        // Note: this may set expr=NULL, tryFailure=true.
+        expr = resolveParallelIteratorAndForallIntents(pfs, se);
+    }
   }
 
   if (CallExpr* call = toCallExpr(expr)) {
     expr = preFold(call);
   }
 
-  if (fn && fn->retTag == RET_PARAM && is_param_resolved(fn, expr)) {
+  if (expr && fn && fn->retTag == RET_PARAM && is_param_resolved(fn, expr)) {
     return expr;
   }
 
@@ -5726,6 +5729,10 @@ resolveExpr(Expr* expr) {
       }
     }
 
+    if (!tryFailure)
+      callStack.pop();
+  }
+  {
     if (tryFailure) {
       if (tryStack.n > 0 && tryStack.tail()->parentSymbol == fn) {
         // The code in the 'true' branch of a tryToken conditional has failed
@@ -5756,9 +5763,8 @@ resolveExpr(Expr* expr) {
       }
 
     }
-
-    callStack.pop();
   }
+  INT_ASSERT(expr);
 
   if (SymExpr* sym = toSymExpr(expr)) {
     // Avoid record constructors via cast
@@ -6588,6 +6594,9 @@ void resolve() {
   resolveAutoCopies();
 
   insertDynamicDispatchCalls();
+
+  beforeLoweringForallStmts = false;
+  lowerForallStmts();
 
   insertReturnTemps();
 

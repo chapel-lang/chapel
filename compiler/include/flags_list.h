@@ -61,6 +61,8 @@ symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark 
 // as indicated by this flag, it launches into enacting forall intents
 // for the forall loop that this variable was created for.
 symbolFlag( FLAG_CHPL__ITER , npr, "chpl__iter", "used as a marker to implement forall intents" )
+// Marks chpl__iter things created for ForallStmt.
+symbolFlag( FLAG_CHPL__ITER_NEWSTYLE , npr, "chpl__iter_newstyle", ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
 symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores the result of a coercion" )

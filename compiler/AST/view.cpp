@@ -131,12 +131,18 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   bool is_C_loop = false;
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
-    if (ForallStmt* pfs = toForallStmt(parentAst))
-      if (ast == pfs->loopBody()) {
+    if (ForallStmt* pfs = toForallStmt(parentAst)) {
+      if (expr == pfs->loopBody()) {
         printf("\n%6c", ' ');
         for (int i = 0; i < indent; i++) printf(" ");
+        if (pfs->withClause()->numVars() == 0)
+          printf("with() ");
         printf("do\n");
+        indent -= 2;
+      } else if (expr->list) {
+        printf("\n");
       }
+    }
     do_list_line = !parentAst || list_line(expr, parentAst);
     if (do_list_line) {
       printf("%-7d ", expr->id);
@@ -156,11 +162,13 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       }
     } else if (toBlockStmt(ast)) {
       block_explain = block_explanation(ast, parentAst);
-      printf("%s{\n", block_explain);
+      const char* block_kind = ast->astTagAsString();
+      if (!strcmp(block_kind, "BlockStmt")) block_kind = "";
+      printf("%s{%s\n", block_explain, block_kind);
     } else if (toCondStmt(ast)) {
       printf("if ");
-    } else if (ForallStmt* fs = toForallStmt(ast)) {
-      printf("forall in%s\n", fs->zippered() ? " zip" : "");
+    } else if (toForallStmt(ast)) {
+      printf("forall");
     } else if (CallExpr* e = toCallExpr(expr)) {
       if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
           is_C_loop = true;
@@ -256,14 +264,19 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
-    } else if (ForallStmt* fs = toForallStmt(parentAst)) {
-      if (expr == fs->iteratedExpressions().tail) {
+    } else if (ForallStmt* pfs = toForallStmt(parentAst)) {
+      if (expr == pfs->loopBody()) {
+        indent += 2;
+      } else if (expr == pfs->inductionVariables().tail) {
         printf("\n%6c", ' ');
         for (int i = 0; i < indent; i++) printf(" ");
-        if (fs->withClause()->numVars())
-          printf("with (...)\n");
-        else
-          printf("with()");
+        printf("in%s", pfs->zippered() ? " zip" : "");
+      } else if (expr == pfs->iteratedExpressions().tail &&
+                 pfs->withClause()->numVars() > 0)
+      {
+        printf("\n      ");
+        for (int i = 0; i < indent; i++) printf(" ");
+        printf("with (...)\n");
       }
     } else if (!toCondStmt(expr) && do_list_line) {
       DefExpr* def = toDefExpr(expr);
