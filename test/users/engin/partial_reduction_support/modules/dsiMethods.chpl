@@ -40,7 +40,8 @@ iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
   }
 
 iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
-    param tag: iterKind) where tag == iterKind.standalone {
+    param tag: iterKind) where tag == iterKind.standalone &&
+    __primitive("method call resolves", ranges(onlyDim), "these", tag) {
 
     if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
