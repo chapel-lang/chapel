@@ -103,6 +103,7 @@ FnSymbol* gChplDeleteError = NULL;
 FnSymbol *gGetDynamicEndCount = NULL;
 FnSymbol *gSetDynamicEndCount = NULL;
 
+FnSymbol *gChplUncaughtError;
 
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;

@@ -162,7 +162,7 @@ private:
   AList  errorCond         (VarSymbol*     errorVar,
                             BlockStmt*     thenBlock,
                             BlockStmt*     elseBlock = NULL);
-  CallExpr* haltExpr       ();
+  CallExpr* haltExpr       (VarSymbol*     error);
 
   ErrorHandlingVisitor();
 };
@@ -274,7 +274,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
-      currHandler->insertAtTail(haltExpr());
+      currHandler->insertAtTail(haltExpr(errorVar));
     } else if (!tryStack.empty()) {
       TryInfo* outerTry = & tryStack.top();
       currHandler->insertAtTail(new CallExpr(PRIM_MOVE, outerTry->errorVar,
@@ -318,7 +318,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
-          errorPolicy->insertAtTail(haltExpr());
+          errorPolicy->insertAtTail(haltExpr(errorVar));
       }
 
       node->insertAtTail(errorVar); // adding error argument to call
@@ -378,8 +378,8 @@ AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
 }
 
 // TODO: take in a halt message from the error
-CallExpr* ErrorHandlingVisitor::haltExpr() {
-  return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
+CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
+  return new CallExpr(gChplUncaughtError, errorVar);
 }
 
 } /* end anon namespace */

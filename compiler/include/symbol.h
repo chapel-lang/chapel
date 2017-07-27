@@ -721,6 +721,8 @@ extern FnSymbol *gBuildStarTupleType;
 extern FnSymbol *gBuildTupleTypeNoRef;
 extern FnSymbol *gBuildStarTupleTypeNoRef;
 
+extern FnSymbol *gChplUncaughtError;
+
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
