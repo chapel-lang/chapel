@@ -8,6 +8,7 @@ $CHPL_HOME/modules/internal/ChapelRange.chpl:1591: note:                 init(_m
 $CHPL_HOME/modules/internal/ChapelRange.chpl:1536: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_boundedLow_F)
 $CHPL_HOME/modules/standard/List.chpl:88: note:                 init(_mt: _MT, this: _ic_these__ref_list_BaseArr)
 $CHPL_HOME/modules/internal/ChapelRange.chpl:1653: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_F)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:1653: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_F)
 $CHPL_HOME/modules/internal/ChapelRange.chpl:1479: note:                 init(_mt: _MT, this: _ic_chpl_direct_pos_stride_range_iter)
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:1948: note:                 init(_mt: _MT, this: _ic_chpl__serialViewIter)
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:1297: note:                 init(_mt: _MT, this: _ic_these_DefaultRectangularArr_1_int64_t_F_locale_int64_t)
@@ -16,4 +17,5 @@ $CHPL_HOME/modules/internal/ChapelLocale.chpl:413: note:                 init(_m
 $CHPL_HOME/modules/internal/ChapelRange.chpl:1653: note:                 init(_mt: _MT, this: _ic_these__ref_range_int64_t_bounded_F)
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:1948: note:                 init(_mt: _MT, this: _ic_chpl__serialViewIter)
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:1297: note:                 init(_mt: _MT, this: _ic_these_DefaultRectangularArr_1_int64_t_F_localesSignal_int64_t)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:426: note:                 init(_mt: _MT, this: _ic_chpl_initOnLocales_AbstractRootLocale)
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:426: note:                 init(_mt: _MT, this: _ic_chpl_initOnLocales_AbstractRootLocale)
