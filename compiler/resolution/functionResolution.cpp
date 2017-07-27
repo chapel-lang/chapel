@@ -3274,6 +3274,8 @@ populateForwardingMethods(Type* t,
       fn->copyFlags(method);
       // but we need to resolve the wrapper method again
       fn->removeFlag(FLAG_RESOLVED);
+      // Never give an error when returning 'void' from a forwarding fn
+      fn->removeFlag(FLAG_VOID_NO_RETURN_VALUE);
 
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_INLINE);
@@ -3301,29 +3303,28 @@ populateForwardingMethods(Type* t,
       CallExpr* setTgt = new CallExpr(PRIM_MOVE, tgt, getTgt);
       CallExpr* wrapCall = new CallExpr(new UnresolvedSymExpr(method->name), gMethodToken, tgt);
 
+      SymbolMap map;
+
+      // Add mt, _this to SymbolMap since these were computed above
+      map.put(method->getFormal(1), mt);
+      map.put(method->getFormal(2), _this);
+
       // Add the arguments to the wrapper function
       // Add the arguments to the call
       int i = 0;
       for_formals(formal, method) {
         if (i > 1) { // skip method token, target - added above
-          ArgSymbol* arg = formal->copy();
-          fn->insertFormalAtTail(arg);
-          wrapCall->insertAtTail(new SymExpr(arg));
+          // Pass map so that later arguments will use it
+          // to replace uses of old formals with the new formals
+          DefExpr* def = formal->defPoint->copy(&map);
+          fn->insertFormalAtTail(def);
+          wrapCall->insertAtTail(new SymExpr(def->sym));
         }
         i++;
       }
 
-      // Copy the where clause, if any
-      // TODO: replace this.type with the delegate expression.type
+      // Adjust the where clause
       if (method->where != NULL) {
-        SymbolMap map;
-
-        int nFormals = method->numFormals();
-        for (int i = 1; i <= nFormals; i++) {
-          Symbol* from = method->getFormal(i);
-          Symbol* to = fn->getFormal(i);
-          map.put(from, to);
-        }
         fn->where = method->where->copy(&map);
       }
 
