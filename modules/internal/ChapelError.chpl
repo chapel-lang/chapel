@@ -149,6 +149,25 @@ module ChapelError {
       else
         f <~> first;
     }
+
+    // convenience methods
+    iter filter(type t) where t:Error {
+      // TODO: check that t is a subtype of Error
+      for e in these() {
+        var tmp = e:t;
+        if tmp then
+          yield tmp;
+      }
+    }
+    iter filter(type t) {
+      compilerError("Filtered iterator only supports subclasses of Error");
+    }
+    proc contains(type t) {
+      for e in filter(t) {
+        return true;
+      }
+      return false;
+    }
   }
 
   pragma "no doc"
