@@ -14,7 +14,7 @@ use TomlReader;
 array */
  proc parseToml(input: file) : Toml {
    var tomlStr: string;
-   var tomlFile = openreader(input);
+   var tomlFile = input.reader();
    tomlFile.readstring(tomlStr);
    tomlFile.close();
    return parseToml(tomlStr);
