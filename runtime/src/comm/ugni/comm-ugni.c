@@ -2520,7 +2520,7 @@ static void make_shared_heap(void)
   registered_heap_info_set = 1;
 }
 
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p)
+void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
 {
   if (!registered_heap_info_set)
     make_shared_heap();

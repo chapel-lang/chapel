@@ -212,13 +212,14 @@ void chpl_comm_post_task_init(void);
 void chpl_comm_rollcall(void);
 
 //
-// Inform callers as to the communication layer's desired starting address
-// and length for the shared heap, if any.
+// Communication layers that need or want to register memory with the
+// network interface may have to provide the space for the Chapel heap
+// themselves.  If so, this provides that heap's address and length.
 //
 // This function may be called multiple times during program
 // initialization.
 //
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
+void chpl_comm_get_registered_heap(void** start_p, size_t* size_p);
 
 //
 // This routine is used by the Chapel runtime to broadcast the

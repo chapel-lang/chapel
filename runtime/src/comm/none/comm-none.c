@@ -131,7 +131,7 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
 }
 
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+void chpl_comm_get_registered_heap(void** start_p, size_t* size_p) {
   *start_p = NULL;
   *size_p  = 0;
 }

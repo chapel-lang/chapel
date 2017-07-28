@@ -71,7 +71,7 @@ static int get_num_heaps(void) {
     void* heap_base;
     size_t heap_size;
 
-    chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+    chpl_comm_get_registered_heap(&heap_base, &heap_size);
     if (heap_base == NULL) {
       num_heaps = 0;
     } else {
@@ -445,7 +445,7 @@ void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
 
-  chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+  chpl_comm_get_registered_heap(&heap_base, &heap_size);
   if (heap_base != NULL && heap_size == 0) {
     chpl_internal_error("if heap address is specified, size must be also");
   }
