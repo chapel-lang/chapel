@@ -32,7 +32,7 @@ proc while_loop()
       else
         res2 = res2 / 2;
       j += 1;
-    } 
+    }
     i += 1;
   }
   return res2;
@@ -54,7 +54,7 @@ proc main() {
   
   if verbose {
     writeln("For loop underwent ", numIterations, " iterations ", numTrials,
-            " times in ", t1.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+          " times in ", t1.elapsed(TimeUnits.milliseconds)/1000, " seconds");
     writeln("While loop underwent ", numIterations, " iterations ", numTrials,
           " times in ", t2.elapsed(TimeUnits.milliseconds)/1000, " seconds");
     var res3 = c_trial();
