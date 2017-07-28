@@ -1198,10 +1198,10 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
         for_defs(se, defMap, def->sym) {
           if (firstDef == NULL)
-	    firstDef = se->getStmtExpr();
+            firstDef = se->getStmtExpr();
         }
 
-	INT_ASSERT(firstDef == NULL || firstDef == initialization);
+        INT_ASSERT(firstDef == NULL || firstDef == initialization);
 
         initialization->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
                                                  def->sym));
