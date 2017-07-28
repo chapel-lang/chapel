@@ -800,8 +800,9 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
-    llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmTbaaTypeDescriptor(NULL),
+    llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
+    llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL)
 {
