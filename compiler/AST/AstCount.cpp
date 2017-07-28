@@ -180,6 +180,14 @@ void AstCount::visitForallIntents(ForallIntents* clause) {
   numForallIntents++;
 }
 
+bool AstCount::enterForallIntent(ForallIntent* intent) {
+  numForallIntent++;
+  return true;
+}
+
+void AstCount::exitForallIntent(ForallIntent* intent) {
+}
+
 bool AstCount::enterForallStmt(ForallStmt* node)
 {
   numForallStmt++;

@@ -26,36 +26,108 @@
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// ForallIntent represents one forall intent in a with clause
+//
+// This is a transitional step on the way to LoopIntentVar.
+// We also plan to retire BlockStmt::forallIntents and ForallIntents class
+// by switching ALL forall statements (and the likes) to new representation.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+ForallIntent::ForallIntent(TFITag intent, Expr* var, Expr* reduceExpr):
+  Expr(E_ForallIntent),
+  fiIntent(intent),
+  fiVar(var),
+  riSpec(reduceExpr)
+{
+  gForallIntents.add(this);
+}
+
+ForallIntent* ForallIntent::copyInner(SymbolMap* map) {
+  ForallIntent* _this = new ForallIntent(fiIntent,
+                                         COPY_INT(fiVar),
+                                         COPY_INT(riSpec));
+  return _this;
+}
+
+void ForallIntent::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (oldAst == fiVar)
+    fiVar = newAst;
+  else if (oldAst == riSpec)
+    riSpec = newAst;
+  else
+    INT_FATAL(this, "Unexpected case in ForallIntent::replaceChild");
+}
+
+Expr* ForallIntent::getFirstChild() {
+  return fiVar;
+}
+
+Expr* ForallIntent::getFirstExpr() {
+  return fiVar->getFirstExpr();
+}
+
+Expr* ForallIntent::getNextExpr(Expr* expr) {
+  if (expr == fiVar && riSpec)
+    return riSpec;
+  else
+    return this;
+}
+
+void ForallIntent::verify() {
+  Expr::verify(E_ForallIntent);
+  verifyParent(fiVar);
+  verifyParent(riSpec);
+  bool isRI = isReduce();
+  INT_ASSERT(isRI == (fiIntent == TFI_REDUCE));
+  INT_ASSERT(isRI == (riSpec != NULL));
+}
+
+GenRet ForallIntent::codegen() {
+  INT_ASSERT(false); // this method should not be invoked
+  GenRet ret;
+  return ret;
+}
+
+void ForallIntent::accept(AstVisitor* visitor) {
+  if (visitor->enterForallIntent(this)) {
+    variable()->accept(visitor);
+    if (Expr* ri = reduceExpr())
+      ri->accept(visitor);
+    visitor->exitForallIntent(this);
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // ForallStmt represents a forall loop statement
 //
 /////////////////////////////////////////////////////////////////////////////
 
-ForallStmt::ForallStmt(bool zippered, BlockStmt* body, ForallIntents* with):
+ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
-  fLoopBody(body),
-  fWith(with)
+  fLoopBody(body)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
   fIntentVars.parent = this;
+  fFIntents.parent = this;
   gForallStmts.add(this);
-}
-
-ForallStmt::~ForallStmt() {
-  delete fWith;
 }
 
 ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   ForallStmt* _this  = new ForallStmt(fZippered,
-                                      COPY_INT(fLoopBody),
-                                      COPY_INT(fWith));
+                                      COPY_INT(fLoopBody));
   for_alist(expr, fIterVars)
     _this->fIterVars.insertAtTail(COPY_INT(expr));
   for_alist(expr, fIterExprs)
     _this->fIterExprs.insertAtTail(COPY_INT(expr));
   for_alist(expr, fIntentVars)
     _this->fIntentVars.insertAtTail(COPY_INT(expr));
+  for_alist(expr, fFIntents)
+    _this->fFIntents.insertAtTail(COPY_INT(expr));
 
   return _this;
 }
@@ -69,9 +141,6 @@ void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
     else
       // It is caller responsibility to make newAst fit.
       INT_ASSERT(false);
-
-  } else if (fWith->replaceChildFI(oldAst, newAst)) {
-      // replaceChildFI took care of it
 
   } else {
     // We did not find oldAst in our ForallStmt.
@@ -102,6 +171,8 @@ void ForallStmt::verify() {
     INT_ASSERT(isDefExpr(expr));
   for_alist(expr, fIntentVars)
     INT_ASSERT(isDefExpr(expr));
+  for_alist(expr, fIntentVars)
+    INT_ASSERT(isForallIntent(expr));
 
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
@@ -115,8 +186,6 @@ void ForallStmt::verify() {
   INT_ASSERT(!fLoopBody->byrefVars);
   INT_ASSERT(!fLoopBody->forallIntents);
 
-  INT_ASSERT(fWith);
-
   // Currently ForallStmt are gone during resolve().
   INT_ASSERT(!resolved);
 }
@@ -129,14 +198,13 @@ void ForallStmt::accept(AstVisitor* visitor) {
       expr->accept(visitor);
     for_alist(expr, intentVariables())
       expr->accept(visitor);
-    withClause()->acceptFI(visitor); // aka visitor->visitForallIntents(fWith);
     fLoopBody->accept(visitor);
     visitor->exitForallStmt(this);
   }
 }
 
 GenRet ForallStmt::codegen() {
-  INT_ASSERT(false); // should not be invoked
+  INT_ASSERT(false); // this method should not be invoked
   GenRet ret;
   return ret;
 }
@@ -167,8 +235,6 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
       return fLoopBody->getFirstExpr();
   }
 
-  // Should we also descend into fWith?
-
   if (expr == fIntentVars.tail)
     return fLoopBody->getFirstExpr();
 
@@ -186,14 +252,16 @@ bool ForallStmt::isIteratedExpression(Expr* expr) {
 
 // If 'var' is listed in this's with-clause with a reduce intent,
 // return its position in the with-clause, otherwise return -1.
+// Used in preFold for PRIM_REDUCE_ASSIGN, set up in normalize.
 int ForallStmt::reduceIntentIdx(Symbol* var) {
-  ForallIntents* fi = withClause();
-  int nv = fi->numVars();
-  for (int i = 0; i < nv; i++)
-    if (fi->isReduce(i))
-      if (SymExpr* varSE = toSymExpr(fi->fiVars[i]))
-        if (varSE->symbol() == var)
-          return i;
+  int idx = 0;
+  for_forall_intents(fi, temp, this) {
+    idx++;
+    if (fi->isReduce())
+      if (SymExpr* fiVarSE = toSymExpr(fi->variable()))
+        if (fiVarSE->symbol() == var)
+          return idx;
+  }
 
   // Did not see 'var' with a reduce intent.
   return -1;
@@ -370,15 +438,15 @@ static void fsVerifyNumIterables(ForallStmt* fs) {
   INT_ASSERT(fs->iteratedExpressions().length == numIterables);
 }
 
-static void adjustReduceOpNames(ForallIntents* fi) {
-  for_riSpecs_vector(ri, fi) {
+static void adjustReduceOpNames(ForallStmt* fs) {
+  for_forall_intents(fi, temp, fs)
+   if (Expr* ri = fi->reduceExpr())
     if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ri)) {
       if (!strcmp(sym->unresolved, "max"))
         sym->unresolved = astr("MaxReduceScanOp");
       else if (!strcmp(sym->unresolved, "min"))
         sym->unresolved = astr("MinReduceScanOp");
     }
-  }
 }
 
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator,
@@ -389,16 +457,24 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator,
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
 
-  if (!forall_intents)
-    forall_intents = new ForallIntents();
+  ForallStmt* fs = new ForallStmt(zippered, body);
 
-  ForallStmt* fs = new ForallStmt(zippered, body, forall_intents);
+  if (forall_intents) {
+    // transfer from 'forall_intents' into 'fs'
+    // todo: how to make the parser produce AList directly?
+    AList& fis = fs->forallIntents();
+    for (int i = 0; i < forall_intents->numVars(); i++)
+      fis.insertAtTail(new ForallIntent(forall_intents->fIntents[i],
+                                        forall_intents->fiVars[i],
+                                        forall_intents->riSpecs[i]));
+    delete forall_intents;
+  }
 
   fsDestructureIterables(fs, iterator);
   fsDestructureIndices(fs, indices);
   fsVerifyNumIterables(fs);
 
-  adjustReduceOpNames(forall_intents);
+  adjustReduceOpNames(fs);
   body->blockTag = BLOCK_NORMAL; // do not flatten it in cleanup(), please
 
   return buildChapelStmt(fs);

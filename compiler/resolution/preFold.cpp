@@ -889,12 +889,14 @@ Expr* preFold(CallExpr* call) {
     int rOpIdx = (int)(toVarSymbol(rOpIdxSE->symbol())->immediate->int_value());
     Expr* rhs = call->get(3)->remove();
     Expr* lhs = call->get(2)->remove();
-    ForallIntents* fi = enclosingForallStmt(call)->withClause();
-    INT_ASSERT(rOpIdx >= 0 && rOpIdx < fi->numVars());
+    ForallStmt* fs = enclosingForallStmt(call);
+    // indexing should be legitimate - rOpIdx computed by reduceIntentIdx()
+    ForallIntent* fi = fs->getForallIntent(rOpIdx);
+
     INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name,
-                       toSymExpr(fi->fiVars[rOpIdx])->symbol()->name));
-    INT_ASSERT(fi->isReduce(rOpIdx));
-    Symbol* globalOp = toSymExpr(fi->riSpecs[rOpIdx])->symbol();
+                       toSymExpr(fi->variable())->symbol()->name));
+    INT_ASSERT(fi->isReduce());
+    Symbol* globalOp = toSymExpr(fi->reduceExpr())->symbol();
     INT_ASSERT(isReduceOp(globalOp->type));
     result = new_Expr("accumulateOntoState(%S,%S,%E,%E)",
                       gMethodToken, globalOp, lhs, rhs);

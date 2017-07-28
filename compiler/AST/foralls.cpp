@@ -733,7 +733,7 @@ void lowerForallStmts() {
     if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
       USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
 
-    // Forall intents aka fs->withClause() should have already been handled.
+    // Forall intents aka fs->forallIntents() should have already been handled.
 
     CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
     INT_ASSERT(parIterCall && !parIterCall->next); // expected

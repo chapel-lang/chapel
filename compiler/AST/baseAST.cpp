@@ -84,9 +84,9 @@ void printStatistics(const char* pass) {
   int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
   int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nForallExpr + nNamedExpr;
+    nContextCallExpr + nForallExpr + nForallIntent+ nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kForallExpr + kNamedExpr;
+    kContextCallExpr + kForallExpr + kForallIntent + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
@@ -478,6 +478,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_ForwardingStmt:
       retval = "ForwardingStmt";
+      break;
+
+    case E_ForallIntent:
+      retval = "ForallIntent";
       break;
 
     case E_ForallStmt:
