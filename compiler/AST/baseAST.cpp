@@ -57,21 +57,13 @@ static int uid = 1;
 
 #define sum_gvecs(type) g##type##s.n
 
-// Increment ID by one to avoid weird edge case where 'obj' somehow has an
-// AST ID of zero. Our home-grown Vec will do something like "!v[k]" on a
-// MapElem, where 'k' is a BaseAST*. If we return zero here when 'k' is not
-// NULL, Vec will stop searching before the correct MapElem is found.
-//
-// TODO: how can something have an AST ID of zero? Uninitialized memory??
-// For future reference, the 'arrays.chpl' primer would fail if we did not
-// increment here.
 #define def_vec_hash(SomeType) \
     template<> \
     uintptr_t _vec_hasher(SomeType* obj) { \
       if (obj == NULL) { \
         return 0; \
       } else { \
-        return 1 + (uintptr_t)((BaseAST*)obj)->id; \
+        return (uintptr_t)((BaseAST*)obj)->id; \
       } \
     }
 
