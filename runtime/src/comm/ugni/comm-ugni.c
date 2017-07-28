@@ -338,7 +338,7 @@ static gni_nic_device_t nic_type;
 //
 // We register all of the read/write memory regions that have pathnames
 // associated with them in /proc/self/maps.  We can handle up to
-// NUM_MEM_REGIONS of these.  There are four regions we definitely want
+// MAX_MEM_REGIONS of these.  There are four regions we definitely want
 // to register.  In address order they are the static data, the part of
 // the heap right after the static data, the main heap (probably on
 // hugepages), and the stack.  We don't actually have to register all
@@ -350,20 +350,27 @@ static int    registered_heap_info_set;
 static size_t registered_heap_size;
 static void*  registered_heap_start;
 
-#define NUM_MEM_REGIONS 10
+//
+// Memory regions.  mem_regions contains the address/length pairs and
+// uGNI memory domain handles for each memory region of interest to us.
+// mem_region_map contains a copy of every node's mem_regions.
+//
+#define MAX_MEM_REGIONS 20
 
 typedef struct {
-   uint64_t         addr;
-   uint64_t         length;
-   gni_mem_handle_t mdh;
+  uint64_t         addr;
+  uint64_t         len;
+  gni_mem_handle_t mdh;
 } mem_region_t;
 
-typedef struct mem_map_t_struct {
-  uint32_t     mreg_cnt;
-  mem_region_t mregs[NUM_MEM_REGIONS];
-} mem_map_t;
+typedef struct {
+  uint32_t     mreg_cnt;  // really hi idx + 1, not count (table may have holes)
+  mem_region_t mregs[MAX_MEM_REGIONS];
+} mem_region_table_t;
 
-static mem_map_t* mem_map_map;
+static mem_region_table_t mem_regions;
+
+static mem_region_table_t* mem_region_map;
 
 //
 // This is the memory region for the guaranteed NIC-registered memory
@@ -430,7 +437,6 @@ mpool_idx_base_t mpool_idx_finc(mpool_idx_t* pvar) {
 // cqh:           Completion queue handle.
 // cq_cnt_max:    Completion queue size.
 // cq_cnt_curr:   Number of pending completions outstanding.
-// mem_map:       Memory regions.
 //
 
 #define CD_ACTIVE_TRANS_MAX 128     // Max transactions in flight, per cd
@@ -455,7 +461,6 @@ typedef struct {
   gni_cq_handle_t    cqh;
   cq_cnt_t           cq_cnt_max;
   cq_cnt_atomic_t    cq_cnt_curr;
-  mem_map_t          mem_map;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -463,6 +468,9 @@ typedef struct {
   uint64_t           acqs_with_rb_looks;
   uint64_t           reacqs;
 #endif
+  uint64_t           cache_spacer[8];    // prevent comm_doms[] inter-element
+                                         //   cache line sharing; ra-atomics
+                                         //     perf suffers without this
 } comm_dom_t;
 
 
@@ -564,8 +572,8 @@ typedef uint16_t nb_desc_idx_t;
 
 static gni_cq_handle_t rf_cqh;          // completion queue handle
 
-static mem_region_t    rf_mreg;         // memory descriptor
-static mem_region_t*   rf_mreg_map;     // all locales' remote fork mem descs
+static gni_mem_handle_t  rf_mdh;        // remote fork req space GNI mem handle
+static gni_mem_handle_t* rf_mdh_map;    // all locales' remote fork space mdhs
 
 //
 // Blocking remote forks need a "remote fork done" (rf_done) flag, for
@@ -1162,8 +1170,12 @@ static void      gni_setup_per_comm_dom(int);
 static void      gni_init(gni_nic_handle_t*, int);
 static uint8_t   GNIT_Ptag(void);
 static uint32_t  GNIT_Cookie(void);
-static void      gni_register_memory(comm_dom_t*);
+static void      register_memory(void);
 static chpl_bool get_next_rw_memory_range(uint64_t*, uint64_t*, char*, size_t);
+static void      register_mem_region(mem_region_t*);
+static mem_region_t* mreg_for_addr(void*, mem_region_table_t*);
+static mem_region_t* mreg_for_local_addr(void*);
+static mem_region_t* mreg_for_remote_addr(void*, int32_t);
 static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      exit_all(int);
@@ -1582,7 +1594,7 @@ void chpl_comm_post_task_init(void)
 
   //
   // Create all the communication domains, including their GNI NIC
-  // handles, completion queues, memory descriptors, and endpoints.
+  // handles, endpoints, and completion queues.
   //
   comm_doms =
     (comm_dom_t*) chpl_mem_allocMany(comm_dom_cnt, sizeof(comm_doms[0]),
@@ -1594,25 +1606,9 @@ void chpl_comm_post_task_init(void)
   comm_dom_free_idx = 0;
 
   //
-  // Find the memory region associated with guaranteed NIC-registered
-  // memory.  Recording this saves time looking it up later.
+  // Register memory.
   //
-  {
-    void* p;
-    size_t s;
-
-    chpl_comm_mem_reg_tell(&p, &s);
-
-    for (int i = 0; i < comm_doms[0].mem_map.mreg_cnt; i++) {
-      if ((void*) (intptr_t) comm_doms[0].mem_map.mregs[i].addr == p) {
-        gnr_mreg = &comm_doms[0].mem_map.mregs[i];
-        break;
-      }
-    }
-
-    if (gnr_mreg == NULL)
-      CHPL_INTERNAL_ERROR("cannot find gnr_mreg");
-  }
+  register_memory();
 
   //
   // Share the per-locale memory descriptors around the job.  These are
@@ -1621,10 +1617,11 @@ void chpl_comm_post_task_init(void)
   // the job.
   //
   // chpl_comm_mem_reg no: not communicated
-  mem_map_map =
-    (mem_map_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(mem_map_map[0]),
-                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                    0, 0);
+  mem_region_map =
+    (mem_region_table_t*) chpl_mem_allocMany(chpl_numNodes,
+                                             sizeof(mem_region_map[0]),
+                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                             0, 0);
   bar_min_child = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
   if (bar_min_child >= chpl_numNodes)
     bar_num_children = 0;
@@ -1637,12 +1634,12 @@ void chpl_comm_post_task_init(void)
 
   {
     typedef struct {
-      uint32_t        locale;
-      mem_map_t       gather_mem_map;
-      barrier_info_t* gather_bar_info;
+      uint32_t           locale;
+      mem_region_table_t gather_mem_region_tab;
+      barrier_info_t*    gather_bar_info;
     } gdata_t;
 
-    gdata_t  my_gdata = { chpl_nodeID, comm_doms[0].mem_map, &bar_info };
+    gdata_t  my_gdata = { chpl_nodeID, mem_regions, &bar_info };
     gdata_t* gdata;
 
     // chpl_comm_mem_reg no: not communicated
@@ -1653,7 +1650,7 @@ void chpl_comm_post_task_init(void)
       CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
 
     for (int i = 0; i < chpl_numNodes; i++) {
-      mem_map_map[gdata[i].locale] = gdata[i].gather_mem_map;
+      mem_region_map[gdata[i].locale] = gdata[i].gather_mem_region_tab;
 
       if (gdata[i].locale >= bar_min_child
           && gdata[i].locale < bar_min_child + bar_num_children)
@@ -1809,7 +1806,7 @@ static void compute_comm_dom_cnt(void)
   if (comm_dom_cnt > 30)
     comm_dom_cnt = 30;
 
-  if (comm_dom_cnt > (1 << _IID_CDI_BITS))
+  if (comm_dom_cnt >= (1 << _IID_CDI_BITS))
     CHPL_INTERNAL_ERROR("too many comm domains for internal encoding");
 }
 
@@ -1866,11 +1863,6 @@ void gni_setup_per_comm_dom(int cdi)
         != GNI_RC_SUCCESS)
       GNI_FAIL(gni_rc, "GNI_EpBind(cd->remote_eps[i]) failed");
   }
-
-  //
-  // Register memory with uGNI.
-  //
-  gni_register_memory(cd);
 
 #ifdef DEBUG_STATS
   cd->acqs               = 0;
@@ -1967,10 +1959,15 @@ uint32_t GNIT_Cookie(void)
 
 
 static
-void gni_register_memory(comm_dom_t* cd)
+void register_memory(void)
 {
-  gni_return_t gni_rc;
-  uint32_t     flags;
+  uint64_t  addr;
+  uint64_t  len;
+  char      pathname[100];
+  void*     mem_reg_addr;
+  size_t    mem_reg_size;
+  int       have_hugepage_module
+              = (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL);
 
   //
   // Register read/write memory regions found in /proc/self/maps.  If
@@ -1979,7 +1976,7 @@ void gni_register_memory(comm_dom_t* cd)
   // register only non-anonymous regions (those associated with a path).
   // However, don't register device memory other than from /dev/zero.
   // This gets us the hugepage regions, the stack, and some other useful
-  // things.  Only the NUM_MEM_REGIONS largest regions are registered,
+  // things.  Only the MAX_MEM_REGIONS largest regions are registered,
   // except that the guaranteed NIC-registered region is registered no
   // matter how small it is.  In order to enhance the performance of
   // lookups we sort the regions in our memory map by size, from large
@@ -1987,99 +1984,88 @@ void gni_register_memory(comm_dom_t* cd)
   // frequently than the smaller ones.
   //
   // If HUGETLB_DEFAULT_PAGE_SIZE is absent, indicating that we don't
-  // have a hugepage module loaded, only register the guaranteed
+  // have a hugepage module loaded, only record the guaranteed
   // NIC-registered segment.
   //
-  // We process the memory map and decide what to register while
-  // working on the first comm domain, and then for the rest we just
-  // clone what was done for the first one.
+  chpl_comm_mem_reg_tell(&mem_reg_addr, &mem_reg_size);
+
+  mem_regions.mreg_cnt = 0;
+
+  DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/maps", NULL);
+  DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/numa_maps", NULL);
+
+  while (get_next_rw_memory_range(&addr, &len, pathname, sizeof(pathname))) {
+    int i;
+
+    //
+    // This is slightly easier to understand in the positive sense.
+    // We skip everything except:
+    //   - the guaranteed-registered memory region, if any, or
+    //   - if we have hugepages, anything that has a path (isn't
+    //     anonymous) but isn't a device other than /dev/zero.
+    //
+    if (! (addr == (uint64_t) (intptr_t) mem_reg_addr
+           || (have_hugepage_module
+               && strlen(pathname) > 0
+               && (strncmp(pathname, "/dev/", 5) != 0
+                   || (strncmp(pathname, "/dev/zero", 9) == 0
+                       && (pathname[9] == ' '
+                           || pathname[9] == '\0'))))))
+      continue;
+
+    //
+    // Put the memory regions in the table, sorted in order of
+    // decreasing size.
+    //
+    for (i = mem_regions.mreg_cnt;
+         i > 0 && len > mem_regions.mregs[i - 1].len;
+         i--) {
+      if (i < MAX_MEM_REGIONS) {
+        mem_regions.mregs[i] = mem_regions.mregs[i - 1];
+      }
+    }
+
+    if (i == MAX_MEM_REGIONS && addr == (uint64_t) (intptr_t) mem_reg_addr)
+      i--;
+
+    if (i < MAX_MEM_REGIONS) {
+      mem_regions.mregs[i].addr = addr;
+      mem_regions.mregs[i].len = len;
+      if (mem_regions.mreg_cnt < MAX_MEM_REGIONS)
+        mem_regions.mreg_cnt++;
+    }
+  }
+
+  if (mem_regions.mreg_cnt == 0) {
+    CHPL_INTERNAL_ERROR("no registerable memory regions?");
+  }
+
   //
-  if (cd == comm_doms) {
-    uint64_t  addr;
-    uint64_t  len;
-    char      pathname[100];
-    void*     mem_reg_addr;
-    size_t    mem_reg_size;
-    int       have_hugepage_module
-                = (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL);
+  // Now, register the recorded memory regions with uGNI.
+  //
+  for (int i = 0; i < mem_regions.mreg_cnt; i++) {
+    register_mem_region(&mem_regions.mregs[i]);
+  }
 
-    chpl_comm_mem_reg_tell(&mem_reg_addr, &mem_reg_size);
- 
-    cd->mem_map.mreg_cnt = 0;
+  //
+  // Find the memory region associated with guaranteed NIC-registered
+  // memory.  Recording this saves time looking it up later.
+  //
+  {
+    void* p;
+    size_t s;
 
-    DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/maps", NULL);
-    DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/numa_maps", NULL);
+    chpl_comm_mem_reg_tell(&p, &s);
 
-    while (get_next_rw_memory_range(&addr, &len, pathname, sizeof(pathname))) {
-      int i;
-
-      //
-      // This is slightly easier to understand in the positive sense.
-      // We skip everything except:
-      //   - the guaranteed-registered memory region, if any, or
-      //   - if we have hugepages, anything that has a path (isn't
-      //     anonymous) but isn't a device other than /dev/zero.
-      //
-      if (! (addr == (uint64_t) (intptr_t) mem_reg_addr
-             || (have_hugepage_module
-                 && strlen(pathname) > 0
-                 && (strncmp(pathname, "/dev/", 5) != 0
-                     || (strncmp(pathname, "/dev/zero", 9) == 0
-                         && (pathname[9] == ' '
-                             || pathname[9] == '\0'))))))
-        continue;
-
-      //
-      // Put the read/write memory regions in the table, sorted in
-      // order of decreasing size.
-      //
-      for (i = cd->mem_map.mreg_cnt;
-           i > 0 && len > cd->mem_map.mregs[i - 1].length;
-           i--) {
-        if (i < NUM_MEM_REGIONS) {
-          cd->mem_map.mregs[i] = cd->mem_map.mregs[i - 1];
-        }
-      }
-
-      if (i == NUM_MEM_REGIONS && addr == (uint64_t) (intptr_t) mem_reg_addr)
-        i--;
-
-      if (i < NUM_MEM_REGIONS) {
-        cd->mem_map.mregs[i].addr   = addr;
-        cd->mem_map.mregs[i].length = len;
-        if (cd->mem_map.mreg_cnt < NUM_MEM_REGIONS)
-          cd->mem_map.mreg_cnt++;
+    for (int i = 0; i < mem_regions.mreg_cnt; i++) {
+      if ((void*) (intptr_t) mem_regions.mregs[i].addr == p) {
+        gnr_mreg = &mem_regions.mregs[i];
+        break;
       }
     }
 
-    if (comm_doms[0].mem_map.mreg_cnt <= 0) {
-      printf("REGISTER: mem_reg_space %p %zx\n", mem_reg_addr, mem_reg_size);
-      CHPL_INTERNAL_ERROR("main memory map is not yet set up");
-    }
-
-    flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
-  }
-  else {
-    //
-    // For communication domains after the first one, just clone the
-    // registrations that were done for that one.
-    //
-    cd->mem_map = comm_doms[0].mem_map;
-    flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
-    if (nic_type == GNI_DEVICE_GEMINI)
-      flags |= GNI_MEM_MDD_CLONE;
-  }
-
-  for (int i = 0; i < cd->mem_map.mreg_cnt; i++) {
-    DBG_P_L(DBGF_MEMREG,
-            "CD %d: GNI_MemRegister[%d](%" PRIx64 ", %" PRIx64 ")",
-            (int) (cd - comm_doms), i,
-            cd->mem_map.mregs[i].addr, cd->mem_map.mregs[i].length);
-    if ((gni_rc = GNI_MemRegister(cd->nih, cd->mem_map.mregs[i].addr,
-                                  cd->mem_map.mregs[i].length,
-                                  NULL, flags, -1, &cd->mem_map.mregs[i].mdh))
-        != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
+    if (gnr_mreg == NULL)
+      CHPL_INTERNAL_ERROR("cannot find gnr_mreg");
   }
 }
 
@@ -2151,6 +2137,55 @@ chpl_bool get_next_rw_memory_range(uint64_t* addr, uint64_t* len,
 
 
 static
+void register_mem_region(mem_region_t* mr)
+{
+  uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
+  gni_return_t gni_rc;
+
+  DBG_P_L(DBGF_MEMREG,
+          "GNI_MemRegister[%d](%" PRIx64 ", %" PRIx64 ")",
+          (int) (mr - &mem_regions.mregs[0]), mr->addr, mr->len);
+  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mr->len,
+                                NULL, flags, -1, &mr->mdh))
+      != GNI_RC_SUCCESS) {
+    GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
+  }
+}
+
+
+static
+inline
+mem_region_t* mreg_for_addr(void* addr, mem_region_table_t* tab)
+{
+  uint64_t addr_ui = (uint64_t) addr;
+  mem_region_t* mr;
+
+  mr = tab->mregs;
+  for (int i = 0; i < tab->mreg_cnt; i++, mr++) {
+    if (addr_ui >= mr->addr && addr_ui <= mr->addr + mr->len)
+      return mr;
+  }
+
+  return NULL;
+}
+
+
+static
+inline
+mem_region_t* mreg_for_local_addr(void* addr)
+{
+  return mreg_for_addr(addr, &mem_regions);
+}
+
+static
+inline
+mem_region_t* mreg_for_remote_addr(void* addr, int32_t locale)
+{
+  return mreg_for_addr(addr, &mem_region_map[locale]);
+}
+
+
+static
 void polling_task(void* ignore)
 {
   gni_cq_entry_t ev;
@@ -2190,7 +2225,6 @@ void set_up_for_polling(void)
 {
   cq_cnt_t     cq_cnt;
   gni_return_t gni_rc;
-  uint32_t     flags;
   uint32_t     i;
 
   //
@@ -2262,15 +2296,13 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      uint32_t locale;
-      struct {
-        fork_t*      fork_reqs;
-        chpl_bool32* fork_reqs_free;
-      } gather_val;
+      uint32_t     locale;
+      fork_t*      gather_fork_reqs;
+      chpl_bool32* gather_fork_reqs_free;
     } gdata_t;
 
     gdata_t  my_gdata = { chpl_nodeID,
-                          { fork_reqs, (chpl_bool32*) fork_reqs_free } };
+                          fork_reqs, (chpl_bool32*) fork_reqs_free };
     gdata_t* gdata;
 
     // chpl_comm_mem_reg no: not communicated
@@ -2281,8 +2313,8 @@ void set_up_for_polling(void)
       CHPL_INTERNAL_ERROR("PMI_Allgather(fork_reqs_map) failed");
 
     for (i = 0; i < chpl_numNodes; i++) {
-      fork_reqs_map[gdata[i].locale]      = gdata[i].gather_val.fork_reqs;
-      fork_reqs_free_map[gdata[i].locale] = gdata[i].gather_val.fork_reqs_free;
+      fork_reqs_map[gdata[i].locale]      = gdata[i].gather_fork_reqs;
+      fork_reqs_free_map[gdata[i].locale] = gdata[i].gather_fork_reqs_free;
     }
 
     chpl_mem_free(gdata, 0, 0);
@@ -2300,37 +2332,39 @@ void set_up_for_polling(void)
   //
   // Register the fork request memory.
   //
-  rf_mreg.addr   = (uint64_t) (intptr_t) fork_reqs;
-  rf_mreg.length = (uint64_t)
-                   (FORK_REQ_BUFS_PER_LOCALE * sizeof(fork_reqs[0]));
-  flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
+  {
+    uint64_t addr  = (uint64_t) (intptr_t) fork_reqs;
+    uint64_t len   = (uint64_t)
+                     (FORK_REQ_BUFS_PER_LOCALE * sizeof(fork_reqs[0]));
+    uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
 
-  DBG_P_L(DBGF_MEMREG,
-          "RemFork space: GNI_MemRegister(%" PRIx64 ", %" PRIx64")",
-          rf_mreg.addr, rf_mreg.length);
-  if ((gni_rc = GNI_MemRegister(cd->nih, rf_mreg.addr, rf_mreg.length, rf_cqh,
-                                flags, -1, &rf_mreg.mdh))
-      != GNI_RC_SUCCESS)
-    GNI_FAIL(gni_rc, "GNI_MemRegister(fork requests) failed");
+    DBG_P_L(DBGF_MEMREG,
+            "RemFork space: GNI_MemRegister(%" PRIx64 ", %" PRIx64")",
+            addr, len);
+    if ((gni_rc = GNI_MemRegister(cd->nih, addr, len, rf_cqh,
+                                  flags, -1, &rf_mdh))
+        != GNI_RC_SUCCESS)
+      GNI_FAIL(gni_rc, "GNI_MemRegister(fork requests) failed");
+  }
 
   //
   // Share the per-locale fork request memory descriptors around the
   // job.
   //
   // chpl_comm_mem_reg no: not communicated
-  rf_mreg_map =
-    (mem_region_t*) chpl_mem_allocMany(chpl_numNodes,
-                                       sizeof(rf_mreg_map[0]),
-                                       CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                       0, 0);
+  rf_mdh_map =
+    (gni_mem_handle_t*) chpl_mem_allocMany(chpl_numNodes,
+                                           sizeof(rf_mdh_map[0]),
+                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                           0, 0);
 
   {
     typedef struct {
-      uint32_t     locale;
-      mem_region_t gather_val;
+      uint32_t         locale;
+      gni_mem_handle_t gather_val;
     } gdata_t;
 
-    gdata_t  my_gdata = { chpl_nodeID, rf_mreg };
+    gdata_t  my_gdata = { chpl_nodeID, rf_mdh };
     gdata_t* gdata;
 
     // chpl_comm_mem_reg no: not communicated
@@ -2338,10 +2372,10 @@ void set_up_for_polling(void)
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
     if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-      CHPL_INTERNAL_ERROR("PMI_Allgather(rf_mreg_map) failed");
+      CHPL_INTERNAL_ERROR("PMI_Allgather(rf_mdh_map) failed");
 
     for (i = 0; i < chpl_numNodes; i++)
-      rf_mreg_map[gdata[i].locale] = gdata[i].gather_val;
+      rf_mdh_map[gdata[i].locale] = gdata[i].gather_val;
 
     chpl_mem_free(gdata, 0, 0);
   }
@@ -2692,37 +2726,6 @@ void exit_any(int status)
 
 
 static
-inline
-mem_region_t* mreg_for_addr(void* addr, mem_map_t* map)
-{
-  uint64_t addr_ui = (uint64_t) addr;
-  mem_region_t* mr;
-
-  mr = map->mregs;
-  for (int i = 0; i < map->mreg_cnt; i++, mr++) {
-    if (addr_ui >= mr->addr && addr_ui < mr->addr + mr->length)
-      return mr;
-  }
-
-  return NULL;
-}
-
-static
-inline
-mem_region_t* mreg_for_local_addr(void* addr)
-{
-  return mreg_for_addr(addr, &comm_doms[0].mem_map);
-}
-
-static
-inline
-mem_region_t* mreg_for_remote_addr(void* addr, int32_t locale)
-{
-  return mreg_for_addr(addr, &mem_map_map[locale]);
-}
-
-
-static
 void rf_handler(gni_cq_entry_t* ev, void* context)
 {
   //
@@ -2799,6 +2802,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       }
     }
     break;
+
   case fork_op_large_call:
     DBG_P_LP(DBGF_RF, "forkFrom(%d) %s",
              (int) req_li, sprintf_rf_req(-1, f)); 
@@ -2824,7 +2828,6 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       release_req_buf(req_li, req_cdi, req_rbi);
     }
     break;
-
 
   case fork_op_put:
     DBG_P_LP(DBGF_GETPUT|DBGF_RF, "forkFrom(%d) %s",
@@ -5849,7 +5852,7 @@ void do_fork_post(int locale,
   post_desc.local_addr      = (uint64_t) (intptr_t) p_rf_req;
   post_desc.remote_addr     = (uint64_t) (intptr_t)
                               SEND_SIDE_FORK_REQ_BUF_ADDR(locale, cd_idx, rbi);
-  post_desc.remote_mem_hndl = rf_mreg_map[locale].mdh;
+  post_desc.remote_mem_hndl = rf_mdh_map[locale];
   post_desc.length          = f_size;
 
   //
