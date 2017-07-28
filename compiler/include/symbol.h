@@ -359,19 +359,21 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
-  llvm::MDNode* llvmTbaaNode;
-  llvm::MDNode* llvmConstTbaaNode;
-  llvm::MDNode* llvmTbaaStructNode;
-  llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmTbaaTypeDescriptor;
+  llvm::MDNode* llvmTbaaAccessTag;
+  llvm::MDNode* llvmConstTbaaAccessTag;
+  llvm::MDNode* llvmTbaaStructCopyNode;
+  llvm::MDNode* llvmConstTbaaStructCopyNode;
   llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  void* llvmTbaaTypeDescriptor;
+  void* llvmTbaaAccessTag;
+  void* llvmConstTbaaAccessTag;
+  void* llvmTbaaStructCopyNode;
+  void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
 #endif
 
