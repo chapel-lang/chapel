@@ -2218,8 +2218,6 @@ void makeBinaryLLVM(void) {
   options += " ";
   options += ldflags;
 
-  options += " -pthread";
-
   // Now, if we're doing a multilocale build, we have to make a launcher.
   // For this reason, we create a makefile. codegen_makefile
   // also gives us the name of the temporary place to save
