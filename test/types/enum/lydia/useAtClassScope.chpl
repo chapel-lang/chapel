@@ -5,7 +5,7 @@
 proc main() {
   var sampleBug = new Sample();
   writeln(sampleBug.tag);
-
+  delete sampleBug;
 }
 
 enum classTag { field1,
