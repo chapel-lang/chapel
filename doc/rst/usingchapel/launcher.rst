@@ -65,7 +65,7 @@ A specific launcher can be explicitly requested by setting the
 follows:
 
 
-* if ``CHPL_PLATFORM`` is cray-xc, cray-xe, cray-xk, or cray-xt:
+* if ``CHPL_PLATFORM`` is cray-xc, cray-xe, or cray-xk:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
