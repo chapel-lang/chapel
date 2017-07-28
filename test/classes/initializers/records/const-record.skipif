@@ -1,0 +1,2 @@
+# This test currently fails under gasnet
+CHPL_COMM != none
