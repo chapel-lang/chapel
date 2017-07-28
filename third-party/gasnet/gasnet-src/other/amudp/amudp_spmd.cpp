@@ -3,7 +3,8 @@
  * Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
 
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -346,7 +347,7 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
 #if USE_ASYNC_TCP_CONTROL
   extern "C" void AMUDP_SPMDControlSocketCallback(int sig) {
     AMUDP_SPMDIsActiveControlSocket = TRUE;
-    AMUDP_VERBOSE_INFO("got an AMUDP_SIGIO signal");
+    AMUDP_VERBOSE_INFO(("got an AMUDP_SIGIO signal"));
     reghandler(AMUDP_SIGIO, AMUDP_SPMDControlSocketCallback);
   }
 #endif
@@ -1614,6 +1615,7 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
   if (retval == NULL) {
     retval = (char *)defaultval;
     dflt = "   (default)";
+    usingdefault = 1;
   }
 #ifdef gasnett_envstr_display
   { char displaykey[255];

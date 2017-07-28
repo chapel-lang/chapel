@@ -302,6 +302,68 @@ extern void gasneti_defaultAMHandler(gasnet_token_t token) {
                      (int)gasnet_mynode(), (int)gasnet_nodes(), (int)srcnode);
 }
 /* ------------------------------------------------------------------------------------ */
+#if GASNETC_AMREGISTER
+  /* Use conduit-specific impl */
+  extern int gasnetc_amregister(gasnet_handler_t, gasneti_handler_fn_t);
+#else
+  /* Use default/recommended impl */
+  extern gasneti_handler_fn_t gasnetc_handler[];
+  static int gasnetc_amregister(gasnet_handler_t index, gasneti_handler_fn_t fnptr) {
+    /* register a single handler */
+    gasneti_assert(gasnetc_handler[index] == gasneti_defaultAMHandler);
+    gasnetc_handler[index] = fnptr;
+    return GASNET_OK;
+  }
+#endif
+extern int gasneti_amregister(gasnet_handlerentry_t *table, int numentries,
+                               int lowlimit, int highlimit,
+                               int dontcare, int *numregistered) {
+  static char checkuniqhandler[256] = { 0 };
+  int i;
+  *numregistered = 0;
+  for (i = 0; i < numentries; i++) {
+    int newindex;
+
+    if ((table[i].index == 0 && !dontcare) ||
+        (table[i].index && dontcare)) continue;
+    else if (table[i].index) newindex = table[i].index;
+    else { /* deterministic assignment of dontcare indexes */
+      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
+        if (!checkuniqhandler[newindex]) break;
+      }
+      if (newindex > highlimit) {
+        char s[255];
+        snprintf(s, sizeof(s), "Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
+        GASNETI_RETURN_ERRR(BAD_ARG, s);
+      }
+    }
+
+    /*  ensure handlers fall into the proper range of pre-assigned values */
+    if (newindex < lowlimit || newindex > highlimit) {
+      char s[255];
+      snprintf(s, sizeof(s), "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
+      GASNETI_RETURN_ERRR(BAD_ARG, s);
+    }
+
+    /* discover duplicates */
+    if (checkuniqhandler[newindex] != 0)
+      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
+    checkuniqhandler[newindex] = 1;
+
+    /* register the handler */
+    int rc = gasnetc_amregister((gasnet_handler_t)newindex, (gasneti_handler_fn_t)table[i].fnptr);
+    if (GASNET_OK != rc) return rc;
+
+    /* The check below for !table[i].index is redundant and present
+     * only to defeat the over-aggressive optimizer in pathcc 2.1
+     */
+    if (dontcare && !table[i].index) table[i].index = newindex;
+
+    (*numregistered)++;
+  }
+  return GASNET_OK;
+}
+/* ------------------------------------------------------------------------------------ */
 
 #ifndef GASNETC_FATALSIGNAL_CALLBACK
 #define GASNETC_FATALSIGNAL_CALLBACK(sig)
@@ -639,6 +701,52 @@ extern void gasneti_decode_args(int *argc, char ***argv) {
     }
   }
 }
+
+/* Propagate requested env vars from GASNet global env to the local env */
+
+void (*gasneti_propagate_env_hook)(const char *, int) = NULL; // spawner- or conduit-specific hook
+
+extern void gasneti_propagate_env_helper(const char *environ, const char * keyname, int flags) {
+  const int is_prefix = flags & GASNETI_PROPAGATE_ENV_PREFIX;
+  const char *p = environ;
+
+  gasneti_assert(environ);
+  gasneti_assert(keyname && !strchr(keyname,'='));
+
+  int keylen = strlen(keyname);
+  while (*p) {
+    if (!strncmp(keyname, p, keylen) && (is_prefix || p[keylen] == '=')) {
+      gasneti_assert(NULL != strchr(p+keylen, '='));
+      char *var = gasneti_strdup(p);
+      char *val = strchr(var, '=');
+      *(val++) = '\0';
+      if (gasnett_decode_envval_fn) {
+        val = (char *)((*gasnett_decode_envval_fn)(val));
+      }
+      gasnett_setenv(var, val);
+      GASNETI_TRACE_PRINTF(I,("gasneti_propagate_env(%s) => '%s'", var, val));
+      gasneti_free(var);
+      if (!is_prefix) break;
+    }
+    p += strlen(p) + 1;
+  }
+}
+
+extern void gasneti_propagate_env(const char * keyname, int flags) {
+  gasneti_assert(keyname);
+  gasneti_assert(NULL == strchr(keyname, '='));
+
+  // First look for matches in gasneti_globalEnv (if any)
+  if (gasneti_globalEnv) {
+    gasneti_propagate_env_helper(gasneti_globalEnv, keyname, flags);
+  }
+
+  // Next allow conduit-specific getenv (if any) to overwrite
+  if (gasneti_propagate_env_hook) {
+    gasneti_propagate_env_hook(keyname, flags);
+  }
+}
+
 
 /* Process environment for exittimeout.
  * If (GASNET_EXITTIMEOUT is set), it is returned
@@ -1268,6 +1376,79 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
     return len;
 }
 #endif /* gasneti_getline */
+
+/* ------------------------------------------------------------------------------------ */
+// Internal conduit interface to spawner
+
+#if HAVE_SSH_SPAWNER
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_ssh(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+#endif
+#if HAVE_MPI_SPAWNER
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+#endif
+#if HAVE_PMI_SPAWNER
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_pmi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+#endif
+
+extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_p,
+                                  const char *force_spawner,
+                                  gasnet_node_t *nodes_p, gasnet_node_t *mynode_p) {
+  gasneti_spawnerfn_t const *res = NULL;
+  const char *not_set = "(not set)";
+  const char *spawner;
+  char *tmp = NULL;
+  if (force_spawner) spawner = force_spawner;
+  else { 
+    // Purposely hide this variable from verbose output, since it's only for use as an internal hand-off
+    // from gasnetrun scripts. End users should set GASNET_<conduit>_SPAWNER
+    spawner = gasneti_getenv("GASNET_SPAWN_CONTROL");
+    if (!spawner) spawner = not_set;
+  }
+
+  if (spawner != not_set) { // upper-case
+    tmp = gasneti_strdup(spawner);
+    for (char *p = tmp; *p; p++) *p = toupper(*p);
+    spawner = tmp;
+  }
+
+#if HAVE_MPI_SPAWNER
+  /* bug 3406: Try MPI-based spawn first, EVEN if the var is not set.
+   * This is a requirement for spawning using bare mpirun
+   */
+  if (!res && (spawner == not_set || !strcmp(spawner, "MPI")) &&
+      (res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p))) {
+  }
+#endif
+
+#if HAVE_SSH_SPAWNER
+  /* GASNET_SPAWN_CONTROL=ssh is set by gasnetrun for the ssh spawn master,
+   * and by the ssh command line for other processes (ie all normal uses).
+   * We no longer claim to support ssh-based launch without gasnetrun.
+   * TODO: should we remove the "spawner == not_set" case?
+   */
+  if (!res && (spawner == not_set || !strcmp(spawner, "SSH")) &&
+      (res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p))) {
+  }
+#endif
+
+#if HAVE_PMI_SPAWNER
+  /* GASNET_SPAWN_CONTROL=pmi is set by gasnetrun for the pmi spawn case.
+   * We no longer claim to support direct launch with srun, yod, etc.
+   * TODO: should we remove the "spawner == not_set" case?
+   */
+  if (!res && (spawner == not_set || !strcmp(spawner, "PMI")) &&
+      (res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p))) {
+  }
+#endif
+
+  if (!res) {
+    gasneti_fatalerror("Requested spawner \"%s\" is unknown or not supported in this build", spawner);
+  }
+
+  gasneti_free(tmp);
+
+  return res;
+}
 
 /* ------------------------------------------------------------------------------------ */
 /* Debug memory management

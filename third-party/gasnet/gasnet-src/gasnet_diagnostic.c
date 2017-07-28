@@ -87,7 +87,7 @@ static int id = 0;
     }
   }
 #else
-  #define auxseg_test()   TEST_HEADER("auxseg test - SKIPPED")
+  #define auxseg_test()   TEST_HEADER("auxseg test - SKIPPED") do { } while(0)
 #endif
 
 static void mutex_test(int id);
@@ -597,7 +597,7 @@ static void spinlock_test(int id) {
 }
 #else
 static void spinlock_test(int id) {
-  TEST_HEADER("spinlock test - SKIPPED");
+  TEST_HEADER("spinlock test - SKIPPED"); else return;
 }
 #endif
 /* ------------------------------------------------------------------------------------ */
@@ -733,7 +733,7 @@ static void atomic128_test(int id) {
 }
 #else
 static void atomic128_test(int id) {
-  TEST_HEADER("128-bit atomic test - SKIPPED");
+  TEST_HEADER("128-bit atomic test - SKIPPED"); else return;
 }
 #endif
 /* ------------------------------------------------------------------------------------ */

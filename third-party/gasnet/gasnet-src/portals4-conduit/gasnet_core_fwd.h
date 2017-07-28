@@ -43,6 +43,11 @@
    */
 #undef GASNETC_USE_INTERRUPTS
 
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+#undef GASNETC_AMREGISTER
+
   /* define these to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */

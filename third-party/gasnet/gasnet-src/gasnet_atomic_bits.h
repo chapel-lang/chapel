@@ -138,7 +138,7 @@
          atomics require specific macro names to trigger the proper
          constructions elsewhere.
 
-   SEE ALSO: https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
+   SEE ALSO: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
  */
 
 /* ------------------------------------------------------------------------------------ */
@@ -2115,6 +2115,12 @@
 
       /* Using default fences as we have none in our asms */
     #elif GASNETI_HAVE_GCC_ASM
+      #if GASNETI_PGI_ASM_TPR23291
+        #define GASNETI_ASM_CR0 /*empty*/
+      #else
+        #define GASNETI_ASM_CR0 "cr0"
+      #endif
+
       #define GASNETI_HAVE_ATOMIC32_T 1
       typedef struct { volatile uint32_t ctr; } gasneti_atomic32_t;
       #define gasneti_atomic32_init(v)       { (v) }
@@ -2124,6 +2130,17 @@
       GASNETI_INLINE(_gasneti_atomic32_addfetch)
       uint32_t _gasneti_atomic32_addfetch(gasneti_atomic32_t *v, uint32_t op) {
         register uint32_t result;
+      #if GASNETI_PGI_ASM_TPR23290
+        __asm__ __volatile__ (
+          "0:\t"
+          "lwarx    %0,0,%2 \n\t"
+          "add      %0,%0,%3 \n\t"
+          "stwcx.   %0,0,%2 \n\t"
+          "bne-     0b \n\t"
+          : "=&b"(result), "=m" (v->ctr)	/* constraint b = 'b'ase register (not r0) */
+          : "r" (v), "r"(op) , "m"(v->ctr)
+          : GASNETI_ASM_CR0);
+      #else
         __asm__ __volatile__ ( 
           "0:\t"
           "lwarx    %0,0,%2 \n\t" 
@@ -2132,7 +2149,8 @@
           "bne-     0b \n\t" 
           : "=&b"(result), "=m" (v->ctr)	/* constraint b = 'b'ase register (not r0) */
           : "r" (v), "Ir"(op) , "m"(v->ctr)
-          : "cr0");
+          : GASNETI_ASM_CR0);
+      #endif
         return result;
       }
       #define _gasneti_atomic32_addfetch _gasneti_atomic32_addfetch
@@ -2149,7 +2167,7 @@
           "bne-     0b \n\t" 
           : "=&r"(oldval), "=m" (v->ctr)
           : "r" (v), "r"(newval) , "m"(v->ctr)
-          : "cr0");
+          : GASNETI_ASM_CR0);
         return oldval;
       }
       #define _gasneti_atomic32_swap _gasneti_atomic32_swap
@@ -2167,7 +2185,7 @@
 	  "1:	"
 	  : "=&r"(result), "=m"(p->ctr)
 	  : "r" (p), "r"(oldval), "r"(newval), "m"(p->ctr)
-	  : "cr0");
+	  : GASNETI_ASM_CR0);
   
         return (result == 0);
       } 
@@ -2192,7 +2210,7 @@
 		"1:	"
 		: "=&b"(result), "=m"(p->ctr)
 		: "r" (p), "r"(oldval), "r"(newval), "m"(p->ctr)
-		: "cr0");
+		: GASNETI_ASM_CR0);
           return (result == 0);
         } 
         #define _gasneti_atomic64_compare_and_swap _gasneti_atomic64_compare_and_swap
@@ -2206,13 +2224,24 @@
                 "bne-     0b"                   /* retry on conflict */
                 : "=&b"(oldval), "=m"(p->ctr)
                 : "r" (p), "r"(newval), "m"(p->ctr)
-                : "cr0");
+                : GASNETI_ASM_CR0);
           return oldval;
         }
         #define _gasneti_atomic64_swap _gasneti_atomic64_swap
         GASNETI_INLINE(_gasneti_atomic64_addfetch)
         uint64_t _gasneti_atomic64_addfetch(gasneti_atomic64_t *p, uint64_t op) {
           register uint64_t result;
+        #if GASNETI_PGI_ASM_TPR23290
+          __asm__ __volatile__ (
+                "0:\t"
+                "ldarx    %0,0,%2 \n\t"
+                "add      %0,%0,%3 \n\t"
+                "stdcx.   %0,0,%2 \n\t"
+                "bne-     0b \n\t"
+                : "=&b"(result), "=m" (p->ctr)	/* constraint b = 'b'ase register (not r0) */
+                : "r" (p), "r"(op) , "m"(p->ctr)
+                : GASNETI_ASM_CR0);
+        #else
           __asm__ __volatile__ (
                 "0:\t"
                 "ldarx    %0,0,%2 \n\t"
@@ -2221,7 +2250,8 @@
                 "bne-     0b \n\t"
                 : "=&b"(result), "=m" (p->ctr)	/* constraint b = 'b'ase register (not r0) */
                 : "r" (p), "Ir"(op) , "m"(p->ctr)
-                : "cr0");
+                : GASNETI_ASM_CR0);
+        #endif
           return result;
         }
         #define _gasneti_atomic64_addfetch _gasneti_atomic64_addfetch
@@ -2245,7 +2275,7 @@
 		"bne-	0b		"	/* retry on loss of reservation */
 		: "=m"(p->ctr), "=&b"(tmp)
 		: "r"(val), "r"(p), "m"(p->ctr)
-		: "cr0" );
+		: GASNETI_ASM_CR0 );
         }
         #define _gasneti_atomic64_set _gasneti_atomic64_set
         GASNETI_INLINE(_gasneti_atomic64_read)
@@ -2269,7 +2299,7 @@
 		"bne-	0b		"	/* retry on canary changed */
 		: "=&r"(retval), "=&r"(tmp)
 		: "m"(p->ctr)
-		: "cr0" );
+		: GASNETI_ASM_CR0 );
           return retval;
         }
         #define _gasneti_atomic64_read _gasneti_atomic64_read
@@ -2302,7 +2332,7 @@
 		"bne-     0b		"	/* retry on loss of reservation */
 		: "=&r"(result), "=&r"(tmp), "=m"(p->ctr)
 		: "r" (p), "m"(p->ctr), "r"(oldval), "r"(newval)
-		: "cr0");
+		: GASNETI_ASM_CR0);
           return result;
         } 
         #define _gasneti_atomic64_compare_and_swap _gasneti_atomic64_compare_and_swap
@@ -2325,7 +2355,7 @@
 		"bne-	0b		"	/* retry on loss of reservation */
 		: "=m"(p->ctr), "=&b"(tmp), "=&b"(retval)
 		: "r"(val), "r"(p), "m"(p->ctr)
-		: "cr0" );
+		: GASNETI_ASM_CR0 );
           return retval;
         }
         #define _gasneti_atomic64_swap _gasneti_atomic64_swap
@@ -2349,7 +2379,7 @@
 		"bne-	0b		"	/* retry on loss of reservation */
 		: "=m"(p->ctr), "=&b"(tmp), "=&b"(retval)
 		: "r"(val), "r"(p), "m"(p->ctr)
-		: "cr0" );
+		: GASNETI_ASM_CR0 );
           return retval;
         }
         #define _gasneti_atomic64_fetchadd _gasneti_atomic64_fetchadd

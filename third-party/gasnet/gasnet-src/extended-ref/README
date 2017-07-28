@@ -34,7 +34,8 @@ Optional compile-time settings:
 Known problems:
 ---------------
 
-* See the Berkeley UPC Bugzilla server for details on known bugs.
+* See the GASNet Bugzilla server for details on known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

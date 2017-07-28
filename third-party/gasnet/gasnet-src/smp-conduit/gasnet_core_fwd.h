@@ -42,11 +42,6 @@
  #endif
 #endif
 
-#if GASNETI_THROTTLE_FEATURE_ENABLED
-/* polling is a no-op on smp-conduit, so never throttle it */ 
-#undef GASNETI_THROTTLE_FEATURE_ENABLED
-#endif
-
 #define GASNETI_GASNETC_AMPOLL
 #if GASNET_PSHM
   extern int gasnetc_AMPoll(void);
@@ -70,6 +65,11 @@
      (e.g. with a signal) to run AM handlers (interrupt-based handler dispatch)
    */
 /* #define GASNETC_USE_INTERRUPTS 1 */
+
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+/* #define GASNETC_AMREGISTER 1 */
 
   /* define these to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)

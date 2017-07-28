@@ -205,8 +205,6 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CC_UNWRAPPED = @CC_UNWRAPPED@
-CC_WRAPPED = @CC_WRAPPED@
 CFLAGS = @CFLAGS@
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
@@ -222,8 +220,6 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
-CXX_UNWRAPPED = @CXX_UNWRAPPED@
-CXX_WRAPPED = @CXX_WRAPPED@
 CYGPATH_W = @CYGPATH_W@
 DBX_PATH = @DBX_PATH@
 DEBUGMALLOC = @DEBUGMALLOC@
@@ -245,9 +241,9 @@ FCA_LIBDIR = @FCA_LIBDIR@
 FCA_LIBS = @FCA_LIBS@
 FH_CFLAGS = @FH_CFLAGS@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
+GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
 GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
-GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
 GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
@@ -270,7 +266,7 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
-IBV_INCLUDE = @IBV_INCLUDE@
+IBV_INCLUDES = @IBV_INCLUDES@
 IBV_LIBCFLAGS = @IBV_LIBCFLAGS@
 IBV_LIBDIR = @IBV_LIBDIR@
 IBV_LIBS = @IBV_LIBS@
@@ -300,17 +296,14 @@ MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
-MPI_CC_UNWRAPPED = @MPI_CC_UNWRAPPED@
-MPI_CC_WRAPPED = @MPI_CC_WRAPPED@
 MPI_CFLAGS = @MPI_CFLAGS@
-MPI_DEFINES = @MPI_DEFINES@
 MPI_LIBS = @MPI_LIBS@
 MXM_INCLUDE = @MXM_INCLUDE@
 MXM_LIBDIR = @MXM_LIBDIR@
 MXM_LIBS = @MXM_LIBS@
 NM = @NM@
 OBJEXT = @OBJEXT@
-OFI_INCLUDE = @OFI_INCLUDE@
+OFI_INCLUDES = @OFI_INCLUDES@
 OFI_LIBCFLAGS = @OFI_LIBCFLAGS@
 OFI_LIBDIR = @OFI_LIBDIR@
 OFI_LIBS = @OFI_LIBS@
@@ -330,6 +323,7 @@ PATCHED_HEADER = @PATCHED_HEADER@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
+PMIRUN_CMD = @PMIRUN_CMD@
 PMI_SPAWNER_INCLUDES = @PMI_SPAWNER_INCLUDES@
 PMI_SPAWNER_LIBDIR = @PMI_SPAWNER_LIBDIR@
 PMI_SPAWNER_LIBS = @PMI_SPAWNER_LIBS@
@@ -400,12 +394,14 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+fi_info = @fi_info@
 gasnet_cv__gfp_fullprogname_CC = @gasnet_cv__gfp_fullprogname_CC@
 gasnet_cv__gfp_fullprogname_CPP = @gasnet_cv__gfp_fullprogname_CPP@
 gasnet_cv__gfp_fullprogname_CXX = @gasnet_cv__gfp_fullprogname_CXX@
 gasnet_cv__gfp_fullprogname_CXXCPP = @gasnet_cv__gfp_fullprogname_CXXCPP@
 gasnet_cv__gfp_fullprogname_MPIRUN_CMD = @gasnet_cv__gfp_fullprogname_MPIRUN_CMD@
 gasnet_cv__gfp_fullprogname_MPI_CC = @gasnet_cv__gfp_fullprogname_MPI_CC@
+gasnet_cv__gfp_fullprogname_PMIRUN_CMD = @gasnet_cv__gfp_fullprogname_PMIRUN_CMD@
 have_mpcc_r = @have_mpcc_r@
 host = @host@
 host_alias = @host_alias@
@@ -423,6 +419,7 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+mxm_dump_config = @mxm_dump_config@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
 prefix = @prefix@
@@ -504,9 +501,6 @@ headers = \
 
 EXTRA_DIST = \
 	README				\
-	README-devel			\
-	README-git			\
-	README-release			\
  	README-tools 			\
 	ChangeLog	  		\
 	license.txt       		\
@@ -522,15 +516,13 @@ EXTRA_DIST = \
 
 #       tests handled below
 include_HEADERS = $(headers)
+
+# deliberately omitted git-only docs: README-devel README-git README-release
 INSTALL_DOCS = \
 	README			\
-	README-devel		\
-	README-git		\
-	README-release		\
 	README-tools		\
 	license.txt		\
 	docs/autotuner.txt	\
-	docs/pshm-design.txt	\
 	docs/gasnet.txt		\
 	docs/gasnet.html	\
 	docs/gasnet.pdf		\
@@ -542,11 +534,14 @@ INSTALL_DOCS = \
 @BUILD_SEQ_LIBS_TRUE@libgasnet_tools_seq_a_SOURCES = 
 @BUILD_SEQ_LIBS_TRUE@libraries_seq = libgasnet_tools-seq.a 
 @BUILD_SEQ_LIBS_TRUE@fragments_seq = gasnet_tools-seq.mak
+@BUILD_SEQ_LIBS_TRUE@pkgconfig_seq = gasnet_tools-seq.pc
 @BUILD_PAR_LIBS_TRUE@libgasnet_tools_par_a_SOURCES = 
 @BUILD_PAR_LIBS_TRUE@libraries_par = libgasnet_tools-par.a 
 @BUILD_PAR_LIBS_TRUE@fragments_par = gasnet_tools-par.mak
+@BUILD_PAR_LIBS_TRUE@pkgconfig_par = gasnet_tools-par.pc
 libraries = $(libraries_seq) $(libraries_par)
 fragments = $(fragments_seq) $(fragments_par)
+pkgconfig = $(pkgconfig_seq) $(pkgconfig_par)
 lib_LIBRARIES = $(libraries)
 @CONDUIT_MODE_TRUE@TESTINSTANCE = $${PPID:-xxxx}
 @CONDUIT_MODE_TRUE@TESTLOG = `pwd`/.test-results
@@ -1241,10 +1236,11 @@ echovar: force
 @CONDUIT_MODE_TRUE@	  echo "$$line" ; \
 @CONDUIT_MODE_TRUE@	fi
 @CONDUIT_MODE_FALSE@test: tests
-@CONDUIT_MODE_FALSE@tests: force
+@CONDUIT_MODE_FALSE@tests: $(TOOLSONLY_TESTS)
+@CONDUIT_MODE_FALSE@$(TOOLSONLY_TESTS): force
 @CONDUIT_MODE_FALSE@	@$(MAKE) -f $(top_builddir)/tests/Makefile \
 @CONDUIT_MODE_FALSE@	        GASNET_INCLUDES="-I@TOP_BUILDDIR@ -I@TOP_SRCDIR@ -I@TOP_SRCDIR@/other" \
-@CONDUIT_MODE_FALSE@		$(TOOLSONLY_TESTS)
+@CONDUIT_MODE_FALSE@		$@
 @CONDUIT_MODE_FALSE@run-tests: tests
 @CONDUIT_MODE_FALSE@	./testtools
 $(recurse_local):
@@ -1257,11 +1253,11 @@ recurse_special:
 	    cd $$dir && $(MAKE) $(DO_WHAT) || exit $$? ; \
 	  fi ; \
 	 done
-all-local: $(lib_LIBRARIES) $(fragments)
+all-local: $(lib_LIBRARIES) $(fragments) $(pkgconfig)
 	@$(MAKE) $(recurse_local) DO_WHAT=$${DO_WHAT=all}
 	@$(MAKE) recurse_special  DO_WHAT=$${DO_WHAT=all}
 clean-local:
-	rm -f $(fragments)
+	rm -f $(fragments) $(pkgconfig)
 	@if test -f Makefile -a -f smp-conduit/Makefile; then \
 	  $(MAKE) $(recurse_local) DO_WHAT=clean || exit $$? ; \
 	 fi
@@ -1269,6 +1265,7 @@ clean-local:
 	  $(MAKE) recurse_special DO_WHAT=clean ;    \
 	 fi
 check-local: check-exports $(TOOLSONLY_CHECK)
+	$(MAKE) check-pkgconfig CHECK_FILES="$(pkgconfig)"
 seq par parsync:
 	@$(MAKE) $(recurse_local) DO_WHAT=$@
 check tests-clean:
@@ -1295,11 +1292,17 @@ install-data-local:
 	    $(INSTALL_DATA) $(top_srcdir)/$$file $(DESTDIR)$(docdir)/`basename $$file` || exit $$? ; \
 	  fi ; \
 	done
+	$(mkinstalldirs) $(DESTDIR)$(libdir)/pkgconfig
 	@list='$(fragments)'; for p in $$list; do \
           if test -f $$p; then \
             filename=`basename $$p`; \
-            echo @GASNET_INSTALL_CMD@ " < $$p > $(DESTDIR)$(includedir)/$$filename"; \
-            @GASNET_INSTALL_CMD@ < $$p > $(DESTDIR)$(includedir)/$$filename || exit $$? ; \
+            destmak="$(DESTDIR)$(includedir)/$$filename"; \
+            echo @GASNET_INSTALL_CMD@ " < $$p > $$destmak"; \
+            @GASNET_INSTALL_CMD@ < $$p > $$destmak || exit $$? ; \
+            thread_model=`echo "$$filename" | sed 's/^.*-\(.*\)\.mak$$/\1/'` ; \
+            destpc="$(DESTDIR)$(libdir)/pkgconfig/gasnet_tools-$$thread_model.pc"; \
+            $(MAKE) do-pkgconfig-tools thread_model=$$thread_model pkgconfig_file="$$destpc" FRAGMENT="$$destmak" || exit $$? ; \
+            chmod 644 "$$destpc" || exit $$? ; \
           else :; fi; \
         done
 	for file in @PATCHED_HEADER@ DUMMY ; do \
@@ -1334,6 +1337,7 @@ uninstall-local:
 	for file in $(fragments) ; do \
 	  rm -f $(DESTDIR)$(includedir)/$$file ; \
 	done
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/gasnet_tools-*.pc
 	for file in @PATCHED_HEADER@ ; do \
 	  rm -f $(DESTDIR)$(includedir)/patched-headers/$$file ; \
 	done
@@ -1364,7 +1368,7 @@ distclean: force
 dist-hook:
 	if test -d $(srcdir)/.git ; then \
 	  GASNET_DESC=`$${GIT=git} --git-dir=$(srcdir)/.git describe` || exit $$? ; \
-	  $(PERL) -pi -e "s/no-version-control-info/$$GASNET_DESC/;" -- $(distdir)/configure || exit $$? ; \
+	  $(PERL) -pi -e "s:no-version-control-info:$$GASNET_DESC:;" -- $(distdir)/configure || exit $$? ; \
 	  echo $$GASNET_DESC > $(distdir)/version.git || exit $$? ; \
 	fi
 	if test -f $(distdir)/docs/Makefile ; then \

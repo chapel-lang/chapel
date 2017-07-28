@@ -46,7 +46,6 @@ extern uint64_t gasneti_max_threads(void) { return 1; }
 
 
 extern void gasnete_init(void) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   static int firstcall = 1;
   GASNETI_TRACE_PRINTF(C,("gasnete_init()"));
   gasneti_assert(firstcall); /*  make sure we haven't been called before */
@@ -264,11 +263,11 @@ static void gasnete_shmembarrier_init(gasnete_coll_team_t team);
 #ifdef SGI_SHMEM
 #define BARRIER_READ_NOTIFYCTR	1
 #define _BARRIER_PAD(name)  \
-	GASNETI_UNUSED static char __barrier_pad ## name[BARRIER_PAD_CACHELINE_SIZE] = { 0 }
+	static char __barrier_pad ## name[BARRIER_PAD_CACHELINE_SIZE] = { 0 }
 #else
 #define BARRIER_READ_NOTIFYCTR	0
 #define _BARRIER_PAD(name)  \
-	GASNETI_UNUSED static char __barrier_pad ## name[BARRIER_PAD_CACHELINE_SIZE] = { 0 }
+	static char __barrier_pad ## name[BARRIER_PAD_CACHELINE_SIZE] = { 0 }
 #endif
 
 typedef struct {

@@ -54,11 +54,19 @@
    */
 /* #define GASNETC_USE_INTERRUPTS 1 */
 
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+#define GASNETC_AMREGISTER 1
+
   /* define these to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */
 /* #define GASNETC_GET_HANDLER 1 */
 /* #define GASNETC_TOKEN_CREATE 1 */
+
+/* mpi-conduit supports top-level poll throttling */
+#define GASNETC_USING_SUSPEND_RESUME 1
 
   /* enable usage correctness checking on HSL's and no-interrupt sections */
 #ifndef GASNETC_HSL_ERRCHECK

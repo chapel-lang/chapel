@@ -49,6 +49,7 @@
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT_FUNCPTR
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+#undef GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC
 
 /* CXX attributes support */
 #undef GASNETI_HAVE_CXX_ATTRIBUTE
@@ -69,6 +70,7 @@
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT_FUNCPTR
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+#undef GASNETI_HAVE_CXX_PRAGMA_GCC_DIAGNOSTIC
 
 /* MPI_CC attributes support */
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE
@@ -89,6 +91,7 @@
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT_FUNCPTR
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+#undef GASNETI_HAVE_MPI_CC_PRAGMA_GCC_DIAGNOSTIC
 
 /* identification of the C compiler used at configure time */
 #undef GASNETI_PLATFORM_COMPILER_IDSTR
@@ -108,6 +111,8 @@
 #undef GASNETI_PLATFORM_MPI_CC_ID
 #undef GASNETI_PLATFORM_MPI_CC_VERSION
 #undef GASNETI_MPI_VERSION
+#undef HAVE_MPI_INIT_THREAD
+#undef HAVE_MPI_QUERY_THREAD
 
 /* Defined to be the inline function modifier supported by the C
    compilers (if supported), prefixed by 'static' (if permitted) */
@@ -267,6 +272,9 @@
 /* has ARM kernel-level support for membar */
 #undef GASNETI_HAVE_ARM_MEMBAR
 
+/* has usable AARCH64 (ARMV8) system counter support */
+#undef GASNETI_HAVE_AARCH64_CNTVCT_EL0
+
 /* has x86 EBX register (not reserved for GOT) */
 #undef GASNETI_HAVE_X86_EBX
 
@@ -391,6 +399,12 @@
 #undef GASNETC_GNI_MULTI_DOMAIN
 #undef GASNETC_GNI_UDREG
 #undef GASNETC_GNI_FIREHOSE
+
+/* GASNet ofi-conduit settings */
+#undef GASNETC_OFI_MAX_MEDIUM
+#undef GASNETC_OFI_NUM_COMPLETIONS
+#undef GASNETC_OFI_HAS_MR_SCALABLE
+#undef GASNETC_OFI_USE_THREAD_DOMAIN
 
 /* GASNet ibv-conduit features and bug work-arounds */
 #undef HAVE_IBV_SRQ

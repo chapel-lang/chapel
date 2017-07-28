@@ -258,7 +258,6 @@ static void gasnete_check_config(void) {
 }
 
 extern void gasnete_init(void) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   static int firstcall = 1;
   GASNETI_TRACE_PRINTF(C,("gasnete_init()"));
   gasneti_assert(firstcall); /*  make sure we haven't been called before */
@@ -405,7 +404,7 @@ extern int  gasnete_try_syncnb(gasnet_handle_t handle) {
   /* polling now takes place in callers which needed and NOT in those which don't */
   GASNETI_SAFE(gasneti_AMPoll());
 #endif
-
+  gasneti_assert(handle != GASNET_INVALID_HANDLE); // invalid handled inline in header
   return gasnete_op_try_free(handle) ? GASNET_OK : GASNET_ERR_NOT_READY;
 }
 #endif

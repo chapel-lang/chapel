@@ -43,7 +43,9 @@ configure-amudprun: FORCE
 	cp $(AMUDPRUN_SRC_DIR)/*.c $(AMUDPRUN_BUILD_DIR)
 	cp $(AMUDPRUN_SRC_DIR)/*.cpp $(AMUDPRUN_BUILD_DIR)
 	cp $(AMUDPRUN_SRC_DIR)/*.h $(AMUDPRUN_BUILD_DIR)
-	cp $(AMUDPRUN_SRC_DIR)/../portable_*.h $(AMUDPRUN_BUILD_DIR)
+	cp $(AMUDPRUN_SRC_DIR)/../*portable_*.h $(AMUDPRUN_BUILD_DIR)
+	cp $(AMUDPRUN_BUILD_DIR)/gasnet_portable_platform.h $(AMUDPRUN_BUILD_DIR)/amudp_portable_platform.h
+
 
 build-amudprun: FORCE
 	cd $(AMUDPRUN_BUILD_DIR) && $(MAKE) -f Makefile.standalone CC="$(CC)" CXX="$(CXX)" platform_defines="$(platform_defines)"

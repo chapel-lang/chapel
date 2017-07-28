@@ -60,7 +60,7 @@ MPI_TESTS = $(MPI1_TESTS) $(MPI2_TESTS)
 # tests that can be built in any mode
 # in order of most useful execution
 # NOTE: if you add a test here that is expected to pass on all conduits,
-#   please also add it to upcr/upc-tests/gasnet-tests/harness.conf
+#   please also add it to upcr-harness/gasnet-tests/harness.conf
 testprograms_seq =      \
         testgasnet      \
         testtools       \
@@ -364,9 +364,10 @@ testbarrierlate: delay.o
 testbarrierlate_extraobjs = delay.o
 
 # delay function, used by multiple tests
-# need to deliberately exclude optimization for this object file to prevent breaking delay
+# need to deliberately exclude and disable optimization for this object file to prevent breaking delay
+NOOPT_FLAG=-O0
 delay.o: force
-	$(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(KEEPTMP_CFLAGS) $(MANUAL_CFLAGS) -c -o $@ $(srcdir)/$*.c
+	$(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(KEEPTMP_CFLAGS) $(NOOPT_FLAG) $(MANUAL_CFLAGS) -c -o $@ $(srcdir)/$*.c
 
 mpi-check: force
 	@if test -z "$(GASNET_MPI_CC)" ; then \

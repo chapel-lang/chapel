@@ -122,7 +122,7 @@ void *workerthread(void *args) {
           sleep(1); 
           gasnet_exit(18); 
       } else {
-        int junk;
+        int junk = 42;
         int lim = MIN(MIN(MIN(gasnet_AMMaxMedium(), gasnet_AMMaxLongRequest()), gasnet_AMMaxLongReply()), TEST_SEGSZ);
         char *p = malloc(lim);
         char *peerseg = TEST_SEG(peer);

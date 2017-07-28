@@ -409,7 +409,6 @@ void *gasnetc_sr_desc_init(struct ibv_send_wr *result, struct ibv_sge *sg_lst_p)
 #define GASNETC_DECL_SR_DESC(_name, _sg_lst_len)                        \
 	struct ibv_send_wr _name[1];                                      \
 	struct ibv_sge _CONCAT(_name,_sg_lst)[_sg_lst_len];              \
-	GASNETI_UNUSED                                                  \
 	void *_CONCAT(_name,_dummy) = gasnetc_sr_desc_init(_name, _CONCAT(_name,_sg_lst)) /* note intentional lack of final semicolon */
 
 /* Use of IB's 32-bit immediate data:
@@ -4106,9 +4105,12 @@ extern int gasnetc_RequestGeneric(gasnetc_category_t category,
 
 #if GASNET_PSHM
   if_pt (gasneti_pshm_in_supernode(dest)) {
-    return gasneti_AMPSHM_RequestGeneric(category, dest, handler,
+    int retval;
+    retval = gasneti_AMPSHM_RequestGeneric(category, dest, handler,
                                          src_addr, nbytes, dst_addr,
                                          numargs, argptr);
+    if_pf (completed) gasnetc_atomic_increment(completed,0);
+    return retval;
   }
 #endif
 
@@ -4127,9 +4129,11 @@ extern int gasnetc_ReplyGeneric(gasnetc_category_t category,
 
 #if GASNET_PSHM
   if_pt (gasnetc_token_is_pshm(token)) {
-      return gasneti_AMPSHM_ReplyGeneric(category, token, handler,
+    retval = gasneti_AMPSHM_ReplyGeneric(category, token, handler,
                                          src_addr, nbytes, dst_addr,
                                          numargs, argptr);
+    if_pf (completed) gasnetc_atomic_increment(completed,0);
+    return retval;
   }
 #endif
 

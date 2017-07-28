@@ -97,7 +97,6 @@ extern size_t gasneti_format_memveclist_bufsz(size_t count) {
   return 200+count*50;
 }
 extern gasneti_memveclist_stats_t gasneti_format_memveclist(char *buf, size_t count, gasnet_memvec_t const *list) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   const int bufsz = gasneti_format_memveclist_bufsz(count);
   char * p = buf;
   int i, j=0;
@@ -129,7 +128,6 @@ extern size_t gasneti_format_putvgetv_bufsz(size_t dstcount, size_t srccount) {
 extern size_t gasneti_format_putvgetv(char *buf, gasnet_node_t node, 
                                     size_t dstcount, gasnet_memvec_t const dstlist[], 
                                     size_t srccount, gasnet_memvec_t const srclist[]) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   const int bufsz = gasneti_format_putvgetv_bufsz(dstcount, srccount);
   char * dstlist_str = (char *)gasneti_malloc(gasneti_format_memveclist_bufsz(dstcount));
   char * srclist_str = (char *)gasneti_malloc(gasneti_format_memveclist_bufsz(srccount));
@@ -149,7 +147,6 @@ extern size_t gasneti_format_addrlist_bufsz(size_t count) {
   return 200+count*25;
 }
 extern gasneti_addrlist_stats_t gasneti_format_addrlist(char *buf, size_t count, void * const *list, size_t len) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   const int bufsz = gasneti_format_addrlist_bufsz(count);
   char * p = buf;
   int i,j=0;
@@ -180,7 +177,6 @@ extern size_t gasneti_format_putigeti_bufsz(size_t dstcount, size_t srccount) {
 extern size_t gasneti_format_putigeti(char *buf, gasnet_node_t node, 
                                     size_t dstcount, void * const dstlist[], size_t dstlen,
                                     size_t srccount, void * const srclist[], size_t srclen) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   const int bufsz = gasneti_format_putigeti_bufsz(dstcount, srccount);
   char * dstlist_str = (char *)gasneti_malloc(gasneti_format_addrlist_bufsz(dstcount));
   char * srclist_str = (char *)gasneti_malloc(gasneti_format_addrlist_bufsz(srccount));
@@ -201,7 +197,6 @@ extern size_t gasneti_format_strides_bufsz(size_t count) {
   return count*30+10;
 }
 extern void gasneti_format_strides(char *buf, size_t count, const size_t *list) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   const int bufsz = gasneti_format_strides_bufsz(count);
   char * p = buf;
   int i;
@@ -226,7 +221,6 @@ extern size_t gasneti_format_putsgets(char *buf, void *_pstats,
                                     const size_t count[], size_t stridelevels) {
   gasnete_strided_stats_t *pstats = _pstats;
   gasnete_strided_stats_t stats;
-  GASNETI_UNUSED_UNLESS_DEBUG
   const int bufsz = gasneti_format_putsgets_bufsz(stridelevels);
   char * srcstrides_str = (char *)gasneti_malloc(gasneti_format_strides_bufsz(stridelevels));
   char * dststrides_str = (char *)gasneti_malloc(gasneti_format_strides_bufsz(stridelevels));
@@ -1132,12 +1126,9 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
 #if GASNETI_STATS_OR_TRACE
 #define AGGRNAME(cat,type) gasneti_aggregate_##cat##_##type
 #define AGGR(type)                                       \
-  GASNETI_UNUSED                                         \
   static gasneti_statctr_t AGGRNAME(ctr,type) = 0;       \
-  GASNETI_UNUSED                                         \
   static gasneti_stat_intval_t AGGRNAME(intval,type) =   \
     { 0, GASNETI_STATCTR_MAX, GASNETI_STATCTR_MIN, 0 };  \
-  GASNETI_UNUSED                                         \
   static gasneti_stat_timeval_t AGGRNAME(timeval,type) = \
     { 0, GASNETI_TICK_MAX, GASNETI_TICK_MIN, 0 }
 AGGR(G);

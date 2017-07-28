@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
   BARRIER();
 
 #ifdef GASNET_PAR
+  TEST_SET_WAITMODE(pollers+1);
   if (pollers)
       test_createandjoin_pthreads(pollers+1,doTest,NULL,0);
   else

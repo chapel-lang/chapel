@@ -13,17 +13,6 @@
 #include <gasnet_handler.h>
 #include <firehose.h>
 
-
-#if HAVE_SSH_SPAWNER
-  #include <ssh-spawner/gasnet_bootstrap_internal.h>
-#endif
-#if HAVE_MPI_SPAWNER
-  #include <mpi-spawner/gasnet_bootstrap_internal.h>
-#endif
-#if HAVE_PMI_SPAWNER
-  #include <pmi-spawner/gasnet_bootstrap_internal.h>
-#endif
-
 #include <infiniband/verbs.h>
 
 /* TODO: flatten these? */
@@ -259,6 +248,9 @@ typedef union {
   /* Keep defn */
 #elif !PLATFORM_COMPILER_PGI
   #define GASNETI_USE_ALLOCA 1
+#endif
+#if GASNETI_USE_ALLOCA
+  #include <alloca.h>
 #endif
 
 /* Can one send a 0-byte payload?
@@ -682,24 +674,17 @@ extern void gasnetc_unpin(gasnetc_hca_t *hca, gasnetc_memreg_t *reg);
 #define gasnetc_unmap(reg)	gasnetc_munmap((void *)((reg)->addr), (reg)->len)
 
 /* Bootstrap support */
-extern void (*gasneti_bootstrapFini_p)(void);
-extern void (*gasneti_bootstrapAbort_p)(int exitcode);
-extern void (*gasneti_bootstrapAlltoall_p)(void *src, size_t len, void *dest);
-extern void (*gasneti_bootstrapBroadcast_p)(void *src, size_t len, void *dest, int rootnode);
-extern void (*gasneti_bootstrapSNodeCast_p)(void *src, size_t len, void *dest, int rootnode);
-extern void (*gasneti_bootstrapCleanup_p)(void);
-#define gasneti_bootstrapFini           (*gasneti_bootstrapFini_p)
-#define gasneti_bootstrapAbort          (*gasneti_bootstrapAbort_p)
-#define gasneti_bootstrapAlltoall       (*gasneti_bootstrapAlltoall_p)
-#define gasneti_bootstrapBroadcast      (*gasneti_bootstrapBroadcast_p)
-#define gasneti_bootstrapSNodeBroadcast (*gasneti_bootstrapSNodeCast_p)
-#define gasneti_bootstrapCleanup        (*gasneti_bootstrapCleanup_p)
+extern gasneti_spawnerfn_t const *gasneti_spawner;
+
+/* This indirection allows us to drop-in a native implementation after init */
 extern void gasneti_bootstrapBarrier(void);
 extern void gasneti_bootstrapExchange(void *src, size_t len, void *dest);
-
-/* Explicitly native Barrier and Exchange: */
-extern void gasnetc_bootstrapBarrier_ib(void);
-extern void gasnetc_bootstrapExchange_ib(void *src, size_t len, void *dest);
+#define gasneti_bootstrapBroadcast      (*(gasneti_spawner->Broadcast))
+#define gasneti_bootstrapSNodeBroadcast (*(gasneti_spawner->SNodeBroadcast))
+#define gasneti_bootstrapAlltoall       (*(gasneti_spawner->Alltoall))
+#define gasneti_bootstrapAbort          (*(gasneti_spawner->Abort))
+#define gasneti_bootstrapCleanup        (*(gasneti_spawner->Cleanup))
+#define gasneti_bootstrapFini           (*(gasneti_spawner->Fini))
 
 /* Global configuration variables */
 extern int		gasnetc_op_oust_limit;

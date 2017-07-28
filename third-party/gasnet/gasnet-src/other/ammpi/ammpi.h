@@ -296,9 +296,7 @@ extern const ammpi_stats_t AMMPI_initial_stats; /* the "empty" values for counte
 #endif
 
 #if defined(AMMPI_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
-  #ifndef _IN_GASNET_TESTS_DELAY_C
     #error Tried to compile AMMPI client code with optimization enabled but also AMMPI_DEBUG (which seriously hurts performance). Disable C and MPI_CC compiler optimization or reconfigure/rebuild without --enable-debug
-  #endif
 #endif
 
 #ifndef _CONCAT

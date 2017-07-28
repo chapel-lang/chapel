@@ -7,7 +7,8 @@
 #define _AMMPI_INTERNAL_H
 
 #include <portable_inttypes.h>
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <ammpi_portable_platform.h>
 
 /* ------------------------------------------------------------------------------------ */
 /* AMMPI system configuration parameters */

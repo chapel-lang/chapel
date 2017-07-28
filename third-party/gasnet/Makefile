@@ -51,15 +51,16 @@ CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries
 endif
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
+CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-aries-alps
 else
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
+CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-gemini-alps
 endif
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xt)
+# TODO cross-configure script has been removed, drop xt support?
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)

@@ -79,9 +79,14 @@
     typedef          long    intptr_t; 
     typedef unsigned long   uintptr_t; 
   #elif defined(__CYGWIN__)
+   #include <cygwin/version.h>
+   #if CYGWIN_VERSION_DLL_MAJOR >= 2005
+    /* stdint.h is complete on modern cygwin */
+    #include <stdint.h>
+   #else
     /* what a mess - 
        inttypes.h and stdint.h are incomplete or missing on 
-       various versions of cygwin, with no easy way to check */
+       older versions of cygwin, with no easy way to check */
     #ifdef HAVE_INTTYPES_H
       #include <inttypes.h>
     #endif
@@ -101,6 +106,7 @@
       typedef          int     intptr_t; 
       typedef unsigned int    uintptr_t; 
     #endif
+   #endif
   #elif defined(SIZEOF_CHAR) && \
         defined(SIZEOF_SHORT) && \
         defined(SIZEOF_INT) && \

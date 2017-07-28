@@ -15,11 +15,17 @@ int main(int argc, char **argv) {
   int iters=0, polling = 1, i;
 
 #if defined(AMUDP)
-  putenv((char*)"A=A");
-  putenv((char*)"B=B");
-  putenv((char*)"C=C");
-  putenv((char*)"ABC=ABC");
-  putenv((char*)"AReallyLongEnvironmentName=A Really Long Environment Value");
+  const char *envvars[][3] = {
+    #define DEFVAR(key,val) { key, val, key "=" val },
+    DEFVAR("A","A")
+    DEFVAR("B","B")
+    DEFVAR("C","C")
+    DEFVAR("ABC","ABC")
+    DEFVAR("AReallyLongEnvironmentName","A Really Long Environment Value")
+  };
+  for (i=0; i < sizeof(envvars)/sizeof(envvars[0]); i++) {
+    putenv((char*)(envvars[i][2]));
+  }
 #endif
 
   TEST_STARTUP(argc, argv, networkpid, eb, ep, 1, 2, "iters (Poll/Block)");
@@ -76,17 +82,18 @@ int main(int argc, char **argv) {
   }
 
 #if defined(AMUDP)
-  if (strcmp(AMX_SPMDgetenvMaster("A"),"A")) 
-    FATALERR("Environment value mismatch on P%i\n", MYPROC);
-  if (strcmp(AMX_SPMDgetenvMaster("B"),"B")) 
-    FATALERR("Environment value mismatch on P%i\n", MYPROC);
-  if (strcmp(AMX_SPMDgetenvMaster("C"),"C"))
-    FATALERR("Environment value mismatch on P%i\n", MYPROC);
-  if (strcmp(AMX_SPMDgetenvMaster("ABC"),"ABC"))
-    FATALERR("Environment value mismatch on P%i\n", MYPROC);
-  if (strcmp(AMX_SPMDgetenvMaster("AReallyLongEnvironmentName"),"A Really Long Environment Value"))
-    FATALERR("Environment value mismatch on P%i\n", MYPROC);
+  for (i=0; i < sizeof(envvars)/sizeof(envvars[0]); i++) {
+    const char *key = envvars[i][0];
+    const char *val = envvars[i][1];
+    const char *actual = AMX_SPMDgetenvMaster(key);
+    if (!actual) actual = "<undef>";
+    if (strcmp(val, actual))
+      printf("P%i: ERROR Environment value mismatch: %s='%s'\n", MYPROC, key, actual);
+  }
 #endif
+
+  printf("Slave %i done.\n", MYPROC);
+  fflush(stdout);
 
   /* barrier */
   AM_Safe(AMX_SPMDBarrier());

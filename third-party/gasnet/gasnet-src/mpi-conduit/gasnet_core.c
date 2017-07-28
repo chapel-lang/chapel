@@ -144,33 +144,27 @@ static int gasnetc_init(int *argc, char ***argv) {
 
     AMMPI_VerboseErrors = gasneti_VerboseErrors;
     AMMPI_SPMDkillmyprocess = gasneti_killmyprocess;
-    #if !defined(GASNETI_DISABLE_MPI_INIT_THREAD) 
-      { int res; 
+    #if !GASNETI_DISABLE_MPI_INIT_THREAD
       #if GASNETI_THREADS
-        /* tell MPI to be thread-safe */
-        res = AMMPI_SPMDSetThreadMode(1, &pstr, argc, argv);
+        int usingthreads = 1;
       #else
-        res = AMMPI_SPMDSetThreadMode(0, &pstr, argc, argv);
+        int usingthreads = 0;
       #endif
-        if (!res) { 
-          #if GASNETI_THREADS
-          { static char tmsg[255];
-            snprintf(tmsg, sizeof(tmsg),
-                          "*** WARNING: The pthreaded version of mpi-conduit requires an MPI implementation "
-                          "which supports threading mode MPI_THREAD_SERIALIZED, "
-                          "but this implementation reports it can only support %s\n", pstr);
-            #if GASNET_DEBUG_VERBOSE
-              /* only show this in verbose mode, because some versions of MPICH (eg Quadrics version)
-                 lie and report THREAD_SINGLE, when in actuality MPI_THREAD_SERIALIZED works just fine */
-              if (!gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) fprintf(stderr, "%s", tmsg);
-            #else
-              tmsgstr = tmsg;
-            #endif
-          }
-          #else
-            fprintf(stderr,"unknown failure in AMMPI_SPMDSetThreadMode() => %s\n",pstr);
-          #endif
-        }
+      // for verbose documentation only:
+      gasnett_getenv_withdefault("GASNET_MPI_THREAD", (usingthreads?"MPI_THREAD_SERIALIZED":"MPI_THREAD_SINGLE"));
+      if (!AMMPI_SPMDSetThreadMode(usingthreads, &pstr, argc, argv)) { 
+        // Some versions of MPI lie and report THREAD_SINGLE, when in actuality MPI_THREAD_SERIALIZED seems to work just fine.
+        // User can ignore this warning or hide it by setting GASNET_MPI_THREAD or GASNET_QUIET if they want to "live dangerously".
+        static char tmsg[1024];
+        snprintf(tmsg, sizeof(tmsg),
+                      "*** WARNING: This MPI implementation reports it can only support %s.\n"
+                    #if GASNETI_THREADS
+                      "*** WARNING: The thread-safe version of mpi-conduit recommends an MPI implementation\n"
+                      "*** WARNING: which supports at least MPI_THREAD_SERIALIZED to ensure correct operation.\n"
+                    #endif
+                      "*** WARNING: You can override the requested thread mode by setting GASNET_MPI_THREAD.\n"
+                      , pstr);
+        tmsgstr = tmsg;
       }
     #endif
 
@@ -191,6 +185,8 @@ static int gasnetc_init(int *argc, char ***argv) {
     GASNETI_AM_SAFE(AMMPI_SPMDSetExitCallback(gasnetc_traceoutput));
     if (pstr)    GASNETI_TRACE_PRINTF(C,("AMMPI_SPMDSetThreadMode/MPI_Init_thread()=>%s",pstr));
     if (tmsgstr) GASNETI_TRACE_PRINTF(I,("%s",tmsgstr));
+    if (tmsgstr && !gasneti_mynode &&
+        !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) { fprintf(stderr, "%s", tmsgstr); fflush(stderr); }
 
     #if GASNET_DEBUG_VERBOSE
       fprintf(stderr,"gasnetc_init(): spawn successful - node %i/%i starting...\n", 
@@ -243,56 +239,14 @@ extern int gasnet_init(int *argc, char ***argv) {
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
-static char checkuniqhandler[256] = { 0 };
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-  int i;
-  *numregistered = 0;
-  for (i = 0; i < numentries; i++) {
-    int newindex;
-
-    if ((table[i].index == 0 && !dontcare) || 
-        (table[i].index && dontcare)) continue;
-    else if (table[i].index) newindex = table[i].index;
-    else { /* deterministic assignment of dontcare indexes */
-      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-        if (!checkuniqhandler[newindex]) break;
-      }
-      if (newindex > highlimit) {
-        char s[255];
-        snprintf(s, sizeof(s), "Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-        GASNETI_RETURN_ERRR(BAD_ARG, s);
-      }
-    }
-
-    /*  ensure handlers fall into the proper range of pre-assigned values */
-    if (newindex < lowlimit || newindex > highlimit) {
-      char s[255];
-      snprintf(s, sizeof(s), "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-      GASNETI_RETURN_ERRR(BAD_ARG, s);
-    }
-
-    /* discover duplicates */
-    if (checkuniqhandler[newindex] != 0) 
-      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-    checkuniqhandler[newindex] = 1;
-
-    /* register the handler */
-    if (AM_SetHandler(gasnetc_endpoint, (handler_t)newindex, table[i].fnptr) != AM_OK) 
-      GASNETI_RETURN_ERRR(RESOURCE, "AM_SetHandler() failed while registering handlers");
+extern int gasnetc_amregister(gasnet_handler_t index, gasneti_handler_fn_t fnptr) {
+  if (AM_SetHandler(gasnetc_endpoint, (handler_t)index, fnptr) != AM_OK)
+    GASNETI_RETURN_ERRR(RESOURCE, "AM_SetHandler() failed while registering handlers");
 #if GASNET_PSHM
-    /* Maintain a shadown handler table for AMPSHM */
-    gasnetc_handler[(gasnet_handler_t)newindex] = (gasneti_handler_fn_t)table[i].fnptr;
+  /* Maintain a shadown handler table for AMPSHM */
+  gasneti_assert(gasnetc_handler[index] == gasneti_defaultAMHandler);
+  gasnetc_handler[index] = fnptr;
 #endif
-
-    /* The check below for !table[i].index is redundant and present
-     * only to defeat the over-aggressive optimizer in pathcc 2.1
-     */
-    if (dontcare && !table[i].index) table[i].index = newindex;
-
-    (*numregistered)++;
-  }
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
@@ -345,7 +299,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
       int numreg = 0;
       gasneti_assert(ctable);
       while (ctable[len].fnptr) len++; /* calc len */
-      if (gasnetc_reghandlers(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
+      if (gasneti_amregister(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
         INITERR(RESOURCE,"Error registering core API handlers");
       gasneti_assert(numreg == len);
     }
@@ -356,7 +310,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
       int numreg = 0;
       gasneti_assert(etable);
       while (etable[len].fnptr) len++; /* calc len */
-      if (gasnetc_reghandlers(etable, len, 64, 127, 0, &numreg) != GASNET_OK)
+      if (gasneti_amregister(etable, len, 64, 127, 0, &numreg) != GASNET_OK)
         INITERR(RESOURCE,"Error registering extended API handlers");
       gasneti_assert(numreg == len);
     }
@@ -366,11 +320,11 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
       int numreg2 = 0;
 
       /*  first pass - assign all fixed-index handlers */
-      if (gasnetc_reghandlers(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
+      if (gasneti_amregister(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
         INITERR(RESOURCE,"Error registering fixed-index client handlers");
 
       /*  second pass - fill in dontcare-index handlers */
-      if (gasnetc_reghandlers(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
+      if (gasneti_amregister(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
         INITERR(RESOURCE,"Error registering variable-index client handlers");
 
       gasneti_assert(numreg1 + numreg2 == numentries);

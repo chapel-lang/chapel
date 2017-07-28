@@ -2586,7 +2586,7 @@ gasnetc_connect_shutdown(void) {
   #else
     /* conn_ud_hca->snd_cq, if any, has already been drained */
     gasneti_assert((NULL == conn_ud_sema_p) ||
-                   (0 == gasneti_semaphore_read(conn_ud_sema_p)));
+                   (0 == gasnetc_sema_read(conn_ud_sema_p)));
   #endif
 
   /* TODO: is this retry loop still necessary? */

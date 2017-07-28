@@ -9,16 +9,8 @@
 # NOTE: this relies on module-established PATH setting to automatically 
 # select the GCC or PGI-based MPI compilers, based on which PrgEnv is currently loaded
 # The same PrgEnv *must* be loaded when building and using the GASNet install
-CC='cc -target=linux'  # vanilla target C compiler
-CXX='CC -target=linux' # vanilla target C++ compiler
-
-# Default optimization on ICC is an irritation:
-# -wd10120 suppresses "command line warning #10120: overriding '-O0' with '-O3'"
-if test x"$PE_ENV" = xINTEL &&
-    ( $CC -dM -E /dev/null | grep __OPTIMIZE__ ) >& /dev/null; then
-  CC="$CC -O0 -wd10120"
-  CXX="$CXX -O0 -wd10120"
-fi
+CC='cc'  # vanilla target C compiler
+CXX='CC' # vanilla target C++ compiler
 
 export CC
 export CXX
@@ -40,13 +32,8 @@ HOST_CXXFLAGS='' ; export HOST_CXXFLAGS
 MPI_CC="$CC" ; export MPI_CC     # MPI-enabled C compiler
 #MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
-MPIRUN_CMD="${APRUN:-aprun} -n %N %C" ; export MPIRUN_CMD  # launch command for MPI jobs
-if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then # PE <= 2.0 use a patched version of NPTL
-  NPTL_PTHREAD_ARGS='--enable-pthreads --with-pthreads-lib=/usr/lib64/nptl --with-pthreads-include=/usr/include/nptl --with-pthreads-patch=other/contrib/crayxt-nptl-pthread-patch'
-else
-  NPTL_PTHREAD_ARGS='--enable-pthreads'
-fi
-EXTRA_CONFIGURE_ARGS="--disable-auto-conduit-detect --enable-mpi --enable-smp --disable-aligned-segments $NPTL_PTHREAD_ARGS"
+MPIRUN_CMD="${SRUN:-srun} -K0 -W60 %V -mblock -n %N %C" ; export MPIRUN_CMD  # launch command for MPI jobs
+EXTRA_CONFIGURE_ARGS="--disable-udp --disable-ibv --enable-mpi --enable-smp --enable-gemini --with-ofi-provider=gni --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
 # OS string for test harness purposes
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_cnl"
 # minimal backtracing support

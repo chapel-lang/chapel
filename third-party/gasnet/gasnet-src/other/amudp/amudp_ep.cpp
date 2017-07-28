@@ -92,9 +92,8 @@ extern int AMUDP_Err(const char *msg, ...) {
 
 extern void AMUDP_FatalErr(const char *msg, ...) {
   va_list argptr;
-  int retval;
   va_start(argptr, msg); // pass in last argument
-    retval = AMUDP_Msg("*** FATAL ERROR", msg, argptr);
+    AMUDP_Msg("*** FATAL ERROR", msg, argptr);
   va_end(argptr);
   abort();
 }
@@ -346,8 +345,6 @@ static int AMUDP_AllocateEndpointResource(ep_t ep) {
 }
 /* ------------------------------------------------------------------------------------ */
 static int AMUDP_AllocateEndpointBuffers(ep_t ep) {
-  int PD = ep->PD;
-  amudp_buf_t *pool;
 
   AMUDP_assert(ep != NULL);
   AMUDP_assert(ep->depth >= 1);

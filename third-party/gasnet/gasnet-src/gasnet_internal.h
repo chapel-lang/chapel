@@ -16,6 +16,7 @@
 #include <gasnet_tools.h>
 
 GASNETI_BEGIN_EXTERNC
+GASNETI_BEGIN_NOWARN
 
 #include <gasnet_syncops.h>
 
@@ -251,6 +252,33 @@ extern void gasneti_freezeForDebugger(void);
 #endif
 
 /* ------------------------------------------------------------------------------------ */
+// Internal conduit interface to spawner
+
+typedef void (*gasneti_bootstrapExchangefn_t)(void *src, size_t len, void *dest);
+typedef void (*gasneti_bootstrapBroadcastfn_t)(void *src, size_t len, void *dest, int rootnode);
+typedef void (*gasneti_bootstrapBarrierfn_t)(void);
+
+typedef struct {
+  gasneti_bootstrapBarrierfn_t Barrier;
+  gasneti_bootstrapExchangefn_t Exchange;
+  gasneti_bootstrapBroadcastfn_t Broadcast;
+  void (*SNodeBroadcast)(void *src, size_t len, void *dest, int rootnode);
+  void (*Alltoall)(void *src, size_t len, void *dest);
+  void (*Abort)(int exitcode);
+  void (*Cleanup)(void);
+  void (*Fini)(void);
+#if GASNET_BLCR
+  int (*PreCheckpoint)(int fd);
+  int (*PostCheckpoint)(int fd, int is_restart);
+  int (*Rollback)(const char *dir);
+#endif
+} gasneti_spawnerfn_t;
+
+extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_p,
+                                  const char *force_spawner,
+                                  gasnet_node_t *nodes_p, gasnet_node_t *mynode_p);
+
+/* ------------------------------------------------------------------------------------ */
 /* memory segment registration and management */
 
 void gasneti_defaultSignalHandler(int sig);
@@ -293,10 +321,6 @@ void gasneti_defaultSignalHandler(int sig);
 #define GASNETI_USE_HIGHSEGMENT 1  /* use the high end of mmap segments */
 #endif
 
-typedef void (*gasneti_bootstrapExchangefn_t)(void *src, size_t len, void *dest);
-typedef void (*gasneti_bootstrapBroadcastfn_t)(void *src, size_t len, void *dest, int rootnode);
-typedef void (*gasneti_bootstrapBarrierfn_t)(void);
-
 #if !GASNET_SEGMENT_EVERYTHING
 #ifdef GASNETI_MMAP_OR_PSHM
 uintptr_t gasneti_mmapLimit(uintptr_t localLimit, uint64_t sharedLimit,
@@ -312,6 +336,12 @@ void gasneti_segmentAttach(uintptr_t segsize, uintptr_t minheapoffset,
 void gasneti_setupGlobalEnvironment(gasnet_node_t numnodes, gasnet_node_t mynode,
                                      gasneti_bootstrapExchangefn_t exchangefn,
                                      gasneti_bootstrapBroadcastfn_t broadcastfn);
+
+#define GASNETI_PROPAGATE_ENV_NAME   0
+#define GASNETI_PROPAGATE_ENV_PREFIX 1
+extern void (*gasneti_propagate_env_hook)(const char *, int); // spawner- or conduit-specific hook
+extern void gasneti_propagate_env_helper(const char *environ, const char * keyname, int flags);
+extern void gasneti_propagate_env(const char *keyname, int flags);
 
 /* signature for internally-registered functions that need auxseg space -
    space in the gasnet-registered heap which is hidden from the client.
@@ -580,9 +610,6 @@ typedef void (*gasneti_HandlerShort) (gasnet_token_t token, ...);
 typedef void (*gasneti_HandlerMedium)(gasnet_token_t token, void *buf, size_t nbytes, ...);
 typedef void (*gasneti_HandlerLong)  (gasnet_token_t token, void *buf, size_t nbytes, ...);
 
-/* default AM handler for unregistered entries - prints a fatal error */
-extern void gasneti_defaultAMHandler(gasnet_token_t token);
-
 /* ------------------------------------------------------------------------------------ */
 #define GASNETI_RUN_HANDLER_SHORT(isReq, hid, phandlerfn, token, pArgs, numargs) do { \
   gasneti_assert(phandlerfn);                                                         \
@@ -663,6 +690,16 @@ extern void gasneti_defaultAMHandler(gasnet_token_t token);
     GASNETI_TRACE_PRINTF(A,("AM%s_LONG_HANDLER: handler execution complete", (isReq?"REQUEST":"REPLY"))); \
   } while (0)
 /* ------------------------------------------------------------------------------------ */
+/* AM handler registration and management */
+
+/* default AM handler for unregistered entries - prints a fatal error */
+extern void gasneti_defaultAMHandler(gasnet_token_t token);
+
+extern int gasneti_amregister(gasnet_handlerentry_t *table, int numentries,
+                               int lowlimit, int highlimit,
+                               int dontcare, int *numregistered);
+
+/* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */
 
 extern uint32_t gasneti_gethostid(void);
@@ -703,11 +740,14 @@ extern void gasneti_nodemapFini(void);
 
 /* ------------------------------------------------------------------------------------ */
 
+#include <gasnet_handler.h>
+
 #if GASNET_PSHM
 #include <gasnet_pshm.h>
 #endif
 
 /* ------------------------------------------------------------------------------------ */
+GASNETI_END_NOWARN
 GASNETI_END_EXTERNC
 
 #undef _IN_GASNET_INTERNAL_H

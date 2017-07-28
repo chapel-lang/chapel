@@ -53,6 +53,10 @@ extern int gasnetc_AMPoll(void)
 
         /* The branches protecting these calls are an optimization:
            if there is no progress to be done, avoid a function call. */
+        if(gasnetc_psm_state.pending_ack.head.next != NULL) {
+            gasnete_post_pending_ack();
+        }
+
         if(gasnetc_psm_state.posted_reqs_length > 0) {
             gasnete_finish_mq_reqs();
         }
@@ -106,6 +110,13 @@ void *gasnetc_progress_thread(void * arg)
             gasnete_post_pending_mq_ops();
             GASNETC_PSM_UNLOCK();
         }
+
+        if(gasnetc_psm_state.pending_ack.head.next != NULL &&
+            GASNETC_PSM_TRYLOCK() == 0) {
+            gasnete_post_pending_ack();
+            GASNETC_PSM_UNLOCK();
+        }
+
     }
 
     return NULL;

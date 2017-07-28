@@ -1,12 +1,20 @@
 #include <gasnet_internal.h>
 #include <gasnet_core_internal.h>
 #include <gasnet_handler.h>
-#include <pmi-spawner/gasnet_bootstrap_internal.h>
 #include <gasnet_gemini.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <signal.h>
 #include <string.h>
+
+#ifndef container_of
+/* Convert from address of a member to address of the containing structure
+ * ptr = member pointer
+ * type = container's type
+ * field = member's field name
+ */
+  #define container_of(ptr,type,field) ((type*) ((uintptr_t)(ptr) - offsetof(type,field)))
+#endif
 
 #define GASNETC_NETWORKDEPTH_SPACE_DEFAULT (12*1024)
 #define GASNETC_NETWORKDEPTH_TOTAL_DEFAULT 64
@@ -23,6 +31,7 @@
 #else
   #define GASNETC_CDM_MODE GNI_CDM_MODE_FORK_FULLCOPY
 #endif
+static uint32_t gasnetc_cdm_mode = GASNETC_CDM_MODE;
 
 int      gasnetc_dev_id;
 uint32_t gasnetc_cookie;
@@ -295,7 +304,7 @@ int gasnetc_try_pin(void *addr, uintptr_t size)
 #  define DOMAIN_SPECIFIC_VAR(_type, _var)  _type _var = DOMAIN_SPECIFIC_VAL(_var)
 #else
 #  define DOMAIN_SPECIFIC_VAL(_var)         (_var)
-#  define DOMAIN_SPECIFIC_VAR(_type, _var)  GASNETI_UNUSED char _dummy##_var = 0
+#  define DOMAIN_SPECIFIC_VAR(_type, _var)  char _dummy##_var = 0
 #endif
 
 /*------ Macros for lock operations */
@@ -839,7 +848,7 @@ void  gasnetc_create_parallel_domain(gasnete_threadidx_t tidx)
   inst_id = gasneti_mynode + GASNETC_DIDX * gasneti_nodes;
   status = GNI_CdmCreate(inst_id,
                         gasnetc_ptag, gasnetc_cookie,
-                        GASNETC_CDM_MODE,
+                        gasnetc_cdm_mode,
                         &DOMAIN_SPECIFIC_VAL(cdm_handle));
   gasneti_assert_always (status == GNI_RC_SUCCESS);
 
@@ -847,6 +856,13 @@ void  gasnetc_create_parallel_domain(gasnete_threadidx_t tidx)
                         gasnetc_dev_id,
                         &local_address,
                         &DOMAIN_SPECIFIC_VAL(nic_handle));
+#if defined(GNI_CDM_MODE_FMA_DEDICATED)
+  if_pf ((GNI_RC_ERROR_RESOURCE == status) &&
+         (gasnetc_cdm_mode & GNI_CDM_MODE_FMA_DEDICATED)) {
+    // TODO: supernode-scoped reduction followed by *automatic* enable of FMA sharing if needed
+    gasneti_fatalerror("GNI_CdmAttach failed: please try setting environment variable GASNET_GNI_FMA_SHARING=1");
+  }
+#endif
   gasneti_assert_always (status == GNI_RC_SUCCESS);
 
   status = GNI_CqCreate(DOMAIN_SPECIFIC_VAL(nic_handle), num_pd + 2, 0, GNI_CQ_NOBLOCK, 
@@ -937,12 +953,43 @@ uintptr_t gasnetc_init_messaging(void)
   for(i=0;i<gasnetc_domain_count;i++)
     reset_comm_data(gasnetc_cdom_data+i);
 #endif
+
+  // Process GASNET_GNI_FMA_SHARING, if supported
+  // Default is NO, unless we project resource exhaustion otherwise
+  #if defined(GNI_CDM_MODE_FMA_SHARED) && defined(GNI_CDM_MODE_FMA_DEDICATED)
+  {
+    int my_cdm_count = gasneti_myhost.node_count * gasnetc_domain_count;
+    int avail_cmd_count = 123; // TODO: reduce by any used by MPI?
+    int fma_sharing = gasneti_getenv_yesno_withdefault("GASNET_GNI_FMA_SHARING",
+                                                       my_cdm_count > avail_cmd_count);
+    gasnetc_cdm_mode |= fma_sharing ? GNI_CDM_MODE_FMA_SHARED: GNI_CDM_MODE_FMA_DEDICATED;
+  }
+  #endif
+
+  // Process GASNET_GNI_MDD_SHARING, if supported
+  // Default is YES: use shared MDD to avoid likely resource exhaustion
+  #if defined(GNI_CDM_MODE_MDD_SHARED) && defined(GNI_CDM_MODE_MDD_DEDICATED)
+  {
+    int mdd_sharing = gasneti_getenv_yesno_withdefault("GASNET_GNI_MDD_SHARING", 1);
+    gasnetc_cdm_mode |= mdd_sharing ? GNI_CDM_MODE_MDD_SHARED: GNI_CDM_MODE_MDD_DEDICATED;
+  }
+  #endif
+
+  // Process GASNET_GNI_BTE_MULTI_CHANNEL, if supported
+  // Default is NO: use all available BTE channels
+  #if defined(GNI_CDM_MODE_BTE_SINGLE_CHANNEL)
+  {
+    int bte_multi_channel = gasneti_getenv_yesno_withdefault("GASNET_GNI_BTE_MULTI_CHANNEL", 1);
+    gasnetc_cdm_mode |= bte_multi_channel ? 0: GNI_CDM_MODE_BTE_SINGLE_CHANNEL;
+  }
+  #endif
+
   GASNETC_INITLOCK_GNI();
   GASNETC_INITLOCK_AM_BUFFER();
 
   status = GNI_CdmCreate(gasneti_mynode,
 			 gasnetc_ptag, gasnetc_cookie,
-			 GASNETC_CDM_MODE,
+			 gasnetc_cdm_mode,
 			 &cdm_handle);
   gasneti_assert_always (status == GNI_RC_SUCCESS);
 
@@ -950,6 +997,13 @@ uintptr_t gasnetc_init_messaging(void)
 			 gasnetc_dev_id,
 			 &local_address,
 			 &nic_handle);
+#if defined(GNI_CDM_MODE_FMA_DEDICATED)
+  if_pf ((GNI_RC_ERROR_RESOURCE == status) &&
+         (gasnetc_cdm_mode & GNI_CDM_MODE_FMA_DEDICATED)) {
+    // TODO: supernode-scoped reduction followed by *automatic* enable of FMA sharing if needed
+    gasneti_fatalerror("GNI_CdmAttach failed: please try setting environment variable GASNET_GNI_FMA_SHARING=1");
+  }
+#endif
   gasneti_assert_always (status == GNI_RC_SUCCESS);
 
   /* Determine space for AM Requests: GASNET_NETWORKDEPTH_SPACE */
@@ -1089,7 +1143,7 @@ uintptr_t gasnetc_init_messaging(void)
     struct am_exchange *all_am_exchg = gasneti_malloc(gasneti_nodes * sizeof(struct am_exchange));
     uint8_t *local_peer_base = (uint8_t *)am_mmap_ptr + reply_region_length;
 
-    gasneti_bootstrapExchange_pmi(&my_am_exchg, sizeof(struct am_exchange), all_am_exchg);
+    gasneti_spawner->Exchange(&my_am_exchg, sizeof(struct am_exchange), all_am_exchg);
   
     /* At this point all_am_exchg has the required information for everyone */
     for (i = 0; i < gasneti_nodes; i += 1) {
@@ -1868,8 +1922,7 @@ gasnetc_post_descriptor_t *gasnetc_poll_bound_cq(GASNETC_DIDX_FARG_ALONE)
   }
   GASNETC_UNLOCK_GNI();
 
-  /* NOTE: we rely here on the fact that pd is first member of gpd */
-  return (gasnetc_post_descriptor_t *) result;
+  return result ? container_of(result, gasnetc_post_descriptor_t, pd) : NULL;
 }
 
 GASNETI_NEVER_INLINE(gasnetc_poll_local_queue,
@@ -2558,38 +2611,41 @@ void gasnetc_fetchop_u64(
 void gasnetc_init_post_descriptor_pool(GASNETC_DIDX_FARG_ALONE) 
 {
   int i;
-  const int count = gasnetc_pd_buffers.size / sizeof(gasnetc_post_descriptor_t) / gasnetc_domain_count;
-  gasnetc_post_descriptor_t *gpd;
+  const int count = gasnetc_pd_buffers.size / GASNETC_SIZEOF_GDP /  gasnetc_domain_count;
+  uintptr_t addr;
+
   gasneti_assert_always(gasnetc_pd_buffers.addr != NULL);
 
 #if GASNETC_USE_MULTI_DOMAIN
   /* must first destroy the temporary pool of post descriptors (only first domain) */
   if_pf (GASNETC_DIDX == GASNETC_DEFAULT_DOMAIN) {
     for (i=0; i < gasnetc_log2_remote; ++i) {
-      gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
+      gasnetc_post_descriptor_t *gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
       gasneti_free(gpd);
     }
   }
 
-  gpd = gasnetc_pd_buffers.addr;
-  gpd += count * GASNETC_DIDX;
-  memset(gpd, 0, count * sizeof(gasnetc_post_descriptor_t)); /* Just in case */
+  addr = (uintptr_t) gasnetc_pd_buffers.addr;
+  addr += count * GASNETC_DIDX * GASNETC_SIZEOF_GDP;
+  memset((void*)addr, 0, count * GASNETC_SIZEOF_GDP); /* Just in case */
   /* sacrifice the first one to work as a padding */
   for (i = 1; i < count; i += 1) {
-    gasneti_lifo_push(&DOMAIN_SPECIFIC_VAL(post_descriptor_pool), gpd + i);
+    addr += GASNETC_SIZEOF_GDP;
+    gasneti_lifo_push(&DOMAIN_SPECIFIC_VAL(post_descriptor_pool), (void*)addr);
   }
 #else
   /* must first destroy the temporary pool of post descriptors */
   for (i=0; i < gasnetc_log2_remote; ++i) {
-    gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
+    gasnetc_post_descriptor_t *gpd = gasnetc_alloc_post_descriptor(GASNETC_DIDX_PASS_ALONE);
     gasneti_free(gpd);
   }
 
   /* now create the new pool */
-  gpd = gasnetc_pd_buffers.addr;
-  memset(gpd, 0, gasnetc_pd_buffers.size); /* Just in case */
+  addr = (uintptr_t) gasnetc_pd_buffers.addr;
+  memset((void*)addr, 0, count * GASNETC_SIZEOF_GDP); /* Just in case */
   for (i = 0; i < count; i += 1) {
-    gasneti_lifo_push(&post_descriptor_pool, gpd + i);
+    gasneti_lifo_push(&post_descriptor_pool, (void*)addr);
+    addr += GASNETC_SIZEOF_GDP;
   }
 #endif
 }
@@ -2811,16 +2867,7 @@ gasneti_auxseg_request_t gasnetc_bounce_auxseg_alloc(gasnet_seginfo_t *auxseg_in
 /* AuxSeg setup for registered post descriptors*/
 /* This ident string is used by upcrun (and potentially by other tools) to estimate
  * the auxseg requirements, and gets rounded up.
- * So, this doesn't need to be an exact value.
- * As of 2013.03.06 I have systems with
- *     Gemini = 304 bytes
- *     Aries  = 320 bytes
  */
-#if GASNET_CONDUIT_GEMINI
-  #define GASNETC_SIZEOF_GDP 304
-#else
-  #define GASNETC_SIZEOF_GDP 320
-#endif
 #if GASNETC_USE_MULTI_DOMAIN
   GASNETI_IDENT(gasneti_pd_auxseg_IdentString,
               "$GASNetAuxSeg_pd: " _STRINGIFY(GASNETC_SIZEOF_GDP) "*"
@@ -2835,7 +2882,8 @@ gasneti_auxseg_request_t gasnetc_pd_auxseg_alloc(gasnet_seginfo_t *auxseg_info) 
   gasneti_auxseg_request_t retval;
   
   retval.minsz =
-  retval.optimalsz = gasnetc_domain_count * num_pd * sizeof(gasnetc_post_descriptor_t);
+  retval.optimalsz = gasnetc_domain_count * num_pd * GASNETC_SIZEOF_GDP;
+  gasneti_assert_always(GASNETC_SIZEOF_GDP >= sizeof(gasnetc_post_descriptor_t));
 
   if (auxseg_info != NULL) { /* auxseg granted */
     /* The only one we care about is our own node */

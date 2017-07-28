@@ -568,7 +568,9 @@ typedef void (*gasneti_progressfn_t)(void);
     extern int gasnetc_AMPoll(void);
   #endif
 
-  #if GASNETI_THROTTLE_FEATURE_ENABLED && (GASNET_PAR || GASNETI_CONDUIT_THREADS)
+  #if GASNETI_THROTTLE_FEATURE_ENABLED /* enabled by configure */ \
+      && GASNETC_USING_SUSPEND_RESUME /* implemented by the conduit */ \
+      && (GASNET_PAR || GASNETI_CONDUIT_THREADS) /* appropriate threading mode */
     #define GASNETI_THROTTLE_POLLERS 1
   #else
     #define GASNETI_THROTTLE_POLLERS 0

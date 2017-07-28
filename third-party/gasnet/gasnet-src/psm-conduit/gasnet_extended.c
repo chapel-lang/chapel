@@ -18,7 +18,7 @@ static const gasnete_eopaddr_t EOPADDR_NIL = { { 0xFF, 0xFF } };
 extern void _gasnete_iop_check(gasnete_iop_t *iop) { gasnete_iop_check(iop); }
 
 void gasnete_put_long(gasnet_node_t node, void *dest, void *src,
-        size_t nbytes, gasnet_handle_t op GASNETE_THREAD_FARG);
+        size_t nbytes, gasnet_handle_t op, uint8_t isbulk GASNETE_THREAD_FARG);
 void gasnete_get_long (void *dest, gasnet_node_t node, void *src,
         size_t nbytes, gasnet_handle_t op GASNETE_THREAD_FARG);
 
@@ -287,7 +287,6 @@ static void gasnete_check_config(void) {
 
 GASNETI_COLD
 extern void gasnete_init(void) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   static int firstcall = 1;
   GASNETI_TRACE_PRINTF(C,("gasnete_init()"));
   gasneti_assert(firstcall); /*  make sure we haven't been called before */
@@ -548,7 +547,7 @@ int gasnete_handler_get_reply(psm2_am_token_t token,
 */
 
 static void gasnete_put_nbi_inner (gasnet_node_t node, void *dest, void *src,
-                             size_t nbytes GASNETE_THREAD_FARG)
+                             size_t nbytes, uint8_t isbulk GASNETE_THREAD_FARG)
 {
     gasnete_threaddata_t * const mythread = GASNETE_MYTHREAD;
     gasnete_iop_t * const op = mythread->current_iop;
@@ -563,14 +562,12 @@ static void gasnete_put_nbi_inner (gasnet_node_t node, void *dest, void *src,
 
     gasneti_assert(node < gasneti_nodes);
 
-#if 0 // Disabled due to bug 3342
     if(nbytes >= gasnetc_psm_state.long_msg_threshold) {
             op->initiated_put_cnt++;
         gasnete_put_long(node, dest, src, nbytes,
-                (gasnet_handle_t)op GASNETE_THREAD_PASS);
+                (gasnet_handle_t)op, isbulk GASNETE_THREAD_PASS);
         return;
     }
-#endif
 
     GASNETC_PSM_LOCK();
     while(bytes_remaining > mtu_size) {
@@ -605,13 +602,13 @@ extern void gasnete_put_nbi (gasnet_node_t node, void *dest, void *src,
                              size_t nbytes GASNETE_THREAD_FARG)
 {
     GASNETI_CHECKPSHM_PUT(ALIGNED,V);
-    gasnete_put_nbi_inner(node, dest, src, nbytes GASNETE_THREAD_PASS);
+    gasnete_put_nbi_inner(node, dest, src, nbytes, 0 GASNETE_THREAD_PASS);
 }
 
 extern void gasnete_put_nbi_bulk (gasnet_node_t node, void *dest, void *src,
                               size_t nbytes GASNETE_THREAD_FARG) {
     GASNETI_CHECKPSHM_PUT(UNALIGNED,V);
-    gasnete_put_nbi_inner(node, dest, src, nbytes GASNETE_THREAD_PASS);
+    gasnete_put_nbi_inner(node, dest, src, nbytes, 1 GASNETE_THREAD_PASS);
 }
 
 extern void gasnete_get_nbi_bulk (void *dest, gasnet_node_t node, void *src, size_t nbytes GASNETE_THREAD_FARG) {
@@ -699,7 +696,7 @@ extern void gasnete_get_nbi_bulk (void *dest, gasnet_node_t node, void *src, siz
 */
 
 extern gasnet_handle_t gasnete_put_nb_inner(gasnet_node_t node, void *dest,
-                               void *src, size_t nbytes GASNETE_THREAD_FARG)
+                               void *src, size_t nbytes, uint8_t isbulk GASNETE_THREAD_FARG)
 {
     gasnete_eop_t* op = gasnete_eop_new(GASNETE_MYTHREAD);
     size_t mtu_size = gasnetc_psm_max_request_len;
@@ -710,13 +707,11 @@ extern gasnet_handle_t gasnete_put_nb_inner(gasnet_node_t node, void *dest,
 
     gasneti_assert(node < gasneti_nodes);
 
-#if 0 // Disabled due to bug 3342
     if(nbytes >= gasnetc_psm_state.long_msg_threshold) {
         gasnete_put_long(node, dest, src, nbytes,
-                (gasnet_handle_t)op GASNETE_THREAD_PASS);
+                (gasnet_handle_t)op, isbulk GASNETE_THREAD_PASS);
         return (gasnet_handle_t)op;
     }
-#endif
 
     GASNETC_PSM_LOCK();
     while(bytes_remaining > mtu_size) {
@@ -752,12 +747,12 @@ extern gasnet_handle_t gasnete_put_nb_inner(gasnet_node_t node, void *dest,
 extern gasnet_handle_t gasnete_put_nb(gasnet_node_t node, void *dest, void *src, size_t nbytes GASNETE_THREAD_FARG)
 {
     GASNETI_CHECKPSHM_PUT(ALIGNED,H);
-    return gasnete_put_nb_inner(node, dest, src, nbytes GASNETE_THREAD_PASS);
+    return gasnete_put_nb_inner(node, dest, src, nbytes, 0 GASNETE_THREAD_PASS);
 }
 
 extern gasnet_handle_t gasnete_put_nb_bulk (gasnet_node_t node, void *dest, void *src, size_t nbytes GASNETE_THREAD_FARG) {
     GASNETI_CHECKPSHM_PUT(UNALIGNED,H);
-    return gasnete_put_nb_inner(node, dest, src, nbytes GASNETE_THREAD_PASS);
+    return gasnete_put_nb_inner(node, dest, src, nbytes, 1 GASNETE_THREAD_PASS);
 }
 
 

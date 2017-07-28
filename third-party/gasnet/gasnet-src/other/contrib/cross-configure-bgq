@@ -8,12 +8,12 @@
 
 if test -n "$USE_GCC" ; then
     # GCC-based compilers
-    CC='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-gcc -Wno-unused'
-    CXX='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-g++ -Wno-unused'
+    CC='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-gcc'
+    CXX='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-g++'
 elif test -n "$USE_CLANG" ; then
     # CLANG-based compilers
-    CC='bgclang -fno-integrated-as -Wno-unused -U__GNUC__'
-    CXX='bgclang++ -fno-integrated-as -Wno-unused -U__GNUC__'
+    CC='bgclang -U__GNUC__'
+    CXX='bgclang++ -U__GNUC__'
 else
     # XLC-based compilers
     CC='bgxlc_r -qarch=qp -qtune=qp'
@@ -39,7 +39,7 @@ if test -n "$USE_GCC" ; then
     MPI_CC='mpicc'
 elif test -n "$USE_CLANG" ; then
     # CLANG-based compilers
-    MPI_CC='env MPICH_CC=bgclang mpicc'
+    MPI_CC='mpiclang'
 else
     # XLC-based compilers
     MPI_CC='mpixlc -qarch=qp -qtune=qp'
