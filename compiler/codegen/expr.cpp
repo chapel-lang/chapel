@@ -108,6 +108,8 @@ static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
 
+#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
