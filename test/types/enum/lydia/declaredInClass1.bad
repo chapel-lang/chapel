@@ -1,0 +1,1 @@
+declaredInClass1.chpl:19: error: unresolved enumerated type symbol or call 'type classTag.field2'
