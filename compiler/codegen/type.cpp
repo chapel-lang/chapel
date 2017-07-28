@@ -36,6 +36,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+#include "wellknown.h"
 
 
 
@@ -400,7 +401,7 @@ void AggregateType::codegenDef() {
         if( fLLVMWideOpt ) {
           // These are here so that the types are generated during codegen..
           if( ! info->globalToWideInfo.localeIdType ) {
-            Type* localeType = LOCALE_ID_TYPE;
+            Type* localeType = dtLocaleID->typeInfo();
             info->globalToWideInfo.localeIdType = localeType->codegen().type;
           }
           if( ! info->globalToWideInfo.nodeIdType ) {
