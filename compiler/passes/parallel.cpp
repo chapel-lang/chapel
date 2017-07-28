@@ -911,11 +911,17 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
 
     stmt = stmt->next;
   }
-  if (found)
+
+  Expr* initialization = def->sym->getInitialization();
+
+  if (found) {
+    INT_ASSERT(stmt == initialization);
     stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
-  else
+  } else {
+    INT_ASSERT(0);
     mod->initFn->insertBeforeEpilogue(new CallExpr
                                      (PRIM_PRIVATE_BROADCAST, def->sym));
+  }
 }
 
 
@@ -1183,13 +1189,22 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
             (def->sym->type != dtString)))) {
-        // replicate global const of primitive type
-        INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
+
+        // replicate global const of primitive/record type
+
+        Expr* initialization = def->sym->getInitialization();
+
+        Expr* firstDef = NULL;
 
         for_defs(se, defMap, def->sym) {
-          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
-                                                      def->sym));
+          if (firstDef == NULL)
+	    firstDef = se->getStmtExpr();
         }
+
+	INT_ASSERT(firstDef == NULL || firstDef == initialization);
+
+        initialization->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
+                                                 def->sym));
 
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions
