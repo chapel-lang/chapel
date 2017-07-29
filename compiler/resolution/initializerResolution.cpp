@@ -38,9 +38,9 @@
 
 static void resolveInitCall(CallExpr* call);
 
-static void gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
-                                 CallInfo&                  info);
+                                 Vec<ResolutionCandidate*>& candidates);
 
 static void resolveMatch(FnSymbol* fn);
 
@@ -103,7 +103,7 @@ static void resolveInitCall(CallExpr* call) {
   // initializer-specific manner
   Vec<ResolutionCandidate*> candidates;
 
-  gatherInitCandidates(candidates, visibleFns, info);
+  gatherInitCandidates(info, visibleFns, candidates);
 
   explainGatherCandidate(candidates, info, call);
 
@@ -113,9 +113,9 @@ static void resolveInitCall(CallExpr* call) {
   // doesn't apply to initializers (which permit it in phase 1, but prevent it
   // in phase 2)
 
-  Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
+  Expr* scope   = (info.scope) ? info.scope : getVisibilityBlock(call);
 
-  bool explain = fExplainVerbose &&
+  bool  explain = fExplainVerbose &&
     ((explainCallLine && explainCallMatch(call)) ||
      info.call->id == explainCallID);
 
@@ -199,23 +199,23 @@ static void resolveInitCall(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void      doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+static void      doGatherInitCandidates(CallInfo&                  info,
                                         Vec<FnSymbol*>&            visibleFns,
-                                        CallInfo&                  info,
-                                        bool                       generated);
+                                        bool                       generated,
+                                        Vec<ResolutionCandidate*>& candidates);
 
-static void      filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+static void      filterInitCandidate(CallInfo&                  info,
                                      FnSymbol*                  fn,
-                                     CallInfo&                  info);
+                                     Vec<ResolutionCandidate*>& candidates);
 
-static void      filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+static void      filterInitCandidate(CallInfo&                  info,
                                      ResolutionCandidate*       currCandidate,
-                                     CallInfo&                  info);
+                                     Vec<ResolutionCandidate*>& candidates);
 
 static void      filterInitGenericCandidate(
-                                  Vec<ResolutionCandidate*>& candidates,
-                                  ResolutionCandidate*       currCandidate,
-                                  CallInfo&                  info);
+                                     CallInfo&                  info,
+                                     ResolutionCandidate*       currCandidate,
+                                     Vec<ResolutionCandidate*>& candidates);
 
 
 static FnSymbol* instantiateInitSig(FnSymbol*  fn,
@@ -223,27 +223,26 @@ static FnSymbol* instantiateInitSig(FnSymbol*  fn,
                                     CallExpr*  call);
 
 static void      filterInitConcreteCandidate(
-                                   Vec<ResolutionCandidate*>& candidates,
-                                   ResolutionCandidate*       currCandidate,
-                                   CallInfo&                  info);
+                                     CallInfo&                  info,
+                                     ResolutionCandidate*       currCandidate,
+                                     Vec<ResolutionCandidate*>& candidates);
 
-static void gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
-                                 CallInfo&                  info) {
+                                 Vec<ResolutionCandidate*>& candidates) {
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  doGatherInitCandidates(candidates, visibleFns, info, false);
+  doGatherInitCandidates(info, visibleFns, false, candidates);
 
   // If no results, try again with any compiler-generated candidates.
   if (candidates.n == 0) {
-    doGatherInitCandidates(candidates, visibleFns, info, true);
+    doGatherInitCandidates(info, visibleFns, true, candidates);
   }
 }
 
-static void doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+static void doGatherInitCandidates(CallInfo&                  info,
                                    Vec<FnSymbol*>&            visibleFns,
-                                   CallInfo&                  info,
-                                   bool                       generated) {
-
+                                   bool                       generated,
+                                   Vec<ResolutionCandidate*>& candidates) {
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     // Only consider user functions or compiler-generated functions
     if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == generated) {
@@ -255,6 +254,7 @@ static void doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
       if (info.call->methodTag) {
         if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
           // OK
+
         } else {
           // Skip this candidate
           continue;
@@ -271,7 +271,7 @@ static void doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
         }
       }
 
-      filterInitCandidate(candidates, visibleFn, info);
+      filterInitCandidate(info, visibleFn, candidates);
     }
   }
 }
@@ -286,12 +286,12 @@ static void doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
  * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
  */
-static void filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+static void filterInitCandidate(CallInfo&                  info,
                                 FnSymbol*                  fn,
-                                CallInfo&                  info) {
+                                Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
 
-  filterInitCandidate(candidates, currCandidate, info);
+  filterInitCandidate(info, currCandidate, candidates);
 
   if (candidates.tail() != currCandidate) {
     delete currCandidate;
@@ -309,15 +309,14 @@ static void filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
  * \param currCandidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
  */
-static void filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+static void filterInitCandidate(CallInfo&                  info,
                                 ResolutionCandidate*       currCandidate,
-                                CallInfo&                  info) {
-
+                                Vec<ResolutionCandidate*>& candidates) {
   if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
-    filterInitGenericCandidate(candidates, currCandidate, info);
+    filterInitGenericCandidate (info, currCandidate, candidates);
 
   } else {
-    filterInitConcreteCandidate(candidates, currCandidate, info);
+    filterInitConcreteCandidate(info, currCandidate, candidates);
   }
 }
 
@@ -329,9 +328,9 @@ static void filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
  * \param info          The CallInfo object for the call site.
  */
 static void filterInitGenericCandidate(
-                                  Vec<ResolutionCandidate*>& candidates,
+                                  CallInfo&                  info,
                                   ResolutionCandidate*       currCandidate,
-                                  CallInfo&                  info) {
+                                  Vec<ResolutionCandidate*>& candidates) {
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
   if (!currCandidate->fn) {
@@ -363,7 +362,7 @@ static void filterInitGenericCandidate(
                                            info.call);
 
     if (currCandidate->fn != NULL) {
-      filterInitCandidate(candidates, currCandidate, info);
+      filterInitCandidate(info, currCandidate, candidates);
     }
   }
 }
@@ -474,12 +473,14 @@ static FnSymbol* instantiateInitSig(FnSymbol*  fn,
  * \param info          The CallInfo object for the call site.
  */
 static void filterInitConcreteCandidate(
-                              Vec<ResolutionCandidate*>& candidates,
+                              CallInfo&                  info,
                               ResolutionCandidate*       currCandidate,
-                              CallInfo& info) {
+                              Vec<ResolutionCandidate*>& candidates) {
   currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
 
-  if (!currCandidate->fn) return;
+  if (!currCandidate->fn) {
+    return;
+  }
 
   resolveTypedefedArgTypes(currCandidate->fn);
 
@@ -573,8 +574,7 @@ static void resolveMatch(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void makeActualsVector(const CallExpr*          call,
-                              const CallInfo&          info,
+static void makeActualsVector(const CallInfo&          info,
                               std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static void makeRecordInitWrappers(CallExpr* call) {
@@ -582,7 +582,7 @@ static void makeRecordInitWrappers(CallExpr* call) {
   std::vector<ArgSymbol*> actualIdxToFormal;
   FnSymbol*               wrap = NULL;
 
-  makeActualsVector(call, info, actualIdxToFormal);
+  makeActualsVector(info, actualIdxToFormal);
 
   wrap = wrapAndCleanUpActuals(call->resolvedFunction(),
                                info,
@@ -602,10 +602,10 @@ static void makeRecordInitWrappers(CallExpr* call) {
 // This work was already performed when we found the right resolution candidate
 // so the "failure" modes should never get triggered.  The information we need
 // was cleaned up, though, so we are just going to recreate the parts we need.
-static void makeActualsVector(const CallExpr*          call,
-                              const CallInfo&          info,
+static void makeActualsVector(const CallInfo&          info,
                               std::vector<ArgSymbol*>& actualIdxToFormal) {
-  FnSymbol*         fn = call->resolvedFunction();
+  const CallExpr*   call = info.call;
+  FnSymbol*         fn   = call->resolvedFunction();
   std::vector<bool> formalIdxToActual;
 
   for (int i = 0; i < fn->numFormals(); i++) {
@@ -618,49 +618,59 @@ static void makeActualsVector(const CallExpr*          call,
   for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
-      int j = 0;
+      int  j     = 0;
+
       for_formals(formal, fn) {
-        if (!strcmp(info.actualNames.v[i], formal->name)) {
-          match = true;
+        if (strcmp(info.actualNames.v[i], formal->name) == 0) {
+          match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = true;
           break;
         }
+
         j++;
       }
+
       // Fail if no matching formal is found.
       if (!match) {
-        INT_FATAL(call, "Compilation should have already ensured this action ",
-                  " would be valid");
+        INT_FATAL(call,
+                  "Compilation should have already ensured this action ",
+                  "would be valid");
       }
     }
   }
 
   // Fill in unmatched formals in sequence with the remaining actuals.
   // Record successful substitutions.
-  int j = 0;
+  int        j      = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
+
   for (int i = 0; i < info.actuals.n; i++) {
-    if (!info.actualNames.v[i]) {
+    if (info.actualNames.v[i] == NULL) {
       bool match = false;
+
       while (formal) {
-        if (formal->variableExpr)
+        if (formal->variableExpr) {
           return;
+        }
+
         if (formalIdxToActual[j] == false) {
-          match = true;
+          match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = true;
-          formal = next_formal(formal);
+          formal               = next_formal(formal);
           j++;
           break;
         }
+
         formal = next_formal(formal);
         j++;
       }
+
       // Fail if there are too many unnamed actuals.
       if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_TUPLE))) {
-        INT_FATAL(call, "Compilation should have verified this action was ",
-                  "valid");
+        INT_FATAL(call,
+                  "Compilation should have verified this action was valid");
       }
     }
   }
@@ -670,10 +680,12 @@ static void makeActualsVector(const CallExpr*          call,
   while (formal) {
     if (formalIdxToActual[j] == false && !formal->defaultExpr) {
       // Fail if not.
-      INT_FATAL(call, "Compilation should have verified this action was ",
-                "valid");
+      INT_FATAL(call,
+                "Compilation should have verified this action was valid");
     }
+
     formal = next_formal(formal);
+
     j++;
   }
 }
