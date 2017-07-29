@@ -201,17 +201,11 @@ public:
 };
 
 
-ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                                         Vec<ResolutionCandidate*>& ambiguous,
-                                         DisambiguationContext DC,
-                                         bool ignoreWhere);
-
-void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
-                                        Vec<ResolutionCandidate*>& ambiguous,
-                                        DisambiguationContext DC,
-                                        ResolutionCandidate*& bestRef,
-                                        ResolutionCandidate*& bestConstRef,
-                                        ResolutionCandidate*& bestValue);
+ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    Vec<ResolutionCandidate*>& ambiguous,
+                    DisambiguationContext      DC,
+                    bool                       ignoreWhere);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);
