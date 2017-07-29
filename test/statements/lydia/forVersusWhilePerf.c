@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "forVersusWhilePerf.h"
 
 static double now_time(void) {
@@ -64,12 +65,12 @@ int64_t c_trial() {
   endtimeWhile = now_time();
 
   if (result != result2) {
-    printf("These results should have matched, got %ld and %ld\n", result, result2);
+    printf("These results should have matched, got %ld and %ld\n", (long int)result, (long int)result2);
   } else {
     printf("C verification successful\n");
   }
-  printf("C for loop took %f seconds for %ld iterations %ld times\n", (endtimeFor-starttimeFor)/(1000*1000), numIters, ntrials);
-  printf("C while loop took %f seconds for %ld iterations %ld times\n", (endtimeWhile-starttimeWhile)/(1000*1000), numIters, ntrials);
+  printf("C for loop took %f seconds for %ld iterations %ld times\n", (endtimeFor-starttimeFor)/(1000*1000), (long int)numIters, (long int)ntrials);
+  printf("C while loop took %f seconds for %ld iterations %ld times\n", (endtimeWhile-starttimeWhile)/(1000*1000), (long int)numIters, (long int)ntrials);
 
   return result;
 }
