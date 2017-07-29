@@ -3517,6 +3517,11 @@ static bool      isGenericRecordInit(CallExpr* call);
 
 static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly);
 
+static void      findVisibleFunctionsAndCandidates(
+                                     CallInfo&                  info,
+                                     Vec<FnSymbol*>&            visibleFns,
+                                     Vec<ResolutionCandidate*>& candidates);
+
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   CallInfo  info;
   FnSymbol* retval = NULL;
@@ -3571,45 +3576,8 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   CallExpr*                 call = info.call;
   Vec<FnSymbol*>            visibleFns;
   Vec<ResolutionCandidate*> candidates;
-  bool                      retryFind = false;
 
-  // First, try finding candidates without delegation
-  findVisibleFunctions (info, visibleFns);
-  findVisibleCandidates(info, visibleFns, candidates);
-
-  // if no candidate was found, try it with delegation
-  if (candidates.n == 0) {
-    // if it's a method, try delegating
-    if (call->numActuals() >= 1 &&
-        call->get(1)->typeInfo() == dtMethodToken) {
-
-      Type* receiverType = call->get(2)->typeInfo()->getValType();
-
-      if (typeUsesForwarding(receiverType)) {
-        retryFind = populateForwardingMethods(receiverType,
-                                              info.name,
-                                              info.call);
-      }
-    }
-  }
-
-  if (retryFind == true) {
-    // clear out visibleFns, candidates
-    visibleFns.clear();
-
-    forv_Vec(ResolutionCandidate*, candidate, candidates) {
-      delete candidate;
-    }
-
-    candidates.clear();
-
-    // try again to include forwarded functions
-    findVisibleFunctions (info, visibleFns);
-    findVisibleCandidates(info, visibleFns, candidates);
-  }
-
-  explainGatherCandidate(candidates, info, call);
-
+  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
 
@@ -3919,6 +3887,56 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
     reissueCompilerWarning(str, 1);
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void findVisibleFunctionsAndCandidates(
+                                CallInfo&                  info,
+                                Vec<FnSymbol*>&            visibleFns,
+                                Vec<ResolutionCandidate*>& candidates) {
+  // First, try finding candidates without delegation
+  findVisibleFunctions (info, visibleFns);
+  findVisibleCandidates(info, visibleFns, candidates);
+
+  // if no candidate was found, try it with delegation
+  if (candidates.n == 0) {
+    if (info.call->numActuals()       >= 1 &&
+        info.call->get(1)->typeInfo() == dtMethodToken) {
+      Type* receiverType = info.call->get(2)->typeInfo()->getValType();
+
+      if (typeUsesForwarding(receiverType) == true) {
+        if (populateForwardingMethods(receiverType,
+                                      info.name,
+                                      info.call) == true) {
+          visibleFns.clear();
+
+          forv_Vec(ResolutionCandidate*, candidate, candidates) {
+            delete candidate;
+          }
+
+          candidates.clear();
+
+          // try again to include forwarded functions
+          findVisibleFunctions (info, visibleFns);
+          findVisibleCandidates(info, visibleFns, candidates);
+        }
+      }
+    }
+  }
+
+  explainGatherCandidate(candidates, info, info.call);
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void lvalueCheck(CallExpr* call)
 {
