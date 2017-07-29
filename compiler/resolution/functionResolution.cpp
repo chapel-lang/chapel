@@ -5192,6 +5192,10 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
   call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
   call->insertAtHead(new SymExpr(gMethodToken));
 
+  temporaryInitializerFixup(call);
+
+  resolveDefaultGenericType(call);
+
   resolveInitializer(call);
 
   // Because initializers determine the type they utilize based on the

@@ -356,10 +356,6 @@ void resolveInitCall(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  temporaryInitializerFixup(call);
-
-  resolveDefaultGenericType(call);
-
   // Make a CallInfo which doesn't care if the this argument is
   // generic, but otherwise should result in the same behavior.
   CallInfo info(call, false, true);
