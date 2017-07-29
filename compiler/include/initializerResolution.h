@@ -29,7 +29,8 @@
 //  the generic instantiation of it.
 
 class CallExpr;
+class FnSymbol;
 
-void resolveInitializer(CallExpr* call);
+FnSymbol* resolveInitializer(CallExpr* call);
 
 #endif
