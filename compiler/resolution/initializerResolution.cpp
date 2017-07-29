@@ -63,8 +63,6 @@ static void makeActualsVector(const CallExpr* call,
                               const CallInfo& info,
                               std::vector<ArgSymbol*>& actualIdxToFormal);
 
-static bool isRefWrapperForNonGenericRecord(AggregateType* at);
-
 // Rewrite of instantiateSignature, for initializers.  Removed some bits,
 // modified others.
 /** Instantiate enough of the function for it to make it through the candidate
@@ -621,71 +619,3 @@ static void makeActualsVector(const CallExpr* call,
   }
 }
 
-void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type does not
-    // define either an initializer or a constructor.  Also ignores errors from
-    // improperly inserted .init() calls (so be sure to check here if something
-    // is behaving oddly - Lydia, 08/19/16)
-    if (strcmp(usym->unresolved, "init") == 0 &&
-        call->numActuals()               >= 2 &&
-        !isNamedExpr(call->get(2))) {
-      // Arg 2 will be a NamedExpr to "this" if we're in an intentionally
-      // inserted initializer call
-      SymExpr* _mt = toSymExpr(call->get(1));
-      SymExpr* sym = toSymExpr(call->get(2));
-
-      INT_ASSERT(sym != NULL);
-
-      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
-
-        if (isRefWrapperForNonGenericRecord(ct) == false &&
-            ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
-          // Transitioning to a default initializer world. (Lydia note 03/14/17)
-          if (strcmp(ct->defaultInitializer->name, "init") == 0)
-            return;
-
-          // This code should be removed when the compiler generates
-          // initializers as the default method of construction and
-          // initialization for a type (Lydia note, 08/19/16)
-          usym->unresolved = astr("_construct_", ct->symbol->name);
-
-          _mt->remove();
-        }
-      }
-    }
-  }
-}
-
-
-//
-// Noakes 2017/03/26
-//   The function temporaryInitializerFixup is designed to update
-//   certain calls to init() while the initializer update matures.
-//
-//   Unfortunately this transformation is triggered incorrectly for uses of
-//           this.init(...);
-//
-//   inside initializers for non-generic records.
-//
-//   For those uses of init() the "this" argument has currently has type
-//   _ref(<Record>) rather than <Record>
-//
-//  This rather unfortunate function catches this case and enables the
-//  transformation to be skipped.
-//
-static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
-  bool retval = false;
-
-  if (isClass(at)                           == true &&
-      strncmp(at->symbol->name, "_ref(", 5) == 0    &&
-      at->fields.length                     == 1) {
-    Symbol* sym = toDefExpr(at->fields.head)->sym;
-
-    if (strcmp(sym->name, "_val") == 0) {
-      retval = isNonGenericRecordWithInitializers(sym->type);
-    }
-  }
-
-  return retval;
-}

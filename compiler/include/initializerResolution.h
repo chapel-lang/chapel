@@ -20,15 +20,15 @@
 #ifndef _INITIALIZER_RESOLUTION_H_
 #define _INITIALIZER_RESOLUTION_H_
 
-// Defines the resolution strategy for initializers.  This is different than
-// how normal generic functions are handled and how generic constructors are
-// handled, as we want to have the this argument for the type in the initializer
-// argument list, and want to utilize Phase 1 of the initializer body to
-// determine the generic instantiation of it.
-class AggregateType;
-class CallExpr;
+// Defines the resolution strategy for initializers.
 
-void temporaryInitializerFixup(CallExpr* call);
+// This is different than how normal generic functions are handled
+// and how generic constructors are handled, as we want to have the
+// this argument for the type in the initializer argument list,
+// and want to utilize Phase 1 of the initializer body to determine
+//  the generic instantiation of it.
+
+class CallExpr;
 
 void resolveInitializer(CallExpr* call);
 
