@@ -3594,9 +3594,7 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 
 static bool typeUsesForwarding(Type* t);
 
-static bool populateForwardingMethods(Type*       t,
-                                      const char* calledName,
-                                      CallExpr*   forCall);
+static bool populateForwardingMethods(CallInfo& info);
 
 static void findVisibleFunctionsAndCandidates(
                                 CallInfo&                  info,
@@ -3606,16 +3604,14 @@ static void findVisibleFunctionsAndCandidates(
   findVisibleFunctions (info, visibleFns);
   findVisibleCandidates(info, visibleFns, candidates);
 
-  // if no candidate was found, try it with delegation
+  // If no candidates were found and it's a method, try delegating
   if (candidates.n == 0) {
     if (info.call->numActuals()       >= 1 &&
         info.call->get(1)->typeInfo() == dtMethodToken) {
       Type* receiverType = info.call->get(2)->typeInfo()->getValType();
 
       if (typeUsesForwarding(receiverType) == true) {
-        if (populateForwardingMethods(receiverType,
-                                      info.name,
-                                      info.call) == true) {
+        if (populateForwardingMethods(info) == true) {
           visibleFns.clear();
 
           forv_Vec(ResolutionCandidate*, candidate, candidates) {
@@ -3645,11 +3641,13 @@ static bool typeUsesForwarding(Type* t) {
   return retval;
 }
 
-static bool populateForwardingMethods(Type*       t,
-                                      const char* calledName,
-                                      CallExpr*   forCall) {
-  AggregateType* at       = toAggregateType(t);
-  bool           addedAny = false;
+static bool populateForwardingMethods(CallInfo& info) {
+  CallExpr*      forCall    = info.call;
+  const char*    calledName = info.name;
+  Type*          t          = forCall->get(2)->typeInfo()->getValType();
+
+  AggregateType* at         = toAggregateType(t);
+  bool           addedAny   = false;
 
   // Currently, only AggregateTypes can forward
   if (at == NULL) {
@@ -3667,6 +3665,7 @@ static bool populateForwardingMethods(Type*       t,
   // try resolving the call on the forwarding expressions
   for_alist(expr, at->forwardingTo) {
     ForwardingStmt* delegate = toForwardingStmt(expr);
+
     INT_ASSERT(delegate);
 
     // Forwarding method should use line number of forwarding stmt
@@ -3680,8 +3679,8 @@ static bool populateForwardingMethods(Type*       t,
 
       delegate->type = dtUnknown; // avoiding loop from recursion
 
-
       Symbol*   tmp        = newTemp(at);
+
       at->symbol->defPoint->insertBefore(new DefExpr(tmp));
 
       CallExpr* getTgtCall = new CallExpr(fnGetTgt, gMethodToken, tmp);
