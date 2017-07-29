@@ -3491,14 +3491,7 @@ static int disambiguateByMatch(CallInfo&                  info,
                                ResolutionCandidate*&      bestRef,
                                ResolutionCandidate*&      bestConstRef,
                                ResolutionCandidate*&      bestValue) {
-  CallExpr* call  = info.call;
-  Expr*     scope = (info.scope) ? info.scope : getVisibilityBlock(call);
-
-  bool explain = fExplainVerbose &&
-    ((explainCallLine != 0 && explainCallMatch(call) == true) ||
-     info.call->id == explainCallID);
-
-  DisambiguationContext     DC(&info.actuals, scope, explain);
+  DisambiguationContext     DC(info);
   Vec<ResolutionCandidate*> ambiguous;
 
   disambiguateByMatch(candidates,
@@ -3997,13 +3990,15 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("H: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
-  } else if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+  } else if (formal1->instantiatedFrom &&
+             formal2->instantiatedFrom &&
              formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
     EXPLAIN("G1: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
 
-  } else if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+  } else if (formal1->instantiatedFrom &&
+             formal2->instantiatedFrom &&
              !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
     EXPLAIN("G2: Fn %d is more specific\n", DC.i);
@@ -4011,6 +4006,7 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (considerParamMatches(actualType, f1Type, f2Type)) {
     EXPLAIN("In first param case\n");
+
     // The actual matches formal1's type, but not formal2's
     if (paramWorks(actual, f2Type)) {
       // but the actual is a param and works for formal2
@@ -4103,6 +4099,39 @@ static void registerParamPreference(int&                  paramPrefers,
     EXPLAIN("param prefers differing things\n");
   }
 }
+
+DisambiguationContext::DisambiguationContext(CallInfo& info) {
+  actuals = &info.actuals;
+  scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
+  explain = false;
+  i       = -1;
+  j       = -1;
+
+  if (fExplainVerbose == true) {
+    if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
+      explain = true;
+    }
+
+    if (info.call->id == explainCallID) {
+      explain = true;
+    }
+  }
+}
+
+const DisambiguationContext&
+DisambiguationContext::forPair(int newI, int newJ) {
+  this->i = newI;
+  this->j = newJ;
+
+  return *this;
+}
+
+  Vec<Symbol*>* actuals;
+  Expr*         scope;
+  bool          explain;
+  int           i;
+  int           j;
+
 
 
 /************************************* | **************************************
