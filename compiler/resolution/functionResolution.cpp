@@ -3440,7 +3440,11 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
 
 /************************************* | **************************************
 *                                                                             *
+* Find the best return-intent overloads from a list of candidates.            *
 *                                                                             *
+* If there was ambiguity, bestRef, bestConstRef, and bestValue will be NULL,  *
+* and the vector ambiguous will store any functions that participated in the  *
+* ambiguity (i.e. the multiple best matches).                                 *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -3458,14 +3462,6 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
 
 #endif
 
-
-static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                                Vec<ResolutionCandidate*>& ambiguous,
-                                DisambiguationContext      DC,
-
-                                ResolutionCandidate*&      bestRef,
-                                ResolutionCandidate*&      bestConstRef,
-                                ResolutionCandidate*&      bestValue);
 
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
@@ -3494,39 +3490,14 @@ static int disambiguateByMatch(CallInfo&                  info,
   DisambiguationContext     DC(info);
   Vec<ResolutionCandidate*> ambiguous;
 
-  disambiguateByMatch(candidates,
-                      ambiguous,
-                      DC,
-                      bestRef,
-                      bestConstRef,
-                      bestValue);
-
-  int nBestRef      = bestRef      != NULL ? 1 : 0;
-  int nBestValue    = bestValue    != NULL ? 1 : 0;
-  int nBestConstRef = bestConstRef != NULL ? 1 : 0;
-
-  return nBestRef + nBestValue + nBestConstRef;
-}
-
-/* Find the best return-intent overloads from a list of candidates.
-   If there was ambiguity, bestRef, bestConstRef, and bestValue will be NULL,
-   and the vector ambiguous will store any functions that participated
-   in the ambiguity (i.e. the multiple best matches).
- */
-static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                                Vec<ResolutionCandidate*>& ambiguous,
-                                DisambiguationContext      DC,
-                                ResolutionCandidate*&      bestRef,
-                                ResolutionCandidate*&      bestConstRef,
-                                ResolutionCandidate*&      bestValue) {
-  ResolutionCandidate* best = disambiguateByMatch(candidates,
-                                                  ambiguous,
-                                                  DC,
-                                                  true);
+  ResolutionCandidate*      best = disambiguateByMatch(candidates,
+                                                       ambiguous,
+                                                       DC,
+                                                       true);
 
   // The common case is that there is no ambiguity because
   // the return intent overload feature is not used.
-  if (best) {
+  if (best != NULL) {
     if (best->fn->retTag == RET_REF) {
       bestRef = best;
 
@@ -3537,7 +3508,7 @@ static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
       bestValue = best;
     }
 
-    return;
+    return 1;
   }
 
   // Now, if there was ambiguity, find candidates with different
@@ -3547,6 +3518,7 @@ static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
   int                  nConstRef         = 0;
   int                  nValue            = 0;
   int                  nOther            = 0;
+  int                  total             = 0;
 
   ResolutionCandidate* refCandidate      = NULL;
   ResolutionCandidate* constRefCandidate = NULL;
@@ -3573,11 +3545,11 @@ static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
     }
   }
 
-  int total = nRef + nConstRef + nValue + nOther;
+  total = nRef + nConstRef + nValue + nOther;
 
   // 0 matches -> return now, not a ref pair.
   if (total == 0) {
-    return;
+    return 0;
   }
 
   // 1 match -> should have returned above (best from disambiguateByMatch)
@@ -3593,15 +3565,9 @@ static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
     // If there are *any* type/param candidates, we need to cause ambiguity
     // if they are not selected... including consideration of where clauses.
-    ResolutionCandidate* best = disambiguateByMatch(candidates,
-                                                    ambiguous,
-                                                    DC,
-                                                    false);
+    bestValue  = disambiguateByMatch(candidates, ambiguous, DC, false);
 
-    // returns ambiguity if best == NULL, best match otherwise
-    bestValue = best;
-
-    return;
+    return 1;
   }
 
   if (nRef > 1 || nConstRef > 1 || nValue > 1) {
@@ -3650,13 +3616,19 @@ static void disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
   // Now we know there are >= 2 matches.
   // If there are more than 2 matches in any category, fail for ambiguity.
   if (nRef > 1 || nConstRef > 1 || nValue > 1) {
-    return;
+    return 0;
 
   } else {
     // Otherwise, return the single candidate in each slot.
     bestRef      = refCandidate;
     bestConstRef = constRefCandidate;
     bestValue    = valueCandidate;
+
+    int nBestRef      = bestRef      != NULL ? 1 : 0;
+    int nBestValue    = bestValue    != NULL ? 1 : 0;
+    int nBestConstRef = bestConstRef != NULL ? 1 : 0;
+
+    return nBestRef + nBestValue + nBestConstRef;
   }
 }
 
