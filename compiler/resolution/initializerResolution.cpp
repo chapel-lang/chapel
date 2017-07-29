@@ -19,7 +19,7 @@
 
 #include "initializerResolution.h"
 
-#include "astutil.h"
+#include "AggregateType.h"
 #include "caches.h"
 #include "callInfo.h"
 #include "driver.h"
@@ -28,299 +28,29 @@
 #include "initializerRules.h"
 #include "passes.h"
 #include "resolution.h"
-#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "type.h"
 #include "view.h"
 #include "visibleCandidates.h"
 #include "visibleFunctions.h"
 #include "wrappers.h"
 
-static
-void resolveInitCall(CallExpr* call);
+static void resolveInitCall(CallExpr* call);
 
-static
-void resolveMatch(FnSymbol* fn);
+static void gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+                                 Vec<FnSymbol*>&            visibleFns,
+                                 CallInfo&                  info);
 
-/* Stolen from function resolution */
-static void
-filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
-                    ResolutionCandidate* currCandidate,
-                    CallInfo& info);
-
-static void
-filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
-                    FnSymbol* fn,
-                    CallInfo& info);
-
-static FnSymbol*
-instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+static void resolveMatch(FnSymbol* fn);
 
 static void makeRecordInitWrappers(CallExpr* call);
-static void makeActualsVector(const CallExpr* call,
-                              const CallInfo& info,
-                              std::vector<ArgSymbol*>& actualIdxToFormal);
 
-// Rewrite of instantiateSignature, for initializers.  Removed some bits,
-// modified others.
-/** Instantiate enough of the function for it to make it through the candidate
- *  filtering and disambiguation process.
- *
- * \param fn   Generic function to instantiate
- * \param subs Type substitutions to be made during instantiation
- * \param call Call that is being resolved
- */
-static FnSymbol*
-instantiateInitSig(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
-  //
-  // Handle tuples explicitly
-  // (_build_tuple, tuple type constructor, tuple default constructor)
-  //
-  FnSymbol* tupleFn = createTupleSignature(fn, subs, call);
-  if (tupleFn) return tupleFn;
-
-  form_Map(SymbolMapElem, e, subs) {
-    if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-      // This line is modified from instantiateSignature to allow the "this"
-      // arg to remain generic until we have finished resolving the generic
-      // portions of the initializer body's Phase 1.
-      if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
-          !e->key->hasFlag(FLAG_ARG_THIS))
-        INT_FATAL(fn, "illegal instantiation with a generic type");
-      TypeSymbol* nts = getNewSubType(fn, e->key, ts);
-      if (ts != nts)
-        e->value = nts;
-    }
-  }
-
-  //
-  // determine root function in the case of partial instantiation
-  //
-  FnSymbol* root = determineRootFunc(fn);
-
-  //
-  // determine all substitutions (past substitutions in a partial
-  // instantiation plus the current substitutions) and change the
-  // substitutions to refer to the root function's formal arguments
-  //
-  SymbolMap all_subs;
-  determineAllSubs(fn, root, subs, all_subs);
-
-  //
-  // use cached instantiation if possible
-  //
-  if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
-    if (cached != (FnSymbol*)gVoid) {
-      checkInfiniteWhereInstantiation(cached);
-      return cached;
-    } else
-      return NULL;
-  }
-
-  SET_LINENO(fn);
-
-  //
-  // instantiate function
-  //
-
-  SymbolMap map;
-
-  FnSymbol* newFn = instantiateFunction(fn, root, all_subs, call, subs, map);
-
-  fixupTupleFunctions(fn, newFn, call);
-
-  if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken) {
-    newFn->getFormal(2)->type->methods.add(newFn);
-  }
-
-  newFn->tagIfGeneric();
-
-  if (newFn->hasFlag(FLAG_GENERIC) == false &&
-      evaluateWhereClause(newFn)   == false) {
-    //
-    // where clause evaluates to false so cache gVoid as a function
-    //
-    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
-    return NULL;
-  }
-
-  explainAndCheckInstantiation(newFn, fn);
-
-  return newFn;
-}
-
-/** Candidate filtering logic specific to concrete functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
- */
-static void
-filterInitConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
-                            ResolutionCandidate* currCandidate,
-                            CallInfo& info) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
-
-  if (!currCandidate->fn) return;
-
-  resolveTypedefedArgTypes(currCandidate->fn);
-
-  if (!currCandidate->computeAlignment(info)) {
-    return;
-  }
-
-  // We should reject this candidate if any of the situations handled by this
-  // function are violated.
-  if (checkResolveFormalsWhereClauses(currCandidate) == false)
-    return;
-
-  candidates.add(currCandidate);
-}
-
-
-/** Candidate filtering logic specific to generic functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
- */
-static void
-filterInitGenericCandidate(Vec<ResolutionCandidate*>& candidates,
-                           ResolutionCandidate* currCandidate,
-                           CallInfo& info) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
-
-  if (!currCandidate->fn) return;
-
-  if (!currCandidate->computeAlignment(info)) {
-    return;
-  }
-
-  if (checkGenericFormals(currCandidate) == false)
-    return;
-
-  // Compute the param/type substitutions for generic arguments.
-  currCandidate->computeSubstitutions(true);
-
-  /*
-   * If no substitutions were made we can't instantiate this generic, and must
-   * reject it.
-   */
-  if (currCandidate->substitutions.n > 0) {
-    /*
-     * Instantiate just enough of the generic to get through the rest of the
-     * filtering and disambiguation processes.
-     */
-    currCandidate->fn = instantiateInitSig(currCandidate->fn, currCandidate->substitutions, info.call);
-
-    if (currCandidate->fn != NULL) {
-      filterInitCandidate(candidates, currCandidate, info);
-    }
-  }
-}
-
-
-/** Tests to see if a function is a candidate for resolving a specific call.  If
- *  it is a candidate, we add it to the candidate lists.
- *
- * This version of filterInitCandidate is called by other versions of
- * filterInitCandidate, and shouldn't be called outside this family of functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
- */
-static void
-filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
-                    ResolutionCandidate* currCandidate,
-                    CallInfo& info) {
-
-  if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
-    filterInitGenericCandidate(candidates, currCandidate, info);
-
-  } else {
-    filterInitConcreteCandidate(candidates, currCandidate, info);
-  }
-}
-
-
-/** Tests to see if a function is a candidate for resolving a specific call.  If
- *  it is a candidate, we add it to the candidate lists.
- *
- * This version of filterInitCandidate is called by code outside the filterInitCandidate
- * family of functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
- */
-static void
-filterInitCandidate(Vec<ResolutionCandidate*>& candidates, FnSymbol* fn,
-                    CallInfo& info) {
-  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
-  filterInitCandidate(candidates, currCandidate, info);
-
-  if (candidates.tail() != currCandidate) {
-    // The candidate was not accepted.  Time to clean it up.
-    delete currCandidate;
-  }
-}
-
-static void
-doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
-                       Vec<FnSymbol*>& visibleFns,
-                       CallInfo& info,
-                       bool compilerGenerated) {
-
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    // Only consider user functions or compiler-generated functions
-    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
-
-      // Some expressions might resolve to methods without parenthesis.
-      // If the call is marked with methodTag, it indicates the called
-      // function should be a no-parens function or a type constructor.
-      // (a type constructor call without parens uses default arguments)
-      if (info.call->methodTag) {
-        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
-          // OK
-        } else {
-          // Skip this candidate
-          continue;
-        }
-      }
-
-      if (fExplainVerbose &&
-          ((explainCallLine && explainCallMatch(info.call)) ||
-           info.call->id == explainCallID))
-      {
-        USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
-        if( info.call->id == breakOnResolveID ) {
-          gdbShouldBreakHere();
-        }
-      }
-
-      filterInitCandidate(candidates, visibleFn, info);
-    }
-  }
-}
-
-static void
-gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
-                     Vec<FnSymbol*>& visibleFns,
-                     CallInfo& info) {
-
-  // Search user-defined (i.e. non-compiler-generated) functions first.
-  doGatherInitCandidates(candidates, visibleFns, info, false);
-
-  // If no results, try again with any compiler-generated candidates.
-  if (candidates.n == 0) {
-    doGatherInitCandidates(candidates, visibleFns, info, true);
-  }
-}
-/* end of function resolution steal */
-
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 void resolveInitializer(CallExpr* call) {
   // From resolveExpr() (removed the tryStack stuff)
@@ -333,10 +63,12 @@ void resolveInitializer(CallExpr* call) {
   resolveMatch(call->resolvedFunction());
 
   if (isGenericRecord(call->get(2)->typeInfo())) {
-    NamedExpr* named = toNamedExpr(call->get(2));
+    NamedExpr* named   = toNamedExpr(call->get(2));
     INT_ASSERT(named);
-    SymExpr* namedSe = toSymExpr(named->actual);
+
+    SymExpr*   namedSe = toSymExpr(named->actual);
     INT_ASSERT(namedSe);
+
     namedSe->symbol()->type = call->resolvedFunction()->_this->type;
 
     makeRecordInitWrappers(call);
@@ -345,10 +77,15 @@ void resolveInitializer(CallExpr* call) {
   callStack.pop();
 }
 
-static
-void resolveInitCall(CallExpr* call) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveInitCall(CallExpr* call) {
   // From resolveNormalCall()
-  if( call->id == breakOnResolveID ) {
+  if (call->id == breakOnResolveID) {
     printf("breaking on resolve call:\n");
     print_view(call);
     gdbShouldBreakHere();
@@ -358,15 +95,14 @@ void resolveInitCall(CallExpr* call) {
   // generic, but otherwise should result in the same behavior.
   CallInfo info(call, false, true);
 
-
   Vec<FnSymbol*> visibleFns; // visible functions
 
   findVisibleFunctions(info, visibleFns);
 
-
   // Modified narrowing down the candidates to operate in an
   // initializer-specific manner
   Vec<ResolutionCandidate*> candidates;
+
   gatherInitCandidates(candidates, visibleFns, info);
 
   explainGatherCandidate(candidates, info, call);
@@ -378,9 +114,11 @@ void resolveInitCall(CallExpr* call) {
   // in phase 2)
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
+
   bool explain = fExplainVerbose &&
     ((explainCallLine && explainCallMatch(call)) ||
      info.call->id == explainCallID);
+
   DisambiguationContext DC(&info.actuals, scope, explain);
 
   Vec<ResolutionCandidate*> ambiguous;
@@ -455,12 +193,322 @@ void resolveInitCall(CallExpr* call) {
   resolveNormalCallCompilerWarningStuff(resolvedFn);
 }
 
-// Copied from resolveFns(FnSymbol* fn) in functionResolution.
-// Removed code for extern functions (since I don't think it will apply),
-// iterators, type constructors, and FLAG_PRIVATIZED_CLASS.
-void resolveMatch(FnSymbol* fn) {
-  if (fn->isResolved())
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void      doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+                                        Vec<FnSymbol*>&            visibleFns,
+                                        CallInfo&                  info,
+                                        bool                       generated);
+
+static void      filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+                                     FnSymbol*                  fn,
+                                     CallInfo&                  info);
+
+static void      filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+                                     ResolutionCandidate*       currCandidate,
+                                     CallInfo&                  info);
+
+static void      filterInitGenericCandidate(
+                                  Vec<ResolutionCandidate*>& candidates,
+                                  ResolutionCandidate*       currCandidate,
+                                  CallInfo&                  info);
+
+
+static FnSymbol* instantiateInitSig(FnSymbol*  fn,
+                                    SymbolMap& subs,
+                                    CallExpr*  call);
+
+static void      filterInitConcreteCandidate(
+                                   Vec<ResolutionCandidate*>& candidates,
+                                   ResolutionCandidate*       currCandidate,
+                                   CallInfo&                  info);
+
+static void gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+                                 Vec<FnSymbol*>&            visibleFns,
+                                 CallInfo&                  info) {
+  // Search user-defined (i.e. non-compiler-generated) functions first.
+  doGatherInitCandidates(candidates, visibleFns, info, false);
+
+  // If no results, try again with any compiler-generated candidates.
+  if (candidates.n == 0) {
+    doGatherInitCandidates(candidates, visibleFns, info, true);
+  }
+}
+
+static void doGatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
+                                   Vec<FnSymbol*>&            visibleFns,
+                                   CallInfo&                  info,
+                                   bool                       generated) {
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    // Only consider user functions or compiler-generated functions
+    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == generated) {
+
+      // Some expressions might resolve to methods without parenthesis.
+      // If the call is marked with methodTag, it indicates the called
+      // function should be a no-parens function or a type constructor.
+      // (a type constructor call without parens uses default arguments)
+      if (info.call->methodTag) {
+        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
+          // OK
+        } else {
+          // Skip this candidate
+          continue;
+        }
+      }
+
+      if (fExplainVerbose &&
+          ((explainCallLine && explainCallMatch(info.call)) ||
+           info.call->id == explainCallID)) {
+        USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+
+        if (info.call->id == breakOnResolveID) {
+          gdbShouldBreakHere();
+        }
+      }
+
+      filterInitCandidate(candidates, visibleFn, info);
+    }
+  }
+}
+
+/** Tests to see if a function is a candidate for resolving a specific call.
+ *  If it is a candidate, we add it to the candidate lists.
+ *
+ * This version of filterInitCandidate is called by code outside the
+ * filterInitCandidate family of functions.
+ *
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+                                FnSymbol*                  fn,
+                                CallInfo&                  info) {
+  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
+
+  filterInitCandidate(candidates, currCandidate, info);
+
+  if (candidates.tail() != currCandidate) {
+    delete currCandidate;
+  }
+}
+
+/** Tests to see if a function is a candidate for resolving a specific call.
+ *  If it is a candidate, we add it to the candidate lists.
+ *
+ * This version of filterInitCandidate is called by other versions of
+ * filterInitCandidate, and shouldn't be called outside this family of
+ * functions.
+ *
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void filterInitCandidate(Vec<ResolutionCandidate*>& candidates,
+                                ResolutionCandidate*       currCandidate,
+                                CallInfo&                  info) {
+
+  if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
+    filterInitGenericCandidate(candidates, currCandidate, info);
+
+  } else {
+    filterInitConcreteCandidate(candidates, currCandidate, info);
+  }
+}
+
+
+/** Candidate filtering logic specific to generic functions.
+ *
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void filterInitGenericCandidate(
+                                  Vec<ResolutionCandidate*>& candidates,
+                                  ResolutionCandidate*       currCandidate,
+                                  CallInfo&                  info) {
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
+
+  if (!currCandidate->fn) {
     return;
+  }
+
+  if (!currCandidate->computeAlignment(info)) {
+    return;
+  }
+
+  if (checkGenericFormals(currCandidate) == false) {
+    return;
+  }
+
+  // Compute the param/type substitutions for generic arguments.
+  currCandidate->computeSubstitutions(true);
+
+  /*
+   * If no substitutions were made we can't instantiate this generic, and must
+   * reject it.
+   */
+  if (currCandidate->substitutions.n > 0) {
+    /*
+     * Instantiate just enough of the generic to get through the rest of the
+     * filtering and disambiguation processes.
+     */
+    currCandidate->fn = instantiateInitSig(currCandidate->fn,
+                                           currCandidate->substitutions,
+                                           info.call);
+
+    if (currCandidate->fn != NULL) {
+      filterInitCandidate(candidates, currCandidate, info);
+    }
+  }
+}
+
+// Rewrite of instantiateSignature, for initializers.  Removed some bits,
+// modified others.
+/** Instantiate enough of the function for it to make it through the candidate
+ *  filtering and disambiguation process.
+ *
+ * \param fn   Generic function to instantiate
+ * \param subs Type substitutions to be made during instantiation
+ * \param call Call that is being resolved
+ */
+static FnSymbol* instantiateInitSig(FnSymbol*  fn,
+                                    SymbolMap& subs,
+                                    CallExpr*  call) {
+  //
+  // Handle tuples explicitly
+  // (_build_tuple, tuple type constructor, tuple default constructor)
+  //
+  FnSymbol* tupleFn = createTupleSignature(fn, subs, call);
+
+  if (tupleFn) return tupleFn;
+
+  form_Map(SymbolMapElem, e, subs) {
+    if (TypeSymbol* ts = toTypeSymbol(e->value)) {
+      // This line is modified from instantiateSignature to allow the "this"
+      // arg to remain generic until we have finished resolving the generic
+      // portions of the initializer body's Phase 1.
+      if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
+          !e->key->hasFlag(FLAG_ARG_THIS)) {
+        INT_FATAL(fn, "illegal instantiation with a generic type");
+      }
+
+      TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+
+      if (ts != nts) {
+        e->value = nts;
+      }
+    }
+  }
+
+  //
+  // determine root function in the case of partial instantiation
+  //
+  FnSymbol* root = determineRootFunc(fn);
+
+  //
+  // determine all substitutions (past substitutions in a partial
+  // instantiation plus the current substitutions) and change the
+  // substitutions to refer to the root function's formal arguments
+  //
+  SymbolMap all_subs;
+
+  determineAllSubs(fn, root, subs, all_subs);
+
+  //
+  // use cached instantiation if possible
+  //
+  if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
+    if (cached != (FnSymbol*)gVoid) {
+      checkInfiniteWhereInstantiation(cached);
+      return cached;
+
+    } else {
+      return NULL;
+    }
+  }
+
+  SET_LINENO(fn);
+
+  //
+  // instantiate function
+  //
+
+  SymbolMap map;
+
+  FnSymbol* newFn = instantiateFunction(fn, root, all_subs, call, subs, map);
+
+  fixupTupleFunctions(fn, newFn, call);
+
+  if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken) {
+    newFn->getFormal(2)->type->methods.add(newFn);
+  }
+
+  newFn->tagIfGeneric();
+
+  if (newFn->hasFlag(FLAG_GENERIC) == false &&
+      evaluateWhereClause(newFn)   == false) {
+    //
+    // where clause evaluates to false so cache gVoid as a function
+    //
+    replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
+
+    return NULL;
+
+  } else {
+    explainAndCheckInstantiation(newFn, fn);
+
+    return newFn;
+  }
+}
+
+/** Candidate filtering logic specific to concrete functions.
+ *
+ * \param candidates    The list to add possible candidates to.
+ * \param currCandidate The current candidate to consider.
+ * \param info          The CallInfo object for the call site.
+ */
+static void filterInitConcreteCandidate(
+                              Vec<ResolutionCandidate*>& candidates,
+                              ResolutionCandidate*       currCandidate,
+                              CallInfo& info) {
+  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
+
+  if (!currCandidate->fn) return;
+
+  resolveTypedefedArgTypes(currCandidate->fn);
+
+  if (!currCandidate->computeAlignment(info)) {
+    return;
+  }
+
+  // We should reject this candidate if any of the situations handled by this
+  // function are violated.
+  if (checkResolveFormalsWhereClauses(currCandidate) == false) {
+    return;
+  }
+
+  candidates.add(currCandidate);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Copied from resolveFns(FnSymbol* fn) in functionResolution.                 *
+*                                                                             *
+* Removed code for extern functions (since I don't think it will apply),      *
+* iterators, type constructors, and FLAG_PRIVATIZED_CLASS.                    *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveMatch(FnSymbol* fn) {
+  if (fn->isResolved() == true) {
+    return;
+  }
 
   if (fn->id == breakOnResolveID) {
     printf("breaking on resolve fn:\n");
@@ -473,10 +521,12 @@ void resolveMatch(FnSymbol* fn) {
   insertFormalTemps(fn);
 
   bool wasGeneric = fn->_this->type->symbol->hasFlag(FLAG_GENERIC);
+
   if (wasGeneric) {
-    AggregateType* at = toAggregateType(fn->_this->type);
+    AggregateType* at  = toAggregateType(fn->_this->type);
     INT_ASSERT(at);
-    bool res = at->setNextGenericField();
+
+    bool           res = at->setNextGenericField();
     INT_ASSERT(res);
   }
 
@@ -508,16 +558,25 @@ void resolveMatch(FnSymbol* fn) {
   ensureInMethodList(fn);
 }
 
-// This creates wrapper functions for calls to record initializers with default
-// values, out of order named arguments, etc.  That effort was skipped during
-// the call match stage because the "this" argument to the initializer was
-// still generic until the body had been resolved.  After we have determined
-// the concrete type for the "this" argument, then we are capable of creating
-// valid wrappers.
-//
-// Note that this action is not necessary for class initializers, because such
-// calls are wrapped by the "_new" function, and appropriate wrappers will
-// be created for it, so we don't need to wrap the initializer itself.
+/************************************* | **************************************
+*                                                                             *
+* This creates wrapper functions for calls to record initializers with        *
+* default values, out of order named arguments, etc.  That effort was skipped *
+* during the call match stage because the "this" argument to the initializer  *
+* was still generic until the body had been resolved.  After we have          *
+* determined the concrete type for the "this" argument, then we are capable   *
+* of creating valid wrappers.                                                 *
+*                                                                             *
+* Note that this action is not necessary for class initializers, because      *
+* such calls are wrapped by the "_new" function, and appropriate wrappers     *
+* will be created for it, so we don't need to wrap the initializer itself.    *
+*                                                                             *
+************************************** | *************************************/
+
+static void makeActualsVector(const CallExpr*          call,
+                              const CallInfo&          info,
+                              std::vector<ArgSymbol*>& actualIdxToFormal);
+
 static void makeRecordInitWrappers(CallExpr* call) {
   CallInfo                info(call, false, false);
   std::vector<ArgSymbol*> actualIdxToFormal;
@@ -543,11 +602,11 @@ static void makeRecordInitWrappers(CallExpr* call) {
 // This work was already performed when we found the right resolution candidate
 // so the "failure" modes should never get triggered.  The information we need
 // was cleaned up, though, so we are just going to recreate the parts we need.
-static void makeActualsVector(const CallExpr* call,
-                              const CallInfo& info,
+static void makeActualsVector(const CallExpr*          call,
+                              const CallInfo&          info,
                               std::vector<ArgSymbol*>& actualIdxToFormal) {
+  FnSymbol*         fn = call->resolvedFunction();
   std::vector<bool> formalIdxToActual;
-  FnSymbol* fn = call->resolvedFunction();
 
   for (int i = 0; i < fn->numFormals(); i++) {
     formalIdxToActual.push_back(false);
