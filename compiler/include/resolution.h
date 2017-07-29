@@ -180,9 +180,9 @@ public:
 
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    Vec<ResolutionCandidate*>& ambiguous,
                     DisambiguationContext      DC,
-                    bool                       ignoreWhere);
+                    bool                       ignoreWhere,
+                    Vec<ResolutionCandidate*>& ambiguous);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);

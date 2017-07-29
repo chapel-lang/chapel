@@ -112,9 +112,9 @@ static void resolveInitCall(CallExpr* call) {
   DisambiguationContext DC(info);
 
   ResolutionCandidate* best = disambiguateByMatch(candidates,
-                                                  ambiguous,
                                                   DC,
-                                                  false);
+                                                  false,
+                                                  ambiguous);
 
   if (best && best->fn) {
     /*

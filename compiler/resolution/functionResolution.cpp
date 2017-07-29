@@ -3492,9 +3492,9 @@ static int disambiguateByMatch(CallInfo&                  info,
   Vec<ResolutionCandidate*> ambiguous;
 
   ResolutionCandidate*      best   = disambiguateByMatch(candidates,
-                                                         ambiguous,
                                                          DC,
-                                                         true);
+                                                         true,
+                                                         ambiguous);
 
   int                       retval = 0;
 
@@ -3563,7 +3563,7 @@ static int disambiguateByMatch(CallInfo&                  info,
 
       // If there are *any* type/param candidates, we need to cause ambiguity
       // if they are not selected... including consideration of where clauses.
-      bestValue  = disambiguateByMatch(candidates, ambiguous, DC, false);
+      bestValue  = disambiguateByMatch(candidates, DC, false, ambiguous);
       retval     = 1;
 
     } else {
@@ -3591,19 +3591,19 @@ static int disambiguateByMatch(CallInfo&                  info,
 
         // Disambiguate each group
         refCandidate      = disambiguateByMatch(refCandidates,
-                                                tmpAmbiguous,
                                                 DC,
-                                                false);
+                                                false,
+                                                tmpAmbiguous);
 
         constRefCandidate = disambiguateByMatch(constRefCandidates,
-                                                tmpAmbiguous,
                                                 DC,
-                                                false);
+                                                false,
+                                                tmpAmbiguous);
 
         valueCandidate    = disambiguateByMatch(valueCandidates,
-                                                tmpAmbiguous,
                                                 DC,
-                                                false);
+                                                false,
+                                                tmpAmbiguous);
         // update the counts
         if (refCandidate      != NULL) nRef      = 1;
         if (constRefCandidate != NULL) nConstRef = 1;
@@ -3653,9 +3653,9 @@ static int disambiguateByMatch(CallInfo&                  info,
  */
 ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    Vec<ResolutionCandidate*>& mostSpecificSet,
                     DisambiguationContext      DC,
-                    bool                       ignoreWhere) {
+                    bool                       ignoreWhere,
+                    Vec<ResolutionCandidate*>& mostSpecificSet) {
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
 
