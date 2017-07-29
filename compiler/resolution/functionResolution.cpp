@@ -2774,6 +2774,9 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
                                    bestConstRef,
                                    bestValue);
 
+  // This will be used in a later update
+  (void) numMatches;
+
   best = bestRef;
   if (!best && bestValue)    best = bestValue;
   if (!best && bestConstRef) best = bestConstRef;
