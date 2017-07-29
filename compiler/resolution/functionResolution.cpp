@@ -3239,6 +3239,12 @@ static void      findVisibleFunctionsAndCandidates(
                                      Vec<FnSymbol*>&            visibleFns,
                                      Vec<ResolutionCandidate*>& candidates);
 
+static int       disambiguateByMatch(CallInfo&                  info,
+                                     Vec<ResolutionCandidate*>& candidates,
+                                     ResolutionCandidate*&      bestRef,
+                                     ResolutionCandidate*&      bestConstRef,
+                                     ResolutionCandidate*&      bestValue);
+
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   CallInfo  info;
   FnSymbol* retval = NULL;
@@ -3290,31 +3296,26 @@ static bool isGenericRecordInit(CallExpr* call) {
 }
 
 static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
-  CallExpr*                 call = info.call;
   Vec<FnSymbol*>            visibleFns;
   Vec<ResolutionCandidate*> candidates;
 
-  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
+  CallExpr*                 call         = info.call;
 
-  Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
-
-  bool explain = fExplainVerbose &&
-    ((explainCallLine && explainCallMatch(call)) ||
-     info.call->id == explainCallID);
-
-  DisambiguationContext     DC(&info.actuals, scope, explain);
-  Vec<ResolutionCandidate*> ambiguous;
   ResolutionCandidate*      bestRef      = NULL;
   ResolutionCandidate*      bestConstRef = NULL;
   ResolutionCandidate*      bestValue    = NULL;
-  ResolutionCandidate*      best         = bestRef;
+  ResolutionCandidate*      best         = NULL;
 
-  disambiguateByMatchReturnOverloads(candidates,
-                                     ambiguous,
-                                     DC,
-                                     bestRef,
-                                     bestConstRef,
-                                     bestValue);
+  int                       numMatches   = 0;
+
+  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
+
+  numMatches = disambiguateByMatch(info,
+                                   candidates,
+
+                                   bestRef,
+                                   bestConstRef,
+                                   bestValue);
 
   best = bestRef;
   if (!best && bestValue)    best = bestValue;
@@ -3978,6 +3979,43 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
       }
     }
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static int disambiguateByMatch(CallInfo&                  info,
+                               Vec<ResolutionCandidate*>& candidates,
+
+                               ResolutionCandidate*&      bestRef,
+                               ResolutionCandidate*&      bestConstRef,
+                               ResolutionCandidate*&      bestValue) {
+  CallExpr* call  = info.call;
+  Expr*     scope = (info.scope) ? info.scope : getVisibilityBlock(call);
+
+  bool explain = fExplainVerbose &&
+    ((explainCallLine != 0 && explainCallMatch(call) == true) ||
+     info.call->id == explainCallID);
+
+
+  DisambiguationContext     DC(&info.actuals, scope, explain);
+  Vec<ResolutionCandidate*> ambiguous;
+
+  disambiguateByMatchReturnOverloads(candidates,
+                                     ambiguous,
+                                     DC,
+                                     bestRef,
+                                     bestConstRef,
+                                     bestValue);
+
+  int nBestRef      = bestRef      != NULL ? 1 : 0;
+  int nBestValue    = bestValue    != NULL ? 1 : 0;
+  int nBestConstRef = bestConstRef != NULL ? 1 : 0;
+
+  return nBestRef + nBestValue + nBestConstRef;
 }
 
 /************************************* | **************************************
