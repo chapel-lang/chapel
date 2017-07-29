@@ -32,8 +32,6 @@ void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew);
 
 void temporaryInitializerFixup(CallExpr* call);
 
-void removeAggTypeFieldInfo();
-
 void resolveInitializer(CallExpr* call);
 
 #endif

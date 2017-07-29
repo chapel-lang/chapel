@@ -7537,32 +7537,50 @@ static void cleanupVoidVarsAndFields() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* pruneResolvedTree -- prunes and cleans the AST after                        *
+* of the function calls and types have been resolved                          *
+*                                                                             *
+************************************** | *************************************/
 
-//
-// pruneResolvedTree -- prunes and cleans the AST after all of the
-// function calls and types have been resolved
-//
-static void
-pruneResolvedTree() {
+static void removeAggTypeFieldInfo();
+
+static void pruneResolvedTree() {
   removeUnusedFunctions();
-  if (fRemoveUnreachableBlocks)
+
+  if (fRemoveUnreachableBlocks) {
     deadBlockElimination();
+  }
+
   removeRandomPrimitives();
+
   replaceTypeArgsWithFormalTypeTemps();
+
   removeParamArgs();
 
   removeAggTypeFieldInfo();
 
   removeUnusedModuleVariables();
+
   removeUnusedTypes();
+
   removeActualNames();
+
   removeFormalTypeAndInitBlocks();
+
   removeTypeBlocks();
+
   removeInitFields();
+
   removeWhereClauses();
+
   removeMootFields();
+
   expandInitFieldPrims();
+
   cleanupAfterRemoves();
+
   cleanupVoidVarsAndFields();
 }
 
@@ -7928,6 +7946,26 @@ static void removeParamArgs()
   }
 }
 
+static void removeAggTypeFieldInfo() {
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
+      // Still in the tree
+      if (at->initializerStyle != DEFINES_CONSTRUCTOR) {
+        // Defined an initializer (so we left its init
+        // and exprType information in the tree)
+        for_fields(field, at) {
+          if (field->defPoint->exprType) {
+            field->defPoint->exprType->remove();
+          }
+
+          if (field->defPoint->init) {
+            field->defPoint->init->remove();
+          }
+        }
+      }
+    }
+  }
+}
 
 static void removeRandomPrimitives()
 {
@@ -8588,5 +8626,16 @@ static void setScalarPromotionType(AggregateType* at) {
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -737,37 +737,3 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 
   return retval;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void removeAggTypeFieldInfo() {
-  forv_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->symbol->defPoint && at->symbol->defPoint->parentSymbol) {
-      // Still in the tree
-      if (at->initializerStyle != DEFINES_CONSTRUCTOR) {
-        // Defined an initializer (so we left its init and exprType information
-        // in the tree)
-        for_fields(field, at) {
-          if (field->defPoint->exprType) {
-            field->defPoint->exprType->remove();
-          }
-          if (field->defPoint->init) {
-            field->defPoint->init->remove();
-          }
-          // Remove the init and exprType information.
-        }
-      }
-    }
-  }
-}
