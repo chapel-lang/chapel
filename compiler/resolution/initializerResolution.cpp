@@ -52,7 +52,7 @@ static void makeRecordInitWrappers(CallExpr* call);
 *                                                                             *
 ************************************** | *************************************/
 
-void resolveInitializer(CallExpr* call) {
+FnSymbol* resolveInitializer(CallExpr* call) {
   // From resolveExpr() (removed the tryStack stuff)
   callStack.add(call);
 
@@ -75,6 +75,8 @@ void resolveInitializer(CallExpr* call) {
   }
 
   callStack.pop();
+
+  return call->resolvedFunction();
 }
 
 /************************************* | **************************************

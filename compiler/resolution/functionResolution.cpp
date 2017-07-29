@@ -3507,14 +3507,19 @@ FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-// if checkonly is provided, don't print any errors; just check
-// to see if the particular function could be resolved.
-// returns the result of resolving - or NULL if we couldn't do it.
-// If checkonly is set, NULL can be returned - otherwise that would
-// be a fatal error.
+static bool      isGenericRecordInit(CallExpr* call);
+
+static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly);
+
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
-  CallInfo info;
+  CallInfo  info;
+  FnSymbol* retval = NULL;
 
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call:\n");
@@ -3526,45 +3531,64 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
 
   resolveDefaultGenericType(call);
 
-  if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
-    if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-      if (strcmp(ures->unresolved, "init") == 0 &&
-          isGenericRecordWithInitializers(call->get(2)->typeInfo())) {
-        // If the first actual is an instance of dtMethodToken and the call is
-        // to "init" of a generic record that defined initializers
-        resolveInitializer(call);
+  if (isGenericRecordInit(call) == true) {
+    retval = resolveInitializer(call);
 
-        return call->resolvedFunction();
-      }
-    }
-  }
-
-  if (info.isNotWellFormed(call) == true) {
+  } else if (info.isNotWellFormed(call) == true) {
     if (checkOnly == false) {
       info.haltNotWellFormed();
 
     } else {
       return NULL;
     }
+  } else {
+    retval = resolveNormalCall(info, checkOnly);
   }
 
+  return retval;
+}
+
+static bool isGenericRecordInit(CallExpr* call) {
+  bool retval = false;
+
+  if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
+    if (strcmp(ures->unresolved, "init") == 0 &&
+        call->numActuals()               >= 2) {
+      Type* t1 = call->get(1)->typeInfo();
+      Type* t2 = call->get(2)->typeInfo();
+
+      if (t1                                  == dtMethodToken &&
+          isGenericRecordWithInitializers(t2) == true) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
+  CallExpr*                 call = info.call;
   Vec<FnSymbol*>            visibleFns;
   Vec<ResolutionCandidate*> candidates;
+  bool                      retryFind = false;
 
   // First, try finding candidates without delegation
   findVisibleFunctions (info, visibleFns);
   findVisibleCandidates(info, visibleFns, candidates);
-
-  bool retryFind = false;
 
   // if no candidate was found, try it with delegation
   if (candidates.n == 0) {
     // if it's a method, try delegating
     if (call->numActuals() >= 1 &&
         call->get(1)->typeInfo() == dtMethodToken) {
+
       Type* receiverType = call->get(2)->typeInfo()->getValType();
+
       if (typeUsesForwarding(receiverType)) {
-        retryFind = populateForwardingMethods(receiverType, info.name, info.call);
+        retryFind = populateForwardingMethods(receiverType,
+                                              info.name,
+                                              info.call);
       }
     }
   }
