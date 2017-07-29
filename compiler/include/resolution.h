@@ -157,7 +157,7 @@ public:
 };
 
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
-                            CallInfo& info, CallExpr* call);
+                            CallInfo&                  info);
 
 /** Contextual info used by the disambiguation process.
  *

@@ -107,7 +107,7 @@ static void resolveInitCall(CallExpr* call) {
 
   gatherInitCandidates(info, visibleFns, candidates);
 
-  explainGatherCandidate(candidates, info, call);
+  explainGatherCandidate(candidates, info);
 
   Expr* scope   = (info.scope) ? info.scope : getVisibilityBlock(call);
 
