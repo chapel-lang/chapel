@@ -84,6 +84,8 @@ void resolveInitializer(CallExpr* call) {
 ************************************** | *************************************/
 
 static void resolveInitCall(CallExpr* call) {
+  CallInfo info;
+
   // From resolveNormalCall()
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call:\n");
@@ -91,27 +93,19 @@ static void resolveInitCall(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  // Make a CallInfo which doesn't care if the this argument is
-  // generic, but otherwise should result in the same behavior.
-  CallInfo info(call, false, true);
+  if (info.isNotWellFormed(call, true) == true) {
+    info.haltNotWellFormed(true);
+  }
 
-  Vec<FnSymbol*> visibleFns; // visible functions
+  Vec<FnSymbol*>            visibleFns;
+  Vec<ResolutionCandidate*> candidates;
+  Vec<ResolutionCandidate*> ambiguous;
 
   findVisibleFunctions(info, visibleFns);
-
-  // Modified narrowing down the candidates to operate in an
-  // initializer-specific manner
-  Vec<ResolutionCandidate*> candidates;
 
   gatherInitCandidates(info, visibleFns, candidates);
 
   explainGatherCandidate(candidates, info, call);
-
-  // Removed a whole bunch of stuff that resolveNormalCall did that I didn't
-  // need, including ref/value pairs, some checkonly stuff, a match against
-  // the name being "=", and stuff related to modifying const fields that
-  // doesn't apply to initializers (which permit it in phase 1, but prevent it
-  // in phase 2)
 
   Expr* scope   = (info.scope) ? info.scope : getVisibilityBlock(call);
 
@@ -121,9 +115,10 @@ static void resolveInitCall(CallExpr* call) {
 
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  Vec<ResolutionCandidate*> ambiguous;
-  ResolutionCandidate* best = disambiguateByMatch(candidates, ambiguous, DC,
-      false /*ignoreWhere*/ );
+  ResolutionCandidate* best = disambiguateByMatch(candidates,
+                                                  ambiguous,
+                                                  DC,
+                                                  false);
 
   if (best && best->fn) {
     /*
@@ -149,14 +144,18 @@ static void resolveInitCall(CallExpr* call) {
       // best is deleted below with the other candidates
       best = NULL;
     }
+
   } else if (!best) {
     if (candidates.n > 0) {
+
       Vec<FnSymbol*> candidateFns;
+
       forv_Vec(ResolutionCandidate*, candidate, candidates) {
         candidateFns.add(candidate->fn);
       }
 
       printResolutionErrorAmbiguous(candidateFns, &info);
+
     } else {
       printResolutionErrorUnresolved(visibleFns, &info);
     }
@@ -578,9 +577,13 @@ static void makeActualsVector(const CallInfo&          info,
                               std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static void makeRecordInitWrappers(CallExpr* call) {
-  CallInfo                info(call, false, false);
+  CallInfo                info;
   std::vector<ArgSymbol*> actualIdxToFormal;
   FnSymbol*               wrap = NULL;
+
+  if (info.isNotWellFormed(call) == true) {
+    info.haltNotWellFormed();
+  }
 
   makeActualsVector(info, actualIdxToFormal);
 

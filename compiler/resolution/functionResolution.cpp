@@ -3513,9 +3513,10 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 // returns the result of resolving - or NULL if we couldn't do it.
 // If checkonly is set, NULL can be returned - otherwise that would
 // be a fatal error.
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
+  CallInfo info;
 
-  if( call->id == breakOnResolveID ) {
+  if (call->id == breakOnResolveID) {
     printf("breaking on resolve call:\n");
     print_view(call);
     gdbShouldBreakHere();
@@ -3527,29 +3528,34 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
     if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-      if (!strcmp(ures->unresolved, "init") &&
+      if (strcmp(ures->unresolved, "init") == 0 &&
           isGenericRecordWithInitializers(call->get(2)->typeInfo())) {
         // If the first actual is an instance of dtMethodToken and the call is
         // to "init" of a generic record that defined initializers
         resolveInitializer(call);
+
         return call->resolvedFunction();
       }
     }
   }
 
-  CallInfo info(call, checkonly);
+  if (info.isNotWellFormed(call) == true) {
+    if (checkOnly == false) {
+      info.haltNotWellFormed();
 
-  // Return early if creating the call info would have been an error.
-  if( checkonly && info.badcall ) return NULL;
+    } else {
+      return NULL;
+    }
+  }
 
-  Vec<FnSymbol*> visibleFns; // visible functions
+  Vec<FnSymbol*>            visibleFns;
   Vec<ResolutionCandidate*> candidates;
 
   // First, try finding candidates without delegation
   findVisibleFunctions (info, visibleFns);
   findVisibleCandidates(info, visibleFns, candidates);
 
-  bool retry_find = false;
+  bool retryFind = false;
 
   // if no candidate was found, try it with delegation
   if (candidates.n == 0) {
@@ -3558,17 +3564,19 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
         call->get(1)->typeInfo() == dtMethodToken) {
       Type* receiverType = call->get(2)->typeInfo()->getValType();
       if (typeUsesForwarding(receiverType)) {
-        retry_find = populateForwardingMethods(receiverType, info.name, info.call);
+        retryFind = populateForwardingMethods(receiverType, info.name, info.call);
       }
     }
   }
 
-  if (retry_find) {
+  if (retryFind == true) {
     // clear out visibleFns, candidates
     visibleFns.clear();
+
     forv_Vec(ResolutionCandidate*, candidate, candidates) {
       delete candidate;
     }
+
     candidates.clear();
 
     // try again to include forwarded functions
@@ -3580,32 +3588,40 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
+
   bool explain = fExplainVerbose &&
     ((explainCallLine && explainCallMatch(call)) ||
      info.call->id == explainCallID);
-  DisambiguationContext DC(&info.actuals, scope, explain);
 
+  DisambiguationContext     DC(&info.actuals, scope, explain);
   Vec<ResolutionCandidate*> ambiguous;
-  ResolutionCandidate* bestRef = NULL;
-  ResolutionCandidate* bestConstRef = NULL;
-  ResolutionCandidate* bestValue = NULL;
+  ResolutionCandidate*      bestRef      = NULL;
+  ResolutionCandidate*      bestConstRef = NULL;
+  ResolutionCandidate*      bestValue    = NULL;
+  ResolutionCandidate*      best         = bestRef;
 
-  disambiguateByMatchReturnOverloads(candidates, ambiguous, DC,
-                                     bestRef, bestConstRef, bestValue);
+  disambiguateByMatchReturnOverloads(candidates,
+                                     ambiguous,
+                                     DC,
+                                     bestRef,
+                                     bestConstRef,
+                                     bestValue);
 
-  ResolutionCandidate* best = bestRef;
-  if (!best && bestValue) best = bestValue;
+  best = bestRef;
+  if (!best && bestValue)    best = bestValue;
   if (!best && bestConstRef) best = bestConstRef;
 
   // compute a boolean indicating if we are working with
   // a return intent overload.
   // TODO: rename this variable.
   bool refPair = false;
+
   {
     int nBestRef = (bestRef != NULL);
     int nBestValue = (bestValue != NULL);
     int nBestConstRef = (bestConstRef != NULL);
     int nBest = nBestRef + nBestValue + nBestConstRef;
+
     refPair = (nBest > 1);
   }
 
@@ -3679,12 +3695,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   } else if (!best) {
     if (tryStack.n) {
       // MPF -- doesn't this leak memory for the ResolutionCandidates?
-      if( ! checkonly ) tryFailure = true;
+      if( ! checkOnly ) tryFailure = true;
       return NULL;
 
     } else {
       // if we're just checking, don't print errors
-      if( ! checkonly ) {
+      if( ! checkOnly ) {
 
         if (candidates.n > 0) {
           Vec<FnSymbol*> candidateFns;
@@ -3699,21 +3715,36 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
         }
       }
     }
+
   } else {
     wrapAndCleanUpActuals(best, info, true);
+
     // for return intent overload, ref call must be first, so above
     // case would handle it.
     if (valueCall && call != valueCall) {
-      // If we're resolving a ref and non-ref pair,
-      // also handle the value version if it wasn't already handled.
-      CallInfo valueInfo(valueCall, checkonly);
-      wrapAndCleanUpActuals(bestValue, valueInfo, false);
+      CallInfo tmpInfo;
+
+      if (tmpInfo.isNotWellFormed(valueCall) == true) {
+        if (checkOnly == false) {
+          tmpInfo.haltNotWellFormed();
+        }
+
+      } else {
+        wrapAndCleanUpActuals(bestValue, tmpInfo, false);
+      }
     }
+
     if (constRefCall) {
-      // If we're resolving a ref and non-ref pair,
-      // also handle the const ref version. best is the ref version.
-      CallInfo constRefInfo(constRefCall, checkonly);
-      wrapAndCleanUpActuals(bestConstRef, constRefInfo, false);
+      CallInfo tmpInfo;
+
+      if (tmpInfo.isNotWellFormed(constRefCall) == true) {
+        if (checkOnly == false) {
+          tmpInfo.haltNotWellFormed();
+        }
+
+      } else {
+        wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
+      }
     }
   }
 
@@ -3746,7 +3777,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   }
 
 
-  if( ! checkonly ) {
+  if( ! checkOnly ) {
     if (resolvedFn &&
         resolvedFn->name == astrSequals &&
         isRecord(resolvedFn->getFormal(1)->type) &&
@@ -3807,7 +3838,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     }
   }
 
-  if( ! checkonly ) {
+  if( ! checkOnly ) {
     if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
       // Not allowed if it is not called directly from a constructor.
       if (!isInConstructorLikeFunction(call) ||
