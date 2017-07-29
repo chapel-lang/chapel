@@ -109,18 +109,12 @@ static void resolveInitCall(CallExpr* call) {
 
   explainGatherCandidate(candidates, info);
 
-  Expr* scope   = (info.scope) ? info.scope : getVisibilityBlock(call);
-
-  bool  explain = fExplainVerbose &&
-    ((explainCallLine && explainCallMatch(call)) ||
-     info.call->id == explainCallID);
-
-  DisambiguationContext DC(&info.actuals, scope, explain);
+  DisambiguationContext DC(info);
 
   ResolutionCandidate* best = disambiguateByMatch(candidates,
-                                                  ambiguous,
                                                   DC,
-                                                  false);
+                                                  false,
+                                                  ambiguous);
 
   if (best && best->fn) {
     /*

@@ -67,17 +67,6 @@
 #include <string>
 #include <vector>
 
-// Allow disambiguation tracing to be controlled by the command-line option
-// --explain-verbose.
-#define ENABLE_TRACING_OF_DISAMBIGUATION 1
-
-#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-#define TRACE_DISAMBIGUATE_BY_MATCH(...)                    \
-  if (developer && DC.explain) fprintf(stderr, __VA_ARGS__)
-#else
-#define TRACE_DISAMBIGUATE_BY_MATCH(...)
-#endif
-
 /// State information used during the disambiguation process.
 class DisambiguationState {
 public:
@@ -1953,28 +1942,6 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
 }
 
 
-//
-// This is a utility function that essentially tracks which function,
-// if any, the param arguments prefer.
-//
-static inline void registerParamPreference(int& paramPrefers, int preference,
-                                    const char* argstr,
-                                    DisambiguationContext DC) {
-
-  if (paramPrefers == 0 || paramPrefers == preference) {
-    /* if the param currently has no preference or it matches the new
-       preference, preserve the current preference */
-    paramPrefers = preference;
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers %s\n", argstr);
-  } else {
-    /* otherwise its preference contradicts the previous arguments, so
-       mark it as not preferring either */
-    paramPrefers = -1;
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things\n");
-  }
-}
-
-
 static bool considerParamMatches(Type* actualType,
                                  Type* arg1Type,
                                  Type* arg2Type) {
@@ -2029,516 +1996,6 @@ static bool considerParamMatches(Type* actualType,
 }
 
 
-/** Compare two argument mappings, given a set of actual arguments, and set the
- *  disambiguation state appropriately.
- *
- * This function implements the argument mapping comparison component of the
- * disambiguation procedure as detailed in section 13.14.3 of the Chapel
- * language specification (page 107).
- *
- * \param fn1     The first function to be compared.
- * \param formal1 The formal argument that correspond to the actual argument
- *                for the first function.
- * \param fn2     The second function to be compared.
- * \param formal2 The formal argument that correspond to the actual argument
- *                for the second function.
- * \param actual  The actual argument from the call site.
- * \param DC      The disambiguation context.
- * \param DS      The disambiguation state.
- */
-static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
-                           FnSymbol* fn2, ArgSymbol* formal2,
-                           Symbol* actual,
-                           const DisambiguationContext& DC,
-                           DisambiguationState& DS) {
-
-  // We only want to deal with the value types here, avoiding odd overloads
-  // working (or not) due to _ref.
-  Type *f1Type = formal1->type->getValType();
-  Type *f2Type = formal2->type->getValType();
-  Type *actualType = actual->type->getValType();
-
-  TRACE_DISAMBIGUATE_BY_MATCH("Actual's type: %s\n", toString(actualType));
-
-  bool formal1Promotes = false;
-  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
-  DS.fn1Promotes |= formal1Promotes;
-
-  TRACE_DISAMBIGUATE_BY_MATCH("Formal 1's type: %s\n", toString(f1Type));
-  if (formal1Promotes) {
-    TRACE_DISAMBIGUATE_BY_MATCH("Actual requires promotion to match formal 1\n");
-  } else {
-    TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 1\n");
-  }
-
-  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("Formal 1 is an instantiated param.\n");
-  } else {
-    TRACE_DISAMBIGUATE_BY_MATCH("Formal 1 is NOT an instantiated param.\n");
-  }
-
-  bool formal2Promotes = false;
-  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
-  DS.fn2Promotes |= formal2Promotes;
-
-  TRACE_DISAMBIGUATE_BY_MATCH("Formal 2's type: %s\n", toString(f2Type));
-  if (formal2Promotes) {
-    TRACE_DISAMBIGUATE_BY_MATCH("Actual requires promotion to match formal 2\n");
-  } else {
-    TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 2\n");
-  }
-
-  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is an instantiated param.\n");
-  } else {
-    TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is NOT an instantiated param.\n");
-  }
-
-  if (f1Type == f2Type && formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("A: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (f1Type == f2Type && !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("B: Fn %d is more specific\n", DC.j);
-    DS.fn2MoreSpecific = true;
-
-  } else if (!formal1Promotes && formal2Promotes) {
-    TRACE_DISAMBIGUATE_BY_MATCH("C: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (formal1Promotes && !formal2Promotes) {
-    TRACE_DISAMBIGUATE_BY_MATCH("D: Fn %d is more specific\n", DC.j);
-    DS.fn2MoreSpecific = true;
-
-  } else if (f1Type == f2Type && !formal1->instantiatedFrom && formal2->instantiatedFrom) {
-    TRACE_DISAMBIGUATE_BY_MATCH("E: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (f1Type == f2Type && formal1->instantiatedFrom && !formal2->instantiatedFrom) {
-    TRACE_DISAMBIGUATE_BY_MATCH("F: Fn %d is more specific\n", DC.j);
-    DS.fn2MoreSpecific = true;
-
-  } else if (formal1->instantiatedFrom != dtAny && formal2->instantiatedFrom == dtAny) {
-    TRACE_DISAMBIGUATE_BY_MATCH("G: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (formal1->instantiatedFrom == dtAny && formal2->instantiatedFrom != dtAny) {
-    TRACE_DISAMBIGUATE_BY_MATCH("H: Fn %d is more specific\n", DC.j);
-    DS.fn2MoreSpecific = true;
-
-  } else if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
-             formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("G1: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
-             !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-             formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("G2: Fn %d is more specific\n", DC.i);
-    DS.fn2MoreSpecific = true;
-
-  } else if (considerParamMatches(actualType, f1Type, f2Type)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("In first param case\n");
-    // The actual matches formal1's type, but not formal2's
-    if (paramWorks(actual, f2Type)) {
-      // but the actual is a param and works for formal2
-      if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but
-        // matches the first slightly better if we had to
-        // decide
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
-      } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
-      } else {
-        // neither is a param, but formal1 is an exact type
-        // match, so prefer that one
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
-      }
-    } else {
-      TRACE_DISAMBIGUATE_BY_MATCH("I: Fn %d is more specific\n", DC.i);
-      DS.fn1MoreSpecific = true;
-    }
-  } else if (considerParamMatches(actualType, f2Type, f1Type)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("In second param case\n");
-    // The actual matches formal2's type, but not formal1's
-    if (paramWorks(actual, f1Type)) {
-      // but the actual is a param and works for formal1
-      if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but
-        // matches the second slightly better if we had to
-        // decide
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
-      } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
-      } else {
-        // neither is a param, but formal1 is an exact type
-        // match, so prefer that one
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
-      }
-    } else {
-      TRACE_DISAMBIGUATE_BY_MATCH("J: Fn %d is more specific\n", DC.j);
-      DS.fn2MoreSpecific = true;
-    }
-  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-    TRACE_DISAMBIGUATE_BY_MATCH("K: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-    TRACE_DISAMBIGUATE_BY_MATCH("L: Fn %d is more specific\n", DC.j);
-    DS.fn2MoreSpecific = true;
-
-  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("M: Fn %d is more specific\n", DC.i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-    TRACE_DISAMBIGUATE_BY_MATCH("N: Fn %d is more specific\n", DC.j);
-    DS.fn2MoreSpecific = true;
-
-  } else {
-    TRACE_DISAMBIGUATE_BY_MATCH("O: no information gained from argument\n");
-  }
-}
-
-
-/** Determines if fn1 is a better match than fn2.
- *
- * This function implements the function comparison component of the
- * disambiguation procedure as detailed in section 13.13 of the Chapel
- * language specification.
- *
- * \param candidate1 The function on the left-hand side of the comparison.
- * \param candidate2 The function on the right-hand side of the comparison.
- * \param DC         The disambiguation context.
- * \param ignoreWhere Set to `true` to ignore `where` clauses when
- *                    deciding if one match is better than another.
- *                    This is important for resolving return intent
- *                    overloads.
- *
- * \return -1 if fn1 is a more specific function than f2
- * \return 0 if fn1 and fn2 are equally specific
- * \return 1 if fn2 is a more specific function than f1
- */
-static
-int compareSpecificity(ResolutionCandidate* candidate1,
-                       ResolutionCandidate* candidate2,
-                       const DisambiguationContext& DC,
-                       bool ignoreWhere=false) {
-
-  DisambiguationState DS;
-  bool prefer1 = false;
-  bool prefer2 = false;
-
-  // Returning 0 for the same candidate simplifies the calling code
-  if (candidate1 == candidate2)
-    return 0;
-
-  for (int k = 0; k < DC.actuals->n; ++k) {
-    Symbol* actual = DC.actuals->v[k];
-    ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
-    ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
-
-    TRACE_DISAMBIGUATE_BY_MATCH("\nLooking at argument %d\n", k);
-
-    testArgMapping(candidate1->fn, formal1, candidate2->fn, formal2, actual, DC, DS);
-  }
-
-  if (DS.fn1Promotes != DS.fn2Promotes) {
-    TRACE_DISAMBIGUATE_BY_MATCH("\nP: Fn %d does not require argument promotion; Fn %d does\n", DS.fn1Promotes?DC.j:DC.i, DS.fn1Promotes?DC.i:DC.j);
-    // Prefer the version that did not promote
-    prefer1 = !DS.fn1Promotes;
-    prefer2 = !DS.fn2Promotes;
-  } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
-    prefer1 = DS.fn1MoreSpecific;
-    prefer2 = DS.fn2MoreSpecific;
-  } else {
-    // If the decision hasn't been made based on the argument mappings...
-
-    if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\nQ: Fn %d is more specific\n", DC.i);
-      prefer1 = true;
-
-    } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\nR: Fn %d is more specific\n", DC.j);
-      prefer2 = true;
-
-    } else if (DS.paramPrefers == 1) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\nS: Fn %d is more specific\n", DC.i);
-      prefer1 = true;
-
-    } else if (DS.paramPrefers == 2) {
-      TRACE_DISAMBIGUATE_BY_MATCH("\nT: Fn %d is more specific\n", DC.j);
-      prefer2 = true;
-
-    } else if (!ignoreWhere) {
-      bool fn1where = candidate1->fn->where != NULL &&
-                      !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-      bool fn2where = candidate2->fn->where != NULL &&
-                      !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-      if (fn1where && !fn2where) {
-        TRACE_DISAMBIGUATE_BY_MATCH("\nU: Fn %d is more specific\n", DC.i);
-        prefer1 = true;
-
-      } else if (!fn1where && fn2where) {
-        TRACE_DISAMBIGUATE_BY_MATCH("\nV: Fn %d is more specific\n", DC.j);
-        prefer2 = true;
-      }
-    }
-  }
-
-  INT_ASSERT(!(prefer1 && prefer2));
-
-  if (prefer1) {
-    TRACE_DISAMBIGUATE_BY_MATCH("\nW: Fn %d is more specific than Fn %d\n",
-                                DC.i, DC.j);
-    return -1;
-  } else if (prefer2) {
-    TRACE_DISAMBIGUATE_BY_MATCH("\nW: Fn %d is less specific than Fn %d\n",
-                                DC.i, DC.j);
-    return 1;
-  } else {
-    // Neither is more specific
-    TRACE_DISAMBIGUATE_BY_MATCH("\nW: Fn %d and Fn %d are equally specific\n",
-                                DC.i, DC.j);
-    return 0;
-  }
-}
-
-/** Find the best candidate from a list of candidates.
- *
- * This function finds the best Chapel function from a set of candidates, given
- * a call site.  This is an implementation of 13.14.3 of the Chapel language
- * specification (page 106).
- *
- * \param candidates A list of the candidate functions, from which the best
- *                   match is selected.
- * \param mostSpecificSet  On return, stores the set of candidates that
- *                         are not known to be worse than any other,
- *                         in the event that this set has 1 member.
- * \param DC         The disambiguation context.
- * \param ignoreWhere Set to `true` to ignore `where` clauses when
- *                    deciding if one match is better than another.
- *                    This is important for resolving return intent
- *                    overloads.
- *
- * \return NULL or the single most specific candidate
- */
-ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    Vec<ResolutionCandidate*>& mostSpecificSet,
-                    DisambiguationContext DC,
-                    bool ignoreWhere=false) {
-
-  // MPF note: A more straightforwardly O(n) version of this
-  // function did not appear to be faster. See history of this comment.
-
-  // If index i is set then we can skip testing function F_i because we already
-  // know it can not be the best match.
-  std::vector<bool> notBest(candidates.n, false);
-
-  for (int i = 0; i < candidates.n; ++i) {
-
-    TRACE_DISAMBIGUATE_BY_MATCH("##########################\n");
-    TRACE_DISAMBIGUATE_BY_MATCH("# Considering function %d #\n", i);
-    TRACE_DISAMBIGUATE_BY_MATCH("##########################\n\n");
-
-    ResolutionCandidate* candidate1 = candidates.v[i];
-    bool singleMostSpecific = true; // is fn1 the only most specific candidate?
-                                    // if so, as an optimization,
-                                    // do not compute mostSpecific vector
-
-    TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
-
-    if (notBest[i]) {
-      TRACE_DISAMBIGUATE_BY_MATCH("Already known to not be best match.  Skipping.\n\n");
-      continue;
-    }
-
-    for (int j = 0; j < candidates.n; ++j) {
-      if (i == j) continue;
-
-      TRACE_DISAMBIGUATE_BY_MATCH("Comparing to function %d\n", j);
-      TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
-
-      ResolutionCandidate* candidate2 = candidates.v[j];
-
-      TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
-
-      int cmp = compareSpecificity(candidate1, candidate2,
-                                   DC.forPair(i, j), ignoreWhere);
-
-      if (cmp < 0) {
-        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
-        notBest[j] = true;
-
-      } else if (cmp > 0) {
-        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
-        notBest[i] = true;
-        singleMostSpecific = false;
-        break;
-      } else {
-        TRACE_DISAMBIGUATE_BY_MATCH("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
-        singleMostSpecific = false;
-        break;
-      }
-    }
-
-    if (singleMostSpecific) {
-      TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is the best match.\n\n\n", i);
-      return candidate1;
-
-    } else {
-      TRACE_DISAMBIGUATE_BY_MATCH("Y: Fn %d is NOT the best match.\n\n\n", i);
-    }
-  }
-
-  TRACE_DISAMBIGUATE_BY_MATCH("Z: No non-ambiguous best match.\n\n");
-
-  for (int i = 0; i < candidates.n; ++i) {
-    if (!notBest[i])
-      mostSpecificSet.add(candidates.v[i]);
-  }
-
-  return NULL;
-}
-
-/* Find the best return-intent overloads from a list of candidates.
-   If there was ambiguity, bestRef, bestConstRef, and bestValue will be NULL,
-   and the vector ambiguous will store any functions that participated
-   in the ambiguity (i.e. the multiple best matches).
- */
-void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
-                                        Vec<ResolutionCandidate*>& ambiguous,
-                                        DisambiguationContext DC,
-                                        ResolutionCandidate*& bestRef,
-                                        ResolutionCandidate*& bestConstRef,
-                                        ResolutionCandidate*& bestValue) {
-
-  ResolutionCandidate* best = disambiguateByMatch(candidates,
-                                                  ambiguous,
-                                                  DC,
-                                                  true /*ignoreWhere*/);
-
-  // The common case is that there is no ambiguity because
-  // the return intent overload feature is not used.
-  if (best) {
-    if (best->fn->retTag == RET_REF)
-      bestRef = best;
-    else if(best->fn->retTag == RET_CONST_REF)
-      bestConstRef = best;
-    else
-      bestValue = best;
-    return;
-  }
-
-  // Now, if there was ambiguity, find candidates with different
-  // return intent in ambiguousCandidates. If there is only
-  // one of each, we are good to go.
-
-  int nRef = 0;
-  int nConstRef = 0;
-  int nValue = 0;
-  int nOther = 0;
-  ResolutionCandidate* refCandidate = NULL;
-  ResolutionCandidate* constRefCandidate = NULL;
-  ResolutionCandidate* valueCandidate = NULL;
-
-  // Count number of candidates in each category.
-  forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
-    RetTag retTag = candidate->fn->retTag;
-    if (retTag == RET_REF) {
-      refCandidate = candidate;
-      nRef++;
-    } else if(retTag == RET_CONST_REF) {
-      constRefCandidate = candidate;
-      nConstRef++;
-    } else if(retTag == RET_VALUE) {
-      valueCandidate = candidate;
-      nValue++;
-    } else {
-      nOther++;
-    }
-  }
-
-  int total = nRef + nConstRef + nValue + nOther;
-
-  // 0 matches -> return now, not a ref pair.
-  if (total == 0)
-    return;
-
-  // 1 match -> should have returned above (best from disambiguateByMatch)
-  INT_ASSERT(1 < total);
-
-  // Now, if there are more than 2 matches in any category,
-  // try harder to disambiguate. disambiguateByMatch might not have
-  // resolved the finer points.
-  if (nOther > 0) {
-    ambiguous.clear();
-    // If there are *any* type/param candidates, we need to cause ambiguity
-    // if they are not selected... including consideration of where clauses.
-    ResolutionCandidate* best = disambiguateByMatch(candidates,
-                                                    ambiguous,
-                                                    DC,
-                                                    false /*ignoreWhere*/);
-    // returns ambiguity if best == NULL, best match otherwise
-    bestValue = best;
-    return;
-  }
-
-  if (nRef > 1 || nConstRef > 1 || nValue > 1) {
-
-    // Split candidates into ref, const ref, and value candidates
-    Vec<ResolutionCandidate*> refCandidates;
-    Vec<ResolutionCandidate*> constRefCandidates;
-    Vec<ResolutionCandidate*> valueCandidates;
-    Vec<ResolutionCandidate*> tmpAmbiguous;
-
-    // Move candidates to above Vecs according to return intent
-    forv_Vec(ResolutionCandidate*, candidate, candidates) {
-      RetTag retTag = candidate->fn->retTag;
-      if (retTag == RET_REF)
-        refCandidates.push_back(candidate);
-      else if(retTag == RET_CONST_REF)
-        constRefCandidates.push_back(candidate);
-      else if(retTag == RET_VALUE)
-        valueCandidates.push_back(candidate);
-    }
-
-    // Disambiguate each group
-    refCandidate = disambiguateByMatch(refCandidates,
-                                       tmpAmbiguous,
-                                       DC,
-                                       false /*ignoreWhere*/);
-    constRefCandidate = disambiguateByMatch(constRefCandidates,
-                                            tmpAmbiguous,
-                                            DC,
-                                            false /*ignoreWhere*/);
-    valueCandidate = disambiguateByMatch(valueCandidates,
-                                         tmpAmbiguous,
-                                         DC,
-                                         false /*ignoreWhere*/);
-
-
-    // update the counts
-    if (refCandidate != NULL)
-      nRef = 1;
-    if (constRefCandidate != NULL)
-      nConstRef = 1;
-    if (valueCandidate != NULL)
-      nValue = 1;
-  }
-
-  // Now we know there are >= 2 matches.
-  // If there are more than 2 matches in any category, fail for ambiguity.
-  if (nRef > 1 || nConstRef > 1 || nValue > 1)
-    return;
-
-  // Otherwise, return the single candidate in each slot.
-  bestRef = refCandidate;
-  bestConstRef = constRefCandidate;
-  bestValue = valueCandidate;
-}
 
 
 bool
@@ -3239,6 +2696,12 @@ static void      findVisibleFunctionsAndCandidates(
                                      Vec<FnSymbol*>&            visibleFns,
                                      Vec<ResolutionCandidate*>& candidates);
 
+static int       disambiguateByMatch(CallInfo&                  info,
+                                     Vec<ResolutionCandidate*>& candidates,
+                                     ResolutionCandidate*&      bestRef,
+                                     ResolutionCandidate*&      bestConstRef,
+                                     ResolutionCandidate*&      bestValue);
+
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   CallInfo  info;
   FnSymbol* retval = NULL;
@@ -3290,31 +2753,29 @@ static bool isGenericRecordInit(CallExpr* call) {
 }
 
 static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
-  CallExpr*                 call = info.call;
   Vec<FnSymbol*>            visibleFns;
   Vec<ResolutionCandidate*> candidates;
 
-  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
+  CallExpr*                 call         = info.call;
 
-  Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
-
-  bool explain = fExplainVerbose &&
-    ((explainCallLine && explainCallMatch(call)) ||
-     info.call->id == explainCallID);
-
-  DisambiguationContext     DC(&info.actuals, scope, explain);
-  Vec<ResolutionCandidate*> ambiguous;
   ResolutionCandidate*      bestRef      = NULL;
   ResolutionCandidate*      bestConstRef = NULL;
   ResolutionCandidate*      bestValue    = NULL;
-  ResolutionCandidate*      best         = bestRef;
+  ResolutionCandidate*      best         = NULL;
 
-  disambiguateByMatchReturnOverloads(candidates,
-                                     ambiguous,
-                                     DC,
-                                     bestRef,
-                                     bestConstRef,
-                                     bestValue);
+  int                       numMatches   = 0;
+
+  findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
+
+  numMatches = disambiguateByMatch(info,
+                                   candidates,
+
+                                   bestRef,
+                                   bestConstRef,
+                                   bestValue);
+
+  // This will be used in a later update
+  (void) numMatches;
 
   best = bestRef;
   if (!best && bestValue)    best = bestValue;
@@ -3979,6 +3440,674 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+* Find the best return-intent overloads from a list of candidates.            *
+*                                                                             *
+* If there was ambiguity, bestRef, bestConstRef, and bestValue will be NULL,  *
+* and the vector ambiguous will store any functions that participated in the  *
+* ambiguity (i.e. the multiple best matches).                                 *
+*                                                                             *
+************************************** | *************************************/
+
+// Allow disambiguation tracing to be controlled by the command-line option
+// --explain-verbose.
+#define ENABLE_TRACING_OF_DISAMBIGUATION 1
+
+#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
+
+#define EXPLAIN(...)                                  \
+        if (developer && DC.explain) fprintf(stderr, __VA_ARGS__)
+#else
+
+#define EXPLAIN(...)
+
+#endif
+
+
+static int  compareSpecificity(ResolutionCandidate*         candidate1,
+                               ResolutionCandidate*         candidate2,
+                               const DisambiguationContext& DC,
+                               bool                         ignoreWhere);
+
+static void testArgMapping(FnSymbol*                    fn1,
+                           ArgSymbol*                   formal1,
+                           FnSymbol*                    fn2,
+                           ArgSymbol*                   formal2,
+                           Symbol*                      actual,
+                           const DisambiguationContext& DC,
+                           DisambiguationState&         DS);
+
+static void registerParamPreference(int&                  paramPrefers,
+                                    int                   preference,
+                                    const char*           argstr,
+                                    DisambiguationContext DC);
+
+static int disambiguateByMatch(CallInfo&                  info,
+                               Vec<ResolutionCandidate*>& candidates,
+
+                               ResolutionCandidate*&      bestRef,
+                               ResolutionCandidate*&      bestConstRef,
+                               ResolutionCandidate*&      bestValue) {
+  DisambiguationContext     DC(info);
+
+  Vec<ResolutionCandidate*> ambiguous;
+
+  ResolutionCandidate*      best   = disambiguateByMatch(candidates,
+                                                         DC,
+                                                         true,
+                                                         ambiguous);
+
+  int                       retval = 0;
+
+  // The common case is that there is no ambiguity because the
+  // return intent overload feature is not used.
+  if (best != NULL) {
+    if (best->fn->retTag == RET_REF) {
+      bestRef = best;
+
+    } else if(best->fn->retTag == RET_CONST_REF) {
+      bestConstRef = best;
+
+    } else {
+      bestValue = best;
+    }
+
+    retval = 1;
+
+  } else {
+    // Now, if there was ambiguity, find candidates with different
+    // return intent in ambiguousCandidates.
+    // If there is only one of each, we are good to go.
+    int                  nRef              = 0;
+    int                  nConstRef         = 0;
+    int                  nValue            = 0;
+    int                  nOther            = 0;
+    int                  total             = 0;
+
+    ResolutionCandidate* refCandidate      = NULL;
+    ResolutionCandidate* constRefCandidate = NULL;
+    ResolutionCandidate* valueCandidate    = NULL;
+
+    // Count number of candidates in each category.
+    forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
+      RetTag retTag = candidate->fn->retTag;
+
+      if (retTag == RET_REF) {
+        refCandidate = candidate;
+        nRef++;
+
+      } else if(retTag == RET_CONST_REF) {
+        constRefCandidate = candidate;
+        nConstRef++;
+
+      } else if(retTag == RET_VALUE) {
+        valueCandidate = candidate;
+        nValue++;
+
+      } else {
+        nOther++;
+      }
+    }
+
+    total = nRef + nConstRef + nValue + nOther;
+
+    // 0 matches -> return now, not a ref pair.
+    if (total == 0) {
+      retval = 0;
+
+    // 1 match   -> It should not be possible to get here
+    } else if (total == 1) {
+      INT_ASSERT(false);
+
+    } else if (nOther > 0) {
+      ambiguous.clear();
+
+      // If there are *any* type/param candidates, we need to cause ambiguity
+      // if they are not selected... including consideration of where clauses.
+      bestValue  = disambiguateByMatch(candidates, DC, false, ambiguous);
+      retval     = 1;
+
+    } else {
+      if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+        // Split candidates into ref, const ref, and value candidates
+        Vec<ResolutionCandidate*> refCandidates;
+        Vec<ResolutionCandidate*> constRefCandidates;
+        Vec<ResolutionCandidate*> valueCandidates;
+        Vec<ResolutionCandidate*> tmpAmbiguous;
+
+        // Move candidates to above Vecs according to return intent
+        forv_Vec(ResolutionCandidate*, candidate, candidates) {
+          RetTag retTag = candidate->fn->retTag;
+
+          if (retTag == RET_REF) {
+            refCandidates.push_back(candidate);
+
+          } else if (retTag == RET_CONST_REF) {
+            constRefCandidates.push_back(candidate);
+
+          } else if (retTag == RET_VALUE) {
+            valueCandidates.push_back(candidate);
+          }
+        }
+
+        // Disambiguate each group
+        refCandidate      = disambiguateByMatch(refCandidates,
+                                                DC,
+                                                false,
+                                                tmpAmbiguous);
+
+        constRefCandidate = disambiguateByMatch(constRefCandidates,
+                                                DC,
+                                                false,
+                                                tmpAmbiguous);
+
+        valueCandidate    = disambiguateByMatch(valueCandidates,
+                                                DC,
+                                                false,
+                                                tmpAmbiguous);
+        // update the counts
+        if (refCandidate      != NULL) nRef      = 1;
+        if (constRefCandidate != NULL) nConstRef = 1;
+        if (valueCandidate    != NULL) nValue    = 1;
+      }
+
+      // Now we know there are >= 2 matches.
+      // If there are more than 2 matches in any category, fail for ambiguity.
+      if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+        retval = 0;
+
+      } else {
+        bestRef      = refCandidate;
+        bestConstRef = constRefCandidate;
+        bestValue    = valueCandidate;
+
+        int nBestRef      = bestRef      != NULL ? 1 : 0;
+        int nBestValue    = bestValue    != NULL ? 1 : 0;
+        int nBestConstRef = bestConstRef != NULL ? 1 : 0;
+
+        retval = nBestRef + nBestValue + nBestConstRef;
+      }
+    }
+  }
+
+  return retval;
+}
+
+/** Find the best candidate from a list of candidates.
+ *
+ * This function finds the best Chapel function from a set of candidates, given
+ * a call site.  This is an implementation of 13.14.3 of the Chapel language
+ * specification (page 106).
+ *
+ * \param candidates A list of the candidate functions, from which the best
+ *                   match is selected.
+ * \param mostSpecificSet  On return, stores the set of candidates that
+ *                         are not known to be worse than any other,
+ *                         in the event that this set has 1 member.
+ * \param DC         The disambiguation context.
+ * \param ignoreWhere Set to `true` to ignore `where` clauses when
+ *                    deciding if one match is better than another.
+ *                    This is important for resolving return intent
+ *                    overloads.
+ *
+ * \return NULL or the single most specific candidate
+ */
+ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    DisambiguationContext      DC,
+                    bool                       ignoreWhere,
+                    Vec<ResolutionCandidate*>& mostSpecificSet) {
+  // MPF note: A more straightforwardly O(n) version of this
+  // function did not appear to be faster. See history of this comment.
+
+  // If index i is set then we can skip testing function F_i because
+  // we already know it can not be the best match.
+  std::vector<bool> notBest(candidates.n, false);
+
+  for (int i = 0; i < candidates.n; ++i) {
+
+    EXPLAIN("##########################\n");
+    EXPLAIN("# Considering function %d #\n", i);
+    EXPLAIN("##########################\n\n");
+
+    ResolutionCandidate* candidate1         = candidates.v[i];
+    bool                 singleMostSpecific = true;
+
+    EXPLAIN("%s\n\n", toString(candidate1->fn));
+
+    if (notBest[i]) {
+      EXPLAIN("Already known to not be best match.  Skipping.\n\n");
+      continue;
+    }
+
+    for (int j = 0; j < candidates.n; ++j) {
+      if (i == j) {
+        continue;
+      }
+
+      EXPLAIN("Comparing to function %d\n", j);
+      EXPLAIN("-----------------------\n");
+
+      ResolutionCandidate* candidate2 = candidates.v[j];
+
+      EXPLAIN("%s\n", toString(candidate2->fn));
+
+      int cmp = compareSpecificity(candidate1,
+                                   candidate2,
+                                   DC.forPair(i, j),
+                                   ignoreWhere);
+
+      if (cmp < 0) {
+        EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
+        notBest[j] = true;
+
+      } else if (cmp > 0) {
+        EXPLAIN("X: Fn %d is a worse match than Fn %d\n\n\n", i, j);
+        notBest[i] = true;
+        singleMostSpecific = false;
+        break;
+      } else {
+        EXPLAIN("X: Fn %d is a as good a match as Fn %d\n\n\n", i, j);
+        singleMostSpecific = false;
+        break;
+      }
+    }
+
+    if (singleMostSpecific) {
+      EXPLAIN("Y: Fn %d is the best match.\n\n\n", i);
+      return candidate1;
+
+    } else {
+      EXPLAIN("Y: Fn %d is NOT the best match.\n\n\n", i);
+    }
+  }
+
+  EXPLAIN("Z: No non-ambiguous best match.\n\n");
+
+  for (int i = 0; i < candidates.n; ++i) {
+    if (notBest[i] == false) {
+      mostSpecificSet.add(candidates.v[i]);
+    }
+  }
+
+  return NULL;
+}
+
+/** Determines if fn1 is a better match than fn2.
+ *
+ * This function implements the function comparison component of the
+ * disambiguation procedure as detailed in section 13.13 of the Chapel
+ * language specification.
+ *
+ * \param candidate1 The function on the left-hand side of the comparison.
+ * \param candidate2 The function on the right-hand side of the comparison.
+ * \param DC         The disambiguation context.
+ * \param ignoreWhere Set to `true` to ignore `where` clauses when
+ *                    deciding if one match is better than another.
+ *                    This is important for resolving return intent
+ *                    overloads.
+ *
+ * \return -1 if fn1 is a more specific function than f2
+ * \return 0 if fn1 and fn2 are equally specific
+ * \return 1 if fn2 is a more specific function than f1
+ */
+static int compareSpecificity(ResolutionCandidate*         candidate1,
+                              ResolutionCandidate*         candidate2,
+                              const DisambiguationContext& DC,
+                              bool                         ignoreWhere) {
+
+  DisambiguationState DS;
+  bool                prefer1 = false;
+  bool                prefer2 = false;
+
+  // Returning 0 for the same candidate simplifies the calling code
+  if (candidate1 == candidate2) {
+    return 0;
+  }
+
+  for (int k = 0; k < DC.actuals->n; ++k) {
+    Symbol*    actual  = DC.actuals->v[k];
+    ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
+    ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
+
+    EXPLAIN("\nLooking at argument %d\n", k);
+
+    testArgMapping(candidate1->fn,
+                   formal1,
+                   candidate2->fn,
+                   formal2,
+                   actual,
+                   DC,
+                   DS);
+  }
+
+  if (DS.fn1Promotes != DS.fn2Promotes) {
+    EXPLAIN("\nP: Fn %d does not require argument promotion; Fn %d does\n",
+                                DS.fn1Promotes ? DC.j : DC.i,
+                                DS.fn1Promotes ? DC.i : DC.j);
+
+    // Prefer the version that did not promote
+    prefer1 = !DS.fn1Promotes;
+    prefer2 = !DS.fn2Promotes;
+
+  } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
+    prefer1 = DS.fn1MoreSpecific;
+    prefer2 = DS.fn2MoreSpecific;
+
+  } else {
+    // If the decision hasn't been made based on the argument mappings...
+    if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
+      EXPLAIN("\nQ: Fn %d is more specific\n", DC.i);
+      prefer1 = true;
+
+    } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
+      EXPLAIN("\nR: Fn %d is more specific\n", DC.j);
+      prefer2 = true;
+
+    } else if (DS.paramPrefers == 1) {
+      EXPLAIN("\nS: Fn %d is more specific\n", DC.i);
+      prefer1 = true;
+
+    } else if (DS.paramPrefers == 2) {
+      EXPLAIN("\nT: Fn %d is more specific\n", DC.j);
+      prefer2 = true;
+
+    } else if (!ignoreWhere) {
+      bool fn1where = candidate1->fn->where != NULL &&
+                      !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      bool fn2where = candidate2->fn->where != NULL &&
+                      !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      if (fn1where && !fn2where) {
+        EXPLAIN("\nU: Fn %d is more specific\n", DC.i);
+        prefer1 = true;
+
+      } else if (!fn1where && fn2where) {
+        EXPLAIN("\nV: Fn %d is more specific\n", DC.j);
+        prefer2 = true;
+      }
+    }
+  }
+
+  INT_ASSERT(!(prefer1 && prefer2));
+
+  if (prefer1) {
+    EXPLAIN("\nW: Fn %d is more specific than Fn %d\n",
+                                DC.i, DC.j);
+    return -1;
+
+  } else if (prefer2) {
+    EXPLAIN("\nW: Fn %d is less specific than Fn %d\n",
+                                DC.i, DC.j);
+    return 1;
+
+  } else {
+    // Neither is more specific
+    EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n",
+                                DC.i, DC.j);
+    return 0;
+  }
+}
+
+/** Compare two argument mappings, given a set of actual arguments, and set the
+ *  disambiguation state appropriately.
+ *
+ * This function implements the argument mapping comparison component of the
+ * disambiguation procedure as detailed in section 13.14.3 of the Chapel
+ * language specification (page 107).
+ *
+ * \param fn1     The first function to be compared.
+ * \param formal1 The formal argument that correspond to the actual argument
+ *                for the first function.
+ * \param fn2     The second function to be compared.
+ * \param formal2 The formal argument that correspond to the actual argument
+ *                for the second function.
+ * \param actual  The actual argument from the call site.
+ * \param DC      The disambiguation context.
+ * \param DS      The disambiguation state.
+ */
+static void testArgMapping(FnSymbol*                    fn1,
+                           ArgSymbol*                   formal1,
+                           FnSymbol*                    fn2,
+                           ArgSymbol*                   formal2,
+                           Symbol*                      actual,
+                           const DisambiguationContext& DC,
+                           DisambiguationState&         DS) {
+  // We only want to deal with the value types here, avoiding odd overloads
+  // working (or not) due to _ref.
+  Type* f1Type     = formal1->type->getValType();
+  Type* f2Type     = formal2->type->getValType();
+  Type* actualType = actual->type->getValType();
+
+  EXPLAIN("Actual's type: %s\n", toString(actualType));
+
+  bool formal1Promotes = false;
+  bool formal2Promotes = false;
+
+  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
+
+  DS.fn1Promotes |= formal1Promotes;
+
+  EXPLAIN("Formal 1's type: %s\n", toString(f1Type));
+
+  if (formal1Promotes) {
+    EXPLAIN("Actual requires promotion to match formal 1\n");
+
+  } else {
+    EXPLAIN("Actual DOES NOT require promotion to match formal 1\n");
+  }
+
+  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+    EXPLAIN("Formal 1 is an instantiated param.\n");
+
+  } else {
+    EXPLAIN("Formal 1 is NOT an instantiated param.\n");
+  }
+
+  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
+
+  DS.fn2Promotes |= formal2Promotes;
+
+  EXPLAIN("Formal 2's type: %s\n", toString(f2Type));
+
+  if (formal2Promotes) {
+    EXPLAIN("Actual requires promotion to match formal 2\n");
+  } else {
+    EXPLAIN("Actual DOES NOT require promotion to match formal 2\n");
+  }
+
+  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+    EXPLAIN("Formal 2 is an instantiated param.\n");
+  } else {
+    EXPLAIN("Formal 2 is NOT an instantiated param.\n");
+  }
+
+  if (f1Type == f2Type &&
+      formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+      !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+    EXPLAIN("A: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (f1Type == f2Type &&
+             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+             formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+    EXPLAIN("B: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+
+  } else if (!formal1Promotes && formal2Promotes) {
+    EXPLAIN("C: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (formal1Promotes && !formal2Promotes) {
+    EXPLAIN("D: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+
+  } else if (f1Type == f2Type           &&
+             !formal1->instantiatedFrom &&
+             formal2->instantiatedFrom) {
+    EXPLAIN("E: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (f1Type == f2Type &&
+             formal1->instantiatedFrom &&
+             !formal2->instantiatedFrom) {
+    EXPLAIN("F: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+
+  } else if (formal1->instantiatedFrom != dtAny &&
+             formal2->instantiatedFrom == dtAny) {
+    EXPLAIN("G: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (formal1->instantiatedFrom == dtAny &&
+             formal2->instantiatedFrom != dtAny) {
+    EXPLAIN("H: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+
+  } else if (formal1->instantiatedFrom &&
+             formal2->instantiatedFrom &&
+             formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+             !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+    EXPLAIN("G1: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (formal1->instantiatedFrom &&
+             formal2->instantiatedFrom &&
+             !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+             formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+    EXPLAIN("G2: Fn %d is more specific\n", DC.i);
+    DS.fn2MoreSpecific = true;
+
+  } else if (considerParamMatches(actualType, f1Type, f2Type)) {
+    EXPLAIN("In first param case\n");
+
+    // The actual matches formal1's type, but not formal2's
+    if (paramWorks(actual, f2Type)) {
+      // but the actual is a param and works for formal2
+      if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        // the param works equally well for both, but
+        // matches the first slightly better if we had to
+        // decide
+        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+
+      } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+
+      } else {
+        // neither is a param, but formal1 is an exact type
+        // match, so prefer that one
+        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+      }
+
+    } else {
+      EXPLAIN("I: Fn %d is more specific\n", DC.i);
+      DS.fn1MoreSpecific = true;
+    }
+
+  } else if (considerParamMatches(actualType, f2Type, f1Type)) {
+    EXPLAIN("In second param case\n");
+
+    // The actual matches formal2's type, but not formal1's
+    if (paramWorks(actual, f1Type)) {
+      // but the actual is a param and works for formal1
+      if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        // the param works equally well for both, but
+        // matches the second slightly better if we had to
+        // decide
+        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+
+      } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+
+      } else {
+        // neither is a param, but formal1 is an exact type
+        // match, so prefer that one
+        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+      }
+
+    } else {
+      EXPLAIN("J: Fn %d is more specific\n", DC.j);
+      DS.fn2MoreSpecific = true;
+    }
+
+  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
+    EXPLAIN("K: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
+    EXPLAIN("L: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+
+  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
+    EXPLAIN("M: Fn %d is more specific\n", DC.i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
+    EXPLAIN("N: Fn %d is more specific\n", DC.j);
+    DS.fn2MoreSpecific = true;
+
+  } else {
+    EXPLAIN("O: no information gained from argument\n");
+  }
+}
+
+//
+// This is a utility function that essentially tracks which function,
+// if any, the param arguments prefer.
+//
+static void registerParamPreference(int&                  paramPrefers,
+                                    int                   preference,
+                                    const char*           argstr,
+                                    DisambiguationContext DC) {
+
+  if (paramPrefers == 0 || paramPrefers == preference) {
+    /* if the param currently has no preference or it matches the new
+       preference, preserve the current preference */
+    paramPrefers = preference;
+    EXPLAIN("param prefers %s\n", argstr);
+
+  } else {
+    /* otherwise its preference contradicts the previous arguments, so
+       mark it as not preferring either */
+    paramPrefers = -1;
+    EXPLAIN("param prefers differing things\n");
+  }
+}
+
+DisambiguationContext::DisambiguationContext(CallInfo& info) {
+  actuals = &info.actuals;
+  scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
+  explain = false;
+  i       = -1;
+  j       = -1;
+
+  if (fExplainVerbose == true) {
+    if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
+      explain = true;
+    }
+
+    if (info.call->id == explainCallID) {
+      explain = true;
+    }
+  }
+}
+
+const DisambiguationContext&
+DisambiguationContext::forPair(int newI, int newJ) {
+  this->i = newI;
+  this->j = newJ;
+
+  return *this;
+}
+
+  Vec<Symbol*>* actuals;
+  Expr*         scope;
+  bool          explain;
+  int           i;
+  int           j;
+
+
 
 /************************************* | **************************************
 *                                                                             *
