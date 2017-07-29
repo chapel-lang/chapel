@@ -3488,15 +3488,18 @@ static int disambiguateByMatch(CallInfo&                  info,
                                ResolutionCandidate*&      bestConstRef,
                                ResolutionCandidate*&      bestValue) {
   DisambiguationContext     DC(info);
+
   Vec<ResolutionCandidate*> ambiguous;
 
-  ResolutionCandidate*      best = disambiguateByMatch(candidates,
-                                                       ambiguous,
-                                                       DC,
-                                                       true);
+  ResolutionCandidate*      best   = disambiguateByMatch(candidates,
+                                                         ambiguous,
+                                                         DC,
+                                                         true);
 
-  // The common case is that there is no ambiguity because
-  // the return intent overload feature is not used.
+  int                       retval = 0;
+
+  // The common case is that there is no ambiguity because the
+  // return intent overload feature is not used.
   if (best != NULL) {
     if (best->fn->retTag == RET_REF) {
       bestRef = best;
@@ -3508,128 +3511,125 @@ static int disambiguateByMatch(CallInfo&                  info,
       bestValue = best;
     }
 
-    return 1;
-  }
+    retval = 1;
 
-  // Now, if there was ambiguity, find candidates with different
-  // return intent in ambiguousCandidates. If there is only
-  // one of each, we are good to go.
-  int                  nRef              = 0;
-  int                  nConstRef         = 0;
-  int                  nValue            = 0;
-  int                  nOther            = 0;
-  int                  total             = 0;
+  } else {
+    // Now, if there was ambiguity, find candidates with different
+    // return intent in ambiguousCandidates.
+    // If there is only one of each, we are good to go.
+    int                  nRef              = 0;
+    int                  nConstRef         = 0;
+    int                  nValue            = 0;
+    int                  nOther            = 0;
+    int                  total             = 0;
 
-  ResolutionCandidate* refCandidate      = NULL;
-  ResolutionCandidate* constRefCandidate = NULL;
-  ResolutionCandidate* valueCandidate    = NULL;
+    ResolutionCandidate* refCandidate      = NULL;
+    ResolutionCandidate* constRefCandidate = NULL;
+    ResolutionCandidate* valueCandidate    = NULL;
 
-  // Count number of candidates in each category.
-  forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
-    RetTag retTag = candidate->fn->retTag;
-
-    if (retTag == RET_REF) {
-      refCandidate = candidate;
-      nRef++;
-
-    } else if(retTag == RET_CONST_REF) {
-      constRefCandidate = candidate;
-      nConstRef++;
-
-    } else if(retTag == RET_VALUE) {
-      valueCandidate = candidate;
-      nValue++;
-
-    } else {
-      nOther++;
-    }
-  }
-
-  total = nRef + nConstRef + nValue + nOther;
-
-  // 0 matches -> return now, not a ref pair.
-  if (total == 0) {
-    return 0;
-  }
-
-  // 1 match -> should have returned above (best from disambiguateByMatch)
-  if (total == 1) {
-    INT_ASSERT(false);
-  }
-
-  // Now, if there are more than 2 matches in any category,
-  // try harder to disambiguate. disambiguateByMatch might not have
-  // resolved the finer points.
-  if (nOther > 0) {
-    ambiguous.clear();
-
-    // If there are *any* type/param candidates, we need to cause ambiguity
-    // if they are not selected... including consideration of where clauses.
-    bestValue  = disambiguateByMatch(candidates, ambiguous, DC, false);
-
-    return 1;
-  }
-
-  if (nRef > 1 || nConstRef > 1 || nValue > 1) {
-    // Split candidates into ref, const ref, and value candidates
-    Vec<ResolutionCandidate*> refCandidates;
-    Vec<ResolutionCandidate*> constRefCandidates;
-    Vec<ResolutionCandidate*> valueCandidates;
-    Vec<ResolutionCandidate*> tmpAmbiguous;
-
-    // Move candidates to above Vecs according to return intent
-    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+    // Count number of candidates in each category.
+    forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
       RetTag retTag = candidate->fn->retTag;
 
       if (retTag == RET_REF) {
-        refCandidates.push_back(candidate);
+        refCandidate = candidate;
+        nRef++;
 
-      } else if (retTag == RET_CONST_REF) {
-        constRefCandidates.push_back(candidate);
+      } else if(retTag == RET_CONST_REF) {
+        constRefCandidate = candidate;
+        nConstRef++;
 
-      } else if (retTag == RET_VALUE) {
-        valueCandidates.push_back(candidate);
+      } else if(retTag == RET_VALUE) {
+        valueCandidate = candidate;
+        nValue++;
+
+      } else {
+        nOther++;
       }
     }
 
-    // Disambiguate each group
-    refCandidate      = disambiguateByMatch(refCandidates,
-                                            tmpAmbiguous,
-                                            DC,
-                                            false);
+    total = nRef + nConstRef + nValue + nOther;
 
-    constRefCandidate = disambiguateByMatch(constRefCandidates,
-                                            tmpAmbiguous,
-                                            DC,
-                                            false);
+    // 0 matches -> return now, not a ref pair.
+    if (total == 0) {
+      retval = 0;
 
-    valueCandidate    = disambiguateByMatch(valueCandidates,
-                                            tmpAmbiguous,
-                                            DC,
-                                            false);
-    // update the counts
-    if (refCandidate      != NULL) nRef      = 1;
-    if (constRefCandidate != NULL) nConstRef = 1;
-    if (valueCandidate    != NULL) nValue    = 1;
+    // 1 match   -> It should not be possible to get here
+    } else if (total == 1) {
+      INT_ASSERT(false);
+
+    } else if (nOther > 0) {
+      ambiguous.clear();
+
+      // If there are *any* type/param candidates, we need to cause ambiguity
+      // if they are not selected... including consideration of where clauses.
+      bestValue  = disambiguateByMatch(candidates, ambiguous, DC, false);
+      retval     = 1;
+
+    } else {
+      if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+        // Split candidates into ref, const ref, and value candidates
+        Vec<ResolutionCandidate*> refCandidates;
+        Vec<ResolutionCandidate*> constRefCandidates;
+        Vec<ResolutionCandidate*> valueCandidates;
+        Vec<ResolutionCandidate*> tmpAmbiguous;
+
+        // Move candidates to above Vecs according to return intent
+        forv_Vec(ResolutionCandidate*, candidate, candidates) {
+          RetTag retTag = candidate->fn->retTag;
+
+          if (retTag == RET_REF) {
+            refCandidates.push_back(candidate);
+
+          } else if (retTag == RET_CONST_REF) {
+            constRefCandidates.push_back(candidate);
+
+          } else if (retTag == RET_VALUE) {
+            valueCandidates.push_back(candidate);
+          }
+        }
+
+        // Disambiguate each group
+        refCandidate      = disambiguateByMatch(refCandidates,
+                                                tmpAmbiguous,
+                                                DC,
+                                                false);
+
+        constRefCandidate = disambiguateByMatch(constRefCandidates,
+                                                tmpAmbiguous,
+                                                DC,
+                                                false);
+
+        valueCandidate    = disambiguateByMatch(valueCandidates,
+                                                tmpAmbiguous,
+                                                DC,
+                                                false);
+        // update the counts
+        if (refCandidate      != NULL) nRef      = 1;
+        if (constRefCandidate != NULL) nConstRef = 1;
+        if (valueCandidate    != NULL) nValue    = 1;
+      }
+
+      // Now we know there are >= 2 matches.
+      // If there are more than 2 matches in any category, fail for ambiguity.
+      if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+        retval = 0;
+
+      } else {
+        bestRef      = refCandidate;
+        bestConstRef = constRefCandidate;
+        bestValue    = valueCandidate;
+
+        int nBestRef      = bestRef      != NULL ? 1 : 0;
+        int nBestValue    = bestValue    != NULL ? 1 : 0;
+        int nBestConstRef = bestConstRef != NULL ? 1 : 0;
+
+        retval = nBestRef + nBestValue + nBestConstRef;
+      }
+    }
   }
 
-  // Now we know there are >= 2 matches.
-  // If there are more than 2 matches in any category, fail for ambiguity.
-  if (nRef > 1 || nConstRef > 1 || nValue > 1) {
-    return 0;
-
-  } else {
-    // Otherwise, return the single candidate in each slot.
-    bestRef      = refCandidate;
-    bestConstRef = constRefCandidate;
-    bestValue    = valueCandidate;
-
-    int nBestRef      = bestRef      != NULL ? 1 : 0;
-    int nBestValue    = bestValue    != NULL ? 1 : 0;
-    int nBestConstRef = bestConstRef != NULL ? 1 : 0;
-
-    return nBestRef + nBestValue + nBestConstRef;
-  }
+  return retval;
 }
 
 /** Find the best candidate from a list of candidates.
