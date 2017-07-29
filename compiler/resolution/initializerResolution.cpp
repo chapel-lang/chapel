@@ -324,50 +324,6 @@ gatherInitCandidates(Vec<ResolutionCandidate*>& candidates,
 /* end of function resolution steal */
 
 
-void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew) {
-  // Convert the PRIM_NEW to a normal call
-  call->primitive = NULL;
-  call->baseExpr  = call->get(1)->remove();
-
-  parent_insert_help(call, call->baseExpr);
-
-  VarSymbol* new_temp  = newTemp("new_temp", typeToNew);
-  DefExpr*   def       = new DefExpr(new_temp);
-
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
-
-  } else {
-    call->parentExpr->insertBefore(def);
-  }
-
-  // Invoking an instance method
-  call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
-  call->insertAtHead(new SymExpr(gMethodToken));
-
-  resolveInitializer(call);
-
-  // Because initializers determine the type they utilize based on the
-  // execution of Phase 1, if the type is generic we will need to update the
-  // type of the actual we are sending in for the this arg
-  if (typeToNew->symbol->hasFlag(FLAG_GENERIC) == true) {
-    new_temp->type = call->resolvedFunction()->_this->type;
-
-    if (isClass(typeToNew) == true) {
-      // use the allocator instead of directly calling the init method
-      // Need to convert the call into the right format
-      call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-      call->get(1)->replace(new SymExpr(new_temp->type->symbol));
-      call->get(2)->remove();
-      // Need to resolve the allocator
-      resolveCall(call);
-      resolveFns(call->resolvedFunction());
-
-      def->remove();
-    }
-  }
-}
-
 void resolveInitializer(CallExpr* call) {
   // From resolveExpr() (removed the tryStack stuff)
   callStack.add(call);

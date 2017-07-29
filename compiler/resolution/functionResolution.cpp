@@ -4990,13 +4990,17 @@ static SymExpr* resolveNewTypeExpr(CallExpr* call);
 
 static bool     resolveNewHasInitializer(AggregateType* at);
 
-static void     resolveNewHandleInitializer(CallExpr*      call,
-                                            AggregateType* at,
-                                            SymExpr*       typeExpr);
-
 static void     resolveNewHandleConstructor(CallExpr*      call,
                                             AggregateType* at,
                                             SymExpr*       typeExpr);
+
+static void     resolveNewHandleGenericInitializer(CallExpr*      call,
+                                                   AggregateType* at,
+                                                   SymExpr*       typeExpr);
+
+static void     resolveNewHandleNonGenericInitializer(CallExpr*      call,
+                                                      AggregateType* at,
+                                                      SymExpr*       typeExpr);
 
 static void     resolveNewHalt(CallExpr* call);
 
@@ -5004,11 +5008,14 @@ static void resolveNew(CallExpr* call) {
   if (SymExpr* typeExpr = resolveNewTypeExpr(call)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
-        if (resolveNewHasInitializer(at) == true) {
-          resolveNewHandleInitializer(call, at, typeExpr);
+        if (resolveNewHasInitializer(at) == false) {
+          resolveNewHandleConstructor(call, at, typeExpr);
+
+        } else if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
+          resolveNewHandleNonGenericInitializer(call, at, typeExpr);
 
         } else {
-          resolveNewHandleConstructor(call, at, typeExpr);
+          resolveNewHandleGenericInitializer(call, at, typeExpr);
         }
 
       } else if (PrimitiveType* pt = toPrimitiveType(type)) {
@@ -5071,75 +5078,12 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   return retval;
 }
 
-static void resolveNewHandleInitializer(CallExpr*      call,
-                                        AggregateType* at,
-                                        SymExpr*       typeExpr) {
-  SET_LINENO(call);
-
-  if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-    VarSymbol* newTmp = newTemp("new_temp", at);
-    DefExpr*   def    = new DefExpr(newTmp);
-
-    if (isClass(at) == true) {
-      // Convert the PRIM_NEW to a normal call
-      call->primitive = NULL;
-      call->baseExpr  = new UnresolvedSymExpr("_new");
-      parent_insert_help(call, call->baseExpr);
-
-      if (isBlockStmt(call->parentExpr) == true) {
-        call->insertBefore(def);
-
-      } else {
-        call->parentExpr->insertBefore(def);
-      }
-
-      resolveExpr(call);
-
-    } else {
-      // Convert the PRIM_NEW to a normal call
-      call->primitive = NULL;
-      call->baseExpr  = new UnresolvedSymExpr("init");
-
-      parent_insert_help(call, call->baseExpr);
-
-      if (isBlockStmt(call->parentExpr) == true) {
-        call->insertBefore(def);
-
-      } else {
-        Expr* parent = call->parentExpr;
-
-        // NB: This removes the "init" call from the tree
-        call->replace(new SymExpr(newTmp));
-
-        // Insert <def> and then re-insert the "init" call
-        parent->insertBefore(def);
-        parent->insertBefore(call);
-      }
-
-      typeExpr->remove();
-
-      // Invoking an instance method
-      call->insertAtHead(new SymExpr(newTmp));
-      call->insertAtHead(new SymExpr(gMethodToken));
-
-      resolveExpr(call);
-    }
-
-  } else {
-    typeExpr->replace(new UnresolvedSymExpr("init"));
-
-    modAndResolveInitCall(call, at);
-  }
-}
-
 static void resolveNewHandleConstructor(CallExpr*      call,
                                         AggregateType* at,
                                         SymExpr*       typeExpr) {
   SET_LINENO(call);
 
-  FnSymbol* atInit = at->defaultInitializer;
-
-  if (atInit != NULL) {
+  if (FnSymbol* atInit = at->defaultInitializer) {
     Expr* baseExpr = NULL;
 
     typeExpr->replace(new UnresolvedSymExpr(atInit->name));
@@ -5164,6 +5108,110 @@ static void resolveNewHandleConstructor(CallExpr*      call,
               "could not generate default initializer for type "
               "'%s', please define one",
               at->symbol->name);
+  }
+}
+
+static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
+                                                  AggregateType* at,
+                                                  SymExpr*       typeExpr) {
+  SET_LINENO(call);
+
+  VarSymbol* newTmp = newTemp("new_temp", at);
+  DefExpr*   def    = new DefExpr(newTmp);
+
+  if (isClass(at) == true) {
+    // Convert the PRIM_NEW to a normal call
+    call->primitive = NULL;
+    call->baseExpr  = new UnresolvedSymExpr("_new");
+    parent_insert_help(call, call->baseExpr);
+
+    if (isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(def);
+
+    } else {
+      call->parentExpr->insertBefore(def);
+    }
+
+    resolveExpr(call);
+
+  } else {
+    // Convert the PRIM_NEW to a normal call
+    call->primitive = NULL;
+    call->baseExpr  = new UnresolvedSymExpr("init");
+
+    parent_insert_help(call, call->baseExpr);
+
+    if (isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(def);
+
+    } else {
+      Expr* parent = call->parentExpr;
+
+      // NB: This removes the "init" call from the tree
+      call->replace(new SymExpr(newTmp));
+
+      // Insert <def> and then re-insert the "init" call
+      parent->insertBefore(def);
+      parent->insertBefore(call);
+    }
+
+    typeExpr->remove();
+
+    // Invoking an instance method
+    call->insertAtHead(new SymExpr(newTmp));
+    call->insertAtHead(new SymExpr(gMethodToken));
+
+    resolveExpr(call);
+  }
+}
+
+static void resolveNewHandleGenericInitializer(CallExpr*      call,
+                                               AggregateType* at,
+                                               SymExpr*       typeExpr) {
+  SET_LINENO(call);
+
+  typeExpr->replace(new UnresolvedSymExpr("init"));
+
+  // Convert the PRIM_NEW to a normal call
+  call->primitive = NULL;
+  call->baseExpr  = call->get(1)->remove();
+
+  parent_insert_help(call, call->baseExpr);
+
+  VarSymbol* new_temp  = newTemp("new_temp", at);
+  DefExpr*   def       = new DefExpr(new_temp);
+
+  if (isBlockStmt(call->parentExpr) == true) {
+    call->insertBefore(def);
+
+  } else {
+    call->parentExpr->insertBefore(def);
+  }
+
+  // Invoking an instance method
+  call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
+  call->insertAtHead(new SymExpr(gMethodToken));
+
+  resolveInitializer(call);
+
+  // Because initializers determine the type they utilize based on the
+  // execution of Phase 1, if the type is generic we will need to update the
+  // type of the actual we are sending in for the this arg
+  if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
+    new_temp->type = call->resolvedFunction()->_this->type;
+
+    if (isClass(at) == true) {
+      // use the allocator instead of directly calling the init method
+      // Need to convert the call into the right format
+      call->baseExpr->replace(new UnresolvedSymExpr("_new"));
+      call->get(1)->replace(new SymExpr(new_temp->type->symbol));
+      call->get(2)->remove();
+      // Need to resolve the allocator
+      resolveCall(call);
+      resolveFns(call->resolvedFunction());
+
+      def->remove();
+    }
   }
 }
 

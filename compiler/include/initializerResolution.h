@@ -28,8 +28,6 @@
 class AggregateType;
 class CallExpr;
 
-void modAndResolveInitCall (CallExpr* call, AggregateType* typeToNew);
-
 void temporaryInitializerFixup(CallExpr* call);
 
 void resolveInitializer(CallExpr* call);
