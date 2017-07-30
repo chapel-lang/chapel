@@ -2735,32 +2735,15 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
 
   } else {
-    ResolutionCandidate* best = NULL;
-
-    if        (bestRef      != NULL) {
-      best = bestRef;
-
-    } else if (bestValue    != NULL) {
-      best = bestValue;
-
-    } else if (bestConstRef != NULL) {
-      best = bestConstRef;
-    }
-
-    // If we are working with a return intent overload:
-    //    'refCall'      will invoke the ref   function bestRef->fn
-    //    'valueCall'    will invoke the value function bestValue->fn
-    //    'constRefCall' will invoke the value function bestConstRef->fn
-    //  we will manipulate these three side by side.
-    // and 'call' will be the first of these.
-    CallExpr* refCall      = NULL;
-    CallExpr* valueCall    = NULL;
-    CallExpr* constRefCall = NULL;
+    CallExpr*            refCall      = NULL;
+    CallExpr*            valueCall    = NULL;
+    CallExpr*            constRefCall = NULL;
+    ResolutionCandidate* best         = NULL;
 
     if (bestRef      != NULL) {
       refCall = call;
 
-      INT_ASSERT(bestRef->fn != NULL);
+      instantiateBody(bestRef->fn);
     }
 
     if (bestValue    != NULL) {
@@ -2773,7 +2756,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
         call->insertAfter(valueCall);
       }
 
-      INT_ASSERT(bestValue->fn != NULL);
+      instantiateBody(bestValue->fn);
     }
 
     if (bestConstRef != NULL) {
@@ -2781,21 +2764,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
       call->insertAfter(constRefCall);
 
-      INT_ASSERT(bestConstRef->fn != NULL);
-    }
-
-
-
-
-    if (bestRef      != NULL && bestRef->fn      != NULL) {
-      instantiateBody(bestRef->fn);
-    }
-
-    if (bestValue    != NULL && bestValue->fn    != NULL) {
-      instantiateBody(bestValue->fn);
-    }
-
-    if (bestConstRef != NULL && bestConstRef->fn != NULL) {
       instantiateBody(bestConstRef->fn);
     }
 
@@ -2803,21 +2771,31 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
 
 
+
+    if        (bestRef      != NULL) {
+      best = bestRef;
+
+    } else if (bestValue    != NULL) {
+      best = bestValue;
+
+    } else if (bestConstRef != NULL) {
+      best = bestConstRef;
+    }
+
     if (explainCallLine != 0 && explainCallMatch(call) == true) {
       USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
     }
 
+
+
+
+
+
+
     if (call->partialTag                  == true &&
         best->fn->hasFlag(FLAG_NO_PARENS) == false) {
-
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        delete candidate;
-      }
-
       if (valueCall    != NULL) valueCall->remove();
       if (constRefCall != NULL) constRefCall->remove();
-
-      retval = NULL;
 
     } else {
       wrapAndCleanUpActuals(best, info, true);
@@ -2848,49 +2826,32 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
         }
       }
 
-      FnSymbol* resolvedFn         = bestRef->fn;
-      FnSymbol* resolvedRefFn      = NULL;
-      FnSymbol* resolvedValueFn    = NULL;
-      FnSymbol* resolvedConstRefFn = NULL;
-
-      if (bestRef      != NULL) resolvedRefFn      = bestRef->fn;
-      if (bestValue    != NULL) resolvedValueFn    = bestValue->fn;
-      if (bestConstRef != NULL) resolvedConstRefFn = bestConstRef->fn;
-
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        delete candidate;
-      }
-
       if (call->partialTag == true) {
         call->partialTag = false;
       }
 
       if (checkOnly == false) {
-        if (resolvedFn->name                         == astrSequals &&
-            isRecord(resolvedFn->getFormal(1)->type) == true        &&
-            resolvedFn->getFormal(2)->type           == dtNil) {
+        if (best->fn->name                         == astrSequals &&
+            isRecord(best->fn->getFormal(1)->type) == true        &&
+            best->fn->getFormal(2)->type           == dtNil) {
           USR_FATAL(userCall(call),
                     "type mismatch in assignment from nil to %s",
-                    toString(resolvedFn->getFormal(1)->type));
+                    toString(best->fn->getFormal(1)->type));
         }
       }
 
-      if (refCall      != NULL) INT_ASSERT(resolvedRefFn      != NULL);
-      if (valueCall    != NULL) INT_ASSERT(resolvedValueFn    != NULL);
-      if (constRefCall != NULL) INT_ASSERT(resolvedConstRefFn != NULL);
-
       SET_LINENO(call);
 
-      if (refCall      != NULL && resolvedRefFn      != NULL) {
-        refCall->baseExpr->replace(new SymExpr(resolvedRefFn));
+      if (refCall      != NULL) {
+        refCall->baseExpr->replace(new SymExpr(bestRef->fn));
       }
 
-      if (valueCall    != NULL && resolvedValueFn    != NULL) {
-        valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+      if (valueCall    != NULL) {
+        valueCall->baseExpr->replace(new SymExpr(bestValue->fn));
       }
 
-      if (constRefCall != NULL && resolvedConstRefFn != NULL) {
-        constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
+      if (constRefCall != NULL) {
+        constRefCall->baseExpr->replace(new SymExpr(bestConstRef->fn));
       }
 
       // Replace the call with a new ContextCallExpr containing 2 or 3 calls
@@ -2898,7 +2859,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
       call->insertAfter(contextCall);
 
-      // note: call is one of refCall, valueCall, constRefCall
       if (refCall      != NULL) refCall->remove();
       if (valueCall    != NULL) valueCall->remove();
       if (constRefCall != NULL) constRefCall->remove();
@@ -2909,7 +2869,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
 
       if (checkOnly == false) {
-        if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
+        if (best->fn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
           // Not allowed if it is not called directly from a constructor.
           if (isInConstructorLikeFunction(call) == false ||
               getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS) == false) {
@@ -2918,33 +2878,22 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
                            "of 'this', therefore it can be invoked only "
                            "directly from a constructor on the object "
                            "being constructed",
-                           resolvedFn->name);
+                           best->fn->name);
           }
         }
 
         lvalueCheck(call);
 
-        checkForStoringIntoTuple(call, resolvedFn);
+        checkForStoringIntoTuple(call, best->fn);
 
-        resolveNormalCallCompilerWarningStuff(resolvedFn);
+        resolveNormalCallCompilerWarningStuff(best->fn);
       }
 
-      retval = resolvedFn;
+      retval = best->fn;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
     }
   }
 
