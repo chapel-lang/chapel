@@ -2030,163 +2030,6 @@ userCall(CallExpr* call) {
 }
 
 
-void
-printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info) {
-  CallExpr* call = userCall(info->call);
-  if (info->name == astrThis) {
-    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
-                   toString(info->actuals.v[1]->type),
-                   toString(info));
-  } else {
-    const char* entity = "call";
-    if (!strncmp("_type_construct_", info->name, 16))
-      entity = "type specifier";
-    const char* str = toString(info);
-    if (info->scope) {
-      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
-      INT_ASSERT(mod);
-      str = astr(mod->name, ".", str);
-    }
-    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-  }
-
-  if (developer) {
-    for (int i = callStack.n-1; i>=0; i--) {
-      CallExpr* cs = callStack.v[i];
-      FnSymbol* f = cs->getFunction();
-      if (f->instantiatedFrom)
-        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-      else
-        break;
-    }
-  }
-  bool printed_one = false;
-  forv_Vec(FnSymbol, fn, candidates) {
-    USR_PRINT(fn, "%s %s",
-              printed_one ? "               " : "candidates are:",
-              toString(fn));
-    printed_one = true;
-  }
-  USR_STOP();
-}
-
-void
-printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
-  if( ! info ) INT_FATAL("CallInfo is NULL");
-  if( ! info->call ) INT_FATAL("call is NULL");
-  bool needToReport = false;
-  CallExpr* call = userCall(info->call);
-
-  if (call->isCast()) {
-    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal cast to non-type");
-    } else {
-      USR_FATAL_CONT(call, "illegal cast from %s to %s",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
-    }
-  } else if (!strcmp("these", info->name)) {
-    if (info->actuals.n == 2 &&
-        info->actuals.v[0]->type == dtMethodToken) {
-      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
-                       toString(info->actuals.v[1]->type));
-      } else {
-        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
-                       toString(info->actuals.v[1]->type));
-      }
-    } else {
-      needToReport = true;
-    }
-  } else if (!strcmp("_type_construct__tuple", info->name)) {
-    if (info->call->argList.length == 0)
-      USR_FATAL_CONT(call, "tuple size must be specified");
-    SymExpr* sym = toSymExpr(info->call->get(1));
-    if (!sym || !sym->symbol()->isParameter()) {
-      USR_FATAL_CONT(call, "tuple size must be static");
-    } else {
-      USR_FATAL_CONT(call, "invalid tuple");
-    }
-  } else if (info->name == astrSequals) {
-    if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
-        info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal assignment of type to value");
-    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
-               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal assignment of value to type");
-    } else if (info->actuals.v[1]->type == dtNil) {
-      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
-                toString(info->actuals.v[0]->type));
-    } else {
-      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
-    }
-  } else if (info->name == astrThis) {
-    Type* type = info->actuals.v[1]->getValType();
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
-    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-      USR_FATAL_CONT(call, "illegal access of first class function");
-    } else {
-      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
-                     toString(info->actuals.v[1]->type),
-                     toString(info));
-    }
-  } else {
-    needToReport = true;
-  }
-  // It would be easier to just check exit_eventually to catch all needToReport cases.
-  // Alas exit_eventually is static to misc.cpp.
-  if (needToReport) {
-    const char* entity = "call";
-    if (!strncmp("_type_construct_", info->name, 16))
-      entity = "type specifier";
-    const char* str = toString(info);
-    if (info->scope) {
-      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
-      INT_ASSERT(mod);
-      str = astr(mod->name, ".", str);
-    }
-    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
-      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
-      if (typeE != NULL) {
-        entity = "enumerated type symbol or call";
-      }
-    }
-    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
-    if (visibleFns.n > 0) {
-      if (developer) {
-        for (int i = callStack.n-1; i>=0; i--) {
-          CallExpr* cs = callStack.v[i];
-          FnSymbol* f = cs->getFunction();
-          if (f->instantiatedFrom)
-            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-          else
-            break;
-        }
-      }
-      bool printed_one = false;
-      forv_Vec(FnSymbol, fn, visibleFns) {
-        // Consider "visible functions are"
-        USR_PRINT(fn, "%s %s",
-                  printed_one ? "               " : "candidates are:",
-                  toString(fn));
-        printed_one = true;
-      }
-    }
-    if (visibleFns.n == 1 &&
-        visibleFns.v[0]->numFormals() == 0
-        && !strncmp("_type_construct_", info->name, 16))
-      USR_PRINT(call, "did you forget the 'new' keyword?");
-  }
-  if( developer ) {
-    // Should this be controlled another way?
-    USR_PRINT(call, "unresolved call had id %i", call->id);
-  }
-  USR_STOP();
-}
-
 static void issueCompilerError(CallExpr* call) {
   //
   // Disable compiler warnings in internal modules that are triggered
@@ -2761,7 +2604,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   ResolutionCandidate*      bestRef      = NULL;
   ResolutionCandidate*      bestConstRef = NULL;
   ResolutionCandidate*      bestValue    = NULL;
-  ResolutionCandidate*      best         = NULL;
 
   int                       numMatches   = 0;
 
@@ -2774,255 +2616,333 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
                                    bestConstRef,
                                    bestValue);
 
-  // This will be used in a later update
-  (void) numMatches;
+  if (numMatches == 0) {
+    if (call->partialTag == false && checkOnly == false) {
+      if (tryStack.n > 0) {
+        tryFailure = true;
 
-  best = bestRef;
-  if (!best && bestValue)    best = bestValue;
-  if (!best && bestConstRef) best = bestConstRef;
+      } else if (candidates.n > 0) {
+        printResolutionErrorAmbiguous(info, candidates);
 
-  // compute a boolean indicating if we are working with
-  // a return intent overload.
-  // TODO: rename this variable.
-  bool refPair = false;
-
-  {
-    int nBestRef = (bestRef != NULL);
-    int nBestValue = (bestValue != NULL);
-    int nBestConstRef = (bestConstRef != NULL);
-    int nBest = nBestRef + nBestValue + nBestConstRef;
-
-    refPair = (nBest > 1);
-  }
-
-  // If we are working with a return intent overload:
-  //  'refCall' will invoke the ref function bestRef->fn
-  //  'valueCall' will invoke the value function bestValue->fn
-  //  'constRefCall' will invoke the value function bestConstRef->fn
-  //  we will manipulate these three side by side.
-  // and 'call' will be the first of these.
-  CallExpr* refCall = NULL;
-  CallExpr* valueCall = NULL;
-  CallExpr* constRefCall = NULL;
-
-  if (refPair) {
-    bool first = true;
-    if (bestRef) {
-      // call will be refCall.
-      refCall = call;
-      first = false;
-    }
-    // might not have had a ref call, so maybe value is first
-    if (bestValue) {
-      if (first) {
-        valueCall = call;
-        first = false;
       } else {
-        valueCall = call->copy();
-        call->insertAfter(valueCall);
+        printResolutionErrorUnresolved(visibleFns, &info);
       }
     }
-    // by here, usedCall must be true.
-    if (bestConstRef) {
-      constRefCall = call->copy();
-      call->insertAfter(constRefCall);
-    }
-  }
 
-  if (best && best->fn) {
-    /*
-     * Finish instantiating the body.  This is a noop if the function wasn't
-     * partially instantiated.
-     */
-
-    if (refPair == false)
-      instantiateBody(best->fn);
-    else {
-      if (refCall)
-        instantiateBody(bestRef->fn);
-      if (valueCall)
-        instantiateBody(bestValue->fn);
-      if (constRefCall)
-        instantiateBody(bestConstRef->fn);
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
     }
 
-    if (explainCallLine && explainCallMatch(call)) {
-      USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
-    }
-  }
-
-  // Future work note: the repeated check to best and best->fn means that we
-  // could probably restructure this function to a better form.
-  if (call->partialTag && (!best || !best->fn ||
-                           !best->fn->hasFlag(FLAG_NO_PARENS))) {
-    if (best != NULL) {
-      // MPF 2016-0106 - this appears to be dead code
-      // at least in a full single-locale test run.
-
-      // best is deleted below with the other candidates
-      best = NULL;
-    }
-  } else if (!best) {
-    if (tryStack.n) {
-      // MPF -- doesn't this leak memory for the ResolutionCandidates?
-      if( ! checkOnly ) tryFailure = true;
-      return NULL;
-
-    } else {
-      // if we're just checking, don't print errors
-      if( ! checkOnly ) {
-
-        if (candidates.n > 0) {
-          Vec<FnSymbol*> candidateFns;
-          // MPF: we could choose to only print the best matches here
-          forv_Vec(ResolutionCandidate*, candidate, candidates) {
-            candidateFns.add(candidate->fn);
-          }
-
-          printResolutionErrorAmbiguous(candidateFns, &info);
-        } else {
-          printResolutionErrorUnresolved(visibleFns, &info);
-        }
-      }
-    }
+    return NULL;
 
   } else {
-    wrapAndCleanUpActuals(best, info, true);
+    ResolutionCandidate* best    = NULL;
+    bool                 refPair = false;
 
-    // for return intent overload, ref call must be first, so above
-    // case would handle it.
-    if (valueCall && call != valueCall) {
-      CallInfo tmpInfo;
+    if        (bestRef      != NULL) {
+      best = bestRef;
 
-      if (tmpInfo.isNotWellFormed(valueCall) == true) {
-        if (checkOnly == false) {
-          tmpInfo.haltNotWellFormed();
+    } else if (bestValue    != NULL) {
+      best = bestValue;
+
+    } else if (bestConstRef != NULL) {
+      best = bestConstRef;
+    }
+
+
+    {
+      int nBestRef      = bestRef      != NULL ? 1 : 0;
+      int nBestValue    = bestValue    != NULL ? 1 : 0;
+      int nBestConstRef = bestConstRef != NULL ? 1 : 0;
+
+      refPair = (nBestRef + nBestValue + nBestConstRef > 1) ? true : false;
+    }
+
+    // If we are working with a return intent overload:
+    //    'refCall'      will invoke the ref   function bestRef->fn
+    //    'valueCall'    will invoke the value function bestValue->fn
+    //    'constRefCall' will invoke the value function bestConstRef->fn
+    //  we will manipulate these three side by side.
+    // and 'call' will be the first of these.
+    CallExpr* refCall      = NULL;
+    CallExpr* valueCall    = NULL;
+    CallExpr* constRefCall = NULL;
+
+    if (refPair == true) {
+      bool first = true;
+
+      if (bestRef != NULL) {
+        refCall = call;
+        first   = false;
+      }
+
+      // might not have had a ref call, so maybe value is first
+      if (bestValue != NULL) {
+        if (first == true) {
+          valueCall = call;
+          first     = false;
+
+        } else {
+          valueCall = call->copy();
+
+          call->insertAfter(valueCall);
         }
+      }
 
-      } else {
-        wrapAndCleanUpActuals(bestValue, tmpInfo, false);
+      // by here, usedCall must be true.
+      if (bestConstRef != NULL) {
+        constRefCall = call->copy();
+
+        call->insertAfter(constRefCall);
       }
     }
 
-    if (constRefCall) {
-      CallInfo tmpInfo;
+    if (best != NULL && best->fn != NULL) {
+      /*
+       * Finish instantiating the body.  This is a noop if the function wasn't
+       * partially instantiated.
+       */
 
-      if (tmpInfo.isNotWellFormed(constRefCall) == true) {
-        if (checkOnly == false) {
-          tmpInfo.haltNotWellFormed();
-        }
+      if (refPair == false) {
+        instantiateBody(best->fn);
 
       } else {
-        wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
+        if (refCall) {
+          instantiateBody(bestRef->fn);
+        }
+
+        if (valueCall) {
+          instantiateBody(bestValue->fn);
+        }
+
+        if (constRefCall) {
+          instantiateBody(bestConstRef->fn);
+        }
+      }
+
+      if (explainCallLine && explainCallMatch(call)) {
+        USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
       }
     }
-  }
 
-  FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
-  FnSymbol* resolvedRefFn = bestRef != NULL ? bestRef->fn : NULL;
-  FnSymbol* resolvedValueFn = bestValue != NULL ? bestValue->fn : NULL;
-  FnSymbol* resolvedConstRefFn = bestConstRef != NULL ? bestConstRef->fn : NULL;
+    // Future work note: the repeated check to best and best->fn means that we
+    // could probably restructure this function to a better form.
+    if (call->partialTag == true &&
+        (best                              == NULL ||
+         best->fn                          == NULL ||
+         best->fn->hasFlag(FLAG_NO_PARENS) == false)) {
+      if (best != NULL) {
+        // MPF 2016-0106 - this appears to be dead code
+        // at least in a full single-locale test run.
 
-  // Only keep it a ref-pair if a ref version is present and
-  // we have options that resolved.
-  if (refPair) {
-    int nBestRef = (resolvedRefFn != NULL);
-    int nBestValue = (resolvedValueFn != NULL);
-    int nBestConstRef = (resolvedConstRefFn != NULL);
-    int nBest = nBestRef + nBestValue + nBestConstRef;
-    refPair = (nBest > 1);
-  }
+        // best is deleted below with the other candidates
+        best = NULL;
+      }
 
-  forv_Vec(ResolutionCandidate*, candidate, candidates) {
-    delete candidate;
-  }
+    } else if (best == NULL) {
+      if (tryStack.n) {
+        // MPF -- doesn't this leak memory for the ResolutionCandidates?
+        if (checkOnly == false) {
+          tryFailure = true;
+        }
 
-  if (call->partialTag) {
-    if (!resolvedFn) {
-      if (valueCall) valueCall->remove();
-      if (constRefCall) constRefCall->remove();
-      return NULL;
-    }
-    call->partialTag = false;
-  }
+        return NULL;
 
+      } else {
+        // if we're just checking, don't print errors
+        if (checkOnly == false) {
+          if (candidates.n > 0) {
+            Vec<FnSymbol*> candidateFns;
 
-  if( ! checkOnly ) {
-    if (resolvedFn &&
-        resolvedFn->name == astrSequals &&
-        isRecord(resolvedFn->getFormal(1)->type) &&
-        resolvedFn->getFormal(2)->type == dtNil) {
-      USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-                toString(resolvedFn->getFormal(1)->type));
-    }
+            // MPF: we could choose to only print the best matches here
+            forv_Vec(ResolutionCandidate*, candidate, candidates) {
+              candidateFns.add(candidate->fn);
+            }
 
-    if (!resolvedFn) {
-      INT_FATAL(call, "unable to resolve call");
-    }
-  }
+            printResolutionErrorAmbiguous(candidateFns, &info);
 
-  if (resolvedFn && call->parentSymbol) {
-    SET_LINENO(call);
-    if (refPair) {
-      if (refCall && resolvedRefFn)
-        refCall->baseExpr->replace(new SymExpr(resolvedRefFn));
-      if (valueCall && resolvedValueFn)
-        valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
-      if (constRefCall && resolvedConstRefFn)
-        constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
-
-      // Replace the call with a new ContextCallExpr containing 2 or 3 calls
-      ContextCallExpr* contextCall = new ContextCallExpr();
-      call->insertAfter(contextCall);
-
-      // note: call is one of refCall, valueCall, constRefCall
-      if (refCall) refCall->remove();
-      if (valueCall) valueCall->remove();
-      if (constRefCall) constRefCall->remove();
-
-      contextCall->setRefValueConstRefOptions(refCall, valueCall, constRefCall);
+          } else {
+            printResolutionErrorUnresolved(visibleFns, &info);
+          }
+        }
+      }
 
     } else {
-      call->baseExpr->replace(new SymExpr(resolvedFn));
-      if (valueCall && valueCall != call) {
-        // value call was added but didn't resolve right. Remove it.
-        valueCall->remove();
+      wrapAndCleanUpActuals(best, info, true);
+
+      // for return intent overload, ref call must be first, so above
+      // case would handle it.
+      if (valueCall != NULL && valueCall != call) {
+        CallInfo tmpInfo;
+
+        if (tmpInfo.isNotWellFormed(valueCall) == true) {
+          if (checkOnly == false) {
+            tmpInfo.haltNotWellFormed();
+          }
+
+        } else {
+          wrapAndCleanUpActuals(bestValue, tmpInfo, false);
+        }
       }
-      if (constRefCall && constRefCall != call) {
-        // const ref call was added but didn't resolve right. Remove it.
-        constRefCall->remove();
+
+      if (constRefCall != NULL) {
+        CallInfo tmpInfo;
+
+        if (tmpInfo.isNotWellFormed(constRefCall) == true) {
+          if (checkOnly == false) {
+            tmpInfo.haltNotWellFormed();
+          }
+
+        } else {
+          wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
+        }
       }
-      // If we aren't working with a ref not-ref return intent pair,
-      // adjust the returned value to have flag FLAG_REF_TO_CONST,
-      // but disable this behavior for constructors, so that they
-      // can set 'const' fields.
-      if (resolvedFn->retTag == RET_CONST_REF)
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr))
-          if (parentCall->isPrimitive(PRIM_MOVE))
-            if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
-              if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol()))
-                if (lhs->hasFlag(FLAG_EXPR_TEMP))
-                  if (FnSymbol* inFn = toFnSymbol(parentCall->parentSymbol))
-                    if (!isConstructorLikeFunction(inFn))
-                      lhs->addFlag(FLAG_REF_TO_CONST);
     }
+
+    FnSymbol* resolvedFn         = NULL;
+    FnSymbol* resolvedRefFn      = NULL;
+    FnSymbol* resolvedValueFn    = NULL;
+    FnSymbol* resolvedConstRefFn = NULL;
+
+    if (best         != NULL) resolvedFn         = best->fn;
+    if (bestRef      != NULL) resolvedRefFn      = bestRef->fn;
+    if (bestValue    != NULL) resolvedValueFn    = bestValue->fn;
+    if (bestConstRef != NULL) resolvedConstRefFn = bestConstRef->fn;
+
+    // Only keep it a ref-pair if a ref version is present and
+    // we have options that resolved.
+    if (refPair == true) {
+      int nBestRef      = resolvedRefFn      != NULL ? 1 : 0;
+      int nBestValue    = resolvedValueFn    != NULL ? 1 : 0;
+      int nBestConstRef = resolvedConstRefFn != NULL ? 1 : 0;
+
+      refPair = (nBestRef + nBestValue + nBestConstRef > 1) ? true : false;
+    }
+
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
+    }
+
+    if (call->partialTag == true) {
+      if (resolvedFn == NULL) {
+        if (valueCall    != NULL) valueCall->remove();
+        if (constRefCall != NULL) constRefCall->remove();
+
+        return NULL;
+
+      } else {
+        call->partialTag = false;
+      }
+    }
+
+
+    if (checkOnly == false) {
+      if (resolvedFn                               != NULL        &&
+          resolvedFn->name                         == astrSequals &&
+          isRecord(resolvedFn->getFormal(1)->type) == true        &&
+          resolvedFn->getFormal(2)->type           == dtNil) {
+        USR_FATAL(userCall(call),
+                  "type mismatch in assignment from nil to %s",
+                  toString(resolvedFn->getFormal(1)->type));
+      }
+
+      if (resolvedFn == NULL) {
+        INT_FATAL(call, "unable to resolve call");
+      }
+    }
+
+    if (resolvedFn != NULL && call->parentSymbol != NULL) {
+      SET_LINENO(call);
+
+      if (refPair == true) {
+        if (refCall      != NULL && resolvedRefFn      != NULL) {
+          refCall->baseExpr->replace(new SymExpr(resolvedRefFn));
+        }
+
+        if (valueCall    != NULL && resolvedValueFn    != NULL) {
+          valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+        }
+
+        if (constRefCall != NULL && resolvedConstRefFn != NULL) {
+          constRefCall->baseExpr->replace(new SymExpr(resolvedConstRefFn));
+        }
+
+        // Replace the call with a new ContextCallExpr containing 2 or 3 calls
+        ContextCallExpr* contextCall = new ContextCallExpr();
+
+        call->insertAfter(contextCall);
+
+        // note: call is one of refCall, valueCall, constRefCall
+        if (refCall      != NULL) refCall->remove();
+        if (valueCall    != NULL) valueCall->remove();
+        if (constRefCall != NULL) constRefCall->remove();
+
+        contextCall->setRefValueConstRefOptions(refCall,
+                                                valueCall,
+                                                constRefCall);
+
+      } else {
+        call->baseExpr->replace(new SymExpr(resolvedFn));
+
+        if (valueCall    != NULL && valueCall    != call) {
+          // value call was added but didn't resolve right. Remove it.
+          valueCall->remove();
+        }
+
+        if (constRefCall != NULL && constRefCall != call) {
+          // const ref call was added but didn't resolve right. Remove it.
+          constRefCall->remove();
+        }
+
+        // If we aren't working with a ref not-ref return intent pair,
+        // adjust the returned value to have flag FLAG_REF_TO_CONST,
+        // but disable this behavior for constructors, so that they
+        // can set 'const' fields.
+        if (resolvedFn->retTag == RET_CONST_REF) {
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+            if (parentCall->isPrimitive(PRIM_MOVE) == true) {
+              if (SymExpr* lhsSe = toSymExpr(parentCall->get(1))) {
+                if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol())) {
+                  if (lhs->hasFlag(FLAG_EXPR_TEMP) == true) {
+                    Symbol* parSym = parentCall->parentSymbol;
+
+                    if (FnSymbol* inFn = toFnSymbol(parSym)) {
+                      if (isConstructorLikeFunction(inFn) == false) {
+                        lhs->addFlag(FLAG_REF_TO_CONST);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (checkOnly == false) {
+      if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
+        // Not allowed if it is not called directly from a constructor.
+        if (isInConstructorLikeFunction(call) == false ||
+            getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS) == false) {
+          USR_FATAL_CONT(call,
+                         "illegal call to %s() - it modifies 'const' fields "
+                         "of 'this', therefore it can be invoked only "
+                         "directly from a constructor on the object "
+                         "being constructed",
+                         resolvedFn->name);
+        }
+      }
+
+      lvalueCheck(call);
+
+      checkForStoringIntoTuple(call, resolvedFn);
+
+      resolveNormalCallCompilerWarningStuff(resolvedFn);
+    }
+
+    return resolvedFn;
   }
-
-  if( ! checkOnly ) {
-    if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
-      // Not allowed if it is not called directly from a constructor.
-      if (!isInConstructorLikeFunction(call) ||
-          !getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS)
-          )
-        USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
-
-    lvalueCheck(call);
-    checkForStoringIntoTuple(call, resolvedFn);
-
-    resolveNormalCallCompilerWarningStuff(resolvedFn);
-  }
-
-  return resolvedFn;
 }
 
 static void wrapAndCleanUpActuals(ResolutionCandidate* best,
@@ -4338,6 +4258,224 @@ static void resolveTupleExpand(CallExpr* call) {
   if (parent && parent->isNamed("_type_construct__tuple")) {
     parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void printResolutionErrorAmbiguous(CallInfo&                  info,
+                                   Vec<ResolutionCandidate*>& candidates) {
+  CallExpr* call       = userCall(info.call);
+  bool      printedOne = false;
+
+  if (info.name == astrThis) {
+    USR_FATAL_CONT(call,
+                   "ambiguous access of '%s' by '%s'",
+                   toString(info.actuals.v[1]->type),
+                   toString(&info));
+
+  } else {
+    const char* entity = "call";
+    const char* str    = toString(&info);
+
+    if (strncmp("_type_construct_", info.name, 16) == 0) {
+      entity = "type specifier";
+    }
+
+    if (info.scope) {
+      ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
+
+      INT_ASSERT(mod);
+
+      str = astr(mod->name, ".", str);
+    }
+
+    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
+  }
+
+  if (developer == true) {
+    for (int i = callStack.n - 1; i >= 0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f  = cs->getFunction();
+
+      if (f->instantiatedFrom) {
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      } else {
+        break;
+      }
+    }
+  }
+
+  forv_Vec(ResolutionCandidate, cand, candidates) {
+    USR_PRINT(cand->fn,
+              "%s %s",
+              printedOne ? "               " : "candidates are:",
+              toString(cand->fn));
+
+    printedOne = true;
+  }
+
+  USR_STOP();
+}
+
+void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates,
+                                   CallInfo*       info) {
+  CallExpr* call = userCall(info->call);
+  if (info->name == astrThis) {
+    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
+                   toString(info->actuals.v[1]->type),
+                   toString(info));
+  } else {
+    const char* entity = "call";
+    if (!strncmp("_type_construct_", info->name, 16))
+      entity = "type specifier";
+    const char* str = toString(info);
+    if (info->scope) {
+      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
+      INT_ASSERT(mod);
+      str = astr(mod->name, ".", str);
+    }
+    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
+  }
+
+  if (developer) {
+    for (int i = callStack.n-1; i>=0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f = cs->getFunction();
+      if (f->instantiatedFrom)
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      else
+        break;
+    }
+  }
+  bool printed_one = false;
+  forv_Vec(FnSymbol, fn, candidates) {
+    USR_PRINT(fn, "%s %s",
+              printed_one ? "               " : "candidates are:",
+              toString(fn));
+    printed_one = true;
+  }
+  USR_STOP();
+}
+
+void
+printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
+  if( ! info ) INT_FATAL("CallInfo is NULL");
+  if( ! info->call ) INT_FATAL("call is NULL");
+  bool needToReport = false;
+  CallExpr* call = userCall(info->call);
+
+  if (call->isCast()) {
+    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal cast to non-type");
+    } else {
+      USR_FATAL_CONT(call, "illegal cast from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
+    }
+  } else if (!strcmp("these", info->name)) {
+    if (info->actuals.n == 2 &&
+        info->actuals.v[0]->type == dtMethodToken) {
+      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
+                       toString(info->actuals.v[1]->type));
+      } else {
+        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
+                       toString(info->actuals.v[1]->type));
+      }
+    } else {
+      needToReport = true;
+    }
+  } else if (!strcmp("_type_construct__tuple", info->name)) {
+    if (info->call->argList.length == 0)
+      USR_FATAL_CONT(call, "tuple size must be specified");
+    SymExpr* sym = toSymExpr(info->call->get(1));
+    if (!sym || !sym->symbol()->isParameter()) {
+      USR_FATAL_CONT(call, "tuple size must be static");
+    } else {
+      USR_FATAL_CONT(call, "invalid tuple");
+    }
+  } else if (info->name == astrSequals) {
+    if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+        info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal assignment of type to value");
+    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal assignment of value to type");
+    } else if (info->actuals.v[1]->type == dtNil) {
+      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
+                toString(info->actuals.v[0]->type));
+    } else {
+      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
+    }
+  } else if (info->name == astrThis) {
+    Type* type = info->actuals.v[1]->getValType();
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
+    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      USR_FATAL_CONT(call, "illegal access of first class function");
+    } else {
+      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
+                     toString(info->actuals.v[1]->type),
+                     toString(info));
+    }
+  } else {
+    needToReport = true;
+  }
+  // It would be easier to just check exit_eventually to catch all needToReport cases.
+  // Alas exit_eventually is static to misc.cpp.
+  if (needToReport) {
+    const char* entity = "call";
+    if (!strncmp("_type_construct_", info->name, 16))
+      entity = "type specifier";
+    const char* str = toString(info);
+    if (info->scope) {
+      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
+      INT_ASSERT(mod);
+      str = astr(mod->name, ".", str);
+    }
+    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
+      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
+      if (typeE != NULL) {
+        entity = "enumerated type symbol or call";
+      }
+    }
+    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
+    if (visibleFns.n > 0) {
+      if (developer) {
+        for (int i = callStack.n-1; i>=0; i--) {
+          CallExpr* cs = callStack.v[i];
+          FnSymbol* f = cs->getFunction();
+          if (f->instantiatedFrom)
+            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+          else
+            break;
+        }
+      }
+      bool printed_one = false;
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        // Consider "visible functions are"
+        USR_PRINT(fn, "%s %s",
+                  printed_one ? "               " : "candidates are:",
+                  toString(fn));
+        printed_one = true;
+      }
+    }
+    if (visibleFns.n == 1 &&
+        visibleFns.v[0]->numFormals() == 0
+        && !strncmp("_type_construct_", info->name, 16))
+      USR_PRINT(call, "did you forget the 'new' keyword?");
+  }
+  if( developer ) {
+    // Should this be controlled another way?
+    USR_PRINT(call, "unresolved call had id %i", call->id);
+  }
+  USR_STOP();
 }
 
 /************************************* | **************************************

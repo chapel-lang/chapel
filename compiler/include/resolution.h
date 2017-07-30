@@ -213,11 +213,21 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
-void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info);
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info);
+void printResolutionErrorAmbiguous(CallInfo&                  info,
+                                   Vec<ResolutionCandidate*>& candidates);
+
+void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates,
+                                   CallInfo*       info);
+
+void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
+                                    CallInfo*       info);
+
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+
 void lvalueCheck(CallExpr* call);
+
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
+
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
