@@ -2774,42 +2774,26 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
                                    bestValue);
 
   if (numMatches == 0) {
-    if (call->partialTag == false) {
-      if (tryStack.n) {
-        if (checkOnly == false) {
-          tryFailure = true;
+    if (call->partialTag == false && checkOnly == false) {
+      if (tryStack.n > 0) {
+        tryFailure = true;
+
+      } else if (candidates.n > 0) {
+        Vec<FnSymbol*> candidateFns;
+
+        forv_Vec(ResolutionCandidate*, candidate, candidates) {
+          candidateFns.add(candidate->fn);
         }
 
-        return NULL;
+        printResolutionErrorAmbiguous(candidateFns, &info);
 
       } else {
-        if (checkOnly == false) {
-          if (candidates.n > 0) {
-            Vec<FnSymbol*> candidateFns;
-
-            forv_Vec(ResolutionCandidate*, candidate, candidates) {
-              candidateFns.add(candidate->fn);
-            }
-
-            printResolutionErrorAmbiguous(candidateFns, &info);
-
-          } else {
-            printResolutionErrorUnresolved(visibleFns, &info);
-          }
-        }
+        printResolutionErrorUnresolved(visibleFns, &info);
       }
     }
 
     forv_Vec(ResolutionCandidate*, candidate, candidates) {
       delete candidate;
-    }
-
-    if (call->partialTag == true) {
-      return NULL;
-    }
-
-    if (checkOnly == false) {
-      INT_FATAL(call, "unable to resolve call");
     }
 
     return NULL;
