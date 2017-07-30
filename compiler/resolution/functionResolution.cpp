@@ -2729,7 +2729,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
   } else {
     ResolutionCandidate* best    = NULL;
-    bool                 refPair = false;
+    bool                 refPair = true;
 
     if        (bestRef      != NULL) {
       best = bestRef;
@@ -2742,14 +2742,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     }
 
 
-    {
-      int nBestRef      = bestRef      != NULL ? 1 : 0;
-      int nBestValue    = bestValue    != NULL ? 1 : 0;
-      int nBestConstRef = bestConstRef != NULL ? 1 : 0;
-
-      refPair = (nBestRef + nBestValue + nBestConstRef > 1) ? true : false;
-    }
-
     // If we are working with a return intent overload:
     //    'refCall'      will invoke the ref   function bestRef->fn
     //    'valueCall'    will invoke the value function bestValue->fn
@@ -2760,59 +2752,43 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     CallExpr* valueCall    = NULL;
     CallExpr* constRefCall = NULL;
 
-    if (refPair == true) {
-      bool first = true;
+    if (bestRef      != NULL) {
+      refCall = call;
+    }
 
-      if (bestRef != NULL) {
-        refCall = call;
-        first   = false;
-      }
+    if (bestValue    != NULL) {
+      if (bestRef == NULL) {
+        valueCall = call;
 
-      // might not have had a ref call, so maybe value is first
-      if (bestValue != NULL) {
-        if (first == true) {
-          valueCall = call;
-          first     = false;
+      } else {
+        valueCall = call->copy();
 
-        } else {
-          valueCall = call->copy();
-
-          call->insertAfter(valueCall);
-        }
-      }
-
-      // by here, usedCall must be true.
-      if (bestConstRef != NULL) {
-        constRefCall = call->copy();
-
-        call->insertAfter(constRefCall);
+        call->insertAfter(valueCall);
       }
     }
 
-    if (best != NULL && best->fn != NULL) {
-      /*
-       * Finish instantiating the body.  This is a noop if the function wasn't
-       * partially instantiated.
-       */
+    if (bestConstRef != NULL) {
+      constRefCall = call->copy();
 
-      if (refPair == false) {
-        instantiateBody(best->fn);
+      call->insertAfter(constRefCall);
+    }
 
-      } else {
-        if (refCall) {
-          instantiateBody(bestRef->fn);
-        }
+    INT_ASSERT(best != NULL && best->fn != NULL);
 
-        if (valueCall) {
-          instantiateBody(bestValue->fn);
-        }
-
-        if (constRefCall) {
-          instantiateBody(bestConstRef->fn);
-        }
+    if (best->fn != NULL) {
+      if (bestRef      != NULL && bestRef->fn      != NULL) {
+        instantiateBody(bestRef->fn);
       }
 
-      if (explainCallLine && explainCallMatch(call)) {
+      if (bestValue    != NULL && bestValue->fn    != NULL) {
+        instantiateBody(bestValue->fn);
+      }
+
+      if (bestConstRef != NULL && bestConstRef->fn != NULL) {
+        instantiateBody(bestConstRef->fn);
+      }
+
+      if (explainCallLine != 0 && explainCallMatch(call) == true) {
         USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
       }
     }
@@ -2820,8 +2796,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     // Future work note: the repeated check to best and best->fn means that we
     // could probably restructure this function to a better form.
     if (call->partialTag == true &&
-        (best                              == NULL ||
-         best->fn                          == NULL ||
+        (best->fn                          == NULL ||
          best->fn->hasFlag(FLAG_NO_PARENS) == false)) {
       if (best != NULL) {
         // MPF 2016-0106 - this appears to be dead code
@@ -2829,34 +2804,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
         // best is deleted below with the other candidates
         best = NULL;
-      }
-
-    } else if (best == NULL) {
-      if (tryStack.n) {
-        // MPF -- doesn't this leak memory for the ResolutionCandidates?
-        if (checkOnly == false) {
-          tryFailure = true;
-        }
-
-        return NULL;
-
-      } else {
-        // if we're just checking, don't print errors
-        if (checkOnly == false) {
-          if (candidates.n > 0) {
-            Vec<FnSymbol*> candidateFns;
-
-            // MPF: we could choose to only print the best matches here
-            forv_Vec(ResolutionCandidate*, candidate, candidates) {
-              candidateFns.add(candidate->fn);
-            }
-
-            printResolutionErrorAmbiguous(candidateFns, &info);
-
-          } else {
-            printResolutionErrorUnresolved(visibleFns, &info);
-          }
-        }
       }
 
     } else {
@@ -2896,6 +2843,12 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     FnSymbol* resolvedValueFn    = NULL;
     FnSymbol* resolvedConstRefFn = NULL;
 
+    INT_ASSERT(best->fn != NULL);
+
+    if (bestRef      != NULL) INT_ASSERT(bestRef->fn      != NULL);
+    if (bestValue    != NULL) INT_ASSERT(bestValue->fn    != NULL);
+    if (bestConstRef != NULL) INT_ASSERT(bestConstRef->fn != NULL);
+
     if (best         != NULL) resolvedFn         = best->fn;
     if (bestRef      != NULL) resolvedRefFn      = bestRef->fn;
     if (bestValue    != NULL) resolvedValueFn    = bestValue->fn;
@@ -2903,17 +2856,19 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
     // Only keep it a ref-pair if a ref version is present and
     // we have options that resolved.
-    if (refPair == true) {
-      int nBestRef      = resolvedRefFn      != NULL ? 1 : 0;
-      int nBestValue    = resolvedValueFn    != NULL ? 1 : 0;
-      int nBestConstRef = resolvedConstRefFn != NULL ? 1 : 0;
+    int nBestRef      = resolvedRefFn      != NULL ? 1 : 0;
+    int nBestValue    = resolvedValueFn    != NULL ? 1 : 0;
+    int nBestConstRef = resolvedConstRefFn != NULL ? 1 : 0;
 
-      refPair = (nBestRef + nBestValue + nBestConstRef > 1) ? true : false;
-    }
+    refPair = (nBestRef + nBestValue + nBestConstRef > 1) ? true : false;
+
+    INT_ASSERT(refPair == true);
 
     forv_Vec(ResolutionCandidate*, candidate, candidates) {
       delete candidate;
     }
+
+    INT_ASSERT(resolvedFn != NULL);
 
     if (call->partialTag == true) {
       if (resolvedFn == NULL) {
@@ -2942,6 +2897,8 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
         INT_FATAL(call, "unable to resolve call");
       }
     }
+
+    INT_ASSERT(call->parentSymbol != NULL);
 
     if (resolvedFn != NULL && call->parentSymbol != NULL) {
       SET_LINENO(call);
