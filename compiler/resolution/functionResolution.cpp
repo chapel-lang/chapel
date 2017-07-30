@@ -2607,6 +2607,8 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 
   int                       numMatches   = 0;
 
+  FnSymbol*                 retval       = NULL;
+
   findVisibleFunctionsAndCandidates(info, visibleFns, candidates);
 
   numMatches = disambiguateByMatch(info,
@@ -2633,7 +2635,97 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
       delete candidate;
     }
 
-    return NULL;
+    retval = NULL;
+
+
+  } else if (numMatches == 1) {
+    ResolutionCandidate* best = NULL;
+
+    if        (bestRef      != NULL) {
+      best = bestRef;
+
+    } else if (bestValue    != NULL) {
+      best = bestValue;
+
+    } else if (bestConstRef != NULL) {
+      best = bestConstRef;
+    }
+
+    instantiateBody(best->fn);
+
+    if (explainCallLine != 0 && explainCallMatch(call) == true) {
+      USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+    }
+
+    if (call->partialTag                  == false ||
+        best->fn->hasFlag(FLAG_NO_PARENS) == true) {
+      wrapAndCleanUpActuals(best, info, true);
+
+      if (call->partialTag == true) {
+        call->partialTag = false;
+      }
+
+      if (checkOnly == false) {
+        if (best->fn->name                         == astrSequals &&
+            isRecord(best->fn->getFormal(1)->type) == true        &&
+            best->fn->getFormal(2)->type           == dtNil) {
+          USR_FATAL(userCall(call),
+                    "type mismatch in assignment from nil to %s",
+                    toString(best->fn->getFormal(1)->type));
+        }
+      }
+
+      SET_LINENO(call);
+
+      call->baseExpr->replace(new SymExpr(best->fn));
+
+      if (best->fn->retTag == RET_CONST_REF) {
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE) == true) {
+            if (SymExpr* lhsSe = toSymExpr(parentCall->get(1))) {
+              if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol())) {
+                if (lhs->hasFlag(FLAG_EXPR_TEMP) == true) {
+                  Symbol* parSym = parentCall->parentSymbol;
+
+                  if (FnSymbol* inFn = toFnSymbol(parSym)) {
+                    if (isConstructorLikeFunction(inFn) == false) {
+                      lhs->addFlag(FLAG_REF_TO_CONST);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (checkOnly == false) {
+        if (best->fn->hasFlag(FLAG_MODIFIES_CONST_FIELDS) == true) {
+          // Not allowed if it is not called directly from a constructor.
+          if (isInConstructorLikeFunction(call) == false ||
+              getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS) == false) {
+            USR_FATAL_CONT(call,
+                           "illegal call to %s() - it modifies 'const' fields "
+                           "of 'this', therefore it can be invoked only "
+                           "directly from a constructor on the object "
+                           "being constructed",
+                           best->fn->name);
+          }
+        }
+
+        lvalueCheck(call);
+
+        checkForStoringIntoTuple(call, best->fn);
+
+        resolveNormalCallCompilerWarningStuff(best->fn);
+      }
+
+      retval = best->fn;
+    }
+
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
+    }
 
   } else {
     ResolutionCandidate* best    = NULL;
@@ -2941,8 +3033,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
       resolveNormalCallCompilerWarningStuff(resolvedFn);
     }
 
-    return resolvedFn;
+    retval = resolvedFn;
   }
+
+  return retval;
 }
 
 static void wrapAndCleanUpActuals(ResolutionCandidate* best,
@@ -2957,9 +3051,12 @@ static void wrapAndCleanUpActuals(ResolutionCandidate* best,
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
-    if (callStack.n >= 2)
-      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->resolvedFunction()))
+
+    if (callStack.n >= 2) {
+      if (FnSymbol* fn = callStack.v[callStack.n - 2]->resolvedFunction()) {
         outerCompilerWarningMap.put(fn, str);
+      }
+    }
   }
 
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
