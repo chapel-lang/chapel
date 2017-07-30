@@ -40,6 +40,7 @@ endif
 
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+CHPL_GASNET_CFG_OPTIONS += --enable-gni-multi-domain
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
