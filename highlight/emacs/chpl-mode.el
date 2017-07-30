@@ -1,4 +1,4 @@
-;;; chpl-mode.el --- a CC Mode for Chapel derived from derived-mode-ex.el
+;;; chpl-mode.el --- Major mode for editing Chapel code
 
 ;; Author:     2007 Steven T Balensiefer
 ;; Maintainer: Chapel group <chapel_info@cray.com>
@@ -406,4 +406,4 @@ Key bindings:
 
 (provide 'chpl-mode)
 
-;;; derived-mode-ex.el ends here
+;;; chpl-mode.el ends here
