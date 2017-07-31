@@ -92,6 +92,7 @@ static chpl_bool debug_exiting = false;
 #define _DBG_DO(flg)  (((flg) & debug_flag) != 0)
 
 #define DBG_INIT()  dbg_init()
+#define DBG_INIT_OUTPUT_FILE()  dbg_init_output_file()
 
 static __thread uint32_t thread_idx      = ~(uint32_t) 0;
 static atomic_uint_least32_t next_thread_idx;
@@ -172,6 +173,7 @@ static int64_t task_id(int firmly_bound)
 #undef DEBUG_STATS
 
 #define DBG_INIT()
+#define DBG_INIT_OUTPUT_FILE()
 
 #define DBG_P(flg, f, ...)
 #define DBG_P_L(flg, f, ...)
@@ -214,7 +216,6 @@ static uint64_t debug_stats_flag = 0;
 //#define PERFSTATS_COMM_UGNI 1
 
 #ifdef PERFSTATS_COMM_UGNI
-#include <inttypes.h>
 
 #define PERFSTATS_VARS_EPHEMERAL(MACRO)                                 \
         MACRO(put_cnt)                                                  \
@@ -240,6 +241,9 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_get_cnt)                                             \
         MACRO(fork_free_cnt)                                            \
         MACRO(fork_amo_cnt)                                             \
+        MACRO(fork_reg_dereg_cnt)                                       \
+        MACRO(regMem_cnt)                                               \
+        MACRO(deregMem_cnt)                                             \
         MACRO(sent_bytes)                                               \
         MACRO(rcvd_bytes)                                               \
         MACRO(acq_cd_cnt)                                               \
@@ -297,6 +301,13 @@ chpl_comm_pstats_t chpl_comm_pstats;
 
 
 //
+// Alignment.
+//
+#define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
+#define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
+
+
+//
 // Declarations having to do with the NIC.
 //
 static uint32_t* nic_addr_map = NULL;
@@ -350,6 +361,9 @@ static int    registered_heap_info_set;
 static size_t registered_heap_size;
 static void*  registered_heap_start;
 
+static int    using_hugepages;
+static size_t hugepage_size;
+
 //
 // Memory regions.  mem_regions contains the address/length pairs and
 // uGNI memory domain handles for each memory region of interest to us.
@@ -369,6 +383,7 @@ typedef struct {
 } mem_region_table_t;
 
 static mem_region_table_t mem_regions;
+static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static mem_region_table_t* mem_region_map;
 
@@ -496,13 +511,13 @@ static __thread int cd_idx = -1;
 // Declarations having to do with individual remote references.
 //
 
-#define IS_ALIGNED_32(x)  (((x) & (size_t) 3) == 0)
-#define ALIGN_32_DOWN(x)  ((x) & ~(size_t) 3)
-#define ALIGN_32_UP(x)    ALIGN_32_DOWN((x) + (size_t) 3)
+#define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
+#define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
+#define IS_ALIGNED_32(x)  ((x) == ALIGN_32_DN(x))
 
-#define IS_ALIGNED_64(x)  (((x) & (size_t) 7) == 0)
-#define ALIGN_64_DOWN(x)  ((x) & ~(size_t) 7)
-#define ALIGN_64_UP(x)    ALIGN_64_DOWN((x) + (size_t) 7)
+#define ALIGN_64_DN(x)    ALIGN_DN((x), sizeof(int64_t))
+#define ALIGN_64_UP(x)    ALIGN_UP((x), sizeof(int64_t))
+#define IS_ALIGNED_64(x)  ((x) == ALIGN_64_DN(x))
 
 #define VP_TO_UI64(x)     ((uint64_t) (intptr_t) (x))
 #define UI64_TO_VP(x)     ((void*) (intptr_t) (x))
@@ -669,6 +684,7 @@ typedef enum {
   fork_op_get,
   fork_op_free,
   fork_op_amo,
+  fork_op_reg_dereg,
   fork_op_num_ops
 } fork_op_t;
 
@@ -761,6 +777,14 @@ typedef struct {
 } fork_amo_info_t;
 
 typedef struct {
+  fork_base_info_t b;
+  c_nodeid_t n;
+  uint32_t c;
+  uint32_t i;
+  mem_region_t r;
+} fork_reg_info_t;
+
+typedef struct {
   unsigned char buf[FORK_T_MAX_SIZE];
 } fork_space_t;
 
@@ -771,6 +795,7 @@ typedef union fork_t {
   fork_xfer_info_t x;
   fork_free_info_t f;
   fork_amo_info_t  a;
+  fork_reg_info_t  r;
   fork_space_t bytes; // get fork_t to be >= FORK_T_MAX_SIZE bytes
 } fork_t;
 
@@ -1173,6 +1198,7 @@ static uint32_t  GNIT_Cookie(void);
 static void      register_memory(void);
 static chpl_bool get_next_rw_memory_range(uint64_t*, uint64_t*, char*, size_t);
 static void      register_mem_region(mem_region_t*);
+static void      deregister_mem_region(mem_region_t*);
 static mem_region_t* mreg_for_addr(void*, mem_region_table_t*);
 static mem_region_t* mreg_for_local_addr(void*);
 static mem_region_t* mreg_for_remote_addr(void*, int32_t);
@@ -1227,6 +1253,7 @@ static void      fork_put(void*, int32_t, void*, size_t);
 static void      fork_get(void*, int32_t, void*, size_t);
 static void      fork_free(int32_t, void*);
 static void      fork_amo(fork_t*, int32_t);
+static void      fork_reg_dereg(int32_t, int);
 static void      do_fork_post(int, rf_done_t**,
                               uint64_t, fork_base_info_t*, int*, int*);
 static void      acquire_comm_dom(void);
@@ -1256,11 +1283,6 @@ static void dbg_init(void)
     debug_flag = flg;
   }
 
-  if (_DBG_DO(DBGF_IN_FILE)
-      && (debug_file = fopen("debug-ugni.out", "w")) != NULL) {
-    setbuf(debug_file, NULL);
-  }
-
   if ((ev =  chpl_get_rt_env("COMM_UGNI_DEBUG_STATS", NULL)) != NULL
       && sscanf(ev, "%" SCNi64, &flg) == 1) {
     debug_stats_flag = flg;
@@ -1269,6 +1291,23 @@ static void dbg_init(void)
   if ((ev = chpl_get_rt_env("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL
       && sscanf(ev, "%d", &FORK_REQ_BUFS_PER_CD) != 1)
     CHPL_INTERNAL_ERROR("bad FORK_REQ_BUFS_PER_CD env var value");
+}
+
+
+static void dbg_init_output_file(void);
+static void dbg_init_output_file(void)
+{
+  if (_DBG_DO(DBGF_IN_FILE)) {
+    char fname[100];
+    FILE* f;
+
+    (void) snprintf(fname, sizeof(fname),
+                    "debug-ugni.%d.out", (int) chpl_nodeID);
+    if ((f = fopen(fname, "w")) != NULL) {
+      debug_file = f;
+      setbuf(debug_file, NULL);
+    }
+  }
 }
 
 
@@ -1281,7 +1320,8 @@ static const char* fork_op_name(fork_op_t op)
                                  "put",
                                  "get",
                                  "free",
-                                 "amo" };
+                                 "amo",
+                                 "reg_dereg" };
   return ((int)op >= 0 && op < fork_op_num_ops) ? names[op] : "?op?";
 }
 
@@ -1389,6 +1429,23 @@ static char* sprintf_rf_req(int loc, void* f_in)
     }
     break;
 
+  case fork_op_reg_dereg:
+    {
+      fork_reg_info_t* pr = (fork_reg_info_t*) f;
+      if (pr->r.addr != 0) {
+        // registration
+        snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
+                 "map[%d].r[%d] <- (%" PRIx64 ", %" PRIx64 "), cnt %d",
+                 (int) pr->n, (int) pr->i, pr->r.addr, pr->r.len, pr->c);
+      } else {
+        // deregistration
+        snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
+                 "map[%d].r[%d], i_hi %d",
+                 (int) pr->n, (int) pr->i, pr->c);
+      }
+    }
+    break;
+
   default:
     snprintf(&buf[bufcnt], sizeof(buf) - bufcnt, "(op %d)", (int) op);
     break;
@@ -1469,6 +1526,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
       CHPL_INTERNAL_ERROR("PMI_Get_rank_in_app() failed");
     chpl_nodeID = (int32_t) rank;
   }
+
+  DBG_INIT_OUTPUT_FILE();  // needs chpl_nodeID
 
   {
     int app_size;
@@ -2154,6 +2213,21 @@ void register_mem_region(mem_region_t* mr)
 
 
 static
+void deregister_mem_region(mem_region_t* mr)
+{
+  gni_return_t gni_rc;
+
+  DBG_P_L(DBGF_MEMREG,
+          "GNI_MemDeregister[%d]",
+          (int) (mr - &mem_regions.mregs[0]));
+  if ((gni_rc = GNI_MemDeregister(comm_doms[0].nih, &mr->mdh))
+      != GNI_RC_SUCCESS) {
+    GNI_FAIL(gni_rc, "GNI_MemDeregister() failed");
+  }
+}
+
+
+static
 inline
 mem_region_t* mreg_for_addr(void* addr, mem_region_table_t* tab)
 {
@@ -2176,6 +2250,7 @@ mem_region_t* mreg_for_local_addr(void* addr)
 {
   return mreg_for_addr(addr, &mem_regions);
 }
+
 
 static
 inline
@@ -2408,18 +2483,20 @@ static void make_shared_heap(void)
   assert(!registered_heap_info_set);
 
   if (chpl_numNodes == 1) {
+    using_hugepages = false;
     registered_heap_start = NULL;
     registered_heap_size  = 0;
     registered_heap_info_set = 1;
     return;
   }
 
-  if (getenv("HUGETLB_MORECORE") != NULL) {
+  using_hugepages = (getenv("HUGETLB_MORECORE") == NULL) ? false : true;
+  if (using_hugepages) {
     //
     // If the heap is supposed to be on hugepages, acquire that space
     // now.
     //
-    size_t page_size = gethugepagesize();
+    size_t page_size = hugepage_size = gethugepagesize();
     size_t max_heap_size;
     size_t size;
     size_t decrement;
@@ -2528,6 +2605,197 @@ void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
   assert(registered_heap_info_set);
   *start_p = registered_heap_start;
   *size_p  = registered_heap_size;
+}
+
+
+inline
+size_t chpl_comm_impl_regMemAllocThreshold(void)
+{
+  if (using_hugepages)
+    return 2 * hugepage_size;
+  return SIZE_MAX;
+}
+
+
+void* chpl_comm_impl_regMemAlloc(size_t size)
+{
+  int mr_i;
+  void* p;
+
+  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+    return NULL;
+
+  PERFSTATS_INC(regMem_cnt);
+
+  //
+  // Memory region table adjustments, both here and on other nodes,
+  // need to be single-threaded.
+  //
+  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemAlloc(): cannot lock");
+
+  //
+  // Do we have room for another registered memory table entry?
+  //
+  for (mr_i = 0;
+       mr_i < MAX_MEM_REGIONS && mem_regions.mregs[mr_i].addr != 0;
+       mr_i++)
+    ;
+
+  p = NULL;
+  if (mr_i < MAX_MEM_REGIONS) {
+    mem_region_t* mr = &mem_regions.mregs[mr_i];
+
+    p = get_huge_pages(ALIGN_UP(size, hugepage_size), GHP_DEFAULT);
+
+    //
+    // If we got the memory, reserve the memory region slot we found.
+    //
+    if (p != NULL) {
+      mr->addr = (uint64_t) (intptr_t) p;
+      mr->len = 1;
+
+      //
+      // Adjust the region count, if necessary.
+      //
+      if (mr_i >= mem_regions.mreg_cnt)
+        mem_regions.mreg_cnt = mr_i + 1;
+
+      DBG_P_LP(DBGF_MEMREG,
+               "chpl_regMemAlloc(%" PRIx64 "): "
+               "mregs[%d] = %" PRIx64 ", cnt %d",
+               size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
+    }
+  }
+
+  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemAlloc(): cannot unlock");
+
+  return p;
+}
+
+
+void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
+{
+  mem_region_t* mr;
+  int mr_i;
+
+  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_comm_regMemPostAlloc(%p, %" PRIx64 ")",
+           p, size);
+
+  //
+  // Find the memory region table entry for this memory.
+  //
+  mr = mreg_for_addr(p, &mem_regions);
+  if (mr == NULL)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
+
+  mr_i = (int) (mr - &mem_regions.mregs[0]);
+
+  //
+  // Memory region table adjustments, both here and on other nodes,
+  // need to be single-threaded.
+  //
+  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): cannot lock");
+
+  //
+  // Finish filling the table entry and register the memory.
+  //
+  mr->len = (uint64_t) size;
+
+  register_mem_region(mr);
+
+  //
+  // Update the memory region maps on all nodes.
+  //
+  // TODO: This is terrible, from a scalability point of view.
+  //
+  for (c_nodeid_t node = 0; node < chpl_numNodes; node++) {
+    if (node == chpl_nodeID) {
+      mem_region_map[node].mreg_cnt = mem_regions.mreg_cnt;
+      mem_region_map[node].mregs[mr_i] = mem_regions.mregs[mr_i];
+    } else {
+      fork_reg_dereg(node, mr_i);
+    }
+  }
+
+  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): cannot unlock");
+}
+
+
+chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
+{
+  mem_region_t* mr;
+  int mr_i;
+
+  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+    return false;
+
+  //
+  // Is this memory in our table?
+  //
+  mr = mreg_for_addr(p, &mem_regions);
+  if (mr == NULL)
+    return false;
+
+  mr_i = (int) (mr - &mem_regions.mregs[0]);
+
+  PERFSTATS_INC(deregMem_cnt);
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_comm_regMemFree(%p, %" PRIx64 "): [%d]",
+           p, size, mr_i);
+
+  //
+  // Deregister the memory and empty the entry in our table.  The
+  // table adjustments, both here and on other nodes, need to be
+  // single-threaded.
+  //
+  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemFree(): cannot lock");
+
+  deregister_mem_region(mr);
+
+  mr->addr = 0;
+  mr->len = 0;
+
+  //
+  // Adjust the memory region count downward, if necessary.
+  //
+  if (mr_i == mem_regions.mreg_cnt - 1) {
+    int j;
+    for (j = mr_i - 1; j >= 0 && mem_regions.mregs[j].addr == 0; j--)
+      ;
+    assert(j >= 0);
+    mem_regions.mreg_cnt = j + 1;
+  }
+
+  //
+  // Update the memory region maps on all nodes.
+  //
+  // TODO: This is terrible, from a scalability point of view.
+  //
+  for (c_nodeid_t node = 0; node < chpl_numNodes; node++) {
+    if (node == chpl_nodeID) {
+      mem_region_map[node].mreg_cnt = mem_regions.mreg_cnt;
+      mem_region_map[node].mregs[mr_i] = mem_regions.mregs[mr_i];
+    } else {
+      fork_reg_dereg(node, mr_i);
+    }
+  }
+
+  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemFree(): cannot unlock");
+
+  free_huge_pages(p);
+
+  return true;
 }
 
 
@@ -2875,6 +3143,19 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       fork_amo_info_t f_a = f->a;
       release_req_buf(req_li, req_cdi, req_rbi);
       fork_amo_wrapper(&f_a);
+    }
+    break;
+
+  case fork_op_reg_dereg:
+    DBG_P_LP(DBGF_MEMREG|DBGF_RF, "forkFrom(%d) %s",
+             (int) req_li, sprintf_rf_req((int) req_li, f));
+
+    {
+      fork_reg_info_t f_r = f->r;
+
+      mem_region_map[f_r.n].mreg_cnt = f_r.c;
+      mem_region_map[f_r.n].mregs[f_r.i] = f_r.r;
+      indicate_done(&f_r.b);
     }
     break;
 
@@ -4025,7 +4306,7 @@ void do_remote_get(void* tgt_addr, int32_t locale, void* src_addr, size_t size,
   // target address.
   //
   tgt_addr_xmit     = tgt_addr;
-  src_addr_xmit     = UI64_TO_VP(ALIGN_32_DOWN(VP_TO_UI64(src_addr)));
+  src_addr_xmit     = UI64_TO_VP(ALIGN_32_DN(VP_TO_UI64(src_addr)));
   src_addr_xmit_off = VP_TO_UI64(src_addr) - VP_TO_UI64(src_addr_xmit);
   xmit_size         = ALIGN_32_UP(size + src_addr_xmit_off);
 
@@ -5792,6 +6073,41 @@ void fork_amo(fork_t* p_rf_req, int32_t locale)
 
 
 static
+void fork_reg_dereg(int32_t locale, int i)
+{
+  fork_base_info_t hdr = { .op       = fork_op_reg_dereg,
+                           .caller   = chpl_nodeID,
+                           .rf_done  = NULL // set in do_fork_post
+                         };
+  fork_reg_info_t req = { .b = hdr,
+                          .n = chpl_nodeID,
+                          .c = mem_regions.mreg_cnt,
+                          .i = i,
+                          .r = mem_regions.mregs[i] };
+  int cdi;
+  int rbi;
+
+  if (locale < 0 || locale >= chpl_numNodes)
+    CHPL_INTERNAL_ERROR("fork_reg_dereg(): remote locale out of range");
+
+  DBG_SET_SEQ(req.b.seq);
+  DBG_P_LP(DBGF_MEMREG|DBGF_RF, "forkTo(%d) %s",
+           (int) locale, sprintf_rf_req(locale, &req));
+
+  //
+  // Send the request to the target.
+  //
+  PERFSTATS_INC(fork_reg_dereg_cnt);
+  do_fork_post(locale, &req.b.rf_done, sizeof(req), &req.b, &cdi, &rbi);
+  
+  //
+  // The completion indication is the only response.  We free the remote
+  // fork request buffer on this side.
+  //
+  *SEND_SIDE_FORK_REQ_FREE_ADDR(locale, cdi, rbi) = true;
+}
+
+
 void do_fork_post(int locale,
                   rf_done_t** rf_done_slot,
                   uint64_t f_size, fork_base_info_t* p_rf_req,
@@ -6333,7 +6649,7 @@ static void _psv_print(int, chpl_comm_pstats_t*);
 #endif
 
 
-void chpl_comm_statsReport(chpl_bool32 sum_over_locales)
+void chpl_comm_statsReport(chpl_bool sum_over_locales)
 {
 #ifdef PERFSTATS_COMM_UGNI
   if (sum_over_locales) {

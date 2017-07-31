@@ -222,6 +222,66 @@ void chpl_comm_rollcall(void);
 void chpl_comm_get_registered_heap(void** start_p, size_t* size_p);
 
 //
+// This is the comm layer sub-interface for dynamic allocation and
+// registration of memory. The functions are as follows:
+//
+// chpl_comm_regMemAllocThreshold():
+//   Allocations smaller than this should be done normally, by the
+//   memory layer.  Others should be done through this comm layer
+//   sub-interface.
+//
+// chpl_comm_regMemAlloc()
+//   Allocate memory, returning either a non-NULL pointer or NULL when
+//   no more memory is available.  After allocation the memory can be
+//   localized, filled, and so on as desired by the memory layer.
+//
+// chpl_comm_regMemPostAlloc()
+//   Perform post-allocation operations, typically registration.  This
+//   call is non-destructive to the memory contents, and should be made
+//   after the memory is localized.  Do not pass memory allocated from
+//   anything but chpl_comm_regMemAlloc() to this function.
+//
+// chpl_comm_regMemFree()
+//   Free memory previously allocated by chpl_comm_regMemAlloc().  If
+//   the memory did indeed come from chpl_mem_regMemAlloc(), this frees
+//   it and returns true.  Otherwise it does nothing and returns false.
+//   Given some memory address to be freed it is therefore safe, though
+//   perhaps not performance-optimal, to first try to free it here, and 
+//   only free it elsewhere if this function returns false.
+//
+#ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
+  #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() SIZE_MAX
+#endif
+static inline
+size_t chpl_comm_regMemAllocThreshold(void) {
+  return CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD();
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC
+  #define CHPL_COMM_IMPL_REG_MEM_ALLOC(size) NULL
+#endif
+static inline
+void* chpl_comm_regMemAlloc(size_t size) {
+  return CHPL_COMM_IMPL_REG_MEM_ALLOC(size);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_POST_ALLOC
+#define CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size) return
+#endif
+static inline
+void chpl_comm_regMemPostAlloc(void* p, size_t size) {
+    CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_FREE
+#define CHPL_COMM_IMPL_REG_MEM_FREE(p, size) false
+#endif
+static inline
+chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
+    return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
+}
+
+//
 // This routine is used by the Chapel runtime to broadcast the
 // locations of module-level ("global") variables to all locales
 // so that all locales can put/get the value of a global variable
