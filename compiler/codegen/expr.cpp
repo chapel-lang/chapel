@@ -34,6 +34,7 @@
 #include "type.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
+#include "wellknown.h"
 
 
 #ifndef __STDC_FORMAT_MACROS
@@ -106,6 +107,8 @@ static GenRet codegenZero32();
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
+
+#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
 /************************************ | *************************************
 *                                                                           *
@@ -392,7 +395,7 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->builder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaNode;
+  if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaAccessTag;
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
 
   if(!info->loopStack.empty()) {
@@ -445,8 +448,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   llvm::LoadInst* ret = info->builder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType ) {
-    if( isConst ) tbaa = valType->symbol->llvmConstTbaaNode;
-    else tbaa = valType->symbol->llvmTbaaNode;
+    if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
+    else tbaa = valType->symbol->llvmTbaaAccessTag;
   }
 
   if(!info->loopStack.empty()) {
@@ -2707,8 +2710,8 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     llvm::MDNode* tbaaTag = NULL;
     llvm::MDNode* tbaaStructTag = NULL;
     if( pointedToType ) {
-      tbaaTag = pointedToType->symbol->llvmTbaaNode;
-      tbaaStructTag = pointedToType->symbol->llvmTbaaStructNode;
+      tbaaTag = pointedToType->symbol->llvmTbaaAccessTag;
+      tbaaStructTag = pointedToType->symbol->llvmTbaaStructCopyNode;
     }
     // For structures, ONLY set the tbaa.struct metadata, since
     // generally speaking simple tbaa tags don't make sense for structs.
@@ -2777,7 +2780,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
   if( ! info->cfile ) {
     bool useMemcpy = false;
 
-    if( chplType && chplType->symbol->llvmTbaaStructNode ) {
+    if( chplType && chplType->symbol->llvmTbaaStructCopyNode ) {
       // Always use memcpy for things for which we've developed LLVM
       // struct nodes for alias analysis, since as far as we know, we
       // can't use tbaa.struct for load/store.

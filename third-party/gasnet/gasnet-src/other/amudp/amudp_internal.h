@@ -7,7 +7,8 @@
 #define _AMUDP_INTERNAL_H
 
 #include <portable_inttypes.h>
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 #include <stdio.h>
 #include <stdarg.h>

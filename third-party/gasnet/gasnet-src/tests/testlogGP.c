@@ -101,7 +101,7 @@ void _print_stat(int myproc, stat_struct_t *st, const char *name, int operation)
 void put_tests(int iters, int nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
-    int64_t begin, end, delay_time, loops;
+    int64_t begin=0, end, delay_time, loops=0;
     stat_struct_t st;
 
 	memset(mymem, 0, nbytes);
@@ -224,7 +224,7 @@ void put_tests(int iters, int nbytes)
 void get_tests(int iters, int nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
-    int64_t begin, end, delay_time, loops;
+    int64_t begin=0, end, delay_time, loops=0;
     stat_struct_t st;
 
 	memset(mymem, 0, nbytes);

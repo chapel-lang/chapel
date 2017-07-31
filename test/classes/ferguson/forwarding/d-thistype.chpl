@@ -1,0 +1,36 @@
+
+class C {
+  var field:int;
+}
+
+class D {
+  var field:real;
+}
+
+
+record WrapperOne {
+  var instance; // e.g. some class
+  proc f( a:this.type ) {
+    writeln("in f ", this, " a=", a);
+  }
+}
+
+record WrapperTwo {
+  var instance; // WrapperOne
+  forwarding instance;
+}
+
+
+{
+  var a = new WrapperTwo(new WrapperOne(new C(1)));
+  var aa = new WrapperOne(new C(2));
+
+  a.f(aa);
+}
+
+{
+  var b = new WrapperTwo(new WrapperOne(new D(1.0)));
+  var bb = new WrapperOne(new D(2.0));
+
+  b.f(bb);
+}

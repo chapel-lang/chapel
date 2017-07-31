@@ -33,6 +33,7 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
+#include "wellknown.h"
 
 #include <cctype>
 #include <set>
@@ -1084,11 +1085,9 @@ static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent) {
     SymExpr* destSE = toSymExpr(parent->get(1));
     Symbol* dest = destSE->symbol();
     SymExpr* riSpecMaybe = dest->firstSymExpr();
-    if (ForallStmt* fs = toForallStmt(riSpecMaybe->parentExpr)) {
-      for_vector(Expr, riSpec, fs->withClause()->riSpecs)
-        if (riSpecMaybe == riSpec)
-          return riSpecMaybe;
-    }
+    if (ForallIntent* fi = toForallIntent(riSpecMaybe->parentExpr))
+      if (riSpecMaybe == fi->reduceExpr())
+        return riSpecMaybe;
   }
   return NULL;
 }

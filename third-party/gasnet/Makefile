@@ -40,6 +40,7 @@ endif
 
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+CHPL_GASNET_CFG_OPTIONS += --enable-gni-multi-domain
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
@@ -51,23 +52,14 @@ CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-aries
 endif
 endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
+CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-aries-alps
 else
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
+CHPL_GASNET_CFG_SCRIPT=cross-configure-cray-gemini-alps
 endif
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xt)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
-ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),portals)
-else
-CHPL_GASNET_CFG_OPTIONS += --disable-portals
-endif
-else
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
@@ -75,7 +67,6 @@ XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 CHPL_GASNET_CFG_SCRIPT=configure
-endif
 endif
 endif
 
@@ -105,15 +96,10 @@ gasnet-config: FORCE
 	$(XTRA_CONFIG_COMMAND)
 	cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync $(CHPL_GASNET_CFG_OPTIONS)
 
-#
-# Force serial make using -j1, to avoid the problem documented by
-#     https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3389
-# which can corrupt gasnet_config.h.
-#
-gasnet-build: gasnet-config
-	cd $(GASNET_BUILD_DIR) && $(MAKE) -j1 all
+gasnet-build: FORCE
+	cd $(GASNET_BUILD_DIR) && $(MAKE) all
 
-gasnet-install: gasnet-build
+gasnet-install: FORCE
 	cd $(GASNET_BUILD_DIR) && $(MAKE) install
 	$(XTRA_POST_INSTALL_COMMAND)
 
@@ -126,7 +112,7 @@ gasnet-install: gasnet-build
 post-install: FORCE
 	$(foreach mkfile, $(MKFILES), sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(mkfile) &&) true
 
-gasnet: gasnet-install
+gasnet: gasnet-config gasnet-build gasnet-install
 
 FORCE:
 

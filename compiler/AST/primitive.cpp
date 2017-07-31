@@ -24,6 +24,7 @@
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
+#include "wellknown.h"
 
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {

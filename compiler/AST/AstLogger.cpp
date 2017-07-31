@@ -130,6 +130,13 @@ void AstLogger::exitBlockStmt(BlockStmt* node) {
 void AstLogger::visitForallIntents(ForallIntents* clause) {
 }
 
+bool AstLogger::enterForallIntent(ForallIntent* intent) {
+  return true;
+}
+
+void AstLogger::exitForallIntent(ForallIntent* intent) {
+}
+
 bool AstLogger::enterForallStmt(ForallStmt* node) {
   return true;
 }

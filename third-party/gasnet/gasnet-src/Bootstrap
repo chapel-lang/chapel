@@ -189,9 +189,10 @@ set -x
     #   warning: ignoring old commands for target X
     # Remove the earlier, overridden rule to silence the warning AND remove unwanted dependencies
     # top-level: Makefile and distclean targets, remove all but the last rule (ours)
-    perl -0777 -pi -e 's/^(distclean|Makefile):[^\n]*\n(?:\t[^\n]*\n)*(?=.*\n\1:)//msg' Makefile.in
+    perl -0777 -i.bak -pe 's/^(distclean|Makefile):[^\n]*\n(?:\t[^\n]*\n)*(?=.*\n\1:)//msg' Makefile.in
     # conduits: Makefile target defined in included other/Makefile-conduit.mak, just clear the automake one
-    perl -0777 -pi -e 's/^Makefile:[^\n]*\n(?:\t[^\n]*\n)*//msg' *-conduit/Makefile.in
+    perl -0777 -i.bak -pe 's/^Makefile:[^\n]*\n(?:\t[^\n]*\n)*//msg' *-conduit/Makefile.in
+    rm -f Makefile.in.bak *-conduit/Makefile.in.bak
 
     rm -Rf autom4te*.cache
     rm -f config.cache

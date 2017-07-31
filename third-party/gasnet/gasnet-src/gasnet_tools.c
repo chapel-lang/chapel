@@ -100,6 +100,12 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
 }
 #endif
 
+#if GASNETI_THREADS && GASNETI_BUG3430_WORKAROUND
+  gasneti_mutex_t gasneti_bug3430_lock = GASNETI_MUTEX_INITIALIZER;
+  gasneti_cond_t gasneti_bug3430_cond = GASNETI_COND_INITIALIZER;
+  volatile int gasneti_bug3430_creating = 0;
+#endif
+
 /* ------------------------------------------------------------------------------------ */
 /* rwlock support */
 
@@ -114,7 +120,7 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
      gasneti_rwlock_t const *l;
      struct _S_gasnet_rwlocklist *next;
      _gasneti_rwlock_state state;
-  } _gasneti_rwlocklist_t GASNETI_THREAD_TYPEDEF;
+  } _gasneti_rwlocklist_t;
 
   extern _gasneti_rwlock_state _gasneti_rwlock_query(gasneti_rwlock_t const *l) {
     _gasneti_rwlocklist_t const *list = gasneti_threadkey_get(_gasneti_rwlock_list);
@@ -374,9 +380,11 @@ extern const char *gasnett_performance_warning_str(void) {
     #elif defined(GASNETI_FORCE_SLOW_MEMBARS)
       "        FORCED non-inlined memory barriers\n"
     #endif
-    #if defined(GASNETI_FORCE_GETTIMEOFDAY)
+    #if defined(GASNETI_FORCE_GETTIMEOFDAY) \
+      && !((PLATFORM_OS_LINUX || PLATFORM_OS_CNL) && (PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64)) // Bug 3448
       "        FORCED timers using gettimeofday()\n"
-    #elif defined(GASNETI_FORCE_POSIX_REALTIME)
+    #elif defined(GASNETI_FORCE_POSIX_REALTIME) \
+      && !((PLATFORM_OS_LINUX || PLATFORM_OS_CNL) && (PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64)) // Bug 3448
       "        FORCED timers using clock_gettime()\n"
     #endif
     #if defined(GASNETI_BUG1389_WORKAROUND)
@@ -430,13 +438,25 @@ extern double gasneti_tick_metric(int idx) {
 volatile int gasnet_frozen = 0;
 extern void gasneti_fatalerror(const char *msg, ...) {
   va_list argptr;
-  char expandedmsg[255];
+  #ifndef GASNETI_FATALERROR_LEN
+  #define GASNETI_FATALERROR_LEN 80
+  #endif
+  char expandedmsg[GASNETI_FATALERROR_LEN];
+  const char prefix[] = "*** FATAL ERROR: ";
+  const size_t maxmsg = sizeof(expandedmsg)-sizeof(prefix)-4;
+  const size_t msglen = strlen(msg);
 
-  strcpy(expandedmsg, "*** FATAL ERROR: ");
-  strcat(expandedmsg, msg);
-  strcat(expandedmsg, "\n");
   va_start(argptr, msg); /*  pass in last argument */
-    vfprintf(stderr, expandedmsg, argptr);
+    if (msglen <= maxmsg) { /* short enough to send to stderr in a single operation */
+      strcpy(expandedmsg, prefix);
+      strncat(expandedmsg, msg, maxmsg);
+      if (expandedmsg[strlen(expandedmsg)-1] != '\n') strcat(expandedmsg, "\n");
+      vfprintf(stderr, expandedmsg, argptr);
+    } else { /* long format msg */
+      fprintf(stderr, prefix);
+      vfprintf(stderr, msg, argptr);
+      if (msg[strlen(msg)-1] != '\n') fprintf(stderr, "\n");
+    }
     fflush(stderr);
   va_end(argptr);
 
@@ -1223,7 +1243,7 @@ extern void gasneti_backtrace_init(const char *exename) {
   }
 
   { static char btlist_def[255];
-    GASNETI_UNUSED_UNLESS_THREADS int th;
+    int th;
     int i;
     btlist_def[0] = '\0';
     #if GASNETI_THREADS
@@ -1602,15 +1622,15 @@ GASNETT_TENTATIVE_EXTERN
 const char * (*gasnett_decode_envval_fn)(const char *);
 GASNETT_TENTATIVE_EXTERN
 int (*gasneti_verboseenv_fn)(void);
-gasneti_getenv_fn_t *gasneti_conduit_getenv = NULL;
+gasneti_getenv_fn_t *gasneti_getenv_hook = NULL;
 char *gasneti_globalEnv = NULL;
 
 extern char *gasneti_getenv(const char *keyname) {
   char *retval = NULL;
 
-  if (keyname && gasneti_conduit_getenv) {
-    /* highest priority given to conduit-specific getenv */
-    retval = (*gasneti_conduit_getenv)(keyname);
+  if (keyname && gasneti_getenv_hook) {
+    /* highest priority given to spawner- or conduit-specific getenv */
+    retval = (*gasneti_getenv_hook)(keyname);
   }
 
   if (keyname && !retval && gasneti_globalEnv) { 
@@ -1666,7 +1686,6 @@ extern void gasneti_envstr_display(const char *key, const char *val, int is_dflt
   else if (strlen(val) == 0) displayval = "*empty*";
   GASNETT_TRACE_PRINTF("ENV parameter: %s = %s%s", key, displayval, dflt);
   if (verbose) {
-    GASNETI_UNUSED_UNLESS_THREADS
     static gasneti_mutex_t envmutex = GASNETI_MUTEX_INITIALIZER;
     static gasneti_verboseenv_t *displaylist = NULL;
     static gasneti_verboseenv_t *displaylist_tail = NULL;
@@ -2179,7 +2198,6 @@ void gasneti_set_affinity(int rank) {
   #endif
 #endif
 const char *gasneti_gethostname(void) {
-  GASNETI_UNUSED_UNLESS_THREADS
   static gasneti_mutex_t hnmutex = GASNETI_MUTEX_INITIALIZER;
   static int firsttime = 1;
   static char hostname[MAXHOSTNAMELEN];
@@ -2483,6 +2501,8 @@ gasneti_count0s_copy(void * GASNETI_RESTRICT dst, const void * GASNETI_RESTRICT 
   const uint8_t *s = src;
   while (bytes--) zeros += !(*(d++) = *(s++));
   return zeros;
+#elif PLATFORM_COMPILER_PATHSCALE /* avoid bug 3428 using pre-memcpy/post-count0s */
+  size_t zeros = gasneti_count0s(memcpy(dst, src, bytes), bytes);
 #else /* Carefully optimized (but still portable) word-oriented loop */
   size_t tmp, remain, zeros;
   const uint8_t *s;

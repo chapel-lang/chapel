@@ -2,3 +2,6 @@ bug: cannot make multiple instances of a generic type with multiple type fields
 
 This test generates a resolution error when attempting to create a second
 instance of a specialization of a generic record with multiple type fields
+
+Note: when this test is fixed, please remove the prediff and update the
+expected output accordingly.

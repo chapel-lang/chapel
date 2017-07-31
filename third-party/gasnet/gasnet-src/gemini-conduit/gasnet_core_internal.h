@@ -71,6 +71,8 @@ extern gasnetc_exitcode_t *gasnetc_exitcodes;
 /* ------------------------------------------------------------------------------------ */
 /* Bootstrap collective operations */
 
+extern gasneti_spawnerfn_t const *gasneti_spawner;
+
 void gasnetc_bootstrapBarrier_gni(void);
 void gasnetc_bootstrapExchange_gni(void *src, size_t len, void *dest);
 

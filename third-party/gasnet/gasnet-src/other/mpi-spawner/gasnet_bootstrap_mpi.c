@@ -7,7 +7,6 @@
 
 #include <gasnet_internal.h>
 #include <gasnet_core_internal.h>
-#include <mpi-spawner/gasnet_bootstrap_internal.h>
 #include <signal.h>
 #include <mpi.h>
 
@@ -27,20 +26,117 @@ static int gasnetc_mpi_preinitialized = 0;
 static int gasnetc_mpi_size = -1;
 static int gasnetc_mpi_rank = -1;
 
-int gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode) {
+GASNETI_IDENT(gasnetc_IdentString_HaveMPISpawner, "$GASNetMPISpawner: 1 $");
+
+static gasneti_spawnerfn_t const spawnerfn;
+
+#ifndef HAVE_MPI_INIT_THREAD
+#define HAVE_MPI_INIT_THREAD (MPI_VERSION >= 2)
+#endif
+#ifndef HAVE_MPI_QUERY_THREAD
+#define HAVE_MPI_QUERY_THREAD (MPI_VERSION >= 2)
+#endif
+#ifndef GASNET_MPI_THREAD_STRICT
+#define GASNET_MPI_THREAD_STRICT 0  // strictly adhere to the MPI threading specification
+#endif
+
+static int threadstr2int(const char *str) {
+  char tmp[80];
+  char *p;
+  strncpy(tmp, str, sizeof(tmp));
+  for (p = tmp; *p; p++) if (*p >= 'a' && *p <= 'z') *p -= 'a'-'A'; /* upper-case */
+  int ret = -1;
+  #if HAVE_MPI_INIT_THREAD
+    if (strstr(tmp,"SINGLE"))     return MPI_THREAD_SINGLE;
+    if (strstr(tmp,"FUNNELED"))   return MPI_THREAD_FUNNELED;
+    if (strstr(tmp,"SERIALIZED")) return MPI_THREAD_SERIALIZED;
+    if (strstr(tmp,"MULTIPLE"))   return MPI_THREAD_MULTIPLE;
+    ret = MPI_THREAD_SINGLE-1;
+  #endif
+  return ret;
+}
+static const char *threadint2str(int id) {
+  switch (id) {
+    #if HAVE_MPI_INIT_THREAD
+      case MPI_THREAD_SINGLE:     return "MPI_THREAD_SINGLE";
+      case MPI_THREAD_FUNNELED:   return "MPI_THREAD_FUNNELED";
+      case MPI_THREAD_SERIALIZED: return "MPI_THREAD_SERIALIZED";
+      case MPI_THREAD_MULTIPLE:   return "MPI_THREAD_MULTIPLE";
+    #endif
+      default: return "UNKNOWN VALUE";
+  }
+}
+
+extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode) {
   MPI_Group world;
   int err;
 
   /* Call MPI_Init exactly once */
   err = MPI_Initialized(&gasnetc_mpi_preinitialized);
-  if (MPI_SUCCESS != err) return GASNET_ERR_NOT_INIT;
+  if (MPI_SUCCESS != err) return NULL;
+#if !HAVE_MPI_INIT_THREAD
   if (!gasnetc_mpi_preinitialized) {
-#if MPI_VERSION < 2
-    if (!argc || !argv) return GASNET_ERR_BAD_ARG;
-#endif
+  #if MPI_VERSION < 2
+    if (!argc || !argv) return NULL;
+  #endif
     err = MPI_Init(argc, argv);
-    if (MPI_SUCCESS != err) return GASNET_ERR_NOT_INIT;
+    if (MPI_SUCCESS != err) return NULL;
   }
+#else /* HAVE_MPI_INIT_THREAD */
+  // Setup/verify the threading mode
+  // By default we assume mpi-spawner is the only conduit-level client of MPI
+  // If the process is fully single-threaded, we should be using THREAD_SINGLE
+  // If other threads exist that don't call mpi-spawner/MPI then THREAD_FUNNELED
+  // If other threads might call mpi-spawner (eg fini/exit) then THREAD_SERIALIZED
+  // Clients who want to make asynchronous calls to MPI directly should override our thread mode to THREAD_MULTIPLE
+  #if GASNET_MPI_THREAD_STRICT
+    #if GASNETI_THREADS
+      int required = MPI_THREAD_SERIALIZED;
+    #elif _REENTRANT
+      int required = MPI_THREAD_FUNNELED;
+    #else
+      int required = MPI_THREAD_SINGLE;
+    #endif
+  #else
+    int required = MPI_THREAD_SINGLE; // temporarily loosened for backwards compatibility
+  #endif
+    int provided = -1;
+    const char *override = gasneti_getenv_withdefault("GASNET_MPI_THREAD",threadint2str(required));
+    if (override) {
+      int overreq = threadstr2int(override);
+      if (overreq >= MPI_THREAD_SINGLE) required = overreq;
+      else { fprintf(stderr,"WARNING: Ignoring unrecognized GASNET_MPI_THREAD value."); fflush(stderr); }
+    }
+    if (gasnetc_mpi_preinitialized) {  // MPI already init, query current thread support level
+      #if HAVE_MPI_QUERY_THREAD
+        MPI_Query_thread(&provided);
+        // deliberately ignore errors on query
+      #else
+        provided = required;
+      #endif
+    } else { // init MPI and request our needed level of thread safety
+      #if GASNET_DEBUG_VERBOSE
+        fprintf(stderr,"mpi-spawner: MPI_Init_thread(%s)\n",threadint2str(required));
+        fflush(stderr);
+      #endif
+      err = MPI_Init_thread(argc, argv, required, &provided);
+      if (err != MPI_SUCCESS) return NULL;
+    }
+    #if GASNET_DEBUG_VERBOSE
+      fprintf(stderr,"mpi-spawner: MPI threading mode: %s required, %s provided.\n",
+                     threadint2str(required), threadint2str(provided));
+      fflush(stderr);
+    #endif
+    if (provided < required) {
+      fprintf(stderr,"WARNING: GASNet requested MPI threading support model: %s\n"
+                     "WARNING: but the MPI library only provided: %s\n"
+                     "WARNING: You may need to link a more thread-safe MPI library to ensure correct operation.\n"
+                     "WARNING: You can override the required level by setting GASNET_MPI_THREAD.\n",
+                     threadint2str(required), threadint2str(provided)
+             );
+      fflush(stderr);
+    } 
+#endif
 
   /* Create private communicator */
   err = MPI_Comm_group(MPI_COMM_WORLD, &world);
@@ -61,14 +157,22 @@ int gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gas
   *mynode = gasnetc_mpi_rank;
 
   gasneti_setupGlobalEnvironment(*nodes, *mynode,
-				 &gasneti_bootstrapExchange_mpi,
-				 &gasneti_bootstrapBroadcast_mpi);
+				 spawnerfn.Exchange,
+				 spawnerfn.Broadcast);
 
-  return GASNET_OK;
+  return &spawnerfn;
 }
 
-void gasneti_bootstrapFini_mpi(void) {
+static void bootstrapFini(void) {
   int err;
+
+#if (MPI_VERSION > 1)
+  /* Check to see if MPI is already finalized, for instance on an error path. */
+  int isfini = 0;
+  err = MPI_Finalized(&isfini);
+  gasneti_assert_always(err == MPI_SUCCESS);
+  if (isfini) return;
+#endif
 
   err = MPI_Comm_free(&gasnetc_mpi_comm);
   gasneti_assert_always(err == MPI_SUCCESS);
@@ -83,7 +187,7 @@ void gasneti_bootstrapFini_mpi(void) {
   }
 }
 
-void gasneti_bootstrapAbort_mpi(int exitcode) {
+static void bootstrapAbort(int exitcode) {
   (void) MPI_Abort(gasnetc_mpi_comm, exitcode);
 
   gasneti_reghandler(SIGABRT, SIG_DFL);
@@ -91,14 +195,14 @@ void gasneti_bootstrapAbort_mpi(int exitcode) {
   /* NOT REACHED */
 }
 
-void gasneti_bootstrapBarrier_mpi(void) {
+static void bootstrapBarrier(void) {
   int err;
 
   err = MPI_Barrier(gasnetc_mpi_comm);
   gasneti_assert_always(err == MPI_SUCCESS);
 }
 
-void gasneti_bootstrapExchange_mpi(void *src, size_t len, void *dest) {
+static void bootstrapExchange(void *src, size_t len, void *dest) {
   const int inplace = ((uint8_t *)src == (uint8_t *)dest + len * gasnetc_mpi_rank);
   int err;
 
@@ -118,7 +222,7 @@ void gasneti_bootstrapExchange_mpi(void *src, size_t len, void *dest) {
 #endif
 }
 
-void gasneti_bootstrapAlltoall_mpi(void *src, size_t len, void *dest) {
+static void bootstrapAlltoall(void *src, size_t len, void *dest) {
   const int inplace = (src == dest);
   int err;
 
@@ -139,7 +243,7 @@ void gasneti_bootstrapAlltoall_mpi(void *src, size_t len, void *dest) {
 #endif
 }
 
-void gasneti_bootstrapBroadcast_mpi(void *src, size_t len, void *dest, int rootnode) {
+static void bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) {
   int err;
   
   if (gasnetc_mpi_rank == rootnode) {
@@ -149,7 +253,7 @@ void gasneti_bootstrapBroadcast_mpi(void *src, size_t len, void *dest, int rootn
   gasneti_assert_always(err == MPI_SUCCESS);
 }
 
-void gasneti_bootstrapSNodeBroadcast_mpi(void *src, size_t len, void *dest, int rootnode) {
+static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
   int err;
 
   if (gasnetc_mpi_rank == rootnode) {
@@ -173,6 +277,23 @@ void gasneti_bootstrapSNodeBroadcast_mpi(void *src, size_t len, void *dest, int 
   }
 }
 
-void gasneti_bootstrapCleanup_mpi(void) {
+static void bootstrapCleanup(void) {
   /* Nothing to do here */
 }
+
+static gasneti_spawnerfn_t const spawnerfn = {
+  bootstrapBarrier,
+  bootstrapExchange,
+  bootstrapBroadcast,
+  bootstrapSNodeBroadcast,
+  bootstrapAlltoall,
+  bootstrapAbort,
+  bootstrapCleanup,
+  bootstrapFini,
+#if GASNET_BLCR && 0 // BLCR-TODO
+  bootstrapPreCheckpoint,
+  bootstrapPostCheckpoint,
+  bootstrapRollback,
+#endif
+};
+

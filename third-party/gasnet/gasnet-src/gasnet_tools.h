@@ -58,6 +58,9 @@
 #define GASNETT_RELEASE_VERSION_PATCH GASNET_RELEASE_VERSION_PATCH
 
 #include <gasnet_basic.h>
+
+GASNETI_BEGIN_NOWARN
+
 #include <gasnet_toolhelp.h>
 
 /* allow conduit-specific tool helpers (eg elan timers) */
@@ -444,7 +447,6 @@ extern gasnett_backtrace_type_t gasnett_backtrace_user;
   #include <stdarg.h>
 #endif
 GASNETI_FORMAT_PRINTF(_gasnett_trace_printf_noop,1,2,
-GASNETI_UNUSED
 static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #if PLATFORM_COMPILER_PGI
     va_list _ap; va_start(_ap,_format); va_end(_ap); /* avoid a silly warning */
@@ -648,6 +650,7 @@ static int *gasnett_linkconfig_idiotcheck(void)
 
 /* ------------------------------------------------------------------------------------ */
 
+GASNETI_END_NOWARN
 GASNETI_END_EXTERNC
 
 #undef _IN_GASNET_TOOLS_H

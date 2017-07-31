@@ -208,7 +208,7 @@ void gasneti_pshmnet_bootstrapGather(gasneti_pshmnet_t *vnet, void *src,
 /* "critical sections" in which we notify peers if we abort() while
  * they are potentially blocked in gasneti_pshmnet_bootstrapBarrier().
   */
-extern void gasneti_pshm_cs_enter(void);
+extern void gasneti_pshm_cs_enter(void (*callback)(void));
 extern void gasneti_pshm_cs_leave(void);
 
 /* returns the maximum size payload that pshmnet can offer.  This is the
@@ -295,7 +295,7 @@ int gasneti_AMPSHM_ReplyGeneric(int category, gasnet_token_t token,
                                 va_list argptr) 
 {
   int retval;
-  gasnet_node_t sourceid;
+  gasnet_node_t sourceid = 0; // init to avoid a maybe-uninit warning on gcc -O3 -Wall
   gasneti_assert(gasnetc_token_is_pshm(token));
   gasnetc_AMGetMsgSource(token, &sourceid);
   gasneti_assert(gasneti_pshm_in_supernode(sourceid));

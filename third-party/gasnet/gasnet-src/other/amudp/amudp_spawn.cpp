@@ -3,7 +3,8 @@
  * Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
 
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 #include <errno.h>
 #if PLATFORM_OS_CYGWIN

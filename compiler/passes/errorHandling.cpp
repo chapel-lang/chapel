@@ -25,6 +25,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "wellknown.h"
 
 #include <stack>
 

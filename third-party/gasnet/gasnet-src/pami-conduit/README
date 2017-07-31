@@ -23,6 +23,19 @@ performance.
 
 There are no known minimum required versions of PAMI or related software
 
+Optional compile-time settings:
+------------------------------
+
+* The following compile-time settings from extended-ref
+  (see the extended-ref README)
+
+ + GASNETI_THREADINFO_OPT - optimize thread discovery using hidden local variable
+
+ + GASNETI_LAZY_BEGINFUNCTION - postpone thread discovery to first use
+
+ + GASNETE_SCATTER_EOPS_ACROSS_CACHELINES(1/0) - scatter newly allocated eops
+    across cache lines to reduce false sharing
+
 Recognized environment variables:
 ---------------------------------
 
@@ -65,23 +78,11 @@ Recognized environment variables:
   This integer parameter sets the maxumum number of PAMI operations
   to be retired by a call to gasnet_AMPoll().
 
-Optional compile-time settings:
-------------------------------
-
-* The following compile-time settings from extended-ref
-  (see the extended-ref README)
-
- + GASNETI_THREADINFO_OPT - optimize thread discovery using hidden local variable
-
- + GASNETI_LAZY_BEGINFUNCTION - postpone thread discovery to first use
-
- + GASNETE_SCATTER_EOPS_ACROSS_CACHELINES(1/0) - scatter newly allocated eops
-    across cache lines to reduce false sharing
-
 Known problems:
 ---------------
 
-* See the Berkeley UPC Bugzilla server for details on known bugs.
+* See the GASNet Bugzilla server for details on known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

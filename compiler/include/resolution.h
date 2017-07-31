@@ -157,7 +157,7 @@ public:
 };
 
 void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
-                            CallInfo& info, CallExpr* call);
+                            CallInfo&                  info);
 
 /** Contextual info used by the disambiguation process.
  *
@@ -166,52 +166,23 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
  */
 class DisambiguationContext {
 public:
-  /// The actual arguments from the call site.
+                               DisambiguationContext(CallInfo& info);
+
+  const DisambiguationContext& forPair(int newI, int newJ);
+
   Vec<Symbol*>* actuals;
-  /// The scope in which the call is made.
-  Expr* scope;
-  /// Whether or not to print out tracing information.
-  bool explain;
-  /// Indexes used when printing out tracing information.
-  int i, j;
-
-  /** A simple constructor that initializes all of the values except i and j.
-   *
-   * \param actuals The actual arguments from the call site.
-   * \param scope   A block representing the scope the call was made in.
-   * \param explain Whether or not a trace of this disambiguation process should
-   *                be printed for the developer.
-   */
-  DisambiguationContext(Vec<Symbol*>* actuals, Expr* scope, bool explain) :
-    actuals(actuals), scope(scope), explain(explain), i(-1), j(-1) {}
-
-  /** A helper function used to set the i and j members.
-   *
-   * \param i The index of the left-hand side of the comparison.
-   * \param j The index of the right-hand side of the comparison.
-   *
-   * \return A constant reference to this disambiguation context.
-   */
-  const DisambiguationContext& forPair(int newI, int newJ) {
-    this->i = newI;
-    this->j = newJ;
-
-    return *this;
-  }
+  Expr*         scope;
+  bool          explain;
+  int           i;
+  int           j;
 };
 
 
-ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                                         Vec<ResolutionCandidate*>& ambiguous,
-                                         DisambiguationContext DC,
-                                         bool ignoreWhere);
-
-void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
-                                        Vec<ResolutionCandidate*>& ambiguous,
-                                        DisambiguationContext DC,
-                                        ResolutionCandidate*& bestRef,
-                                        ResolutionCandidate*& bestConstRef,
-                                        ResolutionCandidate*& bestValue);
+ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    DisambiguationContext      DC,
+                    bool                       ignoreWhere,
+                    Vec<ResolutionCandidate*>& ambiguous);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);
@@ -242,11 +213,18 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
-void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info);
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info);
+void printResolutionErrorAmbiguous(CallInfo&                  info,
+                                   Vec<ResolutionCandidate*>& candidates);
+
+void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
+                                    CallInfo*       info);
+
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+
 void lvalueCheck(CallExpr* call);
+
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
+
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples

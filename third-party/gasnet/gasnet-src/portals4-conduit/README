@@ -30,6 +30,20 @@ which implements GASNet directly over IB verbs.
 Users with Ethernet hardware are encouraged to use udp-conduit instead, 
 which implements GASNet directly over UDP.
 
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+* Portals 4 implementations which do not support creating a memory
+  descriptor to bind all of memory may set two configure-time flags to
+  activate a workaround:
+    --with-portals4-max-md-size=SIZE
+    --with-portals4-max-va-size=SIZE
+  SIZE should be the Log2 of the size in bytes of the largest memory
+  space that can be covered by a memory descriptor and the largest
+  user-accessible virtual address.  In general, these arguments should
+  not be needed.
+
 Recognized environment variables:
 ---------------------------------
 
@@ -46,7 +60,7 @@ GASNET_AM_BUFFER_SIZE=<size>
   increasing GASNET_AM_NUM_ENTRIES will be more fruitful.
 
   Note that, unlike many interfaces, Portals 4 does not require a
-  buffer per active messages.  Instead, active messages are tightly
+  buffer per active message.  Instead, active messages are tightly
   packed into a receive buffer until the buffer fills.  So 16 entries
   of 1MB means that the conduit can receive approximately 256k
   messages of 16 arguments.
@@ -101,24 +115,11 @@ relevant when using portals-conduit:
 
 See the Portals 4 documentation for the most up-to-date information. 
 
-Optional compile-time settings:
-------------------------------
-
-* All the compile-time settings from extended-ref (see the extended-ref README)
-* Portals 4 implementations which do not support creating a memory
-  descriptor to bind all of memory may set two configure-time flags to
-  activate a workaround:
-    --with-portals4-max-md-size=SIZE
-    --with-portals4-max-va-size=SIZE
-  SIZE should be the Log2 of the size in bytes of the largest memory
-  space that can be covered by a memory descriptor and the largest
-  user-accessible virtual address.  In general, these arguments should
-  not be needed.
-
 Known problems:
 ---------------
 
-* See the Berkeley UPC Bugzilla server for details on known bugs.
+* See the GASNet Bugzilla server for details on known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

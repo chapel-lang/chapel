@@ -22,6 +22,7 @@
 
 #include <vector>
 
+class AggregateType;
 class FnSymbol;
 
 void gatherIteratorTags();
@@ -30,5 +31,32 @@ void gatherWellKnownFns();
 
 std::vector<FnSymbol*> getWellKnownFunctions();
 void clearGenericWellKnownFunctions();
+
+// The well-known types
+extern AggregateType* dtArray;
+extern AggregateType* dtBaseArr;
+extern AggregateType* dtBaseDom;
+extern AggregateType* dtDist;
+extern AggregateType* dtError;
+extern AggregateType* dtLocale;
+extern AggregateType* dtLocaleID;
+extern AggregateType* dtMainArgument;
+extern AggregateType* dtOnBundleRecord;
+extern AggregateType* dtTaskBundleRecord;
+extern AggregateType* dtTuple;
+
+// The well-known functions
+extern FnSymbol *gChplHereAlloc;
+extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDoDirectExecuteOn;
+extern FnSymbol *gBuildTupleType;
+extern FnSymbol *gBuildTupleTypeNoRef;
+extern FnSymbol *gBuildStarTupleType;
+extern FnSymbol *gBuildStarTupleTypeNoRef;
+extern FnSymbol *gChplDeleteError;
+extern FnSymbol *gPrintModuleInitFn;
+extern FnSymbol *gGetDynamicEndCount;
+extern FnSymbol *gSetDynamicEndCount;
+
 
 #endif

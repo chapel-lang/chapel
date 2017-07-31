@@ -87,21 +87,10 @@ VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
-FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gAddModuleFn = NULL;
-FnSymbol* gChplHereAlloc = NULL;
-FnSymbol* gChplHereFree = NULL;
-FnSymbol* gChplDoDirectExecuteOn = NULL;
 FnSymbol *gGenericTupleTypeCtor = NULL;
 FnSymbol *gGenericTupleInit = NULL;
 FnSymbol *gGenericTupleDestroy = NULL;
-FnSymbol *gBuildTupleType = NULL;
-FnSymbol *gBuildStarTupleType = NULL;
-FnSymbol *gBuildTupleTypeNoRef = NULL;
-FnSymbol *gBuildStarTupleTypeNoRef = NULL;
-FnSymbol* gChplDeleteError = NULL;
-FnSymbol *gGetDynamicEndCount = NULL;
-FnSymbol *gSetDynamicEndCount = NULL;
 
 
 std::map<FnSymbol*,int> ftableMap;
@@ -811,8 +800,9 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
-    llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmTbaaTypeDescriptor(NULL),
+    llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
+    llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL)
 {
@@ -2376,6 +2366,7 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 const char* astrSdot = NULL;
 const char* astrSequals = NULL;
 const char* astr_cast = NULL;
+const char* astrInit = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
@@ -2384,6 +2375,7 @@ void initAstrConsts() {
   astrSdot    = astr(".");
   astrSequals = astr("=");
   astr_cast   = astr("_cast");
+  astrInit    = astr("init");
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");

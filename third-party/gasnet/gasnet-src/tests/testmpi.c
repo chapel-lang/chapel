@@ -168,7 +168,6 @@ void mpi_barrier(threaddata_t *tdata) {
   #define MPI_LOCK()
   #define MPI_UNLOCK()
 #else
-  GASNETT_UNUSED
   static gasnet_hsl_t  mpi_hsl = GASNET_HSL_INITIALIZER;
   #define MPI_LOCK()   gasnet_hsl_lock(&mpi_hsl)
   #define MPI_UNLOCK() gasnet_hsl_unlock(&mpi_hsl)

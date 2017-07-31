@@ -104,11 +104,10 @@ LIBRARIES = $(lib_LIBRARIES)
 ARFLAGS = cru
 libamudp_a_AR = $(AR) $(ARFLAGS)
 libamudp_a_LIBADD =
-am__objects_1 =
-am_libamudp_a_OBJECTS = $(am__objects_1) amudp_cdefs.$(OBJEXT) \
-	amudp_ep.$(OBJEXT) amudp_reqrep.$(OBJEXT) \
-	amudp_spawn.$(OBJEXT) amudp_spmd.$(OBJEXT) exc.$(OBJEXT) \
-	sig.$(OBJEXT) socklist.$(OBJEXT) sockutil.$(OBJEXT)
+am_libamudp_a_OBJECTS = amudp_cdefs.$(OBJEXT) amudp_ep.$(OBJEXT) \
+	amudp_reqrep.$(OBJEXT) amudp_spawn.$(OBJEXT) \
+	amudp_spmd.$(OBJEXT) exc.$(OBJEXT) sig.$(OBJEXT) \
+	socklist.$(OBJEXT) sockutil.$(OBJEXT)
 libamudp_a_OBJECTS = $(am_libamudp_a_OBJECTS)
 PROGRAMS = $(bin_PROGRAMS)
 amudprun_SOURCES = amudprun.c
@@ -158,8 +157,6 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CC_UNWRAPPED = @CC_UNWRAPPED@
-CC_WRAPPED = @CC_WRAPPED@
 CFLAGS = @GASNET_OPT_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags) $(strict_proto_flags)
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
@@ -175,8 +172,6 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
-CXX_UNWRAPPED = @CXX_UNWRAPPED@
-CXX_WRAPPED = @CXX_WRAPPED@
 CYGPATH_W = @CYGPATH_W@
 DBX_PATH = @DBX_PATH@
 DEBUGMALLOC = @DEBUGMALLOC@
@@ -198,9 +193,9 @@ FCA_LIBDIR = @FCA_LIBDIR@
 FCA_LIBS = @FCA_LIBS@
 FH_CFLAGS = @FH_CFLAGS@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
+GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
 GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
-GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
 GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
@@ -223,7 +218,7 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
-IBV_INCLUDE = @IBV_INCLUDE@
+IBV_INCLUDES = @IBV_INCLUDES@
 IBV_LIBCFLAGS = @IBV_LIBCFLAGS@
 IBV_LIBDIR = @IBV_LIBDIR@
 IBV_LIBS = @IBV_LIBS@
@@ -253,17 +248,14 @@ MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
-MPI_CC_UNWRAPPED = @MPI_CC_UNWRAPPED@
-MPI_CC_WRAPPED = @MPI_CC_WRAPPED@
 MPI_CFLAGS = @MPI_CFLAGS@
-MPI_DEFINES = @MPI_DEFINES@
 MPI_LIBS = @MPI_LIBS@
 MXM_INCLUDE = @MXM_INCLUDE@
 MXM_LIBDIR = @MXM_LIBDIR@
 MXM_LIBS = @MXM_LIBS@
 NM = @NM@
 OBJEXT = @OBJEXT@
-OFI_INCLUDE = @OFI_INCLUDE@
+OFI_INCLUDES = @OFI_INCLUDES@
 OFI_LIBCFLAGS = @OFI_LIBCFLAGS@
 OFI_LIBDIR = @OFI_LIBDIR@
 OFI_LIBS = @OFI_LIBS@
@@ -283,6 +275,7 @@ PATCHED_HEADER = @PATCHED_HEADER@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
+PMIRUN_CMD = @PMIRUN_CMD@
 PMI_SPAWNER_INCLUDES = @PMI_SPAWNER_INCLUDES@
 PMI_SPAWNER_LIBDIR = @PMI_SPAWNER_LIBDIR@
 PMI_SPAWNER_LIBS = @PMI_SPAWNER_LIBS@
@@ -352,12 +345,14 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+fi_info = @fi_info@
 gasnet_cv__gfp_fullprogname_CC = @gasnet_cv__gfp_fullprogname_CC@
 gasnet_cv__gfp_fullprogname_CPP = @gasnet_cv__gfp_fullprogname_CPP@
 gasnet_cv__gfp_fullprogname_CXX = @gasnet_cv__gfp_fullprogname_CXX@
 gasnet_cv__gfp_fullprogname_CXXCPP = @gasnet_cv__gfp_fullprogname_CXXCPP@
 gasnet_cv__gfp_fullprogname_MPIRUN_CMD = @gasnet_cv__gfp_fullprogname_MPIRUN_CMD@
 gasnet_cv__gfp_fullprogname_MPI_CC = @gasnet_cv__gfp_fullprogname_MPI_CC@
+gasnet_cv__gfp_fullprogname_PMIRUN_CMD = @gasnet_cv__gfp_fullprogname_PMIRUN_CMD@
 have_mpcc_r = @have_mpcc_r@
 host = @host@
 host_alias = @host_alias@
@@ -375,6 +370,7 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+mxm_dump_config = @mxm_dump_config@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
 prefix = @prefix@
@@ -403,16 +399,17 @@ apputils_flags =
 @BLCR_ENABLED_TRUE@blcr_ldflags = @BLCR_LIBDIR@ @BLCR_LIBS@
 @USE_STRICT_PROTOTYPES_FALSE@strict_proto_flags = 
 @USE_STRICT_PROTOTYPES_TRUE@strict_proto_flags = -DGASNET_USE_STRICT_PROTOTYPES
-platform_defines = @GASNET_MACHINE_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMUDP_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMUDP_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
 platform_libraries = -L$(top_builddir) -lgasnet_tools-seq @LIBS@ @GASNET_UDP_LIBS@ $(blcr_ldflags)
 testdir = $(srcdir)/../amxtests
 altincdir = $(srcdir)/..
 gasnet_tools = -I$(srcdir)/../.. -I../.. -DHAVE_GASNET_TOOLS
-INCLUDES = -I$(srcdir) -I$(altincdir) $(platform_defines) $(gasnet_tools)
+INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines) $(gasnet_tools)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
 cxxcompile = $(CXX) $(CXXFLAGS) $(INCLUDES)
 link = $(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
+@USE_UDP_CONDUIT_TRUE@BUILT_SOURCES = amudp_portable_platform.h
 @USE_UDP_CONDUIT_TRUE@lib_LIBRARIES = libamudp.a
 headers = \
 	amudp.h			\
@@ -426,8 +423,8 @@ headers = \
 	socklist.h		\
 	sockutil.h		
 
+allheaders = $(BUILT_SOURCES) $(headers)
 libamudp_a_SOURCES = \
-	$(headers)		\
 	amudp_cdefs.c		\
 	amudp_ep.cpp		\
 	amudp_reqrep.cpp	\
@@ -440,9 +437,7 @@ libamudp_a_SOURCES = \
 
 libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o) $(libamudp_a_SOURCES:%.c=%.o)
 EXTRA_DIST = \
-	Makefile.common 	\
-	Makefile.generic 	\
-	Makefile.standalone 	\
+        $(headers)              \
 	Makefile.tests  	\
 	Makefile.titanium.in 	\
 	amudprun.c              \
@@ -466,8 +461,8 @@ testprograms = \
 TESTLOG = `pwd`/.test-results
 TEST_LINE = ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 AMUDP_RUNCMD_EXP = \
-      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  \
-      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` \
+      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  ; \
+      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` ; \
       TEST_DOIT="$$TEST_RUN"
 
 TEST_RUNCMD = ; $(AMUDP_RUNCMD_EXP) ; 				\
@@ -497,9 +492,10 @@ TEST_DEPTH = 32
 TEST_DUPLEX = H
 AMUDP_NETWORKDEPTH = $(TEST_DEPTH)
 @USE_UDP_CONDUIT_FALSE@clean_local_files = 
-@USE_UDP_CONDUIT_TRUE@clean_local_files = libamudp.a *.o core .test-results
+@USE_UDP_CONDUIT_TRUE@clean_local_files = libamudp.a *.o core .test-results $(BUILT_SOURCES)
 CLEANFILES = $(clean_local_files)
-all: all-am
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .cpp .o .obj
@@ -711,13 +707,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LIBRARIES) $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -748,6 +746,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLIBRARIES \
@@ -816,7 +815,7 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-libLIBRARIES
 
-.MAKE: install-am install-strip
+.MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
 	clean-generic clean-libLIBRARIES clean-local ctags distclean \
@@ -833,6 +832,11 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLIBRARIES
 	uninstall-am uninstall-binPROGRAMS uninstall-libLIBRARIES
 
 
+amudp_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+	cp -f $< $@
+
+$(libamudp_a_DEPENDENCIES): $(allheaders)
+
 tests: apputils.o $(testprograms)
 
 test%: test%.o apputils.o libamudp.a
@@ -842,7 +846,7 @@ tests-clean:
 	rm -f $(testprograms)
 
 run-tests: tests
-	@rm -f .test-results ; touch $(TESTLOG)
+	@rm -f $(TESTLOG) ; touch $(TESTLOG)
 	@echo $(TEST_LINE)
 	@echo  Running AMUDP tests...
 	@echo  If this fails to spawn a job, you may need to re-run with a
@@ -858,39 +862,44 @@ run-tests: tests
 	@TEST_RUN="./testgetput $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS)" $(TEST_RUNCMD)
 	@TEST_RUN="./testreadwrite $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS)" $(TEST_RUNCMD)
 	@echo TESTS COMPLETE
+	@cat $(TESTLOG) ; rm -f $(TESTLOG)
 
 # make a distribution
 amxdist:
 	@bash -x -c ' \
          VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp_const.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
          export VERSION ; \
+	 distdir=amudp$${VERSION} ; \
          echo "+++ Building distribution for AMUDP version $${VERSION} +++" && \
-	 rm -Rf amudp$${VERSION}.tar.gz amudp$${VERSION} && \
-         mkdir amudp$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch]* \
-	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
-	    amudp$${VERSION} && \
-         rm -f amudp$${VERSION}/Makefile.in amudp$${VERSION}/Makefile.titanium && \
-         mv amudp$${VERSION}/Makefile.standalone amudp$${VERSION}/Makefile && \
-         tar -cvhf amudp$${VERSION}.tar amudp$${VERSION} && gzip -9 amudp$${VERSION}.tar && \
-         rm -Rf amudp$${VERSION} && \
-         echo "+++ amudp$${VERSION}.tar.gz is ready for distribution +++" \
+	 rm -Rf $$distdir.tar.gz $$distdir && \
+         mkdir $$distdir && \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch] \
+	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
+	    $$distdir && \
+	 cd $$distdir && \
+	 mv gasnet_portable_platform.h amudp_portable_platform.h && \
+	 rm -f Makefile.in Makefile.am Makefile.titanium* && \
+         mv Makefile.standalone Makefile && \
+	 cd .. && \
+         tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
+         rm -Rf $$distdir && \
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" \
         '
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(headers)
+test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
 	$(compile) -DAMUDP -I$(testdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(headers)
+apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
 	$(compile) -DAMUDP -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
 
 amudprun$(EXEEXT): amudprun.o $(headers) libamudp.a
 	$(link) -o $@ $< -L. -lamudp $(linkend)
 
-%.o: %.c $(headers)
-	$(compile) -o $@ -c $<
+%.o: %.c $(allheaders)
+	$(compile) -o $@ -c `test -e $(srcdir)/$< && echo "$(srcdir)/"`$<
 
-%.o: %.cpp $(headers) $(top_builddir)/libgasnet_tools-seq.a
-	$(cxxcompile) -o $@ -c $<
+%.o: %.cpp $(allheaders) $(top_builddir)/libgasnet_tools-seq.a
+	$(cxxcompile) -o $@ -c `test -e $(srcdir)/$< && echo "$(srcdir)/"`$<
 
 $(top_builddir)/libgasnet_tools-seq.a: force
 	@cd $(top_builddir) && $(MAKE) libgasnet_tools-seq.a
@@ -899,6 +908,7 @@ $(top_builddir)/libgasnet_tools-seq.a: force
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@	@echo Checking libamudp exports...
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@	@lib=libamudp.a ; \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            @NM@ --defined-only $$lib |                                             \
+@GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@            grep -v -e ' [\._]*amudp_' -e ' [\._]*AMUDP_' -e ' [\._]*AM_'           \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
 @GNU_NM_TRUE@@USE_UDP_CONDUIT_TRUE@                    -e 'get_pc_thunk'                                               \

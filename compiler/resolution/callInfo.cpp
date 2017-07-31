@@ -22,11 +22,16 @@
 #include "baseAST.h"
 #include "expr.h"
 
-CallInfo::CallInfo(CallExpr* icall, bool checkOnly, bool initOkay) {
-  call    = icall;
+CallInfo::CallInfo() {
+  call    = NULL;
   scope   = NULL;
   name    = NULL;
-  badcall = false;
+}
+
+bool CallInfo::isNotWellFormed(CallExpr* callExpr, bool forInit) {
+  bool retval = false;
+
+  call = callExpr;
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     name = se->symbol()->name;
@@ -53,13 +58,14 @@ CallInfo::CallInfo(CallExpr* icall, bool checkOnly, bool initOkay) {
     }
   }
 
-  for_actuals(actual, call) {
-    bool isThis = false;
+  for (int i = 1; i <= call->numActuals() && retval == false; i++) {
+    Expr* actual = call->get(i);
+    bool  isThis = false;
 
     if (NamedExpr* named = toNamedExpr(actual)) {
       actualNames.add(named->name);
 
-      if (initOkay == true && named->name == astrThis) {
+      if (forInit == true && named->name == astrThis) {
         isThis = true;
       }
 
@@ -70,37 +76,57 @@ CallInfo::CallInfo(CallExpr* icall, bool checkOnly, bool initOkay) {
     }
 
     SymExpr* se = toSymExpr(actual);
+
     INT_ASSERT(se);
 
-    Type*    t  = se->symbol()->type;
+    Symbol*  sym = se->symbol();
+    Type*    t   = sym->type;
 
-    if (t == dtUnknown && se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      if (checkOnly) {
-        badcall = true;
-      } else {
-        USR_FATAL(call,
-                  "use of '%s' before encountering its definition, "
-                  "type unknown",
-                  se->symbol()->name);
+    if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+      retval = true;
+
+    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true && isThis == false) {
+      retval = true;
+
+    } else {
+      actuals.add(sym);
+    }
+  }
+
+  return retval;
+}
+
+void CallInfo::haltNotWellFormed(bool forInit) const {
+  for (int i = 1; i <= call->numActuals(); i++) {
+    Expr* actual = call->get(i);
+    bool  isThis = false;
+
+    if (NamedExpr* named = toNamedExpr(actual)) {
+      if (forInit == true && named->name == astrThis) {
+        isThis = true;
       }
+
+      actual = named->actual;
     }
 
-    if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (initOkay == true && isThis == true) {
-        // initOkay is only used when resolving an initializer call,
-        // so we allow the this argument to be generic, as we will
-        // perform the work necessary to instantiate it.
+    SymExpr* se = toSymExpr(actual);
+    INT_ASSERT(se);
 
-      } else if (checkOnly == true) {
-        badcall = true;
+    Symbol*  sym = se->symbol();
+    Type*    t   = sym->type;
 
-      } else {
+    if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+      USR_FATAL(call,
+                "use of '%s' before encountering its definition, "
+                "type unknown",
+                sym->name);
+
+    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
+      if (forInit == false || isThis == false) {
         INT_FATAL(call,
                   "the type of the actual argument '%s' is generic",
-                  se->symbol()->name);
+                  sym->name);
       }
     }
-
-    actuals.add(se->symbol());
   }
 }

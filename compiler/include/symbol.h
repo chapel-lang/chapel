@@ -359,19 +359,21 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
-  llvm::MDNode* llvmTbaaNode;
-  llvm::MDNode* llvmConstTbaaNode;
-  llvm::MDNode* llvmTbaaStructNode;
-  llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmTbaaTypeDescriptor;
+  llvm::MDNode* llvmTbaaAccessTag;
+  llvm::MDNode* llvmConstTbaaAccessTag;
+  llvm::MDNode* llvmTbaaStructCopyNode;
+  llvm::MDNode* llvmConstTbaaStructCopyNode;
   llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  void* llvmTbaaTypeDescriptor;
+  void* llvmTbaaAccessTag;
+  void* llvmConstTbaaAccessTag;
+  void* llvmTbaaStructCopyNode;
+  void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
 #endif
 
@@ -654,6 +656,7 @@ const char* intentDescrString(IntentTag intent);
 extern const char* astrSdot;
 extern const char* astrSequals;
 extern const char* astr_cast;
+extern const char* astrInit;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
@@ -701,24 +704,11 @@ extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
-extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gAddModuleFn;
-extern FnSymbol *gChplHereAlloc;
-extern FnSymbol *gChplHereFree;
-extern FnSymbol *gChplDoDirectExecuteOn;
+
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
-extern FnSymbol *gChplDeleteError;
-extern FnSymbol *gGetDynamicEndCount;
-extern FnSymbol *gSetDynamicEndCount;
-
-// These global symbols point to generic functions that
-// will be instantiated.
-extern FnSymbol *gBuildTupleType;
-extern FnSymbol *gBuildStarTupleType;
-extern FnSymbol *gBuildTupleTypeNoRef;
-extern FnSymbol *gBuildStarTupleTypeNoRef;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

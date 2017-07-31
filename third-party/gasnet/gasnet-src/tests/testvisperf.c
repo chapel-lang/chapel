@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
             if (singlesender) snprintf(mystr, sizeof(mystr), "%8i: ", (int)datasz);
             else  snprintf(mystr, sizeof(mystr), "P%i: %6i: ", myproc, (int)datasz);
             for (di = 0; di < densitysteps; di++) {
-              gasnett_tick_t begin, end;
+              gasnett_tick_t begin=0, end=0;
               size_t Lcnt = (localcontig ? 1 : datasz/contigsz);
               size_t Rcnt = (remotecontig? 1 : datasz/contigsz);
               size_t Lsz = datasz/Lcnt;

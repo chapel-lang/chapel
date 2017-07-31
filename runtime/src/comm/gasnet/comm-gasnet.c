@@ -779,11 +779,27 @@ static void set_max_segsize() {
 #endif
 }
 
+static void set_num_comm_domains() {
+  char num_cpus_val[22]; // big enough for an unsigned 64-bit quantity
+  int num_cpus;
+
+  num_cpus = chpl_getNumPhysicalCpus(true) + 1;
+
+  snprintf(num_cpus_val, sizeof(num_cpus_val), "%d", num_cpus);
+  if (setenv("GASNET_DOMAIN_COUNT", num_cpus_val, 0) != 0) {
+    chpl_error("Cannot setenv(\"GASNET_DOMAIN_COUNT\")", 0, 0);
+  }
+
+  if (setenv("GASNET_AM_DOMAIN_POLL_MASK", "3", 0) != 0) {
+    chpl_error("Cannot setenv(\"GASNET_AM_DOMAIN_POLL_MASK\")", 0, 0);
+  }
+}
+
 void chpl_comm_init(int *argc_p, char ***argv_p) {
 //  int status; // Some compilers complain about unused variable 'status'.
 
   set_max_segsize();
-
+  set_num_comm_domains();
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 
   gasnet_init(argc_p, argv_p);

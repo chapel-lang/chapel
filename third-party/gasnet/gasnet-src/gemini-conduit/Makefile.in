@@ -190,8 +190,6 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CC_UNWRAPPED = @CC_UNWRAPPED@
-CC_WRAPPED = @CC_WRAPPED@
 CFLAGS = @CFLAGS@
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
@@ -207,8 +205,6 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
-CXX_UNWRAPPED = @CXX_UNWRAPPED@
-CXX_WRAPPED = @CXX_WRAPPED@
 CYGPATH_W = @CYGPATH_W@
 DBX_PATH = @DBX_PATH@
 DEBUGMALLOC = @DEBUGMALLOC@
@@ -230,9 +226,9 @@ FCA_LIBDIR = @FCA_LIBDIR@
 FCA_LIBS = @FCA_LIBS@
 FH_CFLAGS = @FH_CFLAGS@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
+GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
 GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
-GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
 GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
@@ -255,7 +251,7 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
-IBV_INCLUDE = @IBV_INCLUDE@
+IBV_INCLUDES = @IBV_INCLUDES@
 IBV_LIBCFLAGS = @IBV_LIBCFLAGS@
 IBV_LIBDIR = @IBV_LIBDIR@
 IBV_LIBS = @IBV_LIBS@
@@ -285,17 +281,14 @@ MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
-MPI_CC_UNWRAPPED = @MPI_CC_UNWRAPPED@
-MPI_CC_WRAPPED = @MPI_CC_WRAPPED@
 MPI_CFLAGS = @MPI_CFLAGS@
-MPI_DEFINES = @MPI_DEFINES@
 MPI_LIBS = @MPI_LIBS@
 MXM_INCLUDE = @MXM_INCLUDE@
 MXM_LIBDIR = @MXM_LIBDIR@
 MXM_LIBS = @MXM_LIBS@
 NM = @NM@
 OBJEXT = @OBJEXT@
-OFI_INCLUDE = @OFI_INCLUDE@
+OFI_INCLUDES = @OFI_INCLUDES@
 OFI_LIBCFLAGS = @OFI_LIBCFLAGS@
 OFI_LIBDIR = @OFI_LIBDIR@
 OFI_LIBS = @OFI_LIBS@
@@ -315,6 +308,7 @@ PATCHED_HEADER = @PATCHED_HEADER@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
+PMIRUN_CMD = @PMIRUN_CMD@
 PMI_SPAWNER_INCLUDES = @PMI_SPAWNER_INCLUDES@
 PMI_SPAWNER_LIBDIR = @PMI_SPAWNER_LIBDIR@
 PMI_SPAWNER_LIBS = @PMI_SPAWNER_LIBS@
@@ -384,12 +378,14 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+fi_info = @fi_info@
 gasnet_cv__gfp_fullprogname_CC = @gasnet_cv__gfp_fullprogname_CC@
 gasnet_cv__gfp_fullprogname_CPP = @gasnet_cv__gfp_fullprogname_CPP@
 gasnet_cv__gfp_fullprogname_CXX = @gasnet_cv__gfp_fullprogname_CXX@
 gasnet_cv__gfp_fullprogname_CXXCPP = @gasnet_cv__gfp_fullprogname_CXXCPP@
 gasnet_cv__gfp_fullprogname_MPIRUN_CMD = @gasnet_cv__gfp_fullprogname_MPIRUN_CMD@
 gasnet_cv__gfp_fullprogname_MPI_CC = @gasnet_cv__gfp_fullprogname_MPI_CC@
+gasnet_cv__gfp_fullprogname_PMIRUN_CMD = @gasnet_cv__gfp_fullprogname_PMIRUN_CMD@
 have_mpcc_r = @have_mpcc_r@
 host = @host@
 host_alias = @host_alias@
@@ -407,6 +403,7 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+mxm_dump_config = @mxm_dump_config@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
 prefix = @prefix@
@@ -459,7 +456,7 @@ CONDUIT_SOURCELIST = \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_INCLUDES@ -DGASNET_CONDUIT_GEMINI -D_GNU_SOURCE
+CONDUIT_EXTRALIBCFLAGS = @GNI_INCLUDES@ -DGASNET_CONDUIT_GEMINI -D_GNU_SOURCE -DHAVE_PMI_SPAWNER
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = 
@@ -469,7 +466,7 @@ CONDUIT_PRIVATEHEADERS = gasnet_gemini.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(pmi_srcdir)/*.h
+CONDUIT_EXTRADEPS = $(pmi_srcdir)/*.[ch]
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as

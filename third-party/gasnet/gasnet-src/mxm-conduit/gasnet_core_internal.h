@@ -101,16 +101,6 @@ enum {
                 fflush(stdout); fflush(stderr); \
         } while (0)
 
-#if HAVE_SSH_SPAWNER
-#include <ssh-spawner/gasnet_bootstrap_internal.h>
-#endif
-#if HAVE_MPI_SPAWNER
-#include <mpi-spawner/gasnet_bootstrap_internal.h>
-#endif
-#if HAVE_PMI_SPAWNER
-#include <pmi-spawner/gasnet_bootstrap_internal.h>
-#endif
-
 #include <mxm/api/mxm_version.h>
 #include <mxm/api/mxm_api.h>
 
@@ -205,22 +195,16 @@ extern int gasnetc_ReplyGeneric(gasnetc_category_t category,
 /*
  * Bootstrap support
  */
-extern void (*gasneti_bootstrapFini_p)(void);
-extern void (*gasneti_bootstrapAbort_p)(int exitcode);
-extern void (*gasneti_bootstrapBarrier_p)(void);
-extern void (*gasneti_bootstrapExchange_p)(void *src, size_t len, void *dest);
-extern void (*gasneti_bootstrapAlltoall_p)(void *src, size_t len, void *dest);
-extern void (*gasneti_bootstrapBroadcast_p)(void *src, size_t len, void *dest, int rootnode);
-extern void (*gasneti_bootstrapSNodeCast_p)(void *src, size_t len, void *dest, int rootnode);
-extern void (*gasneti_bootstrapCleanup_p)(void);
-#define gasneti_bootstrapFini           (*gasneti_bootstrapFini_p)
-#define gasneti_bootstrapAbort          (*gasneti_bootstrapAbort_p)
-#define gasneti_bootstrapBarrier        (*gasneti_bootstrapBarrier_p)
-#define gasneti_bootstrapExchange       (*gasneti_bootstrapExchange_p)
-#define gasneti_bootstrapAlltoall       (*gasneti_bootstrapAlltoall_p)
-#define gasneti_bootstrapBroadcast      (*gasneti_bootstrapBroadcast_p)
-#define gasneti_bootstrapSNodeBroadcast (*gasneti_bootstrapSNodeCast_p)
-#define gasneti_bootstrapCleanup        (*gasneti_bootstrapCleanup_p)
+extern gasneti_spawnerfn_t const *gasneti_spawner;
+
+#define gasneti_bootstrapBarrier        (*(gasneti_spawner->Barrier))
+#define gasneti_bootstrapExchange       (*(gasneti_spawner->Exchange))
+#define gasneti_bootstrapBroadcast      (*(gasneti_spawner->Broadcast))
+#define gasneti_bootstrapSNodeBroadcast (*(gasneti_spawner->SNodeBroadcast))
+#define gasneti_bootstrapAlltoall       (*(gasneti_spawner->Alltoall))
+#define gasneti_bootstrapAbort          (*(gasneti_spawner->Abort))
+#define gasneti_bootstrapCleanup        (*(gasneti_spawner->Cleanup))
+#define gasneti_bootstrapFini           (*(gasneti_spawner->Fini))
 
 #define MXM_MAX_ADDR_LEN 1024
 

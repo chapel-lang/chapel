@@ -72,9 +72,9 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config-aux/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/gasnet_config.h
-CONFIG_CLEAN_FILES = perlstart mpirun_common Makefile-conduit.mak \
-	fragment-head.mak fragment-body.mak Makefile-libgasnet.mak \
-	gasnet_tools-fragment.mak
+CONFIG_CLEAN_FILES = perlstart Makefile-libgasnet.mak \
+	gasnet_tools-fragment.mak mpirun_common fragment-head.mak \
+	fragment-body.mak Makefile-conduit.mak
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -174,8 +174,6 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CC_UNWRAPPED = @CC_UNWRAPPED@
-CC_WRAPPED = @CC_WRAPPED@
 CFLAGS = @CFLAGS@
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
@@ -191,8 +189,6 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
-CXX_UNWRAPPED = @CXX_UNWRAPPED@
-CXX_WRAPPED = @CXX_WRAPPED@
 CYGPATH_W = @CYGPATH_W@
 DBX_PATH = @DBX_PATH@
 DEBUGMALLOC = @DEBUGMALLOC@
@@ -214,9 +210,9 @@ FCA_LIBDIR = @FCA_LIBDIR@
 FCA_LIBS = @FCA_LIBS@
 FH_CFLAGS = @FH_CFLAGS@
 GASNETI_PTR_BITS = @GASNETI_PTR_BITS@
+GASNET_EXTRA_DEFINES = @GASNET_EXTRA_DEFINES@
 GASNET_IBV_SPAWNER_CONF = @GASNET_IBV_SPAWNER_CONF@
 GASNET_INSTALL_CMD = @GASNET_INSTALL_CMD@
-GASNET_MACHINE_DEFINES = @GASNET_MACHINE_DEFINES@
 GASNET_MXM_SPAWNER_CONF = @GASNET_MXM_SPAWNER_CONF@
 GASNET_OFI_SPAWNER_CONF = @GASNET_OFI_SPAWNER_CONF@
 GASNET_OPT_CFLAGS = @GASNET_OPT_CFLAGS@
@@ -239,7 +235,7 @@ GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
 HAVE_STDINT_H = @HAVE_STDINT_H@
 HAVE_SYS_TYPES_H = @HAVE_SYS_TYPES_H@
-IBV_INCLUDE = @IBV_INCLUDE@
+IBV_INCLUDES = @IBV_INCLUDES@
 IBV_LIBCFLAGS = @IBV_LIBCFLAGS@
 IBV_LIBDIR = @IBV_LIBDIR@
 IBV_LIBS = @IBV_LIBS@
@@ -269,17 +265,14 @@ MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
-MPI_CC_UNWRAPPED = @MPI_CC_UNWRAPPED@
-MPI_CC_WRAPPED = @MPI_CC_WRAPPED@
 MPI_CFLAGS = @MPI_CFLAGS@
-MPI_DEFINES = @MPI_DEFINES@
 MPI_LIBS = @MPI_LIBS@
 MXM_INCLUDE = @MXM_INCLUDE@
 MXM_LIBDIR = @MXM_LIBDIR@
 MXM_LIBS = @MXM_LIBS@
 NM = @NM@
 OBJEXT = @OBJEXT@
-OFI_INCLUDE = @OFI_INCLUDE@
+OFI_INCLUDES = @OFI_INCLUDES@
 OFI_LIBCFLAGS = @OFI_LIBCFLAGS@
 OFI_LIBDIR = @OFI_LIBDIR@
 OFI_LIBS = @OFI_LIBS@
@@ -299,6 +292,7 @@ PATCHED_HEADER = @PATCHED_HEADER@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
+PMIRUN_CMD = @PMIRUN_CMD@
 PMI_SPAWNER_INCLUDES = @PMI_SPAWNER_INCLUDES@
 PMI_SPAWNER_LIBDIR = @PMI_SPAWNER_LIBDIR@
 PMI_SPAWNER_LIBS = @PMI_SPAWNER_LIBS@
@@ -371,12 +365,14 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+fi_info = @fi_info@
 gasnet_cv__gfp_fullprogname_CC = @gasnet_cv__gfp_fullprogname_CC@
 gasnet_cv__gfp_fullprogname_CPP = @gasnet_cv__gfp_fullprogname_CPP@
 gasnet_cv__gfp_fullprogname_CXX = @gasnet_cv__gfp_fullprogname_CXX@
 gasnet_cv__gfp_fullprogname_CXXCPP = @gasnet_cv__gfp_fullprogname_CXXCPP@
 gasnet_cv__gfp_fullprogname_MPIRUN_CMD = @gasnet_cv__gfp_fullprogname_MPIRUN_CMD@
 gasnet_cv__gfp_fullprogname_MPI_CC = @gasnet_cv__gfp_fullprogname_MPI_CC@
+gasnet_cv__gfp_fullprogname_PMIRUN_CMD = @gasnet_cv__gfp_fullprogname_PMIRUN_CMD@
 have_mpcc_r = @have_mpcc_r@
 host = @host@
 host_alias = @host_alias@
@@ -394,6 +390,7 @@ localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
+mxm_dump_config = @mxm_dump_config@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
 prefix = @prefix@
@@ -441,17 +438,28 @@ CONDUITMODE_EXTRADIST = \
 SUBDIRS = $(CONDUITMODE_SUBDIRS)
 EXTRA_DIST = \
         $(CONDUITMODE_EXTRADIST) 	\
+	Makefile-echovar.mak            \
+	pkgconfig-conduit.pc            \
+	pkgconfig-tools.pc              \
 	detect-cachesz.c 		\
+	check-pp.c                      \
+	check-header-erase.pl           \
 	tools-toggle.pl
 
 include_HEADERS = \
 	portable_inttypes.h \
-	portable_platform.h
+	portable_platform.h \
+	gasnet_portable_platform.h
 
 @CONDUIT_MODE_TRUE@@USE_UDP_CONDUIT_TRUE@UDP_dir = $(top_builddir)/other/amudp
 @CONDUIT_MODE_TRUE@@USE_AMMPI_TRUE@MPI_dir = $(top_builddir)/other/ammpi
 @CONDUIT_MODE_TRUE@testdirs = $(UDP_dir) $(MPI_dir)
 @CONDUIT_MODE_TRUE@CONDUITMODE_TARGETS = Makefile-conduit.mak mpirun_common
+
+# Automated correctness checks for portable_platform.h
+#
+CHECK_PP_C = $(srcdir)/check-pp.c
+CLEANFILES = check-pp-tgt$(EXESUFFIX)
 all: all-recursive
 
 .SUFFIXES:
@@ -487,17 +495,17 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 $(am__aclocal_m4_deps):
 perlstart: $(top_builddir)/config.status $(srcdir)/perlstart.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-mpirun_common: $(top_builddir)/config.status $(srcdir)/mpirun_common.in
+Makefile-libgasnet.mak: $(top_builddir)/config.status $(srcdir)/Makefile-libgasnet.mak.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-Makefile-conduit.mak: $(top_builddir)/config.status $(srcdir)/Makefile-conduit.mak.in
+gasnet_tools-fragment.mak: $(top_builddir)/config.status $(srcdir)/gasnet_tools-fragment.mak.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+mpirun_common: $(top_builddir)/config.status $(srcdir)/mpirun_common.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 fragment-head.mak: $(top_builddir)/config.status $(srcdir)/fragment-head.mak.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 fragment-body.mak: $(top_builddir)/config.status $(srcdir)/fragment-body.mak.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-Makefile-libgasnet.mak: $(top_builddir)/config.status $(srcdir)/Makefile-libgasnet.mak.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-gasnet_tools-fragment.mak: $(top_builddir)/config.status $(srcdir)/gasnet_tools-fragment.mak.in
+Makefile-conduit.mak: $(top_builddir)/config.status $(srcdir)/Makefile-conduit.mak.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
@@ -715,6 +723,7 @@ distdir: $(DISTFILES)
 	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
 	  dist-hook
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) check-local
 check: check-recursive
 all-am: Makefile $(HEADERS) all-local
 installdirs: installdirs-recursive
@@ -744,6 +753,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -818,16 +828,16 @@ ps-am:
 
 uninstall-am: uninstall-includeHEADERS uninstall-local
 
-.MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
-	install-am install-strip tags-recursive
+.MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) check-am \
+	ctags-recursive install-am install-strip tags-recursive
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
-	all all-am all-local check check-am clean clean-generic ctags \
-	ctags-recursive dist-hook distclean distclean-generic \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am \
-	install-data-local install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am \
+	all all-am all-local check check-am check-local clean \
+	clean-generic ctags ctags-recursive dist-hook distclean \
+	distclean-generic distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-data-local install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
 	install-includeHEADERS install-info install-info-am \
 	install-man install-pdf install-pdf-am install-ps \
 	install-ps-am install-strip installcheck installcheck-am \
@@ -842,6 +852,24 @@ uninstall-am: uninstall-includeHEADERS uninstall-local
 @CONDUIT_MODE_TRUE@	@list='$(testdirs)'; for dir in $$list ; do \
 @CONDUIT_MODE_TRUE@	  ( cd "$$dir" && $(MAKE) $@ ) || exit $$?; \
 @CONDUIT_MODE_TRUE@	done
+$(CHECK_PP_C): gasnet_portable_platform.h portable_platform.h
+
+check-pp-tgt: $(CHECK_PP_C)
+	@CC@ @CFLAGS@ @LDFLAGS@ -I$(srcdir) $(MANUAL_DEFINES) $(MANUAL_CFLAGS) $(MANUAL_LDFLAGS) -o $@ $< @LIBS@ $(MANUAL_LIBS)
+
+# Disabled until we have a more compelling need for configure detection of HOST_CC
+#check-pp-host: $(CHECK_PP_C)
+#	@HOST_CC@ @HOST_CFLAGS@ @HOST_LDFLAGS@ -I$(srcdir) $(MANUAL_DEFINES) $(MANUAL_CFLAGS) $(MANUAL_LDFLAGS) -o $@ $< @HOST_LIBS@ $(MANUAL_LIBS)
+
+@CROSS_COMPILING_TRUE@check-pp-run: check-pp-tgt
+@CROSS_COMPILING_FALSE@check-pp-run: check-pp-tgt
+@CROSS_COMPILING_FALSE@	./check-pp-tgt
+.PHONY: check-pp-run
+
+check-pp: check-pp-run
+	@PERL@ $(srcdir)/check-header-erase.pl $(srcdir)/gasnet_portable_platform.h 1
+
+check-local: check-pp
 
 # If we add plpa to EXTRA_DIST, then automake-1.9 tries to package
 # plpa/config/acinclude.m4 more than once.
@@ -853,6 +881,8 @@ all-local: $(CONDUITMODE_TARGETS) perlstart
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
 	$(INSTALL_DATA) $(srcdir)/ssh-spawner/README $(DESTDIR)$(docdir)/README-ssh-spawner
+	$(INSTALL_DATA) $(srcdir)/mpi-spawner/README $(DESTDIR)$(docdir)/README-mpi-spawner
+	$(INSTALL_DATA) $(srcdir)/pmi-spawner/README $(DESTDIR)$(docdir)/README-pmi-spawner
 uninstall-local:
 	rm -Rf $(DESTDIR)$(docdir)
 # GASNET_TOOLSONLY_FALSE_END

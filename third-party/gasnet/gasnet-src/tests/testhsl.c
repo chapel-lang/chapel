@@ -89,9 +89,7 @@ int main(int argc, char **argv) {
   if (argc < 2) test_usage();
   {
     int errtest = atoi(argv[1]);
-    GASNETT_UNUSED
     gasnet_hsl_t lock1 = GASNET_HSL_INITIALIZER;
-    GASNETT_UNUSED
     gasnet_hsl_t lock2;
     gasnet_hsl_init(&lock2);
 

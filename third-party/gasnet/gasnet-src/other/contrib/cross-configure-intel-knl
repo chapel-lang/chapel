@@ -18,8 +18,8 @@
 # Usage Instructions: 
 #  1. fill in the following values to point to the target and host compilers:
 
-CC='icc -xMIC-AVX512 -O0 -wd10120' ; export CC  # vanilla target C compiler
-CXX='icpc -xMIC-AVX512 -O0 -wd10120' ; export CXX  # vanilla target C++ compiler
+CC='icc -xMIC-AVX512' ; export CC  # vanilla target C compiler
+CXX='icpc -xMIC-AVX512' ; export CXX  # vanilla target C++ compiler
 
 # Host C compiler
 # NOTE: you may need to set GCC_EXEC_PREFIX=/usr/bin/
@@ -33,7 +33,7 @@ HOST_CXXFLAGS='-g -O2' ; export HOST_CXXFLAGS
 
 # Optional additional settings: (see configure --help for complete list)
 
-MPI_CC='mpiicc -xMIC-AVX512 -O0 -wd10120' ; export MPI_CC     # MPI-enabled C compiler
+MPI_CC='mpiicc -xMIC-AVX512' ; export MPI_CC     # MPI-enabled C compiler
 MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
 MPIRUN_CMD='mpiexec -n %N %C' # User must set GASNET_NODEFILE

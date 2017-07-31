@@ -1,25 +1,95 @@
 README file for ssh-spawner
-================================
-Paul H. Hargrove <PHHargrove@lbl.gov>
+===========================
 
-Configure Options:
+@ TOC: @
+@ Section: Overview @
+@ Section: Basic Usage @
+@ Section: Build-time Configuration @
+@ Section: Runtime Configuration @
+@ Section: Troubleshooting Connection Problems @
+
+
+@ Section: Overview @
+
+This document describes ssh-spawner, a component of the GASNet runtime library
+which allows applications using many GASNet conduits to utilize ssh (or rsh)
+to perform job launch.  If installing GASNet on system which allows remote
+shell connections to the compute nodes, this may be a lower-overhead mechanism
+for job launch than use of the default mpi-spawner.  This is also the default
+spawner when MPI support is not present (or is disabled).
+
+@ Section: Basic Usage @
+
++ Usage summary (option 1):
+  Many languages and libraries built over GASNet provide their own commands
+  for job launch.  These should be used instead of GASNet's whenever possible.
+  They typically wrap the mechanisms described below, while providing
+  additional options specific to the language or library.
+
+  The remaining options are documented here mainly for those who are
+  implementing such a wrapper.
+
++ Usage summary (option 2):
+  Conduits which support ssh-spawner each include a spawner utility named
+  for the conduit:
+    gasnetrun_[conduit] -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+  The ssh-spawner described in this README is used if selected by one of the
+  following three mechanisms, in order from greatest to least precedence:
+     + Passing -spawner=ssh to the gasnetrun_[conduit] utility
+     + Setting GASNET_[CONDUIT]_SPAWNER=ssh in the environment
+     + If ssh-spawner was established as the default at configure time (see
+       Build-time Configuration, below).
+
+@ Section: Build-time Configuration @
+
+The ssh-spawner offers the following configure-time options:
+
+  --with-[conduit]-spawner=ssh
+    Conduits which support ssh-spawner each accept a configure option
+    of this form to set the default spawner used by the corresponding
+    gasnetrun_[conduit] utility, as described in the "Basic Usage"
+    section above.  If this option is not used, the "mpi" is the
+    default if MPI support is found at configure time, and "ssh"
+    otherwise.  However, one may pass this option to make ssh-spawner
+    the default for the corresponding conduit.
+
   --disable-pdeathsig (auto-detect by default)
     On Linux, it is possible to request a signal be delivered to a
     process when its parent process dies.  This can be used by the
     ssh-based spawner to reduce the possibility of orphan (run away)
-    processes in certain abnormal termination scenarios.  
-    Because are 2.4.x versions of Linux on which use of this option
+    processes in certain abnormal termination scenarios.
+    Because there are 2.4.x versions of Linux where use of this option
     can lock up the machine (as the result of a kernel bug), this
     option is disabled for kernels prior to 2.6.0, and can also be
     explicitly disabled at configure time.
 
-  --with-ssh-{cmd,options,nodefile}=<VALUE>
+  --with-ssh-{nodefile,cmd,options}=<VALUE>
     These control the default values used when the corresponding
     environment variables are not set.  These environment variables
     are documented below.
 
-Environment Variables: (may be controlled by a wrapper script)
+  --with-ssh-out-degree=<VALUE>
+    This establishes a default value for the GASNET_SSH_OUT_DEGREE
+    environment variable, documented below.
+    If your system does not permit remote shell connections among
+    compute nodes, then you should configure using
+      --with-ssh-out-degree=0
+    to ensure that ssh-spawner only attempts to make connections
+    out-bound from the "master node".  Be aware, however, that this
+    may severely limit the size of jobs that one can launch.
 
+@ Section: Runtime Configuration @
+
+Environment Variables:
 
 + A list of hosts is specified using one of the GASNET_SSH_NODEFILE,
   GASNET_SSH_SERVERS, or GASNET_NODEFILE environment variables (with
@@ -59,70 +129,52 @@ Environment Variables: (may be controlled by a wrapper script)
 
 + The environment variable GASNET_SSH_OUT_DEGREE can be used to
   limit the number of out-going ssh connections from any given
-  host. The value 0 means no limit is imposed.
-  Default value is 32.
+  host.  The value 0 means no limit is imposed.
+  The default value is 32 unless an alternate value was set at
+  configure time using --with-ssh-out-degree=<VALUE>.
 
 + The environment variable GASNET_SSH_REMOTE_PATH can be set to
   specify the working directory (defaults to current).
 
-+ Users of OpenSSH should NOT add "-f" to GASNET_SSH_OPTIONS.  Doing
-  so causes the spawner to mistakenly believe that a process it
-  spawned has exited.
++ Users of OpenSSH should NOT add "-f" to GASNET_SSH_OPTIONS.
+  Doing so causes the spawner to mistakenly believe that a process
+  which it has spawned has exited.
   However, if agent forwarding or X11 forwarding are normally
   enabled in your configuration, "-a" and "-x" can be used with
   OpenSSH to disable them and speed the connection process (except
   where the agent forwarding is needed for authorization).
 
+@ Section: Troubleshooting Connection Problems @
 
-Command-line Usage:
-
-If running a UPC or Titanium application, then language-specific
-commands upcrun or tirun should be used instead.  In other cases
-it is advisable to use a GASNet conduit-specific spawner script
-such as gasnetrun_ibv or gasnetrun_mxm.  However, if you find
-you *must* use the ssh-spawner directly:
-
-    your_app -GASNET-SPAWN-master N[:M] -- [args ...]
-
-where N is the number of processes to run, and M is the number of
-nodes/hosts over which the processes will be distributed.  If only
-N is given, then M=N by default.  For more complete usage info:
-
-    your_app -GASNET-SPAWN-master
-
-
-Troubleshooting:
-
-For the following, the term "compute node"  means one of the hosts
-given by GASNET_SSH_NODEFILE or GASNET_SSH_SERVERS, which will run
-an application process.  The term "master node" means the node from
-which the job was spawned.  The master node may be one of the
-compute nodes, but this is not required.
+For the following, the term "compute node" means one of the hosts
+given by GASNET_SSH_NODEFILE, GASNET_SSH_SERVERS, or obtained
+from a variable specific to the batch system.  These are nodes
+which will run application processes.  The term "master node"
+means the node from which the job was spawned.  The master node
+may also be a compute nodes, but this is not required.
 
 + The ssh (or rsh) at your site must be configured to allow logins
-  from the master node to compute nodes, and among the compute nodes.
-  These must be achieved without interaction (such as entering a
-  password or accepting new hostkeys).
+  from the master node to compute nodes.  It is also strongly
+  recommended that logins between compute nodes be permitted (see
+  the description of the --with-ssh-out-degree configure option
+  for the alternative).  These must be achieved without user
+  interaction such as entering a password or accepting hostkeys.
+
   For OpenSSH users, the following options are used automatically
-    "-o 'StrictHostKeyChecking no' -o 'BatchMode yes'"
+    -o 'StrictHostKeyChecking no'
+    -o 'BatchMode yes'
   which should ensure that ssh does not try to prompt the user.
+  There is no need to specify these in the GASNET_SSH_OPTIONS
+  environment variable.
 
 + Any firewall or port filtering must allow the ssh/rsh connections
   described above, plus TCP connections on an "untrusted port" (ports
-  with numbers over 1024) from a compute node to the master node and
-  and among compute nodes.
+  with numbers over 1024) from a compute node to the master node (and
+  among compute nodes unless the out-degree has been set to 0).
 
-+ Resolution of hostnames for the master and all compute nodes must
-  be possible from both the master node and the compute nodes.
++ The master node must be able to resolve its own hostname and the
+  hostnames of all compute nodes.
 
-
-GASNet Developers:
-
-See ibv-conduit for an example of how to use this code in a conduit.
-In particular the call to gasneti_bootstrapInit_ssh() in
-gasnet_core.c, and the contrib/gasnetrun_ibv.pl script.  The perl
-script passes the spawner's arguments in an environment variable and
-the argv for the application via an open temporary file.  This scheme
-allows one to support GASNet applications which may call
-gasnet_init(NULL, NULL), which cannot work with the spawner aguments
-passed on the command line.
++ Compute nodes must able to resolve the hostname of the master node,
+  and (unless the out-degree has been set to zero) the hostnames of
+  the other compute nodes.

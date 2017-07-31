@@ -34,6 +34,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "visibleFunctions.h"
+#include "wellknown.h"
 
 #include <cstdlib>
 #include <inttypes.h>

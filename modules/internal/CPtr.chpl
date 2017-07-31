@@ -305,7 +305,7 @@ module CPtr {
 
     .. warning::
 
-      This method is intendend for C interoporability. To enhance
+      This method is intended for C interoperability. To enhance
       flexibility, it is possible to request the sizes of Chapel types.
       However, be aware:
 

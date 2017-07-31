@@ -485,11 +485,12 @@ GASNET_FUN_END([$0($1)])
 ]])
 
 dnl allow a true #undef in config.h
+dnl Note this requires GASNET_PROG_PERL, although AC_REQUIRE cannot be used in this context
 AC_DEFUN([GASNET_TRUE_UNDEF],[[
 GASNET_FUN_BEGIN([$0($1)])
   if test -f '$1' -a -n "`grep '#trueundef' '$1'`" ; then
-    mv '$1' '$1.dirty'
-    cat '$1.dirty' | sed -e 's/^\s*#\s*trueundef\s/#undef /' > '$1'
+    PERL=${PERL:-perl}
+    $PERL -pi.dirty -e 's/^\s*#\s*trueundef\s/#undef /' '$1'
     rm -f '$1.dirty'
   fi
 GASNET_FUN_END([$0($1)])
@@ -1182,11 +1183,9 @@ fi
 GASNET_FUN_END([$0(...)])
 ])
 
-dnl GASNET_CHECK_OPTIMIZEDDEBUG CCVAR CFLAGSVAR EXTRAARGS INCLUDES [ACTION]
+dnl GASNET_CHECK_OPTIMIZEDDEBUG CCVAR CFLAGSVAR EXTRAARGS INCLUDES ACTION
 dnl Ensure the compiler CC doesn't create a conflict between
-dnl optimization and debugging.
-dnl If no ACTION is given, the default is an error message suggesting
-dnl changes to the CCVAR and/or CFLAGSVAR.
+dnl optimization and debugging. Run ACTION upon failure
 AC_DEFUN([GASNET_CHECK_OPTIMIZEDDEBUG],[
 GASNET_FUN_BEGIN([$0(...)])
  if test "$enable_debug" = "yes" ; then
@@ -1208,11 +1207,29 @@ GASNET_FUN_BEGIN([$0(...)])
   GASNET_POPVAR(CPPFLAGS)
   AC_LANG_RESTORE
   if test "$gasnet_result" = yes; then
-    ifelse([$5],[],[ dnl m4_ifval not present in older autotools
-    GASNET_MSG_ERROR([User requested --enable-debug but $1 or $2 has enabled optimization (-O) or disabled assertions (-DNDEBUG). Try setting $1='$[$1] -O0 -UNDEBUG' or changing $2])
-    ],[$5])
+    :
+    $5
   fi
  fi
+GASNET_FUN_END([$0(...)])
+])
+
+dnl GASNET_CORRECT_OPTIMIZEDDEBUG CCVAR CFLAGSVAR FIXVAR EXTRAARGS INCLUDES [EXTRAMSG]
+dnl Ensure the compiler doesn't create a conflict between
+dnl optimization and debugging. If it appears to, try appending 
+dnl '-O0 -UNDEBUG' to FIXVAR. If that still fails, run ACTION.
+dnl If no ACTION is given, the default is an error message suggesting
+dnl changes to the CCVAR.
+AC_DEFUN([GASNET_CORRECT_OPTIMIZEDDEBUG],[
+GASNET_FUN_BEGIN([$0(...)])
+GASNET_CHECK_OPTIMIZEDDEBUG([$1],[$2],[$4],[$5],[
+  old_$3="$[$3]"
+  $3="$[$3] -O0 -UNDEBUG"
+  GASNET_CHECK_OPTIMIZEDDEBUG([$1],[$2],[$4],[$5],[
+    GASNET_MSG_ERROR([User requested --enable-debug but \$$1 has enabled optimization (-O) or disabled assertions (-DNDEBUG). Appending '-O0 -UNDEBUG' to \$$3 did not resolve this conflict. Try setting $3='$old_[$3] <flags to disable optimization>' $6])
+  ])
+  GASNET_MSG_WARN([Appending '-O0 -UNDEBUG' to \$$3 to resolve debug vs. optimize compilation conflict])
+])
 GASNET_FUN_END([$0(...)])
 ])
 
@@ -1378,6 +1395,30 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
       AC_DEFINE([$1]_ATTRIBUTE_UNUSED_TYPEDEF)
   else
       AC_DEFINE([$1]_ATTRIBUTE_UNUSED_TYPEDEF, 0)
+  fi
+  popdef([cachevar])
+
+  pushdef([cachevar],cv_prefix[]translit([$1],'A-Z','a-z')[]_pragma_gcc_diagnostic)
+  AC_CACHE_CHECK($2 for pragma GCC diagnostic push/pop/ignored, cachevar,
+    # Note we're not checking whether the pragma actually *does* anything,
+    # we only care that it doesn't generate new warnings, ie silently ignored is fine for our purposes
+    GASNET_TRY_COMPILE_WITHWARN(GASNETI_C_OR_CXX([$1]), [
+          _Pragma("GCC diagnostic push")
+	  _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
+	  _Pragma("GCC diagnostic ignored \"-Wunused-variable\"")
+	  _Pragma("GCC diagnostic ignored \"-Wunused-value\"")
+	  _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")
+	  _Pragma("GCC diagnostic ignored \"-Wunused\"")
+	  static int foo = 5;
+	  static void bar(void) { }
+          _Pragma("GCC diagnostic pop")
+      ], [
+      ], [ cachevar='yes' ],[ cachevar='no/warning' ],[ cachevar='no/error' ])
+  )
+  if test "$cachevar" = yes; then
+      AC_DEFINE([$1]_PRAGMA_GCC_DIAGNOSTIC)
+  else
+      AC_DEFINE([$1]_PRAGMA_GCC_DIAGNOSTIC, 0)
   fi
   popdef([cachevar])
 ])
@@ -2091,16 +2132,8 @@ else
   esac
 fi
 $2_FAMILY=$$3
-$2_UNWRAPPED=$$2
-case $$3 in
-  GNU) $2_WRAPPED=$$2 ;;
-  *)   $2_WRAPPED="\$(top_builddir)/cc-wrapper \$($2_FAMILY) \$($2_UNWRAPPED)" ;;
-esac
 AC_SUBST($2_FAMILY)
 AC_SUBST($2_SUBFAMILY)
-AC_SUBST($2_UNWRAPPED)
-AC_SUBST($2_WRAPPED)
-GASNET_SUBST_FILE(cc_wrapper_mk, cc-wrapper.mk)
 GASNET_FUN_END([$0($1,$2,$3)])
 ])
 

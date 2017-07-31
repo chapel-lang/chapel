@@ -8,7 +8,6 @@
 #include <gasnet_internal.h>
 #include <gasnet_handler.h>
 #include <gasnet_core_internal.h>
-#include <pmi-spawner/gasnet_bootstrap_internal.h>
 #include <gasnet_gemini.h>
 /* #include <alps/libalpslli.h> */
 
@@ -34,6 +33,8 @@ static void gasnetc_atexit(void);
 #endif
 
 gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS]; /* handler table (recommended impl) */
+
+gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
 #if GASNETC_GNI_FIREHOSE
 static int gasnetc_did_firehose_init = 0;
@@ -81,9 +82,8 @@ static void gasnetc_check_config(void) {
 static int gasnetc_bootstrapInit(int *argc, char ***argv) {
   const char *envval;
 
-  { int retval = gasneti_bootstrapInit_pmi(argc, argv, &gasneti_nodes, &gasneti_mynode);
-    if (retval != GASNET_OK) GASNETI_RETURN(retval);
-  }
+  gasneti_spawner = gasneti_spawnerInit(argc, argv, "PMI", &gasneti_nodes, &gasneti_mynode);
+  if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
   /* Check for device and address (both or neither) in environment  */
   envval = getenv("PMI_GNI_DEV_ID");
@@ -411,7 +411,7 @@ done:
   gasnetc_handler[_hidx_gasnetc_sys_barrier_reqh]  = (gasneti_handler_fn_t)&gasnetc_sys_barrier_reqh;
   gasnetc_handler[_hidx_gasnetc_sys_exchange_reqh] = (gasneti_handler_fn_t)&gasnetc_sys_exchange_reqh;
 
-  gasneti_bootstrapCleanup_pmi(); /* No further use of PMI-based colelctives */
+  gasneti_spawner->Cleanup(); /* No further use of PMI-based colelctives */
 }
 
 static void gasnetc_sys_coll_fini(void)
@@ -620,7 +620,7 @@ static int gasnetc_init(int *argc, char ***argv) {
      * conduit-specific uses.  The return value is a pointer to the space
      * requested by the 2nd argument.
      */
-    gasnetc_exitcodes = gasneti_pshm_init(&gasneti_bootstrapSNodeBroadcast_pmi,
+    gasnetc_exitcodes = gasneti_pshm_init(gasneti_spawner->SNodeBroadcast,
                                           gasneti_nodemap_local_count * sizeof(gasnetc_exitcode_t));
     gasnetc_exitcodes[gasneti_nodemap_local_rank].present = 0;
   #endif
@@ -695,54 +695,6 @@ extern int gasnet_init(int *argc, char ***argv) {
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
-static char checkuniqhandler[256] = { 0 };
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-  int i;
-  *numregistered = 0;
-  for (i = 0; i < numentries; i++) {
-    int newindex;
-
-    if ((table[i].index == 0 && !dontcare) || 
-        (table[i].index && dontcare)) continue;
-    else if (table[i].index) newindex = table[i].index;
-    else { /* deterministic assignment of dontcare indexes */
-      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-        if (!checkuniqhandler[newindex]) break;
-      }
-      if (newindex > highlimit) {
-        char s[255];
-        sprintf(s,"Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-        GASNETI_RETURN_ERRR(BAD_ARG, s);
-      }
-    }
-
-    /*  ensure handlers fall into the proper range of pre-assigned values */
-    if (newindex < lowlimit || newindex > highlimit) {
-      char s[255];
-      sprintf(s, "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-      GASNETI_RETURN_ERRR(BAD_ARG, s);
-    }
-
-    /* discover duplicates */
-    if (checkuniqhandler[newindex] != 0) 
-      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-    checkuniqhandler[newindex] = 1;
-
-    /* register the handler */
-    gasnetc_handler[(gasnet_handler_t)newindex] = (gasneti_handler_fn_t)table[i].fnptr;
-
-    /* The check below for !table[i].index is redundant and present
-     * only to defeat the over-aggressive optimizer in pathcc 2.1
-     */
-    if (dontcare && !table[i].index) table[i].index = newindex;
-
-    (*numregistered)++;
-  }
-  return GASNET_OK;
-}
-/* ------------------------------------------------------------------------------------ */
 extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   GASNETC_DIDX_POST(GASNETC_DEFAULT_DOMAIN);
@@ -783,7 +735,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int len = 0;
     gasneti_assert(ctable);
     while (ctable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(ctable, len, 1, GASNETE_HANDLER_BASE-1, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ctable, len, 1, GASNETE_HANDLER_BASE-1, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
     gasneti_assert(numreg == len);
   }
@@ -793,7 +745,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int len = 0;
     gasneti_assert(etable);
     while (etable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(etable, len, GASNETE_HANDLER_BASE, 127, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(etable, len, GASNETE_HANDLER_BASE, 127, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering extended API handlers");
     gasneti_assert(numreg == len);
   }
@@ -806,7 +758,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     gasneti_assert(ftable);
     while (ftable[len].fnptr) len++; /* calc len */
     gasneti_assert(base + len <= 128);  /* enough space remaining after etable? */
-    if (gasnetc_reghandlers(ftable, len, base, 127, 1, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ftable, len, base, 127, 1, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE, "Error registering firehose handlers");
     gasneti_assert(numreg == len);
   }
@@ -817,12 +769,12 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int numreg2 = 0;
 
     /*  first pass - assign all fixed-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
+    if (gasneti_amregister(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
 
     /*  second pass - fill in dontcare-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
-      GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
+    if (gasneti_amregister(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
+      GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
 
     gasneti_assert(numreg1 + numreg2 == numentries);
   }
@@ -1093,7 +1045,7 @@ extern void gasnetc_exit(int exitcode) {
   gasneti_sched_yield();
   gasnetc_shutdown();
 
-  gasneti_bootstrapFini_pmi();  /* normal exit */
+  gasneti_spawner->Fini();  /* normal exit */
   gasneti_killmyprocess(exitcode); /* last chance */
   gasnetc_GNIT_Abort("gasnetc_exit failed!");
 }

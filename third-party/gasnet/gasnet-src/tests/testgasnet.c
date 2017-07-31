@@ -701,13 +701,15 @@ void doit5(int partner, int *partnerseg) {
       (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
     }
     { double dbl = 1.0;
-      ptr64 = (gasnett_atomic64_t *)(void *)&dbl; /* (void*) suppresses g++ warning (bug 2158) */
+      uintptr_t tmp = (uintptr_t)&dbl;
+      ptr64 = (gasnett_atomic64_t *)tmp; /* conversion suppresses gcc-4 warning (bug 2158) */
       tmp64 = gasnett_atomic64_read(ptr64, 0);
       gasnett_atomic64_set(ptr64, tmp64, 0);
       (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
     }
     { struct { char c; double dbl; } s = {0, 1.0};
-      ptr64 = (gasnett_atomic64_t *)(void *)&s.dbl; /* (void*) suppresses g++ warning (bug 2158) */
+      uintptr_t tmp = (uintptr_t)&s.dbl;
+      ptr64 = (gasnett_atomic64_t *)tmp; /* conversion suppresses gcc-4 warning (bug 2158) */
       tmp64 = gasnett_atomic64_read(ptr64, 0);
       gasnett_atomic64_set(ptr64, tmp64, 0);
       (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);

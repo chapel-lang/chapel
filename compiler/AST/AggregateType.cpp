@@ -35,17 +35,6 @@
 AggregateType* dtObject            = NULL;
 
 AggregateType* dtString            = NULL;
-AggregateType* dtArray             = NULL;
-AggregateType* dtBaseArr           = NULL;
-AggregateType* dtBaseDom           = NULL;
-AggregateType* dtDist              = NULL;
-AggregateType* dtTuple             = NULL;
-AggregateType* dtLocale            = NULL;
-AggregateType* dtLocaleID          = NULL;
-AggregateType* dtMainArgument      = NULL;
-AggregateType* dtOnBundleRecord    = NULL;
-AggregateType* dtTaskBundleRecord  = NULL;
-AggregateType* dtError             = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
