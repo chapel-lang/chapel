@@ -216,9 +216,6 @@ bool isPOD(Type* t);
 void printResolutionErrorAmbiguous(CallInfo&                  info,
                                    Vec<ResolutionCandidate*>& candidates);
 
-void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates,
-                                   CallInfo*       info);
-
 void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
                                     CallInfo*       info);
 

@@ -4279,46 +4279,6 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   USR_STOP();
 }
 
-void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates,
-                                   CallInfo*       info) {
-  CallExpr* call = userCall(info->call);
-  if (info->name == astrThis) {
-    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
-                   toString(info->actuals.v[1]->type),
-                   toString(info));
-  } else {
-    const char* entity = "call";
-    if (!strncmp("_type_construct_", info->name, 16))
-      entity = "type specifier";
-    const char* str = toString(info);
-    if (info->scope) {
-      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
-      INT_ASSERT(mod);
-      str = astr(mod->name, ".", str);
-    }
-    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-  }
-
-  if (developer) {
-    for (int i = callStack.n-1; i>=0; i--) {
-      CallExpr* cs = callStack.v[i];
-      FnSymbol* f = cs->getFunction();
-      if (f->instantiatedFrom)
-        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-      else
-        break;
-    }
-  }
-  bool printed_one = false;
-  forv_Vec(FnSymbol, fn, candidates) {
-    USR_PRINT(fn, "%s %s",
-              printed_one ? "               " : "candidates are:",
-              toString(fn));
-    printed_one = true;
-  }
-  USR_STOP();
-}
-
 void
 printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
   if( ! info ) INT_FATAL("CallInfo is NULL");
