@@ -36,33 +36,14 @@ proc main() {
   var tbl2D: domain(string);
   var tbl2: [tbl2D] Toml;
   var tomlData2: Toml = tbl2;
-  /*
-  tomlData2["A.B"] = new Toml(tomlData["A.B"]);
-  writeln(tomlData["A.B"]);                 // uncomment to see subtable error
-  writeln("Should be the same as");
-  writeln(tomlData2["A.B"]);
-*/
 
-  // to reproduce error from earlier(deconstruction)
+  // copy Toml A.B in tomlData to Toml A in TomlData2
   tomlData2["A"] = new Toml(tomlData["A"]);
   writeln(tomlData["A"]);
   writeln("Should be the same as");
   writeln(tomlData2["A"]);
 
-  var tbl3D: domain(string);
-  var tbl3: [tbl3D] Toml;
-  var tomlData3: Toml = tbl3;
-  var example: Toml = "works";
-  tomlData3["thisone"] = example;
-
-  // copy a tbl from tomlData
-  tomlData2["thisone"] = new Toml(tomlData3["thisone"]);
-  writeln(tomlData3["thisone"].toString());                   // this works
-  writeln("Should be the same as:");
-  writeln(tomlData2["thisone"].toString());
-
-
-  delete tomlData2;  // without copy constuctor, error here
+  delete tomlData2;  
   delete tomlData;
   tomlChannel.close();
 }

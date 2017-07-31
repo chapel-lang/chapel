@@ -440,11 +440,11 @@ Parser module with the Toml class for the Chapel TOML library.
        this.i = root.i;
        this.re = root.re;
        this.dom = root.dom;
-       this.arr = root.arr;
+       for idx in root.dom do this.arr[idx] = new Toml(root.arr[idx]);
        this.dt = root.dt;
        this.s = root.s;
        this.D = root.D;
-       this.A = root.A;
+       for idx in root.D do this.A[idx] = new Toml(root.A[idx]);
        this.tag = root.tag;
      }
 
