@@ -53,7 +53,6 @@ static void makeRecordInitWrappers(CallExpr* call);
 ************************************** | *************************************/
 
 FnSymbol* resolveInitializer(CallExpr* call) {
-  // From resolveExpr() (removed the tryStack stuff)
   callStack.add(call);
 
   resolveInitCall(call);
@@ -113,149 +112,35 @@ static void resolveInitCall(CallExpr* call) {
     best = disambiguateByMatch(candidates, DC, false, ambiguous);
 
     if (best == NULL) {
-      if (best && best->fn) {
-        /*
-         * Finish instantiating the body.  This is a noop if the function wasn't
-         * partially instantiated.
-         */
-
-        instantiateBody(best->fn);
-
-        if (explainCallLine && explainCallMatch(call)) {
-          USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
-        }
-      }
-
-      // Future work note: the repeated check to best and best->fn means that we
-      // could probably restructure this function to a better form.
-      if (call->partialTag && (!best || !best->fn ||
-                               !best->fn->hasFlag(FLAG_NO_PARENS))) {
-        if (best != NULL) {
-          // MPF 2016-0106 - this appears to be dead code
-          // at least in a full single-locale test run.
-
-          // best is deleted below with the other candidates
-          best = NULL;
-        }
-
-      } else if (!best) {
+      if (call->partialTag == false) {
         if (candidates.n > 0) {
-
-          Vec<FnSymbol*> candidateFns;
-
-          forv_Vec(ResolutionCandidate*, candidate, candidates) {
-            candidateFns.add(candidate->fn);
-          }
-
-          printResolutionErrorAmbiguous(candidateFns, &info);
+          printResolutionErrorAmbiguous(info, candidates);
 
         } else {
           printResolutionErrorUnresolved(visibleFns, &info);
         }
       }
-      // removed the creation of wrappers and the lvalue check call, as resolving
-      // the _new call will handle all that stuff for us.
-      // NOTE: This is unlikely to work for generic records.
-
-      FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
-
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        delete candidate;
-      }
-
-      if (call->partialTag) {
-        if (!resolvedFn) {
-          return;
-        }
-        call->partialTag = false;
-      }
-
-
-      if (!resolvedFn) {
-        INT_FATAL(call, "unable to resolve call");
-      }
-
-      if (resolvedFn && call->parentSymbol) {
-        SET_LINENO(call);
-        call->baseExpr->replace(new SymExpr(resolvedFn));
-      }
-
-      checkForStoringIntoTuple(call, resolvedFn);
-
-      resolveNormalCallCompilerWarningStuff(resolvedFn);
 
     } else {
+      instantiateBody(best->fn);
 
-      if (best && best->fn) {
-        /*
-         * Finish instantiating the body.  This is a noop if the function wasn't
-         * partially instantiated.
-         */
-
-        instantiateBody(best->fn);
-
-        if (explainCallLine && explainCallMatch(call)) {
-          USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
-        }
+      if (explainCallLine != 0 && explainCallMatch(call) == true) {
+        USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
       }
 
-      // Future work note: the repeated check to best and best->fn means that we
-      // could probably restructure this function to a better form.
-      if (call->partialTag && (!best || !best->fn ||
-                               !best->fn->hasFlag(FLAG_NO_PARENS))) {
-        if (best != NULL) {
-          // MPF 2016-0106 - this appears to be dead code
-          // at least in a full single-locale test run.
-
-          // best is deleted below with the other candidates
-          best = NULL;
-        }
-
-      } else if (!best) {
-        if (candidates.n > 0) {
-
-          Vec<FnSymbol*> candidateFns;
-
-          forv_Vec(ResolutionCandidate*, candidate, candidates) {
-            candidateFns.add(candidate->fn);
-          }
-
-          printResolutionErrorAmbiguous(candidateFns, &info);
-
-        } else {
-          printResolutionErrorUnresolved(visibleFns, &info);
-        }
-      }
-      // removed the creation of wrappers and the lvalue check call, as resolving
-      // the _new call will handle all that stuff for us.
-      // NOTE: This is unlikely to work for generic records.
-
-      FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
-
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        delete candidate;
-      }
-
-      if (call->partialTag) {
-        if (!resolvedFn) {
-          return;
-        }
-        call->partialTag = false;
-      }
-
-
-      if (!resolvedFn) {
-        INT_FATAL(call, "unable to resolve call");
-      }
-
-      if (resolvedFn && call->parentSymbol) {
+      if (call->partialTag == false) {
         SET_LINENO(call);
-        call->baseExpr->replace(new SymExpr(resolvedFn));
+
+        call->baseExpr->replace(new SymExpr(best->fn));
+
+        checkForStoringIntoTuple(call, best->fn);
+
+        resolveNormalCallCompilerWarningStuff(best->fn);
       }
+    }
 
-      checkForStoringIntoTuple(call, resolvedFn);
-
-      resolveNormalCallCompilerWarningStuff(resolvedFn);
+    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      delete candidate;
     }
   }
 }
