@@ -418,13 +418,11 @@ Expr* Symbol::getInitialization() const {
       }
     }
 
-    if (isDef || isUse) {
+    if (isDef) {
+      // first use/def of the variable is a def (normal case)
+      return stmt->getStmtExpr();
 
-      if (isDef) {
-        // first use/def of the variable is a def (normal case)
-        return stmt->getStmtExpr();
-      }
-
+    } else if (isUse) {
       bool handled = false;
 
       // handle PRIM_MOVE refTmp, PRIM_ADDR_OF curSym or

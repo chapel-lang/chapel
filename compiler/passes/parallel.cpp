@@ -918,7 +918,8 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
     INT_ASSERT(stmt == initialization);
     stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
   } else {
-    INT_ASSERT(0);
+    // This branch should go away if this INT_FATAL never fires.
+    INT_FATAL("could not find initialization");
     mod->initFn->insertBeforeEpilogue(new CallExpr
                                      (PRIM_PRIVATE_BROADCAST, def->sym));
   }
