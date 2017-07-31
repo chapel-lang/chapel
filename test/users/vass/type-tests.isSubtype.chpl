@@ -8,7 +8,7 @@ var q1:int, q2:real, q3:real;
 
 class C1{}  class C2:C1{}  class C3:C1{}  class C4:C2{}
 
-record R1{}  record R2:R1{}  record R3:R1{}  record R4:R2{}
+record R1{} // record R2:R1{}  record R3:R1{}  record R4:R2{} // no record inheritance at the moment.  Output preserved in type-tests.isSubtype-record.good
 
 union U1 { var x,y: int; }  union U2 { var x,y: int; }  // no union inheritance at the moment
 
@@ -43,6 +43,7 @@ compilerWarning("C4, C4  ", isSubtype(C4,C4):string);
 
 compilerWarning("isSubtype - records");
 compilerWarning("R1, R1  ", isSubtype(R1,R1):string);
+/*
 compilerWarning("R1, R2  ", isSubtype(R1,R2):string);
 compilerWarning("R1, R3  ", isSubtype(R1,R3):string);
 compilerWarning("R1, R4  ", isSubtype(R1,R4):string);
@@ -58,6 +59,7 @@ compilerWarning("R4, R1  ", isSubtype(R4,R1):string);
 compilerWarning("R4, R2  ", isSubtype(R4,R2):string);
 compilerWarning("R4, R3  ", isSubtype(R4,R3):string);
 compilerWarning("R4, R4  ", isSubtype(R4,R4):string);
+*/
 
 compilerWarning("isSubtype - mixing up");
 compilerWarning("real,     D1.type  ", isSubtype(real,D1.type):string);
@@ -124,6 +126,7 @@ compilerWarning("C4, C4  ", isProperSubtype(C4,C4):string);
 
 compilerWarning("isProperSubtype - records");
 compilerWarning("R1, R1  ", isProperSubtype(R1,R1):string);
+/*
 compilerWarning("R1, R2  ", isProperSubtype(R1,R2):string);
 compilerWarning("R1, R3  ", isProperSubtype(R1,R3):string);
 compilerWarning("R1, R4  ", isProperSubtype(R1,R4):string);
@@ -139,6 +142,7 @@ compilerWarning("R4, R1  ", isProperSubtype(R4,R1):string);
 compilerWarning("R4, R2  ", isProperSubtype(R4,R2):string);
 compilerWarning("R4, R3  ", isProperSubtype(R4,R3):string);
 compilerWarning("R4, R4  ", isProperSubtype(R4,R4):string);
+*/
 
 compilerWarning("isProperSubtype - mixing up");
 compilerWarning("real,     D1.type  ", isProperSubtype(real,D1.type):string);
