@@ -58,6 +58,21 @@ unsigned int prime2[] = {
   4194301, 8388593, 16777213, 33554393, 67108859, 134217689,
   268435399, 536870909
 };
+
+template<>
+uintptr_t _vec_hasher(const char* obj) {
+  uintptr_t h = 0;
+  while (obj != NULL && *obj) h = h * 27 + (unsigned char)*obj++;
+  return h;
+}
+template<>
+uintptr_t _vec_hasher(unsigned int obj) {
+  return obj;
+}
+template<>
+uintptr_t _vec_hasher(int obj) {
+  return obj;
+}
   
 // binary search over intervals
 static int

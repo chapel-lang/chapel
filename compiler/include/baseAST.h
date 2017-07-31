@@ -84,6 +84,7 @@
 #define for_alive_in_Vec(TYPE, VAR, VEC)           \
   forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
 
+class BaseAST;
 class AstVisitor;
 class Expr;
 class GenRet;
@@ -105,6 +106,17 @@ class QualifiedType;
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
+
+#define def_vec_hash(SomeType) \
+    template<> \
+    uintptr_t _vec_hasher(SomeType* obj);
+
+foreach_ast(def_vec_hash);
+def_vec_hash(Symbol);
+def_vec_hash(Type);
+def_vec_hash(BaseAST);
+
+#undef def_vec_hash
 
 //
 // declare global vectors for all AST node types
@@ -418,6 +430,58 @@ def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
 
 #undef def_to_ast
+
+#define def_hash_ast(SomeType) \
+  namespace std { \
+    template<> struct less<SomeType*> { \
+      bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
+        if (lhs == NULL && rhs != NULL) return true; \
+        if (lhs != NULL && rhs == NULL) return false; \
+        if (lhs == NULL && rhs == NULL) return false; \
+        return ((BaseAST*)lhs)->id < ((BaseAST*)rhs)->id; \
+      } \
+    }; \
+  }
+
+def_hash_ast(SymExpr)
+def_hash_ast(UnresolvedSymExpr)
+def_hash_ast(DefExpr)
+def_hash_ast(ContextCallExpr)
+def_hash_ast(ForallExpr)
+def_hash_ast(NamedExpr)
+def_hash_ast(UseStmt)
+def_hash_ast(BlockStmt)
+def_hash_ast(CondStmt)
+def_hash_ast(GotoStmt)
+def_hash_ast(DeferStmt)
+def_hash_ast(ForallStmt)
+def_hash_ast(TryStmt)
+def_hash_ast(ForwardingStmt)
+def_hash_ast(CatchStmt)
+def_hash_ast(ExternBlockStmt)
+def_hash_ast(Expr)
+def_hash_ast(ModuleSymbol)
+def_hash_ast(VarSymbol)
+def_hash_ast(ArgSymbol)
+def_hash_ast(TypeSymbol)
+def_hash_ast(FnSymbol)
+def_hash_ast(EnumSymbol)
+def_hash_ast(LabelSymbol)
+def_hash_ast(Symbol)
+def_hash_ast(PrimitiveType)
+def_hash_ast(EnumType)
+def_hash_ast(AggregateType)
+def_hash_ast(Type)
+
+def_hash_ast(LoopStmt);
+def_hash_ast(WhileStmt);
+def_hash_ast(WhileDoStmt);
+def_hash_ast(DoWhileStmt);
+def_hash_ast(ForLoop);
+def_hash_ast(CForLoop);
+def_hash_ast(ParamForLoop);
+
+#undef def_hash_ast
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {
