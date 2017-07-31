@@ -842,90 +842,6 @@ insertEndCount(FnSymbol* fn,
   }
 }
 
-
-static void
-replicateGlobalRecordWrappedVars(DefExpr *def) {
-  ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
-  Expr* stmt = mod->initFn->body->body.head;
-  Expr* useFirst = NULL;
-  Symbol *currDefSym = def->sym;
-  bool found = false;
-  // Try to find the first definition of this variable in the
-  //   module initialization function
-  while (stmt && !found)
-  {
-    std::vector<SymExpr*> symExprs;
-    collectSymExprs(stmt, symExprs);
-    for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == currDefSym) {
-        INT_ASSERT(se->parentExpr);
-        int result = isDefAndOrUse(se);
-        if (result & 1) {
-          // first use/def of the variable is a def (normal case)
-
-          // 'useFirst' may not be NULL if the 'result & 2' branch below is
-          // taken. Consider the following scenario:
-          //   (move refA (addr-of origSym))
-          // The second branch will set 'currDefSym = refA', and we will begin
-          // to iterate over its defs/uses. Finding the same expression should
-          // not count as 'finding' the right statement.
-          bool isOldStmt = useFirst == se->getStmtExpr() && currDefSym->isRef();
-
-          if (useFirst == NULL || !isOldStmt) {
-            found = true;
-            break;
-          }
-        } else if (result & 2) {
-          if (useFirst == NULL) {
-            // This statement captures a reference to the variable
-            // to pass it to the function that builds the initializing
-            // expression
-            CallExpr *parent = toCallExpr(se->parentExpr);
-            INT_ASSERT(parent);
-            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF) || parent->isPrimitive(PRIM_SET_REFERENCE));
-            INT_ASSERT(isCallExpr(parent->parentExpr));
-            // Now start looking for the first use of the captured
-            // reference
-            currDefSym = toSymExpr(toCallExpr(parent->parentExpr)->get(1))->symbol();
-            INT_ASSERT(currDefSym);
-            // This is used to flag that we have found the first use
-            // of the variable
-            useFirst = stmt;
-          } else {
-            // This statement builds the initializing expression, so
-            // we can insert the broadcast after this statement
-
-            // These checks may need to change if we change the way
-            // we handle domain literals, forall expressions, and/or
-            // depending on how we add array literals to the language
-            INT_ASSERT(toCallExpr(stmt));
-            INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
-            found = true;
-            break;
-          }
-        }
-      }
-    }
-    if (found)
-      break;
-
-    stmt = stmt->next;
-  }
-
-  Expr* initialization = def->sym->getInitialization();
-
-  if (found) {
-    INT_ASSERT(stmt == initialization);
-    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
-  } else {
-    // This branch should go away if this INT_FATAL never fires.
-    INT_FATAL("could not find initialization");
-    mod->initFn->insertBeforeEpilogue(new CallExpr
-                                     (PRIM_PRIVATE_BROADCAST, def->sym));
-  }
-}
-
-
 static AggregateType*
 buildHeapType(Type* type) {
   static Map<Type*,AggregateType*> heapTypeMap;
@@ -1195,21 +1111,17 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
         Expr* initialization = def->sym->getInitialization();
 
-        Expr* firstDef = NULL;
-
-        for_defs(se, defMap, def->sym) {
-          if (firstDef == NULL)
-            firstDef = se->getStmtExpr();
-        }
-
-        INT_ASSERT(firstDef == NULL || firstDef == initialization);
-
+        INT_ASSERT(initialization);
         initialization->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
                                                  def->sym));
 
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions
-        replicateGlobalRecordWrappedVars(def);
+        Expr* initialization = def->sym->getInitialization();
+
+        INT_ASSERT(initialization);
+        initialization->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
+                                                 def->sym));
 
       } else {
         // put other global constants and all global variables on the heap
