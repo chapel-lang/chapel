@@ -103,6 +103,10 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiSetIndices(x) { }
 
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+  }
+
   proc dsiBuildArray(type eltType)
     return new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
@@ -208,9 +212,8 @@ class CSDom: BaseSparseDomImpl {
     return l;
   }
 
-  // TODO: better variable name than dimIdx?
-  proc stopIdx(dimIdx) {
-    return startIdx(dimIdx+1)-1;
+  proc stopIdx(i) {
+    return startIdx(i+1)-1;
   }
 
   proc find(ind: rank*idxType) {
