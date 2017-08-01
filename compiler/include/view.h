@@ -88,6 +88,9 @@ const char* debugLoc(BaseAST* ast);
 
 int debugID(int id);
 int debugID(BaseAST* ast);
-
+void debugSummary(int id);
+void debugSummary(BaseAST* ast);
+BaseAST* debugParentSym(int id);
+BaseAST* debugParentSym(BaseAST* ast);
 
 #endif

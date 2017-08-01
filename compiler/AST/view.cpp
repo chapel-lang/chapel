@@ -699,6 +699,42 @@ int debugID(BaseAST* ast) {
   return ast ? ast->id : -1;
 }
 
+// "debug summary": print key pieces of info
+void debugSummary(int id) {
+  if (BaseAST* ast = aid09(id))
+    debugSummary(ast);
+  else
+    printf("%s\n", aidNotFoundError("debugSummary", id));
+}
+void debugSummary(BaseAST* ast) {
+  if (ast)
+    printf("%d   %s   %s\n", ast->id, ast->astTagAsString(), debugLoc(ast));
+  else
+    printf("<debugSummary: NULL>\n");
+}
+
+// find the Parent Symbol
+BaseAST* debugParentSym(int id) {
+  if (BaseAST* ast = aid09(id))
+    return debugParentSym(ast);
+  else {
+    printf("%s\n", aidNotFoundError("debugParentSym", id));
+    return NULL;
+  }
+}
+BaseAST* debugParentSym(BaseAST* ast) {
+  if (!ast)
+    return NULL;
+  else if (Expr* expr = toExpr(ast))
+    return expr->parentSymbol;
+  else if (Symbol* sym = toSymbol(ast))
+    return sym->defPoint->parentSymbol;
+  else {
+    printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
+    return NULL;
+  }
+}
+
 
 //
 // map_view: print the contents of a SymbolMap
