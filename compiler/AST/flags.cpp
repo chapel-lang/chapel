@@ -70,36 +70,6 @@ void writeFlags(FILE* fp, Symbol* sym) {
   }
 }
 
-static const char* qualDebugStr(Qualifier q) {
-    switch (q) {
-      case QUAL_UNKNOWN:
-        return "unknown";
-      case QUAL_CONST:
-        return "const";
-      case QUAL_REF:
-        return "ref";
-      case QUAL_CONST_REF:
-        return "const-ref";
-      case QUAL_PARAM:
-        return "param";
-      case QUAL_VAL:
-        return "val";
-      case QUAL_NARROW_REF:
-        return "narrow-ref";
-      case QUAL_WIDE_REF:
-        return "wide-ref";
-
-      case QUAL_CONST_VAL:
-        return "const-val";
-      case QUAL_CONST_NARROW_REF:
-        return "const-narrow-ref";
-      case QUAL_CONST_WIDE_REF:
-        return "const-wide-ref";
-    }
-    INT_FATAL("Unhandled Qualifier");
-    return "UNKNOWN-QUAL";
-}
-
 // these affect what viewFlags() prints
 bool viewFlagsShort   = true;
 bool viewFlagsPragma  = false;
@@ -138,11 +108,11 @@ static void viewSymbolFlags(Symbol* sym) {
           fprint_imm(stdout, *toVarSymbol(sym)->immediate, true);
           printf("\n");
         }
-        printf("qual %s\n", qualDebugStr(vs->qual));
+        printf("qual %s\n", qualifierToStr(vs->qual));
 
       } else if (ArgSymbol* as = toArgSymbol(sym)) {
         printf("%s arg  qual %s\n",
-               as->intentDescrString(), qualDebugStr(as->qual));
+               as->intentDescrString(), qualifierToStr(as->qual));
 
       } else if (toTypeSymbol(sym)) {
         printf("a TypeSymbol\n");
