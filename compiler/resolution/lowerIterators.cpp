@@ -90,6 +90,32 @@ FnSymbol* getTheIteratorFn(Type* icType)
   }
 }
 
+FnSymbol* debugGetTheIteratorFn(Type* type) {
+  FnSymbol* result = NULL;
+  if (AggregateType* agg = toAggregateType(type)) {
+    if (agg->symbol->hasFlag(FLAG_TUPLE))
+      result = getTheIteratorFn(agg);
+    else if (agg->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+      result = getTheIteratorFn(agg);
+    else if (agg->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+      if (IteratorInfo* ii = agg->iteratorInfo)
+        result = ii->iterator;
+  }
+  if (result && result->hasFlag(FLAG_AUTO_II))
+    if (AggregateType* rettype = toAggregateType(result->retType))
+      if (FnSymbol* newresult = debugGetTheIteratorFn(rettype))
+        result = newresult;
+  return result;
+}
+
+FnSymbol* debugGetTheIteratorFn(ForLoop* forLoop) {
+  if (forLoop)
+    if (SymExpr* iteratorSE = forLoop->iteratorGet())
+      return debugGetTheIteratorFn(iteratorSE->symbol()->type);
+  // otherwise
+  return NULL;
+}
+
 
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
