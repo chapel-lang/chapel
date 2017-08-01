@@ -431,57 +431,57 @@ def_to_ast(ParamForLoop);
 
 #undef def_to_ast
 
-#define def_hash_ast(SomeType) \
+#define def_less_ast(SomeType) \
   namespace std { \
     template<> struct less<SomeType*> { \
       bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
         if (lhs == NULL && rhs != NULL) return true; \
         if (lhs != NULL && rhs == NULL) return false; \
         if (lhs == NULL && rhs == NULL) return false; \
-        return ((BaseAST*)lhs)->id < ((BaseAST*)rhs)->id; \
+        return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id; \
       } \
     }; \
   }
 
-def_hash_ast(SymExpr)
-def_hash_ast(UnresolvedSymExpr)
-def_hash_ast(DefExpr)
-def_hash_ast(ContextCallExpr)
-def_hash_ast(ForallExpr)
-def_hash_ast(NamedExpr)
-def_hash_ast(UseStmt)
-def_hash_ast(BlockStmt)
-def_hash_ast(CondStmt)
-def_hash_ast(GotoStmt)
-def_hash_ast(DeferStmt)
-def_hash_ast(ForallStmt)
-def_hash_ast(TryStmt)
-def_hash_ast(ForwardingStmt)
-def_hash_ast(CatchStmt)
-def_hash_ast(ExternBlockStmt)
-def_hash_ast(Expr)
-def_hash_ast(ModuleSymbol)
-def_hash_ast(VarSymbol)
-def_hash_ast(ArgSymbol)
-def_hash_ast(TypeSymbol)
-def_hash_ast(FnSymbol)
-def_hash_ast(EnumSymbol)
-def_hash_ast(LabelSymbol)
-def_hash_ast(Symbol)
-def_hash_ast(PrimitiveType)
-def_hash_ast(EnumType)
-def_hash_ast(AggregateType)
-def_hash_ast(Type)
+def_less_ast(SymExpr)
+def_less_ast(UnresolvedSymExpr)
+def_less_ast(DefExpr)
+def_less_ast(ContextCallExpr)
+def_less_ast(ForallExpr)
+def_less_ast(NamedExpr)
+def_less_ast(UseStmt)
+def_less_ast(BlockStmt)
+def_less_ast(CondStmt)
+def_less_ast(GotoStmt)
+def_less_ast(DeferStmt)
+def_less_ast(ForallStmt)
+def_less_ast(TryStmt)
+def_less_ast(ForwardingStmt)
+def_less_ast(CatchStmt)
+def_less_ast(ExternBlockStmt)
+def_less_ast(Expr)
+def_less_ast(ModuleSymbol)
+def_less_ast(VarSymbol)
+def_less_ast(ArgSymbol)
+def_less_ast(TypeSymbol)
+def_less_ast(FnSymbol)
+def_less_ast(EnumSymbol)
+def_less_ast(LabelSymbol)
+def_less_ast(Symbol)
+def_less_ast(PrimitiveType)
+def_less_ast(EnumType)
+def_less_ast(AggregateType)
+def_less_ast(Type)
 
-def_hash_ast(LoopStmt);
-def_hash_ast(WhileStmt);
-def_hash_ast(WhileDoStmt);
-def_hash_ast(DoWhileStmt);
-def_hash_ast(ForLoop);
-def_hash_ast(CForLoop);
-def_hash_ast(ParamForLoop);
+def_less_ast(LoopStmt);
+def_less_ast(WhileStmt);
+def_less_ast(WhileDoStmt);
+def_less_ast(DoWhileStmt);
+def_less_ast(ForLoop);
+def_less_ast(CForLoop);
+def_less_ast(ParamForLoop);
 
-#undef def_hash_ast
+#undef def_less_ast
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {
