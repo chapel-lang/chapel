@@ -31,4 +31,9 @@ module ChapelError {
   proc chpl_delete_error(err: Error) {
     delete err;
   }
+  pragma "function terminates program"
+  proc chpl_uncaught_error(err: Error) {
+    var tmpstring = "uncaught error - " + stringify(err);
+    __primitive("chpl_error", tmpstring.c_str());
+  }
 }
