@@ -1,0 +1,2 @@
+setParentField-var.chpl:13: In initializer:
+setParentField-var.chpl:15: error: can't set value of field "v" from parent type during phase 1 of initialization
