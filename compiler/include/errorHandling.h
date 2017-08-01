@@ -23,5 +23,6 @@
 class BlockStmt;
 
 void lowerErrorHandling();
+void lowerCheckErrorPrimitive();
 
 #endif

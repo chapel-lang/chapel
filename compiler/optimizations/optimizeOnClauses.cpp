@@ -310,6 +310,7 @@ classifyPrimitive(CallExpr *call) {
   case NUM_KNOWN_PRIMS:
   case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
   case PRIM_THROW:
+  case PRIM_CHECK_ERROR:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 

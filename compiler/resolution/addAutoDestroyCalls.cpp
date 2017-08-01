@@ -36,7 +36,8 @@ static void cullForDefaultConstructor(FnSymbol* fn);
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
-                      BlockStmt*        block);
+                      BlockStmt*        block,
+                      std::set<VarSymbol*> *ignoredVariables);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -44,7 +45,7 @@ void addAutoDestroyCalls() {
       cullForDefaultConstructor(fn);
     }
 
-    walkBlock(fn, NULL, fn->body);
+    walkBlock(fn, NULL, fn->body, NULL);
   }
 
   // Finally, remove all defer statements, since they have been lowered.
@@ -130,10 +131,13 @@ static VarSymbol*   definesAnAutoDestroyedVariable(const Expr* stmt);
 static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
+static bool         isErrorLabel(const Expr*        stmt);
+static std::set<VarSymbol*> gatherIgnoredVariablesForErrorHandling(CondStmt* cond);
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
-                      BlockStmt*        block) {
+                      BlockStmt*        block,
+                      std::set<VarSymbol*> *ignoredVariables) {
   AutoDestroyScope scope(parent, block);
 
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
@@ -144,9 +148,14 @@ static void walkBlock(FnSymbol*         fn,
     // Handle the current statement
     //
 
+    // AutoDestroy locals at the start of the error-handling label
+    // (when exiting a try block without error)
+    if (isErrorLabel(stmt) == true) {
+      scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
     // AutoDestroy primary locals at start of function epilogue (1)
-    if (isReturnLabel(stmt, retLabel) == true) {
-      scope.insertAutoDestroys(fn, stmt);
+    } else if (isReturnLabel(stmt, retLabel) == true) {
+      scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
     // Be conservative about unreachable code before the epilogue
     } else if (isDeadCode == false) {
@@ -160,18 +169,24 @@ static void walkBlock(FnSymbol*         fn,
 
       // AutoDestroy primary locals at start of function epilogue (2)
       } else if (scope.handlingFormalTemps(stmt) == true) {
-        scope.insertAutoDestroys(fn, stmt);
+        scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
       // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
       } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
-        walkBlock(fn, &scope, subBlock);
+        walkBlock(fn, &scope, subBlock, NULL);
 
       // Recurse in to the BlockStmt(s) of a CondStmt
       } else if (CondStmt*  cond     = toCondStmt(stmt))  {
-        walkBlock(fn, &scope, cond->thenStmt);
+
+        std::set<VarSymbol*> ignoredVariables;
+
+        ignoredVariables = gatherIgnoredVariablesForErrorHandling(cond);
+
+        walkBlock(fn, &scope, cond->thenStmt, &ignoredVariables);
 
         if (cond->elseStmt != NULL)
-          walkBlock(fn, &scope, cond->elseStmt);
+          walkBlock(fn, &scope, cond->elseStmt, &ignoredVariables);
+
       }
     }
 
@@ -187,11 +202,9 @@ static void walkBlock(FnSymbol*         fn,
       // (don't add variable definitions, etc, above).
       isDeadCode = true;
 
-      GotoStmt* gotoStmt = toGotoStmt(stmt);
-
       // The main block for a function or a simple sub-block
       if (parent == NULL || gotoStmt == NULL) {
-        scope.insertAutoDestroys(fn, stmt);
+        scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
       // Currently unprepared for a nested scope that ends in a goto
       } else {
@@ -200,7 +213,7 @@ static void walkBlock(FnSymbol*         fn,
           case GOTO_CONTINUE:
           case GOTO_BREAK:
           case GOTO_ERROR_HANDLING:
-            scope.insertAutoDestroys(fn, stmt);
+            scope.insertAutoDestroys(fn, stmt, ignoredVariables);
             break;
 
           case GOTO_NORMAL:
@@ -270,6 +283,71 @@ static bool isReturnLabel(const Expr* stmt, const LabelSymbol* returnLabel) {
   }
 
   return retval;
+}
+
+// Is this the definition of an error handling label?
+static bool isErrorLabel(const Expr* stmt) {
+  if (const DefExpr*  expr = toConstDefExpr(stmt)) {
+    if (LabelSymbol* label = toLabelSymbol(expr->sym)) {
+      if (label->hasFlag(FLAG_ERROR_LABEL))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+
+static std::set<VarSymbol*> gatherIgnoredVariablesForErrorHandling(CondStmt* cond)
+{
+  std::set<VarSymbol*> ignoredVariables;
+  bool isErrorCond;
+
+  // special handling of PRIM_CHECK_ERROR as the condition
+  if (CallExpr* call = toCallExpr(cond->condExpr)) {
+    if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+      isErrorCond = true;
+    }
+  }
+
+  if (isErrorCond) {
+    // Look for the function call immediately preceeding
+    // that throws. Is it returning a variable that we will
+    // want to auto-destroy?
+
+    VarSymbol* ignore = NULL;
+    if (CallExpr* move = toCallExpr(cond->prev)) {
+      if (move->isPrimitive(PRIM_MOVE)) {
+        if (CallExpr* call = toCallExpr(move->get(2))) {
+          if (FnSymbol* fn = call->resolvedFunction()) {
+            if (fn->throwsError()) {
+              SymExpr *se = toSymExpr(move->get(1));
+              ignore = toVarSymbol(se->symbol());
+              ignoredVariables.insert(ignore);
+            }
+          }
+        }
+      }
+    }
+
+    // If ignore is set, it might be a callTmp,
+    // track a subsequent PRIM_MOVE to exand the
+    // set of ignored variables to include the
+    // relevant user variable.
+    if (ignore != NULL) {
+      if (CallExpr* move = toCallExpr(cond->next)) {
+        if (move->isPrimitive(PRIM_MOVE)) {
+          SymExpr *dstSe = toSymExpr(move->get(1));
+          SymExpr *srcSe = toSymExpr(move->get(2));
+          if (dstSe != NULL && srcSe != NULL &&
+              srcSe->symbol() == ignore)
+            ignoredVariables.insert(toVarSymbol(dstSe->symbol()));
+        }
+      }
+    }
+  }
+
+  return ignoredVariables;
 }
 
 /************************************* | **************************************

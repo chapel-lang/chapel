@@ -27,6 +27,7 @@ class Expr;
 class FnSymbol;
 class VarSymbol;
 
+#include <set>
 #include <vector>
 
 // Track status of auto destroy variables within lexical scopes
@@ -42,11 +43,13 @@ public:
   bool                     handlingFormalTemps(const Expr* stmt) const;
 
   void                     insertAutoDestroys(FnSymbol* fn,
-                                              Expr*     refStmt);
+                                              Expr*     refStmt,
+                                              std::set<VarSymbol*>* ignored);
 
 private:
   void                     variablesDestroy(Expr*      refStmt,
-                                            VarSymbol* excludeVar)     const;
+                                            VarSymbol* excludeVar,
+                                            std::set<VarSymbol*>* ignored) const;
 
   const AutoDestroyScope*  mParent;
   const BlockStmt*         mBlock;

@@ -100,24 +100,49 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 
 // If the refStmt is a goto then we need to recurse
 // to the block that contains the target of the goto
-void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt) {
+void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
+                                          std::set<VarSymbol*>* ignored) {
   GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
   bool                    recurse    = (gotoStmt != NULL) ? true : false;
   BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
   VarSymbol*              excludeVar = variableToExclude(fn, refStmt);
   const AutoDestroyScope* scope      = this;
+  bool                    includeParent    = false;
 
-  while (scope != NULL && scope->mBlock != forTarget) {
-    scope->variablesDestroy(refStmt, excludeVar);
+  if (gotoStmt != NULL && gotoStmt->gotoTag == GOTO_ERROR_HANDLING)
+    includeParent = true;
 
-    scope = (recurse == true) ? scope->mParent : NULL;
+  // Error handling gotos need to include auto-destroys
+  // for any in-scope variables for the block containing
+  // the error-handling label.
+  // Compare with while/break, say, in which the
+  // variables in the parent block are assumed to be destroyed by the
+  // parent block.
+
+  // Problem: this loop terminates because
+  // scope->mBlock == forTarget by the time we should be running it.
+  while (scope != NULL) {
+    // stop when block == forTarget for non-error-handling gotos
+    if (scope->mBlock == forTarget && includeParent == false)
+      break;
+
+    scope->variablesDestroy(refStmt, excludeVar, ignored);
+
+    // stop if recurse == false or if block == forTarget
+    if (recurse == false)
+      break;
+    if (scope->mBlock == forTarget)
+      break;
+
+    scope = scope->mParent;
   }
 
   mLocalsHandled = true;
 }
 
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
-                                        VarSymbol* excludeVar) const {
+                                        VarSymbol* excludeVar,
+                                        std::set<VarSymbol*>* ignored) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;
@@ -146,7 +171,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       // of interleaving matters.
       INT_ASSERT(var || defer);
 
-      if (var != NULL && var != excludeVar) {
+      if (var != NULL && var != excludeVar &&
+          (ignored == NULL || ignored->count(var) == 0)) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 

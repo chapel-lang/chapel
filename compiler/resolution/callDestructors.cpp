@@ -21,6 +21,7 @@
 
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
+#include "errorHandling.h"
 #include "expr.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -176,10 +177,6 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
 
   return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
 }
-
-//
-// In this first effort, only functions that return strings
-//
 
 bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
 {
@@ -1456,4 +1453,9 @@ void callDestructors() {
   insertReferenceTemps();
 
   checkForErroneousInitCopies();
+
+  // Lower error handling check error primitives
+  // now that callDestructors has had the benefit
+  // of more straightforward error-handling AST.
+  lowerCheckErrorPrimitive();
 }
