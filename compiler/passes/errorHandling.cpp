@@ -377,7 +377,6 @@ AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
   return ret;
 }
 
-// TODO: take in a halt message from the error
 CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
   return new CallExpr(gChplUncaughtError, errorVar);
 }
