@@ -160,24 +160,20 @@ static void      filterInitCandidate(CallInfo&                  info,
                                      FnSymbol*                  fn,
                                      Vec<ResolutionCandidate*>& candidates);
 
-static void      filterInitCandidate(CallInfo&                  info,
-                                     ResolutionCandidate*       currCandidate,
-                                     Vec<ResolutionCandidate*>& candidates);
+static bool      filterInitCandidate(CallInfo&                  info,
+                                     ResolutionCandidate*       currCandidate);
 
-static void      filterInitGenericCandidate(
+static bool      filterInitGenericCandidate(
                                      CallInfo&                  info,
-                                     ResolutionCandidate*       currCandidate,
-                                     Vec<ResolutionCandidate*>& candidates);
-
+                                     ResolutionCandidate*       currCandidate);
 
 static FnSymbol* instantiateInitSig(FnSymbol*  fn,
                                     SymbolMap& subs,
                                     CallExpr*  call);
 
-static void      filterInitConcreteCandidate(
+static bool      filterInitConcreteCandidate(
                                      CallInfo&                  info,
-                                     ResolutionCandidate*       currCandidate,
-                                     Vec<ResolutionCandidate*>& candidates);
+                                     ResolutionCandidate*       currCandidate);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -241,88 +237,72 @@ static void doGatherInitCandidates(CallInfo&                  info,
 static void filterInitCandidate(CallInfo&                  info,
                                 FnSymbol*                  fn,
                                 Vec<ResolutionCandidate*>& candidates) {
-  ResolutionCandidate* currCandidate = new ResolutionCandidate(fn);
+  ResolutionCandidate* candidate = new ResolutionCandidate(fn);
 
-  filterInitCandidate(info, currCandidate, candidates);
-
-  if (candidates.tail() != currCandidate) {
-    delete currCandidate;
-  }
-}
-
-/** Tests to see if a function is a candidate for resolving a specific call.
- *  If it is a candidate, we add it to the candidate lists.
- *
- * This version of filterInitCandidate is called by other versions of
- * filterInitCandidate, and shouldn't be called outside this family of
- * functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
- */
-static void filterInitCandidate(CallInfo&                  info,
-                                ResolutionCandidate*       currCandidate,
-                                Vec<ResolutionCandidate*>& candidates) {
-  if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
-    filterInitGenericCandidate (info, currCandidate, candidates);
+  if (filterInitCandidate(info, candidate) == true) {
+    candidates.add(candidate);
 
   } else {
-    filterInitConcreteCandidate(info, currCandidate, candidates);
+    delete candidate;
   }
 }
 
+static bool filterInitCandidate(CallInfo&            info,
+                                ResolutionCandidate* candidate) {
+  bool retval = false;
 
-/** Candidate filtering logic specific to generic functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
- */
-static void filterInitGenericCandidate(
-                                  CallInfo&                  info,
-                                  ResolutionCandidate*       currCandidate,
-                                  Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
+  if (candidate->fn->hasFlag(FLAG_GENERIC)) {
+    retval = filterInitGenericCandidate (info, candidate);
 
-  if (!currCandidate->fn) {
-    return;
+  } else {
+    retval = filterInitConcreteCandidate(info, candidate);
   }
 
-  if (!currCandidate->computeAlignment(info)) {
-    return;
-  }
+  return retval;
+}
 
-  if (checkGenericFormals(currCandidate) == false) {
-    return;
-  }
 
-  // Compute the param/type substitutions for generic arguments.
-  currCandidate->computeSubstitutions(true);
+static bool filterInitGenericCandidate(CallInfo&            info,
+                                       ResolutionCandidate* candidate) {
+  bool retval = false;
 
-  /*
-   * If no substitutions were made we can't instantiate this generic, and must
-   * reject it.
-   */
-  if (currCandidate->substitutions.n > 0) {
-    /*
-     * Instantiate just enough of the generic to get through the rest of the
-     * filtering and disambiguation processes.
-     */
-    currCandidate->fn = instantiateInitSig(currCandidate->fn,
-                                           currCandidate->substitutions,
-                                           info.call);
+  candidate->fn = expandIfVarArgs(candidate->fn, info);
 
-    if (currCandidate->fn != NULL) {
-      filterInitCandidate(info, currCandidate, candidates);
+  if (candidate->fn == NULL) {
+    retval = false;
+
+  } else if (candidate->computeAlignment(info) == false) {
+    retval = false;
+
+  } else if (checkGenericFormals(candidate)    == false) {
+    retval = false;
+
+  } else {
+    candidate->computeSubstitutions(true);
+
+    if (candidate->substitutions.n > 0) {
+      /*
+       * Instantiate just enough of the generic to get through the
+       * the rest of the filtering and disambiguation processes.
+       */
+      candidate->fn = instantiateInitSig(candidate->fn,
+                                         candidate->substitutions,
+                                         info.call);
+
+      if (candidate->fn != NULL) {
+        retval = filterInitCandidate(info, candidate);
+      }
     }
   }
+
+  return retval;
 }
 
-// Rewrite of instantiateSignature, for initializers.  Removed some bits,
-// modified others.
-/** Instantiate enough of the function for it to make it through the candidate
- *  filtering and disambiguation process.
+// Rewrite of instantiateSignature, for initializers.
+// Removed some bits, modified others.
+
+/** Instantiate enough of the function for it to make it through
+ *  the candidate filtering and disambiguation process.
  *
  * \param fn   Generic function to instantiate
  * \param subs Type substitutions to be made during instantiation
@@ -421,32 +401,30 @@ static FnSymbol* instantiateInitSig(FnSymbol*  fn,
 /** Candidate filtering logic specific to concrete functions.
  *
  * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
+ * \param candidate The current candidate to consider.
  * \param info          The CallInfo object for the call site.
  */
-static void filterInitConcreteCandidate(
-                              CallInfo&                  info,
-                              ResolutionCandidate*       currCandidate,
-                              Vec<ResolutionCandidate*>& candidates) {
-  currCandidate->fn = expandIfVarArgs(currCandidate->fn, info);
+static bool filterInitConcreteCandidate(CallInfo&            info,
+                                        ResolutionCandidate* candidate) {
+  bool retval = false;
 
-  if (!currCandidate->fn) {
-    return;
+  candidate->fn = expandIfVarArgs(candidate->fn, info);
+
+  if (candidate->fn == NULL) {
+    retval = false;
+
+  } else {
+    resolveTypedefedArgTypes(candidate->fn);
+
+    if (candidate->computeAlignment(info) == false) {
+      retval = false;
+
+    } else {
+      retval = checkResolveFormalsWhereClauses(candidate);
+    }
   }
 
-  resolveTypedefedArgTypes(currCandidate->fn);
-
-  if (!currCandidate->computeAlignment(info)) {
-    return;
-  }
-
-  // We should reject this candidate if any of the situations handled by this
-  // function are violated.
-  if (checkResolveFormalsWhereClauses(currCandidate) == false) {
-    return;
-  }
-
-  candidates.add(currCandidate);
+  return retval;
 }
 
 /************************************* | **************************************
