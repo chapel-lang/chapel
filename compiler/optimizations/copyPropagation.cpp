@@ -74,6 +74,10 @@
 //# becomes:
 //#  ("foo" ... x ...)
 //# As long as rx is a valid reference of x.
+//#
+//# For simplicity, this pass avoids propagating any variables that may have
+//# references to them.
+//#
 //#############################################################################
 
 //#############################################################################
@@ -97,12 +101,6 @@
 //# looking for pairs to invalidate.  If this map size grows to 100 or more,
 //# then some more efficient index is needed.
 //#
-//# We create a simple map from reference variables to the variable to which
-//# each refers.  When a reference is potentially or actually dereferenced, the
-//# referent needs to be invalidated using the standard algorithm.
-//#
-//# The reference map is created at the beginning of the function and lasts for
-//# the entire function.
 //#############################################################################
 
 //#############################################################################
@@ -126,7 +124,6 @@
 
 
 static size_t s_repl_count; ///< The number of pairs replaced by GCP this pass.
-static size_t s_ref_repl_count; ///< The number of references replaced this pass.
 
 //#############################################################################
 //# LOCAL COPY PROPAGATION
@@ -144,16 +141,6 @@ typedef std::map<Symbol*, Symbol*> AvailableMap;
 typedef AvailableMap::value_type AvailableMapElem;
 typedef std::pair<Symbol*, Symbol*> AvailablePair;
 
-// RefMap: lhs -> rhs
-// The relationship derived from (move lhs (addr_of rhs)) -- that is, lhs is a
-// reference to rhs.
-// Where (deref key) appears, it can be replaced by (value).
-// Also, where (key) is passed as a writable argument, we must kill (value) --
-// as well as any value of value, value of value of value, etc. obtained by
-// looking up (value0 in RefMap, etc.
-typedef std::map<Symbol*, Symbol*> RefMap;
-typedef RefMap::value_type RefMapElem;
-
 // ReverseAvailableMap: rhs --> lhs*
 // The reverse of the available map, used to accelerate the removal of pairs
 // invalidated because the value of the RHS has changed.
@@ -164,109 +151,14 @@ typedef ReverseAvailableMap::mapped_type ReverseMapList;
 #if DEBUG_CP
 // Set nonzero to enable verbose output.
 static unsigned debug = 0;
+
+#define DEBUG_COPYPROP(...) if (debug > 0) printf(__VA_ARGS__)
+
+#else
+
+#define DEBUG_COPYPROP(...)
+
 #endif
-
-// Insert pairs into available copies map
-// Also, record references when they are created.
-static void extractReferences(Expr* expr,
-                              RefMap& refs)
-{
-  // We're only interested in call expressions.
-  if (CallExpr* call = toCallExpr(expr))
-  {
-    // Consider primitives that can create aliases:
-    // 1. A move primitive that has ref variables on both sides.
-    // 2. An assign or move that has an 'addr of' primitive on its rhs.
-    // 3. A field assignment or extraction that has ref variables on both
-    //    sides. (not implemented)
-    // 4. A field assignment that has an 'addr of' primitive on its rhs. (not
-    //    implemented)
-    // 5. An assign or move that has a PRIM_GET_MEMBER on the rhs. (not implemented)
-    bool okAssign = call->isPrimitive(PRIM_ASSIGN) &&
-                    !(call->get(1)->isRef() && call->get(2)->isRef());
-    if (call->isPrimitive(PRIM_MOVE) || okAssign)
-    {
-      SymExpr* lhe = toSymExpr(call->get(1)); // Left-Hand Expression
-      Symbol* lhs = lhe->symbol(); // Left-Hand Symbol
-
-      if (SymExpr* rhe = toSymExpr(call->get(2))) // Right-Hand Expression
-      {
-        Symbol* rhs = rhe->symbol(); // Right-Hand Symbol
-
-        if (lhs->isRef() &&
-            rhs->isRef())
-        {
-          // This is a ref <- ref assignment.
-          // Which means that the lhs is now also a reference to whatever the
-          // rhs refers to.
-          RefMap::iterator refDef = refs.find(rhs);
-          // Refs can come from outside the function (e.g. through arguments),
-          // so are not necessarily defined within the function.
-          if (refDef != refs.end() && refDef->second != NULL)
-          {
-            Symbol* val = refDef->second;
-#if DEBUG_CP
-            if (debug > 0)
-              printf("Creating ref (%s[%d], %s[%d])\n",
-                     lhs->name, lhs->id, val->name, val->id);
-#endif
-            refs.insert(RefMapElem(lhs, val));
-          } else {
-#if DEBUG_CP
-            if (debug > 0) {
-              printf("Setting pair to NULL: %s[%d]\n", lhs->name, lhs->id);
-            }
-#endif
-            // If we can't reason about this usage of a reference, mark its
-            // corresponding value with NULL to indicate that nothing should
-            // happen.
-            refs[lhs] = NULL;
-          }
-        }
-      }
-
-      if (CallExpr* rhc = toCallExpr(call->get(2)))
-      {
-        if (rhc->isPrimitive(PRIM_ADDR_OF) || rhc->isPrimitive(PRIM_SET_REFERENCE))
-        {
-          SymExpr* rhe = toSymExpr(rhc->get(1));
-
-          // Create the pair lhs <- &rhs.
-          Symbol* lhs = lhe->symbol();
-          Symbol* rhs = rhe->symbol();
-
-          RefMap::iterator refDef = refs.find(lhs);
-          if (refDef != refs.end()) {
-            // Multiple ADDR_OFs. Make the value NULL to indicate that we cannot
-            // replace this reference.
-            refs[lhs] = NULL;
-          } else {
-#if DEBUG_CP
-            if (debug > 0)
-              printf("Creating ref (%s[%d], %s[%d])\n",
-                     lhs->name, lhs->id, rhs->name, rhs->id);
-#endif
-            refs.insert(RefMapElem(lhs, rhs));
-          }
-        } else {
-          refs[lhs] = NULL;
-        }
-      }
-    }
-  }
-}
-
-
-static void computeRefMap(FnSymbol* fn, RefMap& refs)
-{
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
-  {
-    for_vector(Expr, expr, bb->exprs)
-    {
-      extractReferences(expr, refs);
-    }
-  }
-}
 
 
 // This routine returns true if the value of the given symbol may have changed
@@ -276,8 +168,9 @@ static void computeRefMap(FnSymbol* fn, RefMap& refs)
 // isRefUse() for that case.
 // To be conservative, the routine should return true by default and then
 // select the cases where we are sure nothing has changed.
-static bool isDef(SymExpr* se)
+static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 {
+  INT_ASSERT(se->isRef() == false);
   if (toGotoStmt(se->parentExpr)) {
     return false;
   }
@@ -311,6 +204,7 @@ static bool isDef(SymExpr* se)
         arg->intent == INTENT_REF   ||  // and this.
         arg->hasFlag(FLAG_ARG_THIS))    // We need this case.
     {
+      liveRefs.insert(se->symbol());
       return true;
     }
 
@@ -323,35 +217,19 @@ static bool isDef(SymExpr* se)
   }
   else
   {
+    const bool isFirstActual = call->get(1) == se;
     if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-        && call->get(1) == se)
-    {
-      // The move primitive automatically dereferences the LHS if it is of
-      // reference type and the RHS is not.  In which case it is not a def (the
-      // referenced value changes, but the reference itself does not.
-      if (se->isRef())
-      {
-        if (! call->get(2)->isRef())
-        {
-          // This is the version of move that applies the deref on the lhs
-          // As a result the value of the lhs is not updated.  To be precise,
-          // the value of the contents of the lhs is updated.
-          return false;
-        }
-
-        // This is a ref <- ref assignment, so the value of the lhs changes.
-        return true;
-      }
-
-      return true;
-    }
-
-    if (isOpEqualPrim(call) && call->get(1) == se)
+        && isFirstActual)
     {
       return true;
     }
 
-    if (call->isPrimitive(PRIM_SET_MEMBER) && se == call->get(1))
+    if (isOpEqualPrim(call) && isFirstActual)
+    {
+      return true;
+    }
+
+    if (call->isPrimitive(PRIM_SET_MEMBER) && isFirstActual)
     {
       return true;
     }
@@ -359,7 +237,7 @@ static bool isDef(SymExpr* se)
     if (call->isPrimitive(PRIM_ARRAY_SET) ||
         call->isPrimitive(PRIM_ARRAY_SET_FIRST))
     {
-      if (se == call->get(1))
+      if (isFirstActual)
       {
         return true;
       }
@@ -381,19 +259,23 @@ static bool isDef(SymExpr* se)
       // For now, we treat subfield extraction as evidence of a future change
       // to the symbol itself, and use that fact to remove it from
       // consideration in copy propagation.
-      if (se == call->get(1))
+      if (isFirstActual)
       {
-        if (!se->isRef())
-        {
-          // We select just the case where the referent is passed by value,
-          // because in the other case, the address of the object is not
-          // returned, so that means that the address (i.e. the value of the
-          // reference variable) does not change.
-          return true;
-        }
+        // We select just the case where the referent is passed by value,
+        // because in the other case, the address of the object is not
+        // returned, so that means that the address (i.e. the value of the
+        // reference variable) does not change.
+        return true;
       }
 
       return false;
+    }
+
+    if (call->isPrimitive(PRIM_ADDR_OF) ||
+        call->isPrimitive(PRIM_SET_REFERENCE) ||
+        call->isPrimitive(PRIM_ARRAY_ALLOC)) {
+      liveRefs.insert(se->symbol());
+      return true;
     }
 
     return false;
@@ -443,8 +325,14 @@ static bool isUse(SymExpr* se)
     // A "normal" call.
     ArgSymbol* arg = actual_to_formal(se);
 
-    if (arg->intent == INTENT_OUT)
+    if (arg->intent == INTENT_OUT ||
+        arg->intent == INTENT_REF)
     {
+      return false;
+    } else if (arg->intent == INTENT_CONST_REF &&
+               isRecord(arg->type)) {
+      // We can currently return a const reference to a field in a record
+      // passed by const ref.
       return false;
     }
   }
@@ -452,6 +340,7 @@ static bool isUse(SymExpr* se)
   else
   {
     INT_ASSERT(call->primitive);
+    const bool isFirstActual = call->get(1) == se;
 
     switch(call->primitive->tag)
     {
@@ -470,7 +359,7 @@ static bool isUse(SymExpr* se)
      case PRIM_AND_ASSIGN:
      case PRIM_OR_ASSIGN:
      case PRIM_XOR_ASSIGN:
-      if (se == call->get(1))
+      if (isFirstActual)
       {
         return false;
       }
@@ -505,7 +394,7 @@ static bool isUse(SymExpr* se)
       // comm prefetch locale widePtr len
       // second argument is an address
       // first and third are values.
-      if (se == call->get(1) || se == call->get(3))
+      if (isFirstActual || se == call->get(3))
       {
         return true;
       }
@@ -522,14 +411,8 @@ static bool isUse(SymExpr* se)
 
      case PRIM_GET_MEMBER:
      case PRIM_GET_MEMBER_VALUE:
-      if (se == call->get(1))
+      if (isFirstActual)
       {
-        if (se->isRef())
-        {
-          // If two refs are equal, then one may substitute for the other.
-          return true;
-        }
-
         return false;
       }
       return true;
@@ -539,7 +422,7 @@ static bool isUse(SymExpr* se)
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
       // The first operand is treated like a reference.
-      if (se == call->get(1))
+      if (isFirstActual)
       {
         return false;
       }
@@ -547,7 +430,7 @@ static bool isUse(SymExpr* se)
 
      case PRIM_SET_UNION_ID:
       // The first operand is treated like a reference.
-      if (se == call->get(1))
+      if (isFirstActual)
       {
         return false;
       }
@@ -559,168 +442,15 @@ static bool isUse(SymExpr* se)
   return true;
 }
 
-
-// Returns true if the argument is passed by (non-const) ref, meaning that the
-// referent (or any if its referents recursively, can be assigned.
-static bool isRefUse(SymExpr* se)
-{
-  if (toGotoStmt(se->parentExpr))
-  {
-    return false;
-  }
-
-  // Conditionals should only read their arg expressions.
-  if (toCondStmt(se->parentExpr))
-  {
-    return false;
-  }
-
-  if (toBlockStmt(se->parentExpr))
-  {
-    return false;
-  }
-
-  if (isDefExpr(se->parentExpr))
-  {
-    return false;
-  }
-
-  CallExpr* call = toCallExpr(se->parentExpr);
-
-  if (FnSymbol* fn = call->resolvedFunction())
-  { // A "normal" call.
-    // Skip the "base" symbol.
-    if (se->symbol() == fn)
-    {
-      return false;
-    }
-
-    if (se->isRef())
-    {
-      return true;
-    }
-
-    // TODO:
-    //  If the FLAG_EXTERN test is removed above, these may become dead code.
-    ArgSymbol* arg = actual_to_formal(se);
-
-    if (arg->intent == INTENT_REF   ||
-        arg->intent == INTENT_INOUT ||
-        arg->intent == INTENT_OUT   ||
-        // The 'this' arg is implicitly passed by reference.
-        // TODO: Decorate this args with INTENT_REF and then remove this and
-        // similar flag tests.  Then retire the FLAG_ARG_THIS flag.
-        arg->hasFlag(FLAG_ARG_THIS))
-    {
-      return true;
-    }
-
-    if (isRecordWrappedType(arg->type))
-    {
-      return true;
-    }
-
-    return false;
-  }
-
-  else // A primitive.
-  {
-    if (se->isRef())
-    {
-      // For a *(ref) to be defined through a primitive, the primitive must
-      // accept a ref argument in that position, such that it may update the
-      // referenced value.
-      switch(call->primitive->tag)
-      {
-       default:
-        break;
-
-       case PRIM_MOVE:
-       case PRIM_ASSIGN:
-       case PRIM_ADD_ASSIGN:
-       case PRIM_SUBTRACT_ASSIGN:
-       case PRIM_MULT_ASSIGN:
-       case PRIM_DIV_ASSIGN:
-       case PRIM_MOD_ASSIGN:
-       case PRIM_LSH_ASSIGN:
-       case PRIM_RSH_ASSIGN:
-       case PRIM_AND_ASSIGN:
-       case PRIM_OR_ASSIGN:
-       case PRIM_XOR_ASSIGN:
-        // Only the left argument is updated.
-        if (call->get(1) == se)
-        {
-          return true;
-        }
-        break;
-
-       case PRIM_SET_MEMBER:
-        // A reference at the third position is copied into some structure
-        // (through which the value it references may later be updated).
-        if (se == call->get(3))
-        {
-          return true;
-        }
-
-        if (se == call->get(1) && se->isRef())
-        {
-          return true;
-        }
-
-        break;
-
-       case PRIM_CHPL_COMM_GET:
-        // The first argument is the local address.
-        if (call->get(1) == se)
-        {
-          return true;
-        }
-        break;
-
-        // Probably we have to add a case for PRIM_CHPL_COMM_PUT as well,
-        // analogous to PRIM_SET_MEMBER.
-        // Strided versions as well.
-        // Is PRIM_ARRAY_SET still used?
-      }
-    }
-  }
-
-  return false;
-}
-
-
-// If the given SymExpr is used in a deref primitive, return that primitive.
-// Otherwise, return NULL.
-static Expr* derefUse(SymExpr* se)
-{
-  if (toGotoStmt(se->parentExpr))
-    return NULL;
-  if (toCondStmt(se->parentExpr))
-    return NULL;
-  if (toBlockStmt(se->parentExpr))
-    return NULL;
-  if (isDefExpr(se->parentExpr))
-    return NULL;
-
-  CallExpr* call = toCallExpr(se->parentExpr);
-  if (call->isPrimitive(PRIM_DEREF))
-    return call;
-  if (isDerefMove(call) && se == call->get(2)) {
-    return se;
-  }
-  return NULL;
-}
-
-
 // Perform updates that effect the copyPropagation transformation.
 static void propagateCopies(std::vector<SymExpr*>& symExprs,
-                            AvailableMap& available,
-                            RefMap& refs)
+                            AvailableMap& available)
 {
   // Scan the SymExprs in the current block, looking for ones that can be replaced.
   for_vector(SymExpr, se, symExprs)
   {
-    INT_ASSERT(! isUnresolvedSymExpr(se));
+    if (se->isRef()) continue;
+
     // Replace an alias with its definition, using the current set of
     // available pairs.
     if (isUse(se))
@@ -730,50 +460,13 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
       // If so, replace the alias with its definition.
       if (alias_def_pair != available.end())
       {
-#if DEBUG_CP
-        if (debug > 0)
-          printf("Replacing %s[%d] with %s[%d]\n",
-                 alias_def_pair->first->name, alias_def_pair->first->id,
-                 alias_def_pair->second->name, alias_def_pair->second->id);
-#endif
+        DEBUG_COPYPROP("Replacing %s[%d] with %s[%d]\n",
+               alias_def_pair->first->name, alias_def_pair->first->id,
+               alias_def_pair->second->name, alias_def_pair->second->id);
+
         INT_ASSERT(alias_def_pair->first != alias_def_pair->second);
         se->setSymbol(alias_def_pair->second);
         ++s_repl_count;
-      }
-    }
-
-    // If we encounter an ADDR_OF with a symbol, do not allow further
-    // replacements in case the reference is used to modify the symbol's data.
-    if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-      if (parent->isPrimitive(PRIM_ADDR_OF) ||
-          parent->isPrimitive(PRIM_SET_REFERENCE) ||
-          parent->isPrimitive(PRIM_ARRAY_ALLOC)) {
-        AvailableMap::iterator ami = available.find(se->symbol());
-        if (ami != available.end()) {
-          available.erase(ami);
-        }
-      }
-    }
-
-    // Also if the SymExpr is used in an expression of the form (deref se),
-    // and there exists a ref-def pair s.t. ref == (addr_of def) and
-    // se->var == ref, replace the deref expression with def.
-    Expr* call = derefUse(se);
-    if (call && (call == se || call == se->parentExpr))
-    {
-      // See if there is a (ref,def) pair.
-      RefMap::iterator ref_def_pair = refs.find(se->symbol());
-      if (ref_def_pair != refs.end() && ref_def_pair->second != NULL)
-      {
-#if DEBUG_CP
-        if (debug > 0)
-          printf("Replacing ('deref %s[%d]) with %s[%d]\n",
-                 ref_def_pair->first->name, ref_def_pair->first->id,
-                 ref_def_pair->second->name, ref_def_pair->second->id);
-#endif
-        SET_LINENO(call->getStmtExpr());
-        call->replace(new SymExpr(ref_def_pair->second));
-        ++s_ref_repl_count;
       }
     }
   }
@@ -790,11 +483,8 @@ removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
   AvailableMap::iterator ami = available.find(sym);
   if (ami != available.end())
   {
-#if DEBUG_CP
-    if (debug > 0)
-      printf("Removing (%s[%d], %s[%d])\n",
-             ami->first->name, ami->first->id, ami->second->name, ami->second->id);
-#endif
+    DEBUG_COPYPROP("Removing (%s[%d], %s[%d])\n",
+      ami->first->name, ami->first->id, ami->second->name, ami->second->id);
     available.erase(ami);
   }
 
@@ -809,11 +499,8 @@ removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
       AvailableMap::iterator ami = available.find(*i);
       if (ami != available.end())
       {
-#if DEBUG_CP
-        if (debug > 0)
-          printf("Removing (%s[%d], %s[%d])\n",
-                 ami->first->name, ami->first->id, ami->second->name, ami->second->id);
-#endif
+        DEBUG_COPYPROP("Removing (%s[%d], %s[%d])\n",
+          ami->first->name, ami->first->id, ami->second->name, ami->second->id);
         available.erase(ami);
       }
     }
@@ -828,7 +515,7 @@ removeAvailable(AvailableMap& available, ReverseAvailableMap& ravailable,
 static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
                                 AvailableMap& available,
                                 ReverseAvailableMap& ravailable,
-                                RefMap& refs)
+                                std::set<Symbol*>& liveRefs)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -838,25 +525,10 @@ static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
     // not a definition.  So here it can be ignored.
     if (! se->parentExpr)
       continue;
+    if (se->isRef()) continue;
 
-    if (isDef(se))
+    if (needsKilling(se, liveRefs))
       removeAvailable(available, ravailable, se->symbol());
-
-    if (isRefUse(se))
-    {
-      // If se is a reference and is used in a way that it may be assigned,
-      // the thing to which it refers is invalidated, as well as anything
-      // that thing could refer to ad infinitum.
-      Symbol* cont = se->symbol();
-      while (true)
-      {
-        RefMap::iterator refDef = refs.find(cont);
-        if (refDef == refs.end())
-          break;
-        cont = refDef->second;
-        removeAvailable(available, ravailable, cont);
-      }
-    }
   }
 }
 
@@ -896,7 +568,8 @@ static bool maybeVolatile(SymExpr* se)
 // Insert pairs into available copies map
 static void extractCopies(Expr* expr,
                           AvailableMap& available,
-                          ReverseAvailableMap& ravailable)
+                          ReverseAvailableMap& ravailable,
+                          std::set<Symbol*>& liveRefs)
 {
   // We're only interested in call expressions.
   if (CallExpr* call = toCallExpr(expr))
@@ -913,54 +586,27 @@ static void extractCopies(Expr* expr,
 
         // We would like assume there are no trivial assignments in the tree.
         // INT_ASSERT(lhs != rhs);
-        // But we are wrong.  "Old-style" assignment (at least) leaves them in,
-        // so for now we just ignore these.
+        // But we cannot.  "Old-style" assignment (at least) leaves them in, so
+        // for now we just ignore these.
         if (lhs == rhs)
           return; // Do not save trivial pairs.
 
-        // The move primitive automatically inserts a deref on the lhs if it has
-        // the "ref" flag and the rhs does not.
-        // That particular usage does not create a copy, since CP is interested
-        // in Symbols, and the meaning of the lhs Symbol does not change if the
-        // move is effectively: 
-        //  ('move' ('deref' lhs) rhs)
-        if (lhs->isRef() &&
-            !rhs->isRef())
-          return; // Not a pair.
-
-        // Essentially a dereference
-        if (!lhs->isRef() &&
-            rhs->isRef())
-          return;
-
-        // Assignment between two references "peels" the RHS, so performs a
-        // copy of the *value* of the RHS into the lvalue pointed to by the
-        // LHS.  In contrast a move between two refs just copies one ref into
-        // the other.
-        // In the PRIM_ASSIGN case, the two references may point to different
-        // objects, so the primitive does not create a pair as far as CP is
-        // concerned.
-        // TODO: Based on the semantics of PRIM_ASSIGN, if both LHS and RHS are
-        // references, we *could* create a pair between the symbols they refer
-        // to.  There might be a neat recursive way to do this....
-        if (lhs->isRef() &&
-            rhs->isRef())
-          if (call->isPrimitive(PRIM_ASSIGN))
-            return;
+        // Don't attempt to do anything with references.
+        if (lhs->isRef() || rhs->isRef()) return;
 
         // We can't make substitutions if the lhs or rhs may change at any
         // time.
         if (maybeVolatile(lhe) || maybeVolatile(rhe))
           return; // Not a reliable pair.
 
-        // Create the pair lhs <- rhs.
-#if DEBUG_CP
-        if (debug > 0)
-          printf("Creating pair (%s[%d], %s[%d])\n",
+        if (liveRefs.find(lhs) == liveRefs.end() &&
+            liveRefs.find(rhs) == liveRefs.end()) {
+          // Create the pair lhs <- rhs.
+          DEBUG_COPYPROP("Creating pair (%s[%d], %s[%d])\n",
                  lhs->name, lhs->id, rhs->name, rhs->id);
-#endif
-        available.insert(AvailableMapElem(lhs, rhs));
-        ravailable[rhs].push_back(lhs);
+          available.insert(AvailableMapElem(lhs, rhs));
+          ravailable[rhs].push_back(lhs);
+        }
       }
     }
   }
@@ -981,7 +627,7 @@ static void
 localCopyPropagationCore(BasicBlock*          bb,
                          AvailableMap&        available,
                          ReverseAvailableMap& ravailable,
-                         RefMap&              refs)
+                         std::set<Symbol*>& liveRefs)
 {
   for_vector(Expr, expr, bb->exprs)
   {
@@ -992,13 +638,14 @@ localCopyPropagationCore(BasicBlock*          bb,
 
     std::vector<SymExpr*> symExprs;
 
+    // TODO: do not collect references or symbols that are not LcnSymbols
     collectSymExprs(expr, symExprs);
 
-    propagateCopies(symExprs, available, refs);
+    propagateCopies(symExprs, available);
 
-    removeKilledSymbols(symExprs, available, ravailable, refs);
+    removeKilledSymbols(symExprs, available, ravailable, liveRefs);
 
-    extractCopies(expr, available, ravailable);
+    extractCopies(expr, available, ravailable, liveRefs);
   }
 }
 
@@ -1008,23 +655,19 @@ localCopyPropagationCore(BasicBlock*          bb,
 //
 size_t localCopyPropagation(FnSymbol* fn)
 {
-  RefMap refs;
-
   BasicBlock::buildBasicBlocks(fn);
-
-  computeRefMap(fn, refs);
+  std::set<Symbol*> liveRefs;
 
   s_repl_count     = 0;
-  s_ref_repl_count = 0;
 
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     AvailableMap available;
     ReverseAvailableMap ravailable;
-    localCopyPropagationCore(bb1, available, ravailable, refs);
+    localCopyPropagationCore(bb1, available, ravailable, liveRefs);
   }
 
-  return s_repl_count + s_ref_repl_count;
+  return s_repl_count;
 }
 
 
@@ -1055,16 +698,16 @@ static void destroyPairSet(std::vector<BitVec*> set)
 // one long vector: availablePairs.
 // The ending index for each block is stored in ends[i].
 static void extractAvailablePairs(FnSymbol* fn,
-                                  RefMap& refs,
                                   std::vector<AvailablePair>& availablePairs, 
                                   std::vector<size_t>& ends)
 {
+  std::set<Symbol*> liveRefs;
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     // Run local copy propagation to extract live pairs at the end of each block.
     AvailableMap available;
     ReverseAvailableMap ravailable;
-    localCopyPropagationCore(bb1, available, ravailable, refs);
+    localCopyPropagationCore(bb1, available, ravailable, liveRefs);
 
     // Record those live pairs in successive elements in availablePairs.
     for (AvailableMap::iterator i = available.begin();
@@ -1086,9 +729,9 @@ static void extractAvailablePairs(FnSymbol* fn,
 // Note that due to the possibility of loops, an earlier block can kill a pair
 // that is defined later.
 static void computeKillSets(FnSymbol* fn,
-                            RefMap& refs,
                             std::vector<AvailablePair>& availablePairs,
-                            std::vector<BitVec*>& KILL)
+                            std::vector<BitVec*>& KILL,
+                            std::set<Symbol*>& liveRefs)
 {
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; ++i)
@@ -1104,24 +747,10 @@ static void computeKillSets(FnSymbol* fn,
 
       for_vector(SymExpr, se, symExprs)
       {
+        if (se->isRef()) continue;
         // Invalidate a symbol if it is redefined.
-        if (isDef(se))
+        if (needsKilling(se, liveRefs))
           killSet.insert(se->symbol());
-
-        // Invalidate a symbol if it may be changed through the use of a
-        // reference.
-        if (isRefUse(se))
-        {
-          Symbol* cont = se->symbol();
-          while (true)
-          {
-            RefMap::iterator refDef = refs.find(cont);
-            if (refDef == refs.end())
-              break;
-            cont = refDef->second;
-            killSet.insert(cont);
-          }
-        }
       }
     }
 
@@ -1212,18 +841,15 @@ static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 // immediately after it would be redundant.
 //
 size_t globalCopyPropagation(FnSymbol* fn) {
-  RefMap refs;
-
   BasicBlock::buildBasicBlocks(fn);
-
-  computeRefMap(fn, refs);
+  std::set<Symbol*> liveRefs;
 
   size_t                     nbbs = fn->basicBlocks->size();
 
   std::vector<AvailablePair> availablePairs;
   std::vector<size_t>        ends;
 
-  extractAvailablePairs(fn, refs, availablePairs, ends);
+  extractAvailablePairs(fn, availablePairs, ends);
 
   size_t size = availablePairs.size();
 
@@ -1249,7 +875,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
 
   initCopySets(COPY, ends, nbbs);
 
-  computeKillSets(fn, refs, availablePairs, KILL);
+  computeKillSets(fn, availablePairs, KILL, liveRefs);
 
   initInSets(IN, fn);
 
@@ -1279,7 +905,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
   // or RHS is overwritten, so the available set remains correct as the block
   // is traversed.  As a check, the contents of the available set following
   // traversal should match the precomputed OUT[i] for the same block.
-  s_repl_count = s_ref_repl_count = 0; // Zero out counters.
+  s_repl_count =  0; // Zero out counters.
   for (size_t i = 0; i < nbbs; i++) {
     BasicBlock* bb = (*fn->basicBlocks)[i];
     AvailableMap available;
@@ -1301,7 +927,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
 
     if (available.size() > 0)
     {
-      localCopyPropagationCore(bb, available, ravailable, refs);
+      localCopyPropagationCore(bb, available, ravailable, liveRefs);
       // Here, as a check, we could subtract from available the pairs
       // corresponding to the true bits in OUT[i].  The expectation is that all
       // and only those pairs remain.
@@ -1313,7 +939,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
   destroyPairSet(IN);
   destroyPairSet(OUT);
 
-  return s_repl_count + s_ref_repl_count;
+  return s_repl_count;
 }
 
 void copyPropagation(void) {

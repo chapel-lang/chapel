@@ -233,7 +233,7 @@ bool Symbol::isRenameable() const {
 
 bool Symbol::isRef() {
   QualifiedType q = qualType();
-  return (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
 }
 
 bool Symbol::isWideRef() {
