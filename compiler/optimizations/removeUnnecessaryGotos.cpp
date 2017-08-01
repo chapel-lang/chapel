@@ -21,6 +21,7 @@
 #include "expr.h"
 #include "optimizations.h"
 #include "stmt.h"
+#include "LoopStmt.h"
 #include <vector>
 #include <set>
 #include "stlUtil.h"
@@ -49,7 +50,18 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
     if (DefExpr* def = toDefExpr(ast2))
       if (LabelSymbol* label = toLabelSymbol(def->sym))
         if (!label->hasFlag(FLAG_EPILOGUE_LABEL) || removeEpilogueLabel)
-          if (labels.find(label) == labels.end())
+          if (labels.find(label) == labels.end()) {
+            if (LoopStmt* loop = toLoopStmt(def->parentExpr)) {
+              if (loop->continueLabelGet() == label) {
+                loop->continueLabelSet(NULL);
+              }
+            } else if (LoopStmt* loop = toLoopStmt(def->prev)) {
+              if (loop->breakLabelGet() == label) {
+                loop->breakLabelSet(NULL);
+              }
+            }
+
             def->remove();
+          }
   }
 }
