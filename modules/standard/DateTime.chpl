@@ -1138,6 +1138,13 @@ module DateTime {
     return str;
   }
 
+  /* Return a `string` from a `datetime` in the form:
+     Wed Dec  4 20:30:40 2002
+  */
+  proc datetime.ctime() {
+    return this.strftime("%a %b %e %T %Y");
+  }
+
   // TODO: Add a datetime.timestamp() method
 
   /* Operators on datetime values */
