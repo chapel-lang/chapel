@@ -19,9 +19,8 @@
 
 #include "flags.h"
 
-#include "baseAST.h"
+#include "expr.h"
 #include "stringutil.h"
-#include "symbol.h"
 
 
 typedef Map<const char*, int> FlagMap;
@@ -71,7 +70,6 @@ void writeFlags(FILE* fp, Symbol* sym) {
   }
 }
 
-
 // these affect what viewFlags() prints
 bool viewFlagsShort   = true;
 bool viewFlagsPragma  = false;
@@ -79,12 +77,7 @@ bool viewFlagsName    = false;
 bool viewFlagsComment = false;
 bool viewFlagsExtras  = true;
 
-void viewFlags(BaseAST* ast) {
-  if (!viewFlagsShort && !viewFlagsName && !viewFlagsComment) {
-    viewFlagsName = true;
-  }
-
-  if (Symbol* sym = toSymbol(ast)) {
+static void viewSymbolFlags(Symbol* sym) {
     for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
       if (sym->flags[flagNum]) {
         if (viewFlagsName) {
@@ -115,9 +108,11 @@ void viewFlags(BaseAST* ast) {
           fprint_imm(stdout, *toVarSymbol(sym)->immediate, true);
           printf("\n");
         }
+        printf("qual %s\n", qualifierToStr(vs->qual));
 
       } else if (ArgSymbol* as = toArgSymbol(sym)) {
-        printf("%s arg\n", as->intentDescrString());
+        printf("%s arg  qual %s\n",
+               as->intentDescrString(), qualifierToStr(as->qual));
 
       } else if (toTypeSymbol(sym)) {
         printf("a TypeSymbol\n");
@@ -141,9 +136,37 @@ void viewFlags(BaseAST* ast) {
         printf("unknown symbol kind\n");
       }
     }
+}
 
+static void viewFlagsHelper(BaseAST* ast, Symbol* sym, const char* msg) {
+  printf("%d: %s %d\n", ast->id, msg, sym->id);
+  viewSymbolFlags(sym);
+}
+  
+void viewFlags(BaseAST* ast) {
+  if (!viewFlagsShort && !viewFlagsComment)
+    viewFlagsName = true;
+  if (Symbol* sym = toSymbol(ast)) {
+    viewSymbolFlags(sym);
+  } else if (Type* type = toType(ast)) {
+    viewFlagsHelper(ast, type->symbol, "is a type, showing its Symbol");
+  } else if (SymExpr* se = toSymExpr(ast)) {
+    viewFlagsHelper(ast, se->symbol(), "is a SymExpr, showing its Symbol");
+  } else if (DefExpr* def = toDefExpr(ast)) {
+    viewFlagsHelper(ast, def->sym, "is a DefExpr, showing its Symbol");
   } else {
-    printf("[%d]: not a Symbol, has no flags\n", ast->id);
+    // more cases
+    bool handled = false;
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (SymExpr* se = toSymExpr(call->baseExpr)) {
+        viewFlagsHelper(ast, se->symbol(),
+                        "is a CallExpr, showing its baseExpr Symbol");
+        handled = true;
+      }
+    }
+    if (!handled)
+      printf("%d: is a %s (does not support Flags)\n",
+             ast->id, ast->astTagAsString());
   }
 }
 
