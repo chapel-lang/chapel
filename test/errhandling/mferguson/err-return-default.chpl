@@ -6,9 +6,8 @@ extern record my_struct {
 
 record MyRecord {
   var y:my_struct;
-  proc init(x:int) {
-    y = new my_struct(x:c_int);
-    super.init();
+  proc MyRecord(i:int) {
+    y.x = i:c_int;
   }
   proc deinit() {
     writeln("deinit ", y.x);
@@ -17,7 +16,7 @@ record MyRecord {
 
 config const case = 1;
 
-proc returnOrThrow(i:int):MyRecord throws {
+proc returnOrThrow(i:int, j = 4):MyRecord throws {
 
   if case == i {
     throw new Error("test error");

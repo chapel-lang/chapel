@@ -576,6 +576,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   FnSymbol* fn        = callExpr->resolvedFunction();
 
   Expr*     nextExpr  = moveExpr->next;
+
+  // Ignore a CondStmt containing a PRIM_CHECK_ERROR
+  // so that we can still detect initCopy after a call that can throw
+  if (isCheckErrorStmt(nextExpr))
+      nextExpr = nextExpr->next;
+
   CallExpr* copyExpr  = NULL;
 
   Symbol*   useLhs    = toSymExpr(lhs)->symbol();
@@ -1245,11 +1251,14 @@ static void insertAutoCopyTemps() {
       // but it is currently being run. See the comment near the call
       // to requiresImplicitDestroy in functionResolution and the test
       // call-expr-tmp.chpl.
+      Expr* moveOrCheckError = move;
+      if (isCheckErrorStmt(move->next))
+        moveOrCheckError = move->next;
 
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
 
       move->insertBefore(new DefExpr(tmp));
-      move->insertAfter(new CallExpr(PRIM_MOVE,
+      moveOrCheckError->insertAfter(new CallExpr(PRIM_MOVE,
                                      sym,
                                      new CallExpr(getAutoCopyForType(sym->type),
                                                   tmp)));

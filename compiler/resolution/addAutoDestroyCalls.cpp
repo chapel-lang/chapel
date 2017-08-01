@@ -24,6 +24,7 @@
 #include "astutil.h"
 #include "AutoDestroyScope.h"
 #include "DeferStmt.h"
+#include "errorHandling.h"
 #include "expr.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -132,7 +133,9 @@ static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
 static bool         isErrorLabel(const Expr*        stmt);
-static std::set<VarSymbol*> gatherIgnoredVariablesForErrorHandling(CondStmt* cond);
+static void gatherIgnoredVariablesForErrorHandling(
+    CondStmt* cond,
+    std::set<VarSymbol*>* ignoredVariables);
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
@@ -180,7 +183,8 @@ static void walkBlock(FnSymbol*         fn,
 
         std::set<VarSymbol*> ignoredVariables;
 
-        ignoredVariables = gatherIgnoredVariablesForErrorHandling(cond);
+        if (isCheckErrorStmt(cond))
+          gatherIgnoredVariablesForErrorHandling(cond, &ignoredVariables);
 
         walkBlock(fn, &scope, cond->thenStmt, &ignoredVariables);
 
@@ -298,56 +302,55 @@ static bool isErrorLabel(const Expr* stmt) {
 }
 
 
-static std::set<VarSymbol*> gatherIgnoredVariablesForErrorHandling(CondStmt* cond)
+static void gatherIgnoredVariablesForErrorHandling(
+    CondStmt* cond,
+    std::set<VarSymbol*>* ignoredVariables)
 {
-  std::set<VarSymbol*> ignoredVariables;
-  bool isErrorCond;
 
-  // special handling of PRIM_CHECK_ERROR as the condition
-  if (CallExpr* call = toCallExpr(cond->condExpr)) {
-    if (call->isPrimitive(PRIM_CHECK_ERROR)) {
-      isErrorCond = true;
-    }
-  }
+  // Look for the function call immediately preceeding
+  // that throws. Is it returning a variable that we will
+  // want to auto-destroy?
 
-  if (isErrorCond) {
-    // Look for the function call immediately preceeding
-    // that throws. Is it returning a variable that we will
-    // want to auto-destroy?
-
-    VarSymbol* ignore = NULL;
-    if (CallExpr* move = toCallExpr(cond->prev)) {
-      if (move->isPrimitive(PRIM_MOVE)) {
-        if (CallExpr* call = toCallExpr(move->get(2))) {
-          if (FnSymbol* fn = call->resolvedFunction()) {
-            if (fn->throwsError()) {
-              SymExpr *se = toSymExpr(move->get(1));
-              ignore = toVarSymbol(se->symbol());
-              ignoredVariables.insert(ignore);
-            }
+  VarSymbol* ignore = NULL;
+  if (CallExpr* move = toCallExpr(cond->prev)) {
+    if (move->isPrimitive(PRIM_MOVE)) {
+      if (CallExpr* call = toCallExpr(move->get(2))) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->throwsError()) {
+            SymExpr *se = toSymExpr(move->get(1));
+            ignore = toVarSymbol(se->symbol());
+            ignoredVariables->insert(ignore);
           }
         }
       }
     }
+  }
 
-    // If ignore is set, it might be a callTmp,
-    // track a subsequent PRIM_MOVE to exand the
-    // set of ignored variables to include the
-    // relevant user variable.
-    if (ignore != NULL) {
-      if (CallExpr* move = toCallExpr(cond->next)) {
-        if (move->isPrimitive(PRIM_MOVE)) {
-          SymExpr *dstSe = toSymExpr(move->get(1));
-          SymExpr *srcSe = toSymExpr(move->get(2));
-          if (dstSe != NULL && srcSe != NULL &&
-              srcSe->symbol() == ignore)
-            ignoredVariables.insert(toVarSymbol(dstSe->symbol()));
+  // If ignore is set, it might be a callTmp,
+  // track a subsequent PRIM_MOVE to expand the
+  // set of ignored variables to include the
+  // relevant user variable.
+  if (ignore != NULL) {
+    if (CallExpr* move = toCallExpr(cond->next)) {
+      if (move->isPrimitive(PRIM_MOVE)) {
+        SymExpr *dstSe = toSymExpr(move->get(1));
+        SymExpr *srcSe = NULL;
+
+        if (CallExpr* subCall = toCallExpr(move->get(2))) {
+          if (FnSymbol* calledFn = subCall->resolvedFunction())
+            if (calledFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                calledFn->hasFlag(FLAG_AUTO_COPY_FN))
+              srcSe = toSymExpr(subCall->get(1));
+        } else {
+          srcSe = toSymExpr(move->get(2));
         }
+
+        if (dstSe != NULL && srcSe != NULL &&
+            srcSe->symbol() == ignore)
+          ignoredVariables->insert(toVarSymbol(dstSe->symbol()));
       }
     }
   }
-
-  return ignoredVariables;
 }
 
 /************************************* | **************************************

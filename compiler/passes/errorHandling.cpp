@@ -591,3 +591,15 @@ void lowerCheckErrorPrimitive()
     }
   }
 }
+
+bool isCheckErrorStmt(Expr* e)
+{
+  if (CondStmt* cond = toCondStmt(e)) {
+    if (CallExpr* call = toCallExpr(cond->condExpr)) {
+      if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
