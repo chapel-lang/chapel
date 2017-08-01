@@ -434,6 +434,20 @@ Parser module with the Toml class for the Chapel TOML library.
        this.tag = fieldArr;
      }
 
+     // Clone
+     proc init(root: Toml) {
+       this.boo = root.boo;
+       this.i = root.i;
+       this.re = root.re;
+       this.dom = root.dom;
+       for idx in root.dom do this.arr[idx] = new Toml(root.arr[idx]);
+       this.dt = root.dt;
+       this.s = root.s;
+       this.D = root.D;
+       for idx in root.D do this.A[idx] = new Toml(root.A[idx]);
+       this.tag = root.tag;
+     }
+
 
      /* Returns the index of the table path given as a parameter */
      proc this(tbl: string) ref : Toml {
