@@ -118,6 +118,8 @@ static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
 
+static TypeSymbol* expandTypeAlias(SymExpr* se);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -810,7 +812,7 @@ static void processSyntacticDistributions(CallExpr* call) {
   if (call->isNamed("chpl__distributed")) {
     if (CallExpr* distCall = toCallExpr(call->get(1))) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
-        if (TypeSymbol* ts = toTypeSymbol(distClass->symbol())) {
+        if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(ts->type) == true) {
             CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
 
@@ -1039,7 +1041,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
-static TypeSymbol* resolveTypeAlias(SymExpr* se) {
+static TypeSymbol* expandTypeAlias(SymExpr* se) {
   TypeSymbol* retval = NULL;
 
   while (se != NULL && retval == NULL) {
@@ -1140,7 +1142,7 @@ static void callConstructor(CallExpr* call) {
       parentParent = toCallExpr(parent->parentExpr);
     }
 
-    if (TypeSymbol* ts = resolveTypeAlias(se)) {
+    if (TypeSymbol* ts = expandTypeAlias(se)) {
       at = toAggregateType(ts->type);
     }
 
