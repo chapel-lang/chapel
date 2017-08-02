@@ -70,7 +70,7 @@ symbolFlag( FLAG_CODEGENNED , npr, "codegenned" , "code has been generated for t
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )
 symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
 // The compiler-generated flag has these meanings:
-// 1. In various parts of the compiler, when printing printing filename/lineno
+// 1. In various parts of the compiler, when printing filename/lineno
 //    information in error messages, callstack locations marked
 //    compiler-generated may be ignored when developer == false.
 // 2. In relation to determination of POD types when "compiler generated"

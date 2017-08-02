@@ -196,7 +196,7 @@ static void doGatherInitCandidates(CallInfo&                  info,
                                    bool                       lastResort,
                                    Vec<ResolutionCandidate*>& candidates) {
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    // Only consider user functions or compiler-generated functions
+    // Only consider functions marked with/without FLAG_LAST_RESORT
     if (visibleFn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
 
       // Some expressions might resolve to methods without parenthesis.
