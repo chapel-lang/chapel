@@ -8,15 +8,15 @@ proc main() {
   var depVersion = "0.1.0";
 }*/
 
-proc getDepTomls(deps: [?dom] (string, Toml)) {
-  var depList: [1..0] Toml;
+proc getManifests(deps: [?dom] (string, Toml)) {
+  var manifests: [1..0] Toml;
   for dep in deps {
     var name = dep(1);
     var version: string = dep(2).toString();
     var toAdd = retrieveDep(name, version);
-    depList.push_back(toAdd);
+    manifests.push_back(toAdd);
   }
-  return depList;
+  return manifests;
 }
    
 

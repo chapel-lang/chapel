@@ -33,44 +33,87 @@ proc createDepTree(root: Toml) {
   var dp: domain(string);
   var dps: [dp] Toml;
   var depTree: Toml = dps;
-  depTree["root"] = new Toml(root);
+  if root.pathExists("brick") {
+    depTree["root"] = new Toml(root["brick"]);
+  }
+  else {
+    halt("Could not find brick; Mason cannot update");
+  }
 
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
-    var depTomls = getDepTomls(deps);
-    var fullTree = createDepTrees(depTree, depTomls);
+    var manifests = getManifests(deps);
+    var fullTree = createDepTrees(depTree, manifests, "root");
+    return fullTree;
   }
   else {
     return depTree;
   }
 } 
 
-proc createDepTrees(depTree: Toml, deps: [?d]) { 
-  if deps.d.size == 0 {
-    return depTree;
+proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml { 
+  var depList: [1..0] Toml;
+  while deps.domain.size > 0 {
+    var dep = deps[deps.domain.first];
+    var brick = dep["brick"];
+    var package = brick["name"].s;
+    var version = brick["version"].s;
+    if depTree.pathExists(package) {
+      var verToUse = IVRS(version, depTree[package]["version"].s);
+      version = verToUse;
+    }
+    var source = brick["source"].s;
+    var toAdd: Toml = package + ' ' + version + ' ' + source;
+    depList.push_back(toAdd);
+
+
+    var dt: domain(string);
+    var depTbl: [dt] Toml;
+    depTree[package] = depTbl;
+    depTree[package]["name"] = package;
+    depTree[package]["version"] = version;
+    depTree[package]["source"] = source;      
+    
+    
+    if dep.pathExists("dependencies") {
+      var subDeps = getDependencies(dep);
+      var manifests = getManifests(subDeps);
+      var dependency = createDepTrees(depTree, manifests, package);
+    }
+    deps.remove(deps.domain.first);
+  }
+  depTree[name]["dependencies"] = depList;
+  return depTree;
+}
+
+
+proc IVRS(version1: string, version2: string) {
+  if version1 == version2 then return version1;
+  var vers1 = version1.split('.');
+  var vers2 = version2.split('.');
+  if vers1(1) != vers2(1) {
+    halt("Differing Major versions of dependencies are not allowed");
+  }
+  else if vers1(2) != vers2(2) {
+    var v1 = ascii(vers1(2));
+    var v2 = ascii(vers2(2));
+    if v1 > v2 {
+      writeln(v1, " ", v2);
+      return version1;
+    }
+    else return version2;
   }
   else {
-    var dep = deps[deps.d.first];
-    var brick = dep["brick"];
-    var package = brick["name"].toString();
-    if depTree.pathExists(package) {
-      halt("for now. res strat will go here");
+    var v1 = ascii(vers1(3));
+    var v2 = ascii(vers2(3));
+    if v1 > v2 {
+      return version1;
     }
-    depTree[package]["name"] = package;
-    depTree[package]["version"] = brick["version"].toString();
-    depTree[package]["source"] = brick["source"].toString();
+    else return version2;
+  }
+}
+    
 
-    if dep.pathExists("dependencies") {
-      var deps = getDependencies(root);
-      var depTomls = getDepTomls(deps);
-      var fullTree = createDepTrees(depTree, depTomls);
-
-      //find a way to recurse through the toml files
-      //while still adding the dependencies to each table
-      // maybe a seperate helper function that takes in a list of tomls
-      //   and spits back the correct dependency list? 
-      // yea def do that
-	 
 
 proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
