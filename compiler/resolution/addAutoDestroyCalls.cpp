@@ -301,7 +301,38 @@ static bool isErrorLabel(const Expr* stmt) {
   return false;
 }
 
+/*
+ This function identifies variables that have not yet been initialized
+ because the function that would initialize them has thrown an error.
+ The error handling can add 'gotos' to handle such errors in-between
+ a DefExpr and the AST nodes that cause that variable to be initialized.
+ This wouldn't have been possible before error handling.
 
+  For example, consider the following Chapel code and AST:
+
+  try {
+    var x = returnOrThrow(1);
+    writeln(x);
+  }
+
+
+  'def' error:Error;
+  'def' x;
+  'def' call_tmp;
+  'move' call_tmp 'call' returnOrThrow(1, error)
+  if('check error' error)
+  {
+    gotoErrorHandling handler;
+  }
+  'move' x 'call' chpl__initCopy(call_tmp)
+  'call' writeln(x)
+
+  In that event, 'call_tmp' might be stack trash (or at least
+  a value that was not a result of initialization) if returnOrThrow
+  threw an error. So 'deinit' shouldn't be called on 'call_tmp' or 'x'
+  (since these variables really are the same and the existence of both
+   is an artifact of the current implementation)
+*/
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
     std::set<VarSymbol*>* ignoredVariables)
