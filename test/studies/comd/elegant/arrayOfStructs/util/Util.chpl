@@ -44,8 +44,7 @@ proc dateString() {
 
 proc timestampMessage(msg : string) {
   use DateTime;
-  // TODO: add 'ctime' method to datetime record
-  const timeStr = datetime.now().strftime("%a %b %d %T %Y");
+  const timeStr = datetime.now().ctime();
   writeln(timeStr, ": ", msg);
   writeln();
 }
