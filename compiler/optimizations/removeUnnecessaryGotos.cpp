@@ -33,6 +33,7 @@
 void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
   std::vector<BaseAST*> asts;
   std::set<BaseAST*> labels;
+  std::set<LoopStmt*> loops;
   collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
@@ -43,6 +44,8 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
         gotoStmt->remove();
       else
         labels.insert(label->symbol());
+    } else if (LoopStmt* loop = toLoopStmt(ast)) {
+      loops.insert(loop);
     }
   }
 
@@ -50,18 +53,20 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
     if (DefExpr* def = toDefExpr(ast2))
       if (LabelSymbol* label = toLabelSymbol(def->sym))
         if (!label->hasFlag(FLAG_EPILOGUE_LABEL) || removeEpilogueLabel)
-          if (labels.find(label) == labels.end()) {
-            if (LoopStmt* loop = toLoopStmt(def->parentExpr)) {
-              if (loop->continueLabelGet() == label) {
-                loop->continueLabelSet(NULL);
-              }
-            } else if (LoopStmt* loop = toLoopStmt(def->prev)) {
-              if (loop->breakLabelGet() == label) {
-                loop->breakLabelSet(NULL);
-              }
-            }
-
+          if (labels.find(label) == labels.end())
             def->remove();
-          }
+  }
+
+  for_set(LoopStmt, loop, loops) {
+    LabelSymbol* breakLabel    = loop->breakLabelGet();
+    LabelSymbol* continueLabel = loop->continueLabelGet();
+
+    if (breakLabel && isAlive(breakLabel) == false) {
+      loop->breakLabelSet(NULL);
+    }
+
+    if (continueLabel && isAlive(continueLabel) == false) {
+      loop->continueLabelSet(NULL);
+    }
   }
 }
