@@ -2236,7 +2236,7 @@ mem_region_t* mreg_for_addr(void* addr, mem_region_table_t* tab)
 
   mr = tab->mregs;
   for (int i = 0; i < tab->mreg_cnt; i++, mr++) {
-    if (addr_ui >= mr->addr && addr_ui <= mr->addr + mr->len)
+    if (addr_ui >= mr->addr && addr_ui < mr->addr + mr->len)
       return mr;
   }
 
