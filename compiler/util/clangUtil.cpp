@@ -2218,6 +2218,11 @@ void makeBinaryLLVM(void) {
   options += " ";
   options += ldflags;
 
+  // We may need to add the -pthread flag here for the link step
+  // if we start doing link-time optimization.  For now, leave it
+  // out because its unnecessary inclusion causes a warning message
+  // on Macs.
+
   // Now, if we're doing a multilocale build, we have to make a launcher.
   // For this reason, we create a makefile. codegen_makefile
   // also gives us the name of the temporary place to save
