@@ -178,12 +178,9 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
  */
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
-  compilerError("is this ioerror ever called?");
-  /*
   const quotedpath = quote_string(path, path.length:ssize_t): string;
   const err_msg = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-  throw new SystemError(error, err_msg);
-  */
+  throw new SystemError(EIO, err_msg);
 }
 
 /* Convert a syserr error code to a human-readable string describing that
