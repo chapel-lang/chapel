@@ -1,5 +1,6 @@
 
 
+
 /*
 Lock File generation depends on three parts of manifest
   1. Package Identifier (name)
@@ -13,9 +14,7 @@ use getDep;
 proc main(args: [] string) {
   var openFile = openreader(args[1]);
   var TomlFile = parseToml(openFile);
-  var rootDeps = getDependencies(TomlFile);
-  var dependencies = getDepTomls(rootDeps);
-  var lockFile = createDepTree(TomlFile, dependencies);
+  var lockFile = createDepTree(TomlFile);
   genLock(lockFile);
   openFile.close();
   delete TomlFile;
@@ -30,33 +29,47 @@ proc genLock(lock: Toml) {
 }
   
 
-proc createDepTree(root: Toml, deps: [?depsD]) { 
+proc createDepTree(root: Toml) {
   var dp: domain(string);
-  var dps: [dp] Toml;    // Future lock file
+  var dps: [dp] Toml;
   var depTree: Toml = dps;
+  depTree["root"] = new Toml(root);
 
-  depTree["root"] = new Toml(root["brick"]);
-  
-
-  var depList: [1..0] Toml;
-  for dep in deps {
-    var brick = dep["brick"];
-    var depToAdd = brick["name"];
-    depList.push_back(depToAdd);
-
-    var deptblD: domain(string);
-    var depTbl: [deptblD] Toml;
-    var package = dep["name"].toString();
-    depTree[package] = depTbl;
-    depTree[package]["name"] = package;
-    depTree[package]["version"] = dep["version"].toString();
-    depTree[package]["source"] = dep["source"].toString();
-    depTree[package]["dependencies"] = new Toml(dep["dependencies"]);
+  if root.pathExists("dependencies") {
+    var deps = getDependencies(root);
+    var depTomls = getDepTomls(deps);
+    var fullTree = createDepTrees(depTree, depTomls);
   }
+  else {
+    return depTree;
+  }
+} 
 
-  depTree["root"]["dependencies"] = depList;
-  return depTree;
-}
+proc createDepTrees(depTree: Toml, deps: [?d]) { 
+  if deps.d.size == 0 {
+    return depTree;
+  }
+  else {
+    var dep = deps[deps.d.first];
+    var brick = dep["brick"];
+    var package = brick["name"].toString();
+    if depTree.pathExists(package) {
+      halt("for now. res strat will go here");
+    }
+    depTree[package]["name"] = package;
+    depTree[package]["version"] = brick["version"].toString();
+    depTree[package]["source"] = brick["source"].toString();
+
+    if dep.pathExists("dependencies") {
+      var deps = getDependencies(root);
+      var depTomls = getDepTomls(deps);
+      var fullTree = createDepTrees(depTree, depTomls);
+
+      //find a way to recurse through the toml files
+      //while still adding the dependencies to each table
+      // maybe a seperate helper function that takes in a list of tomls
+      //   and spits back the correct dependency list? 
+      // yea def do that
 	 
 
 proc getDependencies(tomlTbl: Toml) {

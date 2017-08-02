@@ -24,7 +24,6 @@ proc getDepTomls(deps: [?dom] (string, Toml)) {
 proc retrieveDep(name: string, ver: string) {
   var version = ver.strip('"');
   var tomlPath = "/Users/spartee/.mason/registry/"+name+"/"+version+".toml";
-  writeln(tomlPath);
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);
     var depToml = parseToml(tomlFile);
