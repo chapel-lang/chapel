@@ -4,10 +4,12 @@ os:
 compiler:
   - gcc
 
-script:
-  - ./util/buildRelease/smokeTest
+matrix:
+  include:
+    - env: NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_DOC=true TEST_COMMAND="./util/buildRelease/smokeTest"
+    - env: NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_MAKE_CHECK=true TEST_COMMAND="./util/buildRelease/smokeTest"
 
-env:
-  - NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_DOC=true
+script:
+  - (eval "$TEST_COMMAND")
 
 sudo: false
