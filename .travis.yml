@@ -8,6 +8,6 @@ script:
   - ./util/buildRelease/smokeTest
 
 env:
-  - NIGHTLY_TEST_SETTINGS=true
+  - NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_DOC=true
 
 sudo: false
