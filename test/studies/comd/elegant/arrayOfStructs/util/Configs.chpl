@@ -50,12 +50,21 @@ param bohrToAngs  = 0.52917721092; // Bohrs to Angstroms
 config param MAXATOMS  = 64;
 config param POT_SHIFT = 1.0;
 
-if (xproc*yproc*zproc) != numLocales then
-  halt("Number of locales must match xproc * yproc * zproc: ",
-       xproc, " * ", yproc, " * ", zproc, " != ", numLocales);
+var ReshapedDom : domain(3);
+var ReshapedLocales : [ReshapedDom] locale;
 
-const ReshapedDom     = {1..xproc, 1..yproc, 1..zproc};
-const ReshapedLocales = reshape(Locales, ReshapedDom);
+if xproc == 1 && yproc == 1 && zproc == 1 {
+  use DSIUtil;
+  setupTargetLocalesArray(ReshapedDom, ReshapedLocales, Locales);
+  (xproc, yproc, zproc) = ReshapedLocales.shape;
+} else {
+  if (xproc*yproc*zproc) != numLocales then
+    halt("Number of locales must match xproc * yproc * zproc: ",
+         xproc, " * ", yproc, " * ", zproc, " != ", numLocales);
+
+  const ReshapedDom     = {1..xproc, 1..yproc, 1..zproc};
+  const ReshapedLocales = reshape(Locales, ReshapedDom);
+}
 
 
 proc printConfigs() {
