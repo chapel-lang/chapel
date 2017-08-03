@@ -266,7 +266,7 @@ static int64_t GetOffsetFromIndex(const GEPOperator *GEP, unsigned Idx,
     if (OpC->isZero()) continue;  // No offset.
 
     // Handle struct indices, which add their field offset to the pointer.
-#if HAVE_LLVM_VER >= 38
+#if HAVE_LLVM_VER >= 40
     if (StructType *STy = GTI.getStructTypeOrNull())
 #else
     if (StructType *STy = dyn_cast<StructType>(*GTI))
