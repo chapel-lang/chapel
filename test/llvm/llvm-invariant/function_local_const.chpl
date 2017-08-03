@@ -8,7 +8,7 @@ record A
 }
 
 
-// CHECK: store %A_chpl %{{[0-9]+}}, %A_chpl* %localConst_chpl, !tbaa !{{[0-9]+}}
+// CHECK: store %A_chpl %{{[0-9]+}}, %A_chpl* %localConst_chpl
 // CHECK-NEXT: %[[REG1:[0-9]+]] = bitcast %A_chpl* %localConst_chpl to i8*
 // CHECK-NEXT: %{{[0-9]+}} = call {}* @llvm.invariant.start(i64 8, i8* %[[REG1]])
 
