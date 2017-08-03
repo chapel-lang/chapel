@@ -30,10 +30,4 @@ void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
                            Vec<ResolutionCandidate*>& candidates);
 
-void resolveTypedefedArgTypes(FnSymbol* fn);
-
-bool checkResolveFormalsWhereClauses(ResolutionCandidate* currCandidate);
-
-bool checkGenericFormals(ResolutionCandidate* currCandidate);
-
 #endif

@@ -25,7 +25,6 @@
 
 #include <vector>
 
-
 class ArgSymbol;
 class CallInfo;
 class FnSymbol;
@@ -62,6 +61,12 @@ private:
   bool                      computeAlignment(CallInfo& info);
 
   void                      computeSubstitutions(bool inInitRes = false);
+
+  void                      resolveTypedefedArgTypes();
+
+  bool                      checkResolveFormalsWhereClauses();
+
+  bool                      checkGenericFormals();
 
   SymbolMap                 substitutions;
 };

@@ -64,7 +64,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
   fn = expandIfVarArgs(fn, info);
 
   if (fn != NULL) {
-    resolveTypedefedArgTypes(fn);
+    resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == true) {
       // Ensure that type constructor is resolved before other constructors.
@@ -72,7 +72,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
         resolveTypeConstructor(info);
       }
 
-      retval = checkResolveFormalsWhereClauses(this);
+      retval = checkResolveFormalsWhereClauses();
     }
   }
 
@@ -140,9 +140,9 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
 
   fn = expandIfVarArgs(fn, info);
 
-  if (fn                        != NULL &&
-      computeAlignment(info)    == true &&
-      checkGenericFormals(this) == true) {
+  if (fn                     != NULL &&
+      computeAlignment(info) == true &&
+     checkGenericFormals()   == true) {
     // Compute the param/type substitutions for generic arguments.
     computeSubstitutions();
 
@@ -190,13 +190,13 @@ bool ResolutionCandidate::isApplicableForInitConcrete(CallInfo& info) {
     retval = false;
 
   } else {
-    resolveTypedefedArgTypes(fn);
+    resolveTypedefedArgTypes();
 
     if (computeAlignment(info) == false) {
       retval = false;
 
     } else {
-      retval = checkResolveFormalsWhereClauses(this);
+      retval = checkResolveFormalsWhereClauses();
     }
   }
 
@@ -211,10 +211,10 @@ bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
   if (fn == NULL) {
     retval = false;
 
-  } else if (computeAlignment(info)    == false) {
+  } else if (computeAlignment(info) == false) {
     retval = false;
 
-  } else if (checkGenericFormals(this) == false) {
+  } else if (checkGenericFormals()  == false) {
     retval = false;
 
   } else {
@@ -588,6 +588,126 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   }
 
   return NULL;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void ResolutionCandidate::resolveTypedefedArgTypes() {
+  for_formals(formal, fn) {
+    INT_ASSERT(formal->type);
+
+    if (formal->type == dtUnknown) {
+      if (BlockStmt* block = formal->typeExpr) {
+        if (SymExpr* se = toSymExpr(block->body.first())) {
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            Type* type = resolveTypeAlias(se);
+
+            INT_ASSERT(type);
+
+            formal->type = type;
+          }
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
+  int coindex = -1;
+
+  /*
+   * A derived generic type will use the type of its parent,
+   * and expects this to be instantiated before it is.
+   */
+  resolveFormals(fn);
+
+  for_formals(formal, fn) {
+    if (Symbol* actual = formalIdxToActual[++coindex]) {
+      bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+      bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+
+      bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                               formal->intent == INTENT_PARAM;
+
+      if (actualIsTypeAlias != formalIsTypeAlias) {
+        return false;
+
+      } else if (canDispatch(actual->type,
+                             actual,
+                             formal->type,
+                             fn,
+                             NULL,
+                             formalIsParam) == false) {
+        return false;
+      }
+    }
+  }
+
+  return evaluateWhereClause(fn);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::checkGenericFormals() {
+  int coindex = 0;
+
+  for_formals(formal, fn) {
+    if (formal->type != dtUnknown) {
+      if (Symbol* actual = formalIdxToActual[coindex]) {
+        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+
+        if (actualIsTypeAlias != formalIsTypeAlias) {
+          return false;
+
+        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+          Type* vt  = actual->getValType();
+          Type* st  = actual->type->scalarPromotionType;
+          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+
+          if (canInstantiate(actual->type, formal->type) == false &&
+
+              (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
+              (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
+              (svt == NULL || canInstantiate(svt, formal->type) == false)) {
+
+            return false;
+          }
+
+        } else {
+          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                               formal->intent == INTENT_PARAM;
+
+          if (canDispatch(actual->type,
+                           actual,
+                           formal->type,
+                           fn,
+                           NULL,
+                           formalIsParam) == false) {
+            return false;
+          }
+        }
+      }
+    }
+
+    coindex++;
+  }
+
+  return true;
 }
 
 /************************************* | **************************************
