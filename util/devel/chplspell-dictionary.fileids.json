@@ -600,6 +600,9 @@
   "b321068e-a888-11e6-91b8-10ddb1d4c3d5": [
     "test/exercises/c-ray/forStudents/README"
   ],
+  "3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5": [
+    "test/modules/packages/Toml/TOML.chpl"
+  ],
   "2409dd7e-b858-11e6-9740-843835579daa": [
     "test/release/examples/benchmarks/hpcc/fft.chpl"
   ],
