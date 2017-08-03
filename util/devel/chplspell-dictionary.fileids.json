@@ -31,6 +31,9 @@
     "compiler/AST/expr.cpp",
     "compiler/codegen/expr.cpp"
   ],
+  "ad56c506-780b-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/AST/foralls.cpp"
+  ],
   "e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/iterator.cpp"
   ],
