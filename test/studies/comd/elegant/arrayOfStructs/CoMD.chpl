@@ -61,6 +61,8 @@ proc printProgress(step : int, elapsed : real) {
 
 proc printSystemInfo() {
   proc uname(cmd : string) {
+    if CHPL_COMM == "ugni" then return "unknown";
+
     use Spawn;
     var sub = spawn(["uname", cmd], stdout=PIPE);
     sub.wait();
