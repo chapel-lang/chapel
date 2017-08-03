@@ -19,6 +19,7 @@
 
 #include "ResolutionCandidate.h"
 
+#include "caches.h"
 #include "callInfo.h"
 #include "driver.h"
 #include "expandVarArgs.h"
@@ -154,6 +155,179 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
 
       if (fn != NULL) {
         retval = isApplicable(info);
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::isApplicableForInit(CallInfo& info) {
+  bool retval = false;
+
+  if (fn->hasFlag(FLAG_GENERIC) == false) {
+    retval = isApplicableForInitConcrete(info);
+
+  } else {
+    retval = isApplicableForInitGeneric (info);
+  }
+
+  return retval;
+}
+
+bool ResolutionCandidate::isApplicableForInitConcrete(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn == NULL) {
+    retval = false;
+
+  } else {
+    resolveTypedefedArgTypes(fn);
+
+    if (computeAlignment(info) == false) {
+      retval = false;
+
+    } else {
+      retval = checkResolveFormalsWhereClauses(this);
+    }
+  }
+
+  return retval;
+}
+
+bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn == NULL) {
+    retval = false;
+
+  } else if (computeAlignment(info)    == false) {
+    retval = false;
+
+  } else if (checkGenericFormals(this) == false) {
+    retval = false;
+
+  } else {
+    computeSubstitutions(true);
+
+    if (substitutions.n > 0) {
+      /*
+       * Instantiate just enough of the generic to get through the
+       * the rest of the filtering and disambiguation processes.
+       */
+      fn = instantiateInitSig(info);
+
+      if (fn != NULL) {
+        retval = isApplicableForInit(info);
+      }
+    }
+  }
+
+  return retval;
+}
+
+FnSymbol* ResolutionCandidate::instantiateInitSig(CallInfo& info) {
+  SymbolMap& subs   = substitutions;
+  FnSymbol*  retval = NULL;
+
+  if (FnSymbol* tupleFn = createTupleSignature(fn, subs, info.call)) {
+    retval = tupleFn;
+
+  } else {
+    form_Map(SymbolMapElem, e, subs) {
+      if (TypeSymbol* ts = toTypeSymbol(e->value)) {
+        // This line is modified from instantiateSignature to allow the "this"
+        // arg to remain generic until we have finished resolving the generic
+        // portions of the initializer body's Phase 1.
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) ==  true &&
+            e->key->hasFlag(FLAG_ARG_THIS)          == false) {
+          INT_FATAL(fn, "illegal instantiation with a generic type");
+
+        } else {
+          TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+
+          if (ts != nts) {
+            e->value = nts;
+          }
+        }
+      }
+    }
+
+    //
+    // determine root function in the case of partial instantiation
+    //
+    FnSymbol* root = determineRootFunc(fn);
+
+    //
+    // determine all substitutions (past substitutions in a partial
+    // instantiation plus the current substitutions) and change the
+    // substitutions to refer to the root function's formal arguments
+    //
+    SymbolMap allSubs;
+
+    determineAllSubs(fn, root, subs, allSubs);
+
+    //
+    // use cached instantiation if possible
+    //
+    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+      if (cached != (FnSymbol*)gVoid) {
+        checkInfiniteWhereInstantiation(cached);
+
+        retval = cached;
+
+      } else {
+        retval = NULL;
+      }
+
+    } else {
+
+      SET_LINENO(fn);
+
+      //
+      // instantiate function
+      //
+
+      SymbolMap map;
+
+      FnSymbol* newFn = instantiateFunction(fn,
+                                            root,
+                                            allSubs,
+                                            info.call,
+                                            subs,
+                                            map);
+
+      fixupTupleFunctions(fn, newFn, info.call);
+
+      if (newFn->numFormals()       >  1 &&
+          newFn->getFormal(1)->type == dtMethodToken) {
+        newFn->getFormal(2)->type->methods.add(newFn);
+      }
+
+      newFn->tagIfGeneric();
+
+      if (newFn->hasFlag(FLAG_GENERIC) == false &&
+          evaluateWhereClause(newFn)   == false) {
+
+        // where clause evaluates to false so cache gVoid as a function
+        replaceCache(genericsCache, root, (FnSymbol*) gVoid, &allSubs);
+
+        retval = NULL;
+
+      } else {
+        explainAndCheckInstantiation(newFn, fn);
+
+        retval = newFn;
       }
     }
   }

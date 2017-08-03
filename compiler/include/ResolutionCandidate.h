@@ -38,16 +38,11 @@ public:
 
   bool                      isApplicable(CallInfo& info);
 
-  bool                      computeAlignment(CallInfo& info);
-
-  void                      computeSubstitutions(bool inInitRes = false);
-
+  bool                      isApplicableForInit(CallInfo& info);
 
   FnSymbol*                 fn;
   std::vector<Symbol*>      formalIdxToActual;
   std::vector<ArgSymbol*>   actualIdxToFormal;
-
-  SymbolMap                 substitutions;
 
 private:
                             ResolutionCandidate();
@@ -57,6 +52,18 @@ private:
   void                      resolveTypeConstructor(CallInfo& info);
 
   bool                      isApplicableGeneric(CallInfo& info);
+
+  bool                      isApplicableForInitConcrete(CallInfo& info);
+
+  bool                      isApplicableForInitGeneric(CallInfo& info);
+
+  FnSymbol*                 instantiateInitSig(CallInfo& info);
+
+  bool                      computeAlignment(CallInfo& info);
+
+  void                      computeSubstitutions(bool inInitRes = false);
+
+  SymbolMap                 substitutions;
 };
 
 
