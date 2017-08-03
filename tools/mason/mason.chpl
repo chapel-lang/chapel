@@ -11,6 +11,7 @@ proc main(args: [] string) {
     exit();}
 
   select (args[1]) {
+  when 'new' do masonNew(args);
   when 'build' do masonBuild(args);
   when 'run' do masonRun(args);
   when '-h' do masonHelp();
@@ -22,6 +23,22 @@ proc main(args: [] string) {
     writeln('try mason --help');
     exit();}
   }
+}
+
+
+proc masonNew(args) {
+  var status = -1;
+  if args.size < 3 {
+    writeln('error: Invalid arguments.');
+    masonNewHelp();
+    exit();
+  }
+  else {
+    var project = 'new' + args[2];
+    status = runCommand(project, 'masonNew' + project);
+  }
+  if status != 0 then
+    halt('Error: Mason new failed');
 }
 
 
@@ -57,18 +74,6 @@ proc masonClean(args) {}
 proc masonDoc(args) {} //chpldoc
 
 
-proc masonNew(args) {
-  if args.size < 3 {
-    writeln('error: Invalid arguments.');
-    masonNewHelp();
-    exit();
-  }
-  else {
-    var project = args[2]; // create project structure
-  }
-}
-
-
 proc masonRun(args) {
   var command = '';
   var status = -1;
@@ -81,11 +86,10 @@ proc masonRun(args) {
 }
 
 
-proc runCommand(command): int {
+proc runCommand(command, exe=''): int {
   var cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE);
+  var sub = spawn(cmd, stdout=PIPE, executable=exe);
 
-  writeln(command);
   var line:string;
   while sub.stdout.readline(line) do write(line);
   sub.wait();

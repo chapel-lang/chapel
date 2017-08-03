@@ -5,7 +5,7 @@ use Spawn;
 use FileSystem;
 
 proc main(args: [] string) {
-  const name = args[1]; // change main later
+  const name = args[1]; 
   var status = -1;
   status = gitInit(name);
   if status != 0 {
@@ -14,13 +14,13 @@ proc main(args: [] string) {
   else {
     makeBasicToml(name);
     makeProjFiles(name);
-    writeln("Mason Initialized your new project: " + name);
+    writeln("Mason initialized your new project: " + name);
   }
 }
 
 
 proc gitInit(name: string) : int {
-  var command = "git init " + name;
+  var command = "git init -q " + name;
   return runCommand(command);
 }
 

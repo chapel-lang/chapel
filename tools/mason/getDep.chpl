@@ -1,7 +1,7 @@
 
 use TOML;
 use FileSystem;
-
+use system;
 
 proc main() {
   var depName = "easy";
@@ -23,12 +23,13 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 
 
 proc retrieveDep(name: string, version: string) {
-  var tomlPath = "/Users/spartee/.mason/registry/"+name+"/"+version+".toml";
+  var home = getVar("homePath");
+  var tomlPath = home + "/.mason/registry/"+name+"/"+version+".toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);
     var depToml = parseToml(tomlFile);
     return depToml;
-    }
+  }
   else {
       halt("Could not find toml file for " + name);
     }
