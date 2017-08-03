@@ -148,6 +148,7 @@ GenRet SymExpr::codegen() {
     }
 #endif
   }
+  ret.canBeMarkedAsConstAfterStore = var->isConstValWillNotChange();
   return ret;
 }
 
@@ -384,13 +385,48 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 // Set USE_TBAA to 1 to emit TBAA metadata with loads and stores.
 #define USE_TBAA 1
 
+static
+void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+
+  llvm::Type *int8PtrTy =
+    llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
+
+  #if HAVE_LLVM_VER >= 40
+  llvm::Type *objectPtr = { int8PtrTy };
+  llvm::Function *invariantStart =
+    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start, objectPtr);
+  #else
+  llvm::Function *invariantStart =
+    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start);
+  #endif
+
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  uint64_t sizeInBytes;
+  if(val->getType()->isSized())
+    sizeInBytes = dataLayout.getTypeSizeInBits(val->getType())/8;
+  else
+    return;
+
+  llvm::Value *castedAddr = info->builder->CreateBitCast(addr, int8PtrTy);
+  llvm::Value *args[2] =
+    {
+      llvm::ConstantInt::getSigned(llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes),
+      castedAddr
+    };
+  info->builder->CreateCall(invariantStart, args);
+}
+
 // Create an LLVM store instruction possibly adding
 // appropriate metadata based upon the Chapel type of val.
 //
 static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
-                                  Type* valType = NULL)
+                                  Type* valType = NULL,
+                                  bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->builder->CreateStore(val, ptr);
@@ -407,8 +443,12 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
       ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
   }
 
+  if(addInvariantStart)
+    codegenInvariantStart(val, ptr);
+
   return ret;
 }
+
 
 
 static
@@ -435,7 +475,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  return codegenStoreLLVM(val.val, ptr.val, valType);
+  INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
+  ptr.alreadyStored = true;
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
@@ -472,7 +514,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, isConst);
+  return codegenLoadLLVM(ptr.val, valType);
 }
 
 #endif

@@ -98,6 +98,15 @@ public:
   void* type;
 #endif
 
+  // Used to mark variables as const after they are stored
+  // Specifically: use "llvm.invariant.start"
+  bool canBeMarkedAsConstAfterStore;
+
+  // Mark pointers we already stored to, used to assert
+  // the assumption that store to const memory
+  // is the only store to that memory
+  bool alreadyStored;
+
   // always set if available
   // note that the chplType of a GenRet corresponds to the Chapel
   // type of the result of codegenValue on it - that is, chplType
@@ -119,7 +128,7 @@ public:
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
                    
-  GenRet() : c(), val(NULL), type(NULL), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
+  GenRet() : c(), val(NULL), type(NULL), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);
