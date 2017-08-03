@@ -28,6 +28,7 @@
 #include "initializerRules.h"
 #include "passes.h"
 #include "resolution.h"
+#include "ResolutionCandidate.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -107,7 +108,7 @@ static void resolveInitCall(CallExpr* call) {
 
     gatherInitCandidates(info, visibleFns, candidates);
 
-    explainGatherCandidate(candidates, info);
+    explainGatherCandidate(info, candidates);
 
     best = disambiguateByMatch(candidates, DC, false, ambiguous);
 
