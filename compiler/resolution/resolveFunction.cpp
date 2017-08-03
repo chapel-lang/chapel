@@ -654,6 +654,9 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
   ii->init        = makeIteratorMethod(ii, "init",     dtVoid);
   ii->incr        = makeIteratorMethod(ii, "incr",     dtVoid);
 
+  ii->yieldedType = fn->retType;
+  ii->iteratorRetTag = fn->retTag;
+
   return ii;
 }
 

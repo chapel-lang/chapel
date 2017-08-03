@@ -205,7 +205,9 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
 {
   ArgSymbol* formal = addFormal(fn);
 
-  insertAssignmentToFormal(fn, formal);
+  if (fn->hasFlag(FLAG_ITERATOR_FN) == false) {
+    insertAssignmentToFormal(fn, formal);
+  }
   updateAssignmentsFromRefArgToValue(fn);
   updateAssignmentsFromRefTypeToValue(fn);
   updateAssignmentsFromModuleLevelValue(fn);

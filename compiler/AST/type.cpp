@@ -1392,12 +1392,14 @@ bool isString(Type* type) {
 // Noakes 2017/03/02
 // This function now includes range and atomics
 //
+// MPF    2017/08/03
+// This function now includes iterator records
+//
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
 
   if (AggregateType* aggr = toAggregateType(type)) {
     Symbol*     sym  = aggr->symbol;
-    const char* name = sym->name;
 
     // Must be a record type
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
@@ -1405,10 +1407,6 @@ bool isUserDefinedRecord(Type* type) {
 
     // Not a RUNTIME_type
     } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
-      retval = false;
-
-    // Not an iterator
-    } else if (strncmp(name, "_ir_", 4)              ==    0) {
       retval = false;
 
     } else {

@@ -537,7 +537,8 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
                                          SymExpr* se) {
   int count = 1;
   for_formals(formal, iterator) {
-    if (se->symbol() == formal) {
+    if (formal->hasFlag(FLAG_RETARG) == false &&
+        se->symbol() == formal) {
       // count is used to get the nth field out of the iterator class;
       // it is replaced by the field once the iterator class is created
       Expr* stmt = se->getStmtExpr();

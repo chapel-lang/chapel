@@ -87,16 +87,40 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   // follows getReturnSymbol()
   CallExpr* ret = toCallExpr(fn->body->body.last());
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-  SymExpr* rse = toSymExpr(ret->get(1));
-  INT_ASSERT(rse);
-  Symbol*  rsym = rse->symbol();
+
+  // Yank a PRIM_MOVE/PRIM_ASSIGN setting a formal with FLAG_FN_RETARG
+  // Is this necessary now that we remove it in cullOverRef?
+  /*if (fn->hasFlag(FLAG_FN_RETARG)) {
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_RETARG)) {
+        std::vector<Expr*> toRemove;
+        for_SymbolSymExprs(se, formal) {
+          toRemove.push_back(se->getStmtExpr());
+        }
+        for_vector(Expr, e, toRemove) {
+          if (e->inTree())
+            e->remove();
+        }
+      }
+    }
+  }*/
+
+  if (CallExpr* assign = toCallExpr(ret->prev))
+    if (assign->isPrimitive(PRIM_MOVE) || assign->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* se = toSymExpr(assign->get(1)))
+        if (se->symbol()->hasFlag(FLAG_RETARG))
+          assign->remove();
 
   // Yank the return statement.
   ret->remove();
 
   // We cannot remove rsym's definition, because rsym
   // may also be referenced in an autoDestroy call.
-  return rsym->type;
+
+  INT_ASSERT(fn->iteratorInfo != NULL);
+  Type* yieldedType = fn->iteratorInfo->yieldedType;
+
+  return yieldedType;
 }
 
 //
@@ -1195,7 +1219,8 @@ rebuildIterator(IteratorInfo* ii,
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
-  fn->retType = ii->irecord;
+  if (!fn->hasFlag(FLAG_FN_RETARG))
+    fn->retType = ii->irecord;
 
   Symbol* iterator = newTemp("_ir", ii->irecord);
 
@@ -1228,7 +1253,17 @@ rebuildIterator(IteratorInfo* ii,
   }
 
   // Return the filled-in iterator record.
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    ArgSymbol* retArg = NULL;
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_RETARG))
+        retArg = formal;
+    }
+    fn->insertAtTail(new CallExpr(PRIM_ASSIGN, retArg, iterator));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  } else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
+  }
 
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
 
@@ -1451,7 +1486,8 @@ void lowerIterator(FnSymbol* fn) {
 
   // Add all formals to the set of local symbols.
   for_formals(formal, fn)
-    locals.add(formal);
+    if (!formal->hasFlag(FLAG_RETARG))
+      locals.add(formal);
 
   collectYieldSymbols(fn, asts, yldSymSet, &oneLocalYS);
 
