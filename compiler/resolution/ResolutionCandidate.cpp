@@ -21,10 +21,13 @@
 
 #include "callInfo.h"
 #include "driver.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "resolution.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
+#include "visibleCandidates.h"
 
 /************************************* | **************************************
 *                                                                             *
@@ -34,6 +37,128 @@
 
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::isApplicable(CallInfo& info) {
+  bool retval = false;
+
+  if (fn->hasFlag(FLAG_GENERIC) == false) {
+    retval = isApplicableConcrete(info);
+  } else {
+    retval = isApplicableGeneric (info);
+  }
+
+  return retval;
+}
+
+bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn != NULL) {
+    resolveTypedefedArgTypes(fn);
+
+    if (computeAlignment(info) == true) {
+      // Ensure that type constructor is resolved before other constructors.
+      if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+        resolveTypeConstructor(info);
+      }
+
+      retval = checkResolveFormalsWhereClauses(this);
+    }
+  }
+
+  return retval;
+}
+
+void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
+  SET_LINENO(fn);
+
+  // Ignore tuple constructors; they were generated
+  // with their type constructors.
+  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_IS_MEME) == false) {
+        if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
+          if (formal->instantiatedFrom) {
+            typeConstructorCall->insertAtTail(formal->type->symbol);
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            typeConstructorCall->insertAtTail(paramMap.get(formal));
+          }
+
+        } else {
+          if (strcmp(formal->name, "outer") == 0 ||
+              formal->type                  == dtMethodToken) {
+            typeConstructorCall->insertAtTail(formal);
+
+          } else if (formal->instantiatedFrom) {
+            SymExpr*   se = new SymExpr(formal->type->symbol);
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            SymExpr*   se = new SymExpr(paramMap.get(formal));
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+          }
+        }
+      }
+    }
+
+    info.call->insertBefore(typeConstructorCall);
+
+    // If instead we call resolveCallAndCallee(typeConstructorCall)
+    // then the line number reported in an error would change
+    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
+    // or:   classes/diten/multipledestructor
+    resolveCall(typeConstructorCall);
+
+    INT_ASSERT(typeConstructorCall->isResolved());
+
+    resolveFns(typeConstructorCall->resolvedFunction());
+
+    fn->_this->type = typeConstructorCall->resolvedFunction()->retType;
+
+    typeConstructorCall->remove();
+  }
+}
+
+bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn                        != NULL &&
+      computeAlignment(info)    == true &&
+      checkGenericFormals(this) == true) {
+    // Compute the param/type substitutions for generic arguments.
+    computeSubstitutions();
+
+    if (substitutions.n > 0) {
+      /*
+       * Instantiate enough of the generic to get through the rest of the
+       * filtering and disambiguation processes.
+       */
+      fn = instantiateSignature(fn, substitutions, info.call);
+
+      if (fn != NULL) {
+        retval = isApplicable(info);
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************

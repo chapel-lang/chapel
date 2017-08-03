@@ -31,18 +31,12 @@
 
 static void gatherCandidates(CallInfo&                  info,
                              Vec<FnSymbol*>&            visibleFns,
-                             bool                       generated,
+                             bool                       lastResort,
                              Vec<ResolutionCandidate*>& candidates);
 
 static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates);
-
-static bool filterCandidate(CallInfo& info, ResolutionCandidate* candidate);
-
-static bool filterConcrete (CallInfo& info, ResolutionCandidate* candidate);
-
-static bool filterGeneric  (CallInfo& info, ResolutionCandidate* candidate);
 
 void findVisibleCandidates(CallInfo&                  info,
                            Vec<FnSymbol*>&            visibleFns,
@@ -119,23 +113,11 @@ static void filterCandidate(CallInfo&                  info,
     }
   }
 
-  if (filterCandidate(info, candidate) == true) {
+  if (candidate->isApplicable(info) == true) {
     candidates.add(candidate);
   } else {
     delete candidate;
   }
-}
-
-static bool filterCandidate(CallInfo& info, ResolutionCandidate* candidate) {
-  bool retval = false;
-
-  if (candidate->fn->hasFlag(FLAG_GENERIC) == false) {
-    retval = filterConcrete(info, candidate);
-  } else {
-    retval = filterGeneric (info, candidate);
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
@@ -143,29 +125,6 @@ static bool filterCandidate(CallInfo& info, ResolutionCandidate* candidate) {
 * Candidate filtering logic specific to concrete functions.                   *
 *                                                                             *
 ************************************** | *************************************/
-
-static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn);
-
-static bool filterConcrete(CallInfo& info, ResolutionCandidate* candidate) {
-  bool retval = false;
-
-  candidate->fn = expandIfVarArgs(candidate->fn, info);
-
-  if (candidate->fn != NULL) {
-    resolveTypedefedArgTypes(candidate->fn);
-
-    if (candidate->computeAlignment(info) == true) {
-      // Ensure that type constructor is resolved before other constructors.
-      if (candidate->fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-        resolveTypeConstructor(info, candidate->fn);
-      }
-
-      retval = checkResolveFormalsWhereClauses(candidate);
-    }
-  }
-
-  return retval;
-}
 
 void resolveTypedefedArgTypes(FnSymbol* fn) {
   for_formals(formal, fn) {
@@ -184,62 +143,6 @@ void resolveTypedefedArgTypes(FnSymbol* fn) {
         }
       }
     }
-  }
-}
-
-static void resolveTypeConstructor(CallInfo& info, FnSymbol* fn) {
-  SET_LINENO(fn);
-
-  // Ignore tuple constructors; they were generated
-  // with their type constructors.
-  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
-    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
-
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_IS_MEME) == false) {
-        if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-          if (formal->instantiatedFrom) {
-            typeConstructorCall->insertAtTail(formal->type->symbol);
-          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-            typeConstructorCall->insertAtTail(paramMap.get(formal));
-          }
-
-        } else {
-          if (strcmp(formal->name, "outer") == 0 ||
-              formal->type                  == dtMethodToken) {
-            typeConstructorCall->insertAtTail(formal);
-
-          } else if (formal->instantiatedFrom) {
-            SymExpr*   se = new SymExpr(formal->type->symbol);
-            NamedExpr* ne = new NamedExpr(formal->name, se);
-
-            typeConstructorCall->insertAtTail(ne);
-
-          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-            SymExpr*   se = new SymExpr(paramMap.get(formal));
-            NamedExpr* ne = new NamedExpr(formal->name, se);
-
-            typeConstructorCall->insertAtTail(ne);
-          }
-        }
-      }
-    }
-
-    info.call->insertBefore(typeConstructorCall);
-
-    // If instead we call resolveCallAndCallee(typeConstructorCall)
-    // then the line number reported in an error would change
-    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
-    // or:   classes/diten/multipledestructor
-    resolveCall(typeConstructorCall);
-
-    INT_ASSERT(typeConstructorCall->isResolved());
-
-    resolveFns(typeConstructorCall->resolvedFunction());
-
-    fn->_this->type = typeConstructorCall->resolvedFunction()->retType;
-
-    typeConstructorCall->remove();
   }
 }
 
@@ -283,35 +186,6 @@ bool checkResolveFormalsWhereClauses(ResolutionCandidate* candidate) {
 * Handle Generic functions                                                    *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool filterGeneric(CallInfo& info, ResolutionCandidate* candidate) {
-  bool retval = false;
-
-  candidate->fn = expandIfVarArgs(candidate->fn, info);
-
-  if (candidate->fn                     != NULL &&
-      candidate->computeAlignment(info) == true &&
-      checkGenericFormals(candidate)    == true) {
-    // Compute the param/type substitutions for generic arguments.
-    candidate->computeSubstitutions();
-
-    if (candidate->substitutions.n > 0) {
-      /*
-       * Instantiate enough of the generic to get through the rest of the
-       * filtering and disambiguation processes.
-       */
-      candidate->fn = instantiateSignature(candidate->fn,
-                                           candidate->substitutions,
-                                           info.call);
-
-      if (candidate->fn != NULL) {
-        retval = filterCandidate(info, candidate);
-      }
-    }
-  }
-
-  return retval;
-}
 
 // Verify that the generic formals are matched correctly
 bool checkGenericFormals(ResolutionCandidate* candidate) {

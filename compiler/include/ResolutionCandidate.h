@@ -36,6 +36,8 @@ class ResolutionCandidate {
 public:
                             ResolutionCandidate(FnSymbol* fn);
 
+  bool                      isApplicable(CallInfo& info);
+
   bool                      computeAlignment(CallInfo& info);
 
   void                      computeSubstitutions(bool inInitRes = false);
@@ -49,6 +51,12 @@ public:
 
 private:
                             ResolutionCandidate();
+
+  bool                      isApplicableConcrete(CallInfo& info);
+
+  void                      resolveTypeConstructor(CallInfo& info);
+
+  bool                      isApplicableGeneric(CallInfo& info);
 };
 
 
