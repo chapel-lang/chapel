@@ -193,11 +193,11 @@ static void gatherInitCandidates(CallInfo&                  info,
 
 static void doGatherInitCandidates(CallInfo&                  info,
                                    Vec<FnSymbol*>&            visibleFns,
-                                   bool                       generated,
+                                   bool                       lastResort,
                                    Vec<ResolutionCandidate*>& candidates) {
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    // Only consider user functions or compiler-generated functions
-    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == generated) {
+    // Only consider functions marked with/without FLAG_LAST_RESORT
+    if (visibleFn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
 
       // Some expressions might resolve to methods without parenthesis.
       // If the call is marked with methodTag, it indicates the called

@@ -103,6 +103,7 @@ FnSymbol* makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
   }
   typeCtor->addFlag(FLAG_ALLOW_REF);
   typeCtor->addFlag(FLAG_COMPILER_GENERATED);
+  typeCtor->addFlag(FLAG_LAST_RESORT);
   typeCtor->addFlag(FLAG_INLINE);
   typeCtor->addFlag(FLAG_INVISIBLE_FN);
   typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
@@ -141,6 +142,7 @@ FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   }
   buildTupleType->addFlag(FLAG_ALLOW_REF);
   buildTupleType->addFlag(FLAG_COMPILER_GENERATED);
+  buildTupleType->addFlag(FLAG_LAST_RESORT);
   buildTupleType->addFlag(FLAG_INLINE);
   buildTupleType->addFlag(FLAG_INVISIBLE_FN);
   buildTupleType->addFlag(FLAG_BUILD_TUPLE);
@@ -176,6 +178,7 @@ FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   }
   buildStarTupleType->addFlag(FLAG_ALLOW_REF);
   buildStarTupleType->addFlag(FLAG_COMPILER_GENERATED);
+  buildStarTupleType->addFlag(FLAG_LAST_RESORT);
   buildStarTupleType->addFlag(FLAG_INLINE);
   buildStarTupleType->addFlag(FLAG_INVISIBLE_FN);
   buildStarTupleType->addFlag(FLAG_BUILD_TUPLE);
@@ -246,6 +249,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
 
   ctor->addFlag(FLAG_ALLOW_REF);
   ctor->addFlag(FLAG_COMPILER_GENERATED);
+  ctor->addFlag(FLAG_LAST_RESORT);
   ctor->addFlag(FLAG_INLINE);
   ctor->addFlag(FLAG_INVISIBLE_FN);
   ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
@@ -287,6 +291,7 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
   dtor->insertFormalAtTail(dtor->_this);
 
   dtor->addFlag(FLAG_COMPILER_GENERATED);
+  dtor->addFlag(FLAG_LAST_RESORT);
   dtor->addFlag(FLAG_INLINE);
   dtor->addFlag(FLAG_INVISIBLE_FN);
   dtor->addFlag(FLAG_DESTRUCTOR);

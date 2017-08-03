@@ -3169,6 +3169,8 @@ static bool populateForwardingMethods(CallInfo& info) {
       if (thisType->symbol->hasFlag(FLAG_GENERIC))
         fn->addFlag(FLAG_GENERIC);
 
+      fn->addFlag(FLAG_LAST_RESORT);
+
       fn->retTag = method->retTag;
 
       ArgSymbol* mt    = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);

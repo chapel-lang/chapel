@@ -685,6 +685,7 @@ void AggregateType::buildTypeConstructor() {
   fn->cname = astr("_type_construct_", symbol->cname);
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->retTag = RET_TYPE;
 
   if (symbol->hasFlag(FLAG_REF)   == true) {
@@ -900,6 +901,7 @@ void AggregateType::buildConstructor() {
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   if (symbol->hasFlag(FLAG_REF) == true) {
     fn->addFlag(FLAG_REF);

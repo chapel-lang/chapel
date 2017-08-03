@@ -646,6 +646,7 @@ static void build_record_equality_function(AggregateType* ct) {
 
   FnSymbol* fn = new FnSymbol("==");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
@@ -675,6 +676,7 @@ static void build_record_inequality_function(AggregateType* ct) {
 
   FnSymbol* fn = new FnSymbol("!=");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
@@ -705,6 +707,7 @@ static void build_enum_size_function(EnumType* et) {
   // Build a function that returns the length of the enum specified
   FnSymbol* fn = new FnSymbol("size");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_NO_PARENS);
   fn->addFlag(FLAG_METHOD);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
@@ -741,6 +744,7 @@ static void build_enum_first_function(EnumType* et) {
   // specified, also known as the default.
   FnSymbol* fn = new FnSymbol("chpl_enum_first");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   // Making this compiler generated allows users to define what the
   // default is for a particular enum.  They can also redefine the
   // _defaultOf function for the enum to obtain this functionality (and
@@ -776,6 +780,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Each enum type has its own chpl_enum_enumerate function.
   FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
@@ -799,6 +804,7 @@ static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
@@ -845,6 +851,7 @@ static void build_enum_cast_function(EnumType* et) {
   // string to enumerated type cast function
   fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
   arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
@@ -895,6 +902,7 @@ static void build_enum_assignment_function(EnumType* et) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
@@ -915,6 +923,7 @@ static void build_record_assignment_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC); // TODO: Check if we really want this.
@@ -975,6 +984,7 @@ static void build_extern_init_function(Type* type)
   FnSymbol* fn = new FnSymbol("_defaultOf");
   fn->addFlag(FLAG_INLINE);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", type);
   arg->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
@@ -999,6 +1009,7 @@ static void build_extern_assignment_function(Type* type)
   fn->addFlag(FLAG_ASSIGNOP);
   type->symbol->addFlag(FLAG_POD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INLINE);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", type);
@@ -1029,6 +1040,7 @@ static void build_record_cast_function(AggregateType* ct) {
 
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
@@ -1055,6 +1067,7 @@ static void build_union_assignment_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
   fn->insertFormalAtTail(arg1);
@@ -1126,6 +1139,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   arg->addFlag(FLAG_MARKED_GENERIC);
 
@@ -1231,6 +1245,7 @@ static void build_record_hash_function(AggregateType *ct) {
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
@@ -1284,6 +1299,7 @@ static void buildDefaultInitializer(AggregateType* ct) {
   // flag to this function, but if I do, then I will need to do something
   // different in wrappers.cpp.
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
 
@@ -1513,6 +1529,7 @@ static void buildDefaultOfFunction(AggregateType* ct) {
     arg->addFlag(FLAG_TYPE_VARIABLE);
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_INLINE);
 
     fn->insertFormalAtTail(arg);
@@ -1711,6 +1728,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_INLINE);
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -1744,6 +1762,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if ( makeReadThisAndWriteThis && ! hasReadThis ) {
     FnSymbol* fn = new FnSymbol("readThis");
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_INLINE);
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -1780,6 +1799,7 @@ static void buildStringCastFunction(EnumType* et) {
 
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
@@ -1815,6 +1835,8 @@ void buildDefaultDestructor(AggregateType* ct) {
 
   FnSymbol* fn = new FnSymbol("deinit");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);
 

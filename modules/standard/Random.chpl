@@ -212,7 +212,7 @@ module Random {
 
   // remove this deprecation version when appropriate
   pragma "no doc"
-  pragma "compiler generated"
+  pragma "last resort"
   proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
                         type eltType = real(64),
@@ -596,7 +596,7 @@ module Random {
 
       // remove this deprecation version when appropriate
       pragma "no doc"
-      pragma "compiler generated"
+      pragma "last resort"
       proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                         param parSafe: bool = true,
                         type eltType = real(64)) {
@@ -2099,7 +2099,7 @@ module Random {
       }
 
       pragma "no doc"
-      pragma "compiler generated"
+      pragma "last resort"
       proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                            param parSafe: bool = true,
                            type eltType = real(64)) {
