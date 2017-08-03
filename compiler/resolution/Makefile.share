@@ -30,6 +30,7 @@ RESOLUTION_SRCS =                                              \
                   lowerIterators.cpp                           \
                   postFold.cpp                                 \
                   preFold.cpp                                  \
+                  ResolutionCandidate.cpp                      \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
                   virtualDispatch.cpp                          \

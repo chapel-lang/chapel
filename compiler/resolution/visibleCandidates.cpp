@@ -24,6 +24,7 @@
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "resolution.h"
+#include "ResolutionCandidate.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
