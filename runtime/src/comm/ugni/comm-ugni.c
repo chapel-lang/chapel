@@ -80,23 +80,32 @@ static uint64_t debug_flag = 0;
 #define DBGF_AMO           0x4          // AMOs
 #define DBGF_RF            0x8          // remote forks
 #define DBGF_MEMREG       0x10          // memory registration
-#define DBGF_HUGEPAGES    0x20          // hugepage usage
+#define DBGF_MEMREG_BCAST 0x20          // memory registration
+#define DBGF_HUGEPAGES    0x40          // hugepage usage
 #define DBGF_MEMMAPS     0x100          // memory maps
 #define DBGF_BARRIER    0x1000          // barriers
 #define DBGF_IN_FILE   0x10000          // output debug info to a file
+#define DBGF_1_NODE    0x20000          // only produce debug for one node 
+
+static c_nodeid_t debug_nodeID = 0;
 
 static FILE* debug_file;
 
 static chpl_bool debug_exiting = false;
 
-#define _DBG_DO(flg)  (((flg) & debug_flag) != 0)
+#define _DBG_DO(flg)  (((flg) & debug_flag) != 0                        \
+                       && ((DBGF_1_NODE & debug_flag) == 0              \
+                           || chpl_nodeID == debug_nodeID))
+#define _DBG_THIS_NODE()  ((DBGF_1_NODE & debug_flag) == 0              \
+                           || chpl_nodeID == debug_nodeID)
 
 #define DBG_INIT()  dbg_init()
 #define DBG_INIT_OUTPUT_FILE()  dbg_init_output_file()
 
 static __thread uint32_t thread_idx      = ~(uint32_t) 0;
 static atomic_uint_least32_t next_thread_idx;
-#define _DBG_NEXT_THREAD_IDX() atomic_fetch_add_uint_least32_t(&next_thread_idx, 1)
+#define _DBG_NEXT_THREAD_IDX() \
+        atomic_fetch_add_uint_least32_t(&next_thread_idx, 1)
 
 #define _DBG_P(dbg_do, f, ...)                                          \
         do {                                                            \
@@ -384,6 +393,10 @@ typedef struct {
 
 static mem_region_table_t mem_regions;
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef DEBUG
+static uint32_t mreg_cnt_max;
+#endif
 
 static mem_region_table_t* mem_region_map;
 
@@ -1281,6 +1294,13 @@ static void dbg_init(void)
   if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG", NULL)) != NULL
       && sscanf(ev, "%" SCNi64, &flg) == 1) {
     debug_flag = flg;
+
+    if ((DBGF_1_NODE & debug_flag) != 0
+        && (ev = chpl_get_rt_env("COMM_UGNI_DEBUG_NODE", NULL)) != NULL) {
+      int nodeID;
+      if (sscanf(ev, "%i", &nodeID) == 1)
+        debug_nodeID = nodeID;
+    }
   }
 
   if ((ev =  chpl_get_rt_env("COMM_UGNI_DEBUG_STATS", NULL)) != NULL
@@ -2090,8 +2110,13 @@ void register_memory(void)
     if (i < MAX_MEM_REGIONS) {
       mem_regions.mregs[i].addr = addr;
       mem_regions.mregs[i].len = len;
-      if (mem_regions.mreg_cnt < MAX_MEM_REGIONS)
+      if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
+#ifdef DEBUG
+	if (mem_regions.mreg_cnt > mreg_cnt_max)
+	  mreg_cnt_max = mem_regions.mreg_cnt;
+#endif
+      }
     }
   }
 
@@ -2658,8 +2683,13 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
       //
       // Adjust the region count, if necessary.
       //
-      if (mr_i >= mem_regions.mreg_cnt)
+      if (mr_i >= mem_regions.mreg_cnt) {
         mem_regions.mreg_cnt = mr_i + 1;
+#ifdef DEBUG
+	if (mem_regions.mreg_cnt > mreg_cnt_max)
+	  mreg_cnt_max = mem_regions.mreg_cnt;
+#endif
+      }
 
       DBG_P_LP(DBGF_MEMREG,
                "chpl_regMemAlloc(%" PRIx64 "): "
@@ -2926,6 +2956,10 @@ void chpl_comm_pre_task_exit(int all)
     }
   }
 
+  DBG_P_L(DBGF_MEMREG,
+          "registered memory regions high water mark: %d",
+          (int) mreg_cnt_max);
+
   for (uint32_t i = 0; i < comm_dom_cnt; i++) {
     DBGSTAT_P_L(DBGSF_ANY, "cd[%d] acqs:               %12" PRIu64, i,
                 comm_doms[i].acqs);
@@ -3147,7 +3181,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
     break;
 
   case fork_op_reg_dereg:
-    DBG_P_LP(DBGF_MEMREG|DBGF_RF, "forkFrom(%d) %s",
+    DBG_P_LP(DBGF_MEMREG_BCAST|DBGF_RF, "forkFrom(%d) %s",
              (int) req_li, sprintf_rf_req((int) req_li, f));
 
     {
@@ -6091,7 +6125,7 @@ void fork_reg_dereg(int32_t locale, int i)
     CHPL_INTERNAL_ERROR("fork_reg_dereg(): remote locale out of range");
 
   DBG_SET_SEQ(req.b.seq);
-  DBG_P_LP(DBGF_MEMREG|DBGF_RF, "forkTo(%d) %s",
+  DBG_P_LP(DBGF_MEMREG_BCAST|DBGF_RF, "forkTo(%d) %s",
            (int) locale, sprintf_rf_req(locale, &req));
 
   //
