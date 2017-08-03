@@ -378,7 +378,7 @@ static size_t hugepage_size;
 // uGNI memory domain handles for each memory region of interest to us.
 // mem_region_map contains a copy of every node's mem_regions.
 //
-#define MAX_MEM_REGIONS 20
+#define MAX_MEM_REGIONS 100
 
 typedef struct {
   uint64_t         addr;
@@ -2771,7 +2771,9 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // Is this memory in our table?
   //
   mr = mreg_for_addr(p, &mem_regions);
-  if (mr == NULL)
+  if (mr == NULL
+      || mr->addr != (uint64_t) p
+      || mr->len != size)
     return false;
 
   mr_i = (int) (mr - &mem_regions.mregs[0]);
