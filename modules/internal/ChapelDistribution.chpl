@@ -772,7 +772,7 @@ module ChapelDistribution {
   }
  
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
-     can be overriden with the right tuple size.
+     can be overridden with the right tuple size.
 
      Note that eltType is not included here. eltType could be included
      in a base class, but here we're looking for a way to narrow
@@ -806,7 +806,7 @@ module ChapelDistribution {
 
   pragma "base array"
   class BaseRectangularArr: BaseArrOverRectangularDom {
-    /* rank, idxType, stidable are from BaseArrOverRectangularDom */
+    /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
 
     proc ~BaseRectangularArr() {
@@ -969,7 +969,7 @@ module ChapelDistribution {
   // domain assignment helpers
 
   // Implement simple reallocate/set indices/post reallocate
-  // for compatability.
+  // for compatibility.
   // Domain implementations may supply their own dsiAssignDomain
   // that does something else.
   // lhs is a subclass of BaseRectangularDom
