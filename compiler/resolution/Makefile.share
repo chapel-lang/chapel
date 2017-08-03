@@ -34,7 +34,6 @@ RESOLUTION_SRCS =                                              \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
                   virtualDispatch.cpp                          \
-                  visibleCandidates.cpp                        \
                   visibleFunctions.cpp                         \
                   wrappers.cpp
 

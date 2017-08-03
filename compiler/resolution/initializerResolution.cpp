@@ -33,7 +33,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "view.h"
-#include "visibleCandidates.h"
 #include "visibleFunctions.h"
 #include "wrappers.h"
 

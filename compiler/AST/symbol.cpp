@@ -41,7 +41,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "visibleCandidates.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
