@@ -21,6 +21,7 @@ import re
 import subprocess
 import sys
 import time
+import warnings
 
 import annotate
 
@@ -37,15 +38,20 @@ def main():
     test_dir = os.path.join(chpl_home, 'test')
     ann_path = os.path.join(test_dir, 'ANNOTATIONS.yaml')
 
-    ann_data = annotate.load(ann_path)
-    graph_list = get_graph_names(test_dir)
+    with warnings.catch_warnings(record=True) as warnings_list:
+        ann_data = annotate.load(ann_path)
+        graph_list = get_graph_names(test_dir)
 
-    check_graph_names(ann_data, graph_list)
-    try_parsing_annotations(ann_data, graph_list)
-    check_configs(ann_data)
-    check_pr_number_dates(ann_data)
+        check_graph_names(ann_data, graph_list)
+        try_parsing_annotations(ann_data, graph_list)
+        check_configs(ann_data)
+        check_pr_number_dates(ann_data)
 
-    print("\nNo fatal annotation errors detected")
+        for warning in warnings_list:
+            print(warning.message)
+        print('No fatal annotation errors detected')
+        return len(warnings_list) != 0
+
 
 def get_graph_names(test_dir):
     """Parse test_dir/*GRAPHFILES and return basenames for all .graph files"""
@@ -79,7 +85,7 @@ def check_graph_names(ann_data, graph_list):
     """Check that graph names in the annotation file are listed in GRAPHFILES"""
     for graph in ann_data:
         if graph != 'all' and graph not in graph_list:
-            print('Warning: no .graph file found for "{0}"'.format(graph))
+            warnings.warn('Warning: no .graph file found for "{0}"'.format(graph))
 
 def check_configs(ann_data):
     """Check that all the configs used in the annotation file are 'known'"""
@@ -93,8 +99,8 @@ def check_configs(ann_data):
                     for config in configs:
                         config = config.strip()
                         if config not in known_configs:
-                            print('Warning: config "{0}" for graph "{1}" not '
-                                  'recognized'.format(config, graph))
+                            warnings.warn('Warning: unrecognized config "{0}" '
+                                          'for graph "{1}"'.format(config, graph))
 
 def compute_pr_to_dates():
     """Helper function to compute a map of PR numbers to commit dates"""
@@ -128,9 +134,9 @@ def check_pr_number_dates(ann_data):
                     if pr_num in pr_to_date_dict:
                         pr_date = pr_to_date_dict[pr_num]
                         if pr_date == date:
-                            print('Warning: annotation date for "{0}: {1}" '
-                                  'appears to be the same as the commit '
-                                  'date'.format(graph, text))
+                            warnings.warn('Warning: annotation date for "{0}: '
+                                          '{1}" appears to be the same as the '
+                                          'commit date'.format(graph, text))
 
 
 if __name__ == '__main__':
