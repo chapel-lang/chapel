@@ -453,9 +453,17 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique) {
+    // TODO: Should this take a comparator as an argument?
+    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, row=true) {
       use Sort;
-      if !dataSorted then sort(inds);
+      if !dataSorted {
+        if row then sort(inds);
+        else {
+          var colCmp = new ColCmp();
+          sort(inds, comparator=colCmp);
+        }
+      }
+
 
       //verify sorted and no duplicates if not --fast
       if boundsChecking {
@@ -777,7 +785,7 @@ module ChapelDistribution {
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride(viewDom) param return false;
   }
- 
+
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate
      can be overridden with the right tuple size.
 
@@ -794,7 +802,7 @@ module ChapelDistribution {
     param stridable: bool;
 
     // the dsiReallocate to overload only uses the argument with
-    // the matching tuple of ranges. 
+    // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
     proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
@@ -803,7 +811,7 @@ module ChapelDistribution {
 
     proc dsiPostReallocate() {
     }
-    
+
     proc ~BaseArrOverRectangularDom() {
       // this is a bug workaround
     }
@@ -1042,5 +1050,12 @@ module ChapelDistribution {
         lhs.dsiAdd(i);
       }
     }
+  }
+
+  pragma "no doc"
+  /* Comparator used for sorting by columns */
+  record ColCmp{
+    proc init() { }
+    proc key(idx) { return idx(2);}
   }
 }

@@ -17,8 +17,12 @@
  * limitations under the License.
  */
 
+/* Debug flag */
 config param debugCS = false;
 use RangeChunk only ;
+
+/* For backwards-compatibility with LayoutCSR */
+type CSR = CS;
 
 // I have not seen us test a non-"sub" CS domain
 // and I do not want untested code in the docs.
@@ -48,8 +52,9 @@ All elements of a CS-distributed array are stored
 on the locale where the array variable is declared.
 */
 class CS: BaseDist {
-  const row: bool;
-  proc dsiNewSparseDom(param rank: int, type idxType, dom: domain, param row=true) {
+  const row: bool = true;
+
+  proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSDom(rank=rank, row=row, idxType=idxType, dist=this, parentDom=dom);
   }
 
@@ -82,9 +87,8 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
-  proc CSDom(param rank, type idxType, param row=true,
-                               dist: CS,
-                               parentDom: domain(rank, idxType)) {
+  proc CSDom(param rank, type idxType, const row=true,
+             dist: CS, parentDom: domain(rank, idxType)) {
     if (rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     this.row = row;
@@ -110,36 +114,41 @@ class CSDom: BaseSparseDomImpl {
   proc dsiBuildArray(type eltType)
     return new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
+  // TODO: Test
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.row then rowRange.high else colRange.high;
     for i in 1..nnz by -1 {
       while (startIdx(cursor) > i) {
         cursor -= 1;
       }
-      yield (cursor, idx(i));
+      if this.row {
+        yield (cursor, idx(i));
+      } else {
+        yield (idx(i), cursor);
+      }
     }
   }
 
   iter these() {
-    //writeln("serial- rowRange=", rowRange, " colRange=", colRange, "\n",
-    //        "        startIdx=", startIdx, " idx=", idx);
-
-    // faster to start at _private_findStartRow(1) ?
-    var cursor = if row then rowRange.low else colRange.low;
+    // TODO: Is it faster to start at _private_findStart(1) ?
+    var cursor = if this.row then rowRange.low else colRange.low;
     for i in 1..nnz {
       while (startIdx(cursor+1) <= i) {
         cursor+= 1;
       }
-      yield (cursor, idx(i));
+      if this.row then
+        yield (cursor, idx(i));
+      else
+        yield (idx(i), cursor);
+
     }
   }
 
+  // TODO: Test
   iter these(param tag: iterKind) where tag == iterKind.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
     const numChunks = _computeNumChunks(numElems);
-    //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
-    //        "        startIdx=", startIdx, " idx=", idx);
     if debugCS then
       writeln("CSDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
@@ -150,10 +159,11 @@ class CSDom: BaseSparseDomImpl {
       coforall chunk in chunks(1..numElems, numChunks) do
         yield (this, chunk.first, chunk.last);
     // TODO: to handle large numElems and numChunks faster, it would be great
-    // to run the binary search in _private_findStartRow smarter, e.g.
+    // to run the binary search in _private_findStart smarter, e.g.
     // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
+  // TODO: Test
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
     if boundsChecking then
@@ -164,14 +174,17 @@ class CSDom: BaseSparseDomImpl {
 
     // This loop is identical to the serial iterator, except for the iteration
     // space and finding the initial 'cursorRow'.
-    var cursorRow = _private_findStartRow(startIx);
+    var cursor = _private_findStart(startIx);
     if debugCS then
       writeln("CSDom follower: ", startIx, "..", endIx,
-              "  startIdx(", cursorRow, ")=", startIdx(cursorRow));
+              "  startIdx(", cursor, ")=", startIdx(cursor));
 
     for i in startIx..endIx {
-      while (startIdx(cursorRow+1) <= i) do cursorRow += 1;
-      yield (cursorRow, idx(i));
+      while (startIdx(cursor+1) <= i) do cursor+= 1;
+      if this.row then
+        yield (cursor, idx(i));
+      else
+        yield (idx(i), cursor);
     }
   }
 
@@ -183,10 +196,10 @@ class CSDom: BaseSparseDomImpl {
   // Helper: find 'ix' s.t. startIdx(ix) <= startIx < startIdx(ix+1)
   // or a number at most 'approx' smaller than that.
   // There MUST exist a solution within low..high.
-  proc _private_findStartRow(startIx) {
-    return _private_findStartRow(startIx, dom.low, dom.high);
+  proc _private_findStart(startIx) {
+    return _private_findStart(startIx, dom.low, dom.high);
   }
-  proc _private_findStartRow(startIx, low, high) {
+  proc _private_findStart(startIx, low, high) {
     var approx = 2; // Indicates when to switch to linear search.
                     // This number could be tuned for performance.
     // simple binary search (should be fewer comparisons than binarySearch())
@@ -197,14 +210,9 @@ class CSDom: BaseSparseDomImpl {
     }
     var hh = min(l+approx, high);
 
-    //writeln("findStartRow: startIx=", startIx, " l=", l, "(", low,
-    //        ") h=", h, "(", high, ")\n",
-    //        "              startIdx(", l, ")=", startIdx(l),
-    //        " startIdx(", hh, ")=", startIdx(hh));
-
     if boundsChecking then {
-      assert(startIdx(l) <= startIx, "CSDom.findStartRow-1");
-      assert(startIx < startIdx(hh), "CSDom.findStartRow-2");
+      assert(startIdx(l) <= startIx, "CSDom.findStart-1");
+      assert(startIx < startIdx(hh), "CSDom.findStart-2");
       // The second assertion will fail if there is NO solution
       // within low..high.  For performance,
       // ensuring existence of a solution is caller responsibility.
@@ -221,7 +229,13 @@ class CSDom: BaseSparseDomImpl {
 
     const (row, col) = ind;
 
-    return binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
+    var ret: (bool, idxType);
+    if this.row then
+      ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
+    else
+      ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
+
+    return ret;
   }
 
   proc dsiMember(ind: rank*idxType) {
@@ -261,7 +275,7 @@ class CSDom: BaseSparseDomImpl {
     const (found, insertPt) = find(ind);
 
     // if the index already existed, then return
-    if (found) then return 0;
+    if found then return 0;
 
     // increment number of nonzeroes
     nnz += 1;
@@ -277,11 +291,16 @@ class CSDom: BaseSparseDomImpl {
       idx(i+1) = idx(i);
     }
 
-    idx(insertPt) = col;
+    if this.row then
+      idx(insertPt) = col;
+    else
+      idx(insertPt) = row;
 
     // bump the startIdx counts
-    for r in row+1..dom.high {  // want dom[row+1..]
-      startIdx(r) += 1;
+    var start = if this.row then row else col;
+
+    for rc in start+1..dom.high {  // want dom[row+1..]
+      startIdx(rc) += 1;
     }
 
     // shift all of the arrays up and initialize nonzeroes if
@@ -297,11 +316,10 @@ class CSDom: BaseSparseDomImpl {
     return 1;
   }
 
-  // TODO: CSC
   proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
-      isUnique=false){
+                    isUnique=false) {
 
-    bulkAdd_prepareInds(inds, dataSorted, isUnique);
+    bulkAdd_prepareInds(inds, dataSorted, isUnique, row=this.row);
 
     if nnz == 0 {
 
@@ -311,34 +329,60 @@ class CSDom: BaseSparseDomImpl {
       _bulkGrow();
 
       var idxIdx = 1;
-      var currentRow = parentDom.dim(1).low;
       var prevIdx = parentDom.low - (1,1);
+      var current: idxType;
 
+      if this.row then
+        current = parentDom.dim(1).low;
+      else
+        current = parentDom.dim(2).low;
+
+      // Update startIdx && idx
       for (i,j) in inds {
         if !isUnique && (i,j) == prevIdx then continue;
         else prevIdx = (i,j);
 
-        while i != currentRow {
-          currentRow += 1;
-          startIdx[currentRow+1] = startIdx[currentRow];
+        if this.row {
+          while i != current {
+            current += 1;
+            startIdx[current+1] = startIdx[current];
+          }
+          startIdx[i+1] += 1;
+          idx[idxIdx] = j;
+          idxIdx += 1;
+        } else {
+          while j != current {
+            current += 1;
+            startIdx[current+1] = startIdx[current];
+          }
+          startIdx[j+1] += 1;
+          idx[idxIdx] = i;
+          idxIdx += 1;
         }
-        startIdx[i+1] += 1;
-        idx[idxIdx] = j;
-        idxIdx += 1;
       }
+
 
       // make sure startIdx[i]>startIdx[j] for i>j for possibly
       // untouched part of startIdx
-      const startIdxHigh = startIdx[currentRow+1];
-      for r in currentRow+2..startIdx.domain.high {
+      const startIdxHigh = startIdx[current+1];
+      for r in current+2..startIdx.domain.high {
         startIdx[r] = startIdxHigh;
       }
 
       return idxIdx-1;
-    }
+    } // if nnz == 0
+
+    //
+    // TODO: CSC (nnz > 0)
+    //
 
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, isUnique);
+
+    writeln('inds: ', inds);
+    writeln('actualInsertPts: ', actualInsertPts);
+    writeln('actualAddCnt: ', actualAddCnt);
+    writeln('idx: ', idx);
 
     const oldnnz = nnz;
     nnz += actualAddCnt;
@@ -346,13 +390,14 @@ class CSDom: BaseSparseDomImpl {
     //grow nnzDom if necessary
     _bulkGrow();
 
+    // TODO: Problem below here...
     //linearly fill the new idx from backwards
     var newIndIdx = indsDom.high; //index into new indices
     var oldIndIdx = oldnnz; //index into old indices
-    var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
+    var newLoc = actualInsertPts[newIndIdx]; // its position-to-be in new dom
     while newLoc == -1 {
       newIndIdx -= 1;
-      if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+      if newIndIdx == indsDom.low-1 then break; // there were duplicates -- now done
       newLoc = actualInsertPts[newIndIdx];
     }
 
@@ -367,7 +412,11 @@ class CSDom: BaseSparseDomImpl {
       }
       else if newIndIdx >= indsDom.low && i == newLoc {
         //put the new guy in
-        idx[i] = inds[newIndIdx][2];
+        if this.row {
+          idx[i] = inds[newIndIdx][2];
+        } else {
+          idx[i] = inds[newIndIdx][1];
+        }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
           newLoc = actualInsertPts[newIndIdx];
@@ -380,31 +429,35 @@ class CSDom: BaseSparseDomImpl {
         }
       }
       else halt("Something went wrong");
-
     }
+    writeln('idx: ', idx);
 
-    //aggregated row shift
-    var prevRow = parentDom.dim(1).low;
-    var row: int;
-    var rowCnt = 0;
+
+    // Aggregated row || col shift
+    var prevCursor = if this.row then parentDom.dim(1).low else parentDom.dim(2).low;
+    var cursor: int;
+    var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
-      row = ind[1];
-      if row == prevRow then rowCnt += 1;
+      if this.row {
+        cursor = ind[1];
+      } else {
+        cursor = ind[2];
+      }
+      if cursor == prevCursor then cursorCnt += 1;
       else {
-        /*writeln(rowCnt, " nnz in row ", prevRow);*/
-        startIdx[prevRow+1] += rowCnt;
-        if row - prevRow > 1 {
-          for i in prevRow+2..row{
-            startIdx[i] += rowCnt;
+        startIdx[prevCursor+1] += cursorCnt;
+        if cursor - prevCursor > 1 {
+          for i in prevCursor+2..cursor {
+            startIdx[i] += cursorCnt;
           }
         }
-        rowCnt += 1;
-        prevRow = row;
+        cursorCnt += 1;
+        prevCursor = cursor;
       }
     }
-    for i in prevRow+1..dom.high{
-        startIdx[i] += rowCnt;
+    for i in prevCursor+1..dom.high {
+      startIdx[i] += cursorCnt;
     }
     for a in _arrs do
       a.sparseBulkShiftArray(arrShiftMap, oldnnz);
@@ -412,6 +465,7 @@ class CSDom: BaseSparseDomImpl {
     return actualAddCnt;
   }
 
+  // TODO: CSC
   proc dsiRemove(ind: rank*idxType) {
     // find position in nnzDom to remove old index
     const (found, insertPt) = find(ind);
@@ -463,9 +517,7 @@ class CSDom: BaseSparseDomImpl {
     startIdx = 1;
   }
 
-  // TODO: CSC
   iter dimIter(param d, ind) {
-    // d != 1 for CSC?
     if (d != 2) {
       compilerError("dimIter(1, ...) not supported on CS domains");
     }
@@ -475,20 +527,21 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiSerialWrite(f) {
     f.writeln("{");
-    if row {
+    if this.row {
       for r in rowRange {
-        const lo = startIdx(r);
-        const hi = stopIdx(r);
+        const lo = startIdx(r),
+              hi = stopIdx(r);
         for c in lo..hi {
           f.write(" (", r, ", ", idx(c), ")", if (c==hi) then "\n" else "");
         }
       }
     } else {
+      // Note: Prints differently than CSR
       for c in colRange {
-        const lo = startIdx(c);
-        const hi = stopIdx(c);
+        const lo = startIdx(c),
+              hi = stopIdx(c);
         for r in lo..hi {
-          f.write(" (", c, ", ", idx(r), ")", if (r==hi) then "\n" else "");
+          f.write(" (", idx(r), ", ", c, ")", if (r==hi) then "\n" else "");
         }
       }
     }
@@ -498,7 +551,6 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
-// TODO: Distinguish CSR from CSC?
 class CSArr: BaseSparseArrImpl {
 
   proc dsiAccess(ind: rank*idxType) ref {
@@ -571,11 +623,21 @@ class CSArr: BaseSparseArrImpl {
   }
 
   proc dsiSerialWrite(f) {
-    for r in dom.rowRange {
-      const lo = dom.startIdx(r);
-      const hi = dom.stopIdx(r);
-      for c in lo..hi {
-        f.write(data(c), if (c==hi) then "\n" else " ");
+    if dom.row {
+      for r in dom.rowRange {
+        const lo = dom.startIdx(r);
+        const hi = dom.stopIdx(r);
+        for c in lo..hi {
+          f.write(data(c), if (c==hi) then "\n" else " ");
+        }
+      }
+    } else {
+      for c in dom.colRange {
+        const lo = dom.startIdx(c);
+        const hi = dom.stopIdx(c);
+        for r in lo..hi {
+          f.write(data(r), if (r==hi) then "\n" else " ");
+        }
       }
     }
   }
