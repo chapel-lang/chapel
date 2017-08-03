@@ -256,6 +256,8 @@ enum PrimitiveTag {
   PRIM_ZIP,
   PRIM_REQUIRE,
 
+  PRIM_CHECK_ERROR, // used in error-handling conditional. args: error variable
+
   NUM_KNOWN_PRIMS
 };
 

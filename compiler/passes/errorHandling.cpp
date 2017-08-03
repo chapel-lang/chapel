@@ -179,6 +179,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 
   VarSymbol*   errorVar     = newTemp("error", dtError);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
+  handlerLabel->addFlag(FLAG_ERROR_LABEL);
   TryInfo      info         = {errorVar, handlerLabel, node, node->body()};
   tryStack.push(info);
 
@@ -323,7 +324,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       }
 
       node->insertAtTail(errorVar); // adding error argument to call
-      insert->insertAfter(errorCond(errorVar, errorPolicy));
+      insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -566,4 +567,39 @@ static void checkErrorHandling(FnSymbol* fn)
   CanThrowVisitor visit(fn->throwsError(), true);
 
   fn->body->accept(&visit);
+}
+
+
+void lowerCheckErrorPrimitive()
+{
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+      SET_LINENO(call);
+
+      SymExpr* errSe   = toSymExpr(call->get(1));
+      Symbol*  errorVar= errSe->symbol();
+
+      VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
+      DefExpr*   def            = new DefExpr(errorExistsVar);
+      CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, errorVar, gNil);
+      CallExpr*  move = new CallExpr(PRIM_MOVE, errorExistsVar, errorExists);
+
+      Expr* stmt = call->getStmtExpr();
+      stmt->insertBefore(def);
+      def->insertAfter(move);
+      call->replace(new SymExpr(errorExistsVar));
+    }
+  }
+}
+
+bool isCheckErrorStmt(Expr* e)
+{
+  if (CondStmt* cond = toCondStmt(e)) {
+    if (CallExpr* call = toCallExpr(cond->condExpr)) {
+      if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
