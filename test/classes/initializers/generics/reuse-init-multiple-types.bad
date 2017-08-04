@@ -1,3 +1,0 @@
-reuse-init-multiple-types.chpl:24: error: unresolved call 'Foo.init(type int(64), type int(64))'
-reuse-init-multiple-types.chpl:15: note: candidates are: Foo.init(type t1Val, type t2Val)
-deleted module lines

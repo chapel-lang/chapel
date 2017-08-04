@@ -1495,10 +1495,20 @@ bool canCoerce(Type*     actualType,
   return false;
 }
 
-// Returns true iff the actualType can dispatch to the formalType.
-// The function symbol is used to avoid scalar promotion on =.
-// param is set if the actual is a parameter (compile-time constant).
-// fn is the function being called
+/************************************* | **************************************
+*                                                                             *
+* Returns true iff the actualType can dispatch to the formalType.             *
+*                                                                             *
+* The function symbol is used to avoid scalar promotion on =.                 *
+* param is set if the actual is a parameter (compile-time constant).          *
+* fn is the function being called                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isGenericInstantiation(Type*     actualType,
+                                   Type*     formalType,
+                                   FnSymbol* fn);
+
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
@@ -1513,22 +1523,10 @@ bool canDispatch(Type*     actualType,
     return true;
   }
 
-  if (AggregateType* atFormal = toAggregateType(formalType)) {
-    if (actualType->symbol->hasFlag(FLAG_GENERIC) == true &&
-        atFormal->instantiatedFrom                == actualType) {
-      // The actual should only be generic when we're resolving an initializer
-      // If either of these asserts fail, something is very, very wrong.
-      AggregateType* at = toAggregateType(actualType);
-
-      INT_ASSERT(at                       != NULL);
-      INT_ASSERT(at->initializerStyle     != DEFINES_CONSTRUCTOR);
-      INT_ASSERT(strcmp(fn->name, "init") == 0);
-
-      return true;
-    }
+  if (isGenericInstantiation(actualType, formalType, fn) == true) {
+    return true;
   }
 
-  //
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
   // found that without this, calls like autocopy(nil) became
@@ -1580,6 +1578,34 @@ bool canDispatch(Type*     actualType,
 
   return false;
 }
+
+static bool isGenericInstantiation(Type*     actualType,
+                                   Type*     formalType,
+                                   FnSymbol* fn) {
+  AggregateType* atActual = toAggregateType(actualType);
+  AggregateType* atFormal = toAggregateType(formalType);
+  bool           retval   = false;
+
+  if (atActual                                != NULL &&
+      atActual->symbol->hasFlag(FLAG_GENERIC) == true &&
+
+      atFormal                                != NULL &&
+      atFormal->isInstantiatedFrom(atActual)  == true) {
+
+    INT_ASSERT(atActual->initializerStyle != DEFINES_CONSTRUCTOR);
+    INT_ASSERT(strcmp(fn->name, "init")   == 0);
+
+    retval = true;
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
