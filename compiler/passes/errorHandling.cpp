@@ -702,9 +702,8 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
-  // Currently, only task functions can be implicitly throws.
-  // Future: include iterators and any task functions.
-  if (!isTaskFun(fn)) // TODO: for foralls && !fn->isIterator())
+  // Currently, only task functions or iterators can be implicitly throws.
+  if (!isTaskFun(fn) && !fn->isIterator())
     return;
 
   // If we already visited this function, don't visit it again.
