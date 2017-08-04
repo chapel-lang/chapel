@@ -8,9 +8,6 @@ use LayoutCS;
     http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
 
-/* Test bulkAdd_help if true, otherwise test dsiAdd */
-config const bulkAdd = true;
-
 proc main() {
   var D = {1..6, 1..6};
 
@@ -27,27 +24,37 @@ proc main() {
   writeln('DSI');
   writeln('===');
 
-  if bulkAdd {
-    csrDom += indices;
-    cscDom += indices;
-  } else {
-    for idx in indices {
-      csrDom += idx;
-      cscDom += idx;
-    }
-  }
+  // bulkAdd when nnz = 0
+  csrDom += indices[..4];
+  cscDom += indices[..4];
+
+  // dsiAdd, with duplicates
+  csrDom += indices[4];
+  csrDom += indices[5];
+  cscDom += indices[4];
+  cscDom += indices[5];
+
+  // bulkAdd when nnz > 0, with duplicates
+  csrDom += indices;
+  cscDom += indices;
+
+  // TODO: Remove
+  // TODO: .these (parallel)
+  // TODO: IndsIterSafeForRemoving() {
+
+  writeln('csrDom:');
+  writeDSI(csrDom);
+  writeln('cscDom:');
+  writeDSI(cscDom);
+
 
   var csrArr: [csrDom] real,
       cscArr: [cscDom] real;
 
-  writeln('csrDom:');
-  writeln(csrDom);
-  writeln('cscDom:');
-  writeln(cscDom);
-
   for (i,j) in csrArr.domain {
     csrArr[i,j] = 10*i + j;
   }
+
   for (i,j) in cscArr.domain {
     cscArr[i,j] = 10*i + j;
   }
@@ -110,16 +117,19 @@ proc main() {
 
   writeln();
 
-  //writeln("size:\t\t", D.size);
-  //writeln("numIndices:\t",D.numIndices);
-  //writeln("low:\t\t",D.low);
-  //writeln("high:\t\t",D.high);
-  //writeln("stride:\t\t",D.stride);
-  //writeln("alignment:\t",D.alignment);
-  //writeln("first:\t\t",D.first);
-  //writeln("last:\t\t",D.last);
-  //writeln("alignedLow:\t",D.alignedLow);
-  //writeln("alignedHigh:\t",D.alignedHigh);
+}
 
+proc writeDSI(D) {
+  writeln("size:\t\t", D.size);
+  writeln("numIndices:\t",D.numIndices);
+  writeln("low:\t\t",D.low);
+  writeln("high:\t\t",D.high);
+  writeln("stride:\t\t",D.stride);
+  writeln("alignment:\t",D.alignment);
+  writeln("first:\t\t",D.first);
+  writeln("last:\t\t",D.last);
+  writeln("alignedLow:\t",D.alignedLow);
+  writeln("alignedHigh:\t",D.alignedHigh);
+  writeln(D);
 }
 

@@ -24,6 +24,15 @@ use RangeChunk only ;
 /* For backwards-compatibility with LayoutCSR */
 type CSR = CS;
 
+pragma "no doc"
+/* Comparator used for sorting by columns */
+record _ColumnComparator {
+  proc init() { }
+  proc key(idx) { return idx(2);}
+}
+
+const _columnComparator: _ColumnComparator;
+
 // I have not seen us test a non-"sub" CS domain
 // and I do not want untested code in the docs.
 // TODO: change to 'sparse domain' and add that code to the test suite.
@@ -319,7 +328,11 @@ class CSDom: BaseSparseDomImpl {
   proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
                     isUnique=false) {
 
-    bulkAdd_prepareInds(inds, dataSorted, isUnique, row=this.row);
+    if this.row then
+      bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);
+    else {
+      bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
+    }
 
     if nnz == 0 {
 
@@ -372,26 +385,16 @@ class CSDom: BaseSparseDomImpl {
       return idxIdx-1;
     } // if nnz == 0
 
-    //
-    // TODO: CSC (nnz > 0)
-    //
-
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, isUnique);
-
-    writeln('inds: ', inds);
-    writeln('actualInsertPts: ', actualInsertPts);
-    writeln('actualAddCnt: ', actualAddCnt);
-    writeln('idx: ', idx);
 
     const oldnnz = nnz;
     nnz += actualAddCnt;
 
-    //grow nnzDom if necessary
+    // Grow nnzDom if necessary
     _bulkGrow();
 
-    // TODO: Problem below here...
-    //linearly fill the new idx from backwards
+    // Linearly fill the new idx from backwards
     var newIndIdx = indsDom.high; //index into new indices
     var oldIndIdx = oldnnz; //index into old indices
     var newLoc = actualInsertPts[newIndIdx]; // its position-to-be in new dom
@@ -405,13 +408,13 @@ class CSDom: BaseSparseDomImpl {
 
     for i in 1..nnz by -1 {
       if oldIndIdx >= 1 && i > newLoc {
-        //shift from old values
+        // Shift from old values
         idx[i] = idx[oldIndIdx];
         arrShiftMap[oldIndIdx] = i;
         oldIndIdx -= 1;
       }
       else if newIndIdx >= indsDom.low && i == newLoc {
-        //put the new guy in
+        // Put the new guy in
         if this.row {
           idx[i] = inds[newIndIdx][2];
         } else {
@@ -421,17 +424,15 @@ class CSDom: BaseSparseDomImpl {
         if newIndIdx >= indsDom.low then
           newLoc = actualInsertPts[newIndIdx];
         else
-          newLoc = -2; //finished new set
+          newLoc = -2; // Finished new set
         while newLoc == -1 {
           newIndIdx -= 1;
-          if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+          if newIndIdx == indsDom.low-1 then break; // There were duplicates -- now done
           newLoc = actualInsertPts[newIndIdx];
         }
       }
       else halt("Something went wrong");
     }
-    writeln('idx: ', idx);
-
 
     // Aggregated row || col shift
     var prevCursor = if this.row then parentDom.dim(1).low else parentDom.dim(2).low;
@@ -465,7 +466,7 @@ class CSDom: BaseSparseDomImpl {
     return actualAddCnt;
   }
 
-  // TODO: CSC
+  // TODO: CSC / Test
   proc dsiRemove(ind: rank*idxType) {
     // find position in nnzDom to remove old index
     const (found, insertPt) = find(ind);

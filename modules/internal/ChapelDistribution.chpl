@@ -454,20 +454,13 @@ module ChapelDistribution {
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
     // TODO: Should this take a comparator as an argument?
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, row=true) {
+    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
       use Sort;
-      if !dataSorted {
-        if row then sort(inds);
-        else {
-          var colCmp = new ColCmp();
-          sort(inds, comparator=colCmp);
-        }
-      }
-
+      if !dataSorted then sort(inds, comparator=cmp);
 
       //verify sorted and no duplicates if not --fast
       if boundsChecking {
-        if dataSorted && !isSorted(inds) then
+        if dataSorted && !isSorted(inds, comparator=defaultComparator) then
           halt("bulkAdd: Data not sorted, call the function with \
               dataSorted=false");
 
@@ -1050,12 +1043,5 @@ module ChapelDistribution {
         lhs.dsiAdd(i);
       }
     }
-  }
-
-  pragma "no doc"
-  /* Comparator used for sorting by columns */
-  record ColCmp{
-    proc init() { }
-    proc key(idx) { return idx(2);}
   }
 }
