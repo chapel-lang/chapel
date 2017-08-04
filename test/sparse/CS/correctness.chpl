@@ -1,9 +1,9 @@
 use LayoutCS;
 
-// TODO: Cleanup
 /*
-  Testing various array properties with test matrix inspired by
-  Colorado State's useful example matrix:
+  Tests used for development of LayoutCS
+
+  Matrix originated from Colorado State's useful example:
 
     http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
@@ -40,7 +40,7 @@ proc main() {
 
   // TODO: Remove
   // TODO: .these (parallel)
-  // TODO: IndsIterSafeForRemoving() {
+  // TODO: IndsIterSafeForRemoving()
 
   writeln('csrDom:');
   writeDSI(csrDom);
@@ -63,60 +63,24 @@ proc main() {
   writeln(csrArr);
 
   writeln('csrArr:');
-  for i in D.dim(1) {
-    for j in D.dim(2) {
-      write(cscArr[i, j], " ");
-    }
-    writeln();
-  }
+  writeDense(csrArr);
 
   writeln('cscArr non-zeroes:');
   writeln(cscArr);
 
   writeln('cscArr:');
-  for i in D.dim(1) {
-    for j in D.dim(2) {
-      write(cscArr[i, j], " ");
-    }
-    writeln();
-  }
+  writeDense(cscArr);
 
 
   writeln('Internals');
   writeln('=========');
+  writeln('CSR');
+  writeln('---');
+  writeInternals(csrArr);
   writeln();
   writeln('CSC');
   writeln('---');
-  writeln('Column Start Index:');
-  for i in cscArr.domain.dim(2) {
-    // 1 2 4 7 10 12
-    write(cscArr.domain._value.startIdx(i), ' ');
-  }
-
-  writeln();
-  writeln('Row Index:');
-  for i in 1..cscArr.domain._value.nnz {
-    // 1 2 3 4 2 3 3 4 5 6 4 5 6 6
-    write(cscArr.domain._value.idx(i), ' ');
-  }
-  writeln();
-
-  writeln('CSR');
-  writeln('---');
-  writeln('Row Start Index:');
-  for i in csrArr.domain.dim(1) {
-    // 1 5 7 11 13 14
-    write(csrArr.domain._value.startIdx(i), ' ');
-  }
-  writeln();
-  writeln('Column Index:');
-  for i in 1..csrArr.domain._value.nnz {
-    // 1 2 3 4 2 3 3 4 5 6 4 5 6 6
-    write(csrArr.domain._value.idx(i), ' ');
-  }
-
-  writeln();
-
+  writeInternals(cscArr);
 }
 
 proc writeDSI(D) {
@@ -133,3 +97,33 @@ proc writeDSI(D) {
   writeln(D);
 }
 
+
+proc writeDense(A: [?D]) {
+  for i in D.dim(1) {
+    for j in D.dim(2) {
+      writef('%2n ', A[i, j]);
+    }
+    writeln();
+  }
+}
+
+proc writeInternals(A) {
+  const row = A.domain._value.row;
+  if row then writeln('Row Start Index:');
+  else writeln('Column Start Index:');
+
+  var dimension = if row then 1 else 2;
+
+  for i in A.domain.dim(dimension) {
+    write(A.domain._value.startIdx(i), ' ');
+  }
+  writeln();
+
+  if row then writeln('Column Index:');
+  else writeln('Row Index:');
+
+  for i in 1..A.domain._value.nnz {
+    write(A.domain._value.idx(i), ' ');
+  }
+  writeln();
+}

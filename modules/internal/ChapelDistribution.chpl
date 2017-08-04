@@ -453,7 +453,6 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    // TODO: Should this take a comparator as an argument?
     proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
       use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
