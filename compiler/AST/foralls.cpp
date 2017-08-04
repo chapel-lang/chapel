@@ -19,6 +19,7 @@
 
 // foralls.h, foralls.cpp - support for forall loops
 
+#include "DeferStmt.h"
 #include "driver.h"
 #include "foralls.h"
 #include "ForallStmt.h"
@@ -348,7 +349,7 @@ buildFollowLoop(VarSymbol* iter,
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
   followBlock->insertAtTail(followBody);
-  followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
+  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   return followBlock;
 }
@@ -775,7 +776,7 @@ void lowerForallStmts() {
     //destructureIndices(PARBody, indices, new SymExpr(parIdxCopy), false);
 
     PARBlock->insertAtTail(PARBody);
-    PARBlock->insertAtTail("_freeIterator(%S)", parIter);
+    PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
 
     resolveBlockStmt(PARBlock);
     PARBlock->flattenAndRemove();

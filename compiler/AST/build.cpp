@@ -23,6 +23,7 @@
 #include "stlUtil.h"
 #include "baseAST.h"
 #include "config.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -1188,7 +1189,7 @@ buildFollowLoop(VarSymbol* iter,
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
   followBlock->insertAtTail(followBody);
-  followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
+  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   return followBlock;
 }
@@ -1325,7 +1326,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
 
   SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
-  SABlock->insertAtTail("_freeIterator(%S)", saIter);
+  SABlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", saIter)));
   setupForallIntents(loopBody->forallIntents, NULL,
                      iterRec, saIdx, saIdxCopy, SABody, useThisGlobalOp);
   return SABlock;
@@ -1478,7 +1479,7 @@ buildForallLoopStmt(Expr*      indices,
   }
 
   resultBlock->insertAtTail(leadForLoop);
-  resultBlock->insertAtTail("_freeIterator(%S)", leadIter);
+  resultBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", leadIter)));
   setupForallIntents(loopBody->forallIntents,
                      loopBodyForFast ? loopBodyForFast->forallIntents : NULL,
                      iterRec, leadIdx, leadIdxCopy, leadForLoop,
@@ -2111,7 +2112,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
   followBlock->insertAtTail("'delete'(%S)", localOp);
-  followBlock->insertAtTail("_freeIterator(%S)", followIter);
+  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered);
 
@@ -2131,7 +2132,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
   leadBlock->insertAtTail(leadBody);
-  leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
+  leadBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", leadIter)));
 
   fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
 
