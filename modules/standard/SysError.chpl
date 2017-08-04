@@ -51,28 +51,9 @@ class SystemError : Error {
   }
 
   proc writeThis(f) {
-    // TODO: syserr has no writeThis()
-    f.write("syserr: " + msg);
+    try! f.write(msg);
   }
 }
-
-  /*
-  proc fromSyserr(err: syserr): Error type {
-    if err == EEOF {
-      return new EOFError();
-    }
-    return new SystemError(err);
-  }
-   */
-
-/*
-class EOFError : SystemError {
-  proc init() {
-    super.init(EEOF);
-  }
-}
- */
-
 
 // here's what we need from Sys
 private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:err_t):c_string;
@@ -180,7 +161,7 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
   const quotedpath = quote_string(path, path.length:ssize_t): string;
   const err_msg = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-  throw new SystemError(EIO, err_msg);
+  throw new SystemError(EIO:syserr, err_msg);
 }
 
 /* Convert a syserr error code to a human-readable string describing that

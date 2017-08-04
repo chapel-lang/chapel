@@ -3379,31 +3379,35 @@ proc stringify(args ...?k):string {
   } else {
     // otherwise, write it using the I/O system.
 
-    // Open a memory buffer to store the result
-    var f = openmem();
+    try! {
+      // Open a memory buffer to store the result
+      var f = openmem();
 
-    var w = f.writer(locking=false);
+      var w = f.writer(locking=false);
 
-    w.write((...args));
+      w.write((...args));
 
-    var offset = w.offset();
+      var offset = w.offset();
 
-    var buf = c_malloc(uint(8), offset+1);
+      var buf = c_malloc(uint(8), offset+1);
 
-    // you might need a flush here if
-    // close went away
-    w.close();
+      // you might need a flush here if
+      // close went away
+      w.close();
 
-    var r = f.reader(locking=false);
+      var r = f.reader(locking=false);
 
-    r.readBytes(buf, offset:ssize_t);
-    // Add the terminating NULL byte to make C string conversion easy.
-    buf[offset] = 0;
-    r.close();
+      r.readBytes(buf, offset:ssize_t);
+      // Add the terminating NULL byte to make C string conversion easy.
+      buf[offset] = 0;
+      r.close();
 
-    f.close();
+      f.close();
 
-    return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+      return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+    }
+
+    return "";
   }
 }
 

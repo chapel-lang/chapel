@@ -1,1 +1,1 @@
-fileNotValid.chpl:5: error: Bad file descriptor in file.realPath
+fileNotValid.chpl:5: error: uncaught error - Bad file descriptor in file.realPath
