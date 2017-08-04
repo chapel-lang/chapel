@@ -348,18 +348,19 @@ hasUserAssign(Type* type) {
 }
 
 bool hasAutoCopyForType(Type* type) {
-  return autoCopyMap[type] != NULL;
+  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  return autoCopyMap.find(type) != autoCopyMap.end() && it->second != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
 // we can insert NULL values for a type and avoid segfaults
 FnSymbol* getAutoCopyForType(Type* type) {
-  FnSymbol* ret = autoCopyMap[type]; // Do not try this at home
-  if (ret == NULL) {
+  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  if (it == autoCopyMap.end() || it->second == NULL) {
     INT_FATAL(type, "Trying to obtain autoCopy for type '%s',"
                     " which defines none", type->symbol->name);
   }
-  return ret;
+  return it->second;
 }
 
 void getAutoCopyTypeKeys(Vec<Type*> &keys) {
@@ -7938,8 +7939,10 @@ static void removeCopyFns(Type* t) {
     autoDestroy->defPoint->remove();
   }
 
-  if (FnSymbol* autoCopy = autoCopyMap[t]) {
-    autoCopyMap.erase(t);
+  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(t);
+  if (it != autoCopyMap.end()) {
+    FnSymbol* autoCopy = it->second;
+    autoCopyMap.erase(it);
     autoCopy->defPoint->remove();
   }
 }
