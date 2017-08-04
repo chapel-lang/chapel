@@ -5716,6 +5716,7 @@ multicore
 multihop
 multilocale
 multiloop
+multipledestructor
 multiprecision
 multirealm
 multithreaded
