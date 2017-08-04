@@ -38,7 +38,7 @@ proc multiplyAv(v: [?Dv], Av: [?DAv]) {
 }
 
 //
-// Compute A-transpose * v ('Atv').
+// Compute A-tranpose * v ('Atv').
 //
 proc multiplyAtv(v: [?Dv], Atv: [?DAtv]) {
   forall i in DAtv do
