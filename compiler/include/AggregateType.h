@@ -79,8 +79,12 @@ public:
   bool                        setNextGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
+
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
                                                     FnSymbol* fn);
+
+  bool                        isInstantiatedFrom(const AggregateType* base)
+                                                                         const;
 
   const char*                 classStructName(bool standalone);
 

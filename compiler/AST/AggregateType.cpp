@@ -448,6 +448,20 @@ AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
   return instantiation;
 }
 
+bool AggregateType::isInstantiatedFrom(const AggregateType* base) const {
+  const AggregateType* type   = this;
+  bool                 retval = false;
+
+  while (type != NULL && retval == false) {
+    if (type == base) {
+      retval = true;
+    } else {
+      type = type->instantiatedFrom;
+    }
+  }
+
+  return retval;
+}
 
 int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
