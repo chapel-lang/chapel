@@ -25,7 +25,6 @@
 
 #include <vector>
 
-
 class ArgSymbol;
 class CallInfo;
 class FnSymbol;
@@ -36,19 +35,40 @@ class ResolutionCandidate {
 public:
                             ResolutionCandidate(FnSymbol* fn);
 
-  bool                      computeAlignment(CallInfo& info);
+  bool                      isApplicable(CallInfo& info);
 
-  void                      computeSubstitutions(bool inInitRes = false);
-
+  bool                      isApplicableForInit(CallInfo& info);
 
   FnSymbol*                 fn;
   std::vector<Symbol*>      formalIdxToActual;
   std::vector<ArgSymbol*>   actualIdxToFormal;
 
-  SymbolMap                 substitutions;
-
 private:
                             ResolutionCandidate();
+
+  bool                      isApplicableConcrete(CallInfo& info);
+
+  void                      resolveTypeConstructor(CallInfo& info);
+
+  bool                      isApplicableGeneric(CallInfo& info);
+
+  bool                      isApplicableForInitConcrete(CallInfo& info);
+
+  bool                      isApplicableForInitGeneric(CallInfo& info);
+
+  FnSymbol*                 instantiateInitSig(CallInfo& info);
+
+  bool                      computeAlignment(CallInfo& info);
+
+  void                      computeSubstitutions(bool inInitRes = false);
+
+  void                      resolveTypedefedArgTypes();
+
+  bool                      checkResolveFormalsWhereClauses();
+
+  bool                      checkGenericFormals();
+
+  SymbolMap                 substitutions;
 };
 
 

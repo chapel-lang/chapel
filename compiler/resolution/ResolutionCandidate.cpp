@@ -19,11 +19,14 @@
 
 #include "ResolutionCandidate.h"
 
+#include "caches.h"
 #include "callInfo.h"
 #include "driver.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "resolution.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 
 /************************************* | **************************************
@@ -34,6 +37,301 @@
 
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::isApplicable(CallInfo& info) {
+  bool retval = false;
+
+  if (fn->hasFlag(FLAG_GENERIC) == false) {
+    retval = isApplicableConcrete(info);
+  } else {
+    retval = isApplicableGeneric (info);
+  }
+
+  return retval;
+}
+
+bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn != NULL) {
+    resolveTypedefedArgTypes();
+
+    if (computeAlignment(info) == true) {
+      // Ensure that type constructor is resolved before other constructors.
+      if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+        resolveTypeConstructor(info);
+      }
+
+      retval = checkResolveFormalsWhereClauses();
+    }
+  }
+
+  return retval;
+}
+
+void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
+  SET_LINENO(fn);
+
+  // Ignore tuple constructors; they were generated
+  // with their type constructors.
+  if (fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
+
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_IS_MEME) == false) {
+        if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
+          if (formal->instantiatedFrom) {
+            typeConstructorCall->insertAtTail(formal->type->symbol);
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            typeConstructorCall->insertAtTail(paramMap.get(formal));
+          }
+
+        } else {
+          if (strcmp(formal->name, "outer") == 0 ||
+              formal->type                  == dtMethodToken) {
+            typeConstructorCall->insertAtTail(formal);
+
+          } else if (formal->instantiatedFrom) {
+            SymExpr*   se = new SymExpr(formal->type->symbol);
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+
+          } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            SymExpr*   se = new SymExpr(paramMap.get(formal));
+            NamedExpr* ne = new NamedExpr(formal->name, se);
+
+            typeConstructorCall->insertAtTail(ne);
+          }
+        }
+      }
+    }
+
+    info.call->insertBefore(typeConstructorCall);
+
+    // If instead we call resolveCallAndCallee(typeConstructorCall)
+    // then the line number reported in an error would change
+    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
+    // or:   classes/diten/multipledestructor
+    resolveCall(typeConstructorCall);
+
+    INT_ASSERT(typeConstructorCall->isResolved());
+
+    resolveFns(typeConstructorCall->resolvedFunction());
+
+    fn->_this->type = typeConstructorCall->resolvedFunction()->retType;
+
+    typeConstructorCall->remove();
+  }
+}
+
+bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn                     != NULL &&
+      computeAlignment(info) == true &&
+     checkGenericFormals()   == true) {
+    // Compute the param/type substitutions for generic arguments.
+    computeSubstitutions();
+
+    if (substitutions.n > 0) {
+      /*
+       * Instantiate enough of the generic to get through the rest of the
+       * filtering and disambiguation processes.
+       */
+      fn = instantiateSignature(fn, substitutions, info.call);
+
+      if (fn != NULL) {
+        retval = isApplicable(info);
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::isApplicableForInit(CallInfo& info) {
+  bool retval = false;
+
+  if (fn->hasFlag(FLAG_GENERIC) == false) {
+    retval = isApplicableForInitConcrete(info);
+
+  } else {
+    retval = isApplicableForInitGeneric (info);
+  }
+
+  return retval;
+}
+
+bool ResolutionCandidate::isApplicableForInitConcrete(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn == NULL) {
+    retval = false;
+
+  } else {
+    resolveTypedefedArgTypes();
+
+    if (computeAlignment(info) == false) {
+      retval = false;
+
+    } else {
+      retval = checkResolveFormalsWhereClauses();
+    }
+  }
+
+  return retval;
+}
+
+bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
+  bool retval = false;
+
+  fn = expandIfVarArgs(fn, info);
+
+  if (fn == NULL) {
+    retval = false;
+
+  } else if (computeAlignment(info) == false) {
+    retval = false;
+
+  } else if (checkGenericFormals()  == false) {
+    retval = false;
+
+  } else {
+    computeSubstitutions(true);
+
+    if (substitutions.n > 0) {
+      /*
+       * Instantiate just enough of the generic to get through the
+       * the rest of the filtering and disambiguation processes.
+       */
+      fn = instantiateInitSig(info);
+
+      if (fn != NULL) {
+        retval = isApplicableForInit(info);
+      }
+    }
+  }
+
+  return retval;
+}
+
+FnSymbol* ResolutionCandidate::instantiateInitSig(CallInfo& info) {
+  SymbolMap& subs   = substitutions;
+  FnSymbol*  retval = NULL;
+
+  if (FnSymbol* tupleFn = createTupleSignature(fn, subs, info.call)) {
+    retval = tupleFn;
+
+  } else {
+    form_Map(SymbolMapElem, e, subs) {
+      if (TypeSymbol* ts = toTypeSymbol(e->value)) {
+        // This line is modified from instantiateSignature to allow the "this"
+        // arg to remain generic until we have finished resolving the generic
+        // portions of the initializer body's Phase 1.
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) ==  true &&
+            e->key->hasFlag(FLAG_ARG_THIS)          == false) {
+          INT_FATAL(fn, "illegal instantiation with a generic type");
+
+        } else {
+          TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+
+          if (ts != nts) {
+            e->value = nts;
+          }
+        }
+      }
+    }
+
+    //
+    // determine root function in the case of partial instantiation
+    //
+    FnSymbol* root = determineRootFunc(fn);
+
+    //
+    // determine all substitutions (past substitutions in a partial
+    // instantiation plus the current substitutions) and change the
+    // substitutions to refer to the root function's formal arguments
+    //
+    SymbolMap allSubs;
+
+    determineAllSubs(fn, root, subs, allSubs);
+
+    //
+    // use cached instantiation if possible
+    //
+    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+      if (cached != (FnSymbol*)gVoid) {
+        checkInfiniteWhereInstantiation(cached);
+
+        retval = cached;
+
+      } else {
+        retval = NULL;
+      }
+
+    } else {
+
+      SET_LINENO(fn);
+
+      //
+      // instantiate function
+      //
+
+      SymbolMap map;
+
+      FnSymbol* newFn = instantiateFunction(fn,
+                                            root,
+                                            allSubs,
+                                            info.call,
+                                            subs,
+                                            map);
+
+      fixupTupleFunctions(fn, newFn, info.call);
+
+      if (newFn->numFormals()       >  1 &&
+          newFn->getFormal(1)->type == dtMethodToken) {
+        newFn->getFormal(2)->type->methods.add(newFn);
+      }
+
+      newFn->tagIfGeneric();
+
+      if (newFn->hasFlag(FLAG_GENERIC) == false &&
+          evaluateWhereClause(newFn)   == false) {
+
+        // where clause evaluates to false so cache gVoid as a function
+        replaceCache(genericsCache, root, (FnSymbol*) gVoid, &allSubs);
+
+        retval = NULL;
+
+      } else {
+        explainAndCheckInstantiation(newFn, fn);
+
+        retval = newFn;
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -289,6 +587,126 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   }
 
   return NULL;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+void ResolutionCandidate::resolveTypedefedArgTypes() {
+  for_formals(formal, fn) {
+    INT_ASSERT(formal->type);
+
+    if (formal->type == dtUnknown) {
+      if (BlockStmt* block = formal->typeExpr) {
+        if (SymExpr* se = toSymExpr(block->body.first())) {
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+            Type* type = resolveTypeAlias(se);
+
+            INT_ASSERT(type);
+
+            formal->type = type;
+          }
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
+  int coindex = -1;
+
+  /*
+   * A derived generic type will use the type of its parent,
+   * and expects this to be instantiated before it is.
+   */
+  resolveFormals(fn);
+
+  for_formals(formal, fn) {
+    if (Symbol* actual = formalIdxToActual[++coindex]) {
+      bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+      bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+
+      bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                               formal->intent == INTENT_PARAM;
+
+      if (actualIsTypeAlias != formalIsTypeAlias) {
+        return false;
+
+      } else if (canDispatch(actual->type,
+                             actual,
+                             formal->type,
+                             fn,
+                             NULL,
+                             formalIsParam) == false) {
+        return false;
+      }
+    }
+  }
+
+  return evaluateWhereClause(fn);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolutionCandidate::checkGenericFormals() {
+  int coindex = 0;
+
+  for_formals(formal, fn) {
+    if (formal->type != dtUnknown) {
+      if (Symbol* actual = formalIdxToActual[coindex]) {
+        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+
+        if (actualIsTypeAlias != formalIsTypeAlias) {
+          return false;
+
+        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+          Type* vt  = actual->getValType();
+          Type* st  = actual->type->scalarPromotionType;
+          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+
+          if (canInstantiate(actual->type, formal->type) == false &&
+
+              (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
+              (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
+              (svt == NULL || canInstantiate(svt, formal->type) == false)) {
+
+            return false;
+          }
+
+        } else {
+          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                               formal->intent == INTENT_PARAM;
+
+          if (canDispatch(actual->type,
+                           actual,
+                           formal->type,
+                           fn,
+                           NULL,
+                           formalIsParam) == false) {
+            return false;
+          }
+        }
+      }
+    }
+
+    coindex++;
+  }
+
+  return true;
 }
 
 /************************************* | **************************************

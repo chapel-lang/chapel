@@ -54,7 +54,6 @@
 #include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
-#include "visibleCandidates.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 #include "WhileStmt.h"
@@ -2716,6 +2715,19 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void findVisibleCandidates(CallInfo&                  info,
+                                  Vec<FnSymbol*>&            visibleFns,
+                                  Vec<ResolutionCandidate*>& candidates);
+
+static void gatherCandidates(CallInfo&                  info,
+                             Vec<FnSymbol*>&            visibleFns,
+                             bool                       lastResort,
+                             Vec<ResolutionCandidate*>& candidates);
+
+static void filterCandidate (CallInfo&                  info,
+                             FnSymbol*                  fn,
+                             Vec<ResolutionCandidate*>& candidates);
+
 static bool typeUsesForwarding(Type* t);
 
 static bool populateForwardingMethods(CallInfo& info);
@@ -2753,6 +2765,88 @@ static void findVisibleFunctionsAndCandidates(
   }
 
   explainGatherCandidate(info, candidates);
+}
+
+static void findVisibleCandidates(CallInfo&                  info,
+                                  Vec<FnSymbol*>&            visibleFns,
+                                  Vec<ResolutionCandidate*>& candidates) {
+  // Search user-defined (i.e. non-compiler-generated) functions first.
+  gatherCandidates(info, visibleFns, false, candidates);
+
+  // If no results, try again with any compiler-generated candidates.
+  if (candidates.n == 0) {
+    gatherCandidates(info, visibleFns, true, candidates);
+  }
+}
+
+static void gatherCandidates(CallInfo&                  info,
+                             Vec<FnSymbol*>&            visibleFns,
+                             bool                       lastResort,
+                             Vec<ResolutionCandidate*>& candidates) {
+  forv_Vec(FnSymbol, fn, visibleFns) {
+    // Only consider functions marked with/without FLAG_LAST_RESORT
+    // (where existence of the flag matches the lastResort argument)
+    if (fn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
+
+      // Consider
+      //
+      //   c1.foo(10, 20);
+      //
+      // where foo() is a simple method on some class/record
+      //
+      // Normalize currently converts this to
+      //
+      //   #<Call     #<Call "foo" _mt c1>    10    20>
+      //
+      // Resolution performs a post-order traversal of this expression
+      // and so the inner call is visited before the outer call.
+      //
+      // In this context, the inner "call" is effectively a field access
+      // rather than a true function call.  Normalize sets the methodTag
+      // property to true to indicate this, and this form of call can only
+      // be matched to parentheses-less methods and type constructors.
+      //
+      // Later steps will convert the outer call to become
+      //
+      //   #<Call "foo" _mt c1  10    20>
+      //
+      // This outer call has methodTag set to false and this call
+      // should be filtered against the available visibleFunctions.
+      //
+
+      if (info.call->methodTag == false) {
+        filterCandidate(info, fn, candidates);
+
+      } else {
+        if (fn->hasFlag(FLAG_NO_PARENS)        == true ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          filterCandidate(info, fn, candidates);
+        }
+      }
+    }
+  }
+}
+
+static void filterCandidate(CallInfo&                  info,
+                            FnSymbol*                  fn,
+                            Vec<ResolutionCandidate*>& candidates) {
+  ResolutionCandidate* candidate = new ResolutionCandidate(fn);
+
+  if (fExplainVerbose &&
+      ((explainCallLine && explainCallMatch(info.call)) ||
+       info.call->id == explainCallID)) {
+    USR_PRINT(fn, "Considering function: %s", toString(fn));
+
+    if (info.call->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
+  }
+
+  if (candidate->isApplicable(info) == true) {
+    candidates.add(candidate);
+  } else {
+    delete candidate;
+  }
 }
 
 static bool typeUsesForwarding(Type* t) {
