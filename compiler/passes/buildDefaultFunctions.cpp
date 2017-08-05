@@ -1375,60 +1375,253 @@ static void buildDefaultInitField(AggregateType*         at,
           arg->addFlag(FLAG_TYPE_VARIABLE);
         }
 
-        // set up the ArgSymbol appropriately for the type and initialization
-        // from the field declaration.
-        if (defPoint->init == NULL) {
-          if (defPoint->exprType != NULL) {
-            Expr* initVal = new SymExpr(gTypeDefaultToken);
+        // A generic field
+        if        (defPoint->exprType == NULL && defPoint->init == NULL) {
 
-            arg->defaultExpr = new BlockStmt(initVal);
+
+          // set up the ArgSymbol appropriately for the type and initialization
+          // from the field declaration.
+          if (defPoint->init == NULL) {
+            if (defPoint->exprType != NULL) {
+              Expr* initVal = new SymExpr(gTypeDefaultToken);
+
+              arg->defaultExpr = new BlockStmt(initVal);
+            }
+
+          } else {
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
           }
 
-        } else {
-          arg->defaultExpr = new BlockStmt(defPoint->init->copy());
-        }
 
-        if (defPoint->exprType == NULL) {
-          arg->type = dtAny;
+          if (defPoint->exprType == NULL) {
+            arg->type = dtAny;
 
-          if (defPoint->init != NULL) {
-            VarSymbol* tmp = newTemp();
+            if (defPoint->init != NULL) {
+              VarSymbol* tmp = newTemp();
 
-            // tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-            // Lydia NOTE 06/16/17: The default constructor adds this flag
-            // to its equivalent temporary.  I have decided not to do so
-            // and am not seeing issues so far, but may have missed something,
-            // so I am leaving it here just in case.
+              // tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              // Lydia NOTE 06/16/17: The default constructor adds this flag
+              // to its equivalent temporary.  I have decided not to do so
+              // and am not seeing issues so far, but may have missed something,
+              // so I am leaving it here just in case.
 
-            tmp->addFlag(FLAG_MAYBE_TYPE);
-            tmp->addFlag(FLAG_MAYBE_PARAM);
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
 
-            BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
+              BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
 
-            typeExpr->insertAtTail(new CallExpr(PRIM_MOVE,
-                                                tmp,
-                                                defPoint->init->copy()));
+              typeExpr->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                  tmp,
+                                                  defPoint->init->copy()));
 
-            // Lydia NOTE 06/16/17: I believe we don't need to make an
-            // initCopy call for the field's init (like the default
-            // constructor version attempts).
-            // I might have missed something, though, so if it turns out we
-            // do need that initCopy, use this instead of the above statement:
-            // typeExpr->insertAtTail(
-            //           new CallExpr(PRIM_MOVE,
-            //                        tmp,
-            //                        new CallExpr("chpl__initCopy",
-            //                                     defPoint->init->copy())));
+              // Lydia NOTE 06/16/17: I believe we don't need to make an
+              // initCopy call for the field's init (like the default
+              // constructor version attempts).
+              // I might have missed something, though, so if it turns out we
+              // do need that initCopy, use this instead of the above statement:
+              // typeExpr->insertAtTail(
+              //           new CallExpr(PRIM_MOVE,
+              //                        tmp,
+              //                        new CallExpr("chpl__initCopy",
+              //                                     defPoint->init->copy())));
 
-            typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
+              typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
 
-            arg->typeExpr = typeExpr;
+              arg->typeExpr = typeExpr;
+            }
+
+          } else {
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy(),
+                                          BLOCK_SCOPELESS);
           }
 
-        } else {
-          arg->typeExpr = new BlockStmt(defPoint->exprType->copy(),
-                                        BLOCK_SCOPELESS);
+
+
+        // Type infererence required
+        } else if (defPoint->exprType == NULL && defPoint->init != NULL) {
+
+          // set up the ArgSymbol appropriately for the type and initialization
+          // from the field declaration.
+          if (defPoint->init == NULL) {
+            if (defPoint->exprType != NULL) {
+              Expr* initVal = new SymExpr(gTypeDefaultToken);
+
+              arg->defaultExpr = new BlockStmt(initVal);
+            }
+
+          } else {
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+          }
+
+          if (defPoint->exprType == NULL) {
+            arg->type = dtAny;
+
+            if (defPoint->init != NULL) {
+              VarSymbol* tmp = newTemp();
+
+              // tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              // Lydia NOTE 06/16/17: The default constructor adds this flag
+              // to its equivalent temporary.  I have decided not to do so
+              // and am not seeing issues so far, but may have missed something,
+              // so I am leaving it here just in case.
+
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
+
+              BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
+
+              typeExpr->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                  tmp,
+                                                  defPoint->init->copy()));
+
+              // Lydia NOTE 06/16/17: I believe we don't need to make an
+              // initCopy call for the field's init (like the default
+              // constructor version attempts).
+              // I might have missed something, though, so if it turns out we
+              // do need that initCopy, use this instead of the above statement:
+              // typeExpr->insertAtTail(
+              //           new CallExpr(PRIM_MOVE,
+              //                        tmp,
+              //                        new CallExpr("chpl__initCopy",
+              //                                     defPoint->init->copy())));
+
+              typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
+
+              arg->typeExpr = typeExpr;
+            }
+
+          } else {
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy(),
+                                          BLOCK_SCOPELESS);
+          }
+
+
+        // Type is defined and default value should be applied
+        } else if (defPoint->exprType != NULL && defPoint->init == NULL) {
+
+          // set up the ArgSymbol appropriately for the type and initialization
+          // from the field declaration.
+          if (defPoint->init == NULL) {
+            if (defPoint->exprType != NULL) {
+              Expr* initVal = new SymExpr(gTypeDefaultToken);
+
+              arg->defaultExpr = new BlockStmt(initVal);
+            }
+
+          } else {
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+          }
+
+
+          if (defPoint->exprType == NULL) {
+            arg->type = dtAny;
+
+            if (defPoint->init != NULL) {
+              VarSymbol* tmp = newTemp();
+
+              // tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              // Lydia NOTE 06/16/17: The default constructor adds this flag
+              // to its equivalent temporary.  I have decided not to do so
+              // and am not seeing issues so far, but may have missed something,
+              // so I am leaving it here just in case.
+
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
+
+              BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
+
+              typeExpr->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                  tmp,
+                                                  defPoint->init->copy()));
+
+              // Lydia NOTE 06/16/17: I believe we don't need to make an
+              // initCopy call for the field's init (like the default
+              // constructor version attempts).
+              // I might have missed something, though, so if it turns out we
+              // do need that initCopy, use this instead of the above statement:
+              // typeExpr->insertAtTail(
+              //           new CallExpr(PRIM_MOVE,
+              //                        tmp,
+              //                        new CallExpr("chpl__initCopy",
+              //                                     defPoint->init->copy())));
+
+              typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
+
+              arg->typeExpr = typeExpr;
+            }
+
+          } else {
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy(),
+                                          BLOCK_SCOPELESS);
+          }
+
+
+        // Type is defined and type of init value must be consistent
+        } else if (defPoint->exprType != NULL && defPoint->init != NULL) {
+
+          // set up the ArgSymbol appropriately for the type and initialization
+          // from the field declaration.
+          if (defPoint->init == NULL) {
+            if (defPoint->exprType != NULL) {
+              Expr* initVal = new SymExpr(gTypeDefaultToken);
+
+              arg->defaultExpr = new BlockStmt(initVal);
+            }
+
+          } else {
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+          }
+
+          if (defPoint->exprType == NULL) {
+            arg->type = dtAny;
+
+            if (defPoint->init != NULL) {
+              VarSymbol* tmp = newTemp();
+
+              // tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              // Lydia NOTE 06/16/17: The default constructor adds this flag
+              // to its equivalent temporary.  I have decided not to do so
+              // and am not seeing issues so far, but may have missed something,
+              // so I am leaving it here just in case.
+
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
+
+              BlockStmt* typeExpr = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
+
+              typeExpr->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                  tmp,
+                                                  defPoint->init->copy()));
+
+              // Lydia NOTE 06/16/17: I believe we don't need to make an
+              // initCopy call for the field's init (like the default
+              // constructor version attempts).
+              // I might have missed something, though, so if it turns out we
+              // do need that initCopy, use this instead of the above statement:
+              // typeExpr->insertAtTail(
+              //           new CallExpr(PRIM_MOVE,
+              //                        tmp,
+              //                        new CallExpr("chpl__initCopy",
+              //                                     defPoint->init->copy())));
+
+              typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
+
+              arg->typeExpr = typeExpr;
+            }
+
+          } else {
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy(),
+                                          BLOCK_SCOPELESS);
+          }
+
         }
+
+
+
+
+
+
+
 
         fn->insertFormalAtTail(arg);
 
