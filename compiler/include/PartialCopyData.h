@@ -46,12 +46,16 @@ public:
 
 };
 
+bool             hasPartialCopyData(const FnSymbol* fn);
+
 PartialCopyData* getPartialCopyData(FnSymbol* fn);
+
 PartialCopyData& addPartialCopyData(FnSymbol* fn);
 
 void             clearPartialCopyData(FnSymbol* fn);
-void             clearPartialCopyDataFnMap();
-void             checkEmptyPartialCopyDataFnMap();
 
+void             clearPartialCopyDataFnMap();
+
+void             checkEmptyPartialCopyDataFnMap();
 
 #endif
