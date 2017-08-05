@@ -17,7 +17,7 @@ endif
 
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
-LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) -DHAVE_LLVM
+LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) -DHAVE_LLVM -Wno-comment
 LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS) -DHAVE_LLVM
 
 LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
