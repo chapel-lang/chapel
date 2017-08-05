@@ -33,9 +33,6 @@ record _ColumnComparator {
 
 const _columnComparator: _ColumnComparator;
 
-// I have not seen us test a non-"sub" CS domain
-// and I do not want untested code in the docs.
-// TODO: change to 'sparse domain' and add that code to the test suite.
 /*
 This CS layout provides a Compressed Sparse Row and Compressed Sparse Column
 implementation for Chapel's sparse domains and arrays.
@@ -466,7 +463,6 @@ class CSDom: BaseSparseDomImpl {
     return actualAddCnt;
   }
 
-  // TODO: CSC / Test
   proc dsiRemove(ind: rank*idxType) {
     // find position in nnzDom to remove old index
     const (found, insertPt) = find(ind);
@@ -477,15 +473,7 @@ class CSDom: BaseSparseDomImpl {
     // increment number of nonzeroes
     nnz -= 1;
 
-    // TODO: should halve nnzDom if we've outgrown it...
-    /*
-    var oldNNZDomSize = nnzDomSize;
-    if (nnz > nnzDomSize) {
-      nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
-
-      nnzDom = {1..nnzDomSize};
-    }
-    */
+    _shrink(nnz);
 
     const (row,col) = ind;
 
@@ -495,9 +483,16 @@ class CSDom: BaseSparseDomImpl {
     }
 
     // bump the startIdx counts
-    for r in row+1..dom.high {  // want dom[row+1..]
-      startIdx(r) -= 1;
+    if this.row {
+      for r in row+1..dom.high {  // want dom[row+1..]
+        startIdx(r) -= 1;
+      }
+    } else {
+      for r in col+1..dom.high {  // want dom[row+1..]
+        startIdx(r) -= 1;
+      }
     }
+
 
     // shift all of the arrays up and initialize nonzeroes if
     // necessary

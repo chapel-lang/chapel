@@ -14,31 +14,47 @@ proc main() {
   var csrDom: sparse subdomain(D) dmapped CS(row=true),
       cscDom: sparse subdomain(D) dmapped CS(row=false);
 
-  var indices = [(1,1), (1,2), (1,3), (1,4),
-                 (2,2), (2,3),
-                 (3,3), (3,4), (3,5), (3,6),
-                 (4,4), (4,5),
-                 (5,6),
-                 (6,6)];
+  const indices = [(1,1), (1,2), (1,3), (1,4),
+                   (2,2), (2,3),
+                   (3,3), (3,4), (3,5), (3,6),
+                   (4,4), (4,5),
+                   (5,6),
+                   (6,6)];
 
   writeln('DSI');
   writeln('===');
 
   // bulkAdd when nnz = 0
-  csrDom += indices[..4];
-  cscDom += indices[..4];
+  csrDom += indices[..5];
+  cscDom += indices[..5];
 
-  // dsiAdd, with duplicates
-  csrDom += indices[4];
+  // dsiRemove
+  cscDom -= indices[5];
+  csrDom -= indices[5];
+
+  assert(csrDom.size == 4);
+  assert(cscDom.size == 4);
+
+  csrDom -= indices[1..4];
+  cscDom -= indices[1..4];
+
+  assert(csrDom.size == 0);
+  assert(cscDom.size == 0);
+
+  // dsiAdd
   csrDom += indices[5];
-  cscDom += indices[4];
   cscDom += indices[5];
+
+  // dsiAdd duplicates
+  csrDom += indices[4];
+  cscDom += indices[4];
+
 
   // bulkAdd when nnz > 0, with duplicates
   csrDom += indices;
   cscDom += indices;
 
-  // TODO: Remove
+
   // TODO: .these (parallel)
   // TODO: IndsIterSafeForRemoving()
 

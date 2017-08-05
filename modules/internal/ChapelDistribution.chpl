@@ -418,11 +418,30 @@ module ChapelDistribution {
       return -1;
     }
 
-    inline proc _grow(size: int){
+    // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
+    //       - would have to put the conditional outside of the call
+    /* Grow domain if necesary */
+    inline proc _grow(size: int, factor=arrayAsVecGrowthFactor) {
       const oldNNZDomSize = nnzDom.size;
       if (size > oldNNZDomSize) {
-        const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
-        nnzDom = {1.._newNNZDomSize};
+        const _newNNZDomSize = if (oldNNZDomSize) then ceil(factor*oldNNZDomSize):int else 1;
+        nnzDom = {1..#_newNNZDomSize};
+      }
+    }
+
+    // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
+    //       - would have to put the conditional outside of the call
+    /* Shrink domain if necessary */
+    inline proc _shrink(size: int, factor=arrayAsVecGrowthFactor) {
+      if size == 0 {
+        nnzDom = {1..0};
+      } else {
+        // TODO: floor() ?
+        const shrinkThreshold = (nnzDom.size / (factor**2)): int;
+        if (size < shrinkThreshold) {
+          const _newNNZDomSize = (nnzDom.size / factor): int;
+          nnzDom = {1.._newNNZDomSize};
+        }
       }
     }
 
@@ -589,6 +608,7 @@ module ChapelDistribution {
 
   } // end BaseSparseDom
 
+  // TODO: Should these be in ChapelArray with other overloads?
   // BaseSparseDom operator overloads
   proc +=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) &&
     sd.rank==1 {
@@ -620,6 +640,40 @@ module ChapelDistribution {
     for (a,i) in zip(arr,d) do a=i;
 
     sd._value.dsiBulkAdd(arr, true, true, false);
+  }
+
+  //
+  // TODO: Implement bulkRemove
+  //
+  proc -=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) &&
+    sd.rank==1 {
+
+    if inds.size == 0 then return;
+
+    for ind in inds {
+      sd -= ind;
+    }
+  }
+
+  proc -=(ref sd: domain, inds: [] sd.rank*sd.idxType) where isSparseDom(sd) &&
+    sd.rank>1 {
+
+    if inds.size == 0 then return;
+
+    for ind in inds {
+      sd -= ind;
+    }
+  }
+
+  // Currently this is not optimized for addition of a sparse
+  proc +=(ref sd: domain, d: domain)
+  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    if d.size == 0 then return;
+
+    for ind in d {
+      sd -= ind;
+    }
   }
   // end BaseSparseDom operators
 
