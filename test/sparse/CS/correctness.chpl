@@ -1,4 +1,5 @@
 use LayoutCS;
+use Random;
 
 /*
   Tests used for development of LayoutCS
@@ -14,17 +15,29 @@ proc main() {
   var csrDom: sparse subdomain(D) dmapped CS(row=true),
       cscDom: sparse subdomain(D) dmapped CS(row=false);
 
-  const indices = [(1,1), (1,2), (1,3), (1,4),
-                   (2,2), (2,3),
-                   (3,3), (3,4), (3,5), (3,6),
-                   (4,4), (4,5),
-                   (5,6),
-                   (6,6)];
+  var indices = [(1,1), (1,2), (1,3), (1,4),
+                 (2,2), (2,3),
+                 (3,3), (3,4), (3,5), (3,6),
+                 (4,4), (4,5),
+                 (5,6),
+                 (6,6)];
 
   writeln('DSI');
   writeln('===');
 
-  // TODO: dsiBulkAdd overloads / unsorted data
+  // dsiBulkAdd with domain
+  csrDom += D;
+  cscDom += D;
+
+  assert(csrDom.size == D.size);
+  assert(cscDom.size == D.size);
+
+  // dsiRemove with domain
+  csrDom -= D;
+  cscDom -= D;
+
+  assert(csrDom.size == 0);
+  assert(cscDom.size == 0);
 
   // dsiBulkAdd when nnz = 0
   csrDom += indices[..5];
@@ -51,6 +64,9 @@ proc main() {
   // dsiAdd duplicates
   csrDom += indices[4];
   cscDom += indices[4];
+
+  // Shuffle indices to test dsiBulkAdd with unsorted data
+  shuffle(indices);
 
   // dsiBulkAdd when nnz > 0, with duplicates
   csrDom += indices;
