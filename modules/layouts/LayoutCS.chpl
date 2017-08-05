@@ -28,7 +28,7 @@ pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
   proc init() { }
-  proc key(idx) { return idx(2);}
+  proc key(idx: _tuple) { return (idx(2), idx(1));}
 }
 
 const _columnComparator: _ColumnComparator;
@@ -638,3 +638,20 @@ class CSArr: BaseSparseArrImpl {
     }
   }
 } // CSArr
+
+// Currently this is not optimized for addition of a sparse
+/* Overload for CS, necessary b/c domains are sorted by rows, not columns */
+proc +=(ref sd: domain, d: domain)
+where sd._value: CSDom && d.rank==sd.rank && sd.idxType==d.idxType {
+
+  if d.size == 0 then return;
+
+  type _idxType = if sd.rank==1 then int else sd.rank*int;
+  const indCount = d.numIndices;
+  const arr: [{0..#indCount}] _idxType;
+
+  //this could be a parallel loop. but ranks don't match -- doesn't compile
+  for (a,i) in zip(arr,d) do a=i;
+
+  sd._value.dsiBulkAdd(arr, sd._value.row, true, false);
+}

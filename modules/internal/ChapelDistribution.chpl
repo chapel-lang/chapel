@@ -608,8 +608,10 @@ module ChapelDistribution {
 
   } // end BaseSparseDom
 
-  // TODO: Should these be in ChapelArray with other overloads?
+  //
   // BaseSparseDom operator overloads
+  //
+  // TODO: Should these be in ChapelArray with other overloads?
   proc +=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) &&
     sd.rank==1 {
 
@@ -627,8 +629,13 @@ module ChapelDistribution {
   }
 
   // Currently this is not optimized for addition of a sparse
+  // This assumes that a domain is sorted by row, which may not always be true.
+  // There could be domains sorted by column instead.
+  // It would be nice if there was a common interface in BaseDom to query
+  // whether a domain was row-major or column-major to distinguish these.
+  // The current implementation is a work-around for this shortcoming.
   proc +=(ref sd: domain, d: domain)
-  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+  where sd._value: DefaultSparseDom && d.rank==sd.rank && sd.idxType==d.idxType {
 
     if d.size == 0 then return;
 
@@ -642,9 +649,7 @@ module ChapelDistribution {
     sd._value.dsiBulkAdd(arr, true, true, false);
   }
 
-  //
   // TODO: Implement bulkRemove
-  //
   proc -=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) &&
     sd.rank==1 {
 
@@ -665,8 +670,7 @@ module ChapelDistribution {
     }
   }
 
-  // Currently this is not optimized for addition of a sparse
-  proc +=(ref sd: domain, d: domain)
+  proc -=(ref sd: domain, d: domain)
   where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
 
     if d.size == 0 then return;
@@ -675,7 +679,9 @@ module ChapelDistribution {
       sd -= ind;
     }
   }
+  //
   // end BaseSparseDom operators
+  //
 
   class BaseAssociativeDom : BaseDom {
     proc deinit() {

@@ -24,7 +24,9 @@ proc main() {
   writeln('DSI');
   writeln('===');
 
-  // bulkAdd when nnz = 0
+  // TODO: dsiBulkAdd overloads / unsorted data
+
+  // dsiBulkAdd when nnz = 0
   csrDom += indices[..5];
   cscDom += indices[..5];
 
@@ -35,6 +37,7 @@ proc main() {
   assert(csrDom.size == 4);
   assert(cscDom.size == 4);
 
+  // dsiRemove, "promoted"
   csrDom -= indices[1..4];
   cscDom -= indices[1..4];
 
@@ -49,29 +52,30 @@ proc main() {
   csrDom += indices[4];
   cscDom += indices[4];
 
-
-  // bulkAdd when nnz > 0, with duplicates
+  // dsiBulkAdd when nnz > 0, with duplicates
   csrDom += indices;
   cscDom += indices;
-
-
-  // TODO: .these (parallel)
-  // TODO: IndsIterSafeForRemoving()
 
   writeln('csrDom:');
   writeDSI(csrDom);
   writeln('cscDom:');
   writeDSI(cscDom);
 
+  // dsiAssignDomain
+  var csrDom2 = csrDom;
+  var cscDom2 = cscDom;
+  assert(csrDom2 == csrDom);
+  assert(cscDom2 == cscDom);
 
-  var csrArr: [csrDom] real,
-      cscArr: [cscDom] real;
+  var csrArr: [csrDom] int,
+      cscArr: [cscDom] int;
 
-  for (i,j) in csrArr.domain {
+  // Parallel .these
+  forall (i,j) in csrArr.domain {
     csrArr[i,j] = 10*i + j;
   }
 
-  for (i,j) in cscArr.domain {
+  forall (i,j) in cscArr.domain {
     cscArr[i,j] = 10*i + j;
   }
 
@@ -112,7 +116,6 @@ proc writeDSI(D) {
   writeln("alignedHigh:\t",D.alignedHigh);
   writeln(D);
 }
-
 
 proc writeDense(A: [?D]) {
   for i in D.dim(1) {
