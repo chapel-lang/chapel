@@ -2409,19 +2409,6 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
   args.push_back(a3);
   return codegenCallExpr(fnName, args);
 }
-//static
-//GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-//                       GenRet a4, GenRet a5, GenRet a6)
-//{
-//  std::vector<GenRet> args;
-//  args.push_back(a1);
-//  args.push_back(a2);
-//  args.push_back(a3);
-//  args.push_back(a4);
-//  args.push_back(a5);
-//  args.push_back(a6);
-//  return codegenCallExpr(fnName, args);
-//}
 static
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                        GenRet a4, GenRet a5, GenRet a6, GenRet a7)
