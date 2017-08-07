@@ -25,9 +25,19 @@ proc main() {
   writeln('DSI');
   writeln('===');
 
+  // TODO: dsiClone
+  // TODO: leader/follower these()
+  //        - CSC, CSC
+  //        - CSR, CSR
+  //        - CSC, CSR
+  //        - CSR, CSC
+
   // dsiBulkAdd with domain
   csrDom += D;
   cscDom += D;
+
+  // proc ==()
+  assert(csrDom == cscDom);
 
   assert(csrDom.size == D.size);
   assert(cscDom.size == D.size);

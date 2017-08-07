@@ -64,7 +64,7 @@ class CS: BaseDist {
     return new CSDom(rank=rank, row=row, idxType=idxType, dist=this, parentDom=dom);
   }
 
-  proc dsiClone() return new CS();
+  proc dsiClone() return new CS(row=this.row);
 
   proc dsiEqualDMaps(that: CS) param {
     return true;
@@ -109,9 +109,10 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiMyDist() return dist;
 
-  proc dsiGetIndices() return 0;
+  // TODO: Open question -- How should slicing on CS domains and arrays work?
+  proc dsiGetIndices() { compilerError('Slicing is not supported on CS domains'); }
 
-  proc dsiSetIndices(x) { }
+  proc dsiSetIndices(x) { compilerError('Slicing is not supported on CS domains'); }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
@@ -120,7 +121,6 @@ class CSDom: BaseSparseDomImpl {
   proc dsiBuildArray(type eltType)
     return new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
-  // TODO: Test
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.row then rowRange.high else colRange.high;
     for i in 1..nnz by -1 {
@@ -150,7 +150,6 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
-  // TODO: Test
   iter these(param tag: iterKind) where tag == iterKind.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
@@ -169,7 +168,6 @@ class CSDom: BaseSparseDomImpl {
     // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
-  // TODO: Test
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
     if boundsChecking then

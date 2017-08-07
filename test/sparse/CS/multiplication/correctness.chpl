@@ -19,26 +19,17 @@ proc main() {
   var A: [ADom] real,
       B: [BDom] real;
 
-  const rA1 = ADom.dim(1) by 2,
-        rA2 = ADom.dim(2) by 2;
 
-  csrDom += {rA1, rA2};
-  for i in rA1 {
-    for j in rA2 {
-      A[i, j] = i;
-      csrArr[i, j] = i;
-    }
+  csrDom += ADom by 2;
+  for (i,j) in ADom by 2 {
+    A[i, j] = i;
+    csrArr[i, j] = i;
   }
 
-  const rB1 = BDom.dim(1) by 3,
-        rB2 = BDom.dim(2) by 3;
-
-  cscDom += {rB1, rB2};
-  for i in rB1 {
-    for j in rB2 {
-      B[i, j] = j;
-      cscArr[i, j] = j;
-    }
+  cscDom += BDom by 3;
+  for (i,j) in BDom by 3 {
+    B[i, j] = j;
+    cscArr[i, j] = j;
   }
 
   //
@@ -82,14 +73,9 @@ proc main() {
 
 /* Dense matrix-matrix multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
-  var C: [{ADom.dim(1), BDom.dim(2)}] eltType;
-  for i in ADom.dim(1) {
-    for j in BDom.dim(2) {
-      for k in BDom.dim(1) {
-        C[i,j] += A[i,k] * B[k, j];
-      }
-    }
-  }
+  const CDom = {ADom.dim(1), BDom.dim(2)};
+  var C: [CDom] eltType;
+  [(i,j) in CDom] C[i,j] = + reduce(A[i,..] * B[.., j]);
   return C;
 }
 
