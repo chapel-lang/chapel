@@ -7,6 +7,7 @@ use MasonNew;
 use MasonBuild;
 use MasonUpdate;
 
+
 proc main(args: [] string) {
   if args.size < 2 {
     masonHelp();

@@ -11,6 +11,7 @@ proc InitProject(args: [] string) {
   var status = -1;
   if vcs {
     status = gitInit(name);
+    addGitIgnore(name);
   }
   else {
     status = noGitInit(name);
@@ -32,6 +33,13 @@ proc gitInit(name: string) : int {
   return runCommand(command);
 }
 
+proc addGitIgnore(name: string) {
+  var toIgnore = "\ntarget/\nMason.lock";
+  var gitIgnore = open(name+"/.gitignore", iomode.cw);
+  var GIwriter = gitIgnore.writer();
+  GIwriter.write(toIgnore);
+  GIwriter.close();
+}
 
 proc noGitInit(name: string) : int {
   var command = "mkdir " + name;

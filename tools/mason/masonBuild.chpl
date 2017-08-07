@@ -111,8 +111,11 @@ proc getSrcCode(sourceList: [?d] 2*string) {
   for source in sourceList {
     if !depExists(source(2)) {
       writeln("Downloading dependency: " + source(2));
-      var getDependency = "git clone -q "+source(1)+' '+destination+source(2)+'/';
+      var getDependency = "git clone -qn "+source(1)+' '+destination+source(2)+'/';
       runCommand(getDependency);
+      var version = source(2).split('-');
+      var checkout = "git -C "+ destination+source(2) + " checkout -qb v"+version(2);
+      runCommand(checkout);
     }
   }
 }

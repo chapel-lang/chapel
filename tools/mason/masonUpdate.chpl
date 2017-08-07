@@ -28,6 +28,13 @@ proc genLock(lock: Toml) {
   tomlWriter.close();
 }
 
+/*
+proc updateRegistry() {
+  var command = "git -qC " + getEnv("HOME") + "/.mason/registry/ pull origin master";
+  writeln("Updating Mason Registry");
+  runCommand(command);
+}
+*/
 
 /* Responsible for creating the dependency tree
    from the Mason.toml. Starts at the root of the
