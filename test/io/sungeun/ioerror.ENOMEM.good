@@ -1,1 +1,1 @@
-ioerror.chpl:7: error: uncaught error - syserr: Cannot allocate memory ENOMEM
+ioerror.chpl:7: error: uncaught error - Cannot allocate memory ENOMEM

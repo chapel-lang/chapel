@@ -1,2 +1,2 @@
 Past First Check
-asserteof.chpl:28: error: uncaught error - syserr: assert failed - Not at EOF with path "asserteof.test.nums" offset 3
+asserteof.chpl:28: error: uncaught error - assert failed - Not at EOF with path "asserteof.test.nums" offset 3

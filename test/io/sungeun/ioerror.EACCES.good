@@ -1,1 +1,1 @@
-ioerror.chpl:10: error: uncaught error - syserr: Permission denied EACCES with path "this/is/my/path" offset -1
+ioerror.chpl:10: error: uncaught error - Permission denied EACCES with path "this/is/my/path" offset -1
