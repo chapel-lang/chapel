@@ -2113,8 +2113,8 @@ void register_memory(void)
       if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
 #ifdef DEBUG
-	if (mem_regions.mreg_cnt > mreg_cnt_max)
-	  mreg_cnt_max = mem_regions.mreg_cnt;
+        if (mem_regions.mreg_cnt > mreg_cnt_max)
+          mreg_cnt_max = mem_regions.mreg_cnt;
 #endif
       }
     }
@@ -2690,8 +2690,8 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
       if (mr_i >= mem_regions.mreg_cnt) {
         mem_regions.mreg_cnt = mr_i + 1;
 #ifdef DEBUG
-	if (mem_regions.mreg_cnt > mreg_cnt_max)
-	  mreg_cnt_max = mem_regions.mreg_cnt;
+        if (mem_regions.mreg_cnt > mreg_cnt_max)
+          mreg_cnt_max = mem_regions.mreg_cnt;
 #endif
       }
 
