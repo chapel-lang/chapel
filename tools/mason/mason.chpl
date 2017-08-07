@@ -3,7 +3,9 @@ use FileSystem;
 use Help;
 use Spawn;
 use TOML;
-
+use MasonNew;
+use MasonBuild;
+use MasonUpdate;
 
 proc main(args: [] string) {
   if args.size < 2 {
@@ -13,6 +15,7 @@ proc main(args: [] string) {
   select (args[1]) {
   when 'new' do masonNew(args);
   when 'build' do masonBuild(args);
+  when 'update' do UpdateLock();
   when 'run' do masonRun(args);
   when '-h' do masonHelp();
   when '--help' do masonHelp();
@@ -27,94 +30,72 @@ proc main(args: [] string) {
 
 
 proc masonNew(args) {
-  var status = -1;
   if args.size < 3 {
     writeln('error: Invalid arguments.');
     masonNewHelp();
     exit();
   }
   else {
-    var project = 'new' + args[2];
-    status = runCommand(project, 'masonNew' + project);
+    select (args[2]) {
+    when '--help' do masonNewHelp();
+    when '-h' do masonNewHelp();
+    otherwise {
+      InitProject(args);
+    }
+    }
   }
-  if status != 0 then
-    halt('Error: Mason new failed');
 }
 
 
+
 proc masonBuild(args) {
-  if args.size < 2 {
-    writeln('error: Invalid arguments.');
-    masonNewHelp();
-    exit();
-  } 
-  else if args.size > 2 {
+  if args.size > 2 {
     select (args[2]) {
     when '-h' do masonBuildHelp();
     when '--help' do masonBuildHelp();
     }
-    var command = '';
-    var status = -1;
-    if isFile('Mason.toml') {
-      writeln("found it");
-    } 
-    else {
-      halt('No Mason.toml');
-    }
-
-  if status != 0 then
-    halt('Error: Build failed');
   }
-
+  UpdateLock();
+  BuildProgram();
 }
+
+/* TODO: mtime so compilation only when nessescary
+   TODO: eliminate need for main name  */
+proc masonRun(args) {
+  masonBuild(args);  
+  if args.size < 3 {
+    writeln("Cannot run: lacking main file name"); 
+  }
+  else {
+    runCommand("target/debug/" + args[2]);
+  }
+}
+
+
 
 
 proc masonInit(args) {}
 proc masonClean(args) {}
-proc masonDoc(args) {} //chpldoc
+proc masonDoc(args) {}
 
-
-proc masonRun(args) {
-  var command = '';
-  var status = -1;
-  if isFile('Mason.toml') {
-    // Parse manifest file for flags, and build
-    halt('Mason.toml not yet supported...');
-  } else {
-    masonBuild(args);
-  }
+proc runCommand(cmd) {
+   var splitCmd = cmd.split();
+   var process = spawn(splitCmd, stdout=PIPE);
+   process.wait();
+   
+   for line in process.stdout.lines() {
+     writeln(line);
+   }
 }
 
-
-proc runCommand(command, exe=''): int {
-  var cmd = command.split();
-  var sub = spawn(cmd, stdout=PIPE, executable=exe);
-
-  var line:string;
-  while sub.stdout.readline(line) do write(line);
-  sub.wait();
-  return sub.exit_status;
+/* Gets envoirment variables for spawn commands */
+extern proc getenv(name : c_string) : c_string;
+proc getEnv(name: string): string {
+  var cname: c_string = name.c_str();
+  var value = getenv(cname);
+  return value:string;
 }
 
-/* Find Chapel program to serve as target for compilation */
-proc findTarget() {
-  for f in listdir() {
-    if splitExt(f)(2) == 'chpl' then return f;
-  }
-  return '';
-}
-
-
-proc splitExt(s: string): (string, string) {
-  const sp = s.split('.');
-  if sp.size == 1 then
-    return (s, '');
-  else {
-    var ext = sp[sp.size];
-    var root = '.'.join(sp[..sp.size-1]);
-    return (root, ext);
-  }
-}
 
 
 proc masonHelp() {
@@ -130,11 +111,12 @@ proc masonHelp() {
   writeln('    --list              List installed commands');
   writeln();
   writeln('Some common mason commands are (see all commands with --list):');
-  writeln('    build       Compile the current project');
-  writeln('    clean       Remove the target directory');
-  writeln('    doc         Build this project\'s and its dependencies\' documentation');
   writeln('    new         Create a new mason project');
-  writeln('    init        Create a new mason project in an existing directory');
+  writeln('    update      Update/Generate Mason.lock');
+  writeln('    build       Compile the current project');
+  //writeln('    clean       Remove the target directory');
+  //writeln('    doc         Build this project\'s and its dependencies\' documentation');
+  //writeln('    init        Create a new mason project in an existing directory');
   writeln('    run         Build and execute src/main.chpl');
 }
 
@@ -149,14 +131,13 @@ proc masonBuildHelp() {
   writeln('    -h, --help                   Display this message');
   writeln();
   writeln('When no options are provided, the following will take place:');
-  writeln('   - Build from mason project if Mason.toml present');
-  writeln('   - Build from makefile if makefile present');
+  writeln('   - Build from mason project if Mason.lock present');
 }
 
 proc masonNewHelp() {
   writeln('Usage:');
-  writeln('    mason new [options] <path>');
-  //writeln('    mason new -h | --help');
+  writeln('    mason new [options] <project name>');
+  writeln('    mason new -h | --help');
 }
 
 

@@ -1,34 +1,38 @@
-
-
-
-/*
-Lock File generation depends on three parts of manifest
-  1. Package Identifier (name)
-  2. Address for retrieval (git repository)
-  3. Immutable revision of software (commit hash)
-*/
-
 use TOML;
-use getDep;
+use FileSystem;
+use mason;
 
-proc main(args: [] string) {
-  var openFile = openreader(args[1]);
-  var TomlFile = parseToml(openFile);
-  var lockFile = createDepTree(TomlFile);
-  genLock(lockFile);
-  openFile.close();
-  delete TomlFile;
-  delete lockFile;
+/* Finds a Mason.toml file and updates the Mason.lock
+   generating one if it doesnt exist */
+proc UpdateLock() {
+  if isFile("Mason.toml") {
+    var openFile = openreader("Mason.toml");
+    var TomlFile = parseToml(openFile);
+    var lockFile = createDepTree(TomlFile);
+    genLock(lockFile);
+    openFile.close();
+    delete TomlFile;
+    delete lockFile;
+  }
+  else {
+    writeln("Cannot update: no Mason.toml found");
+  }
 }
 
+
+/* Writes out the lock file */
 proc genLock(lock: Toml) {
   var lockFile = open("Mason.lock", iomode.cw);
   var tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
 }
-  
 
+
+/* Responsible for creating the dependency tree
+   from the Mason.toml. Starts at the root of the
+   project and continues down dep tree recursivly
+   until each dep is recorded */
 proc createDepTree(root: Toml) {
   var dp: domain(string);
   var dps: [dp] Toml;
@@ -87,6 +91,11 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
 }
 
 
+
+/* The Incompatible Version Resolution Stategy 
+   - differing major versions are not allowed
+   - Always newest minor and patch 
+   - in accordance with semver  */
 proc IVRS(version1: string, version2: string) {
   if version1 == version2 then return version1;
   var vers1 = version1.split('.');
@@ -112,9 +121,37 @@ proc IVRS(version1: string, version2: string) {
     else return version2;
   }
 }
-    
+
+/* Returns the Mason.toml for each dep listed as a Toml */
+proc getManifests(deps: [?dom] (string, Toml)) {
+  var manifests: [1..0] Toml;
+  for dep in deps {
+    var name = dep(1);
+    var version: string = dep(2).s;
+    var toAdd = retrieveDep(name, version);
+    manifests.push_back(toAdd);
+  }
+  return manifests;
+}
 
 
+/* Resposible for parsing the Mason.toml to be given
+   back to a call from getManifests */ 
+proc retrieveDep(name: string, version: string) {
+  var home = getEnv("HOME");
+  var tomlPath = home + "/.mason/registry/"+name+"/"+version+".toml";
+  if isFile(tomlPath) {
+    var tomlFile = open(tomlPath, iomode.r);
+    var depToml = parseToml(tomlFile);
+    return depToml;
+  }
+  else {
+    halt("Could not find toml file for " + name);
+  }
+}
+
+/* Checks if a dependecy has deps; if so, the
+   dependencies are returned as a (string, Toml) */
 proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
   var deps: [depsD] (string, Toml);
@@ -128,6 +165,8 @@ proc getDependencies(tomlTbl: Toml) {
   return deps;
 }
 
+/* iterator to collect fields from a toml
+   TODO custom fields returned */
 iter allFields(tomlTbl: Toml) { 
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
     if v.tag == fieldToml {
@@ -138,3 +177,4 @@ iter allFields(tomlTbl: Toml) {
     }
   }
 }
+

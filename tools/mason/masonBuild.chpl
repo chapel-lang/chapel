@@ -2,55 +2,142 @@
 use TOML;
 use Spawn;
 use FileSystem;
-use masonInstall;
+use mason;
 
-proc main(args: [] string) {
+proc BuildProgram() {
   if isFile("Mason.lock") {
     if !isDir("target") {
       // Make Target Directory
-      makeTarget();
       makeTargetFiles();
     }
 
     //Install dependencies into .mason/src
-    var toParse = open(args[1], iomode.r);
+    var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
-    installDeps(lockFile);
+    var sourceList = genSourceList(lockFile);
+    getSrcCode(sourceList);
 
     // Compile Program
+    if compileSrc(lockFile) {
+      writeln("Build Successful");
+    }
+    else {
+      writeln("Build Failed");
+    }
 
     // Close memory
      delete lockFile;
      toParse.close();
   }
   else {
-    writeln("Mason needs a lock file!");
+    writeln("Cannot build: no Mason.lock found");
   }
 } 
 
-proc makeTarget() {
-  var makeTarget = "mkdir target";
-  var process = spawnshell(makeTarget);
-  process.wait();
-}
 
-// add if release turn optimizations on
+/* Creates the rest of the project structure */
 proc makeTargetFiles() {
+  var makeTarget = "mkdir target";
   var makeDebug  = "mkdir target/debug";
-  var process = spawnshell(makeDebug);
-  process.wait();
-
-  var makeDeps = "mkdir target/debug/deps";
+  var makeTests = "mkdir target/debug/tests";
   var makeExamples = "mkdir target/debug/examples";
-  var process2 = spawnshell(makeDeps);
-  process2.wait();
-  var process3 = spawnshell(makeExamples);
-  process3.wait();
+  var makeBenches = "mkdir target/debug/benches";
+  runCommand(makeTarget);
+  runCommand(makeDebug);
+  runCommand(makeTests);
+  runCommand(makeExamples);
+  runCommand(makeBenches);
 }
 
 
-proc installDeps(lockFile: Toml) {
+/* Compiles the program into the main project src
+   folder. Requires that the main library file be
+   named after the project folder in which it is 
+   contained */
+proc compileSrc(lockFile: Toml) : bool {
   var sourceList = genSourceList(lockFile);
-  var source = [("https://github.com/spartee/mason-registry", "mason-registry-0.1.0")];
-  getSrcCode(source);
+  var depPath = getEnv("HOME") + '/.mason/src/';
+  var project = lockFile["root"]["name"].s;
+  var projectPath = 'src/'+ project + '.chpl';
+ 
+  if isFile(projectPath) {
+    var command: string = 'chpl ' + projectPath;
+    for dep in sourceList {
+      var depSrc = ' -M '+ depPath + dep(2) + '/src';
+      command += depSrc;
+    }
+    runCommand(command); // compile Program with deps
+  
+    if isFile(project) {
+      var moveFile = 'mv ' + project + ' target/debug/';
+      runCommand(moveFile);
+      if isFile('target/debug/' + project) {
+	return true;
+      }
+    }
+    return false;
+  }
+  else {
+    writeln("Mason could not find your project!");
+    return false;
+  }
+}
+
+
+
+/* Generates a list of tuples that holds the git repo
+   url and the name for local mason dependency pool */
+proc genSourceList(lockFile: Toml) {
+  var sourceList: [1..0] (string, string);
+  for (name, package) in zip(lockFile.D, lockFile.A) {
+    if package.tag == fieldToml {
+      if name == "root" {
+        continue;
+      }
+      else {
+        var version = lockFile[name]["version"].s;
+        var source = lockFile[name]["source"].s;
+        sourceList.push_back((source, name+'-'+version));
+      }
+    }
+  }
+  return sourceList;
+}
+
+/* Clones the git repository of each dependency into
+   the src code dependency pool */
+proc getSrcCode(sourceList: [?d] 2*string) {
+  var destination = getEnv("HOME") +'/.mason/src/';
+  for source in sourceList {
+    if !depExists(source(2)) {
+      writeln("Downloading dependency: " + source(2));
+      var getDependency = "git clone -q "+source(1)+' '+destination+source(2)+'/';
+      runCommand(getDependency);
+    }
+  }
+}
+
+
+/* Checks to see if dependency has already been 
+   downloaed previously */
+proc depExists(dependency: string) {
+  var repos = getEnv("HOME") +'/.mason/src/';
+  var exists = false;
+  for dir in listdir(repos) {
+    if dir == dependency {
+      exists = true;
+    }
+  }
+  return exists;
+}
+
+
+proc runCommand(cmd) {
+  var splitCmd = cmd.split();
+  var process = spawn(splitCmd, stdout=PIPE);
+  process.wait();
+
+  for line in process.stdout.lines() {
+    writeln(line);
+  }
 }

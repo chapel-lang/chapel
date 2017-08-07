@@ -4,16 +4,24 @@ use TOML;
 use Spawn;
 use FileSystem;
 
-proc main(args: [] string) {
-  const name = args[1]; 
+config const vcs: bool = true;
+
+proc InitProject(args: [] string) {
+  const name = args[2];
   var status = -1;
-  status = gitInit(name);
+  if vcs {
+    status = gitInit(name);
+  }
+  else {
+    status = noGitInit(name);
+  }
+
   if status != 0 {
-    halt("Mason new failed");
+    halt("Mason failed to initialize your project.");
   }
   else {
     makeBasicToml(name);
-    makeProjFiles(name);
+    makeProjectFiles(name);
     writeln("Mason initialized your new project: " + name);
   }
 }
@@ -25,6 +33,11 @@ proc gitInit(name: string) : int {
 }
 
 
+proc noGitInit(name: string) : int {
+  var command = "mkdir " + name;
+  return runCommand(command);
+}
+
 proc makeBasicToml(name: string) {
   const baseToml = '\n[brick]\nname = "' + name +
     '"\nversion = "0.1.0"\n\n[dependencies]\n';
@@ -35,21 +48,18 @@ proc makeBasicToml(name: string) {
 }
   
 
-proc makeProjFiles(name: string) {
-  var makeSrc = spawnshell("mkdir src");
-  makeSrc.wait();
-  var makeLib = spawnshell("touch src/lib.chpl");
-  makeLib.wait();
+proc makeProjectFiles(name: string) {
+  var makeSrc = runCommand("mkdir src");
+  var makeLib = runCommand("touch src/" + name + '.chpl');
   moveFile(name, "src");
   moveFile(name, "Mason.toml");
 }
 
 
-  proc moveFile(name: string, file: string) {
+proc moveFile(name: string, file: string) {
   var dir = realPath(name);
   var command = "mv " + file + ' ' + dir;
-  var result = spawnshell(command);
-  result.wait();
+  var result = runCommand(command);
 }
 
 
