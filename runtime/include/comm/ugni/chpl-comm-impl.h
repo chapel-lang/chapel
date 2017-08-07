@@ -22,7 +22,7 @@
 
 //
 // This is the comm layer sub-interface for dynamic allocation and
-// registration of (typically) array memory.
+// registration of memory.
 //
 #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() \
         chpl_comm_impl_regMemAllocThreshold()
