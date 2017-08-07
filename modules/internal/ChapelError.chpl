@@ -23,7 +23,7 @@ module ChapelError {
   class Error {
     var msg: string;
 
-    proc init(_msg: string) {
+    proc Error(_msg: string) {
       msg = _msg;
     }
   }
