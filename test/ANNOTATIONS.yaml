@@ -410,6 +410,14 @@ ep-b:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
+ep.ml-perf:
+  07/26/17:
+    - Update PR 5296 (#6722)
+
+ep.ml-time:
+  07/26/17:
+    - Update PR 5296 (#6722)
+
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
@@ -809,6 +817,8 @@ prk-stencil.ml-perf:
     - Increase the PRK stencil problem size (#6380)
   06/13/17:
     - Optimize updateFluff (#6418)
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 prk-stencil-time:
   05/11/17:
