@@ -2676,7 +2676,11 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
     //
     // If we got the memory, reserve the memory region slot we found.
     //
-    if (p != NULL) {
+    if (p == NULL) {
+      DBG_P_LP(DBGF_MEMREG,
+               "chpl_regMemAlloc(%#zx): no hugepages",
+               size);
+    } else {
       mr->addr = (uint64_t) (intptr_t) p;
       mr->len = 1;
 
@@ -2696,6 +2700,10 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
                "mregs[%d] = %" PRIx64 ", cnt %d",
                size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
     }
+  } else {
+    DBG_P_LP(DBGF_MEMREG,
+             "chpl_regMemAlloc(%#zx): no free table entries",
+             size);
   }
 
   if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
