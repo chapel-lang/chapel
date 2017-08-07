@@ -63,18 +63,22 @@ proc masonBuild(args) {
 /* TODO: mtime so compilation only when nessescary
    TODO: eliminate need for main name  */
 proc masonRun(args) {
-  masonBuild(args);  
-  if args.size < 3 {
-    writeln("Cannot run: lacking main file name"); 
+  var toRun = basename(getEnv('PWD'));
+  if args.size > 2 {
+    if args[2] == "build" {
+      masonBuild(args);
+    }
+  }
+  if isFile("Mason.lock") {
+    var command = "target/debug/" + toRun;
+    runCommand(command);
   }
   else {
-    runCommand("target/debug/" + args[2]);
+    writeln("call mason run from the top level of your projects directory");
   }
 }
 
-
-
-
+// TODO
 proc masonInit(args) {}
 proc masonClean(args) {}
 proc masonDoc(args) {}

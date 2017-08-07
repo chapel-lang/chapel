@@ -6,6 +6,7 @@ use mason;
    generating one if it doesnt exist */
 proc UpdateLock() {
   if isFile("Mason.toml") {
+    updateRegistry();
     var openFile = openreader("Mason.toml");
     var TomlFile = parseToml(openFile);
     var lockFile = createDepTree(TomlFile);
@@ -28,13 +29,11 @@ proc genLock(lock: Toml) {
   tomlWriter.close();
 }
 
-/*
 proc updateRegistry() {
-  var command = "git -qC " + getEnv("HOME") + "/.mason/registry/ pull origin master";
+  var command = "git -C " + getEnv("HOME") + "/.mason/registry/ pull -q origin master";
   writeln("Updating Mason Registry");
   runCommand(command);
 }
-*/
 
 /* Responsible for creating the dependency tree
    from the Mason.toml. Starts at the root of the

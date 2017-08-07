@@ -66,8 +66,9 @@ proc compileSrc(lockFile: Toml) : bool {
       var depSrc = ' -M '+ depPath + dep(2) + '/src';
       command += depSrc;
     }
+    writeln("Compiling "+ project);
     runCommand(command); // compile Program with deps
-  
+    
     if isFile(project) {
       var moveFile = 'mv ' + project + ' target/debug/';
       runCommand(moveFile);
