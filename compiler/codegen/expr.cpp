@@ -91,7 +91,6 @@ static GenRet codegenCallExpr(const char* fnName);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-//static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8);
 static void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
