@@ -33,12 +33,11 @@ def print_mode(mode='list', anonymize=False):
         m = 'make'
 
 
-    chpl_home = overrides.get('CHPL_HOME', '')
-    chpl_module_home = os.environ.get('CHPL_MODULE_HOME', '')
+    chpl_home = chpl_home_utils.get_chpl_home()
 
     if (m == 'list' or mode == 'debug') and not anonymize:
         stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
-        stdout.write("CHPL_HOME: {0} *\n".format(chpl_home))
+        print_var('CHPL_HOME', chpl_home, mode)
         this_dir = os.path.realpath(os.path.dirname(__file__))
         stdout.write("script location: {0}\n".format(this_dir))
     elif chpl_home and m == 'shell':
