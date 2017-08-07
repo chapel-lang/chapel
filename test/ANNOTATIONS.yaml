@@ -256,6 +256,9 @@ all:
       config: Single node XC, 16 node XC
   06/21/17:
     - change tmp directory
+  07/31/17:
+    - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -359,6 +362,10 @@ chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
 
+CoMD:
+  07/26/17:
+    - Update PR 5296 (#6722)
+
 compSampler-timecomp:
   09/09/16:
     - disable function resolution optimization (#4476)
@@ -402,6 +409,14 @@ ep-b:
     - added -E to tests which would benefit from it
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
+
+ep.ml-perf:
+  07/26/17:
+    - Update PR 5296 (#6722)
+
+ep.ml-time:
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 fannkuch-redux:
   07/22/14:
@@ -802,6 +817,8 @@ prk-stencil.ml-perf:
     - Increase the PRK stencil problem size (#6380)
   06/13/17:
     - Optimize updateFluff (#6418)
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 prk-stencil-time:
   05/11/17:
