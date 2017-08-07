@@ -122,6 +122,14 @@ void CallInfo::haltNotWellFormed(bool forInit) const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
+      if (FnSymbol* fn = call->getFunction()) {
+        if (fn->hasFlag(FLAG_EXPORT)) {
+          USR_FATAL(call,
+                    "exported functions cannot have generic arguments like `%s`",
+                    sym->name);
+          return;
+        }
+      }
       if (forInit == false || isThis == false) {
         INT_FATAL(call,
                   "the type of the actual argument '%s' is generic",

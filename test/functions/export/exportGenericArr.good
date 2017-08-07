@@ -1,0 +1,2 @@
+exportGenericArr.chpl:2: In function 'flip_bit':
+exportGenericArr.chpl:3: error: exported functions cannot have generic arguments like `v`
