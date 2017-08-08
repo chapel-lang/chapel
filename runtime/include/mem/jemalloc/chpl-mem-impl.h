@@ -87,9 +87,9 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
 }
 
 
-chpl_bool chpl_mem_impl_alloc_localizes(void);
+chpl_bool chpl_mem_impl_localizes(void);
 
-#define CHPL_MEM_IMPL_ALLOC_LOCALIZES() chpl_mem_impl_alloc_localizes()
+#define CHPL_MEM_IMPL_LOCALIZES() chpl_mem_impl_localizes()
 
 
 // TODO (EJR 03/11/16): Can/should we consider using the extended API? See JIRA

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #
-# Test quickstart configuration on full suite with valgrind on linux64.
+# Test valgrind-compatible configuration on full suite with valgrind on linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-source $CWD/common-quickstart.bash
 source $CWD/common-valgrind.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="valgrind"

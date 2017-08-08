@@ -4,15 +4,15 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
+# qthreads doesn't work with valgrind, so use fifo and limit running threads to
+# avoid "VG_N_THREADS is too low" errors
+source $CWD/common-fifo.bash
 export CHPL_RT_NUM_THREADS_PER_LOCALE=100
 
-# once qthreads+valgrind works, we need to enable oversubscription since we use
-# paratest. --enabled-valgrind builds qthreads with valgrind macros to help
-# with debugging
-tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
-if [ "${tasks}" == "qthreads" ] ; then
-    source $CWD/common-oversubscribed.bash
-    export CHPL_QTHREAD_MORE_CFG_OPTIONS=--enable-valgrind
-fi
+# jemalloc doesn't work with valgrind, so use cstdlib
+export CHPL_MEM=cstdlib
+
+# re2 has opt-in support for valgrind, so enable it
+export CHPL_RE2_VALGRIND_SUPPORT=true
 
 nightly_args="${nightly_args} -valgrind -parnodefile $CWD/../../test/Nodes/valgrind-localhost"

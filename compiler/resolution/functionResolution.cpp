@@ -45,6 +45,7 @@
 #include "passes.h"
 #include "postFold.h"
 #include "preFold.h"
+#include "ResolutionCandidate.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -53,7 +54,6 @@
 #include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
-#include "visibleCandidates.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 #include "WhileStmt.h"
@@ -157,19 +157,6 @@ static bool fits_in_uint(int width, Immediate* imm);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
-static bool
-computeActualFormalAlignment(FnSymbol* fn,
-                             std::vector<Symbol*>& formalIdxToActual,
-                             std::vector<ArgSymbol*>& actualIdxToFormal,
-                             CallInfo& info);
-static Type*
-getInstantiationType(Type* actualType, Type* formalType);
-static void
-computeGenericSubs(SymbolMap &subs,
-                   FnSymbol* fn,
-                   std::vector<Symbol*>& formalIdxToActual,
-                   bool inInitRes);
-
 static BlockStmt* getParentBlock(Expr* expr);
 static bool
 isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
@@ -240,18 +227,6 @@ static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
-
-bool ResolutionCandidate::computeAlignment(CallInfo& info) {
-  if (formalIdxToActual.size() != 0) formalIdxToActual.clear();
-  if (actualIdxToFormal.size() != 0) actualIdxToFormal.clear();
-
-  return computeActualFormalAlignment(fn, formalIdxToActual, actualIdxToFormal, info);
-}
-
-void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
-  if (substitutions.n != 0) substitutions.clear();
-  computeGenericSubs(substitutions, fn, formalIdxToActual, inInitRes);
-}
 
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
@@ -373,18 +348,19 @@ hasUserAssign(Type* type) {
 }
 
 bool hasAutoCopyForType(Type* type) {
-  return autoCopyMap[type] != NULL;
+  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  return autoCopyMap.find(type) != autoCopyMap.end() && it->second != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
 // we can insert NULL values for a type and avoid segfaults
 FnSymbol* getAutoCopyForType(Type* type) {
-  FnSymbol* ret = autoCopyMap[type]; // Do not try this at home
-  if (ret == NULL) {
+  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  if (it == autoCopyMap.end() || it->second == NULL) {
     INT_FATAL(type, "Trying to obtain autoCopy for type '%s',"
                     " which defines none", type->symbol->name);
   }
-  return ret;
+  return it->second;
 }
 
 void getAutoCopyTypeKeys(Vec<Type*> &keys) {
@@ -1198,16 +1174,22 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
    This function detects that situation and returns the type that
    should be instantiated.
 */
-static
-Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType)
-{
+Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
+  Type* retval = NULL;
+
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (isInstantiation(parent, formalType))
-      return parent;
-    if (Type* t = getConcreteParentForGenericFormal(parent, formalType))
-      return t;
+    if (isInstantiation(parent, formalType) == true) {
+      retval = parent;
+      break;
+
+    } else if (Type* t = getConcreteParentForGenericFormal(parent,
+                                                           formalType)) {
+      retval = t;
+      break;
+    }
   }
-  return NULL;
+
+  return retval;
 }
 
 // Returns true iff dispatching the actualType to the formalType
@@ -1514,10 +1496,20 @@ bool canCoerce(Type*     actualType,
   return false;
 }
 
-// Returns true iff the actualType can dispatch to the formalType.
-// The function symbol is used to avoid scalar promotion on =.
-// param is set if the actual is a parameter (compile-time constant).
-// fn is the function being called
+/************************************* | **************************************
+*                                                                             *
+* Returns true iff the actualType can dispatch to the formalType.             *
+*                                                                             *
+* The function symbol is used to avoid scalar promotion on =.                 *
+* param is set if the actual is a parameter (compile-time constant).          *
+* fn is the function being called                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isGenericInstantiation(Type*     actualType,
+                                   Type*     formalType,
+                                   FnSymbol* fn);
+
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
@@ -1532,22 +1524,10 @@ bool canDispatch(Type*     actualType,
     return true;
   }
 
-  if (AggregateType* atFormal = toAggregateType(formalType)) {
-    if (actualType->symbol->hasFlag(FLAG_GENERIC) == true &&
-        atFormal->instantiatedFrom                == actualType) {
-      // The actual should only be generic when we're resolving an initializer
-      // If either of these asserts fail, something is very, very wrong.
-      AggregateType* at = toAggregateType(actualType);
-
-      INT_ASSERT(at                       != NULL);
-      INT_ASSERT(at->initializerStyle     != DEFINES_CONSTRUCTOR);
-      INT_ASSERT(strcmp(fn->name, "init") == 0);
-
-      return true;
-    }
+  if (isGenericInstantiation(actualType, formalType, fn) == true) {
+    return true;
   }
 
-  //
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
   // found that without this, calls like autocopy(nil) became
@@ -1600,6 +1580,34 @@ bool canDispatch(Type*     actualType,
   return false;
 }
 
+static bool isGenericInstantiation(Type*     actualType,
+                                   Type*     formalType,
+                                   FnSymbol* fn) {
+  AggregateType* atActual = toAggregateType(actualType);
+  AggregateType* atFormal = toAggregateType(formalType);
+  bool           retval   = false;
+
+  if (atActual                                != NULL &&
+      atActual->symbol->hasFlag(FLAG_GENERIC) == true &&
+
+      atFormal                                != NULL &&
+      atFormal->isInstantiatedFrom(atActual)  == true) {
+
+    INT_ASSERT(atActual->initializerStyle != DEFINES_CONSTRUCTOR);
+    INT_ASSERT(strcmp(fn->name, "init")   == 0);
+
+    retval = true;
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
   if (canDispatch(actualType, NULL, formalType, fn))
@@ -1609,203 +1617,6 @@ moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
   }
   return false;
 }
-
-static bool
-computeActualFormalAlignment(FnSymbol* fn,
-                             std::vector<Symbol*>& formalIdxToActual,
-                             std::vector<ArgSymbol*>& actualIdxToFormal,
-                             CallInfo& info) {
-  for (int i = 0; i < fn->numFormals(); i++) {
-    formalIdxToActual.push_back(NULL);
-  }
-  for (int i = 0; i < info.actuals.n; i++) {
-    actualIdxToFormal.push_back(NULL);
-  }
-  // Match named actuals against formal names in the function signature.
-  // Record successful matches.
-  for (int i = 0; i < info.actuals.n; i++) {
-    if (info.actualNames.v[i]) {
-      bool match = false;
-      int j = 0;
-      for_formals(formal, fn) {
-        if (!strcmp(info.actualNames.v[i], formal->name)) {
-          match = true;
-          actualIdxToFormal[i] = formal;
-          formalIdxToActual[j] = info.actuals.v[i];
-          break;
-        }
-        j++;
-      }
-      // Fail if no matching formal is found.
-      if (!match)
-        return false;
-    }
-  }
-
-  // Fill in unmatched formals in sequence with the remaining actuals.
-  // Record successful substitutions.
-  int j = 0;
-  ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
-  for (int i = 0; i < info.actuals.n; i++) {
-    if (!info.actualNames.v[i]) {
-      bool match = false;
-      while (formal) {
-        if (formal->variableExpr)
-          return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
-        if (formalIdxToActual[j] == NULL) {
-          match = true;
-          actualIdxToFormal[i] = formal;
-          formalIdxToActual[j] = info.actuals.v[i];
-          formal = next_formal(formal);
-          j++;
-          break;
-        }
-        formal = next_formal(formal);
-        j++;
-      }
-      // Fail if there are too many unnamed actuals.
-      if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_TUPLE)))
-        return false;
-    }
-  }
-
-  // Make sure that any remaining formals are matched by name
-  // or have a default value.
-  while (formal) {
-    if (formalIdxToActual[j] == NULL && !formal->defaultExpr)
-      // Fail if not.
-      return false;
-    formal = next_formal(formal);
-    j++;
-  }
-  return true;
-}
-
-//
-// returns the type that a formal type should be instantiated to when
-// instantiated by a given actual type
-//
-static Type*
-getBasicInstantiationType(Type* actualType, Type* formalType) {
-  if (canInstantiate(actualType, formalType)) {
-    return actualType;
-  }
-  if (Type* st = actualType->scalarPromotionType) {
-    if (canInstantiate(st, formalType))
-      return st;
-  }
-  if (Type* vt = actualType->getValType()) {
-    if (canInstantiate(vt, formalType))
-      return vt;
-    else if (Type* st = vt->scalarPromotionType)
-      if (canInstantiate(st, formalType))
-        return st;
-  }
-  return NULL;
-}
-
-static Type* getInstantiationType(Type* actualType, Type* formalType) {
-  Type* ret = getBasicInstantiationType(actualType, formalType);
-
-  // Now, if formalType is a generic parent type to actualType,
-  // we should instantiate the parent actual type
-  if (AggregateType* at = toAggregateType(ret)) {
-    if (at->instantiatedFrom                      != NULL  &&
-        formalType->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (Type* concrete = getConcreteParentForGenericFormal(at, formalType)) {
-        ret = concrete;
-      }
-    }
-  }
-
-  return ret;
-}
-
-
-static void
-computeGenericSubs(SymbolMap &subs,
-                   FnSymbol* fn,
-                   std::vector<Symbol*>& formalIdxToActual,
-                   bool inInitRes) {
-  int i = 0;
-  for_formals(formal, fn) {
-    if (formal->intent == INTENT_PARAM) {
-      if (formalIdxToActual[i] != NULL && formalIdxToActual[i]->isParameter()) {
-        if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalIdxToActual[i]->type, formal->type))
-          subs.put(formal, formalIdxToActual[i]);
-      } else if (formalIdxToActual[i] == NULL && formal->defaultExpr) {
-
-        // break because default expression may reference generic
-        // arguments earlier in formal list; make those substitutions
-        // first (test/classes/bradc/paramInClass/weirdParamInit4)
-        if (subs.n)
-          break;
-
-        resolveBlockStmt(formal->defaultExpr);
-        SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
-        if (se && se->symbol()->isParameter() &&
-            (!formal->type->symbol->hasFlag(FLAG_GENERIC) || canInstantiate(se->symbol()->type, formal->type)))
-          subs.put(formal, se->symbol());
-        else
-          INT_FATAL(fn, "unable to handle default parameter");
-      }
-    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-
-      //
-      // check for field with specified generic type
-      //
-      if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && formal->type != dtAny &&
-          strcmp(formal->name, "outer") && !formal->hasFlag(FLAG_IS_MEME) &&
-          (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
-        USR_FATAL(formal, "invalid generic type specification on class field");
-
-      if (formalIdxToActual[i] != NULL) {
-        if (formal->hasFlag(FLAG_ARG_THIS) && inInitRes &&
-            formalIdxToActual[i]->type->symbol->hasFlag(FLAG_GENERIC)) {
-          // If the "this" arg is generic, we're resolving an initializer, and
-          // the actual being passed is also still generic, don't count this as
-          // a substitution.  Otherwise, we'll end up in an infinite loop if
-          // one of the later generic args has a defaultExpr, as we will always
-          // count the this arg as a substitution and so always approach the
-          // generic arg with a defaultExpr as though a substitution was going
-          // to take place.
-        } else if (Type* type = getInstantiationType(formalIdxToActual[i]->type, formal->type)) {
-          // String literal actuals aligned with non-param generic formals of
-          // type dtAny will result in an instantiation of dtStringC when the
-          // function is extern. In other words, let us write:
-          //   extern proc foo(str);
-          //   foo("bar");
-          // and pass "bar" as a c_string instead of a string
-          if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
-              (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
-              (formalIdxToActual[i]->type == dtString) &&
-              (formalIdxToActual[i]->isImmediate())) {
-            subs.put(formal, dtStringC->symbol);
-          } else {
-            subs.put(formal, type->symbol);
-          }
-        }
-      } else if (formal->defaultExpr) {
-
-        // break because default expression may reference generic
-        // arguments earlier in formal list; make those substitutions
-        // first (test/classes/bradc/genericTypes)
-        if (subs.n)
-          break;
-
-        resolveBlockStmt(formal->defaultExpr);
-        Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
-        if (defaultType == dtTypeDefaultToken)
-          subs.put(formal, dtTypeDefaultToken->symbol);
-        else if (Type* type = getInstantiationType(defaultType, formal->type))
-          subs.put(formal, type->symbol);
-      }
-    }
-    i++;
-  }
-}
-
 
 static BlockStmt*
 getParentBlock(Expr* expr) {
@@ -2931,6 +2742,19 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void findVisibleCandidates(CallInfo&                  info,
+                                  Vec<FnSymbol*>&            visibleFns,
+                                  Vec<ResolutionCandidate*>& candidates);
+
+static void gatherCandidates(CallInfo&                  info,
+                             Vec<FnSymbol*>&            visibleFns,
+                             bool                       lastResort,
+                             Vec<ResolutionCandidate*>& candidates);
+
+static void filterCandidate (CallInfo&                  info,
+                             FnSymbol*                  fn,
+                             Vec<ResolutionCandidate*>& candidates);
+
 static bool typeUsesForwarding(Type* t);
 
 static bool populateForwardingMethods(CallInfo& info);
@@ -2967,7 +2791,89 @@ static void findVisibleFunctionsAndCandidates(
     }
   }
 
-  explainGatherCandidate(candidates, info);
+  explainGatherCandidate(info, candidates);
+}
+
+static void findVisibleCandidates(CallInfo&                  info,
+                                  Vec<FnSymbol*>&            visibleFns,
+                                  Vec<ResolutionCandidate*>& candidates) {
+  // Search user-defined (i.e. non-compiler-generated) functions first.
+  gatherCandidates(info, visibleFns, false, candidates);
+
+  // If no results, try again with any compiler-generated candidates.
+  if (candidates.n == 0) {
+    gatherCandidates(info, visibleFns, true, candidates);
+  }
+}
+
+static void gatherCandidates(CallInfo&                  info,
+                             Vec<FnSymbol*>&            visibleFns,
+                             bool                       lastResort,
+                             Vec<ResolutionCandidate*>& candidates) {
+  forv_Vec(FnSymbol, fn, visibleFns) {
+    // Only consider functions marked with/without FLAG_LAST_RESORT
+    // (where existence of the flag matches the lastResort argument)
+    if (fn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
+
+      // Consider
+      //
+      //   c1.foo(10, 20);
+      //
+      // where foo() is a simple method on some class/record
+      //
+      // Normalize currently converts this to
+      //
+      //   #<Call     #<Call "foo" _mt c1>    10    20>
+      //
+      // Resolution performs a post-order traversal of this expression
+      // and so the inner call is visited before the outer call.
+      //
+      // In this context, the inner "call" is effectively a field access
+      // rather than a true function call.  Normalize sets the methodTag
+      // property to true to indicate this, and this form of call can only
+      // be matched to parentheses-less methods and type constructors.
+      //
+      // Later steps will convert the outer call to become
+      //
+      //   #<Call "foo" _mt c1  10    20>
+      //
+      // This outer call has methodTag set to false and this call
+      // should be filtered against the available visibleFunctions.
+      //
+
+      if (info.call->methodTag == false) {
+        filterCandidate(info, fn, candidates);
+
+      } else {
+        if (fn->hasFlag(FLAG_NO_PARENS)        == true ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          filterCandidate(info, fn, candidates);
+        }
+      }
+    }
+  }
+}
+
+static void filterCandidate(CallInfo&                  info,
+                            FnSymbol*                  fn,
+                            Vec<ResolutionCandidate*>& candidates) {
+  ResolutionCandidate* candidate = new ResolutionCandidate(fn);
+
+  if (fExplainVerbose &&
+      ((explainCallLine && explainCallMatch(info.call)) ||
+       info.call->id == explainCallID)) {
+    USR_PRINT(fn, "Considering function: %s", toString(fn));
+
+    if (info.call->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
+  }
+
+  if (candidate->isApplicable(info) == true) {
+    candidates.add(candidate);
+  } else {
+    delete candidate;
+  }
 }
 
 static bool typeUsesForwarding(Type* t) {
@@ -3295,30 +3201,6 @@ static bool populateForwardingMethods(CallInfo& info) {
   }
 
   return addedAny;
-}
-
-void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
-                            CallInfo&                  info) {
-  CallExpr* call = info.call;
-
-  if ((explainCallLine && explainCallMatch(info.call)) ||
-      call->id == explainCallID) {
-    if (candidates.n == 0) {
-      USR_PRINT(info.call, "no candidates found");
-
-    } else {
-      bool first = true;
-
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
-        USR_PRINT(candidate->fn,
-                  "%s %s",
-                  first ? "candidates are:" : "               ",
-                  toString(candidate->fn));
-
-        first = false;
-      }
-    }
-  }
 }
 
 /************************************* | **************************************
@@ -3955,6 +3837,12 @@ static void registerParamPreference(int&                  paramPrefers,
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 DisambiguationContext::DisambiguationContext(CallInfo& info) {
   actuals = &info.actuals;
   scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
@@ -3980,14 +3868,6 @@ DisambiguationContext::forPair(int newI, int newJ) {
 
   return *this;
 }
-
-  Vec<Symbol*>* actuals;
-  Expr*         scope;
-  bool          explain;
-  int           i;
-  int           j;
-
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -8057,8 +7937,10 @@ static void removeCopyFns(Type* t) {
     autoDestroy->defPoint->remove();
   }
 
-  if (FnSymbol* autoCopy = autoCopyMap[t]) {
-    autoCopyMap.erase(t);
+  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(t);
+  if (it != autoCopyMap.end()) {
+    FnSymbol* autoCopy = it->second;
+    autoCopyMap.erase(it);
     autoCopy->defPoint->remove();
   }
 }
