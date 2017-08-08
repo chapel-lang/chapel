@@ -250,6 +250,9 @@ void chpl_comm_get_registered_heap(void** start_p, size_t* size_p);
 //   only free it elsewhere if this function returns false.
 //
 #ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
+#ifndef SIZE_MAX
+  #define SIZE_MAX (~((size_t)0))
+#endif
   #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() SIZE_MAX
 #endif
 static inline
