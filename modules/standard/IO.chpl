@@ -1592,7 +1592,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       // psahabu: strict mode should be complaining about this
-      if error then ioerror(error, "Unable to connect to HDFS", host);
+      if error then try ioerror(error, "Unable to connect to HDFS", host);
       /* TODO: This code is an alternative to the above line, which breaks the
          function's original invariant of not generating errors within itself.
          This is better style and should still work, but we can't be certain
@@ -1610,7 +1610,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
       hdfs_do_release(fs);
-      if error then ioerror(error, "Unable to open file in HDFS", url);
+      if error then try ioerror(error, "Unable to open file in HDFS", url);
       /* TODO: The above line breaks the function's original invariant of not
          generating errors within itself.  It is better style to remove this
          line.  Doing so should still work, but we can't be certain until we
@@ -1621,7 +1621,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       */
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then ioerror(error, "Unable to open URL", url);
+      if error then try ioerror(error, "Unable to open URL", url);
       /* TODO: The above line breaks the function's original invariant of not
          generating errors within itself.  It is better style to remove this
          line.  Doing so should still work, but we can't be certain until we
@@ -1632,7 +1632,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
 
       */
     } else {
-      ioerror(ENOENT:syserr, "Invalid URL passed to open");
+      try ioerror(ENOENT:syserr, "Invalid URL passed to open");
       /* TODO: This code is an alternative to the above line, which breaks the
          function's original invariant of not generating errors within itself.
          This is better style and should still work, but we can't be certain
@@ -1646,7 +1646,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     }
   } else {
     if (path == "") then
-      ioerror(ENOENT:syserr, "in open: Both path and url were path");
+      try ioerror(ENOENT:syserr, "in open: Both path and url were path");
     /* TODO: The above two lines breaks the function's original invariant of not
        generating errors within itself.  It is better style to remove these
        lines.  Doing so should still work, but we can't be certain until we
