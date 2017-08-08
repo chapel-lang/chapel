@@ -92,8 +92,8 @@ static GenRet codegenCallExpr(const char* fnName);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7);
+static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8);
 static void codegenCall(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 static void codegenCall(const char* fnName, GenRet a1);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
@@ -101,6 +101,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 //static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
+static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
@@ -148,6 +149,7 @@ GenRet SymExpr::codegen() {
     }
 #endif
   }
+  ret.canBeMarkedAsConstAfterStore = var->isConstValWillNotChange();
   return ret;
 }
 
@@ -384,18 +386,53 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 // Set USE_TBAA to 1 to emit TBAA metadata with loads and stores.
 #define USE_TBAA 1
 
+static
+void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+
+  llvm::Type *int8PtrTy =
+    llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
+
+  #if HAVE_LLVM_VER >= 40
+  llvm::Type *objectPtr = { int8PtrTy };
+  llvm::Function *invariantStart =
+    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start, objectPtr);
+  #else
+  llvm::Function *invariantStart =
+    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start);
+  #endif
+
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  uint64_t sizeInBytes;
+  if(val->getType()->isSized())
+    sizeInBytes = dataLayout.getTypeSizeInBits(val->getType())/8;
+  else
+    return;
+
+  llvm::Value *castedAddr = info->builder->CreateBitCast(addr, int8PtrTy);
+  llvm::Value *args[2] =
+    {
+      llvm::ConstantInt::getSigned(llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes),
+      castedAddr
+    };
+  info->builder->CreateCall(invariantStart, args);
+}
+
 // Create an LLVM store instruction possibly adding
 // appropriate metadata based upon the Chapel type of val.
 //
 static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
-                                  Type* valType = NULL)
+                                  Type* valType = NULL,
+                                  bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->builder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaNode;
+  if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaAccessTag;
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
 
   if(!info->loopStack.empty()) {
@@ -407,8 +444,12 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
       ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
   }
 
+  if(addInvariantStart)
+    codegenInvariantStart(val, ptr);
+
   return ret;
 }
+
 
 
 static
@@ -435,7 +476,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  return codegenStoreLLVM(val.val, ptr.val, valType);
+  INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
+  ptr.alreadyStored = true;
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
@@ -448,8 +491,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   llvm::LoadInst* ret = info->builder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType ) {
-    if( isConst ) tbaa = valType->symbol->llvmConstTbaaNode;
-    else tbaa = valType->symbol->llvmTbaaNode;
+    if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
+    else tbaa = valType->symbol->llvmTbaaAccessTag;
   }
 
   if(!info->loopStack.empty()) {
@@ -472,7 +515,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, isConst);
+  return codegenLoadLLVM(ptr.val, valType);
 }
 
 #endif
@@ -2412,19 +2455,6 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
 }
 static
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                       GenRet a4, GenRet a5, GenRet a6)
-{
-  std::vector<GenRet> args;
-  args.push_back(a1);
-  args.push_back(a2);
-  args.push_back(a3);
-  args.push_back(a4);
-  args.push_back(a5);
-  args.push_back(a6);
-  return codegenCallExpr(fnName, args);
-}
-static
-GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                        GenRet a4, GenRet a5, GenRet a6, GenRet a7)
 {
   std::vector<GenRet> args;
@@ -2435,6 +2465,21 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   args.push_back(a6);
   args.push_back(a7);
+  return codegenCallExpr(fnName, args);
+}
+static
+GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                       GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  args.push_back(a8);
   return codegenCallExpr(fnName, args);
 }
 
@@ -2710,8 +2755,8 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     llvm::MDNode* tbaaTag = NULL;
     llvm::MDNode* tbaaStructTag = NULL;
     if( pointedToType ) {
-      tbaaTag = pointedToType->symbol->llvmTbaaNode;
-      tbaaStructTag = pointedToType->symbol->llvmTbaaStructNode;
+      tbaaTag = pointedToType->symbol->llvmTbaaAccessTag;
+      tbaaStructTag = pointedToType->symbol->llvmTbaaStructCopyNode;
     }
     // For structures, ONLY set the tbaa.struct metadata, since
     // generally speaking simple tbaa tags don't make sense for structs.
@@ -2780,7 +2825,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
   if( ! info->cfile ) {
     bool useMemcpy = false;
 
-    if( chplType && chplType->symbol->llvmTbaaStructNode ) {
+    if( chplType && chplType->symbol->llvmTbaaStructCopyNode ) {
       // Always use memcpy for things for which we've developed LLVM
       // struct nodes for alias analysis, since as far as we know, we
       // can't use tbaa.struct for load/store.
@@ -3440,8 +3485,9 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_ARRAY_ALLOC: {
     // get(1): return symbol
     // get(2): number of elements
-    // get(3): localize subchunks?
-    // get(4): desired sublocale
+    // get(3): desired sublocale
+    // get(4): (temporary) make 2nd call?
+    // get(5): (temporary) 2nd call: repeat previously returned ptr
     GenRet dst = get(1);
     GenRet alloced;
 
@@ -3458,7 +3504,8 @@ GenRet CallExpr::codegenPrimitive() {
                                         get(3),
                                         get(4),
                                         get(5),
-                                        get(6));
+                                        get(6),
+                                        get(7));
 
       call.chplType = get(1)->typeInfo();
       alloced       = codegenAddrOf(codegenWideAddr(locale,
@@ -3474,7 +3521,8 @@ GenRet CallExpr::codegenPrimitive() {
                                 get(3),
                                 get(4),
                                 get(5),
-                                get(6));
+                                get(6),
+                                get(7));
     }
 
     codegenAssign(dst, alloced);

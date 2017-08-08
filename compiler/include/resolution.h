@@ -26,25 +26,41 @@
 #include <map>
 
 class CallInfo;
+class ResolutionCandidate;
 
-extern SymbolMap       paramMap;
+extern bool                           beforeLoweringForallStmts;
+extern int                            explainCallLine;
 
-extern Vec<CallExpr*>  callStack;
-extern Vec<CondStmt*>  tryStack;
+extern SymbolMap                      paramMap;
 
-extern Vec<CallExpr*>  inits;
+extern Vec<CallExpr*>                 callStack;
 
-extern Vec<BlockStmt*> standardModuleSet;
+extern Vec<CondStmt*>                 tryStack;
+extern bool                           tryFailure;
 
-extern char            arrayUnrefName[];
+extern Vec<CallExpr*>                 inits;
+
+extern Vec<BlockStmt*>                standardModuleSet;
+
+extern char                           arrayUnrefName[];
+
+extern Map<Type*,     FnSymbol*>      autoDestroyMap;
+extern Map<FnSymbol*, FnSymbol*>      iteratorLeaderMap;
+extern Map<FnSymbol*, FnSymbol*>      iteratorFollowerMap;
+
+extern std::map<CallExpr*, CallExpr*> eflopiMap;
+
+
+
+
+
+
+
+
 
 bool hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);
 void getAutoCopyTypeKeys(Vec<Type*> &keys); // type to chpl__autoCopy function
-extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
-extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
-extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
-extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
 bool       propagateNotPOD(Type* t);
 
@@ -58,10 +74,12 @@ void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
+Type*      getConcreteParentForGenericFormal(Type* actualType,
+                                             Type* formalType);
+
 bool       isInstantiation(Type* sub, Type* super);
 
 // explain call stuff
-extern int explainCallLine;
 bool explainCallMatch(CallExpr* call);
 
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
@@ -86,7 +104,6 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
-extern bool beforeLoweringForallStmts;
 Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE);
 void implementForallIntents1(DefExpr* defChplIter);
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
@@ -115,49 +132,6 @@ FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 // disambiguation
-/** A wrapper for candidates for function call resolution.
- *
- * If a best candidate was found than the function member will point to it.
- */
-class ResolutionCandidate {
-public:
-  /// A pointer to the best candidate function.
-  FnSymbol* fn;
-
-  /** The actual arguments for the candidate, aligned so that they have the same
-   *  index as their corresponding formal argument in the called function.
-   */
-  std::vector<Symbol*> formalIdxToActual; // note: was alignedActuals
-
-  /** The formal arguments for the candidate, aligned so that they have the same
-   *  index as their corresponding actual argument in the call.
-   */
-  std::vector<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
-
-  /// A symbol map for substitutions that were made during the copying process.
-  SymbolMap substitutions;
-
-  /** The main constructor.
-   *
-   * \param fn A function that is a candidate for the resolution process.
-   */
-  ResolutionCandidate(FnSymbol* function) : fn(function) {}
-
-  /** Compute the alignment of actual and formal arguments for the wrapped
-   *  function and the current call site.
-   *
-   * \param info The CallInfo object corresponding to the call site.
-   *
-   * \return If a valid alignment was found.
-   */
-  bool computeAlignment(CallInfo& info);
-
-  /// Compute substitutions for wrapped function that is generic.
-  void computeSubstitutions(bool inInitRes = false);
-};
-
-void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
-                            CallInfo& info, CallExpr* call);
 
 /** Contextual info used by the disambiguation process.
  *
@@ -166,52 +140,23 @@ void explainGatherCandidate(Vec<ResolutionCandidate*>& candidates,
  */
 class DisambiguationContext {
 public:
-  /// The actual arguments from the call site.
+                               DisambiguationContext(CallInfo& info);
+
+  const DisambiguationContext& forPair(int newI, int newJ);
+
   Vec<Symbol*>* actuals;
-  /// The scope in which the call is made.
-  Expr* scope;
-  /// Whether or not to print out tracing information.
-  bool explain;
-  /// Indexes used when printing out tracing information.
-  int i, j;
-
-  /** A simple constructor that initializes all of the values except i and j.
-   *
-   * \param actuals The actual arguments from the call site.
-   * \param scope   A block representing the scope the call was made in.
-   * \param explain Whether or not a trace of this disambiguation process should
-   *                be printed for the developer.
-   */
-  DisambiguationContext(Vec<Symbol*>* actuals, Expr* scope, bool explain) :
-    actuals(actuals), scope(scope), explain(explain), i(-1), j(-1) {}
-
-  /** A helper function used to set the i and j members.
-   *
-   * \param i The index of the left-hand side of the comparison.
-   * \param j The index of the right-hand side of the comparison.
-   *
-   * \return A constant reference to this disambiguation context.
-   */
-  const DisambiguationContext& forPair(int newI, int newJ) {
-    this->i = newI;
-    this->j = newJ;
-
-    return *this;
-  }
+  Expr*         scope;
+  bool          explain;
+  int           i;
+  int           j;
 };
 
 
-ResolutionCandidate* disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                                         Vec<ResolutionCandidate*>& ambiguous,
-                                         DisambiguationContext DC,
-                                         bool ignoreWhere);
-
-void disambiguateByMatchReturnOverloads(Vec<ResolutionCandidate*>& candidates,
-                                        Vec<ResolutionCandidate*>& ambiguous,
-                                        DisambiguationContext DC,
-                                        ResolutionCandidate*& bestRef,
-                                        ResolutionCandidate*& bestConstRef,
-                                        ResolutionCandidate*& bestValue);
+ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    DisambiguationContext      DC,
+                    bool                       ignoreWhere,
+                    Vec<ResolutionCandidate*>& ambiguous);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);
@@ -227,7 +172,6 @@ FnSymbol* tryResolveCall(CallExpr* call);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
-extern bool tryFailure;
 void insertFormalTemps(FnSymbol* fn);
 void insertAndResolveCasts(FnSymbol* fn);
 void ensureInMethodList(FnSymbol* fn);
@@ -242,11 +186,18 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
-void printResolutionErrorAmbiguous(Vec<FnSymbol*>& candidates, CallInfo* info);
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info);
+void printResolutionErrorAmbiguous(CallInfo&                  info,
+                                   Vec<ResolutionCandidate*>& candidates);
+
+void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
+                                    CallInfo*       info);
+
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+
 void lvalueCheck(CallExpr* call);
+
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
+
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples

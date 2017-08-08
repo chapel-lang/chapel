@@ -57,6 +57,23 @@ static int uid = 1;
 
 #define sum_gvecs(type) g##type##s.n
 
+#define def_vec_hash(SomeType) \
+    template<> \
+    uintptr_t _vec_hasher(SomeType* obj) { \
+      if (obj == NULL) { \
+        return 0; \
+      } else { \
+        return (uintptr_t)((BaseAST*)obj)->id; \
+      } \
+    }
+
+foreach_ast(def_vec_hash);
+def_vec_hash(Symbol);
+def_vec_hash(Type);
+def_vec_hash(BaseAST);
+
+#undef def_vec_hash
+
 //
 // Throughout printStatistics(), "n" indicates the number of nodes;
 // "k" indicates how many KiB memory they occupy: k = n * sizeof(node) / 1024.

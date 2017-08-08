@@ -71,14 +71,14 @@ static int get_num_heaps(void) {
     void* heap_base;
     size_t heap_size;
 
-    chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+    chpl_comm_get_registered_heap(&heap_base, &heap_size);
     if (heap_base == NULL) {
       num_heaps = 0;
     } else {
       num_heaps = chpl_topo_getNumNumaDomains();
       if (num_heaps < 1) {
         num_heaps = 1;
-      } else if (!chpl_mem_impl_alloc_localizes()) {
+      } else if (!chpl_mem_impl_localizes()) {
         num_heaps = 1;
       }
     }
@@ -445,7 +445,7 @@ void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
 
-  chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+  chpl_comm_get_registered_heap(&heap_base, &heap_size);
   if (heap_base != NULL && heap_size == 0) {
     chpl_internal_error("if heap address is specified, size must be also");
   }
@@ -481,7 +481,7 @@ void chpl_mem_layerExit(void) {
 }
 
 
-chpl_bool chpl_mem_impl_alloc_localizes(void) {
+chpl_bool chpl_mem_impl_localizes(void) {
   //
   // For now, we only NUMA-localize the comm layer desired shared heap
   // if we're using the ugni comm layer.  ugni is the simpler case

@@ -1,0 +1,8 @@
+feature request: record inheritance
+
+We removed support for record inheritance after realizing that we hadn't
+sufficiently solidified its details.  This test will probably be useful when we
+rethink the feature (see Github issue #6851)
+
+Note that this test was split out from type-tests.isSubtype.chpl.  If/when
+record inheritance becomes supported, revert the commit in which this happened.

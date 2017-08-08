@@ -30,6 +30,20 @@ proc main() {
   writeln("KV pairs in table A.C");
   writeln(tomlData["A.C"]);
 
+ 
+  // Test of the copy constructor
+  // New Toml
+  var tbl2D: domain(string);
+  var tbl2: [tbl2D] Toml;
+  var tomlData2: Toml = tbl2;
+
+  // copy Toml A.B in tomlData to Toml A in TomlData2
+  tomlData2["A"] = new Toml(tomlData["A"]);
+  writeln(tomlData["A"]);
+  writeln("Should be the same as");
+  writeln(tomlData2["A"]);
+
+  delete tomlData2;  
   delete tomlData;
   tomlChannel.close();
 }

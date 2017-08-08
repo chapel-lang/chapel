@@ -448,6 +448,20 @@ AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
   return instantiation;
 }
 
+bool AggregateType::isInstantiatedFrom(const AggregateType* base) const {
+  const AggregateType* type   = this;
+  bool                 retval = false;
+
+  while (type != NULL && retval == false) {
+    if (type == base) {
+      retval = true;
+    } else {
+      type = type->instantiatedFrom;
+    }
+  }
+
+  return retval;
+}
 
 int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
@@ -685,6 +699,7 @@ void AggregateType::buildTypeConstructor() {
   fn->cname = astr("_type_construct_", symbol->cname);
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
   fn->retTag = RET_TYPE;
 
   if (symbol->hasFlag(FLAG_REF)   == true) {
@@ -900,6 +915,7 @@ void AggregateType::buildConstructor() {
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   if (symbol->hasFlag(FLAG_REF) == true) {
     fn->addFlag(FLAG_REF);

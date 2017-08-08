@@ -31,9 +31,20 @@ PartialCopyData::PartialCopyData() {
 }
 
 PartialCopyData::~PartialCopyData() {
-
   partialCopyMap.clear();
   varargNewFormals.clear();
+}
+
+// Return true if there is an entry for 'fn' in the partialCopyFnMap
+bool hasPartialCopyData(const FnSymbol* fn) {
+  std::map<int, PartialCopyData>::iterator it     = sFnMap.find(fn->id);
+  bool                                     retval = false;
+
+  if (it != sFnMap.end()) {
+    retval = true;
+  }
+
+  return retval;
 }
 
 // Return the entry for 'fn' in partialCopyFnMap or NULL if it does not exist.

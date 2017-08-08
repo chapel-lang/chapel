@@ -41,7 +41,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "visibleCandidates.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -92,6 +91,7 @@ FnSymbol *gGenericTupleTypeCtor = NULL;
 FnSymbol *gGenericTupleInit = NULL;
 FnSymbol *gGenericTupleDestroy = NULL;
 
+FnSymbol *gChplUncaughtError;
 
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;
@@ -232,7 +232,7 @@ bool Symbol::isRenameable() const {
 
 bool Symbol::isRef() {
   QualifiedType q = qualType();
-  return (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
 }
 
 bool Symbol::isWideRef() {
@@ -379,6 +379,82 @@ SymExpr* Symbol::getSingleDef() const {
 }
 
 
+Expr* Symbol::getInitialization() const {
+  // In theory, this should be the first "def" for the symbol,
+  // but that might be obfuscated by PRIM_ADDR_OF.
+
+  FnSymbol* fn = toFnSymbol(defPoint->parentSymbol);
+  ModuleSymbol* mod = toModuleSymbol(defPoint->parentSymbol);
+  if (fn == NULL && mod != NULL ) {
+    // Global variables are initialized in their module init function
+    fn = mod->initFn;
+  }
+
+  Expr* stmt;
+  // We'll search statements starting with stmt for the one
+  // initializing our variable.
+  if (mod != NULL) {
+    stmt = fn->body->body.head;
+  } else {
+    stmt = defPoint->getStmtExpr()->next;
+  }
+
+  const Symbol *curSym = this;
+  const Symbol *refSym = NULL;
+
+  while (stmt != NULL) {
+    std::vector<SymExpr*> symExprs;
+    collectSymExprs(stmt, symExprs);
+
+    bool isDef = false;
+    bool isUse = false;
+
+    for_vector(SymExpr, se, symExprs) {
+      Symbol* sym = se->symbol();
+      if (sym == curSym || sym == refSym) {
+        int result = isDefAndOrUse(se);
+        isDef |= (result & 1);
+        isUse |= (result & 2);
+      }
+    }
+
+    if (isDef) {
+      // first use/def of the variable is a def (normal case)
+      return stmt->getStmtExpr();
+
+    } else if (isUse) {
+      bool handled = false;
+
+      // handle PRIM_MOVE refTmp, PRIM_ADDR_OF curSym or
+      // handle PRIM_MOVE refTmp, PRIM_SET_REFERENCE curSym
+      if (CallExpr* call = toCallExpr(stmt)) {
+        if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* dstSe = toSymExpr(call->get(1));
+          CallExpr* getRef = toCallExpr(call->get(2));
+
+          if (getRef != NULL) {
+            if (getRef->isPrimitive(PRIM_ADDR_OF) ||
+                getRef->isPrimitive(PRIM_SET_REFERENCE)) {
+              // Start looking for the first def of the captured reference
+
+              INT_ASSERT(dstSe);
+              // Doesn't handle multiple refs before finding initialization
+              INT_ASSERT(refSym == NULL);
+              refSym = dstSe->symbol();
+              handled = true;
+            }
+          }
+        }
+      }
+
+      INT_ASSERT(handled); // did we encounter new AST pattern?
+    }
+    stmt = stmt->next;
+  }
+
+  INT_FATAL(defPoint, "couldn't find initialization");
+  return NULL;
+}
 
 
 bool Symbol::isImmediate() const {
@@ -800,8 +876,9 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
-    llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmTbaaTypeDescriptor(NULL),
+    llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
+    llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL)
 {

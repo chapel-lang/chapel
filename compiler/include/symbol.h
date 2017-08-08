@@ -168,6 +168,15 @@ public:
   SymExpr*           getSingleUse()                            const;
   // Return the single def of this Symbol, or NULL if there are 0 or >= 2
   SymExpr*           getSingleDef()                            const;
+
+  // The compiler really ought to view a call to `init` that
+  // constructs a const record as the single "def". However it
+  // might consider it a "use" for various reasons. This method
+  // is useful for finding such cases.
+  // This function finds the statement expression that is responsible
+  // for initializing this symbol.
+  Expr*              getInitialization()                       const;
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
@@ -359,19 +368,21 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
-  llvm::MDNode* llvmTbaaNode;
-  llvm::MDNode* llvmConstTbaaNode;
-  llvm::MDNode* llvmTbaaStructNode;
-  llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmTbaaTypeDescriptor;
+  llvm::MDNode* llvmTbaaAccessTag;
+  llvm::MDNode* llvmConstTbaaAccessTag;
+  llvm::MDNode* llvmTbaaStructCopyNode;
+  llvm::MDNode* llvmConstTbaaStructCopyNode;
   llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  void* llvmTbaaTypeDescriptor;
+  void* llvmTbaaAccessTag;
+  void* llvmConstTbaaAccessTag;
+  void* llvmTbaaStructCopyNode;
+  void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
 #endif
 
@@ -707,6 +718,8 @@ extern FnSymbol *gAddModuleFn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
+
+extern FnSymbol *gChplUncaughtError;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

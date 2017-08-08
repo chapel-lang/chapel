@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on mac os x.
+# Test default configuration on darwin
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash

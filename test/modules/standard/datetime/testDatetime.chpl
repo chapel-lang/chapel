@@ -42,6 +42,11 @@ proc test_isoformat() {
 
 proc test_more_ctime() {
   // Test fields that TestDate doesn't touch.
+  var t = new datetime(2002, 12, 4, 20, 30, 40);
+  assert(t.ctime() == "Wed Dec  4 20:30:40 2002");
+
+  t = new datetime(2002, 3, 22, 18, 3, 5, 123);
+  assert(t.ctime() == "Fri Mar 22 18:03:05 2002");
 /*
   import time;
 

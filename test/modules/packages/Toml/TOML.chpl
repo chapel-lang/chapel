@@ -369,7 +369,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
  /*
  Class to hold various types parsed from input
- Used to recursivly hold tables and respective values
+ Used to recursively hold tables and respective values
  */
    class Toml {
 
@@ -434,6 +434,20 @@ Parser module with the Toml class for the Chapel TOML library.
        this.tag = fieldArr;
      }
 
+     // Clone
+     proc init(root: Toml) {
+       this.boo = root.boo;
+       this.i = root.i;
+       this.re = root.re;
+       this.dom = root.dom;
+       for idx in root.dom do this.arr[idx] = new Toml(root.arr[idx]);
+       this.dt = root.dt;
+       this.s = root.s;
+       this.D = root.D;
+       for idx in root.D do this.A[idx] = new Toml(root.A[idx]);
+       this.tag = root.tag;
+     }
+
 
      /* Returns the index of the table path given as a parameter */
      proc this(tbl: string) ref : Toml {
@@ -483,7 +497,7 @@ Parser module with the Toml class for the Chapel TOML library.
        var flat: [flatDom] Toml;
        this.flatten(flat);       // Flattens containing Toml
        printValues(f, this);     // Prints key values in containing Toml
-       printHelp(flat, f);       // Prints tables in containg Toml
+       printHelp(flat, f);       // Prints tables in containing Toml
      }
 
      pragma "no doc"
@@ -620,7 +634,7 @@ pragma "no doc"
      return source.currentLine[source.currentLine.D.first];
    }
 
-   /* Returns a boolean or wether or not another line can be read
+   /* Returns a boolean or whether or not another line can be read
    /  Also updates the currentLine if empty */
    proc readLine(source) {
      return source.nextLine();
@@ -639,7 +653,7 @@ pragma "no doc"
      source.skipROL();
    }
 
-   /* retrives the next token in currentline */
+   /* retrieves the next token in currentLine */
    proc getToken(source) {
      return source.nextToke();
    }
@@ -711,7 +725,7 @@ pragma "no doc"
        }
      }
 
-     /* Reads next line into currentline */
+     /* Reads next line into currentLine */
      proc nextLine() {
        if currentLine.isEmpty() {
          if tokenD.size == 1 {
@@ -727,7 +741,7 @@ pragma "no doc"
      }
 
 
-     /* retrives next token in currentLine */
+     /* retrieves next token in currentLine */
      proc nextToke() {
        newLine();
        return currentLine.next();

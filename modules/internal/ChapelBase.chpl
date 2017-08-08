@@ -94,10 +94,9 @@ module ChapelBase {
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   { __primitive("=", a, b); }
-  // Because resolution prefers user-defined versions to ones marked as "compiler
-  // generated", it is desirable to add that flag to this default version.
-  // In that way, a user-supplied version of assignment will override this one.
+
   pragma "compiler generated"
+  pragma "last resort" // so user-supplied assignment will override this one.
     // The CG pragma is needed because this function interferes with
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isClassType(a.type) {
@@ -779,15 +778,14 @@ module ChapelBase {
     return ret;
   }
 
-  enum localizationStyle_t { locNone, locWhole, locSubchunks };
-
   inline proc _ddata_allocate(type eltType, size: integral,
-                              locStyle = localizationStyle_t.locNone,
                               subloc = c_sublocid_none) {
-    var ret:_ddata(eltType);
-    __primitive("array_alloc", ret, size,
-                locStyle == localizationStyle_t.locSubchunks, subloc);
+    var ret: _ddata(eltType);
+    var callAgain: bool;
+    __primitive("array_alloc", ret, size, subloc, c_ptrTo(callAgain), c_nil);
     init_elts(ret, size, eltType);
+    if callAgain then
+      __primitive("array_alloc", ret, size, subloc, c_nil, ret);
     return ret;
   }
 
@@ -1118,6 +1116,7 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) {
     // body inserted during generic instantiation
@@ -1125,6 +1124,7 @@ module ChapelBase {
 
   // Catch-all initCopy implementation:
   pragma "compiler generated"
+  pragma "last resort"
   pragma "init copy fn"
   inline proc chpl__initCopy(const x) {
     // body adjusted during generic instantiation
@@ -1132,6 +1132,7 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
@@ -1139,6 +1140,7 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "donor fn"
   pragma "unref fn"
   inline proc chpl__unref(x: _tuple) {
@@ -1146,6 +1148,7 @@ module ChapelBase {
   }
 
 
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(ir: _iteratorRecord) {
@@ -1154,11 +1157,13 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "unalias fn"
   inline proc chpl__unalias(x) {
     pragma "no copy" var ret = x;
@@ -1185,14 +1190,17 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(type t)  { }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
@@ -1693,6 +1701,7 @@ module ChapelBase {
 
   // analogously to proc =(ref a, b:_nilType) where isClassType(a.type)
   pragma "compiler generated"
+  pragma "last resort"
   inline proc =(ref a, b:_nilType) where isExternClassType(a.type)
   { __primitive("=", a, nil); }
 

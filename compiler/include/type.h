@@ -154,6 +154,8 @@ enum Qualifier {
   QUAL_CONST_WIDE_REF
 };
 
+const char* qualifierToStr(Qualifier q);
+
 // A QualifiedType is basically a tuple of (qualifier, type).
 // Shorter names, such as QualType and QualT have been proposed.
 // A QualifiedType is only expected to be meaningful during and
@@ -270,44 +272,7 @@ public:
     return _qual;
   }
 
-  const char* qualStr() const {
-    Qualifier q = _qual;
-
-    if (isRefType()) {
-      q = QUAL_REF;
-    } else if (isWideRefType()) {
-      q = QUAL_WIDE_REF;
-    }
-
-    switch (q) {
-      case QUAL_UNKNOWN:
-        return "unknown";
-      case QUAL_CONST:
-        return "const";
-      case QUAL_REF:
-        return "ref";
-      case QUAL_CONST_REF:
-        return "const-ref";
-      case QUAL_PARAM:
-        return "param";
-      case QUAL_VAL:
-        return "val";
-      case QUAL_NARROW_REF:
-        return "narrow-ref";
-      case QUAL_WIDE_REF:
-        return "wide-ref";
-
-      case QUAL_CONST_VAL:
-        return "const-val";
-      case QUAL_CONST_NARROW_REF:
-        return "const-narrow-ref";
-      case QUAL_CONST_WIDE_REF:
-        return "const-wide-ref";
-    }
-    INT_FATAL("Unhandled Qualifier");
-    return "UNKNOWN-QUAL";
-  }
-
+  const char* qualStr() const;
 
 private:
   Type*      _type;

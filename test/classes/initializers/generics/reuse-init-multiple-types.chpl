@@ -1,9 +1,6 @@
-//
-// 2017-07-25 Future
-//
-// It is not possible to make two instances of the same generic type
-// when there are multiple type fields.
-//
+// Confirm that it is possible to create two instances of a generic
+// class if the class has multiple generic fields.  Until 08/03/2017
+// this only worked for one generic field.
 
 class Foo {
   type t1;

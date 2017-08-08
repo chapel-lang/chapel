@@ -1,11 +1,1 @@
-#
-# Increasing the heap size to this amount will cause a failure at startup for
-# nodes lacking enough memory.
-#
-# This test appears to require more memory as the number of cores per node
-# increases, possibly due to the temporary arrays created in each iteration
-# of the reduction.
-#
-
 CHPL_RT_CALL_STACK_SIZE=2m
-CHPL_RT_MAX_HEAP_SIZE=40G

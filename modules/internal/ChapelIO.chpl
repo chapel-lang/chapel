@@ -729,13 +729,13 @@ module ChapelIO {
   //
   // Convert 'x' to a string just the way it would be written out.
   //
-  // This is marked as compiler generated so it doesn't take precedence over
+  // This is marked as last resort so it doesn't take precedence over
   // generated casts for types like enums
   //
   // This version only applies to non-primitive types
   // (primitive types should support :string directly)
   pragma "no doc"
-  pragma "compiler generated"
+  pragma "last resort"
   proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
     return stringify(x);
   }

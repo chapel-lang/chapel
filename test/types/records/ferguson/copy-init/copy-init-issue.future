@@ -1,0 +1,9 @@
+bug: copy init not resolving in this example
+
+A copy initializer declared as a proc init(other:MyRecord) should resolve
+and work for both instances where the compiler wants to add an initCopy
+and when it wants to add an autoCopy.  In particular, certain operations
+on records can cause callDestructors to add an autoCopy, such as
+returning a global by value.
+
+

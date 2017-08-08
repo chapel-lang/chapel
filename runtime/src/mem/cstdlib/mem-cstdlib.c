@@ -34,7 +34,7 @@ void chpl_mem_layerInit(void) {
   void* start;
   size_t size;
 
-  chpl_comm_desired_shared_heap(&start, &size);
+  chpl_comm_get_registered_heap(&start, &size);
   if (start || size) {
     chpl_error("Your CHPL_MEM setting doesn't support the registered heap "
                "required by your CHPL_COMM setting. You'll need to change one "

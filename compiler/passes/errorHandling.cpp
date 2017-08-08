@@ -163,7 +163,7 @@ private:
   AList  errorCond         (VarSymbol*     errorVar,
                             BlockStmt*     thenBlock,
                             BlockStmt*     elseBlock = NULL);
-  CallExpr* haltExpr       ();
+  CallExpr* haltExpr       (VarSymbol*     error);
 
   ErrorHandlingVisitor();
 };
@@ -179,6 +179,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
 
   VarSymbol*   errorVar     = newTemp("error", dtError);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
+  handlerLabel->addFlag(FLAG_ERROR_LABEL);
   TryInfo      info         = {errorVar, handlerLabel, node, node->body()};
   tryStack.push(info);
 
@@ -275,7 +276,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
-      currHandler->insertAtTail(haltExpr());
+      currHandler->insertAtTail(haltExpr(errorVar));
     } else if (!tryStack.empty()) {
       TryInfo* outerTry = & tryStack.top();
       currHandler->insertAtTail(new CallExpr(PRIM_MOVE, outerTry->errorVar,
@@ -319,11 +320,11 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
-          errorPolicy->insertAtTail(haltExpr());
+          errorPolicy->insertAtTail(haltExpr(errorVar));
       }
 
       node->insertAtTail(errorVar); // adding error argument to call
-      insert->insertAfter(errorCond(errorVar, errorPolicy));
+      insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -378,9 +379,8 @@ AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
   return ret;
 }
 
-// TODO: take in a halt message from the error
-CallExpr* ErrorHandlingVisitor::haltExpr() {
-  return new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("uncaught error"));
+CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
+  return new CallExpr(gChplUncaughtError, errorVar);
 }
 
 } /* end anon namespace */
@@ -567,4 +567,39 @@ static void checkErrorHandling(FnSymbol* fn)
   CanThrowVisitor visit(fn->throwsError(), true);
 
   fn->body->accept(&visit);
+}
+
+
+void lowerCheckErrorPrimitive()
+{
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+      SET_LINENO(call);
+
+      SymExpr* errSe   = toSymExpr(call->get(1));
+      Symbol*  errorVar= errSe->symbol();
+
+      VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
+      DefExpr*   def            = new DefExpr(errorExistsVar);
+      CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, errorVar, gNil);
+      CallExpr*  move = new CallExpr(PRIM_MOVE, errorExistsVar, errorExists);
+
+      Expr* stmt = call->getStmtExpr();
+      stmt->insertBefore(def);
+      def->insertAfter(move);
+      call->replace(new SymExpr(errorExistsVar));
+    }
+  }
+}
+
+bool isCheckErrorStmt(Expr* e)
+{
+  if (CondStmt* cond = toCondStmt(e)) {
+    if (CallExpr* call = toCallExpr(cond->condExpr)) {
+      if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

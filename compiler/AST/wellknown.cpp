@@ -243,6 +243,12 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "chpl_uncaught_error",
+    &gChplUncaughtError,
+    FLAG_UNKNOWN
+  },
+
 };
 
 void gatherWellKnownFns() {

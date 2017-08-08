@@ -1,0 +1,5 @@
+bug: inherited field detection only notices immediate parent, not up the chain
+
+We give the appropriate error message for inherited parent fields, but don't
+notice when a field inherited from a grandparent type (for instance) is used in
+the same way.

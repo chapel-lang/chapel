@@ -8,6 +8,28 @@ if len(sys.argv)!=2:
   print 'usage: sub_test COMPILER'
   sys.exit(0)
 
+home = ""
+if "CHPL_HOME" in os.environ:
+  home = os.environ["CHPL_HOME"]
+
+platform = "unknown"
+if "CHPL_TARGET_PLATFORM" in os.environ:
+  platform = os.environ["CHPL_TARGET_PLATFORM"]
+else:
+  p = subprocess.Popen([home + "/util/chplenv/chpl_platform.py", "--target"],
+                        stdout=subprocess.PIPE)
+  myoutput = p.communicate()[0]
+  if p.returncode != 0:
+    sys.stdout.write("could not run chpl_platform.py")
+    sys.exit(1)
+  else:
+    platform = myoutput
+
+
+# Skip this test on cygwin -- see JIRA 164
+if platform.startswith("cygwin"):
+  sys.exit(0)
+
 # Find the base installation
 compiler=sys.argv[1]
 if not os.access(compiler,os.R_OK|os.X_OK):

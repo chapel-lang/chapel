@@ -38,6 +38,7 @@ static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
+static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
 
 void
@@ -109,6 +110,10 @@ checkParsed() {
     nestedName(mod);
 
     checkModule(mod);
+  }
+
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    checkRecordInheritance(at);
   }
 
   checkExportedNames();
@@ -356,6 +361,17 @@ checkModule(ModuleSymbol* mod) {
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
       }
     }
+  }
+}
+
+// outputs an error message if we encountered a record that tried to inherit
+static void checkRecordInheritance(AggregateType* at) {
+  if (!at->isRecord())
+    return;
+
+  if (at->inherits.length != 0) {
+    USR_FATAL_CONT(at, "inheritance is not currently supported for records");
+    USR_PRINT(at, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
   }
 }
 

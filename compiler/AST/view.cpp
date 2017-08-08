@@ -699,6 +699,42 @@ int debugID(BaseAST* ast) {
   return ast ? ast->id : -1;
 }
 
+// "debug summary": print key pieces of info
+void debugSummary(int id) {
+  if (BaseAST* ast = aid09(id))
+    debugSummary(ast);
+  else
+    printf("%s\n", aidNotFoundError("debugSummary", id));
+}
+void debugSummary(BaseAST* ast) {
+  if (ast)
+    printf("%d   %s   %s\n", ast->id, ast->astTagAsString(), debugLoc(ast));
+  else
+    printf("<debugSummary: NULL>\n");
+}
+
+// find the Parent Symbol
+BaseAST* debugParentSym(int id) {
+  if (BaseAST* ast = aid09(id))
+    return debugParentSym(ast);
+  else {
+    printf("%s\n", aidNotFoundError("debugParentSym", id));
+    return NULL;
+  }
+}
+BaseAST* debugParentSym(BaseAST* ast) {
+  if (!ast)
+    return NULL;
+  else if (Expr* expr = toExpr(ast))
+    return expr->parentSymbol;
+  else if (Symbol* sym = toSymbol(ast))
+    return sym->defPoint->parentSymbol;
+  else {
+    printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
+    return NULL;
+  }
+}
+
 
 //
 // map_view: print the contents of a SymbolMap
@@ -861,6 +897,20 @@ void whocalls(int id) {
     }
   }
 
+  int fItAll = 0, fItMatch = 0, fItNonTreeMatch = 0;
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* loop = toForLoop(block)) {
+      fItAll++;
+      if (SymExpr* it = loop->iteratorGet())
+        if (Symbol* ic = it->symbol())
+          if (FnSymbol* iterator = debugGetTheIteratorFn(ic))
+            if (iterator->id == id)
+              printf("  ForLoop %d  iterator sym %d  %s  %s\n",
+                     loop->id, ic->id, parentMsg(loop, &fItMatch,
+                       &fItNonTreeMatch), debugLoc(loop));
+    }
+  }
+
   int vmtMatch = 0, vmtAll = 0;
   for (int i = 0; i < virtualMethodTable.n; i++) {
     if (virtualMethodTable.v[i].key) {
@@ -884,8 +934,38 @@ void whocalls(int id) {
 
   printf("  %d of %d calls", callMatch, callAll);
   if (callNonTreeMatch) printf(", also %d not in tree", callNonTreeMatch);
-  printf(".  %d of %d for-loops", forMatch, forAll);
-  if (forNonTreeMatch) printf(", also %d not in tree", forNonTreeMatch);
-  printf(".  %d of %d in VMT.  %d of %d in FT.\n",
-         vmtMatch, vmtAll, ftMatch, ftAll);
+  printf(".  %d of %d for-loops", forMatch+fItMatch, forAll+fItAll);
+  int forNontree = forNonTreeMatch + fItNonTreeMatch;
+  if (forNontree) printf(", also %d not in tree", forNontree);
+  printf(".  %d of %d in VMT+FT.\n", vmtMatch+ftMatch, vmtAll+ftAll);
+}
+
+FnSymbol* debugGetTheIteratorFn(int id) {
+  if (BaseAST* ast = aidWithError(id, "debugGetTheIteratorFn"))
+    return debugGetTheIteratorFn(ast);
+  else
+    return NULL;
+}
+
+FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
+  if (!ast) {
+    printf("<debugGetTheIteratorFn: NULL>\n");
+    return NULL;
+  }
+  else if (Symbol* sym = toSymbol(ast))
+    return debugGetTheIteratorFn(sym);
+  else if (Type* type = toType(ast))
+    return debugGetTheIteratorFn(type);
+  else if (ForLoop* fl = toForLoop(ast))
+    return debugGetTheIteratorFn(fl->iteratorGet()->symbol());
+  else if (SymExpr* se = toSymExpr(ast))
+    return debugGetTheIteratorFn(se->symbol());
+  else {
+    printf("<don't know how to get the iterator for node %d>\n", ast->id);
+    return NULL;
+  }
+}
+
+FnSymbol* debugGetTheIteratorFn(Symbol* sym) {
+  return sym ? debugGetTheIteratorFn(sym->type) : NULL;
 }

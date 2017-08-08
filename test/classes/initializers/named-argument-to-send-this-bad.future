@@ -1,0 +1,5 @@
+bug: should generate error message when namedExpr used to send "this" to a function
+
+At the time of writing, our compiler generates an internal error instead of the
+appropriate error message.  I believe this is because we don't expect to send
+"this" as a named argument.

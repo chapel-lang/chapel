@@ -900,6 +900,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   fn->retType = at;
 

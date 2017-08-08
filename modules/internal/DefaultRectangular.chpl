@@ -1545,8 +1545,13 @@ module DefaultRectangular {
       computeFactoredOffs();
       const size = blk(1) * dom.dsiDim(1).length;
 
-      if defRectSimpleDData {
+      if !localeModelHasSublocales {
         data = _ddata_allocate(eltType, size);
+      } else if defRectSimpleDData {
+        data = _ddata_allocate(eltType, size,
+                               subloc = (if here.getChildCount() > 1
+                                         then c_sublocid_all
+                                         else c_sublocid_none));
       } else {
         //
         // Checking the size first (and having a large-ish size hurdle)
@@ -1592,9 +1597,9 @@ module DefaultRectangular {
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           mData(0).data =
             _ddata_allocate(eltType, size,
-                            locStyle = if here.maxTaskPar < 2
-                                       then localizationStyle_t.locNone
-                                       else localizationStyle_t.locSubchunks);
+                            subloc = (if here.getChildCount() > 1
+                                      then c_sublocid_all
+                                      else c_sublocid_none));
         } else {
           var dataOff: idxType = 0;
           for i in 0..#mdNumChunks do local do on here.getChild(i) {
@@ -1606,7 +1611,6 @@ module DefaultRectangular {
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;
             const dd = _ddata_allocate(eltType, chunkSize,
-                                       locStyle = localizationStyle_t.locWhole,
                                        subloc = i:chpl_sublocID_t);
             mData(i).data = _ddata_shift(eltType, dd, -dataOff:idxSignedType);
             dataOff += chunkSize;
