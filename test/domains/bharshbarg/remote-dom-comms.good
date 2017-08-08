@@ -1,7 +1,0 @@
-Array over local domain:
-LOCALE0: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
-LOCALE1: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
---------------------
-Array over remote domain:
-LOCALE0: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
-LOCALE1: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
