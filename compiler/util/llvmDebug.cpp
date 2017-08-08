@@ -628,7 +628,6 @@ LLVM_DISUBPROGRAM debug_data::get_function(FnSymbol *function)
 
 LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol *gVarSym)
 {
-  GenInfo *info = gGenInfo; 
   const char *name = gVarSym->name;
   const char *cname = gVarSym->cname;
   const char *file_name = gVarSym->astloc.filename;
@@ -637,6 +636,7 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol 
   LLVM_DIFILE file = get_file(file_name);
   LLVM_DITYPE gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
 #if HAVE_LLVM_VER <= 39
+  GenInfo *info = gGenInfo; 
   GenRet got = info->lvt->getValue(cname); //?use cname since get_function uses it?
 
 #if HAVE_LLVM_VER >= 36
