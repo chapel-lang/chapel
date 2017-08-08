@@ -47,7 +47,6 @@ class SystemError : Error {
   proc SystemError(err: syserr, msg: string) {
     this.err = err;
     this.msg = msg;
-    //super.init(msg);
   }
 
   proc writeThis(f) {

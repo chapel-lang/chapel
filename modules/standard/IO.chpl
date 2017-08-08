@@ -3406,8 +3406,6 @@ proc stringify(args ...?k):string {
 
       return new string(buf, offset, offset+1, owned=true, needToCopy=false);
     }
-
-    return "";
   }
 }
 
@@ -3437,8 +3435,8 @@ inline proc channel.read(ref args ...?k):bool throws {
   else if e == EEOF then return false;
   else {
     try this._ch_ioerror(e, "in channel.read(" +
-                         _args_to_proto((...args), preArg="ref ") +
-                         ")");
+                            _args_to_proto((...args), preArg="ref ") +
+                            ")");
     return false;
   }
 }
@@ -3491,8 +3489,8 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
   else if e == EEOF then return false;
   else {
     try this._ch_ioerror(e, "in channel.read(" +
-                         _args_to_proto((...args), preArg="ref ") +
-                         "style:iostyle)");
+                            _args_to_proto((...args), preArg="ref ") +
+                            "style:iostyle)");
     return false;
   }
 }
@@ -3917,8 +3915,8 @@ inline proc channel.write(const args ...?k):bool throws {
   if !e then return true;
   else {
     try this._ch_ioerror(e, "in channel.write(" +
-                         _args_to_proto((...args), preArg="") +
-                         ")");
+                            _args_to_proto((...args), preArg="") +
+                            ")");
     return false;
   }
 }
@@ -3969,8 +3967,8 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
   if !e then return true;
   else {
     try this._ch_ioerror(e, "in channel.write(" +
-                         _args_to_proto((...args), preArg="") +
-                         "style:iostyle)");
+                            _args_to_proto((...args), preArg="") +
+                            "style:iostyle)");
     return false;
   }
 }
@@ -4248,15 +4246,15 @@ proc stdinInit() {
 }
 
 proc stdoutInit() {
- try! {
-   return openfp(chpl_cstdout()).writer();
- }
+  try! {
+    return openfp(chpl_cstdout()).writer();
+  }
 }
 
 proc stderrInit() {
- try! {
-   return openfp(chpl_cstderr()).writer();
- }
+  try! {
+    return openfp(chpl_cstderr()).writer();
+  }
 }
 
 /* Equivalent to stdout.write. See :proc:`channel.write` */
@@ -6860,7 +6858,7 @@ proc channel.extractMatch(m:reMatch, ref arg) throws {
     _extractMatch(m, arg, err);
     if err {
       try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
-                             arg.type:string + ")");
+                                arg.type:string + ")");
     }
     this.unlock();
   }
