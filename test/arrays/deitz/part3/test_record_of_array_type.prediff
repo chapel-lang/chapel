@@ -1,0 +1,15 @@
+#!/bin/bash
+
+outfile=$2
+temp=$outfile.tmp
+
+# First, grab the program output.
+# Filter out valgrind output and some nondeterministic output.
+grep -v ^= $outfile | \
+  grep -v '^timedexec:' | \
+  grep -v '(x = (x = 0.0))' > $temp
+
+# Then, add the first two lines of valgrind output, cleaned up.
+grep ^= $outfile | sed 's@^=[^ ]*= @@;s@Thread.*@Thread@' | head -2 >> $temp
+
+mv $temp $outfile
