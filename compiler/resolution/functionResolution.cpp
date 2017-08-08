@@ -3837,6 +3837,12 @@ static void registerParamPreference(int&                  paramPrefers,
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 DisambiguationContext::DisambiguationContext(CallInfo& info) {
   actuals = &info.actuals;
   scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
@@ -3862,14 +3868,6 @@ DisambiguationContext::forPair(int newI, int newJ) {
 
   return *this;
 }
-
-  Vec<Symbol*>* actuals;
-  Expr*         scope;
-  bool          explain;
-  int           i;
-  int           j;
-
-
 
 /************************************* | **************************************
 *                                                                             *
