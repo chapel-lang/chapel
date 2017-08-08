@@ -49,7 +49,7 @@ class Block1DDist {
 
   //
   // DOWN: an array of local distribution class descriptors -- set up
-  // in the class constructor
+  // in the class initializer
   //
   var locDist: [targetLocDom] LocBlock1DDist(idxType);
 
@@ -181,7 +181,7 @@ class LocBlock1DDist {
   // INITIALIZERS:
 
   //
-  // Constructor computes what chunk of index(1) is owned by the
+  // Initializer computes what chunk of index(1) is owned by the
   // current locale
   //
   proc init(type idxType,
