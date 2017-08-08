@@ -1,4 +1,5 @@
 // Sparse matrix-matrix multiplication performance benchmark
+// TODO: Compare to MKL sparse multiplication && scipy.sparse multiplication
 
 use LayoutCS;
 use Random;

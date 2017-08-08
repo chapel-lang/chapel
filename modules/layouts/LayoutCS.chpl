@@ -173,6 +173,7 @@ class CSDom: BaseSparseDomImpl {
     if boundsChecking then
       assert(startIx <= endIx, "CSDom follower - got nothing to iterate over");
 
+    // TODO: Allow zippering sparse domains of equal length some day...
     if (followThisDom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays (CS layout)");
 

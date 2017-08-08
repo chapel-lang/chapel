@@ -68,7 +68,10 @@ proc main() {
     writeDense(csrcscArr);
   }
 
-  // TODO: Validate sparse csrcscArr against AB
+  // Validate csrcscArr nonzeros against AB
+  for (i, j) in csrcscArr.domain {
+    assert(AB[i,j] == csrcscArr[i, j]);
+  }
 }
 
 /* Dense matrix-matrix multiplication */
@@ -82,7 +85,8 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
   // TODO: Checks for ADom._value.row && BDom._value.row
-  // TODO: Clean this up...
+  // TODO: Cleaner Implementation
+  // TODO: Parallel Implementation
 
   var CDom: sparse subdomain({ADom._value.parentDom.dim(1), BDom._value.parentDom.dim(2)}) dmapped CS();
   var C: [CDom] eltType;

@@ -25,19 +25,10 @@ proc main() {
   writeln('DSI');
   writeln('===');
 
-  // TODO: dsiClone
-  // TODO: leader/follower these()
-  //        - CSC, CSC
-  //        - CSR, CSR
-  //        - CSC, CSR
-  //        - CSR, CSC
-
   // dsiBulkAdd with domain
   csrDom += D;
   cscDom += D;
 
-  // proc ==()
-  assert(csrDom == cscDom);
 
   assert(csrDom.size == D.size);
   assert(cscDom.size == D.size);
@@ -81,6 +72,58 @@ proc main() {
   // dsiBulkAdd when nnz > 0, with duplicates
   csrDom += indices;
   cscDom += indices;
+
+  // proc ==()
+  assert(csrDom == cscDom);
+
+  // dsiClone
+  var copyDom = csrDom;
+  assert(copyDom == csrDom);
+
+  var csrCopy: [csrDom] int,
+      cscCopy: [cscDom] int;
+
+  const csrOnes: [csrDom] int = 1,
+        cscOnes: [cscDom] int = 1;
+
+  // standalone these()
+  forall r in csrDom {
+    csrCopy[r] = 1;
+  }
+  assert(csrOnes.equals(csrCopy));
+  csrCopy = 0;
+
+  forall c in cscDom {
+    cscCopy[c] = 1;
+  }
+  assert(cscOnes.equals(cscCopy));
+  cscCopy = 0;
+
+  // leader/follower these()
+  for (r,c) in zip(csrDom, cscDom) {
+    csrCopy[r] = 1;
+    cscCopy[c] = 1;
+  }
+  assert(csrOnes.equals(csrCopy));
+  assert(cscOnes.equals(cscCopy));
+  csrCopy = 0;
+  cscCopy = 0;
+
+  for (r,c) in zip(csrDom, cscDom) {
+    csrCopy[r] = 1;
+    cscCopy[c] = 1;
+  }
+  assert(csrOnes.equals(csrCopy));
+  assert(cscOnes.equals(cscCopy));
+
+  // parallel leader/follower these()
+  forall (r1, r2) in zip(csrDom, csrDom) {
+    assert(r1 == r2);
+  }
+
+  forall (c1, c2) in zip(cscDom, cscDom) {
+    assert(c1 == c2);
+  }
 
   writeln('csrDom:');
   writeDSI(csrDom);
