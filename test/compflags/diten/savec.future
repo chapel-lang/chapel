@@ -1,0 +1,5 @@
+bug: building from saved C source fails for multilocale
+
+PR #6772 is believed to be the cause of this bug. Once it is fixed, this
+.future file and the .skipif should be removed so that this is tested in all
+configurations.
