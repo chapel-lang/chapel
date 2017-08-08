@@ -24,10 +24,6 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
 #endif
-// This macro set to obtain SIZE_MAX
-#ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS 1
-#endif
 
 #include "sys_basic.h"
 #include "qio_error.h"
@@ -38,15 +34,6 @@
 
 #include <inttypes.h>
 #include <stdint.h>
-
-// Last resort way to get SIZE_MAX. This should be correct,
-// but we'd rather use the system's definition... which should
-// theoretically be provided by the above (__STDC_LIMIT_MACROS+stdint.h)
-// but that isn't happening for me on GCC 4.7.2 when this file is included
-// by a C++ program.
-#ifndef SIZE_MAX
-#define SIZE_MAX (~((size_t)0))
-#endif
 
 #include <sys/uio.h>
 #include "deque.h"
