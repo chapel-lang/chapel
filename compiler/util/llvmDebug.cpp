@@ -636,6 +636,7 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol 
   
   LLVM_DIFILE file = get_file(file_name);
   LLVM_DITYPE gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
+#if HAVE_LLVM_VER <= 39
   GenRet got = info->lvt->getValue(cname); //?use cname since get_function uses it?
 
 #if HAVE_LLVM_VER >= 36
@@ -646,6 +647,7 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol 
 #else
   llvm::Value *llVal = NULL;
   llVal = got.val;  
+#endif
 #endif
 
   if(gVarSym_type)
