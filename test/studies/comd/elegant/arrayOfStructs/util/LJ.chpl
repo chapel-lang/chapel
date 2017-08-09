@@ -47,7 +47,7 @@ class PotentialLJ : BasePotential {
     const eShift = POT_SHIFT * cut6 * (cut6 - 1.0);
     const eps4 = -4.0 * epsilon;
 
-    forall (boxID, centerBox) in zip(Boxes.domain, Boxes) with (+ reduce ePot) {
+    forall (boxID, centerBox) in zip(Boxes.domain, Boxes) with (+ reduce ePot) do local {
       // TODO: hoist if we can serialize to avoid comms
       const Offsets = {-1..1, -1..1, -1..1};
       for off in Offsets {
