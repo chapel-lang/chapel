@@ -538,7 +538,8 @@ public:
 private:
   virtual std::string        docsDirective();
 
-  int                        hasGenericFormals()                         const;
+  int                        hasGenericFormals(bool flagError=false, 
+                                               const char* errPrefix="") const;
 
   bool                       _throwsError;
 };

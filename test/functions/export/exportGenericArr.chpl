@@ -1,5 +1,14 @@
-  export
-  proc flip_bit(v: [?D] int) {
-    v[0] = -v[0];
-    return v;
-  }
+export proc queryDomain(v: [?D] int) {
+}
+
+export proc typeArg(x: int, type t) {
+}
+
+export proc paramArg(x: int, param p: int) {
+}
+
+export proc noType(x: int, y) {
+}
+
+export proc queryType(x: int, y: ?t) {
+}

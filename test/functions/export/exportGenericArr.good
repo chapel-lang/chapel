@@ -1,2 +1,5 @@
-exportGenericArr.chpl:2: In function 'flip_bit':
-exportGenericArr.chpl:3: error: exported functions cannot have generic arguments like `v`
+exportGenericArr.chpl:4: error: exported function `typeArg` can't have generic formal arguments like 't'
+exportGenericArr.chpl:7: error: exported function `paramArg` can't have generic formal arguments like 'p'
+exportGenericArr.chpl:10: error: exported function `noType` can't have generic formal arguments like 'y'
+exportGenericArr.chpl:13: error: exported function `queryType` can't have generic formal arguments like 'y'
+exportGenericArr.chpl:1: error: exported function `queryDomain` can't have generic formal arguments like 'v'
