@@ -12,7 +12,7 @@ const loc = Locales[numLocales-1];
 record RR {
   var xx, yy: int;
   // the default constructor
-  proc RR() {
+  proc init() {
     var done$: sync bool;
     on loc {
       this.xx = 555;
@@ -40,7 +40,7 @@ record RR {
 record QQ {
   var aa, bb: int;
   // non-default constructor
-  proc QQ(cc: int, dd: int) {
+  proc init(cc: int, dd: int) {
     var done$: sync bool;
     on loc {
       this.aa = cc;
