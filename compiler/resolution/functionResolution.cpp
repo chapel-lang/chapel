@@ -3243,7 +3243,8 @@ static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                const DisambiguationContext& DC,
                                int                          i,
                                int                          j,
-                               bool                         ignoreWhere);
+                               bool                         ignoreWhere,
+                               bool                         forGenericInit);
 
 static void testArgMapping(FnSymbol*                    fn1,
                            ArgSymbol*                   formal1,
@@ -3260,7 +3261,7 @@ disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
   DisambiguationContext     DC(info);
   Vec<ResolutionCandidate*> ambiguous;
 
-  return disambiguateByMatch(candidates, DC, false, ambiguous);
+  return disambiguateByMatch(candidates, DC, false, true, ambiguous);
 }
 
 static int disambiguateByMatch(CallInfo&                  info,
@@ -3468,7 +3469,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                                    DC,
                                    i,
                                    j,
-                                   ignoreWhere);
+                                   ignoreWhere,
+                                   forGenericInit);
 
       if (cmp < 0) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -3529,18 +3531,18 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         ignoreWhere) {
+                              bool                         ignoreWhere,
+                              bool                         forGenericInit) {
 
   DisambiguationState DS;
+
+  // Initializer work-around: Skip _mt/_this for generic initializers
+  int                 start   = (forGenericInit == false) ? 0 : 2;
+
   bool                prefer1 = false;
   bool                prefer2 = false;
 
-  // Returning 0 for the same candidate simplifies the calling code
-  if (candidate1 == candidate2) {
-    return 0;
-  }
-
-  for (int k = 0; k < DC.actuals->n; ++k) {
+  for (int k = start; k < DC.actuals->n; ++k) {
     Symbol*    actual  = DC.actuals->v[k];
     ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
     ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
