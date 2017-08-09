@@ -1233,6 +1233,36 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
     }
     fprintf(hdrfile, "\n};\n");
   }
+  if( hdrfile ) {
+    fprintf(hdrfile, "\nvoid* chpl_global_serialize_table[] = {");
+    std::vector<CallExpr*> serializeCalls;
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
+        SymExpr* se = toSymExpr(call->get(2));
+        INT_ASSERT(se != NULL);
+
+        VarSymbol* imm = toVarSymbol(se->symbol());
+        INT_ASSERT(imm && imm->isImmediate());
+        int64_t idx = imm->immediate->int_value();
+
+        if (idx+1 > serializeCalls.size()) {
+          serializeCalls.resize(idx+1);
+        }
+
+        serializeCalls[idx] = call;
+      }
+    }
+    for (int i = 0; i < serializeCalls.size(); i++) {
+      CallExpr* call = serializeCalls[i];
+      INT_ASSERT(call != NULL);
+      SymExpr* global = toSymExpr(call->get(1));
+      INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
+
+      const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
+      fprintf(hdrfile, prefix, global->symbol()->cname);
+    }
+    fprintf(hdrfile, "\n};\n");
+  }
 }
 
 static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,

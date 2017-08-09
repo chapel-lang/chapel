@@ -53,6 +53,7 @@ extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
+extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;

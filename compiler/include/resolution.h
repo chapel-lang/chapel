@@ -212,4 +212,16 @@ bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
 
+
+extern Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
+
+struct Serializers {
+  FnSymbol* serializer;
+  FnSymbol* deserializer;
+  FnSymbol* broadcaster;
+  FnSymbol* destroyer;
+};
+
+extern std::map<Type*, Serializers> serializeMap;
+
 #endif

@@ -97,6 +97,8 @@ typedef struct {
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
 static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 
+static int broadcastGlobalID = 0;
+
 static void insertEndCounts();
 static void passArgsToNestedFns();
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
@@ -187,7 +189,8 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // If the actual is a reference, store a reference
     else if (var->isRef())
       field->qual = QUAL_REF;
-    // BHARSH TODO: This really belongs in RVF
+    // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
+    // in 'needsAutoCopyAutoDestroyForArg'
     // If the formal is constant, store a value
     else if (formal->isConstant())
       field->qual = QUAL_VAL;
@@ -842,6 +845,49 @@ insertEndCount(FnSymbol* fn,
   }
 }
 
+static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
+  // Disable serialized broadcasting for internal globals until have a way of
+  // finding the point where the runtime is sufficiently 'set up' such that
+  // we can use the Locales array.
+  bool isInternalModule = sym->getModule()->modTag == MOD_INTERNAL;
+  if (isInternalModule == false &&
+      serializeMap.find(sym->type) != serializeMap.end()) {
+
+    Serializers ser       = serializeMap[sym->type];
+    FnSymbol* broadcastFn = ser.broadcaster;
+    FnSymbol* destroyFn   = ser.destroyer;
+    INT_ASSERT(broadcastFn != NULL && destroyFn != NULL);
+
+    VarSymbol* broadcastID = new_IntSymbol(broadcastGlobalID++);
+    beforeExpr->insertAfter(new CallExpr(broadcastFn, sym, broadcastID));
+
+    FnSymbol* autoDestroyFn = autoDestroyMap.get(sym->type);
+
+    if (autoDestroyFn != NULL) {
+      Expr* destroyExpr = NULL;
+
+      // We expect to find an autoDestroy call inserted by callDestructors'
+      // 'insertGlobalAutoDestroyCalls' function.
+      for_SymbolSymExprs(se, sym) {
+        CallExpr* call = toCallExpr(se->parentExpr);
+        if (call && call->isResolved()) {
+          FnSymbol* fn = call->resolvedFunction();
+          if (fn == autoDestroyFn) {
+            // Fail if multiple destroys are found
+            INT_ASSERT(destroyExpr == NULL);
+            destroyExpr = call->getStmtExpr();
+          }
+        }
+      }
+      INT_ASSERT(destroyExpr != NULL);
+
+      // Destroy broadcasted copies before the original.
+      destroyExpr->insertBefore(new CallExpr(destroyFn, sym, broadcastID));
+    }
+  } else {
+    beforeExpr->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, sym));
+  }
+}
 
 static void
 replicateGlobalRecordWrappedVars(DefExpr *def) {
@@ -916,7 +962,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
 
   if (found) {
     INT_ASSERT(stmt == initialization);
-    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+    insertBroadcast(stmt, def->sym);
   } else {
     // This branch should go away if this INT_FATAL never fires.
     INT_FATAL("could not find initialization");
@@ -1204,8 +1250,7 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
         INT_ASSERT(firstDef == NULL || firstDef == initialization);
 
-        initialization->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
-                                                 def->sym));
+        insertBroadcast(initialization, def->sym);
 
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions

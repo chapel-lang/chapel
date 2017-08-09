@@ -53,6 +53,7 @@ symbolFlag( FLAG_BASE_DOMAIN , ypr, "base domain" , ncm )
 symbolFlag( FLAG_BASE_DIST , ypr, "base dist" , ncm )
 symbolFlag( FLAG_BEGIN , npr, "begin" , ncm )
 symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
+symbolFlag( FLAG_BROADCAST_FN, npr, "serialized broadcast function", ncm)
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
 symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
 
@@ -203,6 +204,7 @@ symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
+symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 
 // See FLAG_POD below
