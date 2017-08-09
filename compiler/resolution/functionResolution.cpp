@@ -4849,6 +4849,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
       // ... then mark LHS constant.
       lhsSym->addFlag(FLAG_CONST);
     }
+  } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+    lhsSym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
   }
 
   moveFinalize(call);
@@ -4952,6 +4955,17 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     }
 
   } else {
+    if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+      Type* baseType = rhs->get(1)->getValType();
+      const char* memberName = get_string(rhs->get(2));
+      Symbol* sym = baseType->getField(memberName);
+      if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          se->symbol()->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+        }
+      }
+    }
+
     moveFinalize(call);
   }
 }
@@ -5313,6 +5327,8 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   VarSymbol* new_temp  = newTemp("new_temp", at);
   DefExpr*   def       = new DefExpr(new_temp);
+
+  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);

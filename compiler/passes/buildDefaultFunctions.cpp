@@ -1627,6 +1627,8 @@ static void buildInitializerCall(AggregateType* ct,
   VarSymbol* _this = newTemp("_this", ct);
   CallExpr*  call  = new CallExpr("init");
 
+  _this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
   fn->insertAtHead(new DefExpr(_this));
 
   call->insertAtTail(new SymExpr(gMethodToken));

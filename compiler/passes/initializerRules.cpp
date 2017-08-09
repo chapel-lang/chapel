@@ -229,6 +229,10 @@ static void preNormalize(FnSymbol* fn) {
   AggregateType* at         = toAggregateType(fn->_this->type);
   InitNormalize  state(fn);
 
+  if (at->isGeneric() == true) {
+    fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+  }
+
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {

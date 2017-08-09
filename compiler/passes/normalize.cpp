@@ -1955,6 +1955,8 @@ static void normVarTypeInference(DefExpr* defExpr) {
           // generic record case ...
           argExpr->insertAtHead(new NamedExpr("this", new SymExpr(var)));
 
+          var->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
         } else {
           // ... but not in the non-generic record case
           argExpr->insertAtHead(var);
@@ -2141,6 +2143,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
       argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
       argExpr->insertAtHead(gMethodToken);
+
+      initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
       // Assign the rhs into the lhs.
       CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);

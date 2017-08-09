@@ -68,7 +68,12 @@ FnSymbol* resolveInitializer(CallExpr* call) {
     SymExpr*   namedSe = toSymExpr(named->actual);
     INT_ASSERT(namedSe);
 
-    namedSe->symbol()->type = call->resolvedFunction()->_this->type;
+    Symbol*    sym     = namedSe->symbol();
+
+    sym->type = call->resolvedFunction()->_this->type;
+
+    if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION))
+      sym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
     makeRecordInitWrappers(call);
   }
