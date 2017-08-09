@@ -67,27 +67,22 @@
 #include <string>
 #include <vector>
 
-/// State information used during the disambiguation process.
 class DisambiguationState {
 public:
-  /// Is fn1 more specific than fn2?
-  bool fn1MoreSpecific;
-  /// Is fn2 more specific than fn1?
-  bool fn2MoreSpecific;
+        DisambiguationState();
 
-  /// Does fn1 require promotion?
-  bool fn1Promotes;
-  /// Does fn2 require promotion?
-  bool fn2Promotes;
+  void  updateParamPrefers(int                          preference,
+                           const char*                  argStr,
+                           const DisambiguationContext& DC);
 
-  /// 1 == fn1, 2 == fn2, -1 == conflicting signals
-  int paramPrefers;
+  bool  fn1MoreSpecific;
+  bool  fn2MoreSpecific;
 
-  /// Initialize the state to the starting values.
-  DisambiguationState()
-    : fn1MoreSpecific(false), fn2MoreSpecific(false),
-      fn1Promotes(false), fn2Promotes(false), paramPrefers(0) {}
+  bool  fn1Promotes;
+  bool  fn2Promotes;
 
+  // 1 == fn1, 2 == fn2, -1 == conflicting signals
+  int   paramPrefers;
 };
 
 //#
@@ -3245,11 +3240,6 @@ static void testArgMapping(FnSymbol*                    fn1,
                            int                          j,
                            DisambiguationState&         DS);
 
-static void registerParamPreference(int&                  paramPrefers,
-                                    int                   preference,
-                                    const char*           argstr,
-                                    DisambiguationContext DC);
-
 static int disambiguateByMatch(CallInfo&                  info,
                                Vec<ResolutionCandidate*>& candidates,
 
@@ -3760,18 +3750,17 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (paramWorks(actual, f2Type)) {
       // but the actual is a param and works for formal2
       if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but
-        // matches the first slightly better if we had to
-        // decide
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+        // the param works equally well for both, but matches
+        // the first lightly better if we had to decide
+        DS.updateParamPrefers(1, "formal1", DC);
 
       } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+        DS.updateParamPrefers(2, "formal2", DC);
 
       } else {
         // neither is a param, but formal1 is an exact type
         // match, so prefer that one
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+        DS.updateParamPrefers(1, "formal1", DC);
       }
 
     } else {
@@ -3786,18 +3775,17 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (paramWorks(actual, f1Type)) {
       // but the actual is a param and works for formal1
       if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but
-        // matches the second slightly better if we had to
-        // decide
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+        // the param works equally well for both, but matches
+        // the second slightly better if we had to decide
+        DS.updateParamPrefers(2, "formal2", DC);
 
       } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+        DS.updateParamPrefers(1, "formal1", DC);
 
       } else {
-        // neither is a param, but formal1 is an exact type
-        // match, so prefer that one
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+        // neither is a param, but formal1 is an exact type match,
+        // so prefer that one
+        DS.updateParamPrefers(2, "formal2", DC);
       }
 
     } else {
@@ -3826,37 +3814,13 @@ static void testArgMapping(FnSymbol*                    fn1,
   }
 }
 
-//
-// This is a utility function that essentially tracks which function,
-// if any, the param arguments prefer.
-//
-static void registerParamPreference(int&                  paramPrefers,
-                                    int                   preference,
-                                    const char*           argstr,
-                                    DisambiguationContext DC) {
-
-  if (paramPrefers == 0 || paramPrefers == preference) {
-    /* if the param currently has no preference or it matches the new
-       preference, preserve the current preference */
-    paramPrefers = preference;
-    EXPLAIN("param prefers %s\n", argstr);
-
-  } else {
-    /* otherwise its preference contradicts the previous arguments, so
-       mark it as not preferring either */
-    paramPrefers = -1;
-    EXPLAIN("param prefers differing things\n");
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-void lvalueCheck(CallExpr* call)
-{
+void lvalueCheck(CallExpr* call) {
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
@@ -8948,5 +8912,35 @@ DisambiguationContext::DisambiguationContext(CallInfo& info) {
     if (info.call->id == explainCallID) {
       explain = true;
     }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+DisambiguationState::DisambiguationState() {
+  fn1MoreSpecific = false;
+  fn2MoreSpecific = false;
+
+  fn1Promotes     = false;
+  fn2Promotes     = false;
+
+  paramPrefers    = 0;
+}
+
+void DisambiguationState::updateParamPrefers(
+                                     int                          preference,
+                                     const char*                  argStr,
+                                     const DisambiguationContext& DC) {
+  if (paramPrefers == 0 || paramPrefers == preference) {
+    paramPrefers = preference;
+    EXPLAIN("param prefers %s\n", argStr);
+
+  } else {
+    paramPrefers = -1;
+    EXPLAIN("param prefers differing things\n");
   }
 }
