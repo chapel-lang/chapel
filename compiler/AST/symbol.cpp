@@ -1656,6 +1656,14 @@ int FnSymbol::hasGenericFormals() const {
     }
 
     if (isGeneric == true) {
+      if (hasFlag(FLAG_EXPORT)) {
+        if (!hasGenericFormal) {
+          USR_FATAL_CONT(this,
+                         "exported function `%s` can't be generic", name);
+        }
+        USR_PRINT(this,
+                  "   formal argument '%s' causes it to be", formal->name);
+      }
       hasGenericFormal = true;
 
       if (formal->defaultExpr == NULL) {
