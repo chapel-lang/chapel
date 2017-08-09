@@ -28,7 +28,7 @@ CallInfo::CallInfo() {
   name    = NULL;
 }
 
-bool CallInfo::isNotWellFormed(CallExpr* callExpr, bool forInit) {
+bool CallInfo::isNotWellFormed(CallExpr* callExpr) {
   bool retval = false;
 
   call = callExpr;
@@ -60,14 +60,9 @@ bool CallInfo::isNotWellFormed(CallExpr* callExpr, bool forInit) {
 
   for (int i = 1; i <= call->numActuals() && retval == false; i++) {
     Expr* actual = call->get(i);
-    bool  isThis = false;
 
     if (NamedExpr* named = toNamedExpr(actual)) {
       actualNames.add(named->name);
-
-      if (forInit == true && named->name == astrThis) {
-        isThis = true;
-      }
 
       actual = named->actual;
 
@@ -85,7 +80,8 @@ bool CallInfo::isNotWellFormed(CallExpr* callExpr, bool forInit) {
     if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       retval = true;
 
-    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true && isThis == false) {
+    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true &&
+               sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false) {
       retval = true;
 
     } else {
@@ -96,16 +92,11 @@ bool CallInfo::isNotWellFormed(CallExpr* callExpr, bool forInit) {
   return retval;
 }
 
-void CallInfo::haltNotWellFormed(bool forInit) const {
+void CallInfo::haltNotWellFormed() const {
   for (int i = 1; i <= call->numActuals(); i++) {
     Expr* actual = call->get(i);
-    bool  isThis = false;
 
     if (NamedExpr* named = toNamedExpr(actual)) {
-      if (forInit == true && named->name == astrThis) {
-        isThis = true;
-      }
-
       actual = named->actual;
     }
 
@@ -122,7 +113,7 @@ void CallInfo::haltNotWellFormed(bool forInit) const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (forInit == false || isThis == false) {
+      if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false) {
         INT_FATAL(call,
                   "the type of the actual argument '%s' is generic",
                   sym->name);

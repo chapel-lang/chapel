@@ -30,10 +30,9 @@ class CallInfo {
 public:
                    CallInfo();
 
-  bool             isNotWellFormed(CallExpr* call,
-                                   bool      forInit = false);
+  bool             isNotWellFormed(CallExpr* call);
 
-  void             haltNotWellFormed(bool forInit = false)               const;
+  void             haltNotWellFormed()                                   const;
 
   CallExpr*        call;        // call expression
   BlockStmt*       scope;       // module scope as in M.call

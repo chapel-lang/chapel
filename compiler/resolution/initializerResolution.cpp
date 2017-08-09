@@ -98,8 +98,8 @@ static void resolveInitCall(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  if (info.isNotWellFormed(call, true) == true) {
-    info.haltNotWellFormed(true);
+  if (info.isNotWellFormed(call) == true) {
+    info.haltNotWellFormed();
 
   } else {
     DisambiguationContext     DC(info);
