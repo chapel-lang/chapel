@@ -7182,18 +7182,35 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
 
   if (serializeFn != NULL) {
     resolveFns(serializeFn);
+    Type* retType = serializeFn->retType->getValType();
 
-    VarSymbol* data = newTemp(serializeFn->retType);
-    chpl_gen_main->insertAtHead(new DefExpr(data));
-
-    CallExpr* deserializeCall = new CallExpr("chpl__deserialize", gMethodToken, at->symbol, data);
-    deserializeFn = resolveNormalSerializer(deserializeCall);
-
-    if (deserializeFn != NULL) {
-      resolveFns(deserializeFn);
+    if (retType == dtVoid) {
+      USR_FATAL(serializeFn, "chpl__serialize cannot return void");
     }
 
-    data->defPoint->remove();
+    if (isPrimitiveType(retType) == false && autoDestroyMap.get(retType) == NULL) {
+      USR_FATAL_CONT(serializeFn, "chpl__serialize must return a type that can be automatically memory managed (e.g. a record)");
+      serializeFn = NULL;
+    } else {
+      VarSymbol* data = newTemp(serializeFn->retType);
+      chpl_gen_main->insertAtHead(new DefExpr(data));
+
+      CallExpr* deserializeCall = new CallExpr("chpl__deserialize", gMethodToken, at->symbol, data);
+      deserializeFn = resolveNormalSerializer(deserializeCall);
+
+      if (deserializeFn != NULL) {
+        resolveFns(deserializeFn);
+
+        Type* retType = deserializeFn->retType->getValType();
+        if (retType == dtVoid) {
+          USR_FATAL(deserializeFn, "chpl__deserialize cannot return void");
+        } else if (retType != at) {
+          USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", retType->symbol->name, at->symbol->name);
+        }
+      }
+
+      data->defPoint->remove();
+    }
   }
 
   if (serializeFn != NULL && deserializeFn == NULL) {
