@@ -1591,7 +1591,7 @@ bool FnSymbol::tagIfGeneric() {
   bool retval = false;
 
   if (hasFlag(FLAG_GENERIC) == false) {
-    int result = hasGenericFormals(hasFlag(FLAG_EXPORT), "exported function ");
+    int result = hasGenericFormals();
 
     // If this function has at least 1 generic formal
     if (result > 0) {
@@ -1623,7 +1623,7 @@ bool FnSymbol::tagIfGeneric() {
 //
 //   0 if there are no generic formals
 //
-int FnSymbol::hasGenericFormals(bool flagError, const char* errPrefix) const {
+int FnSymbol::hasGenericFormals() const {
   bool hasGenericFormal   = false;
   bool hasGenericDefaults =  true;
   int  retval             =     0;
@@ -1656,12 +1656,15 @@ int FnSymbol::hasGenericFormals(bool flagError, const char* errPrefix) const {
     }
 
     if (isGeneric == true) {
-      hasGenericFormal = true;
-      if (flagError) {
-        USR_FATAL_CONT(this,
-                       "%s`%s` can't have generic formal arguments like '%s'",
-                       errPrefix, name, formal->name);
+      if (hasFlag(FLAG_EXPORT)) {
+        if (!hasGenericFormal) {
+          USR_FATAL_CONT(this,
+                         "exported function `%s` can't be generic", name);
+        }
+        USR_PRINT(this,
+                  "   formal argument '%s' causes it to be", formal->name);
       }
+      hasGenericFormal = true;
 
       if (formal->defaultExpr == NULL) {
         hasGenericDefaults = false;

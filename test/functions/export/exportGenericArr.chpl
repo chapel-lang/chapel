@@ -12,3 +12,6 @@ export proc noType(x: int, y) {
 
 export proc queryType(x: int, y: ?t) {
 }
+
+export proc twoGenerics(type t, param p: int) {
+}
