@@ -143,8 +143,10 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
 
 FnSymbol* determineRootFunc(FnSymbol* fn);
 
-void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
-                      SymbolMap& all_subs);
+void determineAllSubs(FnSymbol*  fn,
+                      FnSymbol*  root,
+                      SymbolMap& subs,
+                      SymbolMap& allSubs);
 
 FnSymbol* instantiateFunction(FnSymbol*  fn,
                               FnSymbol*  root,
@@ -169,10 +171,8 @@ private:
 
 
 ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
+disambiguateForInit(CallInfo&                    info,
+                    Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);

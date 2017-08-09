@@ -3216,12 +3216,27 @@ static bool populateForwardingMethods(CallInfo& info) {
 
 #define EXPLAIN(...)                                  \
         if (developer && DC.explain) fprintf(stderr, __VA_ARGS__)
+
 #else
 
 #define EXPLAIN(...)
 
 #endif
 
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous);
+
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    bool                         forGenericInit,
+                    Vec<ResolutionCandidate*>&   ambiguous);
 
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
@@ -3239,6 +3254,14 @@ static void testArgMapping(FnSymbol*                    fn1,
                            int                          i,
                            int                          j,
                            DisambiguationState&         DS);
+
+ResolutionCandidate*
+disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
+  DisambiguationContext     DC(info);
+  Vec<ResolutionCandidate*> ambiguous;
+
+  return disambiguateByMatch(candidates, DC, false, ambiguous);
+}
 
 static int disambiguateByMatch(CallInfo&                  info,
                                Vec<ResolutionCandidate*>& candidates,
@@ -3391,30 +3414,21 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-/** Find the best candidate from a list of candidates.
- *
- * This function finds the best Chapel function from a set of candidates, given
- * a call site.  This is an implementation of 13.14.3 of the Chapel language
- * specification (page 106).
- *
- * \param candidates A list of the candidate functions, from which the best
- *                   match is selected.
- * \param mostSpecificSet  On return, stores the set of candidates that
- *                         are not known to be worse than any other,
- *                         in the event that this set has 1 member.
- * \param DC         The disambiguation context.
- * \param ignoreWhere Set to `true` to ignore `where` clauses when
- *                    deciding if one match is better than another.
- *                    This is important for resolving return intent
- *                    overloads.
- *
- * \return NULL or the single most specific candidate
- */
-ResolutionCandidate*
+static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
                     bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   mostSpecificSet) {
+                    Vec<ResolutionCandidate*>&   ambiguous) {
+  return disambiguateByMatch(candidates, DC, ignoreWhere, false, ambiguous);
+}
+
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    bool                         forGenericInit,
+                    Vec<ResolutionCandidate*>&   ambiguous) {
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
 
@@ -3423,7 +3437,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   std::vector<bool> notBest(candidates.n, false);
 
   for (int i = 0; i < candidates.n; ++i) {
-
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
     EXPLAIN("##########################\n\n");
@@ -3486,7 +3499,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
 
   for (int i = 0; i < candidates.n; ++i) {
     if (notBest[i] == false) {
-      mostSpecificSet.add(candidates.v[i]);
+      ambiguous.add(candidates.v[i]);
     }
   }
 
