@@ -97,10 +97,8 @@ static void resolveInitCall(CallExpr* call) {
     info.haltNotWellFormed(true);
 
   } else {
-    DisambiguationContext     DC(info);
     Vec<FnSymbol*>            visibleFns;
     Vec<ResolutionCandidate*> candidates;
-    Vec<ResolutionCandidate*> ambiguous;
     ResolutionCandidate*      best        = NULL;
 
     findVisibleFunctions(info, visibleFns);
@@ -109,7 +107,7 @@ static void resolveInitCall(CallExpr* call) {
 
     explainGatherCandidate(info, candidates);
 
-    best = disambiguateByMatch(candidates, DC, false, ambiguous);
+    best = disambiguateForInit(info, candidates);
 
     if (best == NULL) {
       if (call->partialTag == false) {
