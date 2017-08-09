@@ -54,13 +54,11 @@ extern std::map<CallExpr*, CallExpr*> eflopiMap;
 
 
 
+bool       hasAutoCopyForType(Type* type);
 
+FnSymbol*  getAutoCopyForType(Type* type);
 
-
-
-bool hasAutoCopyForType(Type* type);
-FnSymbol* getAutoCopyForType(Type* type);
-void getAutoCopyTypeKeys(Vec<Type*> &keys); // type to chpl__autoCopy function
+void       getAutoCopyTypeKeys(Vec<Type*>& keys);
 
 bool       propagateNotPOD(Type* t);
 
@@ -88,8 +86,18 @@ bool isStandaloneIterator(FnSymbol* fn);
 
 bool isDispatchParent(Type* t, Type* pt);
 
-bool canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes = NULL);
-bool canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* promotes = NULL, bool paramCoerce = false);
+bool canCoerce(Type*     actualType,
+               Symbol*   actualSym,
+               Type*     formalType,
+               FnSymbol* fn,
+               bool*     promotes = NULL);
+
+bool canDispatch(Type*     actualType,
+                 Symbol*   actualSym,
+                 Type*     formalType,
+                 FnSymbol* fn          = NULL,
+                 bool*     promotes    = NULL,
+                 bool      paramCoerce = false);
 
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
@@ -104,12 +112,20 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
-Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE);
+Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
+                                              SymExpr*    origSE);
+
 void implementForallIntents1(DefExpr* defChplIter);
+
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
+
+void implementForallIntents2wrapper(CallExpr* call,
+                                    CallExpr* origToLeaderCall);
+
 void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall);
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignore_isResolved);
+
+void stashPristineCopyOfLeaderIter(FnSymbol* origLeader,
+                                   bool      ignoreIsResolved);
 
 // reduce intents
 void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
@@ -124,39 +140,39 @@ void      instantiateBody(FnSymbol* fn);
 TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
+
 FnSymbol* determineRootFunc(FnSymbol* fn);
+
 void determineAllSubs(FnSymbol* fn, FnSymbol* root, SymbolMap& subs,
                       SymbolMap& all_subs);
-FnSymbol* instantiateFunction(FnSymbol* fn, FnSymbol* root, SymbolMap& all_subs,
-                              CallExpr* call, SymbolMap& subs, SymbolMap& map);
+
+FnSymbol* instantiateFunction(FnSymbol*  fn,
+                              FnSymbol*  root,
+                              SymbolMap& allSubs,
+                              CallExpr*  call,
+                              SymbolMap& subs,
+                              SymbolMap& map);
+
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
-// disambiguation
-
-/** Contextual info used by the disambiguation process.
- *
- * This class wraps information that is used by multiple functions during the
- * function disambiguation process.
- */
 class DisambiguationContext {
 public:
-                               DisambiguationContext(CallInfo& info);
+                 DisambiguationContext(CallInfo& info);
 
-  const DisambiguationContext& forPair(int newI, int newJ);
+  Vec<Symbol*>*  actuals;
+  Expr*          scope;
+  bool           explain;
 
-  Vec<Symbol*>* actuals;
-  Expr*         scope;
-  bool          explain;
-  int           i;
-  int           j;
+private:
+                 DisambiguationContext();
 };
 
 
 ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    DisambiguationContext      DC,
-                    bool                       ignoreWhere,
-                    Vec<ResolutionCandidate*>& ambiguous);
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous);
 
 // Regular resolve functions
 void      resolveFormals(FnSymbol* fn);
@@ -202,13 +218,15 @@ void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+
 // returns true if the function was handled
 bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
+
 AggregateType* computeNonRefTuple(AggregateType* t);
+
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 
 bool evaluateWhereClause(FnSymbol* fn);
-
 
 bool isAutoDestroyedVariable(Symbol* sym);
 
