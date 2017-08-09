@@ -3980,8 +3980,10 @@ proc channel.writeln(out error:syserr):bool {
 
 // documented in style= error= version
 pragma "no doc"
-proc channel.writeln():bool {
-  return this.write(new ioNewline());
+proc channel.writeln():bool throws {
+  try {
+    return this.write(new ioNewline());
+  }
 }
 
 // documented in style= error= version
@@ -4001,8 +4003,10 @@ proc channel.writeln(const args ...?k):bool throws {
 // documented in style= error= version
 pragma "no doc"
 proc channel.writeln(const args ...?k,
-                     style:iostyle):bool {
-  return this.write((...args), new ioNewline(), style=style);
+                     style:iostyle):bool throws {
+  try {
+    return this.write((...args), new ioNewline(), style=style);
+  }
 }
 
 
