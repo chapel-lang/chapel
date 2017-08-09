@@ -65,6 +65,7 @@ release/examples/benchmarks/ssca2/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/comd/llnl/CoMD.ml-time.graph
+studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.ml-time.graph
 studies/isx/isx.ml-time.graph
 studies/isx/isx-hand-optimized.ml-time.graph
 release/examples/benchmarks/isx/isx-release.ml-time.graph
@@ -89,6 +90,7 @@ release/examples/benchmarks/ssca2/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/comd/llnl/CoMD.ml-time.graph
+studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.ml-time.graph
 # suite: - ISx (time)
 studies/isx/isx.ml-time.graph
 studies/isx/isx-hand-optimized.ml-time.graph
