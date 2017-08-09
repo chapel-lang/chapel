@@ -1,6 +1,17 @@
-// Sparse matrix-matrix multiplication performance benchmark
-// TODO: Compare to MKL sparse multiplication && scipy.sparse multiplication
+/* Sparse matrix-matrix multiplication performance benchmark */
+/* TODO:
 
+   Comparisons we'd like to make include:
+
+   Chapel:
+     - CSR * CSC - optimized
+     - CSR * cSC - naive
+   Python:
+     - scipy.sparse.csr . scipy.sparse.csc
+   MKL:
+     - mkl_dcsrmultcsr()
+
+*/
 use LayoutCS;
 use Random;
 use Time;
