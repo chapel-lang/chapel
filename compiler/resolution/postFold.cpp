@@ -29,6 +29,10 @@
 
 #include "../ifa/prim_data.h"
 
+static Expr* postFoldCallExpr(CallExpr* call);
+
+static Expr* postFoldSymExpr(SymExpr* symExpr);
+
 static void foldEnumOp(int         op,
                        EnumSymbol* e1,
                        EnumSymbol* e2,
@@ -95,6 +99,46 @@ Expr* postFold(Expr* expr) {
     return result;
 
   SET_LINENO(expr);
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    result = postFoldCallExpr(call);
+
+  } else if (SymExpr* sym = toSymExpr(expr)) {
+    result = postFoldSymExpr(sym);
+  }
+
+  if (CondStmt* cond = toCondStmt(result->parentExpr)) {
+    if (cond->condExpr == result) {
+      if (Expr* expr = cond->foldConstantCondition()) {
+        result = expr;
+      } else {
+        //
+        // push try block
+        //
+        if (SymExpr* se = toSymExpr(result))
+          if (se->symbol() == gTryToken)
+            tryStack.add(cond);
+      }
+    }
+  }
+
+  //
+  // pop try block and delete else
+  //
+  if (tryStack.n) {
+    if (BlockStmt* block = toBlockStmt(result)) {
+      if (tryStack.tail()->thenStmt == block) {
+        tryStack.tail()->replace(block->remove());
+        tryStack.pop();
+      }
+    }
+  }
+
+  return result;
+}
+
+static Expr* postFoldCallExpr(CallExpr* expr) {
+  Expr* result = expr;
 
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->resolvedFunction()) {
@@ -470,7 +514,15 @@ Expr* postFold(Expr* expr) {
         insertValueTemp(call->getStmtExpr(), actual);
       }
     }
-  } else if (SymExpr* sym = toSymExpr(expr)) {
+  }
+
+  return result;
+}
+
+static Expr* postFoldSymExpr(SymExpr* expr) {
+  Expr* result = expr;
+
+  if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* val = paramMap.get(sym->symbol())) {
       CallExpr* call = toCallExpr(sym->parentExpr);
       if (call && call->get(1) == sym) {
@@ -533,33 +585,6 @@ Expr* postFold(Expr* expr) {
         }
       } else {
         sym->setSymbol(val);
-      }
-    }
-  }
-
-  if (CondStmt* cond = toCondStmt(result->parentExpr)) {
-    if (cond->condExpr == result) {
-      if (Expr* expr = cond->foldConstantCondition()) {
-        result = expr;
-      } else {
-        //
-        // push try block
-        //
-        if (SymExpr* se = toSymExpr(result))
-          if (se->symbol() == gTryToken)
-            tryStack.add(cond);
-      }
-    }
-  }
-
-  //
-  // pop try block and delete else
-  //
-  if (tryStack.n) {
-    if (BlockStmt* block = toBlockStmt(result)) {
-      if (tryStack.tail()->thenStmt == block) {
-        tryStack.tail()->replace(block->remove());
-        tryStack.pop();
       }
     }
   }
