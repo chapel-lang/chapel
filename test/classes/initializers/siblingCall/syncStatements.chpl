@@ -3,19 +3,19 @@
 // statement around a this.init() call, as the sync statement itself introduces
 // no parallelism or loop structures.
 class Foo {
-   var x = 11;
+  var x = 11;
 
-   proc init() {
-      sync {
-         this.init(-4);
-      }
-      writeln("whee!");
-   }
+  proc init() {
+    sync {
+      this.init(-4);
+    }
+    writeln("whee!");
+  }
 
-   proc init(xVal) {
-      x = xVal;
-      super.init();
-   }
+  proc init(xVal) {
+    x = xVal;
+    super.init();
+  }
 }
 
 var foo = new Foo();

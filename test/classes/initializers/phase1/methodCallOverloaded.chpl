@@ -1,24 +1,24 @@
 class Foo {
-   var x: bool;
+  var x: bool;
 
-   proc init(val: int) {
-      var xVal: bool;
-      if (overloaded(val) > overloaded(val, val)) {
-         xVal = false;
-      } else {
-         xVal = true;
-      }
-      x = xVal;
-      super.init();
-   }
+  proc init(val: int) {
+    var xVal: bool;
+    if (overloaded(val) > overloaded(val, val)) {
+      xVal = false;
+    } else {
+      xVal = true;
+    }
+    x = xVal;
+    super.init();
+  }
 
-   proc overloaded(val: int) {
-      return val;
-   }
+  proc overloaded(val: int) {
+    return val;
+  }
 
-   proc overloaded(val1: int, val2: int) {
-      return val1 + val2;
-   }
+  proc overloaded(val1: int, val2: int) {
+    return val1 + val2;
+  }
 }
 
 var foo = new Foo(-1);

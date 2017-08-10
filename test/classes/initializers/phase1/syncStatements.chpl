@@ -2,14 +2,14 @@
 // themselves do not introduce parallelism or loops, so it should be no problem
 // to have a field initialization within them.
 class Foo {
-   var x: int;
+  var x: int;
 
-   proc init(xVal) {
-      sync {
-         x = xVal;
-      }
-      super.init();
-   }
+  proc init(xVal) {
+    sync {
+      x = xVal;
+    }
+    super.init();
+  }
 }
 
 var foo = new Foo(13);
