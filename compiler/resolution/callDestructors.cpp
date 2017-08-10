@@ -984,19 +984,23 @@ changeRetToArgAndClone(CallExpr* move,
 }
 
 
-static void
-returnRecordsByReferenceArguments() {
+static void returnRecordsByReferenceArguments() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
-      if (FnSymbol* fn = requiresImplicitDestroy(call)) {
-        if (fn->hasFlag(FLAG_EXTERN))
-          continue;
-        CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE) ||
-                   move->isPrimitive(PRIM_ASSIGN));
-        SymExpr* lhs = toSymExpr(move->get(1));
-        INT_ASSERT(!lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
-        changeRetToArgAndClone(move, lhs->symbol(), call, fn);
+    if (call->parentSymbol != NULL) {
+      if (requiresImplicitDestroy(call) == true) {
+        FnSymbol* fn = call->resolvedFunction();
+
+        if (fn->hasFlag(FLAG_EXTERN) == false) {
+          CallExpr* move = toCallExpr(call->parentExpr);
+          SymExpr*  lhs  = toSymExpr(move->get(1));
+
+          INT_ASSERT(move->isPrimitive(PRIM_MOVE)   == true||
+                     move->isPrimitive(PRIM_ASSIGN) == true);
+
+          INT_ASSERT(lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false);
+
+          changeRetToArgAndClone(move, lhs->symbol(), call, fn);
+        }
       }
     }
   }

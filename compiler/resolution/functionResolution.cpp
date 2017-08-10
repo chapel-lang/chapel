@@ -5831,49 +5831,46 @@ bool isInstantiation(Type* sub, Type* super) {
 }
 
 
-//
-// returns resolved function if the function requires an implicit
-// destroy of its returned value (i.e. reference count)
-//
-// Currently, FLAG_DONOR_FN is only relevant when placed on
-// chpl__autoCopy().
-//
-FnSymbol*
-requiresImplicitDestroy(CallExpr* call) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool requiresImplicitDestroy(CallExpr* call) {
+  bool retval = false;
+
   if (FnSymbol* fn = call->resolvedFunction()) {
     FnSymbol* parent = call->getFunction();
-    INT_ASSERT(parent);
 
-    if (!parent->hasFlag(FLAG_DONOR_FN) &&
-        // No autocopy/destroy calls in a donor function (this might
-        // need to change when this flag is used more generally)).
-        // Currently, this assumes we have thoughtfully written
-        // chpl__autoCopy functions.
-
-        // Return type is a record (which includes array, domain, dist,
-        // user record)
-        isRecord(fn->retType) &&
-
-        // These are special functions where we don't want to destroy
-        // the result
-        !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
-        !fn->isIterator() &&
-        !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
-        !fn->hasFlag(FLAG_DONOR_FN) &&
-        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
-        strcmp(fn->name, "=") &&
-        strcmp(fn->name, "_defaultOf") &&
-        !fn->hasFlag(FLAG_AUTO_II) &&
-        !fn->hasFlag(FLAG_CONSTRUCTOR) &&
-        !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-      return fn;
+    if (parent->hasFlag(FLAG_DONOR_FN)                        == false &&
+        isRecord(fn->retType)                                 == true  &&
+        fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
+        fn->isIterator()                                      == false &&
+        fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
+        fn->hasFlag(FLAG_DONOR_FN)                            == false &&
+        fn->hasFlag(FLAG_INIT_COPY_FN)                        == false &&
+        fn->hasFlag(FLAG_AUTO_II)                             == false &&
+        fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
+        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
+        strcmp(fn->name, "=")                                 !=     0 &&
+        strcmp(fn->name, "_defaultOf")                        !=     0) {
+      retval = true;
     }
   }
-  return NULL;
+
+  return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
+  bool retval = false;
+
   if (BlockStmt* block = toBlockStmt(expr)) {
     if (block->isWhileStmt() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param while loop");
@@ -5895,13 +5892,16 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
 
   if (paramMap.get(fn->getReturnSymbol())) {
     CallExpr* call = toCallExpr(fn->body->body.tail);
+
     INT_ASSERT(call);
     INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+
     call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
-    return true; // param function is resolved
+
+    retval = true; // param function is resolved
   }
 
-  return false;
+  return retval;
 }
 
 
