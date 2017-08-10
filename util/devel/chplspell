@@ -64,12 +64,10 @@ DEFAULTDIRS=(
 	     doc/rst/developer   doc/rst/language   doc/rst/meta
 	     doc/rst/platforms   doc/rst/technotes  doc/rst/tools
 	     doc/rst/users-guide doc/rst/usingchapel
-	     test/release/examples/benchmarks/shootout
-	     test/release/examples/primers
+	     test/release
 	     test/studies/shootout
 	     .github
 )
-# TODO: test/release
 
 # DEFAULTFILES are just files in $CHPL_HOME or in a directory
 # otherwise not suited for DEFAULTDIRS.  (The latter must have their
