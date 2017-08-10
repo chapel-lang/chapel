@@ -259,6 +259,10 @@ all:
   07/31/17:
     - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
       config: 16 node XC
+  08/08/17:
+    - text: With comm=ugni, register large arrays dynamically (#6947)
+      config: 16 node XC
+
 
 
 AllCompTime:
