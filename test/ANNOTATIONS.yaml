@@ -577,6 +577,8 @@ jacobi:
     - add param versions of min/max for ints (#5073)
   01/13/17:
     - refactoring of rectangular IO (#5157)
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 knucleotide:
   10/17/15:
