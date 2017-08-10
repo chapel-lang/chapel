@@ -50,28 +50,33 @@ NORMALGLOBS=("-name" "*.chpl"  "-o"
              "-name" "*.h"     "-o"
              "-name" "README*" "-o"
              "-name" "*.md"    "-o"
-             "-name" "*.rst"   "-o"
-             "-name" "*.1" )
-# *.1 are man pages
+             "-name" "*.rst" )
 
 # Latex files to look for when recursing through directories.
 # These are tracked separately because scspell needs --no-c-escapes for them.
 LATEXGLOBS=("-name" "*.tex")
 
+# Directories under doc/ are listed explicitly to exclude directories
+# generated via "make docs".  The generated files are generated from
+# other files we're already spellchecking.
 DEFAULTDIRS=( \
-	     compiler doc man modules runtime spec \
+	     compiler man modules runtime spec \
+	     doc/rst/developer   doc/rst/language   doc/rst/meta  \
+	     doc/rst/platforms   doc/rst/technotes  doc/rst/tools \
+	     doc/rst/users-guide doc/rst/usingchapel              \
 	     test/release/examples/benchmarks/shootout \
 	     test/release/examples/primers \
 	     test/studies/shootout \
 	     .github
 )
-# TODO: tools util test/release
+# TODO: test/release
 
 # DEFAULTFILES are just files in $CHPL_HOME or in a directory
 # otherwise not suited for DEFAULTDIRS.  (The latter must have their
 # paths fully specified.  We don't search for these; just a straight-up
 # match in $CHPL_HOME.)
-DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst" "test/ANNOTATIONS.yaml")
+DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst" \
+	      "test/ANNOTATIONS.yaml" "doc/README.rst")
 
 # Filter out files with "too much" noise.  LAPACK.chpl is over 20k
 # lines of mostly noise, which qualifies.
@@ -80,7 +85,7 @@ DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst" "test/ANNOTATIONS.
 # handling entire directories.  This setting has no impact on files specified
 # specifically on the command line.
 FILTEROUT="bison-chapel.cpp bison-chapel.h flex-chapel.cpp flex-chapel.h \
-           LAPACK.chpl LAPACK.rst"
+           LAPACK.chpl"
 
 
 # Here endeth the configuration options.  The rest of the script
