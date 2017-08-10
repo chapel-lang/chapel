@@ -60,7 +60,7 @@ private:
 
   bool                      computeAlignment(CallInfo& info);
 
-  void                      computeSubstitutions(bool inInitRes = false);
+  void                      computeSubstitutions();
 
   void                      resolveTypedefedArgTypes();
 

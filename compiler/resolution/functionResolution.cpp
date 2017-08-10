@@ -4864,6 +4864,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
       // ... then mark LHS constant.
       lhsSym->addFlag(FLAG_CONST);
     }
+  } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+    lhsSym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
   }
 
   moveFinalize(call);
@@ -4967,6 +4970,17 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     }
 
   } else {
+    if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+      Type* baseType = rhs->get(1)->getValType();
+      const char* memberName = get_string(rhs->get(2));
+      Symbol* sym = baseType->getField(memberName);
+      if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          se->symbol()->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+        }
+      }
+    }
+
     moveFinalize(call);
   }
 }
@@ -5328,6 +5342,8 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   VarSymbol* new_temp  = newTemp("new_temp", at);
   DefExpr*   def       = new DefExpr(new_temp);
+
+  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
@@ -6044,6 +6060,29 @@ resolveExpr(Expr* expr) {
       } else {
         INT_ASSERT(call->isResolved());
         resolveFns(call->resolvedFunction());
+      }
+
+      for (int i = 1; i < call->numActuals(); i++) {
+        Expr* actualExpr = call->get(i);
+        Symbol* actualSym = NULL;
+        if (SymExpr* actual = toSymExpr(actualExpr)) {
+          actualSym = actual->symbol();
+        } else if (NamedExpr* named = toNamedExpr(actualExpr)) {
+          SymExpr* namedSe = toSymExpr(named->actual);
+          INT_ASSERT(namedSe);
+          actualSym = namedSe->symbol();
+        } else {
+          INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
+        }
+
+        if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+          Symbol* formal = call->resolvedFunction()->getFormal(i);
+          INT_ASSERT(!formal->type->symbol->hasFlag(FLAG_GENERIC));
+          // The type has been determined to no longer be generic.  Update the
+          // delayed instance to have the right type.
+          actualSym->type = formal->type;
+          actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+        }
       }
     }
 

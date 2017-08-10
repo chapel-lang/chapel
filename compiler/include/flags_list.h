@@ -128,6 +128,7 @@ symbolFlag( FLAG_FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program"
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
+symbolFlag( FLAG_DELAY_GENERIC_EXPANSION, npr, "delay instantiation", "generics instances whose instantiation  will be determined shortly")
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
