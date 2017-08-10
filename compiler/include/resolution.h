@@ -80,8 +80,10 @@ bool       isInstantiation(Type* sub, Type* super);
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
-FnSymbol* requiresImplicitDestroy(CallExpr* call);
+bool requiresImplicitDestroy(CallExpr* call);
+
 bool isLeaderIterator(FnSymbol* fn);
+
 bool isStandaloneIterator(FnSymbol* fn);
 
 bool isDispatchParent(Type* t, Type* pt);

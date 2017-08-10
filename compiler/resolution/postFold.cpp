@@ -263,7 +263,7 @@ Expr* postFold(Expr* expr) {
           if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-              if (requiresImplicitDestroy(rhsCall)) {
+              if (requiresImplicitDestroy(rhsCall) == true) {
                 // this still seems to be necessary even if
                 // isUserDefinedRecord(lhs->symbol()->type) == true
                 // see call-expr-tmp.chpl for example
