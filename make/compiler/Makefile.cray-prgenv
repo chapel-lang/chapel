@@ -33,15 +33,6 @@ RANLIB = ranlib
 # flags
 #
 
-# gcc 5.1 introduced a new libstdc++ ABI to conform with the C11 standard, but
-# it is incompatible with the old ABI. If Chapel third-party/runtime C++ code
-# (e.g. re2) is built with the new ABI, the generated code must also use the
-# new ABI or we'll get link errors. However, it's possible for a user to use an
-# older version of gcc than the one used to build the runtime/third-party, so
-# we force the use of the old ABI so our libs can be linked with code that's
-# using either ABI.
-CXXFLAGS += -D_GLIBCXX_USE_CXX11_ABI=0
-
 DEBUG_CFLAGS = -g
 OPT_CFLAGS = -O3
 
