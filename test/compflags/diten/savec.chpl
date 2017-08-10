@@ -5,7 +5,7 @@ var ret: int;
 
 extern proc system(s: c_string): int(32);
 
-ret = system(("chpl --savec " + outdir + " " + filename).c_str());
+ret = system((CHPL_HOME+"/bin/"+CHPL_HOST_PLATFORM+"/"+"chpl --savec " + outdir + " " + filename).c_str());
 if ret != 0 then
   halt("Error compiling Chapel code");
 
