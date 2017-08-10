@@ -29,7 +29,9 @@
 
 #include "../ifa/prim_data.h"
 
-static Expr* postFoldCallExpr(CallExpr* call);
+static Expr* postFoldNormal(CallExpr* call);
+
+static Expr* postFoldPrimop(CallExpr* call);
 
 static Expr* postFoldSymExpr(SymExpr* symExpr);
 
@@ -101,7 +103,13 @@ Expr* postFold(Expr* expr) {
   SET_LINENO(expr);
 
   if (CallExpr* call = toCallExpr(expr)) {
-    result = postFoldCallExpr(call);
+    if (call->isResolved() == true) {
+      result = postFoldNormal(call);
+
+    } else {
+      result = postFoldPrimop(call);
+
+    }
 
   } else if (SymExpr* sym = toSymExpr(expr)) {
     result = postFoldSymExpr(sym);
@@ -137,7 +145,7 @@ Expr* postFold(Expr* expr) {
   return result;
 }
 
-static Expr* postFoldCallExpr(CallExpr* expr) {
+static Expr* postFoldNormal(CallExpr* expr) {
   Expr* result = expr;
 
   if (CallExpr* call = toCallExpr(expr)) {
@@ -173,6 +181,24 @@ static Expr* postFoldCallExpr(CallExpr* expr) {
           }
         }
       }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+
+  return result;
+}
+
+static Expr* postFoldPrimop(CallExpr* expr) {
+  Expr* result = expr;
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      (void) fn;
+
+      INT_ASSERT(false);
+
     } else if (call->isPrimitive(PRIM_QUERY_TYPE_FIELD) ||
                call->isPrimitive(PRIM_QUERY_PARAM_FIELD)) {
       SymExpr* classWrap = toSymExpr(call->get(1));
