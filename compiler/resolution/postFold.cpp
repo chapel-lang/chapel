@@ -33,6 +33,8 @@ static Expr* postFoldNormal(CallExpr* call);
 
 static Expr* postFoldPrimop(CallExpr* call);
 
+static Expr* postFoldMove(CallExpr* call);
+
 static Expr* postFoldSymExpr(SymExpr* symExpr);
 
 static void foldEnumOp(int         op,
@@ -210,148 +212,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
         }
       }
     }
-  }
-  // param initialization should not involve PRIM_ASSIGN or "=".
-  else if (call->isPrimitive(PRIM_MOVE)) {
-    bool set = false;
-    if (SymExpr* lhs = toSymExpr(call->get(1))) {
-      if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
-        if (paramMap.get(lhs->symbol()))
-          INT_FATAL(call, "parameter set multiple times");
-        VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
-        // We are expecting the LHS to be a var (what else could it be? )
-        if (lhsVar->immediate) {
-          // The value of the LHS of this move has already been
-          // established, most likely through a construct like
-          // if (cond) return x;
-          // return y;
-          // In this case, the first 'true' conditional that hits a return
-          // can fast-forward to the end of the routine, and some
-          // resolution time can be saved.
-          // Re-enable the fatal error to catch this case; the correct
-          // solution is to ensure that the containing expression is never
-          // resolved, using the abbreviated resolution suggested above.
-          // INT_ASSERT(!lhsVar->immediate);
-          set = true; // That is, set previously.
-        } else {
-          if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
-              if (rhsVar->immediate) {
-                paramMap.put(lhs->symbol(), rhsVar);
 
-                lhs->symbol()->defPoint->remove();
-
-                call->convertToNoop();
-
-                set = true;
-              }
-            }
-
-            if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
-              paramMap.put(lhs->symbol(), rhsv);
-
-              lhs->symbol()->defPoint->remove();
-
-              call->convertToNoop();
-
-              set = true;
-            }
-          }
-        }
-
-        if (Symbol* lhsSym = lhs->symbol()) {
-          if (lhsSym->isParameter()) {
-            if (!lhsSym->hasFlag(FLAG_TEMP)) {
-              if (!isLegalParamType(lhsSym->type)) {
-                USR_FATAL_CONT(call,
-                               "'%s' is not of a supported param type",
-                               lhsSym->name);
-
-              } else if (!set) {
-                USR_FATAL_CONT(call,
-                               "Initializing parameter '%s' to value "
-                               "not known at compile time",
-                               lhsSym->name);
-                lhs->symbol()->removeFlag(FLAG_PARAM);
-              }
-
-            } else /* this is a compiler temp */ {
-              if (lhsSym->hasFlag(FLAG_RVV) && !set) {
-                USR_FATAL_CONT(call,
-                               "'param' functions cannot return "
-                               "non-'param' values");
-              }
-            }
-          }
-        }
-      }
-
-      if (!set) {
-        if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {
-          // Add FLAG_TYPE_VARIABLE when relevant
-          if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
-              lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-          } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
-            if (FnSymbol* fn = rhs->resolvedFunction()) {
-              if (fn->retTag == RET_TYPE)
-                lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-            } else if (rhs->isPrimitive(PRIM_DEREF)) {
-              if (isTypeExpr(rhs->get(1)))
-                lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-            }
-          }
-        }
-        if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_TYPEOF)) {
-            lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-          }
-          if (FnSymbol* fn = rhs->resolvedFunction()) {
-            if (fn->name == astrSequals && fn->retType == dtVoid) {
-              call->replace(rhs->remove());
-              result = rhs;
-              set = true;
-            }
-          }
-        }
-      }
-
-      if (!set) {
-        if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-            !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-          if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-            if (requiresImplicitDestroy(rhsCall) == true) {
-              // this still seems to be necessary even if
-              // isUserDefinedRecord(lhs->symbol()->type) == true
-              // see call-expr-tmp.chpl for example
-              lhs->symbol()->addFlag(FLAG_INSERT_AUTO_COPY);
-              lhs->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
-            }
-          }
-        }
-
-        if (isReferenceType(lhs->symbol()->type) ||
-            lhs->symbol()->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
-            lhs->symbol()->type->symbol->hasFlag(FLAG_ARRAY))
-          // Should this conditional include domains, distributions, sync and/or single?
-          // TODO -- remove this? Or explain its purpose?
-          lhs->symbol()->removeFlag(FLAG_EXPR_TEMP);
-      }
-
-      if (!set) {
-        if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_NO_INIT)) {
-            // If the lhs is a primitive, then we can safely just remove this
-            // value.  Otherwise the type needs to be resolved a little
-            // further and so this statement can't be removed until
-            // resolveRecordInitializers
-            if (!isAggregateType(rhs->get(1)->getValType())) {
-              call->convertToNoop();
-            }
-          }
-        }
-      }
-    }
+  } else if (call->isPrimitive(PRIM_MOVE)) {
+    result = postFoldMove(call);
 
   } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
     Type* baseType = call->get(1)->getValType();
@@ -374,9 +237,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
         }
       }
     }
-
-
-
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE)) {
     if (isTypeExpr(call->get(1)) == true  ||
@@ -402,8 +262,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
         call->replace(result);
       }
     }
-
-
 
   } else if (call->isPrimitive(PRIM_CAST)) {
     Type* t= call->get(1)->typeInfo();
@@ -525,6 +383,152 @@ static Expr* postFoldPrimop(CallExpr* call) {
     //
     for_actuals(actual, call) {
       insertValueTemp(call->getStmtExpr(), actual);
+    }
+  }
+
+  return result;
+}
+
+static Expr* postFoldMove(CallExpr* call) {
+  bool  set    = false;
+  Expr* result = call;
+
+  if (SymExpr* lhs = toSymExpr(call->get(1))) {
+    if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
+      if (paramMap.get(lhs->symbol()))
+        INT_FATAL(call, "parameter set multiple times");
+      VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+      // We are expecting the LHS to be a var (what else could it be? )
+      if (lhsVar->immediate) {
+        // The value of the LHS of this move has already been
+        // established, most likely through a construct like
+        // if (cond) return x;
+        // return y;
+        // In this case, the first 'true' conditional that hits a return
+        // can fast-forward to the end of the routine, and some
+        // resolution time can be saved.
+        // Re-enable the fatal error to catch this case; the correct
+        // solution is to ensure that the containing expression is never
+        // resolved, using the abbreviated resolution suggested above.
+        // INT_ASSERT(!lhsVar->immediate);
+        set = true; // That is, set previously.
+      } else {
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
+          if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
+            if (rhsVar->immediate) {
+              paramMap.put(lhs->symbol(), rhsVar);
+
+              lhs->symbol()->defPoint->remove();
+
+              call->convertToNoop();
+
+              set = true;
+            }
+          }
+
+          if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
+            paramMap.put(lhs->symbol(), rhsv);
+
+            lhs->symbol()->defPoint->remove();
+
+            call->convertToNoop();
+
+            set = true;
+          }
+        }
+      }
+
+      if (Symbol* lhsSym = lhs->symbol()) {
+        if (lhsSym->isParameter()) {
+          if (!lhsSym->hasFlag(FLAG_TEMP)) {
+            if (!isLegalParamType(lhsSym->type)) {
+              USR_FATAL_CONT(call,
+                             "'%s' is not of a supported param type",
+                             lhsSym->name);
+
+            } else if (!set) {
+              USR_FATAL_CONT(call,
+                             "Initializing parameter '%s' to value "
+                             "not known at compile time",
+                             lhsSym->name);
+              lhs->symbol()->removeFlag(FLAG_PARAM);
+            }
+
+          } else /* this is a compiler temp */ {
+            if (lhsSym->hasFlag(FLAG_RVV) && !set) {
+              USR_FATAL_CONT(call,
+                             "'param' functions cannot return "
+                             "non-'param' values");
+            }
+          }
+        }
+      }
+    }
+
+    if (!set) {
+      if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {
+        // Add FLAG_TYPE_VARIABLE when relevant
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
+          if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+            lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+        } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
+          if (FnSymbol* fn = rhs->resolvedFunction()) {
+            if (fn->retTag == RET_TYPE)
+              lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+          } else if (rhs->isPrimitive(PRIM_DEREF)) {
+            if (isTypeExpr(rhs->get(1)))
+              lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+          }
+        }
+      }
+      if (CallExpr* rhs = toCallExpr(call->get(2))) {
+        if (rhs->isPrimitive(PRIM_TYPEOF)) {
+          lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+        }
+        if (FnSymbol* fn = rhs->resolvedFunction()) {
+          if (fn->name == astrSequals && fn->retType == dtVoid) {
+            call->replace(rhs->remove());
+            result = rhs;
+            set = true;
+          }
+        }
+      }
+    }
+
+    if (!set) {
+      if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+          !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+          if (requiresImplicitDestroy(rhsCall) == true) {
+            // this still seems to be necessary even if
+            // isUserDefinedRecord(lhs->symbol()->type) == true
+            // see call-expr-tmp.chpl for example
+            lhs->symbol()->addFlag(FLAG_INSERT_AUTO_COPY);
+            lhs->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
+        }
+      }
+
+      if (isReferenceType(lhs->symbol()->type) ||
+          lhs->symbol()->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
+          lhs->symbol()->type->symbol->hasFlag(FLAG_ARRAY))
+        // Should this conditional include domains, distributions, sync and/or single?
+        // TODO -- remove this? Or explain its purpose?
+        lhs->symbol()->removeFlag(FLAG_EXPR_TEMP);
+    }
+
+    if (!set) {
+      if (CallExpr* rhs = toCallExpr(call->get(2))) {
+        if (rhs->isPrimitive(PRIM_NO_INIT)) {
+          // If the lhs is a primitive, then we can safely just remove this
+          // value.  Otherwise the type needs to be resolved a little
+          // further and so this statement can't be removed until
+          // resolveRecordInitializers
+          if (!isAggregateType(rhs->get(1)->getValType())) {
+            call->convertToNoop();
+          }
+        }
+      }
     }
   }
 
