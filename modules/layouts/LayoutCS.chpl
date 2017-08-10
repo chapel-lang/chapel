@@ -24,10 +24,6 @@ pragma "no doc"
 config param debugCS = false;
 
 pragma "no doc"
-/* For backwards-compatibility with LayoutCSR */
-type CSR = CS;
-
-pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
   proc init() { }
@@ -269,19 +265,18 @@ class CSDom: BaseSparseDomImpl {
     return (0, 0);
   }
 
-  // TODO: Fix this!
   proc dsiLast {
     if nnz == 0 then return (parentDom.low) - (1,1);
-    const _low = nnzDom.low;
+
     var _last = parentDom.low[1] - 1;
     for i in dom do
-      if startIdx[i] > _low then
-        _last = i;
+      if startIdx[i] > _last then
+        _last = i-1;
 
     if this.compressRows then
-      return (_last-1, idx[nnz]);
+      return (_last, idx[nnz]);
     else
-      return (idx[nnz], _last-1);
+      return (idx[nnz], _last);
   }
 
   proc dsiAdd(ind: rank*idxType) {

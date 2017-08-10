@@ -35,14 +35,29 @@ proc main() {
     var csrD: sparse subdomain(D) dmapped csrDmap,
         cscD: sparse subdomain(D) dmapped cscDmap;
 
+    // Empty domain
+    assert(csrD.first == (0,0));
+    assert(cscD.first == (0,0));
+    assert(csrD.last == (0,0));
+    assert(cscD.last == (0,0));
+
     csrD += [(1,2), (2,1), (4,5), (5,4)];
     cscD += [(1,2), (2,1), (4,5), (5,4)];
 
+    // Differentiate first & last for CSC & CSR
     assert(csrD.first == (1,2));
     assert(cscD.first == (2,1));
-    // TODO: Fix this!
     assert(csrD.last == (5,4));
     assert(cscD.last == (4,5));
+
+    csrD -= [(1,2), (2,1), (4,5)];
+    cscD -= [(1,2), (2,1), (4,5)];
+
+    // 1-element domain
+    assert(csrD.first == (5,4));
+    assert(cscD.first == (5,4));
+    assert(csrD.last == (5,4));
+    assert(cscD.last == (5,4));
   }
 
   // dsiEqualsDmap && default value
