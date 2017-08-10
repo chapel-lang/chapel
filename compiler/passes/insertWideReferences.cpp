@@ -411,7 +411,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 }
 
 static Type* getElementType(BaseAST* bs) {
-  Type* arrType = getNarrowType(bs).type();
+  Type* arrType = getNarrowType(bs->getValType()).type();
   INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS));
 
   return getDataClassType(arrType->symbol)->type;
