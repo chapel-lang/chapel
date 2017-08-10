@@ -59,14 +59,14 @@ LATEXGLOBS=("-name" "*.tex")
 # Directories under doc/ are listed explicitly to exclude directories
 # generated via "make docs".  The generated files are generated from
 # other files we're already spellchecking.
-DEFAULTDIRS=( \
-	     compiler man modules runtime spec \
-	     doc/rst/developer   doc/rst/language   doc/rst/meta  \
-	     doc/rst/platforms   doc/rst/technotes  doc/rst/tools \
-	     doc/rst/users-guide doc/rst/usingchapel              \
-	     test/release/examples/benchmarks/shootout \
-	     test/release/examples/primers \
-	     test/studies/shootout \
+DEFAULTDIRS=(
+	     compiler man modules runtime spec
+	     doc/rst/developer   doc/rst/language   doc/rst/meta
+	     doc/rst/platforms   doc/rst/technotes  doc/rst/tools
+	     doc/rst/users-guide doc/rst/usingchapel
+	     test/release/examples/benchmarks/shootout
+	     test/release/examples/primers
+	     test/studies/shootout
 	     .github
 )
 # TODO: test/release
@@ -75,7 +75,7 @@ DEFAULTDIRS=( \
 # otherwise not suited for DEFAULTDIRS.  (The latter must have their
 # paths fully specified.  We don't search for these; just a straight-up
 # match in $CHPL_HOME.)
-DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst" \
+DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst"
 	      "test/ANNOTATIONS.yaml" "doc/README.rst")
 
 # Filter out files with "too much" noise.  LAPACK.chpl is over 20k
