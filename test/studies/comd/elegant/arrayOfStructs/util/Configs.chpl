@@ -62,8 +62,8 @@ if xproc == 1 && yproc == 1 && zproc == 1 {
     halt("Number of locales must match xproc * yproc * zproc: ",
          xproc, " * ", yproc, " * ", zproc, " != ", numLocales);
 
-  const ReshapedDom     = {1..xproc, 1..yproc, 1..zproc};
-  const ReshapedLocales = reshape(Locales, ReshapedDom);
+  ReshapedDom     = {1..xproc, 1..yproc, 1..zproc};
+  ReshapedLocales = reshape(Locales, ReshapedDom);
 }
 
 
