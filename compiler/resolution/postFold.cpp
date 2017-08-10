@@ -54,9 +54,9 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual);
                                                                         \
         fold_constant(prim, lhs->immediate, NULL, &i3);                 \
                                                                         \
-        result = new SymExpr(new_ImmediateSymbol(&i3));                 \
+        retval = new SymExpr(new_ImmediateSymbol(&i3));                 \
                                                                         \
-        call->replace(result);                                          \
+        call->replace(retval);                                          \
       }                                                                 \
     }                                                                   \
   }
@@ -72,9 +72,9 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual);
                                                                         \
               fold_constant(prim, lhs->immediate, rhs->immediate, &i3); \
                                                                         \
-              result = new SymExpr(new_ImmediateSymbol(&i3));           \
+              retval = new SymExpr(new_ImmediateSymbol(&i3));           \
                                                                         \
-              call->replace(result);                                    \
+              call->replace(retval);                                    \
             }                                                           \
           }                                                             \
         }                                                               \
@@ -87,41 +87,42 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual);
                                                                         \
           foldEnumOp(prim, lhs, rhs, &imm);                             \
                                                                         \
-          result = new SymExpr(new_ImmediateSymbol(&imm));              \
+          retval = new SymExpr(new_ImmediateSymbol(&imm));              \
                                                                         \
-          call->replace(result);                                        \
+          call->replace(retval);                                        \
         }                                                               \
       }                                                                 \
     }                                                                   \
   }
 
+#include "AstDumpToNode.h"
 
 Expr* postFold(Expr* expr) {
-  Expr* result = expr;
+  Expr* retval = expr;
 
   if (expr->parentSymbol != NULL) {
     SET_LINENO(expr);
 
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isResolved() == true) {
-        result = postFoldNormal(call);
+        retval = postFoldNormal(call);
 
-      } else {
-        result = postFoldPrimop(call);
+      } else if (call->isPrimitive() == true) {
+        retval = postFoldPrimop(call);
       }
 
     } else if (SymExpr* sym = toSymExpr(expr)) {
-      result = postFoldSymExpr(sym);
+      retval = postFoldSymExpr(sym);
     }
 
-    if (CondStmt* cond = toCondStmt(result->parentExpr)) {
-      if (cond->condExpr == result) {
+    if (CondStmt* cond = toCondStmt(retval->parentExpr)) {
+      if (cond->condExpr == retval) {
         if (Expr* expr = cond->foldConstantCondition()) {
-          result = expr;
+          retval = expr;
 
         } else {
           // push try block
-          if (SymExpr* se = toSymExpr(result)) {
+          if (SymExpr* se = toSymExpr(retval)) {
             if (se->symbol() == gTryToken) {
               tryStack.add(cond);
             }
@@ -132,7 +133,7 @@ Expr* postFold(Expr* expr) {
 
     // pop try block and delete else
     if (tryStack.n) {
-      if (BlockStmt* block = toBlockStmt(result)) {
+      if (BlockStmt* block = toBlockStmt(retval)) {
         if (tryStack.tail()->thenStmt == block) {
           tryStack.tail()->replace(block->remove());
           tryStack.pop();
@@ -141,40 +142,52 @@ Expr* postFold(Expr* expr) {
     }
   }
 
-  return result;
+  return retval;
 }
 
 static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
-  Expr*     result = call;
+  Expr*     retval = call;
 
-  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
+  if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM) == true) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
-    if (ret && ret->immediate) {
-      result = new SymExpr(ret);
-      call->replace(result);
+
+    if (ret != NULL && ret->immediate != NULL) {
+      retval = new SymExpr(ret);
+
+      call->replace(retval);
+
     } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {
-      result = new SymExpr(es);
-      call->replace(result);
+      retval = new SymExpr(es);
+
+      call->replace(retval);
+
     } else if (ret == gVoid) {
-      result = new SymExpr(gVoid);
-      call->replace(result);
+      retval = new SymExpr(gVoid);
+
+      call->replace(retval);
     }
   }
 
-  if (fn->hasFlag(FLAG_MAYBE_TYPE) && fn->getReturnSymbol()->hasFlag(FLAG_TYPE_VARIABLE))
+  if (fn->hasFlag(FLAG_MAYBE_TYPE)                       == true &&
+      fn->getReturnSymbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     fn->retTag = RET_TYPE;
+  }
+
   if (fn->retTag == RET_TYPE) {
     Symbol* ret = fn->getReturnSymbol();
-    if (!ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-      result = new SymExpr(ret->type->symbol);
-      call->replace(result);
+
+    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+      retval = new SymExpr(ret->type->symbol);
+
+      call->replace(retval);
     }
   }
 
-  if (call->isNamedAstr(astrSequals)) {
+  if (call->isNamedAstr(astrSequals) == true) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
-      if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
+      if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
+          lhs->symbol()->isParameter()             == true) {
         if (paramMap.get(lhs->symbol())) {
           USR_FATAL(call, "parameter set multiple times");
         }
@@ -182,63 +195,73 @@ static Expr* postFoldNormal(CallExpr* call) {
     }
   }
 
-  return result;
+  return retval;
 }
 
 static Expr* postFoldPrimop(CallExpr* call) {
-  Expr* result = call;
+  Expr* retval = call;
 
-  if (call->isPrimitive(PRIM_QUERY_TYPE_FIELD) ||
-      call->isPrimitive(PRIM_QUERY_PARAM_FIELD)) {
+  if (call->isPrimitive(PRIM_MOVE) == true) {
+    retval = postFoldMove(call);
+
+  } else if (call->isPrimitive(PRIM_QUERY_TYPE_FIELD)  == true ||
+             call->isPrimitive(PRIM_QUERY_PARAM_FIELD) == true) {
     SymExpr* classWrap = toSymExpr(call->get(1));
-    // Really should be a symExpr
-    INT_ASSERT(classWrap);
-    AggregateType* ct = toAggregateType(classWrap->symbol()->type);
-    if (!ct) {
-      USR_FATAL(call, "Attempted to obtain field of a type that was not a record or class");
-    }
-    const char* memberName = get_string(call->get(2));
 
-    // Finds the field matching the specified name.
-    Vec<Symbol *> keys;
-    ct->substitutions.get_keys(keys);
-    forv_Vec(Symbol, key, keys) {
-      if (!strcmp(memberName, key->name)) {
-        // If there is a substitution for it, replace this call with that
-        // substitution
-        if (Symbol* value = ct->substitutions.get(key)) {
-          result = new SymExpr(value);
-          call->replace(result);
+    if (AggregateType* at = toAggregateType(classWrap->symbol()->type)) {
+      const char*  memberName = get_string(call->get(2));
+      Vec<Symbol*> keys;
+
+      at->substitutions.get_keys(keys);
+
+      forv_Vec(Symbol, key, keys) {
+        if (strcmp(memberName, key->name) == 0) {
+          // If there is a substitution for it, replace this call with that
+          // substitution
+          if (Symbol* value = at->substitutions.get(key)) {
+            retval = new SymExpr(value);
+
+            call->replace(retval);
+          }
         }
       }
+
+    } else {
+      USR_FATAL(call,
+                "Attempted to obtain field of a type that "
+                "was not a record or class");
     }
 
-  } else if (call->isPrimitive(PRIM_MOVE)) {
-    result = postFoldMove(call);
-
-  } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
-    Type* baseType = call->get(1)->getValType();
+  } else if (call->isPrimitive(PRIM_GET_MEMBER) == true) {
+    Type*       baseType   = call->get(1)->getValType();
     const char* memberName = get_string(call->get(2));
-    Symbol* sym = baseType->getField(memberName);
-    SymExpr* left = toSymExpr(call->get(1));
-    VarSymbol* varSym = toVarSymbol(sym);
-    if (left && left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      result = new SymExpr(sym->type->symbol);
-      call->replace(result);
-    } else if (sym->isParameter() || (varSym && varSym->isType())) {
+    Symbol*     sym        = baseType->getField(memberName);
+    SymExpr*    left       = toSymExpr(call->get(1));
+    VarSymbol*  varSym     = toVarSymbol(sym);
+
+    if (left != NULL && left->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      retval = new SymExpr(sym->type->symbol);
+
+      call->replace(retval);
+
+    } else if (sym->isParameter() == true ||
+               (varSym != NULL && varSym->isType() == true)) {
       Vec<Symbol*> keys;
+
       baseType->substitutions.get_keys(keys);
+
       forv_Vec(Symbol, key, keys) {
-        if (!strcmp(sym->name, key->name)) {
+        if (strcmp(sym->name, key->name) == 0) {
           if (Symbol* value = baseType->substitutions.get(key)) {
-            result = new SymExpr(value);
-            call->replace(result);
+            retval = new SymExpr(value);
+
+            call->replace(retval);
           }
         }
       }
     }
 
-  } else if (call->isPrimitive(PRIM_IS_SUBTYPE)) {
+  } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
     if (isTypeExpr(call->get(1)) == true  ||
         isTypeExpr(call->get(2)) == true)  {
       Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
@@ -253,153 +276,210 @@ static Expr* postFoldPrimop(CallExpr* call) {
           lt->symbol->hasFlag(FLAG_GENERIC) == false) {
 
         if (isSubTypeOrInstantiation(lt, rt) == true) {
-          result = new SymExpr(gTrue);
+          retval = new SymExpr(gTrue);
 
         } else {
-          result = new SymExpr(gFalse);
+          retval = new SymExpr(gFalse);
         }
 
-        call->replace(result);
+        call->replace(retval);
       }
     }
 
-  } else if (call->isPrimitive(PRIM_CAST)) {
+  } else if (call->isPrimitive(PRIM_CAST) == true) {
     Type* t= call->get(1)->typeInfo();
-    if (t == dtUnknown)
+
+    if (t == dtUnknown) {
       INT_FATAL(call, "Unable to resolve type");
+    }
+
     call->get(1)->replace(new SymExpr(t->symbol));
-  } else if (call->isPrimitive("string_compare")) {
+
+  } else if (call->isPrimitive("string_compare") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
     SymExpr* rhs = toSymExpr(call->get(2));
+
     INT_ASSERT(lhs && rhs);
+
     if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
       const char* lstr = get_string(lhs);
       const char* rstr = get_string(rhs);
-      int comparison = strcmp(lstr, rstr);
-      result = new SymExpr(new_IntSymbol(comparison));
-      call->replace(result);
+      int         cmp  = strcmp(lstr, rstr);
+
+      retval = new SymExpr(new_IntSymbol(cmp));
+
+      call->replace(retval);
     }
-  } else if (call->isPrimitive("string_concat")) {
+
+  } else if (call->isPrimitive("string_concat") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
     SymExpr* rhs = toSymExpr(call->get(2));
+
     INT_ASSERT(lhs && rhs);
+
     if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
       const char* lstr = get_string(lhs);
       const char* rstr = get_string(rhs);
-      if (lhs->symbol()->type == dtString)
-        result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
-      else
-        result = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
-      call->replace(result);
+
+      if (lhs->symbol()->type == dtString) {
+        retval = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+      } else {
+        retval = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
+      }
+
+      call->replace(retval);
     }
-  } else if (call->isPrimitive("string_length")) {
+
+  } else if (call->isPrimitive("string_length") == true) {
     SymExpr* se = toSymExpr(call->get(1));
+
     INT_ASSERT(se);
-    if (se->symbol()->isParameter()) {
-      const char* str = get_string(se);
-      int length = unescapeString(str, se).length();
-      result = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
-      call->replace(result);
+
+    if (se->symbol()->isParameter() == true) {
+      const char* str    = get_string(se);
+      int         length = unescapeString(str, se).length();
+
+      retval = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
+
+      call->replace(retval);
     }
-  } else if (call->isPrimitive("ascii")) {
+
+  } else if (call->isPrimitive("ascii") == true) {
     SymExpr* se = toSymExpr(call->get(1));
+
     INT_ASSERT(se);
-    if (se->symbol()->isParameter()) {
-      const char* str = get_string(se);
+
+    if (se->symbol()->isParameter() == true) {
+      const char*       str       = get_string(se);
       const std::string unescaped = unescapeString(str, se);
-      result = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
-      call->replace(result);
+
+      retval = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
+
+      call->replace(retval);
     }
-  } else if (call->isPrimitive("string_contains")) {
+
+  } else if (call->isPrimitive("string_contains") == true) {
     SymExpr* lhs = toSymExpr(call->get(1));
     SymExpr* rhs = toSymExpr(call->get(2));
+
     INT_ASSERT(lhs && rhs);
-    if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
+
+    if (lhs->symbol()->isParameter() == true &&
+        rhs->symbol()->isParameter() == true) {
       const char* lstr = get_string(lhs);
       const char* rstr = get_string(rhs);
-      result = new SymExpr(strstr(lstr, rstr) ? gTrue : gFalse);
-      call->replace(result);
+
+      retval = new SymExpr(strstr(lstr, rstr) ? gTrue : gFalse);
+
+      call->replace(retval);
     }
-  } else if (call->isPrimitive(PRIM_UNARY_MINUS)) {
+
+  } else if (call->isPrimitive(PRIM_UNARY_MINUS) == true) {
     FOLD_CALL1(P_prim_minus);
-  } else if (call->isPrimitive(PRIM_UNARY_PLUS)) {
+
+  } else if (call->isPrimitive(PRIM_UNARY_PLUS) == true) {
     FOLD_CALL1(P_prim_plus);
-  } else if (call->isPrimitive(PRIM_UNARY_NOT)) {
+
+  } else if (call->isPrimitive(PRIM_UNARY_NOT) == true) {
     FOLD_CALL1(P_prim_not);
-  } else if (call->isPrimitive(PRIM_UNARY_LNOT)) {
+
+  } else if (call->isPrimitive(PRIM_UNARY_LNOT) == true) {
     FOLD_CALL1(P_prim_lnot);
-  } else if (call->isPrimitive(PRIM_ADD)) {
+
+  } else if (call->isPrimitive(PRIM_ADD) == true) {
     FOLD_CALL2(P_prim_add);
-  } else if (call->isPrimitive(PRIM_SUBTRACT)) {
+
+  } else if (call->isPrimitive(PRIM_SUBTRACT) == true) {
     FOLD_CALL2(P_prim_subtract);
-  } else if (call->isPrimitive(PRIM_MULT)) {
+
+  } else if (call->isPrimitive(PRIM_MULT) == true) {
     FOLD_CALL2(P_prim_mult);
-  } else if (call->isPrimitive(PRIM_DIV)) {
+
+  } else if (call->isPrimitive(PRIM_DIV) == true) {
     FOLD_CALL2(P_prim_div);
-  } else if (call->isPrimitive(PRIM_MOD)) {
+
+  } else if (call->isPrimitive(PRIM_MOD) == true) {
     FOLD_CALL2(P_prim_mod);
-  } else if (call->isPrimitive(PRIM_EQUAL)) {
+
+  } else if (call->isPrimitive(PRIM_EQUAL) == true) {
     FOLD_CALL2(P_prim_equal);
-  } else if (call->isPrimitive(PRIM_NOTEQUAL)) {
+
+  } else if (call->isPrimitive(PRIM_NOTEQUAL) == true) {
     FOLD_CALL2(P_prim_notequal);
-  } else if (call->isPrimitive(PRIM_LESSOREQUAL)) {
+
+  } else if (call->isPrimitive(PRIM_LESSOREQUAL) == true) {
     FOLD_CALL2(P_prim_lessorequal);
-  } else if (call->isPrimitive(PRIM_GREATEROREQUAL)) {
+
+  } else if (call->isPrimitive(PRIM_GREATEROREQUAL) == true) {
     FOLD_CALL2(P_prim_greaterorequal);
-  } else if (call->isPrimitive(PRIM_LESS)) {
+
+  } else if (call->isPrimitive(PRIM_LESS) == true) {
     FOLD_CALL2(P_prim_less);
-  } else if (call->isPrimitive(PRIM_GREATER)) {
+
+  } else if (call->isPrimitive(PRIM_GREATER) == true) {
     FOLD_CALL2(P_prim_greater);
-  } else if (call->isPrimitive(PRIM_AND)) {
+
+  } else if (call->isPrimitive(PRIM_AND) == true) {
     FOLD_CALL2(P_prim_and);
-  } else if (call->isPrimitive(PRIM_OR)) {
+
+  } else if (call->isPrimitive(PRIM_OR) == true) {
     FOLD_CALL2(P_prim_or);
-  } else if (call->isPrimitive(PRIM_XOR)) {
+
+  } else if (call->isPrimitive(PRIM_XOR) == true) {
     FOLD_CALL2(P_prim_xor);
-  } else if (call->isPrimitive(PRIM_POW)) {
+
+  } else if (call->isPrimitive(PRIM_POW) == true) {
     FOLD_CALL2(P_prim_pow);
-  } else if (call->isPrimitive(PRIM_LSH)) {
+
+  } else if (call->isPrimitive(PRIM_LSH) == true) {
     FOLD_CALL2(P_prim_lsh);
-  } else if (call->isPrimitive(PRIM_RSH)) {
+
+  } else if (call->isPrimitive(PRIM_RSH) == true) {
     FOLD_CALL2(P_prim_rsh);
-  } else if (call->isPrimitive(PRIM_REQUIRE)) {
-    Expr* arg = call->argList.only();
-    const char* str;
+
+  } else if (call->isPrimitive(PRIM_REQUIRE) == true) {
+    Expr*       arg = call->argList.only();
+    const char* str = NULL;
+
     if (get_string(arg, &str)) {
       processStringInRequireStmt(str, false);
+
     } else {
       USR_FATAL(call, "'require' statements require string arguments");
     }
-    result = new CallExpr(PRIM_NOOP);
-    call->replace(result);
-  } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
-             (call->primitive &&
-              (!strncmp("_fscan", call->primitive->name, 6) ||
-               !strcmp("_readToEndOfLine", call->primitive->name) ||
-               !strcmp("_now_timer", call->primitive->name)))) {
-    //
-    // these primitives require temps to dereference actuals
-    //   why not do this to all primitives?
-    //
+
+    retval = new CallExpr(PRIM_NOOP);
+
+    call->replace(retval);
+
+  } else if (call->isPrimitive(PRIM_ARRAY_ALLOC)                == true ||
+             strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
+             strcmp (call->primitive->name, "_readToEndOfLine") == 0    ||
+             strcmp (call->primitive->name, "_now_timer")       == 0)   {
     for_actuals(actual, call) {
       insertValueTemp(call->getStmtExpr(), actual);
     }
   }
 
-  return result;
+  return retval;
 }
 
 static Expr* postFoldMove(CallExpr* call) {
   bool  set    = false;
-  Expr* result = call;
+  Expr* retval = call;
 
   if (SymExpr* lhs = toSymExpr(call->get(1))) {
-    if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) || lhs->symbol()->isParameter()) {
-      if (paramMap.get(lhs->symbol()))
+    if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
+        lhs->symbol()->isParameter()             == true) {
+
+      if (paramMap.get(lhs->symbol())) {
         INT_FATAL(call, "parameter set multiple times");
+      }
+
       VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+
       // We are expecting the LHS to be a var (what else could it be? )
-      if (lhsVar->immediate) {
+      if (lhsVar->immediate != NULL) {
         // The value of the LHS of this move has already been
         // established, most likely through a construct like
         // if (cond) return x;
@@ -412,10 +492,11 @@ static Expr* postFoldMove(CallExpr* call) {
         // resolved, using the abbreviated resolution suggested above.
         // INT_ASSERT(!lhsVar->immediate);
         set = true; // That is, set previously.
+
       } else {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
-            if (rhsVar->immediate) {
+            if (rhsVar->immediate != NULL) {
               paramMap.put(lhs->symbol(), rhsVar);
 
               lhs->symbol()->defPoint->remove();
@@ -439,23 +520,24 @@ static Expr* postFoldMove(CallExpr* call) {
       }
 
       if (Symbol* lhsSym = lhs->symbol()) {
-        if (lhsSym->isParameter()) {
-          if (!lhsSym->hasFlag(FLAG_TEMP)) {
-            if (!isLegalParamType(lhsSym->type)) {
+        if (lhsSym->isParameter() == true) {
+          if (lhsSym->hasFlag(FLAG_TEMP) == false) {
+            if (isLegalParamType(lhsSym->type) == false) {
               USR_FATAL_CONT(call,
                              "'%s' is not of a supported param type",
                              lhsSym->name);
 
-            } else if (!set) {
+            } else if (set == false) {
               USR_FATAL_CONT(call,
                              "Initializing parameter '%s' to value "
                              "not known at compile time",
                              lhsSym->name);
+
               lhs->symbol()->removeFlag(FLAG_PARAM);
             }
 
-          } else /* this is a compiler temp */ {
-            if (lhsSym->hasFlag(FLAG_RVV) && !set) {
+          } else {
+            if (lhsSym->hasFlag(FLAG_RVV) == true && set == false) {
               USR_FATAL_CONT(call,
                              "'param' functions cannot return "
                              "non-'param' values");
@@ -465,39 +547,47 @@ static Expr* postFoldMove(CallExpr* call) {
       }
     }
 
-    if (!set) {
-      if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE)) {
+    if (set == false) {
+      if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE) == true) {
         // Add FLAG_TYPE_VARIABLE when relevant
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+          if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
             lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+          }
+
         } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (FnSymbol* fn = rhs->resolvedFunction()) {
-            if (fn->retTag == RET_TYPE)
+            if (fn->retTag == RET_TYPE) {
               lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+            }
+
           } else if (rhs->isPrimitive(PRIM_DEREF)) {
-            if (isTypeExpr(rhs->get(1)))
+            if (isTypeExpr(rhs->get(1)) == true) {
               lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+            }
           }
         }
       }
+
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_TYPEOF)) {
+        if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
           lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
         }
+
         if (FnSymbol* fn = rhs->resolvedFunction()) {
           if (fn->name == astrSequals && fn->retType == dtVoid) {
             call->replace(rhs->remove());
-            result = rhs;
-            set = true;
+
+            retval = rhs;
+            set    = true;
           }
         }
       }
     }
 
-    if (!set) {
-      if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-          !lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (set == false) {
+      if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP)     == true &&
+          lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
           if (requiresImplicitDestroy(rhsCall) == true) {
             // this still seems to be necessary even if
@@ -511,20 +601,19 @@ static Expr* postFoldMove(CallExpr* call) {
 
       if (isReferenceType(lhs->symbol()->type) ||
           lhs->symbol()->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
-          lhs->symbol()->type->symbol->hasFlag(FLAG_ARRAY))
-        // Should this conditional include domains, distributions, sync and/or single?
-        // TODO -- remove this? Or explain its purpose?
+          lhs->symbol()->type->symbol->hasFlag(FLAG_ARRAY)) {
         lhs->symbol()->removeFlag(FLAG_EXPR_TEMP);
+      }
     }
 
-    if (!set) {
+    if (set == false) {
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_NO_INIT)) {
           // If the lhs is a primitive, then we can safely just remove this
           // value.  Otherwise the type needs to be resolved a little
           // further and so this statement can't be removed until
           // resolveRecordInitializers
-          if (!isAggregateType(rhs->get(1)->getValType())) {
+          if (isAggregateType(rhs->get(1)->getValType()) == false) {
             call->convertToNoop();
           }
         }
@@ -532,14 +621,15 @@ static Expr* postFoldMove(CallExpr* call) {
     }
   }
 
-  return result;
+  return retval;
 }
 
 static Expr* postFoldSymExpr(SymExpr* sym) {
-  Expr* result = sym;
+  Expr* retval = sym;
 
   if (Symbol* val = paramMap.get(sym->symbol())) {
     CallExpr* call = toCallExpr(sym->parentExpr);
+
     if (call && call->get(1) == sym) {
       // This is a place where param substitution has already determined the
       // value of a move or assignment. If it's a RVV, then we should ignore
@@ -568,7 +658,7 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
           call->convertToNoop();
         }
 
-        return result;
+        return retval;
       }
     }
 
@@ -576,25 +666,33 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
         sym->symbol()->type != val->type) {
       Symbol* toSym = sym->symbol();
 
-      if (!toSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (toSym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         // This assertion is here to ensure compatibility with old code.
         // Todo: remove after 1.15 release.
         Symbol* newToSym = toSym->type->symbol;
-        INT_ASSERT(toSym->type       // cast machinery used this previously
-                   == newToSym->type);  // now it will use this
+
+        INT_ASSERT(toSym->type == newToSym->type);
+
         toSym = newToSym;
       }
+
       INT_ASSERT(toSym->hasFlag(FLAG_TYPE_VARIABLE));
+
       CallExpr* cast = createCast(val, toSym);
+
       sym->replace(cast);
 
       // see whether preFold will fold this _cast call
-      Expr* prevResult = result;
-      result = preFold(cast);
-      if (result == cast) {
+      Expr* prevResult = retval;
+
+      retval = preFold(cast);
+
+      if (retval == cast) {
         // if it doesn't, put things back as they were:
         cast->replace(sym);
-        result = prevResult;
+
+        retval = prevResult;
+
         // and then do what we would've done if we hadn't used the cast
         sym->setSymbol(val);
       }
@@ -603,39 +701,44 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
     }
   }
 
-  return result;
+  return retval;
 }
+
+// This function acts as if a "long" on the compiler host is at least as big
+// as "int" on the target.  This is not guaranteed to be true.
 
 static void foldEnumOp(int         op,
                        EnumSymbol* e1,
                        EnumSymbol* e2,
                        Immediate*  imm) {
-  int64_t val1 = -1, val2 = -1, count = 0;
-  // ^^^ This is an assumption that "long" on the compiler host is at
-  // least as big as "int" on the target.  This is not guaranteed to be true.
+  int64_t   val1  = -1;
+  int64_t   val2  = -1;
+  int64_t   count =  0;
 
-  EnumType *type1, *type2;
+  EnumType* type1 = toEnumType(e1->type);
+  EnumType* type2 = toEnumType(e2->type);
 
-  type1 = toEnumType(e1->type);
-  type2 = toEnumType(e2->type);
-  INT_ASSERT(type1 && type2);
 
   // Loop over the enum values to find the int value of e1
   for_enums(constant, type1) {
     if (!get_int(constant->init, &count)) {
       count++;
     }
+
     if (constant->sym == e1) {
       val1 = count;
       break;
     }
   }
+
   // Loop over the enum values to find the int value of e2
   count = 0;
+
   for_enums(constant, type2) {
     if (!get_int(constant->init, &count)) {
       count++;
     }
+
     if (constant->sym == e2) {
       val2 = count;
       break;
@@ -644,24 +747,33 @@ static void foldEnumOp(int         op,
 
   // All operators on enum types result in a bool
   imm->const_kind = NUM_KIND_BOOL;
-  imm->num_index = BOOL_SIZE_SYS;
+  imm->num_index  = BOOL_SIZE_SYS;
+
   switch (op) {
-    default: INT_FATAL("fold constant op not supported"); break;
+    default:
+      INT_FATAL("fold constant op not supported");
+      break;
+
     case P_prim_equal:
       imm->v_bool = val1 == val2;
       break;
+
     case P_prim_notequal:
       imm->v_bool = val1 != val2;
       break;
+
     case P_prim_less:
       imm->v_bool = val1 < val2;
       break;
+
     case P_prim_lessorequal:
       imm->v_bool = val1 <= val2;
       break;
+
     case P_prim_greater:
       imm->v_bool = val1 > val2;
       break;
+
     case P_prim_greaterorequal:
       imm->v_bool = val1 >= val2;
       break;
