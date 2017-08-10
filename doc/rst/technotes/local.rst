@@ -151,7 +151,7 @@ of locales is greater than one:
 
 Output::
 
-  > ./a.out -nl 2
+  > ./local-on-err -nl 2
   local-on-err.chpl:2: error: Local-on is not local
 
 This program begins executing on Locale 0, so when the ``local do on``

@@ -74,8 +74,8 @@ writeln("myConst = ", myConst, ", myParam = ", myParam);
 // maybe be qualified by the ``config`` keyword.  The comment following
 // each declaration shows how the value can be modified.
 //
-config var cfgVar = "hello";         // ./a.out --cfgVar="world"
-config const cfgConst: bool = false; // ./a.out --cfgConst=true
+config var cfgVar = "hello";         // ./variables --cfgVar="world"
+config const cfgConst: bool = false; // ./variables --cfgConst=true
 config param cfgParam = 4;           // chpl variables.chpl -s cfgParam=1
 config type cfgType = complex;       // chpl variables.chpl -s cfgType=imag
 writeln("cfgVar = ", cfgVar,

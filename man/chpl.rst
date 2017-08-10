@@ -390,8 +390,8 @@ OPTIONS
 
 **-o, --output <filename>**
 
-    Specify the name of the compiler-generated executable (defaults to a.out
-    if unspecified).
+    Specify the name of the compiler-generated executable. Defaults to
+    the main module name if unspecified.
 
 **--static**
 
