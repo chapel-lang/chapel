@@ -850,7 +850,11 @@ static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
   // finding the point where the runtime is sufficiently 'set up' such that
   // we can use the Locales array.
   bool isInternalModule = sym->getModule()->modTag == MOD_INTERNAL;
+
+  bool isVariableRecordWrappedType = isRecordWrappedType(sym->getValType()) && sym->hasFlag(FLAG_CONST) == false;
+
   if (isInternalModule == false &&
+      isVariableRecordWrappedType == false &&
       serializeMap.find(sym->type) != serializeMap.end()) {
 
     Serializers ser       = serializeMap[sym->type];
