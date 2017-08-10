@@ -12,8 +12,12 @@ use Random;
 proc main() {
   var D = {1..6, 1..6};
 
-  var csrDom: sparse subdomain(D) dmapped CS(row=true),
-      cscDom: sparse subdomain(D) dmapped CS(row=false);
+  const csrDmap = new dmap(new CS(compressRows=true)),
+        cscDmap = new dmap(new CS(compressRows=false)),
+        csDmap  = new dmap(new CS());
+
+  var csrDom: sparse subdomain(D) dmapped csrDmap,
+      cscDom: sparse subdomain(D) dmapped cscDmap;
 
   var indices = [(1,1), (1,2), (1,3), (1,4),
                  (2,2), (2,3),
@@ -25,10 +29,28 @@ proc main() {
   writeln('DSI');
   writeln('===');
 
+  // dsiFirst && dsiLast, for tricky cases
+  {
+
+    var csrD: sparse subdomain(D) dmapped csrDmap,
+        cscD: sparse subdomain(D) dmapped cscDmap;
+
+    csrD += [(1,2), (2,1), (4,5), (5,4)];
+    cscD += [(1,2), (2,1), (4,5), (5,4)];
+
+    assert(csrD.first == (1,2));
+    assert(cscD.first == (2,1));
+    // TODO: Fix this!
+    assert(csrD.last == (5,4));
+    assert(cscD.last == (4,5));
+  }
+
+  // dsiEqualsDmap && default value
+  assert(csDmap == csrDmap);
+
   // dsiBulkAdd with domain
   csrDom += D;
   cscDom += D;
-
 
   assert(csrDom.size == D.size);
   assert(cscDom.size == D.size);
@@ -43,6 +65,7 @@ proc main() {
   // dsiBulkAdd when nnz = 0
   csrDom += indices[..5];
   cscDom += indices[..5];
+
 
   // dsiRemove
   cscDom -= indices[5];
@@ -196,7 +219,7 @@ proc writeDense(A: [?D]) {
 }
 
 proc writeInternals(A) {
-  const row = A.domain._value.row;
+  const row = A.domain._value.compressRows;
   if row then writeln('Row Start Index:');
   else writeln('Column Start Index:');
 

@@ -17,10 +17,13 @@
  * limitations under the License.
  */
 
-/* Debug flag */
-config param debugCS = false;
 use RangeChunk only ;
 
+pragma "no doc"
+/* Debug flag */
+config param debugCS = false;
+
+pragma "no doc"
 /* For backwards-compatibility with LayoutCSR */
 type CSR = CS;
 
@@ -31,42 +34,47 @@ record _ColumnComparator {
   proc key(idx: _tuple) { return (idx(2), idx(1));}
 }
 
+pragma "no doc"
 const _columnComparator: _ColumnComparator;
 
 /*
-This CS layout provides a Compressed Sparse Row and Compressed Sparse Column
-implementation for Chapel's sparse domains and arrays.
+This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
+Column (CSC) implementation for Chapel's sparse domains and arrays.
 
-To declare a CS domain, invoke the ``CS`` constructor without arguments
-in a `dmapped` clause. For example:
+To declare a CS domain, invoke the ``CS`` constructor in a `dmapped` clause,
+specifying CSR vs. CSC format with the ``param compressRows`` argument, which
+defaults to ``true`` if omitted. For example:
 
   .. code-block:: chapel
 
     use LayoutCS;
     var D = {1..n, 1..m};  // a default-distributed domain
-    var CS_Domain: sparse subdomain(D) dmapped CS();
+    var CSR_Domain: sparse subdomain(D) dmapped CS(true); // Default argument
+    var CSC_Domain : sparse subdomain(D) dmapped CS(false);
 
-To declare a CS array, use a CS domain, for example:
+To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
+For example:
 
   .. code-block:: chapel
 
-    // assume the above declarations
-    var CS_Array: [CS_Domain] real;
+    // assumes the above declarations
+    var CSR_Array: [CSR_Domain] real;
+    var CSC_Array: [CSC_Domain] real;
 
 This domain map is a layout, i.e. it maps all indices to the current locale.
 All elements of a CS-distributed array are stored
 on the locale where the array variable is declared.
 */
 class CS: BaseDist {
-  const row: bool = true;
+  param compressRows: bool = true;
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return new CSDom(rank=rank, row=row, idxType=idxType, dist=this, parentDom=dom);
+    return new CSDom(rank, idxType, this.compressRows, this, dom);
   }
 
-  proc dsiClone() return new CS(row=this.row);
+  proc dsiClone() return new CS(compressRows=this.compressRows);
 
-  proc dsiEqualDMaps(that: CS) param {
+  proc dsiEqualDMaps(that: CS(this.compressRows)) param {
     return true;
   }
 
@@ -77,9 +85,8 @@ class CS: BaseDist {
 
 
 class CSDom: BaseSparseDomImpl {
-  const row: bool;                  // would like param
-
-  var dist: CS;
+  param compressRows;
+  var dist: CS(compressRows);
 
   var rowRange: range(idxType);
   var colRange: range(idxType);
@@ -93,26 +100,22 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
-  proc CSDom(param rank, type idxType, const row=true,
-             dist: CS, parentDom: domain(rank, idxType)) {
+  proc CSDom(param rank, type idxType, param compressRows, dist: CS(compressRows), parentDom: domain(rank, idxType)) {
     if (rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
-    this.row = row;
+    // TODO: Open question -- How should strided parentDom work?
+    if parentDom.stridable then
+      compilerError("Only non-strided domains are supported by the CS distribution");
     this.dist = dist;
     this.parentDom = parentDom;
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
-    dom = if row then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
+    dom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
     nnzDom = {1..nnz};
     dsiClear();
   }
 
   proc dsiMyDist() return dist;
-
-  // TODO: Open question -- How should slicing on CS domains and arrays work?
-  proc dsiGetIndices() { compilerError('Slicing is not supported on CS domains'); }
-
-  proc dsiSetIndices(x) { compilerError('Slicing is not supported on CS domains'); }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
@@ -122,12 +125,12 @@ class CSDom: BaseSparseDomImpl {
     return new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
   iter dsiIndsIterSafeForRemoving() {
-    var cursor = if this.row then rowRange.high else colRange.high;
+    var cursor = if this.compressRows then rowRange.high else colRange.high;
     for i in 1..nnz by -1 {
       while (startIdx(cursor) > i) {
         cursor -= 1;
       }
-      if this.row {
+      if this.compressRows {
         yield (cursor, idx(i));
       } else {
         yield (idx(i), cursor);
@@ -137,12 +140,12 @@ class CSDom: BaseSparseDomImpl {
 
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
-    var cursor = if this.row then rowRange.low else colRange.low;
+    var cursor = if this.compressRows then rowRange.low else colRange.low;
     for i in 1..nnz {
       while (startIdx(cursor+1) <= i) {
         cursor+= 1;
       }
-      if this.row then
+      if this.compressRows then
         yield (cursor, idx(i));
       else
         yield (idx(i), cursor);
@@ -186,7 +189,7 @@ class CSDom: BaseSparseDomImpl {
 
     for i in startIx..endIx {
       while (startIdx(cursor+1) <= i) do cursor+= 1;
-      if this.row then
+      if this.compressRows then
         yield (cursor, idx(i));
       else
         yield (idx(i), cursor);
@@ -235,7 +238,7 @@ class CSDom: BaseSparseDomImpl {
     const (row, col) = ind;
 
     var ret: (bool, idxType);
-    if this.row then
+    if this.compressRows then
       ret = binarySearch(idx, col, lo=startIdx(row), hi=stopIdx(row));
     else
       ret = binarySearch(idx, row, lo=startIdx(col), hi=stopIdx(col));
@@ -254,23 +257,31 @@ class CSDom: BaseSparseDomImpl {
   proc dsiFirst {
     if nnz == 0 then return (parentDom.low) - (1,1);
     const _low = nnzDom.low;
-    for i in dom do
-      if startIdx[i] > _low then
-        return (i-1, idx[idx.domain.low]);
-
+    for i in dom {
+      if startIdx[i] > _low {
+        if this.compressRows then
+          return (i-1, idx[idx.domain.low]);
+        else
+          return (idx[idx.domain.low], i-1);
+      }
+    }
     halt("Something went wrong in dsiFirst");
     return (0, 0);
   }
 
+  // TODO: Fix this!
   proc dsiLast {
     if nnz == 0 then return (parentDom.low) - (1,1);
     const _low = nnzDom.low;
-    var _lastRow = parentDom.low[1] - 1;
+    var _last = parentDom.low[1] - 1;
     for i in dom do
       if startIdx[i] > _low then
-        _lastRow = i;
+        _last = i;
 
-    return (_lastRow-1, idx[nnz]);
+    if this.compressRows then
+      return (_last-1, idx[nnz]);
+    else
+      return (idx[nnz], _last-1);
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -291,18 +302,18 @@ class CSDom: BaseSparseDomImpl {
 
     const (row,col) = ind;
 
-    // shift column indices up
+    // shift row|column indices up
     for i in insertPt..nnz-1 by -1 {
       idx(i+1) = idx(i);
     }
 
-    if this.row then
+    if this.compressRows then
       idx(insertPt) = col;
     else
       idx(insertPt) = row;
 
     // bump the startIdx counts
-    var start = if this.row then row else col;
+    var start = if this.compressRows then row else col;
 
     for rc in start+1..dom.high {  // want dom[row+1..]
       startIdx(rc) += 1;
@@ -324,7 +335,7 @@ class CSDom: BaseSparseDomImpl {
   proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
                     isUnique=false) {
 
-    if this.row then
+    if this.compressRows then
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);
     else {
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
@@ -341,7 +352,7 @@ class CSDom: BaseSparseDomImpl {
       var prevIdx = parentDom.low - (1,1);
       var current: idxType;
 
-      if this.row then
+      if this.compressRows then
         current = parentDom.dim(1).low;
       else
         current = parentDom.dim(2).low;
@@ -351,7 +362,7 @@ class CSDom: BaseSparseDomImpl {
         if !isUnique && (i,j) == prevIdx then continue;
         else prevIdx = (i,j);
 
-        if this.row {
+        if this.compressRows {
           while i != current {
             current += 1;
             startIdx[current+1] = startIdx[current];
@@ -411,7 +422,7 @@ class CSDom: BaseSparseDomImpl {
       }
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new guy in
-        if this.row {
+        if this.compressRows {
           idx[i] = inds[newIndIdx][2];
         } else {
           idx[i] = inds[newIndIdx][1];
@@ -431,12 +442,12 @@ class CSDom: BaseSparseDomImpl {
     }
 
     // Aggregated row || col shift
-    var prevCursor = if this.row then parentDom.dim(1).low else parentDom.dim(2).low;
+    var prevCursor = if this.compressRows then parentDom.dim(1).low else parentDom.dim(2).low;
     var cursor: int;
     var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
-      if this.row {
+      if this.compressRows {
         cursor = ind[1];
       } else {
         cursor = ind[2];
@@ -482,7 +493,7 @@ class CSDom: BaseSparseDomImpl {
     }
 
     // bump the startIdx counts
-    if this.row {
+    if this.compressRows {
       for r in row+1..dom.high {  // want dom[row+1..]
         startIdx(r) -= 1;
       }
@@ -522,7 +533,7 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiSerialWrite(f) {
     f.writeln("{");
-    if this.row {
+    if this.compressRows {
       for r in rowRange {
         const lo = startIdx(r),
               hi = stopIdx(r);
@@ -618,7 +629,7 @@ class CSArr: BaseSparseArrImpl {
   }
 
   proc dsiSerialWrite(f) {
-    if dom.row {
+    if dom.compressRows {
       for r in dom.rowRange {
         const lo = dom.startIdx(r);
         const hi = dom.stopIdx(r);
@@ -637,20 +648,3 @@ class CSArr: BaseSparseArrImpl {
     }
   }
 } // CSArr
-
-// Currently this is not optimized for addition of a sparse
-/* Overload for CS, necessary b/c domains are sorted by rows, not columns */
-proc +=(ref sd: domain, d: domain)
-where sd._value: CSDom && d.rank==sd.rank && sd.idxType==d.idxType {
-
-  if d.size == 0 then return;
-
-  type _idxType = if sd.rank==1 then int else sd.rank*int;
-  const indCount = d.numIndices;
-  const arr: [{0..#indCount}] _idxType;
-
-  //this could be a parallel loop. but ranks don't match -- doesn't compile
-  for (a,i) in zip(arr,d) do a=i;
-
-  sd._value.dsiBulkAdd(arr, sd._value.row, true, false);
-}

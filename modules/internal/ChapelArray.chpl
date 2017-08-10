@@ -3215,63 +3215,41 @@ module ChapelArray {
   //
   // BaseSparseDom operator overloads
   //
-  proc +=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) &&
-    sd.rank==1 {
-
+  proc +=(ref sd: domain, inds: [] index(sd)) where isSparseDom(sd) {
     if inds.size == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
   }
 
-  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType) where isSparseDom(sd) &&
-    sd.rank>1 {
 
-    if inds.size == 0 then return;
-
-    sd._value.dsiBulkAdd(inds);
-  }
-
-  // Currently this is not optimized for addition of a sparse
-  // This assumes that a domain is sorted by row, which may not always be true.
-  // There could be domains sorted by column instead.
-  // It would be nice if there was a common interface in BaseDom to query
-  // whether a domain was row-major or column-major to distinguish these.
-  // The current implementation is a work-around for this shortcoming.
+  // TODO: Currently not optimized
   proc +=(ref sd: domain, d: domain)
-  where sd._value: DefaultSparseDom && d.rank==sd.rank && sd.idxType==d.idxType {
-
+  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
     if d.size == 0 then return;
 
-    type _idxType = if sd.rank==1 then int else sd.rank*int;
     const indCount = d.numIndices;
-    const arr: [{0..#indCount}] _idxType;
+    var arr: [{0..#indCount}] index(sd);
 
-    //this could be a parallel loop. but ranks don't match -- doesn't compile
-    for (a,i) in zip(arr,d) do a=i;
+    for (i,j) in zip(d, 0..) do arr[j] = i;
 
-    sd._value.dsiBulkAdd(arr, true, true, false);
+    var rowSorted = false;
+
+    // Once an interface supports it:
+    // if sd.RMO && d.RMO then rowSorted = true;
+
+    sd._value.dsiBulkAdd(arr, rowSorted, true, false);
   }
 
   // TODO: Implement bulkRemove
-  proc -=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) &&
-    sd.rank==1 {
-    for ind in inds {
+  proc -=(ref sd: domain, inds: [] index(sd)) where isSparseDom(sd) {
+    for ind in inds do
       sd -= ind;
-    }
-  }
-
-  proc -=(ref sd: domain, inds: [] sd.rank*sd.idxType) where isSparseDom(sd) &&
-    sd.rank>1 {
-    for ind in inds {
-      sd -= ind;
-    }
   }
 
   proc -=(ref sd: domain, d: domain)
   where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
-    for ind in d {
+    for ind in d do
       sd -= ind;
-    }
   }
   //
   // Helper functions
