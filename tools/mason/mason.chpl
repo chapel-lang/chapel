@@ -1,7 +1,6 @@
 
 use FileSystem;
 use Help;
-use Spawn;
 use TOML;
 use MasonNew;
 use MasonBuild;
@@ -47,7 +46,6 @@ proc masonNew(args) {
     }
   }
 }
-
 
 
 proc masonBuild(args) {
@@ -105,7 +103,7 @@ proc masonHelp() {
   //writeln('    clean       Remove the target directory');
   //writeln('    doc         Build this project\'s and its dependencies\' documentation');
   //writeln('    init        Create a new mason project in an existing directory');
-  writeln('    run         Build and execute src/main.chpl');
+  writeln('    run         Build and execute src/<project name>.chpl');
 }
 
 
