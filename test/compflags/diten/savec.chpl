@@ -11,7 +11,7 @@ if ret != 0 then
 
 ret = system(("rm a.out").c_str());
 if ret != 0 then
-  halt("Error removing savec directory");
+  halt("Error removing a.out directory");
 
 ret = system(("make -f " + outdir + "/Makefile > /dev/null 2>&1").c_str());
 if ret != 0 then
@@ -19,7 +19,7 @@ if ret != 0 then
 
 ret = system(("rm a.out").c_str());
 if ret != 0 then
-  halt("Error removing savec directory");
+  halt("Error removing a.out directory");
 
 ret = system(("rm -r " + outdir).c_str());
 if ret != 0 then
