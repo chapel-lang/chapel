@@ -1,0 +1,1 @@
+lhsConsRhsInit.chpl:18: error: type mismatch between 'hasConstruct' and 'hasInit'
