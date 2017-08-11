@@ -64,9 +64,9 @@ proc makeProjectFiles(name: string) {
 }
 
 
-proc moveFile(name: string, file: string) {
+proc moveFile(name: string, src: string) {
   var dir = realPath(name);
-  var command = "mv " + file + ' ' + dir;
+  var command = "mv " + src + ' ' + dir;
   var result = runCommand(command);
 }
 
