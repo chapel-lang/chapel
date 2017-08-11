@@ -683,8 +683,16 @@ memleaks:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
   06/19/17:
     - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/06/17:
+    - Close more leaks in DimensionalDist2D (#6590)
   07/14/17:
     - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in #5757 (#6776)
 
 memleaksfull:
   07/08/14:
@@ -709,8 +717,19 @@ memleaksfull:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
   06/19/17:
     - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/04/17:
+    - LLNL version of CoMD added, leaks memory (#6553)
+  07/06/17:
+    - skip LLNL CoMD for memory leaks (#6611)
+    - Close more leaks in DimensionalDist2D (#6590)
   07/14/17:
     - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in #5757 (#6776)
 
 meteor:
   12/18/13:
