@@ -195,6 +195,15 @@ def get(var, default=None):
     """ Check if variable has a default defined somewhere and return value """
     return os.environ.get(var) or chplconfig.get(var) or default
 
+@memoize
+def get_environ(var, default=None):
+    """ Check if variable has a default defined somewhere and return value """
+    return os.environ.get(var) or default
+
+def get_chplconfig(var, default=None):
+    """ Check if variable has a default defined somewhere and return value """
+    return chplconfig.get(var) or default
+
 
 def allvars():
     """ Generate overrides currently set via environment/chplconfig """
