@@ -1185,11 +1185,15 @@ buildFollowLoop(VarSymbol* iter,
     }
   }
 
+  // the various _getIterator function calls above return an iterator that
+  // needs to be freed. This DeferStmt needs to be before followBody,
+  // since that might break.
+  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
+
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
   followBlock->insertAtTail(followBody);
-  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   return followBlock;
 }
@@ -1317,6 +1321,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(new DefExpr(saIdx));
   SABlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
+  SABlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", saIter)));
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
   ForLoop* SABody = new ForLoop(saIdx, saIter, NULL, false);
@@ -1326,7 +1331,6 @@ buildStandaloneForallLoopStmt(Expr* indices,
 
   SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
-  SABlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", saIter)));
   setupForallIntents(loopBody->forallIntents, NULL,
                      iterRec, saIdx, saIdxCopy, SABody, useThisGlobalOp);
   return SABlock;
@@ -1420,6 +1424,7 @@ buildForallLoopStmt(Expr*      indices,
   else
     resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, iterRec);
 
+  resultBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", leadIter)));
   resultBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", leadIdx, leadIter);
 
   leadForLoop->insertAtTail(new DefExpr(leadIdxCopy));
@@ -1479,7 +1484,6 @@ buildForallLoopStmt(Expr*      indices,
   }
 
   resultBlock->insertAtTail(leadForLoop);
-  resultBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", leadIter)));
   setupForallIntents(loopBody->forallIntents,
                      loopBodyForFast ? loopBodyForFast->forallIntents : NULL,
                      iterRec, leadIdx, leadIdxCopy, leadForLoop,
@@ -2106,13 +2110,13 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   } else {
     followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))", followIter, data, leadIdxCopy);
   }
+  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", followIdx, followIter);
   followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
   followBlock->insertAtTail("'delete'(%S)", localOp);
-  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered);
 
@@ -2129,10 +2133,10 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   } else {
     leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, data);
   }
+  leadBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", leadIter)));
 
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
   leadBlock->insertAtTail(leadBody);
-  leadBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", leadIter)));
 
   fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
 

@@ -264,12 +264,12 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   retval->insertAtTail(new DefExpr(iterator));
 
   retval->insertAtTail(iterInit);
+  retval->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", iterator)));
   retval->insertAtTail(new BlockStmt(iterMove, BLOCK_TYPE));
 
   retval->insertAtTail(loop);
 
   retval->insertAtTail(new DefExpr(breakLabel));
-  retval->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", iterator)));
 
   return retval;
 }

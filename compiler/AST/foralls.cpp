@@ -339,6 +339,7 @@ buildFollowLoop(VarSymbol* iter,
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))",           followIter, iter, leadIdxCopy);
     }
   }
+  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   ref->insertAfter(followBlock); // otherwise it wouldn't normalize
   normalize(followBlock);
@@ -349,7 +350,6 @@ buildFollowLoop(VarSymbol* iter,
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
   followBlock->insertAtTail(followBody);
-  followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   return followBlock;
 }
@@ -767,6 +767,7 @@ void lowerForallStmts() {
 
     PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall));
     PARBlock->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
+    PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
     PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
 
     currentAstLoc = fs->loopBody()->astloc; // can't do SET_LINENO
@@ -776,7 +777,6 @@ void lowerForallStmts() {
     //destructureIndices(PARBody, indices, new SymExpr(parIdxCopy), false);
 
     PARBlock->insertAtTail(PARBody);
-    PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
 
     resolveBlockStmt(PARBlock);
     PARBlock->flattenAndRemove();
