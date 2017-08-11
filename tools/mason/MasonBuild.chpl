@@ -13,8 +13,10 @@ proc masonBuild(args) {
     when '--help' do masonBuildHelp();
     }
   }
-  UpdateLock();
-  BuildProgram();
+  else {
+    UpdateLock();
+    BuildProgram();
+  }
 }
 
 
