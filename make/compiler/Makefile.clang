@@ -158,7 +158,6 @@ RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #
 CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes
 ifndef CHPL_COMM_DEBUG
-CHPL_GASNET_MORE_CFLAGS += -Wno-unused
 endif
 endif
 ifdef CHPL_COMM_DEBUG

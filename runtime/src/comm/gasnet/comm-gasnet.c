@@ -292,7 +292,6 @@ size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nby
   chpl_comm_bundleData_t comm  = { .caller = f->hdr.caller,
                                    .ack    = f->hdr.ack };
   chpl_comm_on_bundle_t bundle = { .comm =  comm };
-  chpl_comm_on_bundle_t *bptr  = &dst->bundle;
 
   // Copy task-local data to the new task
   bundle.task_bundle.state = f->hdr.state;
@@ -753,7 +752,6 @@ static void set_max_segsize_env_var(size_t size) {
 }
 
 static void set_max_segsize() {
-  FILE* file = NULL;
   size_t size;
 
   if ((size = chpl_comm_getenvMaxHeapSize()) != 0) {
@@ -1231,7 +1229,6 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       // the registered memory segment.
       int local_in_segment;
       void* local_buf = NULL;
-      size_t buf_sz = 0;
       size_t max_chunk = gasnet_AMMaxLongReply();
       size_t start;
 
@@ -1555,8 +1552,6 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid,
                      chpl_comm_on_bundle_t *arg, size_t arg_size) {
-  done_t  done;
-
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
@@ -1614,8 +1609,6 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
                           chpl_comm_on_bundle_t *arg, size_t arg_size) {
-  done_t  done;
-
   if (chpl_nodeID == node) {
     assert(0);
     chpl_ftable_call(fid, arg);
