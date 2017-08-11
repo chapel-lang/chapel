@@ -4,6 +4,8 @@ use MasonBuild;
 use MasonUpdate;
 use MasonUtils;
 use MasonHelp;
+use FileSystem;
+
 
 proc main(args: [] string) {
   if args.size < 2 {
@@ -28,24 +30,39 @@ proc main(args: [] string) {
 }
 
 
+config const build: bool = false;
+
 /* TODO: mtime so compilation only when nessescary
    TODO: eliminate need for main name  */
 proc masonRun(args) {
   var toRun = basename(getEnv('PWD'));
+  if build then masonBuild(args);
   if args.size > 2 {
-    if args[2] == "build" {
-      masonBuild(args);
+    select (args[2]) {
+    when '-h' do masonRunHelp();
+    when '--help' do masonRunHelp();
+    otherwise {
+      writeln("Invalid run argument");
+      writeln("Try mason run --help");
+      exit();
+    }
     }
   }
-  if isFile("Mason.lock") {
-    var command = "target/debug/" + toRun;
-    runCommand(command);
-  }
   else {
-    writeln("call mason run from the top level of your projects directory");
+    if isFile("Mason.lock") {
+      var command = "target/debug/" + toRun;
+      runCommand(command);
+    }
+    else if isFile("Mason.toml") {
+      masonBuild(args);
+      var command = "target/debug/" + toRun;
+      runCommand(command);
+    }
+    else {
+      writeln("call mason run from the top level of your projects directory");
+    }
   }
 }
-
 // TODO
 proc masonInit(args) {}
 proc masonClean(args) {}

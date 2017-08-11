@@ -35,7 +35,7 @@ proc BuildProgram() {
 
     // Compile Program
     if compileSrc(lockFile) {
-      writeln("Build Successful");
+      writeln("Build Successful\n");
     }
     else {
       writeln("Build Failed");
@@ -88,7 +88,7 @@ proc compileSrc(lockFile: Toml) : bool {
       return false;
     }
     
-    moveFile('target/debug/', project);
+    rename(project, 'target/debug/' + project);
     if isFile('target/debug/' + project) {
 	return true;
     }

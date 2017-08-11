@@ -27,6 +27,17 @@ proc masonHelp() {
 }
 
 
+proc masonRunHelp() {
+  writeln('Run the compiled project and output to standard output');
+  writeln();
+  writeln('Usage:');
+  writeln('   mason run [options]');
+  writeln();
+  writeln('Options:');
+  writeln('    -h, --help                   Display this message');
+  writeln('    -b, --build                  Compile before running binary');
+}
+
 proc masonBuildHelp() {
   writeln('Compile a local package and all of its dependencies');
   writeln();

@@ -1,6 +1,5 @@
 
 use Path;
-use TOML;
 use Spawn;
 use FileSystem;
 use MasonUtils;
@@ -70,7 +69,7 @@ proc noGitInit(name: string) : int {
 proc makeBasicToml(name: string) {
   const baseToml = '\n[brick]\nname = "' + name +
     '"\nversion = "0.1.0"\n\n[dependencies]\n';
-  var tomlFile = open("Mason.toml", iomode.cw);
+  var tomlFile = open(name+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
   tomlWriter.close();
@@ -78,8 +77,6 @@ proc makeBasicToml(name: string) {
   
 
 proc makeProjectFiles(name: string) {
-  runCommand("mkdir src");
-  runCommand("touch src/" + name + '.chpl');
-  moveFile(name, "src");
-  moveFile(name, "Mason.toml");
+  runCommand("mkdir " + name + "/src");
+  runCommand("touch " + name + "/src/" + name + '.chpl');
 }
