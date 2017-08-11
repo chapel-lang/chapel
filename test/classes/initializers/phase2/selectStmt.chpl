@@ -4,7 +4,7 @@ class Foo {
   proc init(xVal) {
     x = xVal;
     super.init();
-    select x.type {
+    select xVal.type {
       when int(16) do
         writeln("It was small");
       when int(32) do
