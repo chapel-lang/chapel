@@ -11,6 +11,10 @@ proc masonBuild(args) {
     select (args[2]) {
     when '-h' do masonBuildHelp();
     when '--help' do masonBuildHelp();
+    otherwise {
+      writeln("Invalid build arguments");
+      writeln("try mason build --help");
+    }
     }
   }
   else {

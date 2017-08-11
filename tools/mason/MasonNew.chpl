@@ -78,5 +78,10 @@ proc makeBasicToml(name: string) {
 
 proc makeProjectFiles(name: string) {
   runCommand("mkdir " + name + "/src");
-  runCommand("touch " + name + "/src/" + name + '.chpl');
+  const libTemplate = '\n /* Documentation for ' + name +
+    ' */\nmodule '+ name + ' { \nwriteln("New library: '+ name +'");\n}';
+  var lib = open(name+'/src/'+name+'.chpl', iomode.cw);
+  var libWriter = lib.writer();
+  libWriter.write(libTemplate);
+  libWriter.close();
 }
