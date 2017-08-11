@@ -14,5 +14,4 @@ def get_uniq_cfg_path():
 
 @memoize
 def get_link_args():
-    return third_party_utils.default_get_link_args('re2',
-                                                   libs=['-lre2', '-lpthread'])
+    return third_party_utils.pkgconfig_get_link_args('re2', system=False)
