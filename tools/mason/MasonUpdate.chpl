@@ -1,6 +1,6 @@
 use TOML;
 use FileSystem;
-use mason;
+use MasonUtils;
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */

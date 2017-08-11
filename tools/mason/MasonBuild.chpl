@@ -2,7 +2,8 @@
 use TOML;
 use Spawn;
 use FileSystem;
-use mason;
+use MasonUtils;
+
 
 proc BuildProgram() {
   if isFile("Mason.lock") {
@@ -67,23 +68,24 @@ proc compileSrc(lockFile: Toml) : bool {
       command += depSrc;
     }
     writeln("Compiling "+ project);
-    runCommand(command); // compile Program with deps
-    
-    if isFile(project) {
-      var moveFile = 'mv ' + project + ' target/debug/';
-      runCommand(moveFile);
-      if isFile('target/debug/' + project) {
-	return true;
-      }
+    var compilation = runWithStatus(command); // compile Program with deps
+    if compilation != 0 {
+      return false;
     }
-    return false;
+    
+    moveFile('target/debug/', project);
+    if isFile('target/debug/' + project) {
+	return true;
+    }
+    else {
+      return false;
+    }
   }
   else {
     writeln("Mason could not find your project!");
     return false;
   }
 }
-
 
 
 /* Generates a list of tuples that holds the git repo
@@ -118,30 +120,5 @@ proc getSrcCode(sourceList: [?d] 2*string) {
       var checkout = "git -C "+ destination+source(2) + " checkout -qb v"+version(2);
       runCommand(checkout);
     }
-  }
-}
-
-
-/* Checks to see if dependency has already been 
-   downloaed previously */
-proc depExists(dependency: string) {
-  var repos = getEnv("HOME") +'/.mason/src/';
-  var exists = false;
-  for dir in listdir(repos) {
-    if dir == dependency {
-      exists = true;
-    }
-  }
-  return exists;
-}
-
-
-proc runCommand(cmd) {
-  var splitCmd = cmd.split();
-  var process = spawn(splitCmd, stdout=PIPE);
-  process.wait();
-
-  for line in process.stdout.lines() {
-    writeln(line);
   }
 }

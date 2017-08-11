@@ -6,6 +6,7 @@ use TOML;
 use MasonNew;
 use MasonBuild;
 use MasonUpdate;
+use MasonUtils;
 
 
 proc main(args: [] string) {
@@ -82,24 +83,6 @@ proc masonRun(args) {
 proc masonInit(args) {}
 proc masonClean(args) {}
 proc masonDoc(args) {}
-
-proc runCommand(cmd) {
-   var splitCmd = cmd.split();
-   var process = spawn(splitCmd, stdout=PIPE);
-   process.wait();
-   
-   for line in process.stdout.lines() {
-     writeln(line);
-   }
-}
-
-/* Gets envoirment variables for spawn commands */
-extern proc getenv(name : c_string) : c_string;
-proc getEnv(name: string): string {
-  var cname: c_string = name.c_str();
-  var value = getenv(cname);
-  return value:string;
-}
 
 
 
