@@ -3,6 +3,19 @@ use TOML;
 use Spawn;
 use FileSystem;
 use MasonUtils;
+use MasonHelp;
+
+
+proc masonBuild(args) {
+  if args.size > 2 {
+    select (args[2]) {
+    when '-h' do masonBuildHelp();
+    when '--help' do masonBuildHelp();
+    }
+  }
+  UpdateLock();
+  BuildProgram();
+}
 
 
 proc BuildProgram() {

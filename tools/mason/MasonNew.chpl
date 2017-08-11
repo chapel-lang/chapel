@@ -4,8 +4,28 @@ use TOML;
 use Spawn;
 use FileSystem;
 use MasonUtils;
+use MasonHelp;
+
 
 config const vcs: bool = true;
+
+proc masonNew(args) {
+  if args.size < 3 {
+    writeln('error: Invalid arguments.');
+    masonNewHelp();
+    exit();
+  }
+  else {
+    select (args[2]) {
+    when '--help' do masonNewHelp();
+    when '-h' do masonNewHelp();
+    otherwise {
+      InitProject(args);
+    }
+    }
+  }
+}
+
 
 proc InitProject(args: [] string) {
   const name = args[2];
