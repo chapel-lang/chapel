@@ -197,11 +197,12 @@ def get(var, default=None):
 
 @memoize
 def get_environ(var, default=None):
-    """ Check if variable has a default defined somewhere and return value """
+    """ Check if variable has a default defined in the environment and return value """
     return os.environ.get(var) or default
 
+@memoize
 def get_chplconfig(var, default=None):
-    """ Check if variable has a default defined somewhere and return value """
+    """ Check if variable has a default defined in a chplconfig file and return value """
     return chplconfig.get(var) or default
 
 
