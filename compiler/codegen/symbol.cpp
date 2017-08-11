@@ -1190,7 +1190,9 @@ void FnSymbol::codegenPrototype() {
 
       arg->codegenType();
       numArgs++;
-      if(arg->intent & INTENT_REF)
+      // LLVM Arguments indices in function API are 1-based not 0-based
+      // that's why we push numArgs after increment
+      if(arg->isRef())
         refArgs.push_back(numArgs);
     }
 
