@@ -1383,7 +1383,7 @@ static void buildDefaultInitField(AggregateType*         at,
 
 
         //
-        // Type infererence required if this is a param or variable field
+        // Type inference is required if this is a param or variable field
         //
         } else if (defPoint->exprType == NULL && defPoint->init != NULL) {
           VarSymbol* tmp      = newTemp();

@@ -95,8 +95,6 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual);
     }                                                                   \
   }
 
-#include "AstDumpToNode.h"
-
 Expr* postFold(Expr* expr) {
   Expr* retval = expr;
 
