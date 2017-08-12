@@ -642,7 +642,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
                           other.stride,
-                          other._alignment,
+                          other.alignment,
                           true);
 
     return (boundedOther.length == 0) || member(boundedOther);
@@ -2034,10 +2034,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           // naturally aligned.
           f.clearError();
         } else {
-          // un-naturally aligned - read the un-natural alignment
-          var a: idxType;
-          f <~> a;
-          _alignment = a;
+          if stridable {
+            // un-naturally aligned - read the un-natural alignment
+            var a: idxType;
+            f <~> a;
+            _alignment = a;
+          } else {
+            halt("Trying to read an aligned range value into a non-stridable array");
+          }
         }
       }
     }
