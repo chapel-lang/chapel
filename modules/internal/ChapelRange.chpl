@@ -402,7 +402,7 @@ module ChapelRange {
 
   /* Returns true if this range is naturally aligned, false otherwise */
   proc range.isNaturallyAligned()
-    where this.boundedType == BoundedRangeType.bounded
+    where stridable && this.boundedType == BoundedRangeType.bounded
   {
     // If the stride is positive, we must be aligned on the low bound.
     if stride > 0 then return this.alignedLow == _low;
@@ -410,6 +410,13 @@ module ChapelRange {
     if stride < 0 then return this.alignedHigh == _high;
     // stride == 0: ???
     return false;
+  }
+
+  pragma "no doc"
+  inline proc range.isNaturallyAligned() param
+    where !stridable && this.boundedType == BoundedRangeType.bounded
+  {
+    return true;
   }
 
   pragma "no doc"
@@ -429,7 +436,7 @@ module ChapelRange {
   pragma "no doc"
   inline proc range.isNaturallyAligned()
   {
-    if _alignment == 0 then return true;
+    if alignment == 0 then return true;
     return false;
   }
 
@@ -598,12 +605,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   if tmp.stridable {
     tmp._stride = r.stride;
+    tmp._alignment = r.alignment: tmp.idxType;
+    tmp._aligned = r.aligned;
   }
 
   tmp._low = r.low: tmp.idxType;
   tmp._high = r.high: tmp.idxType;
-  tmp._alignment = r.alignment: tmp.idxType;
-  tmp._aligned = r.aligned;
   return tmp;
 }
 
@@ -796,13 +803,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low, _low - 1 - i, stride, _effAlmt(), _aligned);
+                       _low, _low - 1 - i, stride, _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       _high + 1 - i, _high, stride, _effAlmt(), _aligned);
+                       _high + 1 - i, _high, stride, _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), _aligned);
+                     _low, _high, stride, _effAlmt(), aligned);
   }
 
   pragma "no doc"
@@ -1235,11 +1242,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       newhi = 0;
     }
 
-    const aligned = if stridable
-                    then (!ambig && (this.aligned || other.aligned))
-                    else false;
-      
-    
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
@@ -1247,7 +1249,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                            newhi,
                            newStride,
                            0,
-                           aligned);
+                           !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
       var al1 = (this.alignment % st1:idxType):int;
