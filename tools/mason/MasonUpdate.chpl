@@ -30,9 +30,15 @@ proc genLock(lock: Toml) {
 }
 
 proc updateRegistry() {
-  var command = "git -C " + getEnv("HOME") + "/.mason/registry/ pull -q origin master";
-  writeln("Updating Mason Registry");
-  runCommand(command);
+  var home = getEnv("HOME");
+  if isDir(home + '/.mason/registry') {
+    var command = "git -C " + getEnv("HOME") + "/.mason/registry/ pull -q origin master";
+    writeln("Updating Mason Registry");
+    runCommand(command);
+  }
+  else { // TODO: once we have registry clone and call command again.
+    halt("Mason cannot find your registry!");
+  } 
 }
 
 /* Responsible for creating the dependency tree

@@ -19,7 +19,12 @@ proc masonNew(args) {
     when '--help' do masonNewHelp();
     when '-h' do masonNewHelp();
     otherwise {
-      InitProject(args);
+      if isDir(args[2]) {
+	writeln('A directory with that name already exists');
+      }
+      else {
+	InitProject(args);
+      }
     }
     }
   }
@@ -38,12 +43,12 @@ proc InitProject(args: [] string) {
   }
 
   if status != 0 {
-    halt("Mason failed to initialize your project.");
+    halt("Mason could not create Library Project: " + name);
   }
   else {
     makeBasicToml(name);
     makeProjectFiles(name);
-    writeln("Mason initialized your new project: " + name);
+    writeln("Created Library Project: " + name);
   }
 }
 

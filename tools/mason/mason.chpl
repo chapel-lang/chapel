@@ -17,6 +17,7 @@ proc main(args: [] string) {
   when 'build' do masonBuild(args);
   when 'update' do UpdateLock();
   when 'run' do masonRun(args);
+  when 'clean' do masonClean();
   when '-h' do masonHelp();
   when '--help' do masonHelp();
   when '-V' do printVersion();
@@ -49,23 +50,36 @@ proc masonRun(args) {
     }
   }
   else {
-    if isFile("Mason.lock") {
-      var command = "target/debug/" + toRun;
-      runCommand(command);
-    }
-    else if isFile("Mason.toml") {
-      masonBuild(args);
-      var command = "target/debug/" + toRun;
-      runCommand(command);
+    if isDir('target') {
+      if isFile("Mason.lock") {
+	var command = "target/debug/" + toRun;
+	runCommand(command);
+      }
+      else if isFile("Mason.toml") {
+	masonBuild(args);
+	var command = "target/debug/" + toRun;
+	runCommand(command);
+      }
+      else {
+	writeln("call mason run from the top level of your projects directory");
+      }
     }
     else {
-      writeln("call mason run from the top level of your projects directory");
+      writeln("Mason cannot find the compiled program");
+      writeln("Try mason run --build");
+      exit();
     }
   }
 }
+
+
+proc masonClean() {
+  runCommand('rm -rf target');
+}
+
+
 // TODO
 proc masonInit(args) {}
-proc masonClean(args) {}
 proc masonDoc(args) {}
 
 

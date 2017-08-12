@@ -20,7 +20,7 @@ proc masonHelp() {
   writeln('    new         Create a new mason project');
   writeln('    update      Update/Generate Mason.lock');
   writeln('    build       Compile the current project');
-  //writeln('    clean       Remove the target directory');
+  writeln('    clean       Remove the target directory');
   //writeln('    doc         Build this project\'s and its dependencies\' documentation');
   //writeln('    init        Create a new mason project in an existing directory');
   writeln('    run         Build and execute src/<project name>.chpl');
