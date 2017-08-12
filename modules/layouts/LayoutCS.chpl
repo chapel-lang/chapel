@@ -45,8 +45,8 @@ defaults to ``true`` if omitted. For example:
 
     use LayoutCS;
     var D = {1..n, 1..m};  // a default-distributed domain
-    var CSR_Domain: sparse subdomain(D) dmapped CS(true); // Default argument
-    var CSC_Domain : sparse subdomain(D) dmapped CS(false);
+    var CSR_Domain: sparse subdomain(D) dmapped CS(compressRows=true); // Default argument
+    var CSC_Domain : sparse subdomain(D) dmapped CS(compressRows=false);
 
 To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
 For example:
@@ -519,9 +519,12 @@ class CSDom: BaseSparseDomImpl {
   }
 
   iter dimIter(param d, ind) {
-    if (d != 2) {
-      compilerError("dimIter(1, ...) not supported on CS domains");
+    if (d != 2 && this.compressRows) {
+      compilerError("dimIter(1, ..) not supported on CS(compressRows=true) domains");
+    } else if (d != 1 && !this.compressRows) {
+      compilerError("dimIter(2, ..) not supported on CS(compressRows=false) domains");
     }
+
     for i in startIdx[ind]..stopIdx[ind] do
       yield idx[i];
   }

@@ -11,7 +11,7 @@ proc main() {
         BDom = {1..n, 1..m};
 
   var csrDom: sparse subdomain(ADom) dmapped CS(),
-      cscDom: sparse subdomain(BDom) dmapped CS(row=false);
+      cscDom: sparse subdomain(BDom) dmapped CS(compressRows=false);
 
   var csrArr: [csrDom] real,
       cscArr: [cscDom] real;
@@ -74,55 +74,70 @@ proc main() {
   }
 }
 
+
+proc multiply(A, B) {
+  return denseMultiply(A, B);
+}
+
 /* Dense matrix-matrix multiplication */
-proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
+proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const CDom = {ADom.dim(1), BDom.dim(2)};
   var C: [CDom] eltType;
-  [(i,j) in CDom] C[i,j] = + reduce(A[i,..] * B[.., j]);
+  forall (i, j) in CDom {
+    for k in BDom.dim(1) {
+      C[i,j] += A[i, k] * B[k, j];
+    }
+  }
   return C;
 }
 
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
-  // TODO: Checks for ADom._value.row && BDom._value.row
-  // TODO: Cleaner Implementation
-  // TODO: Parallel Implementation
+  if !(ADom._value.compressRows && !BDom._value.compressRows) then
+    compilerError('Only CSR-CSC multiplication is currently supported');
+
+  // TODO: This is pretty slow.. We can rebuild it cleaner. faster. parallel.
 
   var CDom: sparse subdomain({ADom._value.parentDom.dim(1), BDom._value.parentDom.dim(2)}) dmapped CS();
   var C: [CDom] eltType;
 
   // C index
   var i = 0;
-  // Loop over rows in A
+  // TODO: 2-pass approach (break out after indexAdded)
+
+  ref idxA = A.domain._value.idx,
+      idxB = B.domain._value.idx;
+
   for r in ADom._value.rowRange {
+    const cRange = idxRange(A, r);
+    if cRange.isEmpty() then continue;
     for c in BDom._value.colRange {
 
-      const cRange = idxRange(A, r);
       const rRange = idxRange(B, c);
-
-      // Skip if either row/column is empty
-      if cRange.isEmpty() || rRange.isEmpty() then continue;
+      if rRange.isEmpty() then continue;
 
       // Non-zero row pointer for B
       var nzr = rRange.first;
 
       var indexAdded = false;
       // Loop overs non-zeros within an A row
+      var tmp: eltType;
+      var I: int;
       for nzc in cRange {
-        const idxA = idx(A, nzc),
-              idxB = idx(B, nzr);
-        if idxA == idxB {
+        if idxA(nzc) == idxB(nzr) {
           // Multiply!
           if !indexAdded {
             CDom += (r, c);
             indexAdded = true;
             i += 1;
+            I = i;
           }
-          C._value.data(i) += A._value.data(nzc) * B._value.data(nzr);
+           tmp += A._value.data(nzc) * B._value.data(nzr);
         }
         if nzr == rRange.last then break;
-        while idx(B, nzr) < idxA && nzr < rRange.last do nzr += 1;
+        while idxB(nzr) < idxA(nzc) && nzr < rRange.last do nzr += 1;
       }
+      if I > 0 then C._value.data(I) = tmp;
     }
   }
   return C;
@@ -134,10 +149,6 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
 
 inline proc idxRange(Arr: [?Dom], i) {
   return Dom._value.startIdx(i)..Dom._value.stopIdx(i);
-}
-
-inline proc idx(Arr: [?Dom], i) {
-  return Dom._value.idx(i);
 }
 
 

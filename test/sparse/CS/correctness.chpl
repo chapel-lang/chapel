@@ -198,6 +198,7 @@ proc main() {
   writeln('cscArr:');
   writeDense(cscArr);
 
+  // TODO: dimIter
 
   writeln('Internals');
   writeln('=========');

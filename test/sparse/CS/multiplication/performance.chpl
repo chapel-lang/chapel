@@ -1,15 +1,14 @@
-/* Sparse matrix-matrix multiplication performance benchmark */
-/* TODO:
+/* Sparse matrix-matrix multiplication performance benchmark
 
    Comparisons we'd like to make include:
 
-   Chapel:
-     - CSR * CSC - optimized
-     - CSR * cSC - naive
-   Python:
-     - scipy.sparse.csr . scipy.sparse.csc
-   MKL:
-     - mkl_dcsrmultcsr()
+   - Chapel:
+     - [x] CSR * CSC - optimized
+     - [x] CSR * cSC - naive
+   - Python:
+     - [ ] scipy.sparse.csr . scipy.sparse.csc
+   - MKL:
+     - [ ] mkl_dcsrmultcsr()
 
 */
 use LayoutCS;
@@ -27,52 +26,40 @@ proc main() {
   const D1 = {1..m, 1..n},
         D2 = {1..n, 1..m};
 
-  // CSR * CSC
-  {
-    // Domains
-    var ADom: sparse subdomain(D1) dmapped CS(row=true),
-        BDom: sparse subdomain(D2) dmapped CS(row=false);
+  // Domains
+  var ADom: sparse subdomain(D1) dmapped CS(compressRows=true),
+      BDom: sparse subdomain(D2) dmapped CS(compressRows=false);
 
-    // Arrays
-    var A: [ADom] real,
-        B: [BDom] real;
+  // Arrays
+  var A: [ADom] real,
+      B: [BDom] real;
 
-    // Populate
-    populate(A, ADom, sparsity, seed);
-    populate(B, BDom, sparsity, seed+1);
+  // Populate
+  populate(A, ADom, sparsity, seed);
+  populate(B, BDom, sparsity, seed+1);
 
-    var t: Timer;
+  var t: Timer;
 
-    t.start();
-    var result = multiply(A, B);
-    t.stop();
-    if !correctness {
-      write('CSR * CSC: ');
-      writeln(t.elapsed());
-    }
+  // CSR . CSC - optimized
+  t.start();
+  var result = multiply(A, B);
+  t.stop();
+  if !correctness {
+    write('CSR . CSC - optimized: ');
+    writeln(t.elapsed());
   }
 
 
-  // dense * dense
-  {
-    // Arrays
-    var A: [D1] real,
-        B: [D2] real;
-
-    // Populate
-    populate(A, sparsity, seed);
-    populate(B, sparsity, seed+1);
-
-    var t: Timer;
-
-    t.start();
-    var result = multiply(A, B);
-    t.stop();
-    if !correctness {
-      write('dense * dense: ');
-      writeln(t.elapsed());
-    }
-  }
+  // CSR . CSC - indexed
+  //{
+  //  t.start();
+  //  var result = denseMultiply(A, B);
+  //  t.stop();
+  //  if !correctness {
+  //    write('CSR . CSC - indexed: ');
+  //    writeln(t.elapsed());
+  //  }
+  //}
 }
 
 
