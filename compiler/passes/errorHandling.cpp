@@ -133,7 +133,6 @@ typedef std::map<BaseAST*, BaseAST*> implicitThrowsReasons_t;
 // Static functions
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
-static bool isTaskFunction(FnSymbol* fn);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
 
@@ -359,8 +358,13 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
     if (insideTry) {
       TryInfo   info      = tryStack.top();
-      CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol,
-                                         thrownError);
+
+      Expr* castError = NULL;
+      if (thrownError->type == dtError)
+        castError = new SymExpr(thrownError);
+      else
+        castError = new CallExpr(PRIM_CAST, dtError->symbol, thrownError);
+
       throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, info.errorVar,
                                             castError));
       throwBlock->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
@@ -376,7 +380,12 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
-  CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
+
+  Expr* castError = NULL;
+  if (error->type == dtError)
+    castError = new SymExpr(error);
+  else
+    castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
 
   AList ret;
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
@@ -390,8 +399,8 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
                                       BlockStmt* thenBlock,
                                       BlockStmt* elseBlock) {
-  VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
-  CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, errorVar, gNil);
+  VarSymbol* errorExistsVar = newTemp("shouldHandleError", dtBool);
+  CallExpr*  errorExists    = new CallExpr(PRIM_CHECK_ERROR, errorVar);
 
   AList ret;
   ret.insertAtTail(new DefExpr(errorExistsVar));
@@ -477,12 +486,14 @@ public:
   virtual bool enterCallExpr (CallExpr*  node);
 
   bool throws() { return canThrow; }
+  bool unchecked() { return onlyUnchecked; }
   BaseAST* reason() { return reasonThrows; }
 
 private:
 
   int  tryDepth;
   bool canThrow;
+  bool onlyUnchecked;
   BaseAST* reasonThrows; // one of the reasons it throws, for errors
   std::set<FnSymbol*>* visited;
   implicitThrowsReasons_t* reasons;
@@ -491,6 +502,7 @@ private:
 CanThrowVisitor::CanThrowVisitor(std::set<FnSymbol*>* visitedIn, implicitThrowsReasons_t* reasonsIn) {
   tryDepth = 0;
   canThrow = false;
+  onlyUnchecked = true;
   reasonThrows = NULL;
   visited = visitedIn;
   reasons = reasonsIn;
@@ -513,6 +525,8 @@ void CanThrowVisitor::exitTryStmt(TryStmt* node) {
     canThrow = false;
   } else {
     canThrow = nonExhaustive;
+    if (nonExhaustive)
+      onlyUnchecked = false;
     if (reasonThrows == NULL)
       reasonThrows = node;
   }
@@ -537,10 +551,13 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
 
         // not in a try
         canThrow = true;
+        if (!calledFn->hasFlag(FLAG_UNCHECKED_THROWS))
+          onlyUnchecked = false;
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     canThrow = true;
+    onlyUnchecked = false;
     if (reasonThrows == NULL)
       reasonThrows = node;
   }
@@ -659,8 +676,8 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
-  // Currently, only task functions can be implicitly throws.
-  if (!isTaskFunction(fn))
+  // Currently, only task functions or iterators can be implicitly throws.
+  if (!isTaskFun(fn) && !fn->isIterator())
     return;
 
   // If we already visited this function, don't visit it again.
@@ -680,6 +697,9 @@ static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, impli
   if (visit.throws()) {
     (*reasons)[fn] = visit.reason();
     fn->throwsErrorInit();
+
+    if (visit.unchecked())
+      fn->addFlag(FLAG_UNCHECKED_THROWS);
   }
 }
 
@@ -724,20 +744,12 @@ bool isCheckErrorStmt(Expr* e)
   return false;
 }
 
-static bool isTaskFunction(FnSymbol* fn)
-{
-  return fn->hasFlag(FLAG_ON) ||
-         fn->hasFlag(FLAG_LOCAL_ON) ||
-         fn->hasFlag(FLAG_BEGIN) ||
-         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
-}
-
 // Should we raise an error in strict mode if the error is not handled?
 // No for calls inside of compiler-generated functions, wrapper functions,
 // or task functions. No for functions marked with FLAG_UNCHECKED_THROWS.
 static bool isCompilerGeneratedFunction(FnSymbol* fn)
 {
-  return isTaskFunction(fn) ||
+  return isTaskFun(fn) ||
          fn->hasFlag(FLAG_WRAPPER) ||
          fn->hasFlag(FLAG_COMPILER_GENERATED);
 }
