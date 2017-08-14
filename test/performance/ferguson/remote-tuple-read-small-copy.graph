@@ -1,5 +1,5 @@
 perfkeys: GETs:, GETs:
-files: remote-tuple-read-small-1-c.dat, remote-tuple-read-small-1-c-cache.dat
+files: remote-tuple-read-small-copy-c.dat, remote-tuple-read-small-copy-c-cache.dat
 graphkeys: c GETs, c-cache GETs
 ylabel: Count
-graphtitle: remote-tuple-read-small-1
+graphtitle: remote-tuple-read-small-copy
