@@ -2192,7 +2192,7 @@ static void addActualsToParCallNew(CallExpr* parCall, FIIvec& fivec,
     FIinfo& info = fivec[idx];
     Symbol* ovar  = outerVars[idx];
     Symbol* globalOp = info.reduceGVar;
-    Symbol* actual;
+    Symbol* actual = NULL;
 
     // Pass 'ovar' into the parallel iterator.
     //
