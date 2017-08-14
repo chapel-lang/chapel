@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage none
+// NOEXEC
+
 //Check whether we add parallel_loop_access metadata for loops at all
 proc loop (A, B, n) {
   for i in vectorizeOnly(1..n) {

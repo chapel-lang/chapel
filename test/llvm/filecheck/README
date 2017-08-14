@@ -1,0 +1,3 @@
+Tests in this directory are meant to exercise the testing system's use of
+FileCheck as an alternative to .good files. As such, they are really
+meant to be tests of the testing system.

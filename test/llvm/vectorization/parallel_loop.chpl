@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1
+// NOEXEC
+
 // Check whether parallel_loop_access metadata impacts vectorization
 // This is special case of loop taken from LLVM test suite
 // with extra branch added inside, to avoid vectorizaton if

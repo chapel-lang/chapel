@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --no-vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1
+// NOEXEC
+
 //This loop shouldn't be vectorized because no parallel_loop_access
 //metadata was added. For more details look into parallel_loop.chpl
 proc loop (A, B, C, D) {

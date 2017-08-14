@@ -1,3 +1,7 @@
+// FileCheck
+// COMPOPTS: --llvm --fast --vectorize --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -force-vector-width=4 --mllvm -force-vector-interleave=1 --mllvm -runtime-memory-check-threshold=0
+// NOEXEC
+
 //Check whether vectorization occurs for nested loops
 proc loop (A, B) {
   for i in vectorizeOnly(0..511) {
