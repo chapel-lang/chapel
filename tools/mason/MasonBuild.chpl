@@ -57,16 +57,11 @@ proc BuildProgram() {
 
 /* Creates the rest of the project structure */
 proc makeTargetFiles() {
-  var makeTarget = "mkdir target";
-  var makeDebug  = "mkdir target/debug";
-  var makeTests = "mkdir target/debug/tests";
-  var makeExamples = "mkdir target/debug/examples";
-  var makeBenches = "mkdir target/debug/benches";
-  runCommand(makeTarget);
-  runCommand(makeDebug);
-  runCommand(makeTests);
-  runCommand(makeExamples);
-  runCommand(makeBenches);
+  mkdir('target');
+  mkdir('target/debug');
+  mkdir('target/debug/tests');
+  mkdir('target/debug/examples');
+  mkdir('target/debug/benches');
 }
 
 
