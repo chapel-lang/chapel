@@ -1498,10 +1498,10 @@ proc file.length():int(64) {
 // these strings are here (vs in _modestring)
 // in an attempt to avoid string copies, leaks,
 // and unnecessary allocations.
-private const _r = "r";
-private const _rw  = "r+";
-private const _cw = "w";
-private const _cwr = "w+";
+private param _r = "r";
+private param _rw  = "r+";
+private param _cw = "w";
+private param _cwr = "w+";
 
 pragma "no doc"
 proc _modestring(mode:iomode) {
