@@ -177,6 +177,16 @@ proc main() {
   var csrArr: [csrDom] int,
       cscArr: [cscDom] int;
 
+  // dimIter (pretty trivial tests)
+  // csrDom[5, ..]
+  for i in csrDom.dimIter(2, 5) {
+    assert(i == 6);
+  }
+  // csrDom[.., 1]
+  for i in cscDom.dimIter(1, 1) {
+    assert(i == 1);
+  }
+
   // Parallel .these
   forall (i,j) in csrArr.domain {
     csrArr[i,j] = 10*i + j;
@@ -198,7 +208,6 @@ proc main() {
   writeln('cscArr:');
   writeDense(cscArr);
 
-  // TODO: dimIter
 
   writeln('Internals');
   writeln('=========');

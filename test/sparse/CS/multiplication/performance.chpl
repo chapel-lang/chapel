@@ -6,7 +6,7 @@
      - [x] CSR * CSC - optimized
      - [x] CSR * cSC - naive
    - Python:
-     - [ ] scipy.sparse.csr . scipy.sparse.csc
+     - [ ] scipy.sparse.csr . scipy.sparse.csc (checked in)
    - MKL:
      - [ ] mkl_dcsrmultcsr()
 
@@ -18,6 +18,7 @@ use Time;
 // For configs and matrix multiplication routine
 use correctness;
 
+// TODO: Option to read in array
 config const sparsity = 0.01,
              seed = 42;
 
@@ -48,18 +49,6 @@ proc main() {
     write('CSR . CSC - optimized: ');
     writeln(t.elapsed());
   }
-
-
-  // CSR . CSC - indexed
-  //{
-  //  t.start();
-  //  var result = denseMultiply(A, B);
-  //  t.stop();
-  //  if !correctness {
-  //    write('CSR . CSC - indexed: ');
-  //    writeln(t.elapsed());
-  //  }
-  //}
 }
 
 

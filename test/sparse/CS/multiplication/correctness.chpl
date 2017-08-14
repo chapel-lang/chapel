@@ -1,10 +1,23 @@
 /* Matrix multiplication */
 
 use LayoutCS;
+use Time;
+
+var timerDom: domain(string);
+var subTimers: [timerDom] Timer;
+subTimers['multiply'] = new Timer();
+subTimers['add indices'] = new Timer();
+subTimers['find indices'] = new Timer();
+subTimers[' overlap'] = new Timer();
+subTimers['  push_back'] = new Timer();
+subTimers['setup'] = new Timer();
+
+config param subtimers = false;
 
 config const correctness = false,
              m = 6,
              n = 7;
+
 
 proc main() {
   const ADom = {1..m, 1..n},
@@ -91,57 +104,94 @@ proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   return C;
 }
 
+// TODO: Optimize & Parallelize
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
   if !(ADom._value.compressRows && !BDom._value.compressRows) then
     compilerError('Only CSR-CSC multiplication is currently supported');
 
-  // TODO: This is pretty slow.. We can rebuild it cleaner. faster. parallel.
-
+  if subtimers then subTimers['setup'].start();
   var CDom: sparse subdomain({ADom._value.parentDom.dim(1), BDom._value.parentDom.dim(2)}) dmapped CS();
   var C: [CDom] eltType;
-
-  // C index
-  var i = 0;
-  // TODO: 2-pass approach (break out after indexAdded)
 
   ref idxA = A.domain._value.idx,
       idxB = B.domain._value.idx;
 
-  for r in ADom._value.rowRange {
-    const cRange = idxRange(A, r);
-    if cRange.isEmpty() then continue;
-    for c in BDom._value.colRange {
-
-      const rRange = idxRange(B, c);
-      if rRange.isEmpty() then continue;
-
-      // Non-zero row pointer for B
-      var nzr = rRange.first;
-
-      var indexAdded = false;
-      // Loop overs non-zeros within an A row
-      var tmp: eltType;
-      var I: int;
-      for nzc in cRange {
-        if idxA(nzc) == idxB(nzr) {
-          // Multiply!
-          if !indexAdded {
-            CDom += (r, c);
-            indexAdded = true;
-            i += 1;
-            I = i;
-          }
-           tmp += A._value.data(nzc) * B._value.data(nzr);
-        }
-        if nzr == rRange.last then break;
-        while idxB(nzr) < idxA(nzc) && nzr < rRange.last do nzr += 1;
-      }
-      if I > 0 then C._value.data(I) = tmp;
+  /* Compute overlap between idxA & idxB over r1 and r2, respectively */
+  iter overlap(const ref r1, const ref r2) {
+    var ptr2 = r2.first;
+    for ptr1 in r1 {
+      if idxA(ptr1) == idxB(ptr2) then yield (ptr1, ptr2);
+      while (idxB(ptr2) < idxA(ptr1) && ptr2 < r2.last) do ptr2 += 1;
     }
   }
+
+  var indices: [1..0] 2*int;
+
+  if subtimers then subTimers['setup'].stop();
+
+  if subtimers then subTimers['find indices'].start();
+
+  const ref Astart = ADom._value.startIdx,
+            Bstart = BDom._value.startIdx;
+
+  for r in ADom._value.rowRange {
+    const ref a1 = Astart[r],
+              a2 = Astart[r+1]-1;
+    if a1 > a2 then continue;
+    const aRange = a1..a2;
+    for c in BDom._value.colRange {
+      const ref b1 = Bstart[c],
+                b2 = Bstart[c+1]-1;
+      if b1 > b2 then continue;
+      const bRange = b1..b2;
+
+      if subtimers then subTimers[' overlap'].start();
+      for (i, j) in overlap(aRange, bRange) {
+        // Add to index!
+        if subtimers then subTimers['  push_back'].start();
+        indices.push_back((r, c));
+        if subtimers then subTimers['  push_back'].stop();
+        break;
+      }
+      if subtimers then subTimers[' overlap'].stop();
+    }
+  }
+  if subtimers then subTimers['find indices'].stop();
+
+  if subtimers then subTimers['add indices'].start();
+  CDom += indices;
+  if subtimers then subTimers['add indices'].stop();
+
+  if subtimers then subTimers['multiply'].start();
+  ref idxC = C.domain._value.idx;
+  for r in CDom._value.rowRange {
+    const cRange = idxRange(A, r);
+    for c in idxRange(C, r) {
+      const rRange = idxRange(B, idxC(c));
+      var tmp: eltType;
+      for (i, j) in overlap(cRange, rRange) {
+        tmp += A._value.data(i) * B._value.data(j);
+      }
+      C._value.data(c) = tmp;
+    }
+  }
+  if subtimers then subTimers['multiply'].stop();
+
+  if subtimers {
+    var s: real;
+    for key in timerDom {
+        write(key, ': ');
+        var t = subTimers[key].elapsed();
+        writeln(t);
+      if !key[1].startsWith(' ') then s += t;
+    }
+    writeln('total: ', s);
+  }
+
   return C;
 }
+
 
 //
 // Some helpers for accessing CSDom internals

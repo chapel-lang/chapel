@@ -10,7 +10,7 @@ import numpy as np
 
 import time
 
-def main(m=6, n=7, sparsity=0.01):
+def main(m=1000, n=1000, sparsity=0.01):
     A = sparse.random(m, n, density=sparsity, format='csr', dtype=np.float64) # float64?
     B = sparse.random(n, m, density=sparsity, format='csc', dtype=np.float64) # float64?
 
@@ -18,8 +18,11 @@ def main(m=6, n=7, sparsity=0.01):
     print(B.getnnz())
     start = time.time()
     C = A.dot(B)
+    C.sort_indices()
     stop = time.time()
     print('Python: ', stop-start)
+    print(C.getnnz())
+    print(bool(C.has_sorted_indices))
 
 
 
