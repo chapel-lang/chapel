@@ -1239,7 +1239,7 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
             !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
-            (def->sym->type != dtString)))) {
+            !(def->sym->type == dtString && def->sym->isImmediate())))) {
 
         // replicate global const of primitive/record type
 
