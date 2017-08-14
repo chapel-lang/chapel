@@ -8,4 +8,4 @@ most of the required performance testing files.
 
 To run performance testing in this directory, do:
 
-  start_test -performance -perflabel ml-  .
+  start_test -performance -perflabel cc-  .

@@ -16,9 +16,9 @@ do
       base=${name%.chpl}
       echo processing $base
 
-      # regenerate .ml-compopts
-      rm -f ${base}.ml-compopts
-      ln -s MYCOMPOPTS ${base}.ml-compopts
+      # regenerate .cc-compopts
+      rm -f ${base}.cc-compopts
+      ln -s MYCOMPOPTS ${base}.cc-compopts
 
       # Detect whether we are graphing GETS, PUTS, or ONS
       GETS=1
@@ -38,21 +38,21 @@ do
         ONS=0
       fi
 
-      # regenerate .ml-keys
-      rm -f ${base}.ml-keys
+      # regenerate .cc-keys
+      rm -f ${base}.cc-keys
       if [ "$GETS" -eq 1 ]
       then
-        echo GETs: >> ${base}.ml-keys
+        echo GETs: >> ${base}.cc-keys
       fi
       if [ "$PUTS" -eq 1 ]
       then
-        echo PUTs: >> ${base}.ml-keys
+        echo PUTs: >> ${base}.cc-keys
       fi
       if [ "$ONS" -eq 1 ]
       then
-        echo ONs: >> ${base}.ml-keys
+        echo ONs: >> ${base}.cc-keys
       fi
-      echo "seconds elapsed:" >> ${base}.ml-keys
+      echo "seconds elapsed:" >> ${base}.cc-keys
 
       # regenerate .graph
       rm -f ${base}.graph
