@@ -1,4 +1,5 @@
 class MyError : Error {
+  var x = 1;
 }
 
 proc test() {
@@ -16,7 +17,7 @@ proc test() {
     writeln("contains MyError? ", hasMyError);
     writeln("iterating MyError:");
     for error in errors.filter(MyError) {
-      writeln(error);
+      writeln(error.x);
     }
     writeln("iterating everything else:");
     for error in errors {

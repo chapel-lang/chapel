@@ -1,2 +1,2 @@
 before test
-Caught errors ErrorGroup with 10 errors and 10 messages:: Error: 1 ... Error: 9
+Caught errors ErrorGroup with 10 errors and 10 messages:: {msg = 1} ... {msg = 9}
