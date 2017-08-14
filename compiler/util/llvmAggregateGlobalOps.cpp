@@ -170,7 +170,7 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   SmallPtrSet<Instruction*, 8> memopsUses;
   Instruction *LastMemopUse = NULL;
 
-#if HAVE_LLVM >= 38
+#if HAVE_LLVM_VER >= 38
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
        !isa<TerminatorInst>(BI);
        ++BI)
@@ -209,7 +209,7 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   // Reorder the instructions here.
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
-#if HAVE_LLVM >= 38
+#if HAVE_LLVM_VER >= 38
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
        !isa<TerminatorInst>(BI);)
 #else
@@ -266,7 +266,7 @@ static int64_t GetOffsetFromIndex(const GEPOperator *GEP, unsigned Idx,
     if (OpC->isZero()) continue;  // No offset.
 
     // Handle struct indices, which add their field offset to the pointer.
-#if HAVE_LLVM >= 38
+#if HAVE_LLVM_VER >= 40
     if (StructType *STy = GTI.getStructTypeOrNull())
 #else
     if (StructType *STy = dyn_cast<StructType>(*GTI))
@@ -549,7 +549,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
 
-#if HAVE_LLVM >= 38
+#if HAVE_LLVM_VER >= 38
   BasicBlock::iterator BI = StartInst->getIterator();
 #else
   BasicBlock::iterator BI = StartInst;
@@ -814,7 +814,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
         Instruction* lastAdded = tryAggregating(I, getLoadStorePointer(I), DebugThis);
         if( lastAdded ) {
           MadeChange = true;
-#if HAVE_LLVM >= 38
+#if HAVE_LLVM_VER >= 38
           BI = lastAdded->getIterator();
 #else
           BI = lastAdded;
