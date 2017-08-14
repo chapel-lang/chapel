@@ -67,16 +67,25 @@ depend:
 # automatically rebuild on 3rd party version upgrades or if we specify
 # different option in the Makefile.
 
-SRC_FILES = -iname '*.cc'  -o -iname '*.cp'  -o -iname '*.cxx' -o -iname '*.cpp' -o  -iname '*.CPP' -o -iname '*.c++' -o  -iname '*.hh'  -o -iname '*.hp' -o -iname '*.hxx' -o -iname '*.hpp' -o -iname '*.HPP' -o -iname '*.h++' -o -iname '*.tcc' -o -iname '*.c'   -o -iname '*.h'
-AMUDPRUN_DEPEND := $(shell find $(AMUDPRUN_SRC_DIR) $(SRC_FILES) 2>/dev/null) $(AMUDPRUN_DIR)/Makefile*
-GASNET_DEPEND := $(shell find $(GASNET_SUBDIR) $(SRC_FILES) 2>/dev/null) $(GASNET_DIR)/Makefile*
-GMP_DEPEND := $(shell find $(GMP_SUBDIR) $(SRC_FILES) 2>/dev/null) $(GMP_DIR)/Makefile*
-HWLOC_DEPEND := $(shell find $(HWLOC_SUBDIR) $(SRC_FILES) 2>/dev/null) $(HWLOC_DIR)/Makefile*
-JEMALLOC_DEPEND := $(shell find $(JEMALLOC_SUBDIR) $(SRC_FILES) 2>/dev/null) $(JEMALLOC_DIR)/Makefile*
-LIBUNWIND_DEPEND := $(shell find $(LIBUNWIND_SUBDIR) $(SRC_FILES) 2>/dev/null) $(LIBUNWIND_DIR)/Makefile*
-MASSIVETHREADS_DEPEND := $(shell find $(MASSIVETHREADS_SUBDIR) $(SRC_FILES) 2>/dev/null) $(MASSIVETHREADS_DIR)/Makefile*
-QTHREAD_DEPEND := $(shell find $(QTHREAD_SUBDIR) $(SRC_FILES) 2>/dev/null) $(QTHREAD_DIR)/Makefile*
-RE2_DEPEND := $(shell find $(RE2_SUBDIR) $(SRC_FILES) 2>/dev/null) $(RE2_DIR)/Makefile*
+# Common C/C++ file extensions
+SRC_FILES_FILTER += -iname '*.c'   -o -iname '*.h'   -o -iname '*.cpp' -o
+SRC_FILES_FILTER += -iname '*.cc'  -o -iname '*.cxx' -o -iname '*.hpp' -o
+# Less common C++ extensions
+SRC_FILES_FILTER += -iname '*.c++' -o -iname '*.hp'  -o -iname '*.hxx' -o
+SRC_FILES_FILTER += -iname '*.h++' -o -iname '*.tcc' -o -iname '*.cp'
+
+# Find 3rd party dependencies -- arg 1 is src dir, arg 2 is top-level dir with Makefiles/README
+find_3p_depend = $(shell find $(1) $(SRC_FILES_FILTER) 2>/dev/null) $(2)/Makefile* $(2)/README
+
+AMUDPRUN_DEPEND       := $(call find_3p_depend, $(AMUDPRUN_SRC_DIR),      $(AMUDPRUN_DIR))
+GASNET_DEPEND         := $(call find_3p_depend, $(GASNET_SUBDIR),         $(GASNET_DIR))
+GMP_DEPEND            := $(call find_3p_depend, $(GMP_SUBDIR),            $(GMP_DIR))
+HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_SUBDIR),          $(HWLOC_DIR))
+JEMALLOC_DEPEND       := $(call find_3p_depend, $(JEMALLOC_SUBDIR),       $(JEMALLOC_DIR))
+LIBUNWIND_DEPEND      := $(call find_3p_depend, $(LIBUNWIND_SUBDIR),      $(LIBUNWIND_DIR))
+MASSIVETHREADS_DEPEND := $(call find_3p_depend, $(MASSIVETHREADS_SUBDIR), $(MASSIVETHREADS_DIR))
+QTHREAD_DEPEND        := $(call find_3p_depend, $(QTHREAD_SUBDIR),        $(QTHREAD_DIR))
+RE2_DEPEND            := $(call find_3p_depend, $(RE2_SUBDIR),            $(RE2_DIR))
 
 
 test-venv: $(CHPL_VENV_TEST_REQS)
