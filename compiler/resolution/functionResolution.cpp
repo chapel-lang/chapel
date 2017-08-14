@@ -7270,6 +7270,8 @@ static void resolveSerializers() {
     if (ts->defPoint->parentSymbol               != NULL   &&
         ts->hasFlag(FLAG_GENERIC)                == false  &&
         ts->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
+        isSingleType(ts->type)                   == false &&
+        isSyncType(ts->type)                     == false &&
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) == true) {
