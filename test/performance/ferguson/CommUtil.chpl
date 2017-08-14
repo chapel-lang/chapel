@@ -78,7 +78,7 @@ proc totalOns(D:[LocaleSpace] commDiagnostics) : int {
 
 // Checks anything with a passed maximum != max(int) is below the maximum.
 // Prints out counts if the passed maximum == max(int) (or is not passed).
-// Prints out all counts if 
+// Prints out all counts if called with no arguments.
 proc report(maxGets=max(int), maxPuts=max(int), maxOns=max(int)) {
   var counts = getCommDiagnostics();
 

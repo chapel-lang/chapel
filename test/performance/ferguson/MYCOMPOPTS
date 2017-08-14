@@ -24,9 +24,13 @@ def f(options, configname):
     s += ' # ' + perftest + '-' + configname + '.perfkeys'
   print(s)
 
+# Include this argument to print out an error if a passed maximum count
+# is not attained. Note that the perf testing only reports on counts
+# where the maximum is not passed.
+checkMaxAttained=' -scheckMaxAttained=true'
 
 # C backend, no cache remote
-f('--no-llvm --no-cache-remote -scheckMaxAttained=true', 'c')
+f('--no-llvm --no-cache-remote ' + checkMaxAttained, 'c')
 
 # C backend, cache remote
 f('--no-llvm --cache-remote', 'c-cache')
