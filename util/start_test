@@ -672,7 +672,6 @@ def set_up_environment():
         #   when the memkind package is being used (KNL, e.g.)
         # - any locale model other than 'flat' (because we'll need
         #   libnuma which is only available as a .so)
-        # MPF: this causes problems on my Ubuntu system...
         if (not (tgt_platform == 'darwin' or
                  (chpl_compiler.get('target').startswith("cray-prgenv") and
                   os.getenv("CRAY_MEMKIND", "") != "") or
