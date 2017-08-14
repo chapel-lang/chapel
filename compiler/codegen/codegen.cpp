@@ -1243,7 +1243,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
 
         VarSymbol* imm = toVarSymbol(se->symbol());
         INT_ASSERT(imm && imm->isImmediate());
-        int64_t idx = imm->immediate->int_value();
+        uint64_t idx = imm->immediate->int_value();
 
         if (idx+1 > serializeCalls.size()) {
           serializeCalls.resize(idx+1);
@@ -1252,7 +1252,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         serializeCalls[idx] = call;
       }
     }
-    for (int i = 0; i < serializeCalls.size(); i++) {
+    for (unsigned int i = 0; i < serializeCalls.size(); i++) {
       CallExpr* call = serializeCalls[i];
       INT_ASSERT(call != NULL);
       SymExpr* global = toSymExpr(call->get(1));
