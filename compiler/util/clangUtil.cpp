@@ -1200,7 +1200,7 @@ void prepareCodegenLLVM()
     FM.setNoSignedZeros();
     FM.setAllowReciprocal();
     FM.setUnsafeAlgebra();
-    info->builder->SetFastMathFlags(FM);
+    info->builder->setFastMathFlags(FM);
   }
 }
 
