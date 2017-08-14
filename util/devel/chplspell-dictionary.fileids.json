@@ -794,5 +794,8 @@
   ],
   "44484c44-fd7f-11e6-980e-10ddb1d4c3d5": [
     "test/studies/shootout/submitted/fasta2.chpl"
+  ],
+  "1988b5a1-7958-11e7-93b8-7831c1d3c768": [
+    "test/studies/shootout/submitted/spectralnorm.chpl"
   ]
 }

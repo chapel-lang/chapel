@@ -4397,6 +4397,9 @@ tblname
 tblpath
 tokenlist
 
+FILEID: 1988b5a1-7958-11e7-93b8-7831c1d3c768
+tranpose
+
 NATURAL:
 abcd
 abcdefg
@@ -5716,6 +5719,7 @@ multicore
 multihop
 multilocale
 multiloop
+multipledestructor
 multiprecision
 multirealm
 multithreaded
