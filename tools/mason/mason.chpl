@@ -18,6 +18,7 @@ proc main(args: [] string) {
   when 'update' do UpdateLock();
   when 'run' do masonRun(args);
   when 'clean' do masonClean();
+  when '--list' do masonList();
   when '-h' do masonHelp();
   when '--help' do masonHelp();
   when '-V' do printVersion();
@@ -76,6 +77,7 @@ proc masonRun(args) {
 proc masonClean() {
   runCommand('rm -rf target');
 }
+
 
 
 // TODO

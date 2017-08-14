@@ -26,6 +26,17 @@ proc masonHelp() {
   writeln('    run         Build and execute src/<project name>.chpl');
 }
 
+proc masonList() {
+  writeln('Installed Mason Commands:');
+  writeln('      new                ');
+  writeln('      update             ');
+  writeln('      build              ');
+  writeln('      run                ');
+  writeln('      clean              ');
+  writeln('      help               ');
+  writeln('      version            ');
+}
+
 
 proc masonRunHelp() {
   writeln('Run the compiled project and output to standard output');
