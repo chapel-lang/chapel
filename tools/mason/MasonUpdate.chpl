@@ -113,26 +113,29 @@ proc IVRS(version1: string, version2: string) {
   var vers1 = version1.split('.');
   var vers2 = version2.split('.');
   if vers1(1) != vers2(1) {
-    halt("Differing Major versions of dependencies are not allowed");
+    halt("Differing Major versions of dependencies are not supported");
   }
   else if vers1(2) != vers2(2) {
-    var v1 = ascii(vers1(2));
-    var v2 = ascii(vers2(2));
+    var v1 = toInt(vers1(2));
+    var v2 = toInt(vers2(2));
     if v1 > v2 {
-      writeln(v1, " ", v2);
       return version1;
     }
     else return version2;
   }
   else {
-    var v1 = ascii(vers1(3));
-    var v2 = ascii(vers2(3));
+    var v1 = toInt(vers1(3));
+    var v2 = toInt(vers2(3));
     if v1 > v2 {
       return version1;
     }
     else return version2;
   }
 }
+
+
+
+
 
 /* Returns the Mason.toml for each dep listed as a Toml */
 proc getManifests(deps: [?dom] (string, Toml)) {

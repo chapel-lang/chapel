@@ -37,14 +37,6 @@ proc runWithStatus(command): int {
 }
 
 
-/* Moves a file from curdir to a folder in
-   curdir */
-proc moveFile(name: string, src: string) {
-  var dir = realPath(name);
-  var command = "mv " + src + ' ' + dir;
-  runCommand(command);
-}
-
 
 /* Checks to see if dependency has already been
    downloaed previously */
@@ -59,3 +51,13 @@ proc depExists(dependency: string) {
   return exists;
 }
 
+proc toInt(num: string) {
+  var counter: int;
+  for i in 1..100 {
+    var toStr: string = stringify(i);
+    if toStr == num {
+      return i;
+    }
+  }
+  return 0;
+}
