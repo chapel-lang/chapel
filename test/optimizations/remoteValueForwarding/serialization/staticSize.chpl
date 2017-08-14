@@ -1,5 +1,4 @@
 use CommDiagnostics;
-use Memory;
 
 config const n = 10;
 
@@ -43,38 +42,31 @@ proc stop(msg : string) {
 }
 
 proc main() {
-  const startMem = memoryUsed();
+  const R = (1..n-1, 1..n, 1..n+1);
+  const f = new Foo(new Helper(R));
 
-  {
-    const R = (1..n-1, 1..n, 1..n+1);
-    const f = new Foo(new Helper(R));
-
-    start();
-    on Locales[numLocales-1] {
-      const x = f.ranges;
-      if x(1).low == 0 then halt("something");
-    }
-    stop("on-stmt");
-
-    start();
-    coforall loc in Locales do on loc {
-      const x = f.ranges;
-      if x(1).low == 0 then halt("something");
-    }
-    stop("coforall-on");
-
-    start();
-    sync {
-      begin on Locales[numLocales-1] {
-        const x = f.ranges;
-        if x(1).low == 0 then halt("something");
-      }
-    }
-    stop("begin-on");
+  start();
+  on Locales[numLocales-1] {
+    const x = f.ranges;
+    if x(1).low == 0 then halt("something");
   }
+  stop("on-stmt");
 
-  // Note: I suspect the current leaks come from internal iterator classes
-  writeln("Leaked ", memoryUsed()-startMem, " bytes");
+  start();
+  coforall loc in Locales do on loc {
+    const x = f.ranges;
+    if x(1).low == 0 then halt("something");
+  }
+  stop("coforall-on");
+
+  start();
+  sync {
+    begin on Locales[numLocales-1] {
+      const x = f.ranges;
+      if x(1).low == 0 then halt("something");
+    }
+  }
+  stop("begin-on");
 
   for (msg, dat) in zip(commStatsDom, commStats) {
     const sep = "===== " + msg + " =====";
