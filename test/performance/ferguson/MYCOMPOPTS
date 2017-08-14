@@ -21,7 +21,7 @@ basecompopts='--fast '
 def f(options, configname):
   s = basecompopts + options
   if perftest != '':
-    s += ' # ' + perftest + '-' + configname + '.perfkeys'
+    s += ' # ' + perftest + '-' + configname
   print(s)
 
 # Include this argument to print out an error if a passed maximum count
