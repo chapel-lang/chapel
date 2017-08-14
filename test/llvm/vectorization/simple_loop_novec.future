@@ -1,0 +1,1 @@
+bug: this test needs updating to disable vectorization in LLVM 4
