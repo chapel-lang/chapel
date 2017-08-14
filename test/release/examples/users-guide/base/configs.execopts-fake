@@ -1,4 +1,4 @@
-./a.out --n 1000
-./a.out --n=1000
-./a.out --epsilon=0.000001 --debug=true
-./a.out --epsilon=0.000001 --debug
+./configs --n 1000
+./configs --n=1000
+./configs --epsilon=0.000001 --debug=true
+./configs --epsilon=0.000001 --debug

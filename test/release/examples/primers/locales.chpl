@@ -5,7 +5,7 @@
    using multiple locales set up your environment as described in
    :ref:`multilocale documentation <readme-multilocale>` and execute it
    using the ``-nl #`` flag to specify  the number of locales.
-   For example, to run on 2 locales, run: ``./a.out -nl 2``
+   For example, to run on 2 locales, run: ``./locales -nl 2``
 */
 
 //

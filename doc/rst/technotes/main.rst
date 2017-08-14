@@ -111,10 +111,10 @@ rather than passing it on to the declared main function. However,
 placing the argument ``--`` in the argument list will cause all
 following arguments to be passed to the declared main function and
 will suspend handling of any builtin command line
-arguments. Specifically, if a.out is a Chapel program which has
+arguments. Specifically, if ``myprogram`` is a Chapel program which has
 declared main to take arguments:
 
-``./a.out -- --memTrack=true``
+``./myprogram -- --memTrack=true``
 
 will result in the program receiving ``--memTrack=true`` as the first
 argument after the executable name.
