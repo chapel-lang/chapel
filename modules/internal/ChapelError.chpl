@@ -36,7 +36,8 @@ module ChapelError {
     }
 
     proc writeThis(f) {
-      f <~> "Error: " <~> msg;
+      //f <~> "Error: " <~> msg;
+      f <~> "{msg = " <~> msg <~> "}";
     }
 
     pragma "no doc"
