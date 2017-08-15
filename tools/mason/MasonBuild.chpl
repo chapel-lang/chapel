@@ -131,7 +131,7 @@ proc getSrcCode(sourceList: [?d] 2*string) {
       var getDependency = "git clone -qn "+source(1)+' '+destination+source(2)+'/';
       runCommand(getDependency);
       var version = source(2).split('-');
-      var checkout = "git -C "+ destination+source(2) + " checkout -qb v"+version(2);
+      var checkout = "git -C "+ destination+source(2) + " checkout -q v"+version(2);
       runCommand(checkout);
     }
   }
