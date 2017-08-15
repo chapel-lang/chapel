@@ -97,8 +97,8 @@ module ChapelError {
     iter these() {
       var e = _head;
       while e != nil {
-	yield e;
-	e = e._next;
+        yield e;
+        e = e._next;
       }
     }
 
@@ -107,7 +107,7 @@ module ChapelError {
       var todelete: Error;
       while e != nil {
         todelete = e;
-	e = e._next;
+        e = e._next;
         delete todelete;
       }
     }
