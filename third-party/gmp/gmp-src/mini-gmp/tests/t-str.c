@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012, 2013 Free Software Foundation, Inc.
+Copyright 2012-2014, 2016 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -39,13 +39,16 @@ test_small (void)
     const char *decimal;
   } data[] = {
     { "183407", "183407" },
-    { " 763959", "763959" },
+    { " 763959", "763959 " },
     { "9 81999", "981999" },
-    { "10\t7398", "107398" },
+    { "10\t7398 ", "107398" },
     { "-9585 44", "-00958544" },
     { "-0", "0000" },
     { " -000  ", "0" },
     { "0704436", "231710" },
+    /* Check the case of large number of leading zeros. */
+    { "0000000000000000000000000", "0000000000000000000000000" },
+    { "000000000000000000000000704436", "000000000000000000000000231710" },
     { " 02503517", "689999" },
     { "0 1312143", "365667" },
     { "-03 274062", "-882738" },
@@ -71,6 +74,14 @@ test_small (void)
     { "0X7fc47", "523335" },
     { "0X8167c", "530044" },
     /* Some invalid inputs */
+    { "", NULL },
+    { "0x", NULL },
+    { "0b", NULL },
+    { "0z", NULL },
+    { "-", NULL },
+    { "-0x ", NULL },
+    { "0|1", NULL },
+    { "4+4", NULL },
     { "0ab", NULL },
     { "10x0", NULL },
     { "0xxab", NULL },
@@ -243,7 +254,7 @@ testmain (int argc, char **argv)
 	      assert (tn <= MAXLIMBS);
 	      mpn_copyi (t, a->_mp_d, tn);
 
-	      bn = mpn_get_str (bp, base, t, tn);
+	      bn = mpn_get_str ((unsigned char *) bp, base, t, tn);
 	      if (bn != arn)
 		{
 		  fprintf (stderr, "mpn_get_str failed:\n");
@@ -286,7 +297,7 @@ testmain (int argc, char **argv)
 		      abort ();
 		    }
 		}
-	      tn = mpn_set_str (t, bp, bn, base);
+	      tn = mpn_set_str (t, (unsigned char *) bp, bn, base);
 	      if (tn != mpz_size (a) || mpn_cmp (t, a->_mp_d, tn))
 		{
 		  fprintf (stderr, "mpn_set_str failed:\n");
@@ -299,6 +310,7 @@ testmain (int argc, char **argv)
 		}
 	    }
 	  free (ap);
+	  free (rp);
 	  testfree (bp);
 	}
     }

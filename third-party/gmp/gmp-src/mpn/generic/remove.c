@@ -7,7 +7,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GMP RELEASE.
 
-Copyright 2009, 2012, 2013 Free Software Foundation, Inc.
+Copyright 2009, 2012-2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -80,13 +80,14 @@ mpn_bdiv_qr_wrap (mp_ptr qp, mp_ptr rp,
 
 mp_bitcnt_t
 mpn_remove (mp_ptr wp, mp_size_t *wn,
-	    mp_ptr up, mp_size_t un, mp_ptr vp, mp_size_t vn,
+	    mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn,
 	    mp_bitcnt_t cap)
 {
-  mp_ptr    pwpsp[LOG];
+  mp_srcptr pwpsp[LOG];
   mp_size_t pwpsn[LOG];
   mp_size_t npowers;
-  mp_ptr tp, qp, np, pp, qp2;
+  mp_ptr tp, qp, np, qp2;
+  mp_srcptr pp;
   mp_size_t pn, nn, qn, i;
   mp_bitcnt_t pwr;
   TMP_DECL;
@@ -98,9 +99,9 @@ mpn_remove (mp_ptr wp, mp_size_t *wn,
 
   TMP_MARK;
 
-  tp = TMP_ALLOC_LIMBS ((un + 1 + vn) / 2); /* remainder */
-  qp = TMP_ALLOC_LIMBS (un + 1);	/* quotient, alternating */
-  qp2 = TMP_ALLOC_LIMBS (un + 1);	/* quotient, alternating */
+  TMP_ALLOC_LIMBS_3 (qp, un + 1,	/* quotient, alternating */
+		     qp2, un + 1,	/* quotient, alternating */
+		     tp, (un + 1 + vn) / 2); /* remainder */
   pp = vp;
   pn = vn;
 
@@ -121,7 +122,7 @@ mpn_remove (mp_ptr wp, mp_size_t *wn,
 
       pwpsp[npowers] = pp;
       pwpsn[npowers] = pn;
-      npowers++;
+      ++npowers;
 
       if (((mp_bitcnt_t) 2 << npowers) - 1 > cap)
 	break;
@@ -142,7 +143,7 @@ mpn_remove (mp_ptr wp, mp_size_t *wn,
 
   pwr = ((mp_bitcnt_t) 1 << npowers) - 1;
 
-  for (i = npowers - 1; i >= 0; i--)
+  for (i = npowers; --i >= 0;)
     {
       pn = pwpsn[i];
       if (qn < pn)

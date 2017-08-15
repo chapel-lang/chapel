@@ -29,7 +29,7 @@
 #  see https://www.gnu.org/licenses/.
 
 
-INCLUDES = -D__GMP_WITHIN_GMPXX -I$(top_srcdir)
+AM_CPPFLAGS = -D__GMP_WITHIN_GMPXX -I$(top_srcdir)
 
 if WANT_CXX
 noinst_LTLIBRARIES = libcxx.la

@@ -29,7 +29,7 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 void
 testlogops (int count)
 {
-  unsigned i;
+  int i;
   mpz_t a, b, res, ref;
   mp_bitcnt_t c;
 

@@ -3,7 +3,7 @@
 
    Contributed to the GNU project by Torbjörn Granlund.
 
-Copyright 2007-2009, 2011, 2012, 2013 Free Software Foundation, Inc.
+Copyright 2007-2009, 2011-2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -112,7 +112,7 @@ see https://www.gnu.org/licenses/.  */
 #ifdef TUNE_SQR_TOOM2_MAX
 /* We slightly abuse TUNE_SQR_TOOM2_MAX here.  If it is set for an assembly
    mpn_sqr_basecase, it comes from SQR_TOOM2_THRESHOLD_MAX in the assembly
-   file.  An assembly mpn_sqr_basecase that does not define it, should allow
+   file.  An assembly mpn_sqr_basecase that does not define it should allow
    any size.  */
 #define SQR_BASECASE_LIM  SQR_TOOM2_THRESHOLD
 #endif
@@ -130,54 +130,14 @@ see https://www.gnu.org/licenses/.  */
    size.  */
 #define mpn_local_sqr(rp,up,n,tp) mpn_sqr_basecase(rp,up,n)
 #else
-/* Define our own squaring function, which uses mpn_sqr_basecase for its
-   allowed sizes, but its own code for larger sizes.  */
-static void
-mpn_local_sqr (mp_ptr rp, mp_srcptr up, mp_size_t n, mp_ptr tp)
-{
-  mp_size_t i;
-
-  ASSERT (n >= 1);
-  ASSERT (! MPN_OVERLAP_P (rp, 2*n, up, n));
-
-  if (BELOW_THRESHOLD (n, SQR_BASECASE_LIM))
-    {
-      mpn_sqr_basecase (rp, up, n);
-      return;
-    }
-
-  {
-    mp_limb_t ul, lpl;
-    ul = up[0];
-    umul_ppmm (rp[1], lpl, ul, ul << GMP_NAIL_BITS);
-    rp[0] = lpl >> GMP_NAIL_BITS;
-  }
-  if (n > 1)
-    {
-      mp_limb_t cy;
-
-      cy = mpn_mul_1 (tp, up + 1, n - 1, up[0]);
-      tp[n - 1] = cy;
-      for (i = 2; i < n; i++)
-	{
-	  mp_limb_t cy;
-	  cy = mpn_addmul_1 (tp + 2 * i - 2, up + i, n - i, up[i - 1]);
-	  tp[n + i - 2] = cy;
-	}
-      MPN_SQR_DIAGONAL (rp + 2, up + 1, n - 1);
-
-      {
-	mp_limb_t cy;
-#if HAVE_NATIVE_mpn_addlsh1_n
-	cy = mpn_addlsh1_n (rp + 1, rp + 1, tp, 2 * n - 2);
-#else
-	cy = mpn_lshift (tp, tp, 2 * n - 2, 1);
-	cy += mpn_add_n (rp + 1, rp + 1, tp, 2 * n - 2);
-#endif
-	rp[2 * n - 1] += cy;
-      }
-    }
-}
+/* Else use mpn_sqr_basecase for its allowed sizes, else mpn_mul_basecase.  */
+#define mpn_local_sqr(rp,up,n,tp) \
+  do {									\
+    if (BELOW_THRESHOLD (n, SQR_BASECASE_LIM))				\
+      mpn_sqr_basecase (rp, up, n);					\
+    else								\
+      mpn_mul_basecase(rp, up, n, up, n);				\
+  } while (0)
 #endif
 
 #define getbit(p,bi) \

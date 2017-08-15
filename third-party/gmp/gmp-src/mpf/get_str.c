@@ -4,7 +4,8 @@
    example, the number 3.1416 would be returned as "31416" in DIGIT_PTR and
    1 in EXP.
 
-Copyright 1993-1997, 2000-2003, 2005, 2006, 2011 Free Software Foundation, Inc.
+Copyright 1993-1997, 2000-2003, 2005, 2006, 2011, 2015 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -190,6 +191,15 @@ mpf_get_str (char *dbuf, mp_exp_t *exp, int base, size_t n_digits, mpf_srcptr u)
 
   LIMBS_PER_DIGIT_IN_BASE (n_limbs_needed, n_digits, base);
 
+  if (un > n_limbs_needed)
+    {
+      up += un - n_limbs_needed;
+      un = n_limbs_needed;
+    }
+
+  TMP_ALLOC_LIMBS_2 (pp, 2 * n_limbs_needed + 4,
+		     tp, 2 * n_limbs_needed + 4);
+
   if (ue <= n_limbs_needed)
     {
       /* We need to multiply number by base^n to get an n_digits integer part.  */
@@ -199,15 +209,7 @@ mpf_get_str (char *dbuf, mp_exp_t *exp, int base, size_t n_digits, mpf_srcptr u)
       n_more_limbs_needed = n_limbs_needed - ue;
       DIGITS_IN_BASE_PER_LIMB (e, n_more_limbs_needed, base);
 
-      if (un > n_limbs_needed)
-	{
-	  up += un - n_limbs_needed;
-	  un = n_limbs_needed;
-	}
-      pp = TMP_ALLOC_LIMBS (2 * n_limbs_needed + 2);
-      tp = TMP_ALLOC_LIMBS (2 * n_limbs_needed + 2);
-
-      pn = mpn_pow_1_highpart (pp, &ign, (mp_limb_t) base, e, n_limbs_needed, tp);
+      pn = mpn_pow_1_highpart (pp, &ign, (mp_limb_t) base, e, n_limbs_needed + 1, tp);
       if (un > pn)
 	mpn_mul (tp, up, un, pp, pn);	/* FIXME: mpn_mul_highpart */
       else
@@ -236,15 +238,7 @@ mpf_get_str (char *dbuf, mp_exp_t *exp, int base, size_t n_digits, mpf_srcptr u)
       n_less_limbs_needed = ue - n_limbs_needed;
       DIGITS_IN_BASE_PER_LIMB (e, n_less_limbs_needed, base);
 
-      if (un > n_limbs_needed)
-	{
-	  up += un - n_limbs_needed;
-	  un = n_limbs_needed;
-	}
-      pp = TMP_ALLOC_LIMBS (2 * n_limbs_needed + 2);
-      tp = TMP_ALLOC_LIMBS (2 * n_limbs_needed + 2);
-
-      pn = mpn_pow_1_highpart (pp, &ign, (mp_limb_t) base, e, n_limbs_needed, tp);
+      pn = mpn_pow_1_highpart (pp, &ign, (mp_limb_t) base, e, n_limbs_needed + 1, tp);
 
       xn = n_limbs_needed + (n_less_limbs_needed-ign);
       xp = TMP_ALLOC_LIMBS (xn);

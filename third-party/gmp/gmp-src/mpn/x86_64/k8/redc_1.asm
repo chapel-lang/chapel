@@ -114,7 +114,7 @@ ifdef(`PIC',`
 
 	JUMPTABSECT
 	ALIGN(8)
-L(tab):	JMPENT(	L(0m4), L(tab))
+L(tab):	JMPENT(	L(0), L(tab))
 	JMPENT(	L(1), L(tab))
 	JMPENT(	L(2), L(tab))
 	JMPENT(	L(3), L(tab))
@@ -397,6 +397,7 @@ L(le1):	add	%r10, (up)
 
 
 	ALIGN(16)
+L(0):
 L(0m4):
 L(lo0):	mov	(mp,nneg,8), %rax
 	mov	nneg, i

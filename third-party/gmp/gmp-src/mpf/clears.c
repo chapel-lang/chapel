@@ -1,6 +1,6 @@
 /* mpf_clears() -- Clear multiple mpf_t variables.
 
-Copyright 2009, 2014 Free Software Foundation, Inc.
+Copyright 2009, 2014, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -29,7 +29,6 @@ GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
 #include <stdarg.h>
-#include <stdio.h>		/* for NULL */
 #include "gmp.h"
 #include "gmp-impl.h"
 
@@ -42,8 +41,9 @@ mpf_clears (mpf_ptr x, ...)
 
   while (x != NULL)
     {
-      (*__gmp_free_func) (x->_mp_d, (size_t) (x->_mp_prec + 1) * GMP_LIMB_BYTES);
+      __GMP_FREE_FUNC_LIMBS (PTR(x), PREC(x) + 1);
       x = va_arg (ap, mpf_ptr);
     }
+
   va_end (ap);
 }

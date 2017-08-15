@@ -132,12 +132,8 @@ mpn_fib2_ui (mp_ptr fp, mp_ptr f1p, unsigned long int n)
 
 	  /* Calculate F[2k+1] = 4*F[k]^2 - F[k-1]^2 + 2*(-1)^k.
 	     n&mask is the low bit of our implied k.  */
-#if HAVE_NATIVE_mpn_rsblsh2_n || HAVE_NATIVE_mpn_rsblsh_n
 #if HAVE_NATIVE_mpn_rsblsh2_n
 	  fp[size] = mpn_rsblsh2_n (fp, fp, xp, size);
-#else /* HAVE_NATIVE_mpn_rsblsh_n */
-	  fp[size] = mpn_rsblsh_n (fp, fp, xp, size, 2);
-#endif
 	  if ((n & mask) == 0)
 	    MPN_INCR_U(fp, size + 1, 2);	/* possible +2 */
 	  else

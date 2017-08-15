@@ -160,7 +160,7 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
 	      const char *orig_fmt, va_list orig_ap)
 {
   va_list  ap, this_ap, last_ap;
-  size_t   alloc_fmt_size;
+  size_t   alloc_fmt_size, orig_fmt_size;
   char     *fmt, *alloc_fmt, *last_fmt, *this_fmt, *gmp_str;
   int      retval = 0;
   int      type, fchar, *value, seen_precision;
@@ -180,7 +180,7 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
      piece can be null-terminated.  We're not going to be very fast here, so
      use __gmp_allocate_func rather than TMP_ALLOC, to avoid overflowing the
      stack if a long output string is given.  */
-  alloc_fmt_size = strlen (orig_fmt) + 1;
+  alloc_fmt_size = orig_fmt_size = strlen (orig_fmt) + 1;
 #if _LONG_LONG_LIMB
   /* for a long long limb we change %Mx to %llx, so could need an extra 1
      char for every 3 existing */
@@ -188,7 +188,7 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
 #endif
   alloc_fmt = __GMP_ALLOCATE_FUNC_TYPE (alloc_fmt_size, char);
   fmt = alloc_fmt;
-  memcpy (fmt, orig_fmt, alloc_fmt_size);
+  memcpy (fmt, orig_fmt, orig_fmt_size);
 
   /* last_fmt and last_ap are just after the last output, and hence where
      the next output will begin, when that's done */

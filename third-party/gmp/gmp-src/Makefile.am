@@ -1,7 +1,7 @@
 ## Process this file with automake to generate Makefile.in
 
 
-# Copyright 1991, 1993, 1994, 1996, 1997, 1999-2004, 2006-2009, 2011-2014 Free
+# Copyright 1991, 1993, 1994, 1996, 1997, 1999-2004, 2006-2009, 2011-2016 Free
 # Software Foundation, Inc.
 #
 #  This file is part of the GNU MP Library.
@@ -86,6 +86,9 @@
 #        5.1.1   11:1:1    7:1:3     -
 #        5.1.2   11:2:1    7:2:3     -
 #        6.0.0   12:0:2    8:0:4     -
+#        6.1.0   13:0:3    9:0:5     -
+#        6.1.1   13:1:3    9:1:5     -
+#        6.1.2   13:2:3    9:2:5     -
 #
 # Starting at 3:0:0 is a slight abuse of the versioning system, but it
 # ensures we're past soname libgmp.so.2, which was used on Debian GNU/Linux
@@ -98,13 +101,13 @@
 # it's still good to get the shared library filename (like
 # libgmpxx.so.3.0.4) incrementing, to make it clear which GMP it's from.
 
-LIBGMP_LT_CURRENT    = 12
-LIBGMP_LT_REVISION   = 0
-LIBGMP_LT_AGE        = 2
+LIBGMP_LT_CURRENT    = 13
+LIBGMP_LT_REVISION   = 2
+LIBGMP_LT_AGE        = 3
 
-LIBGMPXX_LT_CURRENT  = 8
-LIBGMPXX_LT_REVISION = 0
-LIBGMPXX_LT_AGE      = 4
+LIBGMPXX_LT_CURRENT  = 9
+LIBGMPXX_LT_REVISION = 2
+LIBGMPXX_LT_AGE      = 5
 
 
 SUBDIRS = tests mpn mpz mpq mpf printf scanf rand cxx demos tune doc
@@ -137,7 +140,7 @@ BUILT_SOURCES = gmp.h
 DISTCLEANFILES = $(BUILT_SOURCES) config.m4 @gmp_srclinks@
 
 # Tell gmp.h it's building gmp, not an application, used by windows DLL stuff.
-INCLUDES=-D__GMP_WITHIN_GMP
+AM_CPPFLAGS=-D__GMP_WITHIN_GMP
 
 
 MPF_OBJECTS = mpf/init$U.lo mpf/init2$U.lo mpf/inits$U.lo mpf/set$U.lo	    \
@@ -147,7 +150,7 @@ MPF_OBJECTS = mpf/init$U.lo mpf/init2$U.lo mpf/inits$U.lo mpf/set$U.lo	    \
   mpf/get_str$U.lo mpf/dump$U.lo mpf/size$U.lo mpf/eq$U.lo mpf/reldiff$U.lo \
   mpf/sqrt$U.lo mpf/random2$U.lo mpf/inp_str$U.lo mpf/out_str$U.lo	    \
   mpf/add$U.lo mpf/add_ui$U.lo mpf/sub$U.lo mpf/sub_ui$U.lo mpf/ui_sub$U.lo \
-  mpf/mul$U.lo mpf/mul_ui$U.lo mpf/div$U.lo mpf/div_ui$U.lo		    \
+  mpf/mul$U.lo mpf/mul_ui$U.lo mpf/div$U.lo mpf/div_ui$U.lo mpf/cmp_z$U.lo  \
   mpf/cmp$U.lo mpf/cmp_d$U.lo mpf/cmp_ui$U.lo mpf/cmp_si$U.lo		    \
   mpf/mul_2exp$U.lo mpf/div_2exp$U.lo mpf/abs$U.lo mpf/neg$U.lo		    \
   mpf/set_q$U.lo mpf/get_d$U.lo mpf/get_d_2exp$U.lo mpf/set_dfl_prec$U.lo   \
@@ -424,15 +427,14 @@ check-mini-gmp:
 	abs_srcdir="`cd $(srcdir) && pwd`" ; \
 	$(MKDIR_P) mini-gmp/tests \
 	&& cd mini-gmp/tests \
-	&& LD_LIBRARY_PATH="../../.libs:$$LD_LIBRARY_PATH" \
-	   DYLD_LIBRARY_PATH="../../.libs:$$DYLD_LIBRARY_PATH" \
+	&& TEST_LIBRARY_PATH="../../.libs"  \
 	   $(MAKE) -f "$$abs_srcdir/mini-gmp/tests/Makefile" \
 		VPATH="$$abs_srcdir/mini-gmp/tests" \
 		srcdir="$$abs_srcdir/mini-gmp/tests" \
 		MINI_GMP_DIR="$$abs_srcdir/mini-gmp" \
 		LDFLAGS="-L../../.libs" \
 		LIBS="-lgmp -lm" \
-		CC="$(CC_FOR_BUILD)" EXTRA_CFLAGS="-g -I../.." check
+		CC="$(CC)" CFLAGS="$(CFLAGS)" CPPFLAGS="-I../.." check
 
 clean-mini-gmp:
 	if [ -d mini-gmp/tests ] ; then \

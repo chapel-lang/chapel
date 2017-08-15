@@ -50,12 +50,18 @@ mp_limb_t calling_conventions_values[23] =
 #define RFLAGS	22
 
 /* values to check */
+#ifdef __cplusplus
+extern "C" {
+#endif
 struct {
   int  control;
   int  status;
   int  tag;
   int  other[4];
 } calling_conventions_fenv;
+#ifdef __cplusplus
+}
+#endif
 
 
 const char *regname[6] = {"rbx", "rbp", "r12", "r13", "r14", "r15"};

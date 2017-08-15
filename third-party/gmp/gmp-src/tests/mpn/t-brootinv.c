@@ -1,4 +1,4 @@
-/* Copyright 2012 Free Software Foundation, Inc.
+/* Copyright 2012, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -87,7 +87,7 @@ main (int argc, char **argv)
       mpn_powlo (pp, rp, &k, 1, n, scratch);
       mpn_mullo_n (app, ap, pp, n);
 
-      if (app[0] != 1 || !mpn_zero_p (app+1, n-1))
+      if (app[0] != 1 || !(n == 1 || mpn_zero_p (app+1, n-1)))
 	{
 	  gmp_fprintf (stderr,
 		       "mpn_brootinv returned bad result: %u limbs\n",

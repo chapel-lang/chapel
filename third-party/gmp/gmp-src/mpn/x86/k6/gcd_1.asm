@@ -1,6 +1,6 @@
 dnl  AMD K6 mpn_gcd_1 -- mpn by 1 gcd.
 
-dnl  Copyright 2000-2002, 2004 Free Software Foundation, Inc.
+dnl  Copyright 2000-2002, 2004, 2014 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -321,15 +321,12 @@ L(modexact):
 
 	pushl	%ebx		FRAME_pushl()
 
-ifdef(`PIC',`
+ifdef(`PIC_WITH_EBX',`
 	nop	C code alignment
 	call	L(movl_eip_ebx)
-L(here):
-	addl	$_GLOBAL_OFFSET_TABLE_, %ebx
-	call	GSYM_PREFIX`'mpn_modexact_1_odd@PLT
-',`
-	call	GSYM_PREFIX`'mpn_modexact_1_odd
+	add	$_GLOBAL_OFFSET_TABLE_, %ebx
 ')
+	CALL(	mpn_modexact_1_odd)
 
 	movl	%esi, %edx		C y odd
 	movl	SAVE_ESI, %esi
@@ -353,7 +350,7 @@ L(here):
 	ret
 
 
-ifdef(`PIC',`
+ifdef(`PIC_WITH_EBX',`
 L(movl_eip_ebx):
 	movl	(%esp), %ebx
 	ret_internal

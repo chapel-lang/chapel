@@ -140,6 +140,7 @@ L(ret):	mr	r3, r9
 
 
 L(large):
+	stwu	r1, -32(r1)
 	mfspr	r10, 256
 	oris	r0, r10, 0xffff		C Set VRSAVE bit 0-15
 	mtspr	256, r0
@@ -341,11 +342,12 @@ C We now have 4 128-bit accumulators to sum
 C Reduce 32-bit fields
 	vsumsws	x0, x0, z
 
-	li	r7, -16			C FIXME: does all ppc32 ABIs...
-	stvx	x0, r7, r1		C FIXME: ...support storing below sp?
-	lwz	r3, -4(r1)
+	li	r7, 16
+	stvx	x0, r7, r1
+	lwz	r3, 28(r1)
 
 	mtspr	256, r10
+	addi	r1, r1, 32
 	blr
 EPILOGUE()
 

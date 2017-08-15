@@ -81,7 +81,8 @@ L(end2):
 	blr
 
 L(BIG):
-	stmw	r24, -32(r1)	C save registers we are supposed to preserve
+	stwu	r1, -48(r1)
+	stmw	r24, 8(r1)	C save registers we are supposed to preserve
 	lwz	r9, 0(r4)
 	subfic	r8, r6, 32
 	slw	r3, r9, r8	C compute function return value
@@ -159,6 +160,7 @@ L(loopU):
 	stw	r27, 16(r7)
 
 	stw	r12, 20(r7)
-	lmw	r24, -32(r1)	C restore registers
+	lmw	r24, 8(r1)	C restore registers
+	addi	r1, r1, 48
 	blr
 EPILOGUE()

@@ -87,7 +87,7 @@ L(1):	tbz	n, #1, L(2)
 	csinc	x15, x15, x15, COND
 	stp	x8, x9, [rp],#16
 
-L(2):	lsr	n, n, 2
+L(2):	lsr	n, n, #2
 	cbz	n, L(end)
 
 L(top):	ldp	x4, x5, [up],#16

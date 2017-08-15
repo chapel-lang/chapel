@@ -1,8 +1,9 @@
 dnl  AMD64 mpn_copyi optimised for CPUs with fast SSE.
 
-dnl  Contributed to the GNU project by Torbjörn Granlund.
+dnl  Copyright 2003, 2005, 2007, 2011, 2012, 2015 Free Software Foundation,
+dnl  Inc.
 
-dnl  Copyright 2003, 2005, 2007, 2011, 2012 Free Software Foundation, Inc.
+dnl  Contributed to the GNU project by Torbjörn Granlund.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -32,18 +33,26 @@ dnl  see https://www.gnu.org/licenses/.
 
 include(`../config.m4')
 
-
-C	    cycles/limb		  good for cpu?
+C	     cycles/limb     cycles/limb     cycles/limb      good
+C              aligned	      unaligned	      best seen	     for cpu?
 C AMD K8,K9
-C AMD K10	 0.85	 1.64		Y/N
-C AMD bd1	 1.4	 1.4		Y
+C AMD K10	 0.85		 1.64				Y/N
+C AMD bull	 1.4		 1.4				N
+C AMD pile	 0.77		 0.93				N
+C AMD steam	 ?		 ?
+C AMD excavator	 ?		 ?
 C AMD bobcat
-C Intel P4	 2.3	 2.3		Y
-C Intel core2	 1.0	 1.0
-C Intel NHM	 0.5	 0.67		Y
-C Intel SBR	 0.5	 0.75		Y
+C AMD jaguar	 0.65		 1.02		opt/0.93	Y/N
+C Intel P4	 2.3		 2.3				Y
+C Intel core	 1.0		 1.0		0.52/0.64	N
+C Intel NHM	 0.5		 0.67				Y
+C Intel SBR	 0.51		 0.75		opt/0.54	Y/N
+C Intel IBR	 0.50		 0.57		opt/0.54	Y
+C Intel HWL	 0.50		 0.57		opt/0.51	Y
+C Intel BWL	 0.55		 0.62		opt/0.55	Y
 C Intel atom
-C VIA nano	 1.16	 5.16		Y/N
+C Intel SLM	 1.02		 1.27		opt/1.07	Y/N
+C VIA nano	 1.16		 5.16				Y/N
 
 C We try to do as many 16-byte operations as possible.  The top-most and
 C bottom-most writes might need 8-byte operations.  We can always write using
@@ -71,7 +80,7 @@ ASM_START()
 PROLOGUE(mpn_copyi)
 	FUNC_ENTRY(3)
 
-	cmp	$3, n
+	cmp	$3, n			C NB: bc code below assumes this limit
 	jc	L(bc)
 
 	test	$8, R8(rp)		C is rp 16-byte aligned?
@@ -142,25 +151,27 @@ L(end):	test	$1, R8(n)
 	FUNC_EXIT()
 	ret
 
-C Basecase code.  Needed for good small operands speed, not for
-C correctness as the above code is currently written.
+C Basecase code.  Needed for good small operands speed, not for correctness as
+C the above code is currently written.  The commented-out lines need to be
+C reinstated if this code is to be used for n > 3, and then the post loop
+C offsets need fixing.
 
 L(bc):	sub	$2, n
 	jc	L(end)
 	ALIGN(16)
 1:	mov	(up), %rax
 	mov	8(up), %rcx
-	lea	16(up), up
+dnl	lea	16(up), up
 	mov	%rax, (rp)
 	mov	%rcx, 8(rp)
-	lea	16(rp), rp
-	sub	$2, n
-	jnc	1b
+dnl	lea	16(rp), rp
+dnl	sub	$2, n
+dnl	jnc	1b
 
 	test	$1, R8(n)
 	jz	L(ret)
-	mov	(up), %rax
-	mov	%rax, (rp)
+	mov	16(up), %rax
+	mov	%rax, 16(rp)
 L(ret):	FUNC_EXIT()
 	ret
 EPILOGUE()

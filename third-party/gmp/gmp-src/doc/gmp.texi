@@ -14,7 +14,7 @@
 This manual describes how to install and use the GNU multiple precision
 arithmetic library, version @value{VERSION}.
 
-Copyright 1991, 1993-2014 Free Software Foundation, Inc.
+Copyright 1991, 1993-2016 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document under
 the terms of the GNU Free Documentation License, Version 1.3 or any later
@@ -627,8 +627,8 @@ install under a particular tree.  The default is @samp{/usr/local}.
 @option{--exec-prefix} can be used to direct architecture-dependent files like
 @file{libgmp.a} to a different location.  This can be used to share
 architecture-independent parts like the documentation, but separate the
-dependent parts.  Note however that @file{gmp.h} and @file{mp.h} are
-architecture-dependent since they encode certain aspects of @file{libgmp}, so
+dependent parts.  Note however that @file{gmp.h} is
+architecture-dependent since it encodes certain aspects of @file{libgmp}, so
 it will be necessary to ensure both @file{$prefix/include} and
 @file{$exec_prefix/include} are available to the compiler.
 
@@ -3524,18 +3524,14 @@ be perfect squares.
 @cindex Probable prime testing functions
 Determine whether @var{n} is prime.  Return 2 if @var{n} is definitely prime,
 return 1 if @var{n} is probably prime (without being certain), or return 0 if
-@var{n} is definitely composite.
+@var{n} is definitely non-prime.
 
-This function does some trial divisions, then some Miller-Rabin probabilistic
-primality tests.  The argument @var{reps} controls how many such tests are
-done; a higher value will reduce the chances of a composite being returned as
-``probably prime''.  25 is a reasonable number; a composite number will then be
-identified as a prime with a probability of less than @m{2^{-50},2^(-50)}.
-
-Miller-Rabin and similar tests can be more properly called compositeness
-tests.  Numbers which fail are known to be composite but those which pass
-might be prime or might be composite.  Only a few composites pass, hence those
-which pass are considered probably prime.
+This function performs some trial divisions, then @var{reps} Miller-Rabin
+probabilistic primality tests.  A higher @var{reps} value will reduce the
+chances of a non-prime being identified as ``probably prime''.  A composite
+number will be identified as a prime with a probability of less than
+@m{4^{-reps},4^(-@var{reps})}.  Reasonable values of @var{reps} are between 15
+and 50.
 @end deftypefun
 
 @deftypefun void mpz_nextprime (mpz_t @var{rop}, const mpz_t @var{op})
@@ -3619,7 +3615,9 @@ Set @var{rop} to the least common multiple of @var{op1} and @var{op2}.
 @cindex Inverse modulo functions
 Compute the inverse of @var{op1} modulo @var{op2} and put the result in
 @var{rop}.  If the inverse exists, the return value is non-zero and @var{rop}
-will satisfy @math{0 < @var{rop} < @GMPabs{@var{op2}}}.  If an inverse doesn't
+will satisfy @math{0 @le{} @var{rop} < @GMPabs{@var{op2}}} (with @math{@var{rop}
+= 0} possible only when @math{@GMPabs{@var{op2}} = 1}, i.e., in the
+somewhat degenerate zero ring).  If an inverse doesn't
 exist the return value is zero and @var{rop} is undefined.  The behaviour of
 this function is undefined when @var{op2} is zero.
 @end deftypefun
@@ -3948,7 +3946,7 @@ Generate a random integer with long strings of zeros and ones in the
 binary representation.  Useful for testing functions and algorithms,
 since this kind of random numbers have proven to be more likely to
 trigger corner-case bugs.  The random number will be in the range
-0 to @m{2^n-1, 2^@var{n}@minus{}1}, inclusive.
+@m{2^{n-1}, 2^@var{n@minus{}1}} to @m{2^n-1, 2^@var{n}@minus{}1}, inclusive.
 
 The variable @var{state} must be initialized by calling one of the
 @code{gmp_randinit} functions (@ref{Random State Initialization})
@@ -4176,7 +4174,7 @@ void foo (mpz_t x)
   mp_limb_t *xp;
 
   n = mpz_size (x);
-  xp = mpz_limbs_modify(x, 2*n);
+  xp = mpz_limbs_modify (x, 2*n);
   for (i = 0; i < n; i++)
     xp[n+i] = xp[n-1-i];
   mpz_limbs_finish (x, mpz_sgn (x) < 0 ? - 2*n : 2*n);
@@ -4233,7 +4231,7 @@ numbers.  These functions start with the prefix @code{mpq_}.
 Rational numbers are stored in objects of type @code{mpq_t}.
 
 All rational arithmetic functions assume operands have a canonical form, and
-canonicalize their result.  The canonical from means that the denominator and
+canonicalize their result.  The canonical form means that the denominator and
 the numerator have no common factors, and that the denominator is positive.
 Zero has the unique representation 0/1.
 
@@ -4422,6 +4420,7 @@ zero, this routine will divide by zero.
 @cindex Comparison functions
 
 @deftypefun int mpq_cmp (const mpq_t @var{op1}, const mpq_t @var{op2})
+@deftypefunx int mpq_cmp_z (const mpq_t @var{op1}, const mpz_t @var{op2})
 Compare @var{op1} and @var{op2}.  Return a positive value if @math{@var{op1} >
 @var{op2}}, zero if @math{@var{op1} = @var{op2}}, and a negative value if
 @math{@var{op1} < @var{op2}}.
@@ -4551,31 +4550,33 @@ for instance @samp{0x10/11} is @math{16/11}, whereas @samp{0x10/0x11} is
 GMP floating point numbers are stored in objects of type @code{mpf_t} and
 functions operating on them have an @code{mpf_} prefix.
 
-The mantissa of each float has a user-selectable precision, limited only by
-available memory.  Each variable has its own precision, and that can be
-increased or decreased at any time.
+The mantissa of each float has a user-selectable precision, in practice only
+limited by available memory.  Each variable has its own precision, and that can
+be increased or decreased at any time.  This selectable precision is a minimum
+value, GMP rounds it up to a whole limb.
 
-The exponent of each float is a fixed precision, one machine word on most
+The accuracy of a calculation is determined by the priorly set precision of the
+destination variable and the numeric values of the input variables.  Input
+variables' set precisions do not affect calculations (except indirectly as
+their values might have been affected when they were assigned).
+
+The exponent of each float has fixed precision, one machine word on most
 systems.  In the current implementation the exponent is a count of limbs, so
 for example on a 32-bit system this means a range of roughly
 @math{2^@W{-68719476768}} to @math{2^@W{68719476736}}, or on a 64-bit system
-this will be greater.  Note however that @code{mpf_get_str} can only return an
-exponent which fits an @code{mp_exp_t} and currently @code{mpf_set_str}
-doesn't accept exponents bigger than a @code{long}.
+this will be much greater.  Note however that @code{mpf_get_str} can only
+return an exponent which fits an @code{mp_exp_t} and currently
+@code{mpf_set_str} doesn't accept exponents bigger than a @code{long}.
 
-Each variable keeps a size for the mantissa data actually in use.  This means
+Each variable keeps track of the mantissa data actually in use.  This means
 that if a float is exactly represented in only a few bits then only those bits
-will be used in a calculation, even if the selected precision is high.
+will be used in a calculation, even if the variable's selected precision is
+high.  This is a performance optimization; it does not affect the numeric
+results.
 
-All calculations are performed to the precision of the destination variable.
-Each function is defined to calculate with ``infinite precision'' followed by
-a truncation to the destination precision, but of course the work done is only
-what's needed to determine a result under that definition.
-
-The precision selected by the user for a variable is a minimum value, GMP may
-increase it to facilitate efficient calculation.  Currently this means
-rounding up to a whole limb, and then sometimes having a further partial limb,
-depending on the high limb of the mantissa.
+Internally, GMP sometimes calculates with higher precision than that of the
+destination variable in order to limit errors.  Final results are always
+truncated to the destination variable's precision.
 
 The mantissa is stored in binary.  One consequence of this is that decimal
 fractions like @math{0.1} cannot be represented exactly.  The same is true of
@@ -4586,16 +4587,16 @@ choices.)
 
 The @code{mpf} functions and variables have no special notion of infinity or
 not-a-number, and applications must take care not to overflow the exponent or
-results will be unpredictable.  This might change in a future release.
+results will be unpredictable.
 
 Note that the @code{mpf} functions are @emph{not} intended as a smooth
 extension to IEEE P754 arithmetic.  In particular results obtained on one
 computer often differ from the results on a computer with a different word
 size.
 
-The GMP extension library MPFR (@url{http://mpfr.org}) is an alternative to
-GMP's @code{mpf} functions.  MPFR provides well-defined precision and accurate
-rounding, and thereby naturally extends IEEE P754.
+New projects should consider using the GMP extension library MPFR
+(@url{http://mpfr.org}) instead.  MPFR provides well-defined precision and
+accurate rounding, and thereby naturally extends IEEE P754.
 
 @menu
 * Initializing Floats::
@@ -4958,6 +4959,7 @@ Set @var{rop} to @m{@var{op1}/2^{op2}, @var{op1} divided by 2 raised to
 @cindex Comparison functions
 
 @deftypefun int mpf_cmp (const mpf_t @var{op1}, const mpf_t @var{op2})
+@deftypefunx int mpf_cmp_z (const mpf_t @var{op1}, const mpz_t @var{op2})
 @deftypefunx int mpf_cmp_d (const mpf_t @var{op1}, double @var{op2})
 @deftypefunx int mpf_cmp_ui (const mpf_t @var{op1}, unsigned long int @var{op2})
 @deftypefunx int mpf_cmp_si (const mpf_t @var{op1}, signed long int @var{op2})
@@ -4970,16 +4972,12 @@ a NaN.
 @end deftypefun
 
 @deftypefun int mpf_eq (const mpf_t @var{op1}, const mpf_t @var{op2}, mp_bitcnt_t op3)
+@strong{This function is mathematically ill-defined and should not be used.}
+
 Return non-zero if the first @var{op3} bits of @var{op1} and @var{op2} are
-equal, zero otherwise.  I.e., test if @var{op1} and @var{op2} are approximately
-equal.
-
-Caution 1: All version of GMP up to version 4.2.4 compared just whole limbs,
-meaning sometimes more than @var{op3} bits, sometimes fewer.
-
-Caution 2: This function will consider XXX11...111 and XX100...000 different,
-even if ... is replaced by a semi-infinite number of bits.  Such numbers are
-really just one ulp off, and should be considered equal.
+equal, zero otherwise.  Note that numbers like e.g., 256 (binary 100000000) and
+255 (binary 11111111) will never be equal by this function's measure, and
+furthermore that 0 will only be equal to itself.
 @end deftypefun
 
 @deftypefun void mpf_reldiff (mpf_t @var{rop}, const mpf_t @var{op1}, const mpf_t @var{op2})
@@ -5299,7 +5297,8 @@ with a count equal to the logarithm of @var{s2limb} instead, for optimal speed.
 Multiply @{@var{s1p}, @var{n}@} and @var{s2limb}, and add the @var{n} least
 significant limbs of the product to @{@var{rp}, @var{n}@} and write the result
 to @var{rp}.  Return the most significant limb of the product, plus carry-out
-from the addition.
+from the addition.  @{@var{s1p}, @var{n}@} and @{@var{rp}, @var{n}@} are
+allowed to overlap provided @math{@var{rp} @le{} @var{s1p}}.
 
 This is a low-level function that is a building block for general
 multiplication as well as other operations in GMP@.  It is written in assembly
@@ -5310,7 +5309,8 @@ for most CPUs.
 Multiply @{@var{s1p}, @var{n}@} and @var{s2limb}, and subtract the @var{n}
 least significant limbs of the product from @{@var{rp}, @var{n}@} and write the
 result to @var{rp}.  Return the most significant limb of the product, plus
-borrow-out from the subtraction.
+borrow-out from the subtraction.  @{@var{s1p}, @var{n}@} and @{@var{rp},
+@var{n}@} are allowed to overlap provided @math{@var{rp} @le{} @var{s1p}}.
 
 This is a low-level function that is a building block for general
 multiplication and division as well as other operations in GMP@.  It is written
@@ -5374,6 +5374,14 @@ separate, not partially overlapping.
 performance.]
 @end deftypefun
 
+@deftypefun void mpn_divexact_1 (mp_limb_t * @var{rp}, const mp_limb_t * @var{sp}, mp_size_t @var{n}, mp_limb_t @var{d})
+Divide @{@var{sp}, @var{n}@} by @var{d}, expecting it to divide exactly, and
+writing the result to @{@var{rp}, @var{n}@}. If @var{d} doesn't divide
+exactly, the value written to @{@var{rp}, @var{n}@} is undefined. The areas at
+@var{rp} and @var{sp} have to be identical or completely separate, not
+partially overlapping.
+@end deftypefun
+
 @deftypefn Macro mp_limb_t mpn_divexact_by3 (mp_limb_t *@var{rp}, mp_limb_t *@var{sp}, @w{mp_size_t @var{n}})
 @deftypefnx Function mp_limb_t mpn_divexact_by3c (mp_limb_t *@var{rp}, mp_limb_t *@var{sp}, @w{mp_size_t @var{n}}, mp_limb_t @var{carry})
 Divide @{@var{sp}, @var{n}@} by 3, expecting it to divide exactly, and writing
@@ -5434,6 +5442,10 @@ This function is written in assembly for most CPUs.
 Compare @{@var{s1p}, @var{n}@} and @{@var{s2p}, @var{n}@} and return a
 positive value if @math{@var{s1} > @var{s2}}, 0 if they are equal, or a
 negative value if @math{@var{s1} < @var{s2}}.
+@end deftypefun
+
+@deftypefun int mpn_zero_p (const mp_limb_t *@var{sp}, mp_size_t @var{n})
+Test @{@var{sp}, @var{n}@} and return 1 if the operand is zero, 0 otherwise.
 @end deftypefun
 
 @deftypefun mp_size_t mpn_gcd (mp_limb_t *@var{rp}, mp_limb_t *@var{xp}, mp_size_t @var{xn}, mp_limb_t *@var{yp}, mp_size_t @var{yn})
@@ -5704,7 +5716,15 @@ These functions take @math{O(N)} time, unlike the leaky functions
 @code{mpn_add_1} which are @math{O(1)} on average. They require scratch space
 of @code{mpn_sec_add_1_itch(@var{n})} and @code{mpn_sec_sub_1_itch(@var{n})}
 limbs, respectively, to be passed in the @var{tp} parameter. The scratch space
-requirements are guaranteed to increase monotonously in the operand size.
+requirements are guaranteed to be at most @var{n} limbs, and increase
+monotonously in the operand size.
+@end deftypefun
+
+@deftypefun void mpn_cnd_swap (mp_limb_t @var{cnd}, volatile mp_limb_t *@var{ap}, volatile mp_limb_t *@var{bp}, mp_size_t @var{n})
+If @var{cnd} is non-zero, swaps the contents of the areas @{@var{ap},@var{n}@}
+and @{@var{bp},@var{n}@}. Otherwise, the areas are left unmodified.
+Implemented using logical operations on the limbs, with the same memory
+accesses independent of the value of @var{cnd}.
 @end deftypefun
 
 @deftypefun void mpn_sec_mul (mp_limb_t *@var{rp}, const mp_limb_t *@var{ap}, mp_size_t @var{an}, const mp_limb_t *@var{bp}, mp_size_t @var{bn}, mp_limb_t *@var{tp})
@@ -6840,6 +6860,9 @@ mpz_fdiv_q (q.get_mpz_t(), a.get_mpz_t(), d.get_mpz_t());
 @deftypefunx int mpz_class::set_str (const string& @var{str}, int @var{base})
 @deftypefunx int sgn (mpz_class @var{op})
 @deftypefunx mpz_class sqrt (mpz_class @var{op})
+@maybepagebreak
+@deftypefunx mpz_class gcd (mpz_class @var{op1}, mpz_class @var{op2})
+@deftypefunx mpz_class lcm (mpz_class @var{op1}, mpz_class @var{op2})
 @maybepagebreak
 @deftypefunx void mpz_class::swap (mpz_class& @var{op})
 @deftypefunx void swap (mpz_class& @var{op1}, mpz_class& @var{op2})
@@ -8844,7 +8867,7 @@ requirements, and return.
 GCD is then implemented as a loop around HGCD, similarly to Lehmer's
 algorithm. Where Lehmer repeatedly chops off the top two limbs, calls
 @code{mpn_hgcd2}, and applies the resulting matrix to the full numbers, the
-subquadratic GCD chops off the most significant third of the limbs (the
+sub-quadratic GCD chops off the most significant third of the limbs (the
 proportion is a tuning parameter, and @math{1/3} seems to be more efficient
 than, e.g, @math{1/2}), calls @code{mpn_hgcd}, and applies the resulting
 matrix. Once the input numbers are reduced to size below
@@ -9178,12 +9201,6 @@ getting the exact number of digits, but an exact result every time would not
 be practical, since in general the difference between numbers 100@dots{} and
 99@dots{} is only in the last few bits and the work to identify 99@dots{}
 might well be almost as much as a full conversion.
-
-@code{mpf_get_str} doesn't currently use the algorithm described here, it
-multiplies or divides by a power of @math{b} to move the radix point to the
-just above the highest non-zero digit (or at worst one above that location),
-then multiplies by @math{b^n} to bring out digits.  This is @math{O(N^2)} and
-is certainly not optimal.
 
 The @math{r/b^n} scheme described above for using multiplications to bring out
 digits might be useful for more than a single limb.  Some brief experiments
@@ -10655,8 +10672,9 @@ multiplication.
 
 Marco Bodrato helped implement the new Toom multiply code for GMP 4.3 and
 implemented most of the new Toom multiply and squaring code for 5.0.
-He is the main author of the current mpn_mulmod_bnm1 and mpn_mullo_n.  Marco
-also wrote the functions mpn_invert and mpn_invertappr.  He is the author of
+He is the main author of the current mpn_mulmod_bnm1, mpn_mullo_n, and
+mpn_sqrlo.  Marco also wrote the functions mpn_invert and mpn_invertappr,
+and improved the speed of integer root extraction.  He is the author of
 the current combinatorial functions: binomial, factorial, multifactorial,
 primorial.
 

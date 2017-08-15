@@ -83,7 +83,7 @@ see https://www.gnu.org/licenses/.  */
 /* Section sieve: sieving functions and tools for primes */
 /*********************************************************/
 
-#if WANT_ASSERT
+#if 0
 static mp_limb_t
 bit_to_n (mp_limb_t bit) { return (bit*3+4)|1; }
 #endif

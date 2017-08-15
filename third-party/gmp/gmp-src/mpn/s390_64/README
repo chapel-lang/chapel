@@ -54,7 +54,7 @@ separate feed-in paths.
 
 mpn_lshift, mpn_rshift
 
-The current code runs at pipeline decode bandwith on z990.
+The current code runs at pipeline decode bandwidth on z990.
 
 
 mpn_add_n, mpn_sub_n

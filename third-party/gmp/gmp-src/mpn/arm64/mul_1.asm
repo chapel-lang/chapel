@@ -48,8 +48,8 @@ PROLOGUE(mpn_mul_1)
 	and	n, n, #-4
 	cbz	x6, L(fi0)
 	cmp	x6, #2
-	bcc	L(fi1)
-	beq	L(fi2)
+	b.cc	L(fi1)
+	b.eq	L(fi2)
 
 L(fi3):	mul	x8, x12, v0
 	umulh	x13, x12, v0

@@ -275,7 +275,7 @@ PROLOGUE(mpn_mod_1s_4p_cps,gp)
 	sll	r17, r10, r9
 	mov	r9, r16
 	jsr	r26, mpn_invert_limb
-	ldah	r29, 0(r26)
+	LDGP(	r29, 0(r26))
 	subq	r31, r10, r2
 	lda	r1, 1(r31)
 	sll	r1, r10, r1
@@ -283,7 +283,6 @@ PROLOGUE(mpn_mod_1s_4p_cps,gp)
 	srl	r0, r2, r2
 	ldq	r26, 0(r30)
 	bis	r2, r1, r2
-	lda	r29, 0(r29)
 	stq	r0, 0(r11)
 	stq	r10, 8(r11)
 	mulq	r2, r3, r2

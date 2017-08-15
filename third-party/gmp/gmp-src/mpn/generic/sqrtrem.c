@@ -1,15 +1,15 @@
 /* mpn_sqrtrem -- square root and remainder
 
-   Contributed to the GNU project by Paul Zimmermann (most code) and
-   Torbjorn Granlund (mpn_sqrtrem1).
+   Contributed to the GNU project by Paul Zimmermann (most code),
+   Torbjorn Granlund (mpn_sqrtrem1) and Marco Bodrato (mpn_dc_sqrt).
 
    THE FUNCTIONS IN THIS FILE EXCEPT mpn_sqrtrem ARE INTERNAL WITH A
    MUTABLE INTERFACE.  IT IS ONLY SAFE TO REACH THEM THROUGH DOCUMENTED
    INTERFACES.  IN FACT, IT IS ALMOST GUARANTEED THAT THEY WILL CHANGE OR
    DISAPPEAR IN A FUTURE GMP RELEASE.
 
-Copyright 1999-2002, 2004, 2005, 2008, 2010, 2012 Free Software Foundation,
-Inc.
+Copyright 1999-2002, 2004, 2005, 2008, 2010, 2012, 2015 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -47,6 +47,8 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "longlong.h"
+#define USE_DIVAPPR_Q 1
+#define TRACE(x)
 
 static const unsigned char invsqrttab[384] = /* The common 0x100 was removed */
 {
@@ -132,7 +134,7 @@ mpn_sqrtrem1 (mp_ptr rp, mp_limb_t a0)
 
 #if GMP_NUMB_BITS > 32
   a1 = a0 >> (GMP_LIMB_BITS - 1 - 32);
-  t = (mp_limb_signed_t) (CNST_LIMB(0x2000000000000) - 0x30000  - a1 * x0 * x0) >> 16;
+  t = (mp_limb_signed_t) (CNST_LIMB(0x2000000000000) - 0x30000 - a1 * x0 * x0) >> 16;
   x0 = (x0 << 16) + ((mp_limb_signed_t) (x0 * t) >> (16+2));
 
   /* x0 is now a 16 bits approximation of 1/sqrt(a0) */
@@ -171,45 +173,33 @@ mpn_sqrtrem1 (mp_ptr rp, mp_limb_t a0)
 static mp_limb_t
 mpn_sqrtrem2 (mp_ptr sp, mp_ptr rp, mp_srcptr np)
 {
-  mp_limb_t qhl, q, u, np0, sp0, rp0, q2;
+  mp_limb_t q, u, np0, sp0, rp0, q2;
   int cc;
 
   ASSERT (np[1] >= GMP_NUMB_HIGHBIT / 2);
 
   np0 = np[0];
   sp0 = mpn_sqrtrem1 (rp, np[1]);
-  qhl = 0;
   rp0 = rp[0];
-  while (rp0 >= sp0)
-    {
-      qhl++;
-      rp0 -= sp0;
-    }
-  /* now rp0 < sp0 < 2^Prec */
-  rp0 = (rp0 << Prec) + (np0 >> Prec);
-  u = 2 * sp0;
-  q = rp0 / u;
-  u = rp0 - q * u;
-  q += (qhl & 1) << (Prec - 1);
-  qhl >>= 1; /* if qhl=1, necessary q=0 as qhl*2^Prec + q <= 2^Prec */
-  /* now we have (initial rp0)<<Prec + np0>>Prec = (qhl<<Prec + q) * (2sp0) + u */
-  sp0 = ((sp0 + qhl) << Prec) + q;
-  cc = u >> Prec;
-  rp0 = ((u << Prec) & GMP_NUMB_MASK) + (np0 & (((mp_limb_t) 1 << Prec) - 1));
-  /* subtract q * q or qhl*2^(2*Prec) from rp */
+  /* rp0 <= 2*sp0 < 2^(Prec + 1) */
+  rp0 = (rp0 << (Prec - 1)) + (np0 >> (Prec + 1));
+  q = rp0 / sp0;
+  /* q <= 2^Prec, if q = 2^Prec, reduce the overestimate. */
+  q -= q >> Prec;
+  /* now we have q < 2^Prec */
+  u = rp0 - q * sp0;
+  /* now we have (rp[0]<<Prec + np0>>Prec)/2 = q * sp0 + u */
+  sp0 = (sp0 << Prec) | q;
+  cc = u >> (Prec - 1);
+  rp0 = ((u << (Prec + 1)) & GMP_NUMB_MASK) + (np0 & ((CNST_LIMB (1) << (Prec + 1)) - 1));
+  /* subtract q * q from rp */
   q2 = q * q;
-  cc -= (rp0 < q2) + qhl;
+  cc -= rp0 < q2;
   rp0 -= q2;
-  /* now subtract 2*q*2^Prec + 2^(2*Prec) if qhl is set */
   if (cc < 0)
     {
-      if (sp0 != 0)
-	{
-	  rp0 += sp0;
-	  cc += rp0 < sp0;
-	}
-      else
-	cc++;
+      rp0 += sp0;
+      cc += rp0 < sp0;
       --sp0;
       rp0 += sp0;
       cc += rp0 < sp0;
@@ -224,9 +214,10 @@ mpn_sqrtrem2 (mp_ptr sp, mp_ptr rp, mp_srcptr np)
    and in {np, n} the low n limbs of the remainder, returns the high
    limb of the remainder (which is 0 or 1).
    Assumes {np, 2n} is normalized, i.e. np[2n-1] >= B/4
-   where B=2^GMP_NUMB_BITS.  */
+   where B=2^GMP_NUMB_BITS.
+   Needs a scratch of n/2+1 limbs. */
 static mp_limb_t
-mpn_dc_sqrtrem (mp_ptr sp, mp_ptr np, mp_size_t n)
+mpn_dc_sqrtrem (mp_ptr sp, mp_ptr np, mp_size_t n, mp_limb_t approx, mp_ptr scratch)
 {
   mp_limb_t q;			/* carry out of {sp, n} */
   int c, b;			/* carry out of remainder */
@@ -240,25 +231,30 @@ mpn_dc_sqrtrem (mp_ptr sp, mp_ptr np, mp_size_t n)
     {
       l = n / 2;
       h = n - l;
-      q = mpn_dc_sqrtrem (sp + l, np + 2 * l, h);
+      q = mpn_dc_sqrtrem (sp + l, np + 2 * l, h, 0, scratch);
       if (q != 0)
-	mpn_sub_n (np + 2 * l, np + 2 * l, sp + l, h);
-      q += mpn_divrem (sp, 0, np + l, n, sp + l, h);
-      c = sp[0] & 1;
-      mpn_rshift (sp, sp, l, 1);
+	ASSERT_CARRY (mpn_sub_n (np + 2 * l, np + 2 * l, sp + l, h));
+      TRACE(printf("tdiv_qr(,,,,%u,,%u) -> %u\n", (unsigned) n, (unsigned) h, (unsigned) (n - h + 1)));
+      mpn_tdiv_qr (scratch, np + l, 0, np + l, n, sp + l, h);
+      q += scratch[l];
+      c = scratch[0] & 1;
+      mpn_rshift (sp, scratch, l, 1);
       sp[l - 1] |= (q << (GMP_NUMB_BITS - 1)) & GMP_NUMB_MASK;
+      if (UNLIKELY ((sp[0] & approx) != 0)) /* (sp[0] & mask) > 1 */
+	return 1; /* Remainder is non-zero */
       q >>= 1;
       if (c != 0)
 	c = mpn_add_n (np + l, np + l, sp + l, h);
+      TRACE(printf("sqr(,,%u)\n", (unsigned) l));
       mpn_sqr (np + n, sp, l);
       b = q + mpn_sub_n (np, np, np + n, 2 * l);
       c -= (l == h) ? b : mpn_sub_1 (np + 2 * l, np + 2 * l, 1, (mp_limb_t) b);
-      q = mpn_add_1 (sp + l, sp + l, h, q);
 
       if (c < 0)
 	{
-#if HAVE_NATIVE_mpn_addlsh1_n
-	  c += mpn_addlsh1_n (np, np, sp, n) + 2 * q;
+	  q = mpn_add_1 (sp + l, sp + l, h, q);
+#if HAVE_NATIVE_mpn_addlsh1_n_ip1 || HAVE_NATIVE_mpn_addlsh1_n
+	  c += mpn_addlsh1_n_ip1 (np, sp, n) + 2 * q;
 #else
 	  c += mpn_addmul_1 (np, sp, n, CNST_LIMB(2)) + 2 * q;
 #endif
@@ -267,6 +263,156 @@ mpn_dc_sqrtrem (mp_ptr sp, mp_ptr np, mp_size_t n)
 	}
     }
 
+  return c;
+}
+
+#if USE_DIVAPPR_Q
+static void
+mpn_divappr_q (mp_ptr qp, mp_srcptr np, mp_size_t nn, mp_srcptr dp, mp_size_t dn, mp_ptr scratch)
+{
+  gmp_pi1_t inv;
+  mp_limb_t qh;
+  ASSERT (dn > 2);
+  ASSERT (nn >= dn);
+  ASSERT ((dp[dn-1] & GMP_NUMB_HIGHBIT) != 0);
+
+  MPN_COPY (scratch, np, nn);
+  invert_pi1 (inv, dp[dn-1], dp[dn-2]);
+  if (BELOW_THRESHOLD (dn, DC_DIVAPPR_Q_THRESHOLD))
+    qh = mpn_sbpi1_divappr_q (qp, scratch, nn, dp, dn, inv.inv32);
+  else if (BELOW_THRESHOLD (dn, MU_DIVAPPR_Q_THRESHOLD))
+    qh = mpn_dcpi1_divappr_q (qp, scratch, nn, dp, dn, &inv);
+  else
+    {
+      mp_size_t itch = mpn_mu_divappr_q_itch (nn, dn, 0);
+      TMP_DECL;
+      TMP_MARK;
+      /* Sadly, scratch is too small. */
+      qh = mpn_mu_divappr_q (qp, np, nn, dp, dn, TMP_ALLOC_LIMBS (itch));
+      TMP_FREE;
+    }
+  qp [nn - dn] = qh;
+}
+#endif
+
+/* writes in {sp, n} the square root (rounded towards zero) of {np, 2n-odd},
+   returns zero if the operand was a perfect square, one otherwise.
+   Assumes {np, 2n-odd}*4^nsh is normalized, i.e. B > np[2n-1-odd]*4^nsh >= B/4
+   where B=2^GMP_NUMB_BITS.
+   THINK: In the odd case, three more (dummy) limbs are taken into account,
+   when nsh is maximal, two limbs are discarded from the result of the
+   division. Too much? Is a single dummy limb enough? */
+static int
+mpn_dc_sqrt (mp_ptr sp, mp_srcptr np, mp_size_t n, unsigned nsh, unsigned odd)
+{
+  mp_limb_t q;			/* carry out of {sp, n} */
+  int c;			/* carry out of remainder */
+  mp_size_t l, h;
+  mp_ptr qp, tp, scratch;
+  TMP_DECL;
+  TMP_MARK;
+
+  ASSERT (np[2 * n - 1 - odd] != 0);
+  ASSERT (n > 4);
+  ASSERT (nsh < GMP_NUMB_BITS / 2);
+
+  l = (n - 1) / 2;
+  h = n - l;
+  ASSERT (n >= l + 2 && l + 2 >= h && h > l && l >= 1 + odd);
+  scratch = TMP_ALLOC_LIMBS (l + 2 * n + 5 - USE_DIVAPPR_Q); /* n + 2-USE_DIVAPPR_Q */
+  tp = scratch + n + 2 - USE_DIVAPPR_Q; /* n + h + 1, but tp [-1] is writable */
+  if (nsh != 0)
+    {
+      /* o is used to exactly set the lowest bits of the dividend, is it needed? */
+      int o = l > (1 + odd);
+      ASSERT_NOCARRY (mpn_lshift (tp - o, np + l - 1 - o - odd, n + h + 1 + o, 2 * nsh));
+    }
+  else
+    MPN_COPY (tp, np + l - 1 - odd, n + h + 1);
+  q = mpn_dc_sqrtrem (sp + l, tp + l + 1, h, 0, scratch);
+  if (q != 0)
+    ASSERT_CARRY (mpn_sub_n (tp + l + 1, tp + l + 1, sp + l, h));
+  qp = tp + n + 1; /* l + 2 */
+  TRACE(printf("div(appr)_q(,,%u,,%u) -> %u \n", (unsigned) n+1, (unsigned) h, (unsigned) (n + 1 - h + 1)));
+#if USE_DIVAPPR_Q
+  mpn_divappr_q (qp, tp, n + 1, sp + l, h, scratch);
+#else
+  mpn_div_q (qp, tp, n + 1, sp + l, h, scratch);
+#endif
+  q += qp [l + 1];
+  c = 1;
+  if (q > 1)
+    {
+      /* FIXME: if s!=0 we will shift later, a noop on this area. */
+      MPN_FILL (sp, l, GMP_NUMB_MAX);
+    }
+  else
+    {
+      /* FIXME: if s!=0 we will shift again later, shift just once. */
+      mpn_rshift (sp, qp + 1, l, 1);
+      sp[l - 1] |= q << (GMP_NUMB_BITS - 1);
+      if (((qp[0] >> (2 + USE_DIVAPPR_Q)) | /* < 3 + 4*USE_DIVAPPR_Q */
+	   (qp[1] & (GMP_NUMB_MASK >> ((GMP_NUMB_BITS >> odd)- nsh - 1)))) == 0)
+	{
+	  mp_limb_t cy;
+	  /* Approximation is not good enough, the extra limb(+ nsh bits)
+	     is smaller than needed to absorb the possible error. */
+	  /* {qp + 1, l + 1} equals 2*{sp, l} */
+	  /* FIXME: use mullo or wrap-around, or directly evaluate
+	     remainder with a single sqrmod_bnm1. */
+	  TRACE(printf("mul(,,%u,,%u)\n", (unsigned) h, (unsigned) (l+1)));
+	  ASSERT_NOCARRY (mpn_mul (scratch, sp + l, h, qp + 1, l + 1));
+	  /* Compute the remainder of the previous mpn_div(appr)_q. */
+	  cy = mpn_sub_n (tp + 1, tp + 1, scratch, h);
+#if USE_DIVAPPR_Q || WANT_ASSERT
+	  MPN_DECR_U (tp + 1 + h, l, cy);
+#if USE_DIVAPPR_Q
+	  ASSERT (mpn_cmp (tp + 1 + h, scratch + h, l) <= 0);
+	  if (mpn_cmp (tp + 1 + h, scratch + h, l) < 0)
+	    {
+	      /* May happen only if div result was not exact. */
+#if HAVE_NATIVE_mpn_addlsh1_n_ip1 || HAVE_NATIVE_mpn_addlsh1_n
+	      cy = mpn_addlsh1_n_ip1 (tp + 1, sp + l, h);
+#else
+	      cy = mpn_addmul_1 (tp + 1, sp + l, h, CNST_LIMB(2));
+#endif
+	      ASSERT_NOCARRY (mpn_add_1 (tp + 1 + h, tp + 1 + h, l, cy));
+	      MPN_DECR_U (sp, l, 1);
+	    }
+	  /* Can the root be exact when a correction was needed? We
+	     did not find an example, but it depends on divappr
+	     internals, and we can not assume it true in general...*/
+	  /* else */
+#else /* WANT_ASSERT */
+	  ASSERT (mpn_cmp (tp + 1 + h, scratch + h, l) == 0);
+#endif
+#endif
+	  if (mpn_zero_p (tp + l + 1, h - l))
+	    {
+	      TRACE(printf("sqr(,,%u)\n", (unsigned) l));
+	      mpn_sqr (scratch, sp, l);
+	      c = mpn_cmp (tp + 1, scratch + l, l);
+	      if (c == 0)
+		{
+		  if (nsh != 0)
+		    {
+		      mpn_lshift (tp, np, l, 2 * nsh);
+		      np = tp;
+		    }
+		  c = mpn_cmp (np, scratch + odd, l - odd);
+		}
+	      if (c < 0)
+		{
+		  MPN_DECR_U (sp, l, 1);
+		  c = 1;
+		}
+	    }
+	}
+    }
+  TMP_FREE;
+
+  if ((odd | nsh) != 0)
+    mpn_rshift (sp, sp, n, nsh + (odd ? GMP_NUMB_BITS / 2 : 0));
   return c;
 }
 
@@ -279,12 +425,8 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
   mp_size_t rn, tn;
   TMP_DECL;
 
-  ASSERT (nn >= 0);
+  ASSERT (nn > 0);
   ASSERT_MPN (np, nn);
-
-  /* If OP is zero, both results are zero.  */
-  if (nn == 0)
-    return 0;
 
   ASSERT (np[nn - 1] != 0);
   ASSERT (rp == NULL || MPN_SAME_OR_SEPARATE_P (np, rp, nn));
@@ -292,34 +434,52 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
   ASSERT (! MPN_OVERLAP_P (sp, (nn + 1) / 2, np, nn));
 
   high = np[nn - 1];
-  if (nn == 1 && (high & GMP_NUMB_HIGHBIT))
+  if (high & (GMP_NUMB_HIGHBIT | (GMP_NUMB_HIGHBIT / 2)))
+    c = 0;
+  else
     {
-      mp_limb_t r;
-      sp[0] = mpn_sqrtrem1 (&r, high);
-      if (rp != NULL)
-	rp[0] = r;
-      return r != 0;
-    }
-  count_leading_zeros (c, high);
-  c -= GMP_NAIL_BITS;
+      count_leading_zeros (c, high);
+      c -= GMP_NAIL_BITS;
 
-  c = c / 2; /* we have to shift left by 2c bits to normalize {np, nn} */
+      c = c / 2; /* we have to shift left by 2c bits to normalize {np, nn} */
+    }
+  if (nn == 1) {
+    if (c == 0)
+      {
+	sp[0] = mpn_sqrtrem1 (&rl, high);
+	if (rp != NULL)
+	  rp[0] = rl;
+      }
+    else
+      {
+	cc = mpn_sqrtrem1 (&rl, high << (2*c)) >> c;
+	sp[0] = cc;
+	if (rp != NULL)
+	  rp[0] = rl = high - cc*cc;
+      }
+    return rl != 0;
+  }
   tn = (nn + 1) / 2; /* 2*tn is the smallest even integer >= nn */
 
+  if ((rp == NULL) && (nn > 8))
+    return mpn_dc_sqrt (sp, np, tn, c, nn & 1);
   TMP_MARK;
-  if (nn % 2 != 0 || c > 0)
+  if (((nn & 1) | c) != 0)
     {
-      tp = TMP_ALLOC_LIMBS (2 * tn);
+      mp_limb_t mask;
+      mp_ptr scratch;
+      TMP_ALLOC_LIMBS_2 (tp, 2 * tn, scratch, tn / 2 + 1);
       tp[0] = 0;	     /* needed only when 2*tn > nn, but saves a test */
       if (c != 0)
-	mpn_lshift (tp + 2 * tn - nn, np, nn, 2 * c);
+	mpn_lshift (tp + (nn & 1), np, nn, 2 * c);
       else
-	MPN_COPY (tp + 2 * tn - nn, np, nn);
-      rl = mpn_dc_sqrtrem (sp, tp, tn);
+	MPN_COPY (tp + (nn & 1), np, nn);
+      c += (nn & 1) ? GMP_NUMB_BITS / 2 : 0;		/* c now represents k */
+      mask = (CNST_LIMB (1) << c) - 1;
+      rl = mpn_dc_sqrtrem (sp, tp, tn, (rp == NULL) ? mask - 1 : 0, scratch);
       /* We have 2^(2k)*N = S^2 + R where k = c + (2tn-nn)*GMP_NUMB_BITS/2,
 	 thus 2^(2k)*N = (S-s0)^2 + 2*S*s0 - s0^2 + R where s0=S mod 2^k */
-      c += (nn % 2) * GMP_NUMB_BITS / 2;		/* c now represents k */
-      s0[0] = sp[0] & (((mp_limb_t) 1 << c) - 1);	/* S mod 2^k */
+      s0[0] = sp[0] & mask;	/* S mod 2^k */
       rl += mpn_addmul_1 (tp, sp, tn, 2 * s0[0]);	/* R = R + 2*s0*S */
       cc = mpn_submul_1 (tp, s0, 1, s0[0]);
       rl -= (tn > 1) ? mpn_sub_1 (tp + 1, tp + 1, tn - 1, cc) : cc;
@@ -343,11 +503,13 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
     }
   else
     {
-      if (rp == NULL)
-	rp = TMP_ALLOC_LIMBS (nn);
       if (rp != np)
-	MPN_COPY (rp, np, nn);
-      rn = tn + (rp[tn] = mpn_dc_sqrtrem (sp, rp, tn));
+	{
+	  if (rp == NULL) /* nn <= 8 */
+	    rp = TMP_SALLOC_LIMBS (nn);
+	  MPN_COPY (rp, np, nn);
+	}
+      rn = tn + (rp[tn] = mpn_dc_sqrtrem (sp, rp, tn, 0, TMP_ALLOC_LIMBS(tn / 2 + 1)));
     }
 
   MPN_NORMALIZE (rp, rn);

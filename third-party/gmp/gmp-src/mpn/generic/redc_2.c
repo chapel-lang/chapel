@@ -53,7 +53,8 @@ mpn_addmul_2 (mp_ptr rp, mp_srcptr up, mp_size_t n, mp_srcptr vp)
 }
 #endif
 
-#if defined (__GNUC__) && defined (__ia64) && W_TYPE_SIZE == 64
+#if defined (__GNUC__) && ! defined (NO_ASM) \
+  && defined (__ia64) && W_TYPE_SIZE == 64
 #define umul2low(ph, pl, uh, ul, vh, vl) \
   do {									\
     mp_limb_t _ph, _pl;							\

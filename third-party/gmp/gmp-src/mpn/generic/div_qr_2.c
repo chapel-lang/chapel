@@ -55,7 +55,7 @@ see https://www.gnu.org/licenses/.  */
    * add_csaac accepts two addends and a carry in, and generates a sum
      and a carry out.  A little like a "full adder".
 */
-#if defined (__GNUC__)  && ! defined (__INTEL_COMPILER)
+#if defined (__GNUC__)  && ! defined (__INTEL_COMPILER) && ! defined (NO_ASM)
 
 #if HAVE_HOST_CPU_FAMILY_x86 && W_TYPE_SIZE == 32
 #define add_sssaaaa(s2, s1, s0, a1, a0, b1, b0)				\
@@ -152,7 +152,7 @@ see https://www.gnu.org/licenses/.  */
 									\
     sub_ddmmss (r1, r0, n1, n0, _t1, _t0);				\
 									\
-    _mask = -(mp_limb_t) (r1 >= _q1 & (r1 > _q1 | r0 >= _q0));  /* (r1,r0) >= (q1,q0) */  \
+    _mask = -(mp_limb_t) ((r1 >= _q1) & ((r1 > _q1) | (r0 >= _q0)));  /* (r1,r0) >= (q1,q0) */  \
     add_ssaaaa (r1, r0, r1, r0, d1 & _mask, d0 & _mask);		\
     sub_ddmmss (_q3, _q2, _q3, _q2, CNST_LIMB(0), -_mask);		\
 									\

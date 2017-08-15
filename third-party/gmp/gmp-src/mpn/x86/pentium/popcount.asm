@@ -1,6 +1,6 @@
 dnl  Intel P5 mpn_popcount -- mpn bit population count.
 
-dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002, 2014, 2015 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -44,6 +44,9 @@ deflit(TABLE_NAME,
 m4_assert_defined(`GSYM_PREFIX')
 GSYM_PREFIX`'mpn_popcount``'_table')
 
+C FIXME: exporting the table to hamdist is incorrect as it hurt incremental
+C linking.
+
 	RODATA
 	ALIGN(8)
 	GLOBL	TABLE_NAME
@@ -67,7 +70,14 @@ deflit(`FRAME',0)
 ifdef(`PIC',`
 	pushl	%ebx	FRAME_pushl()
 	pushl	%ebp	FRAME_pushl()
-
+ifdef(`DARWIN',`
+	shll	%ecx		C size in byte pairs
+	LEA(	TABLE_NAME, %ebp)
+	movl	PARAM_SRC, %esi
+	xorl	%eax, %eax	C total
+	xorl	%ebx, %ebx	C byte
+	xorl	%edx, %edx	C byte
+',`
 	call	L(here)
 L(here):
 	popl	%ebp
@@ -81,6 +91,7 @@ L(here):
 
 	movl	TABLE_NAME@GOT(%ebp), %ebp
 	xorl	%edx, %edx	C byte
+')
 define(TABLE,`(%ebp,$1)')
 ',`
 dnl non-PIC
@@ -132,3 +143,4 @@ ifdef(`PIC',`
 	ret
 
 EPILOGUE()
+ASM_END()

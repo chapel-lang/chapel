@@ -17,7 +17,7 @@ Public License for more details.
 You should have received a copy of the GNU General Public License along with
 the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
-#include "mini-gmp.h"
+#include "../mini-gmp.h"
 #include "hex-random.h"
 
 void mini_urandomb (mpz_t, unsigned long);

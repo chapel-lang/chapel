@@ -1,6 +1,6 @@
 /* Test mpf_sqrt_ui.
 
-Copyright 2004 Free Software Foundation, Inc.
+Copyright 2004, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -39,13 +39,26 @@ check_rand (void)
   mpf_init (s);
   refmpf_set_prec_limbs (s, 2*max_prec+10);
 
+  for (x = 0; x < 2; x++)
+    {
+      mpf_sqrt_ui (r, x);
+      MPF_CHECK_FORMAT (r);
+      if (mpf_cmp_ui (r, x) != 0)
+	{
+	  printf    ("mpf_sqrt_ui wrong for special case:\n");
+          printf    ("  x=%lu\n", x);
+          mpf_trace ("  r", r);
+	  abort ();
+	}
+    }
+
   for (i = 0; i < 50; i++)
     {
       /* input, a random non-zero ulong, exponentially distributed */
       do {
         x = gmp_urandomb_ui (rands,
                              gmp_urandomm_ui (rands, BITS_PER_ULONG) + 1);
-      } while (x == 0);
+      } while (x <= 1);
 
       /* result precision */
       prec = gmp_urandomm_ui (rands, max_prec-min_prec) + min_prec;

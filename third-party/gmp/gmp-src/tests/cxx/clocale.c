@@ -1,6 +1,6 @@
 /* Manipulable localeconv and nl_langinfo.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -41,9 +41,12 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
 extern char point_string[];
 
-#if HAVE_LOCALECONV
+#if HAVE_LOCALECONV && ! defined __MINGW32__
 struct lconv *
 localeconv (void)
+#if defined __cplusplus && defined __GLIBC__
+  throw()
+#endif
 {
   static struct lconv  l;
   l.decimal_point = point_string;
@@ -54,6 +57,9 @@ localeconv (void)
 #if HAVE_NL_LANGINFO
 char *
 nl_langinfo (nl_item n)
+#if defined __cplusplus && defined __GLIBC__
+  throw()
+#endif
 {
   return point_string;
 }

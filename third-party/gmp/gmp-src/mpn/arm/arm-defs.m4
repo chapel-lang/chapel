@@ -84,6 +84,9 @@ L(ptr'lea_num`):	.word	GSYM_PREFIX`'$2')
 ')dnl
 ')
 
+define(`ret',`ifdef(`NOTHUMB',`mov	pc, ',`bx')')
+
+
 define(`EPILOGUE_cpu',
 `lea_list
 	SIZE(`$1',.-`$1')')

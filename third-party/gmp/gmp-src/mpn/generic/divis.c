@@ -4,7 +4,7 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2001, 2002, 2005, 2009 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005, 2009, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -113,12 +113,12 @@ mpn_divisible_p (mp_srcptr ap, mp_size_t an,
       return mpn_modexact_1_odd (ap, an, dlow) == 0;
     }
 
+  count_trailing_zeros (twos, dlow);
   if (dn == 2)
     {
       mp_limb_t  dsecond = dp[1];
       if (dsecond <= dmask)
 	{
-	  count_trailing_zeros (twos, dlow);
 	  dlow = (dlow >> twos) | (dsecond << (GMP_NUMB_BITS-twos));
 	  ASSERT_LIMB (dlow);
 	  return MPN_MOD_OR_MODEXACT_1_ODD (ap, an, dlow) == 0;
@@ -135,10 +135,8 @@ mpn_divisible_p (mp_srcptr ap, mp_size_t an,
 
   TMP_MARK;
 
-  rp = TMP_ALLOC_LIMBS (an + 1);
-  qp = TMP_ALLOC_LIMBS (an - dn + 1); /* FIXME: Could we avoid this? */
-
-  count_trailing_zeros (twos, dp[0]);
+  TMP_ALLOC_LIMBS_2 (rp, an + 1,
+		     qp, an - dn + 1); /* FIXME: Could we avoid this? */
 
   if (twos != 0)
     {

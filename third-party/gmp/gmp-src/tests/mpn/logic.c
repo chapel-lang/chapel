@@ -41,7 +41,7 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
 
 void
-check_one (mp_srcptr refp, mp_srcptr rp, mp_srcptr ap, mp_srcptr bp, mp_size_t n, char *funcname)
+check_one (mp_srcptr refp, mp_srcptr rp, mp_srcptr ap, mp_srcptr bp, mp_size_t n, const char *funcname)
 {
   if (mpn_cmp (refp, rp, n))
     {
@@ -62,8 +62,8 @@ main (int argc, char **argv)
   mp_size_t max_n, n, i;
   gmp_randstate_ptr rands;
   long test, reps = 1000;
-  TMP_SDECL;
-  TMP_SMARK;
+  TMP_DECL;
+  TMP_MARK;
 
   tests_start ();
   TESTS_REPS (reps, argv, argc);
@@ -74,8 +74,8 @@ main (int argc, char **argv)
 
   max_n = 100;
 
-  rp = TMP_SALLOC_LIMBS (1 + max_n * 8 / GMP_LIMB_BITS);
-  refp = TMP_SALLOC_LIMBS (1 + max_n * 8 / GMP_LIMB_BITS);
+  rp = TMP_ALLOC_LIMBS (1 + max_n * 8 / GMP_LIMB_BITS);
+  refp = TMP_ALLOC_LIMBS (1 + max_n * 8 / GMP_LIMB_BITS);
 
   for (test = 0; test < reps; test++)
     {
@@ -127,7 +127,7 @@ main (int argc, char **argv)
 	}
     }
 
-  TMP_SFREE;
+  TMP_FREE;
   mpz_clears (a, b, NULL);
   tests_end ();
   return 0;

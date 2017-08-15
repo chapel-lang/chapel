@@ -59,7 +59,7 @@ PROLOGUE(calling_conventions)
 	LEA(	r12, calling_conventions_function)
 	ldr	r12, [r12]
 	mov	r14, pc
-	bx	r12
+	ret	r12
 
 	LEA(	r12, calling_conventions_values)
 
@@ -79,5 +79,5 @@ PROLOGUE(calling_conventions)
 	add	r12, r12, #JUNK_PARAMS
 	ldm	r12, {r1-r3}
 
-	bx	r14
+	ret	r14
 EPILOGUE()

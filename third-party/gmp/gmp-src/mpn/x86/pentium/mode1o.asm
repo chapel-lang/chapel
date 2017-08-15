@@ -1,6 +1,6 @@
 dnl  Intel Pentium mpn_modexact_1_odd -- exact division style remainder.
 
-dnl  Copyright 2000-2002 Free Software Foundation, Inc.
+dnl  Copyright 2000-2002, 2014 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -82,6 +82,18 @@ deflit(`FRAME',0)
 L(start_1c):
 
 ifdef(`PIC',`
+ifdef(`DARWIN',`
+	shrl	%eax			C d/2
+	LEA(	binvert_limb_table, %ecx)
+	pushl	%ebx		FRAME_pushl()
+	movl	PARAM_SIZE, %ebx
+
+	andl	$127, %eax
+	subl	$2, %ebx
+
+	movb	(%eax,%ecx), %cl
+	jc	L(one_limb)
+',`
 	call	L(here)		FRAME_pushl()
 L(here):
 
@@ -99,7 +111,7 @@ L(here):
 
 	movb	(%eax,%ecx), %cl			C inv 8 bits
 	jc	L(one_limb)
-
+')
 ',`
 dnl non-PIC
 	shrl	%eax			C d/2
@@ -264,3 +276,4 @@ deflit(`FRAME',4)
 	ret
 
 EPILOGUE()
+ASM_END()

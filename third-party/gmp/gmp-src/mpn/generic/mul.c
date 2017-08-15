@@ -2,8 +2,8 @@
 
    Contributed to the GNU project by Torbjorn Granlund.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 1999-2003, 2005-2007, 2009, 2010, 2012
-Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 1997, 1999-2003, 2005-2007, 2009, 2010, 2012,
+2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -209,7 +209,12 @@ mpn_mul (mp_ptr prodp,
       mp_ptr scratch;
       TMP_SDECL; TMP_SMARK;
 
-      scratch = TMP_SALLOC_LIMBS (ITCH);
+#define ITCH_TOOMX2 (9 * vn / 2 + GMP_NUMB_BITS * 2)
+      scratch = TMP_SALLOC_LIMBS (ITCH_TOOMX2);
+      ASSERT (mpn_toom22_mul_itch ((5*vn-1)/4, vn) <= ITCH_TOOMX2); /* 5vn/2+ */
+      ASSERT (mpn_toom32_mul_itch ((7*vn-1)/4, vn) <= ITCH_TOOMX2); /* 7vn/6+ */
+      ASSERT (mpn_toom42_mul_itch (3 * vn - 1, vn) <= ITCH_TOOMX2); /* 9vn/2+ */
+#undef ITCH_TOOMX2
 
       /* FIXME: This condition (repeated in the loop below) leaves from a vn*vn
 	 square to a (3vn-1)*vn rectangle.  Leaving such a rectangle is hardly
@@ -274,9 +279,17 @@ mpn_mul (mp_ptr prodp,
 	{
 	  /* Use ToomX3 variants */
 	  mp_ptr scratch;
-	  TMP_SDECL; TMP_SMARK;
+	  TMP_DECL; TMP_MARK;
 
-	  scratch = TMP_SALLOC_LIMBS (ITCH);
+#define ITCH_TOOMX3 (4 * vn + GMP_NUMB_BITS)
+	  scratch = TMP_ALLOC_LIMBS (ITCH_TOOMX3);
+	  ASSERT (mpn_toom33_mul_itch ((7*vn-1)/6, vn) <= ITCH_TOOMX3); /* 7vn/2+ */
+	  ASSERT (mpn_toom43_mul_itch ((3*vn-1)/2, vn) <= ITCH_TOOMX3); /* 9vn/4+ */
+	  ASSERT (mpn_toom32_mul_itch ((7*vn-1)/4, vn) <= ITCH_TOOMX3); /* 7vn/6+ */
+	  ASSERT (mpn_toom53_mul_itch ((11*vn-1)/6, vn) <= ITCH_TOOMX3); /* 11vn/3+ */
+	  ASSERT (mpn_toom42_mul_itch ((5*vn-1)/2, vn) <= ITCH_TOOMX3); /* 15vn/4+ */
+	  ASSERT (mpn_toom63_mul_itch ((5*vn-1)/2, vn) <= ITCH_TOOMX3); /* 15vn/4+ */
+#undef ITCH_TOOMX3
 
 	  if (2 * un >= 5 * vn)
 	    {
@@ -284,7 +297,7 @@ mpn_mul (mp_ptr prodp,
 	      mp_ptr ws;
 
 	      /* The maximum ws usage is for the mpn_mul result.  */
-	      ws = TMP_SALLOC_LIMBS (7 * vn >> 1);
+	      ws = TMP_ALLOC_LIMBS (7 * vn >> 1);
 
 	      if (BELOW_THRESHOLD (vn, MUL_TOOM42_TO_TOOM63_THRESHOLD))
 		mpn_toom42_mul (prodp, up, 2 * vn, vp, vn, scratch);
@@ -355,7 +368,7 @@ mpn_mul (mp_ptr prodp,
 		    mpn_toom63_mul (prodp, up, un, vp, vn, scratch);
 		}
 	    }
-	  TMP_SFREE;
+	  TMP_FREE;
 	}
       else
 	{
@@ -364,12 +377,12 @@ mpn_mul (mp_ptr prodp,
 
 	  if (BELOW_THRESHOLD (vn, MUL_TOOM6H_THRESHOLD))
 	    {
-	      scratch = TMP_ALLOC_LIMBS (mpn_toom44_mul_itch (un, vn));
+	      scratch = TMP_SALLOC_LIMBS (mpn_toom44_mul_itch (un, vn));
 	      mpn_toom44_mul (prodp, up, un, vp, vn, scratch);
 	    }
 	  else if (BELOW_THRESHOLD (vn, MUL_TOOM8H_THRESHOLD))
 	    {
-	      scratch = TMP_ALLOC_LIMBS (mpn_toom6h_mul_itch (un, vn));
+	      scratch = TMP_SALLOC_LIMBS (mpn_toom6h_mul_itch (un, vn));
 	      mpn_toom6h_mul (prodp, up, un, vp, vn, scratch);
 	    }
 	  else

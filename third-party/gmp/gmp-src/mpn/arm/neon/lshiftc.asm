@@ -166,7 +166,7 @@ L(evn):	vmvn	 d17, d17
 	vshl.u64 d0, d17, d7
 	vshl.u64 d4, d17, d6
 	vst1.32	 {d2}, [rp:64], r12
-	vmvn.u8	 d17, #0
+	vmov.u8	 d17, #255
 	vorr	 d2, d5, d0
 	vshl.u64 d0, d17, d7
 	vorr	 d3, d4, d0
@@ -202,7 +202,7 @@ L(l2):	vld1.32	 {d16}, [ap], r12
 	vmvn	 d16, d16
 	vshl.u64 d1, d16, d7
 	vshl.u64 d5, d16, d6
-	vmvn.u8	 d17, #0
+	vmov.u8	 d17, #255
 	vorr	 d2, d4, d1
 	vshl.u64 d0, d17, d7
 	vorr	 d3, d5, d0

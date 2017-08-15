@@ -2,7 +2,7 @@ dnl  x86 mpn_invert_limb
 
 dnl  Contributed to the GNU project by Niels Möller
 
-dnl  Copyright 2009, 2011 Free Software Foundation, Inc.
+dnl  Copyright 2009, 2011, 2015 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -79,7 +79,7 @@ deflit(`FRAME', 0)
 	mov	%eax, %edi
 	shr	$22, %eax
 ifdef(`PIC',`
-	LEA(	approx_tab, %ebx)
+	LEAL(	approx_tab, %ebx)
 	movzwl	-1024(%ebx, %eax, 2), %eax
 ',`
 	movzwl	-1024+approx_tab(%eax, %eax), %eax	C %eax = v0
@@ -191,3 +191,4 @@ DEF_OBJECT(approx_tab,2)
 	.value	0x40f4,0x40e3,0x40d3,0x40c2,0x40b2,0x40a2,0x4091,0x4081
 	.value	0x4071,0x4061,0x4050,0x4040,0x4030,0x4020,0x4010,0x4000
 END_OBJECT(approx_tab)
+ASM_END()

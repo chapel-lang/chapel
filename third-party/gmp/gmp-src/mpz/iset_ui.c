@@ -41,7 +41,7 @@ mpz_init_set_ui (mpz_ptr dest, unsigned long int val)
   if (val > GMP_NUMB_MAX)
     {
       ALLOC (dest) = 2;
-      PTR (dest) = (mp_ptr) (*__gmp_allocate_func) (GMP_LIMB_BYTES*2);
+      PTR (dest) = __GMP_ALLOCATE_FUNC_LIMBS (2);
       PTR (dest)[1] = val >> GMP_NUMB_BITS;
       size = 2;
     }
@@ -49,7 +49,7 @@ mpz_init_set_ui (mpz_ptr dest, unsigned long int val)
 #endif
     {
       ALLOC (dest) = 1;
-      PTR (dest) = (mp_ptr) (*__gmp_allocate_func) (GMP_LIMB_BYTES);
+      PTR (dest) = __GMP_ALLOCATE_FUNC_LIMBS (1);
 
       size = val != 0;
     }

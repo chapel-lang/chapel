@@ -1,6 +1,6 @@
 /* Test that routines allow reusing a source variable as destination.
 
-Copyright 1996, 2000-2002, 2012 Free Software Foundation, Inc.
+Copyright 1996, 2000-2002, 2012, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -91,7 +91,7 @@ main (int argc, char **argv)
   int pass, reps = 100;
   mpq_t in1, in2, out1;
   unsigned long int randbits, in2i;
-  mpq_t res1, res2, res3;
+  mpq_t res1, res2;
   gmp_randstate_ptr  rands;
 
   tests_start ();
@@ -106,7 +106,6 @@ main (int argc, char **argv)
   mpq_init (out1);
   mpq_init (res1);
   mpq_init (res2);
-  mpq_init (res3);
 
   for (pass = 1; pass <= reps; pass++)
     {
@@ -152,19 +151,36 @@ main (int argc, char **argv)
 	  randbits >>= 1;
 
 	  (dss_funcs[i]) (res1, in1, in2);
+	  MPQ_CHECK_FORMAT(res1);
 
 	  mpq_set (out1, in1);
 	  (dss_funcs[i]) (out1, out1, in2);
-	  mpq_set (res2, out1);
+	  MPQ_CHECK_FORMAT(out1);
+
+	  if (mpq_cmp (res1, out1) != 0)
+	    dump_abort (dss_func_names[i], res1, out1);
 
 	  mpq_set (out1, in2);
 	  (dss_funcs[i]) (out1, in1, out1);
-	  mpq_set (res3, out1);
+	  MPQ_CHECK_FORMAT(out1);
+
+	  if (mpq_cmp (res1, out1) != 0)
+	    dump_abort (dss_func_names[i], res1, out1);
+
+	  mpq_set (out1, in2);
+	  (dss_funcs[i]) (res1, out1, in2);
+	  MPQ_CHECK_FORMAT(res1);
+
+	  (dss_funcs[i]) (res2, in2, in2);
+	  MPQ_CHECK_FORMAT(res2);
+
+	  (dss_funcs[i]) (out1, out1, out1);
+	  MPQ_CHECK_FORMAT(out1);
 
 	  if (mpq_cmp (res1, res2) != 0)
 	    dump_abort (dss_func_names[i], res1, res2);
-	  if (mpq_cmp (res1, res3) != 0)
-	    dump_abort (dss_func_names[i], res1, res3);
+	  if (mpq_cmp (res1, out1) != 0)
+	    dump_abort (dss_func_names[i], res1, out1);
 	}
 
       for (i = 0; i < sizeof (ds_funcs) / sizeof (ds_func); i++)
@@ -176,13 +192,14 @@ main (int argc, char **argv)
 	    }
 	  randbits >>= 1;
 	  (ds_funcs[i]) (res1, in1);
+	  MPQ_CHECK_FORMAT(res1);
 
 	  mpq_set (out1, in1);
 	  (ds_funcs[i]) (out1, out1);
-	  mpq_set (res2, out1);
+	  MPQ_CHECK_FORMAT(out1);
 
-	  if (mpq_cmp (res1, res2) != 0)
-	    dump_abort (ds_func_names[i], res1, res2);
+	  if (mpq_cmp (res1, out1) != 0)
+	    dump_abort (ds_func_names[i], res1, out1);
 	}
 
       in2i = urandom () % 65536;
@@ -196,13 +213,14 @@ main (int argc, char **argv)
 	  randbits >>= 1;
 
 	  (dsi_funcs[i]) (res1, in1, in2i);
+	  MPQ_CHECK_FORMAT(res1);
 
 	  mpq_set (out1, in1);
 	  (dsi_funcs[i]) (out1, out1, in2i);
-	  mpq_set (res2, out1);
+	  MPQ_CHECK_FORMAT(out1);
 
-	  if (mpq_cmp (res1, res2) != 0)
-	    dump_abort (dsi_func_names[i], res1, res2);
+	  if (mpq_cmp (res1, out1) != 0)
+	    dump_abort (dsi_func_names[i], res1, out1);
 	}
 
     }
@@ -212,7 +230,6 @@ main (int argc, char **argv)
   mpq_clear (out1);
   mpq_clear (res1);
   mpq_clear (res2);
-  mpq_clear (res3);
 
   tests_end ();
   exit (0);

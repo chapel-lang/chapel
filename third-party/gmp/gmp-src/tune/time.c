@@ -774,8 +774,8 @@ cgt_works_p (void)
     }
 
   cgt_unittime = unit.tv_sec + unit.tv_nsec * 1e-9;
-  printf ("clock_gettime is %s accurate\n",
-	  unittime_string (cgt_unittime));
+  if (speed_option_verbose)
+    printf ("clock_gettime is %s accurate\n", unittime_string (cgt_unittime));
 
   if (cgt_unittime < 10e-9)
     {

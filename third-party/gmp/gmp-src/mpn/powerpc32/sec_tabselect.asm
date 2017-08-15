@@ -55,8 +55,9 @@ define(`mask',   `r11')
 
 ASM_START()
 PROLOGUE(mpn_sec_tabselect)
+	stwu	r1, -32(r1)
 	addic.	j, n, -4		C outer loop induction variable
-	stmw	r27, -32(r1)
+	stmw	r27, 8(r1)
 	slwi	stride, n, 2
 
 	blt	cr0, L(outer_end)
@@ -136,6 +137,7 @@ L(tp1):	addic	i, i, -1
 	bdnz	L(tp1)
 	stw	r28, 0(rp)
 
-L(b00):	lmw	r27, -32(r1)
+L(b00):	lmw	r27, 8(r1)
+	addi	r1, r1, 32
 	blr
 EPILOGUE()

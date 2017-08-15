@@ -151,3 +151,4 @@ ifdef(`PIC',`
 	ret
 
 EPILOGUE()
+ASM_END()

@@ -90,9 +90,11 @@ L(end):	stw	r8,4(r3)
 	addze	r3,r10
 	blr
 
-L(big):	stmw	r30,-32(r1)
+L(big):	stwu	r1,-16(r1)
 	addi	r5,r5,-1
+	stw	r30,8(r1)
 	srwi	r0,r5,2
+	stw	r31,12(r1)
 	mtctr	r0
 
 	lwz	r7,0(r4)
@@ -150,6 +152,8 @@ L(loopE):
 	bdnz	L(loopE)
 L(endx):
 	addze	r3,r0
-	lmw	r30,-32(r1)
+	lwz	r30,8(r1)
+	lwz	r31,12(r1)
+	addi	r1,r1,16
 	blr
 EPILOGUE(mpn_addmul_1)

@@ -1,6 +1,6 @@
 /* mpq_inits() -- Initialize multiple mpq_t variables and set them to 0.
 
-Copyright 2009 Free Software Foundation, Inc.
+Copyright 2009, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -29,7 +29,6 @@ GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
 #include <stdarg.h>
-#include <stdio.h>		/* for NULL */
 #include "gmp.h"
 #include "gmp-impl.h"
 
@@ -45,5 +44,6 @@ mpq_inits (mpq_ptr x, ...)
       mpq_init (x);
       x = va_arg (ap, mpq_ptr);
     }
+
   va_end (ap);
 }

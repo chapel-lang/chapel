@@ -118,7 +118,6 @@ mpn_divexact_1 (mp_ptr dst, mp_srcptr src, mp_size_t size, mp_limb_t divisor)
 	  umul_ppmm (h, dummy, l, divisor);
 	  c += h;
 	}
-      while (i < size);
 
       ls = s >> shift;
       l = ls - c;

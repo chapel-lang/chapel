@@ -2,7 +2,7 @@
    negative based on if U > V, U == V, or U < V.  Vn and Vd may have
    common factors.
 
-Copyright 1993, 1994, 1996, 2000-2003, 2005 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000-2003, 2005, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -34,7 +34,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 int
-_mpq_cmp_ui (const mpq_t op1, unsigned long int num2, unsigned long int den2)
+_mpq_cmp_ui (mpq_srcptr op1, unsigned long int num2, unsigned long int den2)
 {
   mp_size_t num1_size = SIZ(NUM(op1));
   mp_size_t den1_size = SIZ(DEN(op1));
@@ -63,12 +63,10 @@ _mpq_cmp_ui (const mpq_t op1, unsigned long int num2, unsigned long int den2)
   if (UNLIKELY (den2 == 0))
     DIVIDE_BY_ZERO;
 
-  if (num1_size == 0)
-    return -(num2 != 0);
-  if (num1_size < 0)
-    return num1_size;
   if (num2 == 0)
     return num1_size;
+  if (num1_size <= 0)
+    return -1;
 
   /* NUM1 x DEN2 is either TMP1_SIZE limbs or TMP1_SIZE-1 limbs.
      Same for NUM1 x DEN1 with respect to TMP2_SIZE.  */
@@ -80,8 +78,7 @@ _mpq_cmp_ui (const mpq_t op1, unsigned long int num2, unsigned long int den2)
     return -num1_size;
 
   TMP_MARK;
-  tmp1_ptr = TMP_ALLOC_LIMBS (num1_size + 1);
-  tmp2_ptr = TMP_ALLOC_LIMBS (den1_size + 1);
+  TMP_ALLOC_LIMBS_2 (tmp1_ptr, num1_size + 1, tmp2_ptr, den1_size + 1);
 
   cy_limb = mpn_mul_1 (tmp1_ptr, PTR(NUM(op1)), num1_size,
                        (mp_limb_t) den2);

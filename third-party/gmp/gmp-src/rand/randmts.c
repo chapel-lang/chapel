@@ -1,6 +1,6 @@
 /* Mersenne Twister pseudo-random number generator functions.
 
-Copyright 2002, 2003, 2013 Free Software Foundation, Inc.
+Copyright 2002, 2003, 2013, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -117,7 +117,7 @@ randseed_mt (gmp_randstate_t rstate, mpz_srcptr seed)
 
   p = (gmp_rand_mt_struct *) RNG_STATE (rstate);
 
-  mpz_init2 (mod, 19937L);
+  mpz_init2 (mod, 19938L);
   mpz_init2 (seed1, 19937L);
 
   mpz_setbit (mod, 19937L);

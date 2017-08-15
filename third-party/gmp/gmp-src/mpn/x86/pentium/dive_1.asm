@@ -1,6 +1,6 @@
 dnl  Intel Pentium mpn_divexact_1 -- mpn by limb exact division.
 
-dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002, 2014 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -116,19 +116,10 @@ L(strip_twos):
 	pushl	%ebx		FRAME_pushl()
 	pushl	%ebp		FRAME_pushl()
 
-ifdef(`PIC',`
-	call	L(here)
-L(here):
-	popl	%ebp			C eip
-
-	addl	$_GLOBAL_OFFSET_TABLE_+[.-L(here)], %ebp
-	C AGI
-	movl	binvert_limb_table@GOT(%ebp), %ebp
-	C AGI
-	movzbl	(%eax,%ebp), %eax
+ifdef(`PIC',`dnl
+	LEA(	binvert_limb_table, %ebp)
+	movzbl	(%eax,%ebp), %eax		C inv 8 bits
 ',`
-
-dnl non-PIC
 	movzbl	binvert_limb_table(%eax), %eax	C inv 8 bits
 ')
 
@@ -270,3 +261,4 @@ L(even_entry):
 	ret
 
 EPILOGUE()
+ASM_END()

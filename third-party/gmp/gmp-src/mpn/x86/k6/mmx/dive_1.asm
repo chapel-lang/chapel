@@ -279,3 +279,4 @@ L(even_two):
 	ret
 
 EPILOGUE()
+ASM_END()

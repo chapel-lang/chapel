@@ -38,7 +38,7 @@ mpf_init_set_str (mpf_ptr r, const char *s, int base)
   r->_mp_size = 0;
   r->_mp_exp = 0;
   r->_mp_prec = prec;
-  r->_mp_d = (mp_ptr) (*__gmp_allocate_func) ((size_t) (prec + 1) * GMP_LIMB_BYTES);
+  r->_mp_d = __GMP_ALLOCATE_FUNC_LIMBS (prec + 1);
 
   return mpf_set_str (r, s, base);
 }

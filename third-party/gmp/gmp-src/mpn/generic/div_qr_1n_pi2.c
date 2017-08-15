@@ -50,7 +50,7 @@ see https://www.gnu.org/licenses/.  */
    * add_sssaaaa is like longlong.h's add_ssaaaa but propagating
      carry-out into an additional sum operand.
 */
-#if defined (__GNUC__)  && ! defined (__INTEL_COMPILER)
+#if defined (__GNUC__)  && ! defined (__INTEL_COMPILER) && ! defined (NO_ASM)
 
 #if HAVE_HOST_CPU_FAMILY_x86 && W_TYPE_SIZE == 32
 #define add_sssaaaa(s2, s1, s0, a1, a0, b1, b0)				\

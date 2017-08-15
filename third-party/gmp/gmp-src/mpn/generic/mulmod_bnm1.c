@@ -133,7 +133,7 @@ mpn_mulmod_bnm1 (mp_ptr rp, mp_size_t rn, mp_srcptr ap, mp_size_t an, mp_srcptr 
 
       /* We need at least an + bn >= n, to be able to fit one of the
 	 recursive products at rp. Requiring strict inequality makes
-	 the coded slightly simpler. If desired, we could avoid this
+	 the code slightly simpler. If desired, we could avoid this
 	 restriction by initially halving rn as long as rn is even and
 	 an + bn <= rn/2. */
 

@@ -58,7 +58,6 @@ ifdef(`OPERATION_cnd_sub_n',`
   define(func,    mpn_cnd_sub_n)
 ')
 
-define(cmpeqor, `cmp.eq.or')
 define(PFDIST, 160)
 
 C Some useful aliases for registers we use
@@ -86,22 +85,22 @@ ifdef(`HAVE_ABI_32',`
 	zxt4	n = n			C				I
 	;;
 ')
-.mmi;	and	r3 = 3, n		C				M I
+ {.mmi;	and	r3 = 3, n		C				M I
 	add	n = -1, n		C				M I
 	mov	r2 = ar.lc		C				I0
-.mmi;	cmp.ne	p6, p7 = 0, cnd		C				M I
+}{.mmi;	cmp.ne	p6, p7 = 0, cnd		C				M I
 	add	vp2 = 8, vp		C				M I
 	add	up2 = 8, up		C				M I
 	;;
-.mmi;	add	upadv = PFDIST, up	C				M I
+}{.mmi;	add	upadv = PFDIST, up	C				M I
 	add	vpadv = PFDIST, vp	C				M I
 	shr.u	n = n, 2		C				I0
 	.pred.rel "mutex", p6, p7
-.mmi;	add	rp2 = 8, rp		C				M I
+}{.mmi;	add	rp2 = 8, rp		C				M I
    (p6)	mov	cnd = -1		C				M I
    (p7)	mov	cnd = 0			C				M I
 	;;
-	cmp.eq	p9, p0 = 1, r3		C				M I
+}	cmp.eq	p9, p0 = 1, r3		C				M I
 	cmp.eq	p7, p0 = 2, r3		C				M I
 	cmp.eq	p8, p0 = 3, r3		C				M I
    (p9)	br	L(b1)			C				B
@@ -109,11 +108,11 @@ ifdef(`HAVE_ABI_32',`
    (p8)	br	L(b3)			C				B
 	;;
 L(b0):
-.mmi;	ld8	v2 = [vp1], 16		C				M01
+ {.mmi;	ld8	v2 = [vp1], 16		C				M01
 	ld8	v3 = [vp2], 16		C				M01
 	mov	ar.lc = n		C				I0
 	;;
-	ld8	u2 = [up1], 16		C				M01
+}	ld8	u2 = [up1], 16		C				M01
 	ld8	u3 = [up2], 16		C				M01
 	and	x2 = v2, cnd		C				M I
 	and	x3 = v3, cnd		C				M I
@@ -161,11 +160,11 @@ L(b3):	ld8	v3 = [vp1], 8		C				M01
 	C fall through
 
 L(b2):
-.mmi;	ld8	v0 = [vp1], 16		C				M01
+ {.mmi;	ld8	v0 = [vp1], 16		C				M01
 	ld8	v1 = [vp2], 16		C				M01
 	mov	ar.lc = n		C				I0
 	;;
-	ld8	u0 = [up1], 16		C				M01
+}	ld8	u0 = [up1], 16		C				M01
 	ld8	u1 = [up2], 16		C				M01
 	and	x0 = v0, cnd		C				M I
 	and	x1 = v1, cnd		C				M I
@@ -187,73 +186,79 @@ L(gt2):
 C *** MAIN LOOP START ***
 C	ALIGN(32)
 L(top):
-.mmi;	ld8	v2 = [vp1], 16		C				M01
+ {.mmi;	ld8	v2 = [vp1], 16		C				M01
 	ld8	v3 = [vp2], 16		C				M01
 	cmp.CND	p6, p0 = w0, u0		C				M I
-.mmi;	st8	[rp1] = w2, 16		C				M23
+}{.mmi;	st8	[rp1] = w2, 16		C				M23
 	st8	[rp2] = w3, 16		C				M23
 	cmp.CND	p7, p0 = w1, u1		C				M I
 	;;
+}
 L(lo2):
-.mmi;	ld8	u2 = [up1], 16		C				M01
+ {.mmi;	ld8	u2 = [up1], 16		C				M01
 	ld8	u3 = [up2], 16		C				M01
    (p9)	cmpeqor	p6, p0 = LIM, w0	C				M I
-.mmi;	and	x2 = v2, cnd		C				M I
+}{.mmi;	and	x2 = v2, cnd		C				M I
 	and	x3 = v3, cnd		C				M I
    (p9)	add	w0 = INCR, w0		C				M I
 	;;
-.mmi;	ADDSUB	w2 = u2, x2		C				M I
+}{.mmi;	ADDSUB	w2 = u2, x2		C				M I
    (p6)	cmpeqor	p7, p0 = LIM, w1	C				M I
    (p6)	add	w1 = INCR, w1		C				M I
-.mmi;	ADDSUB	w3 = u3, x3		C				M I
+}{.mmi;	ADDSUB	w3 = u3, x3		C				M I
 	lfetch	[upadv], 32
 	nop	0
 	;;
-.mmi;	ld8	v0 = [vp1], 16		C				M01
+}{.mmi;	ld8	v0 = [vp1], 16		C				M01
 	ld8	v1 = [vp2], 16		C				M01
 	cmp.CND	p8, p0 = w2, u2		C				M I
-.mmi;	st8	[rp1] = w0, 16		C				M23
+}{.mmi;	st8	[rp1] = w0, 16		C				M23
 	st8	[rp2] = w1, 16		C				M23
 	cmp.CND	p9, p0 = w3, u3		C				M I
 	;;
+}
 L(lo0):
-.mmi;	ld8	u0 = [up1], 16		C				M01
+ {.mmi;	ld8	u0 = [up1], 16		C				M01
 	ld8	u1 = [up2], 16		C				M01
    (p7)	cmpeqor	p8, p0 = LIM, w2	C				M I
-.mmi;	and	x0 = v0, cnd		C				M I
+}{.mmi;	and	x0 = v0, cnd		C				M I
 	and	x1 = v1, cnd		C				M I
    (p7)	add	w2 = INCR, w2		C				M I
 	;;
-.mmi;	ADDSUB	w0 = u0, x0		C				M I
+}{.mmi;	ADDSUB	w0 = u0, x0		C				M I
    (p8)	cmpeqor	p9, p0 = LIM, w3	C				M I
    (p8)	add	w3 = INCR, w3		C				M I
-.mmb;	ADDSUB	w1 = u1, x1		C				M I
+}{.mmb;	ADDSUB	w1 = u1, x1		C				M I
 	lfetch	[vpadv], 32
 	br.cloop.dptk	L(top)		C				B
 	;;
+}
 C *** MAIN LOOP END ***
 
 
 L(end):
-.mmi;	st8	[rp1] = w2, 16		C				M23
+ {.mmi;	st8	[rp1] = w2, 16		C				M23
 	st8	[rp2] = w3, 16		C				M23
 	cmp.CND	p6, p0 = w0, u0		C				M I
 	;;
+}
 L(e2):
-.mmi;	cmp.CND	p7, p0 = w1, u1		C				M I
+ {.mmi;	cmp.CND	p7, p0 = w1, u1		C				M I
    (p9)	cmpeqor	p6, p0 = LIM, w0	C				M I
    (p9)	add	w0 = INCR, w0		C				M I
 	;;
-.mmi;	mov	r8 = 0			C				M I
+}{.mmi;	mov	r8 = 0			C				M I
    (p6)	cmpeqor	p7, p0 = LIM, w1	C				M I
    (p6)	add	w1 = INCR, w1		C				M I
 	;;
-.mmi;	st8	[rp1] = w0, 16		C				M23
+}{.mmi;	st8	[rp1] = w0, 16		C				M23
 	st8	[rp2] = w1, 16		C				M23
 	mov	ar.lc = r2		C				I0
+}
 L(e1):
-.mmb;	nop	0
+ {.mmb;	nop	0
    (p7)	mov	r8 = 1			C				M I
 	br.ret.sptk.many b0		C				B
+}
 EPILOGUE()
 ASM_END()

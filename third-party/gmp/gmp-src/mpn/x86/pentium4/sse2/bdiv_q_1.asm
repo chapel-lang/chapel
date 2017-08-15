@@ -231,3 +231,4 @@ ifdef(`PIC',`
 	jmp	L(entry)
 
 EPILOGUE()
+ASM_END()

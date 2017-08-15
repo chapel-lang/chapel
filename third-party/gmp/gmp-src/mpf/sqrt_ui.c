@@ -1,7 +1,7 @@
 /* mpf_sqrt_ui -- Compute the square root of an unsigned integer.
 
-Copyright 1993, 1994, 1996, 2000, 2001, 2004, 2005 Free Software Foundation,
-Inc.
+Copyright 1993, 1994, 1996, 2000, 2001, 2004, 2005, 2015 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -75,16 +75,16 @@ mpf_sqrt_ui (mpf_ptr r, unsigned long int u)
   mp_size_t prec;
   TMP_DECL;
 
-  if (UNLIKELY (u == 0))
+  if (UNLIKELY (u <= 1))
     {
-      r->_mp_size = 0;
-      r->_mp_exp = 0;
+      SIZ (r) = EXP (r) = u;
+      *PTR (r) = u;
       return;
     }
 
   TMP_MARK;
 
-  prec = r->_mp_prec;
+  prec = PREC (r);
   zeros = 2 * prec - 2;
   rsize = zeros + 1 + U2;
 
@@ -101,9 +101,9 @@ mpf_sqrt_ui (mpf_ptr r, unsigned long int u)
   }
 #endif
 
-  mpn_sqrtrem (r->_mp_d, NULL, tp, rsize);
+  mpn_sqrtrem (PTR (r), NULL, tp, rsize);
 
-  r->_mp_size = prec;
-  r->_mp_exp = 1;
+  SIZ (r) = prec;
+  EXP (r) = 1;
   TMP_FREE;
 }

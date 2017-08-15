@@ -197,7 +197,7 @@ mpn_toom52_mul (mp_ptr pp,
     }
 
   /* Compute as1 and asm1.  */
-  flags = (enum toom6_flags) (flags ^ toom6_vm1_neg & mpn_toom_eval_pm1 (as1, asm1, 4, ap, n, s, a0a2));
+  flags = (enum toom6_flags) (flags ^ (toom6_vm1_neg & mpn_toom_eval_pm1 (as1, asm1, 4, ap, n, s, a0a2)));
 
   ASSERT (as1[n] <= 4);
   ASSERT (bs1[n] <= 1);

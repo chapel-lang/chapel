@@ -64,7 +64,7 @@ main (int argc, char *argv[])
   mpz_t pre[7];
   int i;
   int start_p, end_p, interval_start, interval_end, omitted_p;
-  char *endtok;
+  const char *endtok;
   int stop;
   int np, start_idx;
 

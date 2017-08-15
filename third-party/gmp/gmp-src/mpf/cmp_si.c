@@ -1,6 +1,7 @@
 /* mpf_cmp_si -- Compare a float with a signed integer.
 
-Copyright 1993-1995, 1999-2002, 2004, 2012 Free Software Foundation, Inc.
+Copyright 1993-1995, 1999-2002, 2004, 2012, 2015 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -41,8 +42,7 @@ mpf_cmp_si (mpf_srcptr u, long int vval) __GMP_NOTHROW
   int usign;
   unsigned long abs_vval;
 
-  uexp = u->_mp_exp;
-  usize = u->_mp_size;
+  usize = SIZ (u);
 
   /* 1. Are the signs different?  */
   if ((usize < 0) == (vval < 0)) /* don't use xor, type size may differ */
@@ -64,49 +64,41 @@ mpf_cmp_si (mpf_srcptr u, long int vval) __GMP_NOTHROW
 
   /* U and V have the same sign and are both non-zero.  */
 
+  /* 2. Are the exponents different (V's exponent == 1)?  */
+  uexp = EXP (u);
   usign = usize >= 0 ? 1 : -1;
   usize = ABS (usize);
   abs_vval = ABS_CAST (unsigned long, vval);
 
-  /* 2. Are the exponents different (V's exponent == 1)?  */
 #if GMP_NAIL_BITS != 0
-  if (uexp > 1 + (abs_vval > GMP_NUMB_MAX))
-    return usign;
-  if (uexp < 1 + (abs_vval > GMP_NUMB_MAX))
-    return -usign;
+  if (uexp != 1 + (abs_vval > GMP_NUMB_MAX))
+    return (uexp < 1 + (abs_vval > GMP_NUMB_MAX)) ? -usign : usign;
 #else
-  if (uexp > 1)
-    return usign;
-  if (uexp < 1)
-    return -usign;
+  if (uexp != 1)
+    return (uexp < 1) ? -usign : usign;
 #endif
 
-  up = u->_mp_d;
+  up = PTR (u);
 
-  ulimb = up[usize - 1];
+  ASSERT (usize > 0);
+  ulimb = up[--usize];
 #if GMP_NAIL_BITS != 0
-  if (usize >= 2 && uexp == 2)
+  if (uexp == 2)
     {
       if ((ulimb >> GMP_NAIL_BITS) != 0)
 	return usign;
-      ulimb = (ulimb << GMP_NUMB_BITS) | up[usize - 2];
-      usize--;
+      ulimb = (ulimb << GMP_NUMB_BITS);
+      if (usize != 0) ulimb |= up[--usize];
     }
 #endif
-  usize--;
 
   /* 3. Compare the most significant mantissa limb with V.  */
-  if (ulimb > abs_vval)
-    return usign;
-  else if (ulimb < abs_vval)
-    return -usign;
+  if (ulimb != abs_vval)
+    return (ulimb < abs_vval) ? -usign : usign;
 
   /* Ignore zeroes at the low end of U.  */
-  while (*up == 0)
-    {
-      up++;
-      usize--;
-    }
+  for (; *up == 0; ++up)
+    --usize;
 
   /* 4. Now, if the number of limbs are different, we have a difference
      since we have made sure the trailing limbs are not zero.  */

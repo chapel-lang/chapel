@@ -1,6 +1,6 @@
 /*
 
-Copyright 2013, 2014, Free Software Foundation, Inc.
+Copyright 2013-2015, Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -35,7 +35,7 @@ static size_t total_alloc = 0;
    which shouldn't have stricter alignment requirements than
    size_t. */
 
-static char block_end[8] =
+static unsigned char block_end[8] =
   { 0x7c, 0x37, 0xd6, 0x12, 0xa8, 0x6c, 0x01, 0xd1 };
 
 static void *
@@ -53,12 +53,12 @@ block_init (size_t *block, size_t size)
 
 /* Check small redzone, return pointer to malloced block. */
 static size_t *
-block_check  (char *p)
+block_check  (void *p)
 {
   size_t *block = (size_t *) p - 1;
   size_t size = block[0];
 
-  if (memcmp (p + size, block_end, sizeof(block_end)) != 0)
+  if (memcmp ((char *)p + size, block_end, sizeof(block_end)) != 0)
     {
       fprintf (stderr, "red zone overwritten.\n");
       abort ();
@@ -70,7 +70,7 @@ block_check  (char *p)
 static void *
 tu_alloc (size_t size)
 {
-  size_t *block = malloc (sizeof(size_t) + size + sizeof(block_end));
+  size_t *block = (size_t *) malloc (sizeof(size_t) + size + sizeof(block_end));
   if (!block)
     {
       fprintf (stderr, "Virtual memory exhausted.\n");
@@ -84,7 +84,7 @@ static void *
 tu_realloc (void *p, size_t old_size, size_t new_size)
 {
   size_t *block = block_check (p);
-  block = realloc (block, sizeof(size_t) + new_size + sizeof(block_end));
+  block = (size_t *) realloc (block, sizeof(size_t) + new_size + sizeof(block_end));
   if (!block)
     {
       fprintf (stderr, "Virtual memory exhausted.\n");
