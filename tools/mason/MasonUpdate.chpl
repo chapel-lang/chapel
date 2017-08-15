@@ -2,12 +2,15 @@ use TOML;
 use FileSystem;
 use MasonUtils;
 
+config const tf: string = "Mason.toml";
+config const lf: string = "Mason.lock";
+
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc UpdateLock() {
-  if isFile("Mason.toml") {
+  if isFile(tf) {
     updateRegistry();
-    var openFile = openreader("Mason.toml");
+    var openFile = openreader(tf);
     var TomlFile = parseToml(openFile);
     var lockFile = createDepTree(TomlFile);
     genLock(lockFile);
@@ -23,7 +26,7 @@ proc UpdateLock() {
 
 /* Writes out the lock file */
 proc genLock(lock: Toml) {
-  var lockFile = open("Mason.lock", iomode.cw);
+  var lockFile = open(lf, iomode.cw);
   var tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
@@ -32,8 +35,11 @@ proc genLock(lock: Toml) {
 proc updateRegistry() {
   var home = getEnv("HOME");
   if isDir(home + '/.mason/registry') {
-    var command = "git -C " + getEnv("HOME") + "/.mason/registry/ pull -q origin master";
-    writeln("Updating Mason Registry");
+    var command = "git -C " + home + "/.mason/registry/ pull -q origin master";
+    // Temporary workaround for testing
+    if lf == "Mason.lock" {
+      writeln("Updating Mason Registry");
+    }
     runCommand(command);
   }
   else { // TODO: once we have registry clone and call command again.
