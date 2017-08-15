@@ -622,38 +622,20 @@
     "test/release/examples/benchmarks/shootout/README"
   ],
   "b53f219e-718d-11e6-8e91-843835579daa": [
-    "test/release/examples/benchmarks/shootout/fasta.chpl",
-    "test/studies/shootout/fasta/bradc/fasta-blc-numa.chpl",
-    "test/studies/shootout/fasta/bradc/fasta-blc.chpl",
-    "test/studies/shootout/fasta/psahabu/fasta-plain.chpl",
-    "test/studies/shootout/submitted/fasta.chpl"
+    "test/release/examples/benchmarks/shootout/fasta.chpl"
   ],
   "c6909e2e-4400-11e6-907f-843835579daa": [
-    "test/release/examples/benchmarks/shootout/knucleotide.chpl",
-    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-associative.chpl",
-    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-chaining.chpl",
-    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-elegant.chpl",
-    "test/studies/shootout/k-nucleotide/bharshbarg/knucleotide-strings.chpl",
-    "test/studies/shootout/k-nucleotide/bradc/knucleotide-blc.chpl",
-    "test/studies/shootout/submitted/knucleotide.chpl"
+    "test/release/examples/benchmarks/shootout/knucleotide.chpl"
   ],
   "617a3c5c-dfc3-11e6-93be-10ddb1d4c3d5": [
-    "test/release/examples/benchmarks/shootout/mandelbrot-fast.chpl",
-    "test/studies/shootout/mandelbrot/bradc/mandelbrot-blc.chpl",
-    "test/studies/shootout/submitted/mandelbrot2.chpl"
+    "test/release/examples/benchmarks/shootout/mandelbrot-fast.chpl"
   ],
   "4bfc193a-4401-11e6-907f-843835579daa": [
     "test/release/examples/benchmarks/shootout/regexdna-redux.chpl",
-    "test/release/examples/benchmarks/shootout/regexdna.chpl",
-    "test/studies/shootout/regex-dna/bharshbarg/regexdna.chpl",
-    "test/studies/shootout/submitted/regexdna.chpl",
-    "test/studies/shootout/submitted/regexredux.chpl"
+    "test/release/examples/benchmarks/shootout/regexdna.chpl"
   ],
   "560979a4-4401-11e6-907f-843835579daa": [
-    "test/release/examples/benchmarks/shootout/revcomp.chpl",
-    "test/studies/shootout/reverse-complement/bharshbarg/revcomp-begin.chpl",
-    "test/studies/shootout/reverse-complement/bradc/revcomp-blc.chpl",
-    "test/studies/shootout/submitted/revcomp.chpl"
+    "test/release/examples/benchmarks/shootout/revcomp.chpl"
   ],
   "7fcc0bd0-b85f-11e6-9740-843835579daa": [
     "test/release/examples/benchmarks/ssca2/README"
@@ -723,40 +705,7 @@
     "test/studies/dedup/dedup-local.chpl",
     "test/studies/dedup/dedup-spawn-sort.chpl"
   ],
-  "86ba5826-4400-11e6-907f-843835579daa": [
-    "test/studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-coforall.chpl"
-  ],
-  "a88fa2a8-4400-11e6-907f-843835579daa": [
-    "test/studies/shootout/fasta/caseyb/fasta.chpl",
-    "test/studies/shootout/fasta/kbrady/fasta-lines.chpl"
-  ],
-  "a70ca160-4400-11e6-907f-843835579daa": [
-    "test/studies/shootout/fasta/kbrady/fasta-enum.chpl"
-  ],
-  "dfd55fc8-4400-11e6-907f-843835579daa": [
-    "test/studies/shootout/mandelbrot/jacobnelson/mandelbrot-fancy.chpl"
-  ],
-  "e19084d2-4400-11e6-907f-843835579daa": [
-    "test/studies/shootout/mandelbrot/lydia/mandelbrot-no-dist.chpl"
-  ],
-  "e28376ba-4400-11e6-907f-843835579daa": [
-    "test/studies/shootout/mandelbrot/lydia/mandelbrot-unzipped.chpl"
-  ],
-  "07b07cbc-4401-11e6-907f-843835579daa": [
-    "test/studies/shootout/meteor/lydchels/README"
-  ],
-  "262b888a-4401-11e6-907f-843835579daa": [
-    "test/studies/shootout/meteor/lydchels/tests/piececell_test.chpl",
-    "test/studies/shootout/meteor/lydchels/tests/piecelist_test.chpl",
-    "test/studies/shootout/meteor/lydchels/tests/run_tests.chpl"
-  ],
-  "73d37e6c-4401-11e6-907f-843835579daa": [
-    "test/studies/shootout/spectral-norm/README"
-  ],
   "5655c140-644c-11e6-90f0-10ddb1d4c3d5": [
     "test/studies/shootout/submitted/README.md"
-  ],
-  "44484c44-fd7f-11e6-980e-10ddb1d4c3d5": [
-    "test/studies/shootout/submitted/fasta2.chpl"
   ]
 }
