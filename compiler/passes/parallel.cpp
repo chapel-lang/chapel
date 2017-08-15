@@ -401,6 +401,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       if (SymExpr* se = toSymExpr(arg)) {
         if (se->symbol()->hasFlag(FLAG_ERROR_VARIABLE)) {
           baData.needsDestroy.push_back(false);
+          i++;
           continue;
         }
       }
