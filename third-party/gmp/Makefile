@@ -66,7 +66,7 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install)
+	rm -rf build install
 
 $(GMP_BUILD_SUBDIR):
 	mkdir -p $@
