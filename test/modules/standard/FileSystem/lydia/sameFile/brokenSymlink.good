@@ -1,1 +1,1 @@
-brokenSymlink.chpl:25: error: No such file or directory in sameFile(moved.txt, linkToIt)
+brokenSymlink.chpl:25: error: uncaught error - No such file or directory in sameFile(moved.txt, linkToIt)
