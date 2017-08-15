@@ -208,5 +208,5 @@ mpn_toom_interpolate_8pts (mp_ptr pp, mp_size_t n,
   if (LIKELY(spt != n))
     MPN_INCR_U (pp + 8*n, spt - n, cy + r3[3*n]);
   else
-    ASSERT (r3[3*n] | cy == 0);
+    ASSERT (r3[3*n] + cy == 0);
 }

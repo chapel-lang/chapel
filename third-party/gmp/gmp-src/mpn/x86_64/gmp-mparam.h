@@ -215,4 +215,3 @@ see https://www.gnu.org/licenses/.  */
 
 #define FAC_DSC_THRESHOLD                 1075
 #define FAC_ODD_THRESHOLD                    0  /* always */
-

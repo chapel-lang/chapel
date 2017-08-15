@@ -49,6 +49,20 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 void
 tests_start (void)
 {
+  char version[10];
+  snprintf (version, 10, "%u.%u.%u",
+	    __GNU_MP_VERSION,
+	    __GNU_MP_VERSION_MINOR,
+	    __GNU_MP_VERSION_PATCHLEVEL);
+
+  if (strcmp (gmp_version, version) != 0)
+    {
+      fprintf (stderr, "tests are not linked to the newly compiled library\n");
+      fprintf (stderr, "  local version is: %s\n", version);
+      fprintf (stderr, "  linked version is: %s\n", gmp_version);
+      abort ();
+    }
+
   /* don't buffer, so output is not lost if a test causes a segv etc */
   setbuf (stdout, NULL);
   setbuf (stderr, NULL);
@@ -102,7 +116,7 @@ tests_rand_start (void)
 #if HAVE_GETTIMEOFDAY
           struct timeval  tv;
           gettimeofday (&tv, NULL);
-          seed = tv.tv_sec ^ (tv.tv_usec << 12);
+          seed = tv.tv_sec ^ ((unsigned long) tv.tv_usec << 12);
 	  seed &= 0xffffffff;
 #else
           time_t  tv;
@@ -465,7 +479,7 @@ tests_isinf (double d)
 int
 tests_hardware_setround (int mode)
 {
-#if WANT_ASSEMBLY && HAVE_HOST_CPU_FAMILY_x86
+#if ! defined NO_ASM && HAVE_HOST_CPU_FAMILY_x86
   int  rc;
   switch (mode) {
   case 0: rc = 0; break;  /* nearest */
@@ -486,7 +500,7 @@ tests_hardware_setround (int mode)
 int
 tests_hardware_getround (void)
 {
-#if WANT_ASSEMBLY && HAVE_HOST_CPU_FAMILY_x86
+#if ! defined NO_ASM && HAVE_HOST_CPU_FAMILY_x86
   switch ((x86_fstcw () & ~0xC00) >> 10) {
   case 0: return 0; break;  /* nearest */
   case 1: return 3; break;  /* down    */

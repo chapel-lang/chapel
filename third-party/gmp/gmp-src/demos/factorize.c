@@ -1,6 +1,7 @@
 /* Factoring with Pollard's rho method.
 
-Copyright 1995, 1997-2003, 2005, 2009, 2012 Free Software Foundation, Inc.
+Copyright 1995, 1997-2003, 2005, 2009, 2012, 2015 Free Software
+Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -131,7 +132,7 @@ factor_using_division (mpz_t t, struct factors *factors)
   mpz_init (q);
 
   p = mpz_scan1 (t, 0);
-  mpz_div_2exp (t, t, p);
+  mpz_fdiv_q_2exp (t, t, p);
   while (p)
     {
       factor_insert_ui (factors, 2);

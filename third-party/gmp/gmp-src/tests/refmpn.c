@@ -1,7 +1,7 @@
 /* Reference mpn functions, designed to be simple, portable and independent
    of the normal gmp code.  Speed isn't a consideration.
 
-Copyright 1996-2009, 2011-2013 Free Software Foundation, Inc.
+Copyright 1996-2009, 2011-2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -1863,12 +1863,12 @@ refmpn_mulmid (mp_ptr rp, mp_srcptr up, mp_size_t un,
 void
 refmpn_mul (mp_ptr wp, mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn)
 {
-  mp_ptr tp;
+  mp_ptr tp, rp;
   mp_size_t tn;
 
   if (vn < TOOM3_THRESHOLD)
     {
-      /* In the mpn_mul_basecase and toom2 range, use our own mul_basecase.  */
+      /* In the mpn_mul_basecase and toom2 ranges, use our own mul_basecase. */
       if (vn != 0)
 	refmpn_mul_basecase (wp, up, un, vp, vn);
       else
@@ -1876,51 +1876,49 @@ refmpn_mul (mp_ptr wp, mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn)
       return;
     }
 
+  MPN_ZERO (wp, vn);
+  rp = refmpn_malloc_limbs (2 * vn);
+
   if (vn < TOOM4_THRESHOLD)
-    {
-      /* In the toom3 range, use mpn_toom22_mul.  */
-      tn = 2 * vn + mpn_toom22_mul_itch (vn, vn);
-      tp = refmpn_malloc_limbs (tn);
-      mpn_toom22_mul (tp, up, vn, vp, vn, tp + 2 * vn);
-    }
+    tn = mpn_toom22_mul_itch (vn, vn);
   else if (vn < TOOM6_THRESHOLD)
-    {
-      /* In the toom4 range, use mpn_toom33_mul.  */
-      tn = 2 * vn + mpn_toom33_mul_itch (vn, vn);
-      tp = refmpn_malloc_limbs (tn);
-      mpn_toom33_mul (tp, up, vn, vp, vn, tp + 2 * vn);
-    }
+    tn = mpn_toom33_mul_itch (vn, vn);
   else if (vn < FFT_THRESHOLD)
-    {
-      /* In the toom6 range, use mpn_toom44_mul.  */
-      tn = 2 * vn + mpn_toom44_mul_itch (vn, vn);
-      tp = refmpn_malloc_limbs (tn);
-      mpn_toom44_mul (tp, up, vn, vp, vn, tp + 2 * vn);
-    }
+    tn = mpn_toom44_mul_itch (vn, vn);
   else
-    {
-      /* Finally, for the largest operands, use mpn_toom6h_mul.  */
-      tn = 2 * vn + mpn_toom6h_mul_itch (vn, vn);
-      tp = refmpn_malloc_limbs (tn);
-      mpn_toom6h_mul (tp, up, vn, vp, vn, tp + 2 * vn);
-    }
+    tn = mpn_toom6h_mul_itch (vn, vn);
+  tp = refmpn_malloc_limbs (tn);
 
-  if (un != vn)
+  while (un >= vn)
     {
-      if (un - vn < vn)
-	refmpn_mul (wp + vn, vp, vn, up + vn, un - vn);
+      if (vn < TOOM4_THRESHOLD)
+	/* In the toom3 range, use mpn_toom22_mul.  */
+	mpn_toom22_mul (rp, up, vn, vp, vn, tp);
+      else if (vn < TOOM6_THRESHOLD)
+	/* In the toom4 range, use mpn_toom33_mul.  */
+	mpn_toom33_mul (rp, up, vn, vp, vn, tp);
+      else if (vn < FFT_THRESHOLD)
+	/* In the toom6 range, use mpn_toom44_mul.  */
+	mpn_toom44_mul (rp, up, vn, vp, vn, tp);
       else
-	refmpn_mul (wp + vn, up + vn, un - vn, vp, vn);
+	/* For the largest operands, use mpn_toom6h_mul.  */
+	mpn_toom6h_mul (rp, up, vn, vp, vn, tp);
 
-      MPN_COPY (wp, tp, vn);
-      ASSERT_NOCARRY (refmpn_add (wp + vn, wp + vn, un, tp + vn, vn));
-    }
-  else
-    {
-      MPN_COPY (wp, tp, 2 * vn);
+      ASSERT_NOCARRY (refmpn_add (wp, rp, 2 * vn, wp, vn));
+      wp += vn;
+
+      up += vn;
+      un -= vn;
     }
 
   free (tp);
+
+  if (un != 0)
+    {
+      refmpn_mul (rp, vp, vn, up, un);
+      ASSERT_NOCARRY (refmpn_add (wp, rp, un + vn, wp, vn));
+    }
+  free (rp);
 }
 
 void
@@ -1942,6 +1940,12 @@ void
 refmpn_sqr (mp_ptr dst, mp_srcptr src, mp_size_t size)
 {
   refmpn_mul (dst, src, size, src, size);
+}
+
+void
+refmpn_sqrlo (mp_ptr dst, mp_srcptr src, mp_size_t size)
+{
+  refmpn_mullo_n (dst, src, src, size);
 }
 
 /* Allowing usize<vsize, usize==0 or vsize==0. */

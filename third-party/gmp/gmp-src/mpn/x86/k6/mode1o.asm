@@ -173,3 +173,4 @@ L(entry):
 	ret
 
 EPILOGUE()
+ASM_END()

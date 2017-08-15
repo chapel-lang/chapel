@@ -40,7 +40,7 @@ dumpy (mp_srcptr p, mp_size_t n)
       for (i = 3; i >= 0; i--)
 	{
 	  printf ("%0*lx", (int) (2 * sizeof (mp_limb_t)), p[i]);
-	  printf (" " + (i == 0));
+	  printf (i == 0 ? "" : " ");
 	}
     }
   else
@@ -48,7 +48,7 @@ dumpy (mp_srcptr p, mp_size_t n)
       for (i = n - 1; i >= 0; i--)
 	{
 	  printf ("%0*lx", (int) (2 * sizeof (mp_limb_t)), p[i]);
-	  printf (" " + (i == 0));
+	  printf (i == 0 ? "" : " ");
 	}
     }
   puts ("");

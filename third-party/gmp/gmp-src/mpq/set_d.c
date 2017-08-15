@@ -1,6 +1,6 @@
 /* mpq_set_d(mpq_t q, double d) -- Set q to d without rounding.
 
-Copyright 2000, 2002, 2003, 2012 Free Software Foundation, Inc.
+Copyright 2000, 2002, 2003, 2012, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -81,9 +81,8 @@ mpq_set_d (mpq_ptr dest, double d)
 	  return;
 	}
 
-      dn = -exp;
-      np = MPZ_NEWALLOC (NUM(dest), 3);
 #if LIMBS_PER_DOUBLE == 4
+      np = MPZ_NEWALLOC (NUM(dest), 4);
       if ((tp[0] | tp[1] | tp[2]) == 0)
 	np[0] = tp[3], nn = 1;
       else if ((tp[0] | tp[1]) == 0)
@@ -94,6 +93,7 @@ mpq_set_d (mpq_ptr dest, double d)
 	np[3] = tp[3], np[2] = tp[2], np[1] = tp[1], np[0] = tp[0], nn = 4;
 #endif
 #if LIMBS_PER_DOUBLE == 3
+      np = MPZ_NEWALLOC (NUM(dest), 3);
       if ((tp[0] | tp[1]) == 0)
 	np[0] = tp[2], nn = 1;
       else if (tp[0] == 0)
@@ -102,13 +102,14 @@ mpq_set_d (mpq_ptr dest, double d)
 	np[2] = tp[2], np[1] = tp[1], np[0] = tp[0], nn = 3;
 #endif
 #if LIMBS_PER_DOUBLE == 2
+      np = MPZ_NEWALLOC (NUM(dest), 2);
       if (tp[0] == 0)
 	np[0] = tp[1], nn = 1;
       else
 	np[1] = tp[1], np[0] = tp[0], nn = 2;
 #endif
-      dn += nn + 1;
-      ASSERT_ALWAYS (dn > 0);
+      dn = nn + 1 - exp;
+      ASSERT (dn > 0); /* -exp >= -1; nn >= 1*/
       dp = MPZ_NEWALLOC (DEN(dest), dn);
       MPN_ZERO (dp, dn - 1);
       dp[dn - 1] = 1;
@@ -117,11 +118,10 @@ mpq_set_d (mpq_ptr dest, double d)
 	{
 	  mpn_rshift (np, np, nn, c);
 	  nn -= np[nn - 1] == 0;
-	  mpn_rshift (dp, dp, dn, c);
-	  dn -= dp[dn - 1] == 0;
+	  --dn;
+	  dp[dn - 1] = CNST_LIMB(1) << (GMP_LIMB_BITS - c);
 	}
       SIZ(DEN(dest)) = dn;
-      SIZ(NUM(dest)) = negative ? -nn : nn;
     }
   else
     {
@@ -158,9 +158,8 @@ mpq_set_d (mpq_ptr dest, double d)
 	  break;
 #endif
 	}
-      dp = PTR(DEN(dest));
-      dp[0] = 1;
+      *PTR(DEN(dest)) = 1;
       SIZ(DEN(dest)) = 1;
-      SIZ(NUM(dest)) = negative ? -nn : nn;
     }
+  SIZ(NUM(dest)) = negative ? -nn : nn;
 }

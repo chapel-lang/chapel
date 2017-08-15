@@ -142,7 +142,7 @@ struct bench_data
 static double
 bench_gcd (void *ctx, int p)
 {
-  struct bench_data *data = ctx;
+  struct bench_data *data = (struct bench_data *) ctx;
   double t;
 
   p_table[data->n] = p;

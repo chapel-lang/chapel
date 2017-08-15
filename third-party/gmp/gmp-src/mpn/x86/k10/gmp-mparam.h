@@ -1,6 +1,6 @@
 /* x86/k10 gmp-mparam.h -- Compiler/machine parameter header file.
 
-Copyright 1991, 1993, 1994, 2000-2011, 2014 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000-2011, 2014-2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -170,9 +170,12 @@ see https://www.gnu.org/licenses/.  */
 #define SQR_FFT_TABLE3_SIZE 172
 #define SQR_FFT_THRESHOLD                 5504
 
-#define MULLO_BASECASE_THRESHOLD             7
+#define MULLO_BASECASE_THRESHOLD             0  /* always */
 #define MULLO_DC_THRESHOLD                  40
 #define MULLO_MUL_N_THRESHOLD            13463
+#define SQRLO_BASECASE_THRESHOLD             7
+#define SQRLO_DC_THRESHOLD                 143
+#define SQRLO_SQR_THRESHOLD              11000
 
 #define DC_DIV_QR_THRESHOLD                 59
 #define DC_DIVAPPR_Q_THRESHOLD             270

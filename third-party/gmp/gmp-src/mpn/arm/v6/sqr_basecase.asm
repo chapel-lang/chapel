@@ -2,7 +2,7 @@ dnl  ARM v6 mpn_sqr_basecase.
 
 dnl  Contributed to the GNU project by Torbjörn Granlund.
 
-dnl  Copyright 2012, 2013 Free Software Foundation, Inc.
+dnl  Copyright 2012, 2013, 2015 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -49,21 +49,25 @@ C             \____________/                  \____________/
 C                       \                        /
 C                        \                      /
 C                         \                    /
-C                       tail(0m2)          tail(1m2)
+C                         cor3             cor2
 C                            \              /
 C                             \            /
 C                            sqr_diag_addlsh1
 
 C TODO
+C  * Align more labels.
 C  * Further tweak counter and updates in outer loops.  (This could save
 C    perhaps 5n cycles).
+C  * Avoid sub-with-lsl in outer loops.  We could keep n up-shifted, then
+C    initialise loop counter i with a right shift.
 C  * Try to use fewer register.  Perhaps coalesce r9 branch target and n_saved.
 C    (This could save 2-3 cycles for n > 4.)
-C  * Optimise sqr_diag_addlsh1 loop.  (This could save O(n) cycles.)
-C  * Implement larger final corners (xit/tix).  Also stop loops earlier
-C    suppressing writes of upper-most rp[] values.  (This could save 10-20
-C    cycles for n > 4.)
-C  * Is the branch table really faster than discrete branches?
+C  * Optimise sqr_diag_addlsh1 loop.  The current code uses old-style carry
+C    propagation.
+C  * Stop loops earlier suppressing writes of upper-most rp[] values.
+C  * The addmul_2 loops here runs well on all cores, but mul_2 runs poorly
+C    particularly on Cortex-A8.
+
 
 define(`rp',      r0)
 define(`up',      r1)
@@ -95,7 +99,7 @@ PROLOGUE(mpn_sqr_basecase)
 	b	L(3m4)
 
 
-L(1m4):	push	{r4-r10,r11,r14}
+L(1m4):	push	{r4-r11, r14}
 	mov	n_saved, n
 	sub	i, n, #4
 	sub	n, n, #2
@@ -109,7 +113,7 @@ L(1m4):	push	{r4-r10,r11,r14}
 	mov	r4, #0
 	b	L(ko0)
 
-L(3m4):	push	{r4-r10,r11,r14}
+L(3m4):	push	{r4-r11, r14}
 	mov	n_saved, n
 	sub	i, n, #4
 	sub	n, n, #2
@@ -123,7 +127,7 @@ L(3m4):	push	{r4-r10,r11,r14}
 	mov	r4, #0
 	b	L(ko2)
 
-L(2m4):	push	{r4-r10,r11,r14}
+L(2m4):	push	{r4-r11, r14}
 	mov	n_saved, n
 	sub	i, n, #4
 	sub	n, n, #2
@@ -136,7 +140,7 @@ L(2m4):	push	{r4-r10,r11,r14}
 	mov	r5, #0
 	b	L(ko1)
 
-L(0m4):	push	{r4-r10,r11,r14}
+L(0m4):	push	{r4-r11, r14}
 	mov	n_saved, n
 	sub	i, n, #4
 	sub	n, n, #2
@@ -171,225 +175,247 @@ L(ko0):	ldr	u1, [up, #16]!
 	umaal	r4, cyb, u0, v1
 	subs	i, i, #4
 	bhi	L(top)
+
+	umaal	r4, cya, u1, v0
+	ldr	u0, [up, #4]
+	umaal	r5, cyb, u1, v1
+	str	r4, [rp, #4]
+	umaal	r5, cya, u0, v0
+	umaal	cya, cyb, u0, v1
+	str	r5, [rp, #8]
+	str	cya, [rp, #12]
+	str	cyb, [rp, #16]
+
+	add	up, up, #4
+	sub	n, n, #1
+	add	rp, rp, #8
 	bx	r10
 
 L(evnloop):
-	subs	i, n, #4
+	subs	i, n, #6
 	sub	n, n, #2
-	blt	L(tix)
-	ldm	up, {v0,v1,u0}
-	add	up, up, #4
+	blt	L(cor2)
+	ldm	up, {v0,v1,u1}
+	add	up, up, #8
 	mov	cya, #0
 	mov	cyb, #0
-	ldm	rp, {r4,r5}
-	sub	rp, rp, #4
+	ldr	r4, [rp, #-4]
 	umaal	r4, cya, v1, v0
-	str	r4, [rp, #4]
-	ldr	r4, [rp, #12]
-	b	L(lo2)
-L(ua2):	ldr	u0, [up, #4]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #4]
-	ldr	r4, [rp, #12]
-	umaal	r5, cyb, u1, v1
-L(lo2):	ldr	u1, [up, #8]
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #8]
-	ldr	r5, [rp, #16]
-	umaal	r4, cyb, u0, v1
-	ldr	u0, [up, #12]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #12]
-	ldr	r4, [rp, #20]
-	umaal	r5, cyb, u1, v1
-	ldr	u1, [up, #16]!
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #16]!
-	ldr	r5, [rp, #8]
-	umaal	r4, cyb, u0, v1
-	subs	i, i, #4
-	bhi	L(ua2)
-L(am2_0m4):
+	str	r4, [rp, #-4]
+	ldr	r4, [rp, #0]
+
+	ALIGN(16)
+L(ua2):	ldr	r5, [rp, #4]
 	umaal	r4, cya, u1, v0
 	ldr	u0, [up, #4]
 	umaal	r5, cyb, u1, v1
-	str	r4, [rp, #4]
+	str	r4, [rp, #0]
+	ldr	r4, [rp, #8]
 	umaal	r5, cya, u0, v0
-	umaal	cya, cyb, u0, v1
-	str	r5, [rp, #8]
-	str	cya, [rp, #12]
-	str	cyb, [rp, #16]
-	sub	up, up, n, lsl #2
+	ldr	u1, [up, #8]
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #4]
+	ldr	r5, [rp, #12]
+	umaal	r4, cya, u1, v0
+	ldr	u0, [up, #12]
+	umaal	r5, cyb, u1, v1
+	str	r4, [rp, #8]
+	ldr	r4, [rp, #16]!
+	umaal	r5, cya, u0, v0
+	ldr	u1, [up, #16]!
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #-4]
+	subs	i, i, #4
+	bhs	L(ua2)
+
+	umaal	r4, cya, u1, v0
+	umaal	cya, cyb, u1, v1
+	str	r4, [rp, #0]
+	str	cya, [rp, #4]
+	str	cyb, [rp, #8]
+L(am2_0m4):
 	sub	rp, rp, n, lsl #2
-	add	up, up, #8
+	sub	up, up, n, lsl #2
+	add	rp, rp, #8
+
 	sub	i, n, #4
 	sub	n, n, #2
-	ldm	up, {v0,v1,u0}
-	sub	up, up, #4
+	ldm	up, {v0,v1,u1}
 	mov	cya, #0
 	mov	cyb, #0
-	ldr	r4, [rp, #24]
-	ldr	r5, [rp, #28]
-	add	rp, rp, #12
+	ldr	r4, [rp, #4]
 	umaal	r4, cya, v1, v0
-	str	r4, [rp, #12]
-	ldr	r4, [rp, #20]
-	b	L(lo0)
-L(ua0):	ldr	u0, [up, #4]
-	umaal	r4, cya, u1, v0
 	str	r4, [rp, #4]
-	ldr	r4, [rp, #12]
-	umaal	r5, cyb, u1, v1
-	ldr	u1, [up, #8]
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #8]
-	ldr	r5, [rp, #16]
-	umaal	r4, cyb, u0, v1
-	ldr	u0, [up, #12]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #12]
-	ldr	r4, [rp, #20]
-	umaal	r5, cyb, u1, v1
-L(lo0):	ldr	u1, [up, #16]!
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #16]!
-	ldr	r5, [rp, #8]
-	umaal	r4, cyb, u0, v1
-	subs	i, i, #4
-	bhi	L(ua0)
-L(am2_2m4):
+	ldr	r4, [rp, #8]
+	b	L(lo0)
+
+	ALIGN(16)
+L(ua0):	ldr	r5, [rp, #4]
 	umaal	r4, cya, u1, v0
 	ldr	u0, [up, #4]
 	umaal	r5, cyb, u1, v1
-	str	r4, [rp, #4]
+	str	r4, [rp, #0]
+	ldr	r4, [rp, #8]
 	umaal	r5, cya, u0, v0
-	umaal	cya, cyb, u0, v1
-	str	r5, [rp, #8]
-	str	cya, [rp, #12]
-	str	cyb, [rp, #16]
-	sub	up, up, n, lsl #2
+	ldr	u1, [up, #8]
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #4]
+L(lo0):	ldr	r5, [rp, #12]
+	umaal	r4, cya, u1, v0
+	ldr	u0, [up, #12]
+	umaal	r5, cyb, u1, v1
+	str	r4, [rp, #8]
+	ldr	r4, [rp, #16]!
+	umaal	r5, cya, u0, v0
+	ldr	u1, [up, #16]!
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #-4]
+	subs	i, i, #4
+	bhs	L(ua0)
+
+	umaal	r4, cya, u1, v0
+	umaal	cya, cyb, u1, v1
+	str	r4, [rp, #0]
+	str	cya, [rp, #4]
+	str	cyb, [rp, #8]
+L(am2_2m4):
 	sub	rp, rp, n, lsl #2
-	add	up, up, #8
-	add	rp, rp, #24
+	sub	up, up, n, lsl #2
+	add	rp, rp, #16
 	b	L(evnloop)
 
 
 L(oddloop):
-	subs	i, n, #4
+	sub	i, n, #5
 	sub	n, n, #2
-	blt	L(xit)
-	ldm	up, {v0,v1,u1}
-	mov	cya, #0
-	mov	cyb, #0
-	sub	rp, rp, #8
-	ldr	r5, [rp, #8]
-	ldr	r4, [rp, #12]
-	umaal	r5, cya, v1, v0
-	str	r5, [rp, #8]
-	ldr	r5, [rp, #16]
-	b	L(lo1)
-L(ua1):	ldr	u0, [up, #4]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #4]
-	ldr	r4, [rp, #12]
-	umaal	r5, cyb, u1, v1
-	ldr	u1, [up, #8]
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #8]
-	ldr	r5, [rp, #16]
-	umaal	r4, cyb, u0, v1
-L(lo1):	ldr	u0, [up, #12]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #12]
-	ldr	r4, [rp, #20]
-	umaal	r5, cyb, u1, v1
-	ldr	u1, [up, #16]!
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #16]!
-	ldr	r5, [rp, #8]
-	umaal	r4, cyb, u0, v1
-	subs	i, i, #4
-	bhi	L(ua1)
-L(am2_3m4):
-	umaal	r4, cya, u1, v0
-	ldr	u0, [up, #4]
-	umaal	r5, cyb, u1, v1
-	str	r4, [rp, #4]
-	umaal	r5, cya, u0, v0
-	umaal	cya, cyb, u0, v1
-	str	r5, [rp, #8]
-	str	cya, [rp, #12]
-	str	cyb, [rp, #16]
-	sub	up, up, n, lsl #2
-	sub	rp, rp, n, lsl #2
-	add	up, up, #8
-	add	rp, rp, #24
-	subs	i, n, #4
-	sub	n, n, #2
-	ldm	up, {v0,v1,u1}
+	ldm	up, {v0,v1,u0}
 	mov	cya, #0
 	mov	cyb, #0
 	ldr	r5, [rp, #0]
-	ldr	r4, [rp, #4]
-	add	up, up, #8
 	umaal	r5, cya, v1, v0
 	str	r5, [rp, #0]
-	ldr	r5, [rp, #8]
-	bls	L(e3)
-L(ua3):	ldr	u0, [up, #4]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #4]
-	ldr	r4, [rp, #12]
-	umaal	r5, cyb, u1, v1
-	ldr	u1, [up, #8]
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #8]
-	ldr	r5, [rp, #16]
-	umaal	r4, cyb, u0, v1
-	ldr	u0, [up, #12]
-	umaal	r4, cya, u1, v0
-	str	r4, [rp, #12]
-	ldr	r4, [rp, #20]
-	umaal	r5, cyb, u1, v1
-	ldr	u1, [up, #16]!
-	umaal	r5, cya, u0, v0
-	str	r5, [rp, #16]!
-	ldr	r5, [rp, #8]
-	umaal	r4, cyb, u0, v1
-	subs	i, i, #4
-	bhi	L(ua3)
-L(e3):
-L(am2_1m4):
+	ldr	r5, [rp, #4]
+	add	up, up, #4
+	b	L(lo1)
+
+	ALIGN(16)
+L(ua1):	ldr	r5, [rp, #4]
 	umaal	r4, cya, u1, v0
 	ldr	u0, [up, #4]
 	umaal	r5, cyb, u1, v1
-	str	r4, [rp, #4]
+	str	r4, [rp, #0]
+L(lo1):	ldr	r4, [rp, #8]
 	umaal	r5, cya, u0, v0
-	umaal	cya, cyb, u0, v1
-	str	r5, [rp, #8]
-	str	cya, [rp, #12]
-	str	cyb, [rp, #16]
-	sub	up, up, n, lsl #2
+	ldr	u1, [up, #8]
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #4]
+	ldr	r5, [rp, #12]
+	umaal	r4, cya, u1, v0
+	ldr	u0, [up, #12]
+	umaal	r5, cyb, u1, v1
+	str	r4, [rp, #8]
+	ldr	r4, [rp, #16]!
+	umaal	r5, cya, u0, v0
+	ldr	u1, [up, #16]!
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #-4]
+	subs	i, i, #4
+	bhs	L(ua1)
+
+	umaal	r4, cya, u1, v0
+	umaal	cya, cyb, u1, v1
+	str	r4, [rp, #0]
+	str	cya, [rp, #4]
+	str	cyb, [rp, #8]
+L(am2_3m4):
 	sub	rp, rp, n, lsl #2
-	add	up, up, #8
-	add	rp, rp, #24
-	b	L(oddloop)
+	sub	up, up, n, lsl #2
+	add	rp, rp, #4
 
-L(xit):	ldm	up!, {v0,u0}
-	ldr	cya, [rp], #12
-	mov	cyb, #0
-	umaal	cya, cyb, u0, v0
-	b	L(sqr_diag_addlsh1)
-
-L(tix):	ldm	up!, {v0,v1,u0}
-	ldm	rp, {r4,r5}
+	subs	i, n, #3
+	beq	L(cor3)
+	sub	n, n, #2
+	ldm	up, {v0,v1,u0}
 	mov	cya, #0
 	mov	cyb, #0
-	umaal	r4, cya, v1, v0
+	ldr	r5, [rp, #8]
+	sub	up, up, #4
+	umaal	r5, cya, v1, v0
+	str	r5, [rp, #8]
+	ldr	r5, [rp, #12]
+	b	L(lo3)
+
+	ALIGN(16)
+L(ua3):	ldr	r5, [rp, #4]
+	umaal	r4, cya, u1, v0
+	ldr	u0, [up, #4]
+	umaal	r5, cyb, u1, v1
+	str	r4, [rp, #0]
+	ldr	r4, [rp, #8]
 	umaal	r5, cya, u0, v0
-	stm	rp, {r4,r5}
+	ldr	u1, [up, #8]
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #4]
+	ldr	r5, [rp, #12]
+	umaal	r4, cya, u1, v0
+	ldr	u0, [up, #12]
+	umaal	r5, cyb, u1, v1
+	str	r4, [rp, #8]
+L(lo3):	ldr	r4, [rp, #16]!
+	umaal	r5, cya, u0, v0
+	ldr	u1, [up, #16]!
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #-4]
+	subs	i, i, #4
+	bhs	L(ua3)
+
+	umaal	r4, cya, u1, v0
+	umaal	cya, cyb, u1, v1
+	str	r4, [rp, #0]
+	str	cya, [rp, #4]
+	str	cyb, [rp, #8]
+L(am2_1m4):
+	sub	rp, rp, n, lsl #2
+	sub	up, up, n, lsl #2
+	add	rp, rp, #12
+	b	L(oddloop)
+
+
+L(cor3):ldm	up, {v0,v1,u0}
+	ldr	r5, [rp, #8]
+	mov	cya, #0
+	mov	cyb, #0
+	umaal	r5, cya, v1, v0
+	str	r5, [rp, #8]
+	ldr	r5, [rp, #12]
+	ldr	r4, [rp, #16]
+	umaal	r5, cya, u0, v0
+	ldr	u1, [up, #12]
+	umaal	r4, cyb, u0, v1
+	str	r5, [rp, #12]
+	umaal	r4, cya, u1, v0
+	umaal	cya, cyb, u1, v1
+	str	r4, [rp, #16]
+	str	cya, [rp, #20]
+	str	cyb, [rp, #24]
+	add	up, up, #16
+	mov	cya, cyb
+	adds	rp, rp, #36		C clear cy
+	mov	cyb, #0
+	umaal	cya, cyb, u1, u0
+	b	L(sqr_diag_addlsh1)
+
+L(cor2):
+	ldm	up!, {v0,v1,u0}
+	mov	r4, cya
+	mov	r5, cyb
+	mov	cya, #0
+	umaal	r4, cya, v1, v0
+	mov	cyb, #0
+	umaal	r5, cya, u0, v0
+	strd	r4, r5, [rp, #-4]
 	umaal	cya, cyb, u0, v1
-	add	rp, rp, #20
+	add	rp, rp, #16
 C	b	L(sqr_diag_addlsh1)
 
 
@@ -408,7 +434,7 @@ L(sqr_diag_addlsh1):
 	umull	w1, r5, r3, r3
 	mov	w2, #0
 	mov	r10, #0
-C	cmn	r0, #0			C clear cy (already clear by luck)
+C	cmn	r0, #0			C clear cy (already clear)
 	b	L(lm)
 
 L(tsd):	adds	w0, w0, rbx
@@ -431,7 +457,7 @@ L(lm):	ldr	w0, [rp, #4]
 	adc	w2, r5, w2
 	stm	rp, {w0,w1,w2}
 
-	pop	{r4-r10,r11,pc}
+	pop	{r4-r11, pc}
 
 
 C Straight line code for n <= 4
@@ -503,8 +529,8 @@ L(4):	push	{r4-r11, r14}
 	adcs	r4, r4, r4
 	adcs	r5, r5, r5
 	adcs	r6, r6, r6
-	adc	r7, r8, #0
 	add	rp, rp, #4
+	adc	r7, r8, #0
 	ldm	rp, {r8,r9,r10,r11,r12,r14}
 	adds	r1, r1, r8
 	adcs	r2, r2, r9

@@ -113,7 +113,7 @@ mpn_mu_divappr_q (mp_ptr qp,
     {
       MPN_COPY (tp + 1, dp, in);
       tp[0] = 1;
-      mpn_invertappr (ip, tp, in + 1, NULL);
+      mpn_invertappr (ip, tp, in + 1, tp + in + 1);
       MPN_COPY_INCR (ip, ip + 1, in);
     }
   else
@@ -123,7 +123,7 @@ mpn_mu_divappr_q (mp_ptr qp,
 	MPN_ZERO (ip, in);
       else
 	{
-	  mpn_invertappr (ip, tp, in + 1, NULL);
+	  mpn_invertappr (ip, tp, in + 1, tp + in + 1);
 	  MPN_COPY_INCR (ip, ip + 1, in);
 	}
     }
@@ -348,7 +348,7 @@ mpn_mu_divappr_q_choose_in (mp_size_t qn, mp_size_t dn, int k)
 mp_size_t
 mpn_mu_divappr_q_itch (mp_size_t nn, mp_size_t dn, int mua_k)
 {
-  mp_size_t qn, in, itch_local, itch_out;
+  mp_size_t qn, in, itch_local, itch_out, itch_invapp;
 
   qn = nn - dn;
   if (qn + 1 < dn)
@@ -359,5 +359,8 @@ mpn_mu_divappr_q_itch (mp_size_t nn, mp_size_t dn, int mua_k)
 
   itch_local = mpn_mulmod_bnm1_next_size (dn + 1);
   itch_out = mpn_mulmod_bnm1_itch (itch_local, dn, in);
-  return in + dn + itch_local + itch_out;
+  itch_invapp = mpn_invertappr_itch (in + 1) + in + 2; /* 3in + 4 */
+
+  ASSERT (dn + itch_local + itch_out >= itch_invapp);
+  return in + MAX (dn + itch_local + itch_out, itch_invapp);
 }

@@ -1,6 +1,6 @@
 /* Generate perfect square testing data.
 
-Copyright 2002-2004, 2012 Free Software Foundation, Inc.
+Copyright 2002-2004, 2012, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -135,8 +135,8 @@ int
 f_cmp_divisor (const void *parg, const void *qarg)
 {
   const struct factor_t *p, *q;
-  p = parg;
-  q = qarg;
+  p = (const struct factor_t *) parg;
+  q = (const struct factor_t *) qarg;
   if (p->divisor > q->divisor)
     return 1;
   else if (p->divisor < q->divisor)
@@ -149,8 +149,8 @@ int
 f_cmp_fraction (const void *parg, const void *qarg)
 {
   const struct factor_t *p, *q;
-  p = parg;
-  q = qarg;
+  p = (const struct factor_t *) parg;
+  q = (const struct factor_t *) qarg;
   if (p->fraction > q->fraction)
     return 1;
   else if (p->fraction < q->fraction)
@@ -174,8 +174,7 @@ f_cmp_fraction (const void *parg, const void *qarg)
 int
 mul_2exp_mod (int n, int p, int m)
 {
-  int  i;
-  for (i = 0; i < p; i++)
+  while (--p >= 0)
     n = (2 * n) % m;
   return n;
 }
@@ -213,7 +212,7 @@ generate_sq_res_0x100 (int limb_bits)
   int  i, res;
 
   nsq_res_0x100 = (0x100 + limb_bits - 1) / limb_bits;
-  sq_res_0x100 = xmalloc (nsq_res_0x100 * sizeof (*sq_res_0x100));
+  sq_res_0x100 = (mpz_t *) xmalloc (nsq_res_0x100 * sizeof (*sq_res_0x100));
 
   for (i = 0; i < nsq_res_0x100; i++)
     mpz_init_set_ui (sq_res_0x100[i], 0L);
@@ -244,8 +243,8 @@ generate_mod (int limb_bits, int nail_bits)
   /* no more than limb_bits many factors in a one limb modulus (and of
      course in reality nothing like that many) */
   factor_alloc = limb_bits;
-  factor = xmalloc (factor_alloc * sizeof (*factor));
-  rawfactor = xmalloc (factor_alloc * sizeof (*rawfactor));
+  factor = (struct factor_t *) xmalloc (factor_alloc * sizeof (*factor));
+  rawfactor = (struct rawfactor_t *) xmalloc (factor_alloc * sizeof (*rawfactor));
 
   if (numb_bits % 4 != 0)
     {
@@ -289,7 +288,7 @@ generate_mod (int limb_bits, int nail_bits)
     mpz_init (q);
     mpz_init (r);
 
-    for (i = 3; i <= max_divisor; i++)
+    for (i = 3; i <= max_divisor; i+=2)
       {
         if (! isprime (i))
           continue;
@@ -341,7 +340,7 @@ generate_mod (int limb_bits, int nail_bits)
 
       /* one copy of each small prime */
       mpz_set_ui (pp, 1L);
-      for (i = 3; i <= max_divisor; i++)
+      for (i = 3; i <= max_divisor; i+=2)
         {
           if (! isprime (i))
             continue;

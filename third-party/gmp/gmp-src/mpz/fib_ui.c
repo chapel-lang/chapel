@@ -1,6 +1,6 @@
 /* mpz_fib_ui -- calculate Fibonacci numbers.
 
-Copyright 2000-2002, 2005, 2012 Free Software Foundation, Inc.
+Copyright 2000-2002, 2005, 2012, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -60,7 +60,7 @@ mpz_fib_ui (mpz_ptr fn, unsigned long n)
   mp_ptr         fp, xp, yp;
   mp_size_t      size, xalloc;
   unsigned long  n2;
-  mp_limb_t      c, c2;
+  mp_limb_t      c;
   TMP_DECL;
 
   if (n <= FIB_TABLE_LIMIT)
@@ -72,7 +72,7 @@ mpz_fib_ui (mpz_ptr fn, unsigned long n)
 
   n2 = n/2;
   xalloc = MPN_FIB2_SIZE (n2) + 1;
-  fp = MPZ_REALLOC (fn, 2*xalloc+1);
+  fp = MPZ_NEWALLOC (fn, 2 * xalloc);
 
   TMP_MARK;
   TMP_ALLOC_LIMBS_2 (xp,xalloc, yp,xalloc);
@@ -93,8 +93,11 @@ mpz_fib_ui (mpz_ptr fn, unsigned long n)
       yp[size] = 0;
       ASSERT_NOCARRY (mpn_add_n_sub_n (xp, yp, xp, yp, size+1));
       xsize = size + (xp[size] != 0);
-      ysize = size + (yp[size] != 0);
+      ASSERT (yp[size] <= 1);
+      ysize = size + yp[size];
 #else
+      mp_limb_t  c2;
+
       c2 = mpn_lshift (fp, xp, size, 1);
       c = c2 + mpn_add_n (xp, fp, yp, size);
       xp[size] = c;
@@ -131,8 +134,12 @@ mpz_fib_ui (mpz_ptr fn, unsigned long n)
       /* F[2k] = F[k]*(F[k]+2F[k-1]) */
 
       mp_size_t  xsize, ysize;
+#if HAVE_NATIVE_mpn_addlsh1_n
+      c = mpn_addlsh1_n (yp, xp, yp, size);
+#else
       c = mpn_lshift (yp, yp, size, 1);
       c += mpn_add_n (yp, yp, xp, size);
+#endif
       yp[size] = c;
       xsize = size;
       ysize = size + (c != 0);

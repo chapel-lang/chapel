@@ -1,6 +1,6 @@
 dnl  x86-64 mpn_divrem_1 -- mpn by limb division.
 
-dnl  Copyright 2004, 2005, 2007-2010, 2012 Free Software Foundation, Inc.
+dnl  Copyright 2004, 2005, 2007-2010, 2012, 2014 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -138,9 +138,14 @@ L(44):
 IFSTD(`	push	%rdi		')
 IFSTD(`	push	%rsi		')
 	push	%r8
+IFSTD(`	sub	$8, %rsp	')
 IFSTD(`	mov	d, %rdi		')
+IFDOS(`	sub	$40, %rsp	')
 IFDOS(`	mov	d, %rcx		')
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_invert_limb)
+IFSTD(`	add	$8, %rsp	')
+IFDOS(`	add	$40, %rsp	')
 	pop	%r8
 IFSTD(`	pop	%rsi		')
 IFSTD(`	pop	%rdi		')
@@ -150,6 +155,7 @@ IFSTD(`	pop	%rdi		')
 	mov	%rbp, %rax
 	test	un, un
 	je	L(frac)
+
 L(ent):	mov	-8(up,un,8), %rbp
 	shr	R8(%rcx), %rax
 	shld	R8(%rcx), %rbp, %rax

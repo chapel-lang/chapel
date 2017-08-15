@@ -28,6 +28,7 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
    check_f, but enough differences to make a common loop or a set of macros
    seem like too much trouble. */
 
+#include "config.h"	/* needed for the HAVE_, could also move gmp incls */
 
 #include <stdarg.h>
 

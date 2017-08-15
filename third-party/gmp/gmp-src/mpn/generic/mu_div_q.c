@@ -106,7 +106,7 @@ mpn_mu_div_q (mp_ptr qp,
 	}
 
       /* The max error of mpn_mu_divappr_q is +4.  If the low quotient limb is
-	 greater than the max error, we cannot trust the quotient.  */
+	 smaller than the max error, we cannot trust the quotient.  */
       if (tp[0] > 4)
 	{
 	  MPN_COPY (qp, tp + 1, qn);

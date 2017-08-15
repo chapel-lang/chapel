@@ -181,6 +181,9 @@ mp_size_t  sqr_fft_modf_threshold       = MP_SIZE_T_MAX;
 mp_size_t  mullo_basecase_threshold     = MP_SIZE_T_MAX;
 mp_size_t  mullo_dc_threshold           = MP_SIZE_T_MAX;
 mp_size_t  mullo_mul_n_threshold        = MP_SIZE_T_MAX;
+mp_size_t  sqrlo_basecase_threshold     = MP_SIZE_T_MAX;
+mp_size_t  sqrlo_dc_threshold           = MP_SIZE_T_MAX;
+mp_size_t  sqrlo_sqr_threshold          = MP_SIZE_T_MAX;
 mp_size_t  mulmid_toom42_threshold      = MP_SIZE_T_MAX;
 mp_size_t  mulmod_bnm1_threshold        = MP_SIZE_T_MAX;
 mp_size_t  sqrmod_bnm1_threshold        = MP_SIZE_T_MAX;
@@ -387,9 +390,18 @@ analyze_dat (int final)
  * mpn/generic/divrem_1.c, mpn/generic/mod_1.c and mpz/fac_ui.c */
 
 mp_limb_t mpn_div_qr_1_tune (mp_ptr, mp_limb_t *, mp_srcptr, mp_size_t, mp_limb_t);
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 mp_limb_t mpn_divrem_1_tune (mp_ptr, mp_size_t, mp_srcptr, mp_size_t, mp_limb_t);
 mp_limb_t mpn_mod_1_tune (mp_srcptr, mp_size_t, mp_limb_t);
 void mpz_fac_ui_tune (mpz_ptr, unsigned long);
+
+#if defined (__cplusplus)
+}
+#endif
 
 double
 speed_mpn_mod_1_tune (struct speed_params *s)
@@ -858,8 +870,8 @@ cached_measure (mp_ptr rp, mp_srcptr ap, mp_srcptr bp, mp_size_t n, int k,
   do {									\
     fft_tab[idx].n = nval;						\
     fft_tab[idx].k = kval;						\
-    fft_tab[idx+1].n = -1;	/* sentinel */				\
-    fft_tab[idx+1].k = -1;						\
+    fft_tab[idx+1].n = (1 << 27) - 1;	/* sentinel, 27b wide field */	\
+    fft_tab[idx+1].k = (1 <<  5) - 1;					\
   } while (0)
 
 int
@@ -872,7 +884,6 @@ fftmes (mp_size_t nmin, mp_size_t nmax, int initial_k, struct fft_param_t *p, in
   int n_measurements;
   mp_limb_t *ap, *bp, *rp;
   mp_size_t alloc;
-  char *linepref;
   struct fft_table_nk *fft_tab;
 
   fft_tab = mpn_fft_table3[p->sqr];
@@ -896,18 +907,17 @@ fftmes (mp_size_t nmin, mp_size_t nmax, int initial_k, struct fft_param_t *p, in
 	{
 	  printf ("\\\n  { ");
 	  printf ("{%7u,%2u}", fft_tab[0].n, fft_tab[0].k);
-	  linepref = "    ";
 	}
 
       idx = 1;
     }
 
-  ap = malloc (sizeof (mp_limb_t));
+  ap = (mp_ptr) malloc (sizeof (mp_limb_t));
   if (p->sqr)
     bp = ap;
   else
-    bp = malloc (sizeof (mp_limb_t));
-  rp = malloc (sizeof (mp_limb_t));
+    bp = (mp_ptr) malloc (sizeof (mp_limb_t));
+  rp = (mp_ptr) malloc (sizeof (mp_limb_t));
   alloc = 1;
 
   /* Round n to comply to initial k value */
@@ -945,22 +955,22 @@ fftmes (mp_size_t nmin, mp_size_t nmax, int initial_k, struct fft_param_t *p, in
 	      alloc = n1;
 	      if (p->sqr)
 		{
-		  ap = realloc (ap, sizeof (mp_limb_t));
-		  rp = realloc (rp, sizeof (mp_limb_t));
-		  ap = bp = realloc (ap, alloc * sizeof (mp_limb_t));
+		  ap = (mp_ptr) realloc (ap, sizeof (mp_limb_t));
+		  rp = (mp_ptr) realloc (rp, sizeof (mp_limb_t));
+		  ap = bp = (mp_ptr) realloc (ap, alloc * sizeof (mp_limb_t));
 		  mpn_random (ap, alloc);
-		  rp = realloc (rp, alloc * sizeof (mp_limb_t));
+		  rp = (mp_ptr) realloc (rp, alloc * sizeof (mp_limb_t));
 		}
 	      else
 		{
-		  ap = realloc (ap, sizeof (mp_limb_t));
-		  bp = realloc (bp, sizeof (mp_limb_t));
-		  rp = realloc (rp, sizeof (mp_limb_t));
-		  ap = realloc (ap, alloc * sizeof (mp_limb_t));
+		  ap = (mp_ptr) realloc (ap, sizeof (mp_limb_t));
+		  bp = (mp_ptr) realloc (bp, sizeof (mp_limb_t));
+		  rp = (mp_ptr) realloc (rp, sizeof (mp_limb_t));
+		  ap = (mp_ptr) realloc (ap, alloc * sizeof (mp_limb_t));
 		  mpn_random (ap, alloc);
-		  bp = realloc (bp, alloc * sizeof (mp_limb_t));
+		  bp = (mp_ptr) realloc (bp, alloc * sizeof (mp_limb_t));
 		  mpn_random (bp, alloc);
-		  rp = realloc (rp, alloc * sizeof (mp_limb_t));
+		  rp = (mp_ptr) realloc (rp, alloc * sizeof (mp_limb_t));
 		}
 	    }
 
@@ -1369,17 +1379,64 @@ tune_mullo (void)
       print_define ("MULLO_DC_THRESHOLD", mullo_dc_threshold);
     }
 
-#if WANT_FFT
-  param.name = "MULLO_MUL_N_THRESHOLD";
-  param.min_size = mullo_dc_threshold;
-  param.max_size = 2 * mul_fft_threshold;
-  param.noprint = 0;
-  param.step_factor = 0.03;
-  one (&mullo_mul_n_threshold, &param);
-#else
-  print_define_remark ("MULLO_MUL_N_THRESHOLD", MP_SIZE_T_MAX,
-                           "without FFT use mullo forever");
-#endif
+  if (WANT_FFT && mul_fft_threshold < MP_SIZE_T_MAX / 2)
+    {
+      param.name = "MULLO_MUL_N_THRESHOLD";
+      param.min_size = mullo_dc_threshold;
+      param.max_size = 2 * mul_fft_threshold;
+      param.noprint = 0;
+      param.step_factor = 0.03;
+      one (&mullo_mul_n_threshold, &param);
+    }
+  else
+    print_define_remark ("MULLO_MUL_N_THRESHOLD", MP_SIZE_T_MAX,
+			 "without FFT use mullo forever");
+}
+
+void
+tune_sqrlo (void)
+{
+  static struct param_t  param;
+
+  param.function = speed_mpn_sqrlo;
+
+  param.name = "SQRLO_BASECASE_THRESHOLD";
+  param.min_size = 1;
+  param.min_is_always = 1;
+  param.max_size = SQRLO_BASECASE_THRESHOLD_LIMIT-1;
+  param.stop_factor = 1.5;
+  param.noprint = 1;
+  one (&sqrlo_basecase_threshold, &param);
+
+  param.name = "SQRLO_DC_THRESHOLD";
+  param.min_size = 8;
+  param.min_is_always = 0;
+  param.max_size = SQRLO_DC_THRESHOLD_LIMIT-1;
+  one (&sqrlo_dc_threshold, &param);
+
+  if (sqrlo_basecase_threshold >= sqrlo_dc_threshold)
+    {
+      print_define ("SQRLO_BASECASE_THRESHOLD", sqrlo_dc_threshold);
+      print_define_remark ("SQRLO_DC_THRESHOLD", 0, "never mpn_sqrlo_basecase");
+    }
+  else
+    {
+      print_define ("SQRLO_BASECASE_THRESHOLD", sqrlo_basecase_threshold);
+      print_define ("SQRLO_DC_THRESHOLD", sqrlo_dc_threshold);
+    }
+
+  if (WANT_FFT && sqr_fft_threshold < MP_SIZE_T_MAX / 2)
+    {
+      param.name = "SQRLO_SQR_THRESHOLD";
+      param.min_size = sqrlo_dc_threshold;
+      param.max_size = 2 * sqr_fft_threshold;
+      param.noprint = 0;
+      param.step_factor = 0.03;
+      one (&sqrlo_sqr_threshold, &param);
+    }
+  else
+    print_define_remark ("SQRLO_SQR_THRESHOLD", MP_SIZE_T_MAX,
+			 "without FFT use sqrlo forever");
 }
 
 void
@@ -1663,7 +1720,7 @@ tune_mu_bdiv (void)
     param.name = "MU_BDIV_QR_THRESHOLD";
     param.function = speed_mpn_dcpi1_bdiv_qr;
     param.function2 = speed_mpn_mu_bdiv_qr;
-    param.min_size = mul_toom22_threshold;
+    param.min_size = dc_bdiv_qr_threshold;
     param.max_size = 5000;
     param.step_factor = 0.02;
     one (&mu_bdiv_qr_threshold, &param);
@@ -1673,7 +1730,7 @@ tune_mu_bdiv (void)
     param.name = "MU_BDIV_Q_THRESHOLD";
     param.function = speed_mpn_dcpi1_bdiv_q;
     param.function2 = speed_mpn_mu_bdiv_q;
-    param.min_size = mul_toom22_threshold;
+    param.min_size = dc_bdiv_q_threshold;
     param.max_size = 5000;
     param.step_factor = 0.02;
     one (&mu_bdiv_q_threshold, &param);
@@ -1687,12 +1744,12 @@ tune_invertappr (void)
 
   param.function = speed_mpn_ni_invertappr;
   param.name = "INV_MULMOD_BNM1_THRESHOLD";
-  param.min_size = 4;
+  param.min_size = 5;
   one (&inv_mulmod_bnm1_threshold, &param);
 
   param.function = speed_mpn_invertappr;
   param.name = "INV_NEWTON_THRESHOLD";
-  param.min_size = 3;
+  param.min_size = 5;
   one (&inv_newton_threshold, &param);
 }
 
@@ -1703,7 +1760,7 @@ tune_invert (void)
 
   param.function = speed_mpn_invert;
   param.name = "INV_APPR_THRESHOLD";
-  param.min_size = 3;
+  param.min_size = 5;
   one (&inv_appr_threshold, &param);
 }
 
@@ -2603,7 +2660,7 @@ speed_mpn_pre_set_str (struct speed_params *s)
 
   TMP_MARK;
 
-  str = TMP_ALLOC (s->size);
+  str = (unsigned char *) TMP_ALLOC (s->size);
   for (i = 0; i < s->size; i++)
     str[i] = s->xp[i] % base;
 
@@ -2829,6 +2886,7 @@ all (void)
   printf ("\n");
 
   tune_mullo ();
+  tune_sqrlo ();
   printf("\n");
 
   tune_dc_div ();
@@ -2850,6 +2908,13 @@ all (void)
   tune_powm_sec ();
   printf("\n");
 
+  tune_get_str ();
+  tune_set_str ();
+  printf("\n");
+
+  tune_fac_ui ();
+  printf("\n");
+
   tune_matrix22_mul ();
   tune_hgcd ();
   tune_hgcd_appr ();
@@ -2857,13 +2922,6 @@ all (void)
   tune_gcd_dc ();
   tune_gcdext_dc ();
   tune_jacobi_base ();
-  printf("\n");
-
-  tune_get_str ();
-  tune_set_str ();
-  printf("\n");
-
-  tune_fac_ui ();
   printf("\n");
 
   time (&end_time);

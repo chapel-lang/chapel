@@ -54,12 +54,12 @@ mpn_dcpi1_div_q (mp_ptr qp, mp_ptr np, mp_size_t nn,
   ASSERT (nn - dn >= 3);
   ASSERT (dp[dn-1] & GMP_NUMB_HIGHBIT);
 
-  tp = TMP_SALLOC_LIMBS (nn + 1);
+  tp = TMP_ALLOC_LIMBS (nn + 1);
   MPN_COPY (tp + 1, np, nn);
   tp[0] = 0;
 
   qn = nn - dn;
-  wp = TMP_SALLOC_LIMBS (qn + 1);
+  wp = TMP_ALLOC_LIMBS (qn + 1);
 
   qh = mpn_dcpi1_divappr_q (wp, tp, nn + 1, dp, dn, dinv);
 

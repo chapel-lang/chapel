@@ -64,9 +64,16 @@ main (int argc, char **argv)
 
       /* printf ("%ld\n", SIZ (x2)); */
 
+      mpz_sqrt (temp, x2);
+      MPZ_CHECK_FORMAT (temp);
+
       mpz_sqrtrem (x, rem, x2);
       MPZ_CHECK_FORMAT (x);
       MPZ_CHECK_FORMAT (rem);
+
+      /* Are results different?  */
+      if (mpz_cmp (temp, x) != 0)
+	dump_abort (x2, x, rem);
 
       mpz_mul (temp, x, x);
 

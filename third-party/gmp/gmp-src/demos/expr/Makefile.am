@@ -29,7 +29,7 @@
 #  see https://www.gnu.org/licenses/.
 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/tests
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/tests
 
 # FIXME: This is a workaround for a bug in automake 1.8.4.  When the only
 # library is in EXTRA_LIBRARIES, $(ARFLAGS) is used but no default setting

@@ -205,3 +205,4 @@ L(one):
 	ret
 
 EPILOGUE()
+ASM_END()

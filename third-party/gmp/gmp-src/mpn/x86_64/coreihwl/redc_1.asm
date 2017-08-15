@@ -409,7 +409,7 @@ L(ed0):	mov	40(up,n,8), %rdx	C next iteration up[0]
 
 L(cj):
 IFSTD(`	mov	8(%rsp), %rdi		C param 1: rp
-	lea	16(%rsp), %rsp		C deallocate two slots
+	lea	16-8(%rsp), %rsp	C deallocate 2, add back for alignment
 	lea	(up,n,8), %rdx		C param 3: up - n
 	neg	R32(n)		')	C param 4: n
 
@@ -418,9 +418,13 @@ IFDOS(`	mov	up, %rdx		C param 2: up
 	neg	R32(n)
 	mov	n, %r9			C param 4: n
 	mov	8(%rsp), %rcx		C param 1: rp
-	lea	16(%rsp), %rsp	')	C deallocate two slots
+	lea	16-32-8(%rsp), %rsp')	C deallocate 2, allocate shadow, align
 
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_add_n)
+
+IFSTD(`	lea	8(%rsp), %rsp	')
+IFDOS(`	lea	32+8(%rsp), %rsp')
 
 L(ret):	pop	%r15
 	pop	%r14

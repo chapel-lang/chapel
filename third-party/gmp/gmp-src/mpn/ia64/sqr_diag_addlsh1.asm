@@ -60,6 +60,13 @@ define(`tp_param', `r33')  define(`tp', `r15')		C size: 2n - 2
 define(`up_param', `r34')  define(`up', `r31')		C size: n
 define(`n',  `r35')
 
+ifdef(`HAVE_ABI_32',`
+	define(`ABI64', `')
+	define(`ABI32', `$1')
+',`
+	define(`ABI64', `$1')
+	define(`ABI32', `')
+')
 
 ASM_START()
 PROLOGUE(mpn_sqr_diag_addlsh1)
@@ -69,76 +76,81 @@ PROLOGUE(mpn_sqr_diag_addlsh1)
 	.save	ar.lc, r3
 	.body
 
-.mmi;		alloc	r2 = ar.pfs, 4,24,0,24	C			M
-		nop	4711
+ {.mii;		alloc	r2 = ar.pfs, 4,24,0,24	C			M
 		mov	r3 = ar.lc		C			I0
-.mmi;		mov	tp = tp_param		C			M I
-		mov	up = up_param		C			M I
-		mov	rp = rp_param		C			M I
+	ABI64(`	nop	4711		')
+	ABI32(`	zxt4	n = n		')
+}{.mmi;	ABI64(`	mov	tp = tp_param	')	C			M I
+	ABI32(`	addp4	tp = 0, tp_param')	C			M I
+	ABI64(`	mov	up = up_param	')	C			M I
+	ABI32(`	addp4	up = 0, up_param')	C			M I
+	ABI64(`	mov	rp = rp_param	')	C			M I
+	ABI32(`	addp4	rp = 0, rp_param')	C			M I
 	;;
-.mmi;		ld8	r36 = [tp], 8		C			M
+}{.mmi;		ld8	r36 = [tp], 8		C			M
 		add	r20 = -2, n		C			M I
 		mov	r9 = ar.ec		C			I0
 	;;
-.mmi;		ld8	r32 = [tp], 8		C			M
+}{.mmi;		ld8	r32 = [tp], 8		C			M
 		mov	r16 = 0			C			M I
 		mov	ar.ec = 7		C			I0
 	;;
-.mmi;		nop	4711
+}{.mmi;		nop	4711
 		mov	r44 = 0			C			M I
 		mov	ar.lc = r20		C			I0
 	;;
-.mii;		mov	r33 = 0
+}{.mii;		mov	r33 = 0
 		mov	r10 = pr		C			I0
 		mov	pr.rot = 0x30000	C			I0
 	;;
-		br.cexit.spnt.few.clr	L(end)
+}		br.cexit.spnt.few.clr	L(end)
 
 dnl *** MAIN LOOP START ***
 	ALIGN(32)
 L(top):
-.mfi;	(p18)	ldf8	f33 = [up], 8		C			M
+ {.mfi;	(p18)	ldf8	f33 = [up], 8		C			M
 	(p20)	xma.l	f36 = f35, f35, f42	C			F
 	(p41)	cmpequc	p50, p0 = -1, r44	C			M I
-.mfi;		setfsig	f40 = r16		C			M23
+}{.mfi;		setfsig	f40 = r16		C			M23
 	(p20)	xma.hu	f38 = f35, f35, f42	C			F
 	(p23)	add	r50 = r41, r49		C			M I
 	;;
-.mmi;	(p16)	ld8	r36 = [tp], 8		C			M
+}{.mmi;	(p16)	ld8	r36 = [tp], 8		C			M
 	(p23)	cmpltu	p40, p0 = r50, r41	C cyout hi		M I
 	(p19)	shrp	r45 = r38, r35, 63	C non-critical		I0
-.mmi;	(p21)	getfsig	r39 = f39		C hi			M2
+}{.mmi;	(p21)	getfsig	r39 = f39		C hi			M2
 	(p24)	st8	[rp] = r51, 8		C hi			M23
 	(p41)	add	r44 = 1, r44		C			M I
 	;;
-.mmi;	(p16)	ld8	r32 = [tp], 8		C			M
+}{.mmi;	(p16)	ld8	r32 = [tp], 8		C			M
 	(p50)	cmpeqor	p40, p0 = -1, r50	C cyout hi		M I
 	(p17)	shrp	r16 = r33, r37, 63	C critical		I0
-.mmi;	(p21)	getfsig	r42 = f37		C lo			M2
+}{.mmi;	(p21)	getfsig	r42 = f37		C lo			M2
 	(p23)	st8	[rp] = r44, 8		C lo			M23
 	(p50)	add	r50 = 1, r50		C			M I
 	;;
-		br.ctop.sptk.few.clr L(top)	C			B
+}		br.ctop.sptk.few.clr L(top)	C			B
 dnl *** MAIN LOOP END ***
 	;;
 L(end):
-.mmi;		nop	4711
+ {.mmi;		nop	4711
 	(p41)	add	r44 = 1, r44		C			M I
 		shr.u	r48 = r39, 63		C			I0
 	;;
-.mmi;		st8	[rp] = r51, 8		C			M23
+}{.mmi;		st8	[rp] = r51, 8		C			M23
 	(p41)	cmpequc	p6, p0 = 0, r44		C			M I
 		add	r50 = r41, r48		C			M I
 	;;
-.mmi;		st8	[rp] = r44, 8		C			M23
+}{.mmi;		st8	[rp] = r44, 8		C			M23
 	(p6)	add	r50 = 1, r50		C			M I
 		mov	ar.lc = r3		C			I0
 	;;
-.mii;		st8	[rp] = r50		C			M23
+}{.mii;		st8	[rp] = r50		C			M23
 		mov	ar.ec = r9		C			I0
 		mov	pr = r10		C			I0
 	;;
-.mib;		nop	4711
+}{.mib;		nop	4711
 		mov	ar.pfs = r2		C			I0
 		br.ret.sptk.many b0		C			B
+}
 EPILOGUE()

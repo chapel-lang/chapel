@@ -36,7 +36,7 @@ mpf_init_set_d (mpf_ptr r, double val)
 {
   mp_size_t prec = __gmp_default_fp_limb_precision;
   r->_mp_prec = prec;
-  r->_mp_d = (mp_ptr) (*__gmp_allocate_func) ((size_t) (prec + 1) * GMP_LIMB_BYTES);
+  r->_mp_d = __GMP_ALLOCATE_FUNC_LIMBS (prec + 1);
 
   mpf_set_d (r, val);
 }

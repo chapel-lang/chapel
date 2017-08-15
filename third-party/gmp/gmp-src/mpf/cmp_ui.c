@@ -1,6 +1,6 @@
 /* mpf_cmp_ui -- Compare a float with an unsigned integer.
 
-Copyright 1993-1995, 1999, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1993-1995, 1999, 2001, 2002, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -39,8 +39,7 @@ mpf_cmp_ui (mpf_srcptr u, unsigned long int vval) __GMP_NOTHROW
   mp_exp_t uexp;
   mp_limb_t ulimb;
 
-  uexp = u->_mp_exp;
-  usize = u->_mp_size;
+  usize = SIZ (u);
 
   /* 1. Is U negative?  */
   if (usize < 0)
@@ -51,50 +50,39 @@ mpf_cmp_ui (mpf_srcptr u, unsigned long int vval) __GMP_NOTHROW
     return usize != 0;
 
   /* 2. Are the exponents different (V's exponent == 1)?  */
+  uexp = EXP (u);
+
 #if GMP_NAIL_BITS != 0
-  if (uexp > 1 + (vval > GMP_NUMB_MAX))
-    return 1;
-  if (uexp < 1 + (vval > GMP_NUMB_MAX))
-    return -1;
+  if (uexp != 1 + (vval > GMP_NUMB_MAX))
+    return (uexp < 1 + (vval > GMP_NUMB_MAX)) ? -1 : 1;
 #else
-  if (uexp > 1)
-    return 1;
-  if (uexp < 1)
-    return -1;
+  if (uexp != 1)
+    return (uexp < 1) ? -1 : 1;
 #endif
 
-  up = u->_mp_d;
+  up = PTR (u);
 
-  ulimb = up[usize - 1];
+  ASSERT (usize > 0);
+  ulimb = up[--usize];
 #if GMP_NAIL_BITS != 0
-  if (usize >= 2 && uexp == 2)
+  if (uexp == 2)
     {
       if ((ulimb >> GMP_NAIL_BITS) != 0)
 	return 1;
-      ulimb = (ulimb << GMP_NUMB_BITS) | up[usize - 2];
-      usize--;
+      ulimb = (ulimb << GMP_NUMB_BITS);
+      if (usize != 0) ulimb |= up[--usize];
     }
 #endif
-  usize--;
 
   /* 3. Compare the most significant mantissa limb with V.  */
-  if (ulimb > vval)
-    return 1;
-  else if (ulimb < vval)
-    return -1;
+  if (ulimb != vval)
+    return (ulimb < vval) ? -1 : 1;
 
   /* Ignore zeroes at the low end of U.  */
-  while (*up == 0)
-    {
-      up++;
-      usize--;
-    }
+  for (; *up == 0; ++up)
+    --usize;
 
   /* 4. Now, if the number of limbs are different, we have a difference
      since we have made sure the trailing limbs are not zero.  */
-  if (usize > 0)
-    return 1;
-
-  /* Wow, we got zero even if we tried hard to avoid it.  */
-  return 0;
+  return (usize > 0);
 }

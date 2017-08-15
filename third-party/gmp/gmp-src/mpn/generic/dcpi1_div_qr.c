@@ -104,7 +104,7 @@ mpn_dcpi1_div_qr (mp_ptr qp,
   ASSERT (nn - dn >= 3);	/* to adhere to mpn_sbpi1_div_qr's limits */
   ASSERT (dp[dn-1] & GMP_NUMB_HIGHBIT);
 
-  tp = TMP_SALLOC_LIMBS (dn);
+  tp = TMP_ALLOC_LIMBS (dn);
 
   qn = nn - dn;
   qp += qn;

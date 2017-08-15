@@ -1,6 +1,6 @@
 /* mpz_combit -- complement a specified bit.
 
-Copyright 2002, 2003, 2012 Free Software Foundation, Inc.
+Copyright 2002, 2003, 2012, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -47,7 +47,8 @@ mpz_combit (mpz_ptr d, mp_bitcnt_t bit_index)
 
   /* Check for the hairy case. d < 0, and we have all zero bits to the
      right of the bit to toggle. */
-  else if (limb_index < -dsize && mpn_zero_p (dp, limb_index)
+  else if (limb_index < -dsize
+	   && (limb_index == 0 || mpn_zero_p (dp, limb_index))
 	   && (dp[limb_index] & (bit - 1)) == 0)
     {
       ASSERT (dsize < 0);

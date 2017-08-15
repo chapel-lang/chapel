@@ -1,7 +1,7 @@
 /* mpq_cmp(u,v) -- Compare U, V.  Return positive, zero, or negative
    based on if U > V, U == V, or U < V.
 
-Copyright 1991, 1994, 1996, 2001, 2002, 2005 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2001, 2002, 2005, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -33,13 +33,15 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 #include "longlong.h"
 
-int
-mpq_cmp (const mpq_t op1, const mpq_t op2)
+static int
+mpq_cmp_numden (mpq_srcptr op1, mpz_srcptr num_op2, mpz_srcptr den_op2)
 {
   mp_size_t num1_size = SIZ(NUM(op1));
   mp_size_t den1_size = SIZ(DEN(op1));
-  mp_size_t num2_size = SIZ(NUM(op2));
-  mp_size_t den2_size = SIZ(DEN(op2));
+  mp_size_t num2_size = SIZ(num_op2);
+  mp_size_t den2_size = SIZ(den_op2);
+  int op2_is_int;
+  mp_limb_t d1h, d2h;
   mp_size_t tmp1_size, tmp2_size;
   mp_ptr tmp1_ptr, tmp2_ptr;
   mp_size_t num1_sign;
@@ -59,6 +61,23 @@ mpq_cmp (const mpq_t op1, const mpq_t op2)
 
   num1_sign = num1_size;
   num1_size = ABS (num1_size);
+
+  /* THINK: Does storing d1h and d2h make sense? */
+  d1h = PTR(DEN(op1))[den1_size - 1];
+  d2h = PTR(den_op2)[den2_size - 1];
+  op2_is_int = (den2_size | d2h) == 1;
+  if (op2_is_int == (den1_size | d1h)) /* Both ops are integers */
+    /* return mpz_cmp (NUM (op1), num_op2); */
+    {
+      int cmp;
+
+      if (num1_sign != num2_size)
+	return num1_sign - num2_size;
+
+      cmp = mpn_cmp (PTR(NUM(op1)), PTR(num_op2), num1_size);
+      return (num1_sign > 0 ? cmp : -cmp);
+    }
+
   num2_size = ABS (num2_size);
 
   tmp1_size = num1_size + den2_size;
@@ -72,7 +91,7 @@ mpq_cmp (const mpq_t op1, const mpq_t op2)
   if (tmp1_size > tmp2_size + 1)
     /* NUM1 x DEN2 is surely larger in magnitude than NUM2 x DEN1.  */
     return num1_sign;
-  if (tmp2_size > tmp1_size + 1)
+  if (tmp2_size + op2_is_int > tmp1_size + 1)
     /* NUM1 x DEN2 is surely smaller in magnitude than NUM2 x DEN1.  */
     return -num1_sign;
 
@@ -82,45 +101,69 @@ mpq_cmp (const mpq_t op1, const mpq_t op2)
     mp_bitcnt_t bits1, bits2;
 
     count_leading_zeros (cnt1, PTR(NUM(op1))[num1_size - 1]);
-    count_leading_zeros (cnt2, PTR(DEN(op2))[den2_size - 1]);
-    bits1 = tmp1_size * GMP_NUMB_BITS - cnt1 - cnt2 + 2 * GMP_NAIL_BITS;
+    count_leading_zeros (cnt2, d2h);
+    bits1 = (mp_bitcnt_t) tmp1_size * GMP_NUMB_BITS - cnt1 - cnt2 + 2 * GMP_NAIL_BITS;
 
-    count_leading_zeros (cnt1, PTR(NUM(op2))[num2_size - 1]);
-    count_leading_zeros (cnt2, PTR(DEN(op1))[den1_size - 1]);
-    bits2 = tmp2_size * GMP_NUMB_BITS - cnt1 - cnt2 + 2 * GMP_NAIL_BITS;
+    count_leading_zeros (cnt1, PTR(num_op2)[num2_size - 1]);
+    count_leading_zeros (cnt2, d1h);
+    bits2 = (mp_bitcnt_t) tmp2_size * GMP_NUMB_BITS - cnt1 - cnt2 + 2 * GMP_NAIL_BITS;
 
     if (bits1 > bits2 + 1)
       return num1_sign;
-    if (bits2 > bits1 + 1)
+    if (bits2 + op2_is_int > bits1 + 1)
       return -num1_sign;
   }
 
   /* 3. Finally, cross multiply and compare.  */
 
   TMP_MARK;
+  if (op2_is_int)
+    {
+      tmp2_ptr = TMP_ALLOC_LIMBS (tmp2_size);
+      tmp1_ptr = PTR(NUM(op1));
+      --tmp1_size;
+    }
+  else
+    {
   TMP_ALLOC_LIMBS_2 (tmp1_ptr,tmp1_size, tmp2_ptr,tmp2_size);
 
   if (num1_size >= den2_size)
     tmp1_size -= 0 == mpn_mul (tmp1_ptr,
 			       PTR(NUM(op1)), num1_size,
-			       PTR(DEN(op2)), den2_size);
+			       PTR(den_op2), den2_size);
   else
     tmp1_size -= 0 == mpn_mul (tmp1_ptr,
-			       PTR(DEN(op2)), den2_size,
+			       PTR(den_op2), den2_size,
 			       PTR(NUM(op1)), num1_size);
+    }
 
    if (num2_size >= den1_size)
      tmp2_size -= 0 == mpn_mul (tmp2_ptr,
-				PTR(NUM(op2)), num2_size,
+				PTR(num_op2), num2_size,
 				PTR(DEN(op1)), den1_size);
    else
      tmp2_size -= 0 == mpn_mul (tmp2_ptr,
 				PTR(DEN(op1)), den1_size,
-				PTR(NUM(op2)), num2_size);
+				PTR(num_op2), num2_size);
 
 
   cc = tmp1_size - tmp2_size != 0
     ? tmp1_size - tmp2_size : mpn_cmp (tmp1_ptr, tmp2_ptr, tmp1_size);
   TMP_FREE;
   return num1_sign < 0 ? -cc : cc;
+}
+
+int
+mpq_cmp (mpq_srcptr op1, mpq_srcptr op2)
+{
+  return mpq_cmp_numden (op1, NUM(op2), DEN(op2));
+}
+
+int
+mpq_cmp_z (mpq_srcptr op1, mpz_srcptr op2)
+{
+  const static mp_limb_t one = 1;
+  const static mpz_t den = MPZ_ROINIT_N ((mp_limb_t *) &one, 1);
+
+  return mpq_cmp_numden (op1, op2, den);
 }

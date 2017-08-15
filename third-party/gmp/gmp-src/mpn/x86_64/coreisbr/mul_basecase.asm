@@ -287,7 +287,7 @@ L(a100):lea	2(un), n		C un = 4, 8, 12, ...
 	adc	$0, w1
 	mov	(up,un,8), %rax
 	mul	v1
-	mov	8(rp,un,8), X1		C FIXME: Use un
+	mov	8(rp,un,8), X1
 	jmp	L(lo0)
 
 L(a110):lea	(un), n			C un = 2, 6, 10, ...

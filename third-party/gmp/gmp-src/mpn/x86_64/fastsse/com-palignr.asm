@@ -1,6 +1,6 @@
 dnl  AMD64 mpn_com optimised for CPUs with fast SSE copying and SSSE3.
 
-dnl  Copyright 2012, 2013 Free Software Foundation, Inc.
+dnl  Copyright 2012, 2013, 2015 Free Software Foundation, Inc.
 
 dnl  Contributed to the GNU project by Torbjorn Granlund.
 
@@ -36,13 +36,21 @@ C	     cycles/limb     cycles/limb     cycles/limb      good
 C              aligned	      unaligned	      best seen	     for cpu?
 C AMD K8,K9	 2.0		 illop		1.0/1.0		N
 C AMD K10	 0.85		 illop				Y/N
-C AMD bd1	 1.39		 ? 1.45				Y/N
+C AMD bull	 1.39		 ? 1.45				Y/N
+C AMD pile     0.8-1.4	       0.7-1.4				Y
+C AMD steam
+C AMD excavator
 C AMD bobcat	 1.97		 ? 8.17		1.5/1.5		N
+C AMD jaguar	 1.02		 1.02		0.91/0.91	N
 C Intel P4	 2.26		 illop				Y/N
-C Intel core2	 0.52		 0.82		opt/0.74	Y
+C Intel core	 0.52		 0.95		opt/0.74	Y
 C Intel NHM	 0.52		 0.65		opt/opt		Y
-C Intel SBR	 0.51		 0.55		opt/0.51	Y
+C Intel SBR	 0.51		 0.65		opt/opt		Y
+C Intel IBR	 0.50		 0.64		opt/0.57	Y
+C Intel HWL	 0.51		 0.58		opt/opt		Y
+C Intel BWL	 0.57		 0.69		opt/0.65	Y
 C Intel atom	 1.16		 1.70		opt/opt		Y
+C Intel SLM	 1.02		 1.52				N
 C VIA nano	 1.09		 1.10		opt/opt		Y
 
 C We use only 16-byte operations, except for unaligned top-most and bottom-most

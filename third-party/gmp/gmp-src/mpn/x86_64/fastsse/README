@@ -4,10 +4,11 @@ implementations of SSE operations, hence the name "fastsse".
 Current processors that might benefit from this code are:
 
   AMD K10
-  AMD Bulldozer
+  AMD Bulldozer/Piledriver/Steamroller/Excavator
   Intel Nocona
   Intel Nehalem/Westmere
   Intel Sandybridge/Ivybridge
+  Intel Haswell/Broadwell
   VIA Nano
 
 Current processors that do not benefit from this code are:

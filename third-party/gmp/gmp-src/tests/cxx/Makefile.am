@@ -24,7 +24,7 @@
 # linker.  FIXME: Presumably libtool should do something about this itself.
 # -lm is needed for t-ops2 which compares the results of trunc and mpf_trunc.
 #
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/tests
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/tests
 LDADD = -L$(top_builddir)/.libs \
   $(top_builddir)/tests/libtests.la \
   $(top_builddir)/libgmpxx.la \

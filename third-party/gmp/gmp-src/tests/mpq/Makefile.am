@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 1996, 1999-2002, 2012 Free Software Foundation, Inc.
+# Copyright 1996, 1999-2002, 2012, 2015 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library test suite.
 #
@@ -18,11 +18,11 @@
 # the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.
 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/tests
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/tests
 LDADD = $(top_builddir)/tests/libtests.la $(top_builddir)/libgmp.la
 
 check_PROGRAMS = t-aors t-cmp t-cmp_ui t-cmp_si t-equal t-get_d t-get_str \
-  t-inp_str t-inv t-md_2exp t-set_f t-set_str io reuse
+  t-inp_str t-inv t-md_2exp t-set_f t-set_str io reuse t-cmp_z
 TESTS = $(check_PROGRAMS)
 
 # Temporary files used by the tests.  Removed automatically if the tests

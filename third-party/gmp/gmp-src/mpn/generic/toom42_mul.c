@@ -11,7 +11,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2008, 2012 Free Software Foundation, Inc.
+Copyright 2006-2008, 2012, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -75,6 +75,7 @@ mpn_toom42_mul (mp_ptr pp,
   mp_ptr a0_a2;
   mp_ptr as1, asm1, as2;
   mp_ptr bs1, bsm1, bs2;
+  mp_ptr tmp;
   TMP_DECL;
 
 #define a0  ap
@@ -94,13 +95,13 @@ mpn_toom42_mul (mp_ptr pp,
 
   TMP_MARK;
 
-  as1 = TMP_SALLOC_LIMBS (n + 1);
-  asm1 = TMP_SALLOC_LIMBS (n + 1);
-  as2 = TMP_SALLOC_LIMBS (n + 1);
-
-  bs1 = TMP_SALLOC_LIMBS (n + 1);
-  bsm1 = TMP_SALLOC_LIMBS (n);
-  bs2 = TMP_SALLOC_LIMBS (n + 1);
+  tmp = TMP_ALLOC_LIMBS (6 * n + 5);
+  as1  = tmp; tmp += n + 1;
+  asm1 = tmp; tmp += n + 1;
+  as2  = tmp; tmp += n + 1;
+  bs1  = tmp; tmp += n + 1;
+  bsm1 = tmp; tmp += n;
+  bs2  = tmp; tmp += n + 1;
 
   a0_a2 = pp;
 

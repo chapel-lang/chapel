@@ -56,7 +56,7 @@ which components of GNU MP).
 
 			OVERVIEW OF GNU MP
 
-There are five classes of functions in GNU MP.
+There are four classes of functions in GNU MP.
 
  1. Signed integer arithmetic functions (mpz).  These functions are intended
     to be easy to use, with their regular interface.  The associated type is
@@ -81,11 +81,6 @@ There are five classes of functions in GNU MP.
 
     Almost all calculations, in the entire package, are made by calling these
     low-level functions.
-
- 5. Berkeley MP compatible functions.
-
-    To use these functions, include the file "mp.h".  You can test if you are
-    using the GNU version by testing if the symbol __GNU_MP__ is defined.
 
 For more information on how to use GNU MP, please refer to the documentation.
 It is composed from the file doc/gmp.texi, and can be displayed on the screen

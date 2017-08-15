@@ -3,7 +3,7 @@
 # GMP config.guess wrapper.
 
 
-# Copyright 2000-2006, 2008, 2011-2014 Free Software Foundation, Inc.
+# Copyright 2000-2006, 2008, 2011-2016 Free Software Foundation, Inc.
 #
 #  This file is part of the GNU MP Library.
 #
@@ -172,35 +172,50 @@ EOF
   fi
   ;;
 
-arm*-*-*)
-  cpu_code=`sed -n 's/^CPU part.*\(0x.*\)$/\1/p' /proc/cpuinfo 2>/dev/null`
-  case "$cpu_code" in
-      0xa10 | 0xa11 | 0xb11)			# v4 strongarm/sa1100
-		exact_cpu="armsa1";;
-      0x915 | 0x925 | \
-      0x920 | 0x922 | 0x940)			# v4
-		exact_cpu="arm9tdmi";;
-      0x210 | 0x290 | 0x2d0 | \
-      0x212 | 0x292 | 0x2d2 | \
-      0x411)	exact_cpu="armxscale";;		# v5 pxa2xx
-      0x926 | 0x946 | 0x966 | 0x968)		# v5te/v5tej
-		exact_cpu="arm9te";;
-      0xa20 | 0xa22 | 0xa26)			# v5te
-		exact_cpu="arm10";;
-      0xb02)	exact_cpu="arm11mpcore";;	# v6
-      0xb36)	exact_cpu="arm1136";;		# v6
-      0xb56)	exact_cpu="arm1156";;		# v6t2
-      0xb76)	exact_cpu="arm1176";;		# v6
-      0xc05)	exact_cpu="armcortexa5";;	# v7a
-      0xc07)	exact_cpu="armcortexa7";;	# v7a
-      0xc08)	exact_cpu="armcortexa8";;	# v7a
-      0xc09)	exact_cpu="armcortexa9";;	# v7a
-      0xc0f)	exact_cpu="armcortexa15";;	# v7a
-      0xc14)	exact_cpu="armcortexr4";;	# v7r
-      0xc15)	exact_cpu="armcortexr5";;	# v7r
-      0xc23)	exact_cpu="armcortexm3";;	# v7m
+arm*-*-* | aarch64-*-*)
+  cpu_code=`sed -n 's/^CPU part.*\(0x.*\)$/\1/p' /proc/cpuinfo 2>/dev/null | sort -r | head -n 1 2>/dev/null`
+  cpu_implementer=`sed -n 's/^CPU implementer.*\(0x.*\)$/\1/p' /proc/cpuinfo 2>/dev/null | head -n 1 2>/dev/null`
+  case "${cpu_implementer}_${cpu_code}" in
+    0x53_0x001) exact_cpu=armexynosm1  ;;
+    0x51_0x800) exact_cpu=armcortexa57 ;;
+    0x43_0x0a1) exact_cpu=armthunderx  ;;
+    0x50_0x000) exact_cpu=armxgene1    ;;
   esac
-  exact_cpu="${exact_cpu}`sed -n 's;^Features.*\(neon\).*;\1;p' /proc/cpuinfo 2>/dev/null`"
+  if test -z "$exact_cpu"; then
+    case "$cpu_code" in
+	0xa10 | 0xa11 | 0xb11)			# v4 strongarm/sa1100
+		exact_cpu="armsa1";;
+	0x915 | 0x925 | \
+	0x920 | 0x922 | 0x940)			# v4
+		exact_cpu="arm9tdmi";;
+	0x210 | 0x290 | 0x2d0 | \
+	0x212 | 0x292 | 0x2d2 | \
+	0x411)	exact_cpu="armxscale";;		# v5 pxa2xx
+	0x926 | 0x946 | 0x966 | 0x968)		# v5te/v5tej
+		exact_cpu="arm9te";;
+	0xa20 | 0xa22 | 0xa26)			# v5te
+		exact_cpu="arm10";;
+	0xb02)	exact_cpu="arm11mpcore";;	# v6
+	0xb36)	exact_cpu="arm1136";;		# v6
+	0xb56)	exact_cpu="arm1156";;		# v6t2
+	0xb76)	exact_cpu="arm1176";;		# v6
+	0xc05)	exact_cpu="armcortexa5";;	# v7a
+	0xc07)	exact_cpu="armcortexa7";;	# v7a
+	0xc08)	exact_cpu="armcortexa8";;	# v7a
+	0xc09)	exact_cpu="armcortexa9";;	# v7a
+	0xc0f)	exact_cpu="armcortexa15";;	# v7a
+	0xc14)	exact_cpu="armcortexr4";;	# v7r
+	0xc15)	exact_cpu="armcortexr5";;	# v7r
+	0xc23)	exact_cpu="armcortexm3";;	# v7m
+
+	0xd04)	exact_cpu="armcortexa35";;	# v8-32
+	0xd03)	exact_cpu="armcortexa53";;	# v8
+	0xd07)	exact_cpu="armcortexa57";;	# v8
+	0xd08)	exact_cpu="armcortexa72";;	# v8
+	*)	exact_cpu=$guess_cpu;;
+    esac
+  fi
+  exact_cpu="${exact_cpu}`sed -n 's;^Features.*\(neon\).*;\1;p' /proc/cpuinfo 2>/dev/null | head -n 1 2>/dev/null`"
   ;;
 
 ia64*-*-*)
@@ -242,7 +257,8 @@ main ()
       switch ((getcpuid(3LL) >> 24) & 0xFF) {
       case 0x07: puts ("itanium");  break;
       case 0x1F: puts ("itanium2"); break; /* McKinley, Madison */
-      case 0x20: puts ("itanium2"); break; /* Montecito */
+      case 0x20: puts ("itanium2"); break; /* Montecito, Montvale, Tukwila */
+      case 0x21: puts ("itanium2"); break; /* Poulson */
       }
     }
   return 0;
@@ -376,73 +392,8 @@ rs6000-*-* | powerpc*-*-*)
   # (as noted below).  But the man page says the command is still "under
   # development", so it doesn't seem wise to use it just yet, not while
   # there's an alternative.
-  #
-  # Try to read the PVR.  mfpvr is a protected instruction, NetBSD, MacOS
-  # and AIX don't allow it in user mode, but the Linux kernel does.
-  #
-  # Using explicit bytes for mfpvr avoids worrying about assembler syntax
-  # and underscores.  "char"s are used instead of "int"s to avoid worrying
-  # whether sizeof(int)==4 or if it's the right endianness.
-  #
-  # Note this is no good on AIX, since a C function there is the address of
-  # a function descriptor, not actual code.  But this doesn't matter since
-  # AIX doesn't allow mfpvr anyway.
-  #
-  eval $set_cc_for_build
-  cat >$dummy.c <<\EOF
-#include <stdio.h>
-struct {
-  int   n;  /* force 4-byte alignment */
-  char  a[8];
-} getpvr = {
-  0,
-  {
-    0x7c, 0x7f, 0x42, 0xa6,  /* mfpvr r3 */
-    0x4e, 0x80, 0x00, 0x20,  /* blr      */
-  }
-};
-int
-main ()
-{
-  unsigned  (*fun)();
-  unsigned  pvr;
 
-  /* a separate "fun" variable is necessary for gcc 2.95.2 on MacOS,
-     it gets a compiler error on a combined cast and call */
-  fun = (unsigned (*)()) getpvr.a;
-  pvr = (*fun) ();
-
-  switch (pvr >> 16) {
-  case 0x0001: puts ("powerpc601");  break;
-  case 0x0003: puts ("powerpc603");  break;
-  case 0x0004: puts ("powerpc604");  break;
-  case 0x0006: puts ("powerpc603e"); break;
-  case 0x0007: puts ("powerpc603e"); break;  /* 603ev */
-  case 0x0008: puts ("powerpc750");  break;
-  case 0x0009: puts ("powerpc604e"); break;
-  case 0x000a: puts ("powerpc604e"); break;  /* 604ev5 */
-  case 0x000c: puts ("powerpc7400"); break;
-  case 0x0041: puts ("powerpc630");  break;
-  case 0x0050: puts ("powerpc860");  break;
-  case 0x8000: puts ("powerpc7450"); break;
-  case 0x8001: puts ("powerpc7455"); break;
-  case 0x8002: puts ("powerpc7457"); break;
-  case 0x8003: puts ("powerpc7447"); break; /* really 7447A */
-  case 0x800c: puts ("powerpc7410"); break;
-  }
-  return 0;
-}
-EOF
-  if ($CC_FOR_BUILD $dummy.c -o $dummy) >/dev/null 2>&1; then
-    # This style construct is needed on AIX 4.3 to suppress the SIGILL error
-    # from (*fun)().  Using $SHELL -c $dummy 2>/dev/null doesn't work.
-    { x=`$dummy`; } 2>/dev/null
-    if test -n "$x"; then
-      exact_cpu=$x
-    fi
-  fi
-
-  # Grep the linux kernel /proc/cpuinfo pseudo-file.
+  # Grep the /proc/cpuinfo pseudo-file.
   # Anything unrecognised is ignored, since of course we mustn't spit out
   # a cpu type config.sub doesn't know.
   if test -z "$exact_cpu" && test -f /proc/cpuinfo; then
@@ -456,9 +407,60 @@ EOF
       970??)   exact_cpu="powerpc970" ;;
       603 | 603e | 604 | 604e | 750 | 821 | 860)
         exact_cpu="powerpc$x" ;;
-      POWER[4-9])
-        exact_cpu=`echo $x | sed "s;POWER;power;"` ;;
+      POWER[4-9]*)
+        exact_cpu=`echo $x | sed -e "s;POWER;power;" -e "s;[a-zA-Z]*$;;"` ;;
     esac
+  fi
+
+  # Try to read the PVR.  mfpvr is a protected instruction, NetBSD, MacOS
+  # and AIX don't allow it in user mode, but the Linux kernel does.
+  #
+  # Note this is no good on AIX, since a C function there is the address of
+  # a function descriptor, not actual code.  But this doesn't matter since
+  # AIX doesn't allow mfpvr anyway.
+  #
+  if test -z "$exact_cpu"; then
+    eval $set_cc_for_build
+    cat >$dummy.c <<\EOF
+#include <stdio.h>
+int
+main ()
+{
+  unsigned  pvr;
+
+  asm ("mfpvr	%0" : "=r" (pvr));
+
+  switch (pvr >> 16) {
+  case 0x0001: puts ("powerpc601");  break;
+  case 0x0003: puts ("powerpc603");  break;
+  case 0x0004: puts ("powerpc604");  break;
+  case 0x0006: puts ("powerpc603e"); break;
+  case 0x0007: puts ("powerpc603e"); break;  /* 603ev */
+  case 0x0008: puts ("powerpc750");  break;
+  case 0x0009: puts ("powerpc604e"); break;
+  case 0x000a: puts ("powerpc604e"); break;  /* 604ev5 */
+  case 0x000c: puts ("powerpc7400"); break;
+  case 0x0041: puts ("powerpc630");  break;
+  case 0x003f: puts ("power7");      break;
+  case 0x004b: puts ("power8");      break;
+  case 0x0050: puts ("powerpc860");  break;
+  case 0x8000: puts ("powerpc7450"); break;
+  case 0x8001: puts ("powerpc7455"); break;
+  case 0x8002: puts ("powerpc7457"); break;
+  case 0x8003: puts ("powerpc7447"); break; /* really 7447A */
+  case 0x800c: puts ("powerpc7410"); break;
+  }
+  return 0;
+}
+EOF
+    if ($CC_FOR_BUILD $dummy.c -o $dummy) >/dev/null 2>&1; then
+      # This style construct is needed on AIX 4.3 to suppress the SIGILL error
+      # from (*fun)().  Using $SHELL -c $dummy 2>/dev/null doesn't work.
+      { x=`$dummy`; } 2>/dev/null
+      if test -n "$x"; then
+	exact_cpu=$x
+      fi
+    fi
   fi
 
   if test -z "$exact_cpu"; then
@@ -508,6 +510,9 @@ main ()
 #endif
 #ifdef POWER_7
   case POWER_7:    puts ("power7"); break;
+#endif
+#ifdef POWER_8
+  case POWER_8:    puts ("power8"); break;
 #endif
   default:
     if (_system_configuration.architecture == POWER_RS)
@@ -592,6 +597,8 @@ sparc-*-* | sparc64-*-*)
     elif grep 'cpu.*MB86904' /proc/cpuinfo >/dev/null; then
       # actually MicroSPARC-II
       exact_cpu=microsparc
+    elif grep 'cpu.*UltraSparc T5' /proc/cpuinfo >/dev/null; then
+      exact_cpu="ultrasparct5"
     elif grep 'cpu.*UltraSparc T4' /proc/cpuinfo >/dev/null; then
       exact_cpu="ultrasparct4"
     elif grep 'cpu.*UltraSparc T3' /proc/cpuinfo >/dev/null; then
@@ -655,7 +662,11 @@ sparc-*-* | sparc64-*-*)
   for prtconfopt in "" "-vp"; do
     if test -z "$exact_cpu"; then
       if $SHELL -c "/usr/sbin/prtconf $prtconfopt" 2>/dev/null >$dummy; then
-	if grep 'SUNW,UltraSPARC-T3' $dummy >/dev/null; then
+	if grep 'SUNW,UltraSPARC-T5' $dummy >/dev/null; then
+	  exact_cpu=ultrasparct5
+	elif grep 'SUNW,UltraSPARC-T4' $dummy >/dev/null; then
+	  exact_cpu=ultrasparct4
+	elif grep 'SUNW,UltraSPARC-T3' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct3
 	elif grep 'SUNW,UltraSPARC-T2' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct2
@@ -693,7 +704,11 @@ sparc-*-* | sparc64-*-*)
   #
   if test -z "$exact_cpu"; then
     if $SHELL -c "/sbin/sysctl hw.model" 2>/dev/null >$dummy; then
-      if grep -i 'UltraSparc-T3' $dummy >/dev/null; then
+      if grep -i 'UltraSparc-T5' $dummy >/dev/null; then
+        exact_cpu=ultrasparct5
+      elif grep -i 'UltraSparc-T4' $dummy >/dev/null; then
+        exact_cpu=ultrasparct4
+      elif grep -i 'UltraSparc-T3' $dummy >/dev/null; then
         exact_cpu=ultrasparct3
       elif grep -i 'UltraSparc-T2' $dummy >/dev/null; then
         exact_cpu=ultrasparct2
@@ -748,25 +763,69 @@ i?86-*-* | amd64-*-* | x86_64-*-*)
 extern "C"
 #endif
 unsigned int cpuid (int, char *, char *, int);
+
+int
+gmp_workaround_skylake_cpuid_bug ()
+{
+  char feature_string[49];
+  char processor_name_string[49];
+  static const char *bad_cpus[] = {" G44", " G45", " G39" /* , "6600" */ };
+  int i;
+
+  /* Example strings:                                   */
+  /* "Intel(R) Pentium(R) CPU G4400 @ 3.30GHz"          */
+  /* "Intel(R) Core(TM) i5-6600K CPU @ 3.50GHz"         */
+  /*                  ^               ^               ^ */
+  /*     0x80000002       0x80000003      0x80000004    */
+  /* We match out just the 0x80000003 part here. */
+
+  /* In their infinitive wisdom, Intel decided to use one register order for
+     the vendor string, and another for the processor name string.  We shuffle
+     things about here, rather than write a new variant of our assembly cpuid.
+  */
+
+  unsigned int eax, ebx, ecx, edx;
+  eax = CPUID (feature_string, 0x80000003);
+  ebx = ((unsigned int *)feature_string)[0];
+  edx = ((unsigned int *)feature_string)[1];
+  ecx = ((unsigned int *)feature_string)[2];
+
+  ((unsigned int *) (processor_name_string))[0] = eax;
+  ((unsigned int *) (processor_name_string))[1] = ebx;
+  ((unsigned int *) (processor_name_string))[2] = ecx;
+  ((unsigned int *) (processor_name_string))[3] = edx;
+
+  processor_name_string[16] = 0;
+
+  for (i = 0; i < sizeof (bad_cpus) / sizeof (char *); i++)
+    {
+      if (strstr (processor_name_string, bad_cpus[i]) != 0)
+	return 1;
+    }
+  return 0;
+}
+
 int
 main ()
 {
   char vendor_string[13];
-  char dummy_string[12];
+  char feature_string[12];
   long fms;
-  int family, model, stepping;
-  const char *modelstr;
-  int cpu_64bit = 0;
-  int cpuid_64bit;
+  int family, model;
+  const char *modelstr, *suffix;
+  int cpu_64bit = 0, cpu_avx = 0;
+  int cpuid_64bit, cpuid_avx, cpuid_osxsave;
 
   CPUID (vendor_string, 0);
   vendor_string[12] = 0;
 
-  fms = CPUID (dummy_string, 1);
+  fms = CPUID (feature_string, 1);
 
   family = ((fms >> 8) & 0xf) + ((fms >> 20) & 0xff);
   model = ((fms >> 4) & 0xf) + ((fms >> 12) & 0xf0);
-  stepping = fms & 0xf;
+
+  cpuid_avx     = (feature_string[11] >> 4) & 1;
+  cpuid_osxsave = (feature_string[11] >> 3) & 1;
 
   modelstr = "$guess_cpu";
 
@@ -782,46 +841,61 @@ main ()
 	  else if (model >= 4)	modelstr = "pentiummmx";
 	  break;
 	case 6:
-          if (model <= 1)                        modelstr = "pentiumpro";
-          else if (model <= 6)                   modelstr = "pentium2";
-          else if (model <= 8)                   modelstr = "pentium3";
-          else if (model <= 9)                   modelstr = "pentiumm";
-          else if (model <= 0x0c)                modelstr = "pentium3";
-          else if (model <= 0x0e)                modelstr = "pentiumm";
-          else if (model <= 0x19) cpu_64bit = 1, modelstr = "core2";
-          else if (model == 0x1a) cpu_64bit = 1, modelstr = "coreinhm"; /* NHM Gainestown */
-          else if (model == 0x1c) cpu_64bit = 1, modelstr = "atom";     /* Silverthorne */
-          else if (model == 0x1d) cpu_64bit = 1, modelstr = "core2";    /* PNR Dunnington */
-          else if (model == 0x1e) cpu_64bit = 1, modelstr = "coreinhm"; /* NHM Lynnfield/Jasper */
-          else if (model == 0x25) cpu_64bit = 1, modelstr = "coreiwsm"; /* WSM Clarkdale/Arrandale */
-          else if (model == 0x26) cpu_64bit = 1, modelstr = "atom";     /* Lincroft */
-          else if (model == 0x27) cpu_64bit = 1, modelstr = "atom";     /* Saltwell */
-          else if (model == 0x2a) cpu_64bit = 1, modelstr = "coreisbr"; /* SB */
-          else if (model == 0x2c) cpu_64bit = 1, modelstr = "coreiwsm"; /* WSM Gulftown */
-          else if (model == 0x2d) cpu_64bit = 1, modelstr = "coreisbr"; /* SBC-EP */
-          else if (model == 0x2e) cpu_64bit = 1, modelstr = "coreinhm"; /* NHM Beckton */
-          else if (model == 0x2f) cpu_64bit = 1, modelstr = "coreiwsm"; /* WSM Eagleton */
-          else if (model == 0x36) cpu_64bit = 1, modelstr = "atom";     /* Cedarview/Saltwell */
-          else if (model == 0x37) cpu_64bit = 1, modelstr = "coreinhm"; /* Atom Silvermont */
-          else if (model == 0x3a) cpu_64bit = 1, modelstr = "coreisbr"; /* IBR */
-          else if (model == 0x3c) cpu_64bit = 1, modelstr = "coreihwl"; /* Haswell client */
-          else if (model == 0x3d) cpu_64bit = 1, modelstr = "coreibwl"; /* Broadwell */
-          else if (model == 0x3e) cpu_64bit = 1, modelstr = "coreisbr"; /* Ivytown */
-          else if (model == 0x3f) cpu_64bit = 1, modelstr = "coreihwl"; /* Haswell server */
-          else if (model == 0x45) cpu_64bit = 1, modelstr = "coreihwl"; /* Haswell ULT */
-          else if (model == 0x46) cpu_64bit = 1, modelstr = "coreihwl"; /* Crystal Well */
-          else if (model == 0x4d) cpu_64bit = 1, modelstr = "coreinhm"; /* Silvermont/Avoton */
-          else if (model == 0x4f) cpu_64bit = 1, modelstr = "coreibwl"; /* Broadwell server */
-          else if (model == 0x56) cpu_64bit = 1, modelstr = "coreibwl"; /* Broadwell microserver */
-          else cpu_64bit = 1, modelstr = "corei"; /* default */
+          if (model <= 1)                                   modelstr = "pentiumpro";
+          else if (model <= 6)                              modelstr = "pentium2";
+          else if (model <= 8)                              modelstr = "pentium3";
+          else if (model <= 9)                              modelstr = "pentiumm";
+          else if (model <= 0x0c)                           modelstr = "pentium3";
+          else if (model <= 0x0e)                           modelstr = "pentiumm";
+          else if (model <= 0x19) cpu_64bit = 1,            modelstr = "core2";
+          else if (model == 0x1a) cpu_64bit = 1,            modelstr = "nehalem";    /* NHM Gainestown */
+          else if (model == 0x1c) cpu_64bit = 1,            modelstr = "atom";       /* Silverthorne */
+          else if (model == 0x1d) cpu_64bit = 1,            modelstr = "core2";      /* PNR Dunnington */
+          else if (model == 0x1e) cpu_64bit = 1,            modelstr = "nehalem";    /* NHM Lynnfield/Jasper */
+          else if (model == 0x25) cpu_64bit = 1,            modelstr = "westmere";   /* WSM Clarkdale/Arrandale */
+          else if (model == 0x26) cpu_64bit = 1,            modelstr = "atom";       /* Lincroft */
+          else if (model == 0x27) cpu_64bit = 1,            modelstr = "atom";       /* Saltwell */
+          else if (model == 0x2a) cpu_64bit = 1, cpu_avx=1, modelstr = "sandybridge";/* SB */
+          else if (model == 0x2c) cpu_64bit = 1,            modelstr = "westmere";   /* WSM Gulftown */
+          else if (model == 0x2d) cpu_64bit = 1, cpu_avx=1, modelstr = "sandybridge";/* SBC-EP */
+          else if (model == 0x2e) cpu_64bit = 1,            modelstr = "nehalem";    /* NHM Beckton */
+          else if (model == 0x2f) cpu_64bit = 1,            modelstr = "westmere";   /* WSM Eagleton */
+          else if (model == 0x36) cpu_64bit = 1,            modelstr = "atom";       /* Cedarview/Saltwell */
+          else if (model == 0x37) cpu_64bit = 1,            modelstr = "silvermont"; /* Silvermont */
+          else if (model == 0x3a) cpu_64bit = 1, cpu_avx=1, modelstr = "ivybridge";  /* IBR */
+          else if (model == 0x3c) cpu_64bit = 1, cpu_avx=1, modelstr = "haswell";    /* Haswell client */
+          else if (model == 0x3d) cpu_64bit = 1, cpu_avx=1, modelstr = "broadwell";  /* Broadwell */
+          else if (model == 0x3e) cpu_64bit = 1, cpu_avx=1, modelstr = "ivybridge";  /* Ivytown */
+          else if (model == 0x3f) cpu_64bit = 1, cpu_avx=1, modelstr = "haswell";    /* Haswell server */
+          else if (model == 0x45) cpu_64bit = 1, cpu_avx=1, modelstr = "haswell";    /* Haswell ULT */
+          else if (model == 0x46) cpu_64bit = 1, cpu_avx=1, modelstr = "haswell";    /* Crystal Well */
+          else if (model == 0x47) cpu_64bit = 1, cpu_avx=1, modelstr = "broadwell";  /* Broadwell */
+          else if (model == 0x4a) cpu_64bit = 1,            modelstr = "silvermont"; /* Silvermont */
+          else if (model == 0x4c) cpu_64bit = 1,            modelstr = "silvermont"; /* Airmont */
+          else if (model == 0x4d) cpu_64bit = 1,            modelstr = "silvermont"; /* Silvermont/Avoton */
+          else if (model == 0x4e) cpu_64bit = 1, cpu_avx=1, modelstr = "skylake";    /* Skylake client */
+          else if (model == 0x4f) cpu_64bit = 1, cpu_avx=1, modelstr = "broadwell";  /* Broadwell server */
+          else if (model == 0x55) cpu_64bit = 1, cpu_avx=1, modelstr = "skylake";    /* Skylake server */
+          else if (model == 0x56) cpu_64bit = 1, cpu_avx=1, modelstr = "broadwell";  /* Broadwell microserver */
+          else if (model == 0x57) cpu_64bit = 1,            modelstr = "knightslanding"; /* aka Xeon Phi */
+          else if (model == 0x5a) cpu_64bit = 1,            modelstr = "silvermont"; /* Silvermont */
+          else if (model == 0x5c) cpu_64bit = 1,            modelstr = "goldmont";   /* Goldmont */
+          else if (model == 0x5e) cpu_64bit = 1, cpu_avx=1, modelstr = "skylake";    /* Skylake */
+          else if (model == 0x5f) cpu_64bit = 1,            modelstr = "goldmont";   /* Goldmont */
+          else if (model == 0x8e) cpu_64bit = 1, cpu_avx=1, modelstr = "kabylake";   /* Kabylake Y/U */
+          else if (model == 0x9e) cpu_64bit = 1, cpu_avx=1, modelstr = "kabylake";   /* Kabylake desktop */
+          else                    cpu_64bit = 1,            modelstr = "nehalem";    /* default */
 
-	  if (strcmp (modelstr, "coreihwl") == 0)
+	  if (strcmp (modelstr, "haswell") == 0 ||
+	      strcmp (modelstr, "broadwell") == 0 ||
+	      strcmp (modelstr, "skylake") == 0)
 	    {
-	      /* Some Haswells lack BMI2.  Let them appear as Sandybridges for
-		 now.  */
-	      CPUID (dummy_string, 7);
-	      if ((dummy_string[0 + 8 / 8] & (1 << (8 % 8))) == 0)
-		modelstr = "coreisbr";
+	      /* Some haswell, broadwell, skylake lack BMI2.  Let them appear
+		 as sandybridge for now.  */
+	      CPUID (feature_string, 7);
+	      if ((feature_string[0 + 8 / 8] & (1 << (8 % 8))) == 0
+		  || gmp_workaround_skylake_cpuid_bug ())
+		modelstr = "sandybridge";
 	    }
 
 	  break;
@@ -864,7 +938,7 @@ main ()
 	  cpu_64bit = 1, modelstr = "bobcat";
 	  break;
 	case 21:		/* Bulldozer */
-	  cpu_64bit = 1;
+	  cpu_64bit = 1, cpu_avx = 1;
 	  if (model <= 1)
 	    modelstr = "bulldozer";
 	  else if (model < 0x20)	/* really 2, [0x10-0x20) */
@@ -875,7 +949,7 @@ main ()
 	    modelstr = "excavator";
 	  break;
 	case 22:		/* Jaguar, an improved bobcat */
-	  cpu_64bit = 1, modelstr = "jaguar";
+	  cpu_64bit = 1, cpu_avx = 1, modelstr = "jaguar";
 	  break;
 	}
     }
@@ -895,17 +969,25 @@ main ()
 	}
     }
 
-  CPUID (dummy_string, 0x80000001);
-  cpuid_64bit = (dummy_string[7] >> 5) & 1;
+  CPUID (feature_string, 0x80000001);
+  cpuid_64bit = (feature_string[7] >> 5) & 1;
 
-  /* If our cpuid-based CPU identification thinks this is a 32-bit CPU but
-     cpuid claims AMD64 capabilities, then revert to the generic "x86_64".
-     This is of course wrong, but it can happen in some emulators, so this
-     workaround allows for successful 64-bit builds.  */
+  suffix = "";
+
   if (cpuid_64bit && ! cpu_64bit)
+    /* If our cpuid-based CPU identification thinks this is a 32-bit CPU but
+       cpuid claims AMD64 capabilities, then revert to the generic "x86_64".
+       This is of course wrong, but it can happen in some virtualisers and
+       emulators, and this workaround allows for successful 64-bit builds.  */
     modelstr = "x86_64";
+  else if (cpu_avx && ! (cpuid_avx && cpuid_osxsave))
+    /* For CPUs nominally capable of executing AVX, append "noavx" when not
+       both the AVX and OSXSAVE cpuid bits are set.  We tolerate weirdness
+       here, as some virtualisers set a broken cpuid state here, while other
+       virtualisers allow users to set a broken state.  */
+    suffix = "noavx";
 
-  printf ("%s", modelstr);
+  printf ("%s%s", modelstr, suffix);
   return 0;
 }
 EOF
@@ -986,18 +1068,20 @@ EOF
   ;;
 
 s390*-*-*)
-  model=`grep "^processor 0: version =" /proc/cpuinfo | sed -e 's/.*machine = //'`
-  case $model in
-    2064 | 2066) zcpu="z900" ;;
-    2084 | 2086) zcpu="z990" ;;
-    2094 | 2096) zcpu="z9"   ;;
-    2097 | 2098) zcpu="z10"  ;;
-    2817 | 2818 | *) zcpu="z196" ;;
-  esac
-  case "$guess_full" in
-    s390x-*-*) exact_cpu=${zcpu}    ;;
-    s390-*-*)  exact_cpu=${zcpu}esa ;;
-  esac
+  if test -f /proc/cpuinfo; then
+    model=`grep "^processor 0: version =" /proc/cpuinfo | sed -e 's/.*machine = //'`
+    case $model in
+      2064 | 2066) zcpu="z900" ;;
+      2084 | 2086) zcpu="z990" ;;
+      2094 | 2096) zcpu="z9"   ;;
+      2097 | 2098) zcpu="z10"  ;;
+      2817 | 2818 | *) zcpu="z196" ;;
+    esac
+    case "$guess_full" in
+      s390x-*-*) exact_cpu=${zcpu}    ;;
+      s390-*-*)  exact_cpu=${zcpu}esa ;;
+    esac
+  fi
   ;;
 
 esac

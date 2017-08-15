@@ -340,8 +340,8 @@ L(gt3):
 }{.mmi;	ld8	r16 = [up], UPD
 	nop	0
 	BSH	r21 = r17, tnc
-	;; }
- {.mmi	nop	0
+	;;
+}{.mmi;	nop	0
 	nop	0
 	FSH	r22 = r17, cnt
 }{.mib;	ld8	r17 = [up], UPD

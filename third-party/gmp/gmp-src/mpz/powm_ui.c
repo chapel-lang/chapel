@@ -282,7 +282,7 @@ mpz_powm_ui (mpz_ptr r, mpz_srcptr b, unsigned long int el, mpz_srcptr m)
     }
   else
     {
-      /* For large exponents, fake a mpz_t exponent and deflect to the more
+      /* For large exponents, fake an mpz_t exponent and deflect to the more
 	 sophisticated mpz_powm.  */
       mpz_t e;
       mp_limb_t ep[LIMBS_PER_ULONG];

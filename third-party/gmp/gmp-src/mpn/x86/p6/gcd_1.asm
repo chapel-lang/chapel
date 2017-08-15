@@ -2,7 +2,8 @@ dnl  x86 mpn_gcd_1 optimised for processors with fast BSF.
 
 dnl  Based on the K7 gcd_1.asm, by Kevin Ryde.  Rehacked by Torbjorn Granlund.
 
-dnl  Copyright 2000-2002, 2005, 2009, 2011, 2012 Free Software Foundation, Inc.
+dnl  Copyright 2000-2002, 2005, 2009, 2011, 2012, 2015 Free Software
+dnl  Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -94,8 +95,9 @@ C Both U and V are single limbs, reduce with bmod if u0 >> v0.
 L(reduce_nby1):
 	cmp	$BMOD_1_TO_MOD_1_THRESHOLD, n
 	jl	L(bmod)
-ifdef(`PIC_WITH_EBX',`
+ifdef(`PIC_WITH_EBX',`dnl
 	push	%ebx
+	add	$-4, %esp
 	call	L(movl_eip_to_ebx)
 	add	$_GLOBAL_OFFSET_TABLE_, %ebx
 ')
@@ -108,6 +110,7 @@ ifdef(`PIC_WITH_EBX',`
 L(bmod):
 ifdef(`PIC_WITH_EBX',`dnl
 	push	%ebx
+	add	$-4, %esp
 	call	L(movl_eip_to_ebx)
 	add	$_GLOBAL_OFFSET_TABLE_, %ebx
 ')
@@ -117,9 +120,11 @@ ifdef(`PIC_WITH_EBX',`dnl
 	CALL(	mpn_modexact_1_odd)
 
 L(called):
-	add	$12, %esp	C deallocate params
 ifdef(`PIC_WITH_EBX',`dnl
+	add	$16, %esp	C deallocate params
 	pop	%ebx
+',`
+	add	$12, %esp	C deallocate params
 ')
 L(reduced):
 	pop	%edx

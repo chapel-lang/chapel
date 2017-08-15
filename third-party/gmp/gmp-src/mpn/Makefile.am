@@ -29,7 +29,7 @@
 #  see https://www.gnu.org/licenses/.
 
 
-INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir) \
+AM_CPPFLAGS = -D__GMP_WITHIN_GMP -I$(top_srcdir) \
   -DOPERATION_`echo $* | sed 's/_$$//'`
 
 OFILES = @mpn_objects@

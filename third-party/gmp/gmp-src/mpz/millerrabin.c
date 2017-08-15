@@ -9,7 +9,8 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 1991, 1993, 1994, 1996-2002, 2005 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996-2002, 2005, 2014 Free Software
+Foundation, Inc.
 
 Contributed by John Amanatides.
 
@@ -117,7 +118,10 @@ millerrabin (mpz_srcptr n, mpz_srcptr nm1, mpz_ptr x, mpz_ptr y,
       mpz_powm_ui (y, y, 2L, n);
       if (mpz_cmp (y, nm1) == 0)
 	return 1;
-      if (mpz_cmp_ui (y, 1L) == 0)
+      /* y == 1 means that the previous y was a non-trivial square root
+	 of 1 (mod n). y == 0 means that n is a power of the base.
+	 In either case, n is not prime. */
+      if (mpz_cmp_ui (y, 1L) <= 0)
 	return 0;
     }
   return 0;

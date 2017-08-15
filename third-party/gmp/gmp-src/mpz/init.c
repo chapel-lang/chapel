@@ -35,11 +35,11 @@ void
 mpz_init (mpz_ptr x)
 {
   ALLOC (x) = 1;
-  PTR (x) = (mp_ptr) (*__gmp_allocate_func) (GMP_LIMB_BYTES);
+  PTR (x) = __GMP_ALLOCATE_FUNC_LIMBS (1);
   SIZ (x) = 0;
 
 #ifdef __CHECKER__
   /* let the low limb look initialized, for the benefit of mpz_get_ui etc */
-  PTR (x) = 0;
+  PTR (x)[0] = 0;
 #endif
 }

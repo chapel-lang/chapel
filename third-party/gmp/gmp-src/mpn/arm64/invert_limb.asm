@@ -40,31 +40,31 @@ C Compiler generated, mildly edited.  Could surely be further optimised.
 
 ASM_START()
 PROLOGUE(mpn_invert_limb)
-	lsr	x2, x0, 54
+	lsr	x2, x0, #54
 	adrp	x1, approx_tab
 	and	x2, x2, #0x1fe
 	add	x1, x1, :lo12:approx_tab
 	ldrh	w3, [x1,x2]
-	lsr	x4, x0, 24
-	add	x4, x4, 1
-	ubfiz	x2, x3, 11, 16
+	lsr	x4, x0, #24
+	add	x4, x4, #1
+	ubfiz	x2, x3, #11, #16
 	umull	x3, w3, w3
 	mul	x3, x3, x4
 	sub	x2, x2, #1
-	sub	x2, x2, x3, lsr 40
-	lsl	x3, x2, 60
+	sub	x2, x2, x3, lsr #40
+	lsl	x3, x2, #60
 	mul	x1, x2, x2
 	msub	x1, x1, x4, x3
-	lsl	x2, x2, 13
-	add	x1, x2, x1, lsr 47
-	and	x2, x0, 1
+	lsl	x2, x2, #13
+	add	x1, x2, x1, lsr #47
+	and	x2, x0, #1
 	neg	x3, x2
-	and	x3, x3, x1, lsr 1
-	add	x2, x2, x0, lsr 1
+	and	x3, x3, x1, lsr #1
+	add	x2, x2, x0, lsr #1
 	msub	x2, x1, x2, x3
 	umulh	x2, x2, x1
-	lsl	x1, x1, 31
-	add	x1, x1, x2, lsr 1
+	lsl	x1, x1, #31
+	add	x1, x1, x2, lsr #1
 	mul	x3, x1, x0
 	umulh	x2, x1, x0
 	adds	x4, x3, x0

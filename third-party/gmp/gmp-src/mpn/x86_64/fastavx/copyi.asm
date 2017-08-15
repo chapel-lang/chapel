@@ -1,8 +1,8 @@
 dnl  AMD64 mpn_copyi optimised for CPUs with fast AVX.
 
-dnl  Contributed to the GNU project by Torbjörn Granlund.
+dnl  Copyright 2003, 2005, 2007, 2011-2013, 2015 Free Software Foundation, Inc.
 
-dnl  Copyright 2003, 2005, 2007, 2011-2013 Free Software Foundation, Inc.
+dnl  Contributed to the GNU project by Torbjörn Granlund.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -32,7 +32,8 @@ dnl  see https://www.gnu.org/licenses/.
 
 include(`../config.m4')
 
-C cycles/limb aligned	      unaligned	      best seen	     for cpu?
+C	     cycles/limb     cycles/limb     cycles/limb      good
+C              aligned	      unaligned	      best seen	     for cpu?
 C AMD K8,K9	n/a
 C AMD K10	n/a
 C AMD bull	n/a
@@ -44,9 +45,9 @@ C Intel P4	n/a
 C Intel core	n/a
 C Intel NHM	n/a
 C Intel SBR	 0.50		 0.91				N
-C Intel IBR	 ?
+C Intel IBR	 0.50		 0.65				N
 C Intel HWL	 0.25		 0.30				Y
-C Intel BWL	 ?
+C Intel BWL	 0.28		 0.37				Y
 C Intel atom	n/a
 C VIA nano	n/a
 

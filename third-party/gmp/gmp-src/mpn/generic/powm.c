@@ -152,8 +152,7 @@ redcify (mp_ptr rp, mp_srcptr up, mp_size_t un, mp_srcptr mp, mp_size_t n)
   TMP_DECL;
   TMP_MARK;
 
-  tp = TMP_ALLOC_LIMBS (un + n);
-  qp = TMP_ALLOC_LIMBS (un + 1);	/* FIXME: Put at tp+? */
+  TMP_ALLOC_LIMBS_2 (tp, un + n, qp, un + 1);
 
   MPN_ZERO (tp, n);
   MPN_COPY (tp + n, up, un);

@@ -114,7 +114,7 @@ FFT_TABLE_ATTRS struct fft_table_nk mpn_fft_table3[2][FFT_TABLE3_SIZE] =
 int
 mpn_fft_best_k (mp_size_t n, int sqr)
 {
-  FFT_TABLE_ATTRS struct fft_table_nk *fft_tab, *tab;
+  const struct fft_table_nk *fft_tab, *tab;
   mp_size_t tab_n, thres;
   int last_k;
 

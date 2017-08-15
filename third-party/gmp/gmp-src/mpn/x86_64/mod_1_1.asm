@@ -2,7 +2,7 @@ dnl  AMD64 mpn_mod_1_1p
 
 dnl  Contributed to the GNU project by Torbjörn Granlund and Niels Möller.
 
-dnl  Copyright 2009-2012 Free Software Foundation, Inc.
+dnl  Copyright 2009-2012, 2014 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -198,6 +198,7 @@ PROLOGUE(mpn_mod_1_1p_cps)
 	sal	R8(%rcx), %r12
 IFSTD(`	mov	%r12, %rdi	')	C pass parameter
 IFDOS(`	mov	%r12, %rcx	')	C pass parameter
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_invert_limb)
 	neg	%r12
 	mov	%r12, %r8

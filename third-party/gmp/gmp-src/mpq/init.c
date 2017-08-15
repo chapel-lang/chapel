@@ -35,10 +35,10 @@ void
 mpq_init (mpq_t x)
 {
   ALLOC(NUM(x)) = 1;
-  PTR(NUM(x)) = (mp_ptr) (*__gmp_allocate_func) (GMP_LIMB_BYTES);
+  PTR(NUM(x)) = __GMP_ALLOCATE_FUNC_LIMBS (1);
   SIZ(NUM(x)) = 0;
   ALLOC(DEN(x)) = 1;
-  PTR(DEN(x)) = (mp_ptr) (*__gmp_allocate_func) (GMP_LIMB_BYTES);
+  PTR(DEN(x)) = __GMP_ALLOCATE_FUNC_LIMBS (1);
   PTR(DEN(x))[0] = 1;
   SIZ(DEN(x)) = 1;
 

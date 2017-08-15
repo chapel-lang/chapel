@@ -7,7 +7,7 @@
    THEY'RE ALMOST CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR
    COMPLETELY IN FUTURE GNU MP RELEASES.
 
-Copyright 2003, 2004, 2009, 2011-2014 Free Software Foundation, Inc.
+Copyright 2003, 2004, 2009, 2011-2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -63,15 +63,25 @@ long __gmpn_cpuid (char [12], int);
 
 static struct {
   const char  *name;
-  const char  vendor[13];
+  const char  *vendor;
   unsigned    fms;
 } fake_cpuid_table[] = {
   { "core2",      "GenuineIntel", MAKE_FMS (6, 0xf) },
-  { "coreinhm",   "GenuineIntel", MAKE_FMS (6, 0x1a) },
-  { "coreiwsm",   "GenuineIntel", MAKE_FMS (6, 0x25) },
-  { "coreisbr",   "GenuineIntel", MAKE_FMS (6, 0x2a) },
-  { "coreihwl",   "GenuineIntel", MAKE_FMS (6, 0x3c) },
+  { "nehalem",    "GenuineIntel", MAKE_FMS (6, 0x1a) },
+  { "nhm",        "GenuineIntel", MAKE_FMS (6, 0x1a) },
   { "atom",       "GenuineIntel", MAKE_FMS (6, 0x1c) },
+  { "westmere",   "GenuineIntel", MAKE_FMS (6, 0x25) },
+  { "wsm",        "GenuineIntel", MAKE_FMS (6, 0x25) },
+  { "sandybridge","GenuineIntel", MAKE_FMS (6, 0x2a) },
+  { "sbr",        "GenuineIntel", MAKE_FMS (6, 0x2a) },
+  { "silvermont", "GenuineIntel", MAKE_FMS (6, 0x37) },
+  { "slm",        "GenuineIntel", MAKE_FMS (6, 0x37) },
+  { "haswell",    "GenuineIntel", MAKE_FMS (6, 0x3c) },
+  { "hwl",        "GenuineIntel", MAKE_FMS (6, 0x3c) },
+  { "broadwell",  "GenuineIntel", MAKE_FMS (6, 0x3d) },
+  { "bwl",        "GenuineIntel", MAKE_FMS (6, 0x3d) },
+  { "skylake",    "GenuineIntel", MAKE_FMS (6, 0x5e) },
+  { "sky",        "GenuineIntel", MAKE_FMS (6, 0x5e) },
   { "pentium4",   "GenuineIntel", MAKE_FMS (15, 3) },
 
   { "k8",         "AuthenticAMD", MAKE_FMS (15, 0) },
@@ -196,6 +206,49 @@ int __gmpn_cpuvec_initialized = 0;
    asm routines only operate correctly up to their own defined threshold,
    not an arbitrary value.  */
 
+static int
+gmp_workaround_skylake_cpuid_bug ()
+{
+  char feature_string[49];
+  char processor_name_string[49];
+  static const char *bad_cpus[] = {" G44", " G45", " G39" /* , "6600" */ };
+  int i;
+
+  /* Example strings:                                   */
+  /* "Intel(R) Pentium(R) CPU G4400 @ 3.30GHz"          */
+  /* "Intel(R) Core(TM) i5-6600K CPU @ 3.50GHz"         */
+  /*                  ^               ^               ^ */
+  /*     0x80000002       0x80000003      0x80000004    */
+  /* We match out just the 0x80000003 part here. */
+
+  /* In their infinitive wisdom, Intel decided to use one register order for
+     the vendor string, and another for the processor name string.  We shuffle
+     things about here, rather than write a new variant of our assembly cpuid.
+  */
+
+  unsigned int eax, ebx, ecx, edx;
+  eax = __gmpn_cpuid (feature_string, 0x80000003);
+  ebx = ((unsigned int *)feature_string)[0];
+  edx = ((unsigned int *)feature_string)[1];
+  ecx = ((unsigned int *)feature_string)[2];
+
+  ((unsigned int *) (processor_name_string))[0] = eax;
+  ((unsigned int *) (processor_name_string))[1] = ebx;
+  ((unsigned int *) (processor_name_string))[2] = ecx;
+  ((unsigned int *) (processor_name_string))[3] = edx;
+
+  processor_name_string[16] = 0;
+
+  for (i = 0; i < sizeof (bad_cpus) / sizeof (char *); i++)
+    {
+      if (strstr (processor_name_string, bad_cpus[i]) != 0)
+	return 1;
+    }
+  return 0;
+}
+
+enum {BMI2_BIT = 8};
+
 void
 __gmpn_cpuvec_init (void)
 {
@@ -272,8 +325,13 @@ __gmpn_cpuvec_init (void)
 	    case 0x2c:		/* WSM Gulftown */
 	    case 0x2e:		/* NHM Beckton */
 	    case 0x2f:		/* WSM Eagleton */
-	    case 0x37:		/* Atom Silvermont */
-	    case 0x4d:		/* Atom Silvermont/Avoton */
+	    case 0x37:		/* Silvermont */
+	    case 0x4a:		/* Silvermont */
+	    case 0x4c:		/* Airmont */
+	    case 0x4d:		/* Silvermont/Avoton */
+	    case 0x5a:		/* Silvermont */
+	    case 0x5c:		/* Goldmont */
+	    case 0x5f:		/* Goldmont */
 	      CPUVEC_SETUP_core2;
 	      CPUVEC_SETUP_coreinhm;
 	      break;
@@ -287,20 +345,46 @@ __gmpn_cpuvec_init (void)
 	      CPUVEC_SETUP_coreisbr;
 	      break;
 	    case 0x3c:		/* Haswell client */
-	    case 0x3d:		/* Broadwell */
 	    case 0x3f:		/* Haswell server */
 	    case 0x45:		/* Haswell ULT */
 	    case 0x46:		/* Crystal Well */
-	    case 0x4f:		/* Broadwell server */
-	    case 0x56:		/* Broadwell microserver */
 	      CPUVEC_SETUP_core2;
 	      CPUVEC_SETUP_coreinhm;
 	      CPUVEC_SETUP_coreisbr;
 	      /* Some Haswells lack BMI2.  Let them appear as Sandybridges for
 		 now.  */
 	      __gmpn_cpuid (dummy_string, 7);
-	      if ((dummy_string[0 + 8 / 8] & (1 << (8 % 8))) != 0)
-		CPUVEC_SETUP_coreihwl;
+	      if ((dummy_string[0 + BMI2_BIT / 8] & (1 << (BMI2_BIT % 8))) == 0)
+		break;
+	      CPUVEC_SETUP_coreihwl;
+	      break;
+	    case 0x3d:		/* Broadwell */
+	    case 0x47:		/* Broadwell */
+	    case 0x4f:		/* Broadwell server */
+	    case 0x56:		/* Broadwell microserver */
+	      CPUVEC_SETUP_core2;
+	      CPUVEC_SETUP_coreinhm;
+	      CPUVEC_SETUP_coreisbr;
+	      if ((dummy_string[0 + BMI2_BIT / 8] & (1 << (BMI2_BIT % 8))) == 0)
+		break;
+	      CPUVEC_SETUP_coreihwl;
+	      CPUVEC_SETUP_coreibwl;
+	      break;
+	    case 0x4e:		/* Skylake client */
+	    case 0x55:		/* Skylake server */
+	    case 0x5e:		/* Skylake */
+	    case 0x8e:		/* Kabylake */
+	    case 0x9e:		/* Kabylake */
+	      CPUVEC_SETUP_core2;
+	      CPUVEC_SETUP_coreinhm;
+	      CPUVEC_SETUP_coreisbr;
+	      if ((dummy_string[0 + BMI2_BIT / 8] & (1 << (BMI2_BIT % 8))) == 0)
+		break;
+	      if (gmp_workaround_skylake_cpuid_bug ())
+		break;
+	      CPUVEC_SETUP_coreihwl;
+	      CPUVEC_SETUP_coreibwl;
+	      CPUVEC_SETUP_skylake;
 	      break;
 	    }
 	  break;

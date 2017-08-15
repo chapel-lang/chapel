@@ -70,7 +70,7 @@ mpz_sqrt (mpz_ptr root, mpz_srcptr op)
     }
   else
     {
-      root_ptr = MPZ_REALLOC (root, root_size);
+      root_ptr = MPZ_NEWALLOC (root, root_size);
 
       mpn_sqrtrem (root_ptr, NULL, op_ptr, op_size);
     }

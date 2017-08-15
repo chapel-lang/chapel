@@ -52,10 +52,10 @@ PROLOGUE(mpn_invert_limb)
 	adds	r1, r12, r0
 	adc	r3, r3, r0
 	rsb	r0, r3, r2
-	bx	lr
+	ret	lr
 EPILOGUE()
 
-	.section .rodata
+	RODATA
 	ALIGN(2)
 approx_tab:
 	.short    0xffc0,0xfec0,0xfdc0,0xfcc0,0xfbc0,0xfac0,0xfa00,0xf900

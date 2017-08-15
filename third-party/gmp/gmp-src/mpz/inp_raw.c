@@ -1,6 +1,6 @@
 /* mpz_inp_raw -- read an mpz_t in raw format.
 
-Copyright 2001, 2002, 2005, 2012 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005, 2012, 2016 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -66,6 +66,7 @@ mpz_inp_raw (mpz_ptr x, FILE *fp)
 {
   unsigned char  csize_bytes[4];
   mp_size_t      csize, abs_xsize, i;
+  size_t         size;
   size_t         abs_csize;
   char           *cp;
   mp_ptr         xp, sp, ep;
@@ -78,17 +79,13 @@ mpz_inp_raw (mpz_ptr x, FILE *fp)
   if (fread (csize_bytes, sizeof (csize_bytes), 1, fp) != 1)
     return 0;
 
-  csize =
-    (  (mp_size_t) csize_bytes[0] << 24)
-    + ((mp_size_t) csize_bytes[1] << 16)
-    + ((mp_size_t) csize_bytes[2] << 8)
-    + ((mp_size_t) csize_bytes[3]);
+  size = (((size_t) csize_bytes[0] << 24) + ((size_t) csize_bytes[1] << 16) +
+	  ((size_t) csize_bytes[2] << 8)  + ((size_t) csize_bytes[3]));
 
-  /* Sign extend if necessary.
-     Could write "csize -= ((csize & 0x80000000L) << 1)", but that tickles a
-     bug in gcc 3.0 for powerpc64 on AIX.  */
-  if (sizeof (csize) > 4 && csize & 0x80000000L)
-    csize -= 0x80000000L << 1;
+  if (size < 0x80000000u)
+    csize = size;
+  else
+    csize = size - 0x80000000u - 0x80000000u;
 
   abs_csize = ABS (csize);
 

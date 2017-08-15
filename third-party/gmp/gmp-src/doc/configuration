@@ -291,9 +291,8 @@ At build time:
 
     */Makefile.in  \   configure    / */Makefile
     config.in      | -------------> | config.h
-    gmp-h.in       |                | config.m4
-    mp-h.in        /                | gmp.h
-                                    | mp.h
+    gmp-h.in       /                | config.m4
+                                    | gmp.h
                                     \ fat.h  (fat binary build only)
 
 When configured with --enable-maintainer-mode the Makefiles include

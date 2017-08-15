@@ -48,7 +48,7 @@ C    read-modify-write tricks.
 C  * The VMX code is used from the smallest sizes it handles, but measurements
 C    show a large speed bump at the cutoff points.  Small copying (perhaps
 C    using some read-modify-write technique) should be optimized.
-C  * Make a mpn_com based on this code.
+C  * Make an mpn_com based on this code.
 
 define(`GMP_LIMB_BYTES', eval(GMP_LIMB_BITS/8))
 define(`LIMBS_PER_VR',  eval(16/GMP_LIMB_BYTES))

@@ -176,21 +176,12 @@ const char *shrt_max_def = "not defined";
   } while (0)
 
 
-#if HAVE_STRINGIZE
 #define CHECK_LIMB(x,y)      CHECK_LIMB_S (x, #x, y, #y)
 #define CHECK_INT(x,y)       CHECK_INT_S (x, #x, y, #y)
 #define CHECK_CONDITION(x)   CHECK_CONDITION_S (x, #x)
 #define CHECK_BITS(c,t)      CHECK_BITS_S (c, #c, t)
 #define CHECK_MAX(m,n,t,f)   CHECK_MAX_S (m, #m, n, #n, t, f)
 #define CHECK_HIGHBIT(n,t,f) CHECK_HIGHBIT_S (n, #n, t, f)
-#else
-#define CHECK_LIMB(x,y)      CHECK_LIMB_S (x, "x", y, "y")
-#define CHECK_INT(x,y)       CHECK_INT_S (x, "x", y, "y")
-#define CHECK_CONDITION(x)   CHECK_CONDITION_S (x, "x")
-#define CHECK_BITS(c,t)      CHECK_BITS_S (c, "c", t)
-#define CHECK_MAX(m,n,t,f)   CHECK_MAX_S (m, "m", n, "n", t, f)
-#define CHECK_HIGHBIT(n,t,f) CHECK_HIGHBIT_S (n, "n", t, f)
-#endif
 
 
 /* The tests below marked "Bad!" fail on Cray T90 systems, where int, short

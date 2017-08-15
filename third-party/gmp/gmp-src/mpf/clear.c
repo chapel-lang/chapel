@@ -33,7 +33,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpf_clear (mpf_ptr m)
+mpf_clear (mpf_ptr x)
 {
-  (*__gmp_free_func) (m->_mp_d, (size_t) (m->_mp_prec + 1) * GMP_LIMB_BYTES);
+  __GMP_FREE_FUNC_LIMBS (PTR(x), PREC(x) + 1);
 }

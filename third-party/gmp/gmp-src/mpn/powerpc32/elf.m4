@@ -53,14 +53,17 @@ define(`LEA',
 m4_assert_numargs(2)
 `ifdef(`PIC',`
 	mflr	r0
-	bl	_GLOBAL_OFFSET_TABLE_@local-4
-	mflr	$1
+	bcl	20, 31, 1f
+1:	mflr	$1
+	addis	$1, $1, (_GLOBAL_OFFSET_TABLE_-1b)@ha
+	addi	$1, $1, (_GLOBAL_OFFSET_TABLE_-1b)@l
 	mtlr	r0
 	lwz	$1, $2@got($1)
 ',`
 	lis	$1, $2@ha
 	la	$1, $2@l($1)
 ')')
+
 
 define(`LEAL',
 m4_assert_numargs(2)

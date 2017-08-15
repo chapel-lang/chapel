@@ -2,7 +2,7 @@
 
    Contributed to the GNU project by Martin Boij (as part of perfpow.c).
 
-Copyright 2009, 2010, 2012 Free Software Foundation, Inc.
+Copyright 2009, 2010, 2012, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -55,8 +55,7 @@ see https://www.gnu.org/licenses/.  */
 int
 mpn_bsqrtinv (mp_ptr rp, mp_srcptr yp, mp_bitcnt_t bnb, mp_ptr tp)
 {
-  mp_ptr tp2, tp3;
-  mp_limb_t k;
+  mp_ptr tp2;
   mp_size_t bn, order[GMP_LIMB_BITS + 1];
   int i, d;
 
@@ -65,8 +64,6 @@ mpn_bsqrtinv (mp_ptr rp, mp_srcptr yp, mp_bitcnt_t bnb, mp_ptr tp)
   bn = 1 + bnb / GMP_LIMB_BITS;
 
   tp2 = tp + bn;
-  tp3 = tp + 2 * bn;
-  k = 3;
 
   rp[0] = 1;
   if (bnb == 1)
@@ -88,9 +85,11 @@ mpn_bsqrtinv (mp_ptr rp, mp_srcptr yp, mp_bitcnt_t bnb, mp_ptr tp)
 	  bnb = order[i];
 	  bn = 1 + bnb / GMP_LIMB_BITS;
 
-	  mpn_mul_1 (tp, rp, bn, k);
+	  mpn_sqrlo (tp, rp, bn);
+	  mpn_mullo_n (tp2, rp, tp, bn); /* tp2 <- rp ^ 3 */
 
-	  mpn_powlo (tp2, rp, &k, 1, bn, tp3);
+	  mpn_mul_1 (tp, rp, bn, 3);
+
 	  mpn_mullo_n (rp, yp, tp2, bn);
 
 #if HAVE_NATIVE_mpn_rsh1sub_n
