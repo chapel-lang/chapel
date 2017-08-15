@@ -50,14 +50,3 @@ proc depExists(dependency: string) {
   }
   return exists;
 }
-
-proc toInt(num: string) {
-  var counter: int;
-  for i in 1..100 {
-    var toStr: string = stringify(i);
-    if toStr == num {
-      return i;
-    }
-  }
-  return 0;
-}

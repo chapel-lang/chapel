@@ -118,27 +118,28 @@ proc IVRS(version1: string, version2: string) {
   if version1 == version2 then return version1;
   var vers1 = version1.split('.');
   var vers2 = version2.split('.');
+  var v1 = vers1(1): int;
+  var v2 = vers2(1): int;
   if vers1(1) != vers2(1) {
     halt("Differing Major versions of dependencies are not supported");
   }
   else if vers1(2) != vers2(2) {
-    var v1 = toInt(vers1(2));
-    var v2 = toInt(vers2(2));
+    v1 = vers1(2): int;
+    v2 = vers2(2): int;
     if v1 > v2 {
       return version1;
     }
     else return version2;
   }
   else {
-    var v1 = toInt(vers1(3));
-    var v2 = toInt(vers2(3));
+    v1 = vers1(3): int;
+    v2 = vers2(3): int;
     if v1 > v2 {
       return version1;
     }
     else return version2;
   }
 }
-
 
 
 
