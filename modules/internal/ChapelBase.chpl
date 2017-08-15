@@ -836,7 +836,7 @@ module ChapelBase {
 
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
-  // to get 'errors' field from any generic instantiation.
+  // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
   class _EndCountBase {
     var errors: chpl_ErrorGroup;
@@ -932,8 +932,7 @@ module ChapelBase {
 
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
-  //
-  // This version is called for implicit sync at end of main.
+  // called for sync blocks (implicit or explicit), unbounded coforalls, cobegins.
   pragma "dont disable remote value forwarding"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) throws {

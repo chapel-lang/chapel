@@ -799,5 +799,3 @@ void lowerErrorHandling() {
     fn->accept(&visitor);
   }
 }
-
-

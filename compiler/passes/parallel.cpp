@@ -158,6 +158,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   for_formals_actuals(formal, arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->symbol(); // arg or var
+
     //
     // If we need to do an autoCopy for a BEGIN, and the result is placed on
     // the stack, then we need to copy that result into the arg bundle even

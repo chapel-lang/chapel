@@ -153,7 +153,6 @@ module ChapelError {
 
     // convenience methods
     iter filter(type t) where t:Error {
-      // TODO: check that t is a subtype of Error
       for e in these() {
         var tmp = e:t;
         if tmp then
