@@ -65,7 +65,6 @@ DEFAULTDIRS=(
 	     doc/rst/platforms   doc/rst/technotes  doc/rst/tools
 	     doc/rst/users-guide doc/rst/usingchapel
 	     test/release
-	     test/studies/shootout
 	     .github
 )
 
