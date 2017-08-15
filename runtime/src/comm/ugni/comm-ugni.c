@@ -378,7 +378,7 @@ static size_t hugepage_size;
 // uGNI memory domain handles for each memory region of interest to us.
 // mem_region_map contains a copy of every node's mem_regions.
 //
-#define MAX_MEM_REGIONS 100
+#define MAX_MEM_REGIONS 1000
 
 typedef struct {
   uint64_t         addr;
@@ -2734,6 +2734,13 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
                size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
     }
   } else {
+    static int spoke = 0;
+
+    if (!spoke) {
+      chpl_warning("out of registered memory region table entries!", 0, 0);
+      spoke = 1;
+    }
+
     DBG_P_LP(DBGF_MEMREG,
              "chpl_regMemAlloc(%#zx): no free table entries",
              size);
