@@ -129,14 +129,33 @@ module ChapelError {
         f <~> n <~> " errors";
 
 
+      var minMsg:string;
+      var maxMsg:string;
+      for msg in Msgs {
+        if minMsg == "" || msg < minMsg then
+          minMsg = msg;
+        if maxMsg == "" || msg > maxMsg then
+          maxMsg = msg;
+      }
+
       var first:Error;
       var last:Error;
-      for msg in Msgs.sorted() {
-        const ref errs = byMsg[msg];
-        for e in errs {
+
+      // Set first and last.
+      {
+        const ref minErrs = byMsg[minMsg];
+        for e in minErrs {
           if first == nil then
             first = e;
           last = e;
+        }
+        if minMsg != maxMsg {
+          const ref maxErrs = byMsg[maxMsg];
+          for e in maxErrs {
+            if first == nil then
+              first = e;
+            last = e;
+          }
         }
       }
 
