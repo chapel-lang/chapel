@@ -4970,7 +4970,7 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     }
 
   } else {
-    if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+    if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       Type* baseType = rhs->get(1)->getValType();
       const char* memberName = get_string(rhs->get(2));
       Symbol* sym = baseType->getField(memberName);
@@ -5429,7 +5429,7 @@ static void temporaryInitializerFixup(CallExpr* call) {
 
       INT_ASSERT(sym != NULL);
 
-      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
+      if (AggregateType* ct = toAggregateType(sym->symbol()->getValType())) {
 
         if (isRefWrapperForNonGenericRecord(ct) == false &&
             ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
@@ -6082,6 +6082,25 @@ resolveExpr(Expr* expr) {
           // delayed instance to have the right type.
           actualSym->type = formal->type;
           actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+          INT_ASSERT(isAggregateType(actualSym->type));
+          toAggregateType(actualSym->type)->initializerResolved = true;
+
+          if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
+            if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
+              if (fn->_this != NULL &&
+                  isClass(fn->_this->type)) {
+                AggregateType* at = toAggregateType(fn->_this->type);
+                Symbol* superField = at->getField(1);
+                if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+                  at = at->getInstantiationParent(formal->type);
+                  fn->_this->type = at;
+                  superField = at->getField(1);
+                  superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+                }
+              }
+            }
+          }
         }
       }
     }

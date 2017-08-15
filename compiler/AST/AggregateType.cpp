@@ -309,6 +309,16 @@ bool AggregateType::setNextGenericField() {
     }
     idx++;
   }
+
+  if (dispatchParents.v[0] != NULL &&
+      dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC)) {
+    AggregateType* parent = toAggregateType(dispatchParents.v[0]);
+    if (parent) {
+      bool parentVal = parent->setNextGenericField();
+      INT_ASSERT(parentVal);
+    }
+  }
+
   if (genericField != 0)
     return true;
   else
@@ -412,6 +422,47 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
     newInstance->genericField = 0;
     newInstance->symbol->removeFlag(FLAG_GENERIC);
   }
+
+  return newInstance;
+}
+
+AggregateType* AggregateType::getInstantiationParent(Type* parentType) {
+  if (!this->isClass()) {
+    INT_FATAL(this,
+              "only call getInstantiationParent on classes, others can't "
+              "inherit");
+  }
+
+  // First, look to see if we have an instantiation with that value already
+  for_vector(AggregateType, at, instantiations) {
+    Symbol* field = at->getField(1); // super is always the first field
+    if (field->type == parentType)
+      return at;
+  }
+
+  // Otherwise, we need to create an instantiation for that type
+  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
+  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
+  newInstance->symbol->copyFlags(this->symbol);
+
+  newInstance->substitutions.copy(this->substitutions);
+
+  Symbol* field = newInstance->getField(1);
+  newInstance->substitutions.put(field, parentType->symbol);
+  newInstance->symbol->renameInstantiatedFromSuper(parentType->symbol);
+
+  field->type = parentType;
+
+  instantiations.push_back(newInstance);
+  newInstance->instantiatedFrom = this;
+
+  // Handle dispatch parent
+  newInstance->dispatchParents.add(parentType);
+  bool inserted = parentType->dispatchChildren.add_exclusive(newInstance);
+  INT_ASSERT(inserted);
+
+  if (newInstance->symbol->hasFlag(FLAG_GENERIC))
+    newInstance->symbol->removeFlag(FLAG_GENERIC);
 
   return newInstance;
 }

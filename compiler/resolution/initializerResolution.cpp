@@ -267,7 +267,10 @@ static void resolveMatch(FnSymbol* fn) {
     INT_ASSERT(at);
 
     bool           res = at->setNextGenericField();
-    INT_ASSERT(res);
+    if (at->dispatchParents.v[0] == NULL ||
+        at->dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == false) {
+      INT_ASSERT(res);
+    }
   }
 
   resolveBlockStmt(fn->body);
