@@ -1,0 +1,5 @@
+perfkeys: GETs:, GETs:
+files: remote-array-read-access-c.dat, remote-array-read-access-c-cache.dat
+graphkeys: c GETs, c-cache GETs
+ylabel: Count
+graphtitle: remote-array-read-access

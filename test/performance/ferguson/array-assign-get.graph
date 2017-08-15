@@ -1,0 +1,5 @@
+perfkeys: GETs:, GETs:
+files: array-assign-get-c.dat, array-assign-get-c-cache.dat
+graphkeys: c GETs, c-cache GETs
+ylabel: Count
+graphtitle: array-assign-get

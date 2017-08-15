@@ -121,7 +121,7 @@ OPTIONS
     Turns off all optimizations in the Chapel compiler and generates naive C
     code with many temporaries.
 
-**--cache-remote**
+**--[no-]cache-remote**
 
     Enables the cache for remote data. This cache can improve communication
     performance for some programs by adding aggregation, write behind, and
