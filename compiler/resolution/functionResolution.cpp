@@ -6062,7 +6062,7 @@ resolveExpr(Expr* expr) {
         resolveFns(call->resolvedFunction());
       }
 
-      for (int i = 1; i < call->numActuals(); i++) {
+      for (int i = 1; i <= call->numActuals(); i++) {
         Expr* actualExpr = call->get(i);
         Symbol* actualSym = NULL;
         if (SymExpr* actual = toSymExpr(actualExpr)) {
@@ -6083,8 +6083,9 @@ resolveExpr(Expr* expr) {
           actualSym->type = formal->type;
           actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
-          INT_ASSERT(isAggregateType(actualSym->type));
-          toAggregateType(actualSym->type)->initializerResolved = true;
+          AggregateType* formalType = toAggregateType(formal->type);
+          INT_ASSERT(formalType);
+          formalType->initializerResolved = true;
 
           if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
             if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
@@ -6093,7 +6094,7 @@ resolveExpr(Expr* expr) {
                 AggregateType* at = toAggregateType(fn->_this->type);
                 Symbol* superField = at->getField(1);
                 if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
-                  at = at->getInstantiationParent(formal->type);
+                  at = at->getInstantiationParent(formalType);
                   fn->_this->type = at;
                   superField = at->getField(1);
                   superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);

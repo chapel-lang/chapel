@@ -426,7 +426,8 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   return newInstance;
 }
 
-AggregateType* AggregateType::getInstantiationParent(Type* parentType) {
+AggregateType*
+AggregateType::getInstantiationParent(AggregateType* parentType) {
   if (!this->isClass()) {
     INT_FATAL(this,
               "only call getInstantiationParent on classes, others can't "
