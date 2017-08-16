@@ -515,19 +515,6 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   // call wrapper-function
   call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
   baData.firstCall = false;
-
-  // Remove any error fields - they shouldn't be code-generated
-  // since the errors are handled directly.
-  if (baData.adjustErrors) {
-    AggregateType* ctype = baData.ctype;
-    Symbol* toRemove = NULL;
-    for_fields(field, ctype) {
-      if (field->hasFlag(FLAG_ERROR_VARIABLE))
-        toRemove = field;
-    }
-    if (toRemove != NULL)
-      toRemove->defPoint->remove();
-  }
 }
 
 static CallExpr* helpFindDownEndCount(BlockStmt* block)
@@ -1723,6 +1710,19 @@ static void passArgsToNestedFns() {
         }
 
         localeArg->remove();
+      }
+
+      // Remove any error fields - they shouldn't be code-generated
+      // since the errors are handled directly.
+      if (baData.adjustErrors) {
+        AggregateType* ctype = baData.ctype;
+        Symbol* toRemove = NULL;
+        for_fields(field, ctype) {
+          if (field->hasFlag(FLAG_ERROR_VARIABLE))
+            toRemove = field;
+        }
+        if (toRemove != NULL)
+          toRemove->defPoint->remove();
       }
     }
   }
