@@ -354,9 +354,9 @@ static void moveLinenoInsideArgBundle()
         // This task (wrapper) function is not actually called with lineno, fname
         // arguments, so remove them.
         SET_LINENO(fn);
-        DefExpr* fileArg = toDefExpr(fn->formals.tail);
+        DefExpr* fileArg = filenameArgSym->defPoint;
         fileArg->remove();
-        DefExpr* lineArg = toDefExpr(fn->formals.tail);
+        DefExpr* lineArg = lineArgSym->defPoint;
         lineArg->remove();
 
         // In the body of the wrapper, create a local lineno variable initialized
