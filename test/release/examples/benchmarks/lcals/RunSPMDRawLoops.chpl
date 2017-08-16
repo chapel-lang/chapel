@@ -6,7 +6,7 @@ module RunSPMDRawLoops {
    */
 
   use LCALSDataTypes;
-  use Timer, Barrier, RangeChunk;
+  use Timer, Barriers, RangeChunk;
 
   proc runSPMDRawLoops(loop_stats:[] LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
