@@ -87,11 +87,11 @@ class CSDom: BaseSparseDomImpl {
   var rowRange: range(idxType);
   var colRange: range(idxType);
 
-  /* (row|col) dom */
-  const dom: domain(1, idxType);
+  /* (row|col) startIdxDom */
+  const startIdxDom: domain(1, idxType);
 
   /* (row|col) start */
-  var startIdx: [dom] idxType;      // would like index(nnzDom)
+  var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
   /* (row|col) idx */
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
@@ -106,7 +106,7 @@ class CSDom: BaseSparseDomImpl {
     this.parentDom = parentDom;
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
-    dom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
+    startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
     nnzDom = {1..nnz};
     dsiClear();
   }
@@ -201,7 +201,7 @@ class CSDom: BaseSparseDomImpl {
   // or a number at most 'approx' smaller than that.
   // There MUST exist a solution within low..high.
   proc _private_findStart(startIx) {
-    return _private_findStart(startIx, dom.low, dom.high);
+    return _private_findStart(startIx, startIdxDom.low, startIdxDom.high);
   }
   proc _private_findStart(startIx, low, high) {
     var approx = 2; // Indicates when to switch to linear search.
@@ -253,7 +253,7 @@ class CSDom: BaseSparseDomImpl {
   proc dsiFirst {
     if nnz == 0 then return (parentDom.low) - (1,1);
     const _low = nnzDom.low;
-    for i in dom {
+    for i in startIdxDom {
       if startIdx[i] > _low {
         if this.compressRows then
           return (i-1, idx[idx.domain.low]);
@@ -269,7 +269,7 @@ class CSDom: BaseSparseDomImpl {
     if nnz == 0 then return (parentDom.low) - (1,1);
 
     var _last = parentDom.low[1] - 1;
-    for i in dom do
+    for i in startIdxDom do
       if startIdx[i] > _last then
         _last = i-1;
 
@@ -310,7 +310,7 @@ class CSDom: BaseSparseDomImpl {
     // bump the startIdx counts
     var start = if this.compressRows then row else col;
 
-    for rc in start+1..dom.high {  // want dom[row+1..]
+    for rc in start+1..startIdxDom.high {  // want startIdxDom[row+1..]
       startIdx(rc) += 1;
     }
 
@@ -459,7 +459,7 @@ class CSDom: BaseSparseDomImpl {
         prevCursor = cursor;
       }
     }
-    for i in prevCursor+1..dom.high {
+    for i in prevCursor+1..startIdxDom.high {
       startIdx[i] += cursorCnt;
     }
     for a in _arrs do
@@ -489,11 +489,11 @@ class CSDom: BaseSparseDomImpl {
 
     // bump the startIdx counts
     if this.compressRows {
-      for r in row+1..dom.high {  // want dom[row+1..]
+      for r in row+1..startIdxDom.high {  // want startIdxDom[row+1..]
         startIdx(r) -= 1;
       }
     } else {
-      for r in col+1..dom.high {  // want dom[row+1..]
+      for r in col+1..startIdxDom.high {  // want startIdxDom[row+1..]
         startIdx(r) -= 1;
       }
     }
