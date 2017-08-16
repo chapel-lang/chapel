@@ -81,8 +81,11 @@ DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst"
 # Any files with these basenames will be skipped when we encounter them
 # handling entire directories.  This setting has no impact on files specified
 # specifically on the command line.
-FILTEROUT="bison-chapel.cpp bison-chapel.h flex-chapel.cpp flex-chapel.h \
-           LAPACK.chpl"
+FILTEROUT="compiler/parser/bison-chapel.cpp \
+           compiler/include/bison-chapel.h  \
+           compiler/parser/flex-chapel.cpp  \
+           compiler/include/flex-chapel.h   \
+           modules/packages/LAPACK.chpl"
 
 
 # Here endeth the configuration options.  The rest of the script
@@ -219,10 +222,9 @@ if [ $JUSTARGS == 0 ]; then
 
 	# Filter out files listed in $FILTEROUT
 	for file in "${NFILES[@]}"; do
-	    b=$(basename "$file")
 	    KEEP=1
 	    for filter in $FILTEROUT; do
-		if [ "$b" == "$filter" ]; then
+		if [ "$file" != "${file#$filter}" ]; then
 		    KEEP=0
 		    break;
 		fi
@@ -233,10 +235,9 @@ if [ $JUSTARGS == 0 ]; then
 	done
 
 	for file in "${LFILES[@]}"; do
-	    b=$(basename "$file")
 	    KEEP=1
 	    for filter in $FILTEROUT; do
-		if [ "$b" == "$filter" ]; then
+		if [ "$file" != "${file#$filter}" ]; then
 		    KEEP=0
 		    break;
 		fi
