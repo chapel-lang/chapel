@@ -19,7 +19,7 @@ In the mason directory found in ``$CHPL_HOME/tools/mason`` run the following:
 
 .. code-block:: sh
    
-   make build
+   make mason
 
 
 This will create the /.mason directory wherever your home directory
@@ -34,6 +34,14 @@ dependencies.
 
 This puts mason in the path of the user so that mason can be used
 anywhere in the user's file system.
+
+
+To do this all in one step, type:
+
+.. code-block:: sh
+
+   make all
+
 
 
 To remove mason simply change directory to $CHPL_HOME/tools/mason and run:

@@ -12,14 +12,9 @@ link=$(bdir)/mason
 
 REGISTRY=https://github.com/Spartee/mason-registry
 
-all: mason
+all: mason install
 
 mason:
-	@echo "Building Mason..."
-	#build
-	#install
-
-build:
 	@mkdir -p ~/.mason
 	@mkdir -p ~/.mason/src
 	@git -C ~/.mason/ clone $(REGISTRY) registry
