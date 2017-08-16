@@ -870,15 +870,23 @@ hwloc__report_error_format_obj(char *buf, size_t buflen, hwloc_obj_t obj)
 {
 	char typestr[64];
 	char *cpusetstr;
+	char *nodesetstr = NULL;
 	hwloc_obj_type_snprintf(typestr, sizeof(typestr), obj, 0);
 	hwloc_bitmap_asprintf(&cpusetstr, obj->cpuset);
+	if (obj->nodeset) /* may be missing during insert */
+	  hwloc_bitmap_asprintf(&nodesetstr, obj->nodeset);
 	if (obj->os_index != (unsigned) -1)
-	  snprintf(buf, buflen, "%s (P#%u cpuset %s)",
-		   typestr, obj->os_index, cpusetstr);
+	  snprintf(buf, buflen, "%s (P#%u cpuset %s%s%s)",
+		   typestr, obj->os_index, cpusetstr,
+		   nodesetstr ? " nodeset " : "",
+		   nodesetstr ? nodesetstr : "");
 	else
-	  snprintf(buf, buflen, "%s (cpuset %s)",
-		   typestr, cpusetstr);
+	  snprintf(buf, buflen, "%s (cpuset %s%s%s)",
+		   typestr, cpusetstr,
+		   nodesetstr ? " nodeset " : "",
+		   nodesetstr ? nodesetstr : "");
 	free(cpusetstr);
+	free(nodesetstr);
 }
 
 /*

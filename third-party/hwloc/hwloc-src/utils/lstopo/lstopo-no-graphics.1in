@@ -211,6 +211,28 @@ If a comma-separated list of types is given, the layout only
 applies to the corresponding containers.
 Ignored for bridges since their children are always vertically aligned.
 .TP
+\fB\-\-no-index\fR, \fB\-\-no-index=<type1,...>\fR
+Do not show object indexes in the graphical output.
+If a comma-separated list of types is given, indexes are only
+disabled for the given object.
+.TP
+\fB\-\-index\fR, \fB\-\-index=<type1,...>\fR
+Show object indexes in the graphical output (default).
+If a comma-separated list of types is given, indexes are only
+enabled for the given object.
+.TP
+\fB\-\-no-attrs\fR, \fB\-\-no-attrs=<type1,...>\fR
+Do not show object attributes (such as memory size, cache size, PCI link speed, etc.)
+in the graphical output.
+If a comma-separated list of types is given, attributes are only
+disabled for the given object.
+.TP
+\fB\-\-attrs\fR, \fB\-\-attrs=<type1,...>\fR
+Show object attributes (such as memory size, cache size, PCI link speed, etc.)
+in the graphical output (default).
+If a comma-separated list of types is given, attributes are only
+enabled for the given object.
+.TP
 \fB\-\-no\-legend\fR
 Remove the text legend at the bottom.
 .TP

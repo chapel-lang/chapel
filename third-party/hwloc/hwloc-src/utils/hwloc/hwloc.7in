@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2014 Inria.  All rights reserved.
+.\" Copyright © 2010-2017 Inria.  All rights reserved.
 .\" Copyright © 2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
@@ -21,11 +21,11 @@ different operating systems and platforms.
 .
 .
 .SS Definitions
-Hwloc has some specific definitions for terms that are used in this
+hwloc has some specific definitions for terms that are used in this
 man page and other hwloc documentation.
 .
 .TP 5
-.B Hwloc CPU set:
+.B hwloc CPU set:
 A set of processors included in an hwloc object, expressed as a bitmask
 indexed by the physical numbers of the CPUs (as announced by the OS).
 The hwloc definition
@@ -33,16 +33,19 @@ of "CPU set" does not carry any the same connotations as Linux's "CPU
 set" (e.g., process affinity, etc.).
 .
 .TP
+.B hwloc node set:
+A set of NUMA memory nodes near an hwloc object, expressed as a bitmask
+indexed by the physical numbers of the NUMA nodes (as announced by the OS).
+.
+.TP
 .B Linux CPU set:
 See http://www.mjmwired.net/kernel/Documentation/cpusets.txt for a
 discussion of Linux CPU sets.  A
 super-short-ignoring-many-details description (taken from that page)
 is:
-.
-.\" Force a paragraph break, but keep the indentation
-.TP
-\
-.
+.br
+
+.br
  "Cpusets provide a mechanism for assigning a set of CPUs and Memory
 Nodes to a set of tasks."
 .
@@ -52,17 +55,16 @@ See http://www.mjmwired.net/kernel/Documentation/cgroups.txt for a
 discussion of Linux control groups.  A
 super-short-ignoring-many-details description (taken from that page)
 is:
-.
-.\" Force a paragraph break, but keep the indentation
-.TP
-\
+.br
+
+.br
  "Control Groups provide a mechanism for aggregating/partitioning sets
 of tasks, and all their future children, into hierarchical groups
 with specialized behaviour."
 .
 .PP
 To be clear, hwloc supports all of the above concepts.  It is simply
-worth noting that they are 3 different things.
+worth noting that they are different things.
 .
 .SS Location Specification
 .
@@ -80,13 +82,23 @@ Locations can be specified in multiple ways:
 Tuples of hwloc "objects" and associated indexes can be specified in
 the form
 .IR object:index .
-Hwloc objects represent types of mapped items (e.g., packages, cores,
+hwloc objects represent types of mapped items (e.g., packages, cores,
 etc.) in a topology tree; indexes are non-negative integers that
 specify a unique physical object in a topology tree.  Both concepts
 are described in detail, below.
-.\" Force a paragraph break, but keep the indentation.
-.TP
-\
+.br
+
+.br
+Indexes may also be specified as ranges.
+\fIx-y\fR enumerates from index \fIx\fR to \fIy\fR.
+\fIx:y\fR enumerates \fIy\fR objects starting from index \fIx\fR
+(wrapping around the end of the index range if needed).
+\fIx-\fR enumerates all objects starting from index \fIx\fR.
+\fIall\fR, \fIodd\fR, and \fIeven\fR are also supported for listing
+all objects, or only those with odd or even indexes.
+.br
+
+.br
 Chaining multiple tuples together in the more general form
 .I object1:index[.object2:index2[...]]
 is permissable.  While the first tuple's object may appear anywhere in
@@ -97,12 +109,23 @@ When using logical indexes (which is the default),
 indexes specified in chained tuples are relative to the scope of the
 parent object.  For example, "package:0.core:1" refers to the second
 core in the first package.
+.br
+
+.br
 When using OS/physical indexes, the first object matching the given
 index is used.
+.br
+
+.br
+PCI and OS devices may also be designed using their identifier.
+For example, "\fBpci=02:03.1\fR" is the PCI device with bus ID "02:03.1".
+.
+"\fBos=eth0\fR" is the network interface whose software name is "eth0".
 .
 .TP
 .B Hex:
-Locations can also be specified as hexidecimal bitmasks prefixed
+For tools that manipulate object as sets (e.g. hwloc-calc and hwloc-bind),
+locations can also be specified as hexidecimal bitmasks prefixed
 .
 with "0x".  Commas must be used to separate the hex digits into blocks
 of 8, such as "0xffc0140,0x00020110".
@@ -120,30 +143,31 @@ example, "0xf...f,0x1" sets both the first bit and all bits starting
 with the 33rd.  The string "0xf...f" -- with no other specified values
 -- sets all bits.
 .
-.TP
-.B I/O devices:
-Locations may also be a PCI or OS object.
-The corresponding value is the set of CPUs that are close to the
-physical device.
-.
-For example, "\fBpci=02:03.1\fR" is equivalent to the set of processors
-that are close to the hostbridge above PCI device with bus ID "02:03.1".
-.
-"\fBos=eth0\fR" is equivalent to all processors close to the network
-interface whose software name is "eth0".
+.PP
+"all" and "root" are special locations consisting in the root
+object in tree. It contains the entire current topology.
 .
 .PP
-Multiple locations can be specified on the command lines
-(delimited by whitespace); the first token of the execution command is
-assumed to either follow "--" (if specified) or the first token that
-is unrecognized as a location.
+Some tools directly operate on these objects (e.g. hwloc-info and hwloc-annotate).
+They do not support hexadecimal locations because each location may
+correspond to multiple objects.
+For instance, there can be exactly one L3 cache per package and NUMA node,
+which means it's the same location.
+.
+If multiple locations are given on the command-line,
+these tools will operation on each location individually and consecutively.
 .
 .PP
-By default, if multiple locations are specified, they are added,
-meaning that the binding will be wider in the sense that the process
-may run on more objects.
+Some other tools internally manipulate objects as sets (e.g. hwloc-calc and hwloc-bind).
+They translate each input location into a hexidecimal location.
+When I/O objects are used, they are translated into the set
+of processors (or NUMA nodes) that are close to the given object
+(because I/O objects do not contain processors or NUMA nodes).
 .
 .PP
+If multiple locations are specified on the command-line (delimited by whitespace),
+they are combined (the overall location is wider).
+.
 If prefixed with "~", the given location
 will be cleared instead of added to the current list of locations.  If
 prefixed with "x", the given location will be and'ed instead of added
@@ -151,14 +175,11 @@ to the current list.  If prefixed with "^", the given location will be
 xor'ed.
 .
 .PP
-"all" and "root" are special locations consisting in the root
-object in tree. It contains the entire current topology.
-.
 More complex operations may be performed by using
 .IR hwloc-calc
 to compute intermediate values.
 .
-.SS Hwloc Objects
+.SS hwloc Objects
 .
 .PP
 Objects in tuples can be any of the following strings
@@ -170,9 +191,12 @@ Objects in tuples can be any of the following strings
 A set of processors and memory.
 .
 .TP
-.B node
+.B numanode
 A NUMA node; a set of processors around memory which the processors
 can directly access.
+.
+If \fBhbm\fR is used instead of \fBnumanode\fR in locations,
+command-line tools only consider high-bandwidth memory nodes such as KNL's MCDRAM.
 .
 .TP
 .B package
@@ -205,14 +229,15 @@ The additional
 type can be used when several machines form an overall single system image
 (SSI), such as Kerrighed.
 .PP
-I/O devices are not listed here since they are not identified using
-tuples as explained in \fBLocation Specification\fR.
+\fBosdev\fR, \fBpcidev\fR, and \fBbridge\fR may also be used
+to specify special devices although some of them have dedicated identification
+ways as explained in \fBLocation Specification\fR.
 .
 .PP
 Finally, note that an object can be denoted by its numeric "depth" in
 the topology graph.
 .
-.SS Hwloc Indexes
+.SS hwloc Indexes
 Indexes are integer values that uniquely specify a given object of a
 specific type.  Indexes can be expressed either as
 .I logical
@@ -315,11 +340,11 @@ to switch from one mode to another.
 .\" **************************
 .SH SEE ALSO
 .
-Hwloc's command line tool documentation: lstopo(1), hwloc-bind(1),
+hwloc's command line tool documentation: lstopo(1), hwloc-bind(1),
 hwloc-calc(1), hwloc-distrib(1), hwloc-ps(1).
 .
 .PP
-Hwloc has many C API functions, each of which have their own man page.
+hwloc has many C API functions, each of which have their own man page.
 Some top-level man pages are also provided, grouping similar functions
 together.  A few good places to start might include:
 hwlocality_objects(3), hwlocality_types(3), hwlocality_creation(3),
