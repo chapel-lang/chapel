@@ -595,13 +595,7 @@
   ],
   "04d69f54-b85e-11e6-9740-843835579daa": [
     "test/release/examples/benchmarks/lulesh/lulesh.chpl",
-    "test/release/examples/benchmarks/lulesh/luleshInit.chpl",
-    "test/studies/lulesh/bradc/lulesh-dense.chpl",
-    "test/studies/lulesh/bradc/tests/lulesh-eof.chpl",
-    "test/studies/lulesh/bradc/tests/lulesh-eof2.chpl",
-    "test/studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple.chpl",
-    "test/studies/lulesh/bradc/xyztuple/luleshInit3.chpl",
-    "test/studies/lulesh/intelVectBug/lulesh.chpl"
+    "test/release/examples/benchmarks/lulesh/luleshInit.chpl"
   ],
   "d522708e-b85e-11e6-9740-843835579daa": [
     "test/release/examples/benchmarks/miniMD/README"
@@ -696,13 +690,5 @@
   ],
   "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
     "test/release/examples/users-guide/base/typeAliases.chpl"
-  ],
-  "329ba602-b6bd-11e6-9740-843835579daa": [
-    "test/studies/dedup/dedup-distributed-ints.chpl",
-    "test/studies/dedup/dedup-distributed-strings.chpl",
-    "test/studies/dedup/dedup-extern.chpl",
-    "test/studies/dedup/dedup-externblock.chpl",
-    "test/studies/dedup/dedup-local.chpl",
-    "test/studies/dedup/dedup-spawn-sort.chpl"
   ]
 }
