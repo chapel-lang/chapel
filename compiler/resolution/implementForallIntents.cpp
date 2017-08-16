@@ -2074,19 +2074,25 @@ static void pruneFIVec(FIIvec& fivec, int numShadowVars) {
 
 // Not to be invoked upon a reduce intent.
 static void setShadowVarFlagsNew(Symbol* ovar, VarSymbol* svar, IntentTag intent) {
+  // These do not make sense for task/forall intents.
+  INT_ASSERT(!(intent & (INTENT_FLAG_PARAM | INTENT_FLAG_TYPE)));
+  // If this assert fails, we need to handle this case.
+  INT_ASSERT(!(intent & INTENT_FLAG_OUT));
+
+  // All our shadow variables are expected to be refs.
+  INT_ASSERT(svar->qual == QUAL_REF);  //see below: svar->qual = QUAL_CONST_REF
+  svar->addFlag(FLAG_REF_VAR);
+
   if (intent & INTENT_FLAG_CONST) {
+    svar->qual = QUAL_CONST_REF;
     svar->addFlag(FLAG_CONST);
+    if (intent == INTENT_CONST_IN)
+      // Enables canForwardValue(), ex.
+      //   release/examples/benchmarks/hpcc/fft.chpl
+      svar->addFlag(FLAG_REF_TO_CONST);
     if (!ovar->isConstant())
       svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
   }
-
-  svar->addFlag(FLAG_REF_VAR);
-  INT_ASSERT(svar->qual == QUAL_REF); // because it has a ref type
-
-  // If this assert fails, we need to handle this case.
-  INT_ASSERT(!(intent & INTENT_FLAG_OUT));
-  // These do not make sense for task/forall intents.
-  INT_ASSERT(!(intent & (INTENT_FLAG_PARAM | INTENT_FLAG_TYPE)));
 }
 
 //
