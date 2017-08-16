@@ -29,7 +29,7 @@
 #  see https://www.gnu.org/licenses/.
 
 
-INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir)
+AM_CPPFLAGS = -D__GMP_WITHIN_GMP -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libmpz.la
 libmpz_la_SOURCES = aors.h aors_ui.h fits_s.h mul_i.h \

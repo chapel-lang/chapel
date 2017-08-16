@@ -108,12 +108,14 @@ L(reduce_nby1):
 IFDOS(`	mov	%rdx, %r8	')
 IFDOS(`	mov	%rsi, %rdx	')
 IFDOS(`	mov	%rdi, %rcx	')
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_mod_1)
 	jmp	L(reduced)
 L(bmod):
 IFDOS(`	mov	%rdx, %r8	')
 IFDOS(`	mov	%rsi, %rdx	')
 IFDOS(`	mov	%rdi, %rcx	')
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_modexact_1_odd)
 L(reduced):
 

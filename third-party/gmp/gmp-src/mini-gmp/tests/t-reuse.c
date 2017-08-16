@@ -145,7 +145,7 @@ const char *ds_func_names[] =
 void
 testmain (int argc, char **argv)
 {
-  int i;
+  unsigned i;
   int pass, reps = COUNT;
   mpz_t in1, in2, in3;
   unsigned long int in2i;

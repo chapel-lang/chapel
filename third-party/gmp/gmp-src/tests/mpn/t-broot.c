@@ -95,10 +95,23 @@ main (int argc, char **argv)
 	  gmp_fprintf (stderr, "k   = %Mx\n", k);
 	  gmp_fprintf (stderr, "a   = %Nx\n", ap, n);
 	  gmp_fprintf (stderr, "r   = %Nx\n", rp, n);
-	  gmp_fprintf (stderr, "r^n = %Nx\n", pp, n);
+	  gmp_fprintf (stderr, "r^k = %Nx\n", pp, n);
 	  abort ();
 	}
     }
+
+  mpn_broot (rp, ap, MAX_LIMBS, 1);
+  if (mpn_cmp (ap, rp, MAX_LIMBS) != 0)
+    {
+      gmp_fprintf (stderr,
+		   "mpn_broot returned bad result: %u limbs\n",
+		   (unsigned) MAX_LIMBS);
+      gmp_fprintf (stderr, "k   = %Mx\n", 1);
+      gmp_fprintf (stderr, "a   = %Nx\n", ap, MAX_LIMBS);
+      gmp_fprintf (stderr, "r   = %Nx\n", rp, MAX_LIMBS);
+      abort ();
+    }
+
   TMP_FREE;
   tests_end ();
   return 0;

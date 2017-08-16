@@ -1,6 +1,6 @@
 /* GMP module external subroutines.
 
-Copyright 2001-2003 Free Software Foundation, Inc.
+Copyright 2001-2003, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -1627,7 +1627,7 @@ PREINIT:
       void (*op) (mpz_ptr, mpz_srcptr, unsigned long);
     } table[] = {
       { mpz_mul_2exp }, /* 0 */
-      { mpz_div_2exp }, /* 1 */
+      { mpz_fdiv_q_2exp }, /* 1 */
       { mpz_pow_ui   }, /* 2 */
     };
 CODE:
@@ -1653,7 +1653,7 @@ PREINIT:
       void (*op) (mpz_ptr, mpz_srcptr, unsigned long);
     } table[] = {
       { mpz_mul_2exp }, /* 0 */
-      { mpz_div_2exp }, /* 1 */
+      { mpz_fdiv_q_2exp }, /* 1 */
       { mpz_pow_ui   }, /* 2 */
     };
 PPCODE:

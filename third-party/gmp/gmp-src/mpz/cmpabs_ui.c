@@ -1,4 +1,4 @@
-/* mpz_cmpabs_ui.c -- Compare a mpz_t a with an mp_limb_t b.  Return positive,
+/* mpz_cmpabs_ui.c -- Compare an mpz_t a with an mp_limb_t b.  Return positive,
   zero, or negative based on if a > b, a == b, or a < b.
 
 Copyright 1991, 1993-1995, 1997, 2000-2002 Free Software Foundation, Inc.

@@ -1,6 +1,6 @@
 dnl  AMD64 mpn_copyi optimised for CPUs with fast SSE copying and SSSE3.
 
-dnl  Copyright 2012, 2013 Free Software Foundation, Inc.
+dnl  Copyright 2012, 2013, 2015 Free Software Foundation, Inc.
 
 dnl  Contributed to the GNU project by Torbjörn Granlund.
 
@@ -39,15 +39,18 @@ C AMD K10	 0.85		 illop				Y/N
 C AMD bull	 0.70		 0.66				Y
 C AMD pile	 0.68		 0.66				Y
 C AMD steam	 ?		 ?
+C AMD excavator	 ?		 ?
 C AMD bobcat	 1.97		 8.16		1.5/1.5		N
-C AMD jaguar	 ?		 ?
+C AMD jaguar	 0.77		 0.93		0.65/opt	N/Y
 C Intel P4	 2.26		 illop				Y/N
 C Intel core	 0.52		 0.64		opt/opt		Y
 C Intel NHM	 0.52		 0.71		opt/opt		Y
 C Intel SBR	 0.51		 0.54		opt/0.51	Y
-C Intel IBR	 ?		 ?				Y
-C Intel HWL	 0.51		 0.52		0.25/0.25	N
+C Intel IBR	 0.50		 0.54		opt/opt		Y
+C Intel HWL	 0.50		 0.51		opt/opt		Y
+C Intel BWL	 0.55		 0.55		opt/opt		Y
 C Intel atom	 1.16		 1.61		opt/opt		Y
+C Intel SLM	 1.02		 1.07		opt/opt		Y
 C VIA nano	 1.09		 1.08		opt/opt		Y
 
 C We use only 16-byte operations, except for unaligned top-most and bottom-most

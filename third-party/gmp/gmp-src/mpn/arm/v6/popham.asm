@@ -81,6 +81,7 @@ ifdef(`OPERATION_hamdist',`
   define(`HAMD',	`$1')
 ')
 
+MULFUNC_PROLOGUE(mpn_popcount mpn_hamdist)
 
 ASM_START()
 PROLOGUE(func)

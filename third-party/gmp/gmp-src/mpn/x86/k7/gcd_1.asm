@@ -3,7 +3,8 @@ dnl  x86 mpn_gcd_1 optimised for AMD K7.
 dnl  Contributed to the GNU project by by Kevin Ryde.  Rehacked by Torbjorn
 dnl  Granlund.
 
-dnl  Copyright 2000-2002, 2005, 2009, 2011, 2012 Free Software Foundation, Inc.
+dnl  Copyright 2000-2002, 2005, 2009, 2011, 2012, 2014, 2015 Free Software
+dnl  Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -53,6 +54,8 @@ C Numbers measured with: speed -CD -s16-32 -t16 mpn_gcd_1
 C TODO
 C  * Tune overhead, this takes 2-3 cycles more than old code when v0 is tiny.
 C  * Stream things better through registers, avoiding some copying.
+C  * For ELF, avoid putting GOT base in both ebx and esi.  Needs special
+C    LEA/LEAL or else discrete code here.
 
 C ctz_table[n] is the number of trailing zeros on n, or MAXSHIFT if n==0.
 
@@ -124,9 +127,10 @@ C Both U and V are single limbs, reduce with bmod if u0 >> v0.
 	jmp	L(reduced)
 
 L(reduce_nby1):
-ifdef(`PIC_WITH_EBX',`
+ifdef(`PIC_WITH_EBX',`dnl
 	push	%ebx
-	call	L(movl_eip_to_ebx)
+	add	$-4, %esp
+	call	L(movl_eip_ebx)
 	add	$_GLOBAL_OFFSET_TABLE_, %ebx
 ')
 	push	v0			C param 3
@@ -140,14 +144,16 @@ L(bmod):
 	CALL(	mpn_modexact_1_odd)
 
 L(called):
-	add	$12, %esp		C deallocate params
-ifdef(`PIC_WITH_EBX',`
+ifdef(`PIC_WITH_EBX',`dnl
+	add	$16, %esp	C deallocate params
 	pop	%ebx
+',`
+	add	$12, %esp		C deallocate params
 ')
 L(reduced):
 	pop	%edx
 
-	LEA(	ctz_table, %esi)
+	LEAL(	ctz_table, %esi)
 	test	%eax, %eax
 	mov	%eax, %ecx
 	jnz	L(mid)
@@ -178,9 +184,10 @@ L(shift_alot):
 	mov	%eax, %ecx
 	jmp	L(mid)
 
-ifdef(`PIC_WITH_EBX',`
-L(movl_eip_to_ebx):
+ifdef(`PIC_WITH_EBX',`dnl
+L(movl_eip_ebx):
 	mov	(%esp), %ebx
 	ret
 ')
 EPILOGUE()
+ASM_END()

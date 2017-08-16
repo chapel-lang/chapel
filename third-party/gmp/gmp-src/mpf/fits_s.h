@@ -1,6 +1,6 @@
 /* mpf_fits_s*_p -- test whether an mpf fits a C signed type.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -42,14 +42,11 @@ FUNCTION (mpf_srcptr f) __GMP_NOTHROW
   mp_exp_t   exp;
   mp_limb_t  fl;
 
-  fs = SIZ(f);
-  if (fs == 0)
-    return 1;  /* zero fits */
-
   exp = EXP(f);
   if (exp < 1)
     return 1;  /* -1 < f < 1 truncates to zero, so fits */
 
+  fs = SIZ (f);
   fp = PTR(f);
   fn = ABS (fs);
 

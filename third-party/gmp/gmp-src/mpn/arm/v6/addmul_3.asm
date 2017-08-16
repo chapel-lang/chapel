@@ -35,8 +35,9 @@ include(`../config.m4')
 C	     cycles/limb
 C StrongARM:	 -
 C XScale	 -
-C Cortex-A7	 ?
-C Cortex-A8	 ?
+C ARM11		 4.33
+C Cortex-A7	 3.23
+C Cortex-A8	 3.19
 C Cortex-A9	 2.125
 C Cortex-A15	 2
 

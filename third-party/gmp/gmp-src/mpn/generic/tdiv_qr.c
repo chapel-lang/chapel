@@ -183,7 +183,7 @@ mpn_tdiv_qr (mp_ptr qp, mp_ptr rp, mp_size_t qxn,
 		  by the qn most significant limbs from the denominator.  Call
 		  the result qest.  This is either the correct quotient, but
 		  might be 1 or 2 too large.  Compute the remainder from the
-		  division.  (This step is implemented by a mpn_divrem call.)
+		  division.  (This step is implemented by an mpn_divrem call.)
 
 	       2) Is the most significant limb from the remainder < p, where p
 		  is the product of the most significant limb from the quotient

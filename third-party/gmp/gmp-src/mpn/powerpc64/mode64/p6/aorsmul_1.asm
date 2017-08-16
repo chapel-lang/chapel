@@ -71,6 +71,8 @@ ifdef(`OPERATION_submul_1',`
   define(CLRRSC,	`subfc	$1, r0, r0')
 ')
 
+MULFUNC_PROLOGUE(mpn_addmul_1 mpn_submul_1)
+
 ASM_START()
 PROLOGUE(func)
 	std	r31, -8(r1)

@@ -10,7 +10,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2008, 2012 Free Software Foundation, Inc.
+Copyright 2006-2008, 2012, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -70,6 +70,7 @@ mpn_toom53_mul (mp_ptr pp,
   mp_ptr gp;
   mp_ptr as1, asm1, as2, asm2, ash;
   mp_ptr bs1, bsm1, bs2, bsm2, bsh;
+  mp_ptr tmp;
   enum toom7_flags flags;
   TMP_DECL;
 
@@ -92,17 +93,17 @@ mpn_toom53_mul (mp_ptr pp,
 
   TMP_MARK;
 
-  as1  = TMP_SALLOC_LIMBS (n + 1);
-  asm1 = TMP_SALLOC_LIMBS (n + 1);
-  as2  = TMP_SALLOC_LIMBS (n + 1);
-  asm2 = TMP_SALLOC_LIMBS (n + 1);
-  ash  = TMP_SALLOC_LIMBS (n + 1);
-
-  bs1  = TMP_SALLOC_LIMBS (n + 1);
-  bsm1 = TMP_SALLOC_LIMBS (n + 1);
-  bs2  = TMP_SALLOC_LIMBS (n + 1);
-  bsm2 = TMP_SALLOC_LIMBS (n + 1);
-  bsh  = TMP_SALLOC_LIMBS (n + 1);
+  tmp = TMP_ALLOC_LIMBS (10 * (n + 1));
+  as1  = tmp; tmp += n + 1;
+  asm1 = tmp; tmp += n + 1;
+  as2  = tmp; tmp += n + 1;
+  asm2 = tmp; tmp += n + 1;
+  ash  = tmp; tmp += n + 1;
+  bs1  = tmp; tmp += n + 1;
+  bsm1 = tmp; tmp += n + 1;
+  bs2  = tmp; tmp += n + 1;
+  bsm2 = tmp; tmp += n + 1;
+  bsh  = tmp; tmp += n + 1;
 
   gp = pp;
 
@@ -110,7 +111,7 @@ mpn_toom53_mul (mp_ptr pp,
   flags = (enum toom7_flags) (toom7_w3_neg & mpn_toom_eval_pm1 (as1, asm1, 4, ap, n, s, gp));
 
   /* Compute as2 and asm2. */
-  flags = (enum toom7_flags) (flags | toom7_w1_neg & mpn_toom_eval_pm2 (as2, asm2, 4, ap, n, s, gp));
+  flags = (enum toom7_flags) (flags | (toom7_w1_neg & mpn_toom_eval_pm2 (as2, asm2, 4, ap, n, s, gp)));
 
   /* Compute ash = 16 a0 + 8 a1 + 4 a2 + 2 a3 + a4
      = 2*(2*(2*(2*a0 + a1) + a2) + a3) + a4  */

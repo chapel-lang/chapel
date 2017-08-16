@@ -692,7 +692,7 @@ memleaks:
   07/14/17:
     - Have reindex domains/distributions preserve locality (#5757)
   07/25/17:
-    - fix leaks introduced by reindex views in #5757 (#6776)
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
 
 memleaksfull:
   07/08/14:
@@ -729,7 +729,7 @@ memleaksfull:
   07/14/17:
     - Have reindex domains/distributions preserve locality (#5757)
   07/25/17:
-    - fix leaks introduced by reindex views in #5757 (#6776)
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
 
 meteor:
   12/18/13:

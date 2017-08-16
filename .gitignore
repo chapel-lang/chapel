@@ -422,6 +422,8 @@ tags
 /third-party/**/install
 /third-party/llvm/llvm
 
+/third-party/gmp/gmp-src/doc/gmp.info.*
+
 /third-party/fltk/build.*
 /third-party/fltk/install.*
 

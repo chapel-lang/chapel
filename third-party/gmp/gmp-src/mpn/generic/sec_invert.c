@@ -52,23 +52,6 @@ mpn_cnd_neg (int cnd, mp_limb_t *rp, const mp_limb_t *ap, mp_size_t n,
   mpn_cnd_sub_n (cnd, rp, ap, scratch, n);
 }
 
-static void
-mpn_cnd_swap (int cnd, volatile mp_limb_t *ap, volatile mp_limb_t *bp,
-	      mp_size_t n)
-{
-  volatile mp_limb_t mask = - (mp_limb_t) (cnd != 0);
-  mp_size_t i;
-  for (i = 0; i < n; i++)
-    {
-      mp_limb_t a, b, t;
-      a = ap[i];
-      b = bp[i];
-      t = (a ^ b) & mask;
-      ap[i] = a ^ t;
-      bp[i] = b ^ t;
-    }
-}
-
 static int
 mpn_sec_eq_ui (mp_srcptr ap, mp_size_t n, mp_limb_t b)
 {

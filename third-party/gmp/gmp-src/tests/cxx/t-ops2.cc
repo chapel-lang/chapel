@@ -110,7 +110,7 @@ void checkz (){
   CHECK_ALL(mpz_class,6,3,^);
   CHECK(mpz_class,unsigned long,6,2,<<);
   CHECK(mpz_class,unsigned long,6,2,>>);
-  CHECK(mpz_class,unsigned long,-13,2,<<);
+  ASSERT_ALWAYS(mpz_class(-13)<<(unsigned long)2 == (-13)*4);
   CHECK(mpz_class,unsigned long,-13,2,>>);
   ASSERT_ALWAYS(++mpz_class(7)==8);
   ASSERT_ALWAYS(++mpz_class(-8)==-7);
@@ -132,6 +132,18 @@ void checkz (){
   ASSERT_ALWAYS(mpz_class(1)+DBL_MAX>2);
   ASSERT_ALWAYS(mpz_class(1)+DBL_MIN<2);
   ASSERT_ALWAYS(mpz_class(1)+std::numeric_limits<double>::denorm_min()<2);
+  ASSERT_ALWAYS(gcd(mpz_class(6),mpz_class(8))==2);
+  ASSERT_ALWAYS(gcd(-mpz_class(6),mpz_class(8))==2);
+  ASSERT_ALWAYS(gcd(-mpz_class(6),-mpz_class(8))==2);
+  ASSERT_ALWAYS(gcd(mpz_class(6),8.f)==2);
+  ASSERT_ALWAYS(gcd(-mpz_class(6),static_cast<unsigned char>(8))==2);
+  ASSERT_ALWAYS(gcd(static_cast<long>(-6),mpz_class(5)+3)==2);
+  ASSERT_ALWAYS(lcm(mpz_class(6),mpz_class(8))==24);
+  ASSERT_ALWAYS(lcm(-mpz_class(6),mpz_class(8))==24);
+  ASSERT_ALWAYS(lcm(-mpz_class(6),-mpz_class(8))==24);
+  ASSERT_ALWAYS(lcm(mpz_class(6),static_cast<short>(8))==24);
+  ASSERT_ALWAYS(lcm(-mpz_class(6),static_cast<unsigned char>(8))==24);
+  ASSERT_ALWAYS(lcm(-6.,mpz_class(5)+3)==24);
 }
 
 template<class T>

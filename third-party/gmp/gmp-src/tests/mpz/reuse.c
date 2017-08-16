@@ -73,7 +73,7 @@ struct {
   const char *fname;
   int isdivision;
   int isslow;
-} dss[] =
+} static dss[] =
   { { mpz_add,     "mpz_add",	  0, 0 },
     { mpz_sub,     "mpz_sub",	  0, 0 },
     { mpz_mul,     "mpz_mul",	  0, 0 },
@@ -97,7 +97,7 @@ struct {
   dsi_func fptr;
   const char *fname;
   int mod;
-} dsi[] =
+} static dsi[] =
 {
   /* Don't change order here without changing the code in main(). */
   { mpz_add_ui,         "mpz_add_ui",	     0 },
@@ -116,7 +116,7 @@ struct {
 struct {
   dsi_div_func fptr;
   const char *fname;
-} dsi_div[] =
+} static dsi_div[] =
 {
   { mpz_cdiv_q_ui,       "mpz_cdiv_q_ui" },
   { mpz_cdiv_r_ui,       "mpz_cdiv_r_ui" },
@@ -130,7 +130,7 @@ struct {
   ddsi_div_func fptr;
   const char *fname;
   int isslow;
-} ddsi_div[] =
+} static ddsi_div[] =
 {
   { mpz_cdiv_qr_ui,     "mpz_cdiv_qr_ui",    0 },
   { mpz_fdiv_qr_ui,     "mpz_fdiv_qr_ui",    0 },
@@ -142,7 +142,7 @@ struct {
   ddss_div_func fptr;
   const char *fname;
   int isslow;
-} ddss_div[] =
+} static ddss_div[] =
 {
   { mpz_cdiv_qr,  "mpz_cdiv_qr",    0 },
   { mpz_fdiv_qr,  "mpz_fdiv_qr",    0 },
@@ -153,7 +153,7 @@ struct {
   ds_func fptr;
   const char *fname;
   int nonneg;
-} ds[] =
+} static ds[] =
 {
   { mpz_abs,    "mpz_abs",    0 },
   { mpz_com,    "mpz_com",    0 },

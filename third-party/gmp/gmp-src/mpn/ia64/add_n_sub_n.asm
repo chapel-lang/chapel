@@ -53,8 +53,6 @@ define(`up1',`r14')
 define(`vp0',`vp')
 define(`vp1',`r15')
 
-define(`cmpltu',  `cmp.ltu')
-define(`cmpeqor', `cmp.eq.or')
 
 ASM_START()
 PROLOGUE(mpn_add_n_sub_n)

@@ -4,7 +4,7 @@
    THEY'RE ALMOST CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR
    COMPLETELY IN FUTURE GNU MP RELEASES.
 
-Copyright 2003, 2004, 2011, 2012 Free Software Foundation, Inc.
+Copyright 2003, 2004, 2011-2013, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -62,7 +62,7 @@ int  __gmpn_cpuid_available (void);
 
 static struct {
   const char  *name;
-  const char  vendor[13];
+  const char  *vendor;
   unsigned    fms;
 } fake_cpuid_table[] = {
   { "i386",       "" },
@@ -76,11 +76,21 @@ static struct {
   { "prescott",   "GenuineIntel", MAKE_FMS (15, 3) },
   { "nocona",     "GenuineIntel", MAKE_FMS (15, 4) },
   { "core2",      "GenuineIntel", MAKE_FMS (6, 0xf) },
-  { "coreinhm",   "GenuineIntel", MAKE_FMS (6, 0x1a) },
-  { "coreiwsm",   "GenuineIntel", MAKE_FMS (6, 0x25) },
-  { "coreisbr",   "GenuineIntel", MAKE_FMS (6, 0x2a) },
-  { "coreihwl",   "GenuineIntel", MAKE_FMS (6, 0x3c) },
+  { "nehalem",    "GenuineIntel", MAKE_FMS (6, 0x1a) },
+  { "nhm",        "GenuineIntel", MAKE_FMS (6, 0x1a) },
   { "atom",       "GenuineIntel", MAKE_FMS (6, 0x1c) },
+  { "westmere",   "GenuineIntel", MAKE_FMS (6, 0x25) },
+  { "wsm",        "GenuineIntel", MAKE_FMS (6, 0x25) },
+  { "sandybridge","GenuineIntel", MAKE_FMS (6, 0x2a) },
+  { "sbr",        "GenuineIntel", MAKE_FMS (6, 0x2a) },
+  { "silvermont", "GenuineIntel", MAKE_FMS (6, 0x37) },
+  { "slm",        "GenuineIntel", MAKE_FMS (6, 0x37) },
+  { "haswell",    "GenuineIntel", MAKE_FMS (6, 0x3c) },
+  { "hwl",        "GenuineIntel", MAKE_FMS (6, 0x3c) },
+  { "broadwell",  "GenuineIntel", MAKE_FMS (6, 0x3d) },
+  { "bwl",        "GenuineIntel", MAKE_FMS (6, 0x3d) },
+  { "skylake",    "GenuineIntel", MAKE_FMS (6, 0x5e) },
+  { "sky",        "GenuineIntel", MAKE_FMS (6, 0x5e) },
 
   { "k5",         "AuthenticAMD", MAKE_FMS (5, 0) },
   { "k6",         "AuthenticAMD", MAKE_FMS (5, 3) },
@@ -91,6 +101,10 @@ static struct {
   { "k10",        "AuthenticAMD", MAKE_FMS (16, 0) },
   { "bobcat",     "AuthenticAMD", MAKE_FMS (20, 1) },
   { "bulldozer",  "AuthenticAMD", MAKE_FMS (21, 1) },
+  { "piledriver", "AuthenticAMD", MAKE_FMS (21, 2) },
+  { "steamroller","AuthenticAMD", MAKE_FMS (21, 0x30) },
+  { "excavator",  "AuthenticAMD", MAKE_FMS (21, 0x60) },
+  { "jaguar",     "AuthenticAMD", MAKE_FMS (22, 1) },
 
   { "viac3",      "CentaurHauls", MAKE_FMS (6, 0) },
   { "viac32",     "CentaurHauls", MAKE_FMS (6, 9) },

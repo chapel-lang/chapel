@@ -74,19 +74,19 @@ PROLOGUE(mpn_gcd_1)
 	mov	x19, v0
 
 	cmp	n, #1
-	bne	L(nby1)
+	b.ne	L(nby1)
 
 C Both U and V are single limbs, reduce with bmod if u0 >> v0.
 	ldr	x3, [up]
 	cmp	v0, x3, lsr #BMOD_THRES_LOG2
-	bhi	L(red1)
+	b.hi	L(red1)
 
 L(bmod):mov	x3, #0			C carry argument
 	bl	mpn_modexact_1c_odd
 	b	L(red0)
 
 L(nby1):cmp	n, #BMOD_1_TO_MOD_1_THRESHOLD
-	blo	L(bmod)
+	b.lo	L(bmod)
 
 	bl	mpn_mod_1
 
@@ -94,7 +94,7 @@ L(red0):mov	x3, x0
 L(red1):cmp	x3, #0
 	rbit	x12, x3
 	clz	x12, x12
-	bne	L(mid)
+	b.ne	L(mid)
 	b	L(end)
 
 	ALIGN(8)
@@ -116,7 +116,7 @@ L(mid):	lsr	x3, x3, x12		C
 ')
 	rbit	x12, x1
 	clz	x12, x12		C
-	bne	L(top)			C
+	b.ne	L(top)			C
 
 L(end):	lsl	x0, x19, x20
 	ldp     x19, x20, [sp,#16]

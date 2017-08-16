@@ -60,6 +60,7 @@ define(`x1', `r12')
 define(`u0', `r8')
 define(`v0', `r10')
 
+MULFUNC_PROLOGUE(mpn_rsh1add_n mpn_rsh1sub_n)
 
 ASM_START()
 PROLOGUE(func)

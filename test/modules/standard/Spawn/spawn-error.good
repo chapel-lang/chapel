@@ -1,1 +1,1 @@
-spawn-error.chpl:5: error: No such file or directory encountered when launching subprocess
+spawn-error.chpl:5: error: uncaught error - No such file or directory encountered when launching subprocess

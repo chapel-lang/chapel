@@ -2,7 +2,7 @@
 
 /*
 
-Copyright 1996-2014 Free Software Foundation, Inc.
+Copyright 1996-2016 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -137,6 +137,10 @@ see https://www.gnu.org/licenses/.
 
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
+
+/* Define to 1 if the compiler accepts gcc style __attribute__ ((visibility))
+   and __attribute__ ((alias)) */
+#undef HAVE_HIDDEN_ALIAS
 
 /* Define one of these to 1 for the host CPU family.
    If your CPU is not in any of these families, leave all undefined.
@@ -302,6 +306,7 @@ see https://www.gnu.org/licenses/.
 #undef HAVE_NATIVE_mpn_mul_5
 #undef HAVE_NATIVE_mpn_mul_6
 #undef HAVE_NATIVE_mpn_mul_basecase
+#undef HAVE_NATIVE_mpn_mullo_basecase
 #undef HAVE_NATIVE_mpn_nand_n
 #undef HAVE_NATIVE_mpn_nior_n
 #undef HAVE_NATIVE_mpn_popcount
@@ -413,9 +418,6 @@ see https://www.gnu.org/licenses/.
 /* Define to 1 if you have the `strerror' function. */
 #undef HAVE_STRERROR
 
-/* Define to 1 if cpp supports the ANSI # stringizing operator. */
-#undef HAVE_STRINGIZE
-
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
 
@@ -506,9 +508,11 @@ see https://www.gnu.org/licenses/.
 /* Assembler local label prefix */
 #undef LSYM_PREFIX
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* Define to 1 to disable the use of inline assembly */
+#undef NO_ASM
 
 /* Name of package */
 #undef PACKAGE
@@ -563,9 +567,6 @@ see https://www.gnu.org/licenses/.
 
 /* Version number of package */
 #undef VERSION
-
-/* Defined to 1 as per --enable-assembly */
-#undef WANT_ASSEMBLY
 
 /* Define to 1 to enable ASSERT checking, per --enable-assert */
 #undef WANT_ASSERT

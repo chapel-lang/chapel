@@ -1,6 +1,6 @@
 /* mpz_scan1 -- search for a 1 bit.
 
-Copyright 2000-2002, 2004, 2012 Free Software Foundation, Inc.
+Copyright 2000-2002, 2004, 2012, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -90,7 +90,7 @@ mpz_scan1 (mpz_srcptr u, mp_bitcnt_t starting_bit) __GMP_NOTHROW
     {
       /* If there's a non-zero limb before ours then we're in the ones
 	 complement region.  */
-      if (mpn_zero_p (u_ptr, starting_limb)) {
+      if (starting_limb == 0 || mpn_zero_p (u_ptr, starting_limb)) {
 	if (limb == 0)
 	  /* Seeking for the first non-zero bit, it is the same for u and -u. */
 	  goto search_nonzero;

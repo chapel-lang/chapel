@@ -43,7 +43,7 @@ mpz_init_set (mpz_ptr w, mpz_srcptr u)
   size = ABS (usize);
 
   ALLOC (w) = MAX (size, 1);
-  PTR (w) = (mp_ptr) (*__gmp_allocate_func) ((size_t) ALLOC (w) * GMP_LIMB_BYTES);
+  PTR (w) = __GMP_ALLOCATE_FUNC_LIMBS (ALLOC (w));
 
   wp = PTR (w);
   up = PTR (u);

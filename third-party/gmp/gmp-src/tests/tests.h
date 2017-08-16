@@ -299,6 +299,7 @@ unsigned long refmpn_scan0 (mp_srcptr, unsigned long);
 unsigned long refmpn_scan1 (mp_srcptr, unsigned long);
 void refmpn_setbit (mp_ptr, unsigned long);
 void refmpn_sqr (mp_ptr, mp_srcptr, mp_size_t);
+void refmpn_sqrlo (mp_ptr, mp_srcptr, mp_size_t);
 mp_size_t refmpn_sqrtrem (mp_ptr, mp_ptr, mp_srcptr, mp_size_t);
 
 void refmpn_sub_ddmmss (mp_limb_t *, mp_limb_t *, mp_limb_t, mp_limb_t, mp_limb_t, mp_limb_t);

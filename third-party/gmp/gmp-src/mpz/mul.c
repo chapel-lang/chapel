@@ -113,7 +113,7 @@ mpz_mul (mpz_ptr w, mpz_srcptr u, mpz_srcptr v)
 	(*__gmp_free_func) (wp, (size_t) ALLOC (w) * GMP_LIMB_BYTES);
 
       ALLOC (w) = wsize;
-      wp = (mp_ptr) (*__gmp_allocate_func) ((size_t) wsize * GMP_LIMB_BYTES);
+      wp = __GMP_ALLOCATE_FUNC_LIMBS (wsize);
       PTR (w) = wp;
     }
   else

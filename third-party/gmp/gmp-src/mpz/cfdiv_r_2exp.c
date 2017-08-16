@@ -73,12 +73,12 @@ cfdiv_r_2exp (mpz_ptr w, mpz_srcptr u, mp_bitcnt_t cnt, int dir)
 	  /* if already smaller than limb_cnt then do nothing */
 	  if (abs_usize <= limb_cnt)
 	    return;
-	  wp = PTR(w);
+	  wp = (mp_ptr) up;
 	}
       else
 	{
 	  i = MIN (abs_usize, limb_cnt+1);
-	  wp = MPZ_REALLOC (w, i);
+	  wp = MPZ_NEWALLOC (w, i);
 	  MPN_COPY (wp, up, i);
 
 	  /* if smaller than limb_cnt then only the copy is needed */
@@ -118,13 +118,9 @@ cfdiv_r_2exp (mpz_ptr w, mpz_srcptr u, mp_bitcnt_t cnt, int dir)
 
       /* Ones complement */
       i = MIN (abs_usize, limb_cnt+1);
-      mpn_com (wp, up, i);
+      ASSERT_CARRY (mpn_neg (wp, up, i));
       for ( ; i <= limb_cnt; i++)
 	wp[i] = GMP_NUMB_MAX;
-
-      /* Twos complement.  Since u!=0 in the relevant part, the twos
-	 complement never gives 0 and a carry, so can use MPN_INCR_U. */
-      MPN_INCR_U (wp, limb_cnt+1, CNST_LIMB(1));
 
       usize = -usize;
     }

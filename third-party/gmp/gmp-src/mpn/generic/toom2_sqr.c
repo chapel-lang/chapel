@@ -6,7 +6,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2010, 2012 Free Software Foundation, Inc.
+Copyright 2006-2010, 2012, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -81,7 +81,7 @@ mpn_toom2_sqr (mp_ptr pp,
   s = an >> 1;
   n = an - s;
 
-  ASSERT (0 < s && s <= n);
+  ASSERT (0 < s && s <= n && s >= n - 1);
 
   asm1 = pp;
 
@@ -97,16 +97,16 @@ mpn_toom2_sqr (mp_ptr pp,
 	  mpn_sub_n (asm1, a0, a1, n);
 	}
     }
-  else
+  else /* n - s == 1 */
     {
-      if (mpn_zero_p (a0 + s, n - s) && mpn_cmp (a0, a1, s) < 0)
+      if (a0[s] == 0 && mpn_cmp (a0, a1, s) < 0)
 	{
 	  mpn_sub_n (asm1, a1, a0, s);
-	  MPN_ZERO (asm1 + s, n - s);
+	  asm1[s] = 0;
 	}
       else
 	{
-	  mpn_sub (asm1, a0, n, a1, s);
+	  asm1[s] = a0[s] - mpn_sub_n (asm1, a0, a1, s);
 	}
     }
 
@@ -138,9 +138,9 @@ mpn_toom2_sqr (mp_ptr pp,
   ASSERT (cy + 1  <= 3);
   ASSERT (cy2 <= 2);
 
-  mpn_incr_u (pp + 2 * n, cy2);
+  MPN_INCR_U (pp + 2 * n, s + s, cy2);
   if (LIKELY (cy <= 2))
-    mpn_incr_u (pp + 3 * n, cy);
+    MPN_INCR_U (pp + 3 * n, s + s - n, cy);
   else
-    mpn_decr_u (pp + 3 * n, 1);
+    MPN_DECR_U (pp + 3 * n, s + s - n, 1);
 }

@@ -74,16 +74,16 @@ EPILOGUE()
 
 PROLOGUE(func)
 	CLRCB
-L(ent):	stw	r31, -4(r1)
-	stw	r30, -8(r1)
-	stw	r29, -12(r1)
-	stw	r28, -16(r1)
-
+L(ent):	stwu	r1, -32(r1)
 	rlwinm.	r0, r6, 0,30,31	C r0 = n & 3, set cr0
 	cmpwi	cr6, r0, 2
+	stw	r28, 8(r1)
 	addi	r6, r6, 3	C compute count...
+	stw	r29, 12(r1)
 	srwi	r6, r6, 2	C ...for ctr
+	stw	r30, 16(r1)
 	mtctr	r6		C copy count into ctr
+	stw	r31, 20(r1)
 	beq	cr0, L(b00)
 	blt	cr6, L(b01)
 	beq	cr6, L(b10)
@@ -175,12 +175,13 @@ L(end):	ADDSUBC	r28, r7, r6
 	stw	r30, 8(r3)
 	stw	r31, 12(r3)
 
-L(ret):	lwz	r31, -4(r1)
-	lwz	r30, -8(r1)
-	lwz	r29, -12(r1)
-	lwz	r28, -16(r1)
-
+L(ret):
+	lwz	r28, 8(r1)
+	lwz	r29, 12(r1)
 	subfe	r3, r0, r0	C -cy
+	lwz	r30, 16(r1)
 	GENRVAL
+	lwz	r31, 20(r1)
+	addi	r1, r1, 32
 	blr
 EPILOGUE()

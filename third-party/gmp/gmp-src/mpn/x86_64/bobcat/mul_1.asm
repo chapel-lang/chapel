@@ -66,7 +66,7 @@ IFDOS(` define(`rp',      `%rcx')    ') dnl
 IFDOS(` define(`up',      `%rsi')    ') dnl
 IFDOS(` define(`n_param', `%r8')     ') dnl
 IFDOS(` define(`v0',      `%r9')     ') dnl
-IFDOS(` define(`cy',      `64(%rsp)')') dnl
+IFDOS(` define(`cy',      `56(%rsp)')') dnl
 C DOS64 allocations
 IFDOS(` define(`n',       `%rbx')    ') dnl
 IFDOS(` define(`w0',      `%r8')     ') dnl

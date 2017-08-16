@@ -39,11 +39,7 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
       error = 1;                                                        \
     }
 
-#if HAVE_STRINGIZE
 #define EXPECT(fun,answer)  EXPECT_S(fun,#fun,answer)
-#else
-#define EXPECT(fun,answer)  EXPECT_S(fun,"fun",answer)
-#endif
 
 int
 main (void)

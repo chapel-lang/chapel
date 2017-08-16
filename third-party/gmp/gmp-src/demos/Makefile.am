@@ -32,7 +32,7 @@
 SUBDIRS = calc expr
 EXTRA_DIST = perl primes.h
 
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 LDADD = $(top_builddir)/libgmp.la
 
 qcn_LDADD = $(LDADD) $(LIBM)

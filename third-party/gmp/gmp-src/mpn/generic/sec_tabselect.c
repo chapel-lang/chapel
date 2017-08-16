@@ -41,7 +41,7 @@ mpn_sec_tabselect (volatile mp_limb_t *rp, volatile const mp_limb_t *tab,
 {
   mp_size_t k, i;
   mp_limb_t mask;
-  volatile mp_limb_t *tp;
+  volatile const mp_limb_t *tp;
 
   for (k = 0; k < nents; k++)
     {

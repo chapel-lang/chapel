@@ -101,7 +101,7 @@ see https://www.gnu.org/licenses/.  */
    like to have helping everywhere that uses a quotient-only division. */
 
 double
-mpq_get_d (const mpq_t src)
+mpq_get_d (mpq_srcptr src)
 {
   double res;
   mp_srcptr np, dp;

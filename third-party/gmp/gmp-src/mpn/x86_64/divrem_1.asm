@@ -1,6 +1,6 @@
 dnl  x86-64 mpn_divrem_1 -- mpn by limb division.
 
-dnl  Copyright 2004, 2005, 2007-2012 Free Software Foundation, Inc.
+dnl  Copyright 2004, 2005, 2007-2012, 2014 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -140,8 +140,11 @@ IFSTD(`	push	%rdi		')
 IFSTD(`	push	%rsi		')
 	push	%r8
 IFSTD(`	mov	d, %rdi		')
+IFDOS(`	sub	$32, %rsp	')
 IFDOS(`	mov	d, %rcx		')
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_invert_limb)
+IFDOS(`	add	$32, %rsp	')
 	pop	%r8
 IFSTD(`	pop	%rsi		')
 IFSTD(`	pop	%rdi		')
@@ -173,7 +176,7 @@ L(nent):lea	1(%rax), %rbp		C
 	jns	L(ntop)			C
 
 	xor	R32(%rcx), R32(%rcx)
-	jmp	L(87)
+	jmp	L(frac)
 
 L(nfx):	sub	d, %rax
 	inc	%r13
@@ -200,9 +203,14 @@ L(44):
 IFSTD(`	push	%rdi		')
 IFSTD(`	push	%rsi		')
 	push	%r8
+IFSTD(`	sub	$8, %rsp	')
 IFSTD(`	mov	d, %rdi		')
+IFDOS(`	sub	$40, %rsp	')
 IFDOS(`	mov	d, %rcx		')
+	ASSERT(nz, `test $15, %rsp')
 	CALL(	mpn_invert_limb)
+IFSTD(`	add	$8, %rsp	')
+IFDOS(`	add	$40, %rsp	')
 	pop	%r8
 IFSTD(`	pop	%rsi		')
 IFSTD(`	pop	%rdi		')
@@ -211,7 +219,7 @@ IFSTD(`	pop	%rdi		')
 	mov	%rax, dinv
 	mov	%rbp, %rax
 	test	un, un
-	je	L(87)
+	je	L(frac)
 
 L(uent):dec	un
 	mov	(up,un,8), %rbp
@@ -266,7 +274,7 @@ L(uend):shl	R8(%rcx), %rbp
 	jae	L(efx)
 L(eok):	mov	%r13, (qp)
 	sub	$8, qp
-	jmp	L(87)
+	jmp	L(frac)
 
 L(ufx):	sub	d, %rax
 	inc	%r13
@@ -275,7 +283,7 @@ L(efx):	sub	d, %rax
 	inc	%r13
 	jmp	L(eok)
 
-L(87):	mov	d, %rbp
+L(frac):mov	d, %rbp
 	neg	%rbp
 	jmp	L(fent)
 

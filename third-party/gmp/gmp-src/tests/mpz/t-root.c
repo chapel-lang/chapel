@@ -1,6 +1,7 @@
 /* Test mpz_root, mpz_rootrem, and mpz_perfect_power_p.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2009 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2009, 2015 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -27,7 +28,7 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 void debug_mp (mpz_t, int);
 
 void
-check_one (mpz_t root1, mpz_t x2, unsigned long nth, int i)
+check_one (mpz_t root1, mpz_t x2, unsigned long nth, int res, int i)
 {
   mpz_t temp, temp2;
   mpz_t root2, rem2;
@@ -49,13 +50,13 @@ check_one (mpz_t root1, mpz_t x2, unsigned long nth, int i)
   mpz_add (temp2, temp, rem2);
 
   /* Is power of result > argument?  */
-  if (mpz_cmp (root1, root2) != 0 || mpz_cmp (x2, temp2) != 0 || mpz_cmpabs (temp, x2) > 0)
+  if (mpz_cmp (root1, root2) != 0 || mpz_cmp (x2, temp2) != 0 || mpz_cmpabs (temp, x2) > 0 || res == mpz_cmp_ui (rem2, 0))
     {
       fprintf (stderr, "ERROR after test %d\n", i);
       debug_mp (x2, 10);
       debug_mp (root1, 10);
       debug_mp (root2, 10);
-      fprintf (stderr, "nth: %lu\n", nth);
+      fprintf (stderr, "nth: %lu ,res: %i\n", nth, res);
       abort ();
     }
 
@@ -97,7 +98,7 @@ main (int argc, char **argv)
   mpz_t x2;
   mpz_t root1;
   mp_size_t x2_size;
-  int i;
+  int i, res;
   int reps = 500;
   unsigned long nth;
   gmp_randstate_ptr rands;
@@ -116,8 +117,8 @@ main (int argc, char **argv)
 
   /* This triggers a gcc 4.3.2 bug */
   mpz_set_str (x2, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff80000000000000000000000000000000000000000000000000000000000000002", 16);
-  mpz_root (root1, x2, 2);
-  check_one (root1, x2, 2, -1);
+  res = mpz_root (root1, x2, 2);
+  check_one (root1, x2, 2, res, -1);
 
   for (i = 0; i < reps; i++)
     {
@@ -131,7 +132,7 @@ main (int argc, char **argv)
       mpz_urandomb (bs, rands, 15);
       nth = mpz_getlimbn (bs, 0) % mpz_sizeinbase (x2, 2) + 2;
 
-      mpz_root (root1, x2, nth);
+      res = mpz_root (root1, x2, nth);
 
       mpz_urandomb (bs, rands, 4);
       bsi = mpz_get_ui (bs);
@@ -146,16 +147,16 @@ main (int argc, char **argv)
 	    }
 	  else
 	    mpz_add_ui (x2, x2, bsi >> 2);
-	  mpz_root (root1, x2, nth);
+	  res = mpz_root (root1, x2, nth);
 	}
 
-      check_one (root1, x2, nth, i);
+      check_one (root1, x2, nth, res, i);
 
       if (((nth & 1) != 0) && ((bsi & 2) != 0))
 	{
 	  mpz_neg (x2, x2);
 	  mpz_neg (root1, root1);
-	  check_one (root1, x2, nth, i);
+	  check_one (root1, x2, nth, res, i);
 	}
     }
 

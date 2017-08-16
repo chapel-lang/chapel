@@ -1,6 +1,6 @@
 /* Generate data for combinatorics: fac_ui, bin_uiui, ...
 
-Copyright 2002, 2011-2013 Free Software Foundation, Inc.
+Copyright 2002, 2011-2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -101,7 +101,7 @@ gen_consts (int numb, int nail, int limb)
   ofl = b - 1;
   printf
     ("#define ODD_FACTORIAL_TABLE_LIMIT (%lu)\n", ofl);
-  mpz_init2 (mask, numb);
+  mpz_init2 (mask, numb + 1);
   mpz_setbit (mask, numb);
   mpz_sub_ui (mask, mask, 1);
   printf
@@ -268,7 +268,7 @@ main (int argc, char *argv[])
 
   if (argc != 3)
     {
-      fprintf (stderr, "Usage: gen-fac_ui limbbits nailbits\n");
+      fprintf (stderr, "Usage: gen-fac limbbits nailbits\n");
       exit (1);
     }
   limb_bits = atoi (argv[1]);

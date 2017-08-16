@@ -36,7 +36,7 @@ check_one (const char *name, mpz_srcptr x, double y, int cmp, int cmpabs)
   got = mpz_cmp_d (x, y);
   if (SGN(got) != cmp)
     {
-      int i;
+      unsigned i;
       printf    ("mpz_cmp_d wrong (from %s)\n", name);
       printf    ("  got  %d\n", got);
       printf    ("  want %d\n", cmp);
@@ -97,8 +97,8 @@ check_data (void)
     { "-2", -1.5,  -1,  1 },
   };
 
-  mpz_t  x;
-  int    i;
+  mpz_t    x;
+  unsigned i;
 
   mpz_init (x);
 

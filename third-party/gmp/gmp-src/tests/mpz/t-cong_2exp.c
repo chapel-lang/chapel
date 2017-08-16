@@ -157,7 +157,6 @@ check_random (int reps)
 void
 check_random_bits (int reps)
 {
-  gmp_randstate_ptr rands = RANDS;
   mp_bitcnt_t ea, ec, en, d;
   mp_bitcnt_t m = 10 * GMP_LIMB_BITS;
   mpz_t  a, c;

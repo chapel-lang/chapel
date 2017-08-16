@@ -187,7 +187,7 @@ mpn_mu_div_qr2 (mp_ptr qp,
     {
       MPN_COPY (tp + 1, dp, in);
       tp[0] = 1;
-      mpn_invertappr (ip, tp, in + 1, NULL);
+      mpn_invertappr (ip, tp, in + 1, tp + in + 1);
       MPN_COPY_INCR (ip, ip + 1, in);
     }
   else
@@ -197,7 +197,7 @@ mpn_mu_div_qr2 (mp_ptr qp,
 	MPN_ZERO (ip, in);
       else
 	{
-	  mpn_invertappr (ip, tp, in + 1, NULL);
+	  mpn_invertappr (ip, tp, in + 1, tp + in + 1);
 	  MPN_COPY_INCR (ip, ip + 1, in);
 	}
     }
@@ -260,8 +260,8 @@ mpn_preinv_mu_div_qr (mp_ptr qp,
   else
     MPN_COPY_INCR (rp, np, dn);
 
-  if (qn == 0)
-    return qh;			/* Degenerate use.  Should we allow this? */
+  /* if (qn == 0) */			/* The while below handles this case */
+  /*   return qh; */			/* Degenerate use.  Should we allow this? */
 
   while (qn > 0)
     {
@@ -399,11 +399,12 @@ mpn_mu_div_qr_choose_in (mp_size_t qn, mp_size_t dn, int k)
 mp_size_t
 mpn_mu_div_qr_itch (mp_size_t nn, mp_size_t dn, int mua_k)
 {
-  mp_size_t itch_local = mpn_mulmod_bnm1_next_size (dn + 1);
   mp_size_t in = mpn_mu_div_qr_choose_in (nn - dn, dn, mua_k);
-  mp_size_t itch_out = mpn_mulmod_bnm1_itch (itch_local, dn, in);
+  mp_size_t itch_preinv = mpn_preinv_mu_div_qr_itch (nn, dn, in);
+  mp_size_t itch_invapp = mpn_invertappr_itch (in + 1) + in + 2; /* 3in + 4 */
 
-  return in + itch_local + itch_out;
+  ASSERT (itch_preinv >= itch_invapp);
+  return in + MAX (itch_invapp, itch_preinv);
 }
 
 mp_size_t

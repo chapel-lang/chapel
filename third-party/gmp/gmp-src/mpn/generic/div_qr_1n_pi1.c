@@ -49,7 +49,7 @@ see https://www.gnu.org/licenses/.  */
 
 /* FIXME: Duplicated in mod_1_1.c. Move to gmp-impl.h */
 
-#if defined (__GNUC__)
+#if defined (__GNUC__) && ! defined (NO_ASM)
 
 #if HAVE_HOST_CPU_FAMILY_x86 && W_TYPE_SIZE == 32
 #define add_mssaaaa(m, s1, s0, a1, a0, b1, b0)				\
@@ -130,7 +130,7 @@ see https://www.gnu.org/licenses/.  */
 	     "%2" ((UDItype)(a0)), "r" ((UDItype)(b0)) __CLOBBER_CC)
 #endif
 
-#if defined (__arm__) && W_TYPE_SIZE == 32
+#if defined (__arm__) && !defined (__thumb__) && W_TYPE_SIZE == 32
 #define add_mssaaaa(m, sh, sl, ah, al, bh, bl)				\
   __asm__ (  "adds	%2, %5, %6\n\t"					\
 	     "adcs	%1, %3, %4\n\t"					\

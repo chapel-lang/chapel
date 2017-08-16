@@ -1,4 +1,4 @@
-/* Copyright 2006, 2007, 2009, 2010, 2013, 2014 Free Software Foundation, Inc.
+/* Copyright 2006, 2007, 2009, 2010, 2013-2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -40,7 +40,7 @@ dumpy (mp_srcptr p, mp_size_t n)
       for (i = 3; i >= 0; i--)
 	{
 	  printf ("%0*lx", (int) (2 * sizeof (mp_limb_t)), p[i]);
-	  printf (" " + (i == 0));
+	  printf (i == 0 ? "" : " ");
 	}
     }
   else
@@ -48,7 +48,7 @@ dumpy (mp_srcptr p, mp_size_t n)
       for (i = n - 1; i >= 0; i--)
 	{
 	  printf ("%0*lx", (int) (2 * sizeof (mp_limb_t)), p[i]);
-	  printf (" " + (i == 0));
+	  printf (i == 0 ? "" : " ");
 	}
     }
   puts ("");
@@ -97,7 +97,7 @@ check_one (mp_ptr qp, mp_srcptr rp,
 
   ASSERT_NOCARRY (refmpn_sub_n (tp, np, tp, nn));
   tvalue = "N-Q*D";
-  if (!mpn_zero_p (tp + dn, nn - dn) || mpn_cmp (tp, dp, dn) >= 0)
+  if (!(nn == dn || mpn_zero_p (tp + dn, nn - dn)) || mpn_cmp (tp, dp, dn) >= 0)
     {
       msg = "q too small";
       goto error;

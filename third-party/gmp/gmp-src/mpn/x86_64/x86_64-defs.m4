@@ -127,7 +127,7 @@ m4_assert_defined(`WANT_ASSERT')
 `ifelse(`$2',,,
 `	pushfq')
 	$2
-	j`$1'	L(ASSERT_ok`'ASSERT_counter)
+	`j$1'	L(ASSERT_ok`'ASSERT_counter)
 	ud2	C assertion failed
 L(ASSERT_ok`'ASSERT_counter):
 ifelse(`$2',,,`	popfq')
@@ -207,9 +207,9 @@ dnl  Usage: JMPENT(targlabel,tablabel)
 
 define(`JMPENT',`dnl
 ifdef(`PIC',
-	`.long	$1-$2'
+	`.long	$1-$2'dnl
 ,
-	`.quad	$1'
+	`.quad	$1'dnl
 )')
 
 
@@ -311,7 +311,7 @@ define(`oplist',
  `(%rax)',16, `(%rcx)',17, `(%rdx)',18,  `(%rbx)',19,
  `(%rsp)',20, `(%rbp)',21, `(%rsi)',22,  `(%rdi)',23,
  `(%r8)', 24, `(%r9)', 25, `(%r10)',26,  `(%r11)',27,
- `(%r12)',28, `(%r13)',29, `(%r14)',30,  `(%r15)' 31')
+ `(%r12)',28, `(%r13)',29, `(%r14)',30,  `(%r15)',31')
 
 
 dnl  Usage
@@ -336,19 +336,67 @@ dnl  Other addressing forms are not handled.  Invalid forms are not properly
 dnl  detected.  Offsets that don't fit one byte are not handled correctly.
 
 define(`mulx',`dnl
-ifelse($#,3,
-`.byte	0xc4`'dnl
-,0x`'eval(0xe2^32*regnumh($1)^128*regnumh($3),16)`'dnl
-,0x`'eval(0xfb-8*regnum($2),16)`'dnl
+.byte	0xc4`'dnl
+ifelse(`$#',3,`dnl
+,eval(0xe2^32*regnumh($1)^128*regnumh($3))`'dnl
+,eval(0xfb-8*regnum($2))`'dnl
 ,0xf6`'dnl
-,0x`'eval(0xc0+(7 & regnum($1))+8*(7 & regnum($3))-0xc0*ix($1),16)`'dnl
-',$#,4,
-`.byte	0xc4`'dnl
-,0x`'eval(0xe2^32*regnumh($2)^128*regnumh($4),16)`'dnl
-,0x`'eval(0xfb-8*regnum($3),16)`'dnl
+,eval(0xc0+(7 & regnum($1))+8*(7 & regnum($3))-0xc0*ix($1))`'dnl
+',`$#',4,`dnl
+,eval(0xe2^32*regnumh($2)^128*regnumh($4))`'dnl
+,eval(0xfb-8*regnum($3))`'dnl
 ,0xf6`'dnl
-,0x`'eval(0x40+(7 & regnum($2))+8*(7 & regnum($4)),16)`'dnl
-,0x`'eval(($1 + 256) % 256,16)`'dnl
+,eval(0x40+(7 & regnum($2))+8*(7 & regnum($4)))`'dnl
+,eval(($1 + 256) % 256)`'dnl
 ')')
+
+dnl  Usage
+dnl
+dnl     adcx(reg1,reg2)
+dnl     adox(reg1,reg2)
+dnl
+dnl  or
+dnl
+dnl     adcx((reg1),reg2)
+dnl     adox((reg1),reg2)
+dnl
+dnl  where reg1 is any register but rsp,rbp,r12,r13, or
+dnl
+dnl     adcx(off,(reg1),reg2)
+dnl     adox(off,(reg1),reg2)
+dnl
+dnl  where reg1 is any register but rsp,r12.
+dnl
+dnl  The exceptions are due to special coding needed for some registers; rsp
+dnl  and r12 need an extra byte 0x24 at the end while rbp and r13 lack the
+dnl  offset-less form.
+dnl
+dnl  Other addressing forms are not handled.  Invalid forms are not properly
+dnl  detected.  Offsets that don't fit one byte are not handled correctly.
+
+define(`adx_helper',`dnl
+,eval(0x48+regnumh($1)+4*regnumh($2))`'dnl
+,0x0f`'dnl
+,0x38`'dnl
+,0xf6`'dnl
+')
+
+define(`adx',`dnl
+ifelse(`$#',2,`dnl
+adx_helper($1,$2)dnl
+,eval(0xc0+(7 & regnum($1))+8*(7 & regnum($2))-0xc0*ix($1))`'dnl
+',`$#',3,`dnl
+adx_helper($2,$3)dnl
+,eval(0x40+(7 & regnum($2))+8*(7 & regnum($3)))`'dnl
+,eval(($1 + 256) % 256)`'dnl
+')')
+
+define(`adcx',`dnl
+.byte	0x66`'dnl
+adx($@)')
+
+define(`adox',`dnl
+.byte	0xf3`'dnl
+adx($@)')
 
 divert`'dnl

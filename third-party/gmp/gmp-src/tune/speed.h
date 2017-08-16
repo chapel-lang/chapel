@@ -1,6 +1,6 @@
 /* Header for speed and threshold things.
 
-Copyright 1999-2003, 2005, 2006, 2008-2013 Free Software Foundation, Inc.
+Copyright 1999-2003, 2005, 2006, 2008-2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -155,6 +155,8 @@ double speed_binvert_limb_arith (struct speed_params *);
 double speed_mpf_init_clear (struct speed_params *);
 
 double speed_mpn_add_n (struct speed_params *);
+double speed_mpn_add_1 (struct speed_params *);
+double speed_mpn_add_1_inplace (struct speed_params *);
 double speed_mpn_add_err1_n (struct speed_params *);
 double speed_mpn_add_err2_n (struct speed_params *);
 double speed_mpn_add_err3_n (struct speed_params *);
@@ -181,6 +183,7 @@ double speed_mpn_addmul_8 (struct speed_params *);
 double speed_mpn_cnd_add_n (struct speed_params *);
 double speed_mpn_cnd_sub_n (struct speed_params *);
 double speed_mpn_com (struct speed_params *);
+double speed_mpn_neg (struct speed_params *);
 double speed_mpn_copyd (struct speed_params *);
 double speed_mpn_copyi (struct speed_params *);
 double speed_MPN_COPY (struct speed_params *);
@@ -274,6 +277,8 @@ double speed_mpn_nussbaumer_mul_sqr (struct speed_params *);
 double speed_mpn_mul_n (struct speed_params *);
 double speed_mpn_mul_n_sqr (struct speed_params *);
 double speed_mpn_mulmid_n (struct speed_params *);
+double speed_mpn_sqrlo (struct speed_params *);
+double speed_mpn_sqrlo_basecase (struct speed_params *);
 double speed_mpn_mullo_n (struct speed_params *);
 double speed_mpn_mullo_basecase (struct speed_params *);
 double speed_mpn_nand_n (struct speed_params *);
@@ -326,7 +331,11 @@ double speed_mpn_sqr_diagonal (struct speed_params *);
 double speed_mpn_sqr (struct speed_params *);
 double speed_mpn_sqrtrem (struct speed_params *);
 double speed_mpn_rootrem (struct speed_params *);
+double speed_mpn_sqrt (struct speed_params *);
+double speed_mpn_root (struct speed_params *);
 double speed_mpn_sub_n (struct speed_params *);
+double speed_mpn_sub_1 (struct speed_params *);
+double speed_mpn_sub_1_inplace (struct speed_params *);
 double speed_mpn_sub_err1_n (struct speed_params *);
 double speed_mpn_sub_err2_n (struct speed_params *);
 double speed_mpn_sub_err3_n (struct speed_params *);
@@ -378,6 +387,7 @@ double speed_mpz_add (struct speed_params *);
 double speed_mpz_bin_uiui (struct speed_params *);
 double speed_mpz_bin_ui (struct speed_params *);
 double speed_mpz_fac_ui (struct speed_params *);
+double speed_mpz_2fac_ui (struct speed_params *);
 double speed_mpz_fib_ui (struct speed_params *);
 double speed_mpz_fib2_ui (struct speed_params *);
 double speed_mpz_init_clear (struct speed_params *);
@@ -412,46 +422,18 @@ double speed_umul_ppmm (struct speed_params *);
 
 /* Prototypes for other routines */
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 /* low 32-bits in p[0], high 32-bits in p[1] */
 void speed_cyclecounter (unsigned p[2]);
 
-void mftb_function (unsigned p[2]);
+#if defined (__cplusplus)
+}
+#endif
 
-/* In i386 gcc -fPIC, ebx is a fixed register and can't be declared a dummy
-   output or a clobber for the cpuid, hence an explicit save and restore.  A
-   clobber as such doesn't provoke an error unfortunately (gcc 3.0), so use
-   the dummy output style in non-PIC, so there's an error if somehow -fPIC
-   is used without a -DPIC to tell us about it.  */
-#if defined(__GNUC__) && ! defined (NO_ASM)	\
-  && (defined (__i386__) || defined (__i486__))
-#if defined (PIC) || defined (__APPLE_CC__)
-#define speed_cyclecounter(p)						\
-  do {									\
-    int	 __speed_cyclecounter__save_ebx;				\
-    int	 __speed_cyclecounter__dummy;					\
-    __asm__ __volatile__ ("movl %%ebx, %1\n"				\
-			  "cpuid\n"					\
-			  "movl %1, %%ebx\n"				\
-			  "rdtsc"					\
-			  : "=a"   ((p)[0]),				\
-			    "=&rm" (__speed_cyclecounter__save_ebx),	\
-			    "=c"   (__speed_cyclecounter__dummy),	\
-			    "=d"   ((p)[1]));				\
-  } while (0)
-#else
-#define speed_cyclecounter(p)						\
-  do {									\
-    int	 __speed_cyclecounter__dummy1;					\
-    int	 __speed_cyclecounter__dummy2;					\
-    __asm__ __volatile__ ("cpuid\n"					\
-			  "rdtsc"					\
-			  : "=a" ((p)[0]),				\
-			    "=b" (__speed_cyclecounter__dummy1),	\
-			    "=c" (__speed_cyclecounter__dummy2),	\
-			    "=d" ((p)[1]));				\
-  } while (0)
-#endif
-#endif
+void mftb_function (unsigned p[2]);
 
 double speed_cyclecounter_diff (const unsigned [2], const unsigned [2]);
 int gettimeofday_microseconds_p (void);
@@ -495,8 +477,8 @@ int mpn_jacobi_base_4 (mp_limb_t, mp_limb_t, int);
 mp_limb_t mpn_mod_1_div (mp_srcptr, mp_size_t, mp_limb_t);
 mp_limb_t mpn_mod_1_inv (mp_srcptr, mp_size_t, mp_limb_t);
 
-mp_limb_t mpn_mod_1_1p_1 (mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t [4]);
-mp_limb_t mpn_mod_1_1p_2 (mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t [4]);
+mp_limb_t mpn_mod_1_1p_1 (mp_srcptr, mp_size_t, mp_limb_t, const mp_limb_t [4]);
+mp_limb_t mpn_mod_1_1p_2 (mp_srcptr, mp_size_t, mp_limb_t, const mp_limb_t [4]);
 
 void mpn_mod_1_1p_cps_1 (mp_limb_t [4], mp_limb_t);
 void mpn_mod_1_1p_cps_2 (mp_limb_t [4], mp_limb_t);
@@ -1163,8 +1145,10 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
 #define SPEED_ROUTINE_MPN_MULLO_N(function)				\
   SPEED_ROUTINE_MPN_MULLO_N_CALL (function (wp, s->xp, s->yp, s->size));
 
-/* For mpn_mul_basecase, xsize=r, ysize=s->size. */
 #define SPEED_ROUTINE_MPN_MULLO_BASECASE(function)			\
+  SPEED_ROUTINE_MPN_MULLO_N_CALL (function (wp, s->xp, s->yp, s->size));
+
+#define SPEED_ROUTINE_MPN_SQRLO(function)				\
   {									\
     mp_ptr    wp;							\
     unsigned  i;							\
@@ -1177,14 +1161,13 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     SPEED_TMP_ALLOC_LIMBS (wp, s->size, s->align_wp);			\
 									\
     speed_operand_src (s, s->xp, s->size);				\
-    speed_operand_src (s, s->yp, s->size);				\
     speed_operand_dst (s, wp, s->size);					\
     speed_cache_fill (s);						\
 									\
     speed_starttime ();							\
     i = s->reps;							\
     do									\
-      function (wp, s->xp, s->yp, s->size);				\
+      function (wp, s->xp, s->size);					\
     while (--i != 0);							\
     t = speed_endtime ();						\
 									\
@@ -3312,7 +3295,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
   }
 
 
-#define SPEED_ROUTINE_MPN_SQRTREM(function)				\
+#define SPEED_ROUTINE_MPN_SQRTROOT_CALL(call)				\
   {									\
     mp_ptr    wp, wp2;							\
     unsigned  i;							\
@@ -3333,36 +3316,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     speed_starttime ();							\
     i = s->reps;							\
     do									\
-      function (wp, wp2, s->xp, s->size);				\
-    while (--i != 0);							\
-    t = speed_endtime ();						\
-									\
-    TMP_FREE;								\
-    return t;								\
-  }
-
-#define SPEED_ROUTINE_MPN_ROOTREM(function)				\
-  {									\
-    mp_ptr    wp, wp2;							\
-    unsigned  i;							\
-    double    t;							\
-    TMP_DECL;								\
-									\
-    SPEED_RESTRICT_COND (s->size >= 1);					\
-									\
-    TMP_MARK;								\
-    SPEED_TMP_ALLOC_LIMBS (wp,	s->size, s->align_wp);			\
-    SPEED_TMP_ALLOC_LIMBS (wp2, s->size, s->align_wp2);			\
-									\
-    speed_operand_src (s, s->xp, s->size);				\
-    speed_operand_dst (s, wp, s->size);					\
-    speed_operand_dst (s, wp2, s->size);				\
-    speed_cache_fill (s);						\
-									\
-    speed_starttime ();							\
-    i = s->reps;							\
-    do									\
-      function (wp, wp2, s->xp, s->size, s->r);				\
+      call;								\
     while (--i != 0);							\
     t = speed_endtime ();						\
 									\
@@ -3392,7 +3346,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     SPEED_TMP_ALLOC_LIMBS (xp, s->size + 1, s->align_xp);		\
 									\
     MPN_SIZEINBASE (wn, s->xp, s->size, base);				\
-    wp = TMP_ALLOC (wn);						\
+    wp = (unsigned char *) TMP_ALLOC (wn);				\
 									\
     /* use this during development to guard against overflowing wp */	\
     /*									\
@@ -3438,7 +3392,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
 									\
     TMP_MARK;								\
 									\
-    xp = TMP_ALLOC (s->size);						\
+    xp = (unsigned char *) TMP_ALLOC (s->size);				\
     for (i = 0; i < s->size; i++)					\
       xp[i] = s->xp[i] % base;						\
 									\

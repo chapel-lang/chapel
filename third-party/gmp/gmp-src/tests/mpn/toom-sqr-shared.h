@@ -66,8 +66,6 @@ main (int argc, char **argv)
 
     for (test = 0; test < count; test++)
       {
-	unsigned size_min;
-	unsigned size_range;
 	mp_size_t an;
 	mp_size_t itch;
 	mp_limb_t p_before, p_after, s_before, s_after;

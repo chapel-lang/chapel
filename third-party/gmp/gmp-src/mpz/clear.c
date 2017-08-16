@@ -1,8 +1,8 @@
 /* mpz_clear -- de-allocate the space occupied by the dynamic digit space of
    an integer.
 
-Copyright 1991, 1993-1995, 2000, 2001, 2012, 2014 Free Software Foundation,
-Inc.
+Copyright 1991, 1993-1995, 2000, 2001, 2012, 2014, 2015 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -34,7 +34,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpz_clear (mpz_ptr m)
+mpz_clear (mpz_ptr x)
 {
-  (*__gmp_free_func) (PTR (m), (size_t) ALLOC (m) * GMP_LIMB_BYTES);
+  __GMP_FREE_FUNC_LIMBS (PTR (x), ALLOC(x));
 }

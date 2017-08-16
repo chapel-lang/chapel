@@ -1,6 +1,6 @@
 /* mpf_fits_u*_p -- test whether an mpf fits a C unsigned type.
 
-Copyright 2001, 2002, 2013 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2013, 2014 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -47,8 +47,8 @@ FUNCTION (mpf_srcptr f) __GMP_NOTHROW
     return 1;  /* -1 < f < 1 truncates to zero, so fits */
 
   fn = SIZ(f);
-  if (fn <= 0)
-    return fn == 0;  /* zero fits, negatives don't */
+  if (fn < 0) /* zero catched by exp == 0 */
+    return 0; /* negatives don't fit */
 
   fp = PTR(f);
 

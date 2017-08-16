@@ -277,7 +277,7 @@ mpn_div_q (mp_ptr qp,
 	}
       else  /* divisor is already normalised */
 	{
-	  MPN_COPY (new_np, np + nn - new_nn, new_nn); /* pointless of MU will be used */
+	  MPN_COPY (new_np, np + nn - new_nn, new_nn); /* pointless if MU will be used */
 
 	  new_dp = (mp_ptr) dp + dn - (qn + 1);
 

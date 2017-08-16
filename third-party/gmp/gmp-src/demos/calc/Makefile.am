@@ -29,7 +29,7 @@
 #  see https://www.gnu.org/licenses/.
 
 
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 # $(LEXLIB) is not actually needed for flex (which means the distributed
 # calclex.c), but it's included here for the benefit of anyone rebuilding

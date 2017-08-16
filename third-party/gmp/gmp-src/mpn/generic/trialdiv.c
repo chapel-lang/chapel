@@ -65,8 +65,8 @@ struct gmp_primes_dtab {
 struct gmp_primes_ptab {
   mp_limb_t ppp;	/* primes, multiplied together */
   mp_limb_t cps[7];	/* ppp values pre-computed for mpn_mod_1s_4p */
-  unsigned int idx:24;	/* index of  first primes in dtab */
-  unsigned int np :8;	/* number of primes related to this entry */
+  gmp_uint_least32_t idx:24;	/* index of  first primes in dtab */
+  gmp_uint_least32_t np :8;	/* number of primes related to this entry */
 };
 
 
@@ -90,7 +90,7 @@ static const struct gmp_primes_ptab gmp_primes_ptab[] =
 #define PTAB_LINES (sizeof (gmp_primes_ptab) / sizeof (gmp_primes_ptab[0]))
 
 /* FIXME: We could optimize out one of the outer loop conditions if we
-   had a final ptab entry with a huge nd field.  */
+   had a final ptab entry with a huge np field.  */
 mp_limb_t
 mpn_trialdiv (mp_srcptr tp, mp_size_t tn, mp_size_t nprimes, int *where)
 {

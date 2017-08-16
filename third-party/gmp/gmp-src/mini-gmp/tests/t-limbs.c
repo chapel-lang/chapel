@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012, 2014, Free Software Foundation, Inc.
+Copyright 2012, 2014, 2016, Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -17,6 +17,7 @@ Public License for more details.
 You should have received a copy of the GNU General Public License along with
 the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
+#include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,12 +36,13 @@ my_mpz_mul (mpz_t r, mpz_srcptr a,  mpz_srcptr b)
 
   an = mpz_size (a);
   bn = mpz_size (b);
-  tn = an + bn;
 
+  assert (an > 0);
+  assert (bn > 0);
+
+  tn = an + bn;
   tp = mpz_limbs_write (r, tn);
-  if (mpz_sgn (a) * mpz_sgn(b) == 0)
-    mpn_zero (tp, tn);
-  else if (an > bn)
+  if (an > bn)
     mpn_mul (tp, mpz_limbs_read (a), an, mpz_limbs_read (b), bn);
   else
     mpn_mul (tp, mpz_limbs_read (b), bn, mpz_limbs_read (a), an);
@@ -55,7 +57,7 @@ void
 testmain (int argc, char **argv)
 {
   unsigned i;
-  mpz_t a, b, t, res, ref;
+  mpz_t a, b, res, ref;
 
   mpz_init (a);
   mpz_init (b);
@@ -65,6 +67,9 @@ testmain (int argc, char **argv)
   for (i = 0; i < COUNT; i++)
     {
       mini_random_op3 (OP_MUL, MAXBITS, a, b, ref);
+      if (mpz_sgn(ref) == 0)
+	/* my_mpz_mul requires a != 0, b != 0 */
+	continue;
       my_mpz_mul (res, a, b);
       if (mpz_cmp (res, ref))
 	{

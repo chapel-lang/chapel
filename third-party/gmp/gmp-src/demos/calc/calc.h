@@ -112,7 +112,7 @@ extern int yydebug;
 typedef union YYSTYPE
 {
 /* Line 2053 of yacc.c  */
-#line 142 "calc.y"
+#line 142 "../../../gmp/demos/calc/calc.y"
 
   char  *str;
   int   var;
