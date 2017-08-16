@@ -76,7 +76,7 @@ Building and Running your project
 When invoked, ``mason build`` will do the following:
 
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
-    - Build **.chpl in the /src directory, where ** is the name of the project.
+    - Build &&.chpl in the /src directory, where && is the name of the project.
     - All packages are compiled into binaries and placed into target/
 
 ``mason run`` will, in turn:
@@ -115,6 +115,7 @@ mason: Command line tool for building chapel programs to provide users with
     
 
 Four States:
+
 1) Project Code: ``yourProject/src/yourProject.chpl``
    	   This is the source code of the project the user creates using mason.
 2) Manifest File: Mason.toml
@@ -311,7 +312,7 @@ a lock file is written below as if generated from the earlier example of a Mason
      version = "0.1.0"
      authors = ["Brad Chamberlain <brad@chamberlain.com>"]
      source = "https://github.com/bradcray/hello_world"
-     dependencies = [curl '1.0.0' 'https://github.com/username/curl']
+     dependencies = ['curl 1.0.0 https://github.com/username/curl']
 
 
 
