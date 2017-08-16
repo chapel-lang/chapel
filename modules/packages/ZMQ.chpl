@@ -237,10 +237,18 @@ module ZMQ {
   private extern proc zmq_msg_init(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_msg_init_size(ref msg: zmq_msg_t,
                                         size: size_t): c_int;
+  private extern proc zmq_msg_init_data(ref msg: zmq_msg_t,
+                                        data: c_void_ptr,
+                                        size: size_t,
+                                        ffn: c_fn_ptr,
+                                        hint: c_void_ptr): c_int;
+  private extern proc zmq_msg_data(ref msg: zmq_msg_t): c_void_ptr;
+  private extern proc zmq_msg_size(ref msg: zmq_msg_t): size_t;
   private extern proc zmq_msg_send(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
   private extern proc zmq_msg_recv(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
+  private extern proc zmq_msg_close(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_recv(sock: c_void_ptr, buf: c_void_ptr,
                                len: size_t, flags: c_int): c_int;
   private extern proc zmq_send(sock: c_void_ptr, buf: c_void_ptr,
@@ -395,6 +403,11 @@ module ZMQ {
 
   pragma "no doc"
   const unset = -42;
+
+  pragma "no doc"
+  proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
+    chpl_here_free(data);
+  }
 
   /*
     Query the ZMQ library version.
@@ -699,13 +712,24 @@ module ZMQ {
     pragma "no doc"
     proc send(data: string, flags: int = 0) {
       on classRef.home {
+        // Copy the string to the current locale and release ownership
+        // because the ZeroMQ library will take ownership of the underlying
+        // buffer and free it when it is no longer needed.
         var copy = data;
-        // message part 1, length
-        send(copy.length:int, ZMQ_SNDMORE | flags);
-        // message part 2, string
-        while (-1 == zmq_send(classRef.socket, copy.c_str():c_void_ptr,
-                              copy.length:size_t,
-                              (ZMQ_DONTWAIT | flags):c_int)) {
+        copy.owned = false;
+
+        // Create the ZeroMQ message from the string buffer
+        var msg: zmq_msg_t;
+        if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
+                                   copy.length:size_t, c_ptrTo(free_helper),
+                                   c_nil)) {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+        }
+
+        // Send the message
+        while(-1 == zmq_msg_send(msg, classRef.socket,
+                                 (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
@@ -775,12 +799,16 @@ module ZMQ {
     proc recv(type T, flags: int = 0) where isString(T) {
       var ret: T;
       on classRef.home {
-        var len = recv(int, flags);
-        var buf = c_calloc(uint(8), (len+1):size_t);
-        var str = new string(buff=buf, length=len, size=len+1,
-                             owned=true, needToCopy=false);
-        while (-1 == zmq_recv(classRef.socket, buf:c_void_ptr, len:size_t,
-                              (ZMQ_DONTWAIT | flags):c_int)) {
+        // Initialize an empty ZeroMQ message
+        var msg: zmq_msg_t;
+        if (0 != zmq_msg_init(msg)) {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+        }
+
+        // Receive the message
+        while (-1 == zmq_msg_recv(msg, classRef.socket,
+                                  (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
@@ -788,6 +816,19 @@ module ZMQ {
             halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
           }
         }
+
+        // Construct the string on the current locale, copying the data buffer
+        // from the message object; then, release the message object
+        var len = zmq_msg_size(msg):int;
+        var str = new string(buff=zmq_msg_data(msg):c_ptr(uint(8)),
+                             length=len, size=len+1,
+                             owned=true, needToCopy=true);
+        if (0 != zmq_msg_close(msg)) {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+        }
+
+        // Return the string to the calling locale
         ret = str;
       }
       return ret;
