@@ -5,7 +5,7 @@
 */
 use BlockDist;
 use Time;
-use LayoutCSR;
+use LayoutCS;
 
 param PRKVERSION = "2.17";
 
@@ -25,7 +25,7 @@ const lsize2 = 2*lsize,
 const vectorDom = {0..#size2};
 
 const parentDom = {0..#size2, 0..#size2};
-var matrixDom: sparse subdomain(parentDom) dmapped CSR();
+var matrixDom: sparse subdomain(parentDom) dmapped CS();
 
 // temporary index buffer for fast initialization
 const indBufDom = {0..#(size2*stencilSize)};

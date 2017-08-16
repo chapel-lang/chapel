@@ -2,7 +2,7 @@
    no elements, a single element, last row, out-of-bounds, etc.
 */
 
-use LayoutCSR;
+use LayoutCS;
 
 const rr = 4, cc = 5;
 

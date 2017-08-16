@@ -22,9 +22,14 @@ use LayoutCS;
 
 pragma "no doc"
 
+// TODO: It would be nice to support CSR & CSC type-aliases in LayoutCS
 /* For backwards-compatibility with LayoutCSR */
 type CSR = CS;
 
 compilerWarning(
   "Module 'LayoutCSR' has been deprecated in favor of 'LayoutCS'"
 );
+
+if debugCSR {
+  compilerError("'debugCSR' has been deprecated in favor of 'debugCS'");
+}

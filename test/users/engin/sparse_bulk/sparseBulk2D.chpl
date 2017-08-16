@@ -1,4 +1,4 @@
-use LayoutCSR;
+use LayoutCS;
 
 config const N = 8;
 
