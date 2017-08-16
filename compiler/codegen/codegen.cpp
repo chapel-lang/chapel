@@ -1155,6 +1155,75 @@ static void protectNameFromC(Symbol* sym) {
   //  free(oldName);
 }
 
+static void genGlobalSerializeTable(GenInfo* info) {
+  FILE* hdrfile = info->cfile;
+  std::vector<CallExpr*> serializeCalls;
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
+      SymExpr* se = toSymExpr(call->get(2));
+      INT_ASSERT(se != NULL);
+
+      VarSymbol* imm = toVarSymbol(se->symbol());
+      INT_ASSERT(imm && imm->isImmediate());
+      uint64_t idx = imm->immediate->int_value();
+
+      if (idx+1 > serializeCalls.size()) {
+        serializeCalls.resize(idx+1);
+      }
+
+      serializeCalls[idx] = call;
+    }
+  }
+
+  if( hdrfile ) {
+    fprintf(hdrfile, "\nvoid* const chpl_global_serialize_table[] = {");
+    for (unsigned int i = 0; i < serializeCalls.size(); i++) {
+      CallExpr* call = serializeCalls[i];
+      INT_ASSERT(call != NULL);
+      SymExpr* global = toSymExpr(call->get(1));
+      INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
+
+      const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
+      fprintf(hdrfile, prefix, global->symbol()->cname);
+    }
+    fprintf(hdrfile, "\n};\n");
+  } else {
+#ifdef HAVE_LLVM
+    llvm::Type *global_serializeTableEntryType =
+      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+
+    std::vector<llvm::Constant *> global_serializeTable;
+
+    for_vector(CallExpr, call, serializeCalls) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+
+      global_serializeTable.push_back(llvm::cast<llvm::Constant>(
+            info->builder->CreatePointerCast(
+              info->lvt->getValue(se->symbol()->cname).val,
+              global_serializeTableEntryType)));
+    }
+
+    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
+          info->module->getNamedGlobal("chpl_global_serialize_table"))) {
+      GVar->eraseFromParent();
+    }
+
+    llvm::ArrayType *global_serializeTableType =
+      llvm::ArrayType::get(global_serializeTableEntryType,
+                          global_serializeTable.size());
+    llvm::GlobalVariable *global_serializeTableGVar =
+      llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal("chpl_global_serialize_table",
+                                          global_serializeTableType));
+    global_serializeTableGVar->setInitializer(
+        llvm::ConstantArray::get(
+          global_serializeTableType, global_serializeTable));
+    info->lvt->addGlobalValue("chpl_global_serialize_table",
+                              global_serializeTableGVar, GEN_PTR, true);
+#endif
+  }
+}
 
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
@@ -1183,6 +1252,9 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
 #ifndef HAVE_LLVM
   zlineToFileIfNeeded(rootModule, info->cfile);
 #endif
+
+  genComment("Global Serialize Table");
+  genGlobalSerializeTable(info);
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, false);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
@@ -1230,36 +1302,6 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         call->insertAtHead(new_IntSymbol(i));
         i++;
       }
-    }
-    fprintf(hdrfile, "\n};\n");
-  }
-  if( hdrfile ) {
-    fprintf(hdrfile, "\nvoid* chpl_global_serialize_table[] = {");
-    std::vector<CallExpr*> serializeCalls;
-    forv_Vec(CallExpr, call, gCallExprs) {
-      if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
-        SymExpr* se = toSymExpr(call->get(2));
-        INT_ASSERT(se != NULL);
-
-        VarSymbol* imm = toVarSymbol(se->symbol());
-        INT_ASSERT(imm && imm->isImmediate());
-        uint64_t idx = imm->immediate->int_value();
-
-        if (idx+1 > serializeCalls.size()) {
-          serializeCalls.resize(idx+1);
-        }
-
-        serializeCalls[idx] = call;
-      }
-    }
-    for (unsigned int i = 0; i < serializeCalls.size(); i++) {
-      CallExpr* call = serializeCalls[i];
-      INT_ASSERT(call != NULL);
-      SymExpr* global = toSymExpr(call->get(1));
-      INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
-
-      const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
-      fprintf(hdrfile, prefix, global->symbol()->cname);
     }
     fprintf(hdrfile, "\n};\n");
   }

@@ -4,6 +4,8 @@ module ChapelSerializedBroadcast {
 
   config param chpl__enableSerializedGlobals = true;
 
+  extern proc chpl_get_global_serialize_table(idx : int) : c_void_ptr;
+
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
     const data = localeZeroGlobal.chpl__serialize();
@@ -14,8 +16,7 @@ module ChapelSerializedBroadcast {
         pragma "no auto destroy"
         var temp = T.chpl__deserialize(data);
 
-        extern var chpl_global_serialize_table : c_ptr(c_void_ptr);
-        const destVoidPtr = (chpl_global_serialize_table + id).deref();
+        const destVoidPtr = chpl_get_global_serialize_table(id);
         const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
 
         __primitive("=", dest.deref(), temp);
@@ -29,8 +30,7 @@ module ChapelSerializedBroadcast {
     const root = here.id;
     coforall loc in Locales do on loc {
       if here.id != root {
-        extern var chpl_global_serialize_table : c_ptr(c_void_ptr);
-        const voidPtr = (chpl_global_serialize_table + id).deref();
+        const voidPtr = chpl_get_global_serialize_table(id);
         var ptr = voidPtr:c_ptr(globalType);
 
         pragma "no copy"
