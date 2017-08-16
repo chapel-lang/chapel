@@ -4,9 +4,9 @@
 Mason: Chapel's Package Manager
 ==============================
 
- Mason represents an effort by the developers on the chapel team at Cray to reach
- out to the chapel community and provide a systematic way of providing packages
- to the developers who want to build and explore in chapel. 
+Mason represents an effort by the developers on the chapel team at Cray to reach
+out to the chapel community and provide a systematic way of providing packages
+to the developers who want to build and explore in chapel. 
 
 
 
@@ -35,7 +35,6 @@ dependencies.
 This puts mason in the path of the user so that mason can be used
 anywhere in the user's file system.
 
-------------- 
 
 To remove mason simply change directory to $CHPL_HOME/tools/mason and run:
 
@@ -43,7 +42,6 @@ To remove mason simply change directory to $CHPL_HOME/tools/mason and run:
 
    make clean
       
-This will remove mason from the user path.
 
 
 
@@ -77,9 +75,8 @@ Building and Running your project
 
 When invoked, ``mason build`` will do the following:
 
-    - TODO: Navigate to the root of the project.
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
-    - Build ??.chpl in the /src directory, where ?? is the name of the project.
+    - Build **.chpl in the /src directory, where ** is the name of the project.
     - All packages are compiled into binaries and placed into target/
 
 ``mason run`` will, in turn:
@@ -111,25 +108,26 @@ MyPackage/
 The Design of Mason
 ===================
 
-    mason: Command line tool for building chapel programs to provide users with
-            a consistent way of building applications and libraries. Mason uses
-            a four state pipeline to go from start to finish in a project. The
-	    four states are listed below.
+mason: Command line tool for building chapel programs to provide users with 
+       a consistent way of building applications and libraries. Mason uses 
+       a four state pipeline to go from start to finish in a project. The
+       four states are listed below.
     
-    Four States:
-        Project Code: ``yourProject/src/yourProject.chpl``
-            This is the source code of the project the user creates using mason.
-        Manifest File: Mason.toml
-            Toml file containing metadata and dependencies
-            Builds dependency directed acyclic graph (DAG) to be
-	    serialized into lock file
-        Lock File:  Mason.lock
-            Contains necessary build information
-            Serialized directed acyclic graph of the dependencies build options
-	     from the manifest
-        Dependancy Code:  ``$HOME/.mason/src``
-	    Local dependencies downloaded by mason after the user lists them in
-	    a project manifest.
+
+Four States:
+1) Project Code: ``yourProject/src/yourProject.chpl``
+   	   This is the source code of the project the user creates using mason.
+2) Manifest File: Mason.toml
+           Toml file containing metadata and dependencies
+           Builds dependency directed acyclic graph (DAG) to be
+	   serialized into lock file
+3) Lock File:  Mason.lock
+           Contains necessary build information
+           Serialized directed acyclic graph of the dependencies build options 
+	   from the manifest
+4) Dependancy Code:  ``$HOME/.mason/src``
+	   Local dependencies downloaded by mason after the user lists them in 
+	   a project manifest.
 
 
 
@@ -138,19 +136,22 @@ The Design of Mason
 =================
 The Manifest File
 =================
+
 The Mason.toml manifest file is written in TOML(for more information see the TOML section below).
 Each time a new project is created in Mason a standard TOML file in included in the top-level
 directory of the project directory. 
 
 For example, Mason.toml:
 
-[brick]
-name = "hello_world"
-version = "0.1.0"
-authors = ["Bradford Chamberlain <brad@chamberlain.com>"]
+.. code-block:: toml
 
-[dependencies]
-curl = '1.0.0'
+    [brick]
+    name = "hello_world"
+    version = "0.1.0"
+    authors = ["Bradford Chamberlain <brad@chamberlain.com>"]
+
+    [dependencies]
+    curl = '1.0.0'
 
 
 
@@ -178,6 +179,7 @@ The registry would follow a hierarchy as follows:
 
 REGISTRY=https://github.com/chapel-lang/mason-registry
 
+
 registry/
   Curl/
       1.0.0.toml
@@ -196,14 +198,16 @@ a URL pointing to the repository and revision in which the version is located.
 
 Continuing the example from before, the 'registry' Mason.toml would include the additional source field:
 
-[brick]
-name = "hello_world"
-version = "0.1.0"
-authors = ["Brad Chamberlain <brad@chamberlain.com>"]
-source = "https://github.com/bradcray/hello_world"
+.. code-block:: toml
 
-[dependencies]
-curl = '1.0.0'
+     [brick]
+     name = "hello_world"
+     version = "0.1.0"
+     authors = ["Brad Chamberlain <brad@chamberlain.com>"]
+     source = "https://github.com/bradcray/hello_world"
+
+     [dependencies]
+     curl = '1.0.0'
 
 
 
@@ -212,16 +216,15 @@ curl = '1.0.0'
 To submit a package to the Mason-Registry 
 =========================================
 
-The mason registry(a repository in the chapel-lang repository) will hold the
-manifest files for packages submitted by developers. To contribute a package,
-all a developer has to do is host their package in a git repository, write a
-manifest file(in TOML) with a source field containing the URL to the package
-repository, and open a PR in the mason-registry repository! As soon as trusted
-chapel developers look at your package and approve it, other users will be able
-to use your package through mason simply by adding the name and version number
-of your package to their project's dependencies! 
+The mason registry will hold the manifest files for packages submitted by developers.
+To contribute a package, all a developer has to do is host their package in a git
+repository, write a manifest file (in TOML) with a source field containing the URL to
+the package repository, and open a PR in the mason-registry repository. As soon as 
+trusted chapel developers look at your package and approve it, other users will be able
+to use your package through mason simply by adding the name and version number of your
+package to their project's dependencies! 
 
-   Steps: 
+Steps: 
       1) Write a library or binary project in chapel using Mason
       2) Host that project in a git repository. (e.g. GitHub)
       3) Add a source field to the Mason.toml file in your project's repository.
@@ -248,19 +251,23 @@ Semantic Versioning
 
 To assist version resolution, the registry will enforce the following conventions:
 
-    The format for all versions will be a.b.c.
-        Major versions are denoted by a.
-        Minor versions are denoted by b.
-        Bug fixes are denoted by c.
-    If the major version is 0, no further conventions will be enforced.
-    The major version must be advanced if and only if the update causes breaking API changes,
-    	such as updated data structures or removed methods and procedures. The minor and bug fix
-     	versions will be zeroed out. (ex. 1.13.1 -> 2.0.0)
-    The minor version must be advanced if and only if the update adds functionality to the API
-    	while maintaining backward compatibility with the current major version. The bug fix 
-	version will be zeroed out. (ex. 1.13.1 -> 1.14.0)
-    The bug fix must be advanced for any update correcting functionality within a minor revision.
-    	(ex. 1.13.1 -> 1.13.2)
+The format for all versions will be a.b.c.
+   Major versions are denoted by a.
+   Minor versions are denoted by b.
+   Bug fixes are denoted by c.
+
+- If the major version is 0, no further conventions will be enforced.
+
+- The major version must be advanced if and only if the update causes breaking API changes,
+  such as updated data structures or removed methods and procedures. The minor and bug fix
+  versions will be zeroed out. (ex. 1.13.1 -> 2.0.0)
+
+- The minor version must be advanced if and only if the update adds functionality to the API
+  while maintaining backward compatibility with the current major version. The bug fix 
+  version will be zeroed out. (ex. 1.13.1 -> 1.14.0)
+
+- The bug fix must be advanced for any update correcting functionality within a minor revision.
+  (ex. 1.13.1 -> 1.13.2)
 
 
 
@@ -291,18 +298,20 @@ be re-compiled by mason then simply take the Mason.lock out of your .gitignore. 
 a lock file is written below as if generated from the earlier example of a Mason.toml:
 
 
-[curl]
-name = 'curl'
-version = '0.1.0'
-source = 'https://github.com/username/curl'
+.. code-block:: toml
+
+     [curl]
+     name = 'curl'
+     version = '0.1.0'
+     source = 'https://github.com/username/curl'
 
 
-[root]
-name = "hello_world"
-version = "0.1.0"
-authors = ["Brad Chamberlain <brad@chamberlain.com>"]
-source = "https://github.com/bradcray/hello_world"
-dependencies = [curl '1.0.0' 'https://github.com/username/curl']
+     [root]
+     name = "hello_world"
+     version = "0.1.0"
+     authors = ["Brad Chamberlain <brad@chamberlain.com>"]
+     source = "https://github.com/bradcray/hello_world"
+     dependencies = [curl '1.0.0' 'https://github.com/username/curl']
 
 
 
