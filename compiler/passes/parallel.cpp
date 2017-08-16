@@ -1505,7 +1505,9 @@ void parallel() {
 
   reprivatizeIterators();
 
-  makeHeapAllocations();
+  if (requireOutlinedOn()) {
+    makeHeapAllocations();
+  }
 
   insertEndCounts();
 
