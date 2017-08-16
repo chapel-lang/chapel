@@ -79,6 +79,7 @@ public:
   bool                        setNextGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
+  AggregateType*              getInstantiationParent(AggregateType* parentType);
 
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
                                                     FnSymbol* fn);

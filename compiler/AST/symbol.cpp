@@ -965,6 +965,20 @@ void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
   renameInstantiatedEnd();
 }
 
+void TypeSymbol::renameInstantiatedFromSuper(TypeSymbol* superSym) {
+  renameInstantiatedStart();
+  const char* afterParentName = std::find(superSym->name,
+                                          superSym->name+strlen(superSym->name),
+                                          '(');
+  const char* afterParentCname = std::find(superSym->cname,
+                                           superSym->cname+strlen(superSym->cname),
+                                           '_');
+  this->name  = astr(this->name , afterParentName+1);
+  this->cname = astr(this->cname, afterParentCname+1);
+  // Don't call renameInstantiatedEnd() because the parent name already has the
+  // end parenthesis.
+}
+
 void TypeSymbol::renameInstantiatedStart() {
   if (this->name[strlen(this->name)-1] == ')') {
     // avoid "strange" instantiated type names based on partial instantiation
