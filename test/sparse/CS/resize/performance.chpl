@@ -21,6 +21,7 @@ proc main() {
     testBulkGrow();
   else
     writeln('--test not recognized');
+
   if !correctness {
     writeln('***');
     writeln('Note: Time expressed in milliseconds');
