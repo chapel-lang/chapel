@@ -60,10 +60,7 @@ LATEXGLOBS=("-name" "*.tex")
 # generated via "make docs".  The generated files are generated from
 # other files we're already spellchecking.
 DEFAULTDIRS=(
-	     compiler man modules runtime spec
-	     doc/rst/developer   doc/rst/language   doc/rst/meta
-	     doc/rst/platforms   doc/rst/technotes  doc/rst/tools
-	     doc/rst/users-guide doc/rst/usingchapel
+	     compiler man modules runtime spec doc
 	     test/release
 	     .github
 )
@@ -85,6 +82,10 @@ FILTEROUT="compiler/parser/bison-chapel.cpp \
            compiler/include/bison-chapel.h  \
            compiler/parser/flex-chapel.cpp  \
            compiler/include/flex-chapel.h   \
+           doc/rst/builtins                 \
+           doc/rst/modules                  \
+           doc/rst/primers                  \
+           doc/rst/examples                 \
            modules/packages/LAPACK.chpl"
 
 
