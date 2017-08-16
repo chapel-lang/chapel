@@ -6075,7 +6075,8 @@ resolveExpr(Expr* expr) {
           INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
         }
 
-        if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+        if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) &&
+            actualSym->type->symbol->hasFlag(FLAG_GENERIC) == true) {
           Symbol* formal = call->resolvedFunction()->getFormal(i);
           INT_ASSERT(!formal->type->symbol->hasFlag(FLAG_GENERIC));
           // The type has been determined to no longer be generic.  Update the
