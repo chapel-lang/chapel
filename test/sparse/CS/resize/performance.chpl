@@ -21,9 +21,11 @@ proc main() {
     testBulkGrow();
   else
     writeln('--test not recognized');
-  writeln('***');
-  writeln('Note: Time expressed in milliseconds');
-  writeln('***');
+  if !correctness {
+    writeln('***');
+    writeln('Note: Time expressed in milliseconds');
+    writeln('***');
+  }
 }
 
 //
@@ -41,12 +43,12 @@ proc testGrow() {
     assert(subD.size == n);
   }
 
-  const func = '_grow()';
   if !correctness {
-    writeln(func, ' factor    : ', arrayAsVecGrowthFactor);
-    writeln(func, ' additions : ', n);
-    writeln(func, ' iterations: ', iters);
-    writeln(func, ' time/iter : ', (t.elapsed() / iters)*1000);
+    writeln('_grow()');
+    writeln('factor    : ', arrayAsVecGrowthFactor);
+    writeln('additions : ', n);
+    writeln('iterations: ', iters);
+    writeln('time/iter : ', (t.elapsed() / iters)*1000);
   }
 }
 
