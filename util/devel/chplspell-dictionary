@@ -3577,12 +3577,6 @@ twopt
 FILEID: b4905dc4-5f88-11e6-90f0-10ddb1d4c3d5
 synccls
 
-FILEID: 5655c140-644c-11e6-90f0-10ddb1d4c3d5
-binarytrees
-fastaredux
-regexredux
-threadring
-
 FILEID: 59041530-69c5-11e6-90f0-10ddb1d4c3d5
 asize
 diarray

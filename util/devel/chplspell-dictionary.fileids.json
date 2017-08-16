@@ -704,8 +704,5 @@
     "test/studies/dedup/dedup-externblock.chpl",
     "test/studies/dedup/dedup-local.chpl",
     "test/studies/dedup/dedup-spawn-sort.chpl"
-  ],
-  "5655c140-644c-11e6-90f0-10ddb1d4c3d5": [
-    "test/studies/shootout/submitted/README.md"
   ]
 }
