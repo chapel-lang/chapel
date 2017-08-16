@@ -55,7 +55,7 @@
    this barrier implementation is optimized and as the task-team concept is
    implemented and optimized.
 */
-module Barrier {
+module Barriers {
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
 

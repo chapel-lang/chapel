@@ -1,4 +1,4 @@
-use Barrier;
+use Barriers;
 use BlockDist;
 
 config const numTasks = 31;
