@@ -25,6 +25,7 @@
 
 #include "astutil.h"
 #include "driver.h"
+#include "errorHandling.h"
 #include "expr.h"
 #include "files.h"
 #include "optimizations.h"
@@ -1565,6 +1566,11 @@ void parallel() {
   insertEndCounts();
 
   passArgsToNestedFns();
+
+  // Lower error handling check error primitives
+  // now that callDestructors and parallel have
+  // had the benefit of more straightforward error-handling AST.
+  lowerCheckErrorPrimitive();
 }
 
 
