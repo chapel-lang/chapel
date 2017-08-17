@@ -3,7 +3,7 @@ use Spawn;
 config const spawnClient = true;
 if spawnClient then
   begin {
-    var client = spawn(["python", "client.py"]);
+    var client = spawn(["./wrapper.sh", "client.py"]);
     client.communicate();
   }
 
