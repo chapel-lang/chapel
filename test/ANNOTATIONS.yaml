@@ -259,6 +259,10 @@ all:
   07/31/17:
     - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
       config: 16 node XC
+  08/08/17:
+    - text: With comm=ugni, register large arrays dynamically (#6947)
+      config: 16 node XC
+
 
 
 AllCompTime:
@@ -573,6 +577,8 @@ jacobi:
     - add param versions of min/max for ints (#5073)
   01/13/17:
     - refactoring of rectangular IO (#5157)
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 knucleotide:
   10/17/15:
@@ -1053,6 +1059,8 @@ timeVectorArray:
     - upgrade jemalloc to 4.2.0 (#3919)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  07/26/17:
+    - Allow domains to implement specialized assignment (#6722)
 
 dynamic:
   02/28/17:
