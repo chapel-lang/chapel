@@ -129,12 +129,13 @@ try {
 
 
 // This is the type for a map that is used when printing out the reason
-// that a function is marked throws. That is relevant for task
-// functions for a coforall, say, where the fact that the body of
-// the coforall throws isn't as relevant to the user as what in
-// particular in the body of the coforall throws.
+// that a function is marked throws. Knowing the reason a function
+// is marked throws implicitly is relevant for example with a coforall
+// task function. In that case, the location of coforall itself
+// isn't as relevant to the user as the location in the body
+// of the coforall of a call to a throwing function.
 //
-// Here the key is a FnSymbol and the value is he reason it was
+// Here the key is a FnSymbol and the value is the reason it was
 // marked throwing (typically a CallExpr).
 typedef std::map<FnSymbol*, BaseAST*> implicitThrowsReasons_t;
 
