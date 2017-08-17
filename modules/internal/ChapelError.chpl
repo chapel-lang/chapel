@@ -25,6 +25,8 @@ module ChapelError {
   // TODO: should Error include list pointers for ErrorGroup?
   class Error {
     var msg: string;
+    pragma "no doc"
+    var _next: Error = nil; // managed by lock in record ErrorGroupRecord
 
     proc Error() {
       _next = nil;
@@ -39,15 +41,13 @@ module ChapelError {
       //f <~> "Error: " <~> msg;
       f <~> "{msg = " <~> msg <~> "}";
     }
-
-    pragma "no doc"
-    var _next: Error = nil; // managed by lock in record ErrorGroupRecord
   }
 
-  // Used by the runtime to accumulate errors. Needs
-  // only support adding errors concurrently. Errors
+  // Used by the runtime to accumulate errors. This type
+  // supports adding errors concurrently but need not support
+  // iterating over the errors concurrently. Errors
   // will be read from this after all tasks that can add
-  // errors have completed; then it no longer needs
+  // errors have completed; at that point it no longer needs
   // to be parallel-safe.
   pragma "no doc"
   record chpl_ErrorGroup {
