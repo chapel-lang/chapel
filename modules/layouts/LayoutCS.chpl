@@ -26,7 +26,6 @@ config param debugCS = false;
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
-  proc init() { }
   proc key(idx: _tuple) { return (idx(2), idx(1));}
 }
 
