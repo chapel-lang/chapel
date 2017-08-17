@@ -1327,7 +1327,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 }
 
 /*
- A Goto ErrorHandling label in the body of an loop will not
+ A Goto ErrorHandling label in the body of a loop will not
  be properly handled when the iterator is inlined into a task
  function because the label will be outside of the task function.
 
