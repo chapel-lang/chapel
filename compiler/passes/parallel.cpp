@@ -27,7 +27,6 @@
 #include "driver.h"
 #include "errorHandling.h"
 #include "expr.h"
-#include "errorHandling.h"
 #include "files.h"
 #include "optimizations.h"
 #include "resolution.h"
