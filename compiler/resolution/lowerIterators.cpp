@@ -490,30 +490,35 @@ fragmentLocalBlocks() {
 // Multiple temps may be created for each formal.
 static void
 replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
-                                         std::vector<SymExpr*>& symExprs) {
+                                         SymExpr* se) {
   int count = 1;
   for_formals(formal, iterator) {
-    for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == formal) {
-        // count is used to get the nth field out of the iterator class;
-        // it is replaced by the field once the iterator class is created
-        Expr* stmt = se->getStmtExpr();
+    if (se->symbol() == formal) {
+      // count is used to get the nth field out of the iterator class;
+      // it is replaced by the field once the iterator class is created
+      Expr* stmt = se->getStmtExpr();
 
-        // Error variable arguments should have already been handled.
-        INT_ASSERT(! (formal->defPoint->parentSymbol != se->parentSymbol &&
-                       formal->hasFlag(FLAG_ERROR_VARIABLE)));
-        // TODO -- this should use/respect ArgSymbol's Qualifier
-        VarSymbol* tmp = newTemp(formal->name, formal->type);
+      // Error variable arguments should have already been handled.
+      INT_ASSERT(! (formal->defPoint->parentSymbol != se->parentSymbol &&
+                     formal->hasFlag(FLAG_ERROR_VARIABLE)));
+      // TODO -- this should use/respect ArgSymbol's Qualifier
+      VarSymbol* tmp = newTemp(formal->name, formal->type);
 
-        stmt->insertBefore(new DefExpr(tmp));
-        stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
-        se->setSymbol(tmp);
-      }
+      stmt->insertBefore(new DefExpr(tmp));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
+      se->setSymbol(tmp);
     }
     count++;
   }
 }
 
+static void
+replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
+                                         std::vector<SymExpr*> & symExprs) {
+  for_vector(SymExpr, se, symExprs) {
+    replaceIteratorFormalsWithIteratorFields(iterator, ic, se);
+  }
+}
 
 static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
 static FnSymbol* argBundleCopyFn = NULL;
@@ -1088,7 +1093,9 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   collectCallExprs(iteratorFn, calls);
   ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
+
   replaceIteratorFormalsWithIteratorFields(iterator, icArg, symExprs);
+
   ArgSymbol* loopBodyFnIDArg = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]);
   iteratorFn->insertFormalAtTail(loopBodyFnIDArg);
   ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnArgs", argsBundleType);
@@ -1209,8 +1216,7 @@ static void
 expandBodyForIteratorInline(ForLoop*       forLoop,
                             BlockStmt*     ibody,
                             Symbol*        index);
-static void replaceErrorArgumentWithEnclosingError(FnSymbol* iterator,
-    std::vector<SymExpr*> & symExprs);
+static void replaceErrorFormalWithEnclosingError(SymExpr* se);
 
 
 static void
@@ -1304,7 +1310,9 @@ expandIteratorInline(ForLoop* forLoop) {
       // argument through the iterator class. Instead of setting
       // a formal error argument, set an enclosing error variable.
       collectSymExprs(ibody, symExprs);
-      replaceErrorArgumentWithEnclosingError(iterator, symExprs);
+      for_vector(SymExpr, se, symExprs) {
+        replaceErrorFormalWithEnclosingError(se);
+      }
     }
 
     collectSymExprs(ibody, symExprs);
@@ -1348,7 +1356,7 @@ addDummyErrorArgumentToCall(CallExpr* call)
 }
 
 static ArgSymbol*
-findErrorArgumentToFn(FnSymbol* fn)
+findErrorFormalForFn(FnSymbol* fn)
 {
   ArgSymbol* errorArg = NULL;
   if (fn->throwsError()) {
@@ -1362,7 +1370,7 @@ findErrorArgumentToFn(FnSymbol* fn)
 }
 
 static ArgSymbol*
-addDummyErrorArgumentToFn(FnSymbol* fn)
+addDummyErrorFormalToFn(FnSymbol* fn)
 {
   ArgSymbol* errorArg = new ArgSymbol(INTENT_REF, "error_out", dtError);
   errorArg->addFlag(FLAG_ERROR_VARIABLE);
@@ -1438,9 +1446,9 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
         // Find the formal to store the error
         // ... find the (last) error argument
-        ArgSymbol* errorArg = findErrorArgumentToFn(fn);
+        ArgSymbol* errorArg = findErrorFormalForFn(fn);
         if (errorArg == NULL) {
-          errorArg = addDummyErrorArgumentToFn(fn);
+          errorArg = addDummyErrorFormalToFn(fn);
           adjustCaller = true;
         }
         INT_ASSERT(errorArg != NULL);
@@ -1501,68 +1509,64 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
    a following error-handling block if one exists.
  */
 static void
-replaceErrorArgumentWithEnclosingError(
-    FnSymbol* iterator,
-    std::vector<SymExpr*>& symExprs) {
+replaceErrorFormalWithEnclosingError(SymExpr* se) {
 
-  for_vector(SymExpr, se, symExprs) {
-    Symbol* oldSymbol = se->symbol();
-    if (oldSymbol->defPoint->parentSymbol != se->parentSymbol &&
-        oldSymbol->hasFlag(FLAG_ERROR_VARIABLE)) {
+  Symbol* oldSymbol = se->symbol();
+  if (oldSymbol->defPoint->parentSymbol != se->parentSymbol &&
+      oldSymbol->hasFlag(FLAG_ERROR_VARIABLE)) {
 
-      LabelSymbol* newLabel = NULL;
-      Symbol* newError = NULL;
+    LabelSymbol* newLabel = NULL;
+    Symbol* newError = NULL;
 
-      // This code is only written to handle a PRIM_MOVE/ASSIGN
-      // that is setting the out error argument of the iterator.
-      // This out error argument is no longer available since the
-      // iterator is being inlined.
-      CallExpr* parentCall = toCallExpr(se->parentExpr);
-      INT_ASSERT(parentCall->isPrimitive(PRIM_MOVE) ||
-                 parentCall->isPrimitive(PRIM_ASSIGN));
-      INT_ASSERT(se == parentCall->get(1));
+    // This code is only written to handle a PRIM_MOVE/ASSIGN
+    // that is setting the out error argument of the iterator.
+    // This out error argument is no longer available since the
+    // iterator is being inlined.
+    CallExpr* parentCall = toCallExpr(se->parentExpr);
+    INT_ASSERT(parentCall->isPrimitive(PRIM_MOVE) ||
+               parentCall->isPrimitive(PRIM_ASSIGN));
+    INT_ASSERT(se == parentCall->get(1));
 
-      FnSymbol* inFn = toFnSymbol(se->parentSymbol);
+    FnSymbol* inFn = toFnSymbol(se->parentSymbol);
 
-      // find the Goto we need to replace
-      GotoStmt* fixGoto = NULL;
-      for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
-        fixGoto = toGotoStmt(cur);
-        if (fixGoto != NULL)
-          break;
-      }
-      INT_ASSERT(fixGoto);
+    // find the Goto we need to replace
+    GotoStmt* fixGoto = NULL;
+    for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
+      fixGoto = toGotoStmt(cur);
+      if (fixGoto != NULL)
+        break;
+    }
+    INT_ASSERT(fixGoto);
 
-      if (findFollowingCheckErrorBlock(se, newLabel, newError)) {
-        // Adjust the current error handling block.
-        // 1. Change the use of the error argument to use the
-        // identified error variable.
-        // 2. Change the Goto to point to the identified error label.
+    if (findFollowingCheckErrorBlock(se, newLabel, newError)) {
+      // Adjust the current error handling block.
+      // 1. Change the use of the error argument to use the
+      // identified error variable.
+      // 2. Change the Goto to point to the identified error label.
 
-        se->setSymbol(newError);
-        fixGoto->gotoTag = GOTO_ERROR_HANDLING;
-        fixGoto->label->replace(new SymExpr(newLabel));
-      } else if(isTaskFun(inFn)) {
-        // 1. Make sure that the task function has an error argument.
-        // 2. Set that out argument instead of the invalid one.
-        ArgSymbol* errorArg = findErrorArgumentToFn(inFn);
-        if (errorArg == NULL) {
-          errorArg = addDummyErrorArgumentToFn(inFn);
-          // And adjust callers of this function
-          for_SymbolSymExprs(se, inFn) {
-            CallExpr* call = toCallExpr(se->parentExpr);
-            addDummyErrorArgumentToCall(call);
-          }
+      se->setSymbol(newError);
+      fixGoto->gotoTag = GOTO_ERROR_HANDLING;
+      fixGoto->label->replace(new SymExpr(newLabel));
+    } else if(isTaskFun(inFn)) {
+      // 1. Make sure that the task function has an error argument.
+      // 2. Set that out argument instead of the invalid one.
+      ArgSymbol* errorArg = findErrorFormalForFn(inFn);
+      if (errorArg == NULL) {
+        errorArg = addDummyErrorFormalToFn(inFn);
+        // And adjust callers of this function
+        for_SymbolSymExprs(se, inFn) {
+          CallExpr* call = toCallExpr(se->parentExpr);
+          addDummyErrorArgumentToCall(call);
         }
-        se->setSymbol(errorArg);
-        INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
-      } else {
-        // Just call gChplUncaughtError
-        VarSymbol* tmp = newTemp("error", dtError);
-        parentCall->insertBefore(new DefExpr(tmp));
-        se->setSymbol(tmp);
-        fixGoto->replace(new CallExpr(gChplUncaughtError, tmp));
       }
+      se->setSymbol(errorArg);
+      INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
+    } else {
+      // Just call gChplUncaughtError
+      VarSymbol* tmp = newTemp("error", dtError);
+      parentCall->insertBefore(new DefExpr(tmp));
+      se->setSymbol(tmp);
+      fixGoto->replace(new CallExpr(gChplUncaughtError, tmp));
     }
   }
 }
