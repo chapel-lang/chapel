@@ -46,7 +46,13 @@ proc masonRunHelp() {
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
-  writeln('    -b, --build                  Compile before running binary');
+  writeln('        --build                  Compile before running binary');
+  writeln('        --show                   Print a verbose execution statement');
+  writeln('Runtime arguments can also be included after the run arguments ');
+  writeln();
+  writeln('When no options are provided, the following will take place:');
+  writeln('   - Execute binary from mason project if target/ is present');
+  writeln('   - If no target directory, build and run is Mason.toml is present');
 }
 
 proc masonBuildHelp() {
@@ -57,6 +63,8 @@ proc masonBuildHelp() {
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
+  writeln('        --show                   Show compilation message');
+  writeln('        --release                Use --fast; Compile to target/release');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Build from mason project if Mason.lock present');

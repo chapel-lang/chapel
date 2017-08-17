@@ -6,30 +6,44 @@ use MasonUtils;
 use MasonHelp;
 
 
+
 proc masonBuild(args) {
+  var show = false;
+  var fast = false;
+  var compopts: [1..0] string;
   if args.size > 2 {
-    select (args[2]) {
-    when '-h' do masonBuildHelp();
-    when '--help' do masonBuildHelp();
-    otherwise {
-      writeln("Invalid build arguments");
-      writeln("try mason build --help");
-    }
+    for arg in args[2..] {
+      if arg == '-h' || arg == '--help' {
+	masonBuildHelp();
+	exit();
+      }
+      else if arg == '--release' {
+	fast = true;
+      }
+      else if arg == '--show' {
+	show = true;
+      }
+      else {
+	compopts.push_back(arg);
+      } 
     }
   }
-  else {
-    UpdateLock();
-    BuildProgram();
-  }
+  UpdateLock();
+  BuildProgram(fast, show, compopts);
 }
 
 
-proc BuildProgram() {
+proc BuildProgram(fast: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
-    if !isDir("target") {
-      // Make Target Directory
-      makeTargetFiles();
+
+    // --fast
+    var binLoc = 'debug';
+    if fast {
+      binLoc = 'release';
     }
+
+    // Make Binary Directory
+    makeTargetFiles(binLoc);
 
     //Install dependencies into .mason/src
     var toParse = open("Mason.lock", iomode.r);
@@ -38,7 +52,7 @@ proc BuildProgram() {
     getSrcCode(sourceList);
 
     // Compile Program
-    if compileSrc(lockFile) {
+    if compileSrc(lockFile, binLoc, show, fast, compopts) {
       writeln("Build Successful\n");
     }
     else {
@@ -56,12 +70,16 @@ proc BuildProgram() {
 
 
 /* Creates the rest of the project structure */
-proc makeTargetFiles() {
-  mkdir('target');
-  mkdir('target/debug');
-  mkdir('target/debug/tests');
-  mkdir('target/debug/examples');
-  mkdir('target/debug/benches');
+proc makeTargetFiles(binLoc: string) {
+  if !isDir('target') {
+    mkdir('target'); 
+  }
+  if !isDir('target/' + binLoc) {
+    mkdir('target/' + binLoc);
+    mkdir('target/' + binLoc + '/tests');
+    mkdir('target/'+ binLoc + '/examples');
+    mkdir('target/' + binLoc + '/benches');
+  }
 }
 
 
@@ -69,26 +87,40 @@ proc makeTargetFiles() {
    folder. Requires that the main library file be
    named after the project folder in which it is 
    contained */
-proc compileSrc(lockFile: Toml) : bool {
+proc compileSrc(lockFile: Toml, binLoc: string, show: bool, 
+		fast: bool, compopts: [?dom] string) : bool {
   var sourceList = genSourceList(lockFile);
   var depPath = getEnv("HOME") + '/.mason/src/';
   var project = lockFile["root"]["name"].s;
   var projectPath = 'src/'+ project + '.chpl';
  
   if isFile(projectPath) {
-    var command: string = 'chpl ' + projectPath;
+    var command: string = 'chpl ' + projectPath + ' ' + ' '.join(compopts);
+    if fast {
+      command += " --fast";
+    }
     for dep in sourceList {
       var depSrc = ' -M '+ depPath + dep(2) + '/src';
       command += depSrc;
     }
-    writeln("Compiling "+ project);
-    var compilation = runWithStatus(command); // compile Program with deps
+
+    // Verbosity control
+    if show {
+      writeln(command);
+    }
+    else {
+      writeln("Compiling "+ project);
+    }
+
+    // compile Program with deps
+    var compilation = runWithStatus(command);
     if compilation != 0 {
       return false;
     }
     
-    rename(project, 'target/debug/' + project);
-    if isFile('target/debug/' + project) {
+    // Confirming File Structure
+    rename(project, 'target/' + binLoc + '/' + project);
+    if isFile('target/' + binLoc + '/' + project) {
 	return true;
     }
     else {

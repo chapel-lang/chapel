@@ -32,44 +32,53 @@ proc main(args: [] string) {
 }
 
 
-config const build: bool = false;
 
-/* TODO: mtime so compilation only when nessescary
-   TODO: eliminate need for main name  */
+/* TODO: mtime so compilation only when nessescary */
 proc masonRun(args) {
   var toRun = basename(getEnv('PWD'));
-  if build then masonBuild(args);
+  var show = false;
+  var execopts: [1..0] string;
   if args.size > 2 {
-    select (args[2]) {
-    when '-h' do masonRunHelp();
-    when '--help' do masonRunHelp();
-    otherwise {
-      writeln("Invalid run argument");
-      writeln("Try mason run --help");
-      exit();
+    for arg in args[2..] {
+      if arg == '-h' || arg == '--help' {
+        masonRunHelp();
+	exit();
+      }
+      else if arg == '--build' {
+	masonBuild(['mason', 'build']);
+      }
+      else if arg == '--show' {
+	show = true;
+      }
+      else {
+	execopts.push_back(arg);
+      }
+    }  
+  }
+  // Find the Binary and execute 
+  if isDir('target') {
+    var execs = ' '.join(execopts);
+    var command = "target/debug/" + toRun + ' ' + execs;
+    if isDir('target/release') {
+      command = "target/release/" + toRun + ' ' + execs;
     }
+    if show {
+      writeln("Executing binary: " + command);
+    }
+    if isFile("Mason.lock") {  // If built
+      runCommand(command);
+    }
+    else if isFile("Mason.toml") { // If not built
+      masonBuild(args);
+      runCommand(command);
+    }
+    else {
+      writeln("call mason run from the top level of your projects directory");
     }
   }
   else {
-    if isDir('target') {
-      if isFile("Mason.lock") {
-	var command = "target/debug/" + toRun;
-	runCommand(command);
-      }
-      else if isFile("Mason.toml") {
-	masonBuild(args);
-	var command = "target/debug/" + toRun;
-	runCommand(command);
-      }
-      else {
-	writeln("call mason run from the top level of your projects directory");
-      }
-    }
-    else {
-      writeln("Mason cannot find the compiled program");
-      writeln("Try mason run --build");
-      exit();
-    }
+    writeln("Mason cannot find the compiled program");
+    exit();
   }
 }
 
