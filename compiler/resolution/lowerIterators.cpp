@@ -490,26 +490,24 @@ fragmentLocalBlocks() {
 // Multiple temps may be created for each formal.
 static void
 replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
-                                         std::vector<BaseAST*>& asts) {
+                                         std::vector<SymExpr*>& symExprs) {
   int count = 1;
   for_formals(formal, iterator) {
-    for_vector(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        if (se->symbol() == formal) {
-          // count is used to get the nth field out of the iterator class;
-          // it is replaced by the field once the iterator class is created
-          Expr* stmt = se->getStmtExpr();
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == formal) {
+        // count is used to get the nth field out of the iterator class;
+        // it is replaced by the field once the iterator class is created
+        Expr* stmt = se->getStmtExpr();
 
-          // Error variable arguments should have already been handled.
-          INT_ASSERT(! (formal->defPoint->parentSymbol != se->parentSymbol &&
-                         formal->hasFlag(FLAG_ERROR_VARIABLE)));
-          // TODO -- this should use/respect ArgSymbol's Qualifier
-          VarSymbol* tmp = newTemp(formal->name, formal->type);
+        // Error variable arguments should have already been handled.
+        INT_ASSERT(! (formal->defPoint->parentSymbol != se->parentSymbol &&
+                       formal->hasFlag(FLAG_ERROR_VARIABLE)));
+        // TODO -- this should use/respect ArgSymbol's Qualifier
+        VarSymbol* tmp = newTemp(formal->name, formal->type);
 
-          stmt->insertBefore(new DefExpr(tmp));
-          stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
-          se->setSymbol(tmp);
-        }
+        stmt->insertBefore(new DefExpr(tmp));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
+        se->setSymbol(tmp);
       }
     }
     count++;
@@ -871,34 +869,32 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
 }
 
 
-static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> asts)
+static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> symExprs)
 {
   //
   // localize return symbols
   //
   Symbol* ret = iteratorFn->getReturnSymbol();
   Map<BlockStmt*,Symbol*> retReplacementMap;
-  for_vector(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      if (se->symbol() == ret) {
-        BlockStmt* block = NULL;
-        for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
-          block = toBlockStmt(parent);
-          if (block)
-            break;
-        }
-        INT_ASSERT(block);
-        if (block != ret->defPoint->parentExpr) {
-          if (Symbol* repl = retReplacementMap.get(block)) {
-            se->setSymbol(repl);
-          } else {
-            SET_LINENO(se);
-            Symbol* newRet = newTemp("newRet", ret->type);
-            newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
-            block->insertAtHead(new DefExpr(newRet));
-            se->setSymbol(newRet);
-            retReplacementMap.put(block, newRet);
-          }
+  for_vector(SymExpr, se, symExprs) {
+    if (se->symbol() == ret) {
+      BlockStmt* block = NULL;
+      for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
+        block = toBlockStmt(parent);
+        if (block)
+          break;
+      }
+      INT_ASSERT(block);
+      if (block != ret->defPoint->parentExpr) {
+        if (Symbol* repl = retReplacementMap.get(block)) {
+          se->setSymbol(repl);
+        } else {
+          SET_LINENO(se);
+          Symbol* newRet = newTemp("newRet", ret->type);
+          newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
+          block->insertAtHead(new DefExpr(newRet));
+          se->setSymbol(newRet);
+          retReplacementMap.put(block, newRet);
         }
       }
     }
@@ -918,9 +914,9 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {
-      std::vector<BaseAST*> asts;
-      collect_asts(iterFn, asts);
-      localizeReturnSymbols(iterFn, asts);
+      std::vector<SymExpr*> symExprs;
+      collectSymExprs(iterFn, symExprs);
+      localizeReturnSymbols(iterFn, symExprs);
     }
   }
 }
@@ -1002,44 +998,42 @@ static void threadLoopBodyFnArgs(CallExpr* call,
 // and remove return statements.
 // If 'asts' are the body of a task function, the return statement
 // must stay because it is a required part of a function.
-static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
+static void convertYieldsAndReturns(std::vector<CallExpr*>& calls, Symbol* index,
                                     ArgSymbol* loopBodyFnIDArg, ArgSymbol* loopBodyFnArgArgs)
 {
-  for_vector(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIM_YIELD)) {
-        SET_LINENO(call);
-        Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
-        call->insertBefore(new DefExpr(yieldedIndex));
-        call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
-        Expr* loopBodyFnCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnIDArg, yieldedIndex, loopBodyFnArgArgs);
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      SET_LINENO(call);
+      Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
+      call->insertBefore(new DefExpr(yieldedIndex));
+      call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
+      Expr* loopBodyFnCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnIDArg, yieldedIndex, loopBodyFnArgArgs);
 
-        // The inserted loop body function call is surrounded by a number of
-        // unlocal blocks equal to the number of local blocks surrounding the original call.
-        int count = countEnclosingLocalBlocks(call);
-        Expr* callOrBlk = loopBodyFnCall;
-        while (count-- > 0)
-        {
-          BlockStmt* blk = new BlockStmt(callOrBlk);
-          blk->blockInfoSet(new CallExpr(PRIM_BLOCK_UNLOCAL));
-          callOrBlk = blk;
-        }
-        call->replace(callOrBlk);
-      } else if (call->isPrimitive(PRIM_RETURN) && !isTaskFun(toFnSymbol(call->parentSymbol))) {
-        // Just remove a return.
-        call->remove();
-      } else if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
-        // Process yields within (a clone of) taskFn.
-        // Todo: do this only if taskFn has yields (directly or not).
-        ArgSymbol *tIDArg, *tArgArgs;
-        threadLoopBodyFnArgs(call, loopBodyFnIDArg, loopBodyFnArgArgs,
-                             &taskFn, &tIDArg, &tArgArgs);
-        // both 'taskFn' and 'call' are updated by threadLoopBodyFnArgs()
-        INT_ASSERT(call->resolvedFunction() == taskFn);
-        std::vector<BaseAST*> taskAsts;
-        collect_asts(taskFn, taskAsts);
-        convertYieldsAndReturns(taskAsts, index, tIDArg, tArgArgs);
+      // The inserted loop body function call is surrounded by a number of
+      // unlocal blocks equal to the number of local blocks surrounding the original call.
+      int count = countEnclosingLocalBlocks(call);
+      Expr* callOrBlk = loopBodyFnCall;
+      while (count-- > 0)
+      {
+        BlockStmt* blk = new BlockStmt(callOrBlk);
+        blk->blockInfoSet(new CallExpr(PRIM_BLOCK_UNLOCAL));
+        callOrBlk = blk;
       }
+      call->replace(callOrBlk);
+    } else if (call->isPrimitive(PRIM_RETURN) && !isTaskFun(toFnSymbol(call->parentSymbol))) {
+      // Just remove a return.
+      call->remove();
+    } else if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
+      // Process yields within (a clone of) taskFn.
+      // Todo: do this only if taskFn has yields (directly or not).
+      ArgSymbol *tIDArg, *tArgArgs;
+      threadLoopBodyFnArgs(call, loopBodyFnIDArg, loopBodyFnArgArgs,
+                           &taskFn, &tIDArg, &tArgArgs);
+      // both 'taskFn' and 'call' are updated by threadLoopBodyFnArgs()
+      INT_ASSERT(call->resolvedFunction() == taskFn);
+      std::vector<CallExpr*> taskCallExprs;
+      collectCallExprs(taskFn, taskCallExprs);
+      convertYieldsAndReturns(taskCallExprs, index, tIDArg, tArgArgs);
     }
   }
 }
@@ -1088,19 +1082,21 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
 
   iteratorFn->body = iterator->body->copy();
   iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
-  std::vector<BaseAST*> asts;
-  collect_asts(iteratorFn, asts);
+  std::vector<SymExpr*> symExprs;
+  std::vector<CallExpr*> calls;
+  collectSymExprs(iteratorFn, symExprs);
+  collectCallExprs(iteratorFn, calls);
   ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
-  replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
+  replaceIteratorFormalsWithIteratorFields(iterator, icArg, symExprs);
   ArgSymbol* loopBodyFnIDArg = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]);
   iteratorFn->insertFormalAtTail(loopBodyFnIDArg);
   ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnArgs", argsBundleType);
   iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
 
-  localizeReturnSymbols(iteratorFn, asts);
+  localizeReturnSymbols(iteratorFn, symExprs);
 
-  convertYieldsAndReturns(asts, index, loopBodyFnIDArg, loopBodyFnArgArgs);
+  convertYieldsAndReturns(calls, index, loopBodyFnIDArg, loopBodyFnArgArgs);
 
   iteratorFn->retType = dtVoid;
   iteratorFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -1213,9 +1209,8 @@ static void
 expandBodyForIteratorInline(ForLoop*       forLoop,
                             BlockStmt*     ibody,
                             Symbol*        index);
-static void replaceErrorArgumentWithEnclosingError(
-    FnSymbol* iterator,
-    std::vector<BaseAST*>& asts);
+static void replaceErrorArgumentWithEnclosingError(FnSymbol* iterator,
+    std::vector<SymExpr*> & symExprs);
 
 
 static void
@@ -1266,7 +1261,7 @@ expandIteratorInline(ForLoop* forLoop) {
 
     Symbol*       index = forLoop->indexGet()->symbol();
     BlockStmt*    ibody = iterator->body->copy();
-    std::vector<BaseAST*> asts;
+    std::vector<SymExpr*> symExprs;
 
     bool isOrderIndependent = forLoop->isOrderIndependent();
     if (preserveInlinedLineNumbers == false) {
@@ -1303,16 +1298,17 @@ expandIteratorInline(ForLoop* forLoop) {
     expandBodyForIteratorInline(forLoop, ibody, index);
 
 
+
     if (iterator->throwsError()) {
       // For an inlined iterator, we don't want to track the error
       // argument through the iterator class. Instead of setting
       // a formal error argument, set an enclosing error variable.
-      collect_asts(ibody, asts);
-      replaceErrorArgumentWithEnclosingError(iterator, asts);
+      collectSymExprs(ibody, symExprs);
+      replaceErrorArgumentWithEnclosingError(iterator, symExprs);
     }
 
-    collect_asts(ibody, asts);
-    replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
+    collectSymExprs(ibody, symExprs);
+    replaceIteratorFormalsWithIteratorFields(iterator, ic, symExprs);
 
     // We can return true if forLoop has been removed from the tree.
     INT_ASSERT(!forLoop->inTree());
@@ -1507,67 +1503,65 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
 static void
 replaceErrorArgumentWithEnclosingError(
     FnSymbol* iterator,
-    std::vector<BaseAST*>& asts) {
+    std::vector<SymExpr*>& symExprs) {
 
-  for_vector(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
-      Symbol* oldSymbol = se->symbol();
-      if (oldSymbol->defPoint->parentSymbol != se->parentSymbol &&
-          oldSymbol->hasFlag(FLAG_ERROR_VARIABLE)) {
+  for_vector(SymExpr, se, symExprs) {
+    Symbol* oldSymbol = se->symbol();
+    if (oldSymbol->defPoint->parentSymbol != se->parentSymbol &&
+        oldSymbol->hasFlag(FLAG_ERROR_VARIABLE)) {
 
-        LabelSymbol* newLabel = NULL;
-        Symbol* newError = NULL;
+      LabelSymbol* newLabel = NULL;
+      Symbol* newError = NULL;
 
-        // This code is only written to handle a PRIM_MOVE/ASSIGN
-        // that is setting the out error argument of the iterator.
-        // This out error argument is no longer available since the
-        // iterator is being inlined.
-        CallExpr* parentCall = toCallExpr(se->parentExpr);
-        INT_ASSERT(parentCall->isPrimitive(PRIM_MOVE) ||
-                   parentCall->isPrimitive(PRIM_ASSIGN));
-        INT_ASSERT(se == parentCall->get(1));
+      // This code is only written to handle a PRIM_MOVE/ASSIGN
+      // that is setting the out error argument of the iterator.
+      // This out error argument is no longer available since the
+      // iterator is being inlined.
+      CallExpr* parentCall = toCallExpr(se->parentExpr);
+      INT_ASSERT(parentCall->isPrimitive(PRIM_MOVE) ||
+                 parentCall->isPrimitive(PRIM_ASSIGN));
+      INT_ASSERT(se == parentCall->get(1));
 
-        FnSymbol* inFn = toFnSymbol(se->parentSymbol);
+      FnSymbol* inFn = toFnSymbol(se->parentSymbol);
 
-        // find the Goto we need to replace
-        GotoStmt* fixGoto = NULL;
-        for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
-          fixGoto = toGotoStmt(cur);
-          if (fixGoto != NULL)
-            break;
-        }
-        INT_ASSERT(fixGoto);
+      // find the Goto we need to replace
+      GotoStmt* fixGoto = NULL;
+      for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
+        fixGoto = toGotoStmt(cur);
+        if (fixGoto != NULL)
+          break;
+      }
+      INT_ASSERT(fixGoto);
 
-        if (findFollowingCheckErrorBlock(se, newLabel, newError)) {
-          // Adjust the current error handling block.
-          // 1. Change the use of the error argument to use the
-          // identified error variable.
-          // 2. Change the Goto to point to the identified error label.
+      if (findFollowingCheckErrorBlock(se, newLabel, newError)) {
+        // Adjust the current error handling block.
+        // 1. Change the use of the error argument to use the
+        // identified error variable.
+        // 2. Change the Goto to point to the identified error label.
 
-          se->setSymbol(newError);
-          fixGoto->gotoTag = GOTO_ERROR_HANDLING;
-          fixGoto->label->replace(new SymExpr(newLabel));
-        } else if(isTaskFun(inFn)) {
-          // 1. Make sure that the task function has an error argument.
-          // 2. Set that out argument instead of the invalid one.
-          ArgSymbol* errorArg = findErrorArgumentToFn(inFn);
-          if (errorArg == NULL) {
-            errorArg = addDummyErrorArgumentToFn(inFn);
-            // And adjust callers of this function
-            for_SymbolSymExprs(se, inFn) {
-              CallExpr* call = toCallExpr(se->parentExpr);
-              addDummyErrorArgumentToCall(call);
-            }
+        se->setSymbol(newError);
+        fixGoto->gotoTag = GOTO_ERROR_HANDLING;
+        fixGoto->label->replace(new SymExpr(newLabel));
+      } else if(isTaskFun(inFn)) {
+        // 1. Make sure that the task function has an error argument.
+        // 2. Set that out argument instead of the invalid one.
+        ArgSymbol* errorArg = findErrorArgumentToFn(inFn);
+        if (errorArg == NULL) {
+          errorArg = addDummyErrorArgumentToFn(inFn);
+          // And adjust callers of this function
+          for_SymbolSymExprs(se, inFn) {
+            CallExpr* call = toCallExpr(se->parentExpr);
+            addDummyErrorArgumentToCall(call);
           }
-          se->setSymbol(errorArg);
-          INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
-        } else {
-          // Just call gChplUncaughtError
-          VarSymbol* tmp = newTemp("error", dtError);
-          parentCall->insertBefore(new DefExpr(tmp));
-          se->setSymbol(tmp);
-          fixGoto->replace(new CallExpr(gChplUncaughtError, tmp));
         }
+        se->setSymbol(errorArg);
+        INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
+      } else {
+        // Just call gChplUncaughtError
+        VarSymbol* tmp = newTemp("error", dtError);
+        parentCall->insertBefore(new DefExpr(tmp));
+        se->setSymbol(tmp);
+        fixGoto->replace(new CallExpr(gChplUncaughtError, tmp));
       }
     }
   }
