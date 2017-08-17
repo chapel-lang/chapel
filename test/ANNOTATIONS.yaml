@@ -1040,6 +1040,8 @@ timeVectorArray:
     - upgrade jemalloc to 4.2.0 (#3919)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  07/26/17:
+    - Allow domains to implement specialized assignment (#6722)
 
 dynamic:
   02/28/17:
