@@ -43,44 +43,51 @@ if ! $RIVENV $SCSPELL --help > /dev/null 2> /dev/null; then
     exit 1
 fi
 
-# Normal files to look for when recursing through directories.
+# Normal files to look for when searching directories.
+# This is used to build a commandline for /usr/bin/find.
 NORMALGLOBS=("-name" "*.chpl"  "-o"
              "-name" "*.cpp"   "-o"
              "-name" "*.c"     "-o"
              "-name" "*.h"     "-o"
              "-name" "README*" "-o"
              "-name" "*.md"    "-o"
-             "-name" "*.rst"   "-o"
-             "-name" "*.1" )
-# *.1 are man pages
+             "-name" "*.rst" )
 
 # Latex files to look for when recursing through directories.
 # These are tracked separately because scspell needs --no-c-escapes for them.
 LATEXGLOBS=("-name" "*.tex")
 
-DEFAULTDIRS=( \
-	     compiler doc man modules runtime spec \
-	     test/release/examples/benchmarks/shootout \
-	     test/release/examples/primers \
-	     test/studies/shootout \
+DEFAULTDIRS=(
+	     compiler doc man modules runtime spec
+	     test/release
 	     .github
 )
-# TODO: tools util test/release
 
 # DEFAULTFILES are just files in $CHPL_HOME or in a directory
 # otherwise not suited for DEFAULTDIRS.  (The latter must have their
 # paths fully specified.  We don't search for these; just a straight-up
 # match in $CHPL_HOME.)
-DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst" "test/ANNOTATIONS.yaml")
+DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst"
+	      "test/ANNOTATIONS.yaml" "doc/README.rst")
 
-# Filter out files with "too much" noise.  LAPACK.chpl is over 20k
-# lines of mostly noise, which qualifies.
+# Filter out files we don't want to spellcheck.
+
+# This includes generated files (generated from files that are
+# spellechecked), and files with "too much noise": LAPACK.chpl is
+# over 20k lines of unique tokens.
 #
-# Any files with these basenames will be skipped when we encounter them
-# handling entire directories.  This setting has no impact on files specified
-# specifically on the command line.
-FILTEROUT="bison-chapel.cpp bison-chapel.h flex-chapel.cpp flex-chapel.h \
-           LAPACK.chpl LAPACK.rst"
+# Any files whose full path relative to $CHPL_HOME has one of these as
+# a prefix will be skipped.  This setting has no impact on files
+# specified specifically on the command line.
+FILTEROUT="compiler/include/bison-chapel.h  \
+           compiler/include/flex-chapel.h   \
+           compiler/parser/bison-chapel.cpp \
+           compiler/parser/flex-chapel.cpp  \
+           doc/rst/builtins                 \
+           doc/rst/modules                  \
+           doc/rst/primers                  \
+           doc/rst/examples                 \
+           modules/packages/LAPACK.chpl"
 
 
 # Here endeth the configuration options.  The rest of the script
@@ -194,7 +201,7 @@ if [ $JUSTARGS == 0 ]; then
 	cd $CHPL_HOME
 	# Now that we're in $CHPL_HOME, use [*] to expand the globs in
 	# $DEFAULTFILES.  This is ok since DEFAULTFILES doesn't
-	# contain any filesnames with spaces etc.  DEFAULTDIRS has no
+	# contain any filenames with spaces etc.  DEFAULTDIRS has no
 	# globs.
 	NORMALFILES=(${DEFAULTFILES[*]})
 	TARGETDIRS=("${DEFAULTDIRS[@]}")
@@ -217,10 +224,9 @@ if [ $JUSTARGS == 0 ]; then
 
 	# Filter out files listed in $FILTEROUT
 	for file in "${NFILES[@]}"; do
-	    b=$(basename "$file")
 	    KEEP=1
 	    for filter in $FILTEROUT; do
-		if [ "$b" == "$filter" ]; then
+		if [ "$file" != "${file#$filter}" ]; then
 		    KEEP=0
 		    break;
 		fi
@@ -231,10 +237,9 @@ if [ $JUSTARGS == 0 ]; then
 	done
 
 	for file in "${LFILES[@]}"; do
-	    b=$(basename "$file")
 	    KEEP=1
 	    for filter in $FILTEROUT; do
-		if [ "$b" == "$filter" ]; then
+		if [ "$file" != "${file#$filter}" ]; then
 		    KEEP=0
 		    break;
 		fi
