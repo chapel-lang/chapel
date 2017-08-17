@@ -2937,7 +2937,7 @@ buildAtomicStmt(Expr* stmt) {
 
   if (!atomic_warning) {
     atomic_warning = true;
-    USR_WARN(stmt, "atomic keyword is ignored (not implemented)");
+    USR_WARN(stmt, "atomic statement is ignored (not implemented)");
   }
   return buildChapelStmt(new BlockStmt(stmt));
 }
