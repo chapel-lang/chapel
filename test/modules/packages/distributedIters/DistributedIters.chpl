@@ -22,7 +22,8 @@
    loop for a range or domain.
 
    Part of a 2017 Cray summer intern project by Sean I. Geronimo Anderson
-   (sgeronimo@cray.com) as mentored by Ben Harshbarger (bharshbarg@cray.com).
+   (github.com/s-geronimoanderson) as mentored by Ben Harshbarger
+   (github.com/benharsh).
  */
 module DistributedIters
 {
