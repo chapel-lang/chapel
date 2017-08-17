@@ -1235,7 +1235,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             Symbol*        index,
                             bool           inTaskFn,
                             TaskFnCopyMap& taskFnCopies,
-                            bool&          callWithErrorArg);
+                            bool&          addErrorArgToCall);
 
 /// \param call A for loop block primitive.
 static bool
@@ -1327,9 +1327,10 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             BlockStmt*     ibody,
                             Symbol*        index) {
   TaskFnCopyMap taskFnCopies;
-  bool callWithErrorArg = false;
+  bool addErrorArgToCall = false;
   expandBodyForIteratorInline(forLoop, ibody, index, false,
-                              taskFnCopies, callWithErrorArg);
+                              taskFnCopies, addErrorArgToCall);
+  INT_ASSERT(addErrorArgToCall == false); // case not handled
 }
 
 /*
@@ -1575,7 +1576,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             Symbol*        index,
                             bool           inTaskFn,
                             TaskFnCopyMap& taskFnCopies,
-                            bool&          callWithErrorArg) {
+                            bool&          addErrorArgToCall) {
   std::vector<BaseAST*> asts;
   bool removeReturn = !inTaskFn;
 
@@ -1635,7 +1636,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // Fix an error-handling sequence that now refers
         // outside of its function.
         if (inTaskFn)
-          fixupErrorHandlingExits(bodyCopy, callWithErrorArg);
+          fixupErrorHandlingExits(bodyCopy, addErrorArgToCall);
 
       }
 
@@ -1653,7 +1654,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // while preserving correct scoping of its SymExprs.
         INT_ASSERT(isGlobal(cfn));
 
-        bool subCallWithErrorArg = false;
+        bool addErrorArgToSubCall = false;
         FnSymbol* fcopy = taskFnCopies.get(cfn);
 
         if (!fcopy) {
@@ -1673,7 +1674,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
           // Repeat, recursively.
           expandBodyForIteratorInline(forLoop, fcopy->body, index, true,
-              taskFnCopies, subCallWithErrorArg);
+              taskFnCopies, addErrorArgToSubCall);
 
         } else {
           // Indeed, 'cfn' is encountered only once per 'body',
@@ -1689,9 +1690,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // Call 'fcopy' instead
         call->baseExpr->replace(new SymExpr(fcopy));
 
-        if (subCallWithErrorArg) {
+        if (addErrorArgToSubCall) {
           addDummyErrorArgumentToCall(call);
-          callWithErrorArg = true;
         }
 
         // Note: this is an expensive operation due to compute_call_sites().
