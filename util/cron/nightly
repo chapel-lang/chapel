@@ -36,6 +36,7 @@ $examples = 0;
 $performance = 0;
 $performancedescription = "";
 $performanceconfigs = "";
+$perflabel = "";
 $releasePerformance = 0;
 $compperformance = 0;
 $compperformancedescription = "";
@@ -100,6 +101,8 @@ while (@ARGV) {
         $performancedescription = shift @ARGV;
     } elsif ($flag eq "-performance-configs") {
         $performanceconfigs = shift @ARGV;
+    } elsif ($flag eq "-perflabel") {
+        $perflabel = shift @ARGV;
     } elsif ($flag eq "-releasePerformance") {
         $releasePerformance = 1;
     } elsif ($flag eq "-compperformance") {
@@ -649,6 +652,9 @@ if ($performance == 1) {
     }
     if ($performanceconfigs ne "") {
        $testflags = "$testflags -performance-configs \"$performanceconfigs\"";
+    }
+    if ($perflabel ne "") {
+       $testflags = "$testflags -perflabel \"$perflabel\"";
     }
 
 }
