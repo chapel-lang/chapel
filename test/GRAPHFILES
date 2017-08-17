@@ -171,10 +171,12 @@ studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
 release/examples/benchmarks/isx/isx-release.graph
 # suite: PRK benchmarks
-studies/prk/Synch_p2p/prk-synch_p2p.graph
-studies/prk/Synch_p2p/prk-synch_p2p-time.graph
+studies/prk/Sparse/prk-sparse.graph
+studies/prk/Sparse/prk-sparse-time.graph
 studies/prk/Stencil/prk-stencil.graph
 studies/prk/Stencil/prk-stencil-time.graph
+studies/prk/Synch_p2p/prk-synch_p2p.graph
+studies/prk/Synch_p2p/prk-synch_p2p-time.graph
 studies/prk/Transpose/prk-transpose.graph
 studies/prk/Transpose/prk-transpose-time.graph
 # suite: NAS Parallel benchmarks

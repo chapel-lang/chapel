@@ -1,0 +1,2 @@
+-s correctness=true -s VisualDebugOn=false
+-s correctness=true -s scramble=false -s VisualDebugOn=false

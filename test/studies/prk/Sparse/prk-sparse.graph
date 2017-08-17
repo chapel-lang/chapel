@@ -1,0 +1,5 @@
+perfkeys: Rate (MFlops/s):
+files: sparse-csr.dat
+graphkeys: CSR
+graphtitle: PRK sparse
+ylabel: Rate (MFlops/s)
