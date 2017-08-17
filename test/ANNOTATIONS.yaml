@@ -256,13 +256,17 @@ all:
       config: Single node XC, 16 node XC
   06/21/17:
     - change tmp directory
+  07/26/17:
+    - Add dsiAssignDomain (#6722)
+    - Move EndCount to task local storage (#6765)
   07/31/17:
     - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
       config: 16 node XC
   08/08/17:
     - text: With comm=ugni, register large arrays dynamically (#6947)
       config: 16 node XC
-
+  08/15/17:
+    - add error handling to the IO module (#6890)
 
 
 AllCompTime:
@@ -456,6 +460,8 @@ fasta:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 fastaredux:
   01/14/14:
