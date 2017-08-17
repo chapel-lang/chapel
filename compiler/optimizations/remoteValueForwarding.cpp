@@ -67,7 +67,7 @@ static void replaceRecordWrappedRefs();
 ************************************** | *************************************/
 
 void remoteValueForwarding() {
-  if (fNoRemoteValueForwarding == false) {
+  if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
     inferConstRefs();
     computeUsesDotLocale();
     Map<Symbol*, Vec<SymExpr*>*> defMap;
