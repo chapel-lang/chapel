@@ -1,0 +1,2 @@
+# See issue #7046
+CHPL_LOCALE_MODEL == numa
