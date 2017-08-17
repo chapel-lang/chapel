@@ -56,8 +56,9 @@ config const infoDistributedIters:bool = false;
     Default is one.
   :type minChunkSize: `int`
 
-  :arg coordinated: Have locale 0 coordinate task distribution only; disallow
-    it from receiving work. (If true and multi-locale.)
+  :arg coordinated: If true (and multi-locale), then have the locale invoking
+    the iterator coordinate task distribution only; that is, disallow it from
+    receiving work.
   :type coordinated: `bool`
 
   :arg workerLocales: An array of locales over which to distribute the work.
@@ -186,7 +187,7 @@ where tag == iterKind.leader
       const numActualWorkerLocales = actualWorkerLocales.size;
 
       // The guided iterator stage (determines next subrange index and size).
-      var meitneriumIndex:atomic int;
+      var guidedStageCount:atomic int;
 
       if infoDistributedIters then
       {
@@ -208,22 +209,22 @@ where tag == iterKind.leader
       if timeDistributedIters then totalTime.start();
 
       coforall L in actualWorkerLocales
-      with (ref meitneriumIndex, ref localeTimes) do
-      on L do
+      with (ref guidedStageCount, ref localeTimes)
+      do on L
       {
         var localeTime:Timer;
         if timeDistributedIters then localeTime.start();
 
-        var localeStage:int = meitneriumIndex.fetchAdd(1);
+        var localeStage:int = guidedStageCount.fetchAdd(1);
         var localeRange:cType = guidedSubrange(denseRange,
                                                numActualWorkerLocales,
                                                localeStage);
-        while localeRange.high <= denseRangeHigh do
+        while localeRange.high <= denseRangeHigh
         {
           const denseLocaleRange:cType = densify(localeRange, localeRange);
           for denseTaskRangeTuple in DynamicIters.guided(tag=iterKind.leader,
                                                          localeRange,
-                                                         numTasks) do
+                                                         numTasks)
           {
             const taskRange:cType = unDensify(denseTaskRangeTuple(1),
                                               localeRange);
@@ -237,7 +238,7 @@ where tag == iterKind.leader
             yield (taskRange,);
           }
 
-          localeStage = meitneriumIndex.fetchAdd(1);
+          localeStage = guidedStageCount.fetchAdd(1);
           localeRange = guidedSubrange(denseRange,
                                        numActualWorkerLocales,
                                        localeStage);
@@ -330,7 +331,7 @@ private proc guidedSubrange(c:range(?),
   var low:int = c.low;
   var chunkSize:int = (cLength / workerCount);
   var remainder:int = (cLength - chunkSize);
-  for unused in (1..#stage) do
+  for unused in (1..#stage)
   {
     low += chunkSize;
     chunkSize = (remainder / workerCount);
@@ -358,9 +359,9 @@ private proc guidedSubrange(c:range(?),
   real time array, and a coordinated boolean, and writes out a formatted
   performance timing summary: Total time for each locale, and locale time
 */
-proc writeTimeStatistics(wallTime:real,
-                         localeTimes:[]real,
-                         coordinated:bool)
+private proc writeTimeStatistics(wallTime:real,
+                                 localeTimes:[]real,
+                                 coordinated:bool)
 {
   const low:int = if coordinated && (numLocales > 1)
                   then 1
@@ -372,7 +373,7 @@ proc writeTimeStatistics(wallTime:real,
   var localeTimesFormatted:string;
 
   const localeRange:range = low..#nLocales;
-  for i in localeRange do
+  for i in localeRange
   {
     const localeTime = localeTimes[i];
     localeTotalTime += localeTime;

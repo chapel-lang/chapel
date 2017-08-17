@@ -1,2 +1,0 @@
-./DistributedIters.chpl:83: In iterator 'distributedGuided':
-./DistributedIters.chpl:97: error: cannot iterate over values of type U
