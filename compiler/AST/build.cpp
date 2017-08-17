@@ -1567,14 +1567,16 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   // running tasks locally, and use network atomic EndCounts if available
   if (onBlock) {
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
-    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+    // Note: gNil is here so error handling can be added by compiler
+    // in parallel pass.
+    onBlock->insertAtTail(new CallExpr("_downEndCount", coforallCount, gNil));
     addByrefVars(onBlock, byref_vars);
     taskBlk->blockTag = BLOCK_SCOPELESS;
     useLocalEndCount = gFalse;
     countRunningTasks = gFalse;
   } else {
     taskBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
-    taskBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
+    taskBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount, gNil));
     addByrefVars(taskBlk, byref_vars);
   }
 
@@ -1613,7 +1615,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
 //       for indices in tmpIter {
 //         /* PRIM_BLOCK_COFORALL (byref_vars) */ {
 //           body();
-//           _downEndCount(_coforallCount);
+//           _downEndCount(_coforallCount, nil);
 //         }
 //       }
 //       _waitEndCount(_coforallCount, countRunningTasks, numTasks);
@@ -1624,7 +1626,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
 //         _upEndCount(_coforallCount, countRunningTasks);
 //         /* PRIM_BLOCK_COFORALL (byref_vars) */ {
 //           body();
-//           _downEndCount(_coforallCount);
+//           _downEndCount(_coforallCount, nil);
 //         }
 //       }
 //       _waitEndCount(_coforallCount, countRunningTasks);
@@ -2843,7 +2845,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   // Note: parallel might be looking for the argument to _downEndCount
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upDynamicEndCount", gFalse));
-    onBlock->insertAtTail(new CallExpr("_downDynamicEndCount"));
+    onBlock->insertAtTail(new CallExpr("_downDynamicEndCount", gNil));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);
     return body;
@@ -2857,7 +2859,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
     beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN));
     addByrefVars(beginBlock, byref_vars);
     beginBlock->insertAtHead(stmt);
-    beginBlock->insertAtTail(new CallExpr("_downEndCount", endCount));
+    beginBlock->insertAtTail(new CallExpr("_downEndCount", endCount, gNil));
     block->insertAtTail(beginBlock);
     return block;
   }
@@ -2908,7 +2910,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     addByrefVars(beginBlk, copyByrefVars(byref_vars));
     stmt->insertBefore(beginBlk);
     beginBlk->insertAtHead(stmt->remove());
-    beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount));
+    beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount, gNil));
     block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
   }
 

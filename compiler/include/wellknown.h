@@ -57,6 +57,8 @@ extern FnSymbol *gChplDeleteError;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gGetDynamicEndCount;
 extern FnSymbol *gSetDynamicEndCount;
+extern FnSymbol *gChplUncaughtError;
+extern FnSymbol *gSaveTaskErrorFn;
 
 
 #endif

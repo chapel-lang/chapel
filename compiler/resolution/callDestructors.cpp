@@ -1466,9 +1466,4 @@ void callDestructors() {
   insertReferenceTemps();
 
   checkForErroneousInitCopies();
-
-  // Lower error handling check error primitives
-  // now that callDestructors has had the benefit
-  // of more straightforward error-handling AST.
-  lowerCheckErrorPrimitive();
 }
