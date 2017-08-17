@@ -25,7 +25,7 @@ iter treeiter ( param tag: iterKind, n: int, id: int=0) : int
    if (id < n) {
      yield id;
 
-     // recursive ... but still have to yeild here
+     // recursive ... but still have to yield here
      cobegin {
        if 2*id+1 < n then on Locales[2*id+1] do
          for z in treeiter(n=n, id=2*id + 1, tag=iterKind.standalone) do yield z;
