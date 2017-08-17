@@ -429,7 +429,7 @@ proc Block.Block(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && sparseLayoutType == CS then 
+  if rank != 2 && isCSType(sparseLayoutType) then 
     compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then

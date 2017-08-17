@@ -32,6 +32,15 @@ record _ColumnComparator {
 pragma "no doc"
 const _columnComparator: _ColumnComparator;
 
+
+//
+// Necessary since `t == CS` does not support classes with param fields
+//
+pragma "no doc"
+proc isCSType(type t) param where t:CS return true;
+pragma "no doc"
+proc isCSType(type t) param return false;
+
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
 Column (CSC) implementation for Chapel's sparse domains and arrays.
