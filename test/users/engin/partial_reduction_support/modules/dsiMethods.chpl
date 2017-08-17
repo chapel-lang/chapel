@@ -106,11 +106,11 @@ proc DefaultSparseDom.__private_findRowRange(r) {
   var done: atomic bool;
   begin with (ref end) {
     var found: bool;
-    (found, end) = binarySearch(indices, ((...r),endDummy));
+    (found, end) = binarySearch(indices, ((...r),endDummy), hi=nnz);
     done.write(true);
   }
   var found: bool;
-  (found, start) = binarySearch(indices, ((...r),startDummy));
+  (found, start) = binarySearch(indices, ((...r),startDummy), hi=nnz);
   done.waitFor(true);
   return start..min(nnz,end-1);
 }
