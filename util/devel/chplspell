@@ -43,7 +43,8 @@ if ! $RIVENV $SCSPELL --help > /dev/null 2> /dev/null; then
     exit 1
 fi
 
-# Normal files to look for when recursing through directories.
+# Normal files to look for when searching directories.
+# This is used to build a commandline for /usr/bin/find.
 NORMALGLOBS=("-name" "*.chpl"  "-o"
              "-name" "*.cpp"   "-o"
              "-name" "*.c"     "-o"
@@ -56,11 +57,8 @@ NORMALGLOBS=("-name" "*.chpl"  "-o"
 # These are tracked separately because scspell needs --no-c-escapes for them.
 LATEXGLOBS=("-name" "*.tex")
 
-# Directories under doc/ are listed explicitly to exclude directories
-# generated via "make docs".  The generated files are generated from
-# other files we're already spellchecking.
 DEFAULTDIRS=(
-	     compiler man modules runtime spec doc
+	     compiler doc man modules runtime spec
 	     test/release
 	     .github
 )
@@ -72,16 +70,19 @@ DEFAULTDIRS=(
 DEFAULTFILES=("COPYRIGHT" "LICENSE*" "README*" "*.md" "*.rst"
 	      "test/ANNOTATIONS.yaml" "doc/README.rst")
 
-# Filter out files with "too much" noise.  LAPACK.chpl is over 20k
-# lines of mostly noise, which qualifies.
+# Filter out files we don't want to spellcheck.
+
+# This includes generated files (generated from files that are
+# spellechecked), and files with "too much noise": LAPACK.chpl is
+# over 20k lines of unique tokens.
 #
-# Any files with these basenames will be skipped when we encounter them
-# handling entire directories.  This setting has no impact on files specified
-# specifically on the command line.
-FILTEROUT="compiler/parser/bison-chapel.cpp \
-           compiler/include/bison-chapel.h  \
-           compiler/parser/flex-chapel.cpp  \
+# Any files whose full path relative to $CHPL_HOME has one of these as
+# a prefix will be skipped.  This setting has no impact on files
+# specified specifically on the command line.
+FILTEROUT="compiler/include/bison-chapel.h  \
            compiler/include/flex-chapel.h   \
+           compiler/parser/bison-chapel.cpp \
+           compiler/parser/flex-chapel.cpp  \
            doc/rst/builtins                 \
            doc/rst/modules                  \
            doc/rst/primers                  \
@@ -200,7 +201,7 @@ if [ $JUSTARGS == 0 ]; then
 	cd $CHPL_HOME
 	# Now that we're in $CHPL_HOME, use [*] to expand the globs in
 	# $DEFAULTFILES.  This is ok since DEFAULTFILES doesn't
-	# contain any filesnames with spaces etc.  DEFAULTDIRS has no
+	# contain any filenames with spaces etc.  DEFAULTDIRS has no
 	# globs.
 	NORMALFILES=(${DEFAULTFILES[*]})
 	TARGETDIRS=("${DEFAULTDIRS[@]}")
