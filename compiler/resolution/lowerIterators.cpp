@@ -512,11 +512,22 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
   }
 }
 
+static void replaceErrorFormalWithEnclosingError(SymExpr* se);
+
 static void
-replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
-                                         std::vector<SymExpr*> & symExprs) {
+replaceIteratorFormals(FnSymbol* iterator, Symbol* ic,
+                       std::vector<SymExpr*> & symExprs) {
+  bool throws = iterator->throwsError();
+
   for_vector(SymExpr, se, symExprs) {
-    replaceIteratorFormalsWithIteratorFields(iterator, ic, se);
+    // For an inlined iterator, we don't want to track the error
+    // argument through the iterator class. Instead of setting
+    // a formal error argument, set an enclosing error variable.
+    if (throws)
+      replaceErrorFormalWithEnclosingError(se);
+    // if se was not replaced by the above call...
+    if (se->parentSymbol != NULL)
+      replaceIteratorFormalsWithIteratorFields(iterator, ic, se);
   }
 }
 
@@ -1094,7 +1105,7 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
 
-  replaceIteratorFormalsWithIteratorFields(iterator, icArg, symExprs);
+  replaceIteratorFormals(iterator, icArg, symExprs);
 
   ArgSymbol* loopBodyFnIDArg = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]);
   iteratorFn->insertFormalAtTail(loopBodyFnIDArg);
@@ -1216,7 +1227,6 @@ static void
 expandBodyForIteratorInline(ForLoop*       forLoop,
                             BlockStmt*     ibody,
                             Symbol*        index);
-static void replaceErrorFormalWithEnclosingError(SymExpr* se);
 
 
 static void
@@ -1303,20 +1313,8 @@ expandIteratorInline(ForLoop* forLoop) {
     // the yielded index for the iterator formal.
     expandBodyForIteratorInline(forLoop, ibody, index);
 
-
-
-    if (iterator->throwsError()) {
-      // For an inlined iterator, we don't want to track the error
-      // argument through the iterator class. Instead of setting
-      // a formal error argument, set an enclosing error variable.
-      collectSymExprs(ibody, symExprs);
-      for_vector(SymExpr, se, symExprs) {
-        replaceErrorFormalWithEnclosingError(se);
-      }
-    }
-
     collectSymExprs(ibody, symExprs);
-    replaceIteratorFormalsWithIteratorFields(iterator, ic, symExprs);
+    replaceIteratorFormals(iterator, ic, symExprs);
 
     // We can return true if forLoop has been removed from the tree.
     INT_ASSERT(!forLoop->inTree());
