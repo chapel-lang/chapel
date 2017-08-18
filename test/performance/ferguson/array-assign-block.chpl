@@ -1,5 +1,5 @@
 use BlockDist;
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 
@@ -8,23 +8,17 @@ const D = Space dmapped Block(boundingBox=Space);
 var A: [D] int;
 var B: [D] int;
 
-var saveB1: int;
-var saveBn: int;
-
 for i in 1..n {
   A[i] = i;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 B = A;
-saveB1 = B[1];
-saveBn = B[n];
 
-stopCommDiagnostics();
+stop();
 
-writeln(saveB1);
-writeln(saveBn);
+writeln(B[1]);
+writeln(B[n]);
 
-writeln(getCommDiagnostics());
+report(maxGets=0, maxPuts=0, maxOns=2);

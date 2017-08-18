@@ -1191,6 +1191,17 @@ void prepareCodegenLLVM()
   info->FPM_postgen = fpm;
 
   info->FPM_postgen->doInitialization();
+
+  if(ffloatOpt == 1)
+  {
+    llvm::FastMathFlags FM;
+    FM.setNoNaNs();
+    FM.setNoInfs();
+    FM.setNoSignedZeros();
+    FM.setAllowReciprocal();
+    FM.setUnsafeAlgebra();
+    info->builder->setFastMathFlags(FM);
+  }
 }
 
 #if HAVE_LLVM_VER >= 33

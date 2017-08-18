@@ -24,6 +24,9 @@
 static bool isSuperInit(Expr* stmt);
 static bool isThisInit (Expr* stmt);
 
+static bool isStringLiteral(Expr* expr, const char* name);
+static bool isSymbolThis(Expr* expr);
+
 static bool isAssignment(CallExpr* callExpr);
 static bool isSimpleAssignment(CallExpr* callExpr);
 static bool isCompoundAssignment(CallExpr* callExpr);
@@ -181,6 +184,8 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
 
     if (isRecord() == true) {
       initStmt->remove();
+    } else {
+      transformSuperInit(initStmt);
     }
 
   } else if (isThisInit(initStmt) == true) {
@@ -1045,6 +1050,41 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at, CallExpr* expr) const {
 }
 
 /************************************* | **************************************
+* Transform `call(".", call(".", this, "super"), "init")` into                *
+* `call(".", call(PRIM_GET_MEMBER_VALUE, this, "super"), "init")`             *
+*                                                                             *
+************************************** | *************************************/
+
+void InitNormalize::transformSuperInit(Expr* initStmt) {
+  CallExpr* initCall = toCallExpr(initStmt);
+  INT_ASSERT(initCall);
+  CallExpr* initBase = toCallExpr(initCall->baseExpr);
+  INT_ASSERT(initBase);
+  CallExpr* sub = toCallExpr(initBase->get(1));
+  if (sub &&
+      sub->numActuals() == 2 &&
+      sub->isNamedAstr(astrSdot) == true) {
+
+    Expr* thisExpr = sub->get(1);
+    Expr* superExpr = sub->get(2);
+
+    INT_ASSERT(isSymbolThis(thisExpr) == true);
+    INT_ASSERT(isStringLiteral(superExpr, "super") == true);
+
+    CallExpr* explicitAccess = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                            thisExpr->remove(),
+                                            superExpr->remove());
+    VarSymbol* superTemp = newTemp("super_tmp");
+    superTemp->addFlag(FLAG_SUPER_TEMP);
+    initCall->insertBefore(new DefExpr(superTemp));
+    initCall->insertBefore(new CallExpr(PRIM_MOVE, superTemp, explicitAccess));
+
+    sub->replace(new SymExpr(superTemp));
+  }
+}
+
+
+/************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
@@ -1152,6 +1192,17 @@ DefExpr* InitNormalize::firstField(FnSymbol* fn) const {
 
   // Skip the pseudo-field "super"
   if (::isClass(at) == true) {
+
+    if (at->isGeneric() == true) {
+      AggregateType* pt = toAggregateType(retval->sym->type);
+      INT_ASSERT(pt);
+      if (pt->isGeneric() == true) {
+        // If the super type is generic, label it so that we can handle that
+        // appropriately during initializer resolution
+        retval->sym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+      }
+    }
+
     retval = toDefExpr(retval->next);
   }
 
@@ -1387,11 +1438,7 @@ static const char* initName(Expr*     stmt);
 
 static const char* initName(CallExpr* expr);
 
-static bool        isStringLiteral(Expr* expr, const char* name);
-
 static bool        isUnresolvedSymbol(Expr* expr, const char* name);
-
-static bool        isSymbolThis(Expr* expr);
 
 static bool isSuperInit(Expr* stmt) {
   const char* name = initName(stmt);

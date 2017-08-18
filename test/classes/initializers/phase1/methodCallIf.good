@@ -1,0 +1,2 @@
+methodCallIf.chpl:4: In initializer:
+methodCallIf.chpl:5: error: cannot call a method during phase 1 of initialization

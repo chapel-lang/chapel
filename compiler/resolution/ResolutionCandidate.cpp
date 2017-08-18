@@ -217,7 +217,7 @@ bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
     retval = false;
 
   } else {
-    computeSubstitutions(true);
+    computeSubstitutions();
 
     if (substitutions.n > 0) {
       /*
@@ -437,7 +437,7 @@ static Type* getInstantiationType(Type* actualType, Type* formalType);
 
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
-void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
+void ResolutionCandidate::computeSubstitutions() {
   SymbolMap& subs = substitutions;
   int        i    = 0;
 
@@ -489,9 +489,9 @@ void ResolutionCandidate::computeSubstitutions(bool inInitRes) {
       if (formalIdxToActual[i] != NULL) {
         Type* actualType = formalIdxToActual[i]->type;
 
-        if (formal->hasFlag(FLAG_ARG_THIS) == true &&
-            inInitRes                      == true &&
-            actualType->symbol->hasFlag(FLAG_GENERIC) == true) {
+        if (formal->hasFlag(FLAG_ARG_THIS)                == true  &&
+            formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+            actualType->symbol->hasFlag(FLAG_GENERIC)     == true) {
 
           // If the "this" arg is generic, we're resolving an initializer, and
           // the actual being passed is also still generic, don't count this as

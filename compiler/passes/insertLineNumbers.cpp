@@ -336,66 +336,72 @@ static void moveLinenoInsideArgBundle()
   // pass line number and filename arguments to functions that are
   // forked via the argument class
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // If we added arguments to a the the following wrapper functions,
-    //  the number of formals should be now be (precisely two) greater
-    //  than the expected number.  Both block types below expect an
-    //  argument bundle, and the on-block expects an additional argument
-    //  that is the locale on which it should be executed.
-    if ((fn->numFormals() > 4 && fn->hasFlag(FLAG_ON_BLOCK)) ||
-        (fn->numFormals() > 5 && !fn->hasFlag(FLAG_ON_BLOCK) &&
-         (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
-          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)))) {
+    ArgSymbol* lineArgSym;
+    ArgSymbol* filenameArgSym;
 
-      // This task (wrapper) function is not actually called with lineno, fname
-      // arguments, so remove them.
-      SET_LINENO(fn);
-      DefExpr* fileArg = toDefExpr(fn->formals.tail);
-      fileArg->remove();
-      DefExpr* lineArg = toDefExpr(fn->formals.tail);
-      lineArg->remove();
+    if (fn->hasFlag(FLAG_ON_BLOCK) ||
+        fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+        fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
 
-      // In the body of the wrapper, create a local lineno variable initialized
-      // from the new corresponding field in the argument bundle.
-      DefExpr* bundleArg = toDefExpr(fn->formals.tail);
-      AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
+      lineArgSym = linenoMap.get(fn);
+      filenameArgSym = filenameMap.get(fn);
 
-      VarSymbol* lineField = newTemp("_ln", lineArg->sym->typeInfo());
-      bundleType->fields.insertAtTail(new DefExpr(lineField));
+      // Either both should be set, or neither.
+      INT_ASSERT( (lineArgSym == NULL && filenameArgSym == NULL) ||
+                  (lineArgSym != NULL && filenameArgSym != NULL) );
 
-      VarSymbol* lineLocal = newTemp("_ln", lineArg->sym->typeInfo());
+      if (lineArgSym != NULL && filenameArgSym != NULL) {
+        // This task (wrapper) function is not actually called with lineno, fname
+        // arguments, so remove them.
+        SET_LINENO(fn);
+        DefExpr* fileArg = filenameArgSym->defPoint;
+        fileArg->remove();
+        DefExpr* lineArg = lineArgSym->defPoint;
+        lineArg->remove();
 
-      fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
-      fn->insertAtHead(new DefExpr(lineLocal));
+        // In the body of the wrapper, create a local lineno variable initialized
+        // from the new corresponding field in the argument bundle.
+        DefExpr* bundleArg = toDefExpr(fn->formals.tail);
+        AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
 
-      // Same thing, just for the filename index now.
+        VarSymbol* lineField = newTemp("_ln", lineArg->sym->typeInfo());
+        bundleType->fields.insertAtTail(new DefExpr(lineField));
 
-      VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());
-      bundleType->fields.insertAtTail(new DefExpr(fileField));
+        VarSymbol* lineLocal = newTemp("_ln", lineArg->sym->typeInfo());
 
-      VarSymbol* fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
+        fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
+        fn->insertAtHead(new DefExpr(lineLocal));
 
-      fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
-      fn->insertAtHead(new DefExpr(fileLocal));
+        // Same thing, just for the filename index now.
 
-      // Replace references to the (removed) arguments with
-      // references to these local variables.
-      SymbolMap update;
-      update.put(fileArg->sym, fileLocal);
-      update.put(lineArg->sym, lineLocal);
-      update_symbols(fn->body, &update);
+        VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());
+        bundleType->fields.insertAtTail(new DefExpr(fileField));
 
-      // In each direct caller of this wrapper function (are there any?),
-      // Remove actual arguments containing the lineno and filename.
-      // Put these in the argument bundle instead.
-      forv_Vec(CallExpr, call, *fn->calledBy) {
-        SET_LINENO(call);
-        Expr* fileActual = call->argList.tail->remove();
-        Expr* lineActual = call->argList.tail->remove();
-        Expr* bundleActual = call->argList.tail;
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
-                                        lineField, lineActual));
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
-                                        fileField, fileActual));
+        VarSymbol* fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
+
+        fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
+        fn->insertAtHead(new DefExpr(fileLocal));
+
+        // Replace references to the (removed) arguments with
+        // references to these local variables.
+        SymbolMap update;
+        update.put(fileArg->sym, fileLocal);
+        update.put(lineArg->sym, lineLocal);
+        update_symbols(fn->body, &update);
+
+        // In each direct caller of this wrapper function (are there any?),
+        // Remove actual arguments containing the lineno and filename.
+        // Put these in the argument bundle instead.
+        forv_Vec(CallExpr, call, *fn->calledBy) {
+          SET_LINENO(call);
+          Expr* fileActual = call->argList.tail->remove();
+          Expr* lineActual = call->argList.tail->remove();
+          Expr* bundleActual = call->argList.tail;
+          call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
+                                          lineField, lineActual));
+          call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
+                                          fileField, fileActual));
+        }
       }
     }
   }

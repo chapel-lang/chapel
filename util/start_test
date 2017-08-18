@@ -519,7 +519,11 @@ def compiler_performance():
 
 
 def generate_graph_files_graphs():
-    exec_graph_list = os.path.join(test_dir, "GRAPHFILES")
+    graphfiles_prefix = ''
+    if args.perflabel != "perf":
+        graphfiles_prefix = args.perflabel.upper()
+
+    exec_graph_list = os.path.join(test_dir, "{0}GRAPHFILES".format(graphfiles_prefix))
 
     logger.write("[Executing genGraphs for {0} in {1}"
             .format(exec_graph_list, perf_html_dir))

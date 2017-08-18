@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
+#include "DeferStmt.h"
 
 #include <algorithm>
 
@@ -263,12 +264,12 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   retval->insertAtTail(new DefExpr(iterator));
 
   retval->insertAtTail(iterInit);
+  retval->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", iterator)));
   retval->insertAtTail(new BlockStmt(iterMove, BLOCK_TYPE));
 
   retval->insertAtTail(loop);
 
   retval->insertAtTail(new DefExpr(breakLabel));
-  retval->insertAtTail(new CallExpr("_freeIterator", iterator));
 
   return retval;
 }

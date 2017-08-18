@@ -1383,7 +1383,7 @@ static void buildDefaultInitField(AggregateType*         at,
 
 
         //
-        // Type infererence required if this is a param or variable field
+        // Type inference is required if this is a param or variable field
         //
         } else if (defPoint->exprType == NULL && defPoint->init != NULL) {
           VarSymbol* tmp      = newTemp();
@@ -1626,6 +1626,8 @@ static void buildInitializerCall(AggregateType* ct,
                                  ArgSymbol*     arg) {
   VarSymbol* _this = newTemp("_this", ct);
   CallExpr*  call  = new CallExpr("init");
+
+  _this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
   fn->insertAtHead(new DefExpr(_this));
 

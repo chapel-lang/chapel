@@ -49,15 +49,16 @@ class Block1DDist {
 
   //
   // DOWN: an array of local distribution class descriptors -- set up
-  // in the class constructor
+  // in the class initializer
   //
-  const locDist: [targetLocDom] LocBlock1DDist(idxType);
+  var locDist: [targetLocDom] LocBlock1DDist(idxType);
 
 
-  // CONSTRUCTORS:
+  // INITIALIZERS:
 
-  proc Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
-                  targetLocales: [] locale = Locales) {
+  proc init(type idxType = int(64), bbox: domain(1, idxType),
+            targetLocales: [] locale = Locales) {
+    this.idxType = idxType;
     boundingBox = bbox;
     //
     // 0-base the local capture of the targetLocDom for simplicity
@@ -68,6 +69,8 @@ class Block1DDist {
     //
     targetLocDom = {0..#targetLocales.numElements};
     targetLocs = targetLocales;
+
+    super.init();
 
     for locid in targetLocDom do
       on targetLocs(locid) do
@@ -175,33 +178,43 @@ class LocBlock1DDist {
   const loc: locale;
 
 
-  // CONSTRUCTORS:
+  // INITIALIZERS:
 
   //
-  // Constructor computes what chunk of index(1) is owned by the
+  // Initializer computes what chunk of index(1) is owned by the
   // current locale
   //
-  proc LocBlock1DDist(type idxType, 
-                     _localeIdx: int, // the locale index from the target domain
-                     dist: Block1DDist(idxType) // reference to glob dist
-                     ) {
-    const localeIdx = _localeIdx;
-    loc = dist.targetLocs(localeIdx);
+  proc init(type idxType,
+            _localeIdx: int, // the locale index from the target domain
+            dist: Block1DDist(idxType) // reference to glob dist
+            ) {
+    this.idxType = idxType;
+
+    //
+    // a helper function for mapping processors to indices
+    //
+    proc procToData(x, lo)
+      return (lo + (x: lo.type) + (x:real != x:int:real));
+
+    const lo = dist.boundingBox.low;
+    const hi = dist.boundingBox.high;
+    const numelems = hi - lo + 1;
+    const numlocs = dist.targetLocDom.numIndices;
+    const blo = if (_localeIdx == 0) then min(idxType)
+                else procToData((numelems: real * _localeIdx) / numlocs, lo);
+    const bhi = if (_localeIdx == numlocs - 1) then max(idxType)
+                else procToData((numelems: real * (_localeIdx+1)) / numlocs, lo) - 1;
+    myChunk = {blo..bhi};
+
+    loc = dist.targetLocs(_localeIdx);
     //
     // TODO: Create these assertions for other local classes as well
     //
     if (loc != here) {
       halt("Creating a local distribution class on the wrong locale");
     }
-    const lo = dist.boundingBox.low;
-    const hi = dist.boundingBox.high;
-    const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocDom.numIndices;
-    const blo = if (localeIdx == 0) then min(idxType)
-                else procToData((numelems: real * localeIdx) / numlocs, lo);
-    const bhi = if (localeIdx == numlocs - 1) then max(idxType)
-                else procToData((numelems: real * (localeIdx+1)) / numlocs, lo) - 1;
-    myChunk = {blo..bhi};
+
+    super.init();
     if debugBradsBlock1D then
       writeln(this);
   }
@@ -209,11 +222,6 @@ class LocBlock1DDist {
 
   // INTERNAL INTERFACE:
 
-  //
-  // a helper function for mapping processors to indices
-  //
-  proc procToData(x, lo)
-    return (lo + (x: lo.type) + (x:real != x:int:real));
 
   //
   // print out the local distribution class

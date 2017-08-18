@@ -128,12 +128,30 @@ try {
 */
 
 
-// Static functions
-static bool canBlockThrow(BlockStmt* blk);
-static void checkErrorHandling(FnSymbol* fn);
+// This is the type for a map that is used when printing out the reason
+// that a function is marked throws. Knowing the reason a function
+// is marked throws implicitly is relevant for example with a coforall
+// task function. In that case, the location of coforall itself
+// isn't as relevant to the user as the location in the body
+// of the coforall of a call to a throwing function.
+//
+// Here the key is a FnSymbol and the value is the reason it was
+// marked throwing (typically a CallExpr).
+typedef std::map<FnSymbol*, BaseAST*> implicitThrowsReasons_t;
 
+// Static functions
+static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
+static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
+static bool isCompilerGeneratedFunction(FnSymbol* fn);
+static bool isUncheckedThrowsFunction(FnSymbol* fn);
 
 namespace {
+
+
+// Static class helper functions
+static bool catchesNotExhaustive(TryStmt* tryStmt);
+static bool shouldEnforceStrict(CallExpr* node);
+static Expr* castToError(Symbol* errorExpr);
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
@@ -178,6 +196,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
   VarSymbol*   errorVar     = newTemp("error", dtError);
+  errorVar->addFlag(FLAG_ERROR_VARIABLE);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
   handlerLabel->addFlag(FLAG_ERROR_LABEL);
   TryInfo      info         = {errorVar, handlerLabel, node, node->body()};
@@ -298,6 +317,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     if (calledFn->throwsError()) {
+
       SET_LINENO(node);
 
       VarSymbol* errorVar    = NULL;
@@ -315,6 +335,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
+        errorVar->addFlag(FLAG_ERROR_VARIABLE);
         insert->insertBefore(new DefExpr(errorVar));
 
         if (outError != NULL)
@@ -324,7 +345,18 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       }
 
       node->insertAtTail(errorVar); // adding error argument to call
-      insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
+
+      // If we are calling a non-blocking task function,
+      // we'll lower the error handling in parallel.cpp,
+      // at the end of parallel(),  using lowerCheckErrorPrimitive.
+      if (calledFn->hasFlag(FLAG_NON_BLOCKING) ||
+          calledFn->hasFlag(FLAG_BEGIN) ||
+          calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+        // Don't add errorPolicy block or condititonal.
+      } else {
+        // Regular operation
+        insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
+      }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -337,8 +369,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
     if (insideTry) {
       TryInfo   info      = tryStack.top();
-      CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol,
-                                         thrownError);
+
+      Expr* castError = castToError(thrownError);
       throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, info.errorVar,
                                             castError));
       throwBlock->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
@@ -354,7 +386,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
-  CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
+
+  Expr* castError = castToError(error);
 
   AList ret;
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
@@ -368,8 +401,8 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
                                       BlockStmt* thenBlock,
                                       BlockStmt* elseBlock) {
-  VarSymbol* errorExistsVar = newTemp("errorExists", dtBool);
-  CallExpr*  errorExists    = new CallExpr(PRIM_NOTEQUAL, errorVar, gNil);
+  VarSymbol* errorExistsVar = newTemp("shouldHandleError", dtBool);
+  CallExpr*  errorExists    = new CallExpr(PRIM_CHECK_ERROR, errorVar);
 
   AList ret;
   ret.insertAtTail(new DefExpr(errorExistsVar));
@@ -383,107 +416,30 @@ CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
   return new CallExpr(gChplUncaughtError, errorVar);
 }
 
-} /* end anon namespace */
+static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
+{
+  if (reasons == NULL)
+    return;
 
-void lowerErrorHandling() {
-  if (!fMinimalModules)
-    INT_ASSERT(dtError->inTree());
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // Determine if compiler-generated fns should be marked 'throws'
-    if (fn->hasFlag(FLAG_ON)) {
-      if (canBlockThrow(fn->body))
-        fn->throwsErrorInit();
-    } else {
-      // Otherwise, just check for error-handling errors.
-      checkErrorHandling(fn);
-    }
-  }
-
-  // Quit if fatal errors were encountered by checkErrorHandling above.
-  USR_STOP();
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    ArgSymbol*   outError = NULL;
-    LabelSymbol* epilogue = NULL;
-
-    if (fn->throwsError()) {
-      SET_LINENO(fn);
-
-      outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
-      fn->insertFormalAtTail(outError);
-
-      epilogue = fn->getOrCreateEpilogueLabel();
-      INT_ASSERT(epilogue); // throws requires an epilogue
-    }
-
-    ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
-    fn->accept(&visitor);
-  }
-}
-
-namespace {
-
-class CanThrowVisitor : public AstVisitorTraverse {
-
-public:
-  CanThrowVisitor       (bool inThrowingFn, bool makeCompileErrors);
-
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCallExpr (CallExpr*  node);
-
-  bool throws() { return canThrow; }
-
-private:
-  int  tryDepth;
-  bool canThrow;
-  bool errors;
-  bool fnCanThrow; // only used for error checking
-
-  bool   catchesNotExhaustive(TryStmt* tryStmt);
-};
-
-CanThrowVisitor::CanThrowVisitor(bool inThrowingFn, bool makeCompileErrors) {
-  tryDepth = 0;
-  canThrow = false;
-  errors = makeCompileErrors;
-  fnCanThrow = inThrowingFn;
-}
-
-bool CanThrowVisitor::enterTryStmt(TryStmt* node) {
-  tryDepth++;
-
-  return true;
-}
-
-void CanThrowVisitor::exitTryStmt(TryStmt* node) {
-  tryDepth--;
-
-  // is it an exhaustive catch?
-
-  bool nonExhaustive = catchesNotExhaustive(node);
-
-  if (node->tryBang()) {
-    canThrow = false;
-  } else {
-    canThrow = nonExhaustive;
-    if (errors && tryDepth==0 && nonExhaustive && !fnCanThrow) {
-      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
+  if (CallExpr* call = toCallExpr(node)) {
+    if (FnSymbol* calledFn = call->resolvedFunction()) {
+      if (calledFn->throwsError()) {
+        if (reasons->count(calledFn)) {
+          BaseAST* reason = (*reasons)[calledFn];
+          USR_PRINT(reason, " is reason function throws");
+          printReason(reason, reasons);
+        }
+      }
     }
   }
 }
 
-bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
+// Returns true if the catches don't cover all of the cases.
+static bool catchesNotExhaustive(TryStmt* tryStmt) {
 
   bool hasCatchAll = false;
 
   for_alist(c, tryStmt->_catches) {
-    if (errors && hasCatchAll)
-      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
-
-    SET_LINENO(c);
-
     CatchStmt* catchStmt = toCatchStmt(c);
     DefExpr*   catchDef  = catchStmt->expr();
 
@@ -504,7 +460,210 @@ bool CanThrowVisitor::catchesNotExhaustive(TryStmt* tryStmt) {
   return !hasCatchAll;
 }
 
-bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
+// Returns true if we should raise strict-mode errors
+// for this call.
+static bool shouldEnforceStrict(CallExpr* node) {
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+    bool inCompilerGeneratedFn = false;
+    if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+      // Don't check wrapper functions in strict mode.
+      inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn);
+    }
+    bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
+    bool strictError = !(inCompilerGeneratedFn || callsUncheckedThrowsFn);
+
+    return strictError;
+  }
+  return false;
+}
+
+
+static Expr* castToError(Symbol* error) {
+  Expr* castError = NULL;
+
+  if (error->type == dtError)
+    castError = new SymExpr(error);
+  else
+    castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
+
+  return castError;
+}
+
+class ImplicitThrowsVisitor : public AstVisitorTraverse {
+
+public:
+  ImplicitThrowsVisitor(std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+  // Does this function throw?
+  bool throws() { return canThrow; }
+  // Is the visited function only throwing because of calls to functions
+  // marked with FLAG_UNCHECKED_THROWS?
+  bool unchecked() { return onlyUnchecked; }
+  // What made us decide that this function should be marked throws?
+  BaseAST* reason() { return reasonThrows; }
+
+private:
+
+  int  tryDepth;
+  bool canThrow;
+  bool onlyUnchecked;
+  BaseAST* reasonThrows; // one of the reasons it throws, for errors
+  std::set<FnSymbol*>* visited;
+  implicitThrowsReasons_t* reasons;
+};
+
+ImplicitThrowsVisitor::ImplicitThrowsVisitor(std::set<FnSymbol*>* visitedIn, implicitThrowsReasons_t* reasonsIn) {
+  tryDepth = 0;
+  canThrow = false;
+  onlyUnchecked = true;
+  reasonThrows = NULL;
+  visited = visitedIn;
+  reasons = reasonsIn;
+}
+
+bool ImplicitThrowsVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void ImplicitThrowsVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  // is it an exhaustive catch?
+
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    canThrow = false;
+  } else {
+    canThrow = nonExhaustive;
+    if (nonExhaustive)
+      onlyUnchecked = false;
+    if (reasonThrows == NULL)
+      reasonThrows = node;
+  }
+}
+
+bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
+  bool insideTry = (tryDepth > 0);
+
+  if (FnSymbol* calledFn = node->resolvedFunction()) {
+
+    // We might be calling a function that could be implicitly
+    // throwing. For example, consider nested coforalls.
+    // That will appear to be a call to coforall_fn1, and
+    // that in turn appears to be a call to coforall_fn2.
+    //
+    // In that example, this enterCallExpr might be visiting
+    // a call to coforall_fn2. We don't know yet if it throws
+    // if we havn't visited it yet.
+    markImplicitThrows(calledFn, visited, reasons);
+
+    if (calledFn->throwsError()) {
+      if (insideTry) {
+        // OK
+      } else {
+
+        if (shouldEnforceStrict(node)) {
+          if (reasonThrows == NULL)
+            reasonThrows = node;
+        }
+
+        // not in a try
+        canThrow = true;
+        if (!calledFn->hasFlag(FLAG_UNCHECKED_THROWS))
+          onlyUnchecked = false;
+      }
+    }
+  } else if (node->isPrimitive(PRIM_THROW)) {
+    canThrow = true;
+    onlyUnchecked = false;
+    if (reasonThrows == NULL)
+      reasonThrows = node;
+  }
+  return true;
+}
+
+
+class ErrorCheckingVisitor : public AstVisitorTraverse {
+
+public:
+  ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* reasons);
+
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual bool enterCallExpr (CallExpr*  node);
+
+private:
+  implicitThrowsReasons_t* reasons;
+
+  int  tryDepth;
+  bool fnCanThrow;
+
+  void checkCatches(TryStmt* tryStmt);
+};
+
+ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* inReasons) {
+  tryDepth = 0;
+  fnCanThrow = inThrowingFn;
+  reasons = inReasons;
+}
+
+bool ErrorCheckingVisitor::enterTryStmt(TryStmt* node) {
+  tryDepth++;
+
+  return true;
+}
+
+void ErrorCheckingVisitor::exitTryStmt(TryStmt* node) {
+  tryDepth--;
+
+  checkCatches(node);
+
+  // is it an exhaustive catch?
+  bool nonExhaustive = catchesNotExhaustive(node);
+
+  if (node->tryBang()) {
+    // OK
+  } else {
+    if (tryDepth==0 && nonExhaustive && !fnCanThrow) {
+      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
+    }
+  }
+}
+
+void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
+
+  bool hasCatchAll = false;
+
+  for_alist(c, tryStmt->_catches) {
+    if (hasCatchAll)
+      USR_FATAL_CONT(c->prev, "catchall placed before the end of a catch list");
+
+    CatchStmt* catchStmt = toCatchStmt(c);
+    DefExpr*   catchDef  = catchStmt->expr();
+
+    // catchall
+    if (catchDef == NULL) {
+      hasCatchAll = true;
+    } else {
+      VarSymbol* errSym  = toVarSymbol(catchDef->sym);
+      Type*      errType = errSym->type;
+
+      // named catchall
+      if (errType == dtError) {
+        hasCatchAll = true;
+      }
+    }
+  }
+}
+
+bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
@@ -512,32 +671,20 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
       if (insideTry) {
         // OK
       } else {
-        if (errors && fStrictErrorHandling) {
-
-          bool inCompilerGeneratedFn = false;
-          if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-            // Don't check wrapper functions in strict mode.
-            if (parentFn->hasFlag(FLAG_WRAPPER))
-              inCompilerGeneratedFn = true;
-            // TODO or on, begin, ...
-          }
-
-          if (!inCompilerGeneratedFn) {
+        if (shouldEnforceStrict(node)) {
+          if (fStrictErrorHandling) {
             USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+            printReason(node, reasons);
           }
         }
-        // not in a try
-        canThrow = true;
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
-    canThrow = true;
-
     if (insideTry) {
       // OK, error checking for this case done in try handling
     } else if (fnCanThrow == true) {
       // OK, fn can throw
-    } else if (errors == true) {
+    } else {
       USR_FATAL_CONT(node, "cannot throw in a non-throwing function");
     }
   }
@@ -553,22 +700,66 @@ bool CanThrowVisitor::enterCallExpr(CallExpr* node) {
 // This function is useful to infer 'throws' for
 // certain compiler-introduced functions.
 
-static bool canBlockThrow(BlockStmt* block)
+static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
-  CanThrowVisitor visit(false, false);
+  // Currently, only task functions or iterators can be implicitly throws.
+  if (!isTaskFun(fn) && !fn->isIterator())
+    return;
 
-  block->accept(&visit);
+  // If we already visited this function, don't visit it again.
+  if (visited->count(fn) > 0)
+    return;
 
-  return visit.throws();
+  // Add to visited set first thing to prevent infinite recursion
+  // if there ever is a cycle of calls.
+  visited->insert(fn);
+
+  ImplicitThrowsVisitor visit(visited, reasons);
+
+  // Note that this function can recurse because
+  // the ImplicitThrowsVisitor will call markImplicitThrows.
+  fn->body->accept(&visit);
+
+  if (visit.throws()) {
+    // Update the reasons - for printing out error messages with
+    // the user view of no task functions (say)
+    (*reasons)[fn] = visit.reason();
+    fn->throwsErrorInit();
+
+    // If we only are throwing because of calls to functions marked
+    // with FLAG_UNCHECKED_THROWS, this function should also be
+    // so marked.
+    if (visit.unchecked())
+      fn->addFlag(FLAG_UNCHECKED_THROWS);
+  }
 }
 
-static void checkErrorHandling(FnSymbol* fn)
+static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
-  CanThrowVisitor visit(fn->throwsError(), true);
+  ErrorCheckingVisitor visit(fn->throwsError(), reasons);
 
   fn->body->accept(&visit);
 }
 
+static void lowerErrorHandling(FnSymbol* fn)
+{
+  ArgSymbol*   outError = NULL;
+  LabelSymbol* epilogue = NULL;
+
+  if (fn->throwsError()) {
+    SET_LINENO(fn);
+
+    outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
+    outError->addFlag(FLAG_ERROR_VARIABLE);
+    fn->insertFormalAtTail(outError);
+
+    epilogue = fn->getOrCreateEpilogueLabel();
+    INT_ASSERT(epilogue); // throws requires an epilogue
+  }
+
+  ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
+  fn->accept(&visitor);
+}
 
 void lowerCheckErrorPrimitive()
 {
@@ -602,4 +793,50 @@ bool isCheckErrorStmt(Expr* e)
     }
   }
   return false;
+}
+
+// Should we raise an error in strict mode if the error is not handled?
+// No for calls inside of compiler-generated functions, wrapper functions,
+// or task functions. No for functions marked with FLAG_UNCHECKED_THROWS.
+static bool isCompilerGeneratedFunction(FnSymbol* fn)
+{
+  return isTaskFun(fn) ||
+         fn->hasFlag(FLAG_WRAPPER) ||
+         fn->hasFlag(FLAG_COMPILER_GENERATED);
+}
+
+static bool isUncheckedThrowsFunction(FnSymbol* fn)
+{
+  return fn->hasFlag(FLAG_UNCHECKED_THROWS);
+}
+
+
+void lowerErrorHandling() {
+  if (!fMinimalModules)
+    INT_ASSERT(dtError->inTree());
+
+  std::set<FnSymbol*> visited;
+  implicitThrowsReasons_t reasons;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Determine if compiler-generated fns should be marked 'throws'
+    markImplicitThrows(fn, &visited, &reasons);
+  }
+
+  // Note, the above step can adjust the AST in a way
+  // that impacts this step.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Otherwise, just check for error-handling errors.
+    checkErrorHandling(fn, &reasons);
+  }
+
+  // Quit if fatal errors were encountered by checkErrorHandling above.
+  USR_STOP();
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    lowerErrorHandling(fn);
+  }
+
+  // Note, PRIM_CHECK_ERROR will be lowered when a later
+  // pass calls lowerCheckErrorPrimitive().
 }

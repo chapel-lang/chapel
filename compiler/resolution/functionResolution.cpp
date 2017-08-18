@@ -67,27 +67,22 @@
 #include <string>
 #include <vector>
 
-/// State information used during the disambiguation process.
 class DisambiguationState {
 public:
-  /// Is fn1 more specific than fn2?
-  bool fn1MoreSpecific;
-  /// Is fn2 more specific than fn1?
-  bool fn2MoreSpecific;
+        DisambiguationState();
 
-  /// Does fn1 require promotion?
-  bool fn1Promotes;
-  /// Does fn2 require promotion?
-  bool fn2Promotes;
+  void  updateParamPrefers(int                          preference,
+                           const char*                  argStr,
+                           const DisambiguationContext& DC);
 
-  /// 1 == fn1, 2 == fn2, -1 == conflicting signals
-  int paramPrefers;
+  bool  fn1MoreSpecific;
+  bool  fn2MoreSpecific;
 
-  /// Initialize the state to the starting values.
-  DisambiguationState()
-    : fn1MoreSpecific(false), fn2MoreSpecific(false),
-      fn1Promotes(false), fn2Promotes(false), paramPrefers(0) {}
+  bool  fn1Promotes;
+  bool  fn2Promotes;
 
+  // 1 == fn1, 2 == fn2, -1 == conflicting signals
+  int   paramPrefers;
 };
 
 //#
@@ -3223,6 +3218,7 @@ static bool populateForwardingMethods(CallInfo& info) {
 
 #define EXPLAIN(...)                                  \
         if (developer && DC.explain) fprintf(stderr, __VA_ARGS__)
+
 #else
 
 #define EXPLAIN(...)
@@ -3230,10 +3226,27 @@ static bool populateForwardingMethods(CallInfo& info) {
 #endif
 
 
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous);
+
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    bool                         forGenericInit,
+                    Vec<ResolutionCandidate*>&   ambiguous);
+
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
                                ResolutionCandidate*         candidate2,
                                const DisambiguationContext& DC,
-                               bool                         ignoreWhere);
+                               int                          i,
+                               int                          j,
+                               bool                         ignoreWhere,
+                               bool                         forGenericInit);
 
 static void testArgMapping(FnSymbol*                    fn1,
                            ArgSymbol*                   formal1,
@@ -3241,12 +3254,17 @@ static void testArgMapping(FnSymbol*                    fn1,
                            ArgSymbol*                   formal2,
                            Symbol*                      actual,
                            const DisambiguationContext& DC,
+                           int                          i,
+                           int                          j,
                            DisambiguationState&         DS);
 
-static void registerParamPreference(int&                  paramPrefers,
-                                    int                   preference,
-                                    const char*           argstr,
-                                    DisambiguationContext DC);
+ResolutionCandidate*
+disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
+  DisambiguationContext     DC(info);
+  Vec<ResolutionCandidate*> ambiguous;
+
+  return disambiguateByMatch(candidates, DC, false, true, ambiguous);
+}
 
 static int disambiguateByMatch(CallInfo&                  info,
                                Vec<ResolutionCandidate*>& candidates,
@@ -3399,30 +3417,21 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-/** Find the best candidate from a list of candidates.
- *
- * This function finds the best Chapel function from a set of candidates, given
- * a call site.  This is an implementation of 13.14.3 of the Chapel language
- * specification (page 106).
- *
- * \param candidates A list of the candidate functions, from which the best
- *                   match is selected.
- * \param mostSpecificSet  On return, stores the set of candidates that
- *                         are not known to be worse than any other,
- *                         in the event that this set has 1 member.
- * \param DC         The disambiguation context.
- * \param ignoreWhere Set to `true` to ignore `where` clauses when
- *                    deciding if one match is better than another.
- *                    This is important for resolving return intent
- *                    overloads.
- *
- * \return NULL or the single most specific candidate
- */
-ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
-                    DisambiguationContext      DC,
-                    bool                       ignoreWhere,
-                    Vec<ResolutionCandidate*>& mostSpecificSet) {
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    Vec<ResolutionCandidate*>&   ambiguous) {
+  return disambiguateByMatch(candidates, DC, ignoreWhere, false, ambiguous);
+}
+
+
+static ResolutionCandidate*
+disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
+                    const DisambiguationContext& DC,
+                    bool                         ignoreWhere,
+                    bool                         forGenericInit,
+                    Vec<ResolutionCandidate*>&   ambiguous) {
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
 
@@ -3431,7 +3440,6 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
   std::vector<bool> notBest(candidates.n, false);
 
   for (int i = 0; i < candidates.n; ++i) {
-
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
     EXPLAIN("##########################\n\n");
@@ -3460,8 +3468,11 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
       int cmp = compareSpecificity(candidate1,
                                    candidate2,
-                                   DC.forPair(i, j),
-                                   ignoreWhere);
+                                   DC,
+                                   i,
+                                   j,
+                                   ignoreWhere,
+                                   forGenericInit);
 
       if (cmp < 0) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -3492,7 +3503,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 
   for (int i = 0; i < candidates.n; ++i) {
     if (notBest[i] == false) {
-      mostSpecificSet.add(candidates.v[i]);
+      ambiguous.add(candidates.v[i]);
     }
   }
 
@@ -3520,18 +3531,20 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
 static int compareSpecificity(ResolutionCandidate*         candidate1,
                               ResolutionCandidate*         candidate2,
                               const DisambiguationContext& DC,
-                              bool                         ignoreWhere) {
+                              int                          i,
+                              int                          j,
+                              bool                         ignoreWhere,
+                              bool                         forGenericInit) {
 
   DisambiguationState DS;
+
+  // Initializer work-around: Skip _mt/_this for generic initializers
+  int                 start   = (forGenericInit == false) ? 0 : 2;
+
   bool                prefer1 = false;
   bool                prefer2 = false;
 
-  // Returning 0 for the same candidate simplifies the calling code
-  if (candidate1 == candidate2) {
-    return 0;
-  }
-
-  for (int k = 0; k < DC.actuals->n; ++k) {
+  for (int k = start; k < DC.actuals->n; ++k) {
     Symbol*    actual  = DC.actuals->v[k];
     ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
     ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
@@ -3544,13 +3557,15 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                    formal2,
                    actual,
                    DC,
+                   i,
+                   j,
                    DS);
   }
 
   if (DS.fn1Promotes != DS.fn2Promotes) {
     EXPLAIN("\nP: Fn %d does not require argument promotion; Fn %d does\n",
-                                DS.fn1Promotes ? DC.j : DC.i,
-                                DS.fn1Promotes ? DC.i : DC.j);
+                                DS.fn1Promotes ? j : i,
+                                DS.fn1Promotes ? i : j);
 
     // Prefer the version that did not promote
     prefer1 = !DS.fn1Promotes;
@@ -3563,19 +3578,19 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   } else {
     // If the decision hasn't been made based on the argument mappings...
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
-      EXPLAIN("\nQ: Fn %d is more specific\n", DC.i);
+      EXPLAIN("\nQ: Fn %d is more specific\n", i);
       prefer1 = true;
 
     } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
-      EXPLAIN("\nR: Fn %d is more specific\n", DC.j);
+      EXPLAIN("\nR: Fn %d is more specific\n", j);
       prefer2 = true;
 
     } else if (DS.paramPrefers == 1) {
-      EXPLAIN("\nS: Fn %d is more specific\n", DC.i);
+      EXPLAIN("\nS: Fn %d is more specific\n", i);
       prefer1 = true;
 
     } else if (DS.paramPrefers == 2) {
-      EXPLAIN("\nT: Fn %d is more specific\n", DC.j);
+      EXPLAIN("\nT: Fn %d is more specific\n", j);
       prefer2 = true;
 
     } else if (!ignoreWhere) {
@@ -3584,11 +3599,11 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       bool fn2where = candidate2->fn->where != NULL &&
                       !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
       if (fn1where && !fn2where) {
-        EXPLAIN("\nU: Fn %d is more specific\n", DC.i);
+        EXPLAIN("\nU: Fn %d is more specific\n", i);
         prefer1 = true;
 
       } else if (!fn1where && fn2where) {
-        EXPLAIN("\nV: Fn %d is more specific\n", DC.j);
+        EXPLAIN("\nV: Fn %d is more specific\n", j);
         prefer2 = true;
       }
     }
@@ -3598,18 +3613,18 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
   if (prefer1) {
     EXPLAIN("\nW: Fn %d is more specific than Fn %d\n",
-                                DC.i, DC.j);
+                                i, j);
     return -1;
 
   } else if (prefer2) {
     EXPLAIN("\nW: Fn %d is less specific than Fn %d\n",
-                                DC.i, DC.j);
+                                i, j);
     return 1;
 
   } else {
     // Neither is more specific
     EXPLAIN("\nW: Fn %d and Fn %d are equally specific\n",
-                                DC.i, DC.j);
+                                i, j);
     return 0;
   }
 }
@@ -3637,17 +3652,19 @@ static void testArgMapping(FnSymbol*                    fn1,
                            ArgSymbol*                   formal2,
                            Symbol*                      actual,
                            const DisambiguationContext& DC,
+                           int                          i,
+                           int                          j,
                            DisambiguationState&         DS) {
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.
-  Type* f1Type     = formal1->type->getValType();
-  Type* f2Type     = formal2->type->getValType();
-  Type* actualType = actual->type->getValType();
+  Type* f1Type          = formal1->type->getValType();
+  Type* f2Type          = formal2->type->getValType();
+  Type* actualType      = actual->type->getValType();
+
+  bool  formal1Promotes = false;
+  bool  formal2Promotes = false;
 
   EXPLAIN("Actual's type: %s\n", toString(actualType));
-
-  bool formal1Promotes = false;
-  bool formal2Promotes = false;
 
   canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
 
@@ -3690,57 +3707,57 @@ static void testArgMapping(FnSymbol*                    fn1,
   if (f1Type == f2Type &&
       formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
       !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("A: Fn %d is more specific\n", DC.i);
+    EXPLAIN("A: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (f1Type == f2Type &&
              !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
              formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("B: Fn %d is more specific\n", DC.j);
+    EXPLAIN("B: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else if (!formal1Promotes && formal2Promotes) {
-    EXPLAIN("C: Fn %d is more specific\n", DC.i);
+    EXPLAIN("C: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (formal1Promotes && !formal2Promotes) {
-    EXPLAIN("D: Fn %d is more specific\n", DC.j);
+    EXPLAIN("D: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else if (f1Type == f2Type           &&
              !formal1->instantiatedFrom &&
              formal2->instantiatedFrom) {
-    EXPLAIN("E: Fn %d is more specific\n", DC.i);
+    EXPLAIN("E: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (f1Type == f2Type &&
              formal1->instantiatedFrom &&
              !formal2->instantiatedFrom) {
-    EXPLAIN("F: Fn %d is more specific\n", DC.j);
+    EXPLAIN("F: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    EXPLAIN("G: Fn %d is more specific\n", DC.i);
+    EXPLAIN("G: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    EXPLAIN("H: Fn %d is more specific\n", DC.j);
+    EXPLAIN("H: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    EXPLAIN("G1: Fn %d is more specific\n", DC.i);
+    EXPLAIN("G1: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    EXPLAIN("G2: Fn %d is more specific\n", DC.i);
+    EXPLAIN("G2: Fn %d is more specific\n", i);
     DS.fn2MoreSpecific = true;
 
   } else if (considerParamMatches(actualType, f1Type, f2Type)) {
@@ -3750,22 +3767,21 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (paramWorks(actual, f2Type)) {
       // but the actual is a param and works for formal2
       if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but
-        // matches the first slightly better if we had to
-        // decide
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+        // the param works equally well for both, but matches
+        // the first lightly better if we had to decide
+        DS.updateParamPrefers(1, "formal1", DC);
 
       } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+        DS.updateParamPrefers(2, "formal2", DC);
 
       } else {
         // neither is a param, but formal1 is an exact type
         // match, so prefer that one
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+        DS.updateParamPrefers(1, "formal1", DC);
       }
 
     } else {
-      EXPLAIN("I: Fn %d is more specific\n", DC.i);
+      EXPLAIN("I: Fn %d is more specific\n", i);
       DS.fn1MoreSpecific = true;
     }
 
@@ -3776,39 +3792,38 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (paramWorks(actual, f1Type)) {
       // but the actual is a param and works for formal1
       if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but
-        // matches the second slightly better if we had to
-        // decide
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+        // the param works equally well for both, but matches
+        // the second slightly better if we had to decide
+        DS.updateParamPrefers(2, "formal2", DC);
 
       } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        registerParamPreference(DS.paramPrefers, 1, "formal1", DC);
+        DS.updateParamPrefers(1, "formal1", DC);
 
       } else {
-        // neither is a param, but formal1 is an exact type
-        // match, so prefer that one
-        registerParamPreference(DS.paramPrefers, 2, "formal2", DC);
+        // neither is a param, but formal1 is an exact type match,
+        // so prefer that one
+        DS.updateParamPrefers(2, "formal2", DC);
       }
 
     } else {
-      EXPLAIN("J: Fn %d is more specific\n", DC.j);
+      EXPLAIN("J: Fn %d is more specific\n", j);
       DS.fn2MoreSpecific = true;
     }
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-    EXPLAIN("K: Fn %d is more specific\n", DC.i);
+    EXPLAIN("K: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-    EXPLAIN("L: Fn %d is more specific\n", DC.j);
+    EXPLAIN("L: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-    EXPLAIN("M: Fn %d is more specific\n", DC.i);
+    EXPLAIN("M: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-    EXPLAIN("N: Fn %d is more specific\n", DC.j);
+    EXPLAIN("N: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else {
@@ -3816,69 +3831,13 @@ static void testArgMapping(FnSymbol*                    fn1,
   }
 }
 
-//
-// This is a utility function that essentially tracks which function,
-// if any, the param arguments prefer.
-//
-static void registerParamPreference(int&                  paramPrefers,
-                                    int                   preference,
-                                    const char*           argstr,
-                                    DisambiguationContext DC) {
-
-  if (paramPrefers == 0 || paramPrefers == preference) {
-    /* if the param currently has no preference or it matches the new
-       preference, preserve the current preference */
-    paramPrefers = preference;
-    EXPLAIN("param prefers %s\n", argstr);
-
-  } else {
-    /* otherwise its preference contradicts the previous arguments, so
-       mark it as not preferring either */
-    paramPrefers = -1;
-    EXPLAIN("param prefers differing things\n");
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-DisambiguationContext::DisambiguationContext(CallInfo& info) {
-  actuals = &info.actuals;
-  scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
-  explain = false;
-  i       = -1;
-  j       = -1;
-
-  if (fExplainVerbose == true) {
-    if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
-      explain = true;
-    }
-
-    if (info.call->id == explainCallID) {
-      explain = true;
-    }
-  }
-}
-
-const DisambiguationContext&
-DisambiguationContext::forPair(int newI, int newJ) {
-  this->i = newI;
-  this->j = newJ;
-
-  return *this;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void lvalueCheck(CallExpr* call)
-{
+void lvalueCheck(CallExpr* call) {
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
@@ -4907,6 +4866,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
       // ... then mark LHS constant.
       lhsSym->addFlag(FLAG_CONST);
     }
+  } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+    Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
+    lhsSym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
   }
 
   moveFinalize(call);
@@ -5010,6 +4972,17 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     }
 
   } else {
+    if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+      Type* baseType = rhs->get(1)->getValType();
+      const char* memberName = get_string(rhs->get(2));
+      Symbol* sym = baseType->getField(memberName);
+      if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          se->symbol()->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+        }
+      }
+    }
+
     moveFinalize(call);
   }
 }
@@ -5372,6 +5345,8 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
   VarSymbol* new_temp  = newTemp("new_temp", at);
   DefExpr*   def       = new DefExpr(new_temp);
 
+  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
 
@@ -5456,7 +5431,7 @@ static void temporaryInitializerFixup(CallExpr* call) {
 
       INT_ASSERT(sym != NULL);
 
-      if (AggregateType* ct = toAggregateType(sym->symbol()->type)) {
+      if (AggregateType* ct = toAggregateType(sym->symbol()->getValType())) {
 
         if (isRefWrapperForNonGenericRecord(ct) == false &&
             ct->initializerStyle                == DEFINES_NONE_USE_DEFAULT) {
@@ -5858,49 +5833,46 @@ bool isInstantiation(Type* sub, Type* super) {
 }
 
 
-//
-// returns resolved function if the function requires an implicit
-// destroy of its returned value (i.e. reference count)
-//
-// Currently, FLAG_DONOR_FN is only relevant when placed on
-// chpl__autoCopy().
-//
-FnSymbol*
-requiresImplicitDestroy(CallExpr* call) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool requiresImplicitDestroy(CallExpr* call) {
+  bool retval = false;
+
   if (FnSymbol* fn = call->resolvedFunction()) {
     FnSymbol* parent = call->getFunction();
-    INT_ASSERT(parent);
 
-    if (!parent->hasFlag(FLAG_DONOR_FN) &&
-        // No autocopy/destroy calls in a donor function (this might
-        // need to change when this flag is used more generally)).
-        // Currently, this assumes we have thoughtfully written
-        // chpl__autoCopy functions.
-
-        // Return type is a record (which includes array, domain, dist,
-        // user record)
-        isRecord(fn->retType) &&
-
-        // These are special functions where we don't want to destroy
-        // the result
-        !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
-        !fn->isIterator() &&
-        !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
-        !fn->hasFlag(FLAG_DONOR_FN) &&
-        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
-        strcmp(fn->name, "=") &&
-        strcmp(fn->name, "_defaultOf") &&
-        !fn->hasFlag(FLAG_AUTO_II) &&
-        !fn->hasFlag(FLAG_CONSTRUCTOR) &&
-        !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-      return fn;
+    if (parent->hasFlag(FLAG_DONOR_FN)                        == false &&
+        isRecord(fn->retType)                                 == true  &&
+        fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
+        fn->isIterator()                                      == false &&
+        fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
+        fn->hasFlag(FLAG_DONOR_FN)                            == false &&
+        fn->hasFlag(FLAG_INIT_COPY_FN)                        == false &&
+        fn->hasFlag(FLAG_AUTO_II)                             == false &&
+        fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
+        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
+        strcmp(fn->name, "=")                                 !=     0 &&
+        strcmp(fn->name, "_defaultOf")                        !=     0) {
+      retval = true;
     }
   }
-  return NULL;
+
+  return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
+  bool retval = false;
+
   if (BlockStmt* block = toBlockStmt(expr)) {
     if (block->isWhileStmt() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param while loop");
@@ -5922,13 +5894,16 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
 
   if (paramMap.get(fn->getReturnSymbol())) {
     CallExpr* call = toCallExpr(fn->body->body.tail);
+
     INT_ASSERT(call);
     INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+
     call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
-    return true; // param function is resolved
+
+    retval = true; // param function is resolved
   }
 
-  return false;
+  return retval;
 }
 
 
@@ -6087,6 +6062,50 @@ resolveExpr(Expr* expr) {
       } else {
         INT_ASSERT(call->isResolved());
         resolveFns(call->resolvedFunction());
+      }
+
+      for (int i = 1; i <= call->numActuals(); i++) {
+        Expr* actualExpr = call->get(i);
+        Symbol* actualSym = NULL;
+        if (SymExpr* actual = toSymExpr(actualExpr)) {
+          actualSym = actual->symbol();
+        } else if (NamedExpr* named = toNamedExpr(actualExpr)) {
+          SymExpr* namedSe = toSymExpr(named->actual);
+          INT_ASSERT(namedSe);
+          actualSym = namedSe->symbol();
+        } else {
+          INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
+        }
+
+        if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) &&
+            actualSym->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+          Symbol* formal = call->resolvedFunction()->getFormal(i);
+          INT_ASSERT(!formal->type->symbol->hasFlag(FLAG_GENERIC));
+          // The type has been determined to no longer be generic.  Update the
+          // delayed instance to have the right type.
+          actualSym->type = formal->type;
+          actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+          AggregateType* formalType = toAggregateType(formal->type);
+          INT_ASSERT(formalType);
+          formalType->initializerResolved = true;
+
+          if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
+            if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
+              if (fn->_this != NULL &&
+                  isClass(fn->_this->type)) {
+                AggregateType* at = toAggregateType(fn->_this->type);
+                Symbol* superField = at->getField(1);
+                if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+                  at = at->getInstantiationParent(formalType);
+                  fn->_this->type = at;
+                  superField = at->getField(1);
+                  superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+                }
+              }
+            }
+          }
+        }
       }
     }
 
@@ -9095,14 +9114,54 @@ static void setScalarPromotionType(AggregateType* at) {
 }
 
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
+DisambiguationContext::DisambiguationContext(CallInfo& info) {
+  actuals = &info.actuals;
+  scope   = (info.scope) ? info.scope : getVisibilityBlock(info.call);
+  explain = false;
 
+  if (fExplainVerbose == true) {
+    if (explainCallLine != 0 && explainCallMatch(info.call) == true) {
+      explain = true;
+    }
 
+    if (info.call->id == explainCallID) {
+      explain = true;
+    }
+  }
+}
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
+DisambiguationState::DisambiguationState() {
+  fn1MoreSpecific = false;
+  fn2MoreSpecific = false;
 
+  fn1Promotes     = false;
+  fn2Promotes     = false;
 
+  paramPrefers    = 0;
+}
 
+void DisambiguationState::updateParamPrefers(
+                                     int                          preference,
+                                     const char*                  argStr,
+                                     const DisambiguationContext& DC) {
+  if (paramPrefers == 0 || paramPrefers == preference) {
+    paramPrefers = preference;
+    EXPLAIN("param prefers %s\n", argStr);
 
-
-
+  } else {
+    paramPrefers = -1;
+    EXPLAIN("param prefers differing things\n");
+  }
+}

@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2013-2016 Inria.  All rights reserved.
+.\" Copyright © 2013-2017 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-ANNOTATE "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
 .SH NAME
@@ -17,6 +17,10 @@ hwloc-annotate \- Add info attributes to a XML topology
 \fI<mode>\fR
 \fI<annotation>\fR
 .
+.PP
+Note that hwloc(7) provides a detailed explanation of the hwloc system
+and of valid <location> formats;
+it should be read before reading this man page.
 .\" **************************
 .\"    Options Section
 .\" **************************
@@ -65,20 +69,9 @@ No new annotation is added. This is useful when clearing existing attributes.
 .PP
 Annotations may be added to one specific object in the topology,
 all of them, or all of a given type.
-This is specified by the \fIlocation\fR:
-.TP
-.B all
-annotates all objects in the topology.
-.TP
-.B root
-annotates the root object of the topology.
-.TP
-.B <type>:all
-annotates all objects of the given type.
-.TP
-.B <type>:<index>
-annotates the object of the given type and index.
-The index is logical.
+This is specified by the \fIlocation\fR (see also EXAMPLES below).
+Objects may be specified as location tuples, as explained in hwloc(7).
+However hexadecimal bitmasks are not accepted since they may correspond to multiple objects.
 .
 .PP
 .B NOTE:

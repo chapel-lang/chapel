@@ -93,7 +93,7 @@ $(LLVM_HEADER_FILE):
 	if [ -f $(LLVM_CONFIGURE_FILE) ]; then \
 	  cd $(LLVM_BUILD_DIR) && make install-local ; \
 	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target installhdrs ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
 	fi
 
 # note: the conditional below allows parallel make to continue

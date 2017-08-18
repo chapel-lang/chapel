@@ -1,0 +1,2 @@
+./DistributedIters.chpl:85: In iterator 'distributedGuided':
+./DistributedIters.chpl:99: error: cannot iterate over values of type void

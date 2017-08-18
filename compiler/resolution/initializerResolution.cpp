@@ -68,7 +68,12 @@ FnSymbol* resolveInitializer(CallExpr* call) {
     SymExpr*   namedSe = toSymExpr(named->actual);
     INT_ASSERT(namedSe);
 
-    namedSe->symbol()->type = call->resolvedFunction()->_this->type;
+    Symbol*    sym     = namedSe->symbol();
+
+    sym->type = call->resolvedFunction()->_this->type;
+
+    if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION))
+      sym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
     makeRecordInitWrappers(call);
   }
@@ -93,14 +98,12 @@ static void resolveInitCall(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  if (info.isNotWellFormed(call, true) == true) {
-    info.haltNotWellFormed(true);
+  if (info.isNotWellFormed(call) == true) {
+    info.haltNotWellFormed();
 
   } else {
-    DisambiguationContext     DC(info);
     Vec<FnSymbol*>            visibleFns;
     Vec<ResolutionCandidate*> candidates;
-    Vec<ResolutionCandidate*> ambiguous;
     ResolutionCandidate*      best        = NULL;
 
     findVisibleFunctions(info, visibleFns);
@@ -109,7 +112,7 @@ static void resolveInitCall(CallExpr* call) {
 
     explainGatherCandidate(info, candidates);
 
-    best = disambiguateByMatch(candidates, DC, false, ambiguous);
+    best = disambiguateForInit(info, candidates);
 
     if (best == NULL) {
       if (call->partialTag == false) {
@@ -264,7 +267,10 @@ static void resolveMatch(FnSymbol* fn) {
     INT_ASSERT(at);
 
     bool           res = at->setNextGenericField();
-    INT_ASSERT(res);
+    if (at->dispatchParents.v[0] == NULL ||
+        at->dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == false) {
+      INT_ASSERT(res);
+    }
   }
 
   resolveBlockStmt(fn->body);

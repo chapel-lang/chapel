@@ -570,7 +570,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void
-instantiate_tuple_cast(FnSymbol* fn)
+instantiate_tuple_cast(FnSymbol* fn, CallExpr* context)
 {
   // Adjust any formals for blank-intent tuple behavior now
   resolveFormals(fn);
@@ -583,6 +583,12 @@ instantiate_tuple_cast(FnSymbol* fn)
 
   VarSymbol* retv = new VarSymbol("retv", toT);
   block->insertAtTail(new DefExpr(retv));
+
+  if (fromT->numFields() != toT->numFields()) {
+    USR_FATAL_CONT(context, "tuple size mismatch (expected %d, got %d)", 
+                   toT->numFields()-1, fromT->numFields()-1);
+    return;
+  }
 
   // Starting at field 2 to skip the size field
   for (int i=2; i<=toT->fields.length; i++) {
@@ -899,7 +905,7 @@ fixupTupleFunctions(FnSymbol* fn,
   if (fn->hasFlag(FLAG_TUPLE_CAST_FN) &&
       newFn->getFormal(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
       fn->getFormal(2)->getValType()->symbol->hasFlag(FLAG_TUPLE) ) {
-    instantiate_tuple_cast(newFn);
+    instantiate_tuple_cast(newFn, instantiatedForCall);
     return true;
   }
 

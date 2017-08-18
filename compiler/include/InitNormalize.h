@@ -148,6 +148,8 @@ private:
   DefExpr*        toSuperField(AggregateType* at, SymExpr*    expr)      const;
   DefExpr*        toSuperField(AggregateType* at, CallExpr*   expr)      const;
 
+  void            transformSuperInit(Expr* initStmt);
+
   const char*     phaseToString(InitPhase phase)                         const;
 
   FnSymbol*       mFn;

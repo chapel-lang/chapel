@@ -1,0 +1,12 @@
+perfkeys: time/iter :, time/iter :, time/iter :, time/iter :
+files: 1.5-small-grow.dat, 1.5-big-grow.dat, 2.0-small-grow.dat, 2.0-big-grow.dat
+graphkeys: 1.5-small-grow, 1.5-big-grow, 2.0-small-grow, 2.0-big-grow
+graphtitle: CSDom._grow()
+ylabel: Time (ms)
+
+
+perfkeys: time/iter :, time/iter :
+files: 2.0-small-bulkGrow.dat, 2.0-big-bulkGrow.dat
+graphkeys: small-bulkGrow, big-bulkGrow
+graphtitle: CSDom._bulkGrow()
+ylabel: Time (ms)

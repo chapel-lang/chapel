@@ -420,16 +420,9 @@ tags
 # Third party ignores.
 /third-party/**/build
 /third-party/**/install
-/third-party/gmp/gmp-6.0.0
-/third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
-/third-party/re2/re2/**/*.orig
-/third-party/re2/re2/core
-/third-party/re2/re2/obj
-/third-party/re2/re2/.git
 
-/third-party/qthread/qthread-1.10/autom4te.cache/
-/third-party/qthread/qthread-1.10/config.h.in
+/third-party/gmp/gmp-src/doc/gmp.info.*
 
 /third-party/fltk/build.*
 /third-party/fltk/install.*

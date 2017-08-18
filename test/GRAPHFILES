@@ -34,6 +34,7 @@ release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/comd/llnl/CoMD.graph
+studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.graph
 studies/isx/isx.graph
 release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
@@ -112,6 +113,7 @@ release/examples/benchmarks/ssca2/performance.graph
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/comd/llnl/CoMD.graph
+studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.graph
 release/examples/benchmarks/lcals/LCALS-raw-short.graph
 release/examples/benchmarks/lcals/LCALS-raw-medium.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
@@ -262,6 +264,8 @@ types/string/psahabu/perf/substring.graph
 modules/packages/Sort/performance/sorts-linearithmic.graph
 modules/packages/Sort/performance/sorts-quadratic.graph
 modules/packages/linearalgebra/performance/linearalgebra-perf.graph
+sparse/CS/multiplication/cs-multiplication.graph
+sparse/CS/resize/cs-resize.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph

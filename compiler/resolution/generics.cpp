@@ -428,7 +428,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
+            !e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
           INT_FATAL(fn, "illegal instantiation with a generic type");
         }
 
