@@ -9,7 +9,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 source $CWD/common-perf.bash
 source $CWD/common-gasnet.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.cc"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.comm-counts"
 
 SHORT_NAME=cc
 START_DATE=08/17/17
