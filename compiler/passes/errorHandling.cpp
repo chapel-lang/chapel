@@ -213,6 +213,7 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
 
   BlockStmt* tryBody = info.tryBody;
 
+  tryBody->insertAtHead(new CallExpr(PRIM_MOVE, info.errorVar, gNil));
   tryBody->insertAtHead(new DefExpr(info.errorVar));
   tryBody->insertAtTail(new DefExpr(info.handlerLabel));
 
@@ -337,6 +338,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorVar = newTemp("error", dtError);
         errorVar->addFlag(FLAG_ERROR_VARIABLE);
         insert->insertBefore(new DefExpr(errorVar));
+        insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
