@@ -111,7 +111,7 @@ def compute_pr_to_dates():
     for line in git_log.splitlines():
         split_line = line.split(' ::: ')
         date = split_line[0]
-        pr_num = re.match(r'.*#(\d+)', split_line[1]).group(1)
+        pr_num = re.match(r'Merge pull request #(\d+)', split_line[1]).group(1)
         pr_to_date_dict[pr_num] = parse_date(date)
 
     return pr_to_date_dict
