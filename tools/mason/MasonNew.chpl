@@ -43,30 +43,29 @@ proc masonNew(args) {
   
   
 proc InitProject(name, vcs, show) {
-  var status = -1;
   if vcs {
-    status = gitInit(name, show);
+    gitInit(name, show);
     addGitIgnore(name);
   }
   else {
     mkdir(name);
   }
-
-  if status != 0 {
-    halt("Mason could not create library project: " + name);
-  }
-  else {
+  // Confirm git init before creating files
+  if isDir(name) {
     makeBasicToml(name);
     makeProjectFiles(name);
-    writeln("Created new library roject: " + name);
+    writeln("Created new library project: " + name);
+  }
+  else {
+    writeln("Failed to create project");
   }
 }
 
 
-proc gitInit(name: string, show: bool) : int {
-  var command = "git init -q " + name;
-  if show then command = "git init " + name;
-  return runWithStatus(command);
+proc gitInit(name: string, show: bool) {
+  var initialize = "git init -q " + name;
+  if show then initialize = "git init " + name;
+  runCommand(initialize);
 }
 
 proc addGitIgnore(name: string) {
@@ -91,7 +90,7 @@ proc makeBasicToml(name: string) {
 proc makeProjectFiles(name: string) {
   mkdir(name + "/src");
   const libTemplate = '\n /* Documentation for ' + name +
-    ' */\nmodule '+ name + ' { \nwriteln("New library: '+ name +'");\n}';
+    ' */\nmodule '+ name + ' { \n   writeln("New library: '+ name +'");\n}';
   var lib = open(name+'/src/'+name+'.chpl', iomode.cw);
   var libWriter = lib.writer();
   libWriter.write(libTemplate);

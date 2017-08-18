@@ -32,15 +32,21 @@ proc genLock(lock: Toml) {
 }
 
 proc updateRegistry() {
-  var home = getEnv("HOME");
-  if isDir(home + '/.mason/registry') {
-    var command = "git -C " + home + "/.mason/registry/ pull -q origin master";
-    // Temporary workaround for testing
+  var masonHome = getMasonHome();
+  var registryHome = masonHome + '/.mason/registry';
+  if isDir(registryHome) {
+    var pullRegistry = 'git -C ' + registryHome + '/ pull -q origin master';
     writeln("Updating Mason Registry");
-    runCommand(command);
+    runCommand(pullRegistry);
   }
-  else { // TODO: once we have registry clone and call command again.
-    halt("Mason cannot find your registry!");
+  // Registry has moved or does not exist
+  else {
+    mkdir(masonHome + '/.mason');
+    mkdir(masonHome + '/.mason/src');
+    var registry = "https://github.com/chapel-lang/mason-registry";
+    var cloneRegistry = 'git -C ' + masonHome + '/.mason/ clone -q ' + registry + ' registry';
+    writeln('Could not find Registry...cloning registry...');
+    runCommand(cloneRegistry);
   } 
 }
 
@@ -157,7 +163,7 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 /* Resposible for parsing the Mason.toml to be given
    back to a call from getManifests */ 
 proc retrieveDep(name: string, version: string) {
-  var home = getEnv("CHPL_MASON_HOME");
+  var home = getMasonHome();
   var tomlPath = home + "/.mason/registry/Brick/"+name+"/"+version+".toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);

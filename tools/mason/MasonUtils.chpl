@@ -41,7 +41,7 @@ proc runWithStatus(command): int {
 /* Checks to see if dependency has already been
    downloaed previously */
 proc depExists(dependency: string) {
-  var repos = getEnv("HOME") +'/.mason/src/';
+  var repos = getMasonHome() +'/.mason/src/';
   var exists = false;
   for dir in listdir(repos) {
     if dir == dependency {
@@ -49,4 +49,23 @@ proc depExists(dependency: string) {
     }
   }
   return exists;
+}
+
+
+proc getMasonHome(): string {
+  var masonHome = getEnv("CHPL_MASON_HOME");
+  if masonHome == '' {
+    var home = getEnv('HOME');
+    if isFile(home + '/.mason') {
+      return home;
+    }
+    else {
+      writeln("Mason could not find CHPL_MASON_HOME");
+      writeln("Consider setting CHPL_MASON_HOME in your .bashrc");
+      halt();
+    }
+  }
+  else {
+    return masonHome;
+  }
 }

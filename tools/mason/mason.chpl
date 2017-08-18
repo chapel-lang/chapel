@@ -33,7 +33,7 @@ proc main(args: [] string) {
 
 
 
-/* TODO: mtime so compilation only when nessescary */
+
 proc masonRun(args) {
   var toRun = basename(getEnv('PWD'));
   var show = false;
@@ -95,6 +95,6 @@ proc masonDoc(args) {}
 
 
 proc printVersion() {
-  writeln('mason 0.0.1 (SHA <date>)');
+  writeln('mason 0.1.0');
 }
 
