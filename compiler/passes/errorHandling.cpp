@@ -352,7 +352,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       if (calledFn->hasFlag(FLAG_NON_BLOCKING) ||
           calledFn->hasFlag(FLAG_BEGIN) ||
           calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
-        // Don't add errorPolicy block or condititonal.
+        // Don't add errorPolicy block or conditional.
       } else {
         // Regular operation
         insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
@@ -561,7 +561,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
     //
     // In that example, this enterCallExpr might be visiting
     // a call to coforall_fn2. We don't know yet if it throws
-    // if we havn't visited it yet.
+    // if we haven't visited it yet.
     markImplicitThrows(calledFn, visited, reasons);
 
     if (calledFn->throwsError()) {
