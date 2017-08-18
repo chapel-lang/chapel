@@ -2743,6 +2743,7 @@ rauto
 
 FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
 fsyntax
+infs
 maino
 qunused
 
@@ -4198,6 +4199,7 @@ fxor
 gdata
 iadd
 iptag
+mdhs
 nbdi
 nbdp
 nopnd
@@ -4326,6 +4328,12 @@ tablename
 tblname
 tblpath
 tokenlist
+
+FILEID: 6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5
+todelete
+
+FILEID: a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5
+multipledestructor
 
 NATURAL:
 abcd
@@ -4738,6 +4746,8 @@ dereference
 dereferenced
 dereferences
 dereferencing
+deregister
+deregistration
 descs
 deseret
 deserialization
@@ -5639,6 +5649,7 @@ mppf
 mprotect
 mreg
 mregs
+msgs
 mtarun
 muchnick
 multicast
@@ -6042,6 +6053,7 @@ refpair
 refvar
 regexdna
 regexp
+registerable
 reindexed
 reindexes
 reindexing
