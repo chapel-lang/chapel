@@ -9,7 +9,7 @@ use MasonHelp;
 
 proc masonBuild(args) {
   var show = false;
-  var fast = false;
+  var release = false;
   var compopts: [1..0] string;
   if args.size > 2 {
     for arg in args[2..] {
@@ -18,7 +18,7 @@ proc masonBuild(args) {
 	exit();
       }
       else if arg == '--release' {
-	fast = true;
+	release = true;
       }
       else if arg == '--show' {
 	show = true;
@@ -29,16 +29,16 @@ proc masonBuild(args) {
     }
   }
   UpdateLock();
-  BuildProgram(fast, show, compopts);
+  BuildProgram(release, show, compopts);
 }
 
 
-proc BuildProgram(fast: bool, show: bool, compopts: [?d] string) {
+proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
 
     // --fast
     var binLoc = 'debug';
-    if fast {
+    if release {
       binLoc = 'release';
     }
 
@@ -49,10 +49,10 @@ proc BuildProgram(fast: bool, show: bool, compopts: [?d] string) {
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
     var sourceList = genSourceList(lockFile);
-    getSrcCode(sourceList);
+    getSrcCode(sourceList, show);
 
     // Compile Program
-    if compileSrc(lockFile, binLoc, show, fast, compopts) {
+    if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
     else {
@@ -88,15 +88,15 @@ proc makeTargetFiles(binLoc: string) {
    named after the project folder in which it is 
    contained */
 proc compileSrc(lockFile: Toml, binLoc: string, show: bool, 
-		fast: bool, compopts: [?dom] string) : bool {
+		release: bool, compopts: [?dom] string) : bool {
   var sourceList = genSourceList(lockFile);
-  var depPath = getEnv("HOME") + '/.mason/src/';
+  var depPath = getMasonHome() + '/.mason/src/';
   var project = lockFile["root"]["name"].s;
   var projectPath = 'src/'+ project + '.chpl';
  
   if isFile(projectPath) {
     var command: string = 'chpl ' + projectPath + ' ' + ' '.join(compopts);
-    if fast {
+    if release {
       command += " --fast";
     }
     for dep in sourceList {
@@ -155,15 +155,19 @@ proc genSourceList(lockFile: Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceList: [?d] 2*string) {
-  var destination = getEnv("HOME") +'/.mason/src/';
-  for source in sourceList {
+proc getSrcCode(sourceList: [?d] 2*string, show) {
+  var destination = getMasonHome() +'/.mason/src/';
+  forall source in sourceList {
     if !depExists(source(2)) {
+      var version = source(2).split('-');
       writeln("Downloading dependency: " + source(2));
       var getDependency = "git clone -qn "+source(1)+' '+destination+source(2)+'/';
-      runCommand(getDependency);
-      var version = source(2).split('-');
       var checkout = "git -C "+ destination+source(2) + " checkout -q v"+version(2);
+      if show {
+	getDependency = "git clone -n "+source(1)+' '+destination+source(2)+'/';
+	checkout = "git -C "+ destination+source(2) + " checkout v"+version(2);
+      }
+      runCommand(getDependency);
       runCommand(checkout);
     }
   }
