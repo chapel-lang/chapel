@@ -4,22 +4,26 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
+ifndef CHPL_MASON_HOME
+export CHPL_MASON_HOME=$(HOME)
+endif
+
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 bdir=$(CHPL_BIN_DIR)
 link=$(bdir)/mason
 
-
-REGISTRY=https://github.com/Spartee/mason-registry
+TOML=$(CHPL_HOME)/test/modules/packages/Toml/
+REGISTRY=https://github.com/chapel-lang/mason-registry
 
 all: mason install
 
 mason:
-	@mkdir -p ~/.mason
-	@mkdir -p ~/.mason/src
-	@git -C ~/.mason/ clone $(REGISTRY) registry
+	@mkdir -p $(CHPL_MASON_HOME)/.mason
+	@mkdir -p $(CHPL_MASON_HOME)/.mason/src
+	@git -C $(CHPL_MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
-	@chpl mason.chpl
+	@chpl mason.chpl -M $(TOML)
 
 install: 
 ifneq ($(wildcard $(link)),)
