@@ -4175,7 +4175,7 @@ record ItemReader {
   }
 
   /* iterate through all items of that type read from the channel */
-  iter these() {
+  iter these() throws {
     while true {
       var x:ItemType;
       var gotany = ch.read(x);
@@ -4183,19 +4183,6 @@ record ItemReader {
       yield x;
     }
   }
-
-  /* It would be nice to be able to handle errors
-     when reading with these()
-     but it's not clear how to get the error argument
-     out. Exceptions would sort us out...
-  iter these(out error:syserr) {
-    while true {
-      var x:ItemType;
-      var gotany = ch.read(x, error=error);
-      if ! gotany then break;
-      yield x;
-    }
-  }*/
 }
 
 /* Create and return an :record:`ItemReader` that can yield read values of
