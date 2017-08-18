@@ -73,5 +73,10 @@ proc masonBuildHelp() {
 proc masonNewHelp() {
   writeln('Usage:');
   writeln('    mason new [options] <project name>');
-  writeln('    mason new -h | --help');
+  writeln();
+  writeln('Options:');
+  writeln('    -h, --help                   Display this message');
+  writeln('        --show                   Increase verbosity');
+  writeln('        --novcs                  Do not initialize a git repository');
+  
 }

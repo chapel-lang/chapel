@@ -157,8 +157,8 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 /* Resposible for parsing the Mason.toml to be given
    back to a call from getManifests */ 
 proc retrieveDep(name: string, version: string) {
-  var home = getEnv("HOME");
-  var tomlPath = home + "/.mason/registry/"+name+"/"+version+".toml";
+  var home = getEnv("CHPL_MASON_HOME");
+  var tomlPath = home + "/.mason/registry/Brick/"+name+"/"+version+".toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);
     var depToml = parseToml(tomlFile);
