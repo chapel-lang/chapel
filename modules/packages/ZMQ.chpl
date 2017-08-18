@@ -712,10 +712,13 @@ module ZMQ {
     pragma "no doc"
     proc send(data: string, flags: int = 0) {
       on classRef.home {
-        // Copy the string to the current locale and release ownership
+        // Deep-copy the string to the current locale and release ownership
         // because the ZeroMQ library will take ownership of the underlying
         // buffer and free it when it is no longer needed.
-        var copy = data;
+        //
+        // TODO: If *not crossing locales*, check for ownership and
+        // conditionally have ZeroMQ free the memory.
+        var copy = new string(s=data, owned=true);
         copy.owned = false;
 
         // Create the ZeroMQ message from the string buffer
