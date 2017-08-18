@@ -2,7 +2,7 @@ use utilities;
 use dsiMethods;
 use templates;
 
-use LayoutCSR;
+use LayoutCS;
 
 config const N = 10;
 config type layoutType = DefaultDist;

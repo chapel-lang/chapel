@@ -42,7 +42,7 @@ use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
 use SparseBlockDist;
-use LayoutCSR;
+use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can
@@ -241,7 +241,7 @@ a stridable domain, the stride information will be ignored and the
 
 When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
 ``sparseLayoutType`` will be the layout of these sparse domains. The default is
-currently coordinate, but :class:`LayoutCSR.CSR` is an interesting alternative.
+currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 
 **Data-Parallel Iteration**
 
@@ -429,8 +429,8 @@ proc Block.Block(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && sparseLayoutType == CSR then 
-    compilerError("CSR layout is only supported for 2 dimensional domains");
+  if rank != 2 && isCSType(sparseLayoutType) then 
+    compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
     halt("Block() requires a non-empty boundingBox");

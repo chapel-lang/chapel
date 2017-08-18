@@ -264,6 +264,8 @@ types/string/psahabu/perf/substring.graph
 modules/packages/Sort/performance/sorts-linearithmic.graph
 modules/packages/Sort/performance/sorts-quadratic.graph
 modules/packages/linearalgebra/performance/linearalgebra-perf.graph
+sparse/CS/multiplication/cs-multiplication.graph
+sparse/CS/resize/cs-resize.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
