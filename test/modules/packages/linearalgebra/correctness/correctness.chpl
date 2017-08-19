@@ -197,8 +197,8 @@ config const correctness = true;
   }
 }
 
-/* dot - calls matMult && inner*/
 
+/* dot - calls matMult && inner*/
 
 {
 
@@ -359,10 +359,10 @@ config const correctness = true;
                  [7,8,9],
                  eltType=real);
   var v = Vector(1,5,9);
-  var matrix = Matrix([1,0,0],
-                      [0,5,0],
-                      [0,0,9],
-                      eltType=real);
+  var vMat = Matrix([1,0,0],
+                    [0,5,0],
+                    [0,0,9],
+                    eltType=real);
   var M1 = Matrix([1,2,3,4],
                   [5,6,7,8],
                   [9,0,1,2],
@@ -371,11 +371,27 @@ config const correctness = true;
   var v12 = Vector(3,8);
   var v13 = Vector([9]);
 
-  assertEqual(v, diag(M), "diag(M)");
-  assertEqual(matrix, diag(v),"diag(v)");
-  assertEqual(v11,diag(M1),"diag(M1)");
-  assertEqual(v12,diag(M1,2),"diag(M1,2)");
-  assertEqual(v13,diag(M1,-2),"diag(M1,-2)");
+  assertEqual(v,    diag(M),        "diag(M)");
+  assertEqual(vMat, diag(v),        "diag(v)");
+  assertEqual(v11,  diag(M1),       "diag(M1)");
+  assertEqual(v12,  diag(M1,2),     "diag(M1,2)");
+  assertEqual(v13,  diag(M1,-2),    "diag(M1,-2)");
+
+  // Now let's try with offsets
+
+  ref rM = M.reindex(1..3, 1..3);
+  ref rv = v.reindex(1..3);
+  ref rvMat = vMat.reindex(1..3, 1..3);
+  ref rM1 = M1.reindex(1..3, 1..4);
+  ref rv11 = v11.reindex(1..3);
+  ref rv12 = v12.reindex(1..2);
+  ref rv13 = v13.reindex(1..1);
+
+  assertEqual(rv,   diag(rM),       "diag(M)");
+  assertEqual(rvMat,diag(rv),       "diag(v)");
+  assertEqual(rv11, diag(rM1),      "diag(M1)");
+  assertEqual(rv12, diag(rM1,2),    "diag(M1,2)");
+  assertEqual(rv13, diag(rM1,-2),   "diag(M1,-2)");
 }
 
 /* tril & triu */
