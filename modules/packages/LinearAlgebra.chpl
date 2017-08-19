@@ -589,11 +589,6 @@ private inline proc _raw(D: domain(1), i) {
 //
 
 
-private proc diag(A: [?Adom] ?eltType, k=0) where Adom.stridable {
-  // TODO: reindex to non-strided
-  return diag(A, k);
-}
-
 /*
    Return a Vector containing the diagonal elements of ``A`` if the argument ``A`` is of rank 2.
    Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
