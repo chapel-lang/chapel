@@ -113,56 +113,43 @@ module ChapelError {
     }
 
     proc writeThis(f) {
-      f <~> "ErrorGroup with ";
-
-      var Msgs:domain(string);
-      var byMsg:[Msgs] list(Error);
       var n = 0;
-
-      for e in these() {
-        Msgs += e.msg;
-        byMsg[e.msg].append(e);
-        n += 1;
-      }
-
-      if n > 1 then
-        f <~> n <~> " errors";
-
 
       var minMsg:string;
       var maxMsg:string;
-      for msg in Msgs {
-        if minMsg == "" || msg < minMsg then
-          minMsg = msg;
-        if maxMsg == "" || msg > maxMsg then
-          maxMsg = msg;
-      }
-
       var first:Error;
       var last:Error;
 
+      for e in these() {
+        if minMsg == "" || e.msg < minMsg then
+          minMsg = e.msg;
+        if maxMsg == "" || e.msg > maxMsg then
+          maxMsg = e.msg;
+
+        n += 1;
+      }
+
       // Set first and last.
       {
-        const ref minErrs = byMsg[minMsg];
-        for e in minErrs {
-          if first == nil then
-            first = e;
-          last = e;
-        }
-        if minMsg != maxMsg {
-          const ref maxErrs = byMsg[maxMsg];
-          for e in maxErrs {
+        for e in these() {
+          if e.msg == minMsg {
             if first == nil then
               first = e;
             last = e;
           }
         }
+        if minMsg != maxMsg {
+          for e in these() {
+            if e.msg == maxMsg {
+              last = e;
+            }
+          }
+        }
       }
 
-      var nMsgs = Msgs.size;
-
-      if nMsgs > 1 then
-        f <~> " and " <~> nMsgs <~> " messages:: ";
+      f <~> "ErrorGroup with ";
+      if n > 1 then
+        f <~> n <~> " errors: ";
 
       if first != last then
         f <~> first <~> " ... " <~> last;
