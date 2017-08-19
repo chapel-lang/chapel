@@ -14,13 +14,29 @@ config const verbose=false;
 //
 
 {
-  const Dom = {0..#10};
-  const MDom = {0..#3, 0..#3};
+  const Dom = {0..#10},
+        MDom = {0..#3, 0..#3},
+        MDom2 = {0..#4, 0..#6};
+
+  //
+  // Vectors
+  //
 
   /* Dimensions */
   {
     var v = Vector(10);
     assertEqual(v.domain, Dom, "Vector(10)");
+  }
+
+  /* Range */
+  {
+    var v = Vector(0..#10);
+    assertEqual(v.domain, Dom, "Vector(0..#10)");
+  }
+  {
+    var v = Vector(1..#10);
+    const d = {1..#10};
+    assertEqual(v.domain, d, "Vector(1..#10)");
   }
 
   /* Domain */
@@ -37,6 +53,10 @@ config const verbose=false;
     assertEqual(v.domain, Dom, "Vector(A)");
   }
 
+  //
+  // Matrices
+  //
+
 
   /* Rows */
   {
@@ -44,11 +64,22 @@ config const verbose=false;
     assertEqual(M.domain, MDom, "Matrix(3)");
   }
 
-
   /* Dimensions */
   {
     var M = Matrix(3, 3);
     assertEqual(M.domain, MDom, "Matrix(3, 3)");
+  }
+
+  /* Range */
+  {
+    var M = Matrix(0..#3);
+    assertEqual(M.domain, MDom, "Matrix(0..#3)");
+  }
+
+  /* Ranges */
+  {
+    var M = Matrix(0..#4, 0..#6);
+    assertEqual(M.domain, MDom2, "Matrix(0..#4, 0..#6)");
   }
 
   /* Domain */
