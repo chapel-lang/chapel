@@ -7,7 +7,7 @@ use LinearAlgebra;
    Many of these tests are trivial and can be expanded upon in the future.
 */
 
-config const verbose=false;
+config const correctness = true;
 
 //
 // Initializers
@@ -463,7 +463,7 @@ config const verbose=false;
 //
 
 proc assertEqual(X, Y, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if X != Y {
     writeln("Test Failed: ", msg);
     writeln(X, ' != ', Y);
@@ -473,7 +473,7 @@ proc assertEqual(X, Y, msg="") {
 
 proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
 {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if X.shape != Y.shape {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -487,7 +487,7 @@ proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
 
 
 proc assertEqual(X: _tuple, Y: _tuple, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if X.size != Y.size {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -504,7 +504,7 @@ proc assertEqual(X: _tuple, Y: _tuple, msg="") {
 }
 
 proc assertTrue(x: bool, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if !x {
     writeln("Test Failed: ", msg);
     writeln("boolean is false");
@@ -512,7 +512,7 @@ proc assertTrue(x: bool, msg="") {
 }
 
 proc assertFalse(x: bool, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if x {
     writeln("Test Failed: ", msg);
     writeln("boolean is true");
