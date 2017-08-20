@@ -1,3 +1,5 @@
+dsiFuncsSpsBlk.chpl:5: warning: Applying 'align' to a non-stridable range has no impact
+dsiFuncsSpsBlk.chpl:5: warning: Applying 'align' to a non-stridable range has no impact
 (7, 17)
 0 0 0 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
 0 0 0 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
@@ -24,7 +26,7 @@ numIndices:	49
 low:		(7, 17)
 high:		(26, 46)
 stride:		(1, 1)
-alignment:	(1, 5)
+alignment:	(7, 17)
 first:		(7, 20)
 last:		(26, 20)
 alignedLow:	(7, 17)
