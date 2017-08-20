@@ -87,7 +87,7 @@ bool requireWideReferences() {
 // on-clause is a no-op and execute the associated statement locally.
 //
 bool requireOutlinedOn() {
-  return !fLocal || strcmp(CHPL_LOCALE_MODEL, "flat") != 0;
+  return requireWideReferences();
 }
 
 const char* cleanFilename(const char* name) {

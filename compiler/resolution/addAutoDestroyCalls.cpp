@@ -338,7 +338,7 @@ static void gatherIgnoredVariablesForErrorHandling(
     std::set<VarSymbol*>* ignoredVariables)
 {
 
-  // Look for the function call immediately preceeding
+  // Look for the function call immediately preceding
   // that throws. Is it returning a variable that we will
   // want to auto-destroy?
 

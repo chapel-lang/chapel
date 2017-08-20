@@ -30,7 +30,18 @@ for my $line (@lines) {
 open OUTFILE, ">$execout" or die "can't open $execout for writing $!";
 
 foreach my $line (@out_lines) {
-  print OUTFILE $line . "\n";
+  # Remove redundant words
+  my @words = split(/ +|[{}]/, $line);
+
+  @uniq_words = ( );
+  $last_word = "";
+  for my $w (@words) {
+    if ($w ne $last_word) {
+      push(@uniq_words, $w);
+    }
+    $last_word = $w;
+  }
+  print OUTFILE join(' ', @uniq_words) . "\n";
 }
 
 close(OUTFILE);

@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 config param tupleLen = 3;
@@ -10,8 +10,8 @@ for i in 1..n {
   }
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+var sumToPrint = 0;
+start();
 
 on Locales[1] {
   var sum = 0;
@@ -20,12 +20,13 @@ on Locales[1] {
       sum += tup[j];
     }
   }
-  writeln(sum);
+  sumToPrint = sum;
 }
 
-stopCommDiagnostics();
+stop();
 
+writeln(sumToPrint);
 writeln(A[1]);
 writeln(A[n]);
 
-writeln(getCommDiagnostics());
+report(maxPuts=1, maxOns=1);

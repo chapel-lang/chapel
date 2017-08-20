@@ -1,2 +1,2 @@
 Tuesday
-readWriteEnum.chpl:6: error: bad format: missing expected literal in channel.read(ref a:week) with path "readWriteEnum.stdin" offset 7
+readWriteEnum.chpl:6: error: uncaught error - bad format: missing expected literal in channel.read(ref a:week) with path "readWriteEnum.stdin" offset 7

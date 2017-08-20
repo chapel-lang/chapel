@@ -394,6 +394,7 @@ class TypeSymbol : public Symbol {
 
   void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
   void renameInstantiatedSingle(Symbol* sym);
+  void renameInstantiatedFromSuper(TypeSymbol* superSym);
 
   GenRet codegen();
   void codegenDef();
@@ -718,8 +719,6 @@ extern FnSymbol *gAddModuleFn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
-
-extern FnSymbol *gChplUncaughtError;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

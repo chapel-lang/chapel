@@ -34,6 +34,7 @@ public:
   static BlockStmt*   build(BlockStmt* body);
 
                       DeferStmt(BlockStmt* body);
+                      DeferStmt(CallExpr* call);
                       ~DeferStmt();
 
   void                accept(AstVisitor* visitor);

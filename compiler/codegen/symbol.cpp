@@ -1181,12 +1181,19 @@ void FnSymbol::codegenPrototype() {
     std::vector<const char *> argumentNames;
 
     int numArgs = 0;
+    std::vector<int> refArgs;
     for_formals(arg, this) {
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(arg->codegenType().type);
       argumentNames.push_back(arg->cname);
+
+      arg->codegenType();
       numArgs++;
+      // LLVM Arguments indices in function API are 1-based not 0-based
+      // that's why we push numArgs after increment
+      if(arg->isRef())
+        refArgs.push_back(numArgs);
     }
 
     llvm::FunctionType *type = llvm::cast<llvm::FunctionType>(
@@ -1224,6 +1231,9 @@ void FnSymbol::codegenPrototype() {
                                : llvm::Function::InternalLinkage,
           cname,
           info->module);
+
+    for(auto argNumber : refArgs)
+      func->addAttribute(argNumber, llvm::Attribute::NonNull);
 
     int argID = 0;
     for(llvm::Function::arg_iterator ai = func->arg_begin();

@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of removing reference handling from copy propagation
-GITHUB_USER=benharsh
-GITHUB_BRANCH=copy-prop-no-refs
-SHORT_NAME=copy-prop-no-refs
-START_DATE=07/27/17
+# Test performance of implementation changes in forall intents
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=improved-forall-intents
+SHORT_NAME=forall-intents
+START_DATE=08/11/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

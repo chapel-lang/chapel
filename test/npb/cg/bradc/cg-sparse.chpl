@@ -2,7 +2,7 @@
 //   618.233 with default arguments, linear search for sparse domain this()
 //    62.169 with --cflags=-O3, linear search
 //    25.4556 with --cflags=-O3, binary search
-use LayoutCSR, CGMakeA, Time;
+use LayoutCS, CGMakeA, Time;
 
 type elemType = real(64);
 
@@ -35,7 +35,7 @@ config const numTrials = 1,
 
 proc main() {
   const DenseSpace = {1..n, 1..n};
-  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CSR()))
+  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CS()))
                    = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 

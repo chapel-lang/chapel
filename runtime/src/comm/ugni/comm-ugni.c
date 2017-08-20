@@ -378,7 +378,7 @@ static size_t hugepage_size;
 // uGNI memory domain handles for each memory region of interest to us.
 // mem_region_map contains a copy of every node's mem_regions.
 //
-#define MAX_MEM_REGIONS 100
+#define MAX_MEM_REGIONS 1000
 
 typedef struct {
   uint64_t         addr;
@@ -2521,79 +2521,111 @@ static void make_shared_heap(void)
     // If the heap is supposed to be on hugepages, acquire that space
     // now.
     //
-    size_t page_size = hugepage_size = gethugepagesize();
+    const size_t page_size = hugepage_size = gethugepagesize();
+    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
+    const size_t nic_max_mem = nic_max_pages * page_size;
+    size_t nic_allowed_mem;
     size_t max_heap_size;
     size_t size;
     size_t decrement;
     void*  start;
 
+    //
+    // Considering the data size we'll register, compute the maximum
+    // heap size that will allow all registrations to fit in the NIC
+    // TLB.  Except on Gemini only, aim for only 95% of what will fit
+    // because there we'll get an error if we go over.
+    //
+    if (nic_type == GNI_DEVICE_GEMINI)
+      nic_allowed_mem = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+    else
+      nic_allowed_mem = nic_max_mem;
+
     {
-#define GEM_ARI_NIC_MAX_PAGES (1 << 14) // not publicly defined
       uint64_t  addr;
       uint64_t  len;
       size_t    data_size;
 
       data_size = 0;
       while (get_next_rw_memory_range(&addr, &len, NULL, 0))
-        data_size += len;
+        data_size += ALIGN_UP(len, page_size);
 
-      max_heap_size =
-        (GEM_ARI_NIC_MAX_PAGES - ((data_size + page_size - 1) / page_size))
-        * page_size;
-
-#undef GEM_ARI_NIC_MAX_PAGES
+      if (data_size >= nic_allowed_mem)
+        max_heap_size = 0;
+      else
+        max_heap_size = nic_allowed_mem - data_size;
     }
 
     if ((size = chpl_comm_getenvMaxHeapSize()) > 0) {
       //
-      // The user specified a size.  Go with that, but if necessary
-      // reduce it so that we can map it all in the NIC.  (Hugepage
-      // sizes only go up to 64 mb.)
+      // The user specified a size.  Go with that, but issue a warning
+      // from node 0 if we can't fit all the registrations in the NIC
+      // TLB.  On Gemini only, reduce the heap size until we can fit in
+      // the NIC TLB, because otherwise we'll get GNI_RC_ERROR_RESOURCE
+      // when we try to register memory.
       //
       if (size > max_heap_size) {
-        char pagesize_buf[20];
-        char msg[140];
+        if (chpl_nodeID == 0) {
+          char nmmBuf[20];
+          char psBuf[20];
+          char hsBuf[20];
+          char msg[200];
 
-        if (page_size >= ((size_t) 1) << 20)
-          sprintf(pagesize_buf, "%zdM", page_size >> 20);
-        else
-          sprintf(pagesize_buf, "%zdK", page_size >> 10);
-        (void) snprintf(msg, sizeof(msg),
-                        "max of 16384 %s-registered %s hugepages limits "
-                        "heap size request",
-                        (nic_type == GNI_DEVICE_GEMINI) ? "Gemini" : "Aries",
-                        pagesize_buf);
-        chpl_warning(msg, 0, 0);
-        size = max_heap_size;
+#define P_GMK_BASE(b, f, v, t)                                          \
+          ((v >= ((t) (1UL << 30)))                                     \
+           ? snprintf(b, sizeof(b), "%" f "G", v / ((t) (1UL << 30)))   \
+           : (v >= ((t) (1UL << 20)))                                   \
+           ? snprintf(b, sizeof(b), "%" f "M", v / ((t) (1UL << 20)))   \
+           : snprintf(b, sizeof(b), "%" f "K", v / ((t) (1UL << 10))))
+#define P_ZI_GMK(b, v) P_GMK_BASE(b, "zd", v, size_t)
+#define P_D_GMK(b, v)  P_GMK_BASE(b, ".1f", v, double)
+
+          P_ZI_GMK(nmmBuf, nic_max_mem);
+          P_ZI_GMK(psBuf, page_size);
+
+          if (nic_type == GNI_DEVICE_GEMINI) {
+            P_D_GMK(hsBuf, max_heap_size);
+            (void) snprintf(msg, sizeof(msg),
+                            "Gemini TLB can cover %s with %s pages; heap "
+                            "reduced to %s to fit",
+                            nmmBuf, psBuf, hsBuf);
+          } else {
+            P_ZI_GMK(hsBuf, size);
+            (void) snprintf(msg, sizeof(msg),
+                            "Aries TLB cache can cover %s with %s pages; "
+                            "with %s heap,\n"
+                            "         cache refills may reduce performance",
+                            nmmBuf, psBuf, hsBuf);
+          }
+
+          chpl_warning(msg, 0, 0);
+
+#undef P_D_GMK
+#undef P_ZI_GMK
+#undef P_GMK_BASE
+        }
+
+        if (nic_type == GNI_DEVICE_GEMINI)
+          size = max_heap_size;
       }
     }
     else {
       //
-      // The user didn't specify a size.  Start with 2/3 of the free
-      // RAM quantity from sysinfo(2), but not more than can be
-      // mapped by the NIC.  Except: under slurm, which we limit to
-      // 16GB for historical reasons (slurm's node sharing used to
-      // place static limits on NIC resources)
+      // The user didn't specify a size.  Start with 16GB or the most
+      // we can fit, whichever is less.
       //
-      struct sysinfo s;
-
-      if (sysinfo(&s) != 0)
-        CHPL_INTERNAL_ERROR("sysinfo() failed");
-      size = (size_t) (0.67 * s.freeram);
-      if (strstr(CHPL_LAUNCHER, "slurm") != NULL
-          && size > (((size_t) 16) << 30))
-        size = ((size_t) 16) << 30;
+      size = (size_t) 16 << 30;
       if (size > max_heap_size)
         size = max_heap_size;
     }
 
     //
     // Work our way down from the starting size in (roughly) 5% steps
-    // until we can actually get that much from the system.  Both the
-    // starting size and decrement are expressed in terms of pages.
+    // until we can actually get that much from the system.
     //
-    size      = (size / page_size) * page_size;
-    decrement = (((size_t) (0.05 * size)) / page_size) * page_size;
+    size = ALIGN_DN(size, page_size);
+    if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size)
+      decrement = page_size;
 
     size += decrement;
     do {
@@ -2601,15 +2633,15 @@ static void make_shared_heap(void)
 
       start = get_huge_pages(size, GHP_DEFAULT);
 
-      DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES get_huge_pages(%ld) returned %p",
-              (long) size, start);
+      DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES get_huge_pages(%#zx) returned %p",
+              size, start);
     } while (start == NULL && size > decrement);
 
     if (start == NULL)
       chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
 
-    DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%ld\n",
-             start, (long) size);
+    DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
+             start, size);
 
     registered_heap_size  = size;
     registered_heap_start = start;
@@ -2621,6 +2653,7 @@ static void make_shared_heap(void)
 
   registered_heap_info_set = 1;
 }
+
 
 void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
 {
@@ -2701,6 +2734,13 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
                size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
     }
   } else {
+    static int spoke = 0;
+
+    if (!spoke) {
+      chpl_warning("out of registered memory region table entries!", 0, 0);
+      spoke = 1;
+    }
+
     DBG_P_LP(DBGF_MEMREG,
              "chpl_regMemAlloc(%#zx): no free table entries",
              size);

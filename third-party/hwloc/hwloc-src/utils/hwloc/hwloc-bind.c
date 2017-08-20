@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012 Université Bordeaux
  * Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -53,6 +53,8 @@ void usage(const char *name, FILE *where)
   fprintf(where, "Input topology options:\n");
   fprintf(where, "  --restrict <set> Restrict the topology to processors listed in <set>\n");
   fprintf(where, "  --whole-system   Do not consider administration limitations\n");
+  fprintf(where, "  --hbm          Only consider high bandwidth memory nodes\n");
+  fprintf(where, "  --no-hbm       Ignore high-bandwidth memory nodes\n");
   fprintf(where, "Miscellaneous options:\n");
   fprintf(where, "  -f --force     Launch the command even if binding failed\n");
   fprintf(where, "  -q --quiet     Hide non-fatal error messages\n");
@@ -74,10 +76,12 @@ int main(int argc, char *argv[])
   int force = 0;
   int single = 0;
   int verbose = 0;
+  int only_hbm = -1;
   int logical = 1;
   int taskset = 0;
   int cpubind_flags = 0;
   hwloc_membind_policy_t membind_policy = HWLOC_MEMBIND_BIND;
+  int got_mempolicy = 0;
   int membind_flags = 0;
   int opt;
   int ret;
@@ -85,6 +89,8 @@ int main(int argc, char *argv[])
   int tid_number = -1;
   hwloc_pid_t pid = 0; /* only valid when pid_number > 0, but gcc-4.8 still reports uninitialized warnings */
   char *callname;
+  struct hwloc_calc_location_context_s lcontext;
+  struct hwloc_calc_set_context_s scontext;
 
   cpubind_set = hwloc_bitmap_alloc();
   membind_set = hwloc_bitmap_alloc();
@@ -208,7 +214,16 @@ int main(int argc, char *argv[])
           usage ("hwloc-bind", stderr);
           exit(EXIT_FAILURE);
 	}
+	got_mempolicy = 1;
 	opt = 1;
+	goto next;
+      }
+      if (!strcmp(argv[0], "--hbm")) {
+	only_hbm = 1;
+	goto next;
+      }
+      if (!strcmp(argv[0], "--no-hbm")) {
+	only_hbm = 0;
 	goto next;
       }
       else if (!strcmp (argv[0], "--whole-system")) {
@@ -245,11 +260,15 @@ int main(int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-    ret = hwloc_calc_process_arg(topology, depth, argv[0], logical,
-				 working_on_cpubind ? cpubind_set : membind_set,
-				 use_nodeset,
-				 working_on_cpubind ? 0 : 1,
-				 verbose);
+    lcontext.topology = topology;
+    lcontext.topodepth = depth;
+    lcontext.only_hbm = only_hbm;
+    lcontext.logical = logical;
+    lcontext.verbose = verbose;
+    scontext.nodeset_input = use_nodeset;
+    scontext.nodeset_output = working_on_cpubind ? 0 : 1;
+    scontext.output_set = working_on_cpubind ? cpubind_set : membind_set;
+    ret = hwloc_calc_process_location_as_set(&lcontext, &scontext, argv[0]);
     if (ret < 0) {
       if (verbose > 0)
 	fprintf(stderr, "assuming the command starts at %s\n", argv[0]);
@@ -416,6 +435,9 @@ int main(int argc, char *argv[])
     }
     if (ret && !force)
       goto failed_binding;
+  } else {
+    if (got_mempolicy)
+      fprintf(stderr, "--mempolicy ignored unless memory binding is also requested with --membind.\n");
   }
 
   if (got_cpubind) {

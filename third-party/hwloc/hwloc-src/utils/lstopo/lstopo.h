@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012, 2015 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -86,6 +86,9 @@ enum lstopo_orient_e {
 };
 /* orientation of children within an object of the given type */
 extern enum lstopo_orient_e force_orient[];
+
+extern int show_indexes[];
+extern int show_attrs[];
 
 extern void output_draw_start(struct lstopo_output *output);
 extern void output_draw(struct lstopo_output *output);

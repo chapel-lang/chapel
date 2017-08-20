@@ -609,15 +609,15 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   }
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
   // BLC: This munging is done so that cp won't complain if the source
-  // and destination are the same file (e.g., a.out and ./a.out)
+  // and destination are the same file (e.g., myprogram and ./myprogram)
   tmpbin = astr(tmpDirName, "/", strippedExeFilename, ".tmp", exeExt);
   if( tmpbinname ) *tmpbinname = tmpbin;
   fprintf(makefile.fptr, "TMPBINNAME = %s\n", tmpbin);
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
-  // over to BINNAME -- the name given by the user, or a.out by
-  // default -- after linking is done.  As it turns out, this saves a
+  // over to BINNAME -- the name given by the user/default module --
+  // after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
 

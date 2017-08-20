@@ -13,5 +13,5 @@ writeln(debug);
 //
 proc main(args: [] string) {
   if args.size > 1 then
-    assert(args[1] == './a.out');
+    assert(args[1] == './configs');
 }

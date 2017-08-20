@@ -476,7 +476,7 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
 
   /* Now that we have all info, compute cacheids and apply quirks */
   for (cachenum = 0; cachenum < infos->numcaches; cachenum++) {
-    struct cacheinfo *cache = &infos->cache[cachenum];
+    cache = &infos->cache[cachenum];
 
     /* default cacheid value */
     cache->cacheid = infos->apicid / cache->nbthreads_sharing;
@@ -785,7 +785,6 @@ static int summarize(struct hwloc_backend *backend, struct procinfo *infos, int 
 
   /* Look for PUs */
   if (fulldiscovery) {
-    unsigned i;
     hwloc_debug("%s", "\n\n * CPU cpusets *\n\n");
     for (i=0; i<nbprocs; i++)
       if(infos[i].present) { /* Only add present PU. We don't know if others actually exist */

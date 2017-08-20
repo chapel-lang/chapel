@@ -49,6 +49,8 @@ FnSymbol *gChplDeleteError;
 FnSymbol *gPrintModuleInitFn;
 FnSymbol *gGetDynamicEndCount;
 FnSymbol *gSetDynamicEndCount;
+FnSymbol *gChplUncaughtError;
+FnSymbol *gSaveTaskErrorFn;
 
 
 /************************************* | **************************************
@@ -246,6 +248,12 @@ static WellKnownFn sWellKnownFns[] = {
   {
     "chpl_uncaught_error",
     &gChplUncaughtError,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_save_task_error",
+    &gSaveTaskErrorFn,
     FLAG_UNKNOWN
   },
 

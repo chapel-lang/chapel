@@ -3214,25 +3214,25 @@ look_sysfsnode(struct hwloc_topology *topology,
 
       /* Create NUMA objects */
       for (index_ = 0; index_ < nbnodes; index_++) {
-          char nodepath[SYSFS_NUMA_NODE_PATH_LEN];
-          hwloc_bitmap_t cpuset;
           hwloc_obj_t node, res_obj;
 	  int annotate;
 
 	  osnode = indexes[index_];
 
-          sprintf(nodepath, "%s/node%u/cpumap", path, osnode);
-          cpuset = hwloc__alloc_read_path_as_cpumask(nodepath, data->root_fd);
-          if (!cpuset) {
-	    /* This NUMA object won't be inserted, we'll ignore distances */
-	    failednodes++;
-	    continue;
-	  }
-
 	  node = hwloc_get_numanode_obj_by_os_index(topology, osnode);
 	  annotate = (node != NULL);
 	  if (!annotate) {
 	    /* create a new node */
+	    char nodepath[SYSFS_NUMA_NODE_PATH_LEN];
+	    hwloc_bitmap_t cpuset;
+	    sprintf(nodepath, "%s/node%u/cpumap", path, osnode);
+	    cpuset = hwloc__alloc_read_path_as_cpumask(nodepath, data->root_fd);
+	    if (!cpuset) {
+	      /* This NUMA object won't be inserted, we'll ignore distances */
+	      failednodes++;
+	      continue;
+	    }
+
 	    node = hwloc_alloc_setup_object(HWLOC_OBJ_NUMANODE, osnode);
 	    node->cpuset = cpuset;
 	    node->nodeset = hwloc_bitmap_alloc();
@@ -3525,21 +3525,23 @@ package_done:
     /* look at the books */
     sprintf(str, "%s/cpu%d/topology/book_siblings", path, i);
     bookset = hwloc__alloc_read_path_as_cpumask(str, data->root_fd);
-    if (bookset && hwloc_bitmap_first(bookset) == i) {
-      struct hwloc_obj *book;
+    if (bookset) {
+      if (hwloc_bitmap_first(bookset) == i) {
+	struct hwloc_obj *book;
 
-      mybookid = (unsigned) -1;
-      sprintf(str, "%s/cpu%d/topology/book_id", path, i); /* contains %d at least up to 4.9 */
-      if (hwloc_read_path_as_int(str, &tmpint, data->root_fd) == 0) {
-	mybookid = (unsigned) tmpint;
+	mybookid = (unsigned) -1;
+	sprintf(str, "%s/cpu%d/topology/book_id", path, i); /* contains %d at least up to 4.9 */
+	if (hwloc_read_path_as_int(str, &tmpint, data->root_fd) == 0) {
+	  mybookid = (unsigned) tmpint;
 
-	book = hwloc_alloc_setup_object(HWLOC_OBJ_GROUP, mybookid);
-	book->cpuset = bookset;
-	hwloc_debug_1arg_bitmap("os book %u has cpuset %s\n",
-				mybookid, bookset);
-	hwloc_obj_add_info(book, "Type", "Book");
-	hwloc_insert_object_by_cpuset(topology, book);
-	bookset = NULL; /* don't free it */
+	  book = hwloc_alloc_setup_object(HWLOC_OBJ_GROUP, mybookid);
+	  book->cpuset = bookset;
+	  hwloc_debug_1arg_bitmap("os book %u has cpuset %s\n",
+				  mybookid, bookset);
+	  hwloc_obj_add_info(book, "Type", "Book");
+	  hwloc_insert_object_by_cpuset(topology, book);
+	  bookset = NULL; /* don't free it */
+	}
       }
       hwloc_bitmap_free(bookset);
     }
@@ -3615,7 +3617,7 @@ package_done:
 	  /* KNL reports L3 with size=0 and full cpuset in cpuid.
 	   * Let hwloc_linux_try_add_knl_mcdram_cache() detect it better.
 	   */
-	  if (!kB && depth == 2 && data->is_knl) {
+	  if (!kB && depth == 3 && data->is_knl) {
 	    hwloc_bitmap_free(cacheset);
 	    continue;
 	  }
@@ -5424,8 +5426,12 @@ hwloc_linux_component_instantiate(struct hwloc_disc_component *component,
 #endif
 
   data->dumped_hwdata_dirname = getenv("HWLOC_DUMPED_HWDATA_DIR");
-  if (!data->dumped_hwdata_dirname)
-    data->dumped_hwdata_dirname = RUNSTATEDIR "/hwloc/";
+  if (!data->dumped_hwdata_dirname) {
+    if (_data1)
+      data->dumped_hwdata_dirname = "/var/run/hwloc";
+    else
+      data->dumped_hwdata_dirname = RUNSTATEDIR "/hwloc";
+  }
 
   data->deprecated_classlinks_model = -2; /* never tried */
   data->mic_need_directlookup = -1; /* not initialized */
