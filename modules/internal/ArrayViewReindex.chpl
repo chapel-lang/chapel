@@ -33,10 +33,20 @@ module ArrayViewReindex {
   // domain indicating the old and new index sets, respectively.
   //
   class ArrayViewReindexDist: BaseDist {
-    const downdist;
+    // a pointer down to the distribution that this class is creating
+    // reindexed views of
+    const downDistPid: int;
+    const downDistInst;
     const updom;
     const downdomPid;
     const downdomInst;
+
+    inline proc downDist {
+      if _isPrivatized(downDistInst) then
+        return chpl_getPrivatizedCopy(downDistInst.type, downDistPid);
+      else
+        return downDistInst;
+    }
 
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
       var newdom = new ArrayViewReindexDom(rank=rank,
@@ -50,10 +60,31 @@ module ArrayViewReindex {
       return newdom;
     }
 
-    proc dsiClone() return new ArrayViewReindexDist(downdist=downdist,
+    proc dsiClone() return new ArrayViewReindexDist(downDistPid=downDistPid,
+                                                    downDistInst=downDistInst,
                                                     updom=updom,
                                                     downdomPid=downdomPid,
                                                     downdomInst=downdomInst);
+
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    /*
+    proc dsiSupportsPrivatization() param
+      return downDistInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizedData() {
+      return (downDistPid, downDistInst, updom, downdomPid, downdomInst);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewReindexDist(downDistPid = privatizeData(1),
+                                      downDistInst = privatizeData(2),
+                                      updom = privatizeData(3),
+                                      downDomPid = privatizeData(4),
+                                      downdomInst = privatizeData(5));
+    }
+    */
+
 
     proc dsiDestroyDist() {
       _delete_dom(updom, false);
@@ -86,7 +117,7 @@ module ArrayViewReindex {
     //
     proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
       var ranges : rank*range(idxType, BoundedRangeType.bounded, stridable);
-      var a = dist.downdist.dsiNewRectangularDom(rank=rank, idxType=idxType,
+      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType=idxType,
                                               stridable=stridable, ranges);
       return a.type;
     }
@@ -171,7 +202,7 @@ module ArrayViewReindex {
       updom = updomRec._value;
 
       var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
-      var downdomclass = dist.downdist.dsiNewRectangularDom(rank=rank,
+      var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
                                                          idxType=idxType,
                                                          stridable=dist.downdomInst.stridable, ranges);
       pragma "no auto destroy"
