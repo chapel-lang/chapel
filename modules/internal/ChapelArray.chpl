@@ -2427,6 +2427,11 @@ module ChapelArray {
       pragma "no auto destroy"
       const updom = {(...newDims)};
 
+
+      /*
+      const redist = new ArrayViewReindexDist(downDistPid = thisDomClass.dist.pid,
+                                              downDistInst=thisDomClass.dist._instance,
+      */
       const redist = new ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
