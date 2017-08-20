@@ -1065,6 +1065,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   pragma "no doc"
   inline proc align(r : range(?i, ?b, ?s), algn: i)
   {
+    if !s then
+      compilerWarning("Applying 'align' to a non-stridable range has no impact");
     // Note that aligning an unstrided range will set the field value,
     // but has no effect on the index set produced (a mod 1 == 0).
     return new range(i, b, s,
