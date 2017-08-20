@@ -55,7 +55,8 @@ module ArrayViewReindex {
                                            stridable=stridable,
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
-                                           dist=this);
+                                           distPid=this.pid,
+                                           distInst=this);
       newdom.dsiSetIndices(inds);
       return newdom;
     }
@@ -104,10 +105,18 @@ module ArrayViewReindex {
     var downdomPid;
     var downdomInst; //: downdomtype(rank, idxType, stridable);
 
-    var dist;
+    const distPid;  // a reference back to our ArrayViewReindexDist
+    const distInst;
 
     var ownsDownDomInst = false;
 
+    inline proc dist {
+      if _isPrivatized(distInst) then
+        return chpl_getPrivatizedCopy(distInst.type, distPid);
+      else
+        return distInst;
+    }
+    
     //
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
@@ -325,6 +334,41 @@ module ArrayViewReindex {
     proc dsiDestroyDom() {
       _delete_dom(updom, false);
       _delete_dom(downdomInst, _isPrivatized(downdomInst));
+    }
+
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downdomInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (updom, downdomPid, downdomInst, distPid, distInst);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewReindexDom(rank = this.rank,
+                                     idxType = this.idxType,
+                                     stridable = this.stridable,
+                                     updom = privatizeData(1),
+                                     downdomPid = privatizeData(2),
+                                     downdomInst = privatizeData(3),
+                                     distPid = privatizeData(4),
+                                     distInst = privatizeData(5)
+                                     );
+    }
+
+    proc dsiGetReprivatizeData() {
+      return (updom, downdomPid, downdomInst);
+    }
+
+    proc dsiReprivatize(other, reprivatizeData) {
+      updom = reprivatizeData(1);
+      //      collapsedDim = other.collapsedDim;
+      //      idx = other.idx;
+      //      distPid = other.distPid;
+      //      distInst = other.distInst;
+      downdomPid = reprivatizeData(2);
+      downdomInst = reprivatizeData(3);
     }
 
   } // end of class ArrayViewReindexDom
