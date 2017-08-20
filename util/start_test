@@ -90,7 +90,7 @@ def run_tests(tests):
 
     # print out flags
     logger.write('[tests: "{0}"]'.format(" ".join(files)))
-    if args.recurse and not os.path.isfile("NORECURSE"):
+    if args.recurse:
         logger.write('[directories: "{0}"]'.format(" ".join(dirs)))
     else:
         logger.write('[directories: (nonrecursive): "{0}"]'
@@ -205,7 +205,7 @@ def test_directory(test, test_type):
         logger.write("[Working on directory {0}]".format(root))
 
         # stop recursing if flag is set
-        if not args.recurse or os.path.isfile("NORECURSE"):
+        if not args.recurse:
             del dirs[:]
 
         # ignore skipifs for --clean-only run
