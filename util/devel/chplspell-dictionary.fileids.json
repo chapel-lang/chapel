@@ -150,6 +150,9 @@
   "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/scopeResolve.cpp"
   ],
+  "a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5": [
+    "compiler/resolution/ResolutionCandidate.cpp"
+  ],
   "7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/callDestructors.cpp"
   ],
@@ -342,6 +345,9 @@
   ],
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
+  ],
+  "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
+    "modules/internal/ChapelError.chpl"
   ],
   "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/ChapelRange.chpl"
