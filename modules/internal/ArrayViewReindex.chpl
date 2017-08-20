@@ -68,11 +68,10 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    /*
     proc dsiSupportsPrivatization() param
       return downDistInst.dsiSupportsPrivatization();
 
-    proc dsiGetPrivatizedData() {
+    proc dsiGetPrivatizeData() {
       return (downDistPid, downDistInst, updom, downdomPid, downdomInst);
     }
 
@@ -80,11 +79,9 @@ module ArrayViewReindex {
       return new ArrayViewReindexDist(downDistPid = privatizeData(1),
                                       downDistInst = privatizeData(2),
                                       updom = privatizeData(3),
-                                      downDomPid = privatizeData(4),
+                                      downdomPid = privatizeData(4),
                                       downdomInst = privatizeData(5));
     }
-    */
-
 
     proc dsiDestroyDist() {
       _delete_dom(updom, false);
