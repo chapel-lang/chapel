@@ -12,7 +12,8 @@ proc test(r:range(?), offs:r.idxType) {
   const res = r.offset(offs);
   write("  offs ", offs, "  ");
   writeme(res);
-  if !res.aligned || res.alignment != r.first + offs then
+  const offs2 = if r.stridable then offs else 0;
+  if !res.aligned || res.alignment != r.first + offs2 then
     write(" ***ERROR***");
   writeln();
 }
