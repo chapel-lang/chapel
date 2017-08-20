@@ -295,12 +295,12 @@ module ChapelRange {
   /* Returns the alignment of the range */
   inline proc range.alignment where stridable return _alignment;
   pragma "no doc"
-  proc range.alignment param where !stridable return 0: idxType;
+  proc range.alignment where !stridable return low;
 
   /* Returns true if the range is aligned */
   inline proc range.aligned where stridable return _aligned;
   pragma "no doc"
-  proc range.aligned param where !stridable return false;
+  proc range.aligned param where !stridable return true;
 
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
@@ -1089,10 +1089,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   /* Returns a range whose alignment is this range's first index plus ``n``.
      If the range has no first index, a runtime error is generated.
    */
-  proc range.offset(offs : idxType)
+  proc range.offset(in offs : idxType)
   {
-    if !stridable then
+    if !stridable {
       compilerWarning("invoking 'offset' on an unstrided range has no effect.");
+      offs = 0;
+    }
 
     if !hasFirst() then
       halt("invoking 'offset' on a range without the first index");
