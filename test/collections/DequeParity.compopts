@@ -1,0 +1,2 @@
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl -sisBounded --main-module=DequeParity
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl --main-module=DequeParity

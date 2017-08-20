@@ -1,0 +1,3 @@
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl --no-loop-invariant-code-motion -sisDeque --main-module=CollectionCounter
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl --no-loop-invariant-code-motion -sisBag --main-module=CollectionCounter
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl --no-loop-invariant-code-motion -sisBoundedDeque --main-module=CollectionCounter

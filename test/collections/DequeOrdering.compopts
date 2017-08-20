@@ -1,0 +1,2 @@
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl --main-module=DequeOrdering
+../../collections/DistributedBag.chpl ../../collections/DistributedDeque.chpl --main-module=DequeOrdering -sisBounded=true
