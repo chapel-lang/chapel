@@ -19,7 +19,7 @@ REGISTRY=https://github.com/chapel-lang/mason-registry
 registry = $(CHPL_MASON_HOME)/.mason/registry/
 
 
-all: mason install
+all: install
 
 
 mason:
@@ -29,26 +29,35 @@ ifneq ($(wildcard $(registry)),)
 	@echo "Removing old registry..."
 	@rm -rf $(CHPL_MASON_HOME)/.mason/registry
 endif
-	@echo "Cloning Registry..."
+	@echo "Registry - $(registry)"
 	@git -C $(CHPL_MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
 	@chpl mason.chpl -M $(TOML)
 
-install: 
+install: mason
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
 	rm -f $(link)
 	@echo
 endif
 	@echo "Installing symbolic link..."
-	mkdir -p $(bdir)
-	ln -s $(shell pwd)/mason $(link)
+	@mkdir -p $(bdir)
+	@ln -s $(shell pwd)/mason $(link)
+
+update:
+	@echo "Re-building Mason..."
+	@chpl mason.chpl -M $(TOML)
 
 clean:
-	@echo "Removing mason..."
-	@rm -f $(shell pwd)/mason
+	@echo "Removing Mason..."
+	rm -f $(shell pwd)/mason
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
-	rm -f $(link)
+	@rm -f $(link)
 	@echo
 endif
+
+
+clobber: clean
+	@echo "Removing Registry..."
+	rm -rf $(CHPL_MASON_HOME)/.mason

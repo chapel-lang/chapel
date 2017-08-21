@@ -25,7 +25,7 @@ proc masonNew(args) {
 	masonNewHelp();
 	exit();
       }
-      else if arg == '--novcs' {
+      else if arg == '--no-vcs' {
 	vcs = false;
       }
       else if arg == '--show' {

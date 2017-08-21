@@ -92,10 +92,11 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
   var sourceList = genSourceList(lockFile);
   var depPath = getMasonHome() + '/.mason/src/';
   var project = lockFile["root"]["name"].s;
-  var projectPath = 'src/'+ project + '.chpl';
+  var pathToProj = 'src/'+ project + '.chpl';
+  var moveTo = ' -o target/'+ binLoc +'/'+ project;
  
-  if isFile(projectPath) {
-    var command: string = 'chpl ' + projectPath + ' ' + ' '.join(compopts);
+  if isFile(pathToProj) {
+    var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
     if release {
       command += " --fast";
     }
@@ -119,7 +120,6 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
     }
     
     // Confirming File Structure
-    rename(project, 'target/' + binLoc + '/' + project);
     if isFile('target/' + binLoc + '/' + project) {
 	return true;
     }

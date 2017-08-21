@@ -47,7 +47,7 @@ proc masonRunHelp() {
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --build                  Compile before running binary');
-  writeln('        --show                   Print a verbose execution statement');
+  writeln('        --show                   Increase verbosity');
   writeln('Runtime arguments can also be included after the run arguments ');
   writeln();
   writeln('When no options are provided, the following will take place:');
@@ -63,8 +63,8 @@ proc masonBuildHelp() {
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
-  writeln('        --show                   Show compilation message');
-  writeln('        --release                Use --fast; Compile to target/release');
+  writeln('        --show                   Increase verbosity');
+  writeln('        --release                Compile to target/release with optimizations (--fast)');
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Build from mason project if Mason.lock present');
@@ -77,6 +77,6 @@ proc masonNewHelp() {
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
-  writeln('        --novcs                  Do not initialize a git repository');
+  writeln('        --no-vcs                 Do not initialize a git repository');
   
 }
