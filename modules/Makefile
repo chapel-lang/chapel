@@ -92,9 +92,9 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
-	standard/collections/Collection.chpl \
-	standard/collections/DistributedBag.chpl \
-	standard/collections/DistributedDeque.chpl \
+	standard/Collection.chpl \
+	standard/DistributedBag.chpl \
+	standard/DistributedDeque.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
