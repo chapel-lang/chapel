@@ -113,7 +113,7 @@ static Vec<FnSymbol*> resolvedFormals;
 
 static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
-static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
+Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
 // map of compiler warnings that may need to be reissued for repeated
@@ -130,6 +130,7 @@ std::map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
 
+std::map<Type*, Serializers> serializeMap;
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
@@ -191,6 +192,7 @@ static void resolveExports();
 static void resolveEnumTypes();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
+static void resolveSerializers();
 static void resolveRecordInitializers();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
@@ -6974,6 +6976,8 @@ void resolve() {
   // in a loop).
   resolveAutoCopies();
 
+  resolveSerializers();
+
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
@@ -7161,6 +7165,148 @@ static void insertRuntimeTypeTemps() {
       tmp->defPoint->remove();
     }
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static FnSymbol* resolveNormalSerializer(CallExpr* call) {
+  BlockStmt* block = new BlockStmt(call);
+
+  chpl_gen_main->body->insertAtHead(block);
+
+  tryResolveCall(call);
+
+  block->remove();
+
+  return call->resolvedFunction();
+}
+
+static bool resolveSerializeDeserialize(AggregateType* at) {
+  SET_LINENO(at->symbol);
+  VarSymbol* tmp          = newTemp(at);
+  FnSymbol* serializeFn   = NULL;
+  FnSymbol* deserializeFn = NULL;
+  bool retval             = false;
+
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+
+  CallExpr* serializeCall = new CallExpr("chpl__serialize", gMethodToken, tmp);
+  serializeFn = resolveNormalSerializer(serializeCall);
+  if (serializeFn != NULL && serializeFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    // Without this check we would resolve a serializer for arrays despite a
+    // serializer only being implemented for domains.
+    serializeFn = NULL;
+  }
+
+  if (serializeFn != NULL) {
+    resolveFns(serializeFn);
+    Type* retType = serializeFn->retType->getValType();
+
+    if (retType == dtVoid) {
+      USR_FATAL(serializeFn, "chpl__serialize cannot return void");
+    }
+
+    if (isPrimitiveType(retType) == false && autoDestroyMap.get(retType) == NULL) {
+      USR_FATAL_CONT(serializeFn, "chpl__serialize must return a type that can be automatically memory managed (e.g. a record)");
+      serializeFn = NULL;
+    } else {
+      VarSymbol* data = newTemp(serializeFn->retType);
+      chpl_gen_main->insertAtHead(new DefExpr(data));
+
+      CallExpr* deserializeCall = new CallExpr("chpl__deserialize", gMethodToken, at->symbol, data);
+      deserializeFn = resolveNormalSerializer(deserializeCall);
+
+      if (deserializeFn != NULL) {
+        resolveFns(deserializeFn);
+
+        Type* retType = deserializeFn->retType->getValType();
+        if (retType == dtVoid) {
+          USR_FATAL(deserializeFn, "chpl__deserialize cannot return void");
+        } else if (retType != at) {
+          USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", retType->symbol->name, at->symbol->name);
+        }
+      }
+
+      data->defPoint->remove();
+    }
+  }
+
+  if (serializeFn != NULL && deserializeFn == NULL) {
+    USR_WARN("Found chpl__serialize for type '%s', but did not find matching chpl__deserialize", at->symbol->cname);
+  } else if (serializeFn != NULL && deserializeFn != NULL) {
+    Serializers ser;
+    ser.serializer = serializeFn;
+    ser.deserializer = deserializeFn;
+    serializeMap[at] = ser;
+
+    retval = true;
+  }
+
+  tmp->defPoint->remove();
+
+  return retval;
+}
+
+static void resolveBroadcasters(AggregateType* at) {
+  SET_LINENO(at->symbol);
+  Serializers& ser = serializeMap[at];
+  INT_ASSERT(ser.serializer != NULL);
+
+  VarSymbol* tmp = newTemp("global_temp", at);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+
+  FnSymbol* broadcastFn;
+  FnSymbol* destroyFn;
+  {
+    SET_LINENO(tmp);
+    CallExpr* call = new CallExpr("chpl__broadcastGlobal", tmp, new_IntSymbol(0, INT_SIZE_64));
+    broadcastFn = resolveNormalSerializer(call);
+    broadcastFn->addFlag(FLAG_BROADCAST_FN);
+  }
+  {
+    SET_LINENO(tmp);
+    CallExpr* call = new CallExpr("chpl__destroyBroadcastedGlobal", tmp, new_IntSymbol(0, INT_SIZE_64));
+    destroyFn = resolveNormalSerializer(call);
+  }
+  if (broadcastFn == NULL || destroyFn == NULL) {
+    INT_FATAL("Unable to resolve serialized broadcasting for type %s", at->symbol->cname);
+  }
+
+  resolveFns(broadcastFn);
+  resolveFns(destroyFn);
+
+  ser.broadcaster = broadcastFn;
+  ser.destroyer   = destroyFn;
+}
+
+static void resolveSerializers() {
+  if (fNoRemoteSerialization == true) {
+    return;
+  }
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->defPoint->parentSymbol               != NULL   &&
+        ts->hasFlag(FLAG_GENERIC)                == false  &&
+        ts->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
+        isSingleType(ts->type)                   == false &&
+        isSyncType(ts->type)                     == false &&
+        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (isRecord(at) == true) {
+          bool success = resolveSerializeDeserialize(at);
+          if (success) {
+            resolveBroadcasters(at);
+          }
+        }
+      }
+    }
+  }
+
+  resolveAutoCopies();
 }
 
 /************************************* | **************************************

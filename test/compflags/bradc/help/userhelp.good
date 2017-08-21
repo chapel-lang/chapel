@@ -37,6 +37,8 @@ Optimization Control Options:
       --[no-]privatization            Enable [disable] privatization of
                                       distributed arrays and domains
       --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
+      --[no-]remote-serialization     Enable [disable] serialization for
+                                      remote consts
       --[no-]remove-copy-calls        Enable [disable] remove copy calls
       --[no-]scalar-replacement       Enable [disable] scalar replacement
       --scalar-replace-limit <limit>  Limit on the size of tuples being

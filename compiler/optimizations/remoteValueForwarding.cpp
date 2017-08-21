@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "driver.h"
 #include "expr.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -311,9 +312,37 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool isSufficientlyConst(ArgSymbol* arg);
 
-static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          FnSymbol*                     fn,
-                          ArgSymbol*                    arg);
+static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                              FnSymbol*                     fn,
+                              ArgSymbol*                    arg);
+static void insertSerialization(FnSymbol*  fn,
+                                ArgSymbol* arg);
+
+
+static bool shouldSerialize(ArgSymbol* arg) {
+  bool retval = false;
+  bool hasSerializer = serializeMap.find(arg->getValType()) != serializeMap.end();
+
+  if (hasSerializer == false) {
+    retval = false;
+  } else if (isRecordWrappedType(arg->getValType())) {
+    // OK to serialize if the record-wrapped type's underlying class is not
+    // modified.
+    //
+    // A weird case is the record-wrapped type being passed across an on-stmt
+    // in _do_destroy where it may eventually be deinit'd. We don't want to
+    // serialize in that case because we want the original to be destroyed.
+    //
+    // BHARSH TODO: This seems a bit flimsy. If 'arg' is a reference to a
+    // const domain (as written by the user), why doesn't it have the flag
+    // FLAG_REF_TO_CONST? That said, we don't seem to be leaking...
+    retval = arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_CONST);
+  } else {
+    retval = hasSerializer;
+  }
+
+  return retval;
+}
 
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap) {
@@ -329,7 +358,11 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       // For each reference arg that is safe to dereference
       for_formals(arg, fn) {
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
-          updateTaskArg(useMap, fn, arg);
+          if (shouldSerialize(arg)) {
+            insertSerialization(fn, arg);
+          } else {
+            defaultForwarding(useMap, fn, arg);
+          }
         }
       }
     }
@@ -343,6 +376,9 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
+  if (arg->hasFlag(FLAG_NO_RVF)) {
+    retval = false;
+
   // Forward array values and references to array values.
   // This is OK because the array/domain/distribution wrapper
   // records have fields that do not vary.
@@ -354,7 +390,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // array header class into the wrapper record - but that would require
   // quite a lot of code changes, and some other features have entangled
   // designs (including privatization and the DSI interface).
-  if (isRecordWrappedType(arg->getValType())) {
+  } else if (isRecordWrappedType(arg->getValType())) {
     retval = true;
 
 
@@ -440,14 +476,158 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   return retval;
 }
 
-static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          FnSymbol*                     fn,
-                          ArgSymbol*                    arg) {
+//
+// BHARSH 2017-08-21:
+//
+// This function inserts calls to chpl__serialize and chpl__deserialize.
+// For example, AST like this:
+//
+//   call on_fn tmp myRecord;
+//
+//   function on_fn(const in dummy_locale_arg, const ref myRecord : Foo) {
+//     call writeln myRecord;
+//   }
+//
+// Will be transformed to AST like this:
+//
+//   var myRecord_data : 3*int;
+//   call chpl__serialize myRecord myRecord_data;
+//   call on_fn tmp myRecord_data
+//
+//   function on_fn(const in dummy_locale_arg, const myRecord_data : 3*int) {
+//     var myRecord : Foo;
+//     call chpl__deserialize myRecord_data myRecord;
+//     call writeln myRecord;
+//     call chpl__autoDestroy myRecord_data;
+//     call chpl__autoDestroy myRecord;
+//   }
+//
+// If we're RVF-ing something with a runtime type, this function copies the
+// original formal and uses it to construct a runtime type within the
+// on-statement. This will change the number of formals for this on-statement
+// unlike traditional RVF.
+//
+// BHARSH TODO: Split this function into more easily-digestable pieces
+// BHARSH TODO: capture the assumptions made here in documentation
+//
+static void insertSerialization(FnSymbol*  fn,
+                                ArgSymbol* arg) {
+  Type* oldArgType    = arg->type;
+  IntentTag oldIntent = arg->intent;
+  ArgSymbol* oldArg   = NULL;
+
+  Serializers ser = serializeMap[oldArgType->getValType()];
+
+  FnSymbol* serializeFn   = ser.serializer;
+  FnSymbol* deserializeFn = ser.deserializer;
+  INT_ASSERT(serializeFn != NULL && deserializeFn != NULL);
+
+  bool needsRuntimeType = oldArgType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+
+  Type* dataType = NULL;
+  if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
+    ArgSymbol* retArg = toArgSymbol(toDefExpr(serializeFn->formals.tail)->sym);
+    INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
+
+    dataType = retArg->getValType();
+  } else {
+    dataType = serializeFn->retType;
+  }
+  arg->type = dataType;
+
+  // Update each callsite to invoke the serializer
+  forv_Vec(CallExpr, call, *fn->calledBy) {
+    SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
+    SET_LINENO(actual);
+
+    VarSymbol* data = newTemp(astr(arg->cname, "_data"), dataType);
+    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+      data->addFlag(FLAG_COFORALL_INDEX_VAR);
+    }
+    call->insertBefore(new DefExpr(data));
+
+    if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
+      call->insertBefore(new CallExpr(serializeFn, actual->copy(), data));
+    } else {
+      call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actual->copy())));
+    }
+
+    actual->replace(new SymExpr(data));
+
+    // Preserve the actual that will be used to create the runtime type within
+    // the on-statement
+    if (needsRuntimeType) {
+      call->insertAtTail(actual);
+    }
+  }
+
+  // We need to keep the RuntimeType around to use as the 'this' formal
+  // for the deserialize call. Add FLAG_NO_RVF to avoid an infinite loop where
+  // we keep trying to serialize a formal we just added.
+  if (needsRuntimeType) {
+    SET_LINENO(fn);
+    oldArg = new ArgSymbol(oldIntent, astr(arg->cname, "_old"), oldArgType);
+    oldArg->addFlag(FLAG_NO_RVF);
+    fn->insertFormalAtTail(oldArg);
+  }
+
+  // Replace all uses of 'arg' with a local reference to a deserialized
+  // instance of 'arg'
+  SET_LINENO(fn);
+  VarSymbol* deserialized = newTemp(arg->cname, oldArgType->getValType());
+  VarSymbol* dsRef = newTemp(arg->cname, QualifiedType(QUAL_REF, oldArgType->getValType()));
+  for_SymbolSymExprs(se, arg) {
+    se->setSymbol(dsRef);
+  }
+
+  Expr* anchor = fn->body->body.head;
+  anchor->insertBefore(new DefExpr(deserialized));
+  anchor->insertBefore(new DefExpr(dsRef));
+
+  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
+  CallExpr* callToAdd = NULL;
+
+  if (needsRuntimeType) {
+    FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(oldArgType->getValType());
+    INT_ASSERT(runtimeTypeFn != NULL);
+    VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
+    anchor->insertBefore(new DefExpr(info));
+    anchor->insertBefore(new CallExpr(PRIM_MOVE, info, new CallExpr(runtimeTypeFn, oldArg)));
+
+    // Add 'this' actual
+    deserializeCall->insertAtHead(new SymExpr(info));
+  }
+
+  if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
+    deserializeCall->insertAtTail(new SymExpr(deserialized));
+    callToAdd = deserializeCall;
+  } else {
+    callToAdd = new CallExpr(PRIM_MOVE, deserialized, deserializeCall);
+  }
+  anchor->insertBefore(callToAdd);
+  anchor->insertBefore(new CallExpr(PRIM_MOVE, dsRef, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
+
+  CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
+  INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
+
+  FnSymbol* dataDestroyFn = getAutoDestroy(arg->getValType());
+  if (dataDestroyFn != NULL) {
+    lastExpr->insertBefore(new CallExpr(dataDestroyFn, arg));
+  }
+
+  FnSymbol* deserializeDestroyFn = getAutoDestroy(deserialized->getValType());
+  if (deserializeDestroyFn != NULL) {
+    lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
+  }
+}
+
+static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                              FnSymbol*                     fn,
+                              ArgSymbol*                    arg) {
   // Dereference the arg type.
   Type* prevArgType = arg->type;
 
   arg->type = arg->getValType();
-  // TODO: What should the intent be here?
 
   forv_Vec(CallExpr, call, *fn->calledBy) {
     // Find actual for arg.
@@ -512,7 +692,6 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     }
   }
 }
-
 
 static bool isSyncSingleMethod(FnSymbol* fn) {
 

@@ -217,6 +217,10 @@ OPTIONS
     Enable [disable] remote value forwarding of read-only values to remote
     threads if reading them early does not violate program semantics.
 
+**--[no-]remote-serialization**
+
+    Enable [disable] serialization for globals and remote constants.
+
 **--[no-]scalar-replacement**
 
     Enable [disable] scalar replacement of records and classes for some

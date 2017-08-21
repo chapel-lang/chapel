@@ -1036,6 +1036,17 @@ module ChapelArray {
       }
     }
 
+    proc chpl__serialize() where this._value.type : DefaultRectangularDom {
+      return this.dims();
+    }
+
+    // TODO: we *SHOULD* be allowed to query param properties from a type....
+    proc type chpl__deserialize(data) {
+      // BHARSH TODO: Is the use of 'this' here documented anywhere?
+      const x : this;
+      return _newDomain(defaultDist.newRectangularDom(x.rank, x.idxType, x.stridable, data));
+    }
+
     proc _do_destroy () {
       if ! _unowned {
         on _instance {
