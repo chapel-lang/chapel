@@ -3347,7 +3347,10 @@ static int disambiguateByMatch(CallInfo&                  info,
       // If there are *any* type/param candidates, we need to cause ambiguity
       // if they are not selected... including consideration of where clauses.
       bestValue  = disambiguateByMatch(candidates, DC, false, ambiguous);
-      retval     = 1;
+      if (bestValue)
+        retval = 1;
+      else
+        retval = 0;
 
     } else {
       if (nRef > 1 || nConstRef > 1 || nValue > 1) {
