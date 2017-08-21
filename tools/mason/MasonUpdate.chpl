@@ -3,16 +3,15 @@ use FileSystem;
 use MasonUtils;
 
 
-
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock() {
-  if isFile("Mason.toml") {
-    updateRegistry();
-    var openFile = openreader("Mason.toml");
+proc UpdateLock(tf="Mason.toml", lf="Mason.lock") {
+  if isFile(tf) {
+    updateRegistry(tf);
+    var openFile = openreader(tf);
     var TomlFile = parseToml(openFile);
     var lockFile = createDepTree(TomlFile);
-    genLock(lockFile);
+    genLock(lockFile, lf);
     openFile.close();
     delete TomlFile;
     delete lockFile;
@@ -24,19 +23,19 @@ proc UpdateLock() {
 
 
 /* Writes out the lock file */
-proc genLock(lock: Toml) {
-  var lockFile = open("Mason.lock", iomode.cw);
+proc genLock(lock: Toml, lf) {
+  var lockFile = open(lf, iomode.cw);
   var tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
 }
 
-proc updateRegistry() {
+proc updateRegistry(tf: string) {
   var masonHome = getMasonHome();
   var registryHome = masonHome + '/.mason/registry';
   if isDir(registryHome) {
     var pullRegistry = 'git -C ' + registryHome + '/ pull -q origin master';
-    writeln("Updating Mason Registry");
+    if tf == "Mason.toml" then writeln("Updating mason-registry");
     runCommand(pullRegistry);
   }
   // Registry has moved or does not exist
@@ -107,7 +106,9 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
     }
     deps.remove(deps.domain.first);
   }
-  depTree[name]["dependencies"] = depList;
+  if depList.domain.size > 0 {
+    depTree[name]["dependencies"] = depList;
+  }
   return depTree;
 }
 
