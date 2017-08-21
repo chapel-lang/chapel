@@ -476,6 +476,40 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   return retval;
 }
 
+//
+// BHARSH 2017-08-21:
+//
+// This function inserts calls to chpl__serialize and chpl__deserialize.
+// For example, AST like this:
+//
+//   call on_fn tmp myRecord;
+//
+//   function on_fn(const in dummy_locale_arg, const ref myRecord : Foo) {
+//     call writeln myRecord;
+//   }
+//
+// Will be transformed to AST like this:
+//
+//   var myRecord_data : 3*int;
+//   call chpl__serialize myRecord myRecord_data;
+//   call on_fn tmp myRecord_data
+//
+//   function on_fn(const in dummy_locale_arg, const myRecord_data : 3*int) {
+//     var myRecord : Foo;
+//     call chpl__deserialize myRecord_data myRecord;
+//     call writeln myRecord;
+//     call chpl__autoDestroy myRecord_data;
+//     call chpl__autoDestroy myRecord;
+//   }
+//
+// If we're RVF-ing something with a runtime type, this function copies the
+// original formal and uses it to construct a runtime type within the
+// on-statement. This will change the number of formals for this on-statement
+// unlike traditional RVF.
+//
+// BHARSH TODO: Split this function into more easily-digestable pieces
+// BHARSH TODO: capture the assumptions made here in documentation
+//
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
@@ -520,6 +554,8 @@ static void insertSerialization(FnSymbol*  fn,
 
     actual->replace(new SymExpr(data));
 
+    // Preserve the actual that will be used to create the runtime type within
+    // the on-statement
     if (needsRuntimeType) {
       call->insertAtTail(actual);
     }
