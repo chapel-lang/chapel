@@ -3819,8 +3819,18 @@ GenRet CallExpr::codegenPrimitive() {
     break;
 
   case PRIM_LESSOREQUAL: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a;
+    GenRet b;
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef())
+      a = codegenDeref(get(1));
+    else
+      a = codegenValue(get(1));
+
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef())
+      b = codegenDeref(get(1));
+    else
+      b = codegenValue(get(1));
 
     if (gGenInfo->cfile) {
       ret.c = "(" + a.c + " <= " + b.c + ")";
@@ -3848,8 +3858,18 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_GREATEROREQUAL: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a;
+    GenRet b;
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef())
+      a = codegenDeref(get(1));
+    else
+      a = codegenValue(get(1));
+
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef())
+      b = codegenDeref(get(1));
+    else
+      b = codegenValue(get(1));
 
     if (gGenInfo->cfile) {
       ret.c = "(" + a.c + " >= " + b.c + ")";
@@ -3877,8 +3897,18 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_LESS: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a;
+    GenRet b;
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef())
+      a = codegenDeref(get(1));
+    else
+      a = codegenValue(get(1));
+
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef())
+      b = codegenDeref(get(1));
+    else
+      b = codegenValue(get(1));
 
     if (gGenInfo->cfile) {
       ret.c = "(" + a.c + " < " + b.c + ")";
@@ -3906,8 +3936,18 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_GREATER: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a;
+    GenRet b;
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef())
+      a = codegenDeref(get(1));
+    else
+      a = codegenValue(get(1));
+
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef())
+      b = codegenDeref(get(1));
+    else
+      b = codegenValue(get(1));
 
     if (gGenInfo->cfile) {
       ret.c = "(" + a.c + " > " + b.c + ")";
