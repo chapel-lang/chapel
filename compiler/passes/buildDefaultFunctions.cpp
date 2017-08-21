@@ -1286,9 +1286,11 @@ static void build_record_hash_function(AggregateType *ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildDefaultInitField(AggregateType*               at,
-                                  FnSymbol*                    fn,
-                                  std::set<const char*>&       names);
+static
+void buildDefaultInitField(AggregateType*               at,
+                           FnSymbol*                    fn,
+                           std::set<const char*>&       names,
+                           SymbolMap&                   fieldArgMap);
 
 static bool buildDefaultInitSuper(AggregateType*               at,
                                   FnSymbol*                    fn,
@@ -1316,10 +1318,15 @@ static void buildDefaultInitializer(AggregateType* at) {
     fn->insertFormalAtTail(_this);
 
     std::set<const char*> names;
+    SymbolMap fieldArgMap;
 
-    buildDefaultInitField(at, fn, names);
+    buildDefaultInitField(at, fn, names, fieldArgMap);
 
     if (buildDefaultInitSuper(at, fn, names) == true) {
+      // Replaces field references with argument references
+      // NOTE: doesn't handle inherited fields yet!
+      update_symbols(fn, &fieldArgMap);
+
       DefExpr* def = new DefExpr(fn);
 
       at->defaultInitializer = fn;
@@ -1342,9 +1349,11 @@ static void buildDefaultInitializer(AggregateType* at) {
   }
 }
 
-static void buildDefaultInitField(AggregateType*         at,
-                                  FnSymbol*              fn,
-                                  std::set<const char*>& names) {
+static
+void buildDefaultInitField(AggregateType*         at,
+                           FnSymbol*              fn,
+                           std::set<const char*>& names,
+                           SymbolMap&             fieldArgMap) {
   for_fields(fieldDefExpr, at) {
     SET_LINENO(fieldDefExpr);
 
@@ -1363,6 +1372,7 @@ static void buildDefaultInitField(AggregateType*         at,
         ArgSymbol*  arg      = new ArgSymbol(INTENT_BLANK, name, dtUnknown);
 
         names.insert(name);
+        fieldArgMap.put(field, arg);
 
         // Insert initialization for each field from the argument provided.
         SET_LINENO(field);
