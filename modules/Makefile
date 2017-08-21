@@ -64,7 +64,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
-
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
@@ -93,6 +92,9 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
+	standard/collections/Collection.chpl \
+	standard/collections/DistributedBag.chpl \
+	standard/collections/DistributedDeque.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
@@ -170,4 +172,3 @@ clean-documentation:
 	rm -rf $(MODULE_SPHINX)
 
 FORCE:
-
