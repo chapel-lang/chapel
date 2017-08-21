@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/dists/BlockDist.chpl:1533: In function 'doiBulkTransferFrom':
+$CHPL_HOME/modules/dists/BlockDist.chpl:1546: error: unresolved access of '[domain(4,int(64),false)] LocBlockDom(4,int(64),false)' by '(2*int(64))'
