@@ -56,7 +56,7 @@ proc getMasonHome(): string {
   var masonHome = getEnv("CHPL_MASON_HOME");
   if masonHome == '' {
     var home = getEnv('HOME');
-    if isFile(home + '/.mason') {
+    if isDir(home + '/.mason') {
       return home;
     }
     else {
