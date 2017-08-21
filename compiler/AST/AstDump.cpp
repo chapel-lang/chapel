@@ -513,6 +513,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
     case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
     case GOTO_ITER_END:       write("gotoIterEnd");       break;
     case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
+    case GOTO_BREAK_ERROR_HANDLING: write("gotoBreakErrorHandling"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {

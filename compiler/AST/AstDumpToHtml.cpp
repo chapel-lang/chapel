@@ -625,6 +625,10 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
     case GOTO_ERROR_HANDLING:
       fprintf(mFP, "<B>gotoErrorHandling</B> ");
       break;
+    case GOTO_BREAK_ERROR_HANDLING:
+      fprintf(mFP, "<B>gotoBreakErrorHandling</B> ");
+      break;
+
   }
 
   if (SymExpr* label = toSymExpr(node->label))
