@@ -317,7 +317,7 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered, /*forall*/ false);
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -778,7 +778,7 @@ void lowerForallStmts() {
     PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
 
     currentAstLoc = fs->loopBody()->astloc; // can't do SET_LINENO
-    ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, false);
+    ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
     // not needed:
     //destructureIndices(PARBody, indices, new SymExpr(parIdxCopy), false);
