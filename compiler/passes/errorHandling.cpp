@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "ForLoop.h"
 #include "driver.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -141,6 +142,7 @@ typedef std::map<FnSymbol*, BaseAST*> implicitThrowsReasons_t;
 
 // Static functions
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
+static bool canBlockStmtThrow(BlockStmt* block);
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
@@ -162,12 +164,15 @@ public:
   virtual void exitTryStmt  (TryStmt*   node);
   virtual void exitCatchStmt(CatchStmt* node);
   virtual bool enterCallExpr(CallExpr*  node);
+  virtual bool enterForLoop (ForLoop*   node);
+  virtual void exitForLoop  (ForLoop*   node);
 
 private:
   struct TryInfo {
     VarSymbol*   errorVar;
     LabelSymbol* handlerLabel;
     TryStmt*     tryStmt;
+    ForLoop*     throwingForall;
     BlockStmt*   tryBody;
   };
 
@@ -178,6 +183,8 @@ private:
 
   void   lowerCatches      (const TryInfo& info);
   AList  setOutGotoEpilogue(VarSymbol*     error);
+  GotoStmt*  gotoHandler();
+  AList  setOuterErrorAndGotoHandler(VarSymbol* error);
   AList  errorCond         (VarSymbol*     errorVar,
                             BlockStmt*     thenBlock,
                             BlockStmt*     elseBlock = NULL);
@@ -199,7 +206,7 @@ bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   errorVar->addFlag(FLAG_ERROR_VARIABLE);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
   handlerLabel->addFlag(FLAG_ERROR_LABEL);
-  TryInfo      info         = {errorVar, handlerLabel, node, node->body()};
+  TryInfo info = {errorVar, handlerLabel, node, NULL, node->body()};
   tryStack.push(info);
 
   return true;
@@ -298,11 +305,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     if (tryStmt->tryBang()) {
       currHandler->insertAtTail(haltExpr(errorVar));
     } else if (!tryStack.empty()) {
-      TryInfo* outerTry = & tryStack.top();
-      currHandler->insertAtTail(new CallExpr(PRIM_MOVE, outerTry->errorVar,
-                                             errorVar));
-      currHandler->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
-                                             outerTry->handlerLabel));
+      currHandler->insertAtTail(setOuterErrorAndGotoHandler(errorVar));
     } else if (outError != NULL) {
       currHandler->insertAtTail(setOutGotoEpilogue(errorVar));
     } else {
@@ -331,8 +334,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
-        errorPolicy->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
-                                               info.handlerLabel));
+        errorPolicy->insertAtTail(gotoHandler());
       } else {
         // without try, need an error variable
         errorVar = newTemp("error", dtError);
@@ -370,13 +372,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
     if (insideTry) {
-      TryInfo   info      = tryStack.top();
-
-      Expr* castError = castToError(thrownError);
-      throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, info.errorVar,
-                                            castError));
-      throwBlock->insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING,
-                                            info.handlerLabel));
+      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(thrownError));
     } else if (outError != NULL) {
       throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
     } else {
@@ -384,6 +380,62 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     }
   }
   return true;
+}
+
+bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
+  if (!node->isLoweredForallLoop())
+    return true;
+  if (!canBlockStmtThrow(node))
+    return true;
+
+  SET_LINENO(node);
+
+   // Make sure that there's a break label.
+  if (node->breakLabelGet() == NULL) {
+    LabelSymbol* b = new LabelSymbol("forall_break_label");
+    // intentionally *not* marked with FLAG_ERROR_LABEL so that
+    // we don't auto-destroy everything just before it.
+    node->breakLabelSet(b);
+    node->insertAfter(new DefExpr(b));
+  }
+
+  VarSymbol*   errorVar     = newTemp("error", dtError);
+  errorVar->addFlag(FLAG_ERROR_VARIABLE);
+  LabelSymbol* handlerLabel = node->breakLabelGet();
+
+  node->insertBefore(new DefExpr(errorVar));
+  node->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
+
+  TryInfo info = {errorVar, handlerLabel, NULL, node, node};
+  tryStack.push(info);
+
+  return true;
+}
+
+void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
+
+  if (!node->isLoweredForallLoop())
+    return;
+  if (tryStack.empty())
+    return;
+
+  TryInfo& info = tryStack.top();
+  if (info.throwingForall == NULL)
+    return;
+
+  tryStack.pop();
+
+  SET_LINENO(node);
+
+  BlockStmt* handler = new BlockStmt();
+  if (!tryStack.empty()) {
+    handler->insertAtTail(setOuterErrorAndGotoHandler(info.errorVar));
+  } else if (outError != NULL) {
+    handler->insertAtTail(setOutGotoEpilogue(info.errorVar));
+  } else {
+    handler->insertAtTail(haltExpr(info.errorVar));
+  }
+  info.handlerLabel->defPoint->insertAfter(errorCond(info.errorVar, handler));
 }
 
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
@@ -396,6 +448,28 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   // errors that come up in C compilation.
   ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castError));
   ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
+
+  return ret;
+}
+
+GotoStmt* ErrorHandlingVisitor::gotoHandler() {
+
+  INT_ASSERT(!tryStack.empty());
+  TryInfo& outerTry = tryStack.top();
+  if (outerTry.throwingForall != NULL)
+    return new GotoStmt(GOTO_BREAK_ERROR_HANDLING, outerTry.handlerLabel);
+  else
+    return new GotoStmt(GOTO_ERROR_HANDLING, outerTry.handlerLabel);
+}
+
+AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error) {
+
+  INT_ASSERT(!tryStack.empty());
+  Expr* castError = castToError(error);
+  TryInfo& outerTry = tryStack.top();
+  AList ret;
+  ret.insertAtTail(new CallExpr(PRIM_MOVE, outerTry.errorVar, castError));
+  ret.insertAtTail(gotoHandler());
 
   return ret;
 }
@@ -734,6 +808,18 @@ static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, impli
     if (visit.unchecked())
       fn->addFlag(FLAG_UNCHECKED_THROWS);
   }
+}
+
+static bool
+canBlockStmtThrow(BlockStmt* block)
+{
+  std::set<FnSymbol*> visited;
+  implicitThrowsReasons_t reasons;
+
+  ImplicitThrowsVisitor visit(&visited, &reasons);
+  block->accept(&visit);
+
+  return visit.throws();
 }
 
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
