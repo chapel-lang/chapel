@@ -733,7 +733,7 @@ class DistributedDeque : Collection {
       var idx = i % nSlots;
       var (size, headIdx, node) = nodes[idx];
       if node == nil {
-        halt("Iterating over nil nodes, head: ", head, ", tail: ", tail, ", idx: ", i);
+        halt("DistributedDeque Internal Error: Iterating over nil nodes, head: ", head, ", tail: ", tail, ", idx: ", i);
       }
       yield node.elements[headIdx];
 
@@ -787,23 +787,24 @@ class DistributedDeque : Collection {
 
     // Iterate over captured head nodes; each time we read them we advance them
     var iterations = size;
-    while tail - 1 >= head - 1 {
+    while tail > head {
       if iterations == 0 then break;
       iterations -= 1;
 
       var idx = (tail - 1) % nSlots;
       var (size, tailIdx, node) = nodes[idx];
       if node == nil {
-        halt("Iterating over nil nodes, head: ", head, ", tail: ", tail, ", idx: ", tail-1);
+        halt("DistributedDeque Internal Error: Iterating over nil nodes, head: ", head, ", tail: ", tail);
+      }
+
+      tailIdx -= 1;
+      if tailIdx == 0 {
+        tailIdx = distributedDequeBlockSize;
       }
       yield node.elements[tailIdx];
 
       // Update state...
       size -= 1;
-      tailIdx -= 1;
-      if tailIdx == 0 {
-        tailIdx = distributedDequeBlockSize;
-      }
 
       // Advance...
       if size == 0 {
@@ -817,6 +818,8 @@ class DistributedDeque : Collection {
         // Else update state...
         nodes[idx] = (size, tailIdx, node);
       }
+
+      tail -= 1;
     }
 
     // Release in locking order...

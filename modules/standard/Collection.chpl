@@ -109,7 +109,7 @@ class Collection {
   /*
     Iterate over all elements in the data structure.
 
-    **BUG:** Compiler does not currently allow overloading standalone or leader/follower
+    **BUG:** Compiler does not currently allow overriding standalone or leader/follower
     iterators, and as such only serial iterators may be used with the base type. See
     issue #6998
 
