@@ -726,7 +726,6 @@ pragma "no doc"
          }
          else {
 	   var ptrhold = currentLine;
-	   var ptrhol2 = tokenlist[tokenD.first];
 	   tokenlist.remove(tokenD.first);
            currentLine = tokenlist[tokenD.first];
 	   delete ptrhold;
