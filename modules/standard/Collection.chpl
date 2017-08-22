@@ -1,24 +1,4 @@
 /*
- * Copyright 2004-2017 Cray Inc.
- * Other additional copyright holders may be indicated within.
- *
- * The entirety of this work is licensed under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- *
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
-/*
   A 'Collection' is a data structure, a container for elements that provide support
   for insert, lookup, remove, and iteration operations.
 */
@@ -32,22 +12,23 @@ class Collection {
     Adds an element to this data structure.
   */
   inline proc add(elt : eltType) : bool {
-    halt("'proc add(elts : eltType ... ?nElts) : bool' is not supported...");
+    halt("'proc add(elt : eltType) : bool' is not supported...");
   }
 
   /*
     Removes an arbitrary element from this data structure.
 
     **BUG:** Compiler will segfault if the returned value is not captured at callsite.
+    Issue: #6542
 
     **FIX:** Ensure that you always capture the return value...
 
     ::
-    
+
       var capturedRetval = c.remove()
 
     **BUG:** Loop Invariant Code Motion causes undefined behavior if assigned to a
-    variable declared outside of loop
+    variable declared outside of loop. Issue: #7003
 
     **FIX:** Use the `--no-loop-invariant-code-motion` to disable LICM.
     Otherwise, just make sure you always capture the return value inside of a loop
@@ -82,13 +63,27 @@ class Collection {
     Check if this data structure is empty.
   */
   inline proc isEmpty() : bool {
-    return size() == 0;
+    return getSize() == 0;
+  }
+
+  /*
+    Syntactic sugar for `getSize`.
+  */
+  inline proc length : int {
+    return size();
+  }
+
+  /*
+    Syntactic sugar for `getSize`.
+  */
+  inline proc size : int {
+    return getSize();
   }
 
   /*
     Obtain the number of elements contained in this collection.
   */
-  inline proc size() : int {
+  inline proc getSize() : int {
     halt("'proc size() : int' is not supported...");
   }
 
@@ -96,47 +91,15 @@ class Collection {
     Iterate over all elements in the data structure.
 
     **BUG:** Compiler does not currently allow overloading standalone or leader/follower
-    iterators, and as such only serial iterators may be used with the base type.
+    iterators, and as such only serial iterators may be used with the base type. See
+    issue #6998
+
+    **BUG:** Resources are not properly cleaned up when the user breaks or returns
+    from a serial iterator, and so this *must* be avoided at all cost. See issue #6912
   */
   iter these() : eltType {
     halt("'iter these() : eltType' is not supported...");
     yield _defaultOf(eltType);
-  }
-
-  /*
-    Declares this collection immutable.
-
-    **NOTE:** This method may be removed from the core interface.
-  */
-  inline proc freeze() : bool {
-    halt("'proc freeze() : bool' is not supported...");
-  }
-
-  /*
-    Declares this collection mutable.
-
-    **NOTE:** This method may be removed from the core interface.
-  */
-  inline proc unfreeze() : bool {
-    halt("'proc freeze() : bool' is not supported...");
-  }
-
-  /*
-    Whether this collection supports freezing.
-
-    **NOTE:** This method may be removed from the core interface.
-  */
-  inline proc canFreeze() : bool {
-    return false;
-  }
-
-  /*
-    Determines if this collection is currently frozen.
-
-    **NOTE:** This method may be removed from the core interface.
-  */
-  inline proc isFrozen() : bool {
-    halt("'proc isFrozen() : bool' is not supported...");
   }
 }
 

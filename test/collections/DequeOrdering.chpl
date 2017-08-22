@@ -14,36 +14,41 @@ for i in 1 .. nElems {
   deque.enqueue(i);
 }
 
-assert(deque.size() == nElems);
+assert(deque.size == nElems);
 assert(deque.contains(nElems / 2));
 
-deque.freeze();
 var expect = 1;
-for elem in deque.FIFO() {
+for elem in deque.these(Ordering.FIFO) {
   assert(elem == expect);
   expect += 1;
 }
-deque.unfreeze();
 
 for i in 1 .. nElems {
   var (hasElem, elem) = deque.dequeue();
   assert(hasElem && elem == i);
 }
 var hasElem = deque.dequeue()[1];
-assert(deque.size() == 0 && deque.isEmpty() && !hasElem);
+assert(deque.size == 0 && deque.isEmpty() && !hasElem);
 
 // LIFO
 for i in 1 .. nElems {
   deque.push(i);
 }
-assert(deque.size() == nElems);
+assert(deque.size == nElems);
 assert(deque.contains(nElems / 2));
+
+expect = nElems;
+for elem in deque.these(Ordering.LIFO) {
+  assert(elem == expect);
+  expect -= 1;
+}
+
 for i in 0 .. #nElems {
   var (hasElem, elem) = deque.pop();
   assert(hasElem && elem == nElems - i);
 }
 hasElem = deque.dequeue()[1];
-assert(deque.size() == 0 && deque.isEmpty() && !hasElem);
+assert(deque.size == 0 && deque.isEmpty() && !hasElem);
 
 // Total Ordering
 // In this case, we add the middle element, then all elements preceeding it to the
@@ -56,7 +61,7 @@ for i in 1 .. middle - 1 {
 for i in middle + 1 .. nElems {
   deque.pushBack(i);
 }
-assert(deque.size() == nElems);
+assert(deque.size == nElems);
 for i in 1 .. nElems {
   var (hasElem, elem) = deque.dequeue();
   assert(hasElem && elem == i);
