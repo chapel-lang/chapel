@@ -1,0 +1,3 @@
+bug: ref-intent array returned without copy but still destroyed
+
+This test passes if the blank-intent is used.
