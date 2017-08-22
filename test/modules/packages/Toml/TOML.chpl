@@ -623,15 +623,16 @@ pragma "no doc"
  */
  module TomlReader {
 
-   use OwnedObject;
-   use Regexp;
+  use Regexp;
 
    /* Returns the next token in the current line without removing it */
    proc top(source) {
-     if source.currentLine.isEmpty() {
-       source.newLine();
+     if source.nextLine() {
+       return source.currentLine[source.currentLine.D.first];
      }
-     return source.currentLine[source.currentLine.D.first];
+     else {
+       halt("Reached end of file");
+     }
    }
 
    /* Returns a boolean or whether or not another line can be read
@@ -645,12 +646,19 @@ pragma "no doc"
    }
 
    proc addToken(source, tokensToAdd: [?dom] string) {
-     var tokens = new Owned(new Tokens(tokensToAdd));
+     var ptrhold = source.currentLine;
+     delete ptrhold;
+     var tokens = new Tokens(tokensToAdd);
      source.currentLine = tokens;
    }
 
    proc skipLine(source) {
-     source.skipROL();
+     var emptyArray: [1..0] string;
+     var emptyCurrent = new Tokens(emptyArray);
+     var ptrhold = source.currentLine;
+     source.currentLine = emptyCurrent;
+     var readNextLine = readLine(source);
+     delete ptrhold;
    }
 
    /* retrieves the next token in currentLine */
@@ -663,8 +671,8 @@ pragma "no doc"
 
      var tomlStr: string;
      var tokenD = {1..0},
-       tokenlist: [tokenD] Owned(Tokens);
-     var currentLine: Owned(Tokens);
+       tokenlist: [tokenD] Tokens;
+     var currentLine: Tokens;
 
 
      proc init(tomlStr: string) {
@@ -705,36 +713,24 @@ pragma "no doc"
            linetokens.push_back(strippedToken);}
        }
        if !linetokens.isEmpty() {
-         var tokens = new Owned(new Tokens(linetokens));
-         // Temporary work-around for push_back(Owned(C))
-         //     See #6841 for more info
-         tokenD = {tokenD.low..tokenD.high+1};
-         tokenlist[tokenD.high] = tokens;
+         var tokens = new Tokens(linetokens);
+         tokenlist.push_back(tokens);
        }
      }
 
 
-     proc newLine() {
-       if nextLine() {
-         if currentLine.isEmpty() {
-           tokenlist.remove(tokenD.first);
-           currentLine = tokenlist[tokenD.first];}
-       }
-       else {
-         halt("Error: unexpectedly reached end of file");
-       }
-     }
-
-     /* Reads next line into currentLine */
      proc nextLine() {
        if currentLine.isEmpty() {
          if tokenD.size == 1 {
-           return false;
+	   return false;
          }
          else {
-           tokenlist.remove(tokenD.first);
+	   var ptrhold = currentLine;
+	   var ptrhol2 = tokenlist[tokenD.first];
+	   tokenlist.remove(tokenD.first);
            currentLine = tokenlist[tokenD.first];
-           return true;
+	   delete ptrhold;
+	   return true;
          }
        }
        return true;
@@ -743,15 +739,14 @@ pragma "no doc"
 
      /* retrieves next token in currentLine */
      proc nextToke() {
-       newLine();
-       return currentLine.next();
-     }
-
-     proc skipROL() {
-       for token in currentLine {
-         currentLine.skip();
+       if nextLine() {
+	 return currentLine.next();
+       }
+       else {
+	 halt("Reached end of file");
        }
      }
+
 
      proc debug() {
        var lineCounter: int = 1;
@@ -764,6 +759,13 @@ pragma "no doc"
          writeln();
        }
      }
+
+
+     proc deinit() {
+       for token in tokenlist {
+	 delete token;
+       }
+      }
    }
 
 
@@ -778,7 +780,7 @@ pragma "no doc"
      }
 
      proc skip() {
-       var idx =  D.first;
+       var idx = D.first;
        var toke = A(idx);
        A.remove(idx);
      }
