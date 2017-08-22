@@ -1177,14 +1177,19 @@ static void genGlobalSerializeTable(GenInfo* info) {
 
   if( hdrfile ) {
     fprintf(hdrfile, "\nvoid* const chpl_global_serialize_table[] = {");
-    for (unsigned int i = 0; i < serializeCalls.size(); i++) {
-      CallExpr* call = serializeCalls[i];
-      INT_ASSERT(call != NULL);
-      SymExpr* global = toSymExpr(call->get(1));
-      INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
+    if (serializeCalls.size() == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "\nNULL,");
+    } else {
+      for (unsigned int i = 0; i < serializeCalls.size(); i++) {
+        CallExpr* call = serializeCalls[i];
+        INT_ASSERT(call != NULL);
+        SymExpr* global = toSymExpr(call->get(1));
+        INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
 
-      const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
-      fprintf(hdrfile, prefix, global->symbol()->cname);
+        const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
+        fprintf(hdrfile, prefix, global->symbol()->cname);
+      }
     }
     fprintf(hdrfile, "\n};\n");
   } else {
