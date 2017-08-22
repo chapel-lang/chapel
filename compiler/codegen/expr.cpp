@@ -3819,16 +3819,22 @@ GenRet CallExpr::codegenPrimitive() {
     break;
 
   case PRIM_LESSOREQUAL: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a = get(1);
+    GenRet b = get(2);
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+
+    GenRet av = codegenValue(a);
+    GenRet bv = codegenValue(b);
 
     if (gGenInfo->cfile) {
-      ret.c = "(" + a.c + " <= " + b.c + ")";
+      ret.c = "(" + av.c + " <= " + bv.c + ")";
     } else {
 #ifdef HAVE_LLVM
       PromotedPair values = convertValuesToLarger(
-                                   a.val,
-                                   b.val,
+                                   av.val,
+                                   bv.val,
                                    is_signed(get(1)->typeInfo()),
                                    is_signed(get(2)->typeInfo()));
 
@@ -3848,16 +3854,22 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_GREATEROREQUAL: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a = get(1);
+    GenRet b = get(2);
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+
+    GenRet av = codegenValue(a);
+    GenRet bv = codegenValue(b);
 
     if (gGenInfo->cfile) {
-      ret.c = "(" + a.c + " >= " + b.c + ")";
+      ret.c = "(" + av.c + " >= " + bv.c + ")";
     } else {
 #ifdef HAVE_LLVM
       PromotedPair values = convertValuesToLarger(
-                                   a.val,
-                                   b.val,
+                                   av.val,
+                                   bv.val,
                                    is_signed(get(1)->typeInfo()),
                                    is_signed(get(2)->typeInfo()));
 
@@ -3877,16 +3889,22 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_LESS: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a = get(1);
+    GenRet b = get(2);
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+
+    GenRet av = codegenValue(a);
+    GenRet bv = codegenValue(b);
 
     if (gGenInfo->cfile) {
-      ret.c = "(" + a.c + " < " + b.c + ")";
+      ret.c = "(" + av.c + " < " + bv.c + ")";
     } else {
 #ifdef HAVE_LLVM
       PromotedPair values = convertValuesToLarger(
-                                   a.val,
-                                   b.val,
+                                   av.val,
+                                   bv.val,
                                    is_signed(get(1)->typeInfo()),
                                    is_signed(get(2)->typeInfo()));
 
@@ -3906,16 +3924,22 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_GREATER: {
-    GenRet a = codegenValue(get(1));
-    GenRet b = codegenValue(get(2));
+    GenRet a = get(1);
+    GenRet b = get(2);
+
+    if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+    if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+
+    GenRet av = codegenValue(a);
+    GenRet bv = codegenValue(b);
 
     if (gGenInfo->cfile) {
-      ret.c = "(" + a.c + " > " + b.c + ")";
+      ret.c = "(" + av.c + " > " + bv.c + ")";
     } else {
 #ifdef HAVE_LLVM
       PromotedPair values = convertValuesToLarger(
-                                   a.val,
-                                   b.val,
+                                   av.val,
+                                   bv.val,
                                    is_signed(get(1)->typeInfo()),
                                    is_signed(get(2)->typeInfo()));
 
