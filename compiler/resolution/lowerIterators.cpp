@@ -1454,9 +1454,11 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
         INT_ASSERT(errorArg != NULL);
 
         // Replace it with assign / goto return
-        oldErrorDst->remove();
-        oldErrorSrc->remove();
-        prevMoveErr->replace(new CallExpr(PRIM_ASSIGN, errorArg, oldErrorSrc));
+        if (oldErrorDst && oldErrorSrc) {
+          oldErrorDst->remove();
+          oldErrorSrc->remove();
+          prevMoveErr->replace(new CallExpr(PRIM_ASSIGN, errorArg, oldErrorSrc));
+        }
         GotoStmt* newGoto = new GotoStmt(GOTO_RETURN, epilogue);
         g->replace(newGoto);
       }
