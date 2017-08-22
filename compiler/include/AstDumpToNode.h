@@ -143,6 +143,8 @@ public:
 
   virtual bool     enterCatchStmt      (CatchStmt*         node);
 
+  virtual bool     enterDeferStmt      (DeferStmt*         node);
+
 private:
                    AstDumpToNode();
 
