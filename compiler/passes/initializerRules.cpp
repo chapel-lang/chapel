@@ -918,11 +918,13 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   //   2) add that formal to the call to "init"
   //
   int count = 1;
+  SymbolMap initArgToNewArgMap;
 
   for_formals(formal, initMethod) {
     // Ignore _mt and this
     if (count >= 3) {
       ArgSymbol* arg = formal->copy();
+      initArgToNewArgMap.put(formal, arg);
 
       fn->insertFormalAtTail(arg);
 
@@ -935,16 +937,14 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
       } else {
         initCall->insertAtTail(new SymExpr(arg));
       }
-
-      // Don't want to be referencing the argument in the initializer, want to
-      // reference our new argument.
-      if (fn->where != NULL) {
-        subSymbol(fn->where, formal, arg);
-      }
     }
 
     count = count + 1;
   }
+
+  // Don't reference arguments to the initializer in the _new argument list
+  // or where clause.
+  update_symbols(fn, &initArgToNewArgMap);
 
   // Construct the body
   body->insertAtTail(new DefExpr(newInstance));
