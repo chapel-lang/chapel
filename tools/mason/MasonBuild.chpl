@@ -38,9 +38,8 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
 
     // --fast
     var binLoc = 'debug';
-    if release {
+    if release then
       binLoc = 'release';
-    }
 
     // Make Binary Directory
     makeTargetFiles(binLoc);
@@ -55,17 +54,13 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
-    else {
-      writeln("Build Failed");
-    }
+    else writeln("Build Failed");
 
     // Close memory
      delete lockFile;
      toParse.close();
   }
-  else {
-    writeln("Cannot build: no Mason.lock found");
-  }
+  else writeln("Cannot build: no Mason.lock found");
 } 
 
 
@@ -90,28 +85,23 @@ proc makeTargetFiles(binLoc: string) {
 proc compileSrc(lockFile: Toml, binLoc: string, show: bool, 
 		release: bool, compopts: [?dom] string) : bool {
   var sourceList = genSourceList(lockFile);
-  var depPath = getMasonHome() + '/.mason/src/';
+  var depPath = MASON_HOME + '/.mason/src/';
   var project = lockFile["root"]["name"].s;
   var pathToProj = 'src/'+ project + '.chpl';
   var moveTo = ' -o target/'+ binLoc +'/'+ project;
  
   if isFile(pathToProj) {
     var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
-    if release {
-      command += " --fast";
-    }
+    if release then command += " --fast";
+
     for dep in sourceList {
       var depSrc = ' -M '+ depPath + dep(2) + '/src';
       command += depSrc;
     }
 
     // Verbosity control
-    if show {
-      writeln(command);
-    }
-    else {
-      writeln("Compiling "+ project);
-    }
+    if show then writeln(command);
+    else writeln("Compiling "+ project);
 
     // compile Program with deps
     var compilation = runWithStatus(command);
@@ -120,12 +110,9 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
     }
     
     // Confirming File Structure
-    if isFile('target/' + binLoc + '/' + project) {
-	return true;
-    }
-    else {
-      return false;
-    }
+    if isFile('target/' + binLoc + '/' + project) then
+      return true;
+    else return false;
   }
   else {
     writeln("Mason could not find your project!");
@@ -140,9 +127,7 @@ proc genSourceList(lockFile: Toml) {
   var sourceList: [1..0] (string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
-      if name == "root" {
-        continue;
-      }
+      if name == "root" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
@@ -156,7 +141,7 @@ proc genSourceList(lockFile: Toml) {
 /* Clones the git repository of each dependency into
    the src code dependency pool */
 proc getSrcCode(sourceList: [?d] 2*string, show) {
-  var destination = getMasonHome() +'/.mason/src/';
+  var destination = MASON_HOME +'/.mason/src/';
   forall source in sourceList {
     if !depExists(source(2)) {
       var version = source(2).split('-');

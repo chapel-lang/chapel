@@ -16,9 +16,7 @@ proc UpdateLock(tf="Mason.toml", lf="Mason.lock") {
     delete TomlFile;
     delete lockFile;
   }
-  else {
-    writeln("Cannot update: no Mason.toml found");
-  }
+  else writeln("Cannot update: no Mason.toml found");
 }
 
 
@@ -30,9 +28,10 @@ proc genLock(lock: Toml, lf) {
   tomlWriter.close();
 }
 
+
 proc updateRegistry(tf: string) {
-  var masonHome = getMasonHome();
-  var registryHome = masonHome + '/.mason/registry';
+  const masonHome = MASON_HOME;
+  const registryHome = masonHome + '/.mason/registry';
   if isDir(registryHome) {
     var pullRegistry = 'git -C ' + registryHome + '/ pull -q origin master';
     if tf == "Mason.toml" then writeln("Updating mason-registry");
@@ -42,8 +41,8 @@ proc updateRegistry(tf: string) {
   else {
     mkdir(masonHome + '/.mason');
     mkdir(masonHome + '/.mason/src');
-    var registry = "https://github.com/chapel-lang/mason-registry";
-    var cloneRegistry = 'git -C ' + masonHome + '/.mason/ clone -q ' + registry + ' registry';
+    const registry = "https://github.com/chapel-lang/mason-registry";
+    const cloneRegistry = 'git -C ' + masonHome + '/.mason/ clone -q ' + registry + ' registry';
     writeln('Could not find Registry...cloning registry...');
     runCommand(cloneRegistry);
   } 
@@ -57,11 +56,11 @@ proc createDepTree(root: Toml) {
   var dp: domain(string);
   var dps: [dp] Toml;
   var depTree: Toml = dps;
-  if root.pathExists("brick") {
+  if root.pathExists("brick") then
     depTree["root"] = new Toml(root["brick"]);
-  }
   else {
-    halt("Could not find brick; Mason cannot update");
+    writeln("Could not find brick; Mason cannot update");
+    exit(1);
   }
 
   if root.pathExists("dependencies") {
@@ -70,9 +69,7 @@ proc createDepTree(root: Toml) {
     var fullTree = createDepTrees(depTree, manifests, "root");
     return fullTree;
   }
-  else {
-    return depTree;
-  }
+  else return depTree;
 } 
 
 proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml { 
@@ -106,9 +103,8 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
     }
     deps.remove(deps.domain.first);
   }
-  if depList.domain.size > 0 {
+  if depList.domain.size > 0 then
     depTree[name]["dependencies"] = depList;
-  }
   return depTree;
 }
 
@@ -125,7 +121,8 @@ proc IVRS(version1: string, version2: string) {
   var v1 = vers1(1): int;
   var v2 = vers2(1): int;
   if vers1(1) != vers2(1) {
-    halt("Differing Major versions of dependencies are not supported");
+    writeln("Differing Major versions of dependencies are not supported");
+    exit(1);
   }
   else if vers1(2) != vers2(2) {
     v1 = vers1(2): int;
@@ -164,15 +161,15 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 /* Resposible for parsing the Mason.toml to be given
    back to a call from getManifests */ 
 proc retrieveDep(name: string, version: string) {
-  var home = getMasonHome();
-  var tomlPath = home + "/.mason/registry/Bricks/"+name+"/"+version+".toml";
+  const tomlPath = MASON_HOME + "/.mason/registry/Bricks/"+name+"/"+version+".toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);
     var depToml = parseToml(tomlFile);
     return depToml;
   }
   else {
-    halt("Could not find toml file for " + name);
+    writeln("No toml file found in mason-registry for " + name +'-'+ version);
+    exit(1);
   }
 }
 
@@ -195,12 +192,9 @@ proc getDependencies(tomlTbl: Toml) {
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) { 
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {
-    if v.tag == fieldToml {
+    if v.tag == fieldToml then
       continue;
-    }
-    else {
-      yield(k,v);
-    }
+    else yield(k,v);
   }
 }
 

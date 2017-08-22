@@ -59,22 +59,19 @@ proc masonRun(args) {
   if isDir('target') {
     var execs = ' '.join(execopts);
     var command = "target/debug/" + toRun + ' ' + execs;
-    if isDir('target/release') {
+    if isDir('target/release') then
       command = "target/release/" + toRun + ' ' + execs;
-    }
-    if show {
+
+    if show then
       writeln("Executing binary: " + command);
-    }
-    if isFile("Mason.lock") {  // If built
+
+    if isFile("Mason.lock") then  // If built
       runCommand(command);
-    }
     else if isFile("Mason.toml") { // If not built
       masonBuild(args);
       runCommand(command);
     }
-    else {
-      writeln("call mason run from the top level of your projects directory");
-    }
+    else writeln("call mason run from the top level of your projects directory");
   }
   else {
     writeln("Mason cannot find the compiled program");
@@ -86,7 +83,6 @@ proc masonRun(args) {
 proc masonClean() {
   runCommand('rm -rf target');
 }
-
 
 
 // TODO

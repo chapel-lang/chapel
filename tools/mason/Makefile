@@ -4,8 +4,8 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
-ifndef CHPL_MASON_HOME
-export CHPL_MASON_HOME=$(HOME)
+ifndef MASON_HOME
+export MASON_HOME=$(HOME)
 endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
@@ -16,21 +16,21 @@ link=$(bdir)/mason
 TOML=$(CHPL_HOME)/test/modules/packages/Toml/
 REGISTRY=https://github.com/chapel-lang/mason-registry
 
-registry = $(CHPL_MASON_HOME)/.mason/registry/
+registry = $(MASON_HOME)/.mason/registry/
 
 
 all: install
 
 
 mason:
-	@mkdir -p $(CHPL_MASON_HOME)/.mason
-	@mkdir -p $(CHPL_MASON_HOME)/.mason/src
+	@mkdir -p $(MASON_HOME)/.mason
+	@mkdir -p $(MASON_HOME)/.mason/src
 ifneq ($(wildcard $(registry)),)
 	@echo "Removing old registry..."
-	@rm -rf $(CHPL_MASON_HOME)/.mason/registry
+	@rm -rf $(MASON_HOME)/.mason/registry
 endif
 	@echo "Registry - $(registry)"
-	@git -C $(CHPL_MASON_HOME)/.mason/ clone $(REGISTRY) registry
+	@git -C $(MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
 	@chpl mason.chpl -M $(TOML)
 
@@ -60,4 +60,4 @@ endif
 
 clobber: clean
 	@echo "Removing Registry..."
-	rm -rf $(CHPL_MASON_HOME)/.mason
+	rm -rf $(MASON_HOME)/.mason
