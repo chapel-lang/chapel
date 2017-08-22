@@ -21,6 +21,7 @@
 
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
 #include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -1303,6 +1304,27 @@ bool AstDumpToNode::enterCatchStmt(CatchStmt* node)
   {
     mOffset = mOffset + 2;
     node->_body->accept(this);
+    mOffset = mOffset - 2;
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+
+  return false;
+}
+
+bool AstDumpToNode::enterDeferStmt(DeferStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+  newline();
+
+  if (BlockStmt* body = node->body())
+  {
+    mOffset = mOffset + 2;
+    body->accept(this);
     mOffset = mOffset - 2;
   }
 
