@@ -10,3 +10,8 @@ var e = new C();
 var f = new C();
 
 printMemAllocs(240);
+
+delete c;
+delete d;
+delete e;
+delete f;
