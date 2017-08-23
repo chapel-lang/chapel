@@ -5877,6 +5877,8 @@ static bool  contextTypesMatch(FnSymbol* valueFn,
 
 static void  contextTypeInfo(FnSymbol* fn);
 
+static void  resolveExprExpandGenerics(CallExpr* call);
+
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
 
 static void  resolveExprMaybeIssueError(CallExpr* call);
@@ -5950,49 +5952,7 @@ static Expr* resolveExpr(Expr* expr) {
         resolveFns(call->resolvedFunction());
       }
 
-      for (int i = 1; i <= call->numActuals(); i++) {
-        Expr* actualExpr = call->get(i);
-        Symbol* actualSym = NULL;
-        if (SymExpr* actual = toSymExpr(actualExpr)) {
-          actualSym = actual->symbol();
-        } else if (NamedExpr* named = toNamedExpr(actualExpr)) {
-          SymExpr* namedSe = toSymExpr(named->actual);
-          INT_ASSERT(namedSe);
-          actualSym = namedSe->symbol();
-        } else {
-          INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
-        }
-
-        if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) &&
-            actualSym->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-          Symbol* formal = call->resolvedFunction()->getFormal(i);
-          INT_ASSERT(!formal->type->symbol->hasFlag(FLAG_GENERIC));
-          // The type has been determined to no longer be generic.  Update the
-          // delayed instance to have the right type.
-          actualSym->type = formal->type;
-          actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-          AggregateType* formalType = toAggregateType(formal->type);
-          INT_ASSERT(formalType);
-          formalType->initializerResolved = true;
-
-          if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
-            if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
-              if (fn->_this != NULL &&
-                  isClass(fn->_this->type)) {
-                AggregateType* at = toAggregateType(fn->_this->type);
-                Symbol* superField = at->getField(1);
-                if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
-                  at = at->getInstantiationParent(formalType);
-                  fn->_this->type = at;
-                  superField = at->getField(1);
-                  superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
-                }
-              }
-            }
-          }
-        }
-      }
+      resolveExprExpandGenerics(call);
     }
 
     if (!tryFailure)
@@ -6134,6 +6094,62 @@ static bool contextTypesMatch(FnSymbol* valueFn,
 static void contextTypeInfo(FnSymbol* fn) {
   if (fn != NULL) {
     USR_FATAL_CONT(fn, "function returns %s", toString(fn->retType));
+  }
+}
+
+static void resolveExprExpandGenerics(CallExpr* call) {
+  for (int i = 1; i <= call->numActuals(); i++) {
+    Expr*   actualExpr = call->get(i);
+    Symbol* actualSym  = NULL;
+
+    if (SymExpr* actual = toSymExpr(actualExpr)) {
+      actualSym = actual->symbol();
+
+    } else if (NamedExpr* named = toNamedExpr(actualExpr)) {
+      SymExpr* namedSe = toSymExpr(named->actual);
+
+      INT_ASSERT(namedSe);
+
+      actualSym = namedSe->symbol();
+
+    } else {
+      INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
+    }
+
+    if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+        actualSym->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
+      Symbol*        formal     = call->resolvedFunction()->getFormal(i);
+      AggregateType* formalType = toAggregateType(formal->type);
+
+      INT_ASSERT(formalType);
+      INT_ASSERT(formalType->symbol->hasFlag(FLAG_GENERIC) == false);
+
+      // The type has been determined to no longer be generic.
+      // Update the delayed instance to have the right type.
+      actualSym->type = formalType;
+
+      actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+      formalType->initializerResolved = true;
+
+      if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
+        if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
+          if (fn->_this != NULL && isClass(fn->_this->type) == true) {
+            AggregateType* ct         = toAggregateType(fn->_this->type);
+            Symbol*        superField = ct->getField(1);
+
+            if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+              ct              = ct->getInstantiationParent(formalType);
+              fn->_this->type = ct;
+
+              superField      = ct->getField(1);
+
+              superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+            }
+          }
+        }
+      }
+    }
   }
 }
 
