@@ -114,8 +114,8 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
-Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
-                                              SymExpr*    origSE);
+CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
+                                                  SymExpr*    origSE);
 
 void implementForallIntents1(DefExpr* defChplIter);
 

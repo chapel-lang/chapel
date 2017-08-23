@@ -672,10 +672,13 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 }
 
 // see also comments above
-Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
-{
-  if (pfs->id == breakOnResolveID)
+CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
+                                                  SymExpr*    origSE) {
+  CallExpr* retval = NULL;
+
+  if (pfs->id == breakOnResolveID) {
     gdbShouldBreakHere();
+  }
 
   // We only get here for origSE==firstIteratedExpr() .
   // If at that time there are other elements in iterExprs(), we remove them.
@@ -684,31 +687,35 @@ Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
   CallExpr* iterCall = buildForallParIterCall(pfs, origSE);
 
   // So we know where iterCall is.
-  INT_ASSERT(iterCall == pfs->firstIteratedExpr());
-  INT_ASSERT(!origSE->inTree());
+  INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
+  INT_ASSERT(origSE->inTree() == false);
 
   bool gotSA = findStandaloneOrLeader(pfs, iterCall);
-  if (tryFailure)
-    // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
-    return NULL;
 
-  addParIdxVarsAndRestruct(pfs, gotSA);
+  // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
+  if (tryFailure == false) {
+    addParIdxVarsAndRestruct(pfs, gotSA);
 
-  implementForallIntentsNew(pfs, iterCall);
+    implementForallIntentsNew(pfs, iterCall);
 
-  resolveParallelIteratorAndIdxVar(pfs, iterCall, gotSA);
+    resolveParallelIteratorAndIdxVar(pfs, iterCall, gotSA);
 
-  if (gotSA) {
-    if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-      removeOrigIterCall(origSE);
-  } else {
-    buildLeaderLoopBody(pfs, rebuildIterableCall(pfs, iterCall, origSE));
+    if (gotSA) {
+      if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        removeOrigIterCall(origSE);
+      }
+
+    } else {
+      buildLeaderLoopBody(pfs, rebuildIterableCall(pfs, iterCall, origSE));
+    }
+
+    INT_ASSERT(iterCall == pfs->firstIteratedExpr());        // still here?
+    INT_ASSERT(iterCall == pfs->iteratedExpressions().tail); // only 1 elem
+
+    retval = iterCall;
   }
 
-  INT_ASSERT(iterCall == pfs->firstIteratedExpr()); // still here?
-  INT_ASSERT(iterCall == pfs->iteratedExpressions().tail); // only 1 elem here
-
-  return iterCall;
+  return retval;
 }
 
 ///////////////////////////////
