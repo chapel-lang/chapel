@@ -9,4 +9,4 @@ var d = new C();
 var e = new C();
 var f = new C();
 
-printMemAllocs(240, true);
+printMemAllocs(240);
