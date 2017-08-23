@@ -5879,6 +5879,8 @@ static void  contextTypeInfo(FnSymbol* fn);
 
 static void  resolveExprExpandGenerics(CallExpr* call);
 
+static void  resolveExprTypeConstructor(SymExpr* symExpr);
+
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
 
 static void  resolveExprMaybeIssueError(CallExpr* call);
@@ -5933,7 +5935,7 @@ static Expr* resolveExpr(Expr* expr) {
 
     resolveCall(call);
 
-    if (!tryFailure && call->isResolved()) {
+    if (tryFailure == false && call->isResolved() == true) {
       if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
         // ForallLeaderArgs: process the leader that 'call' invokes.
         implementForallIntents2(call, origToLeaderCall);
@@ -5948,57 +5950,28 @@ static Expr* resolveExpr(Expr* expr) {
         expr = resolveExprResolveEachCall(cc);
 
       } else {
-        INT_ASSERT(call->isResolved());
-        resolveFns(call->resolvedFunction());
+        FnSymbol* fn = call->resolvedFunction();
+
+        INT_ASSERT(fn != NULL);
+        resolveFns(fn);
       }
 
       resolveExprExpandGenerics(call);
     }
 
-    if (!tryFailure)
+    if (tryFailure == false) {
       callStack.pop();
+    }
   }
 
-  if (tryFailure) {
+  if (tryFailure == true) {
     return resolveExprHandleTryFailure(fn);
   }
 
   INT_ASSERT(expr);
 
-  if (SymExpr* sym = toSymExpr(expr)) {
-    // Avoid record constructors via cast
-    // should be fixed by out-of-order resolution
-    CallExpr* parent = toCallExpr(sym->parentExpr);
-
-    if (!parent ||
-        !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
-        !sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-
-      if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-        // Don't try to resolve the defaultTypeConstructor for string literals
-        // (resolution ordering issue, string literals are encountered too
-        // early on and we don't know enough to be able to resolve them at
-        // that point)
-        if (!(ct == dtString &&
-              (sym->symbol()->isParameter() ||
-               sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
-            !ct->symbol->hasFlag(FLAG_GENERIC) &&
-            !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-            ct->defaultTypeConstructor) {
-
-          resolveFormals(ct->defaultTypeConstructor);
-
-          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (getPartialCopyData(ct->defaultTypeConstructor)) {
-              instantiateBody(ct->defaultTypeConstructor);
-            }
-
-            resolveFns(ct->defaultTypeConstructor);
-          }
-        }
-      }
-    }
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    resolveExprTypeConstructor(symExpr);
   }
 
   return postFold(expr);
@@ -6146,6 +6119,41 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
             }
+          }
+        }
+      }
+    }
+  }
+}
+
+static void resolveExprTypeConstructor(SymExpr* symExpr) {
+  if (AggregateType* ct = toAggregateType(symExpr->typeInfo())) {
+    if (ct->defaultTypeConstructor                != NULL   &&
+        ct->symbol->hasFlag(FLAG_GENERIC)         == false  &&
+        ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
+        ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+      CallExpr* parent = toCallExpr(symExpr->parentExpr);
+      Symbol*   sym    = symExpr->symbol();
+
+      if (parent                               == NULL  ||
+          parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
+          sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+
+        // Don't try to resolve the defaultTypeConstructor for string
+        // literals (resolution ordering issue, string literals are
+        // encountered too early and we don't know enough to be able
+        // to resolve them at that point)
+        if (ct != dtString ||
+            (sym->isParameter()                    == false   &&
+             sym->hasFlag(FLAG_INSTANTIATED_PARAM) == false))  {
+          resolveFormals(ct->defaultTypeConstructor);
+
+          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
+            if (hasPartialCopyData(ct->defaultTypeConstructor) == true) {
+              instantiateBody(ct->defaultTypeConstructor);
+            }
+
+            resolveFns(ct->defaultTypeConstructor);
           }
         }
       }
