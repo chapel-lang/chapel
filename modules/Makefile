@@ -92,9 +92,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
-	standard/Collection.chpl \
-	standard/DistributedBag.chpl \
-	standard/DistributedDeque.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
@@ -116,7 +113,10 @@ PACKAGES_TO_DOCUMENT = \
 	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
-	packages/ZMQ.chpl
+	packages/ZMQ.chpl \
+	packages/Collection.chpl \
+	packages/DistributedBag.chpl \
+	packages/DistributedDeque.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
