@@ -5945,6 +5945,14 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
 *                                                                             *
 ************************************** | *************************************/
 
+static Expr* resolveExprResolveEachCall(ContextCallExpr* cc);
+
+static bool  contextTypesMatch(FnSymbol* valueFn,
+                               FnSymbol* constRefFn,
+                               FnSymbol* refFn);
+
+static void  contextTypeInfo(FnSymbol* fn);
+
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
 
 static Expr* resolveExpr(Expr* expr) {
@@ -6007,89 +6015,8 @@ static Expr* resolveExpr(Expr* expr) {
       // For ContextCallExprs, be sure to resolve all of the
       // functions that could be called.
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        CallExpr* refCall = NULL;
-        CallExpr* valueCall = NULL;
-        CallExpr* constRefCall = NULL;
+        expr = resolveExprResolveEachCall(cc);
 
-        cc->getCalls(refCall, valueCall, constRefCall);
-
-        FnSymbol* refFn = refCall?refCall->resolvedFunction():NULL;
-        FnSymbol* valueFn = valueCall?valueCall->resolvedFunction():NULL;
-        FnSymbol* constRefFn = constRefCall?constRefCall->resolvedFunction():NULL;
-
-        if (refFn)
-          resolveFns(refFn);
-        if (valueFn)
-          resolveFns(valueFn);
-        if (constRefFn)
-          resolveFns(constRefFn);
-
-        // TODO: pull this error checking out into a function call.
-
-        // Error checking. First, check all or none are iterators.
-        int n = 0;
-        int nIterator = 0;
-        if (refFn) {
-          n++;
-          nIterator += refFn->isIterator();
-        }
-        if (valueFn) {
-          n++;
-          nIterator += valueFn->isIterator();
-        }
-        if (constRefFn) {
-          n++;
-          nIterator += constRefFn->isIterator();
-        }
-        if (nIterator != 0 && nIterator != n) {
-          USR_FATAL_CONT(cc, "invalid ref return pair: mixing proc and iter");
-          if (refFn)
-            USR_FATAL_CONT(refFn, "here");
-          if (valueFn)
-            USR_FATAL_CONT(valueFn, "here");
-          if (constRefFn)
-            USR_FATAL_CONT(constRefFn, "here");
-        }
-        // Next, check that the return types match.
-        // This error is skipped for iterators because
-        // the return type of an iterator is e.g. an iterator record
-        // which is not the same as the yielded type.
-        if (nIterator == 0) {
-          Type* firstType = NULL;
-          bool typeError = false;
-          if (refFn) {
-            firstType = refFn->retType->getValType();
-          }
-          if (valueFn) {
-            Type* retType = valueFn->retType->getValType();
-            if (firstType == NULL)
-              firstType = retType;
-            if (firstType != retType)
-              typeError = true;
-          }
-          if (constRefFn) {
-            Type* retType = constRefFn->retType->getValType();
-            if (firstType != retType)
-              typeError = true;
-          }
-
-          if (typeError) {
-            USR_FATAL_CONT(cc, "invalid return intent overload: return types differ");
-            if (refFn)
-              USR_FATAL_CONT(refFn, "function returns %s",
-                             toString(refFn->retType));
-            if (valueFn)
-              USR_FATAL_CONT(valueFn, "function returns %s",
-                             toString(valueFn->retType));
-            if (constRefFn)
-              USR_FATAL_CONT(constRefFn, "function returns %s",
-                             toString(constRefFn->retType));
-            USR_STOP();
-          }
-        }
-
-        // Proceed using the designated call option
-        expr = getDesignatedCall(cc);
       } else {
         INT_ASSERT(call->isResolved());
         resolveFns(call->resolvedFunction());
@@ -6187,6 +6114,99 @@ static Expr* resolveExpr(Expr* expr) {
   }
 
   return postFold(expr);
+}
+
+// A ContextCallExpr wraps 2 or 3 CallExprs.
+// Resolve every call and perform semantic checks
+static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
+  FnSymbol* valueFn    = NULL;
+  FnSymbol* constRefFn = NULL;
+  FnSymbol* refFn      = NULL;
+  int       n          =    0;
+  int       nIterator  =    0;
+
+  if (CallExpr* tmpCall = cc->getValueCall()) {
+    valueFn    = tmpCall->resolvedFunction();
+
+    resolveFns(valueFn);
+
+    n         += 1;
+    nIterator += (valueFn->isIterator()    == true) ? 1 : 0;
+  }
+
+  if (CallExpr* tmpCall = cc->getConstRefCall()) {
+    constRefFn = tmpCall->resolvedFunction();
+
+    resolveFns(constRefFn);
+
+    n         += 1;
+    nIterator += (constRefFn->isIterator() == true) ? 1 : 0;
+  }
+
+  if (CallExpr* tmpCall = cc->getRefCall()) {
+    refFn      = tmpCall->resolvedFunction();
+
+    resolveFns(refFn);
+
+    n         += 1;
+    nIterator += (refFn->isIterator()      == true) ? 1 : 0;
+  }
+
+  // If there are no iterators then confirm that the return types match.
+  //    (The return type of an iterator is not the yielded type)
+  if (nIterator == 0) {
+    if (contextTypesMatch(valueFn, constRefFn, refFn) == false) {
+      USR_FATAL_CONT(cc,
+                     "invalid return intent overload: return types differ");
+
+      contextTypeInfo(valueFn);
+      contextTypeInfo(constRefFn);
+      contextTypeInfo(refFn);
+
+      USR_STOP();
+    }
+
+  // If there are any iterators then they must all be iterators
+  } else if (nIterator != n) {
+    USR_FATAL_CONT(cc, "invalid ref return pair: mixing proc and iter");
+
+    if (valueFn    != NULL) USR_FATAL_CONT(valueFn,    "here");
+    if (constRefFn != NULL) USR_FATAL_CONT(constRefFn, "here");
+    if (refFn      != NULL) USR_FATAL_CONT(refFn,      "here");
+  }
+
+  // Return the "designated call"
+  return getDesignatedCall(cc);
+}
+
+static bool contextTypesMatch(FnSymbol* valueFn,
+                              FnSymbol* constRefFn,
+                              FnSymbol* refFn) {
+  Type* type   = NULL;
+  bool  retval = true;
+
+  if (valueFn != NULL) {
+    type   = valueFn->retType->getValType();
+  }
+
+  if (constRefFn != NULL) {
+    Type* retType = constRefFn->retType->getValType();
+
+    retval = (type == NULL || type == retType) ? true : false;
+    type   = retType;
+  }
+
+  if (refFn != NULL) {
+    retval = (type == refFn->retType->getValType()) ? true : false;
+  }
+
+  return retval;
+}
+
+static void contextTypeInfo(FnSymbol* fn) {
+  if (fn != NULL) {
+    USR_FATAL_CONT(fn, "function returns %s", toString(fn->retType));
+  }
 }
 
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
