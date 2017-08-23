@@ -129,9 +129,8 @@ TOML
 
 TOML is the configuration language chosen by the chapel team for
 configuring programs written in chapel. A TOML file contains the
-nessesary information to build a chapel program using mason. 
+necessary information to build a chapel program using mason. 
 `TOML Spec <https://github.com/toml-lang/toml>`_.
-
 
 
 
