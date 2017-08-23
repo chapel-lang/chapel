@@ -18,7 +18,7 @@ In the mason directory found in ``$CHPL_HOME/tools/mason`` run the following:
 .. code-block:: sh
 
    make
-
+   make install
 
 This will create the hidden ``.mason/`` directory in ``MASON_HOME``, which
 defaults to your ``$HOME`` if unset. It builds the mason binary so that the

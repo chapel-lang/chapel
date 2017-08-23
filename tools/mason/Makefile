@@ -19,10 +19,14 @@ REGISTRY=https://github.com/chapel-lang/mason-registry
 registry = $(MASON_HOME)/.mason/registry/
 
 
-all: install
+all: mason
 
 
-mason:
+mason:	
+	@if [ $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_regexp.py) != re2 ]; then \
+        echo "CHPL_REGEXP=re2 is required to build mason"; \
+        exit 1;\
+	fi;
 	@mkdir -p $(MASON_HOME)/.mason
 	@mkdir -p $(MASON_HOME)/.mason/src
 ifneq ($(wildcard $(registry)),)
