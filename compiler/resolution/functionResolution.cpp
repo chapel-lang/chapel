@@ -5790,48 +5790,6 @@ bool requiresImplicitDestroy(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
-  bool retval = false;
-
-  if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->isWhileStmt() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param while loop");
-
-    } else if (block->isForLoop() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param for loop");
-
-    } else if (block->isLoopStmt() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param loop");
-    }
-  }
-
-  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (isCondStmt(block->parentExpr)) {
-      USR_FATAL(block->parentExpr,
-                "param function cannot contain a non-param conditional");
-    }
-  }
-
-  if (paramMap.get(fn->getReturnSymbol())) {
-    CallExpr* call = toCallExpr(fn->body->body.tail);
-
-    INT_ASSERT(call);
-    INT_ASSERT(call->isPrimitive(PRIM_RETURN));
-
-    call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
-
-    retval = true; // param function is resolved
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 void resolveBlockStmt(BlockStmt* blockStmt) {
   for_exprs_postorder(expr, blockStmt) {
     expr = resolveExpr(expr);
@@ -5861,6 +5819,8 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
 * continue in the surrounding block or call.                                  *
 *                                                                             *
 ************************************** | *************************************/
+
+static bool  isParamResolved(FnSymbol* fn, Expr* expr);
 
 static Expr* resolveExprResolveEachCall(ContextCallExpr* cc);
 
@@ -5908,7 +5868,10 @@ static Expr* resolveExpr(Expr* expr) {
     expr = preFold(call);
   }
 
-  if (expr && fn && fn->retTag == RET_PARAM && is_param_resolved(fn, expr)) {
+  if (expr                      != NULL      &&
+      fn                        != NULL      &&
+      fn->retTag                == RET_PARAM &&
+      isParamResolved(fn, expr) == true) {
     return expr;
   }
 
@@ -5968,6 +5931,42 @@ static Expr* resolveExpr(Expr* expr) {
   }
 
   return postFold(expr);
+}
+
+static bool isParamResolved(FnSymbol* fn, Expr* expr) {
+  bool retval = false;
+
+  if (BlockStmt* block = toBlockStmt(expr)) {
+    if (block->isWhileStmt() == true) {
+      USR_FATAL(expr, "param function cannot contain a non-param while loop");
+
+    } else if (block->isForLoop() == true) {
+      USR_FATAL(expr, "param function cannot contain a non-param for loop");
+
+    } else if (block->isLoopStmt() == true) {
+      USR_FATAL(expr, "param function cannot contain a non-param loop");
+    }
+  }
+
+  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
+    if (isCondStmt(block->parentExpr)) {
+      USR_FATAL(block->parentExpr,
+                "param function cannot contain a non-param conditional");
+    }
+  }
+
+  if (paramMap.get(fn->getReturnSymbol())) {
+    CallExpr* call = toCallExpr(fn->body->body.tail);
+
+    INT_ASSERT(call);
+    INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+
+    call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
+
+    retval = true; // param function is resolved
+  }
+
+  return retval;
 }
 
 // A ContextCallExpr wraps 2 or 3 CallExprs.
