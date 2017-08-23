@@ -5909,17 +5909,45 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-// Resolves an expression and manages the callStack and tryStack.
-// On success, returns the call that was passed in.
-// On a try failure, returns either the expression preceding the elseStmt,
-// substituted for the body of the param condition (if that substitution could
-// be made), or NULL.
-// If null, then resolution of the current block should be aborted.  tryFailure
-// is true in this case, so the search for a matching elseStmt continue in the
-// surrounding block or call.
-static Expr*
-resolveExpr(Expr* expr) {
+void resolveBlockStmt(BlockStmt* blockStmt) {
+  for_exprs_postorder(expr, blockStmt) {
+    expr = resolveExpr(expr);
+
+    if (tryFailure == true) {
+      if (expr != NULL) {
+        tryFailure = false;
+      } else {
+        break;
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Resolves an expression and manages the callStack and tryStack.              *
+*                                                                             *
+* On success, returns the call that was passed in.                            *
+*                                                                             *
+* On a try failure, returns either the expression preceding the elseStmt,     *
+* substituted for the body of the param condition (if that substitution       *
+* could be made), or NULL.                                                    *
+*                                                                             *
+* If null, then resolution of the current block should be aborted.            *
+* tryFailure is true in this case, so the search for a matching elseStmt      *
+* continue in the surrounding block or call.                                  *
+*                                                                             *
+************************************** | *************************************/
+
+static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
+
+static Expr* resolveExpr(Expr* expr) {
   Expr* const origExpr = expr;
   FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
 
@@ -6115,38 +6143,11 @@ resolveExpr(Expr* expr) {
     if (!tryFailure)
       callStack.pop();
   }
-  {
-    if (tryFailure) {
-      if (tryStack.n > 0 && tryStack.tail()->parentSymbol == fn) {
-        // The code in the 'true' branch of a tryToken conditional has failed
-        // to resolve fully. Roll the callStack back to the function where
-        // the nearest tryToken conditional is and replace the entire
-        // conditional with the 'false' branch then continue resolution on
-        // it.  If the 'true' branch did fully resolve, we would replace the
-        // conditional with the 'true' branch instead.
-        while (callStack.n > 0 &&
-               callStack.tail()->resolvedFunction() !=
-               tryStack.tail()->elseStmt->parentSymbol) {
-          callStack.pop();
-        }
 
-        BlockStmt* block = tryStack.tail()->elseStmt;
-
-        tryStack.tail()->replace(block->remove());
-        tryStack.pop();
-
-        if (!block->prev)
-          block->insertBefore(new CallExpr(PRIM_NOOP));
-
-        tryFailure = false;
-
-        return block->prev;
-      } else {
-        return NULL;
-      }
-
-    }
+  if (tryFailure) {
+    return resolveExprHandleTryFailure(fn);
   }
+
   INT_ASSERT(expr);
 
   if (SymExpr* sym = toSymExpr(expr)) {
@@ -6188,21 +6189,43 @@ resolveExpr(Expr* expr) {
   return postFold(expr);
 }
 
+static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
+  Expr* retval = NULL;
 
-void
-resolveBlockStmt(BlockStmt* blockStmt) {
-  for_exprs_postorder(expr, blockStmt) {
-    expr = resolveExpr(expr);
+  if (tryStack.n > 0 && tryStack.tail()->parentSymbol == fn) {
+    // The code in the 'true' branch of a tryToken conditional has failed
+    // to resolve fully. Roll the callStack back to the function where
+    // the nearest tryToken conditional is and replace the entire
+    // conditional with the 'false' branch then continue resolution on
+    // it.  If the 'true' branch did fully resolve, we would replace the
+    // conditional with the 'true' branch instead.
+    BlockStmt* elseBlock  = tryStack.tail()->elseStmt;
+    Symbol*    elseParent = elseBlock->parentSymbol;
 
-    if (tryFailure) {
-      if (expr == NULL)
-        return;
-
-      tryFailure = false;
+    while (callStack.n                          >  0 &&
+           callStack.tail()->resolvedFunction() != elseParent) {
+      callStack.pop();
     }
+
+    tryStack.tail()->replace(elseBlock->remove());
+    tryStack.pop();
+
+    if (elseBlock->prev == NULL) {
+      elseBlock->insertBefore(new CallExpr(PRIM_NOOP));
+    }
+
+    tryFailure = false;
+    retval     = elseBlock->prev;
   }
+
+  return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 computeReturnTypeParamVectors(BaseAST* ast,
