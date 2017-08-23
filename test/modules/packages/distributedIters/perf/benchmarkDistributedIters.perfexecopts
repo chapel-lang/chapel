@@ -1,2 +1,2 @@
---test=uniform --mode=guided --n=10000 # benchmarkDistributeIters-guided.perfkeys
---test=uniform --mode=default --n=10000 # benchmarkDistributeIters-default.perfkeys
+--test=uniform --mode=guided --n=10000 # distributedGuided
+--test=uniform --mode=default --n=10000 # default
