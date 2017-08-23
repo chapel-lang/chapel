@@ -142,7 +142,7 @@ private proc testGuidedWorkload()
   do replicatedArray[i] = array[i];
 
   timer.start();
-  forall i in distributedGuided(controlRange, coordinated=coordinated) do
+  forall i in distributedGuided(controlRange, coordinated=coordinated)
   {
     const k:real = (array[i] * n):int;
 
@@ -167,7 +167,7 @@ private proc testControlWorkload():real
   fillArray(array);
 
   timer.start();
-  forall i in D do
+  forall i in D
   {
     const k:real = (array[i] * n):int;
 
@@ -198,7 +198,6 @@ private proc fillArray(array)
     when testCase.stacked do fillStacked(array);
     when testCase.uniform do fillUniformlyRandom(array);
   }
-
   if debug then writeArrayStatistics(array);
 }
 
@@ -250,7 +249,7 @@ private proc fillCubicOutliers(array)
   const a_2:real = -2.85714;
   const a_1:real = 0.690476;
   const a_0:real = 0.492857;
-  forall i in arrayDomain do
+  forall i in arrayDomain
   {
     const x:real = array[i];
     const xSquared:real = (x ** 2);
@@ -284,10 +283,8 @@ private proc fillKryptonite(array, desiredProcessorCount:int=0)
                                          / processorCount:real);
   const commonRatio:real = (1.0 - (1.0 / processorCount:real));
 
-  forall i in arrayDomain do
-  {
-    array[i] = (lengthOverProcessorCount * (commonRatio ** i));
-  }
+  forall i in arrayDomain do array[i] = (lengthOverProcessorCount
+                                         * (commonRatio ** i));
   normalizeSum(array);
 }
 
@@ -311,10 +308,8 @@ private proc fillStacked(array, desiredProcessorCount:int=0)
                                          / processorCount:real);
   const commonRatio:real = (1.0 - (1.0 / processorCount:real));
 
-  forall i in arrayDomain do
-  {
-    array[i] = (lengthOverProcessorCount * (commonRatio ** (arraySize - i)));
-  }
+  forall i in arrayDomain do array[i] = (lengthOverProcessorCount
+                                         * (commonRatio ** (arraySize - i)));
   normalizeSum(array);
 }
 
@@ -334,7 +329,7 @@ private proc fillNormallyDistributed(array)
   const precisionByRootTwoPi:real = (precision:real/((2.0 * Math.pi) ** 0.5));
   const minusPrecisionSquaredByTwo:real = (-1.0 * ((precision:real ** 2.0)
                                                    /2.0));
-  forall i in arrayDomain do
+  forall i in arrayDomain
   {
     const x:real = array[i];
     const power:real = (minusPrecisionSquaredByTwo
@@ -371,9 +366,9 @@ private proc normalizeSum(array, desiredSum=0)
 
 private proc properDivisors(n:int):domain(int)
 { // Return an associative domain of ``n``'s proper divisors.
-  var result:domain(int)={1};
+  var result:domain(int) = {1};
   var quotient:real;
-  for i in 2..n/2 do
+  for i in 2..n/2
   {
     quotient=n/i;
     if quotient == quotient:int
@@ -387,7 +382,7 @@ private proc isPerfect(n:int):bool
     Return whether ``n`` is a perfect number (i.e. equals its proper divisor
     sum).
   */
-  var properDivisorsN:domain(int)=properDivisors(n);
+  var properDivisorsN:domain(int) = properDivisors(n);
   var sum:int;
   for p in properDivisorsN do sum += p;
   return sum == n;
@@ -401,10 +396,7 @@ private proc max(array:[]):real
   const firstIndex = arrayLocalSubdomain.first;
   const initial = array[firstIndex];
   max = initial;
-  for element in array do
-  {
-    if element > max then max = element;
-  }
+  for element in array do if element > max then max = element;
   return max;
 }
 
@@ -424,7 +416,7 @@ private proc writeArrayStatistics(array:[]real)
     max = initial;
 
     // Mean.
-    for element in array do
+    for element in array
     {
       if element < min then min = element;
       if element > max then max = element;
@@ -450,7 +442,7 @@ private proc writeArrayStatistics(array:[]real)
     const plusStdDev:real = (mean + stdDev);
     const plusTwoStdDev:real = (mean + 2.0*stdDev);
     const plusThreeStdDev:real = (mean + 3.0*stdDev);
-    for element in array do
+    for element in array
     {
       if element < mean
       then if element < minusTwoStdDev
@@ -470,7 +462,7 @@ private proc writeArrayStatistics(array:[]real)
     }
     writeln("writeArrayStatistics: Histogram:");
     var current:real = minusThreeStdDev;
-    for bin in bins do
+    for bin in bins
     {
       writeln((current - stdDev), " to ", current, ": ", bin);
       current += stdDev;
