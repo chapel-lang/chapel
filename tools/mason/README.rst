@@ -23,7 +23,7 @@ In the mason directory found in ``$CHPL_HOME/tools/mason`` run the following:
 This will create the hidden ``.mason/`` directory in ``MASON_HOME``, which
 defaults to your ``$HOME`` if unset. It builds the mason binary so that the
 command line interface can be used. The mason registry is also downloaded from
-github so that a user can start to rely on mason to specifcy project
+github so that a user can start to rely on mason to specify project
 dependencies. This installs mason in the same place as the chapel compiler (``chpl``)
 so that mason can be used anywhere in the user's file system.
 

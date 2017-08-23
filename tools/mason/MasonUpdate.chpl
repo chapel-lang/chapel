@@ -3,7 +3,7 @@ use FileSystem;
 use MasonUtils;
 
 /*
-Update: Performs the upfront dependency resoultion and generates the lock file.
+Update: Performs the upfront dependency resolution and generates the lock file.
  
 Incompatible Version Resolution Strategy:
 
@@ -66,7 +66,7 @@ proc updateRegistry(tf: string) {
 
 /* Responsible for creating the dependency tree
    from the Mason.toml. Starts at the root of the
-   project and continues down dep tree recursivly
+   project and continues down dep tree recursively
    until each dep is recorded */
 proc createDepTree(root: Toml) {
   var dp: domain(string);
@@ -126,10 +126,10 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
 
 
 
-/* The Incompatible Version Resolution Stategy 
+/* The Incompatible Version Resolution Strategy 
    - differing major versions are not allowed
    - Always newest minor and patch 
-   - in accordance with semver  */
+   - in accordance with semantic versioning  */
 proc IVRS(version1: string, version2: string) {
   if version1 == version2 then return version1;
   var vers1 = version1.split('.');
@@ -174,7 +174,7 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 }
 
 
-/* Resposible for parsing the Mason.toml to be given
+/* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */ 
 proc retrieveDep(name: string, version: string) {
   const tomlPath = MASON_HOME + "/.mason/registry/Bricks/"+name+"/"+version+".toml";
