@@ -160,7 +160,6 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
-static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
 static Expr* resolveTypeExpr(Expr* expr);
 static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
@@ -1830,81 +1829,6 @@ userCall(CallExpr* call) {
     }
   }
   return call;
-}
-
-
-static void issueCompilerError(CallExpr* call) {
-  //
-  // Disable compiler warnings in internal modules that are triggered
-  // within a dynamic dispatch context because of potential user
-  // confusion.  Removed the following code and See the following
-  // tests:
-  //
-  //   test/arrays/bradc/workarounds/arrayOfSpsArray.chpl
-  //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
-  //   test/classes/bradc/arrayInClass/genericArrayInClass-otharrs.chpl
-  //
-  if (call->isPrimitive(PRIM_WARNING))
-    if (inDynamicDispatchResolution)
-      if (call->getModule()->modTag == MOD_INTERNAL &&
-          callStack.head()->getModule()->modTag == MOD_INTERNAL)
-        return;
-  //
-  // If an errorDepth was specified, report a diagnostic about the call
-  // that deep into the callStack. The default depth is 1.
-  //
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
-  VarSymbol* depthParam = toVarSymbol(paramMap.get(toDefExpr(fn->formals.tail)->sym));
-  int64_t depth;
-  bool foundDepthVal;
-  if (depthParam && depthParam->immediate &&
-      depthParam->immediate->const_kind == NUM_KIND_INT) {
-    depth = depthParam->immediate->int_value();
-    foundDepthVal = true;
-  } else {
-    depth = 1;
-    foundDepthVal = false;
-  }
-  if (depth > callStack.n - 1) {
-    if (foundDepthVal)
-      USR_WARN(call, "compiler diagnostic depth value exceeds call stack depth");
-    depth = callStack.n - 1;
-  }
-  if (depth < 0) {
-    USR_WARN(call, "compiler diagnostic depth value can not be negative");
-    depth = 0;
-  }
-  CallExpr* from = NULL;
-  for (int i = callStack.n-1 - depth; i >= 0; i--) {
-    from = callStack.v[i];
-    // We report calls whose target function is not compiler-generated and is
-    // not defined in one of the internal modules.
-    if (from->linenum() > 0 &&
-        from->getModule()->modTag != MOD_INTERNAL &&
-        !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
-      break;
-  }
-
-  const char* str = "";
-  VarSymbol* var = NULL;
-  for_formals(arg, fn) {
-    if (foundDepthVal && arg->defPoint == fn->formals.tail)
-      continue;
-    var = toVarSymbol(paramMap.get(arg));
-    INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
-    str = astr(str, var->immediate->v_string);
-  }
-  // collapse newlines and other escape sequences before printing
-  str = astr(unescapeString(str, var).c_str());
-  if (call->isPrimitive(PRIM_ERROR)) {
-    USR_FATAL(from, "%s", str);
-  } else {
-    USR_WARN(from, "%s", str);
-  }
-  if (FnSymbol* fn = toFnSymbol(callStack.tail()->resolvedFunction()))
-    innerCompilerWarningMap.put(fn, str);
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->resolvedFunction()))
-    outerCompilerWarningMap.put(fn, str);
 }
 
 static void reissueCompilerWarning(const char* str, int offset) {
@@ -5955,6 +5879,8 @@ static void  contextTypeInfo(FnSymbol* fn);
 
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
 
+static void  resolveExprMaybeIssueError(CallExpr* call);
+
 static Expr* resolveExpr(Expr* expr) {
   Expr* const origExpr = expr;
   FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
@@ -5972,10 +5898,12 @@ static Expr* resolveExpr(Expr* expr) {
     if (se->symbol()) {
       makeRefType(se->symbol()->type);
     }
+
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-      if (pfs->isIteratedExpression(expr))
+      if (pfs->isIteratedExpression(expr)) {
         // Note: this may set expr=NULL, tryFailure=true.
         expr = resolveParallelIteratorAndForallIntents(pfs, se);
+      }
     }
   }
 
@@ -5996,7 +5924,7 @@ static Expr* resolveExpr(Expr* expr) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR) ||
         call->isPrimitive(PRIM_WARNING)) {
-      issueCompilerError(call);
+      resolveExprMaybeIssueError(call);
     }
 
     callStack.add(call);
@@ -6239,6 +6167,100 @@ static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
   }
 
   return retval;
+}
+
+static void resolveExprMaybeIssueError(CallExpr* call) {
+  //
+  // Disable compiler warnings in internal modules that are triggered within
+  // a dynamic dispatch context to reduce potential user confusion.
+  //
+  if (call->isPrimitive(PRIM_ERROR)         == true          ||
+      call->getModule()->modTag             != MOD_INTERNAL  ||
+      inDynamicDispatchResolution           == false         ||
+      callStack.head()->getModule()->modTag != MOD_INTERNAL) {
+
+    //
+    // If an errorDepth was specified, report a diagnostic about the call
+    // that deep into the callStack. The default depth is 1.
+    //
+    FnSymbol*   fn            = toFnSymbol(call->parentSymbol);
+    DefExpr*    lastFormal    = toDefExpr(fn->formals.tail);
+    VarSymbol*  depthParam    = toVarSymbol(paramMap.get(lastFormal->sym));
+    int         depth         = 0;
+    int         head          = 0;
+    bool        foundDepthVal = false;
+    CallExpr*   from          = NULL;
+    const char* str           = "";
+    VarSymbol*  var           = NULL;
+
+    if (depthParam                        != NULL &&
+        depthParam->immediate             != NULL &&
+        depthParam->immediate->const_kind == NUM_KIND_INT) {
+      depth         = (int) depthParam->immediate->int_value();
+      foundDepthVal = true;
+
+      if (depth > callStack.n - 1) {
+        USR_WARN(call,
+                 "compiler diagnostic depth value exceeds call stack depth");
+
+        depth = callStack.n - 1;
+
+      } else if (depth < 0) {
+        USR_WARN(call, "compiler diagnostic depth value can not be negative");
+
+        depth = 0;
+      }
+
+    } else {
+      depth         = (callStack.n == 1) ? 0 : 1;
+      foundDepthVal = false;
+    }
+
+    head = callStack.n - 1 - depth;
+
+    for (int i = head; i >= 0; i--) {
+      CallExpr*     frame  = callStack.v[i];
+      ModuleSymbol* module = frame->getModule();
+      FnSymbol*     fn     = frame->getFunction();
+
+      from = frame;
+
+      if (frame->linenum()                     >  0             &&
+          fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
+          module->modTag                       != MOD_INTERNAL) {
+        break;
+      }
+    }
+
+    for_formals(arg, fn) {
+      if (foundDepthVal == false || arg->defPoint != fn->formals.tail) {
+        var = toVarSymbol(paramMap.get(arg));
+
+        INT_ASSERT(var                        != NULL &&
+                   var->immediate             != NULL &&
+                   var->immediate->const_kind == CONST_KIND_STRING);
+
+        str = astr(str, var->immediate->v_string);
+      }
+    }
+
+    // collapse newlines and other escape sequences before printing
+    str = astr(unescapeString(str, var).c_str());
+
+    if (call->isPrimitive(PRIM_ERROR) == true) {
+      USR_FATAL(from, "%s", str);
+    } else {
+      USR_WARN (from, "%s", str);
+    }
+
+    if (FnSymbol* fn = callStack.tail()->resolvedFunction())  {
+      innerCompilerWarningMap.put(fn, str);
+    }
+
+    if (FnSymbol* fn = callStack.v[head]->resolvedFunction()) {
+      outerCompilerWarningMap.put(fn, str);
+    }
+  }
 }
 
 /************************************* | **************************************
