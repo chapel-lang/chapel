@@ -52,7 +52,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
    use Regexp;
    use DateTime;
-   use OwnedObject;
+   
 
    /* Prints a line by line output of parsing process */
    config const debugTomlParser: bool = false;
@@ -225,10 +225,7 @@ Parser module with the Toml class for the Chapel TOML library.
            }
            else {
              var toParse = parseValue();
-             // Temporary work-around for push_back(Owned(C))
-             //     See #6841 for more info
-             Dom = {Dom.low..Dom.high+1};
-             array[Dom.high] = toParse;
+	     array.push_back(toParse);
            }
          }
          skipNext(source);
@@ -295,7 +292,7 @@ Parser module with the Toml class for the Chapel TOML library.
        else if corner.match(val) {
          var token = getToken(source);
          var value =  token.strip(bracket);
-         var toAdd = ['[', value, ']'];
+         var toAdd = [']', value, '['];
          addToken(source, toAdd);
          return parseValue();
        }
@@ -646,10 +643,9 @@ pragma "no doc"
    }
 
    proc addToken(source, tokensToAdd: [?dom] string) {
-     var ptrhold = source.currentLine;
-     delete ptrhold;
-     var tokens = new Tokens(tokensToAdd);
-     source.currentLine = tokens;
+     for toke in tokensToAdd {
+       source.currentLine.addToke(toke);
+     }
    }
 
    proc skipLine(source) {
@@ -789,6 +785,10 @@ pragma "no doc"
        var toke = A(idx);
        A.remove(idx);
        return toke;
+     }
+
+     proc addToke(toke: string) {
+       A.push_front(toke);
      }
 
      proc isEmpty(): bool {
