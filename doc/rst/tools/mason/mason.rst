@@ -90,10 +90,8 @@ For example, after ``mason run [ options ]``, the project directory appears as s
       target/
 	debug/
       	release/
-	  benches/
-	  examples/
 	  MyPackage
-	  test/
+	
    
 
 

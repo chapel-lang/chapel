@@ -71,9 +71,11 @@ proc makeTargetFiles(binLoc: string) {
   }
   if !isDir('target/' + binLoc) {
     mkdir('target/' + binLoc);
-    mkdir('target/' + binLoc + '/tests');
-    mkdir('target/'+ binLoc + '/examples');
-    mkdir('target/' + binLoc + '/benches');
+    
+    // TODO:
+    //mkdir('target/' + binLoc + '/tests');
+    //mkdir('target/'+ binLoc + '/examples');
+    //mkdir('target/' + binLoc + '/benches');
   }
 }
 
