@@ -7,6 +7,7 @@ if spawnClient then
     client.communicate();
   }
 
+// server.chpl
 use ZMQ;
 
 var context: Context;

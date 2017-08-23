@@ -165,13 +165,52 @@ versions may expose more features native to ZeroMQ.
 Serialization
 +++++++++++++
 
-In Chapel, sending or receiving messages on a :record:`Socket` uses
-`multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
-and the :chpl:mod:`Reflection` module to serialize primitive and user-defined
-data types whenever possible.  Currently, the ZMQ module serializes primitive
-numeric types, strings, and records composed of these types.  Strings are
-encoded as a length (as `int`) followed by the character array
-(in bytes).
+In Chapel, sending or receiving messages is supported for a variety of types.
+Primitive numeric types and strings are supported as the foundation.
+In addition, user-defined :type:`record` types may be serialized automatically
+as `multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
+by internal use of the :chpl:mod:`Reflection` module.
+Currently, the ZMQ module can serialize records of primitive numeric types,
+strings, and other serializable records.
+
+.. note::
+
+   The serialization protocol for strings changed in Chapel 1.16 in order to
+   support inter-language messaging through ZeroMQ. (See
+   :ref:`notes on interoperability <interop>` below.)
+
+   Prior to Chapel 1.16, ZMQ would send a string as two multipart messages:
+   the first sent the length as `int`; the second sent the character array
+   (in bytes).  It was identified that this scheme was incompatible with how
+   other language bindings for ZeroMQ serialize and send strings.
+
+   As of Chapel 1.16, the ZMQ module uses the C-level ``zmq_msg_send()`` and
+   ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
+   respectively, when transmitting strings.  Further, ZMQ sends the string as
+   a single message of only the byte stream of the string's character array.
+   (Recall that Chapel's :type:`string` type currently only supports ASCII
+   strings, not full Unicode strings.)
+
+.. _interop:
+
+Interoperability
+++++++++++++++++
+
+The ZeroMQ messaging library has robust support in many programming languages
+and Chapel's ZMQ module intends on providing interfaces and serialization
+protocols suitable for exchanging data between Chapel and non-Chapel programs.
+
+As an example (and test) of Chapel-Python interoperability over ZeroMQ, the
+following sources demonstrate a :const:`PUSH`-:const:`PULL` socket pair between
+a Chapel server and a Python client using the
+`PyZMQ Python bindings for ZeroMQ <https://pyzmq.readthedocs.io/en/latest/>`_.
+
+.. literalinclude:: ../../../../test/modules/packages/ZMQ/interop-py/server.chpl
+   :language: chapel
+   :lines: 10-
+
+.. literalinclude:: ../../../../test/modules/packages/ZMQ/interop-py/client.py
+   :language: python
 
 Tasking-Layer Interaction
 +++++++++++++++++++++++++
