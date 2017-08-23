@@ -1,22 +1,3 @@
-/*
- * Copyright 2004-2017 Cray Inc.
- * Other additional copyright holders may be indicated within.
- * 
- * The entirety of this work is licensed under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- * 
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 use Collection;
 
 /*
@@ -165,6 +146,14 @@ class LocalDeque {
     if cached != nil {
       var tmp = cached;
       cached = nil;
+
+      // Clean...
+      tmp.headIdx = 1;
+      tmp.tailIdx = 1;
+      tmp.size = 0;
+      tmp.next = nil;
+      tmp.prev = nil;
+
       return tmp;
     }
 
@@ -401,7 +390,7 @@ class DistributedDeque : Collection {
     // Initialize each slot. We use a round-robin algorithm.
     var idx : atomic int;
     for 0 .. #here.maxTaskPar {
-      for loc in targetLocales do on loc {
+      coforall loc in targetLocales do on loc {
         var i = idx.fetchAdd(1);
         slots[i] = new LocalDeque(eltType);
       }

@@ -89,7 +89,7 @@ class Collection {
     Syntactic sugar for `getSize`.
   */
   inline proc length : int {
-    return size();
+    return getSize();
   }
 
   /*
