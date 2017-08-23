@@ -129,7 +129,7 @@ TOML
 
 TOML is the configuration language chosen by the chapel team for
 configuring programs written in chapel. A TOML file contains the
-nessescary information to build a chapel program using mason. 
+nessesary information to build a chapel program using mason. 
 `TOML Spec <https://github.com/toml-lang/toml>`_.
 
 
@@ -140,7 +140,6 @@ Mason-Registry
 ==============
 
 The initial mason registry is a GitHub repository containing a list of versioned manifest files.
-This is not unlike that of the OS X Homebrew package manager registry.
 
 `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
@@ -162,7 +161,7 @@ The registry consists of the following hierarchy:
       2.2.1.toml
 
 Each versioned manifest file is identical to the manifest file in the top-level directory
-of the package repository, with one exeption, a URL pointing to the repository and revision
+of the package repository, with one exception, a URL pointing to the repository and revision
 in which the version is located.
 
 Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:

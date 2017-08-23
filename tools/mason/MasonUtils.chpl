@@ -3,7 +3,7 @@
 use Spawn;
 use FileSystem;
 
-/* Gets enviornment variables for spawn commands */
+/* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
   var cname: c_string = name.c_str();
