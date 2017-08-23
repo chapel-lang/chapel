@@ -2,6 +2,22 @@ use TOML;
 use FileSystem;
 use MasonUtils;
 
+/*
+Update: Performs the upfront dependency resoultion and generates the lock file.
+ 
+Incompatible Version Resolution Strategy:
+
+The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
+    1. If multiple bug fixes of a package are present in the project,
+       mason will use the latest bug fix. (ex. 1.1.0, 1.1.1 --> 1.1.1)
+    2. If multiple minor versions of a package are present in the project,
+       mason will use the latest minor version within the common major version.
+       (ex. 1.4.3, 1.7.0 --> 1.7)
+    3. If multiple major versions are present, mason will print an error.
+       (ex. 1.13.0, 2.1.0 --> incompatible)
+*/
+
+
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */

@@ -5,10 +5,7 @@
 mason
 =====
 
-Mason represents an effort by the developers on the chapel team at Cray to reach
-out to the chapel community and provide a systematic way of providing packages
-to the developers who want to build and explore in chapel. 
-
+Mason is Chapel's package manager
 
 
 
@@ -16,7 +13,7 @@ to the developers who want to build and explore in chapel.
 Installation Instructions
 =========================
 
-In the mason directory found in ``$CHPL_HOME/tools/mason`` run the following:
+In ``$CHPL_HOME`` run the following:
 
 .. code-block:: sh
    
@@ -27,40 +24,31 @@ This will create the hidden ``.mason/`` directory in ``MASON_HOME``, which
 defaults to your ``$HOME`` if unset. It builds the mason binary so that the 
 command line interface can be used. The mason registry is also downloaded from
 github so that a user can start to rely on mason to specifcy project
-dependencies. 
-
-.. code-block:: sh
-
-   make install
-
-This puts mason in the path of the user so that mason can be used
-anywhere in the user's file system.
+dependencies. This installs mason in the same place as the chapel compiler (``chpl``)
+so that mason can be used anywhere in the user's file system.
 
 
-To do this all in one step, type:
-
-.. code-block:: sh
-
-   make all
-
-
-
-To remove mason simply change directory to ``$CHPL_HOME/tools/mason`` and run:
+To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
 
 .. code-block:: sh
 
    make clean
+
       
+To remove mason and the mason-registry change directory to ``$CHPL_HOME/tools/mason``
+and run:
 
+.. code-block:: sh
 
+   make clobber
 
 
 
 Setting up your Project
 =======================
 	
-``mason new [project name] [--vcs=true/false]`` is the command that initializes
-a new project. It also creates a git repository unless ``--vcs=false`` is included.
+``mason new [ project name ] [ options ]`` is the command that initializes
+a new project. It also creates a git repository unless ``--no-vcs`` is included.
 
 For example, after ``mason new MyPackage`` is run in an empty directory it will have the 
 following hierarchy::
@@ -72,9 +60,7 @@ following hierarchy::
 
 Mason will enforce that the main file be named after the package to enforce namespacing.
 While it is common practice for package names to be PascalCase and chpl files to be lowercase,
-it is an acceptable tradeoff for reliability, and MyPackage will be the first file listed in ``src/``.
-
-
+it is an acceptable tradeoff for reliability. MyPackage will be the first file listed in ``src/``.
 
 
 
@@ -82,18 +68,18 @@ it is an acceptable tradeoff for reliability, and MyPackage will be the first fi
 Building and Running your project
 =================================
 
-When invoked, ``mason build`` will do the following:
+When invoked, ``mason build [ options ]`` will do the following:
 
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
     - Build ``MyPackage.chpl`` in the ``src/`` directory. 
     - All packages are compiled into binaries and placed into ``target/``
 
-``mason run`` will, in turn:
+``mason run [ options ]`` will, in turn:
 
     - Invoke build.
     - Run the resulting executable out of target/, if it exists.
         
-For example, after ``mason run MyPackage``, the project directory appears as so::
+For example, after ``mason run [ options ]``, the project directory appears as so::
 
 
     MyPackage/
@@ -114,35 +100,6 @@ For example, after ``mason run MyPackage``, the project directory appears as so:
 
 
 
-The Design of Mason
-===================
-
-mason: Command line tool for building chapel programs to provide users with 
-       a consistent way of building applications and libraries. Mason uses 
-       a four state pipeline to go from start to finish in a project. The
-       four states are listed below.
-    
-
-Four States:
-
-1) Project Code: ``yourProject/src/yourProject.chpl``
-   	   This is the source code of the project the user creates using mason.
-2) Manifest File: ``Mason.toml``
-           Toml file containing metadata and dependencies
-           Builds dependency directed acyclic graph (DAG) to be
-	   serialized into lock file
-3) Lock File:  ``Mason.lock``
-           Contains necessary build information
-           Serialized directed acyclic graph of the dependencies build options 
-	   from the manifest
-4) Dependency Code:  ``$HOME/.mason/src``
-	   Local dependencies downloaded by mason after the user lists them in 
-	   a project manifest.
-
-
-
-
-
 
 The Manifest File
 =================
@@ -156,9 +113,9 @@ For example, ``Mason.toml``:
 .. code-block:: text
 
     [brick]
-    name = "hello_world"
+    name = "MyPackage"
     version = "0.1.0"
-    authors = ["Bradford Chamberlain <brad@chamberlain.com>"]
+    authors = ["Sam Partee <Sam@Partee.com>"]
 
     [dependencies]
     curl = '1.0.0'
@@ -170,7 +127,7 @@ For example, ``Mason.toml``:
 TOML
 ====
 
-TOML is the configuation language chosen by the chapel developers for
+TOML is the configuration language chosen by the chapel developers for
 configuring programs written in chapel using mason. A TOML file contains
 the nessescary information to build a chapel program using mason. 
 `TOML Spec <https://github.com/toml-lang/toml>`_.
@@ -184,6 +141,8 @@ Mason-Registry
 
 The initial mason registry is a GitHub repository containing a list of versioned manifest files.
 This is not unlike that of the OS X Homebrew package manager registry.
+
+`Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
 The registry would follow a hierarchy as follows:
 
@@ -206,15 +165,15 @@ Each versioned manifest file would be identical to the manifest file in the top-
 of the package repository, with one additional field not required in the repository manifest,
 a URL pointing to the repository and revision in which the version is located.
 
-Continuing the example from before, the 'registry' ``Mason.toml`` would include the additional source field:
+Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:
 
 .. code-block:: text
 
      [brick]
-     name = "hello_world"
+     name = "MyPackage"
      version = "0.1.0"
-     authors = ["Brad Chamberlain <brad@chamberlain.com>"]
-     source = "https://github.com/bradcray/hello_world"
+     authors = ["Sam Partee <Sam@Partee.com>"]
+     source = "https://github.com/Spartee/MyPackage"
 
      [dependencies]
      curl = '1.0.0'
@@ -227,23 +186,22 @@ Submit a package
 ================
 
 The mason registry will hold the manifest files for packages submitted by developers.
-To contribute a package, all a developer has to do is host their package in a git
-repository, write a manifest file (in TOML) with a source field containing the URL to
-the package repository, and open a PR in the mason-registry repository. As soon as 
-trusted chapel developers look at your package and approve it, other users will be able
-to use your package through mason simply by adding the name and version number of your
-package to their project's dependencies 
+To contribute a package to the mason-registry a chapel developer will need to host their
+project and submit a pull request to the mason-registry with the toml file pointing
+to their project. For a more detailed description follow the steps below.
 
 Steps: 
       1) Write a library or binary project in chapel using mason
       2) Host that project in a git repository. (e.g. GitHub)
       3) Create a tag of your package that corresponds to the version number prefixed with a 'v'. (e.g. v0.1.0)
-      4) Fork the Mason-registry.
-      5) Create a branch of the mason registry and add your project's ``Mason.toml`` under ``Bricks/MyPackage/0.1.0.toml.``
-      6) Add a source field to your projects ``Mason.toml`` pointing to your project's repository.
-      7) Open a PR in the mason-registry for your newly created branch.
-      8) Wait for trusted chapel developers to approve the PR.
-      9) Maintain your project and notify chapel developers if taken down. 
+      4) Fork the mason-registry on GitHub
+      5) Create a branch of the mason-registry and add your project's ``Mason.toml`` under ``Bricks/<project_name>/<version>.toml``
+      6) Add a source field to your ``<version>.toml`` pointing to your project's repository.
+      7) Open a PR in the mason-registry for your newly created branch containing just your <version>.toml.
+      8) Wait for mason-registry gatekeepers to approve the PR.
+
+Once your package is uploaded, maintain the integrity of your package, and please notify the
+chapel team if your package should be taken down. 
 
 
 
@@ -320,10 +278,10 @@ a lock file is written below as if generated from the earlier example of a ``Mas
 
 
      [root]
-     name = "hello_world"
+     name = "MyPackage"
      version = "0.1.0"
-     authors = ["Brad Chamberlain <brad@chamberlain.com>"]
-     source = "https://github.com/bradcray/hello_world"
+     authors = ["Sam Partee <Sam@Partee.com>"]
+     source = "https://github.com/Spartee/MyPackage"
      dependencies = ['curl 1.0.0 https://github.com/username/curl']
 
 
@@ -335,5 +293,5 @@ Dependency Code
 
 The src code for every package downloaded will be in ``$MASON_HOME`` which by default is placed
 under the ``$HOME`` directory of the user. The path to the versioned packages downloaded by the
-user would then be under ``$HOME/.mason/src/``. In the directory adjacent to the source code
+user would then be under ``$MASON_HOME/.mason/src/``. In the directory adjacent to the source code
 directory is the user's checkout of the mason registry. 

@@ -6,6 +6,38 @@ use MasonUtils;
 use MasonHelp;
 use FileSystem;
 
+/*
+
+The Design of Mason
+===================
+
+  Mason is a command line tool for building chapel programs to provide users with
+       a consistent way of building applications and libraries. Mason uses
+       a four state pipeline to go from start to finish in a project. The
+       four states are listed below.
+
+
+  Four States:
+
+  1) Project Code: ``yourProject/src/yourProject.chpl``
+           This is the source code of the project the user creates using mason.
+  2) Manifest File: ``Mason.toml``
+           Toml file containing metadata and dependencies
+           Builds dependency directed acyclic graph (DAG) to be
+           serialized into lock file
+  3) Lock File:  ``Mason.lock``
+           Contains necessary build information
+           Serialized directed acyclic graph of the dependencies build options
+           from the manifest
+  4) Dependency Code:  ``$MASON_HOME/.mason/src``
+           Local dependencies downloaded by mason after the user lists them in
+           a project manifest.
+
+Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/mason/mason.rst
+
+*/
+
+
 
 proc main(args: [] string) {
   if args.size < 2 {
