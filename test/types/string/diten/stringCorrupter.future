@@ -1,5 +1,0 @@
-bug: string manipulation corrupts strings
-
-This reads some strings in from a file and uses some string methods get
-modified versions. It appears that the strings are prematurely freed
-resulting in memory corruption.
