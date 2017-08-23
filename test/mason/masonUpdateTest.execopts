@@ -1,0 +1,2 @@
+--tf noDep.toml --lf noDep.good # noDep
+--tf simple.toml --lf simple.good # simple

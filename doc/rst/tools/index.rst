@@ -14,3 +14,4 @@ Contents:
 
    chpldoc/chpldoc
    chplvis/chplvis
+   mason/mason
