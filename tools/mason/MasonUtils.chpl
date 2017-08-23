@@ -3,7 +3,7 @@
 use Spawn;
 use FileSystem;
 
-/* Gets envoirnment variables for spawn commands */
+/* Gets enviornment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
   var cname: c_string = name.c_str();
@@ -39,7 +39,7 @@ proc runWithStatus(command): int {
 
 
 /* Checks to see if dependency has already been
-   downloaed previously */
+   downloaded previously */
 proc depExists(dependency: string) {
   var repos = MASON_HOME +'/.mason/src/';
   var exists = false;

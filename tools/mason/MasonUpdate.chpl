@@ -189,7 +189,7 @@ proc retrieveDep(name: string, version: string) {
   }
 }
 
-/* Checks if a dependecy has deps; if so, the
+/* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
 proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
@@ -204,7 +204,7 @@ proc getDependencies(tomlTbl: Toml) {
   return deps;
 }
 
-/* iterator to collect fields from a toml
+/* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) { 
   for (k,v) in zip(tomlTbl.D, tomlTbl.A) {

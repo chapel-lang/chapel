@@ -23,8 +23,8 @@ In ``$CHPL_HOME`` run the following:
 This will create the hidden ``.mason/`` directory in ``MASON_HOME``, which
 defaults to your ``$HOME`` if unset. It builds the mason binary so that the 
 command line interface can be used. The mason registry is also downloaded from
-github so that a user can start to rely on mason to specifcy project
-dependencies. This installs mason in the same place as the chapel compiler (``chpl``)
+github so that a user can start to rely on mason to specify project dependencies.
+This installs mason in the same place as the chapel compiler (``chpl``)
 so that mason can be used anywhere in the user's file system.
 
 
@@ -58,9 +58,9 @@ following hierarchy::
   	  src/
     	    MyPackage.chpl
 
-Mason will enforce that the main file be named after the package to enforce namespacing.
+Mason will ensure that the main file be named after the package to enforce namespacing.
 While it is common practice for package names to be PascalCase and chpl files to be lowercase,
-it is an acceptable tradeoff for reliability. MyPackage will be the first file listed in ``src/``.
+it is an acceptable tradeoff for reliability. ``MyPackage`` will be the first file listed in ``src/``.
 
 
 
@@ -105,8 +105,8 @@ The Manifest File
 =================
 
 The ``Mason.toml`` manifest file is written in TOML(for more information see TOML section below).
-Each time a new project is created in Mason a standard TOML file in included in the top-level
-directory of the project directory. 
+Each time a new project is created in Mason a standard TOML file is included in the top-level
+directory of the project. 
 
 For example, ``Mason.toml``:
 
@@ -127,9 +127,9 @@ For example, ``Mason.toml``:
 TOML
 ====
 
-TOML is the configuration language chosen by the chapel developers for
-configuring programs written in chapel using mason. A TOML file contains
-the nessescary information to build a chapel program using mason. 
+TOML is the configuration language chosen by the chapel team for
+configuring programs written in chapel. A TOML file contains the
+nessescary information to build a chapel program using mason. 
 `TOML Spec <https://github.com/toml-lang/toml>`_.
 
 
@@ -144,7 +144,7 @@ This is not unlike that of the OS X Homebrew package manager registry.
 
 `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
-The registry would follow a hierarchy as follows:
+The registry consists of the following hierarchy:
 
 
 .. code-block:: text
@@ -161,9 +161,9 @@ The registry would follow a hierarchy as follows:
       2.2.0.toml
       2.2.1.toml
 
-Each versioned manifest file would be identical to the manifest file in the top-level directory
-of the package repository, with one additional field not required in the repository manifest,
-a URL pointing to the repository and revision in which the version is located.
+Each versioned manifest file is identical to the manifest file in the top-level directory
+of the package repository, with one exeption, a URL pointing to the repository and revision
+in which the version is located.
 
 Continuing the example from before, the 'registry' ``0.1.0.toml`` would include the additional source field:
 
@@ -261,11 +261,11 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 The Lock File
 =============
 
-The lock file ``Mason.lock`` is generated after running a mason update command. The user should
+The lock file ``Mason.lock`` is generated after running a ``mason update`` command. The user should
 never manually edit the lock file as it is intended to "lock" in the settings of a certain 
 project build iteration. ``Mason.lock`` is added by default to the .gitignore when a new project 
-is created. If you intention is to create a binary application package that does not need to
-be re-compiled by mason then simply take the ``Mason.lock`` out of your .gitignore. An example of
+is created. If your intention is to create a binary application package that does not need to
+be re-compiled by mason then take the ``Mason.lock`` out of your .gitignore. An example of
 a lock file is written below as if generated from the earlier example of a ``Mason.toml``:
 
 
@@ -294,4 +294,4 @@ Dependency Code
 The src code for every package downloaded will be in ``$MASON_HOME`` which by default is placed
 under the ``$HOME`` directory of the user. The path to the versioned packages downloaded by the
 user would then be under ``$MASON_HOME/.mason/src/``. In the directory adjacent to the source code
-directory is the user's checkout of the mason registry. 
+directory is the user's checkout of the mason-registry. 
