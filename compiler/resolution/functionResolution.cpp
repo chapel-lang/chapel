@@ -160,7 +160,6 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
-static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
 static Expr* resolveTypeExpr(Expr* expr);
 static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
@@ -1830,81 +1829,6 @@ userCall(CallExpr* call) {
     }
   }
   return call;
-}
-
-
-static void issueCompilerError(CallExpr* call) {
-  //
-  // Disable compiler warnings in internal modules that are triggered
-  // within a dynamic dispatch context because of potential user
-  // confusion.  Removed the following code and See the following
-  // tests:
-  //
-  //   test/arrays/bradc/workarounds/arrayOfSpsArray.chpl
-  //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
-  //   test/classes/bradc/arrayInClass/genericArrayInClass-otharrs.chpl
-  //
-  if (call->isPrimitive(PRIM_WARNING))
-    if (inDynamicDispatchResolution)
-      if (call->getModule()->modTag == MOD_INTERNAL &&
-          callStack.head()->getModule()->modTag == MOD_INTERNAL)
-        return;
-  //
-  // If an errorDepth was specified, report a diagnostic about the call
-  // that deep into the callStack. The default depth is 1.
-  //
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
-  VarSymbol* depthParam = toVarSymbol(paramMap.get(toDefExpr(fn->formals.tail)->sym));
-  int64_t depth;
-  bool foundDepthVal;
-  if (depthParam && depthParam->immediate &&
-      depthParam->immediate->const_kind == NUM_KIND_INT) {
-    depth = depthParam->immediate->int_value();
-    foundDepthVal = true;
-  } else {
-    depth = 1;
-    foundDepthVal = false;
-  }
-  if (depth > callStack.n - 1) {
-    if (foundDepthVal)
-      USR_WARN(call, "compiler diagnostic depth value exceeds call stack depth");
-    depth = callStack.n - 1;
-  }
-  if (depth < 0) {
-    USR_WARN(call, "compiler diagnostic depth value can not be negative");
-    depth = 0;
-  }
-  CallExpr* from = NULL;
-  for (int i = callStack.n-1 - depth; i >= 0; i--) {
-    from = callStack.v[i];
-    // We report calls whose target function is not compiler-generated and is
-    // not defined in one of the internal modules.
-    if (from->linenum() > 0 &&
-        from->getModule()->modTag != MOD_INTERNAL &&
-        !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
-      break;
-  }
-
-  const char* str = "";
-  VarSymbol* var = NULL;
-  for_formals(arg, fn) {
-    if (foundDepthVal && arg->defPoint == fn->formals.tail)
-      continue;
-    var = toVarSymbol(paramMap.get(arg));
-    INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
-    str = astr(str, var->immediate->v_string);
-  }
-  // collapse newlines and other escape sequences before printing
-  str = astr(unescapeString(str, var).c_str());
-  if (call->isPrimitive(PRIM_ERROR)) {
-    USR_FATAL(from, "%s", str);
-  } else {
-    USR_WARN(from, "%s", str);
-  }
-  if (FnSymbol* fn = toFnSymbol(callStack.tail()->resolvedFunction()))
-    innerCompilerWarningMap.put(fn, str);
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->resolvedFunction()))
-    outerCompilerWarningMap.put(fn, str);
 }
 
 static void reissueCompilerWarning(const char* str, int offset) {
@@ -5946,7 +5870,13 @@ static bool  contextTypesMatch(FnSymbol* valueFn,
 
 static void  contextTypeInfo(FnSymbol* fn);
 
+static void  resolveExprExpandGenerics(CallExpr* call);
+
+static void  resolveExprTypeConstructor(SymExpr* symExpr);
+
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
+
+static void  resolveExprMaybeIssueError(CallExpr* call);
 
 static Expr* resolveExpr(Expr* expr) {
   Expr* const origExpr = expr;
@@ -5965,10 +5895,12 @@ static Expr* resolveExpr(Expr* expr) {
     if (se->symbol()) {
       makeRefType(se->symbol()->type);
     }
+
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-      if (pfs->isIteratedExpression(expr))
+      if (pfs->isIteratedExpression(expr)) {
         // Note: this may set expr=NULL, tryFailure=true.
         expr = resolveParallelIteratorAndForallIntents(pfs, se);
+      }
     }
   }
 
@@ -5989,14 +5921,14 @@ static Expr* resolveExpr(Expr* expr) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR) ||
         call->isPrimitive(PRIM_WARNING)) {
-      issueCompilerError(call);
+      resolveExprMaybeIssueError(call);
     }
 
     callStack.add(call);
 
     resolveCall(call);
 
-    if (!tryFailure && call->isResolved()) {
+    if (tryFailure == false && call->isResolved() == true) {
       if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
         // ForallLeaderArgs: process the leader that 'call' invokes.
         implementForallIntents2(call, origToLeaderCall);
@@ -6011,99 +5943,28 @@ static Expr* resolveExpr(Expr* expr) {
         expr = resolveExprResolveEachCall(cc);
 
       } else {
-        INT_ASSERT(call->isResolved());
-        resolveFns(call->resolvedFunction());
+        FnSymbol* fn = call->resolvedFunction();
+
+        INT_ASSERT(fn != NULL);
+        resolveFns(fn);
       }
 
-      for (int i = 1; i <= call->numActuals(); i++) {
-        Expr* actualExpr = call->get(i);
-        Symbol* actualSym = NULL;
-        if (SymExpr* actual = toSymExpr(actualExpr)) {
-          actualSym = actual->symbol();
-        } else if (NamedExpr* named = toNamedExpr(actualExpr)) {
-          SymExpr* namedSe = toSymExpr(named->actual);
-          INT_ASSERT(namedSe);
-          actualSym = namedSe->symbol();
-        } else {
-          INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
-        }
-
-        if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) &&
-            actualSym->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-          Symbol* formal = call->resolvedFunction()->getFormal(i);
-          INT_ASSERT(!formal->type->symbol->hasFlag(FLAG_GENERIC));
-          // The type has been determined to no longer be generic.  Update the
-          // delayed instance to have the right type.
-          actualSym->type = formal->type;
-          actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-          AggregateType* formalType = toAggregateType(formal->type);
-          INT_ASSERT(formalType);
-          formalType->initializerResolved = true;
-
-          if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
-            if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
-              if (fn->_this != NULL &&
-                  isClass(fn->_this->type)) {
-                AggregateType* at = toAggregateType(fn->_this->type);
-                Symbol* superField = at->getField(1);
-                if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
-                  at = at->getInstantiationParent(formalType);
-                  fn->_this->type = at;
-                  superField = at->getField(1);
-                  superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
-                }
-              }
-            }
-          }
-        }
-      }
+      resolveExprExpandGenerics(call);
     }
 
-    if (!tryFailure)
+    if (tryFailure == false) {
       callStack.pop();
+    }
   }
 
-  if (tryFailure) {
+  if (tryFailure == true) {
     return resolveExprHandleTryFailure(fn);
   }
 
   INT_ASSERT(expr);
 
-  if (SymExpr* sym = toSymExpr(expr)) {
-    // Avoid record constructors via cast
-    // should be fixed by out-of-order resolution
-    CallExpr* parent = toCallExpr(sym->parentExpr);
-
-    if (!parent ||
-        !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
-        !sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-
-      if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-        // Don't try to resolve the defaultTypeConstructor for string literals
-        // (resolution ordering issue, string literals are encountered too
-        // early on and we don't know enough to be able to resolve them at
-        // that point)
-        if (!(ct == dtString &&
-              (sym->symbol()->isParameter() ||
-               sym->symbol()->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
-            !ct->symbol->hasFlag(FLAG_GENERIC) &&
-            !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-            ct->defaultTypeConstructor) {
-
-          resolveFormals(ct->defaultTypeConstructor);
-
-          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (getPartialCopyData(ct->defaultTypeConstructor)) {
-              instantiateBody(ct->defaultTypeConstructor);
-            }
-
-            resolveFns(ct->defaultTypeConstructor);
-          }
-        }
-      }
-    }
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    resolveExprTypeConstructor(symExpr);
   }
 
   return postFold(expr);
@@ -6202,6 +6063,97 @@ static void contextTypeInfo(FnSymbol* fn) {
   }
 }
 
+static void resolveExprExpandGenerics(CallExpr* call) {
+  for (int i = 1; i <= call->numActuals(); i++) {
+    Expr*   actualExpr = call->get(i);
+    Symbol* actualSym  = NULL;
+
+    if (SymExpr* actual = toSymExpr(actualExpr)) {
+      actualSym = actual->symbol();
+
+    } else if (NamedExpr* named = toNamedExpr(actualExpr)) {
+      SymExpr* namedSe = toSymExpr(named->actual);
+
+      INT_ASSERT(namedSe);
+
+      actualSym = namedSe->symbol();
+
+    } else {
+      INT_FATAL(actualExpr, "wasn't expecting this type of Expr");
+    }
+
+    if (actualSym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+        actualSym->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
+      Symbol*        formal     = call->resolvedFunction()->getFormal(i);
+      AggregateType* formalType = toAggregateType(formal->type);
+
+      INT_ASSERT(formalType);
+      INT_ASSERT(formalType->symbol->hasFlag(FLAG_GENERIC) == false);
+
+      // The type has been determined to no longer be generic.
+      // Update the delayed instance to have the right type.
+      actualSym->type = formalType;
+
+      actualSym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+      formalType->initializerResolved = true;
+
+      if (actualSym->hasFlag(FLAG_SUPER_TEMP)) {
+        if (FnSymbol* fn = toFnSymbol(actualExpr->parentSymbol)) {
+          if (fn->_this != NULL && isClass(fn->_this->type) == true) {
+            AggregateType* ct         = toAggregateType(fn->_this->type);
+            Symbol*        superField = ct->getField(1);
+
+            if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+              ct              = ct->getInstantiationParent(formalType);
+              fn->_this->type = ct;
+
+              superField      = ct->getField(1);
+
+              superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static void resolveExprTypeConstructor(SymExpr* symExpr) {
+  if (AggregateType* ct = toAggregateType(symExpr->typeInfo())) {
+    if (ct->defaultTypeConstructor                != NULL   &&
+        ct->symbol->hasFlag(FLAG_GENERIC)         == false  &&
+        ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
+        ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+      CallExpr* parent = toCallExpr(symExpr->parentExpr);
+      Symbol*   sym    = symExpr->symbol();
+
+      if (parent                               == NULL  ||
+          parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
+          sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+
+        // Don't try to resolve the defaultTypeConstructor for string
+        // literals (resolution ordering issue, string literals are
+        // encountered too early and we don't know enough to be able
+        // to resolve them at that point)
+        if (ct != dtString ||
+            (sym->isParameter()                    == false   &&
+             sym->hasFlag(FLAG_INSTANTIATED_PARAM) == false))  {
+          resolveFormals(ct->defaultTypeConstructor);
+
+          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
+            if (hasPartialCopyData(ct->defaultTypeConstructor) == true) {
+              instantiateBody(ct->defaultTypeConstructor);
+            }
+
+            resolveFns(ct->defaultTypeConstructor);
+          }
+        }
+      }
+    }
+  }
+}
+
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
   Expr* retval = NULL;
 
@@ -6232,6 +6184,100 @@ static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
   }
 
   return retval;
+}
+
+static void resolveExprMaybeIssueError(CallExpr* call) {
+  //
+  // Disable compiler warnings in internal modules that are triggered within
+  // a dynamic dispatch context to reduce potential user confusion.
+  //
+  if (call->isPrimitive(PRIM_ERROR)         == true          ||
+      call->getModule()->modTag             != MOD_INTERNAL  ||
+      inDynamicDispatchResolution           == false         ||
+      callStack.head()->getModule()->modTag != MOD_INTERNAL) {
+
+    //
+    // If an errorDepth was specified, report a diagnostic about the call
+    // that deep into the callStack. The default depth is 1.
+    //
+    FnSymbol*   fn            = toFnSymbol(call->parentSymbol);
+    DefExpr*    lastFormal    = toDefExpr(fn->formals.tail);
+    VarSymbol*  depthParam    = toVarSymbol(paramMap.get(lastFormal->sym));
+    int         depth         = 0;
+    int         head          = 0;
+    bool        foundDepthVal = false;
+    CallExpr*   from          = NULL;
+    const char* str           = "";
+    VarSymbol*  var           = NULL;
+
+    if (depthParam                        != NULL &&
+        depthParam->immediate             != NULL &&
+        depthParam->immediate->const_kind == NUM_KIND_INT) {
+      depth         = (int) depthParam->immediate->int_value();
+      foundDepthVal = true;
+
+      if (depth > callStack.n - 1) {
+        USR_WARN(call,
+                 "compiler diagnostic depth value exceeds call stack depth");
+
+        depth = callStack.n - 1;
+
+      } else if (depth < 0) {
+        USR_WARN(call, "compiler diagnostic depth value can not be negative");
+
+        depth = 0;
+      }
+
+    } else {
+      depth         = (callStack.n == 1) ? 0 : 1;
+      foundDepthVal = false;
+    }
+
+    head = callStack.n - 1 - depth;
+
+    for (int i = head; i >= 0; i--) {
+      CallExpr*     frame  = callStack.v[i];
+      ModuleSymbol* module = frame->getModule();
+      FnSymbol*     fn     = frame->getFunction();
+
+      from = frame;
+
+      if (frame->linenum()                     >  0             &&
+          fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
+          module->modTag                       != MOD_INTERNAL) {
+        break;
+      }
+    }
+
+    for_formals(arg, fn) {
+      if (foundDepthVal == false || arg->defPoint != fn->formals.tail) {
+        var = toVarSymbol(paramMap.get(arg));
+
+        INT_ASSERT(var                        != NULL &&
+                   var->immediate             != NULL &&
+                   var->immediate->const_kind == CONST_KIND_STRING);
+
+        str = astr(str, var->immediate->v_string);
+      }
+    }
+
+    // collapse newlines and other escape sequences before printing
+    str = astr(unescapeString(str, var).c_str());
+
+    if (call->isPrimitive(PRIM_ERROR) == true) {
+      USR_FATAL(from, "%s", str);
+    } else {
+      USR_WARN (from, "%s", str);
+    }
+
+    if (FnSymbol* fn = callStack.tail()->resolvedFunction())  {
+      innerCompilerWarningMap.put(fn, str);
+    }
+
+    if (FnSymbol* fn = callStack.v[head]->resolvedFunction()) {
+      outerCompilerWarningMap.put(fn, str);
+    }
+  }
 }
 
 /************************************* | **************************************
