@@ -27,7 +27,6 @@ mason:
         echo "CHPL_REGEXP=re2 is required to build mason"; \
         exit 1;\
 	fi;
-	@mkdir -p $(MASON_HOME)/.mason
 	@mkdir -p $(MASON_HOME)/.mason/src
 ifneq ($(wildcard $(registry)),)
 	@echo "Removing old registry..."
