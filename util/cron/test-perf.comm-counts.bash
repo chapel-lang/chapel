@@ -4,18 +4,16 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
+export CHPL_TEST_PERF_CONFIG_NAME='chapcs.comm-counts'
 
 source $CWD/common-perf.bash
 source $CWD/common-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.comm-counts"
 
-SHORT_NAME=cc
 START_DATE=08/17/17
 
-perf_args="-performance-description $SHORT_NAME -sync-dir-suffix $SHORT_NAME -perflabel cc-"
-perf_args="${perf_args} -performance -numtrials 5 -startdate $START_DATE"
+perf_args="-performance -numtrials 1 -startdate $START_DATE -perflabel cc-"
 
 # "make check" will fail on chapcs because Gasnet wants to use ibv.
 #  The warning message causes the good-output v. test-output comparison to fail.
