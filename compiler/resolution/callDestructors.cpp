@@ -361,17 +361,13 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
       if (symLhs && callRhs && callRhs->isPrimitive(PRIM_DEREF))
       {
         VarSymbol* varLhs = toVarSymbol(symLhs->symbol());
-        SymExpr*   symRhs = toSymExpr(callRhs->get(1));
-        VarSymbol* varRhs = toVarSymbol(symRhs->symbol());
+        SymExpr*  exprRhs = toSymExpr(callRhs->get(1));
+        Symbol*    symRhs = exprRhs->symbol();
 
-        // MPF 2016-10-02: It seems to me that this code should also handle the
-        // case that symRhs is an ArgSymbol, but adding that caused problems
-        // in the handling of out argument intents.
-
-        if (varLhs != NULL && varRhs != NULL)
+        if (varLhs != NULL && symRhs != NULL)
         {
-          if (isUserDefinedRecord(varLhs->type) == true &&
-              varRhs->type                      == varLhs->type->refType)
+          INT_ASSERT(varLhs->isRef() == false && symRhs->isRef());
+          if (isUserDefinedRecord(varLhs->type) == true)
           {
 
             // HARSHBARGER 2015-12-11:
