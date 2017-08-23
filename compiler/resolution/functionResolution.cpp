@@ -5651,7 +5651,6 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
                                         tmp));
           tmp->type = formalAt;
         } else {
-          VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
           VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
 
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
@@ -5662,13 +5661,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 
           fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                         typeTmp,
-                                        new CallExpr(PRIM_TYPEOF, refTmp)));
-
-          fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                        refTmp,
-                                        new CallExpr(PRIM_DEREF, formal)));
-
-          fn->insertAtHead(new DefExpr(refTmp));
+                                        new CallExpr(PRIM_TYPEOF, formal)));
 
           fn->insertAtHead(new DefExpr(typeTmp));
         }
