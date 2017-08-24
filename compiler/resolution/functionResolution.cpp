@@ -5864,13 +5864,9 @@ static Expr* resolveExpr(Expr* expr) {
     }
   }
 
-  INT_ASSERT(tryFailure == false);
-
   if (CallExpr* call = toCallExpr(expr)) {
     expr = preFold(call);
   }
-
-  INT_ASSERT(tryFailure == false);
 
   if (expr                      != NULL      &&
       fn                        != NULL      &&
@@ -5878,8 +5874,6 @@ static Expr* resolveExpr(Expr* expr) {
       isParamResolved(fn, expr) == true) {
     return expr;
   }
-
-  INT_ASSERT(tryFailure == false);
 
   if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
@@ -5923,11 +5917,6 @@ static Expr* resolveExpr(Expr* expr) {
     } else {
       return resolveExprHandleTryFailure(fn);
     }
-  }
-
-  if (tryFailure == true) {
-    INT_ASSERT(false);
-    return resolveExprHandleTryFailure(fn);
   }
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
