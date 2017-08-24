@@ -104,6 +104,15 @@ module String {
 
   private config param debugStrings = false;
 
+  pragma "no doc"
+  record __serializeHelper {
+    var len       : int;
+    var buff      : bufferType;
+    var size      : int;
+    var locale_id : chpl_nodeID.type;
+    var shortData : chpl__inPlaceBuffer;
+  }
+
   //
   // String Implementation
   //
@@ -204,16 +213,6 @@ module String {
       }
     }
 
-    pragma "no doc"
-    record __serializeHelper {
-      var len       : int;
-      var buff      : bufferType;
-      var size      : int;
-      var locale_id : chpl_nodeID.type;
-      var shortData : chpl__inPlaceBuffer;
-    }
-
-
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if len <= CHPL_SHORT_STRING_SIZE {
@@ -223,13 +222,17 @@ module String {
     }
 
     proc type chpl__deserialize(data) {
-      if data.len <= CHPL_SHORT_STRING_SIZE {
-        return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
-                          data.size, owned=true, needToCopy=true);
+      if data.locale_id != chpl_nodeID {
+        if data.len <= CHPL_SHORT_STRING_SIZE {
+          return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
+                            data.size, owned=true, needToCopy=true);
+        } else {
+          var localBuff = copyRemoteBuffer(data.locale_id, data.buff, data.len);
+          return new string(localBuff, data.len, data.size,
+                            owned=true, needToCopy=false);
+        }
       } else {
-        var localBuff = copyRemoteBuffer(data.locale_id, data.buff, data.len);
-        return new string(localBuff, data.len, data.size,
-                          owned=true, needToCopy=false);
+        return new string(data.buff, data.len, data.size, owned = false, needToCopy=false);
       }
     }
 
