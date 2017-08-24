@@ -1465,12 +1465,24 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
       symbol->hasFlag(FLAG_EXTERN) == false) {
     if (AggregateType* parent = toAggregateType(dispatchParents.v[0])) {
       if (parent->initializerStyle != DEFINES_CONSTRUCTOR) {
-        CallExpr* superPortion = new CallExpr(".",
+        CallExpr* superPortion = new CallExpr(PRIM_GET_MEMBER_VALUE,
                                               new SymExpr(fn->_this),
                                               new_CStringSymbol("super"));
+        VarSymbol* superTemp   = newTemp("super_tmp");
+
+        superTemp->addFlag(FLAG_SUPER_TEMP);
+
+        CallExpr* makeSuper    = new CallExpr(PRIM_MOVE,
+                                              superTemp,
+                                              superPortion);
+
+        fn->body->insertAtTail(new DefExpr(superTemp));
+        fn->body->insertAtTail(makeSuper);
 
         SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
-        CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+        CallExpr* base         = new CallExpr(".",
+                                              new SymExpr(superTemp),
+                                              initPortion);
         CallExpr* superCall    = new CallExpr(base);
 
         if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
