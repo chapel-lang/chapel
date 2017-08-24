@@ -1,2 +1,0 @@
-Error-handling WIP: This future should close when error handling supports
-throwing from a method of a generic record.
