@@ -5853,8 +5853,13 @@ static Expr* resolveExpr(Expr* expr) {
 
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
       if (pfs->isIteratedExpression(expr) == true) {
-        // Note: this may set expr=NULL, tryFailure=true.
-        expr = resolveParallelIteratorAndForallIntents(pfs, se);
+        CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
+
+        if (tryFailure == false) {
+          expr = call;
+        } else {
+          return resolveExprHandleTryFailure(fn);
+        }
       }
     }
   }
