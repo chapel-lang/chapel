@@ -1778,8 +1778,10 @@ static void passArgsToNestedFns() {
           if (field->hasFlag(FLAG_ERROR_VARIABLE))
             toRemove = field;
         }
-        if (toRemove != NULL)
+        if (toRemove != NULL) {
+          INT_ASSERT(toRemove->firstSymExpr() == NULL);
           toRemove->defPoint->remove();
+        }
       }
     }
   }
