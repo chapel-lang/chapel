@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [[ ! -f pyzmq-venv/bin/activate ]] ; then
+    virtualenv pyzmq-venv
+    source pyzmq-venv/bin/activate
+    pip install -r requirements.txt
+    deactivate
+fi
