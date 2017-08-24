@@ -1610,6 +1610,8 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
   bool isCtor = (strcmp(t->name,  fn->name) == 0);
   bool isInit = (strcmp(fn->name, "init")   == 0);
 
+  isCtor = isCtor || (strcmp(fn->name, "initialize") == 0);
+
   if (isCtor == true || isInit == true) {
     AggregateType* ct = toAggregateType(t->type);
 
