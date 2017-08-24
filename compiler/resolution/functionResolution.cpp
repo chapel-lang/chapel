@@ -5820,117 +5820,72 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  isParamResolved(FnSymbol* fn, Expr* expr);
+static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
-static Expr* resolveExprResolveEachCall(ContextCallExpr* cc);
+static ForallStmt* toForallForIteratedExpr(SymExpr* expr);
 
-static bool  contextTypesMatch(FnSymbol* valueFn,
-                               FnSymbol* constRefFn,
-                               FnSymbol* refFn);
+static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
 
-static void  contextTypeInfo(FnSymbol* fn);
+static Expr*       resolveExprResolveEachCall(ContextCallExpr* cc);
 
-static void  resolveExprExpandGenerics(CallExpr* call);
+static bool        contextTypesMatch(FnSymbol* valueFn,
+                                     FnSymbol* constRefFn,
+                                     FnSymbol* refFn);
 
-static void  resolveExprTypeConstructor(SymExpr* symExpr);
+static void        contextTypeInfo(FnSymbol* fn);
 
-static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
+static void        resolveExprExpandGenerics(CallExpr* call);
 
-static void  resolveExprMaybeIssueError(CallExpr* call);
+static void        resolveExprTypeConstructor(SymExpr* symExpr);
+
+static Expr*       resolveExprHandleTryFailure(FnSymbol* fn);
+
+static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static Expr* resolveExpr(Expr* expr) {
-  Expr*     origExpr = expr;
-  FnSymbol* fn       = toFnSymbol(expr->parentSymbol);
+  FnSymbol* fn     = toFnSymbol(expr->parentSymbol);
+  Expr*     retval = NULL;
 
   SET_LINENO(expr);
 
-  //
-  // Phase 1
-  //
   if (isContextCallExpr(expr) == true) {
-    return expr;
+    retval = expr;
 
   } else if (isParamResolved(fn, expr) == true) {
-    return expr;
+    retval = expr;
 
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
       implementForallIntents1(def);
     }
 
-    return postFold(expr);
+    retval = postFold(expr);
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
-    if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-      if (pfs->isIteratedExpression(expr) == true) {
-        CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
+    if (ForallStmt* pfs = toForallForIteratedExpr(se)) {
+      CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
 
-        if (tryFailure == false) {
-          expr = preFold(call);
-        } else {
-          return resolveExprHandleTryFailure(fn);
-        }
+      if (tryFailure == false) {
+        retval = resolveExprPhase2(expr, fn, preFold(call));
+
+      } else {
+        retval = resolveExprHandleTryFailure(fn);
       }
+
+    } else {
+      retval = resolveExprPhase2(expr, fn, expr);
     }
 
   } else if (CallExpr* call = toCallExpr(expr)) {
-    expr = preFold(call);
+    retval = resolveExprPhase2(expr, fn, preFold(call));
 
   } else {
-    return postFold(expr);
+    retval = postFold(expr);
   }
 
-  //
-  // Phase 2
-  //
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ERROR)   == true  ||
-        call->isPrimitive(PRIM_WARNING) == true) {
-      resolveExprMaybeIssueError(call);
-    }
-
-    callStack.add(call);
-
-    INT_ASSERT(tryFailure == false);
-
-    resolveCall(call);
-
-    if (tryFailure == false && call->isResolved() == true) {
-      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
-        // ForallLeaderArgs: process the leader that 'call' invokes.
-        implementForallIntents2(call, origToLeaderCall);
-
-      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
-        implementForallIntents2wrapper(call, eflopiHelper);
-      }
-
-      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        expr = resolveExprResolveEachCall(cc);
-
-      } else {
-        resolveFns(call->resolvedFunction());
-      }
-
-      resolveExprExpandGenerics(call);
-    }
-
-    if (tryFailure == false) {
-      callStack.pop();
-
-    } else {
-      return resolveExprHandleTryFailure(fn);
-    }
-
-  } else if (SymExpr* symExpr = toSymExpr(expr)) {
-    resolveExprTypeConstructor(symExpr);
-  }
-
-
-
-  // Phase 3
-  return postFold(expr);
+  return retval;
 }
 
 static bool isParamResolved(FnSymbol* fn, Expr* expr) {
@@ -5967,6 +5922,73 @@ static bool isParamResolved(FnSymbol* fn, Expr* expr) {
 
       retval = true;
     }
+  }
+
+  return retval;
+}
+
+static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
+  ForallStmt* retval = NULL;
+
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+    if (pfs->isIteratedExpression(expr) == true) {
+      retval = pfs;
+    }
+  }
+
+  return retval;
+}
+
+static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
+  Expr* retval = NULL;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    resolveExprTypeConstructor(symExpr);
+
+    retval = postFold(expr);
+
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_ERROR)   == true  ||
+        call->isPrimitive(PRIM_WARNING) == true) {
+      resolveExprMaybeIssueError(call);
+    }
+
+    callStack.add(call);
+
+    INT_ASSERT(tryFailure == false);
+
+    resolveCall(call);
+
+    if (tryFailure == false && call->isResolved() == true) {
+      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
+        // ForallLeaderArgs: process the leader that 'call' invokes.
+        implementForallIntents2(call, origToLeaderCall);
+
+      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+        implementForallIntents2wrapper(call, eflopiHelper);
+      }
+
+      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
+        expr = resolveExprResolveEachCall(cc);
+
+      } else {
+        resolveFns(call->resolvedFunction());
+      }
+
+      resolveExprExpandGenerics(call);
+    }
+
+    if (tryFailure == false) {
+      callStack.pop();
+
+      retval = postFold(expr);
+
+    } else {
+      retval = resolveExprHandleTryFailure(fn);
+    }
+
+  } else {
+    retval = postFold(expr);
   }
 
   return retval;
