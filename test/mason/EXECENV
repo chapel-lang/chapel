@@ -1,0 +1,3 @@
+#!/bin/sh
+
+MASON_HOME=$PWD

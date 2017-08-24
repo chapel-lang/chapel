@@ -52,9 +52,10 @@ proc depExists(dependency: string) {
 
 
 proc MASON_HOME: string {
+  // possible locations
   var masonHome = getEnv("MASON_HOME");
+  var home = getEnv('HOME');
   if masonHome == '' {
-    var home = getEnv('HOME');
     if isDir(home + '/.mason') then
       return home;
     else {

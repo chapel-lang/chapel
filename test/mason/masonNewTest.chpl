@@ -1,31 +1,21 @@
 
-use Spawn;
+use MasonUtils;
 use FileSystem;
-
+use MasonNew;
 
 proc main() {
-  writeln(masonNewTest());
-  runCommand('rm -rf Test');
-}
+  const args = ['mason', 'new', 'Test'];
+  masonNew(args);
 
-proc masonNewTest() {
-  runCommand("mason new Test");
-  if isFile('Test/Mason.toml') {
-    if isFile('Test/src/Test.chpl') {
-      return true;
+  // Confirm structure
+  var pwd = getEnv('PWD');
+  if isDir(pwd + '/Test/src') {
+    if isFile(pwd + '/Test/src/Test.chpl') {
+      writeln('File structure: correct');
+      runCommand('rm -rf Test');
     }
   }
-  return false;
-}
-
-
-/* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd) {
-  var splitCmd = cmd.split();
-  var process = spawn(splitCmd, stdout=PIPE);
-  process.wait();
-
-  for line in process.stdout.lines() {
-    write(line);
+  else {
+    writeln('File structure: incorrect');
   }
 }
