@@ -892,6 +892,21 @@ bool isCheckErrorStmt(Expr* e)
   return false;
 }
 
+Symbol* getErrorSymbolFromCheckErrorStmt(Expr* e)
+{
+  if (CondStmt* cond = toCondStmt(e)) {
+    if (CallExpr* call = toCallExpr(cond->condExpr)) {
+      if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+        SymExpr* errSe   = toSymExpr(call->get(1));
+        Symbol*  errorVar= errSe->symbol();
+        return errorVar;
+      }
+    }
+  }
+  INT_FATAL("bad call to getErrorSymbolFromCheckErrorStmt");
+  return NULL;
+}
+
 // Should we raise an error in strict mode if the error is not handled?
 // No for calls inside of compiler-generated functions, wrapper functions,
 // or task functions. No for functions marked with FLAG_UNCHECKED_THROWS.
