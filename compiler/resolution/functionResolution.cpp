@@ -5820,23 +5820,25 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  isParamResolved(FnSymbol* fn, Expr* expr);
+static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
-static Expr* resolveExprResolveEachCall(ContextCallExpr* cc);
+static ForallStmt* toForallForIteratedExpr(SymExpr* expr);
 
-static bool  contextTypesMatch(FnSymbol* valueFn,
-                               FnSymbol* constRefFn,
-                               FnSymbol* refFn);
+static Expr*       resolveExprResolveEachCall(ContextCallExpr* cc);
 
-static void  contextTypeInfo(FnSymbol* fn);
+static bool        contextTypesMatch(FnSymbol* valueFn,
+                                     FnSymbol* constRefFn,
+                                     FnSymbol* refFn);
 
-static void  resolveExprExpandGenerics(CallExpr* call);
+static void        contextTypeInfo(FnSymbol* fn);
 
-static void  resolveExprTypeConstructor(SymExpr* symExpr);
+static void        resolveExprExpandGenerics(CallExpr* call);
 
-static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
+static void        resolveExprTypeConstructor(SymExpr* symExpr);
 
-static void  resolveExprMaybeIssueError(CallExpr* call);
+static Expr*       resolveExprHandleTryFailure(FnSymbol* fn);
+
+static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static Expr* resolveExpr(Expr* expr) {
   Expr*     origExpr = expr;
@@ -5863,15 +5865,13 @@ static Expr* resolveExpr(Expr* expr) {
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
-    if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-      if (pfs->isIteratedExpression(expr) == true) {
-        CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
+    if (ForallStmt* pfs = toForallForIteratedExpr(se)) {
+      CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
 
-        if (tryFailure == false) {
-          expr = preFold(call);
-        } else {
-          return resolveExprHandleTryFailure(fn);
-        }
+      if (tryFailure == false) {
+        expr = preFold(call);
+      } else {
+        return resolveExprHandleTryFailure(fn);
       }
     }
 
@@ -5966,6 +5966,18 @@ static bool isParamResolved(FnSymbol* fn, Expr* expr) {
       call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
 
       retval = true;
+    }
+  }
+
+  return retval;
+}
+
+static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
+  ForallStmt* retval = NULL;
+
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+    if (pfs->isIteratedExpression(expr) == true) {
+      retval = pfs;
     }
   }
 
