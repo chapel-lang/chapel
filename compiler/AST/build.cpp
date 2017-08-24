@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "stlUtil.h"
 #include "baseAST.h"
+#include "CatchStmt.h"
 #include "config.h"
 #include "DeferStmt.h"
 #include "driver.h"
@@ -34,6 +35,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "TryStmt.h"
 #include "wellknown.h"
 
 #include <map>
@@ -2873,11 +2875,54 @@ buildSyncStmt(Expr* stmt) {
   VarSymbol* endCountSave = newTempConst("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
-  block->insertAtTail(stmt);
+  VarSymbol* endCount = newTempConst("_endCount");
+  block->insertAtTail(new DefExpr(endCount));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
+  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
+
+  // Note that a sync statement can contain arbitrary code,
+  // including code that throws. As a result, we need to take
+  // care call _waitDynamicEndCount even if such errors are thrown.
+
+  // This code takes the approach of wrapping the sync body with
+  //
+  //   try {
+  //      orig-body
+  //   } catch e {
+  //      chpl_save_task_error(e);
+  //      e = nil; // don't delete error
+  //   }
+
+  // The result is that an error within a sync block will be reported
+  // in an error group. It is that way because there could also be errors
+  // from waited-for tasks.
+  VarSymbol* e = new VarSymbol("error");
+  DefExpr* defError = new DefExpr(e, NULL, new UnresolvedSymExpr("Error"));
+  BlockStmt* saveError = new BlockStmt();
+
+  saveError->insertAtTail(new CallExpr("chpl_save_task_error",  endCount, e));
+  saveError->insertAtTail(new CallExpr(PRIM_MOVE, e, gNil));
+
+  BlockStmt* catches = new BlockStmt();
+  catches->insertAtTail(CatchStmt::build(defError, saveError));
+
+  BlockStmt* body = toBlockStmt(stmt);
+  INT_ASSERT(body);
+
+  TryStmt* t = new TryStmt(/* try! */ false, body, catches);
+
+  block->insertAtTail(t);
+
+  // waitDynamicEndCount might throw, but we need to clean up the
+  // end counts either way.
+
+  BlockStmt* cleanup = new BlockStmt();
+
+  cleanup->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+  cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
+
+  block->insertAtTail(new DeferStmt(cleanup));
   block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
-  block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
   return block;
 }
 

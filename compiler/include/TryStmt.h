@@ -30,6 +30,7 @@ public:
   static BlockStmt*   build(bool tryBang, Expr*      expr);
   static BlockStmt*   build(bool tryBang, BlockStmt* body);
   static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches);
+  static BlockStmt*   buildWithCatchall(BlockStmt* body, BlockStmt* onErr);
 
                       TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches);
                       ~TryStmt();
