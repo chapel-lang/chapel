@@ -544,41 +544,6 @@ module ArrayViewReindex {
                                      _ArrInstance=privatizeData(4));
     }
 
-
-    //
-    // bulk-transfer
-    //
-    //
-    // If these methods were nonexistent, calls to these methods would use
-    // BaseArr's implementation instead of arr's.
-    //
-    proc dsiSupportsBulkTransfer() param {
-      return arr.dsiSupportsBulkTransfer();
-    }
-    proc dsiSupportsBulkTransferInterface() param {
-      return arr.dsiSupportsBulkTransferInterface();
-    }
-    proc doiCanBulkTransfer() param return arr.doiCanBulkTransfer();
-    proc doiCanBulkTransferStride(viewDom) param return arr.doiCanBulkTransferStride(viewDom);
-
-    proc _viewHelper(dims) {
-      if dims.size != dom.rank {
-        compilerError("Error while composing view domain for reindex view.");
-      }
-      const goodDims = chpl_reindexConvertDom(dims, privDom, downdom).dims();
-      if _containsRCRE() {
-        var nextView = arr._getRCREView();
-        return nextView._viewHelper(goodDims);
-      } else {
-        return {(...goodDims)};
-      }
-    }
-
-    proc _getViewDom() {
-      // BHARSH TODO
-      return _viewHelper(privDom.dsiDims());
-    }
-
     //
     // utility functions used to set up the index cache
     //
@@ -660,6 +625,19 @@ module ArrayViewReindex {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }
+    }
+
+    proc doiCanBulkTransferRankChange() param
+      return arr.doiCanBulkTransferRankChange();
+
+    proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
+      const shifted = chpl_reindexConvertDom(destDom.dims(), destDom._value, this.dom.dist.downdomInst);
+      return chpl__bulkTransferArray(this.arr, shifted, srcClass, srcDom);
+    }
+
+    proc doiBulkTransferToKnown(srcDom, destClass, destDom) : bool {
+      const shifted = chpl_reindexConvertDom(srcDom.dims(), srcDom._value, this.dom.dist.downdomInst);
+      return chpl__bulkTransferArray(destClass, destDom, this.arr, shifted);
     }
   }
 

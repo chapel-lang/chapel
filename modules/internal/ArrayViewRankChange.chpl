@@ -652,43 +652,6 @@ module ArrayViewRankChange {
                                         idx=privatizeData(6));
     }
 
-
-    //
-    // bulk-transfer
-    //
-    // If these methods were nonexistent, calls to these methods would use
-    // BaseArr's implementation instead of arr's.
-    //
-    proc dsiSupportsBulkTransfer() param {
-      return arr.dsiSupportsBulkTransfer();
-    }
-    proc dsiSupportsBulkTransferInterface() param
-      return arr.dsiSupportsBulkTransferInterface();
-    proc doiCanBulkTransfer() param return arr.doiCanBulkTransfer();
-    proc doiCanBulkTransferStride(viewDom) param return arr.doiCanBulkTransferStride(viewDom);
-
-    // Recursively builds up the view-domain given an initial tuple of
-    // dimensions. Handles nested rank-changes.
-    proc _viewHelper(dims) {
-      // If 'dims.size != arr.rank', assume that we still need to do the
-      // conversion for the current rank-change.
-      var goodDims = if dims.size != arr.rank
-        then chpl_rankChangeConvertDom(dims, rank, collapsedDim, idx).dims() else dims;
-      if goodDims.size != arr.rank {
-        compilerError("Error while composing view domain for rank-change view.");
-      }
-      if _containsRCRE() {
-        var nextView = arr._getRCREView();
-        return nextView._viewHelper(goodDims);
-      } else {
-        return {(...goodDims)};
-      }
-    }
-
-    proc _getViewDom() {
-      return _viewHelper(dom.dsiDims());
-    }
-
     //
     // utility functions used to set up the index cache
     //
@@ -768,6 +731,29 @@ module ArrayViewRankChange {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }
     }
+
+    //
+    // A RankChange will only attempt a bulk-transfer if its underlying array
+    // has explicitly opted-in by implementing the param method
+    // ``doiCanBulkTransferRankChange`` that returns true. This will help
+    // domain-map authors avoid this tricky case without any effort on their
+    // part.
+    //
+
+    proc doiCanBulkTransferRankChange() param
+      return arr.doiCanBulkTransferRankChange();
+
+    proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool
+    where this.arr.doiCanBulkTransferRankChange() {
+      const shifted = chpl_rankChangeConvertDom(destDom.dims(), destDom.rank, this.dom.collapsedDim, this.dom.idx);
+      return chpl__bulkTransferArray(this.arr, shifted, srcClass, srcDom);
+    }
+
+    proc doiBulkTransferToKnown(srcDom, destClass, destDom) : bool
+    where this.arr.doiCanBulkTransferRankChange() {
+      const shifted = chpl_rankChangeConvertDom(srcDom.dims(), srcDom.rank, this.dom.collapsedDim, this.dom.idx);
+      return chpl__bulkTransferArray(destClass, destDom, this.arr, shifted);
+    }
   }  // end of class ArrayViewRankChangeArr
 
 
@@ -846,6 +832,4 @@ module ArrayViewRankChange {
     }
     return {(...ranges)};
   }
-
-
 }
