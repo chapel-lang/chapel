@@ -838,6 +838,20 @@ static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
   fn->body->accept(&visit);
 }
 
+
+static ArgSymbol* addOutErrorArg(FnSymbol* fn)
+{
+  ArgSymbol* outError = NULL;
+
+  SET_LINENO(fn);
+
+  outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
+  outError->addFlag(FLAG_ERROR_VARIABLE);
+  fn->insertFormalAtTail(outError);
+
+  return outError;
+}
+
 static void lowerErrorHandling(FnSymbol* fn)
 {
   ArgSymbol*   outError = NULL;
@@ -846,10 +860,7 @@ static void lowerErrorHandling(FnSymbol* fn)
   if (fn->throwsError()) {
     SET_LINENO(fn);
 
-    outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
-    outError->addFlag(FLAG_ERROR_VARIABLE);
-    fn->insertFormalAtTail(outError);
-
+    outError = addOutErrorArg(fn);
     epilogue = fn->getOrCreateEpilogueLabel();
     INT_ASSERT(epilogue); // throws requires an epilogue
   }
