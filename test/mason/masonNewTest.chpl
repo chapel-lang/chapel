@@ -7,7 +7,7 @@ proc main() {
   const args = ['mason', 'new', 'Test'];
   masonNew(args);
 
-  // Confirm structure 
+  // Confirm structure
   var pwd = getEnv('PWD');
   if isDir(pwd + '/Test/src') {
     if isFile(pwd + '/Test/src/Test.chpl') {

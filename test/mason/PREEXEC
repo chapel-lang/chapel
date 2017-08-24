@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e 
+set -e
 
 REGISTRY=https://github.com/chapel-lang/mason-registry
 MASON_HOME=$PWD
