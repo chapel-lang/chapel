@@ -178,6 +178,10 @@ strings, and other serializable records.
    The serialization protocol for strings changed in Chapel 1.16 in order to
    support inter-language messaging through ZeroMQ. (See
    :ref:`notes on interoperability <interop>` below.)
+   As a result, programs using ZMQ that were compiled by Chapel 1.15 or
+   earlier cannot communicate using strings with programs compiled by
+   Chapel 1.16 or later, although such communication can be used between
+   programs compiled by the same version without issue.
 
    Prior to Chapel 1.16, ZMQ would send a string as two multipart messages:
    the first sent the length as `int`; the second sent the character array
@@ -242,7 +246,7 @@ future Chapel releases.
 One interaction of these features is worth noting explicitly: because multipart
 messages are used to automatically serialize non-primitive data types (e.g.,
 strings and records) and a partially-sent multi-part message cannot be
-cancelled (except by closing the socket), an explicitly non-blocking send call
+canceled (except by closing the socket), an explicitly non-blocking send call
 that encountered an error in the ZeroMQ library during serialization would not
 be in a recoverable state, nor would there be a matching "partial receive".
 
@@ -424,7 +428,6 @@ module ZMQ {
     indicate that the associated send or receive operation should be performed
     as a non-blocking operation.
    */
-  //const DONTWAIT = ZMQ_DONTWAIT;
   private extern const ZMQ_DONTWAIT: c_int;
 
   /*
@@ -432,7 +435,6 @@ module ZMQ {
     send operation is a multi-part message and that more message parts will
     subsequently be issued.
    */
-  //const SNDMORE = ZMQ_SNDMORE;
   private extern const ZMQ_SNDMORE: c_int;
 
   // -- Security Options
