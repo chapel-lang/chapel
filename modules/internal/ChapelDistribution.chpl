@@ -748,13 +748,10 @@ module ChapelDistribution {
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
 
-    proc dsiSupportsBulkTransfer() param return false;
-    proc doiCanBulkTransfer() param return false;
-
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
     proc isDefaultRectangular() param return false;
-    proc dsiSupportsBulkTransferInterface() param return false;
-    proc doiCanBulkTransferStride(viewDom) param return false;
+
+    proc doiCanBulkTransferRankChange() param return false;
   }
 
   /* BaseArrOverRectangularDom has this signature so that dsiReallocate

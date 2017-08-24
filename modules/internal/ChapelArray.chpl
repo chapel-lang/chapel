@@ -663,22 +663,6 @@ module ChapelArray {
   }
 
   //
-  // Return a domain with a rank equivalent to chpl__getActualArray(arr).rank.
-  // This domain is no larger than the innermost array's domain. It represents
-  // the 'active' indices that the top-level ArrayView works with. For example:
-  //
-  //   var A : [1..10, 1..10];
-  //   var B => A[1, 1..10];
-  //   writeln(chpl__getViewDom(B)); // {1..1, 1..10}
-  //
-  // TODO: Can this be written to accept a full-fledge array OR a BaseArr?
-  //
-  proc chpl__getViewDom(arr: []) {
-    if chpl__isArrayView(arr._value) then return arr._value._getViewDom();
-    else return arr.domain;
-  }
-
-  //
   // Return the innermost array class (e.g., a DefaultRectangular).
   //
   // 'arr' can be a full-fledged array or a BaseArr-inheriting class
@@ -3544,19 +3528,9 @@ module ChapelArray {
 
   // This must be a param function
   proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
+    if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
-    if a._value.type != b._value.type then return false;
-    if !a._value.dsiSupportsBulkTransfer() then return false;
-    return true;
-  }
-
-  proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
-    if a.eltType != b.eltType then return false;
-    if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
-    if !chpl__supportedDataTypeForBulkTransfer(b.eltType) then return false;
-    if !a._value.dsiSupportsBulkTransferInterface() then return false;
-    if !b._value.dsiSupportsBulkTransferInterface() then return false;
     return true;
   }
 
@@ -3587,51 +3561,6 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
-
-  proc chpl__useBulkTransfer(a:[], b:[]) {
-    //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
-
-    // constraints specific to a particular domain map array type
-    if !a._value.doiCanBulkTransfer(chpl__getViewDom(a)) then return false;
-    if !b._value.doiCanBulkTransfer(chpl__getViewDom(b)) then return false;
-    if !a._value.doiUseBulkTransfer(b) then return false;
-
-    return true;
-  }
-
-  //NOTE: This function also checks for equal lengths in all dimensions,
-  //as the previous one (chpl__useBulkTransfer) so depending on the order they
-  //are called, this can be factored out.
-  proc chpl__useBulkTransferStride(a:[], b:[]) {
-    //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
-
-    // constraints specific to a particular domain map array type
-    if !a._value.doiCanBulkTransferStride(chpl__getViewDom(a)) then return false;
-    if !b._value.doiCanBulkTransferStride(chpl__getViewDom(b)) then return false;
-    if !a._value.doiUseBulkTransferStride(b) then return false;
-
-    return true;
-  }
-
-  inline proc chpl__bulkTransferHelper(a, b) {
-    if chpl__isDROrDRView(a) {
-      if chpl__isDROrDRView(b) {
-        // implemented in DefaultRectangular
-        a._value.doiBulkTransferStride(b, chpl__getViewDom(a));
-      }
-      else
-        // b's domain map must implement this
-        b._value.doiBulkTransferToDR(a, chpl__getViewDom(b));
-    } else {
-      if chpl__isDROrDRView(b) then
-        // a's domain map must implement this
-        a._value.doiBulkTransferFromDR(b, chpl__getViewDom(a));
-      else
-        // a's domain map must implement this,
-        // possibly using b._value.doiBulkTransferToDR()
-        a._value.doiBulkTransferFrom(b, chpl__getViewDom(a));
-    }
- }
 
   pragma "no doc"
   proc checkArrayShapesUponAssignment(a: [], b: []) {
@@ -3673,34 +3602,63 @@ module ChapelArray {
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
 
-    // try bulk transfer
-    if !chpl__serializeAssignment(a, b) then
-      // Do bulk transfer.
-      chpl__bulkTransferArray(a, b);
-    else
-      // Do non-bulk transfer.
-      chpl__transferArray(a, b);
+    chpl__uncheckedArrayTransfer(a, b);
   }
 
-  inline proc chpl__bulkTransferArray(ref a: [], const ref b) {
-    if (useBulkTransfer &&
-        chpl__compatibleForBulkTransfer(a, b) &&
-        chpl__useBulkTransfer(a, b))
-    {
-      a._value.doiBulkTransfer(b, chpl__getViewDom(a));
-    }
-    else if (useBulkTransferStride &&
-        chpl__compatibleForBulkTransferStride(a, b) &&
-        chpl__useBulkTransferStride(a, b))
-    {
-      chpl__bulkTransferHelper(a, b);
-    }
-    else {
-      if debugBulkTransfer {
-        chpl_debug_writeln("proc =(a:[],b): bulk transfer did not happen");
+  inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[]) {
+    if !chpl__serializeAssignment(a, b) && chpl__compatibleForBulkTransfer(a, b) {
+      if chpl__bulkTransferArray(a, b) == false {
+        chpl__transferArray(a, b);
       }
+    } else {
       chpl__transferArray(a, b);
     }
+  }
+
+  inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
+    return chpl__bulkTransferArray(a, AD, b, BD);
+  }
+  inline proc chpl__bulkTransferArray(ref a: [], AD : domain, const ref b: [], BD : domain) {
+    return chpl__bulkTransferArray(a._value, AD, b._value, BD);
+  }
+
+  inline proc chpl__bulkTransferArray(destClass, destDom : domain, srcClass, srcDom : domain) {
+    use Reflection;
+    var success = false;
+
+    proc bulkTransferDebug(msg:string) {
+      if debugBulkTransfer then chpl_debug_writeln("proc =(a:[],b:[]): ", msg);
+    }
+
+    bulkTransferDebug("in chpl__bulkTransferArray");
+
+    //
+    // BHARSH TODO: I would prefer to hoist these 'canResolveMethod' calls into
+    // param bools before the if/else chain, but the compiler complains about
+    // hitting the instantiation limit for 'canResolveMethod'...
+    //
+    // TODO: should we attempt other bulk transfer methods if one fails?
+    //
+    if canResolveMethod(destClass, "doiBulkTransferFromKnown", destDom, srcClass, srcDom) {
+      bulkTransferDebug("attempting doiBulkTransferFromKnown");
+      success = destClass.doiBulkTransferFromKnown(destDom, srcClass, srcDom);
+    } else if canResolveMethod(srcClass, "doiBulkTransferToKnown", srcDom, destClass, destDom) {
+      bulkTransferDebug("attempting doiBulkTransferToKnown");
+      success = srcClass.doiBulkTransferToKnown(srcDom, destClass, destDom);
+    } else if canResolveMethod(destClass, "doiBulkTransferFromAny", destDom, srcClass, srcDom) {
+      bulkTransferDebug("attempting doiBulkTransferFromAny");
+      success = destClass.doiBulkTransferFromAny(destDom, srcClass, srcDom);
+    } else if canResolveMethod(srcClass, "doiBulkTransferToAny", srcDom, destClass, destDom) {
+      bulkTransferDebug("attempting doiBulkTransferToAny");
+      success = srcClass.doiBulkTransferToAny(srcDom, destClass, destDom);
+    }
+
+    if success then
+      bulkTransferDebug("successfully completed bulk transfer");
+    else
+      bulkTransferDebug("bulk transfer did not happen");
+
+    return success;
   }
 
   inline proc chpl__transferArray(ref a: [], const ref b) {
@@ -3709,10 +3667,6 @@ module ChapelArray {
       forall aa in a do
         aa = b;
     } else if chpl__serializeAssignment(a, b) {
-// commenting this out to remove testing noise.
-// this is always printed out if it's on, because chpl__transferArray
-// is now called from array auto-copy.
-//      compilerWarning("whole array assignment has been serialized (see issue #5760)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
     } else if chpl__tryToken { // try to parallelize using leader and follower iterators
@@ -3927,13 +3881,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref a: []) {
     var b : [a._dom] a.eltType;
 
-    // Try bulk transfer.
-    if !chpl__serializeAssignment(b, a) {
-      chpl__bulkTransferArray(b, a);
-      return b;
-    }
-
-    chpl__transferArray(b, a);
+    chpl__uncheckedArrayTransfer(b, a);
     return b;
   }
 
