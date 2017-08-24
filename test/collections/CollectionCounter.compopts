@@ -1,3 +1,0 @@
---no-loop-invariant-code-motion -sisDeque --main-module=CollectionCounter
---no-loop-invariant-code-motion -sisBag --main-module=CollectionCounter
---no-loop-invariant-code-motion -sisBoundedDeque --main-module=CollectionCounter
