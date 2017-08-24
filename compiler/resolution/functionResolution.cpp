@@ -5846,6 +5846,9 @@ static Expr* resolveExpr(Expr* expr) {
 
   if (isContextCallExpr(expr) == true) {
     return expr;
+
+  } else if (isParamResolved(fn, expr) == true) {
+    return expr;
   }
 
   if (SymExpr* se = toSymExpr(expr)) {
@@ -5866,13 +5869,6 @@ static Expr* resolveExpr(Expr* expr) {
 
   if (CallExpr* call = toCallExpr(expr)) {
     expr = preFold(call);
-  }
-
-  if (expr                      != NULL      &&
-      fn                        != NULL      &&
-      fn->retTag                == RET_PARAM &&
-      isParamResolved(fn, expr) == true) {
-    return expr;
   }
 
   if (DefExpr* def = toDefExpr(expr)) {
@@ -5929,34 +5925,37 @@ static Expr* resolveExpr(Expr* expr) {
 static bool isParamResolved(FnSymbol* fn, Expr* expr) {
   bool retval = false;
 
-  if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->isWhileStmt() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param while loop");
+  if (fn != NULL && fn->retTag == RET_PARAM) {
+    if (BlockStmt* block = toBlockStmt(expr)) {
+      if (block->isWhileStmt() == true) {
+        USR_FATAL(expr,
+                  "param function cannot contain a non-param while loop");
 
-    } else if (block->isForLoop() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param for loop");
+      } else if (block->isForLoop() == true) {
+        USR_FATAL(expr, "param function cannot contain a non-param for loop");
 
-    } else if (block->isLoopStmt() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param loop");
+      } else if (block->isLoopStmt() == true) {
+        USR_FATAL(expr, "param function cannot contain a non-param loop");
+      }
     }
-  }
 
-  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (isCondStmt(block->parentExpr)) {
-      USR_FATAL(block->parentExpr,
-                "param function cannot contain a non-param conditional");
+    if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
+      if (isCondStmt(block->parentExpr)) {
+        USR_FATAL(block->parentExpr,
+                  "param function cannot contain a non-param conditional");
+      }
     }
-  }
 
-  if (paramMap.get(fn->getReturnSymbol())) {
-    CallExpr* call = toCallExpr(fn->body->body.tail);
+    if (paramMap.get(fn->getReturnSymbol())) {
+      CallExpr* call = toCallExpr(fn->body->body.tail);
 
-    INT_ASSERT(call);
-    INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+      INT_ASSERT(call);
+      INT_ASSERT(call->isPrimitive(PRIM_RETURN));
 
-    call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
+      call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
 
-    retval = true; // param function is resolved
+      retval = true;
+    }
   }
 
   return retval;
