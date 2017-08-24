@@ -5790,7 +5790,137 @@ bool requiresImplicitDestroy(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
+void resolveBlockStmt(BlockStmt* blockStmt) {
+  for_exprs_postorder(expr, blockStmt) {
+    expr = resolveExpr(expr);
+
+    if (tryFailure == true) {
+      if (expr != NULL) {
+        tryFailure = false;
+      } else {
+        break;
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Resolves an expression and manages the callStack and tryStack.              *
+*                                                                             *
+* On success, returns the call that was passed in.                            *
+*                                                                             *
+* On a try failure, returns either the expression preceding the elseStmt,     *
+* substituted for the body of the param condition (if that substitution       *
+* could be made), or NULL.                                                    *
+*                                                                             *
+* If null, then resolution of the current block should be aborted.            *
+* tryFailure is true in this case, so the search for a matching elseStmt      *
+* continue in the surrounding block or call.                                  *
+*                                                                             *
+************************************** | *************************************/
+
+static bool  isParamResolved(FnSymbol* fn, Expr* expr);
+
+static Expr* resolveExprResolveEachCall(ContextCallExpr* cc);
+
+static bool  contextTypesMatch(FnSymbol* valueFn,
+                               FnSymbol* constRefFn,
+                               FnSymbol* refFn);
+
+static void  contextTypeInfo(FnSymbol* fn);
+
+static void  resolveExprExpandGenerics(CallExpr* call);
+
+static void  resolveExprTypeConstructor(SymExpr* symExpr);
+
+static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
+
+static void  resolveExprMaybeIssueError(CallExpr* call);
+
+static Expr* resolveExpr(Expr* expr) {
+  Expr*     origExpr = expr;
+  FnSymbol* fn       = toFnSymbol(expr->parentSymbol);
+
+  SET_LINENO(expr);
+
+  if (isContextCallExpr(expr) == true) {
+    return expr;
+  }
+
+  if (SymExpr* se = toSymExpr(expr)) {
+    makeRefType(se->symbol()->type);
+
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+      if (pfs->isIteratedExpression(expr) == true) {
+        // Note: this may set expr=NULL, tryFailure=true.
+        expr = resolveParallelIteratorAndForallIntents(pfs, se);
+      }
+    }
+  }
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    expr = preFold(call);
+  }
+
+  if (expr                      != NULL      &&
+      fn                        != NULL      &&
+      fn->retTag                == RET_PARAM &&
+      isParamResolved(fn, expr) == true) {
+    return expr;
+  }
+
+  if (DefExpr* def = toDefExpr(expr)) {
+    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
+      implementForallIntents1(def);
+    }
+
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_ERROR)   == true  ||
+        call->isPrimitive(PRIM_WARNING) == true) {
+      resolveExprMaybeIssueError(call);
+    }
+
+    callStack.add(call);
+
+    resolveCall(call);
+
+    if (tryFailure == false && call->isResolved() == true) {
+      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
+        // ForallLeaderArgs: process the leader that 'call' invokes.
+        implementForallIntents2(call, origToLeaderCall);
+
+      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+        implementForallIntents2wrapper(call, eflopiHelper);
+      }
+
+      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
+        expr = resolveExprResolveEachCall(cc);
+
+      } else {
+        resolveFns(call->resolvedFunction());
+      }
+
+      resolveExprExpandGenerics(call);
+    }
+
+    if (tryFailure == false) {
+      callStack.pop();
+    }
+  }
+
+  if (tryFailure == true) {
+    return resolveExprHandleTryFailure(fn);
+  }
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    resolveExprTypeConstructor(symExpr);
+  }
+
+  return postFold(expr);
+}
+
+static bool isParamResolved(FnSymbol* fn, Expr* expr) {
   bool retval = false;
 
   if (BlockStmt* block = toBlockStmt(expr)) {
@@ -5824,150 +5954,6 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   }
 
   return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void resolveBlockStmt(BlockStmt* blockStmt) {
-  for_exprs_postorder(expr, blockStmt) {
-    expr = resolveExpr(expr);
-
-    if (tryFailure == true) {
-      if (expr != NULL) {
-        tryFailure = false;
-      } else {
-        break;
-      }
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Resolves an expression and manages the callStack and tryStack.              *
-*                                                                             *
-* On success, returns the call that was passed in.                            *
-*                                                                             *
-* On a try failure, returns either the expression preceding the elseStmt,     *
-* substituted for the body of the param condition (if that substitution       *
-* could be made), or NULL.                                                    *
-*                                                                             *
-* If null, then resolution of the current block should be aborted.            *
-* tryFailure is true in this case, so the search for a matching elseStmt      *
-* continue in the surrounding block or call.                                  *
-*                                                                             *
-************************************** | *************************************/
-
-static Expr* resolveExprResolveEachCall(ContextCallExpr* cc);
-
-static bool  contextTypesMatch(FnSymbol* valueFn,
-                               FnSymbol* constRefFn,
-                               FnSymbol* refFn);
-
-static void  contextTypeInfo(FnSymbol* fn);
-
-static void  resolveExprExpandGenerics(CallExpr* call);
-
-static void  resolveExprTypeConstructor(SymExpr* symExpr);
-
-static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
-
-static void  resolveExprMaybeIssueError(CallExpr* call);
-
-static Expr* resolveExpr(Expr* expr) {
-  Expr* const origExpr = expr;
-  FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
-
-  SET_LINENO(expr);
-
-  if (isContextCallExpr(expr)) {
-    // context call expressions are always already resolved
-    // since they are created in resolveNormalFunction to represent
-    // alternative resolutions.
-    return expr;
-  }
-
-  if (SymExpr* se = toSymExpr(expr)) {
-    if (se->symbol()) {
-      makeRefType(se->symbol()->type);
-    }
-
-    if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-      if (pfs->isIteratedExpression(expr)) {
-        // Note: this may set expr=NULL, tryFailure=true.
-        expr = resolveParallelIteratorAndForallIntents(pfs, se);
-      }
-    }
-  }
-
-  if (CallExpr* call = toCallExpr(expr)) {
-    expr = preFold(call);
-  }
-
-  if (expr && fn && fn->retTag == RET_PARAM && is_param_resolved(fn, expr)) {
-    return expr;
-  }
-
-  if (DefExpr* def = toDefExpr(expr)) {
-    if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
-      implementForallIntents1(def);
-    }
-  }
-
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ERROR) ||
-        call->isPrimitive(PRIM_WARNING)) {
-      resolveExprMaybeIssueError(call);
-    }
-
-    callStack.add(call);
-
-    resolveCall(call);
-
-    if (tryFailure == false && call->isResolved() == true) {
-      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
-        // ForallLeaderArgs: process the leader that 'call' invokes.
-        implementForallIntents2(call, origToLeaderCall);
-
-      else if (CallExpr* eflopiHelper = eflopiMap[call]) {
-        implementForallIntents2wrapper(call, eflopiHelper);
-      }
-
-      // For ContextCallExprs, be sure to resolve all of the
-      // functions that could be called.
-      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        expr = resolveExprResolveEachCall(cc);
-
-      } else {
-        FnSymbol* fn = call->resolvedFunction();
-
-        INT_ASSERT(fn != NULL);
-        resolveFns(fn);
-      }
-
-      resolveExprExpandGenerics(call);
-    }
-
-    if (tryFailure == false) {
-      callStack.pop();
-    }
-  }
-
-  if (tryFailure == true) {
-    return resolveExprHandleTryFailure(fn);
-  }
-
-  INT_ASSERT(expr);
-
-  if (SymExpr* symExpr = toSymExpr(expr)) {
-    resolveExprTypeConstructor(symExpr);
-  }
-
-  return postFold(expr);
 }
 
 // A ContextCallExpr wraps 2 or 3 CallExprs.
