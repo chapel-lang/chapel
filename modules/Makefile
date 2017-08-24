@@ -64,7 +64,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
-
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
@@ -114,7 +113,10 @@ PACKAGES_TO_DOCUMENT = \
 	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
-	packages/ZMQ.chpl
+	packages/ZMQ.chpl \
+	packages/Collection.chpl \
+	packages/DistributedBag.chpl \
+	packages/DistributedDeque.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -170,4 +172,3 @@ clean-documentation:
 	rm -rf $(MODULE_SPHINX)
 
 FORCE:
-
