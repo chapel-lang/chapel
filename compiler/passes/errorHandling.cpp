@@ -188,7 +188,7 @@ private:
   AList  errorCond         (VarSymbol*     errorVar,
                             BlockStmt*     thenBlock,
                             BlockStmt*     elseBlock = NULL);
-  CallExpr* haltExpr       (VarSymbol*     error);
+  CallExpr* haltExpr       (VarSymbol*     error, bool tryBang);
 
   ErrorHandlingVisitor();
 };
@@ -303,7 +303,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
   if (!hasCatchAll) {
     if (tryStmt->tryBang()) {
-      currHandler->insertAtTail(haltExpr(errorVar));
+      currHandler->insertAtTail(haltExpr(errorVar, true));
     } else if (!tryStack.empty()) {
       currHandler->insertAtTail(setOuterErrorAndGotoHandler(errorVar));
     } else if (outError != NULL) {
@@ -345,7 +345,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         if (outError != NULL)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
-          errorPolicy->insertAtTail(haltExpr(errorVar));
+          errorPolicy->insertAtTail(haltExpr(errorVar, false));
       }
 
       node->insertAtTail(errorVar); // adding error argument to call
@@ -433,7 +433,7 @@ void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
   } else if (outError != NULL) {
     handler->insertAtTail(setOutGotoEpilogue(info.errorVar));
   } else {
-    handler->insertAtTail(haltExpr(info.errorVar));
+    handler->insertAtTail(haltExpr(info.errorVar, false));
   }
   info.handlerLabel->defPoint->insertAfter(errorCond(info.errorVar, handler));
 }
@@ -488,9 +488,18 @@ AList ErrorHandlingVisitor::errorCond(VarSymbol* errorVar,
   return ret;
 }
 
-CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar) {
-  return new CallExpr(gChplUncaughtError, errorVar);
+// Emit code that can halt with the error.
+// The tryBang argument indicates if the user requested a halt-on-error
+// (with try!). If not, the compiler is adding the halt-on-error for one
+// reason or another and later passes should be able to change the halt
+// into other error handling (as with, say, iterator inlining).
+CallExpr* ErrorHandlingVisitor::haltExpr(VarSymbol* errorVar, bool tryBang) {
+  if (tryBang)
+    return new CallExpr(gChplUncaughtError, errorVar);
+
+  return new CallExpr(gChplPropagateError, errorVar);
 }
+
 
 static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
 {
