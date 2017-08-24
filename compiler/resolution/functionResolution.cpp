@@ -5824,6 +5824,8 @@ static bool        isParamResolved(FnSymbol* fn, Expr* expr);
 
 static ForallStmt* toForallForIteratedExpr(SymExpr* expr);
 
+static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
+
 static Expr*       resolveExprResolveEachCall(ContextCallExpr* cc);
 
 static bool        contextTypesMatch(FnSymbol* valueFn,
@@ -5846,9 +5848,6 @@ static Expr* resolveExpr(Expr* expr) {
 
   SET_LINENO(expr);
 
-  //
-  // Phase 1
-  //
   if (isContextCallExpr(expr) == true) {
     return expr;
 
@@ -5882,55 +5881,7 @@ static Expr* resolveExpr(Expr* expr) {
     return postFold(expr);
   }
 
-  //
-  // Phase 2
-  //
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ERROR)   == true  ||
-        call->isPrimitive(PRIM_WARNING) == true) {
-      resolveExprMaybeIssueError(call);
-    }
-
-    callStack.add(call);
-
-    INT_ASSERT(tryFailure == false);
-
-    resolveCall(call);
-
-    if (tryFailure == false && call->isResolved() == true) {
-      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
-        // ForallLeaderArgs: process the leader that 'call' invokes.
-        implementForallIntents2(call, origToLeaderCall);
-
-      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
-        implementForallIntents2wrapper(call, eflopiHelper);
-      }
-
-      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        expr = resolveExprResolveEachCall(cc);
-
-      } else {
-        resolveFns(call->resolvedFunction());
-      }
-
-      resolveExprExpandGenerics(call);
-    }
-
-    if (tryFailure == false) {
-      callStack.pop();
-
-    } else {
-      return resolveExprHandleTryFailure(fn);
-    }
-
-  } else if (SymExpr* symExpr = toSymExpr(expr)) {
-    resolveExprTypeConstructor(symExpr);
-  }
-
-
-
-  // Phase 3
-  return postFold(expr);
+  return resolveExprPhase2(origExpr, fn, expr);
 }
 
 static bool isParamResolved(FnSymbol* fn, Expr* expr) {
@@ -5982,6 +5933,52 @@ static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
   }
 
   return retval;
+}
+
+static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
+  if        (SymExpr* symExpr = toSymExpr(expr)) {
+    resolveExprTypeConstructor(symExpr);
+
+  } else if (CallExpr* call   = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_ERROR)   == true  ||
+        call->isPrimitive(PRIM_WARNING) == true) {
+      resolveExprMaybeIssueError(call);
+    }
+
+    callStack.add(call);
+
+    INT_ASSERT(tryFailure == false);
+
+    resolveCall(call);
+
+    if (tryFailure == false && call->isResolved() == true) {
+      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
+        // ForallLeaderArgs: process the leader that 'call' invokes.
+        implementForallIntents2(call, origToLeaderCall);
+
+      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+        implementForallIntents2wrapper(call, eflopiHelper);
+      }
+
+      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
+        expr = resolveExprResolveEachCall(cc);
+
+      } else {
+        resolveFns(call->resolvedFunction());
+      }
+
+      resolveExprExpandGenerics(call);
+    }
+
+    if (tryFailure == false) {
+      callStack.pop();
+
+    } else {
+      return resolveExprHandleTryFailure(fn);
+    }
+  }
+
+  return postFold(expr);
 }
 
 // A ContextCallExpr wraps 2 or 3 CallExprs.
