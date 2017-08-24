@@ -5843,23 +5843,23 @@ static Expr*       resolveExprHandleTryFailure(FnSymbol* fn);
 static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static Expr* resolveExpr(Expr* expr) {
-  Expr*     origExpr = expr;
-  FnSymbol* fn       = toFnSymbol(expr->parentSymbol);
+  FnSymbol* fn     = toFnSymbol(expr->parentSymbol);
+  Expr*     retval = NULL;
 
   SET_LINENO(expr);
 
   if (isContextCallExpr(expr) == true) {
-    return expr;
+    retval = expr;
 
   } else if (isParamResolved(fn, expr) == true) {
-    return expr;
+    retval = expr;
 
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
       implementForallIntents1(def);
     }
 
-    return postFold(expr);
+    retval = postFold(expr);
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
@@ -5868,20 +5868,24 @@ static Expr* resolveExpr(Expr* expr) {
       CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
 
       if (tryFailure == false) {
-        expr = preFold(call);
+        retval = resolveExprPhase2(expr, fn, preFold(call));
+
       } else {
-        return resolveExprHandleTryFailure(fn);
+        retval = resolveExprHandleTryFailure(fn);
       }
+
+    } else {
+      retval = resolveExprPhase2(expr, fn, expr);
     }
 
   } else if (CallExpr* call = toCallExpr(expr)) {
-    expr = preFold(call);
+    retval = resolveExprPhase2(expr, fn, preFold(call));
 
   } else {
-    return postFold(expr);
+    retval = postFold(expr);
   }
 
-  return resolveExprPhase2(origExpr, fn, expr);
+  return retval;
 }
 
 static bool isParamResolved(FnSymbol* fn, Expr* expr) {
@@ -5936,10 +5940,14 @@ static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
 }
 
 static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
-  if        (SymExpr* symExpr = toSymExpr(expr)) {
+  Expr* retval = NULL;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
     resolveExprTypeConstructor(symExpr);
 
-  } else if (CallExpr* call   = toCallExpr(expr)) {
+    retval = postFold(expr);
+
+  } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR)   == true  ||
         call->isPrimitive(PRIM_WARNING) == true) {
       resolveExprMaybeIssueError(call);
@@ -5973,12 +5981,17 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
     if (tryFailure == false) {
       callStack.pop();
 
+      retval = postFold(expr);
+
     } else {
-      return resolveExprHandleTryFailure(fn);
+      retval = resolveExprHandleTryFailure(fn);
     }
+
+  } else {
+    retval = postFold(expr);
   }
 
-  return postFold(expr);
+  return retval;
 }
 
 // A ContextCallExpr wraps 2 or 3 CallExprs.
