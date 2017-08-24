@@ -1682,74 +1682,102 @@ proc StencilArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc StencilArr.dsiSupportsBulkTransfer() param return true;
-proc StencilArr.dsiSupportsBulkTransferInterface() param return true;
-
-proc StencilArr.doiCanBulkTransfer(viewDom) {
+private proc _canDoSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
   if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiCanBulkTransfer");
+    writeln("In StencilDist._canDoSimpleStencilTransfer");
 
-  if dom.stridable then
-    for param i in 1..rank do
-      if viewDom.dim(i).stride != 1 then return false;
-
-  return true;
-}
-
-proc StencilArr.doiCanBulkTransferStride(viewDom) param {
-  if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiCanBulkTransferStride");
+  if destDom.stridable || srcDom.stridable {
+    for param i in 1..Dest.rank {
+      if destDom.dim(i).stride != 1 ||
+         srcDom.dim(i).stride != 1 then return false;
+    }
+  }
 
   return useBulkTransferDist;
 }
 
-proc StencilArr.doiUseBulkTransfer(B) {
-  if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiUseBulkTransfer()");
-
-  return this.rank == B.rank;
+proc StencilArr.doiBulkTransferToKnown(srcDom, destClass:StencilArr, destDom) : bool
+where useBulkTransferDist {
+  if _canDoSimpleStencilTransfer(destClass, destDom, this, srcDom) {
+    _doSimpleStencilTransfer(destClass, destDom, this, srcDom);
+    return true;
+  }
+  return false;
 }
 
-proc StencilArr.doiUseBulkTransferStride(B) {
-  if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiUseBulkTransferStride()");
-
-  return this.rank == B.rank;
+proc StencilArr.doiBulkTransferFromKnown(destDom, srcClass:StencilArr, srcDom) : bool
+where useBulkTransferDist {
+  if _canDoSimpleStencilTransfer(this, destDom, srcClass, srcDom) {
+    _doSimpleStencilTransfer(this, destDom, srcClass, srcDom);
+    return true;
+  }
+  return false;
 }
 
-proc StencilArr.doiBulkTransfer(B, viewDom) {
+private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
   if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiBulkTransfer");
-  const actual = chpl__getActualArray(B);
-  const actDom = chpl__getViewDom(B);
+    writeln("In StencilDist._doSimpleStencilTransfer");
 
   if debugStencilDistBulkTransfer then resetCommDiagnostics();
-  var sameDomain: bool;
-  // We need to do the following on the locale where 'this' was allocated,
-  //  but hopefully, most of the time we are initiating the transfer
-  //  from the same locale (local on clauses are optimized out).
-  on this do sameDomain = viewDom==actDom;
+
+  param rank = Dest.rank;
+
+  const equalDoms = (Dest.dom.whole == Src.dom.whole) &&
+                    (srcDom == destDom) &&
+                    (Dest.dom.dist.dsiEqualDMaps(Src.dom.dist));
+
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
-  //  actual.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in zip(this.dom.dist.targetLocDom,
-                                        locArr,
-                                        actual.locArr) do
-    on this.dom.dist.targetLocales(i) {
-
-    if this.rank == B.rank {
-      // Take advantage of DefaultRectangular bulk transfer
+  //  Src.locArr[i]
+  coforall (i, destLocArr, srcLocArr, destLocDom, srcLocDom) in zip(Dest.dom.dist.targetLocDom,
+                                        Dest.locArr,
+                                        Src.locArr,
+                                        Dest.dom.locDoms,
+                                        Src.dom.locDoms) {
+    on Dest.dom.dist.targetLocales(i) {
       if debugStencilDistBulkTransfer then startCommDiagnosticsHere();
-      const lview = myLocArr.locDom.myBlock[viewDom];
-      const rview = BmyLocArr.locDom.myBlock[actDom];
-      myLocArr.myElems[lview] = BmyLocArr.myElems[rview];
+
+      const viewBlock = destLocDom.myBlock[destDom];
+
+      if equalDoms {
+        const theirView = srcLocDom.myBlock[srcDom];
+        destLocArr.myElems[viewBlock] = srcLocArr.myElems[theirView];
+      } else if Dest.rank == 1 {
+        var start = viewBlock.low;
+
+        for (rid, rlo, size) in ConsecutiveChunks(destDom, Src.dom, srcDom, viewBlock.size, start) {
+          destLocArr.myElems[start..#size] = Src.locArr[rid].myElems[rlo..#size];
+          start += size;
+        }
+      } else {
+        const orig = viewBlock.low(rank);
+
+        for coord in dropDims(viewBlock, viewBlock.rank) {
+          var lo = if rank == 2 then (coord, orig) else ((...coord), orig);
+
+          for (rid, rlo, size) in ConsecutiveChunksD(destDom, Src.dom, srcDom, viewBlock.dim(rank).length, lo) {
+            var LSlice, RSlice : rank*range(idxType = Dest.dom.idxType);
+
+            for param i in 1..rank-1 {
+              LSlice(i) = if rank == 2 then coord..coord else coord(i)..coord(i);
+              RSlice(i) = rlo(i)..rlo(i);
+            }
+            LSlice(rank) = lo(rank)..#size;
+            RSlice(rank) = rlo(rank)..#size;
+
+            destLocArr.myElems[(...LSlice)] = Src.locArr[rid].myElems[(...RSlice)];
+
+            lo(rank) += size;
+          }
+        }
+      }
+
       if debugStencilDistBulkTransfer then stopCommDiagnosticsHere();
-    } else {
-      halt("bulk-transfer called with Stencil of differing rank!");
     }
   }
   if debugStencilDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
+
 
 proc StencilArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1784,137 +1812,150 @@ proc StencilDom.dsiLocalSubdomain() {
   return myLocDom.myBlock;
 }
 
-proc StencilDom.numRemoteElems(rlo,rid){
+proc StencilDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
-  var blo,bhi:dist.idxType;
+  var blo, bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
-    bhi=whole.dim(rank).high;
-  else
-      bhi=dist.boundingBox.dim(rank).low +
+    bhi=viewDom.dim(rank).high;
+  else {
+      bhi = dist.boundingBox.dim(rank).low +
         intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1):idxType,
                        dist.targetLocDom.dim(rank).length:idxType) - 1:idxType;
+  }
 
-  return(bhi - (rlo - 1):idxType);
+  return (bhi - (rlo - 1):idxType);
 }
 
-//For assignments of the form: "Stencil = any"
-//where "any" means any array that implements the bulk transfer interface
-proc StencilArr.doiBulkTransferFrom(Barg, viewDom)
-{
+private proc canDoAnyToStencil(Dest, destDom, Src, srcDom) param : bool {
+  if Dest.rank != Src.rank then return false;
+
+  // Does 'Src' support bulk transfers *to* a DefaultRectangular?
+  if !canResolveMethod(Src, "doiBulkTransferToKnown", srcDom,
+                       Dest.locArr[Dest.locArr.domain.first].myElems._value, destDom) {
+    return false;
+  }
+
+  return useBulkTransferDist;
+}
+
+// Overload for any transfer *to* Stencil, if the RHS supports transfers to a
+// DefaultRectangular
+//
+// TODO: avoid spawning so many coforall-ons
+//   - clean up some of this range creation logic
+proc StencilArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
+where canDoAnyToStencil(this, destDom, Src, srcDom) {
+
   if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiBulkTransferFrom()");
+    writeln("In StencilDist.doiBulkTransferFromAny");
 
   const Dest = this;
-  const Src = chpl__getActualArray(Barg);
-  const srcView = chpl__getViewDom(Barg);
-  type el = Dest.idxType;
-  if this.rank == Src.rank {
-    coforall i in Dest.dom.dist.targetLocDom do // for all locales
-      on Dest.dom.dist.targetLocales(i)
-      {
-        var regionDest = Dest.dom.locDoms(i).myBlock[viewDom];
-        var regionSrc = Src.dom.locDoms(i).myBlock[srcView];
-        if regionDest.numIndices>0
-        {
-          const ini=bulkCommConvertCoordinate(regionDest.first, viewDom, srcView);
-          const end=bulkCommConvertCoordinate(regionDest.last, viewDom, srcView);
-          const sb=chpl__tuplify(regionSrc.stride);
+  type el    = Dest.idxType;
 
-          var r1,r2: rank * range(idxType = el,stridable = true);
-          r2=regionDest.dims();
-           //In the case that the number of elements in dimension t for r1 and r2
-           //were different, we need to calculate the correct stride in r1
-          for param t in 1..rank{
-              r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-              if r1[t].length != r2[t].length then
-                r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
-          }
-        
-          if debugStencilDistBulkTransfer then
-              writeln("B{",(...r1),"}.ToDR",regionDest);
+  coforall i in Dest.dom.dist.targetLocDom {
+    on Dest.dom.dist.targetLocales(i) {
+      const regionDest = Dest.dom.locDoms(i).myBlock[destDom];
+      const regionSrc  = Src.dom.locDoms(i).myBlock[srcDom];
+      if regionDest.numIndices > 0 {
+        const ini = bulkCommConvertCoordinate(regionDest.first, destDom, srcDom);
+        const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
+        const sb  = chpl__tuplify(regionSrc.stride);
 
-          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], {(...r1)});
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        r2 = regionDest.dims();
+         //In the case that the number of elements in dimension t for r1 and r2
+         //were different, we need to calculate the correct stride in r1
+        for param t in 1..rank {
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+            if r1[t].length != r2[t].length then
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
+
+        if debugStencilDistBulkTransfer then
+          writeln("A.locArr[i][", regionDest, "] = B[", (...r1), "]");
+
+        // TODO: handle possibility that this function returns false
+        chpl__bulkTransferArray(Dest.locArr[i].myElems._value, regionDest, Src, {(...r1)});
       }
+    }
   }
+
+  return true;
 }
- 
-//For assignments of the form: DR = Stencil 
-//(default rectangular array = block distributed array)
-proc StencilArr.doiBulkTransferToDR(Barg, viewDom)
-{
+
+// For assignments of the form: DefaultRectangular = Stencil
+proc StencilArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
+where useBulkTransferDist {
+
   if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiBulkTransferToDR()");
+    writeln("In StencilDist.doiBulkTransferToKnown(DefaultRectangular)");
 
   const Src = this;
-  const Dest = chpl__getActualArray(Barg);
-  const destView = chpl__getViewDom(Barg);
-  type el = Src.idxType;
-  if this.rank == Dest.rank {
-    coforall j in Src.dom.dist.targetLocDom do
-      on Src.dom.dist.targetLocales(j)
-      {
-        const inters=Src.dom.locDoms(j).myBlock[viewDom];
-        if(inters.numIndices>0)
+  type el   = Src.idxType;
+
+  coforall j in Src.dom.dist.targetLocDom {
+    on Src.dom.dist.targetLocales(j) {
+      const inters = Src.dom.locDoms(j).myBlock[destDom];
+      if inters.numIndices > 0 {
+        const ini = bulkCommConvertCoordinate(inters.first, destDom, srcDom);
+        const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
+        const sa  = chpl__tuplify(srcDom.stride);
+
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        for param t in 1..rank
         {
-          const ini=bulkCommConvertCoordinate(inters.first, viewDom, destView);
-          const end=bulkCommConvertCoordinate(inters.last, viewDom, destView);
-          const sa = chpl__tuplify(destView.stride);
-
-          var r1,r2: rank * range(idxType = el,stridable = true);
-          for param t in 1..rank
-          {
-            r2[t] = (chpl__tuplify(inters.first)[t]
-                     ..chpl__tuplify(inters.last)[t]
-                     by chpl__tuplify(inters.stride)[t]);
-            r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
-          }
-
-          if debugStencilDistBulkTransfer then
-            writeln("A[",r1,"] = B[",r2,"]");
-        
-          Barg[(...r1)] = Src.locArr[j].myElems[(...r2)];
+          r2[t] = (chpl__tuplify(inters.first)[t]
+                   ..chpl__tuplify(inters.last)[t]
+                   by chpl__tuplify(inters.stride)[t]);
+          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
         }
+
+        if debugStencilDistBulkTransfer then
+          writeln("A[",r1,"] = B[",r2,"]");
+
+        const elemActual = Src.locArr[j].myElems._value;
+        chpl__bulkTransferArray(Dest, {(...r1)}, elemActual, {(...r2)});
       }
+    }
   }
+
+  return true;
 }
 
-//For assignments of the form: Stencil = DR 
-//(block distributed array = default rectangular)
-proc StencilArr.doiBulkTransferFromDR(Barg, viewDom)
-{
+// For assignments of the form: Stencil = DefaultRectangular
+proc StencilArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
+where useBulkTransferDist {
   if debugStencilDistBulkTransfer then
-    writeln("In StencilArr.doiBulkTransferFromDR");
+    writeln("In StencilArr.doiBulkTransferFromKnown(DefaultRectangular)");
 
   const Dest = this;
-  const srcView = chpl__getViewDom(Barg);
-  type el = Dest.idxType;
-  if this.rank == srcView.rank {
-    coforall j in Dest.dom.dist.targetLocDom do
-      on Dest.dom.dist.targetLocales(j)
-      {
-        const inters=Dest.dom.locDoms(j).myBlock[viewDom];
-        if(inters.numIndices>0)
-        {
-          const ini=bulkCommConvertCoordinate(inters.first, viewDom, srcView);
-          const end=bulkCommConvertCoordinate(inters.last, viewDom, srcView);
-          const sb = chpl__tuplify(srcView.stride);
+  type el    = Dest.idxType;
 
-          var r1,r2: rank * range(idxType = el,stridable = true);
-          for param t in 1..rank
-          {
-            r2[t] = (chpl__tuplify(inters.first)[t]
-                     ..chpl__tuplify(inters.last)[t]
-                     by chpl__tuplify(inters.stride)[t]);
-            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-          }
+  coforall j in Dest.dom.dist.targetLocDom {
+    on Dest.dom.dist.targetLocales(j) {
+      const inters = Dest.dom.locDoms(j).myBlock[destDom];
+      if inters.numIndices > 0 {
+        const ini = bulkCommConvertCoordinate(inters.first, destDom, srcDom);
+        const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
+        const sb  = chpl__tuplify(srcDom.stride);
 
-          if debugStencilDistBulkTransfer then
-            writeln("A[",r2,"] = B[",r1,"]");
-
-          Dest.locArr[j].myElems[(...r2)] = Barg[(...r1)];
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        for param t in 1..rank {
+          r2[t] = (chpl__tuplify(inters.first)[t]
+                   ..chpl__tuplify(inters.last)[t]
+                   by chpl__tuplify(inters.stride)[t]);
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
         }
+
+        if debugStencilDistBulkTransfer then
+          writeln("A[",r2,"] = B[",r1,"]");
+
+        const elemActual = Dest.locArr[j].myElems._value;
+        chpl__bulkTransferArray(elemActual, {(...r2)}, Src, {(...r1)});
       }
+    }
   }
+
+  return true;
 }

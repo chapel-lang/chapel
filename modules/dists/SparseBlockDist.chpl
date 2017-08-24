@@ -735,21 +735,7 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc SparseBlockArr.dsiSupportsBulkTransfer() param return false;
-
-proc SparseBlockArr.doiCanBulkTransfer() {
-  if dom.stridable then
-    for param i in 1..rank do
-      if dom.whole.dim(i).stride != 1 then return false;
-
-  return true;
-}
-
-// TODO This function needs to be fixed. For now, explicitly returning false
-// from dsiSupportsBulkTransfer, so this function should never be compiled
-proc SparseBlockArr.doiBulkTransfer(B, viewDom) {
-  halt("SparseBlockArr.doiBulkTransfer not yet implemented");
-}
+// TODO: bulk-transfer support
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {
   var elemsToGet = d1.locDoms[lid].mySparseBlock.numIndices;
