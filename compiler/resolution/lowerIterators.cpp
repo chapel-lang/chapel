@@ -1939,20 +1939,9 @@ expandForLoop(ForLoop* forLoop) {
 
     FnSymbol* iterFn = getTheIteratorFn(iterator->type);
     if (iterFn->throwsError()) {
-      Expr* errorCheck = NULL;
       // In this event, the error handling pass added a PRIM_CHECK_ERROR
       // after the call to the iterator function.
       // Scroll backwards to find the error handling block.
-
-      Expr* cur = forLoop->prev;
-      while (cur != NULL) {
-        if (isCheckErrorStmt(cur)) {
-          errorCheck = cur;
-          break;
-        }
-        cur = cur->prev;
-      }
-      INT_ASSERT(errorCheck != NULL);
 
       // TODO: finish this case
       //       I think we need to use the ForLoop's break label
