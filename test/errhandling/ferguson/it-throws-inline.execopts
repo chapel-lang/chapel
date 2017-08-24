@@ -1,0 +1,5 @@
+--i=0 # it-throws-inline.0.good
+--i=1 # it-throws-inline.1.good
+--i=2 # it-throws-inline.2.good
+--i=3 # it-throws-inline.3.good
+--i=4 # it-throws-inline.4.good
