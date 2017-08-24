@@ -5849,6 +5849,13 @@ static Expr* resolveExpr(Expr* expr) {
 
   } else if (isParamResolved(fn, expr) == true) {
     return expr;
+
+  } else if (DefExpr* def = toDefExpr(expr)) {
+    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
+      implementForallIntents1(def);
+    }
+
+    return postFold(expr);
   }
 
   if (SymExpr* se = toSymExpr(expr)) {
@@ -5871,12 +5878,7 @@ static Expr* resolveExpr(Expr* expr) {
     expr = preFold(call);
   }
 
-  if (DefExpr* def = toDefExpr(expr)) {
-    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
-      implementForallIntents1(def);
-    }
-
-  } else if (CallExpr* call = toCallExpr(expr)) {
+  if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR)   == true  ||
         call->isPrimitive(PRIM_WARNING) == true) {
       resolveExprMaybeIssueError(call);
