@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+# The ZMQ package requires the zmq library.
+#
+# Installation of the ZMQ library is detected with the find_library function,
+# which looks for the appropriate dynamic library (e.g. libzmq.so).
+# Note that if the dynamic library is found, this test assumes that the
+# header and static library are available.
+
+from __future__ import print_function
+from ctypes.util import find_library
+
+print(find_library('zmq') is None)
