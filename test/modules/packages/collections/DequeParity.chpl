@@ -1,4 +1,4 @@
-use Barrier;
+use Barriers;
 use DistributedDeque;
 
 // For the parity test, we separate even and odd numbers on each side of the Deque.

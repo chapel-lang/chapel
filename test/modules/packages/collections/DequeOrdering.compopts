@@ -1,2 +1,2 @@
---main-module=DequeOrdering
---main-module=DequeOrdering -sisBounded=true
+-sisBounded=false
+-sisBounded=true

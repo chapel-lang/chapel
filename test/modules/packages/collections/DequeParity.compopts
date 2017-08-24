@@ -1,2 +1,2 @@
--sisBounded --main-module=DequeParity
---main-module=DequeParity
+-sisBounded=true
+-sisBounded=false

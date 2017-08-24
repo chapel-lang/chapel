@@ -140,6 +140,14 @@ class DistributedBag : Collection {
   pragma "no doc"
   var pid : int = -1;
 
+  iter targetLocalesNotHere() {
+    for loc in targetLocales {
+      if loc != here {
+        yield loc;
+      }
+    }
+  }
+
   // Node-local fields below. These fields are specific to the privatized instance.
   // To access them from another node, make sure you use 'getPrivatizedThis'
   pragma "no doc"
@@ -979,8 +987,8 @@ class Bag {
                   segment.releaseStatus();
                   coforall segmentIdx in 0..#here.maxTaskPar {
                     var stolenWork : [{0..#numLocales}] (int, c_ptr(eltType));
-                    coforall loc in parentHandle.targetLocales {
-                      if loc != here then on loc {
+                    coforall loc in parentHandle.targetLocalesNotHere() {
+                      on loc {
                         // As we jumped to the target node, 'localBag' returns
                         // the target's bag that we are attempting to steal from.
                         var targetBag = parentHandle.bag;
