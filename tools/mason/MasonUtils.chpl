@@ -55,14 +55,9 @@ proc MASON_HOME: string {
   // possible locations
   var masonHome = getEnv("MASON_HOME");
   var home = getEnv('HOME');
-  var testDir = getEnv('PWD');
   if masonHome == '' {
     if isDir(home + '/.mason') then
       return home;
-    // Fix for testing
-    else if isDir(testDir + '/.mason') {
-      return testDir;
-    }
     else {
       writeln("Mason could not find MASON_HOME");
       writeln("Consider setting MASON_HOME in your .bashrc");
