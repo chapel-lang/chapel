@@ -5844,11 +5844,23 @@ static Expr* resolveExpr(Expr* expr) {
 
   SET_LINENO(expr);
 
+  //
+  // Phase 1
+  //
   if (isContextCallExpr(expr) == true) {
     return expr;
-  }
 
-  if (SymExpr* se = toSymExpr(expr)) {
+  } else if (isParamResolved(fn, expr) == true) {
+    return expr;
+
+  } else if (DefExpr* def = toDefExpr(expr)) {
+    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
+      implementForallIntents1(def);
+    }
+
+    return postFold(expr);
+
+  } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
@@ -5856,31 +5868,24 @@ static Expr* resolveExpr(Expr* expr) {
         CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
 
         if (tryFailure == false) {
-          expr = call;
+          expr = preFold(call);
         } else {
           return resolveExprHandleTryFailure(fn);
         }
       }
     }
-  }
-
-  if (CallExpr* call = toCallExpr(expr)) {
-    expr = preFold(call);
-  }
-
-  if (expr                      != NULL      &&
-      fn                        != NULL      &&
-      fn->retTag                == RET_PARAM &&
-      isParamResolved(fn, expr) == true) {
-    return expr;
-  }
-
-  if (DefExpr* def = toDefExpr(expr)) {
-    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
-      implementForallIntents1(def);
-    }
 
   } else if (CallExpr* call = toCallExpr(expr)) {
+    expr = preFold(call);
+
+  } else {
+    return postFold(expr);
+  }
+
+  //
+  // Phase 2
+  //
+  if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR)   == true  ||
         call->isPrimitive(PRIM_WARNING) == true) {
       resolveExprMaybeIssueError(call);
@@ -5917,46 +5922,51 @@ static Expr* resolveExpr(Expr* expr) {
     } else {
       return resolveExprHandleTryFailure(fn);
     }
-  }
 
-  if (SymExpr* symExpr = toSymExpr(expr)) {
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
     resolveExprTypeConstructor(symExpr);
   }
 
+
+
+  // Phase 3
   return postFold(expr);
 }
 
 static bool isParamResolved(FnSymbol* fn, Expr* expr) {
   bool retval = false;
 
-  if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->isWhileStmt() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param while loop");
+  if (fn != NULL && fn->retTag == RET_PARAM) {
+    if (BlockStmt* block = toBlockStmt(expr)) {
+      if (block->isWhileStmt() == true) {
+        USR_FATAL(expr,
+                  "param function cannot contain a non-param while loop");
 
-    } else if (block->isForLoop() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param for loop");
+      } else if (block->isForLoop() == true) {
+        USR_FATAL(expr, "param function cannot contain a non-param for loop");
 
-    } else if (block->isLoopStmt() == true) {
-      USR_FATAL(expr, "param function cannot contain a non-param loop");
+      } else if (block->isLoopStmt() == true) {
+        USR_FATAL(expr, "param function cannot contain a non-param loop");
+      }
     }
-  }
 
-  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (isCondStmt(block->parentExpr)) {
-      USR_FATAL(block->parentExpr,
-                "param function cannot contain a non-param conditional");
+    if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
+      if (isCondStmt(block->parentExpr)) {
+        USR_FATAL(block->parentExpr,
+                  "param function cannot contain a non-param conditional");
+      }
     }
-  }
 
-  if (paramMap.get(fn->getReturnSymbol())) {
-    CallExpr* call = toCallExpr(fn->body->body.tail);
+    if (paramMap.get(fn->getReturnSymbol())) {
+      CallExpr* call = toCallExpr(fn->body->body.tail);
 
-    INT_ASSERT(call);
-    INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+      INT_ASSERT(call);
+      INT_ASSERT(call->isPrimitive(PRIM_RETURN));
 
-    call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
+      call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
 
-    retval = true; // param function is resolved
+      retval = true;
+    }
   }
 
   return retval;
