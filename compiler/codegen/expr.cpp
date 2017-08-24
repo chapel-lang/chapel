@@ -1645,7 +1645,7 @@ GenRet codegenSub(GenRet a, GenRet b)
       // with a negative value.
       INT_ASSERT(bv.val->getType()->isIntegerTy());
       GenRet negbv;
-      negbv.val = info->builder->CreateNeg(bv.val);
+      negbv.val = info->builder->CreateNSWNeg(bv.val);
       negbv.isUnsigned = false;
       ret = codegenAdd(av, negbv);
     } else {
@@ -1681,7 +1681,9 @@ GenRet codegenNeg(GenRet a)
     } else if(value->getType()->isFPOrFPVectorTy()) {
       ret.val = info->builder->CreateFNeg(value);
     } else {
-      ret.val = info->builder->CreateNeg(value);
+      bool av_signed = false;
+      if(av.chplType) av_signed = is_signed(av.chplType);
+      ret.val = info->builder->CreateNeg(value, "", false, av_signed);
     }
     ret.isUnsigned = false;
 #endif
@@ -1807,7 +1809,9 @@ GenRet codegenLsh(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     llvm::Value* amt = convertValueToType(bv.val, av.val->getType(),
                                           is_signed(bv.chplType));
-    ret.val = info->builder->CreateShl(av.val, amt);
+    bool av_signed = false;
+    if(av.chplType) av_signed = is_signed(av.chplType);
+    ret.val = info->builder->CreateShl(av.val, amt, "", false, av_signed);
 #endif
   }
   return ret;

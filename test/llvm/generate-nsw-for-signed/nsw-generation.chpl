@@ -7,10 +7,13 @@ config const bUnsigned : uint = 5;
 var signedAdd   : int;
 var signedMul   : int;
 var signedSub   : int;
+var signedShl   : int;
+var signedNeg   : int;
 
 var unsignedAdd   : uint;
 var unsignedMul   : uint;
 var unsignedSub   : uint;
+var unsignedShl   : uint;
 
 proc test()
 {
@@ -20,6 +23,10 @@ proc test()
   signedMul   = aSigned * bSigned;
   // CHECK: sub nsw i64
   signedSub   = aSigned - bSigned;
+  // CHECK: shl nsw i64
+  signedShl   = aSigned << bSigned;
+  // CHECK: sub nsw i64
+  signedNeg   = -aSigned;
   
   // CHECK: add i64
   unsignedAdd   = aUnsigned +  bUnsigned;   
@@ -27,10 +34,12 @@ proc test()
   unsignedMul   = aUnsigned *  bUnsigned;   
   // CHECK: sub i64
   unsignedSub   = aUnsigned -  bUnsigned;   
+  // CHECK: shl i64
+  unsignedShl   = aUnsigned << bUnsigned;
 }
 
 test();
 
-writeln(signedAdd, signedMul, signedSub, 
-    unsignedAdd, unsignedMul, unsignedSub);
+writeln(signedAdd, signedMul, signedSub, signedShl, signedNeg,
+    unsignedAdd, unsignedMul, unsignedSub, unsignedShl);
 
