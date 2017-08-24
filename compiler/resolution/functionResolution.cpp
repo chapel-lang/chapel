@@ -5844,6 +5844,9 @@ static Expr* resolveExpr(Expr* expr) {
 
   SET_LINENO(expr);
 
+  //
+  // Phase 1
+  //
   if (isContextCallExpr(expr) == true) {
     return expr;
 
@@ -5856,9 +5859,8 @@ static Expr* resolveExpr(Expr* expr) {
     }
 
     return postFold(expr);
-  }
 
-  if (SymExpr* se = toSymExpr(expr)) {
+  } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
@@ -5866,18 +5868,23 @@ static Expr* resolveExpr(Expr* expr) {
         CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
 
         if (tryFailure == false) {
-          expr = call;
+          expr = preFold(call);
         } else {
           return resolveExprHandleTryFailure(fn);
         }
       }
     }
-  }
 
-  if (CallExpr* call = toCallExpr(expr)) {
+  } else if (CallExpr* call = toCallExpr(expr)) {
     expr = preFold(call);
+
+  } else {
+    return postFold(expr);
   }
 
+  //
+  // Phase 2
+  //
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR)   == true  ||
         call->isPrimitive(PRIM_WARNING) == true) {
@@ -5915,12 +5922,14 @@ static Expr* resolveExpr(Expr* expr) {
     } else {
       return resolveExprHandleTryFailure(fn);
     }
-  }
 
-  if (SymExpr* symExpr = toSymExpr(expr)) {
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
     resolveExprTypeConstructor(symExpr);
   }
 
+
+
+  // Phase 3
   return postFold(expr);
 }
 
