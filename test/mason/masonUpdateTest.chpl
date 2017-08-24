@@ -3,7 +3,7 @@ use MasonUpdate;
 use TOML;
 
 config const lf: string;
-config const tf: string; 
+config const tf: string;
 
 proc main() {
   UpdateLock(tf, lf);
