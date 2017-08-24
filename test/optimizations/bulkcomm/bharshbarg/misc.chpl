@@ -80,4 +80,9 @@ proc main() {
     var A, B : [2..6 by -2] int;
     stridedAssign(A, B);
   }
+
+  {
+    var A, B : [1..4, 1..4, 1..4, 1..4] int;
+    stridedAssign(A[1, 1..4, 1..4, 1], B[1..4, 1, 1, 1..4]);
+  }
 }
