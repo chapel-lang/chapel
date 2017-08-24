@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CForLoop.h"
 #include "driver.h"
+#include "errorHandling.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -1643,11 +1644,30 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
       }
 
+
+      // Remove returns if the command-line argument indicates to
       if (call->isPrimitive(PRIM_RETURN)) {
         if (removeReturn)
           call->remove();
       }
 
+      // Adjust calls to chpl_propagate_error
+      if (FnSymbol* calledFn = call->resolvedFunction()) {
+        if (calledFn == gChplPropagateError) {
+          SymExpr* errSe = toSymExpr(call->get(1));
+          INT_ASSERT(errSe && errSe->typeInfo() == dtError);
+          LabelSymbol* label = NULL;
+          Symbol* error = NULL;
+          if (findFollowingCheckErrorBlock(errSe, label, error)) {
+            errSe->remove();
+            call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
+            call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
+            call->remove();
+          }
+        }
+      }
+
+      // Adjust task functions within the iterator
       if (FnSymbol* cfn = resolvedToTaskFun(call)) {
         // Todo: skip this handling of 'cfn' if it does not have yields
         // in itself or any other taskFns it may call.
@@ -1916,6 +1936,28 @@ expandForLoop(ForLoop* forLoop) {
 
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
+
+    FnSymbol* iterFn = getTheIteratorFn(iterator->type);
+    if (iterFn->throwsError()) {
+      Expr* errorCheck = NULL;
+      // In this event, the error handling pass added a PRIM_CHECK_ERROR
+      // after the call to the iterator function.
+      // Scroll backwards to find the error handling block.
+
+      Expr* cur = forLoop->prev;
+      while (cur != NULL) {
+        if (isCheckErrorStmt(cur)) {
+          errorCheck = cur;
+          break;
+        }
+        cur = cur->prev;
+      }
+      INT_ASSERT(errorCheck != NULL);
+
+      // TODO: finish this case
+      //       I think we need to use the ForLoop's break label
+      USR_FATAL("Throwing non-inlined iterators are not yet supported");
+    }
 
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->symbol());
