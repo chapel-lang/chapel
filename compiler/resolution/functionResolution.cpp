@@ -5839,25 +5839,20 @@ static Expr* resolveExprHandleTryFailure(FnSymbol* fn);
 static void  resolveExprMaybeIssueError(CallExpr* call);
 
 static Expr* resolveExpr(Expr* expr) {
-  Expr* const origExpr = expr;
-  FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
+  Expr*     origExpr = expr;
+  FnSymbol* fn       = toFnSymbol(expr->parentSymbol);
 
   SET_LINENO(expr);
 
-  if (isContextCallExpr(expr)) {
-    // context call expressions are always already resolved
-    // since they are created in resolveNormalFunction to represent
-    // alternative resolutions.
+  if (isContextCallExpr(expr) == true) {
     return expr;
   }
 
   if (SymExpr* se = toSymExpr(expr)) {
-    if (se->symbol()) {
-      makeRefType(se->symbol()->type);
-    }
+    makeRefType(se->symbol()->type);
 
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-      if (pfs->isIteratedExpression(expr)) {
+      if (pfs->isIteratedExpression(expr) == true) {
         // Note: this may set expr=NULL, tryFailure=true.
         expr = resolveParallelIteratorAndForallIntents(pfs, se);
       }
@@ -5876,14 +5871,13 @@ static Expr* resolveExpr(Expr* expr) {
   }
 
   if (DefExpr* def = toDefExpr(expr)) {
-    if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
+    if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
       implementForallIntents1(def);
     }
-  }
 
-  if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_ERROR) ||
-        call->isPrimitive(PRIM_WARNING)) {
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_ERROR)   == true  ||
+        call->isPrimitive(PRIM_WARNING) == true) {
       resolveExprMaybeIssueError(call);
     }
 
@@ -5892,24 +5886,19 @@ static Expr* resolveExpr(Expr* expr) {
     resolveCall(call);
 
     if (tryFailure == false && call->isResolved() == true) {
-      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
+      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr)) {
         // ForallLeaderArgs: process the leader that 'call' invokes.
         implementForallIntents2(call, origToLeaderCall);
 
-      else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+      } else if (CallExpr* eflopiHelper = eflopiMap[call]) {
         implementForallIntents2wrapper(call, eflopiHelper);
       }
 
-      // For ContextCallExprs, be sure to resolve all of the
-      // functions that could be called.
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
         expr = resolveExprResolveEachCall(cc);
 
       } else {
-        FnSymbol* fn = call->resolvedFunction();
-
-        INT_ASSERT(fn != NULL);
-        resolveFns(fn);
+        resolveFns(call->resolvedFunction());
       }
 
       resolveExprExpandGenerics(call);
@@ -5923,8 +5912,6 @@ static Expr* resolveExpr(Expr* expr) {
   if (tryFailure == true) {
     return resolveExprHandleTryFailure(fn);
   }
-
-  INT_ASSERT(expr);
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
     resolveExprTypeConstructor(symExpr);
