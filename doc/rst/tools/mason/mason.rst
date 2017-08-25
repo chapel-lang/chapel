@@ -104,17 +104,18 @@ structure is as follows::
       src/
 	MyPackage.chpl
 	MySubPackage.chpl
-	MySubPackage2.chpl
+      util/
+	MyPackageUtils.chpl
       target/
 	debug/
 	 MyPackage
 
 
-If MyPackage needs all the files in ``src``(MyPackage, MySubPackage, and MySubPackage2), 
+If MyPackage needs multiple files in different directories like the example above,
 then call ``mason build`` with the ``-M`` flag followed by the local dependencies.
 A full command of this example would be: 
 
-  ``mason build -M src/MySubPackage.chpl -M src/MySubPackage2.chpl``
+  ``mason build -M util/MyPackageUtils.chpl -M src/MySubPackage.chpl``
 
 
 The same goes to execution options at runtime. When calling ``mason run``, any arguments after
