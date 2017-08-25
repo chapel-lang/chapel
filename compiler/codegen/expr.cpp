@@ -3670,7 +3670,7 @@ GenRet CallExpr::codegenPrimitive() {
 
   case PRIM_CLASS_NAME_BY_ID: {
 
-    GenRet cid = get(1);
+    GenRet cid = codegenValue(get(1));
     ret = codegenGlobalArrayElement("chpl_classNames", cid);
     break;
   }
