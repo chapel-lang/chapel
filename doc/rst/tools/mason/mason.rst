@@ -93,8 +93,38 @@ For example, after ``mason run [ options ]``, the project directory appears as s
 	  MyPackage
 	
    
+Projects can also be multiple files. Mason handles this by forwarding all arguments
+not recognized by Mason to the chapel compiler(``chpl``). For example, lets say MyPackage's
+structure is as follows::
 
 
+    MyPackage/
+      Mason.toml
+      Mason.lock
+      src/
+	MyPackage.chpl
+	MySubPackage.chpl
+	MySubPackage2.chpl
+      target/
+	debug/
+	 MyPackage
+
+
+If MyPackage needs all the files in ``src``(MyPackage, MySubPackage, and MySubPackage2), 
+then call ``mason build`` with the ``-M`` flag followed by the local dependencies.
+A full command of this example would be: 
+
+  ``mason build -M src/MySubPackage.chpl -M src/MySubPackage2.chpl``
+
+
+The same goes to execution options at runtime. When calling ``mason run``, any arguments after
+``mason run`` not recognized by mason are forwarded to the runtime environment. For example,
+a chapel program built in mason might have a ``config const number`` that corresponds to a 
+value used in ``MyPackage.chpl``. To try out different values at runtime, pass the values for
+``number`` to ``mason run`` as follows:
+
+    ``mason run --number=100``
+    ``mason run --number=1000``
 
 
 
