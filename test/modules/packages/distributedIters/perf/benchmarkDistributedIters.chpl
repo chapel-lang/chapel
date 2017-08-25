@@ -35,6 +35,7 @@ config const debug:bool = false;
 enum iterator
 {
   default,
+  dynamic,
   guided
 };
 
@@ -90,10 +91,21 @@ enum testCase
 config const test:testCase = testCase.uniform;
 
 /*
-  If ``coordinated`` is ``true``, then the guided iterator dedicates one locale
-  to distributing work to the remaining locales.
+  If ``coordinated`` is ``true``, then the iterator dedicates one locale
+  to distributing work to the remaining locales (if applicable).
 */
 config const coordinated:bool = false;
+
+/*
+  Dynamic-iterator--specific options.
+*/
+config const localeChunkSize:int = 0;
+config const chunkSize:int = 1;
+
+/*
+  Guided-iterator--specific option.
+*/
+config const minChunkSize:int = 1;
 
 /*
   Used to determine the iteration count and total work per iteration.
@@ -108,6 +120,7 @@ var timeResult:real;
 select mode
 {
   when iterator.default do timeResult = testControlWorkload();
+  when iterator.dynamic do timeResult = testDynamicWorkload();
   when iterator.guided do timeResult = testGuidedWorkload();
 }
 
@@ -126,6 +139,41 @@ else
   Testing procedures.
 */
 pragma "no doc"
+private proc testDynamicWorkload()
+{
+  var timer:Timer;
+
+  const replicatedDomain:domain(1) dmapped Replicated() = controlDomain;
+  var array:[controlDomain]real;
+  var replicatedArray:[replicatedDomain]real;
+
+  fillArray(array);
+
+  // Ensure all locales have the same array.
+  coforall L in Locales
+  do on L
+  do for i in controlDomain
+  do replicatedArray[i] = array[i];
+
+  timer.start();
+  forall i in distributedDynamic(controlRange,
+                                 chunkSize=chunkSize,
+                                 localeChunkSize=localeChunkSize,
+                                 coordinated=coordinated)
+  {
+    const k:real = (array[i] * n):int;
+
+    // Simulate work.
+    isPerfect(k:int);
+  }
+  timer.stop();
+
+  const timerElapsed:real = timer.elapsed();
+  timer.clear();
+  return timerElapsed;
+}
+
+pragma "no doc"
 private proc testGuidedWorkload()
 {
   var timer:Timer;
@@ -143,7 +191,9 @@ private proc testGuidedWorkload()
   do replicatedArray[i] = array[i];
 
   timer.start();
-  forall i in distributedGuided(controlRange, coordinated=coordinated)
+  forall i in distributedGuided(controlRange,
+                                minChunkSize=minChunkSize,
+                                coordinated=coordinated)
   {
     const k:real = (array[i] * n):int;
 

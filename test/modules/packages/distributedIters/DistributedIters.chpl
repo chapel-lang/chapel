@@ -54,6 +54,7 @@ config const infoDistributedIters:bool = false;
   :type c: `range(?)` or `domain`
 
   :arg chunkSize: The chunk size to yield to each task. Must be positive.
+    Defaults to 1.
   :type chunkSize: `int`
 
   :arg numTasks: The number of tasks to use. Must be nonnegative. If this
@@ -66,7 +67,10 @@ config const infoDistributedIters:bool = false;
     the domain ``c``. Defaults to 1.
   :type parDim: int
 
-  :arg localeChunkSize: Chunk size to yield to each locale. Must be positive.
+  :arg localeChunkSize: Chunk size to yield to each locale. Must be
+    nonnegative. If this argument has value 0, the iterator will use
+    ``chunkSize * here.maxTaskPar`` in seeking parallelism at both locale and
+    task level.
   :type localeChunkSize: `int`
 
   :arg coordinated: If true (and multi-locale), then have the locale invoking
@@ -97,7 +101,7 @@ iter distributedDynamic(c,
                         chunkSize:int=1,
                         numTasks:int=0,
                         parDim:int=1,
-                        localeChunkSize:int=1,
+                        localeChunkSize:int=0,
                         coordinated:bool=false,
                         workerLocales=Locales)
 {
@@ -118,7 +122,7 @@ iter distributedDynamic(param tag:iterKind,
                         chunkSize:int=1,
                         numTasks:int=0,
                         parDim:int=1,
-                        localeChunkSize:int=1,
+                        localeChunkSize:int=0,
                         coordinated:bool=false,
                         workerLocales=Locales)
 where tag == iterKind.leader
@@ -127,9 +131,12 @@ where tag == iterKind.leader
                  ("DistributedIters: Dynamic iterator (serial): must use a "
                   + "valid domain or range"),
                  1);
-  assert((chunkSize > 0 && localeChunkSize > 0),
+  assert(chunkSize > 0,
          ("DistributedIters: Dynamic iterator (leader): "
-          + "Chunk size must be a postive integer"));
+          + "chunkSize must be a positive integer"));
+  assert(localeChunkSize >= 0,
+         ("DistributedIters: Dynamic iterator (leader): "
+          + "localeChunkSize must be a nonnegative integer"));
 
   type cType = c.type;
 
@@ -227,12 +234,15 @@ where tag == iterKind.leader
       with (ref dynamicStageCount, ref localeTimes)
       do on L
       {
+        const actualLocaleChunkSize = if localeChunkSize == 0
+                                      then (chunkSize * here.maxTaskPar)
+                                      else localeChunkSize;
         var localeTime:Timer;
         if timeDistributedIters then localeTime.start();
 
         var localeStage:int = dynamicStageCount.fetchAdd(1);
         var localeRange:cType = dynamicSubrange(denseRange,
-                                                localeChunkSize,
+                                                actualLocaleChunkSize,
                                                 localeStage);
         while localeRange.low <= denseRangeHigh
         {
@@ -256,7 +266,7 @@ where tag == iterKind.leader
 
           localeStage = dynamicStageCount.fetchAdd(1);
           localeRange = dynamicSubrange(denseRange,
-                                        localeChunkSize,
+                                        actualLocaleChunkSize,
                                         localeStage);
         }
 
@@ -280,11 +290,11 @@ where tag == iterKind.leader
 pragma "no doc"
 iter distributedDynamic(param tag:iterKind,
                         c,
-                        chunkSize:int=1,
-                        numTasks:int=0,
-                        parDim:int=1,
-                        localeChunkSize:int=1,
-                        coordinated:bool=false,
+                        chunkSize:int,
+                        numTasks:int,
+                        parDim:int,
+                        localeChunkSize:int,
+                        coordinated:bool,
                         workerLocales=Locales,
                         followThis)
 where tag == iterKind.follower
