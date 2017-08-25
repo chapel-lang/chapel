@@ -1,14 +1,10 @@
 /*
-  Test to check the correctness of the distributed() iterator from the
+  Test to check the correctness of the distributedDynamic() iterator from the
   DistributedIters module.
 */
 use DistributedIters;
 
-// Range length.
-config const n:int=10000;
-
-var rng:range=1..n;
-
+var rng:range=1..10;
 var A:[rng] int=0;
 
 /*
@@ -17,5 +13,5 @@ var A:[rng] int=0;
 */
 writeln("Checking a void...");
 var v:void;
-for i in distributedGuided(v)
+for i in distributedDynamic(v)
 do A[i] = A[i]+1;

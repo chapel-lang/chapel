@@ -17,59 +17,332 @@
  * limitations under the License.
  */
 
- /*
-   This module contains iterators that can be used to distribute a `forall`
-   loop for a range or domain.
+/*
+  This module contains iterators that can be used to distribute a `forall`
+  loop for a range or domain by dynamically splitting iterations between
+  locales.
 
-   Part of a 2017 Cray summer intern project by Sean I. Geronimo Anderson
-   (github.com/s-geronimoanderson) as mentored by Ben Harshbarger
-   (github.com/benharsh).
- */
+  ..
+    Part of a 2017 Cray summer intern project by Sean I. Geronimo Anderson
+    (github.com/s-geronimoanderson) as mentored by Ben Harshbarger
+    (github.com/benharsh).
+*/
 module DistributedIters
 {
 use DynamicIters,
     Time;
 
-// Toggle debugging output and per-locale performance timing.
+/*
+  Toggle debugging output.
+*/
 config param debugDistributedIters:bool = false;
+
+/*
+  Toggle per-locale performance timing and output.
+*/
 config param timeDistributedIters:bool = false;
 
-// Toggle writing system information.
+/*
+  Toggle invocation information output.
+*/
 config const infoDistributedIters:bool = false;
 
-// Distributed Guided Iterator.
+// Distributed Dynamic Iterator.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
-    be greater than zero.
+    be positive.
   :type c: `range(?)` or `domain`
 
-  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
-    has value 0, the iterator will use the value indicated by
+  :arg chunkSize: The chunk size to yield to each thread. Must be positive.
+  :type chunkSize: `int`
+
+  :arg numTasks: The number of tasks to use. Must be nonnegative. If this
+    argument has value 0, the iterator will use the value indicated by
     ``dataParTasksPerLocale``.
-  :type numTasks: `int`
+  :type numTasks: int
 
   :arg parDim: If ``c`` is a domain, then this specifies the dimension index
     to parallelize across. Must be positive, and must be at most the rank of
     the domain ``c``. Defaults to 1.
-  :type parDim: `int`
+  :type parDim: int
 
-  :arg minChunkSize: The smallest allowable chunk size. Must be at least one.
-    Default is one.
-  :type minChunkSize: `int`
+  :arg localeChunkSize: Chunk size to yield to each locale. Must be positive.
+  :type localeChunkSize: `int`
 
   :arg coordinated: If true (and multi-locale), then have the locale invoking
     the iterator coordinate task distribution only; that is, disallow it from
     receiving work.
-  :type coordinated: `bool`
+  :type coordinated: bool
 
   :arg workerLocales: An array of locales over which to distribute the work.
-    Defaults to Locales (all available locales).
-  :type workerLocales: `[]locale`
+    Defaults to ``Locales`` (all available locales).
+  :type workerLocales: [] locale
+
+  :yields: Indices in the range ``c``.
+
+  This iterator is equivalent to a distributed version of the dynamic policy of
+  OpenMP.
+
+  Given an input range (or domain) ``c``, each locale (except the calling
+  locale, if coordinated is true) receives chunks of size ``localeChunkSize``
+  from ``c`` (or the remaining iterations if there are fewer than
+  ``localeChunkSize``). Each locale then distributes sub-chunks of size
+  ``chunkSize`` as tasks, using the ``dynamic`` iterator from the
+  ``DynamicIters`` module.
+
+  Available for serial and zippered contexts.
+*/
+// Serial version.
+iter distributedDynamic(c,
+                        chunkSize:int=1,
+                        numTasks:int=0,
+                        parDim:int=1,
+                        localeChunkSize:int=1,
+                        coordinated:bool=false,
+                        workerLocales=Locales)
+{
+  compilerAssert(isDomain(c) || isRange(c),
+                 ("DistributedIters: Dynamic iterator (serial): must use a "
+                  + "valid domain or range"),
+                 1);
+  if debugDistributedIters
+  then writeln("DistributedIters: Dynamic iterator (serial): working with ",
+               (if isDomain(c) then "domain " else "range "), c);
+  for i in c do yield i;
+}
+
+// Zippered leader.
+pragma "no doc"
+iter distributedDynamic(param tag:iterKind,
+                        c,
+                        chunkSize:int=1,
+                        numTasks:int=0,
+                        parDim:int=1,
+                        localeChunkSize:int=1,
+                        coordinated:bool=false,
+                        workerLocales=Locales)
+where tag == iterKind.leader
+{
+  compilerAssert(isDomain(c) || isRange(c),
+                 ("DistributedIters: Dynamic iterator (serial): must use a "
+                  + "valid domain or range"),
+                 1);
+  assert((chunkSize > 0 && localeChunkSize > 0),
+         ("DistributedIters: Dynamic iterator (leader): "
+          + "Chunk size must be a postive integer"));
+
+  type cType = c.type;
+
+  if isDomain(c) then
+  {
+    assert(c.rank > 0, ("DistributedIters: Dynamic iterator (leader): "
+                        + "Must use a valid domain"));
+    assert(parDim > 0, ("DistributedIters: Dynamic iterator (leader): "
+                        + "parDim must be a positive integer"));
+    assert(parDim <= c.rank, ("DistributedIters: Dynamic iterator (leader): "
+                              + "parDim must be a dimension of the domain"));
+    var parDimDim = c.dim(parDim);
+    for t in distributedDynamic(tag=iterKind.leader,
+                                c=parDimDim,
+                                chunkSize=chunkSize,
+                                numTasks=numTasks,
+                                parDim=1,
+                                localeChunkSize=localeChunkSize,
+                                coordinated=coordinated,
+                                workerLocales=workerLocales)
+    {
+      // Set the new range based on the tuple the dynamic 1-D iterator yields.
+      var newRange = t(1);
+
+      // Does the same thing as densify, but densify makes a stridable domain,
+      // which mismatches here if c (and thus cType) is non-stridable.
+      var tempDom : cType = computeZeroBasedDomain(c);
+
+      // Rank-change slice the domain along parDim
+      var tempTup = tempDom.dims();
+      // Change the value of the parDim elem of the tuple to the new range
+      tempTup(parDim) = newRange;
+
+      yield tempTup;
+    }
+  }
+  else // c is a range.
+  {
+    const iterCount = c.length;
+
+    if iterCount == 0 then halt("DistributedIters: Dynamic iterator (leader):",
+                                " the range is empty");
+
+    const denseRange:cType = densify(c,c);
+
+    if iterCount == 1
+       || numTasks == 1 && numLocales == 1
+    then
+    {
+      if debugDistributedIters
+      then writeln("DistributedIters: Dynamic iterator (leader): serial ",
+                   "execution due to insufficient work or compute resources");
+      yield (denseRange,);
+    }
+    else
+    {
+      const numWorkerLocales = workerLocales.size;
+      const denseRangeHigh:int = denseRange.high;
+      const masterLocale = here.locale;
+
+      const potentialWorkerLocales =
+        [L in workerLocales] if numLocales == 1
+                                || !coordinated
+                                || L != masterLocale
+                             then L;
+      // It's not sensible to use a single locale besides masterLocale, so use
+      // potentialWorkerLocales only if it's larger than one locale.
+      const actualWorkerLocales = if potentialWorkerLocales.size > 1
+                                  then potentialWorkerLocales
+                                  else [masterLocale];
+
+      if infoDistributedIters then
+      {
+        const actualWorkerLocaleIds = [L in actualWorkerLocales] L.id:string;
+        const actualWorkerLocaleIdsSorted = actualWorkerLocaleIds.sorted();
+        writeln("DistributedIters: distributedDynamic:");
+        writeln("  coordinated = ", coordinated);
+        writeln("  numLocales = ", numLocales);
+        writeln("  numWorkerLocales = ", numWorkerLocales);
+        writeln("  actualWorkerLocales.size = ", actualWorkerLocales.size);
+        writeln("  masterLocale.id = ", masterLocale.id);
+        writeln("  actualWorkerLocaleIds = [ ",
+                ", ".join(actualWorkerLocaleIdsSorted),
+                " ]");
+      }
+
+      var localeTimes:[0..#numLocales]real;
+      var totalTime:Timer;
+      if timeDistributedIters then totalTime.start();
+
+      // The dynamic iterator stage (determines next subrange index and size).
+      var dynamicStageCount:atomic int;
+
+      coforall L in actualWorkerLocales
+      with (ref dynamicStageCount, ref localeTimes)
+      do on L
+      {
+        var localeTime:Timer;
+        if timeDistributedIters then localeTime.start();
+
+        var localeStage:int = dynamicStageCount.fetchAdd(1);
+        var localeRange:cType = dynamicSubrange(denseRange,
+                                                localeChunkSize,
+                                                localeStage);
+        while localeRange.low <= denseRangeHigh
+        {
+          const denseLocaleRange:cType = densify(localeRange, localeRange);
+          for denseTaskRangeTuple in DynamicIters.dynamic(tag=iterKind.leader,
+                                                          localeRange,
+                                                          chunkSize,
+                                                          numTasks)
+          {
+            const taskRange:cType = unDensify(denseTaskRangeTuple(1),
+                                              localeRange);
+            if debugDistributedIters
+            then writeln("DistributedIters: Dynamic iterator (leader): ",
+                         here.locale, ": yielding ", unDensify(taskRange,c),
+                         " (", taskRange.length,
+                         "/", localeRange.length,
+                         " locale-owned of ", iterCount,
+                         " total) as ", taskRange);
+            yield (taskRange,);
+          }
+
+          localeStage = dynamicStageCount.fetchAdd(1);
+          localeRange = dynamicSubrange(denseRange,
+                                        localeChunkSize,
+                                        localeStage);
+        }
+
+        if timeDistributedIters then
+        {
+          localeTime.stop();
+          localeTimes[here.id] = localeTime.elapsed();
+        }
+      }
+
+      if timeDistributedIters then
+      {
+        totalTime.stop();
+        writeTimeStatistics(totalTime.elapsed(), localeTimes, coordinated);
+      }
+    }
+  }
+}
+
+// Zippered follower.
+pragma "no doc"
+iter distributedDynamic(param tag:iterKind,
+                        c,
+                        chunkSize:int=1,
+                        numTasks:int=0,
+                        parDim:int=1,
+                        localeChunkSize:int=1,
+                        coordinated:bool=false,
+                        workerLocales=Locales,
+                        followThis)
+where tag == iterKind.follower
+{
+  compilerAssert(isDomain(c) || isRange(c),
+                 ("DistributedIters: Dynamic iterator (serial): must use a "
+                  + "valid domain or range"),
+                 1);
+  const current = if isDomain(c)
+                  then c._value.these(tag=iterKind.follower,
+                                      followThis=followThis)
+                  else unDensify(followThis(1), c);
+
+  if debugDistributedIters
+  then writeln("DistributedIters: Dynamic iterator (follower): ", here.locale,
+               ": received ",
+               if isDomain(c) then "domain " else "range ",
+               followThis, " (", current.size,
+               "/", c.size, "); shifting to ", current);
+
+  for i in current do yield i;
+}
+
+// Distributed Guided Iterator.
+/*
+  :arg c: The range (or domain) to iterate over. The range (domain) size must
+    be positive.
+  :type c: `range(?)` or `domain`
+
+  :arg numTasks: The number of tasks to use. Must be nonnegative. If this
+    argument has value 0, the iterator will use the value indicated by
+    ``dataParTasksPerLocale``.
+  :type numTasks: int
+
+  :arg parDim: If ``c`` is a domain, then this specifies the dimension index
+    to parallelize across. Must be positive, and must be at most the rank of
+    the domain ``c``. Defaults to 1.
+  :type parDim: int
+
+  :arg minChunkSize: The smallest allowable chunk size. Must be positive.
+    Defaults to 1.
+  :type minChunkSize: int
+
+  :arg coordinated: If true (and multi-locale), then have the locale invoking
+    the iterator coordinate task distribution only; that is, disallow it from
+    receiving work.
+  :type coordinated: bool
+
+  :arg workerLocales: An array of locales over which to distribute the work.
+    Defaults to ``Locales`` (all available locales).
+  :type workerLocales: [] locale
 
   :yields: Indices in the range ``c``.
 
   This iterator is equivalent to a distributed version of the guided policy of
-  OpenMP: Given an input range (domain) ``c``, each locale (except the calling
+  OpenMP.
+
+  Given an input range (or domain) ``c``, each locale (except the calling
   locale, if coordinated is true) receives chunks of approximately
   exponentially decreasing size, until the remaining iterations reaches a
   minimum value, ``minChunkSize``, or there are no remaining iterations in
@@ -79,7 +352,7 @@ config const infoDistributedIters:bool = false;
   the number of tasks, ``numTasks``, and decreases approximately exponentially
   to 1. The splitting strategy is therefore adaptive.
 
-  This iterator is available for serial and zippered contexts.
+  Available for serial and zippered contexts.
 */
 // Serial version.
 iter distributedGuided(c,
@@ -89,12 +362,12 @@ iter distributedGuided(c,
                        coordinated:bool=false,
                        workerLocales=Locales)
 {
-  assert((isDomain(c) || isRange(c)), ("DistributedIters: Serial guided "
-                                       + "iterator: must use a valid domain "
-                                       + "or range"));
-
+  compilerAssert(isDomain(c) || isRange(c),
+                 ("DistributedIters: Guided iterator (serial): must use a "
+                  + "valid domain or range"),
+                 1);
   if debugDistributedIters
-  then writeln("DistributedIters: Serial guided iterator, working with ",
+  then writeln("DistributedIters: Guided iterator (serial): working with ",
                (if isDomain(c) then "domain " else "range "), c);
   for i in c do yield i;
 }
@@ -110,9 +383,10 @@ iter distributedGuided(param tag:iterKind,
                        workerLocales=Locales)
 where tag == iterKind.leader
 {
-  assert((isDomain(c) || isRange(c)), ("DistributedIters: Guided iterator "
-                                       + "(leader): must use a valid domain "
-                                       + "or range"));
+  compilerAssert(isDomain(c) || isRange(c),
+                 ("DistributedIters: Guided iterator (leader): must use a "
+                  + "valid domain or range"),
+                 1);
   if isDomain(c) then
   {
     assert(c.rank > 0, ("DistributedIters: Guided iterator (leader): Must "
@@ -194,7 +468,7 @@ where tag == iterKind.leader
       {
         const actualWorkerLocaleIds = [L in actualWorkerLocales] L.id:string;
         const actualWorkerLocaleIdsSorted = actualWorkerLocaleIds.sorted();
-        writeln("DistributedIters: guidedDistributed:");
+        writeln("DistributedIters: distributedGuided:");
         writeln("  coordinated = ", coordinated);
         writeln("  numLocales = ", numLocales);
         writeln("  numWorkerLocales = ", numWorkerLocales);
@@ -273,10 +547,10 @@ iter distributedGuided(param tag:iterKind,
                        followThis)
 where tag == iterKind.follower
 {
-  assert((isDomain(c) || isRange(c)), ("DistributedIters: Guided iterator "
-                                       + "(follower): Must use a valid "
-                                       + "domain or range"));
-
+  compilerAssert(isDomain(c) || isRange(c),
+                 ("DistributedIters: Guided iterator (follower): must use a "
+                  + "valid domain or range"),
+                 1);
   const current = if isDomain(c)
                   then c._value.these(tag=iterKind.follower,
                                       followThis=followThis)
@@ -296,6 +570,39 @@ where tag == iterKind.follower
   Helpers.
 */
 
+// Dynamic subrange calculation.
+/*
+  :arg c: The range from which to retrieve a dynamic subrange.
+  :type c: `range(?)`
+
+  :arg chunkSize: The chunk size. Must be positive.
+  :type chunkSize: `int`
+
+  :arg stage: The number of dynamic subranges to skip before returning a
+    dynamic subrange.
+  :type stage: `int`
+
+  :returns: A subrange of ``c``.
+
+  This function takes a range, a chunk size, and a stage, and simulates
+  performing OpenMP's dynamic schedule on the range with the given chunk
+  size until reaching the given stage. It then returns the subrange that the
+  dynamic schedule would have produced at that point.
+*/
+private proc dynamicSubrange(c:range(?),
+                             chunkSize:int,
+                             stage:int)
+{
+  const low:int = (c.low + (stage * chunkSize));
+  const potentialHigh:int = (low + (chunkSize - 1));
+  const cHigh = c.high;
+  const high:int = if potentialHigh <= cHigh
+                   then potentialHigh
+                   else cHigh;
+  const subrange:c.type = (low..high);
+  return subrange;
+}
+
 // Guided subrange calculation.
 /*
   :arg c: The range from which to retrieve a guided subrange.
@@ -309,7 +616,7 @@ where tag == iterKind.follower
     guided subrange.
   :type stage: `int`
 
-  :arg minChunkSize: The smallest allowable chunk size. Must be >= 1.
+  :arg minChunkSize: The smallest allowable chunk size. Must be positive.
     Defaults to 1.
   :type minChunkSize: `int`
 

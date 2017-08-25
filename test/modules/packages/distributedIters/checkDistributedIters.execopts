@@ -1,1 +1,2 @@
---infoDistributedIters
+--infoDistributedIters --mode=dynamic # checkDistributedIters-dynamic.good
+--infoDistributedIters --mode=guided # checkDistributedIters-guided.good
