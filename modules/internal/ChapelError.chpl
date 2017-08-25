@@ -122,7 +122,7 @@ module ChapelError {
       }
     }
 
-    proc writeThis(f) {
+    proc message() : string {
       var n = 0;
 
       var minMsg:string;
@@ -131,10 +131,10 @@ module ChapelError {
       var last:Error;
 
       for e in these() {
-        if minMsg == "" || e.msg < minMsg then
-          minMsg = e.msg;
-        if maxMsg == "" || e.msg > maxMsg then
-          maxMsg = e.msg;
+        if minMsg == "" || e.message() < minMsg then
+          minMsg = e.message();
+        if maxMsg == "" || e.message() > maxMsg then
+          maxMsg = e.message();
 
         n += 1;
       }
@@ -142,7 +142,7 @@ module ChapelError {
       // Set first and last.
       {
         for e in these() {
-          if e.msg == minMsg {
+          if e.message() == minMsg {
             if first == nil then
               first = e;
             last = e;
@@ -150,21 +150,21 @@ module ChapelError {
         }
         if minMsg != maxMsg {
           for e in these() {
-            if e.msg == maxMsg {
+            if e.message() == maxMsg {
               last = e;
             }
           }
         }
       }
 
-      f <~> "ErrorGroup with ";
-      if n > 1 then
-        f <~> n <~> " errors: ";
+      var ret = n + " errors: ";
 
       if first != last then
-        f <~> first <~> " ... " <~> last;
+        ret += chpl_describe_error(first) + " ... " + chpl_describe_error(last);
       else
-        f <~> first;
+        ret += chpl_describe_error(first);
+
+      return ret;
     }
 
     // convenience methods
@@ -199,16 +199,6 @@ module ChapelError {
 
     var ret = nameS + ": " + err.message();
 
-    if (err.thrownFileId > 0 && err.thrownLine > 0) {
-
-      const thrownFileC:c_string = __primitive("chpl_lookupFilename",
-                                               err.thrownFileId);
-      const thrownFileS = thrownFileC:string;
-      const thrownLine = err.thrownLine;
-
-      ret += "\n  " + thrownFileS + ":" + thrownLine + ": thrown here";
-    }
-
     return ret;
   }
 
@@ -235,7 +225,15 @@ module ChapelError {
     const myFileS = myFileC:string;
     const myLine = __primitive("_get_user_line");
 
+
+
+    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+                                             err.thrownFileId);
+    const thrownFileS = thrownFileC:string;
+    const thrownLine = err.thrownLine;
+
     var s = "uncaught " + chpl_describe_error(err) +
+            "\n  " + thrownFileS + ":" + thrownLine + ": thrown here" +
             "\n  " + myFileS + ":" + myLine + ": uncaught here";
     chpl_error_preformatted(s.c_str());
   }
