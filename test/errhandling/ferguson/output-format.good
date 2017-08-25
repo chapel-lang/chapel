@@ -1,0 +1,4 @@
+MyError: custom message
+uncaught MyError: custom message
+  output-format.chpl:10: thrown here
+  output-format.chpl:14: uncaught here
