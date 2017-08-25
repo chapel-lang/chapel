@@ -93,7 +93,6 @@ static void filterVirtualChildren();
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 void resolveDynamicDispatches() {
@@ -580,7 +579,7 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 
 // Checks that types match.
 // Note - does not currently check that instantiated params match.
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
+bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name) {
     return false;
   }
