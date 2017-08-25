@@ -52,7 +52,7 @@ FnSymbol *gSetDynamicEndCount;
 FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gSaveTaskErrorFn;
-
+FnSymbol *gSaveLineInErrorFn;
 
 /************************************* | **************************************
 *                                                                             *
@@ -261,6 +261,12 @@ static WellKnownFn sWellKnownFns[] = {
   {
     "chpl_save_task_error",
     &gSaveTaskErrorFn,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_save_line_in_error",
+    &gSaveLineInErrorFn,
     FLAG_UNKNOWN
   },
 

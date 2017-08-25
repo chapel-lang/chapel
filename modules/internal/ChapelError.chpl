@@ -28,6 +28,12 @@ module ChapelError {
     pragma "no doc"
     var _next: Error = nil; // managed by lock in record ErrorGroupRecord
 
+    // These fields save the line/file where the error was thrown.
+    pragma "no doc"
+    var thrownLine:int;
+    pragma "no doc"
+    var thrownFileId:int(32);
+
     proc Error() {
       _next = nil;
     }
@@ -35,6 +41,10 @@ module ChapelError {
     proc Error(_msg: string) {
       msg = _msg;
       _next = nil;
+    }
+
+    proc message() {
+      return msg;
     }
 
     proc writeThis(f) {
@@ -177,13 +187,40 @@ module ChapelError {
   }
 
   pragma "no doc"
+  pragma "insert line file info"
+  proc chpl_save_line_in_error(err: Error) {
+    const line = __primitive("_get_user_line");
+    const fileId = __primitive("_get_user_file");
+    err.thrownLine = line;
+    err.thrownFileId = fileId;
+  }
+  pragma "no doc"
   proc chpl_delete_error(err: Error) {
     if err != nil then delete err;
   }
+  pragma "no doc"
   pragma "function terminates program"
+  pragma "insert line file info"
   proc chpl_uncaught_error(err: Error) {
-    var tmpstring = "uncaught error - " + stringify(err);
-    __primitive("chpl_error", tmpstring.c_str());
+    extern proc chpl_error_preformatted(c_string);
+
+    var cid =  __primitive("getcid", err);
+    var nameC: c_string = __primitive("class name by id", cid);
+    var nameS = nameC:string;
+
+    const thrownFileC:c_string = __primitive("chpl_lookupFilename", err.thrownFileId);
+    const thrownFileS = thrownFileC:string;
+    const thrownLine = err.thrownLine;
+
+    const myFileC:c_string = __primitive("chpl_lookupFilename",
+                                         __primitive("_get_user_file"));
+    const myFileS = myFileC:string;
+    const myLine = __primitive("_get_user_line");
+
+    var s = "uncaught " + nameS + ": " + err.message() + "\n" +
+             "  " + thrownFileS + ":" + thrownLine + ": thrown here\n" +
+             "  " + myFileS + ":" + myLine + ": uncaught here";
+    chpl_error_preformatted(s.c_str());
   }
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
