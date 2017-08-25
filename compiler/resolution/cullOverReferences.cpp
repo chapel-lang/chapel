@@ -781,6 +781,8 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 
   bool forall = (chpl_iter != NULL);
+  // MPF: should be the same as isLoweredForallLoop but it isn't yet
+  //INT_ASSERT(forall == forLoop->isLoweredForallLoop());
   bool zippered = forLoop->zipperedGet() &&
                   (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
                    (chpl_iter != NULL &&

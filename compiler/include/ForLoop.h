@@ -40,6 +40,23 @@ public:
                                        bool       coforall,
                                        bool       zippered);
 
+  static BlockStmt*      buildLoweredForallLoop (Expr*      indices,
+                                                 Expr*      iteratorExpr,
+                                                 BlockStmt* body,
+                                                 bool       coforall,
+                                                 bool       zippered);
+
+
+private:
+  static BlockStmt*      doBuildForLoop (Expr*      indices,
+                                         Expr*      iteratorExpr,
+                                         BlockStmt* body,
+                                         bool       coforall,
+                                         bool       zippered,
+                                         bool       isLoweredForall);
+
+
+
   //
   // Instance Interface
   //
@@ -47,7 +64,8 @@ public:
                          ForLoop(VarSymbol* index,
                                  VarSymbol* iterator,
                                  BlockStmt* initBody,
-                                 bool       zippered);
+                                 bool       zippered,
+                                 bool       isLoweredForall);
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map      = NULL,
@@ -64,6 +82,12 @@ public:
 
   virtual bool           isForLoop()                                  const;
   virtual bool           isCoforallLoop()                             const;
+  // Forall loops start out as ForallStmt but at some point are
+  // lowered into a sequence for For loops. This function indicates
+  // if this ForLoop represents a lowered Forall.
+  // This function should return `true` only for the loop implementing
+  // standalone iteration or the loop implementing leader iteration.
+  virtual bool           isLoweredForallLoop()                        const;
 
   virtual bool           deadBlockCleanup();
 
@@ -83,6 +107,7 @@ private:
   SymExpr*               mIndex;
   SymExpr*               mIterator;
   bool                   mZippered;
+  bool                   mLoweredForall;
 };
 
 #endif

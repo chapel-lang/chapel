@@ -1102,7 +1102,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
-  fifn->insertAtTail(ForLoop::buildForLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
+  fifn->insertAtTail(ForLoop::buildLoweredForallLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
 
   return new CallExpr(new DefExpr(fn), iteratorExpr);
 }
@@ -1163,7 +1163,7 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered, false);
 
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
@@ -1324,7 +1324,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", saIter)));
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
-  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL, false);
+  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL, /*zip*/ false, /*forall*/ true);
   destructureIndices(SABody, indices, new SymExpr(saIdxCopy), false);
   SABody->insertAtHead("'move'(%S, %S)", saIdxCopy, saIdx);
   SABody->insertAtHead(new DefExpr(saIdxCopy));
@@ -1400,7 +1400,8 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
   VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
-  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL, zippered);
+  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL,
+                                           zippered, /*forall*/ true);
 
   VarSymbol* followIdx       = newTemp("chpl__followIdx");
   VarSymbol* followIter      = newTemp("chpl__followIter");
@@ -2080,12 +2081,12 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   BlockStmt* serialBlock = buildChapelStmt();
   VarSymbol* index = newTemp("_index");
   serialBlock->insertAtTail(new DefExpr(index));
-  serialBlock->insertAtTail(ForLoop::buildForLoop(new SymExpr(index),
-                                                  new SymExpr(data),
-                                                  new BlockStmt(new CallExpr(new CallExpr(".", globalOp,
-                                                                                          new_CStringSymbol("accumulate")), index)),
-                                                  false,
-                                                  zippered));
+  serialBlock->insertAtTail(ForLoop::buildForLoop(
+                                        new SymExpr(index),
+                                        new SymExpr(data),
+                                        new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("accumulate")), index)),
+                                        false,
+                                        zippered));
 
   VarSymbol* leadIdx     = newTemp("chpl__leadIdx");
   VarSymbol* leadIter    = newTemp("chpl__leadIter");
@@ -2097,7 +2098,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL, zippered);
+  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL, zippered, /*forall*/ false);
 
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
 
@@ -2120,7 +2121,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
   followBlock->insertAtTail("'delete'(%S)", localOp);
 
-  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered);
+  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered, /*forall*/ true);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);

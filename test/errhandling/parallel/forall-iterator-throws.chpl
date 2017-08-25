@@ -32,7 +32,7 @@ iter myiter(nn: int, nt: int, param tag: iterKind) throws where tag == iterKind.
 // for loop in follower with yield should get vector pragma
 iter myiter(nn:int, nt: int, followThis, param tag: iterKind) throws where tag == iterKind.follower {
   for i in followThis {
-    if i == 1 then
+    if (i&1) == 1 then
       throw new Error("test error");
     yield i;
   }

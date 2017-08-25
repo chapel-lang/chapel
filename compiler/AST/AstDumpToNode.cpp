@@ -1242,6 +1242,11 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
     case GOTO_ERROR_HANDLING:
       fprintf(mFP, "tag:   gotoErrorHandling");
       break;
+
+    case GOTO_BREAK_ERROR_HANDLING:
+      fprintf(mFP, "tag:   gotoBreakErrorHandling");
+      break;
+
   }
 
   if (SymExpr* label = toSymExpr(node->label))

@@ -185,4 +185,11 @@ module ChapelError {
     var tmpstring = "uncaught error - " + stringify(err);
     __primitive("chpl_error", tmpstring.c_str());
   }
+  // This is like the above, but it is only ever added by the
+  // compiler. In case of iterator inlining (say), this call
+  // should be replaced by goto-error-handling.
+  proc chpl_propagate_error(err: Error) {
+    chpl_uncaught_error(err);
+  }
+
 }

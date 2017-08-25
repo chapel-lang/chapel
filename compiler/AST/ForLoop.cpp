@@ -145,17 +145,19 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* ForLoop::buildForLoop(Expr*      indices,
-                                 Expr*      iteratorExpr,
-                                 BlockStmt* body,
-                                 bool       coforall,
-                                 bool       zippered)
+BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
+                          Expr*      iteratorExpr,
+                          BlockStmt* body,
+                          bool       coforall,
+                          bool       zippered,
+                          bool       isLoweredForall)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(index, iterator, body, zippered);
+  ForLoop*     loop          = new ForLoop(index, iterator, body,
+                                           zippered, isLoweredForall);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
@@ -274,6 +276,25 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   return retval;
 }
 
+BlockStmt* ForLoop::buildForLoop(Expr*      indices,
+                                 Expr*      iteratorExpr,
+                                 BlockStmt* body,
+                                 bool       coforall,
+                                 bool       zippered)
+{
+  return doBuildForLoop(indices, iteratorExpr, body, coforall, zippered, false);
+}
+
+BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
+                                           Expr*      iteratorExpr,
+                                           BlockStmt* body,
+                                           bool       coforall,
+                                           bool       zippered)
+{
+  return doBuildForLoop(indices, iteratorExpr, body, coforall, zippered, true);
+}
+
+
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
@@ -285,16 +306,19 @@ ForLoop::ForLoop() : LoopStmt(0)
   mIndex    = 0;
   mIterator = 0;
   mZippered = false;
+  mLoweredForall = false;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
                  BlockStmt* initBody,
-                 bool       zippered) : LoopStmt(initBody)
+                 bool       zippered,
+                 bool       isLoweredForall) : LoopStmt(initBody)
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);
   mZippered = zippered;
+  mLoweredForall = isLoweredForall;
 }
 
 ForLoop::~ForLoop()
@@ -363,6 +387,11 @@ bool ForLoop::isForLoop() const
 bool ForLoop::isCoforallLoop() const
 {
   return mIndex->symbol()->hasFlag(FLAG_COFORALL_INDEX_VAR);
+}
+
+bool ForLoop::isLoweredForallLoop() const
+{
+  return mLoweredForall;
 }
 
 SymExpr* ForLoop::indexGet() const
