@@ -266,7 +266,8 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     BlockStmt* catchBody = catchStmt->body();
     DefExpr*   catchDef  = catchStmt->expr();
 
-    catchBody->insertAtTail(new CallExpr(gChplDeleteError, errorVar));
+    VarSymbol* toDelete = errorVar;
+
     catchBody->remove();
 
     // catchall
@@ -277,6 +278,7 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
       VarSymbol* errSym  = toVarSymbol(catchDef->sym);
       Type*      errType = errSym->type;
 
+      toDelete = errSym;
       catchDef->remove();
       currHandler->insertAtTail(catchDef);
 
@@ -299,6 +301,8 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
         currHandler = nextHandler;
       }
     }
+    catchBody->insertAtTail(
+        new CallExpr(gChplDeleteError, castToError(toDelete)));
   }
 
   if (!hasCatchAll) {

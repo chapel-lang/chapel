@@ -178,7 +178,7 @@ module ChapelError {
 
   pragma "no doc"
   proc chpl_delete_error(err: Error) {
-    delete err;
+    if err != nil then delete err;
   }
   pragma "function terminates program"
   proc chpl_uncaught_error(err: Error) {
