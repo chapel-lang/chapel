@@ -1,0 +1,2 @@
+Parent {x = 1}
+Child {x = 1, y = 2}
