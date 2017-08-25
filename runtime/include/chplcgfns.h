@@ -102,11 +102,6 @@ extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 /* used for config vars: */
 extern void CreateConfigVarTable(void);
 
-/* used by copy collection: */
-
-//extern size_t cid2size(chpl__class_id cid);
-//extern size_t* cid2offsets(chpl__class_id cid);
-
 /* These are defined in _type_structure.c if
    --gen-communicated-structures is true and are used by a
    communication layer to query types of communicated buffers */
