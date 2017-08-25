@@ -5,6 +5,6 @@ mason requires CHPL_COMM=none (local)
 """
 
 from __future__ import print_function
+from os import environ
 
-
-print('CHPL_COMM' != 'none' or 'CHPL_REGEXP' != 're2')
+print(environ['CHPL_COMM'] != 'none' or environ['CHPL_REGEXP'] != 're2')
