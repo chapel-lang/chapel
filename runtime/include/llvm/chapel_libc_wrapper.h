@@ -17,29 +17,36 @@
  * limitations under the License.
  */
 
+#include "clang_builtins_wrapper.h"
+#include <complex.h>
+
+static inline double ADD_WRAPPER_PREFIX(cabs)(_Complex double c) {
 #if __FAST_MATH__
-static inline double cabs(_Complex double c)
-{
     double x = __builtin_creal(c);
     double y = __builtin_cimag(c);
     return __builtin_sqrt(x*x+y*y);
-}
+#else
+    return cabs(c);
 #endif
+}
 
+
+static inline float ADD_WRAPPER_PREFIX(cabsf)(_Complex float c) {
 #if __FAST_MATH__
-static inline float cabsf(_Complex float c)
-{
-    float x = __builtin_creal(c);
-    float y = __builtin_cimag(c);
+    double x = __builtin_crealf(c);
+    double y = __builtin_cimagf(c);
     return __builtin_sqrtf(x*x+y*y);
-}
+#else
+    return cabsf(c);
 #endif
+}
 
+static inline long double ADD_WRAPPER_PREFIX(cabsl)(_Complex long double c) {
 #if __FAST_MATH__
-static inline long double cabsl(_Complex long double c)
-{
-    long double x = __builtin_creall(c);
-    long double y = __builtin_cimagl(c);
+    double x = __builtin_creall(c);
+    double y = __builtin_cimagl(c);
     return __builtin_sqrtl(x*x+y*y);
-}
+#else
+    return cabsl(c);
 #endif
+}
