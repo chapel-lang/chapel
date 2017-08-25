@@ -1657,7 +1657,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
-  
+
   SET_LINENO(body);
 
   VarSymbol* tmpIter = newTemp("tmpIter");
@@ -2896,8 +2896,8 @@ buildSyncStmt(Expr* stmt) {
   //   }
 
   // The result is that an error within a sync block will be reported
-  // in an error group. It is that way because there could also be errors
-  // from waited-for tasks.
+  // in a TaskErrors group. It is that way because there could also be
+  // errors from waited-for tasks.
   VarSymbol* e = new VarSymbol("error");
   DefExpr* defError = new DefExpr(e, NULL, new UnresolvedSymExpr("Error"));
   BlockStmt* saveError = new BlockStmt();
