@@ -7,7 +7,6 @@ w.close();
 var r = f.reader();
 var str:string;
 var ok:bool;
-var error:syserr;
 
 writeln("#1 not match");
 ok = r.readf("%/[a-z]/");
@@ -19,8 +18,14 @@ writeln("#3 captures az, should match");
 ok = r.readf("%/([a-z]+)/", str);
 writeln(r.offset(), " ", ok, ":", str);
 writeln("#4 should not match");
-ok = r.readf("%/(0-9)/", str, error=error);
-writeln(r.offset(), " ", ok);
+
+try {
+  ok = r.readf("%/(0-9)/", str);
+} catch {
+  ok = false;
+  writeln(r.offset(), " ", ok);
+}
+
 writeln("#5 captures 9, should match");
 ok = r.readf("%/([0-9])/", str);
 writeln(r.offset(), " ", ok, ":", str);
