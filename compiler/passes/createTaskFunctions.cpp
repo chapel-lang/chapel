@@ -222,7 +222,7 @@ static Expr* findTailInsertionPoint(Expr* fromHere, bool isCoforall) {
 
   // MPF 2017-08-25:
   // This used to also cover _endCountFree, but now it is in
-  // a DeferStmt before _waitEndCount, so funding _waitEndCount is
+  // a DeferStmt before _waitEndCount, so finding _waitEndCount is
   // sufficient.
   return result;
 }
