@@ -1430,9 +1430,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           Expr* initVal = new SymExpr(gTypeDefaultToken);
 
           arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
-                                           BLOCK_SCOPELESS);
+                                           BLOCK_TYPE);
 
-          arg->defaultExpr = new BlockStmt(initVal);
+          if (arg->intent != INTENT_PARAM) {
+            arg->defaultExpr = new BlockStmt(initVal);
+          }
 
 
         //
@@ -1441,7 +1443,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         //
         } else if (defPoint->exprType != NULL && defPoint->init != NULL) {
           arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
-                                           BLOCK_SCOPELESS);
+                                           BLOCK_TYPE);
 
           arg->defaultExpr = new BlockStmt(defPoint->init->copy());
         }
