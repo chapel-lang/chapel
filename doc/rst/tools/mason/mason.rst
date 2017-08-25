@@ -79,7 +79,7 @@ When invoked, ``mason build [ options ]`` will do the following:
 
     - Invoke build.
     - Run the resulting executable out of ``target/``, if it exists.
-    - All options not recongized by ``mason`` will be forwarded to the executable.
+    - All options not recognized by ``mason`` will be forwarded to the executable.
         
 For example, after ``mason run [ options ]``, the project directory appears as so::
 
@@ -137,7 +137,7 @@ To try out different values at runtime, pass the values for ``number`` to ``maso
 
    For the case when a flag intended for the ``chpl`` compiler or executable is recognized by 
    ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--`` 
-   to override this conflict. For example, ``mason run -- -nl 4``. Intsead of mason recognizing
+   to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
    this argument, this command will run the executable over 4 locales.
 
 
