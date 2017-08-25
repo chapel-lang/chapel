@@ -1588,12 +1588,13 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
     block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", iterator,  new_CStringSymbol("size"))));
     block->insertAtHead(new DefExpr(numTasks));
+    block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
   } else {
     taskBlk->insertBefore(new CallExpr("_upEndCount", coforallCount, countRunningTasks));
+    block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks));
   }
-  block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
 
   block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", useLocalEndCount)));
   block->insertAtHead(new DefExpr(coforallCount));
@@ -2962,8 +2963,8 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
+  block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", cobeginCount)));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
-  block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
 
   block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;
