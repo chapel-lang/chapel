@@ -5,4 +5,3 @@ iterating MyError:
 1
 iterating everything else:
 Error: other error
-  convenience.chpl:12: thrown here
