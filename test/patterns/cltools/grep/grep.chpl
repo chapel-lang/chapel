@@ -33,33 +33,27 @@ proc main(args: [] string) {
    - file name
    - string to be searched for
 */
-proc fileGrep(toFind: string, fname: string) {
+proc fileGrep(toFind: string, fname: string) throws {
 
   var toRead: file;
   try! {
     toRead = open(fname, iomode.r);
   }
   var r = toRead.reader();
+  defer r.close();  // close file
 
   // Use regex library to compile into searchable regex
   var regEx = compile(toFind);
   var line:string;
   var lineNum = 1;
 
-  // Search while handling errors
-  while (true) {
-    try {
-      r.readline(line);
-    } catch {
-      break;
-    }
-
+  // Search while handling errors, throwing if readline encounters an error.
+  while (r.readline(line)) {
     if line.search(regEx) {
       writeln("Found " + toFind + " at " + lineNum + " in " + fname);
     }
     lineNum += 1;
   }
-  r.close();  // close file
 }
 
 
@@ -69,7 +63,7 @@ proc fileGrep(toFind: string, fname: string) {
    - string to be searched for only
  Runs in parallel across any files in the current working directory.
 */
-proc parallelGrep(tofind: string) {
+proc parallelGrep(tofind: string) throws {
 
   // Seaches current working directory ignoring anthing but UTF-8
   // encoded characters

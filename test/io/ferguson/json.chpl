@@ -69,8 +69,9 @@ var f = opentmp();
   try! {
     got = reader.readf("%~jt", r);
   } catch e: SystemError {
-    writeln("got is ", got, " error is ", errorToString(e.err));
+    writeln("error is ", errorToString(e.err));
   }
+  writeln("got is ", got);
   writeln("Read: ", r);
 
   reader.close();

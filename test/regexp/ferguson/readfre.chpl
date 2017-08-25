@@ -20,11 +20,12 @@ writeln(r.offset(), " ", ok, ":", str);
 writeln("#4 should not match");
 
 try {
-  ok = r.readf("%/(0-9)/", str);
+  r.readf("%/(0-9)/", str);
+  ok = true;
 } catch {
   ok = false;
-  writeln(r.offset(), " ", ok);
 }
+writeln(r.offset(), " ", ok);
 
 writeln("#5 captures 9, should match");
 ok = r.readf("%/([0-9])/", str);

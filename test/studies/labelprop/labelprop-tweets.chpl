@@ -188,29 +188,33 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
     writeln(fname, " : processing");
 
   while true {
-    try! {
-      got = logfile.readf("%~jt", tweet);
-    } catch e: SystemError {
-      if e.err == EEOF {
-        break;
-      } else if e.err == EFORMAT {
-        if verbose then
-            stdout.writeln("error reading tweets ", fname, " offset ",
-              logfile.offset(), " : ", errorToString(e.err));
+    got = false;
 
-        // read over something else
-        try! {
+    try! {
+      try {
+        got = logfile.readf("%~jt", tweet);
+      } catch e: SystemError {
+        if e.err == EFORMAT {
+          if verbose then
+              stdout.writeln("error reading tweets ", fname, " offset ",
+                logfile.offset(), " : ", errorToString(e.err));
+
+          // read over something else
           got = logfile.readf("%~jt", empty);
         }
-      } else {
-        stderr.writeln("severe error reading tweets ", fname, " offset ",
-            logfile.offset(), " : ", errorToString(e.err));
 
-        halt("ERROR");
-
-        // advance to the next line.
-        logfile.readln();
+        if !got then throw e;
       }
+    } catch e: SystemError {
+      if e.err == EEOF then break;
+
+      stderr.writeln("severe error reading tweets ", fname, " offset ",
+          logfile.offset(), " : ", errorToString(e.err));
+
+      halt("ERROR");
+
+      // advance to the next line.
+      logfile.readln();
     }
 
     if got {

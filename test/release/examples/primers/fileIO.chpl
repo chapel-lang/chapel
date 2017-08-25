@@ -280,6 +280,8 @@ if example == 0 || example == 5 {
 
     // File does not exist by now, for sure.
     unlink(testfile);
+
+    assert(false); // never reached
   } catch e: SystemError {
     assert(e.err == ENOENT);
   }
@@ -287,6 +289,8 @@ if example == 0 || example == 5 {
   try! {
     // What happens if we try to open a non-existent file?
     var f = open(testfile, iomode.r);
+
+    assert(false); // never reached
   } catch e: SystemError {
     assert(e.err == ENOENT);
   }
