@@ -6,7 +6,7 @@ proc test() {
       throw new Error("test error");
     }
     writeln("after cobegin block");
-  } catch errors: ErrorGroup {
+  } catch errors: TaskErrors {
     for e in errors { 
       writeln("Caught group error e ", e.msg);
     }

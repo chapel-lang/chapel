@@ -839,7 +839,7 @@ module ChapelBase {
   // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
   class _EndCountBase {
-    var errors: chpl_ErrorGroup;
+    var errors: chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
 
@@ -958,7 +958,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this is waiting for
     if ! e.errors.empty() then
-      throw new ErrorGroup(e.errors);
+      throw new TaskErrors(e.errors);
   }
 
   // called for bounded coforalls
@@ -977,7 +977,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this is waiting for
     if ! e.errors.empty() then
-      throw new ErrorGroup(e.errors);
+      throw new TaskErrors(e.errors);
   }
 
   proc _upDynamicEndCount(param countRunningTasks=true) {
@@ -1000,7 +1000,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this sync statement is waiting for
     if ! e.errors.empty() then
-      throw new ErrorGroup(e.errors);
+      throw new TaskErrors(e.errors);
   }
 
   pragma "command line setting"
