@@ -53,7 +53,7 @@ config const infoDistributedIters:bool = false;
     be positive.
   :type c: `range(?)` or `domain`
 
-  :arg chunkSize: The chunk size to yield to each thread. Must be positive.
+  :arg chunkSize: The chunk size to yield to each task. Must be positive.
   :type chunkSize: `int`
 
   :arg numTasks: The number of tasks to use. Must be nonnegative. If this
@@ -595,10 +595,7 @@ private proc dynamicSubrange(c:range(?),
 {
   const low:int = (c.low + (stage * chunkSize));
   const potentialHigh:int = (low + (chunkSize - 1));
-  const cHigh = c.high;
-  const high:int = if potentialHigh <= cHigh
-                   then potentialHigh
-                   else cHigh;
+  const high:int = min(potentialHigh, c.high);
   const subrange:c.type = (low..high);
   return subrange;
 }
