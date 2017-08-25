@@ -1,4 +1,3 @@
 (y = (x = 1))
 deinit 1
 Error: test error
-  err-return.chpl:23: thrown here
