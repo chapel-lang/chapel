@@ -2132,10 +2132,15 @@ static void collectVisibleMethodsNamed(Type*                   t,
     }
   }
 
-  // Collect also methods from whatever type t is instantiated from
   if (AggregateType* at = toAggregateType(t)) {
+    // Collect also methods from whatever type t is instantiated from
     if (at->instantiatedFrom != NULL) {
       collectVisibleMethodsNamed(at->instantiatedFrom, nameAstr, methods);
+    }
+
+    // Collect also methods from a parent class type
+    forv_Vec(Type, parent, at->dispatchParents) {
+      collectVisibleMethodsNamed(parent, nameAstr, methods);
     }
   }
 }
