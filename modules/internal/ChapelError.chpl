@@ -48,8 +48,8 @@ module ChapelError {
     }
 
     proc writeThis(f) {
-      //f <~> "Error: " <~> msg;
-      f <~> "{msg = " <~> msg <~> "}";
+      var description = chpl_describe_error(this);
+      f <~> description;
     }
   }
 
@@ -187,6 +187,32 @@ module ChapelError {
   }
 
   pragma "no doc"
+  proc chpl_error_type_name(err: Error) : string {
+    var cid =  __primitive("getcid", err);
+    var nameC: c_string = __primitive("class name by id", cid);
+    var nameS = nameC:string;
+    return nameS;
+  }
+  pragma "no doc"
+  proc chpl_describe_error(err: Error) : string {
+    var nameS = chpl_error_type_name(err);
+
+    var ret = nameS + ": " + err.message();
+
+    if (err.thrownFileId > 0 && err.thrownLine > 0) {
+
+      const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+                                               err.thrownFileId);
+      const thrownFileS = thrownFileC:string;
+      const thrownLine = err.thrownLine;
+
+      ret += "\n  " + thrownFileS + ":" + thrownLine + ": thrown here";
+    }
+
+    return ret;
+  }
+
+  pragma "no doc"
   pragma "insert line file info"
   proc chpl_save_line_in_error(err: Error) {
     const line = __primitive("_get_user_line");
@@ -204,22 +230,13 @@ module ChapelError {
   proc chpl_uncaught_error(err: Error) {
     extern proc chpl_error_preformatted(c_string);
 
-    var cid =  __primitive("getcid", err);
-    var nameC: c_string = __primitive("class name by id", cid);
-    var nameS = nameC:string;
-
-    const thrownFileC:c_string = __primitive("chpl_lookupFilename", err.thrownFileId);
-    const thrownFileS = thrownFileC:string;
-    const thrownLine = err.thrownLine;
-
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
     const myFileS = myFileC:string;
     const myLine = __primitive("_get_user_line");
 
-    var s = "uncaught " + nameS + ": " + err.message() + "\n" +
-             "  " + thrownFileS + ":" + thrownLine + ": thrown here\n" +
-             "  " + myFileS + ":" + myLine + ": uncaught here";
+    var s = "uncaught " + chpl_describe_error(err) +
+            "\n  " + myFileS + ":" + myLine + ": uncaught here";
     chpl_error_preformatted(s.c_str());
   }
   // This is like the above, but it is only ever added by the
