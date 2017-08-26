@@ -19,7 +19,7 @@ if isBounded {
   cap = -1;
 }
 
-var deque = new DistributedDeque(int, cap=cap);
+var deque = new DistDeque(int, cap=cap);
 var barrier = new Barrier(numLocales * here.maxTaskPar);
 
 // Concurrent add... Ensure they all start around same time...

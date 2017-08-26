@@ -141,14 +141,11 @@ proc canPlaceQueen(board, row, col) {
 type boardType = nQueens * int;
 const totalSolutions = getTotalSolutions();
 var found : atomic int;
-var c : Collection(boardType);
-if isDeque {
-  c = new DistributedDeque(boardType);
-} else if isBag {
-  c = new DistributedBag(boardType);
-} else {
-  halt("Require 'isDeque' or 'isBag' to be set...");
-}
+var c = (
+  if isDeque then new DistDeque(boardType)
+  else if isBag then new DistBag(boardType)
+  else compilerError("Require 'isDeque' or 'isBag' to be set...")
+);
 
 // Fill with initial board...
 c.add(_defaultOf(boardType));
@@ -160,13 +157,15 @@ coforall loc in Locales do on loc {
     barrier.barrier();
     var nSpins : int;
     while found.read() < totalSolutions {
-      var (exists, myBoard) = c.remove();
+      // BUG: If we do not specify the type here, we get a compiler internal error...
+      var (exists, myBoard) : (bool, boardType) = c.remove();
       // Spin: We haven't found solution yet...
       if !exists {
         nSpins = nSpins + 1;
         if nSpins == 1000000 {
           halt("Spun: ", nSpins);
         }
+
         chpl_task_yield();
         continue;
       }
