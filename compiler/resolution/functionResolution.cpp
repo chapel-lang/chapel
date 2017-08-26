@@ -2125,6 +2125,7 @@ resolveDefaultGenericType(CallExpr* call) {
 static void collectVisibleMethodsNamed(Type*                   t,
                                        const char*             nameAstr,
                                        std::vector<FnSymbol*>& methods) {
+
   forv_Vec(FnSymbol, method, t->methods) {
     if (method->name == nameAstr &&
         !method->hasFlag(FLAG_INVISIBLE_FN)) {
@@ -2136,11 +2137,31 @@ static void collectVisibleMethodsNamed(Type*                   t,
     // Collect also methods from whatever type t is instantiated from
     if (at->instantiatedFrom != NULL) {
       collectVisibleMethodsNamed(at->instantiatedFrom, nameAstr, methods);
+
+      // Currently it's not possible for a specific instantiation
+      // to inherit from another type when the generic version
+      // does not.
+      return;
     }
 
+    size_t maxChildMethods = methods.size();
     // Collect also methods from a parent class type
     forv_Vec(Type, parent, at->dispatchParents) {
       collectVisibleMethodsNamed(parent, nameAstr, methods);
+    }
+    // Filter out methods any of the parent methods
+    // that have a signature match with the child's methods.
+    // Such methods represent overrides with inheritance.
+    for (size_t i = maxChildMethods; i < methods.size(); i++) {
+      bool remove = false;
+      for (size_t j = 0; j < maxChildMethods; j++) {
+        if (signatureMatch(methods[i], methods[j])) {
+          remove = true;
+          break;
+        }
+      }
+      if (remove)
+        methods[i] = NULL;
     }
   }
 }
@@ -2955,6 +2976,10 @@ static bool populateForwardingMethods(CallInfo& info) {
     }
 
     for_vector(FnSymbol, method, methods) {
+      // ignore holes
+      if (method == NULL)
+        continue;
+
       // Name should already be filtered out
       INT_ASSERT(method->name == methodName);
 

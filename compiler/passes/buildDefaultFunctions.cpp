@@ -1767,6 +1767,19 @@ static void buildRecordQueryVarField(FnSymbol*  fn,
 *                                                                             *
 ************************************** | *************************************/
 
+static bool inheritsFromError(Type* t) {
+  if (t == dtError)
+    return true;
+
+  bool ret = false;
+
+  forv_Vec(Type, parent, t->dispatchParents) {
+    ret = ret || inheritsFromError(parent);
+  }
+
+  return ret;
+}
+
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasReadWriteThis = false;
   bool hasReadThis = false;
@@ -1780,6 +1793,11 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (fMinimalModules == true) {
     return;
   }
+
+  // This is a workaround - want Error objects to overload message()
+  // to build their own description.
+  if (inheritsFromError(ct))
+    return;
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
   if (function_exists("readWriteThis", dtMethodToken, ct, dtAny)) {

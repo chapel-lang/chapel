@@ -2,4 +2,4 @@
 (y = (x = 2))
 deinit 2
 deinit 1
-{msg = test error}
+Error: test error

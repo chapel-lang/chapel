@@ -375,6 +375,9 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
+    throwBlock->insertAtTail(new CallExpr(gSaveLineInErrorFn,
+                                          castToError(thrownError)));
+
     if (insideTry) {
       throwBlock->insertAtTail(setOuterErrorAndGotoHandler(thrownError));
     } else if (outError != NULL) {

@@ -9,7 +9,7 @@
 
   Notes on the Initial Implementation
   -----------------------------------
-   
+
   This implementation is complete in that it produces nearly identical
   results to the C++ implementation. Verifying this was done by
   putting identical printouts of various arrays each time step and
@@ -66,7 +66,7 @@
 
 // TODO: Found a lot of loops that were computing reductions in a race-y
 // way (i.e., by accumulating into unprotected scalars).  This could be
-// the cause of the numerical instability in the nightly tests.  We 
+// the cause of the numerical instability in the nightly tests.  We
 // really should be using a reduction for these.
 
 use Time;
@@ -141,8 +141,8 @@ const ElemDist = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
 const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
                                  else NodeSpace;
 
-                           
-                                 
+
+
 // STYLE: It'd be nice to replace groups of three arrays with some
 // sort of tuple or otherwise parameterizable data structure
 
@@ -152,20 +152,20 @@ var
 
 
 // TODO: Support comments in file between major sections for clarity
-                                                                         
+
 if debug then writeln("reading coordinates");
 for (locX,locY,locZ) in zip(x,y,z) do reader.read(locX, locY, locZ);
 
 param nodesPerElem = 8;
 
-                                 
+
 // STYLE: In some places we're using an 8* tuple and in other places
 // an 8-ary array, which seems inconsistent and could raise questions
 // about how to know when to use which.  Today, tuples are used in
 // contexts like this primarily for performance purposes.  Ultimately,
 // the two should perform the same for these simple cases.
 
-                                                                         
+
 // Could name this... we chose not to...
 //
 // const elemNeighbors = 0..#nodesPerElem;
@@ -178,16 +178,16 @@ param nodesPerElem = 8;
 var elemToNode: [ElemDist] [0..#nodesPerElem] index(NodeDist);
 
 
-                                 
-                                 
+
+
 if debug then writeln("reading elemToNode mapping");
 //
 // OR, at the very least, we should be able to write read(elemToNode);
-for e in elemToNode do 
+for e in elemToNode do
   for n in e do
     reader.read(n);
 
-                                                                         
+
 
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [ElemDist] index(ElemDist);
@@ -233,10 +233,12 @@ if debugIO {
 writeln("Doing EOF check");
 
 // Make sure we're at the end of the input file, for sanity
-var err: syserr = ENOERR;
 var badint: int;
-reader.read(badint, error=err);
-if (err != EEOF) then halt("Data remains at end of file");
+try! {
+  reader.read(badint);
+} catch e: SystemError {
+  if (e.err != EEOF) then halt("Data remains at end of file");
+}
 
 writeln("Made it past EOF check");
 
