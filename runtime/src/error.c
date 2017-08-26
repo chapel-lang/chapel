@@ -211,6 +211,18 @@ void chpl_error_explicit(const char *message, int32_t lineno,
   chpl_exit_any(1);
 }
 
+void chpl_error_preformatted(const char* message) {
+  spinhaltIfAlreadyExiting();
+  fflush(stdout);
+  fprintf(stderr, "%s\n", message);
+
+#ifdef CHPL_UNWIND_NOT_LAUNCHER
+  chpl_stack_unwind();
+#endif
+
+  chpl_exit_any(1);
+}
+
 void chpl_error(const char *message, int32_t lineno, int32_t filenameIdx) {
   const char *filename = NULL;
   if (filenameIdx != 0)

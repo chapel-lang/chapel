@@ -28,6 +28,12 @@ module ChapelError {
     pragma "no doc"
     var _next: Error = nil; // managed by lock in record ErrorGroupRecord
 
+    // These fields save the line/file where the error was thrown.
+    pragma "no doc"
+    var thrownLine:int;
+    pragma "no doc"
+    var thrownFileId:int(32);
+
     proc Error() {
       _next = nil;
     }
@@ -37,9 +43,13 @@ module ChapelError {
       _next = nil;
     }
 
+    proc message() {
+      return msg;
+    }
+
     proc writeThis(f) {
-      //f <~> "Error: " <~> msg;
-      f <~> "{msg = " <~> msg <~> "}";
+      var description = chpl_describe_error(this);
+      f <~> description;
     }
   }
 
@@ -112,7 +122,7 @@ module ChapelError {
       }
     }
 
-    proc writeThis(f) {
+    proc message() : string {
       var n = 0;
 
       var minMsg:string;
@@ -121,10 +131,10 @@ module ChapelError {
       var last:Error;
 
       for e in these() {
-        if minMsg == "" || e.msg < minMsg then
-          minMsg = e.msg;
-        if maxMsg == "" || e.msg > maxMsg then
-          maxMsg = e.msg;
+        if minMsg == "" || e.message() < minMsg then
+          minMsg = e.message();
+        if maxMsg == "" || e.message() > maxMsg then
+          maxMsg = e.message();
 
         n += 1;
       }
@@ -132,7 +142,7 @@ module ChapelError {
       // Set first and last.
       {
         for e in these() {
-          if e.msg == minMsg {
+          if e.message() == minMsg {
             if first == nil then
               first = e;
             last = e;
@@ -140,21 +150,21 @@ module ChapelError {
         }
         if minMsg != maxMsg {
           for e in these() {
-            if e.msg == maxMsg {
+            if e.message() == maxMsg {
               last = e;
             }
           }
         }
       }
 
-      f <~> "ErrorGroup with ";
-      if n > 1 then
-        f <~> n <~> " errors: ";
+      var ret = n + " errors: ";
 
       if first != last then
-        f <~> first <~> " ... " <~> last;
+        ret += chpl_describe_error(first) + " ... " + chpl_describe_error(last);
       else
-        f <~> first;
+        ret += chpl_describe_error(first);
+
+      return ret;
     }
 
     // convenience methods
@@ -177,13 +187,55 @@ module ChapelError {
   }
 
   pragma "no doc"
+  proc chpl_error_type_name(err: Error) : string {
+    var cid =  __primitive("getcid", err);
+    var nameC: c_string = __primitive("class name by id", cid);
+    var nameS = nameC:string;
+    return nameS;
+  }
+  pragma "no doc"
+  proc chpl_describe_error(err: Error) : string {
+    var nameS = chpl_error_type_name(err);
+
+    var ret = nameS + ": " + err.message();
+
+    return ret;
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  proc chpl_save_line_in_error(err: Error) {
+    const line = __primitive("_get_user_line");
+    const fileId = __primitive("_get_user_file");
+    err.thrownLine = line;
+    err.thrownFileId = fileId;
+  }
+  pragma "no doc"
   proc chpl_delete_error(err: Error) {
     if err != nil then delete err;
   }
+  pragma "no doc"
   pragma "function terminates program"
+  pragma "insert line file info"
   proc chpl_uncaught_error(err: Error) {
-    var tmpstring = "uncaught error - " + stringify(err);
-    __primitive("chpl_error", tmpstring.c_str());
+    extern proc chpl_error_preformatted(c_string);
+
+    const myFileC:c_string = __primitive("chpl_lookupFilename",
+                                         __primitive("_get_user_file"));
+    const myFileS = myFileC:string;
+    const myLine = __primitive("_get_user_line");
+
+
+
+    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+                                             err.thrownFileId);
+    const thrownFileS = thrownFileC:string;
+    const thrownLine = err.thrownLine;
+
+    var s = "uncaught " + chpl_describe_error(err) +
+            "\n  " + thrownFileS + ":" + thrownLine + ": thrown here" +
+            "\n  " + myFileS + ":" + myLine + ": uncaught here";
+    chpl_error_preformatted(s.c_str());
   }
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call

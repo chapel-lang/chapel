@@ -841,6 +841,44 @@ static void genUnwindSymbolTable(){
   genGlobalInt32("chpl_sizeSymTable", symbols.size() * 2);
 }
 
+static void
+genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
+  const char* eltType = "c_string";
+  const char* name = "chpl_classNames";
+
+  if(isHeader) {
+    // Just pass NULL when generating header
+    codegenGlobalConstArray(name, eltType, NULL, true);
+    return;
+  }
+
+  std::vector<const char*> names;
+
+  forv_Vec(TypeSymbol, ts, typeSymbol) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
+      if (isObjectOrSubclass(ct)) {
+        int id = ct->classId;
+        INT_ASSERT(id > 0);
+        if (id >= (int)names.size())
+          names.resize(id+1, NULL);
+        names[id] = ts->name;
+      }
+    }
+  }
+
+  std::vector<GenRet> tmp;
+  for(size_t i = 0; i < names.size(); i++) {
+    const char* name = names[i];
+    if (name == NULL)
+      name = "";
+    tmp.push_back(codegenStringForTable(name));
+  }
+
+  // Now emit the global array declaration
+  codegenGlobalConstArray(name, eltType, &tmp, false);
+}
+
+
 static bool
 compareSymbol(void* v1, void* v2) {
   Symbol* s1 = (Symbol*)v1;
@@ -1238,6 +1276,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
 
   genClassIDs(types, false);
   genSubclassArray(false);
+  genClassNames(types, false);
 
   genComment("Function Pointer Table");
   genFtable(ftableVec, false);
@@ -1518,6 +1557,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   assignClassIds();
   genClassIDs(types, true);
   genSubclassArray(true);
+  genClassNames(types, true);
 
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {

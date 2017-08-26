@@ -60,6 +60,6 @@ extern FnSymbol *gSetDynamicEndCount;
 extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gSaveTaskErrorFn;
-
+extern FnSymbol *gSaveLineInErrorFn;
 
 #endif
