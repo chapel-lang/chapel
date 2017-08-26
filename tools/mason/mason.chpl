@@ -49,6 +49,7 @@ proc main(args: [] string) {
   when 'build' do masonBuild(args);
   when 'update' do UpdateLock();
   when 'run' do masonRun(args);
+  when 'doc' do masonDoc(args);
   when 'clean' do masonClean();
   when '--list' do masonList();
   when '-h' do masonHelp();
@@ -116,10 +117,28 @@ proc masonClean() {
   runCommand('rm -rf target');
 }
 
+ 
+proc masonDoc(args) {
+  var toDoc = basename(getEnv('PWD'));
+  var project = toDoc + '.chpl';
+  if isDir('src/') {
+    if isFile('src/' + project) {
+      var command = 'chpldoc src/' + project;
+      writeln(command);
+      runCommand(command);
+    }
+  }
+  else {
+    writeln('Mason could not find the project to document!');
+    runCommand('chpldoc');
+  }
+}
+
+
 
 // TODO
 proc masonInit(args) {}
-proc masonDoc(args) {}
+
 
 
 proc printVersion() {

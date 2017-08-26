@@ -73,11 +73,13 @@ When invoked, ``mason build [ options ]`` will do the following:
     - Run update to make sure any manual manifest edits are reflected in the dependency code.
     - Build ``MyPackage.chpl`` in the ``src/`` directory. 
     - All packages are compiled into binaries and placed into ``target/``
+    - All options not recognized by ``mason`` will be forwarded to the chapel compiler(``chpl``)
 
 ``mason run [ options ]`` will, in turn:
 
     - Invoke build.
-    - Run the resulting executable out of target/, if it exists.
+    - Run the resulting executable out of ``target/``, if it exists.
+    - All options not recognized by ``mason`` will be forwarded to the executable.
         
 For example, after ``mason run [ options ]``, the project directory appears as so::
 
@@ -89,13 +91,54 @@ For example, after ``mason run [ options ]``, the project directory appears as s
 	MyPackage.chpl
       target/
 	debug/
-      	release/
+       (release/)
 	  MyPackage
+
 	
-   
+For projects that span multiple files, the main module is designated by the module that 
+shares the name with the package directory and the name field in the ``Mason.toml``.
+
+
+For projects that span multiple sub-directories within ``src``, sub-directories must be passed 
+to Mason with the ``-M  <src/subdirectory>`` flag which is forwarded to the chapel compiler. For example, lets say
+MyPackage's structure is as follows::
+
+
+    MyPackage/
+      Mason.toml
+      Mason.lock
+      src/
+	MyPackage.chpl
+	MySubPackage.chpl
+        util/
+	  MyPackageUtils.chpl
+      target/
+	debug/
+	  MyPackage
+
+
+If MyPackage needs multiple files in different directories like the example above,
+then call ``mason build`` with the ``-M`` flag followed by the local dependencies.
+A full command of this example would be:: 
+
+  mason build -M src/util/MyPackageUtils.chpl
 
 
 
+For an example of forwarding arguments in a call to ``mason run``, a chapel program built in 
+mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
+To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
+
+      mason run --number=100
+      mason run --number=1000
+
+
+.. note:: 
+
+   For the case when a flag intended for the ``chpl`` compiler or executable is recognized by 
+   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--`` 
+   to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
+   this argument, this command will run the executable over 4 locales.
 
 
 

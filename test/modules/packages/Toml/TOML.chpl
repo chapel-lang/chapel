@@ -513,9 +513,14 @@ Parser module with the Toml class for the Chapel TOML library.
 
      pragma "no doc"
      proc printHelp(flat: [?d] Toml, f:channel) {
+       if d.member('root') {
+	 f.writeln('[root]');
+	 printValues(f, flat['root']);
+	 d.remove('root');
+       }
        for k in d.sorted() {
-         f.writeln('[', k, ']');
-         printValues(f, flat[k]);
+	 f.writeln('[', k, ']');
+	 printValues(f, flat[k]);
        }
      }
 

@@ -133,7 +133,7 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: compiler FORCE
+mason: compiler chpldoc FORCE
 	cd tools/mason && $(MAKE)
 	cd tools/mason && $(MAKE) install
 
