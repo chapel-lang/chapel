@@ -91,65 +91,70 @@ static FnSymbol*      createAndInsertFunParentMethod(CallExpr*      call,
 ************************************** | *************************************/
 
 Expr* preFold(CallExpr* call) {
-  Expr* result = call;
+  Expr* baseExpr = call->baseExpr;
+  Expr* retval   = call;
 
-  // Match calls that look like:  (<type-symbol> <immediate-integer>)
-  // and replace them with:       <new-type-symbol>
-  // <type-symbol> is in {dtBools, dtInt, dtUint, dtReal, dtImag, dtComplex}.
-  // This replaces, e.g.
-  //   dtInt[INT_SIZE_DEFAULT] 32) with dtInt[INT_SIZE_32].
+  // Replace typeSpecifiers for primitive types with appropriate SymExpr
   if (Type* type = typeForTypeSpecifier(call)) {
-    result = new SymExpr(type->symbol);
+    retval = new SymExpr(type->symbol);
 
-    call->replace(result);
+    call->replace(retval);
   }
 
-  if (SymExpr* sym = toSymExpr(call->baseExpr)) {
-    if (isLcnSymbol(sym->symbol())) {
-      Expr* base = call->baseExpr;
-      base->replace(new UnresolvedSymExpr("this"));
-      call->insertAtHead(base);
+  if (SymExpr* symExpr = toSymExpr(baseExpr)) {
+    if (isLcnSymbol(symExpr->symbol()) == true) {
+      baseExpr->replace(new UnresolvedSymExpr("this"));
+
+      call->insertAtHead(baseExpr);
       call->insertAtHead(gMethodToken);
     }
   }
 
-  if (CallExpr* base = toCallExpr(call->baseExpr)) {
-    if (base->partialTag) {
+  if (CallExpr* base = toCallExpr(baseExpr)) {
+    if (base->partialTag == true) {
       for_actuals_backward(actual, base) {
         actual->remove();
         call->insertAtHead(actual);
       }
+
       base->replace(base->baseExpr->remove());
+
     } else {
       VarSymbol* this_temp = newTemp("_this_tmp_");
+
       this_temp->addFlag(FLAG_EXPR_TEMP);
+
       base->replace(new UnresolvedSymExpr("this"));
+
       CallExpr* move = new CallExpr(PRIM_MOVE, this_temp, base);
+
       call->insertAtHead(new SymExpr(this_temp));
       call->insertAtHead(gMethodToken);
+
       call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
       call->getStmtExpr()->insertBefore(move);
-      result = move;
-      return result;
+
+      retval = move;
+
+      return retval;
     }
   }
 
-
   if (call->isPrimitive() == true) {
     if (Expr* tmp = preFoldPrimOp(call)) {
-      result = tmp;
+      retval = tmp;
     }
 
   } else {
     if (Expr* tmp = preFoldNamed(call)) {
-      result = tmp;
+      retval = tmp;
     }
   }
 
   // ensure result of pre-folding is in the AST
-  INT_ASSERT(result->parentSymbol);
+  INT_ASSERT(retval->parentSymbol);
 
-  return result;
+  return retval;
 }
 
 /************************************* | **************************************
