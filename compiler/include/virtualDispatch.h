@@ -47,4 +47,6 @@ void resolveDynamicDispatches();
 
 void insertDynamicDispatchCalls();
 
+bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
+
 #endif
