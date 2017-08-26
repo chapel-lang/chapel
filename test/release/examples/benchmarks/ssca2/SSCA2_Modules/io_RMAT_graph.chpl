@@ -506,7 +506,7 @@ module io_RMAT_graph
 
   proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
     var temp:IONumType;
-    try {
+    try! {
       chan.read(temp);
     } catch e: SystemError {
       // temp==0 is a workaround for unending large files

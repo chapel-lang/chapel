@@ -353,7 +353,7 @@ module SSCA2_RMAT_graph_generator
   proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
     var temp:IONumType;
     try! {
-      chan.read(temp, error=err);
+      chan.read(temp);
     } catch e: SystemError {
       // temp==0 is a workaround for unending large files
       if e.err != EEOF && temp != 0 then

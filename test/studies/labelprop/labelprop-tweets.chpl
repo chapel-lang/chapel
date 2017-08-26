@@ -196,8 +196,8 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
       } catch e: SystemError {
         if e.err == EFORMAT {
           if verbose then
-              stdout.writeln("error reading tweets ", fname, " offset ",
-                logfile.offset(), " : ", errorToString(e.err));
+            stdout.writeln("error reading tweets ", fname, " offset ",
+              logfile.offset(), " : ", errorToString(e.err));
 
           // read over something else
           got = logfile.readf("%~jt", empty);
@@ -208,8 +208,10 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
     } catch e: SystemError {
       if e.err == EEOF then break;
 
-      stderr.writeln("severe error reading tweets ", fname, " offset ",
+      try! {
+        stderr.writeln("severe error reading tweets ", fname, " offset ",
           logfile.offset(), " : ", errorToString(e.err));
+      }
 
       halt("ERROR");
 

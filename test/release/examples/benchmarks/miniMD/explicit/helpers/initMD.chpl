@@ -366,7 +366,7 @@ proc cleanup() {
 proc inputFile() {
   var fchan: file;
   try {
-    fchan = open(err, input_file, iomode.r);
+    fchan = open(input_file, iomode.r);
   } catch {
     input_file = "none";
     return;
