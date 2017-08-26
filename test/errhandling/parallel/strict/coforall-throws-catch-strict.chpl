@@ -11,7 +11,7 @@ try {
   writeln("before test");
   test();
   writeln("after test");
-} catch g:ErrorGroup {
+} catch g:TaskErrors {
   writeln("Caught errors ", g);
 } catch q {
   writeln("Caught something else ", q);

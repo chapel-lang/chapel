@@ -10,7 +10,7 @@ proc test() {
       }
     }
     writeln("after sync block");
-  } catch errors: ErrorGroup {
+  } catch errors: TaskErrors {
     for e in errors { 
       writeln("Caught group error e ", e.msg);
     }

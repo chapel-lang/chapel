@@ -44,7 +44,7 @@ proc test() {
     forall i in myiter(n,t) {
     }
     writeln("after forall block");
-  } catch errors: ErrorGroup {
+  } catch errors: TaskErrors {
     for e in errors { 
       writeln("Caught group error e ", e.msg);
     }

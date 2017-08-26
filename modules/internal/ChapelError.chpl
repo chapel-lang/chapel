@@ -22,11 +22,11 @@ module ChapelError {
 
   // Base class for errors
   // TODO: should base class Error have a string message at all?
-  // TODO: should Error include list pointers for ErrorGroup?
+  // TODO: should Error include list pointers for TaskErrors?
   class Error {
     var msg: string;
     pragma "no doc"
-    var _next: Error = nil; // managed by lock in record ErrorGroupRecord
+    var _next: Error = nil; // managed by lock in record TaskErrorsRecord
 
     // These fields save the line/file where the error was thrown.
     pragma "no doc"
@@ -60,7 +60,7 @@ module ChapelError {
   // errors have completed; at that point it no longer needs
   // to be parallel-safe.
   pragma "no doc"
-  record chpl_ErrorGroup {
+  record chpl_TaskErrors {
     var _head: Error;
     var _errorsLock: atomicbool;
     // this atomic controls:
@@ -92,15 +92,15 @@ module ChapelError {
   }
 
   // stores multiple errors when they can come up.
-  class ErrorGroup : Error {
+  class TaskErrors : Error {
     var _head: Error = nil;
 
     pragma "no doc"
-    proc ErrorGroup(ref group:chpl_ErrorGroup) {
+    proc TaskErrors(ref group:chpl_TaskErrors) {
       _head = group._head;
       group._head = nil;
     }
-    proc ErrorGroup() {
+    proc TaskErrors() {
       _head = nil;
     }
 
