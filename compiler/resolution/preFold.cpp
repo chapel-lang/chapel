@@ -94,61 +94,67 @@ Expr* preFold(CallExpr* call) {
   Expr* baseExpr = call->baseExpr;
   Expr* retval   = call;
 
-  // Replace typeSpecifiers for primitive types with appropriate SymExpr
-  if (Type* type = typeForTypeSpecifier(call)) {
-    retval = new SymExpr(type->symbol);
-
-    call->replace(retval);
-  }
-
-  if (SymExpr* symExpr = toSymExpr(baseExpr)) {
-    if (isLcnSymbol(symExpr->symbol()) == true) {
-      baseExpr->replace(new UnresolvedSymExpr("this"));
-
-      call->insertAtHead(baseExpr);
-      call->insertAtHead(gMethodToken);
-    }
-  }
-
-  if (CallExpr* base = toCallExpr(baseExpr)) {
-    if (base->partialTag == true) {
-      for_actuals_backward(actual, base) {
-        actual->remove();
-        call->insertAtHead(actual);
-      }
-
-      base->replace(base->baseExpr->remove());
-
-    } else {
-      VarSymbol* this_temp = newTemp("_this_tmp_");
-
-      this_temp->addFlag(FLAG_EXPR_TEMP);
-
-      base->replace(new UnresolvedSymExpr("this"));
-
-      CallExpr* move = new CallExpr(PRIM_MOVE, this_temp, base);
-
-      call->insertAtHead(new SymExpr(this_temp));
-      call->insertAtHead(gMethodToken);
-
-      call->getStmtExpr()->insertBefore(new DefExpr(this_temp));
-      call->getStmtExpr()->insertBefore(move);
-
-      retval = move;
-
-      return retval;
-    }
-  }
-
   if (call->isPrimitive() == true) {
     if (Expr* tmp = preFoldPrimOp(call)) {
       retval = tmp;
     }
 
-  } else {
+  } else if (isUnresolvedSymExpr(baseExpr) == true) {
     if (Expr* tmp = preFoldNamed(call)) {
       retval = tmp;
     }
+
+  } else if (SymExpr* symExpr = toSymExpr(baseExpr)) {
+    // Primitive typeSpecifier -> SymExpr
+    if (Type* type = typeForTypeSpecifier(call)) {
+      retval = new SymExpr(type->symbol);
+
+      call->replace(retval);
+
+    } else {
+      if (isLcnSymbol(symExpr->symbol()) == true) {
+        baseExpr->replace(new UnresolvedSymExpr("this"));
+
+        call->insertAtHead(baseExpr);
+        call->insertAtHead(gMethodToken);
+      }
+
+      if (Expr* tmp = preFoldNamed(call)) {
+        retval = tmp;
+      }
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(baseExpr)) {
+    if (callExpr->partialTag == true) {
+      for_actuals_backward(actual, callExpr) {
+        actual->remove();
+        call->insertAtHead(actual);
+      }
+
+      callExpr->replace(callExpr->baseExpr->remove());
+
+      if (Expr* tmp = preFoldNamed(callExpr)) {
+        retval = tmp;
+      }
+
+    } else {
+      VarSymbol* thisTemp = newTemp("_this_tmp_");
+
+      thisTemp->addFlag(FLAG_EXPR_TEMP);
+
+      callExpr->replace(new UnresolvedSymExpr("this"));
+
+      retval = new CallExpr(PRIM_MOVE, thisTemp, callExpr);
+
+      call->insertAtHead(new SymExpr(thisTemp));
+      call->insertAtHead(gMethodToken);
+
+      call->getStmtExpr()->insertBefore(new DefExpr(thisTemp));
+      call->getStmtExpr()->insertBefore(retval);
+    }
+
+  } else {
+    INT_ASSERT(false);
   }
 
   // ensure result of pre-folding is in the AST
