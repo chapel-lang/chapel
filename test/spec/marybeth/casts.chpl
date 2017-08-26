@@ -9,18 +9,6 @@ writeln(z);
 
 var m = 2: int(64);
 var n = 2: int(32);
-var i = 1;
-var j = 1;
 
-while (n > 0) do {
-  n *= 2;
-  i += 1;
-}
-
-while (m > 0) do {
-  m *= 2;
-  j += 1;
-}
-
-writeln("For 32-bit integers, 2 ** (",i,") overflows.");
-writeln("For 64-bit integers, 2 ** (",j,") overflows.");
+writeln("The maximum 32-bit integer is: ", max(n.type));
+writeln("The maximum 64-bit integer is: ", max(m.type));
