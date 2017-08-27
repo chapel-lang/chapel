@@ -239,7 +239,7 @@ module DistributedBag {
       _pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
       _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
-	
+
     inline proc _value {
       if _pid == -1 {
         halt("DistBag is uninitialized...");
