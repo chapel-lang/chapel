@@ -1857,6 +1857,17 @@ extern bool printCppLineno;
 debug_data *debug_info=NULL;
 
 
+
+
+#ifdef HAVE_LLVM
+static bool hasWrapper(const char *name)
+{
+  auto it = chplClangBuiltinWrappedFunctions.find(name);
+  if(it != end(chplClangBuiltinWrappedFunctions))
+    return true;
+  return false;
+}
+
 static const char* getClangBuiltinWrappedName(const char* name)
 {
   auto it = chplClangBuiltinWrappedFunctions.find(name);
@@ -1864,6 +1875,7 @@ static const char* getClangBuiltinWrappedName(const char* name)
     return astr(WRAPPER_PREFIX, name);
   return name;
 }
+#endif
 
 
 void codegen(void) {
@@ -1978,7 +1990,8 @@ void codegen(void) {
 #ifdef HAVE_LLVM
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
-        fn->cname = getClangBuiltinWrappedName(fn->cname);
+          if(hasWrapper(fn->cname))
+            fn->cname = getClangBuiltinWrappedName(fn->cname);
       }
     }
 #endif
