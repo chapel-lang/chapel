@@ -234,7 +234,7 @@ module DistributedBag {
     pragma "no doc"
     var _rc : Shared(DistributedBagRC(eltType));
 		
-		pragma "no doc"
+    pragma "no doc"
     proc DistBag(type eltType, targetLocales = Locales) {
       _pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
       _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
@@ -253,9 +253,9 @@ module DistributedBag {
     }
 
     pragma "no doc"
-    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone) 
-      && __primitive("method call resolves", _value, "these", tag=tag)
+    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone) {
       return _value.these(tag=tag);
+    }
 
     forwarding _value;
   }
