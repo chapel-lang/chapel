@@ -255,7 +255,8 @@ module DistributedBag {
     }
 
     pragma "no doc"
-    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone) {
+    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone) 
+      && __primitive("method call resolves", _value, "these", tag=tag){
       return _value.these(tag=tag);
     }
 

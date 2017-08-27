@@ -239,7 +239,8 @@ module DistributedDeque {
 
     pragma "no doc"
     inline proc these(param order : Ordering = Ordering.NONE, param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone) {
+        (tag == iterKind.leader || tag == iterKind.standalone) 
+        && __primitive("method call resolves", _value, "these", tag=tag) {
       return _value.these(order, tag=tag);
     }
 
