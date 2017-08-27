@@ -224,6 +224,7 @@ module DistributedBag {
       The implementation of the Bag is forwarded. See :class:`DistributedBagImpl` for
       documentation.
     */
+    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : DistributedBagImpl(eltType);
 
     // Privatized id...
@@ -240,6 +241,7 @@ module DistributedBag {
       _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
 
+    pragma "no doc"
     inline proc _value {
       if _pid == -1 {
         halt("DistBag is uninitialized...");

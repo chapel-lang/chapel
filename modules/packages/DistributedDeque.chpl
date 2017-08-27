@@ -209,6 +209,7 @@ module DistributedDeque {
       The implementation of the Deque is forwarded. See :class:`DistributedDequeImpl` for
       documentation.
     */
+    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : DistributedDequeImpl(eltType);
 
     // Privatization id
@@ -223,6 +224,7 @@ module DistributedDeque {
       _rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
     }
 
+    pragma "no doc"
     inline proc _value {
       if _pid == -1 {
         halt("DistDeque is uninitialized...");
