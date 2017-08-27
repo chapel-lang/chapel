@@ -240,7 +240,6 @@ module DistributedBag {
       _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
 	
-		pragma "no doc"
     inline proc _value {
       if _pid == -1 {
         halt("DistBag is uninitialized...");

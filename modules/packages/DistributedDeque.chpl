@@ -223,7 +223,6 @@ module DistributedDeque {
       _rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
     }
 
-    pragma "no doc"
     inline proc _value {
       if _pid == -1 {
         halt("DistDeque is uninitialized...");
