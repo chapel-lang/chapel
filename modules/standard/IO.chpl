@@ -4175,10 +4175,13 @@ record ItemReader {
   }
 
   /* iterate through all items of that type read from the channel */
-  iter these() throws {
+  iter these() { // TODO: this should be throws
     while true {
       var x:ItemType;
-      var gotany = ch.read(x);
+      var gotany:bool;
+      try! { // TODO: this should by try
+        gotany = ch.read(x);
+      }
       if ! gotany then break;
       yield x;
     }
@@ -7135,7 +7138,8 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
             is the whole pattern.  The tuples will have 1+captures elements.
 
  */
-iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int)) throws
+iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
+// TODO: should be throws
 {
   var m:reMatch;
   var go = true;
@@ -7146,7 +7150,8 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int)) thr
 
   lock();
   on this.home do error = _mark();
-  if error then try this._ch_ioerror(error, "in channel.matches mark");
+  // TODO should be try not try!
+  if error then try! this._ch_ioerror(error, "in channel.matches mark");
 
   while go && i < maxmatches {
     on this.home {
@@ -7190,7 +7195,8 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int)) thr
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = ENOERR;
-  if error then try this._ch_ioerror(error, "in channel.matches");
+  // TODO should be try not try!
+  if error then try! this._ch_ioerror(error, "in channel.matches");
 }
 
 } /* end of FormattedIO module */
