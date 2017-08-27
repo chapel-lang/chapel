@@ -89,7 +89,7 @@
 
     var bag = new DistBag(int, targetLocales=ourTargetLocales);
 
-	
+  
   While the bag is safe to use in a distributed manner, each node always operates on it's privatized
   instance. This means that it is easy to add data in bulk, expecting it to be distributed, when in
   reality it is not; if another node needs data, it will steal work on-demand. This may not always be
@@ -233,7 +233,7 @@ module DistributedBag {
     // Reference Counting...
     pragma "no doc"
     var _rc : Shared(DistributedBagRC(eltType));
-		
+
     pragma "no doc"
     proc DistBag(type eltType, targetLocales = Locales) {
       _pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
