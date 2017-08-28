@@ -1393,9 +1393,10 @@ proc StencilArr.dsiNoFluffView() {
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = _newDistribution(tempDist);
   pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable, dom.whole.dims()));
-  newDist._value.add_dom(tempDom._value);
+  newDist._value._free_when_no_doms = true;
 
   var newDom = tempDom._value;
+  newDom._free_when_no_arrs = true;
 
   var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom, ignoreFluff=true);
   alias.locArr = this.locArr;
