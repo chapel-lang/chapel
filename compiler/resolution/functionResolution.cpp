@@ -2638,6 +2638,178 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
   }
 }
 
+void printResolutionErrorAmbiguous(CallInfo&                  info,
+                                   Vec<ResolutionCandidate*>& candidates) {
+  CallExpr* call       = userCall(info.call);
+  bool      printedOne = false;
+
+  if (info.name == astrThis) {
+    USR_FATAL_CONT(call,
+                   "ambiguous access of '%s' by '%s'",
+                   toString(info.actuals.v[1]->type),
+                   toString(&info));
+
+  } else {
+    const char* entity = "call";
+    const char* str    = toString(&info);
+
+    if (strncmp("_type_construct_", info.name, 16) == 0) {
+      entity = "type specifier";
+    }
+
+    if (info.scope) {
+      ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
+
+      INT_ASSERT(mod);
+
+      str = astr(mod->name, ".", str);
+    }
+
+    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
+  }
+
+  if (developer == true) {
+    for (int i = callStack.n - 1; i >= 0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f  = cs->getFunction();
+
+      if (f->instantiatedFrom) {
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      } else {
+        break;
+      }
+    }
+  }
+
+  forv_Vec(ResolutionCandidate, cand, candidates) {
+    USR_PRINT(cand->fn,
+              "%s %s",
+              printedOne ? "               " : "candidates are:",
+              toString(cand->fn));
+
+    printedOne = true;
+  }
+
+  USR_STOP();
+}
+
+void
+printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
+  if( ! info ) INT_FATAL("CallInfo is NULL");
+  if( ! info->call ) INT_FATAL("call is NULL");
+  bool needToReport = false;
+  CallExpr* call = userCall(info->call);
+
+  if (call->isCast()) {
+    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal cast to non-type");
+    } else {
+      USR_FATAL_CONT(call, "illegal cast from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
+    }
+  } else if (!strcmp("these", info->name)) {
+    if (info->actuals.n == 2 &&
+        info->actuals.v[0]->type == dtMethodToken) {
+      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
+                       toString(info->actuals.v[1]->type));
+      } else {
+        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
+                       toString(info->actuals.v[1]->type));
+      }
+    } else {
+      needToReport = true;
+    }
+  } else if (!strcmp("_type_construct__tuple", info->name)) {
+    if (info->call->argList.length == 0)
+      USR_FATAL_CONT(call, "tuple size must be specified");
+    SymExpr* sym = toSymExpr(info->call->get(1));
+    if (!sym || !sym->symbol()->isParameter()) {
+      USR_FATAL_CONT(call, "tuple size must be static");
+    } else {
+      USR_FATAL_CONT(call, "invalid tuple");
+    }
+  } else if (info->name == astrSequals) {
+    if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+        info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal assignment of type to value");
+    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal assignment of value to type");
+    } else if (info->actuals.v[1]->type == dtNil) {
+      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
+                toString(info->actuals.v[0]->type));
+    } else {
+      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
+    }
+  } else if (info->name == astrThis) {
+    Type* type = info->actuals.v[1]->getValType();
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
+    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      USR_FATAL_CONT(call, "illegal access of first class function");
+    } else {
+      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
+                     toString(info->actuals.v[1]->type),
+                     toString(info));
+    }
+  } else {
+    needToReport = true;
+  }
+  // It would be easier to just check exit_eventually to catch all needToReport cases.
+  // Alas exit_eventually is static to misc.cpp.
+  if (needToReport) {
+    const char* entity = "call";
+    if (!strncmp("_type_construct_", info->name, 16))
+      entity = "type specifier";
+    const char* str = toString(info);
+    if (info->scope) {
+      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
+      INT_ASSERT(mod);
+      str = astr(mod->name, ".", str);
+    }
+    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
+      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
+      if (typeE != NULL) {
+        entity = "enumerated type symbol or call";
+      }
+    }
+    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
+    if (visibleFns.n > 0) {
+      if (developer) {
+        for (int i = callStack.n-1; i>=0; i--) {
+          CallExpr* cs = callStack.v[i];
+          FnSymbol* f = cs->getFunction();
+          if (f->instantiatedFrom)
+            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+          else
+            break;
+        }
+      }
+      bool printed_one = false;
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        // Consider "visible functions are"
+        USR_PRINT(fn, "%s %s",
+                  printed_one ? "               " : "candidates are:",
+                  toString(fn));
+        printed_one = true;
+      }
+    }
+    if (visibleFns.n == 1 &&
+        visibleFns.v[0]->numFormals() == 0
+        && !strncmp("_type_construct_", info->name, 16))
+      USR_PRINT(call, "did you forget the 'new' keyword?");
+  }
+  if( developer ) {
+    // Should this be controlled another way?
+    USR_PRINT(call, "unresolved call had id %i", call->id);
+  }
+  USR_STOP();
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -4044,184 +4216,6 @@ static void resolveTupleExpand(CallExpr* call) {
 
     parent->get(1)->replace(new SymExpr(rank));
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void printResolutionErrorAmbiguous(CallInfo&                  info,
-                                   Vec<ResolutionCandidate*>& candidates) {
-  CallExpr* call       = userCall(info.call);
-  bool      printedOne = false;
-
-  if (info.name == astrThis) {
-    USR_FATAL_CONT(call,
-                   "ambiguous access of '%s' by '%s'",
-                   toString(info.actuals.v[1]->type),
-                   toString(&info));
-
-  } else {
-    const char* entity = "call";
-    const char* str    = toString(&info);
-
-    if (strncmp("_type_construct_", info.name, 16) == 0) {
-      entity = "type specifier";
-    }
-
-    if (info.scope) {
-      ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
-
-      INT_ASSERT(mod);
-
-      str = astr(mod->name, ".", str);
-    }
-
-    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-  }
-
-  if (developer == true) {
-    for (int i = callStack.n - 1; i >= 0; i--) {
-      CallExpr* cs = callStack.v[i];
-      FnSymbol* f  = cs->getFunction();
-
-      if (f->instantiatedFrom) {
-        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-      } else {
-        break;
-      }
-    }
-  }
-
-  forv_Vec(ResolutionCandidate, cand, candidates) {
-    USR_PRINT(cand->fn,
-              "%s %s",
-              printedOne ? "               " : "candidates are:",
-              toString(cand->fn));
-
-    printedOne = true;
-  }
-
-  USR_STOP();
-}
-
-void
-printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
-  if( ! info ) INT_FATAL("CallInfo is NULL");
-  if( ! info->call ) INT_FATAL("call is NULL");
-  bool needToReport = false;
-  CallExpr* call = userCall(info->call);
-
-  if (call->isCast()) {
-    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal cast to non-type");
-    } else {
-      USR_FATAL_CONT(call, "illegal cast from %s to %s",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
-    }
-  } else if (!strcmp("these", info->name)) {
-    if (info->actuals.n == 2 &&
-        info->actuals.v[0]->type == dtMethodToken) {
-      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
-                       toString(info->actuals.v[1]->type));
-      } else {
-        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
-                       toString(info->actuals.v[1]->type));
-      }
-    } else {
-      needToReport = true;
-    }
-  } else if (!strcmp("_type_construct__tuple", info->name)) {
-    if (info->call->argList.length == 0)
-      USR_FATAL_CONT(call, "tuple size must be specified");
-    SymExpr* sym = toSymExpr(info->call->get(1));
-    if (!sym || !sym->symbol()->isParameter()) {
-      USR_FATAL_CONT(call, "tuple size must be static");
-    } else {
-      USR_FATAL_CONT(call, "invalid tuple");
-    }
-  } else if (info->name == astrSequals) {
-    if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
-        info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal assignment of type to value");
-    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
-               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal assignment of value to type");
-    } else if (info->actuals.v[1]->type == dtNil) {
-      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
-                toString(info->actuals.v[0]->type));
-    } else {
-      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
-    }
-  } else if (info->name == astrThis) {
-    Type* type = info->actuals.v[1]->getValType();
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
-    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-      USR_FATAL_CONT(call, "illegal access of first class function");
-    } else {
-      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
-                     toString(info->actuals.v[1]->type),
-                     toString(info));
-    }
-  } else {
-    needToReport = true;
-  }
-  // It would be easier to just check exit_eventually to catch all needToReport cases.
-  // Alas exit_eventually is static to misc.cpp.
-  if (needToReport) {
-    const char* entity = "call";
-    if (!strncmp("_type_construct_", info->name, 16))
-      entity = "type specifier";
-    const char* str = toString(info);
-    if (info->scope) {
-      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
-      INT_ASSERT(mod);
-      str = astr(mod->name, ".", str);
-    }
-    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
-      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
-      if (typeE != NULL) {
-        entity = "enumerated type symbol or call";
-      }
-    }
-    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
-    if (visibleFns.n > 0) {
-      if (developer) {
-        for (int i = callStack.n-1; i>=0; i--) {
-          CallExpr* cs = callStack.v[i];
-          FnSymbol* f = cs->getFunction();
-          if (f->instantiatedFrom)
-            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-          else
-            break;
-        }
-      }
-      bool printed_one = false;
-      forv_Vec(FnSymbol, fn, visibleFns) {
-        // Consider "visible functions are"
-        USR_PRINT(fn, "%s %s",
-                  printed_one ? "               " : "candidates are:",
-                  toString(fn));
-        printed_one = true;
-      }
-    }
-    if (visibleFns.n == 1 &&
-        visibleFns.v[0]->numFormals() == 0
-        && !strncmp("_type_construct_", info->name, 16))
-      USR_PRINT(call, "did you forget the 'new' keyword?");
-  }
-  if( developer ) {
-    // Should this be controlled another way?
-    USR_PRINT(call, "unresolved call had id %i", call->id);
-  }
-  USR_STOP();
 }
 
 /************************************* | **************************************
