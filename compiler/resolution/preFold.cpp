@@ -1437,6 +1437,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   ct->buildConstructors();
 
+  if (ct->wantsDefaultInitializer()) {
+    ct->buildDefaultInitializer();
+  }
+
   buildDefaultDestructor(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
@@ -1519,10 +1523,18 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   wrapper->addFlag(FLAG_INLINE);
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
-                                     new CallExpr(PRIM_CAST,
-                                                  parent->symbol,
-                                                  new CallExpr(ct->defaultInitializer))));
+  if (ct->wantsDefaultInitializer()) {
+    wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
+                                       new CallExpr(PRIM_CAST,
+                                                    parent->symbol,
+                                                    new CallExpr("_new",
+                                                                 new SymExpr(ct->symbol)))));
+  } else {
+    wrapper->insertAtTail(new CallExpr(PRIM_RETURN,
+                                       new CallExpr(PRIM_CAST,
+                                                    parent->symbol,
+                                                    new CallExpr(ct->defaultInitializer))));
+  }
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 
