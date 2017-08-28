@@ -167,7 +167,6 @@ static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
-static Expr* resolveTypeExpr(Expr* expr);
 static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
 
 static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
@@ -349,33 +348,49 @@ hasUserAssign(Type* type) {
   return !compilerAssign;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 bool hasAutoCopyForType(Type* type) {
-  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+
   return autoCopyMap.find(type) != autoCopyMap.end() && it->second != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
 // we can insert NULL values for a type and avoid segfaults
 FnSymbol* getAutoCopyForType(Type* type) {
-  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+
   if (it == autoCopyMap.end() || it->second == NULL) {
-    INT_FATAL(type, "Trying to obtain autoCopy for type '%s',"
-                    " which defines none", type->symbol->name);
+    INT_FATAL(type,
+              "Trying to obtain autoCopy for type '%s', which defines none",
+              type->symbol->name);
   }
+
   return it->second;
 }
 
-void getAutoCopyTypeKeys(Vec<Type*> &keys) {
-  for (std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.begin();
-       it != autoCopyMap.end(); ++it) {
+void getAutoCopyTypeKeys(Vec<Type*>& keys) {
+  std::map<Type*, FnSymbol*>::iterator it;
+
+  for (it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
     keys.add(it->first);
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 // This function is called by generic instantiation
 // for the default initCopy function in ChapelBase.chpl.
-bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
-{
+bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
   ArgSymbol* arg = newFn->getFormal(1);
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
