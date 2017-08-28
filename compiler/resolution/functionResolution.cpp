@@ -3902,51 +3902,68 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveTupleAndExpand(CallExpr* call) {
-  SymExpr* se = toSymExpr(call->get(1));
-  int size = 0;
-  for (int i = 0; i < se->symbol()->type->substitutions.n; i++) {
-    if (se->symbol()->type->substitutions.v[i].key) {
-      if (!strcmp("size", se->symbol()->type->substitutions.v[i].key->name)) {
-        size = toVarSymbol(se->symbol()->type->substitutions.v[i].value)->immediate->int_value();
-        break;
-      }
+  Expr*      stmt = call->getStmtExpr();
+  SymExpr*   se   = toSymExpr(call->get(1));
+  int        size = 0;
+  CallExpr*  noop = new CallExpr(PRIM_NOOP);
+  VarSymbol* tmp  = gTrue;
+
+  for (int i = 0; i < se->symbol()->type->substitutions.n && size == 0; i++) {
+    SymbolMapElem& elem = se->symbol()->type->substitutions.v[i];
+
+    if (elem.key != NULL && strcmp("size", elem.key->name) == 0) {
+      size = toVarSymbol(elem.value)->immediate->int_value();
     }
   }
-  INT_ASSERT(size);
-  CallExpr* noop = new CallExpr(PRIM_NOOP);
-  call->getStmtExpr()->insertBefore(noop);
-  VarSymbol* tmp = gTrue;
+
+  INT_ASSERT(size > 0);
+
+  stmt->insertBefore(noop);
+
   for (int i = 1; i <= size; i++) {
     VarSymbol* tmp1 = newTemp("_tuple_and_expand_tmp_");
+    VarSymbol* tmp2 = newTemp("_tuple_and_expand_tmp_");
+    VarSymbol* tmp3 = newTemp("_tuple_and_expand_tmp_");
+    VarSymbol* tmp4 = newTemp("_tuple_and_expand_tmp_");
+
     tmp1->addFlag(FLAG_MAYBE_PARAM);
     tmp1->addFlag(FLAG_MAYBE_TYPE);
-    VarSymbol* tmp2 = newTemp("_tuple_and_expand_tmp_");
+
     tmp2->addFlag(FLAG_MAYBE_PARAM);
     tmp2->addFlag(FLAG_MAYBE_TYPE);
-    VarSymbol* tmp3 = newTemp("_tuple_and_expand_tmp_");
+
     tmp3->addFlag(FLAG_MAYBE_PARAM);
     tmp3->addFlag(FLAG_MAYBE_TYPE);
-    VarSymbol* tmp4 = newTemp("_tuple_and_expand_tmp_");
+
     tmp4->addFlag(FLAG_MAYBE_PARAM);
     tmp4->addFlag(FLAG_MAYBE_TYPE);
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp1));
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp2));
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp3));
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp4));
-    call->getStmtExpr()->insertBefore(
-      new CallExpr(PRIM_MOVE, tmp1,
-                   new CallExpr(se->copy(), new_IntSymbol(i))));
-    CallExpr* query = new CallExpr(PRIM_QUERY, tmp1);
-    for (int i = 2; i < call->numActuals(); i++)
-      query->insertAtTail(call->get(i)->copy());
-    call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp2, query));
-    call->getStmtExpr()->insertBefore(
-      new CallExpr(PRIM_MOVE, tmp3,
-                   new CallExpr("==", tmp2, call->get(3)->copy())));
-    call->getStmtExpr()->insertBefore(
-      new CallExpr(PRIM_MOVE, tmp4,
-                   new CallExpr("&", tmp3, tmp)));
+
+    stmt->insertBefore(new DefExpr(tmp1));
+    stmt->insertBefore(new DefExpr(tmp2));
+    stmt->insertBefore(new DefExpr(tmp3));
+    stmt->insertBefore(new DefExpr(tmp4));
+
+    CallExpr* index  = new CallExpr(se->copy(), new_IntSymbol(i));
+    CallExpr* query  = new CallExpr(PRIM_QUERY, tmp1);
+    CallExpr* test   = new CallExpr("==",       tmp2, call->get(3)->copy());
+    CallExpr* bitAnd = new CallExpr("&",        tmp3, tmp);
+
+    for (int j = 2; j < call->numActuals(); j++) {
+      query->insertAtTail(call->get(j)->copy());
+    }
+
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp1, index));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp2, query));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp3, test));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp4, bitAnd));
+
     tmp = tmp4;
   }
 
