@@ -1299,6 +1299,9 @@ void AggregateType::buildDefaultInitializer() {
     fn->addFlag(FLAG_LAST_RESORT);
 
     _this->addFlag(FLAG_ARG_THIS);
+    if (isGeneric()) {
+      _this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+    }
 
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
@@ -1427,9 +1430,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           Expr* initVal = new SymExpr(gTypeDefaultToken);
 
           arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
-                                           BLOCK_SCOPELESS);
+                                           BLOCK_TYPE);
 
-          arg->defaultExpr = new BlockStmt(initVal);
+          if (arg->intent != INTENT_PARAM) {
+            arg->defaultExpr = new BlockStmt(initVal);
+          }
 
 
         //
@@ -1438,7 +1443,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         //
         } else if (defPoint->exprType != NULL && defPoint->init != NULL) {
           arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
-                                           BLOCK_SCOPELESS);
+                                           BLOCK_TYPE);
 
           arg->defaultExpr = new BlockStmt(defPoint->init->copy());
         }
@@ -1449,6 +1454,12 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                       fn->_this,
                                       new_CStringSymbol(name),
                                       arg));
+      } else {
+        AggregateType* parentType = toAggregateType(field->type);
+        INT_ASSERT(parentType);
+        if (parentType->isGeneric()) {
+          field->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+        }
       }
     }
   }

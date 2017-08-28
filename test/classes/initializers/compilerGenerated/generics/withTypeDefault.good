@@ -1,0 +1,4 @@
+Foo(int(64))
+{x = 0}
+Foo(bool)
+{x = false}
