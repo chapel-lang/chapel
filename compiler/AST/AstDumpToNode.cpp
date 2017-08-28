@@ -436,7 +436,6 @@ bool AstDumpToNode::enterForallStmt(ForallStmt* node)
   writeField("inductionVariables:  ", node->inductionVariables());
   writeField("iteratedExpressions: ", node->iteratedExpressions());
   writeField("intentVariables:     ", node->intentVariables());
-  writeField("forallIntents:       ", node->forallIntents());
 
   newline();
   writeField("loopBody: ", 10, node->loopBody());

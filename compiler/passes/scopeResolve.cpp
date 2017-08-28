@@ -435,6 +435,9 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
         if (strcmp(sym->name, "chpl__tuple_blank"))
           bodyScope->extend(sym);
       }
+      for_shadow_var_defs(svd, temp, forallStmt) {
+        bodyScope->extend(svd->sym);
+      }
 
       scopeResolve(fBody->body, bodyScope);
 
@@ -885,6 +888,12 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
       errorDotInsideWithClause(origUSE, "forall loop");
       return;
     }
+
+  // A 'with' clause in a ForallStmt.
+  if (isOuterVarOfShadowVar(exprInAst)) {
+    errorDotInsideWithClause(origUSE, "forall loop");
+    return;
+  }
 
   // A 'with' clause for a task construct.
   if (Expr* parent1 = exprInAst->parentExpr) {

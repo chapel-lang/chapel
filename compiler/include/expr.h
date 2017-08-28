@@ -466,6 +466,10 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
+static inline Symbol* outerVarSym(ShadowVarSymbol* sv) {
+  return sv->outerVarSE()->symbol();
+}
+
 // E.g. NamedExpr::actual, DefExpr::init.
 static inline void verifyNotOnList(Expr* expr) {
   if (expr && expr->list)

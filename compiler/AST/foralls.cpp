@@ -32,7 +32,7 @@
 #include "resolution.h"
 #include "iterator.h"
 
-const char* tfiTagDescrString(TFITag tfiTag) {
+const char* tfiTagDescrString(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:   return "default";
     case TFI_CONST:     return "const";
@@ -186,7 +186,7 @@ void ForallIntents::acceptFI(AstVisitor* visitor) {
 // These functions report a user error for an unexpected intent.
 //
 
-static TFITag it2tfi(Expr* ref, IntentTag intent) {
+static ForallIntentTag it2tfi(Expr* ref, IntentTag intent) {
   switch (intent) {
   case INTENT_IN:        return TFI_IN;
   case INTENT_CONST:     return TFI_CONST;
@@ -208,10 +208,17 @@ static TFITag it2tfi(Expr* ref, IntentTag intent) {
 }
 
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
-  TFITag tfi = ri ? TFI_REDUCE : it2tfi(var, intent);
+  ForallIntentTag tfi = ri ? TFI_REDUCE : it2tfi(var, intent);
   fi->fiVars.push_back(var);
   fi->fIntents.push_back(tfi);
   fi->riSpecs.push_back(ri);
+}
+
+void addForallIntent(CallExpr* call, Expr* var, IntentTag intent, Expr* ri) {
+  ForallIntentTag tfi = ri ? TFI_REDUCE : it2tfi(var, intent);
+  const char* name = toUnresolvedSymExpr(var)->unresolved;
+  ShadowVarSymbol* ss = new ShadowVarSymbol(tfi, name, ri);
+  call->insertAtTail(new DefExpr(ss));
 }
 
 //
@@ -741,8 +748,6 @@ void lowerForallStmts() {
     if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
       USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
 
-    // Forall intents aka fs->forallIntents() should have already been handled.
-
     CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
     INT_ASSERT(parIterCall && !parIterCall->next); // expected
     SET_LINENO(parIterCall);
@@ -780,21 +785,18 @@ void lowerForallStmts() {
     currentAstLoc = fs->loopBody()->astloc; // can't do SET_LINENO
     ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
-    // not needed:
-    //destructureIndices(PARBody, indices, new SymExpr(parIdxCopy), false);
-
     PARBlock->insertAtTail(PARBody);
-
     resolveBlockStmt(PARBlock);
-    PARBlock->flattenAndRemove();
+    PARBlock->flattenAndRemove(); // into where 'fs' used to be
 
     BlockStmt* userBody = userLoop(fs);
-    AList& indvars = fs->inductionVariables();
-    while (Expr* def = indvars.tail)
+    while (Expr* def = fs->inductionVariables().tail)
       userBody->insertAtHead(def->remove());
 
-    userBody->flattenAndRemove(); // into fs->loopBody()
+    while (Expr* ivdef = fs->intentVariables().tail)
+      fs->loopBody()->insertAtHead(ivdef->remove());
 
+    userBody->flattenAndRemove();          // into fs->loopBody()
     PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
     fs->loopBody()->flattenAndRemove();    // into PARBody
   }
