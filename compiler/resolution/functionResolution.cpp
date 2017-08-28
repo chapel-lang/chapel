@@ -1106,32 +1106,6 @@ static bool fits_in_uint(int width, Immediate* imm) {
 }
 
 
-void ensureEnumTypeResolved(EnumType* etype) {
-  INT_ASSERT( etype != NULL );
-
-  if( ! etype->integerType ) {
-    // Make sure to resolve all enum types.
-    for_enums(def, etype) {
-      if (def->init) {
-        Expr* enumTypeExpr =
-        resolveTypeExpr(def->init);
-
-        Type* enumtype = enumTypeExpr->typeInfo();
-        if (enumtype == dtUnknown)
-          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
-
-        // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
-        // enumtype->symbol->name);
-      }
-    }
-    // Now try computing the enum size...
-    etype->sizeAndNormalize();
-  }
-
-  INT_ASSERT(etype->integerType != NULL);
-}
-
-
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
 static bool
@@ -1875,46 +1849,6 @@ static void reissueCompilerWarning(const char* str, int offset) {
   }
   USR_WARN(from, "%s", str);
 }
-
-// Resolves a param or type expression
-static Expr* resolveTypeExpr(Expr* expr) {
-  Expr* result = NULL;
-
-  for_exprs_postorder(e, expr) {
-    if (CallExpr* call = toCallExpr(e)) {
-      result = preFold(call);
-    } else {
-      result = e;
-    }
-
-    if (CallExpr* call = toCallExpr(result)) {
-      if (call->parentSymbol) {
-        callStack.add(call);
-
-        resolveCall(call);
-
-        if (call->parentSymbol != NULL) {
-          if (FnSymbol* fn = call->resolvedFunction()) {
-            resolveFormals(fn);
-
-            if (fn->retTag  == RET_PARAM  ||
-                fn->retTag  == RET_TYPE   ||
-                fn->retType == dtUnknown) {
-              resolveFns(fn);
-            }
-          }
-        }
-
-        callStack.pop();
-      }
-    }
-
-    result = postFold(result);
-  }
-
-  return result;
-}
-
 
 //
 // The following several functions support const-ness checking.
@@ -5756,29 +5690,6 @@ static CallExpr* toPrimToLeaderCall(Expr* expr) {
   return NULL;
 }
 
-// Recursively resolve typedefs
-Type* resolveTypeAlias(SymExpr* se)
-{
-  if (! se)
-    return NULL;
-
-  // Quick exit if the type is already known.
-  Type* result = se->getValType();
-  if (result != dtUnknown)
-    return result;
-
-  VarSymbol* var = toVarSymbol(se->symbol());
-  if (! var)
-    return NULL;
-
-  DefExpr* def = var->defPoint;
-  SET_LINENO(def);
-  Expr* typeExpr = resolveTypeExpr(def->init);
-  SymExpr* tse = toSymExpr(typeExpr);
-
-  return resolveTypeAlias(tse);
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -5829,6 +5740,98 @@ bool requiresImplicitDestroy(CallExpr* call) {
         strcmp(fn->name, "=")                                 !=     0 &&
         strcmp(fn->name, "_defaultOf")                        !=     0) {
       retval = true;
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static Expr* resolveTypeOrParamExpr(Expr* expr);
+
+void ensureEnumTypeResolved(EnumType* etype) {
+  if (etype->integerType == NULL) {
+    // Make sure to resolve all enum types.
+    for_enums(def, etype) {
+      if (def->init != NULL) {
+        Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
+
+        if (enumTypeExpr->typeInfo() == dtUnknown) {
+          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
+        }
+      }
+    }
+
+    // Now try computing the enum size...
+    etype->sizeAndNormalize();
+  }
+
+  INT_ASSERT(etype->integerType != NULL);
+}
+
+// Recursively resolve typedefs
+Type* resolveTypeAlias(SymExpr* se) {
+  Type* retval = NULL;
+
+  if (se != NULL) {
+    Type* valType = se->getValType();
+
+    if (valType != dtUnknown) {
+      retval = valType;
+
+    } else if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      SET_LINENO(var->defPoint);
+
+      DefExpr* def      = var->defPoint;
+      Expr*    typeExpr = resolveTypeOrParamExpr(def->init);
+      SymExpr* tse      = toSymExpr(typeExpr);
+
+      retval = resolveTypeAlias(tse);
+    }
+  }
+
+  return retval;
+}
+
+static Expr* resolveTypeOrParamExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  for_exprs_postorder(e, expr) {
+    if (CallExpr* call = toCallExpr(e)) {
+      Expr* result = preFold(call);
+
+      if (CallExpr* callFolded = toCallExpr(result)) {
+        if (callFolded->parentSymbol != NULL) {
+          callStack.add(callFolded);
+
+          resolveCall(callFolded);
+
+          if (callFolded->parentSymbol != NULL) {
+            if (FnSymbol* fn = callFolded->resolvedFunction()) {
+              resolveFormals(fn);
+
+              if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
+                resolveFns(fn);
+
+              } else if (fn->retType == dtUnknown) {
+                resolveFns(fn);
+              }
+            }
+          }
+
+          callStack.pop();
+        }
+      }
+
+      retval = postFold(result);
+
+    } else {
+      retval = postFold(e);
     }
   }
 
