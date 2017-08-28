@@ -64,6 +64,7 @@ proc genLock(lock: Toml, lf) {
 }
 
 
+/* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string) {
   const masonHome = MASON_HOME;
   const registryHome = masonHome + '/.mason/registry';

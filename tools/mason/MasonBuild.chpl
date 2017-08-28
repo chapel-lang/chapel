@@ -69,6 +69,10 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     var sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
 
+    // Get compile flags
+    var cmpFlags = getCompopts(lockFile);
+    if cmpFlags != ' ' then compopts.push_back(cmpFlags);
+
     // Compile Program
     if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
