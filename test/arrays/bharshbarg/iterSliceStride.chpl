@@ -5,7 +5,7 @@ proc main() {
 
   writeln(A);
 
-  var RD = D by -1;
+  var RD = D by 1;
   ref B = A[RD];
 
   for b in B do writeln(b);
