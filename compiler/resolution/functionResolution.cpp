@@ -88,20 +88,34 @@ public:
 //#
 //# Global Variables
 //#
-bool            resolved         = false;
-int             explainCallLine  = 0;
-bool            tryFailure       = false;
-bool            beforeLoweringForallStmts = true;
+char                             arrayUnrefName[] = "array_unref_ret_tmp";
 
-char            arrayUnrefName[] = "array_unref_ret_tmp";
+bool                             resolved                  = false;
+bool                             tryFailure                = false;
+bool                             beforeLoweringForallStmts = true;
 
-SymbolMap       paramMap;
+int                              explainCallLine           = 0;
 
-Vec<CallExpr*>  callStack;
-Vec<CallExpr*>  inits;
-Vec<CondStmt*>  tryStack;
+SymbolMap                        paramMap;
 
-Vec<BlockStmt*> standardModuleSet;
+Vec<CallExpr*>                   callStack;
+Vec<CallExpr*>                   inits;
+
+Vec<CondStmt*>                   tryStack;
+
+Vec<BlockStmt*>                  standardModuleSet;
+
+std::map<CallExpr*, CallExpr*>   eflopiMap;
+
+std::map<Type*,     FnSymbol*>   autoCopyMap;
+std::map<Type*,     Serializers> serializeMap;
+
+Map<Type*,          FnSymbol*>   autoDestroyMap;
+Map<Type*,          FnSymbol*>   unaliasMap;
+Map<Type*,          FnSymbol*>   valueToRuntimeTypeMap;
+Map<FnSymbol*,      FnSymbol*>   iteratorLeaderMap;
+Map<FnSymbol*,      FnSymbol*>   iteratorFollowerMap;
+
 
 
 //#
@@ -113,7 +127,7 @@ static Vec<FnSymbol*> resolvedFormals;
 
 static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
-Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
+
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
 // map of compiler warnings that may need to be reissued for repeated
@@ -126,15 +140,7 @@ static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 static Map<FnSymbol*,const char*> innerCompilerWarningMap;
 static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
-std::map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
-Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
-Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
 
-std::map<Type*, Serializers> serializeMap;
-
-Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
-Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
-std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
 //#
 //# Static Function Declarations
