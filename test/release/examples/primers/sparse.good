@@ -117,3 +117,5 @@ Printing spsArr after resetting and assigning the antiDiag iterator:
 0.0 8.2 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
 9.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
 
+spsDom is bound by (9, 9)
+spsArr is bound by (9, 9)
