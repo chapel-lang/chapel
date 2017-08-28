@@ -1294,6 +1294,8 @@ module ChapelArray {
 
     /* Add index ``i`` to this domain. This method is also available
        as the ``+=`` operator.
+
+       The domain must be irregular.
      */
     proc add(i) {
       return _value.dsiAdd(i);
