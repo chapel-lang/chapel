@@ -3974,44 +3974,62 @@ static void resolveTupleAndExpand(CallExpr* call) {
   call->convertToNoop();
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveTupleExpand(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  Type* type = sym->symbol()->getValType();
+  SymExpr*  sym    = toSymExpr(call->get(1));
+  Type*     type   = sym->symbol()->getValType();
 
-  if (!type->symbol->hasFlag(FLAG_TUPLE))
+  CallExpr* parent = toCallExpr(call->parentExpr);
+  CallExpr* noop   = new CallExpr(PRIM_NOOP);
+  Expr*     stmt   = call->getStmtExpr();
+
+  int       size   = 0;
+
+  if (type->symbol->hasFlag(FLAG_TUPLE) == false) {
     USR_FATAL(call, "invalid tuple expand primitive");
+  }
 
-  int size = 0;
-  for (int i = 0; i < type->substitutions.n; i++) {
-    if (type->substitutions.v[i].key) {
-      if (!strcmp("size", type->substitutions.v[i].key->name)) {
-        size = toVarSymbol(type->substitutions.v[i].value)->immediate->int_value();
-        break;
-      }
+  for (int i = 0; i < type->substitutions.n && size == 0; i++) {
+    SymbolMapElem& elem = type->substitutions.v[i];
+
+    if (elem.key != NULL && strcmp("size", elem.key->name) == 0) {
+      size = toVarSymbol(elem.value)->immediate->int_value();
     }
   }
-  if (size == 0)
+
+  if (size == 0) {
     INT_FATAL(call, "Invalid tuple expand primitive");
-  CallExpr* parent = toCallExpr(call->parentExpr);
-  CallExpr* noop = new CallExpr(PRIM_NOOP);
-  call->getStmtExpr()->insertBefore(noop);
+  }
+
+  stmt->insertBefore(noop);
+
   for (int i = 1; i <= size; i++) {
     VarSymbol* tmp = newTemp("_tuple_expand_tmp_");
+    CallExpr*  e   = NULL;
+
     tmp->addFlag(FLAG_MAYBE_TYPE);
-    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+
+    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);
-    DefExpr* def = new DefExpr(tmp);
-    call->getStmtExpr()->insertBefore(def);
-    CallExpr* e = NULL;
-    if (!call->parentSymbol->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)) {
+    }
+
+    call->insertBefore(new SymExpr(tmp));
+
+    if (call->parentSymbol->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) == false) {
       e = new CallExpr(sym->copy(), new_IntSymbol(i));
     } else {
-      e = new CallExpr(PRIM_GET_MEMBER_VALUE, sym->copy(),
+      e = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                       sym->copy(),
                        new_CStringSymbol(astr("x", istr(i))));
     }
-    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, e);
-    call->getStmtExpr()->insertBefore(move);
-    call->insertBefore(new SymExpr(tmp));
+
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, e));
   }
 
   call->remove();
@@ -4021,8 +4039,10 @@ static void resolveTupleExpand(CallExpr* call) {
   call->convertToNoop();
 
   // increase tuple rank
-  if (parent && parent->isNamed("_type_construct__tuple")) {
-    parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
+  if (parent != NULL && parent->isNamed("_type_construct__tuple") == true) {
+    Symbol* rank = new_IntSymbol(parent->numActuals() - 1);
+
+    parent->get(1)->replace(new SymExpr(rank));
   }
 }
 
