@@ -1,23 +1,27 @@
 // Sparse Domains and Arrays
 
 /*
-   This primer shows off some of Chapel's support for sparse domains
-   and arrays.
+   This primer demonstrates Chapel's sparse domains and arrays.
 
 */
 
 
+/*
+  Creating a sparse domain
+  ------------------------
+ */
+
 //
-// First, we declare a configuration variable, ``n``, which defines the
-// problem size for this example.  It's given a default value of ``9``,
-// which can be over-ridden on the executable's command line using:
-// ``--n=<value>``.
+// First, we declare a :ref:`configuration variable <ug-configs>`, ``n``, with
+// a default value of ``9`` that can be overridden on the executable's command
+// line using: ``--n=<value>``.
 //
 config var n = 9;
 
 
 //
-// Sparse domains in Chapel are defined in terms of a bounding domain.
+// Sparse domains in Chapel are defined in terms of a *bounding domain*, also
+// commonly referred to as a *parent domain*.
 // The role of this bounding domain is to define the range of legal
 // indices for the sparse domain.  Here we declare a dense 2D
 // rectangular bounding domain of ``n x n`` indices which will serve as the
@@ -31,9 +35,10 @@ const dnsDom = {1..n, 1..n};
 // Here we declare our sparse domain.  The sparse keyword indicates
 // that it will be used to only represent a subset of its bounding
 // domain's indices, and that arrays declared using it will store a
-// *zero value* (described further below) for all indices in the set
-// ``dnsDom - spsDom``.  Because we don't initialize the sparse domain, it
-// is initially an empty set of indices.
+// *zero value* referred to as the
+// :ref:`Implicitly Replicated Value <primers-sparse-IRV>, for all indices in
+// the set ``dnsDom - spsDom``.  Because we don't initialize the sparse domain,
+// it is initially an empty set of indices.
 //
 var spsDom: sparse subdomain(dnsDom);
 
@@ -43,6 +48,11 @@ var spsDom: sparse subdomain(dnsDom);
 //
 var spsArr: [spsDom] real;
 
+/*
+ .. _primers-sparse-IO:
+ Sparse I/O
+ ----------
+ */
 
 //
 // I/O on sparse domains and arrays only prints out *non-vero values*;
@@ -55,12 +65,17 @@ writeln();
 
 //
 // We can also do I/O more explicitly by iterating over the dense
-// domain and indexing into the sparse array.  Note that it's legal to
-// index into a sparse array in either its *zero* or *nonzero*
-// positions; however it's only legal to assign to *nonzero*
-// positions, since those are the only ones that are explicitly
-// stored.
+// domain and indexing into the sparse array.
 //
+
+/*
+ .. note::
+
+           It's legal to index into a sparse array in either its *zero*
+           or *nonzero* positions; however it's only legal to assign to
+           *nonzero* positions, since those are the only ones that are
+           explicitly stored.
+ */
 proc writeSpsArr() {
   for (i,j) in dnsDom {
     write(spsArr(i,j), " ");
@@ -76,6 +91,12 @@ proc writeSpsArr() {
 writeln("Printing spsArr with a dense representation:");
 writeSpsArr();
 
+/*
+  .. _primers-sparse-IRV:
+
+  Implicitly Replicated Value
+  ---------------------------
+ */
 
 //
 // Chapel's sparse arrays store the element type's default value for
@@ -94,7 +115,7 @@ writeSpsArr();
 
 
 //
-// OK, now let's actually add some sparse indices to the ``DaSps`` domain
+// OK, now let's actually add some sparse indices to the ``spsDom`` domain
 // and see what happens:
 //
 spsDom += (1,n);
@@ -136,14 +157,21 @@ writeln("Printing spsArr after assigning the corner elements:");
 writeSpsArr();
 
 
+/*
+ .. _primers-sparse-properties:
+ Properties of sparse arrays and domains
+ ---------------------------------------
+ */
+
 //
 // Values can only be assigned to array positions that are members in
-// the sparse domain index set.  The boolean method Domain.member(x)
+// the sparse domain index set.  The boolean method ``Domain.member(x)``
 // can be used to check whether a certain index ``(x)`` is a member of the
 // domain's index set. Note that, in multi-dimensional domains, the member
 // method can accept the index as a tuple like ``spsDom.member((i,j))``
-// or as a parameter list like ``spsDom.member(i,j)``. Below, we print ``*`` for
-// the positions that are members in the sparse domain, and ``.`` otherwise.
+// or as a parameter list like ``spsDom.member(i,j)``. Below, we print ``*``
+// for the positions that are members in the sparse domain, and ``.``
+// otherwise.
 //
 writeln("Positions that are members in the sparse domain are marked by a '*':");
 
@@ -158,8 +186,8 @@ for (i,j) in dnsDom {
 writeln();
 
 //
-// Like other domains and arrays, sparse Chapel domains and arrays can
-// be iterated over...
+// Like other domains and arrays, sparse Chapel domains and arrays have
+// serial and parallel ``.these()`` methods so that they can be iterated over:
 //
 
 writeln("Iterating over spsDom and indexing into spsArr:");
@@ -237,6 +265,21 @@ spsDom = antiDiag(n);
 writeln("Printing spsArr after resetting and assigning the antiDiag iterator:");
 writeSpsArr();
 
+
+//
+// Checking the shape of a sparse array or domain will give the shape of the
+// bounding domain (parent domain):
+//
+
+writeln('spsDom is bound by ', spsDom.shape);
+writeln('spsArr is bound by ', spsArr.shape);
+
+
+/*
+ .. _primers-sparse-performance:
+ Performance
+ -----------
+ */
 
 //
 // We'll close with a brief note on performance: Chapel's default
