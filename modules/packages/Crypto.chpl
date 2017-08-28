@@ -16,25 +16,360 @@
 */
 
 module Crypto {
-  require "openssl/evp.h", "-lcrypto";
-  require "openssl/aes.h", "openssl/rand.h";
+  require "openssl/evp.h", "openssl/pem.h",
+          "openssl/bn.h", "openssl/bio.h",
+          "openssl/aes.h", "openssl/rand.h", "-lcrypto";
+  //require "CryptoHandlers/rsa_complex_bypass_handler.h";
 
-  require "CryptoSupport/hashSupport.chpl";
-  require "CryptoSupport/aesSupport.chpl";
-  require "CryptoSupport/kdfSupport.chpl";
-  require "CryptoSupport/CryptoUtils.chpl";
-  require "CryptoSupport/cryptoRandomSupport.chpl";
-  require "CryptoSupport/rsaSupport.chpl";
+  extern type EVP_PKEY_CTX;
+  extern type EVP_PKEY;
+  extern var EVP_PKEY_RSA: c_int;
 
-  use kdfSupport;
-  use aesSupport;
-  use hashSupport;
-  use CryptoUtils;
-  use cryptoRandomSupport;
-  use symmetricPrimitives;
-  use asymmetricPrimitives;
-  use rsaSupport;
+  extern type EVP_PKEY_CTX_PTR = c_ptr(EVP_PKEY_CTX);
+  extern type EVP_PKEY_PTR = c_ptr(EVP_PKEY);
 
+  extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
+  extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
+  extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
+  extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;
+  extern proc EVP_PKEY_CTX_set_rsa_keygen_bits(ctx: EVP_PKEY_CTX_PTR, mbits: c_int): c_int;
+  extern proc EVP_PKEY_keygen(ctx: EVP_PKEY_CTX_PTR, ref ppkey: EVP_PKEY_PTR): c_int;
+  extern proc EVP_PKEY_CTX_free(ctx: EVP_PKEY_CTX_PTR);
+
+  extern proc EVP_SealInit(ref ctx: EVP_CIPHER_CTX, const types: EVP_CIPHER_PTR,
+                           ek: c_ptr(c_ptr(c_uchar)), ekl: c_ptr(c_int),
+                           iv: c_ptr(c_uchar), pubk: c_ptr(EVP_PKEY_PTR), npubk: c_int): c_int;
+  extern proc EVP_SealUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
+                             outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
+  extern proc EVP_SealFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
+
+  extern proc EVP_OpenInit(ref ctx: EVP_CIPHER_CTX, types: EVP_CIPHER_PTR,
+                           ek: c_ptr(c_uchar), ekl: c_int, iv: c_ptr(c_uchar), priv: EVP_PKEY_PTR): c_int;
+  extern proc EVP_OpenUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
+                             outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
+  extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
+
+  extern type EVP_MD;
+  extern type EVP_MD_CTX;
+  extern type ENGINE;
+
+  extern type EVP_MD_PTR = c_ptr(EVP_MD);
+  extern type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
+  extern type ENGINE_PTR = c_ptr(ENGINE);
+
+  extern proc OpenSSL_add_all_digests();
+  extern proc EVP_get_digestbyname(name: c_string): EVP_MD_PTR;
+  extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): c_int;
+  extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, const types: EVP_MD_PTR, impl: ENGINE_PTR): c_int;
+  extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
+  extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
+
+  extern type EVP_CIPHER;
+  extern type EVP_CIPHER_CTX;
+
+  extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
+  extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
+
+  extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
+
+  extern proc EVP_sha256(): EVP_MD_PTR;
+
+  extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
+  extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): c_int;
+  extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
+                                const cipher: EVP_CIPHER_PTR,
+                                impl: ENGINE_PTR,
+                                const key: c_ptr(c_uchar),
+                                const iv: c_ptr(c_uchar)): c_int;
+  extern proc EVP_EncryptUpdate(ref ctx: EVP_CIPHER_CTX,
+                                outm: c_ptr(c_uchar),
+                                outl: c_ptr(c_int),
+                                const ins: c_ptr(c_uchar),
+                                inl: c_int): c_int;
+  extern proc EVP_EncryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
+                                  outm: c_ptr(c_uchar),
+                                  outl: c_ptr(c_int)): c_int;
+  extern proc EVP_DecryptInit_ex(ref ctx: EVP_CIPHER_CTX,
+                                const cipher: EVP_CIPHER_PTR,
+                                impl: ENGINE_PTR,
+                                const key: c_ptr(c_uchar),
+                                const iv: c_ptr(c_uchar)): c_int;
+  extern proc EVP_DecryptUpdate(ref ctx: EVP_CIPHER_CTX,
+                                outm: c_ptr(c_uchar),
+                                outl: c_ptr(c_int),
+                                const ins: c_ptr(c_uchar),
+                                inl: c_int): c_int;
+  extern proc EVP_DecryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
+                                  outm: c_ptr(c_uchar),
+                                  outl: c_ptr(c_int)): c_int;
+
+  extern proc EVP_aes_128_cbc(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_ecb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_cfb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_ofb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_cbc(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_ecb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_cfb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_ofb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_cbc(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_ecb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_cfb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_ofb(): EVP_CIPHER_PTR;
+
+  extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
+                                passlen: c_int,
+                                const salt: c_ptr(c_uchar),
+                                saltlen: c_int,
+                                iterCount: c_int,
+                                const digest: EVP_MD_PTR,
+                                keylen: c_int,
+                                outx: c_ptr(c_uchar)): c_int;
+  extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
+
+
+  pragma "no doc"
+  proc generateKeys(bits: int) {
+   var localKeyPair: EVP_PKEY_PTR;
+   var keyCtx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA: c_int,
+                                    c_nil: ENGINE_PTR);
+   EVP_PKEY_keygen_init(keyCtx);
+   EVP_PKEY_CTX_set_rsa_keygen_bits(keyCtx, bits: c_int);
+   EVP_PKEY_keygen(keyCtx, localKeyPair);
+
+   EVP_PKEY_CTX_free(keyCtx);
+   return localKeyPair;
+  }
+
+  class CryptoBuffer {
+    var _len: int = 0;
+    var buffDomain: domain(1);
+    var buff: [buffDomain] uint(8);
+
+    /* The `CryptoBuffer` class constructor that initializes the buffer
+       when a `string` is supplied to it.
+
+       :arg s: `string` input for buffer conversion.
+       :type s: `string`
+
+       :return: An object of class `CryptoBuffer`.
+       :rtype: `CryptoBuffer`
+    */
+    proc CryptoBuffer(s: string) {
+      this._len = s.length;
+      this.buffDomain = {1..this._len};
+      for i in this.buffDomain do {
+        this.buff[i] = ascii(s[i]);
+      }
+    }
+
+    /* The `CryptoBuffer` class constructor that initializes the buffer
+       when a `[] uint(8)` is supplied to it.
+
+       :arg s: `[] uint(8)` input for buffer conversion.
+       :type s: `[] uint(8)]`
+
+       :return: An object of class `CryptoBuffer`.
+       :rtype: `CryptoBuffer`
+    */
+    proc CryptoBuffer(s: [] uint(8)) {
+      this._len = s.size;
+      this.buffDomain = s.domain;
+      for i in this.buffDomain do {
+        this.buff[i] = s[i];
+      }
+    }
+
+    /* Returns the entire internal buffer with each byte in ASCII.
+
+       :return: the internal buffer representation.
+       :rtype: `[] uint(8)`
+    */
+    proc getBuffData() {
+      return this.buff;
+    }
+
+    /* Returns the pointer to the entire internal buffer with
+       each byte in ASCII.
+
+       :return: pointer to the internal buffer representation.
+       :rtype: `c_ptr([] uint(8))`
+    */
+    proc getBuffPtr() {
+      return c_ptrTo(this.buff);
+    }
+
+    /* Returns the length of the entire internal buffer.
+
+       :return: length of the internal buffer represenation.
+       :rtype: `int`
+    */
+    proc getBuffSize(): int {
+      return this._len;
+    }
+
+    /* Returns the hexadecimal array representation of the entire internal
+        buffer.
+
+       :return: hex array representation of the internal buffer.
+       :rtype: `[] string`
+    */
+    proc toHex() {
+      var buffHex: [this.buffDomain] string;
+      for i in this.buffDomain do {
+        buffHex[i] = "%xu".format(this.buff[i]);
+      }
+      return buffHex;
+    }
+
+    /* Returns the hexadecimal string representation of the entire internal
+        buffer.
+
+       :return: hex string representation of the internal buffer.
+       :rtype: `string`
+    */
+    proc toHexString() {
+      var buffHexString: string;
+      for i in this.buffDomain do {
+        buffHexString += "%xu".format(this.buff[i]);
+      }
+      return buffHexString;
+    }
+  }
+
+  class RSAKey {
+    var keyLen: int;
+    var keyObj: EVP_PKEY_PTR;
+
+    /* The `RSAKey` class constructor that initializes the `EVP_PKEY` object
+        of OpenSSL and basically, initializes a set of public and private keys.
+
+       It checks for valid RSA key lengths and generates a public key and private
+       key pair accordingly.
+
+       :arg keyLen: RSA Key length in bits.
+       :type keyLen: `int`
+
+       :return: An object of class `RSAKey` representing the key pair.
+       :rtype: `RSAKey`
+    */
+    proc RSAKey(keyLen: int) {
+      if (keyLen != 1024 && keyLen != 2048 && keyLen != 4096) {
+        halt("RSAKey: Invalid key length.");
+      }
+      this.keyLen = keyLen;
+      this.keyObj = generateKeys(this.keyLen);
+    }
+
+    pragma "no doc"
+    proc getKeyPair() {
+      return this.keyObj;
+    }
+
+    // TODO: Key access functions to be added
+  }
+
+  class Envelope {
+    var keyDomain: domain(1);
+    var keys: [keyDomain] CryptoBuffer;
+    var iv: CryptoBuffer;
+    var value: CryptoBuffer;
+
+    /* The `Envelope` class constructor that encapsulates the IV, AES encrypted
+       ciphertext buffer and an array of encrypted key buffers.
+
+       :arg iv: Initialization Vector.
+       :type iv: `CryptoBuffer`
+
+       :arg encSymmKey: Array of encrypted symmetric (AES) keys.
+       :type encSymmKey: `[] CryptoBuffer`
+
+       :arg encSymmValue: AES-encrypted ciphertext buffer.
+       :type encSymmValue: `CryptoBuffer`
+
+       :return: An object of class `Envelope`.
+       :rtype: `Envelope`
+    */
+    proc Envelope(iv: CryptoBuffer, encSymmKey: [] CryptoBuffer, encSymmValue: CryptoBuffer) {
+      this.keyDomain = encSymmKey.domain;
+      for i in this.keyDomain do {
+        this.keys[i] = encSymmKey[i];
+      }
+      this.iv = iv;
+      this.value = encSymmValue;
+    }
+
+    /* This function returns the encrypted version of the plaintext
+       supplied by the user.
+
+       :return: A 'CryptoBuffer' representing the ciphertext.
+       :rtype: `CryptoBuffer`
+    */
+    proc getEncMessage() {
+      return this.value;
+    }
+
+    /* This function returns the IV generated by the `encrypt` routine and
+        encapsulated in the `Envelope`. This is used for both encryption and
+        decryption.
+
+       :return: Initialization Vector.
+       :rtype: `CryptoBuffer`
+    */
+    proc getIV() {
+      return this.iv;
+    }
+
+    /* This function returns a particular symmetric key buffer based
+       on the index supplied as the argument.
+
+       .. note::
+
+         The supplied index should be in the domain of the `this.keys` array.
+
+       :arg i: An index of the symmetric key buffer array.
+       :type i: `int`
+
+       :return: A specific key buffer based on the index.
+       :rtype: `CryptoBuffer`
+    */
+    proc getEncKeyByIndex(i: int) {
+      return this.keys[i];
+    }
+
+    /* This function returns the entire array of symmetric key buffers.
+
+       :return: Entire array of key buffers.
+       :rtype: `[] CryptoBuffer`
+    */
+    proc getEncKeys() {
+      return this.keys;
+    }
+  }
+
+  pragma "no doc"
+  proc digestPrimitives(digestName: string, hashLen: int, inputBuffer: CryptoBuffer) {
+
+    /* Loads the digest primitives into the table  */
+    OpenSSL_add_all_digests();
+
+    /* Create a context variable */
+    var ctx: EVP_MD_CTX;
+
+    /* Allocate space for hashed output */
+    var hash: [0..hashLen-1] uint(8); ;
+    var retHashLen: c_uint = 0;
+
+    /* Get pointer to the desired digest structure */
+    const md = EVP_get_digestbyname(digestName.c_str());
+
+    /* OpenSSL primitive calls */
+    EVP_MD_CTX_init(ctx);
+    EVP_DigestInit_ex(ctx, md, c_nil: ENGINE_PTR);
+    EVP_DigestUpdate(ctx, c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: size_t);
+    EVP_DigestFinal_ex(ctx, c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
+
+    return hash;
+  }
 
   class Hash {
     var hashLen: int;
@@ -90,16 +425,88 @@ module Crypto {
        :rtype: `CryptoBuffer`
     */
     proc getDigest(inputBuffer: CryptoBuffer): CryptoBuffer {
-      this.hashSpace = hashSupport.digestPrimitives(this.digestName, this.hashLen, inputBuffer);
+      this.hashSpace = digestPrimitives(this.digestName, this.hashLen, inputBuffer);
       var hashBuffer = new CryptoBuffer(this.hashSpace);
       return hashBuffer;
     }
   }
 
+  pragma "no doc"
+  proc aesEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, const cipher: EVP_CIPHER_PTR) {
 
+    /* Initialize the context */
+    var ctx: EVP_CIPHER_CTX;
+    EVP_CIPHER_CTX_init(ctx);
+
+    /* Get buffer contents */
+    var keyData = key.getBuffData();
+    var ivData = IV.getBuffData();
+    var plaintextData = plaintext.getBuffData();
+    var plaintextLen = plaintext.getBuffSize();
+
+    /* Allocating space for obtaining the ciphertext */
+    var ciphertextLen = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
+    var cipherDomain: domain(1) = {0..ciphertextLen};
+    var updatedCipherLen: c_int = 0;
+    var ciphertext: [cipherDomain] uint(8);
+
+    EVP_EncryptInit_ex(ctx,
+                       cipher,
+                       c_nil: ENGINE_PTR,
+                       c_ptrTo(keyData): c_ptr(c_uchar),
+                       c_ptrTo(ivData): c_ptr(c_uchar));
+    EVP_EncryptUpdate(ctx,
+                      c_ptrTo(ciphertext): c_ptr(c_uchar),
+                      c_ptrTo(ciphertextLen): c_ptr(c_int),
+                      c_ptrTo(plaintextData): c_ptr(c_uchar),
+                      plaintextLen: c_int);
+    EVP_EncryptFinal_ex(ctx,
+                        c_ptrTo(ciphertext): c_ptr(c_uchar),
+                        c_ptrTo(updatedCipherLen): c_ptr(c_int));
+
+    cipherDomain = {0..((ciphertextLen + updatedCipherLen) - 1)};
+    return ciphertext;
+  }
+
+  pragma "no doc"
+  proc aesDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: EVP_CIPHER_PTR) {
+
+    /* Initialize the context */
+    var ctx: EVP_CIPHER_CTX;
+    EVP_CIPHER_CTX_init(ctx);
+
+    /* Get buffer contents */
+    var keyData = key.getBuffData();
+    var ivData = IV.getBuffData();
+    var ciphertextData = ciphertext.getBuffData();
+    var ciphertextLen = ciphertext.getBuffSize();
+
+    /* Allocating space for obtaining the plaintext */
+    var plaintextLen = ciphertextLen;
+    var updatedPlainLen: c_int = 0;
+    var plainDomain: domain(1) = {0..plaintextLen};
+    var plaintext: [plainDomain] uint(8);
+
+    EVP_DecryptInit_ex(ctx,
+                       cipher,
+                       c_nil: ENGINE_PTR,
+                       c_ptrTo(keyData): c_ptr(c_uchar),
+                       c_ptrTo(ivData): c_ptr(c_uchar));
+    EVP_DecryptUpdate(ctx,
+                      c_ptrTo(plaintext): c_ptr(c_uchar),
+                      c_ptrTo(plaintextLen): c_ptr(c_int),
+                      c_ptrTo(ciphertextData): c_ptr(c_uchar),
+                      ciphertextLen: c_int);
+    EVP_DecryptFinal_ex(ctx,
+                        c_ptrTo(plaintext): c_ptr(c_uchar),
+                        c_ptrTo(updatedPlainLen): c_ptr(c_int));
+
+   plainDomain = {0..((plaintextLen + updatedPlainLen) - 1)};
+   return plaintext;
+  }
 
   class AES {
-    const cipher: symmetricPrimitives.EVP_CIPHER_PTR;
+    const cipher: EVP_CIPHER_PTR;
     var bitLen: int;
 
     /* The `AES` class constructor that initializes the AES encryption
@@ -117,11 +524,11 @@ module Crypto {
     */
     proc AES(bits: int, mode: string) {
       if (bits == 128 && mode == "cbc") {
-        this.cipher = symmetricPrimitives.EVP_aes_128_cbc();
+        this.cipher = EVP_aes_128_cbc();
       } else if (bits == 192 && mode == "cbc") {
-        this.cipher = symmetricPrimitives.EVP_aes_192_cbc();
+        this.cipher = EVP_aes_192_cbc();
       } else if (bits == 256 && mode == "cbc") {
-        this.cipher = symmetricPrimitives.EVP_aes_256_cbc();
+        this.cipher = EVP_aes_256_cbc();
       } else {
         halt("The desired variant of AES does not exist.");
       }
@@ -160,7 +567,7 @@ module Crypto {
        :rtype: `CryptoBuffer`
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
-      var encryptedPlaintext = aesSupport.aesEncrypt(plaintext, key, IV, this.cipher);
+      var encryptedPlaintext = aesEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
       return encryptedPlaintextBuff;
     }
@@ -185,10 +592,21 @@ module Crypto {
        :rtype: `CryptoBuffer`
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
-      var decryptedCiphertext = aesSupport.aesDecrypt(ciphertext, key, IV, this.cipher);
+      var decryptedCiphertext = aesDecrypt(ciphertext, key, IV, this.cipher);
       var decryptedCiphertextBuff = new CryptoBuffer(decryptedCiphertext);
       return decryptedCiphertextBuff;
     }
+  }
+
+  pragma "no doc"
+  proc createRandomBuffer(buffLen: int) {
+    var buff: [0..(buffLen - 1)] uint(8);
+    var retErrCode: c_int;
+    retErrCode = RAND_bytes(c_ptrTo(buff): c_ptr(c_uchar), buffLen: c_int);
+    if (!retErrCode) {
+      halt("The random buffer generator has failed to initialize a buffer.");
+    }
+    return buff;
   }
 
   class CryptoRandom {
@@ -208,10 +626,35 @@ module Crypto {
       if (buffLen < 1) {
         halt("Invalid random buffer length specified.");
       }
-      var randomizedBuff = cryptoRandomSupport.createRandomBuffer(buffLen);
+      var randomizedBuff = createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new CryptoBuffer(randomizedBuff);
       return randomizedCryptoBuff;
     }
+  }
+
+  pragma "no doc"
+  proc PBKDF2_HMAC_PRIM(userKey: string, saltBuff: CryptoBuffer, bitLen: int, iterCount: int, digestName: string) {
+
+    /* Loads all digests into the table*/
+    OpenSSL_add_all_digests();
+
+    var key: [0..(bitLen-1)] uint(8);
+    var salt = saltBuff.getBuffData();
+    var userKeyLen = userKey.length;
+
+    /* Use the specified digest */
+    const md = EVP_get_digestbyname(digestName.c_str());
+
+    PKCS5_PBKDF2_HMAC(userKey.c_str(),
+                      userKeyLen: c_int,
+                      c_ptrTo(salt): c_ptr(c_uchar),
+                      bitLen: c_int,
+                      iterCount: c_int,
+                      md,
+                      bitLen: c_int,
+                      c_ptrTo(key): c_ptr(c_uchar));
+
+    return key;
   }
 
   class KDF {
@@ -260,11 +703,103 @@ module Crypto {
        :rtype: `CryptoBuffer`
     */
     proc PBKDF2_HMAC(userKey: string, saltBuff: CryptoBuffer): CryptoBuffer {
-      var key = kdfSupport.PBKDF2_HMAC(userKey, saltBuff, this.bitLen, this.iterCount, this.hashName);
+      var key = PBKDF2_HMAC_PRIM(userKey, saltBuff, this.bitLen, this.iterCount, this.hashName);
       var keyBuff = new CryptoBuffer(key);
       return keyBuff;
     }
   }
+
+    pragma "no doc"
+    proc rsaEncrypt(keys: [] RSAKey, plaintext: CryptoBuffer, ref iv: [] uint(8), ref encSymmKeys: [] CryptoBuffer) {
+
+      var ctx: EVP_CIPHER_CTX;
+      EVP_CIPHER_CTX_init(ctx);
+
+      var numKeys = keys.size;
+      for i in keys.domain do {
+        var keySize = EVP_PKEY_size(keys[i].getKeyPair());
+        var dummyMalloc: [1..((keySize): int(64))] uint(8);
+        encSymmKeys[i] = new CryptoBuffer(dummyMalloc);
+      }
+
+      var encSymmKeysPtr: [keys.domain] c_ptr(uint(8));
+      var encryptedSymKeyLen: c_int = 0;
+      for i in keys.domain do {
+        encSymmKeysPtr[i] = encSymmKeys[i].getBuffPtr();
+      }
+
+      var keyObjs: [keys.domain] EVP_PKEY_PTR;
+      for i in keys.domain do {
+        keyObjs[i] = keys[i].getKeyPair();
+      }
+
+      var plaintextBuff = plaintext.getBuffData();
+      var plaintextBuffLen = plaintext.getBuffSize();
+      var ciphertextLen = plaintextBuffLen + 16;
+      var cipherDomain: domain(1) = {0..(ciphertextLen - 1)};
+      var updatedCipherLen: c_int = 0;
+      var ciphertext: [cipherDomain] uint(8);
+
+      EVP_SealInit(ctx, EVP_aes_256_cbc(),
+                  c_ptrTo(encSymmKeysPtr),
+                  c_ptrTo(encryptedSymKeyLen): c_ptr(c_int),
+                  c_ptrTo(iv): c_ptr(c_uchar),
+                  c_ptrTo(keyObjs), numKeys: c_int);
+      EVP_SealUpdate(ctx,
+                    c_ptrTo(ciphertext): c_ptr(c_uchar),
+                    c_ptrTo(ciphertextLen): c_ptr(c_int),
+                    c_ptrTo(plaintextBuff): c_ptr(c_uchar),
+                    plaintextBuffLen: c_int);
+      EVP_SealFinal(ctx,
+                   c_ptrTo(ciphertext): c_ptr(c_uchar),
+                   c_ptrTo(updatedCipherLen): c_ptr(c_int));
+
+      cipherDomain = {0..((ciphertextLen + updatedCipherLen) - 1)};
+      return ciphertext;
+    }
+
+    pragma "no doc"
+    proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) {
+
+      var ctx: EVP_CIPHER_CTX;
+      EVP_CIPHER_CTX_init(ctx);
+
+      var numEncKeys = encKeys.size;
+      var openErrCode = 0;
+
+      for i in encKeys.domain do {
+        openErrCode = EVP_OpenInit(ctx,
+                                  EVP_aes_256_cbc(),
+                                  encKeys[i].getBuffPtr(),
+                                  encKeys[i].getBuffSize(): c_int,
+                                  c_ptrTo(iv): c_ptr(c_uchar),
+                                  key.getKeyPair());
+        if (openErrCode) {
+          break;
+        }
+      }
+
+      if (!openErrCode) {
+        halt("The RSAKey is an invalid match");
+      }
+
+      var plaintextLen = ciphertext.size;
+      var updatedPlainLen: c_int = 0;
+      var plaintextDomain: domain(1) = {0..(plaintextLen)};
+      var plaintext: [plaintextDomain] uint(8);
+
+      EVP_OpenUpdate(ctx,
+                    c_ptrTo(plaintext): c_ptr(c_uchar),
+                    c_ptrTo(plaintextLen): c_ptr(c_int),
+                    c_ptrTo(ciphertext): c_ptr(c_uchar),
+                    ciphertext.size: c_int);
+      EVP_OpenFinal(ctx,
+                   c_ptrTo(plaintext): c_ptr(c_uchar),
+                   c_ptrTo(updatedPlainLen): c_ptr(c_int));
+
+      plaintextDomain = {0..((plaintextLen + updatedPlainLen) - 1)};
+      return plaintext;
+    }
 
   class RSA {
     proc RSA() {}
@@ -299,12 +834,12 @@ module Crypto {
        :rtype: `Envelope`
     */
     proc encrypt(plaintext: CryptoBuffer, keys: [] RSAKey): Envelope {
-      var ivLen = asymmetricPrimitives.EVP_CIPHER_iv_length(asymmetricPrimitives.EVP_aes_256_cbc());
+      var ivLen = EVP_CIPHER_iv_length(EVP_aes_256_cbc());
       var iv: [0..((ivLen - 1): int(64))] uint(8);
 
       var encSymmKeys: [keys.domain] CryptoBuffer;
 
-      var ciphertext = rsaSupport.rsaEncrypt(keys, plaintext, iv, encSymmKeys);
+      var ciphertext = rsaEncrypt(keys, plaintext, iv, encSymmKeys);
 
       var envp = new Envelope(new CryptoBuffer(iv), encSymmKeys, new CryptoBuffer(ciphertext));
       return envp;
@@ -333,7 +868,7 @@ module Crypto {
       var ciphertext = envp.getEncMessage().getBuffData();
       var encKeys = envp.getEncKeys();
 
-      var plaintext = rsaSupport.rsaDecrypt(key, iv, ciphertext, encKeys);
+      var plaintext = rsaDecrypt(key, iv, ciphertext, encKeys);
       var plaintextBuff = new CryptoBuffer(plaintext);
       return plaintextBuff;
     }
