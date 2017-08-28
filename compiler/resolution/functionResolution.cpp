@@ -3789,52 +3789,73 @@ void lvalueCheck(CallExpr* call) {
       INT_ASSERT(false);
       break;
     }
+
     FnSymbol* nonTaskFnParent = NULL;
+
     if (errorMsg &&
         // sets nonTaskFnParent
-        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)
-    ) {
+        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
       errorMsg = false;
+
       nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
     }
-    if (errorMsg) {
-      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+
+    if (errorMsg == true) {
+      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
         // we are asked to ignore errors here
         return;
+      }
+
       FnSymbol* calleeFn = call->resolvedFunction();
+
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
+
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
-        INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n-1] == call);
-        const char* recordName =
-          defaultRecordAssignmentTo(toFnSymbol(call->parentSymbol));
-        if (recordName && callStack.n >= 2)
+        INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
+
+        FnSymbol*   fnParent   = toFnSymbol(call->parentSymbol);
+        const char* recordName = defaultRecordAssignmentTo(fnParent);
+
+        if (recordName && callStack.n >= 2) {
           // blame on the caller of the caller, if available
-          USR_FATAL_CONT(callStack.v[callStack.n-2],
-                         "cannot assign to a record of the type %s"
-                         " using the default assignment operator"
-                         " because it has 'const' field(s)", recordName);
-        else
+          USR_FATAL_CONT(callStack.v[callStack.n - 2],
+                         "cannot assign to a record of the type %s using "
+                         "the default assignment operator because it has "
+                         "'const' field(s)",
+                         recordName);
+        } else {
           USR_FATAL_CONT(actual, "illegal lvalue in assignment");
-      }
-      else
-      {
-        ModuleSymbol* mod = calleeFn->getModule();
-        char cn1 = calleeFn->name[0];
-        const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+        }
+
+      } else {
+        ModuleSymbol* mod          = calleeFn->getModule();
+        char          cn1          = calleeFn->name[0];
+        const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+
         // Should this be the same condition as in insertLineNumber() ?
         if (developer || mod->modTag == MOD_USER) {
-          USR_FATAL_CONT(actual, "non-lvalue actual is passed to %s formal '%s'"
-                         " of %s%s", formal->intentDescrString(), formal->name,
-                         calleeFn->name, calleeParens);
+          USR_FATAL_CONT(actual,
+                         "non-lvalue actual is passed to %s formal '%s' "
+                         "of %s%s",
+                         formal->intentDescrString(),
+                         formal->name,
+                         calleeFn->name,
+                         calleeParens);
+
         } else {
-          USR_FATAL_CONT(actual, "non-lvalue actual is passed to a %s formal of"
-                         " %s%s", formal->intentDescrString(),
-                         calleeFn->name, calleeParens);
+          USR_FATAL_CONT(actual,
+                         "non-lvalue actual is passed to a %s formal of "
+                         "%s%s",
+                         formal->intentDescrString(),
+                         calleeFn->name,
+                         calleeParens);
         }
       }
+
       if (SymExpr* aSE = toSymExpr(actual)) {
         Symbol* aVar = aSE->symbol();
+
         if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
           printTaskOrForallConstErrorNote(aVar);
         }
@@ -3844,26 +3865,41 @@ void lvalueCheck(CallExpr* call) {
 }
 
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
-          const char* varname = aVar->name;
-          if (!strncmp(varname, "_formal_tmp_", 12))
-            varname += 12;
-          if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
-            Symbol* enclTaskFn = aVar->defPoint->parentSymbol;
-            BaseAST* marker;
-            const char* constructName;
-            if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
-              // enclTaskFn points to a good line number
-              marker = enclTaskFn;
-              constructName = "begin";
-            } else {
-              marker = enclTaskFn->defPoint->parentExpr;
-              constructName = "parallel";
-            }
-            USR_PRINT(marker, "The shadow variable '%s' is constant due to task intents in this %s statement", varname, constructName);
-          } else {
-            Expr* enclLoop = aVar->defPoint->parentExpr;
-            USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
-          }
+  const char* varname = aVar->name;
+
+  if (strncmp(varname, "_formal_tmp_", 12) == 0) {
+    varname += 12;
+  }
+
+  if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
+    Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
+    BaseAST*    marker        = NULL;
+    const char* constructName = NULL;
+
+    if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
+      // enclTaskFn points to a good line number
+      marker        = enclTaskFn;
+      constructName = "begin";
+
+    } else {
+      marker        = enclTaskFn->defPoint->parentExpr;
+      constructName = "parallel";
+    }
+
+    USR_PRINT(marker,
+              "The shadow variable '%s' is constant due to task intents "
+              "in this %s statement",
+              varname,
+              constructName);
+
+  } else {
+    Expr* enclLoop = aVar->defPoint->parentExpr;
+
+    USR_PRINT(enclLoop,
+              "The shadow variable '%s' is constant due to forall intents "
+              "in this loop",
+              varname);
+  }
 }
 
 static void resolveTupleAndExpand(CallExpr* call) {
