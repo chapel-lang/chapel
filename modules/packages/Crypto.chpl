@@ -21,6 +21,7 @@
     purposes.
 
     The Crypto module focuses on providing various cryptographic utilities such as
+
     - Symmetric Ciphers
     - Asymmetric Ciphers
     - Hashing Functions
@@ -41,101 +42,158 @@ module Crypto {
           "openssl/aes.h", "openssl/rand.h", "-lcrypto";
   //require "CryptoHandlers/rsa_complex_bypass_handler.h";
 
+  pragma "no doc"
   extern type EVP_PKEY_CTX;
+  pragma "no doc"
   extern type EVP_PKEY;
+  pragma "no doc"
   extern var EVP_PKEY_RSA: c_int;
 
+  pragma "no doc"
   extern type EVP_PKEY_CTX_PTR = c_ptr(EVP_PKEY_CTX);
+  pragma "no doc"
   extern type EVP_PKEY_PTR = c_ptr(EVP_PKEY);
 
+  pragma "no doc"
   extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
+  pragma "no doc"
   extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
+  pragma "no doc"
   extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
+  pragma "no doc"
   extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;
+  pragma "no doc"
   extern proc EVP_PKEY_CTX_set_rsa_keygen_bits(ctx: EVP_PKEY_CTX_PTR, mbits: c_int): c_int;
+  pragma "no doc"
   extern proc EVP_PKEY_keygen(ctx: EVP_PKEY_CTX_PTR, ref ppkey: EVP_PKEY_PTR): c_int;
+  pragma "no doc"
   extern proc EVP_PKEY_CTX_free(ctx: EVP_PKEY_CTX_PTR);
 
+  pragma "no doc"
   extern proc EVP_SealInit(ref ctx: EVP_CIPHER_CTX, const types: EVP_CIPHER_PTR,
                            ek: c_ptr(c_ptr(c_uchar)), ekl: c_ptr(c_int),
                            iv: c_ptr(c_uchar), pubk: c_ptr(EVP_PKEY_PTR), npubk: c_int): c_int;
+  pragma "no doc"
   extern proc EVP_SealUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
                              outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
+  pragma "no doc"
   extern proc EVP_SealFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
+  pragma "no doc"
   extern proc EVP_OpenInit(ref ctx: EVP_CIPHER_CTX, types: EVP_CIPHER_PTR,
                            ek: c_ptr(c_uchar), ekl: c_int, iv: c_ptr(c_uchar), priv: EVP_PKEY_PTR): c_int;
+  pragma "no doc"
   extern proc EVP_OpenUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
                              outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
+  pragma "no doc"
   extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
+  pragma "no doc"
   extern type EVP_MD;
+  pragma "no doc"
   extern type EVP_MD_CTX;
+  pragma "no doc"
   extern type ENGINE;
 
+  pragma "no doc"
   extern type EVP_MD_PTR = c_ptr(EVP_MD);
+  pragma "no doc"
   extern type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
+  pragma "no doc"
   extern type ENGINE_PTR = c_ptr(ENGINE);
 
+  pragma "no doc"
   extern proc OpenSSL_add_all_digests();
+  pragma "no doc"
   extern proc EVP_get_digestbyname(name: c_string): EVP_MD_PTR;
+  pragma "no doc"
   extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): c_int;
+  pragma "no doc"
   extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, const types: EVP_MD_PTR, impl: ENGINE_PTR): c_int;
+  pragma "no doc"
   extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
+  pragma "no doc"
   extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
+  pragma "no doc"
   extern type EVP_CIPHER;
+  pragma "no doc"
   extern type EVP_CIPHER_CTX;
 
+  pragma "no doc"
   extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
+  pragma "no doc"
   extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
 
+  pragma "no doc"
   extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
 
+  pragma "no doc"
   extern proc EVP_sha256(): EVP_MD_PTR;
 
+  pragma "no doc"
   extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
+  pragma "no doc"
   extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): c_int;
+  pragma "no doc"
   extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
                                 const cipher: EVP_CIPHER_PTR,
                                 impl: ENGINE_PTR,
                                 const key: c_ptr(c_uchar),
                                 const iv: c_ptr(c_uchar)): c_int;
+  pragma "no doc"
   extern proc EVP_EncryptUpdate(ref ctx: EVP_CIPHER_CTX,
                                 outm: c_ptr(c_uchar),
                                 outl: c_ptr(c_int),
                                 const ins: c_ptr(c_uchar),
                                 inl: c_int): c_int;
+  pragma "no doc"
   extern proc EVP_EncryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
                                   outm: c_ptr(c_uchar),
                                   outl: c_ptr(c_int)): c_int;
+  pragma "no doc"
   extern proc EVP_DecryptInit_ex(ref ctx: EVP_CIPHER_CTX,
                                 const cipher: EVP_CIPHER_PTR,
                                 impl: ENGINE_PTR,
                                 const key: c_ptr(c_uchar),
                                 const iv: c_ptr(c_uchar)): c_int;
+  pragma "no doc"
   extern proc EVP_DecryptUpdate(ref ctx: EVP_CIPHER_CTX,
                                 outm: c_ptr(c_uchar),
                                 outl: c_ptr(c_int),
                                 const ins: c_ptr(c_uchar),
                                 inl: c_int): c_int;
+  pragma "no doc"
   extern proc EVP_DecryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
                                   outm: c_ptr(c_uchar),
                                   outl: c_ptr(c_int)): c_int;
 
+  pragma "no doc"
   extern proc EVP_aes_128_cbc(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_128_ecb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_128_cfb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_128_ofb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_192_cbc(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_192_ecb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_192_cfb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_192_ofb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_256_cbc(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_256_ecb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_256_cfb(): EVP_CIPHER_PTR;
+  pragma "no doc"
   extern proc EVP_aes_256_ofb(): EVP_CIPHER_PTR;
 
+  pragma "no doc"
   extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
                                 passlen: c_int,
                                 const salt: c_ptr(c_uchar),
@@ -144,6 +202,7 @@ module Crypto {
                                 const digest: EVP_MD_PTR,
                                 keylen: c_int,
                                 outx: c_ptr(c_uchar)): c_int;
+  pragma "no doc"
   extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
 
 
@@ -161,8 +220,11 @@ module Crypto {
   }
 
   class CryptoBuffer {
+    pragma "no doc"
     var _len: int = 0;
+    pragma "no doc"
     var buffDomain: domain(1);
+    pragma "no doc"
     var buff: [buffDomain] uint(8);
 
     /* The `CryptoBuffer` class constructor that initializes the buffer
@@ -187,7 +249,7 @@ module Crypto {
        when a `[] uint(8)` is supplied to it.
 
        :arg s: `[] uint(8)` input for buffer conversion.
-       :type s: `[] uint(8)]`
+       :type s: `[] uint(8)`
 
        :return: An object of class `CryptoBuffer`.
        :rtype: `CryptoBuffer`
@@ -232,8 +294,7 @@ module Crypto {
       return this._len;
     }
 
-    /* Returns the hexadecimal array representation of the entire internal
-        buffer.
+    /* Returns the hexadecimal array representation of the entire internal buffer.
 
        :return: hex array representation of the internal buffer.
        :rtype: `[] string`
@@ -247,8 +308,7 @@ module Crypto {
       return buffHex;
     }
 
-    /* Returns the hexadecimal string representation of the entire internal
-        buffer.
+    /* Returns the hexadecimal string representation of the entire internal buffer.
 
        :return: hex string representation of the internal buffer.
        :rtype: `string`
@@ -264,11 +324,13 @@ module Crypto {
   }
 
   class RSAKey {
+    pragma "no doc"
     var keyLen: int;
+    pragma "no doc"
     var keyObj: EVP_PKEY_PTR;
 
     /* The `RSAKey` class constructor that initializes the `EVP_PKEY` object
-        of OpenSSL and basically, initializes a set of public and private keys.
+       of OpenSSL and basically, initializes a set of public and private keys.
 
        It checks for valid RSA key lengths and generates a public key and private
        key pair accordingly.
@@ -297,9 +359,13 @@ module Crypto {
   }
 
   class Envelope {
+    pragma "no doc"
     var keyDomain: domain(1);
+    pragma "no doc"
     var keys: [keyDomain] CryptoBuffer;
+    pragma "no doc"
     var iv: CryptoBuffer;
+    pragma "no doc"
     var value: CryptoBuffer;
 
     /* The `Envelope` class constructor that encapsulates the IV, AES encrypted
@@ -339,8 +405,8 @@ module Crypto {
     }
 
     /* This function returns the IV generated by the `encrypt` routine and
-        encapsulated in the `Envelope`. This is used for both encryption and
-        dencryption.
+       encapsulated in the `Envelope`. This is used for both encryption and
+       dencryption.
 
        :return: Initialization Vector.
        :rtype: `CryptoBuffer`
@@ -355,7 +421,7 @@ module Crypto {
 
        .. note::
 
-         The supplied index should be in the domain of the `this.keys` array.
+         The supplied index should be in the domain of the RSA-encrypted keys array.
 
        :arg i: An index of the symmetric key buffer array.
        :type i: `int`
@@ -400,9 +466,13 @@ module Crypto {
   }
 
   class Hash {
+    pragma "no doc"
     var hashLen: int;
+    pragma "no doc"
     var digestName: string;
+    pragma "no doc"
     var hashDomain: domain(1);
+    pragma "no doc"
     var hashSpace: [hashDomain] uint(8);
 
     /* The `Hash` class constructor that initializes the hashing function
@@ -531,7 +601,9 @@ module Crypto {
   }
 
   class AES {
+    pragma "no doc"
     const cipher: EVP_CIPHER_PTR;
+    pragma "no doc"
     var byteLen: int;
 
     /* The `AES` class constructor that initializes the AES encryption
@@ -563,6 +635,7 @@ module Crypto {
 
     /* This function returns the size in bytes of the key-length/variant of
        AES which is to be used. For instance,
+
        - AES128 returns 16
        - AES192 returns 24
        - AES256 returns 32
@@ -576,7 +649,8 @@ module Crypto {
     }
 
     /* This is the 'AES' encrypt routine that encrypts the user supplied message buffer
-        using the key and IV.
+       using the key and IV.
+
        The `encrypt` takes in the plaintext buffer, key buffer and IV buffer as the
        arguments and returns a buffer of the ciphertext.
 
@@ -602,6 +676,7 @@ module Crypto {
 
     /* This is the 'AES' decrypt routine that decrypts the user supplied ciphertext
        buffer using the same key and IV used for encryption.
+
        The `decrypt` takes in the ciphertext buffer, key buffer and IV buffer as the
        arguments and returns a buffer of the decrypted plaintext.
 
@@ -642,7 +717,9 @@ module Crypto {
     /* This function represents a CSPRNG that generates and allocates the desired
        number of random values as specified by the argument. Halts for number of
        bytes less than 1 (invalid). For instance,
+
                     `var a = (new CryptoRandom()).createRandomBuffer(5)`
+
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
        :arg buffLen: Number of random values to be generated in the buffer.
@@ -686,8 +763,11 @@ module Crypto {
   }
 
   class KDF {
+    pragma "no doc"
     var byteLen: int;
+    pragma "no doc"
     var iterCount: int;
+    pragma "no doc"
     var hashName: string;
 
     /* The `KDF` class constructor that initializes the common data used by most
@@ -832,7 +912,6 @@ module Crypto {
     }
 
   class RSA {
-    proc init() {}
 
     /* This is the 'RSA' encrypt routine that encrypts the plaintext buffer. This
        uses the `AES` encryption algorithm to encrypt the plaintext and auto-generates
@@ -878,6 +957,7 @@ module Crypto {
 
     /* This is the 'RSA' decrypt routine that decrypts the ciphertext buffer. This
        uses `AES` dencryption to decrypt the ciphertext.
+
        It's accepts the entire `Envelope` object but only a single `RSAKey` object
        for unilateral dencryption.
 
