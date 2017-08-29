@@ -3352,7 +3352,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
-proc stringify(args ...?k):string {
+proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
