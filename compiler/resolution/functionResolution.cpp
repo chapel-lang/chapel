@@ -88,20 +88,34 @@ public:
 //#
 //# Global Variables
 //#
-bool            resolved         = false;
-int             explainCallLine  = 0;
-bool            tryFailure       = false;
-bool            beforeLoweringForallStmts = true;
+char                             arrayUnrefName[] = "array_unref_ret_tmp";
 
-char            arrayUnrefName[] = "array_unref_ret_tmp";
+bool                             resolved                  = false;
+bool                             tryFailure                = false;
+bool                             beforeLoweringForallStmts = true;
 
-SymbolMap       paramMap;
+int                              explainCallLine           = 0;
 
-Vec<CallExpr*>  callStack;
-Vec<CallExpr*>  inits;
-Vec<CondStmt*>  tryStack;
+SymbolMap                        paramMap;
 
-Vec<BlockStmt*> standardModuleSet;
+Vec<CallExpr*>                   callStack;
+Vec<CallExpr*>                   inits;
+
+Vec<CondStmt*>                   tryStack;
+
+Vec<BlockStmt*>                  standardModuleSet;
+
+std::map<CallExpr*, CallExpr*>   eflopiMap;
+
+std::map<Type*,     FnSymbol*>   autoCopyMap;
+std::map<Type*,     Serializers> serializeMap;
+
+Map<Type*,          FnSymbol*>   autoDestroyMap;
+Map<Type*,          FnSymbol*>   unaliasMap;
+Map<Type*,          FnSymbol*>   valueToRuntimeTypeMap;
+Map<FnSymbol*,      FnSymbol*>   iteratorLeaderMap;
+Map<FnSymbol*,      FnSymbol*>   iteratorFollowerMap;
+
 
 
 //#
@@ -113,7 +127,7 @@ static Vec<FnSymbol*> resolvedFormals;
 
 static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
-Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
+
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
 // map of compiler warnings that may need to be reissued for repeated
@@ -126,15 +140,7 @@ static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 static Map<FnSymbol*,const char*> innerCompilerWarningMap;
 static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
-std::map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
-Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
-Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
 
-std::map<Type*, Serializers> serializeMap;
-
-Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
-Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
-std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
 //#
 //# Static Function Declarations
@@ -161,7 +167,6 @@ static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
-static Expr* resolveTypeExpr(Expr* expr);
 static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
 
 static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
@@ -343,33 +348,49 @@ hasUserAssign(Type* type) {
   return !compilerAssign;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 bool hasAutoCopyForType(Type* type) {
-  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+
   return autoCopyMap.find(type) != autoCopyMap.end() && it->second != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
 // we can insert NULL values for a type and avoid segfaults
 FnSymbol* getAutoCopyForType(Type* type) {
-  std::map<Type*,FnSymbol*>::iterator it = autoCopyMap.find(type);
+  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+
   if (it == autoCopyMap.end() || it->second == NULL) {
-    INT_FATAL(type, "Trying to obtain autoCopy for type '%s',"
-                    " which defines none", type->symbol->name);
+    INT_FATAL(type,
+              "Trying to obtain autoCopy for type '%s', which defines none",
+              type->symbol->name);
   }
+
   return it->second;
 }
 
-void getAutoCopyTypeKeys(Vec<Type*> &keys) {
-  for (std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.begin();
-       it != autoCopyMap.end(); ++it) {
+void getAutoCopyTypeKeys(Vec<Type*>& keys) {
+  std::map<Type*, FnSymbol*>::iterator it;
+
+  for (it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
     keys.add(it->first);
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 // This function is called by generic instantiation
 // for the default initCopy function in ChapelBase.chpl.
-bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call)
-{
+bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
   ArgSymbol* arg = newFn->getFormal(1);
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
@@ -1082,32 +1103,6 @@ static bool fits_in_uint(int width, Immediate* imm) {
   }*/
 
   return false;
-}
-
-
-void ensureEnumTypeResolved(EnumType* etype) {
-  INT_ASSERT( etype != NULL );
-
-  if( ! etype->integerType ) {
-    // Make sure to resolve all enum types.
-    for_enums(def, etype) {
-      if (def->init) {
-        Expr* enumTypeExpr =
-        resolveTypeExpr(def->init);
-
-        Type* enumtype = enumTypeExpr->typeInfo();
-        if (enumtype == dtUnknown)
-          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
-
-        // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
-        // enumtype->symbol->name);
-      }
-    }
-    // Now try computing the enum size...
-    etype->sizeAndNormalize();
-  }
-
-  INT_ASSERT(etype->integerType != NULL);
 }
 
 
@@ -1854,46 +1849,6 @@ static void reissueCompilerWarning(const char* str, int offset) {
   }
   USR_WARN(from, "%s", str);
 }
-
-// Resolves a param or type expression
-static Expr* resolveTypeExpr(Expr* expr) {
-  Expr* result = NULL;
-
-  for_exprs_postorder(e, expr) {
-    if (CallExpr* call = toCallExpr(e)) {
-      result = preFold(call);
-    } else {
-      result = e;
-    }
-
-    if (CallExpr* call = toCallExpr(result)) {
-      if (call->parentSymbol) {
-        callStack.add(call);
-
-        resolveCall(call);
-
-        if (call->parentSymbol != NULL) {
-          if (FnSymbol* fn = call->resolvedFunction()) {
-            resolveFormals(fn);
-
-            if (fn->retTag  == RET_PARAM  ||
-                fn->retTag  == RET_TYPE   ||
-                fn->retType == dtUnknown) {
-              resolveFns(fn);
-            }
-          }
-        }
-
-        callStack.pop();
-      }
-    }
-
-    result = postFold(result);
-  }
-
-  return result;
-}
-
 
 //
 // The following several functions support const-ness checking.
@@ -2681,6 +2636,178 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 1);
   }
+}
+
+void printResolutionErrorAmbiguous(CallInfo&                  info,
+                                   Vec<ResolutionCandidate*>& candidates) {
+  CallExpr* call       = userCall(info.call);
+  bool      printedOne = false;
+
+  if (info.name == astrThis) {
+    USR_FATAL_CONT(call,
+                   "ambiguous access of '%s' by '%s'",
+                   toString(info.actuals.v[1]->type),
+                   toString(&info));
+
+  } else {
+    const char* entity = "call";
+    const char* str    = toString(&info);
+
+    if (strncmp("_type_construct_", info.name, 16) == 0) {
+      entity = "type specifier";
+    }
+
+    if (info.scope) {
+      ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
+
+      INT_ASSERT(mod);
+
+      str = astr(mod->name, ".", str);
+    }
+
+    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
+  }
+
+  if (developer == true) {
+    for (int i = callStack.n - 1; i >= 0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f  = cs->getFunction();
+
+      if (f->instantiatedFrom) {
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      } else {
+        break;
+      }
+    }
+  }
+
+  forv_Vec(ResolutionCandidate, cand, candidates) {
+    USR_PRINT(cand->fn,
+              "%s %s",
+              printedOne ? "               " : "candidates are:",
+              toString(cand->fn));
+
+    printedOne = true;
+  }
+
+  USR_STOP();
+}
+
+void
+printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
+  if( ! info ) INT_FATAL("CallInfo is NULL");
+  if( ! info->call ) INT_FATAL("call is NULL");
+  bool needToReport = false;
+  CallExpr* call = userCall(info->call);
+
+  if (call->isCast()) {
+    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal cast to non-type");
+    } else {
+      USR_FATAL_CONT(call, "illegal cast from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
+    }
+  } else if (!strcmp("these", info->name)) {
+    if (info->actuals.n == 2 &&
+        info->actuals.v[0]->type == dtMethodToken) {
+      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
+                       toString(info->actuals.v[1]->type));
+      } else {
+        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
+                       toString(info->actuals.v[1]->type));
+      }
+    } else {
+      needToReport = true;
+    }
+  } else if (!strcmp("_type_construct__tuple", info->name)) {
+    if (info->call->argList.length == 0)
+      USR_FATAL_CONT(call, "tuple size must be specified");
+    SymExpr* sym = toSymExpr(info->call->get(1));
+    if (!sym || !sym->symbol()->isParameter()) {
+      USR_FATAL_CONT(call, "tuple size must be static");
+    } else {
+      USR_FATAL_CONT(call, "invalid tuple");
+    }
+  } else if (info->name == astrSequals) {
+    if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+        info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal assignment of type to value");
+    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(call, "illegal assignment of value to type");
+    } else if (info->actuals.v[1]->type == dtNil) {
+      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
+                toString(info->actuals.v[0]->type));
+    } else {
+      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
+    }
+  } else if (info->name == astrThis) {
+    Type* type = info->actuals.v[1]->getValType();
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
+    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      USR_FATAL_CONT(call, "illegal access of first class function");
+    } else {
+      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
+                     toString(info->actuals.v[1]->type),
+                     toString(info));
+    }
+  } else {
+    needToReport = true;
+  }
+  // It would be easier to just check exit_eventually to catch all needToReport cases.
+  // Alas exit_eventually is static to misc.cpp.
+  if (needToReport) {
+    const char* entity = "call";
+    if (!strncmp("_type_construct_", info->name, 16))
+      entity = "type specifier";
+    const char* str = toString(info);
+    if (info->scope) {
+      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
+      INT_ASSERT(mod);
+      str = astr(mod->name, ".", str);
+    }
+    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
+      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
+      if (typeE != NULL) {
+        entity = "enumerated type symbol or call";
+      }
+    }
+    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
+    if (visibleFns.n > 0) {
+      if (developer) {
+        for (int i = callStack.n-1; i>=0; i--) {
+          CallExpr* cs = callStack.v[i];
+          FnSymbol* f = cs->getFunction();
+          if (f->instantiatedFrom)
+            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+          else
+            break;
+        }
+      }
+      bool printed_one = false;
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        // Consider "visible functions are"
+        USR_PRINT(fn, "%s %s",
+                  printed_one ? "               " : "candidates are:",
+                  toString(fn));
+        printed_one = true;
+      }
+    }
+    if (visibleFns.n == 1 &&
+        visibleFns.v[0]->numFormals() == 0
+        && !strncmp("_type_construct_", info->name, 16))
+      USR_PRINT(call, "did you forget the 'new' keyword?");
+  }
+  if( developer ) {
+    // Should this be controlled another way?
+    USR_PRINT(call, "unresolved call had id %i", call->id);
+  }
+  USR_STOP();
 }
 
 /************************************* | **************************************
@@ -3834,52 +3961,73 @@ void lvalueCheck(CallExpr* call) {
       INT_ASSERT(false);
       break;
     }
+
     FnSymbol* nonTaskFnParent = NULL;
+
     if (errorMsg &&
         // sets nonTaskFnParent
-        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)
-    ) {
+        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)) {
       errorMsg = false;
+
       nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
     }
-    if (errorMsg) {
-      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+
+    if (errorMsg == true) {
+      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
         // we are asked to ignore errors here
         return;
+      }
+
       FnSymbol* calleeFn = call->resolvedFunction();
+
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
+
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
-        INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n-1] == call);
-        const char* recordName =
-          defaultRecordAssignmentTo(toFnSymbol(call->parentSymbol));
-        if (recordName && callStack.n >= 2)
+        INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
+
+        FnSymbol*   fnParent   = toFnSymbol(call->parentSymbol);
+        const char* recordName = defaultRecordAssignmentTo(fnParent);
+
+        if (recordName && callStack.n >= 2) {
           // blame on the caller of the caller, if available
-          USR_FATAL_CONT(callStack.v[callStack.n-2],
-                         "cannot assign to a record of the type %s"
-                         " using the default assignment operator"
-                         " because it has 'const' field(s)", recordName);
-        else
+          USR_FATAL_CONT(callStack.v[callStack.n - 2],
+                         "cannot assign to a record of the type %s using "
+                         "the default assignment operator because it has "
+                         "'const' field(s)",
+                         recordName);
+        } else {
           USR_FATAL_CONT(actual, "illegal lvalue in assignment");
-      }
-      else
-      {
-        ModuleSymbol* mod = calleeFn->getModule();
-        char cn1 = calleeFn->name[0];
-        const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+        }
+
+      } else {
+        ModuleSymbol* mod          = calleeFn->getModule();
+        char          cn1          = calleeFn->name[0];
+        const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+
         // Should this be the same condition as in insertLineNumber() ?
         if (developer || mod->modTag == MOD_USER) {
-          USR_FATAL_CONT(actual, "non-lvalue actual is passed to %s formal '%s'"
-                         " of %s%s", formal->intentDescrString(), formal->name,
-                         calleeFn->name, calleeParens);
+          USR_FATAL_CONT(actual,
+                         "non-lvalue actual is passed to %s formal '%s' "
+                         "of %s%s",
+                         formal->intentDescrString(),
+                         formal->name,
+                         calleeFn->name,
+                         calleeParens);
+
         } else {
-          USR_FATAL_CONT(actual, "non-lvalue actual is passed to a %s formal of"
-                         " %s%s", formal->intentDescrString(),
-                         calleeFn->name, calleeParens);
+          USR_FATAL_CONT(actual,
+                         "non-lvalue actual is passed to a %s formal of "
+                         "%s%s",
+                         formal->intentDescrString(),
+                         calleeFn->name,
+                         calleeParens);
         }
       }
+
       if (SymExpr* aSE = toSymExpr(actual)) {
         Symbol* aVar = aSE->symbol();
+
         if (aVar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
           printTaskOrForallConstErrorNote(aVar);
         }
@@ -3889,73 +4037,105 @@ void lvalueCheck(CallExpr* call) {
 }
 
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
-          const char* varname = aVar->name;
-          if (!strncmp(varname, "_formal_tmp_", 12))
-            varname += 12;
-          if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
-            Symbol* enclTaskFn = aVar->defPoint->parentSymbol;
-            BaseAST* marker;
-            const char* constructName;
-            if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
-              // enclTaskFn points to a good line number
-              marker = enclTaskFn;
-              constructName = "begin";
-            } else {
-              marker = enclTaskFn->defPoint->parentExpr;
-              constructName = "parallel";
-            }
-            USR_PRINT(marker, "The shadow variable '%s' is constant due to task intents in this %s statement", varname, constructName);
-          } else {
-            Expr* enclLoop = aVar->defPoint->parentExpr;
-            USR_PRINT(enclLoop, "The shadow variable '%s' is constant due to forall intents in this loop", varname);
-          }
+  const char* varname = aVar->name;
+
+  if (strncmp(varname, "_formal_tmp_", 12) == 0) {
+    varname += 12;
+  }
+
+  if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
+    Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
+    BaseAST*    marker        = NULL;
+    const char* constructName = NULL;
+
+    if (enclTaskFn->hasFlag(FLAG_BEGIN)) {
+      // enclTaskFn points to a good line number
+      marker        = enclTaskFn;
+      constructName = "begin";
+
+    } else {
+      marker        = enclTaskFn->defPoint->parentExpr;
+      constructName = "parallel";
+    }
+
+    USR_PRINT(marker,
+              "The shadow variable '%s' is constant due to task intents "
+              "in this %s statement",
+              varname,
+              constructName);
+
+  } else {
+    Expr* enclLoop = aVar->defPoint->parentExpr;
+
+    USR_PRINT(enclLoop,
+              "The shadow variable '%s' is constant due to forall intents "
+              "in this loop",
+              varname);
+  }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveTupleAndExpand(CallExpr* call) {
-  SymExpr* se = toSymExpr(call->get(1));
-  int size = 0;
-  for (int i = 0; i < se->symbol()->type->substitutions.n; i++) {
-    if (se->symbol()->type->substitutions.v[i].key) {
-      if (!strcmp("size", se->symbol()->type->substitutions.v[i].key->name)) {
-        size = toVarSymbol(se->symbol()->type->substitutions.v[i].value)->immediate->int_value();
-        break;
-      }
+  Expr*      stmt = call->getStmtExpr();
+  SymExpr*   se   = toSymExpr(call->get(1));
+  int        size = 0;
+  CallExpr*  noop = new CallExpr(PRIM_NOOP);
+  VarSymbol* tmp  = gTrue;
+
+  for (int i = 0; i < se->symbol()->type->substitutions.n && size == 0; i++) {
+    SymbolMapElem& elem = se->symbol()->type->substitutions.v[i];
+
+    if (elem.key != NULL && strcmp("size", elem.key->name) == 0) {
+      size = toVarSymbol(elem.value)->immediate->int_value();
     }
   }
-  INT_ASSERT(size);
-  CallExpr* noop = new CallExpr(PRIM_NOOP);
-  call->getStmtExpr()->insertBefore(noop);
-  VarSymbol* tmp = gTrue;
+
+  INT_ASSERT(size > 0);
+
+  stmt->insertBefore(noop);
+
   for (int i = 1; i <= size; i++) {
     VarSymbol* tmp1 = newTemp("_tuple_and_expand_tmp_");
+    VarSymbol* tmp2 = newTemp("_tuple_and_expand_tmp_");
+    VarSymbol* tmp3 = newTemp("_tuple_and_expand_tmp_");
+    VarSymbol* tmp4 = newTemp("_tuple_and_expand_tmp_");
+
     tmp1->addFlag(FLAG_MAYBE_PARAM);
     tmp1->addFlag(FLAG_MAYBE_TYPE);
-    VarSymbol* tmp2 = newTemp("_tuple_and_expand_tmp_");
+
     tmp2->addFlag(FLAG_MAYBE_PARAM);
     tmp2->addFlag(FLAG_MAYBE_TYPE);
-    VarSymbol* tmp3 = newTemp("_tuple_and_expand_tmp_");
+
     tmp3->addFlag(FLAG_MAYBE_PARAM);
     tmp3->addFlag(FLAG_MAYBE_TYPE);
-    VarSymbol* tmp4 = newTemp("_tuple_and_expand_tmp_");
+
     tmp4->addFlag(FLAG_MAYBE_PARAM);
     tmp4->addFlag(FLAG_MAYBE_TYPE);
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp1));
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp2));
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp3));
-    call->getStmtExpr()->insertBefore(new DefExpr(tmp4));
-    call->getStmtExpr()->insertBefore(
-      new CallExpr(PRIM_MOVE, tmp1,
-                   new CallExpr(se->copy(), new_IntSymbol(i))));
-    CallExpr* query = new CallExpr(PRIM_QUERY, tmp1);
-    for (int i = 2; i < call->numActuals(); i++)
-      query->insertAtTail(call->get(i)->copy());
-    call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp2, query));
-    call->getStmtExpr()->insertBefore(
-      new CallExpr(PRIM_MOVE, tmp3,
-                   new CallExpr("==", tmp2, call->get(3)->copy())));
-    call->getStmtExpr()->insertBefore(
-      new CallExpr(PRIM_MOVE, tmp4,
-                   new CallExpr("&", tmp3, tmp)));
+
+    stmt->insertBefore(new DefExpr(tmp1));
+    stmt->insertBefore(new DefExpr(tmp2));
+    stmt->insertBefore(new DefExpr(tmp3));
+    stmt->insertBefore(new DefExpr(tmp4));
+
+    CallExpr* index  = new CallExpr(se->copy(), new_IntSymbol(i));
+    CallExpr* query  = new CallExpr(PRIM_QUERY, tmp1);
+    CallExpr* test   = new CallExpr("==",       tmp2, call->get(3)->copy());
+    CallExpr* bitAnd = new CallExpr("&",        tmp3, tmp);
+
+    for (int j = 2; j < call->numActuals(); j++) {
+      query->insertAtTail(call->get(j)->copy());
+    }
+
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp1, index));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp2, query));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp3, test));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp4, bitAnd));
+
     tmp = tmp4;
   }
 
@@ -3966,44 +4146,62 @@ static void resolveTupleAndExpand(CallExpr* call) {
   call->convertToNoop();
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveTupleExpand(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  Type* type = sym->symbol()->getValType();
+  SymExpr*  sym    = toSymExpr(call->get(1));
+  Type*     type   = sym->symbol()->getValType();
 
-  if (!type->symbol->hasFlag(FLAG_TUPLE))
+  CallExpr* parent = toCallExpr(call->parentExpr);
+  CallExpr* noop   = new CallExpr(PRIM_NOOP);
+  Expr*     stmt   = call->getStmtExpr();
+
+  int       size   = 0;
+
+  if (type->symbol->hasFlag(FLAG_TUPLE) == false) {
     USR_FATAL(call, "invalid tuple expand primitive");
+  }
 
-  int size = 0;
-  for (int i = 0; i < type->substitutions.n; i++) {
-    if (type->substitutions.v[i].key) {
-      if (!strcmp("size", type->substitutions.v[i].key->name)) {
-        size = toVarSymbol(type->substitutions.v[i].value)->immediate->int_value();
-        break;
-      }
+  for (int i = 0; i < type->substitutions.n && size == 0; i++) {
+    SymbolMapElem& elem = type->substitutions.v[i];
+
+    if (elem.key != NULL && strcmp("size", elem.key->name) == 0) {
+      size = toVarSymbol(elem.value)->immediate->int_value();
     }
   }
-  if (size == 0)
+
+  if (size == 0) {
     INT_FATAL(call, "Invalid tuple expand primitive");
-  CallExpr* parent = toCallExpr(call->parentExpr);
-  CallExpr* noop = new CallExpr(PRIM_NOOP);
-  call->getStmtExpr()->insertBefore(noop);
+  }
+
+  stmt->insertBefore(noop);
+
   for (int i = 1; i <= size; i++) {
     VarSymbol* tmp = newTemp("_tuple_expand_tmp_");
+    CallExpr*  e   = NULL;
+
     tmp->addFlag(FLAG_MAYBE_TYPE);
-    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+
+    if (sym->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);
-    DefExpr* def = new DefExpr(tmp);
-    call->getStmtExpr()->insertBefore(def);
-    CallExpr* e = NULL;
-    if (!call->parentSymbol->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)) {
+    }
+
+    call->insertBefore(new SymExpr(tmp));
+
+    if (call->parentSymbol->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) == false) {
       e = new CallExpr(sym->copy(), new_IntSymbol(i));
     } else {
-      e = new CallExpr(PRIM_GET_MEMBER_VALUE, sym->copy(),
+      e = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                       sym->copy(),
                        new_CStringSymbol(astr("x", istr(i))));
     }
-    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, e);
-    call->getStmtExpr()->insertBefore(move);
-    call->insertBefore(new SymExpr(tmp));
+
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, e));
   }
 
   call->remove();
@@ -4013,187 +4211,11 @@ static void resolveTupleExpand(CallExpr* call) {
   call->convertToNoop();
 
   // increase tuple rank
-  if (parent && parent->isNamed("_type_construct__tuple")) {
-    parent->get(1)->replace(new SymExpr(new_IntSymbol(parent->numActuals()-1)));
+  if (parent != NULL && parent->isNamed("_type_construct__tuple") == true) {
+    Symbol* rank = new_IntSymbol(parent->numActuals() - 1);
+
+    parent->get(1)->replace(new SymExpr(rank));
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void printResolutionErrorAmbiguous(CallInfo&                  info,
-                                   Vec<ResolutionCandidate*>& candidates) {
-  CallExpr* call       = userCall(info.call);
-  bool      printedOne = false;
-
-  if (info.name == astrThis) {
-    USR_FATAL_CONT(call,
-                   "ambiguous access of '%s' by '%s'",
-                   toString(info.actuals.v[1]->type),
-                   toString(&info));
-
-  } else {
-    const char* entity = "call";
-    const char* str    = toString(&info);
-
-    if (strncmp("_type_construct_", info.name, 16) == 0) {
-      entity = "type specifier";
-    }
-
-    if (info.scope) {
-      ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
-
-      INT_ASSERT(mod);
-
-      str = astr(mod->name, ".", str);
-    }
-
-    USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-  }
-
-  if (developer == true) {
-    for (int i = callStack.n - 1; i >= 0; i--) {
-      CallExpr* cs = callStack.v[i];
-      FnSymbol* f  = cs->getFunction();
-
-      if (f->instantiatedFrom) {
-        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-      } else {
-        break;
-      }
-    }
-  }
-
-  forv_Vec(ResolutionCandidate, cand, candidates) {
-    USR_PRINT(cand->fn,
-              "%s %s",
-              printedOne ? "               " : "candidates are:",
-              toString(cand->fn));
-
-    printedOne = true;
-  }
-
-  USR_STOP();
-}
-
-void
-printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
-  if( ! info ) INT_FATAL("CallInfo is NULL");
-  if( ! info->call ) INT_FATAL("call is NULL");
-  bool needToReport = false;
-  CallExpr* call = userCall(info->call);
-
-  if (call->isCast()) {
-    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal cast to non-type");
-    } else {
-      USR_FATAL_CONT(call, "illegal cast from %s to %s",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
-    }
-  } else if (!strcmp("these", info->name)) {
-    if (info->actuals.n == 2 &&
-        info->actuals.v[0]->type == dtMethodToken) {
-      if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-        USR_FATAL_CONT(call, "unable to iterate over type '%s'",
-                       toString(info->actuals.v[1]->type));
-      } else {
-        USR_FATAL_CONT(call, "cannot iterate over values of type %s",
-                       toString(info->actuals.v[1]->type));
-      }
-    } else {
-      needToReport = true;
-    }
-  } else if (!strcmp("_type_construct__tuple", info->name)) {
-    if (info->call->argList.length == 0)
-      USR_FATAL_CONT(call, "tuple size must be specified");
-    SymExpr* sym = toSymExpr(info->call->get(1));
-    if (!sym || !sym->symbol()->isParameter()) {
-      USR_FATAL_CONT(call, "tuple size must be static");
-    } else {
-      USR_FATAL_CONT(call, "invalid tuple");
-    }
-  } else if (info->name == astrSequals) {
-    if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
-        info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal assignment of type to value");
-    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
-               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal assignment of value to type");
-    } else if (info->actuals.v[1]->type == dtNil) {
-      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
-                toString(info->actuals.v[0]->type));
-    } else {
-      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
-    }
-  } else if (info->name == astrThis) {
-    Type* type = info->actuals.v[1]->getValType();
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
-    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-      USR_FATAL_CONT(call, "illegal access of first class function");
-    } else {
-      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
-                     toString(info->actuals.v[1]->type),
-                     toString(info));
-    }
-  } else {
-    needToReport = true;
-  }
-  // It would be easier to just check exit_eventually to catch all needToReport cases.
-  // Alas exit_eventually is static to misc.cpp.
-  if (needToReport) {
-    const char* entity = "call";
-    if (!strncmp("_type_construct_", info->name, 16))
-      entity = "type specifier";
-    const char* str = toString(info);
-    if (info->scope) {
-      ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
-      INT_ASSERT(mod);
-      str = astr(mod->name, ".", str);
-    }
-    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
-      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
-      if (typeE != NULL) {
-        entity = "enumerated type symbol or call";
-      }
-    }
-    USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
-    if (visibleFns.n > 0) {
-      if (developer) {
-        for (int i = callStack.n-1; i>=0; i--) {
-          CallExpr* cs = callStack.v[i];
-          FnSymbol* f = cs->getFunction();
-          if (f->instantiatedFrom)
-            USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-          else
-            break;
-        }
-      }
-      bool printed_one = false;
-      forv_Vec(FnSymbol, fn, visibleFns) {
-        // Consider "visible functions are"
-        USR_PRINT(fn, "%s %s",
-                  printed_one ? "               " : "candidates are:",
-                  toString(fn));
-        printed_one = true;
-      }
-    }
-    if (visibleFns.n == 1 &&
-        visibleFns.v[0]->numFormals() == 0
-        && !strncmp("_type_construct_", info->name, 16))
-      USR_PRINT(call, "did you forget the 'new' keyword?");
-  }
-  if( developer ) {
-    // Should this be controlled another way?
-    USR_PRINT(call, "unresolved call had id %i", call->id);
-  }
-  USR_STOP();
 }
 
 /************************************* | **************************************
@@ -5735,29 +5757,6 @@ static CallExpr* toPrimToLeaderCall(Expr* expr) {
   return NULL;
 }
 
-// Recursively resolve typedefs
-Type* resolveTypeAlias(SymExpr* se)
-{
-  if (! se)
-    return NULL;
-
-  // Quick exit if the type is already known.
-  Type* result = se->getValType();
-  if (result != dtUnknown)
-    return result;
-
-  VarSymbol* var = toVarSymbol(se->symbol());
-  if (! var)
-    return NULL;
-
-  DefExpr* def = var->defPoint;
-  SET_LINENO(def);
-  Expr* typeExpr = resolveTypeExpr(def->init);
-  SymExpr* tse = toSymExpr(typeExpr);
-
-  return resolveTypeAlias(tse);
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -5808,6 +5807,98 @@ bool requiresImplicitDestroy(CallExpr* call) {
         strcmp(fn->name, "=")                                 !=     0 &&
         strcmp(fn->name, "_defaultOf")                        !=     0) {
       retval = true;
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static Expr* resolveTypeOrParamExpr(Expr* expr);
+
+void ensureEnumTypeResolved(EnumType* etype) {
+  if (etype->integerType == NULL) {
+    // Make sure to resolve all enum types.
+    for_enums(def, etype) {
+      if (def->init != NULL) {
+        Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
+
+        if (enumTypeExpr->typeInfo() == dtUnknown) {
+          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
+        }
+      }
+    }
+
+    // Now try computing the enum size...
+    etype->sizeAndNormalize();
+  }
+
+  INT_ASSERT(etype->integerType != NULL);
+}
+
+// Recursively resolve typedefs
+Type* resolveTypeAlias(SymExpr* se) {
+  Type* retval = NULL;
+
+  if (se != NULL) {
+    Type* valType = se->getValType();
+
+    if (valType != dtUnknown) {
+      retval = valType;
+
+    } else if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      SET_LINENO(var->defPoint);
+
+      DefExpr* def      = var->defPoint;
+      Expr*    typeExpr = resolveTypeOrParamExpr(def->init);
+      SymExpr* tse      = toSymExpr(typeExpr);
+
+      retval = resolveTypeAlias(tse);
+    }
+  }
+
+  return retval;
+}
+
+static Expr* resolveTypeOrParamExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  for_exprs_postorder(e, expr) {
+    if (CallExpr* call = toCallExpr(e)) {
+      Expr* result = preFold(call);
+
+      if (CallExpr* callFolded = toCallExpr(result)) {
+        if (callFolded->parentSymbol != NULL) {
+          callStack.add(callFolded);
+
+          resolveCall(callFolded);
+
+          if (callFolded->parentSymbol != NULL) {
+            if (FnSymbol* fn = callFolded->resolvedFunction()) {
+              resolveFormals(fn);
+
+              if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
+                resolveFns(fn);
+
+              } else if (fn->retType == dtUnknown) {
+                resolveFns(fn);
+              }
+            }
+          }
+
+          callStack.pop();
+        }
+      }
+
+      retval = postFold(result);
+
+    } else {
+      retval = postFold(e);
     }
   }
 
