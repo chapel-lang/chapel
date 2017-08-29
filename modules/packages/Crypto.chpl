@@ -692,7 +692,7 @@ module Crypto {
     */
     proc init(byteLen: int, iterCount: int, digest: Hash) {
       if (bitLen < 1) {
-        halt("Invalid key size.");
+        halt("Invalid key size specified.");
       }
       this.byteLen = byteLen;
       this.iterCount = iterCount;
