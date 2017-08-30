@@ -35,7 +35,6 @@ extern SymbolMap                      paramMap;
 
 extern Vec<CallExpr*>                 callStack;
 
-extern Vec<CondStmt*>                 tryStack;
 extern bool                           tryFailure;
 
 extern Vec<CallExpr*>                 inits;
