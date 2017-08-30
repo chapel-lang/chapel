@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "InitNormalize.h"
+#include "passes.h"
 #include "stmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
@@ -284,7 +285,8 @@ static void preNormalize(FnSymbol* fn) {
   // If this is a non-generic class then create a type method
   // to wrap this initializer
   if (isClass(at) == true && at->isGeneric() == false) {
-    buildClassAllocator(fn);
+    FnSymbol* _newFn = buildClassAllocator(fn);
+    normalize(_newFn);
 
     fn->addFlag(FLAG_INLINE);
   }

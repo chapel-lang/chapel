@@ -1299,9 +1299,6 @@ void AggregateType::buildDefaultInitializer() {
     fn->addFlag(FLAG_LAST_RESORT);
 
     _this->addFlag(FLAG_ARG_THIS);
-    if (isGeneric()) {
-      _this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-    }
 
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
@@ -1327,13 +1324,10 @@ void AggregateType::buildDefaultInitializer() {
 
       reset_ast_loc(def, symbol);
 
+      preNormalizeInitMethod(fn);
       normalize(fn);
 
       methods.add(fn);
-
-      if (isClass() == true && isGeneric() == false) {
-        normalize(buildClassAllocator(fn));
-      }
     }
   }
 }
@@ -1450,16 +1444,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
         fn->insertFormalAtTail(arg);
 
-        fn->insertAtTail(new CallExpr(PRIM_INIT_FIELD,
-                                      fn->_this,
-                                      new_CStringSymbol(name),
+        fn->insertAtTail(new CallExpr("=",
+                                      new CallExpr(".",
+                                                   fn->_this,
+                                                   new_CStringSymbol(name)),
                                       arg));
-      } else {
-        AggregateType* parentType = toAggregateType(field->type);
-        INT_ASSERT(parentType);
-        if (parentType->isGeneric()) {
-          field->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-        }
       }
     }
   }
@@ -1476,24 +1465,12 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
       symbol->hasFlag(FLAG_EXTERN) == false) {
     if (AggregateType* parent = toAggregateType(dispatchParents.v[0])) {
       if (parent->initializerStyle != DEFINES_CONSTRUCTOR) {
-        CallExpr* superPortion = new CallExpr(PRIM_GET_MEMBER_VALUE,
+        CallExpr* superPortion = new CallExpr(".",
                                               new SymExpr(fn->_this),
                                               new_CStringSymbol("super"));
-        VarSymbol* superTemp   = newTemp("super_tmp");
-
-        superTemp->addFlag(FLAG_SUPER_TEMP);
-
-        CallExpr* makeSuper    = new CallExpr(PRIM_MOVE,
-                                              superTemp,
-                                              superPortion);
-
-        fn->body->insertAtTail(new DefExpr(superTemp));
-        fn->body->insertAtTail(makeSuper);
 
         SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
-        CallExpr* base         = new CallExpr(".",
-                                              new SymExpr(superTemp),
-                                              initPortion);
+        CallExpr* base         = new CallExpr(".", superPortion, initPortion);
         CallExpr* superCall    = new CallExpr(base);
 
         if (parent->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
