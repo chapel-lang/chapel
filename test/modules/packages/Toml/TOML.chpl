@@ -52,7 +52,7 @@ Parser module with the Toml class for the Chapel TOML library.
 
    use Regexp;
    use DateTime;
-   
+
 
    /* Prints a line by line output of parsing process */
    config const debugTomlParser: bool = false;
