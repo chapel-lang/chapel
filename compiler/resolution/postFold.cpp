@@ -112,32 +112,6 @@ Expr* postFold(Expr* expr) {
     } else if (SymExpr* sym = toSymExpr(expr)) {
       retval = postFoldSymExpr(sym);
     }
-
-    if (CondStmt* cond = toCondStmt(retval->parentExpr)) {
-      if (cond->condExpr == retval) {
-        if (Expr* expr = cond->foldConstantCondition()) {
-          retval = expr;
-
-        } else {
-          // push try block
-          if (SymExpr* se = toSymExpr(retval)) {
-            if (se->symbol() == gTryToken) {
-              tryStack.add(cond);
-            }
-          }
-        }
-      }
-    }
-
-    // pop try block and delete else
-    if (tryStack.n) {
-      if (BlockStmt* block = toBlockStmt(retval)) {
-        if (tryStack.tail()->thenStmt == block) {
-          tryStack.tail()->replace(block->remove());
-          tryStack.pop();
-        }
-      }
-    }
   }
 
   return retval;

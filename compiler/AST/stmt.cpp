@@ -39,10 +39,11 @@ Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
 // remember these so we can remove their iterResumeGoto
 Vec<LabelSymbol*> removedIterResumeLabels;
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 Stmt::Stmt(AstTag astTag) : Expr(astTag) {
 
@@ -553,36 +554,41 @@ BlockStmt::accept(AstVisitor* visitor) {
   }
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Stmt(E_CondStmt),
-  condExpr(iCondExpr),
-  thenStmt(NULL),
-  elseStmt(NULL) {
+  Stmt(E_CondStmt) {
+
+  condExpr = iCondExpr;
+  thenStmt = NULL;
+  elseStmt = NULL;
 
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
 
-    if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt())
+    if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt()) {
       thenStmt = bs;
-    else
+    } else {
       thenStmt = new BlockStmt(s);
+    }
+
   } else {
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
   }
 
-  if (iElseStmt) {
+  if (iElseStmt != NULL) {
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
 
-      if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt())
+      if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt()) {
         elseStmt = bs;
-      else
+      } else {
         elseStmt = new BlockStmt(s);
+      }
 
     } else {
       INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
@@ -592,9 +598,8 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   gCondStmts.add(this);
 }
 
-Expr*
-CondStmt::foldConstantCondition() {
-  Expr* result = NULL;
+CallExpr* CondStmt::foldConstantCondition() {
+  CallExpr* result = NULL;
 
   if (SymExpr* cond = toSymExpr(condExpr)) {
     if (VarSymbol* var = toVarSymbol(cond->symbol())) {
@@ -610,13 +615,15 @@ CondStmt::foldConstantCondition() {
           Expr* then_stmt = thenStmt;
 
           then_stmt->remove();
+
           replace(then_stmt);
 
         } else {
           Expr* else_stmt = elseStmt;
 
-          if (else_stmt) {
+          if (else_stmt != NULL) {
             else_stmt->remove();
+
             replace(else_stmt);
           } else {
             remove();
@@ -629,8 +636,7 @@ CondStmt::foldConstantCondition() {
   return result;
 }
 
-void
-CondStmt::verify() {
+void CondStmt::verify() {
   Expr::verify();
 
   if (astTag != E_CondStmt) {
@@ -657,88 +663,95 @@ CondStmt::verify() {
     INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
 
-  if (condExpr->parentExpr != this)
+  if (condExpr->parentExpr != this) {
     INT_FATAL(this, "Bad CondStmt::condExpr::parentExpr");
+  }
 
-  if (thenStmt->parentExpr != this)
+  if (thenStmt->parentExpr != this) {
     INT_FATAL(this, "Bad CondStmt::thenStmt::parentExpr");
+  }
 
-  if (elseStmt && elseStmt->parentExpr != this)
+  if (elseStmt && elseStmt->parentExpr != this) {
     INT_FATAL(this, "Bad CondStmt::elseStmt::parentExpr");
+  }
 
   verifyNotOnList(condExpr);
+
   verifyNotOnList(thenStmt);
+
   verifyNotOnList(elseStmt);
 }
 
-CondStmt*
-CondStmt::copyInner(SymbolMap* map) {
+CondStmt* CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
                       COPY_INT(thenStmt),
                       COPY_INT(elseStmt));
 }
 
 
-void
-CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == condExpr) {
-    condExpr = new_ast;
+void CondStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (oldAst == condExpr) {
+    condExpr = newAst;
 
-  } else if (old_ast == thenStmt) {
-    thenStmt = toBlockStmt(new_ast);
+  } else if (oldAst == thenStmt) {
+    thenStmt = toBlockStmt(newAst);
 
-  } else if (old_ast == elseStmt) {
-    elseStmt = toBlockStmt(new_ast);
+  } else if (oldAst == elseStmt) {
+    elseStmt = toBlockStmt(newAst);
 
   } else {
     INT_FATAL(this, "Unexpected case in CondStmt::replaceChild");
   }
 }
 
-void
-CondStmt::accept(AstVisitor* visitor) {
+void CondStmt::accept(AstVisitor* visitor) {
   if (visitor->enterCondStmt(this) == true) {
 
-    if (condExpr)
+    if (condExpr != NULL) {
       condExpr->accept(visitor);
+    }
 
-    if (thenStmt)
+    if (thenStmt != NULL) {
       thenStmt->accept(visitor);
+    }
 
-    if (elseStmt)
+    if (elseStmt != NULL) {
       elseStmt->accept(visitor);
+    }
 
     visitor->exitCondStmt(this);
   }
 }
 
-Expr*
-CondStmt::getFirstChild() {
+Expr* CondStmt::getFirstChild() {
   return (condExpr != 0) ? condExpr : NULL ;
 }
 
-Expr*
-CondStmt::getFirstExpr() {
+Expr* CondStmt::getFirstExpr() {
   return (condExpr != 0) ? condExpr->getFirstExpr() : this;
 }
 
-Expr*
-CondStmt::getNextExpr(Expr* expr) {
-  Expr* retval = this;
+Expr* CondStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
 
-  if (expr == condExpr && thenStmt != NULL)
+  if        (expr == condExpr && thenStmt != NULL) {
     retval = thenStmt->getFirstExpr();
 
-  else if (expr == thenStmt && elseStmt != NULL)
+  } else if (expr == thenStmt && elseStmt != NULL) {
     retval = elseStmt->getFirstExpr();
+
+  } else {
+    retval = this;
+  }
 
   return retval;
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Stmt(E_GotoStmt),
@@ -931,10 +944,11 @@ LabelSymbol* GotoStmt::gotoTarget() const {
   return retval;
 }
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
   Stmt(E_ExternBlockStmt),
@@ -977,10 +991,11 @@ Expr* ExternBlockStmt::getFirstExpr() {
 }
 
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 ForwardingStmt::ForwardingStmt(DefExpr* toFnDef) :
   Stmt(E_ForwardingStmt),

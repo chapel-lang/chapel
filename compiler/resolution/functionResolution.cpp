@@ -88,59 +88,48 @@ public:
 //#
 //# Global Variables
 //#
-char                             arrayUnrefName[] = "array_unref_ret_tmp";
+char                               arrayUnrefName[] = "array_unref_ret_tmp";
 
-bool                             resolved                  = false;
-bool                             tryFailure                = false;
-bool                             beforeLoweringForallStmts = true;
+bool                               resolved                  = false;
+bool                               tryFailure                = false;
+bool                               beforeLoweringForallStmts = true;
 
-int                              explainCallLine           = 0;
+int                                explainCallLine           = 0;
 
-SymbolMap                        paramMap;
+SymbolMap                          paramMap;
 
-Vec<CallExpr*>                   callStack;
-Vec<CallExpr*>                   inits;
+Vec<CallExpr*>                     callStack;
+Vec<CallExpr*>                     inits;
 
-Vec<CondStmt*>                   tryStack;
+Vec<BlockStmt*>                    standardModuleSet;
 
-Vec<BlockStmt*>                  standardModuleSet;
+std::map<CallExpr*, CallExpr*>     eflopiMap;
 
-std::map<CallExpr*, CallExpr*>   eflopiMap;
+std::map<Type*,     FnSymbol*>     autoCopyMap;
+std::map<Type*,     Serializers>   serializeMap;
 
-std::map<Type*,     FnSymbol*>   autoCopyMap;
-std::map<Type*,     Serializers> serializeMap;
-
-Map<Type*,          FnSymbol*>   autoDestroyMap;
-Map<Type*,          FnSymbol*>   unaliasMap;
-Map<Type*,          FnSymbol*>   valueToRuntimeTypeMap;
-Map<FnSymbol*,      FnSymbol*>   iteratorLeaderMap;
-Map<FnSymbol*,      FnSymbol*>   iteratorFollowerMap;
-
-
+Map<Type*,          FnSymbol*>     autoDestroyMap;
+Map<Type*,          FnSymbol*>     unaliasMap;
+Map<Type*,          FnSymbol*>     valueToRuntimeTypeMap;
+Map<FnSymbol*,      FnSymbol*>     iteratorLeaderMap;
+Map<FnSymbol*,      FnSymbol*>     iteratorFollowerMap;
 
 //#
 //# Static Variables
 //#
-static ModuleSymbol* explainCallModule;
+static ModuleSymbol*               explainCallModule;
 
-static Vec<FnSymbol*> resolvedFormals;
+static Vec<FnSymbol*>              resolvedFormals;
 
-static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
-                                        // e.g. array and domain runtime types
+static Vec<CondStmt*>              tryStack;
 
-static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
+static Map<Type*,     Type*>       runtimeTypeMap;
 
-// map of compiler warnings that may need to be reissued for repeated
-// calls; the inner compiler warning map is from the compilerWarning
-// function; the outer compiler warning map is from the function
-// containing the compilerWarning function
-// to do: this needs to be a map from functions to multiple strings in
-//        order to support multiple compiler warnings are allowed to
-//        be in a single function
-static Map<FnSymbol*,const char*> innerCompilerWarningMap;
-static Map<FnSymbol*,const char*> outerCompilerWarningMap;
+static Map<Type*,     FnSymbol*>   runtimeTypeToValueMap;
 
+static Map<FnSymbol*, const char*> innerCompilerWarningMap;
 
+static Map<FnSymbol*, const char*> outerCompilerWarningMap;
 
 //#
 //# Static Function Declarations
@@ -183,10 +172,14 @@ static bool formalRequiresTemp(ArgSymbol* formal);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 
 static Expr* resolveExpr(Expr* expr);
+
+static Expr* foldTryCond(Expr* expr);
+
 static void  computeReturnTypeParamVectors(BaseAST*      ast,
                                            Symbol*       retSymbol,
                                            Vec<Type*>&   retTypes,
                                            Vec<Symbol*>& retParams);
+
 static void  insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
@@ -5895,10 +5888,10 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
         }
       }
 
-      retval = postFold(result);
+      retval = foldTryCond(postFold(result));
 
     } else {
-      retval = postFold(e);
+      retval = foldTryCond(postFold(e));
     }
   }
 
@@ -5975,12 +5968,24 @@ static Expr* resolveExpr(Expr* expr) {
   } else if (isParamResolved(fn, expr) == true) {
     retval = expr;
 
+  // This must be after isParamResolved
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    // Possibly pop try block and delete else
+    if (tryStack.n) {
+      if (tryStack.tail()->thenStmt == block) {
+        tryStack.tail()->replace(block->remove());
+        tryStack.pop();
+      }
+    }
+
+    retval = expr;
+
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
       implementForallIntents1(def);
     }
 
-    retval = postFold(expr);
+    retval = foldTryCond(postFold(expr));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
@@ -6003,7 +6008,7 @@ static Expr* resolveExpr(Expr* expr) {
     retval = resolveExprPhase2(expr, fn, preFold(call));
 
   } else {
-    retval = postFold(expr);
+    retval = foldTryCond(postFold(expr));
   }
 
   return retval;
@@ -6066,7 +6071,7 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
   if (SymExpr* symExpr = toSymExpr(expr)) {
     resolveExprTypeConstructor(symExpr);
 
-    retval = postFold(expr);
+    retval = foldTryCond(postFold(expr));
 
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ERROR)   == true  ||
@@ -6102,14 +6107,14 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
     if (tryFailure == false) {
       callStack.pop();
 
-      retval = postFold(expr);
+      retval = foldTryCond(postFold(expr));
 
     } else {
       retval = resolveExprHandleTryFailure(fn);
     }
 
   } else {
-    retval = postFold(expr);
+    retval = foldTryCond(postFold(expr));
   }
 
   return retval;
@@ -6423,6 +6428,28 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
       outerCompilerWarningMap.put(fn, str);
     }
   }
+}
+
+static Expr* foldTryCond(Expr* expr) {
+  Expr* retval = expr;
+
+  if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
+    if (cond->condExpr == expr) {
+      if (CallExpr* noop = cond->foldConstantCondition()) {
+        retval = noop;
+
+      } else {
+        // push try block
+        if (SymExpr* se = toSymExpr(expr)) {
+          if (se->symbol() == gTryToken) {
+            tryStack.add(cond);
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -7354,6 +7381,7 @@ static void resolveExports() {
       // functions
       continue;
     }
+
     if (fn->hasFlag(FLAG_EXPORT)) {
       SET_LINENO(fn);
       resolveFormals(fn);
@@ -9164,7 +9192,7 @@ Expr* resolvePrimInit(CallExpr* call) {
 
       resolveCallAndCallee(defOfCall);
 
-      retval = postFold(defOfCall);
+      retval = foldTryCond(postFold(defOfCall));
     }
   }
 
