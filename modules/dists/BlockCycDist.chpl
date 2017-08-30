@@ -805,7 +805,7 @@ proc BlockCyclicArr.setup() {
   }
 }
 
-proc BlockCyclicArr.dsiDestroyArr(isslice:bool) {
+proc BlockCyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       delete locArr(localeIdx);

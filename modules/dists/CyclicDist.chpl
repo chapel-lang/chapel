@@ -714,7 +714,7 @@ proc CyclicArr.setup() {
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
 }
 
-proc CyclicArr.dsiDestroyArr(isslice:bool) {
+proc CyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       delete locArr(localeIdx);
