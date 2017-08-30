@@ -1,0 +1,22 @@
+.. default-domain:: chpl
+
+.. module:: mathjax.doc
+
+mathjax.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use mathjax.doc;
+
+.. function:: proc pythagoras(a, b)
+
+   
+    Compute the following:
+   
+   .. math::
+   
+      (a + b)^2  &=  (a + b)(a + b) \\
+                                   &=  a^2 + 2ab + b^2
+
