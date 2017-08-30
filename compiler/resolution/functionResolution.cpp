@@ -5975,6 +5975,18 @@ static Expr* resolveExpr(Expr* expr) {
   } else if (isParamResolved(fn, expr) == true) {
     retval = expr;
 
+  // This must be after isParamResolved
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    // Possibly pop try block and delete else
+    if (tryStack.n) {
+      if (tryStack.tail()->thenStmt == block) {
+        tryStack.tail()->replace(block->remove());
+        tryStack.pop();
+      }
+    }
+
+    retval = expr;
+
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
       implementForallIntents1(def);

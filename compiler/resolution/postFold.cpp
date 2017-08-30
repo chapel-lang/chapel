@@ -128,16 +128,6 @@ Expr* postFold(Expr* expr) {
         }
       }
     }
-
-    // pop try block and delete else
-    if (tryStack.n) {
-      if (BlockStmt* block = toBlockStmt(retval)) {
-        if (tryStack.tail()->thenStmt == block) {
-          tryStack.tail()->replace(block->remove());
-          tryStack.pop();
-        }
-      }
-    }
   }
 
   return retval;
