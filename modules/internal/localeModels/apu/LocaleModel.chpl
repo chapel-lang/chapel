@@ -1,5 +1,7 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
+ * Copyright 2004-2017 Cray Inc.
+ * Other additional copyright holders may be indicated within.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
