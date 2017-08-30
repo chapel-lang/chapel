@@ -34,6 +34,7 @@ needs_sphinx = '1.3'
 extensions = [
     'sphinx.ext.todo',
     'sphinxcontrib.chapeldomain',
+    'sphinx.ext.mathjax',
     'util.disguise',
 ]
 
