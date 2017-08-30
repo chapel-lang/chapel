@@ -37,174 +37,8 @@
 */
 
 module Crypto {
-  require "openssl/evp.h", "openssl/pem.h",
-          "openssl/bn.h", "openssl/bio.h",
-          "openssl/aes.h", "openssl/rand.h", "-lcrypto";
-  //require "CryptoHandlers/rsa_complex_bypass_handler.h";
 
-  pragma "no doc"
-  extern type EVP_PKEY_CTX;
-  pragma "no doc"
-  extern type EVP_PKEY;
-  pragma "no doc"
-  extern var EVP_PKEY_RSA: c_int;
-
-  pragma "no doc"
-  extern type EVP_PKEY_CTX_PTR = c_ptr(EVP_PKEY_CTX);
-  pragma "no doc"
-  extern type EVP_PKEY_PTR = c_ptr(EVP_PKEY);
-
-  pragma "no doc"
-  extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
-  pragma "no doc"
-  extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
-  pragma "no doc"
-  extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
-  pragma "no doc"
-  extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;
-  pragma "no doc"
-  extern proc EVP_PKEY_CTX_set_rsa_keygen_bits(ctx: EVP_PKEY_CTX_PTR, mbits: c_int): c_int;
-  pragma "no doc"
-  extern proc EVP_PKEY_keygen(ctx: EVP_PKEY_CTX_PTR, ref ppkey: EVP_PKEY_PTR): c_int;
-  pragma "no doc"
-  extern proc EVP_PKEY_CTX_free(ctx: EVP_PKEY_CTX_PTR);
-
-  pragma "no doc"
-  extern proc EVP_SealInit(ref ctx: EVP_CIPHER_CTX, const types: EVP_CIPHER_PTR,
-                           ek: c_ptr(c_ptr(c_uchar)), ekl: c_ptr(c_int),
-                           iv: c_ptr(c_uchar), pubk: c_ptr(EVP_PKEY_PTR), npubk: c_int): c_int;
-  pragma "no doc"
-  extern proc EVP_SealUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
-                             outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
-  pragma "no doc"
-  extern proc EVP_SealFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
-
-  pragma "no doc"
-  extern proc EVP_OpenInit(ref ctx: EVP_CIPHER_CTX, types: EVP_CIPHER_PTR,
-                           ek: c_ptr(c_uchar), ekl: c_int, iv: c_ptr(c_uchar), priv: EVP_PKEY_PTR): c_int;
-  pragma "no doc"
-  extern proc EVP_OpenUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
-                             outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
-  pragma "no doc"
-  extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
-
-  pragma "no doc"
-  extern type EVP_MD;
-  pragma "no doc"
-  extern type EVP_MD_CTX;
-  pragma "no doc"
-  extern type ENGINE;
-
-  pragma "no doc"
-  extern type EVP_MD_PTR = c_ptr(EVP_MD);
-  pragma "no doc"
-  extern type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
-  pragma "no doc"
-  extern type ENGINE_PTR = c_ptr(ENGINE);
-
-  pragma "no doc"
-  extern proc OpenSSL_add_all_digests();
-  pragma "no doc"
-  extern proc EVP_get_digestbyname(name: c_string): EVP_MD_PTR;
-  pragma "no doc"
-  extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): c_int;
-  pragma "no doc"
-  extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, const types: EVP_MD_PTR, impl: ENGINE_PTR): c_int;
-  pragma "no doc"
-  extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
-  pragma "no doc"
-  extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
-
-  pragma "no doc"
-  extern type EVP_CIPHER;
-  pragma "no doc"
-  extern type EVP_CIPHER_CTX;
-
-  pragma "no doc"
-  extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
-  pragma "no doc"
-  extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
-
-  pragma "no doc"
-  extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
-
-  pragma "no doc"
-  extern proc EVP_sha256(): EVP_MD_PTR;
-
-  pragma "no doc"
-  extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
-  pragma "no doc"
-  extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): c_int;
-  pragma "no doc"
-  extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
-                                const cipher: EVP_CIPHER_PTR,
-                                impl: ENGINE_PTR,
-                                const key: c_ptr(c_uchar),
-                                const iv: c_ptr(c_uchar)): c_int;
-  pragma "no doc"
-  extern proc EVP_EncryptUpdate(ref ctx: EVP_CIPHER_CTX,
-                                outm: c_ptr(c_uchar),
-                                outl: c_ptr(c_int),
-                                const ins: c_ptr(c_uchar),
-                                inl: c_int): c_int;
-  pragma "no doc"
-  extern proc EVP_EncryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
-                                  outm: c_ptr(c_uchar),
-                                  outl: c_ptr(c_int)): c_int;
-  pragma "no doc"
-  extern proc EVP_DecryptInit_ex(ref ctx: EVP_CIPHER_CTX,
-                                const cipher: EVP_CIPHER_PTR,
-                                impl: ENGINE_PTR,
-                                const key: c_ptr(c_uchar),
-                                const iv: c_ptr(c_uchar)): c_int;
-  pragma "no doc"
-  extern proc EVP_DecryptUpdate(ref ctx: EVP_CIPHER_CTX,
-                                outm: c_ptr(c_uchar),
-                                outl: c_ptr(c_int),
-                                const ins: c_ptr(c_uchar),
-                                inl: c_int): c_int;
-  pragma "no doc"
-  extern proc EVP_DecryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
-                                  outm: c_ptr(c_uchar),
-                                  outl: c_ptr(c_int)): c_int;
-
-  pragma "no doc"
-  extern proc EVP_aes_128_cbc(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_128_ecb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_128_cfb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_128_ofb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_192_cbc(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_192_ecb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_192_cfb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_192_ofb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_256_cbc(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_256_ecb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_256_cfb(): EVP_CIPHER_PTR;
-  pragma "no doc"
-  extern proc EVP_aes_256_ofb(): EVP_CIPHER_PTR;
-
-  pragma "no doc"
-  extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
-                                passlen: c_int,
-                                const salt: c_ptr(c_uchar),
-                                saltlen: c_int,
-                                iterCount: c_int,
-                                const digest: EVP_MD_PTR,
-                                keylen: c_int,
-                                outx: c_ptr(c_uchar)): c_int;
-  pragma "no doc"
-  extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
-
+  use C_OpenSSL;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
@@ -985,4 +819,127 @@ module Crypto {
       return plaintextBuff;
     }
   }
+}
+
+
+/*
+    Support for low-level native C_OpenSSL bindings.
+    This submodule wraps the C_OpenSSL implementation, providing access to
+    most of the C_OpenSSL calls.
+
+    Refer to the
+    `C_OpenSSL documentation <https://www.openssl.org/docs/manmaster/man3/>`_
+    of the reference version for the usage of this module.
+    
+  */
+module C_OpenSSL {
+  require "openssl/evp.h", "openssl/pem.h",
+          "openssl/bn.h", "openssl/bio.h",
+          "openssl/aes.h", "openssl/rand.h", "-lcrypto";
+  //require "CryptoHandlers/rsa_complex_bypass_handler.h";
+
+  extern type EVP_PKEY_CTX;
+  extern type EVP_PKEY;
+  extern var EVP_PKEY_RSA: c_int;
+
+  extern type EVP_PKEY_CTX_PTR = c_ptr(EVP_PKEY_CTX);
+  extern type EVP_PKEY_PTR = c_ptr(EVP_PKEY);
+
+  extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
+  extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
+  extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
+  extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;
+  extern proc EVP_PKEY_CTX_set_rsa_keygen_bits(ctx: EVP_PKEY_CTX_PTR, mbits: c_int): c_int;
+  extern proc EVP_PKEY_keygen(ctx: EVP_PKEY_CTX_PTR, ref ppkey: EVP_PKEY_PTR): c_int;
+  extern proc EVP_PKEY_CTX_free(ctx: EVP_PKEY_CTX_PTR);
+
+  extern proc EVP_SealInit(ref ctx: EVP_CIPHER_CTX, const types: EVP_CIPHER_PTR,
+                           ek: c_ptr(c_ptr(c_uchar)), ekl: c_ptr(c_int),
+                           iv: c_ptr(c_uchar), pubk: c_ptr(EVP_PKEY_PTR), npubk: c_int): c_int;
+  extern proc EVP_SealUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
+                             outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
+  extern proc EVP_SealFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
+
+  extern proc EVP_OpenInit(ref ctx: EVP_CIPHER_CTX, types: EVP_CIPHER_PTR,
+                           ek: c_ptr(c_uchar), ekl: c_int, iv: c_ptr(c_uchar), priv: EVP_PKEY_PTR): c_int;
+  extern proc EVP_OpenUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
+                             outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
+  extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
+
+  extern type EVP_MD;
+  extern type EVP_MD_CTX;
+  extern type ENGINE;
+
+  extern type EVP_MD_PTR = c_ptr(EVP_MD);
+  extern type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
+  extern type ENGINE_PTR = c_ptr(ENGINE);
+
+  extern proc OpenSSL_add_all_digests();
+  extern proc EVP_get_digestbyname(name: c_string): EVP_MD_PTR;
+  extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): c_int;
+  extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, const types: EVP_MD_PTR, impl: ENGINE_PTR): c_int;
+  extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
+  extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
+
+  extern type EVP_CIPHER;
+  extern type EVP_CIPHER_CTX;
+
+  extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
+  extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
+
+  extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
+
+  extern proc EVP_sha256(): EVP_MD_PTR;
+
+  extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
+  extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): c_int;
+  extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
+                                const cipher: EVP_CIPHER_PTR,
+                                impl: ENGINE_PTR,
+                                const key: c_ptr(c_uchar),
+                                const iv: c_ptr(c_uchar)): c_int;
+  extern proc EVP_EncryptUpdate(ref ctx: EVP_CIPHER_CTX,
+                                outm: c_ptr(c_uchar),
+                                outl: c_ptr(c_int),
+                                const ins: c_ptr(c_uchar),
+                                inl: c_int): c_int;
+  extern proc EVP_EncryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
+                                  outm: c_ptr(c_uchar),
+                                  outl: c_ptr(c_int)): c_int;
+  extern proc EVP_DecryptInit_ex(ref ctx: EVP_CIPHER_CTX,
+                                const cipher: EVP_CIPHER_PTR,
+                                impl: ENGINE_PTR,
+                                const key: c_ptr(c_uchar),
+                                const iv: c_ptr(c_uchar)): c_int;
+  extern proc EVP_DecryptUpdate(ref ctx: EVP_CIPHER_CTX,
+                                outm: c_ptr(c_uchar),
+                                outl: c_ptr(c_int),
+                                const ins: c_ptr(c_uchar),
+                                inl: c_int): c_int;
+  extern proc EVP_DecryptFinal_ex(ref ctx: EVP_CIPHER_CTX,
+                                  outm: c_ptr(c_uchar),
+                                  outl: c_ptr(c_int)): c_int;
+
+  extern proc EVP_aes_128_cbc(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_ecb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_cfb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_ofb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_cbc(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_ecb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_cfb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_ofb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_cbc(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_ecb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_cfb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_ofb(): EVP_CIPHER_PTR;
+
+  extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
+                                passlen: c_int,
+                                const salt: c_ptr(c_uchar),
+                                saltlen: c_int,
+                                iterCount: c_int,
+                                const digest: EVP_MD_PTR,
+                                keylen: c_int,
+                                outx: c_ptr(c_uchar)): c_int;
+  extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
 }
