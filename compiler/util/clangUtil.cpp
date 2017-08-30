@@ -1334,6 +1334,11 @@ void runClang(const char* just_parse_filename) {
         }
       }
     }
+
+    // Include header containing libc wrappers
+    clangOtherArgs.push_back("-include");
+    clangOtherArgs.push_back("llvm/chapel_libc_wrapper.h");
+
     // Include extern C blocks
     if( externC && gAllExternCode.filename ) {
       clangOtherArgs.push_back("-include");

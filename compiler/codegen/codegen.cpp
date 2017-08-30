@@ -31,6 +31,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "clangBuiltinsWrappedSet.h"
 #include "virtualDispatch.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1972,6 +1973,28 @@ adjustArgSymbolTypesForIntent(void)
 extern bool printCppLineno;
 debug_data *debug_info=NULL;
 
+
+
+
+#ifdef HAVE_LLVM
+static bool hasWrapper(const char *name)
+{
+  auto it = chplClangBuiltinWrappedFunctions.find(name);
+  if(it != end(chplClangBuiltinWrappedFunctions))
+    return true;
+  return false;
+}
+
+static const char* getClangBuiltinWrappedName(const char* name)
+{
+  auto it = chplClangBuiltinWrappedFunctions.find(name);
+  if(it != end(chplClangBuiltinWrappedFunctions))
+    return astr(WRAPPER_PREFIX, name);
+  return name;
+}
+#endif
+
+
 void codegen(void) {
   if (no_codegen)
     return;
@@ -2077,6 +2100,18 @@ void codegen(void) {
     if (fn->getReturnSymbol()) {
       fn->retType = fn->getReturnSymbol()->type;
     }
+  }
+
+  // Wrap calls to chosen functions from c library
+  if( llvmCodegen ) {
+#ifdef HAVE_LLVM
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_EXTERN)) {
+          if(hasWrapper(fn->cname))
+            fn->cname = getClangBuiltinWrappedName(fn->cname);
+      }
+    }
+#endif
   }
 
   if( llvmCodegen ) {
