@@ -608,45 +608,44 @@ static Expr* postFoldMove(CallExpr* call) {
         }
       }
     }
-  }
 
-  //
-  // Phase 3
-  //
+    //
+    // Phase 3
+    //
 
-  if (set == false) {
-    if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     == true &&
-        lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-        if (requiresImplicitDestroy(rhsCall) == true) {
-          // this still seems to be necessary even if
-          // isUserDefinedRecord(lhsSym->type) == true
-          // see call-expr-tmp.chpl for example
-          lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
-          lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    if (set == false) {
+      if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     == true &&
+          lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+        if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+          if (requiresImplicitDestroy(rhsCall) == true) {
+            // this still seems to be necessary even if
+            // isUserDefinedRecord(lhsSym->type) == true
+            // see call-expr-tmp.chpl for example
+            lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
+            lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
+        }
+      }
+
+      if (isReferenceType(lhsSym->type) ||
+          lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
+          lhsSym->type->symbol->hasFlag(FLAG_ARRAY)) {
+        lhsSym->removeFlag(FLAG_EXPR_TEMP);
+      }
+
+      if (CallExpr* rhs = toCallExpr(call->get(2))) {
+        if (rhs->isPrimitive(PRIM_NO_INIT)) {
+          // If the lhs is a primitive, then we can safely just remove this
+          // value.  Otherwise the type needs to be resolved a little
+          // further and so this statement can't be removed until
+          // resolveRecordInitializers
+          if (isAggregateType(rhs->get(1)->getValType()) == false) {
+            call->convertToNoop();
+          }
         }
       }
     }
-
-    if (isReferenceType(lhsSym->type) ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)) {
-      lhsSym->removeFlag(FLAG_EXPR_TEMP);
-    }
-
-    if (CallExpr* rhs = toCallExpr(call->get(2))) {
-      if (rhs->isPrimitive(PRIM_NO_INIT)) {
-        // If the lhs is a primitive, then we can safely just remove this
-        // value.  Otherwise the type needs to be resolved a little
-        // further and so this statement can't be removed until
-        // resolveRecordInitializers
-        if (isAggregateType(rhs->get(1)->getValType()) == false) {
-          call->convertToNoop();
-        }
-      }
-    }
   }
-
 
   return retval;
 }
