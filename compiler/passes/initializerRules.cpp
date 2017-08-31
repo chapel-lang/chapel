@@ -887,7 +887,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   FnSymbol*      fn          = new FnSymbol("_new");
   BlockStmt*     body        = fn->body;
-  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "_t", at);
+  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "chpl_t", at);
   VarSymbol*     newInstance = newTemp("instance", at);
   CallExpr*      allocCall   = callChplHereAlloc(at);
   CallExpr*      initCall    = NULL;
