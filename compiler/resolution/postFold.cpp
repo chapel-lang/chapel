@@ -601,32 +601,31 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
 }
 
 static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
-  if (lhsSym->hasFlag(FLAG_MAYBE_TYPE) == true) {
-    // Add FLAG_TYPE_VARIABLE when relevant
-    if (SymExpr* rhs = toSymExpr(call->get(2))) {
-      if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-      }
+  bool isTypeVar = false;
 
-    } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
-      if (FnSymbol* fn = rhs->resolvedFunction()) {
-        if (fn->retTag == RET_TYPE) {
-          lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-        }
+  if        (SymExpr*  rhs = toSymExpr(call->get(2)))  {
+    isTypeVar = rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
 
-      } else if (rhs->isPrimitive(PRIM_DEREF)) {
-        if (isTypeExpr(rhs->get(1)) == true) {
-          lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-        }
-      }
+  } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
+    if (FnSymbol* fn = rhs->resolvedFunction()) {
+      isTypeVar = fn->retTag == RET_TYPE;
+
+    } else if (rhs->isPrimitive(PRIM_DEREF)  == true) {
+      isTypeVar = isTypeExpr(rhs->get(1));
+
+    } else if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
+      isTypeVar = true;
     }
+
+  } else {
+    INT_ASSERT(false);
   }
 
-  if (CallExpr* rhs = toCallExpr(call->get(2))) {
-    if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
-      lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-    }
+  if (isTypeVar == true) {
+    lhsSym->addFlag(FLAG_TYPE_VARIABLE);
   }
+
+  lhsSym->removeFlag(FLAG_MAYBE_TYPE);
 }
 
 static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
