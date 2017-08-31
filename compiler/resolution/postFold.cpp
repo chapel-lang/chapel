@@ -37,14 +37,10 @@ static Expr* postFoldMove(CallExpr* call);
 
 static Expr* postFoldSymExpr(SymExpr* symExpr);
 
-static void foldEnumOp(int         op,
-                       EnumSymbol* e1,
-                       EnumSymbol* e2,
-                       Immediate*  imm);
-
-static bool isSubTypeOrInstantiation(Type* sub, Type* super);
-
-static void insertValueTemp(Expr* insertPoint, Expr* actual);
+static void  foldEnumOp(int         op,
+                        EnumSymbol* e1,
+                        EnumSymbol* e2,
+                        Immediate*  imm);
 
 #define FOLD_CALL1(prim)                                                \
   if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
@@ -95,27 +91,39 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual);
     }                                                                   \
   }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 Expr* postFold(Expr* expr) {
+  SET_LINENO(expr);
+
   Expr* retval = expr;
 
-  if (expr->parentSymbol != NULL) {
-    SET_LINENO(expr);
+  INT_ASSERT(expr->parentSymbol != NULL);
 
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isResolved() == true) {
-        retval = postFoldNormal(call);
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isResolved() == true) {
+      retval = postFoldNormal(call);
 
-      } else if (call->isPrimitive() == true) {
-        retval = postFoldPrimop(call);
-      }
-
-    } else if (SymExpr* sym = toSymExpr(expr)) {
-      retval = postFoldSymExpr(sym);
+    } else if (call->isPrimitive() == true) {
+      retval = postFoldPrimop(call);
     }
+
+  } else if (SymExpr* sym = toSymExpr(expr)) {
+    retval = postFoldSymExpr(sym);
   }
 
   return retval;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
@@ -169,6 +177,16 @@ static Expr* postFoldNormal(CallExpr* call) {
 
   return retval;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool  isSubTypeOrInstantiation(Type* sub, Type* super);
+
+static void  insertValueTemp(Expr* insertPoint, Expr* actual);
 
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
@@ -436,6 +454,50 @@ static Expr* postFoldPrimop(CallExpr* call) {
   return retval;
 }
 
+static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
+  bool retval = false;
+
+  if (sub == super) {
+    retval = true;
+
+  } else if (AggregateType* at = toAggregateType(sub)) {
+    for (int i = 0; i < at->dispatchParents.n && retval == false; i++) {
+      retval = isSubTypeOrInstantiation(at->dispatchParents.v[i], super);
+    }
+
+    if (retval == false) {
+      if (at->instantiatedFrom != NULL) {
+        retval = isSubTypeOrInstantiation(at->instantiatedFrom,   super);
+      }
+    }
+  }
+
+  return retval;
+}
+
+static void insertValueTemp(Expr* insertPoint, Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual)) {
+    if (se->symbol()->type->refType == NULL) {
+      VarSymbol* tmp = newTemp("_value_tmp_", se->symbol()->getValType());
+
+      insertPoint->insertBefore(new DefExpr(tmp));
+
+      insertPoint->insertBefore(new CallExpr(PRIM_MOVE,
+                                             tmp,
+                                             new CallExpr(PRIM_DEREF,
+                                                          se->symbol())));
+
+      se->setSymbol(tmp);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static Expr* postFoldMove(CallExpr* call) {
   bool  set    = false;
   Expr* retval = call;
@@ -596,6 +658,12 @@ static Expr* postFoldMove(CallExpr* call) {
   return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static Expr* postFoldSymExpr(SymExpr* sym) {
   Expr* retval = sym;
 
@@ -749,44 +817,5 @@ static void foldEnumOp(int         op,
     case P_prim_greaterorequal:
       imm->v_bool = val1 >= val2;
       break;
-  }
-}
-
-static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  if (sub == super) {
-    return true;
-  }
-
-  forv_Vec(Type, parent, sub->dispatchParents) {
-    if (isSubTypeOrInstantiation(parent, super) == true) {
-      return true;
-    }
-  }
-
-  if (AggregateType* at = toAggregateType(sub)) {
-    if (at->instantiatedFrom                                  != NULL &&
-        isSubTypeOrInstantiation(at->instantiatedFrom, super) == true) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-
-static void insertValueTemp(Expr* insertPoint, Expr* actual) {
-  if (SymExpr* se = toSymExpr(actual)) {
-    if (!se->symbol()->type->refType) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->symbol()->getValType());
-
-      insertPoint->insertBefore(new DefExpr(tmp));
-
-      insertPoint->insertBefore(new CallExpr(PRIM_MOVE,
-                                             tmp,
-                                             new CallExpr(PRIM_DEREF,
-                                                          se->symbol())));
-
-      se->setSymbol(tmp);
-    }
   }
 }
