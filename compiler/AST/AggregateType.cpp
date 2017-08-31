@@ -1439,7 +1439,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
                                            BLOCK_TYPE);
 
-          arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+          CallExpr* def    = new CallExpr("_createFieldDefault",
+                                          defPoint->exprType->copy(),
+                                          defPoint->init->copy());
+
+          arg->defaultExpr = new BlockStmt(def);
         }
 
         fn->insertFormalAtTail(arg);
