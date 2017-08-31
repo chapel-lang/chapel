@@ -1436,14 +1436,22 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         // Could be param or variable
         //
         } else if (defPoint->exprType != NULL && defPoint->init != NULL) {
-          arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
-                                           BLOCK_TYPE);
+          if (field->hasFlag(FLAG_PARAM)) {
+            arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
+                                             BLOCK_TYPE);
 
-          CallExpr* def    = new CallExpr("_createFieldDefault",
-                                          defPoint->exprType->copy(),
-                                          defPoint->init->copy());
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
 
-          arg->defaultExpr = new BlockStmt(def);
+          } else {
+            arg->typeExpr    = new BlockStmt(defPoint->exprType->copy(),
+                                             BLOCK_TYPE);
+
+            CallExpr* def    = new CallExpr("_createFieldDefault",
+                                            defPoint->exprType->copy(),
+                                            defPoint->init->copy());
+
+            arg->defaultExpr = new BlockStmt(def);
+          }
         }
 
         fn->insertFormalAtTail(arg);
