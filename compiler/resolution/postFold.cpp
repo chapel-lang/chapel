@@ -498,81 +498,15 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool  postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym);
+
 static Expr* postFoldMove(CallExpr* call) {
   Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
-  bool    set    = false;
   Expr*   retval = call;
 
-  //
-  // Phase 1
-  //
-  if (lhsSym->hasFlag(FLAG_MAYBE_PARAM) == true ||
-      lhsSym->isParameter()             == true) {
-    if (paramMap.get(lhsSym) != NULL) {
-      INT_FATAL(call, "parameter set multiple times");
+  if (postFoldMoveUpdateForParam(call, lhsSym) == false) {
+    bool set = false;
 
-    } else if (toVarSymbol(lhsSym)->immediate != NULL) {
-      set = true; // That is, set previously.
-
-    } else {
-      if (SymExpr* rhs = toSymExpr(call->get(2))) {
-        if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
-          if (rhsVar->immediate != NULL) {
-            paramMap.put(lhsSym, rhsVar);
-
-            lhsSym->defPoint->remove();
-
-            call->convertToNoop();
-
-            set = true;
-          }
-        }
-
-        if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
-          paramMap.put(lhsSym, rhsv);
-
-          lhsSym->defPoint->remove();
-
-          call->convertToNoop();
-
-          set = true;
-        }
-      }
-    }
-
-    if (lhsSym->isParameter() == true) {
-      if (lhsSym->hasFlag(FLAG_TEMP) == false) {
-        if (isLegalParamType(lhsSym->type) == false) {
-          USR_FATAL_CONT(call,
-                         "'%s' is not of a supported param type",
-                         lhsSym->name);
-
-        } else if (set == false) {
-          USR_FATAL_CONT(call,
-                         "Initializing parameter '%s' to value "
-                         "not known at compile time",
-                         lhsSym->name);
-
-          lhsSym->removeFlag(FLAG_PARAM);
-        }
-
-      } else {
-        if (lhsSym->hasFlag(FLAG_RVV) == true && set == false) {
-          USR_FATAL_CONT(call,
-                         "'param' functions cannot return "
-                         "non-'param' values");
-        }
-      }
-    }
-  }
-
-
-
-  //
-  // Phase 2
-  //
-
-  if (set == false) {
     if (lhsSym->hasFlag(FLAG_MAYBE_TYPE) == true) {
       // Add FLAG_TYPE_VARIABLE when relevant
       if (SymExpr* rhs = toSymExpr(call->get(2))) {
@@ -642,6 +576,72 @@ static Expr* postFoldMove(CallExpr* call) {
           if (isAggregateType(rhs->get(1)->getValType()) == false) {
             call->convertToNoop();
           }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
+  bool retval = false;
+
+  if (lhsSym->hasFlag(FLAG_MAYBE_PARAM) == true ||
+      lhsSym->isParameter()             == true) {
+    if (paramMap.get(lhsSym) != NULL) {
+      INT_FATAL(call, "parameter set multiple times");
+
+    } else if (toVarSymbol(lhsSym)->immediate != NULL) {
+      retval = true;
+
+    } else {
+      if (SymExpr* rhs = toSymExpr(call->get(2))) {
+        if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
+          if (rhsVar->immediate != NULL) {
+            paramMap.put(lhsSym, rhsVar);
+
+            lhsSym->defPoint->remove();
+
+            call->convertToNoop();
+
+            retval = true;
+          }
+        }
+
+        if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
+          paramMap.put(lhsSym, rhsv);
+
+          lhsSym->defPoint->remove();
+
+          call->convertToNoop();
+
+          retval = true;
+        }
+      }
+    }
+
+    if (lhsSym->isParameter() == true) {
+      if (lhsSym->hasFlag(FLAG_TEMP) == false) {
+        if (isLegalParamType(lhsSym->type) == false) {
+          USR_FATAL_CONT(call,
+                         "'%s' is not of a supported param type",
+                         lhsSym->name);
+
+        } else if (retval == false) {
+          USR_FATAL_CONT(call,
+                         "Initializing parameter '%s' to value "
+                         "not known at compile time",
+                         lhsSym->name);
+
+          lhsSym->removeFlag(FLAG_PARAM);
+        }
+
+      } else {
+        if (lhsSym->hasFlag(FLAG_RVV) == true && retval == false) {
+          USR_FATAL_CONT(call,
+                         "'param' functions cannot return "
+                         "non-'param' values");
         }
       }
     }
