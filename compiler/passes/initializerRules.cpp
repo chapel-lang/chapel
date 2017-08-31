@@ -567,7 +567,10 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
 static bool hasReferenceToThis(Expr* expr) {
   bool retval = false;
 
-  if (SymExpr* symExpr = toSymExpr(expr)) {
+  if (isUnresolvedSymExpr(expr) == true) {
+    retval = false;
+
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
     if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
       retval = arg->hasFlag(FLAG_ARG_THIS);
     }
