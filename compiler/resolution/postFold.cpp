@@ -499,14 +499,13 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual) {
 ************************************** | *************************************/
 
 static bool  postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym);
+static void  postFoldMoveTail(CallExpr* call, Symbol* lhsSym);
 
 static Expr* postFoldMove(CallExpr* call) {
   Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
   Expr*   retval = call;
 
   if (postFoldMoveUpdateForParam(call, lhsSym) == false) {
-    bool set = false;
-
     if (lhsSym->hasFlag(FLAG_MAYBE_TYPE) == true) {
       // Add FLAG_TYPE_VARIABLE when relevant
       if (SymExpr* rhs = toSymExpr(call->get(2))) {
@@ -529,55 +528,23 @@ static Expr* postFoldMove(CallExpr* call) {
     }
 
     if (CallExpr* rhs = toCallExpr(call->get(2))) {
-      if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
-        lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-      }
+      FnSymbol* fn = rhs->resolvedFunction();
 
-      if (FnSymbol* fn = rhs->resolvedFunction()) {
-        if (fn->name == astrSequals && fn->retType == dtVoid) {
-          call->replace(rhs->remove());
+      if (fn != NULL && fn->name == astrSequals && fn->retType == dtVoid) {
+        call->replace(rhs->remove());
 
-          retval = rhs;
-          set    = true;
+        retval = rhs;
+
+      } else {
+        if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
+          lhsSym->addFlag(FLAG_TYPE_VARIABLE);
         }
-      }
-    }
 
-    //
-    // Phase 3
-    //
-
-    if (set == false) {
-      if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     == true &&
-          lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-        if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-          if (requiresImplicitDestroy(rhsCall) == true) {
-            // this still seems to be necessary even if
-            // isUserDefinedRecord(lhsSym->type) == true
-            // see call-expr-tmp.chpl for example
-            lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
-            lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          }
-        }
+        postFoldMoveTail(call, lhsSym);
       }
 
-      if (isReferenceType(lhsSym->type) ||
-          lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
-          lhsSym->type->symbol->hasFlag(FLAG_ARRAY)) {
-        lhsSym->removeFlag(FLAG_EXPR_TEMP);
-      }
-
-      if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_NO_INIT)) {
-          // If the lhs is a primitive, then we can safely just remove this
-          // value.  Otherwise the type needs to be resolved a little
-          // further and so this statement can't be removed until
-          // resolveRecordInitializers
-          if (isAggregateType(rhs->get(1)->getValType()) == false) {
-            call->convertToNoop();
-          }
-        }
-      }
+    } else {
+      postFoldMoveTail(call, lhsSym);
     }
   }
 
@@ -648,6 +615,39 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
   }
 
   return retval;
+}
+
+static void  postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
+  if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     == true &&
+      lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+    if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+      if (requiresImplicitDestroy(rhsCall) == true) {
+        // this still seems to be necessary even if
+        // isUserDefinedRecord(lhsSym->type) == true
+        // see call-expr-tmp.chpl for example
+        lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
+        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
+    }
+  }
+
+  if (isReferenceType(lhsSym->type) ||
+      lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
+      lhsSym->type->symbol->hasFlag(FLAG_ARRAY)) {
+    lhsSym->removeFlag(FLAG_EXPR_TEMP);
+  }
+
+  if (CallExpr* rhs = toCallExpr(call->get(2))) {
+    if (rhs->isPrimitive(PRIM_NO_INIT)) {
+      // If the lhs is a primitive, then we can safely just remove this
+      // value.  Otherwise the type needs to be resolved a little
+      // further and so this statement can't be removed until
+      // resolveRecordInitializers
+      if (isAggregateType(rhs->get(1)->getValType()) == false) {
+        call->convertToNoop();
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
