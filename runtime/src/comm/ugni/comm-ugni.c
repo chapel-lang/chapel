@@ -1214,7 +1214,7 @@ static void      register_mem_region(mem_region_t*);
 static void      deregister_mem_region(mem_region_t*);
 static mem_region_t* mreg_for_addr(void*, mem_region_table_t*);
 static mem_region_t* mreg_for_local_addr(void*);
-static mem_region_t* mreg_for_remote_addr(void*, int32_t);
+static mem_region_t* mreg_for_remote_addr(void*, c_nodeid_t);
 static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      exit_all(int);
@@ -1249,12 +1249,12 @@ static void      amo_res_init(void);
 static fork_amo_data_t* amo_res_alloc(void);
 static void      amo_res_free(fork_amo_data_t*);
 static void      consume_all_outstanding_cq_events(int);
-static void      do_remote_put(void*, int32_t, void*, size_t,
+static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
-static void      do_remote_get(void*, int32_t, void*, size_t,
+static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static int       amo_cmd_2_nic_op(fork_amo_cmd_t, int);
-static void      do_nic_amo(void*, void*, int32_t, void*, size_t,
+static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*);
 static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
 static void      amo_add_real64_cpu_cmpxchg(void*, void*, void*);
@@ -1262,19 +1262,19 @@ static void      fork_call_common(int, c_sublocid_t,
                                   chpl_fn_int_t,
                                   chpl_comm_on_bundle_t*, size_t,
                                   chpl_bool, chpl_bool);
-static void      fork_put(void*, int32_t, void*, size_t);
-static void      fork_get(void*, int32_t, void*, size_t);
-static void      fork_free(int32_t, void*);
-static void      fork_amo(fork_t*, int32_t);
-static void      fork_reg_dereg(int32_t, int);
-static void      do_fork_post(int, rf_done_t**,
+static void      fork_put(void*, c_nodeid_t, void*, size_t);
+static void      fork_get(void*, c_nodeid_t, void*, size_t);
+static void      fork_free(c_nodeid_t, void*);
+static void      fork_amo(fork_t*, c_nodeid_t);
+static void      fork_reg_dereg(c_nodeid_t, int);
+static void      do_fork_post(c_nodeid_t, rf_done_t**,
                               uint64_t, fork_base_info_t*, int*, int*);
 static void      acquire_comm_dom(void);
-static void      acquire_comm_dom_and_req_buf(uint32_t, int*);
+static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
 static chpl_bool reacquire_comm_dom(int);
-static int       post_fma(uint32_t, gni_post_descriptor_t*);
-static void      post_fma_and_wait(uint32_t, gni_post_descriptor_t*);
+static int       post_fma(c_nodeid_t, gni_post_descriptor_t*);
+static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*);
 static void      local_yield(void);
 
 
@@ -1631,7 +1631,7 @@ void chpl_comm_post_task_init(void)
 
     {
       typedef struct {
-        uint32_t locale;
+        c_nodeid_t locale;
         uint32_t gather_val;
       } gdata_t;
 
@@ -1713,7 +1713,7 @@ void chpl_comm_post_task_init(void)
 
   {
     typedef struct {
-      uint32_t           locale;
+      c_nodeid_t         locale;
       mem_region_table_t gather_mem_region_tab;
       barrier_info_t*    gather_bar_info;
     } gdata_t;
@@ -2279,7 +2279,7 @@ mem_region_t* mreg_for_local_addr(void* addr)
 
 static
 inline
-mem_region_t* mreg_for_remote_addr(void* addr, int32_t locale)
+mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
 {
   return mreg_for_addr(addr, &mem_region_map[locale]);
 }
@@ -2339,7 +2339,7 @@ void set_up_for_polling(void)
   //
   {
     typedef struct {
-      uint32_t locale;
+      c_nodeid_t locale;
       uint32_t gather_val;
     } gdata_t;
 
@@ -2396,7 +2396,7 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      uint32_t     locale;
+      c_nodeid_t   locale;
       fork_t*      gather_fork_reqs;
       chpl_bool32* gather_fork_reqs_free;
     } gdata_t;
@@ -2460,7 +2460,7 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      uint32_t         locale;
+      c_nodeid_t       locale;
       gni_mem_handle_t gather_val;
     } gdata_t;
 
@@ -4111,7 +4111,7 @@ void consume_all_outstanding_cq_events(int cdi)
 }
 
 
-void chpl_comm_put(void* addr, int32_t locale, void* raddr,
+void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
                    size_t size, int32_t typeIndex,
                    int32_t commID, int ln, int32_t fn)
 {
@@ -4147,8 +4147,8 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr,
 
 
 static
-void do_remote_put(void* src_addr, int32_t locale, void* tgt_addr, size_t size,
-                   drpg_may_proxy_t may_proxy)
+void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
+                   size_t size, drpg_may_proxy_t may_proxy)
 {
   mem_region_t*         remote_mr;
   gni_post_descriptor_t post_desc;
@@ -4251,7 +4251,7 @@ void do_remote_put(void* src_addr, int32_t locale, void* tgt_addr, size_t size,
 }
 
 
-void chpl_comm_get(void* addr, int32_t locale, void* raddr,
+void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
                    size_t size, int32_t typeIndex,
                    int32_t commID, int ln, int32_t fn)
 {
@@ -4287,8 +4287,8 @@ void chpl_comm_get(void* addr, int32_t locale, void* raddr,
 
 
 static
-void do_remote_get(void* tgt_addr, int32_t locale, void* src_addr, size_t size,
-                   drpg_may_proxy_t may_proxy)
+void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
+                   size_t size, drpg_may_proxy_t may_proxy)
 {
   mem_region_t*         local_mr;
   mem_region_t*         remote_mr;
@@ -4819,9 +4819,10 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 //
 // Non-blocking get interface
 //
-chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn)
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
+                                       void* raddr, size_t size,
+                                       int32_t typeIndex, int32_t commID,
+                                       int ln, int32_t fn)
 {
   mem_region_t*          local_mr;
   mem_region_t*          remote_mr;
@@ -4920,9 +4921,10 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
 }
 
 
-chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, int32_t locale, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn)
+chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
+                                       void* raddr, size_t size,
+                                       int32_t typeIndex, int32_t commID,
+                                       int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5644,7 +5646,7 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
 
 
 static
-void do_nic_amo(void* opnd1, void* opnd2, int32_t locale,
+void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
                 void* object, size_t size,
                 gni_fma_cmd_type_t cmd, void* result)
 {
@@ -5785,7 +5787,7 @@ void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
 }
 
 
-void chpl_comm_execute_on(int locale, c_sublocid_t subloc,
+void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
                           chpl_comm_on_bundle_t* arg, size_t arg_size)
 {
@@ -5818,7 +5820,7 @@ void chpl_comm_execute_on(int locale, c_sublocid_t subloc,
 }
 
 
-void chpl_comm_execute_on_nb(int locale, c_sublocid_t subloc,
+void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
                              chpl_comm_on_bundle_t* arg, size_t arg_size)
 {
@@ -5860,9 +5862,9 @@ void chpl_comm_execute_on_nb(int locale, c_sublocid_t subloc,
 }
 
 
-void chpl_comm_execute_on_fast(int locale, c_sublocid_t subloc,
-                         chpl_fn_int_t fid,
-                         chpl_comm_on_bundle_t* arg, size_t arg_size)
+void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
+                               chpl_fn_int_t fid,
+                               chpl_comm_on_bundle_t* arg, size_t arg_size)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
@@ -5898,7 +5900,7 @@ void chpl_comm_execute_on_fast(int locale, c_sublocid_t subloc,
 
 
 static
-void fork_call_common(int locale, c_sublocid_t subloc,
+void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
                       chpl_fn_int_t fid,
                       chpl_comm_on_bundle_t* arg, size_t arg_size,
                       chpl_bool fast, chpl_bool blocking)
@@ -6041,7 +6043,7 @@ void fork_call_common(int locale, c_sublocid_t subloc,
 
 
 static
-void fork_put(void* addr, int32_t locale, void* raddr, size_t size)
+void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 {
   fork_base_info_t hdr = { .op       = fork_op_put,
                            .caller   = chpl_nodeID,
@@ -6072,7 +6074,7 @@ void fork_put(void* addr, int32_t locale, void* raddr, size_t size)
 
 
 static
-void fork_get(void* addr, int32_t locale, void* raddr, size_t size)
+void fork_get(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 {
   fork_base_info_t hdr = { .op       = fork_op_get,
                            .caller   = chpl_nodeID,
@@ -6102,7 +6104,7 @@ void fork_get(void* addr, int32_t locale, void* raddr, size_t size)
 
 
 static
-void fork_free(int32_t locale, void* p)
+void fork_free(c_nodeid_t locale, void* p)
 {
   fork_base_info_t hdr = { .op       = fork_op_free };
 
@@ -6125,7 +6127,7 @@ void fork_free(int32_t locale, void* p)
 
 
 static
-void fork_amo(fork_t* p_rf_req, int32_t locale)
+void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
 {
   if (locale < 0 || locale >= chpl_numNodes)
     CHPL_INTERNAL_ERROR("fork_amo(): remote locale out of range");
@@ -6157,7 +6159,7 @@ void fork_amo(fork_t* p_rf_req, int32_t locale)
 
 
 static
-void fork_reg_dereg(int32_t locale, int i)
+void fork_reg_dereg(c_nodeid_t locale, int i)
 {
   fork_base_info_t hdr = { .op       = fork_op_reg_dereg,
                            .caller   = chpl_nodeID,
@@ -6192,7 +6194,8 @@ void fork_reg_dereg(int32_t locale, int i)
 }
 
 
-void do_fork_post(int locale,
+static
+void do_fork_post(c_nodeid_t locale,
                   rf_done_t** rf_done_slot,
                   uint64_t f_size, fork_base_info_t* p_rf_req,
                   int* cdi_p, int* rbi_p)
@@ -6376,7 +6379,7 @@ void acquire_comm_dom(void)
 
 
 static
-void acquire_comm_dom_and_req_buf(uint32_t remote_locale, int* p_rbi)
+void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
 {
   int want_cdi;
   int want_cdi_start;
@@ -6536,7 +6539,7 @@ chpl_bool reacquire_comm_dom(int want_cdi)
 
 static
 inline
-int post_fma(uint32_t locale, gni_post_descriptor_t* post_desc)
+int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
   gni_return_t gni_rc;
@@ -6563,7 +6566,7 @@ int post_fma(uint32_t locale, gni_post_descriptor_t* post_desc)
 
 
 static
-void post_fma_and_wait(uint32_t locale, gni_post_descriptor_t* post_desc)
+void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 {
   int cdi;
   atomic_bool post_done;
