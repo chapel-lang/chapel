@@ -499,6 +499,9 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual) {
 ************************************** | *************************************/
 
 static bool  postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym);
+
+static void  updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym);
+
 static void  postFoldMoveTail(CallExpr* call, Symbol* lhsSym);
 
 static Expr* postFoldMove(CallExpr* call) {
@@ -506,28 +509,12 @@ static Expr* postFoldMove(CallExpr* call) {
   Expr*   retval = call;
 
   if (postFoldMoveUpdateForParam(call, lhsSym) == false) {
-    if (lhsSym->hasFlag(FLAG_MAYBE_TYPE) == true) {
-      // Add FLAG_TYPE_VARIABLE when relevant
-      if (SymExpr* rhs = toSymExpr(call->get(2))) {
-        if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-        }
+    updateFlagTypeVariable(call, lhsSym);
 
-      } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (FnSymbol* fn = rhs->resolvedFunction()) {
-          if (fn->retTag == RET_TYPE) {
-            lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-          }
+    if (isSymExpr(call->get(2)) == true) {
+      postFoldMoveTail(call, lhsSym);
 
-        } else if (rhs->isPrimitive(PRIM_DEREF)) {
-          if (isTypeExpr(rhs->get(1)) == true) {
-            lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-          }
-        }
-      }
-    }
-
-    if (CallExpr* rhs = toCallExpr(call->get(2))) {
+    } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
       FnSymbol* fn = rhs->resolvedFunction();
 
       if (fn != NULL && fn->name == astrSequals && fn->retType == dtVoid) {
@@ -536,15 +523,11 @@ static Expr* postFoldMove(CallExpr* call) {
         retval = rhs;
 
       } else {
-        if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
-          lhsSym->addFlag(FLAG_TYPE_VARIABLE);
-        }
-
         postFoldMoveTail(call, lhsSym);
       }
 
     } else {
-      postFoldMoveTail(call, lhsSym);
+      INT_ASSERT(false);
     }
   }
 
@@ -617,7 +600,35 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
   return retval;
 }
 
-static void  postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
+static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
+  bool isTypeVar = false;
+
+  if        (SymExpr*  rhs = toSymExpr(call->get(2)))  {
+    isTypeVar = rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
+
+  } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
+    if (FnSymbol* fn = rhs->resolvedFunction()) {
+      isTypeVar = fn->retTag == RET_TYPE;
+
+    } else if (rhs->isPrimitive(PRIM_DEREF)  == true) {
+      isTypeVar = isTypeExpr(rhs->get(1));
+
+    } else if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
+      isTypeVar = true;
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  if (isTypeVar == true) {
+    lhsSym->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  lhsSym->removeFlag(FLAG_MAYBE_TYPE);
+}
+
+static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
   if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     == true &&
       lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
     if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
