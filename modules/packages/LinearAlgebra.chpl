@@ -563,24 +563,17 @@ proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
   var C = Vector(Adom, eltType);
 
-  // TODO -- a better way to do 0-based indexing...
-  C[_raw(Adom, 0)] = A[_raw(Adom, 1)]*B[_raw(Bdom, 2)] -
-                     A[_raw(Adom, 2)]*B[_raw(Bdom, 1)];
+  // 0-based indices
+  const zeroDom = {0..#Adom.size};
+  ref Azero = A.reindex(zeroDom),
+      Bzero = B.reindex(zeroDom),
+      Czero = C.reindex(zeroDom);
 
-  C[_raw(Adom, 1)] = A[_raw(Adom, 2)]*B[_raw(Bdom, 0)] -
-                     A[_raw(Adom, 0)]*B[_raw(Bdom, 2)];
-
-  C[_raw(Adom, 2)] = A[_raw(Adom, 0)]*B[_raw(Bdom, 1)] -
-                     A[_raw(Adom, 1)]*B[_raw(Bdom, 0)];
+  Czero[0] = Azero[1]*Bzero[2] - Azero[2]*Bzero[1];
+  Czero[1] = Azero[2]*Bzero[0] - Azero[0]*Bzero[2];
+  Czero[2] = Azero[0]*Bzero[1] - Azero[1]*Bzero[0];
 
   return C;
-}
-
-
-pragma "no doc"
-/* Compute 0-based index */
-private inline proc _raw(D: domain(1), i) {
-  return D.dim(1).orderToIndex(i);
 }
 
 
