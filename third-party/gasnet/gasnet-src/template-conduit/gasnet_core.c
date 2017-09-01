@@ -59,6 +59,9 @@ static int gasnetc_init(int *argc, char ***argv) {
   gasneti_spawner = gasneti_spawnerInit(argc, argv, NULL, &gasneti_nodes, &gasneti_mynode);
   if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
+  /* Must init timers after global env, and preferably before tracing */
+  GASNETI_TICKS_INIT();
+
   #if GASNET_DEBUG_VERBOSE
     fprintf(stderr,"gasnetc_init(): spawn successful - node %i/%i starting...\n", 
       gasneti_mynode, gasneti_nodes); fflush(stderr);
@@ -160,8 +163,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -295,7 +298,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
          gasneti_seginfo[gasneti_mynode].size == segsize);
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(NULL); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 

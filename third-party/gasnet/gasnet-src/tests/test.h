@@ -71,6 +71,26 @@ GASNETT_BEGIN_EXTERNC
   #define assert(x) assert_always(x)
 #endif
 
+#ifndef _CONCAT
+#define _CONCAT_HELPER(a,b) a ## b
+#define _CONCAT(a,b) _CONCAT_HELPER(a,b)
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+// Static assertions : assert a property at compile time, generate an error otherwise
+// `cond` must be an integer constant expression - ie no non-integer types or variable references
+
+// static assertion in a block scope
+// safe to use multiple times per line (eg in a macro expansion)
+#define test_static_assert(cond) do { \
+  static const char *_test_static_assert[ (cond) ?1:-1] = { "Static assertion: " #cond }; \
+} while (0)
+
+// static assertion at file scope
+// safe to use multiple times per line only in C99 mode, not C++ mode
+#define test_static_assert_file(cond) \
+  static const char *_CONCAT(_test_static_assert_file_,__LINE__)[ (cond) ?1:-1]
+
 /* ------------------------------------------------------------------------------------ */
 /* generic message output utility
    test_makeMsg(baseformatargs, msgpred, isfatal, msgeval): 
@@ -262,7 +282,7 @@ static void *_test_malloc(size_t sz, const char *curloc) {
   test_hold_interrupts();
   ptr = malloc(sz);
   test_resume_interrupts();
-  if (ptr == NULL) FATALERR("Failed to malloc(%lu) bytes at %s\n",(unsigned long)sz,curloc);
+  if (ptr == NULL) FATALERR("Failed to malloc(%" PRIuPTR ") bytes at %s\n",(uintptr_t)sz,curloc);
   return ptr;
 }
 static void *_test_calloc(size_t sz, const char *curloc) {
@@ -357,8 +377,8 @@ static int64_t test_calibrate_delay(int iters, int pollcnt, int64_t *time_p)
                   FATALERR("test_calibrate_delay(%i,%i,%i) failed to converge after %i iterations.\n",
                           iters, pollcnt, (int)*time_p, iters);
               #if 0
-                printf("loops=%llu\n",(unsigned long long)loops); fflush(stdout);
-                printf("ratio=%f target=%f time=%llu\n",ratio,target,(unsigned long long)time); fflush(stdout);
+                printf("loops=%" PRIi64 "\n",loops); fflush(stdout);
+                printf("ratio=%f target=%f time=%" PRIi64 "\n",ratio,target,time); fflush(stdout);
               #endif
 	} while (ratio > 1.0);
 
@@ -691,19 +711,15 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
   #ifndef TEST_MAXTHREADS
     #define TEST_MAXTHREADS      GASNETT_MAX_THREADS
   #endif
-  #ifndef TEST_SEGZ_PER_THREAD
-    #define TEST_SEGZ_PER_THREAD (64ULL*1024)
+  #ifndef TEST_SEGZ_PER_THREAD  // provides a default per-thread segsize when TEST_SEGSZ not defined
+    #define TEST_SEGZ_PER_THREAD ((uintptr_t)64*1024)
   #endif
-  #ifndef TEST_SEGSZ
-    #ifdef TEST_SEGSZ_EXPR
+  #ifndef TEST_SEGSZ // TEST_SEGSZ provides a statically-known override value
+    #ifdef TEST_SEGSZ_EXPR // TEST_SEGSZ_EXPR provides a value not statically known
       #define TEST_SEGSZ  alignup(TEST_SEGSZ_EXPR,PAGESZ)
     #else
       #define TEST_SEGSZ  alignup(TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD,PAGESZ)
-    #endif
-  #endif
-  #ifndef TEST_SEGSZ_EXPR
-    #if TEST_SEGSZ < (TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD)
-      #error "TEST_SEGSZ < (TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD)"
+      test_static_assert_file(TEST_SEGSZ >= (TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD));
     #endif
   #endif
 #else
@@ -711,14 +727,15 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
     #ifdef TEST_SEGSZ_EXPR
       #define TEST_SEGSZ  alignup(TEST_SEGSZ_EXPR,PAGESZ)
     #else
-      #define TEST_SEGSZ  alignup(64ULL*1024,PAGESZ)
+      #define TEST_SEGSZ  alignup(64*1024,PAGESZ)
     #endif
   #endif
 #endif
 #ifndef TEST_SEGSZ_EXPR
-  #if (TEST_SEGSZ % PAGESZ) != 0 || TEST_SEGSZ <= 0
-    #error Bad TEST_SEGSZ
-  #endif
+  // validate TEST_SEGSZ properties, when the value is statically-known
+  test_static_assert_file(TEST_SEGSZ > 0);
+  test_static_assert_file(TEST_SEGSZ % PAGESZ == 0);
+  test_static_assert_file(TEST_SEGSZ_REQUEST % PAGESZ == 0);
 #endif
 
 #define TEST_MINHEAPOFFSET  alignup(128*4096,PAGESZ)

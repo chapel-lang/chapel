@@ -102,7 +102,9 @@ struct {
 } gasnetc_ofi_locks;
 #elif GASNET_PAR
 struct {
-    gasneti_atomic_t rx_cq;
+    gasneti_atomic_t rx_request_cq;
+    char _pad0[GASNETI_CACHE_PAD(sizeof(gasneti_atomic_t))];
+    gasneti_atomic_t rx_reply_cq;
 } gasnetc_ofi_locks;
 /* This is left here for the purpose of supporting future providers that require fine
  * grained locking. For now, all supported providers either support FI_THREAD_DOMAIN or
@@ -120,8 +122,14 @@ struct {
     gasneti_atomic_t am_tx;
     char _pad4[GASNETI_CACHE_PAD(sizeof(gasneti_atomic_t))];
     gasneti_atomic_t am_rx;
+
 } gasnetc_ofi_locks;
 #endif
+
+/* These definitions are just to make the polling of the two different AM
+ * networks easier to read and understand*/
+#define OFI_POLL_ALL   1
+#define OFI_POLL_REPLY 0
 
 /* ------------------------------------------------------------------------------------ */
 /* Job Spawn / Bootstrap */

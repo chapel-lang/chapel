@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ofi-conduit/gasnet_ofi.h $
  * Description: GASNet libfabric (OFI) conduit Implementation
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
- * Copyright 2015, Intel Corporation
+ * Copyright 2015-2017, Intel Corporation
  * Terms of use are as specified in license.txt
  */
 #ifndef GASNET_OFI_H
@@ -37,6 +37,7 @@ typedef gasnetc_paratomic(t)         gasnetc_paratomic_t;
 #define gasnetc_paratomic_read       gasnetc_paratomic(read)
 #define gasnetc_paratomic_increment  gasnetc_paratomic(increment)
 #define gasnetc_paratomic_add        gasnetc_paratomic(add)
+#define gasnetc_paratomic_subtract   gasnetc_paratomic(subtract)
 #define gasnetc_paratomic_decrement  gasnetc_paratomic(decrement)
 #define gasnetc_paratomic_decrement_and_test  gasnetc_paratomic(decrement_and_test)
 
@@ -48,8 +49,10 @@ struct fid_cq*        gasnetc_ofi_tx_cqfd; /* CQ for both AM and RDMA tx ops */
 struct fid_ep*        gasnetc_ofi_rdma_epfd;
 struct fid_mr*        gasnetc_ofi_rdma_mrfd;
 
-struct fid_ep*        gasnetc_ofi_am_epfd;
-struct fid_cq*        gasnetc_ofi_am_rcqfd;
+struct fid_ep*        gasnetc_ofi_request_epfd;
+struct fid_ep*        gasnetc_ofi_reply_epfd;
+struct fid_cq*        gasnetc_ofi_request_cqfd;
+struct fid_cq*        gasnetc_ofi_reply_cqfd;
 
 /* The cut off of when to fully block for a non-blocking put*/
 size_t gasnetc_ofi_bbuf_threshold; 
@@ -80,17 +83,34 @@ typedef enum GASNETC_OFI_AM_TYPE {
 typedef  void (*event_callback_fn) (struct fi_cq_data_entry *re, void *buf);
 typedef  void (*rdma_callback_fn) (void *buf);
 
-typedef struct gasnetc_ofi_am_send_buf {
-  gasnetc_ofi_am_type   type;
-  int 					len;
-  int 					isreq;
-  uint8_t 				handler;
-  gasnet_node_t			sourceid;
-  uint8_t 				argnum;
-  void 					*dest_ptr;
-  size_t 				nbytes;
-  uint8_t 				data[OFI_AM_MAX_DATA_LENGTH]
+
+typedef struct gasnetc_ofi_am_short_buf {
+    gasnet_handlerarg_t     data[gasnet_AMMaxArgs()];
+
+} gasnetc_ofi_am_short_buf_t;
+
+typedef struct gasnetc_ofi_am_medium_buf {
+   uint8_t 				data[OFI_AM_MAX_DATA_LENGTH]
                             __attribute__((aligned(GASNETI_MEDBUF_ALIGNMENT)));
+   
+} gasnetc_ofi_am_medium_buf_t;
+
+typedef struct gasnetc_ofi_am_long_buf {
+  void 					*dest_ptr;
+  uint8_t 				data[OFI_AM_MAX_DATA_LENGTH];
+
+} gasnetc_ofi_am_long_buf_t;
+
+typedef struct gasnetc_ofi_am_send_buf {
+    gasnetc_ofi_am_type type:2;
+    uint8_t argnum:6;
+    uint8_t handler;
+    gasnet_node_t			sourceid;
+    union {
+        gasnetc_ofi_am_short_buf_t short_buf;
+        gasnetc_ofi_am_medium_buf_t medium_buf;
+        gasnetc_ofi_am_long_buf_t long_buf;
+    };
 } gasnetc_ofi_am_send_buf_t;
 
 typedef struct gasnetc_ofi_am_buf {
@@ -99,9 +119,10 @@ typedef struct gasnetc_ofi_am_buf {
   gasnetc_ofi_am_send_buf_t 	sendbuf;
 } gasnetc_ofi_am_buf_t;
 
+
 typedef struct gasnetc_ofi_ctxt {
   struct fi_context 	ctxt;
-  event_callback_fn		callback;
+  void * metadata;
   int 					index;
   char _pad0[GASNETI_CACHE_PAD(sizeof(int))];
   gasnetc_paratomic_t   consumed_cntr;
@@ -110,6 +131,7 @@ typedef struct gasnetc_ofi_ctxt {
   char _pad2[GASNETI_CACHE_PAD(sizeof(uint64_t))];
   uint64_t event_cntr;
 } gasnetc_ofi_ctxt_t;
+
 
 typedef struct gasnetc_ofi_op_ctxt {
   struct fi_context 	ctxt;
@@ -138,10 +160,6 @@ typedef struct gasnetc_ofi_bounce_op_ctxt {
     /* Counter to determine when the bbuf transfers are done */
     gasnetc_paratomic_t cntr;
 } gasnetc_ofi_bounce_op_ctxt_t;
-
-typedef struct gasnetc_ofi_token {
-  gasnet_node_t 		sourceid;
-} gasnetc_ofi_token_t;
 
 int gasnetc_ofi_init(int *argc, char ***argv,
 		gasnet_node_t *nodes_p, gasnet_node_t *mynode_p);

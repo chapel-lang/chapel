@@ -160,17 +160,26 @@
 #undef HAVE_MAP_ANON
 #undef HAVE_MAP_ANONYMOUS
 
+/* avoid mmap()-after-munmap() failures */
+#undef GASNETI_BUG3480_WORKAROUND
+
 /* --with-segment-mmap-max value (if given) */
 #undef GASNETI_MMAP_MAX_SIZE
 
 /* --with-max-threads value (if given) */
 #undef GASNETI_MAX_THREADS_CONFIGURE
 
+/* has clock_gettime() */
+#undef HAVE_CLOCK_GETTIME
+
 /* has usleep() */
 #undef HAVE_USLEEP
 
 /* has nanosleep() */
 #undef HAVE_NANOSLEEP
+
+/* has clock_nanosleep() */
+#undef HAVE_CLOCK_NANOSLEEP
 
 /* has nsleep() */
 #undef HAVE_NSLEEP
@@ -225,7 +234,6 @@
 
 /* BLCR support, path and features */
 #undef GASNETI_BLCR_ENABLED
-#undef GASNETI_BLCR_BINDIR
 
 /* support for backtracing */
 #undef HAVE_EXECINFO_H
@@ -240,6 +248,7 @@
 #undef IDB_PATH
 #undef LADEBUG_PATH
 #undef DBX_PATH
+#undef LLDB_PATH
 
 /* have pthread_setconcurrency */
 #undef HAVE_PTHREAD_SETCONCURRENCY
@@ -360,6 +369,9 @@
 /* platform is an IBM BlueGene/Q multiprocessor */
 #undef GASNETI_ARCH_BGQ
 
+/* platform is Microsoft Windows Subsystem for Linux */
+#undef GASNETI_ARCH_WSL
+
 /* have (potentially buggy) MIPS R10000 multiprocessor */
 #undef GASNETI_ARCH_SGI_IP27
 
@@ -412,6 +424,11 @@
 #undef GASNETC_IBV_RCV_THREAD
 #undef GASNETC_IBV_CONN_THREAD
 #undef GASNETC_IBV_MAX_HCAS
+#undef GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
+#undef GASNETC_IBV_PHYSMEM_PROBE_CONFIGURE
+
+/* GASNet pami-conduit settings */
+#undef GASNETI_SIZEOF_PAMI_TASK_T
 
 /* GASNet bug1389 detection/work-around */
 #undef GASNETI_BUG1389_WORKAROUND
@@ -462,9 +479,6 @@
 
 /* Define to 1 if you have the <execinfo.h> header file. */
 #undef HAVE_EXECINFO_H
-
-/* Define to 1 if you have the <fca/fca_api.h> header file. */
-#undef HAVE_FCA_FCA_API_H
 
 /* Define to 1 if you have the <features.h> header file. */
 #undef HAVE_FEATURES_H

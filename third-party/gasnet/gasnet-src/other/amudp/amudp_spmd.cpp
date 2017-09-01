@@ -613,11 +613,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     // append WORKERIP which it is needed before the master env is sent
     { char *network = AMUDP_getenv_prefixed_withdefault("WORKERIP","");
       if (network && network[0]) {
-        #if HAVE_GETIFADDRS
-          strncat(slave_env, network, remain-1);
-        #else
-          AMUDP_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
-        #endif
+        strncat(slave_env, network, remain-1);
       }
     }
     if (!remain) { // ran out of space!
@@ -642,61 +638,6 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     }
 
     AMUDP_SPMDRedirectStdsockets = strcmp(AMUDP_getenv_prefixed_withdefault("ROUTE_OUTPUT",(DISABLE_STDSOCKET_REDIRECT?"0":"1")),"0");
-
-    //
-    // For ease-of-debugging with Chapel, hacked this so that GASNet
-    // will launch each task in an xterm running a debugger if
-    // CHPL_COMM_USE_GDB or CHPL_COMM_USE_LLDB is set.
-    //
-    if (getenv("CHPL_COMM_USE_GDB") != NULL
-        || getenv("CHPL_COMM_USE_LLDB") != NULL) {
-      char xtermPath[1 << 12];
-      char *pp, *ppn;
-      int new_argc = 4 + *argc;
-      char** new_argv
-             = (char**) AMUDP_malloc((new_argc + 1) * sizeof((*new_argv)));
-
-      if ((pp = getenv("PATH")) == NULL || *pp == '\0')
-        AMUDP_FatalErr("CHPL_COMM_USE_(G|LL)DB: no PATH.  Exiting...");
-      else {
-        do {
-          ppn = strchr(pp, ':');
-          if (ppn == NULL)
-            (void) snprintf(xtermPath, sizeof(xtermPath), "%s/xterm",
-                            (*pp == '\0') ? "." : pp);
-          else if (ppn == pp)
-            (void) snprintf(xtermPath, sizeof(xtermPath), "./xterm");
-          else
-            (void) snprintf(xtermPath, sizeof(xtermPath), "%.*s/xterm",
-                            (int) (ppn - pp), pp);
-          if (access(xtermPath, X_OK) == 0)
-            break;
-          xtermPath[0] = '\0';
-          pp = ppn + 1;
-        } while (ppn != NULL);
-
-        if (xtermPath[0] == '\0')
-          AMUDP_FatalErr("CHPL_COMM_USE_(G|LL)DB: no xterm in PATH.  "
-                         "Exiting...");
-        else {
-          new_argv[0] = (char*) AMUDP_malloc(strlen(xtermPath) + 1);
-          strcpy(new_argv[0], xtermPath);
-          new_argv[1] = (char *) "-e";
-
-          if (getenv("CHPL_COMM_USE_GDB") != NULL) {
-            new_argv[2] = (char *) "gdb";
-            new_argv[3] = (char *) "--args";
-          } else {
-            new_argv[2] = (char *) "lldb";
-            new_argv[3] = (char *) "--";
-          }
-
-          memcpy(&new_argv[4], *argv, (*argc + 1) * sizeof(*new_argv));
-          *argc = new_argc;
-          *argv = new_argv;
-        }
-      }
-    }
 
     // call system-specific spawning routine
     AMUDP_SPMDSpawnRunning = TRUE;
@@ -1088,16 +1029,18 @@ pollentry:
       /* here we assume the interface used to contact the master is the same 
          one to be used for UDP endpoints */
       SockAddr myinterface = getsockname(AMUDP_SPMDControlSocket);
-      #if HAVE_GETIFADDRS // allow user to override our same-interface assumption
-        if (network && network[0]) {
+      if (network && network[0]) {
+        #if HAVE_GETIFADDRS // allow user to override our same-interface assumption
           SockAddr networkaddr(network, 0);
           char subnets[1024];
           if (! getIfaceAddr(networkaddr, myinterface, subnets, sizeof(subnets))) {
             AMUDP_Err("Failed to find interface on requested subnet %s. Available subnets: %s", network, subnets);
             AMUDP_RETURN(AM_ERR_RESOURCE);
           }
-        }
-      #endif
+        #else
+          AMUDP_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
+        #endif
+      }
       if (!AMUDP_SilentMode) AMUDP_Info("slave using IP %s", myinterface.IPStr());
       AMUDP_SetUDPInterface(myinterface.IP());
         

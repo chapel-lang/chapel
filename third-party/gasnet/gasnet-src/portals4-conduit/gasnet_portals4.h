@@ -37,20 +37,20 @@
  *  +-- Type: ACTIVE_MESSAGE or LONG_DATA
  */
 
-#define LONG_DATA      0x0000000000000000ULL
-#define ACTIVE_MESSAGE 0x8000000000000000ULL
+#define LONG_DATA      ((uint64_t)0x0000000000000000ULL)
+#define ACTIVE_MESSAGE ((uint64_t)0x8000000000000000ULL)
 
-#define AM_REPLY       0x0000000000000000ULL
-#define AM_REQUEST     0x4000000000000000ULL
+#define AM_REPLY       ((uint64_t)0x0000000000000000ULL)
+#define AM_REQUEST     ((uint64_t)0x4000000000000000ULL)
 
-#define AM_SHORT       0x0000000000000000ULL
-#define AM_MEDIUM      0x1000000000000000ULL
-#define AM_LONG        0x2000000000000000ULL
+#define AM_SHORT       ((uint64_t)0x0000000000000000ULL)
+#define AM_MEDIUM      ((uint64_t)0x1000000000000000ULL)
+#define AM_LONG        ((uint64_t)0x2000000000000000ULL)
 /* GASNet long protocol, but message small enough to in send buffer */
-#define AM_LONG_PACKED 0x3000000000000000ULL
-#define AM_TYPE_MASK   0x3000000000000000ULL
+#define AM_LONG_PACKED ((uint64_t)0x3000000000000000ULL)
+#define AM_TYPE_MASK   ((uint64_t)0x3000000000000000ULL)
 
-#define AM_REQREP_BITS   0x7FFFFFFFFFFFFFFFULL
+#define AM_REQREP_BITS ((uint64_t)0x7FFFFFFFFFFFFFFFULL)
 
 #define CREATE_MATCH_BITS(type, req_type, protocol, arg_count, handler_id, payload_length) \
     (type | req_type | protocol | ((ptl_match_bits_t) arg_count << 55) | ((ptl_match_bits_t) handler_id << 47) | payload_length)
@@ -66,9 +66,9 @@
 #define IS_AM_LONG(match_bits)         (((AM_TYPE_MASK & match_bits) == AM_LONG) ? 1 : 0)
 #define IS_AM_LONG_PACKED(match_bits)  (((AM_TYPE_MASK & match_bits) == AM_LONG_PACKED) ? 1 : 0)
 
-#define GET_ARG_COUNT(match_bits)       ((match_bits & 0x0F80000000000000ULL) >> 55)
-#define GET_HANDLERID(match_bits)       ((match_bits & 0x007F800000000000ULL) >> 47)
-#define GET_PAYLOAD_LENGTH(match_bits)   (match_bits & 0x00007FFFFFFFFFFFULL)
+#define GET_ARG_COUNT(match_bits)       ((match_bits & ((uint64_t)0x0F80000000000000ULL)) >> 55)
+#define GET_HANDLERID(match_bits)       ((match_bits & ((uint64_t)0x007F800000000000ULL)) >> 47)
+#define GET_PAYLOAD_LENGTH(match_bits)   (match_bits & ((uint64_t)0x00007FFFFFFFFFFFULL))
 
 /* Portals 4 AM handler token */
 struct gasnetc_p4_token_t {
@@ -97,7 +97,7 @@ typedef struct p4_am_block_t p4_am_block_t;
 
 #define OP_USER_PTR_BUILD(type, ptr) ((void*) (((uintptr_t) ptr) | ((uint64_t) type << 60)))
 #define OP_GET_TYPE(user_ptr) (((uintptr_t) user_ptr) >> 60)
-#define OP_GET_PTR(user_ptr) ((void*) (((uintptr_t) user_ptr) & 0x0FFFFFFFFFFFFFFFULL))
+#define OP_GET_PTR(user_ptr) ((void*) (((uintptr_t) user_ptr) & ((uint64_t)0x0FFFFFFFFFFFFFFFULL)))
 
 /* match_bits and hdr_data are for retransmit */
 struct p4_frag_am_t {

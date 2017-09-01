@@ -187,14 +187,14 @@ gasneti_mxm_get_ep_address(gasnet_mxm_ep_conn_info_t *ep_info, mxm_ptl_id_t id)
  */
 static void setup_pin_maxsz(uint64_t size)
 {
-    MXM_DEBUG("Starting with size=%lu, gasnetc_pin_maxsz=%lu\n", size, gasnetc_pin_maxsz);
+    MXM_DEBUG("Starting with size=%"PRIu64", gasnetc_pin_maxsz=%"PRIu64"\n", size, gasnetc_pin_maxsz);
     gasneti_assert(size != 0);
     size >>= 1;
     for (gasnetc_pin_maxsz_shift=0; size != 0; ++gasnetc_pin_maxsz_shift) {
         size >>= 1;
     }
     gasnetc_pin_maxsz = ((uint64_t)1) << gasnetc_pin_maxsz_shift;
-    MXM_DEBUG("Rounded down to power of two alculated gasnetc_pin_maxsz=%lu\n",
+    MXM_DEBUG("Rounded down to power of two calculated gasnetc_pin_maxsz=%"PRIu64"\n",
               gasnetc_pin_maxsz);
 }
 #endif
@@ -218,10 +218,10 @@ static int gasneti_load_settings(void)
     if (!gasnetc_pin_maxsz) {
         /* 0=automatic.  Will setup later */
     } else if (!GASNETI_POWEROFTWO(gasnetc_pin_maxsz)) {
-        gasneti_fatalerror("GASNET_PIN_MAXSZ (%llu) is not a power of 2", (unsigned long long) gasnetc_pin_maxsz);
+        gasneti_fatalerror("GASNET_PIN_MAXSZ (%"PRIu64") is not a power of 2", gasnetc_pin_maxsz);
     } else if (gasnetc_pin_maxsz < GASNET_PAGESIZE) {
-        gasneti_fatalerror("GASNET_PIN_MAXSZ (%lu) is less than GASNET_PAGESIZE (%lu)",
-                           (unsigned long) gasnetc_pin_maxsz, (unsigned long) GASNET_PAGESIZE);
+        gasneti_fatalerror("GASNET_PIN_MAXSZ (%"PRIuPTR") is less than GASNET_PAGESIZE (%lu)",
+                           (uintptr_t) gasnetc_pin_maxsz, (unsigned long) GASNET_PAGESIZE);
     } else {
         setup_pin_maxsz(gasnetc_pin_maxsz);
     }
@@ -236,10 +236,10 @@ static int gasneti_load_settings(void)
     if (!gasnet_mxm_module.max_am_med) {
         gasnet_mxm_module.max_am_med = GASNETC_DEFAULT_AM_MAX_MED;
     } else if (gasnet_mxm_module.max_am_med < 512) {
-        gasneti_fatalerror("GASNET_AM_MAX_MED (%lu) is less than 512",
-                           (unsigned long) gasnet_mxm_module.max_am_med);
+        gasneti_fatalerror("GASNET_AM_MAX_MED (%d) is less than 512",
+                           (int) gasnet_mxm_module.max_am_med);
     }
-    MXM_DEBUG("GASNET_AM_MAX_MED is set to %lu\n", gasnet_mxm_module.max_am_med);
+    MXM_DEBUG("GASNET_AM_MAX_MED is set to %"PRIuPTR"\n", (uintptr_t)gasnet_mxm_module.max_am_med);
 #endif
 
     GASNETC_ENVINT(gasnet_mxm_module.strict_api, GASNET_STRICT_API, 1, 0, 1);
@@ -249,14 +249,14 @@ static int gasneti_load_settings(void)
     GASNETI_TRACE_PRINTF(I, ("mxm-conduit run time configuration settings = {"));
 
 #if GASNET_SEGMENT_FAST
-    GASNETI_TRACE_PRINTF(I, ("  GASNET_PIN_MAXSZ                = %lu%s",
-                             (unsigned long) gasnetc_pin_maxsz,
+    GASNETI_TRACE_PRINTF(I, ("  GASNET_PIN_MAXSZ                = %"PRIuPTR"%s",
+                             (uintptr_t) gasnetc_pin_maxsz,
                              (!gasnetc_pin_maxsz ? " (automatic)" : "")));
 #endif
 
 #if !GASNET_PSHM
-    GASNETI_TRACE_PRINTF(I, ("  GASNET_AM_MAX_MED               = %lu",
-                             (unsigned long) gasnet_mxm_module.max_am_med));
+    GASNETI_TRACE_PRINTF(I, ("  GASNET_AM_MAX_MED               = %"PRIuPTR,
+                             (uintptr_t) gasnet_mxm_module.max_am_med));
 #endif
 
     GASNETI_TRACE_PRINTF(I, ("  GASNET_STRICT_API               = %u",
@@ -367,17 +367,17 @@ static void *gasnetc_try_pin_inner(size_t size, gasnetc_memreg_t *reg)
 
     addr = gasneti_mmap(size);
     if (addr != MAP_FAILED) {
-        /*MXM_DEBUG("MMap for size %lu succeeded, trying to register\n", size);*/
+        /*MXM_DEBUG("MMap for size %"PRIuPTR" succeeded, trying to register\n", (uintptr_t)size);*/
         if (gasnetc_pin(addr, size, reg)) {
-            MXM_DEBUG("Registering for size %lu failed\n", size);
+            MXM_DEBUG("Registering for size %"PRIuPTR" failed\n", (uintptr_t)size);
             gasnetc_unpin(reg);
             gasneti_munmap(addr, size);
             return NULL;
         } else {
-            /*MXM_DEBUG("Registering for size %lu succeeded\n", size);*/
+            /*MXM_DEBUG("Registering for size %"PRIuPTR" succeeded\n", (uintptr_t)size);*/
         }
     } else {
-        MXM_DEBUG("MMap for size %lu failed\n", size);
+        MXM_DEBUG("MMap for size %"PRIuPTR" failed\n", (uintptr_t)size);
         addr = NULL;
     }
     return addr;
@@ -413,9 +413,9 @@ static uintptr_t gasnetc_trypin(uintptr_t limit, uintptr_t step)
 static void gasnetc_init_pin_info(int first_local, int ppn)
 {
     gasnetc_pin_info_t *all_info = gasneti_malloc(gasneti_nodes * sizeof(gasnetc_pin_info_t));
-    unsigned long limit;
+    uintptr_t limit;
     int i;
-    unsigned long tmp;
+    uintptr_t tmp;
 
     /*
      * We bound our search by the smallest of:
@@ -424,20 +424,20 @@ static void gasnetc_init_pin_info(int first_local, int ppn)
      */
     MXM_DEBUG("Initializing pinning info\n");
     limit = 2 * (gasneti_getPhysMemSz(1) / 3);
-    MXM_LOG("Physical memory size: %lu, limit: %lu\n", gasneti_getPhysMemSz(1), limit);
+    MXM_LOG("Physical memory size: %"PRIu64", limit: %"PRIuPTR"\n", gasneti_getPhysMemSz(1), limit);
 
     /* Honor PHYSMEM_MAX if set */
     tmp = gasneti_getenv_int_withdefault("GASNET_PHYSMEM_MAX", 0, 1);
     if (tmp) {
-        MXM_DEBUG("GASNET_PHYSMEM_MAX is set to %lu\n", tmp);
+        MXM_DEBUG("GASNET_PHYSMEM_MAX is set to %"PRIuPTR"\n", tmp);
         limit = tmp;
-        MXM_DEBUG("Updated limit: %lu\n", limit);
+        MXM_DEBUG("Updated limit: %"PRIuPTR"\n", limit);
     } else {
         MXM_DEBUG("GASNET_PHYSMEM_MAX is not set\n");
     }
 
     limit = GASNETI_PAGE_ALIGNDOWN(limit);
-    MXM_DEBUG("Limit aligned down to page size: %lu\n", limit);
+    MXM_DEBUG("Limit aligned down to page size: %"PRIuPTR"\n", limit);
     if (limit == 0) {
         gasneti_fatalerror("Failed to determine the available physical memory");
         return;
@@ -446,28 +446,29 @@ static void gasnetc_init_pin_info(int first_local, int ppn)
     gasnetc_pin_info.memory = ~((uintptr_t)0);
     gasnetc_pin_info.ppn = ppn;
 
-    if (gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_PROBE", 0)) {
+    const int do_probe = gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_PROBE", 0);
+    if (do_probe) {
         /* Now search for largest pinnable memory, on one process per machine */
-        unsigned long step = GASNETI_MMAP_GRANULARITY;
-        MXM_DEBUG("GASNET_PHYSMEM_NOPROBE is set\n");
-        MXM_DEBUG("Step set to %lu (GASNETI_MMAP_GRANULARITY)\n", step);
+        uintptr_t step = GASNETI_MMAP_GRANULARITY;
+        MXM_DEBUG("GASNET_PHYSMEM_PROBE is set\n");
+        MXM_DEBUG("Step set to %"PRIuPTR" (GASNETI_MMAP_GRANULARITY)\n", step);
 #if GASNET_SEGMENT_FAST
         if (step > gasnetc_pin_maxsz) {
             step = gasnetc_pin_maxsz;
-            MXM_DEBUG("GASNET_SEGMENT_FAST: Step decreased to %lu (gasnetc_pin_maxsz)\n", step);
+            MXM_DEBUG("GASNET_SEGMENT_FAST: Step decreased to %"PRIuPTR" (gasnetc_pin_maxsz)\n", step);
         }
 #endif
         step = GASNETI_PAGE_ALIGNDOWN(step);
         if (gasneti_mynode == first_local) {
             uintptr_t size;
-            MXM_DEBUG("First local node - probing pinning: limit=%lu, step=%lu\n",
+            MXM_DEBUG("First local node - probing pinning: limit=%"PRIuPTR", step=%"PRIuPTR"\n",
                       limit, step);
             size = gasnetc_trypin(limit, step);
             if_pf (!size) {
                 gasneti_fatalerror("ERROR: Failure to determine the max pinnable memory.  " GASNET_CONDUIT_NAME_STR " may be misconfigured.");
             }
             gasnetc_pin_info.memory = size;
-            MXM_DEBUG("Done probing - using size %lu\n", size);
+            MXM_DEBUG("Done probing - using size %"PRIuPTR"\n", size);
         } else {
             MXM_DEBUG("Not first local node - no pinning probing\n");
         }
@@ -484,7 +485,7 @@ static void gasnetc_init_pin_info(int first_local, int ppn)
         gasneti_bootstrapBarrier(); /* Ensure fakepin completes unmap before continuing */
 #endif
     } else {
-        MXM_LOG("No pinning probing required - using size %lu\n", limit);
+        MXM_LOG("No pinning probing required - using size %"PRIuPTR"\n", limit);
         /* Note that README says PHYSMEM_NOPROBE must be equal on all nodes */
         gasnetc_pin_info.memory = limit;
         gasneti_bootstrapExchange(&gasnetc_pin_info,
@@ -499,7 +500,7 @@ static void gasnetc_init_pin_info(int first_local, int ppn)
         gasnetc_pin_info.memory  = MIN(gasnetc_pin_info.memory, info->memory);
     }
 
-    MXM_LOG("Using max pinnable memory: %lu\n", gasnetc_pin_info.memory);
+    MXM_LOG("Using max pinnable memory: %"PRIuPTR"\n", gasnetc_pin_info.memory);
     gasneti_free(all_info);
 }
 
@@ -577,6 +578,9 @@ static int gasnetc_init(int *argc, char ***argv)
     if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
     gasneti_init_done = 1; /* enable early to allow tracing */
+
+    /* Must init timers after global env, and preferably before tracing */
+    GASNETI_TICKS_INIT();
 
     /* Now enable tracing of all the following steps */
     gasneti_trace_init(argc, argv);
@@ -956,8 +960,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     gasnet_node_t i;
     size_t maxsize = 0;
 
-    GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                            numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+    GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                            numentries, segsize, minheapoffset));
 
     if (!gasneti_init_done)
         GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -1150,7 +1154,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
                    gasneti_seginfo[gasneti_mynode].size == segsize);
 
-    gasneti_auxseg_attach(); /* provide auxseg */
+    /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+             if your conduit has an optimized bootstrapExchange pass it in place of NULL
+     */
+    gasneti_auxseg_attach(NULL); /* provide auxseg */
 
     gasnete_init(); /* init the extended API */
 

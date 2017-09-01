@@ -125,6 +125,9 @@ static int gasnetc_init(int *argc, char ***argv) {
 
   gasneti_freezeForDebugger();
 
+  /* Must init timers after global env, and preferably before tracing */
+  GASNETI_TICKS_INIT();
+
   /*
    * Print information about shmalloc segment search when verbose environment
    * or debug mode
@@ -236,8 +239,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -357,7 +360,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 		    if (segbase == NULL) 
 			gasneti_fatalerror(
 			    "shmalloc couldn't resize GASNet segment from "
-			    "%lu bytes down to %lu bytes\n", 
+			    "%"PRIuPTR" bytes down to %"PRIuPTR" bytes\n", 
 			    gasnetc_seginfo_init.size, segsize);
 
 		#endif
@@ -380,7 +383,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 	    }
 
             #if 0
-	    printf("segbase=%p, segsize=%lu\n", segbase, segsize);
+	    printf("segbase=%p, segsize=%"PRIuPTR"\n", segbase, segsize);
             #endif
 
 	    #ifdef CRAY_SHMEM
@@ -521,7 +524,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
          gasneti_seginfo[gasneti_mynode].size == segsize);
 #endif
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(gasnetc_bootstrapExchange); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -1439,15 +1445,15 @@ gasnetc_SHMallocSegmentSearch()
         #endif
 
         if (gasnetc_verbose_spawn && gasneti_mynode == 0)
-		printf("maxsiz = %lu (%.2f GB), pagesize=%d\n\n", 
+		printf("maxsiz = %"PRIuPTR" (%.2f GB), pagesize=%d\n\n", 
 			maxsz, (float) maxsz / (1024*1024*1024),
 			(int) GASNET_PAGESIZE);
 
 #if 0
 		{
 		    char      buf[64];
-		    snprintf(buf, 64, "SMA_SYMMETRIC_SIZE=%lu", 
-			    (unsigned long) alloc_perthread);
+		    snprintf(buf, 64, "SMA_SYMMETRIC_SIZE=%"PRIuPTR, 
+			     alloc_perthread);
 		    putenv(buf);
 		}
 #endif
@@ -1464,7 +1470,7 @@ gasnetc_SHMallocSegmentSearch()
 	    while (alloc_perthread > 0) {
 		si.addr = shmemalign(GASNETT_PAGESIZE, alloc_perthread);
                 #if 0
-		printf("Difference is %lx\n", (long)shmem_ptr(si.addr,1)  - (long)shmem_ptr(si.addr,0));
+		printf("Difference is %"PRIxPTR"\n", (uintptr_t)shmem_ptr(si.addr,1)  - (uintptr_t)shmem_ptr(si.addr,0));
                 #endif
 		if (si.addr != NULL)
 			break;
@@ -1482,10 +1488,10 @@ gasnetc_SHMallocSegmentSearch()
 	#endif
 
 	if (gasnetc_verbose_spawn)
-		printf("shmalloc search for %lu bytes (max=%lu) took %lu us (%p,%lu)\n", 
+		printf("shmalloc search for %"PRIuPTR" bytes (max=%"PRIuPTR") took %lu us (%p,%"PRIuPTR")\n", 
 		    si.size, maxsz, 
 		    (long)gasneti_ticks_to_ns(endtime-starttime)/1000,
-		    (void*)si.addr,(uintptr_t)si.size);
+		    (void*)si.addr,si.size);
 
 	return si;
 }

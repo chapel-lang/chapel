@@ -580,8 +580,8 @@ gasneti_pshmnet_init(void *region, size_t regionlen, gasneti_pshm_rank_t pshmnod
 
   if (regionlen < (szonce + szpernode * pshmnodes))
     gasneti_fatalerror("Internal error: not enough memory for pshmnet: \n"
-                       " given %lu effective bytes, but need %lu", 
-                       (unsigned long)regionlen, (unsigned long)(szonce + szpernode * pshmnodes));
+                       " given %"PRIuPTR" effective bytes, but need %"PRIuPTR, 
+                       (uintptr_t)regionlen, (uintptr_t)(szonce + szpernode * pshmnodes));
 
   vnet = gasneti_malloc(sizeof(gasneti_pshmnet_t));
   vnet->nodecount = pshmnodes;
@@ -807,7 +807,7 @@ static void gasneti_pshm_abort_handler(int sig) {
     char msg[128] = { '\0', };
     gasneti_assert(strlen(msg1) + strlen(signame) + strlen(msg2) + 1 <= sizeof(msg));
     strcat(strcat(strcat(msg, msg1), signame), msg2);
-    write(STDERR_FILENO, msg, strlen(msg));
+    int ignore = write(STDERR_FILENO, msg, strlen(msg));
   }
 
   // Reraise the signal
@@ -1258,6 +1258,7 @@ int gasnetc_AMPSHM_ReqRepGeneric(int category, int isReq, gasnet_node_t dest,
     if_pf (msg == NULL) {
       /* Grow the free pool with buffers sized and aligned for the largest Medium */
       void *tmp = gasneti_malloc(sizeof(gasneti_AMPSHM_medmsg_t)+7);
+      gasneti_leak(tmp);
       uintptr_t offset = (uintptr_t)GASNETI_AMPSHM_MSG_MED_DATA(tmp) & 7;
       /* Align the (macro-adjusted) Medium payload field, not the msg itself */
       msg = (void*)((uintptr_t)tmp + (offset ? (8-offset) : 0));

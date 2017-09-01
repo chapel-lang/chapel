@@ -3,7 +3,7 @@ README file for GASNet tools
 ============================
 Originally by: Dan Bonachea <bonachea@cs.berkeley.edu>
 Currently maintained by: Paul H. Hargrove <PHHargrove@lbl.gov>
-GASNet tools specification version: 1.9
+GASNet tools specification version: 1.10
 
 The GASNet tools are a set of communication-independent utilities that are used
 to implement GASNet, and constitute a useful portability tool for GASNet
@@ -136,6 +136,44 @@ system-specific support, where available.
   GASNETT_TICK_MIN - a value representing the minimum value storable in a gasnett_tick_t
 
   GASNETT_TICK_MAX - a value representing the maximum value storable in a gasnett_tick_t
+
+  Environment:
+    For Linux on x86, x86-64 or MIC processors, the default timer is the TSC
+    which requires choosing a mechanism for calibration.  This can be controlled
+    via environment variables:
+
+    * GASNET_TSC_RATE
+      GASNET_TSC_RATE=walltime
+        Measures the TSC tick rate against the OS-provided wallclock time.
+        This is the default.
+      GASNET_TSC_RATE=cpuinfo
+        Obtains the TSC tick rate from information in /proc/cpuinfo
+        This is known to be incorrect for certain recent CPU models.
+      GASNET_TSC_RATE=[Hz]
+        If given an integer in the range 1 Million to 100 Billon, this will be
+        taken as the TSC tick rate in Hz (cycles per second).  To avoid the
+        ambiguity between binary (M=2^20) and decimal (M=10^6), no suffixes are
+        accepted.
+
+    * GASNET_TSC_RATE_TOLERANCE
+      This is a floating-point value (read by gasnett_getenv_dbl_withdefault())
+      which indicates the relative error permitted in the calibration of the
+      TSC.  For instance the value 0.001 would permit a relative error as
+      large as 1 part in 1000, or 0.1%.  Exceeding this level of permitted
+      relative error will result in a warning message.
+
+    * GASNET_TSC_RATE_HARD_TOLERANCE
+      This environment variable functions like GASNET_TSC_RATE_TOLERANCE, except
+      that exceeeding this value results in a fatal error.
+
+-----
+Sleep
+-----
+
+  int gasnett_nsleep(uint64_t ns_delay) - nanosecond resolution sleep
+    Sleep for at least the indicated number of nanoseconds.  If interrupted by a
+    signal, may terminate the sleep early returnining non-zero with errno = EINTR.
+    If ns_delay is zero, this function returns without sleeping.
 
 ---------------
 Memory barriers

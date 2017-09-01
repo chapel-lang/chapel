@@ -17,6 +17,9 @@ SEPARATE_CC = @SEPARATE_CC@
 
 @USE_PSHM_TRUE@PSHM_SOURCES  = $(top_srcdir)/gasnet_pshm.c
 
+@HAVE_PTHREAD_FALSE@PTHREADS_ERROR_CHECK = $(MAKE) do-pthreads-error
+@HAVE_PTHREAD_TRUE@PTHREADS_ERROR_CHECK = :
+
 TOOLLIBINCLUDES =         \
         @SYS_HEADER_BLD@  \
         -I$(srcdir)       \
@@ -54,6 +57,7 @@ LIBCFLAGS =                       \
         @GASNET_OPT_CFLAGS@       \
         @MISC_CFLAGS@             \
         @MISC_CPPFLAGS@           \
+        @GASNET_PSHM_CFLAGS@      \
         $(LIBDEFINES)             \
         $(CONDUIT_EXTRALIBCFLAGS) \
 	$(LIBINCLUDES)		  \
@@ -94,6 +98,7 @@ libgasnet_dependencies =                  \
         $(srcdir)/*.[ch]                  \
         $(top_srcdir)/extended-ref/*.[ch] \
         $(top_srcdir)/other/smp-collectives/*.[ch] \
+        $(top_srcdir)/tests/test.h        \
 	$(CONDUIT_SOURCELIST)             \
 	$(CONDUIT_EXTRAHEADERS)           \
 	$(CONDUIT_EXTRADEPS)
@@ -130,13 +135,13 @@ do-libgasnet-seq: $(libgasnet_dependencies) $(CONDUIT_NAME)-seq.mak gasnet-$(CON
           $(set_dirs) do-libgasnet
 
 do-libgasnet-par: $(libgasnet_dependencies) $(CONDUIT_NAME)-par.mak gasnet-$(CONDUIT_NAME)-par.pc $(CONDUIT_PAR_HOOK)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	@$(MAKE) THREAD_MODEL=PAR                            \
           LIBGASNET_THREAD_DEFINES="$(thread_defines)"       \
           $(set_dirs) do-libgasnet
 
 do-libgasnet-parsync: $(libgasnet_dependencies) $(CONDUIT_NAME)-parsync.mak gasnet-$(CONDUIT_NAME)-parsync.pc $(CONDUIT_PARSYNC_HOOK)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	@$(MAKE) THREAD_MODEL=PARSYNC                        \
           LIBGASNET_THREAD_DEFINES="$(thread_defines)"       \
           $(set_dirs) do-libgasnet
@@ -155,7 +160,7 @@ do-libgasnet_tools-seq: $(libgasnet_tools_dependencies)
           $(set_dirs) do-libgasnet_tools
 
 do-libgasnet_tools-par: $(libgasnet_tools_dependencies)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	@$(MAKE) THREAD_MODEL=PAR                            \
           LIBGASNET_THREAD_DEFINES="$(thread_defines) -DGASNETT_THREAD_SAFE" \
           $(set_dirs) do-libgasnet_tools
@@ -166,7 +171,7 @@ $(top_builddir)/other/gasnet_tools-fragment.mak: $(top_srcdir)/other/gasnet_tool
 	cd "$(top_builddir)/other" && $(MAKE) gasnet_tools-fragment.mak	
 
 gasnet_tools-par.mak : $(fragment_deps)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	$(MAKE) do-tools-make-fragment thread_model=par THREAD_MODEL=PAR
 
 gasnet_tools-seq.mak: $(fragment_deps)
@@ -188,7 +193,7 @@ gasnet_tools-seq.pc: gasnet_tools-seq.mak $(pkgconfig_tools)
 	@$(MAKE) do-pkgconfig-tools thread_model=seq pkgconfig_file="$@" FRAGMENT="$<"
 
 gasnet_tools-par.pc: gasnet_tools-par.mak $(pkgconfig_tools)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	@$(MAKE) do-pkgconfig-tools thread_model=par pkgconfig_file="$@" FRAGMENT="$<"
 
 do-pkgconfig-tools: force
