@@ -2642,6 +2642,13 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
+    /* Ensure promoted-push_back is serial */
+    proc push_back(vals) where isArray(vals) || isTuple(vals) {
+      for val in vals do
+        this.push_back(val);
+    }
+
     /* Add element ``val`` to the back of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
 
@@ -2716,6 +2723,13 @@ module ChapelArray {
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
+    }
+
+    pragma "no doc"
+    /* Ensure promoted-push_front is serial */
+    proc push_front(vals) where isArray(vals) || isTuple(vals) {
+      for val in vals do
+        this.push_front(val);
     }
 
     /* Add element ``val`` to the front of the array, extending the array's
