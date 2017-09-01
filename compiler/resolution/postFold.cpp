@@ -37,14 +37,10 @@ static Expr* postFoldMove(CallExpr* call);
 
 static Expr* postFoldSymExpr(SymExpr* symExpr);
 
-static void foldEnumOp(int         op,
-                       EnumSymbol* e1,
-                       EnumSymbol* e2,
-                       Immediate*  imm);
-
-static bool isSubTypeOrInstantiation(Type* sub, Type* super);
-
-static void insertValueTemp(Expr* insertPoint, Expr* actual);
+static void  foldEnumOp(int         op,
+                        EnumSymbol* e1,
+                        EnumSymbol* e2,
+                        Immediate*  imm);
 
 #define FOLD_CALL1(prim)                                                \
   if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
@@ -95,27 +91,39 @@ static void insertValueTemp(Expr* insertPoint, Expr* actual);
     }                                                                   \
   }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 Expr* postFold(Expr* expr) {
+  SET_LINENO(expr);
+
   Expr* retval = expr;
 
-  if (expr->parentSymbol != NULL) {
-    SET_LINENO(expr);
+  INT_ASSERT(expr->parentSymbol != NULL);
 
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isResolved() == true) {
-        retval = postFoldNormal(call);
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isResolved() == true) {
+      retval = postFoldNormal(call);
 
-      } else if (call->isPrimitive() == true) {
-        retval = postFoldPrimop(call);
-      }
-
-    } else if (SymExpr* sym = toSymExpr(expr)) {
-      retval = postFoldSymExpr(sym);
+    } else if (call->isPrimitive() == true) {
+      retval = postFoldPrimop(call);
     }
+
+  } else if (SymExpr* sym = toSymExpr(expr)) {
+    retval = postFoldSymExpr(sym);
   }
 
   return retval;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
@@ -169,6 +177,16 @@ static Expr* postFoldNormal(CallExpr* call) {
 
   return retval;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool  isSubTypeOrInstantiation(Type* sub, Type* super);
+
+static void  insertValueTemp(Expr* insertPoint, Expr* actual);
 
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
@@ -436,158 +454,140 @@ static Expr* postFoldPrimop(CallExpr* call) {
   return retval;
 }
 
-static Expr* postFoldMove(CallExpr* call) {
-  bool  set    = false;
-  Expr* retval = call;
+static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
+  bool retval = false;
 
-  if (SymExpr* lhs = toSymExpr(call->get(1))) {
-    if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
-        lhs->symbol()->isParameter()             == true) {
+  if (sub == super) {
+    retval = true;
 
-      if (paramMap.get(lhs->symbol())) {
-        INT_FATAL(call, "parameter set multiple times");
+  } else if (AggregateType* at = toAggregateType(sub)) {
+    for (int i = 0; i < at->dispatchParents.n && retval == false; i++) {
+      retval = isSubTypeOrInstantiation(at->dispatchParents.v[i], super);
+    }
+
+    if (retval == false) {
+      if (at->instantiatedFrom != NULL) {
+        retval = isSubTypeOrInstantiation(at->instantiatedFrom,   super);
       }
+    }
+  }
 
-      VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+  return retval;
+}
 
-      // We are expecting the LHS to be a var (what else could it be? )
-      if (lhsVar->immediate != NULL) {
-        // The value of the LHS of this move has already been
-        // established, most likely through a construct like
-        // if (cond) return x;
-        // return y;
-        // In this case, the first 'true' conditional that hits a return
-        // can fast-forward to the end of the routine, and some
-        // resolution time can be saved.
-        // Re-enable the fatal error to catch this case; the correct
-        // solution is to ensure that the containing expression is never
-        // resolved, using the abbreviated resolution suggested above.
-        // INT_ASSERT(!lhsVar->immediate);
-        set = true; // That is, set previously.
+static void insertValueTemp(Expr* insertPoint, Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual)) {
+    if (se->symbol()->type->refType == NULL) {
+      VarSymbol* tmp = newTemp("_value_tmp_", se->symbol()->getValType());
+
+      insertPoint->insertBefore(new DefExpr(tmp));
+
+      insertPoint->insertBefore(new CallExpr(PRIM_MOVE,
+                                             tmp,
+                                             new CallExpr(PRIM_DEREF,
+                                                          se->symbol())));
+
+      se->setSymbol(tmp);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool  postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym);
+
+static void  updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym);
+
+static void  postFoldMoveTail(CallExpr* call, Symbol* lhsSym);
+
+static Expr* postFoldMove(CallExpr* call) {
+  Symbol* lhsSym = toSymExpr(call->get(1))->symbol();
+  Expr*   retval = call;
+
+  if (postFoldMoveUpdateForParam(call, lhsSym) == false) {
+    updateFlagTypeVariable(call, lhsSym);
+
+    if (isSymExpr(call->get(2)) == true) {
+      postFoldMoveTail(call, lhsSym);
+
+    } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
+      FnSymbol* fn = rhs->resolvedFunction();
+
+      if (fn != NULL && fn->name == astrSequals && fn->retType == dtVoid) {
+        call->replace(rhs->remove());
+
+        retval = rhs;
 
       } else {
-        if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          if (VarSymbol* rhsVar = toVarSymbol(rhs->symbol())) {
-            if (rhsVar->immediate != NULL) {
-              paramMap.put(lhs->symbol(), rhsVar);
-
-              lhs->symbol()->defPoint->remove();
-
-              call->convertToNoop();
-
-              set = true;
-            }
-          }
-
-          if (EnumSymbol* rhsv = toEnumSymbol(rhs->symbol())) {
-            paramMap.put(lhs->symbol(), rhsv);
-
-            lhs->symbol()->defPoint->remove();
-
-            call->convertToNoop();
-
-            set = true;
-          }
-        }
+        postFoldMoveTail(call, lhsSym);
       }
 
-      if (Symbol* lhsSym = lhs->symbol()) {
-        if (lhsSym->isParameter() == true) {
-          if (lhsSym->hasFlag(FLAG_TEMP) == false) {
-            if (isLegalParamType(lhsSym->type) == false) {
-              USR_FATAL_CONT(call,
-                             "'%s' is not of a supported param type",
-                             lhsSym->name);
+    } else {
+      INT_ASSERT(false);
+    }
+  }
 
-            } else if (set == false) {
-              USR_FATAL_CONT(call,
-                             "Initializing parameter '%s' to value "
-                             "not known at compile time",
-                             lhsSym->name);
+  return retval;
+}
 
-              lhs->symbol()->removeFlag(FLAG_PARAM);
-            }
+static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
+  bool retval = false;
+
+  if (lhsSym->hasFlag(FLAG_MAYBE_PARAM) == true ||
+      lhsSym->isParameter()             == true) {
+    if (paramMap.get(lhsSym) != NULL) {
+      INT_FATAL(call, "parameter set multiple times");
+
+    } else if (lhsSym->isImmediate() == true) {
+      retval = true;
+
+    } else if (SymExpr* rhs = toSymExpr(call->get(2))) {
+      Symbol* rhsSym = rhs->symbol();
+
+      if (rhsSym->isImmediate() == true ||
+          isEnumSymbol(rhsSym)  == true) {
+        paramMap.put(lhsSym, rhsSym);
+
+        lhsSym->defPoint->remove();
+
+        call->convertToNoop();
+
+        retval = true;
+      }
+    }
+
+    if (lhsSym->isParameter() == true) {
+      if (retval == true) {
+        if (lhsSym->hasFlag(FLAG_TEMP)     == false  &&
+            isLegalParamType(lhsSym->type) == false) {
+          USR_FATAL_CONT(call,
+                         "'%s' is not of a supported param type",
+                         lhsSym->name);
+        }
+
+      } else {
+        if (lhsSym->hasFlag(FLAG_TEMP) == false) {
+          if (isLegalParamType(lhsSym->type) == false) {
+            USR_FATAL_CONT(call,
+                           "'%s' is not of a supported param type",
+                           lhsSym->name);
 
           } else {
-            if (lhsSym->hasFlag(FLAG_RVV) == true && set == false) {
-              USR_FATAL_CONT(call,
-                             "'param' functions cannot return "
-                             "non-'param' values");
-            }
-          }
-        }
-      }
-    }
+            USR_FATAL_CONT(call,
+                           "Initializing parameter '%s' to value "
+                           "not known at compile time",
+                           lhsSym->name);
 
-    if (set == false) {
-      if (lhs->symbol()->hasFlag(FLAG_MAYBE_TYPE) == true) {
-        // Add FLAG_TYPE_VARIABLE when relevant
-        if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          if (rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-            lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
+            lhsSym->removeFlag(FLAG_PARAM);
           }
 
-        } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (FnSymbol* fn = rhs->resolvedFunction()) {
-            if (fn->retTag == RET_TYPE) {
-              lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-            }
-
-          } else if (rhs->isPrimitive(PRIM_DEREF)) {
-            if (isTypeExpr(rhs->get(1)) == true) {
-              lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-            }
-          }
-        }
-      }
-
-      if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
-          lhs->symbol()->addFlag(FLAG_TYPE_VARIABLE);
-        }
-
-        if (FnSymbol* fn = rhs->resolvedFunction()) {
-          if (fn->name == astrSequals && fn->retType == dtVoid) {
-            call->replace(rhs->remove());
-
-            retval = rhs;
-            set    = true;
-          }
-        }
-      }
-    }
-
-    if (set == false) {
-      if (lhs->symbol()->hasFlag(FLAG_EXPR_TEMP)     == true &&
-          lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-        if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-          if (requiresImplicitDestroy(rhsCall) == true) {
-            // this still seems to be necessary even if
-            // isUserDefinedRecord(lhs->symbol()->type) == true
-            // see call-expr-tmp.chpl for example
-            lhs->symbol()->addFlag(FLAG_INSERT_AUTO_COPY);
-            lhs->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          }
-        }
-      }
-
-      if (isReferenceType(lhs->symbol()->type) ||
-          lhs->symbol()->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
-          lhs->symbol()->type->symbol->hasFlag(FLAG_ARRAY)) {
-        lhs->symbol()->removeFlag(FLAG_EXPR_TEMP);
-      }
-    }
-
-    if (set == false) {
-      if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_NO_INIT)) {
-          // If the lhs is a primitive, then we can safely just remove this
-          // value.  Otherwise the type needs to be resolved a little
-          // further and so this statement can't be removed until
-          // resolveRecordInitializers
-          if (isAggregateType(rhs->get(1)->getValType()) == false) {
-            call->convertToNoop();
-          }
+        } else if (lhsSym->hasFlag(FLAG_RVV) == true) {
+          USR_FATAL_CONT(call,
+                         "'param' functions cannot return non-'param' values");
         }
       }
     }
@@ -595,6 +595,78 @@ static Expr* postFoldMove(CallExpr* call) {
 
   return retval;
 }
+
+static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
+  bool isTypeVar = false;
+
+  if        (SymExpr*  rhs = toSymExpr(call->get(2)))  {
+    isTypeVar = rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
+
+  } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
+    if (FnSymbol* fn = rhs->resolvedFunction()) {
+      isTypeVar = fn->retTag == RET_TYPE;
+
+    } else if (rhs->isPrimitive(PRIM_DEREF)  == true) {
+      isTypeVar = isTypeExpr(rhs->get(1));
+
+    } else if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
+      isTypeVar = true;
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  if (isTypeVar == true) {
+    lhsSym->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  lhsSym->removeFlag(FLAG_MAYBE_TYPE);
+}
+
+static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
+  if (isSymExpr(call->get(2)) == true) {
+    if (isReferenceType(lhsSym->type)                          == true  ||
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
+        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+      lhsSym->removeFlag(FLAG_EXPR_TEMP);
+    }
+
+  } else if (CallExpr* rhs = toCallExpr(call->get(2))) {
+    if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     ==  true  &&
+        lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
+        requiresImplicitDestroy(rhs)        ==  true) {
+      // this still seems to be necessary even if
+      // isUserDefinedRecord(lhsSym->type) == true
+      // see call-expr-tmp.chpl for example
+      lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
+      lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
+
+    if (isReferenceType(lhsSym->type)                          == true  ||
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
+        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+      lhsSym->removeFlag(FLAG_EXPR_TEMP);
+    }
+
+    if (rhs->isPrimitive(PRIM_NO_INIT) == true) {
+      // If the lhs is a primitive, then we can remove this value.
+      // Otherwise retain this statement through resolveRecordInitializers.
+      if (isAggregateType(rhs->get(1)->getValType()) == false) {
+        call->convertToNoop();
+      }
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static Expr* postFoldSymExpr(SymExpr* sym) {
   Expr* retval = sym;
@@ -749,44 +821,5 @@ static void foldEnumOp(int         op,
     case P_prim_greaterorequal:
       imm->v_bool = val1 >= val2;
       break;
-  }
-}
-
-static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
-  if (sub == super) {
-    return true;
-  }
-
-  forv_Vec(Type, parent, sub->dispatchParents) {
-    if (isSubTypeOrInstantiation(parent, super) == true) {
-      return true;
-    }
-  }
-
-  if (AggregateType* at = toAggregateType(sub)) {
-    if (at->instantiatedFrom                                  != NULL &&
-        isSubTypeOrInstantiation(at->instantiatedFrom, super) == true) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-
-static void insertValueTemp(Expr* insertPoint, Expr* actual) {
-  if (SymExpr* se = toSymExpr(actual)) {
-    if (!se->symbol()->type->refType) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->symbol()->getValType());
-
-      insertPoint->insertBefore(new DefExpr(tmp));
-
-      insertPoint->insertBefore(new CallExpr(PRIM_MOVE,
-                                             tmp,
-                                             new CallExpr(PRIM_DEREF,
-                                                          se->symbol())));
-
-      se->setSymbol(tmp);
-    }
   }
 }
