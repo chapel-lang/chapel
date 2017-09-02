@@ -447,7 +447,7 @@ int	fh_region_partial(gasnet_node_t node, uintptr_t *addr_p, size_t *len_p);
 /* ##################################################################### */
 /* Misc functions (COMMON, firehose.c)                                   */
 /* ##################################################################### */
-unsigned long	fh_getenv(const char *var, unsigned long multiplier);
+int64_t fh_getenv(const char *var, unsigned long multiplier);
 
 /* Common Queue Macros for Firehose FIFO and Local Bucket FIFO */
 #define FH_TAILQ_HEAD(name, type)	\

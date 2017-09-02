@@ -482,6 +482,10 @@ static int gasnetc_init(int *argc, char ***argv) {
     fprintf(stderr,"gasnetc_init(): about to spawn...\n"); fflush(stderr);
   #endif
 
+  /* Must init timers after global env, and preferably before tracing */
+  /* Note that we are intentionly doing this before we fork() */
+  GASNETI_TICKS_INIT();
+
   /* add code here to bootstrap the nodes for your conduit */
 
   gasneti_mynode = 0;
@@ -628,8 +632,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -756,7 +760,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
          gasneti_seginfo[gasneti_mynode].size == segsize);
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(gasnetc_bootstrapExchange); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -836,6 +843,8 @@ extern void gasnetc_exit(int exitcode) {
     gasnetc_join_children();
   }
   exitcode = gasnetc_get_exitcode();
+
+  gasneti_pshm_fini();
 #endif
 
   gasneti_killmyprocess(exitcode);

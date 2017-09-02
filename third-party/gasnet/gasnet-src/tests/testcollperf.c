@@ -130,8 +130,10 @@ void scale_ptrM(void * out_ptr[], void * const in_ptr[], size_t elem_count, size
 
 #if PRINT_TIMERS
 #define print_timer(td, coll_str, addr_mode, num_addrs, sync_mode, nelem, total_ticks) \
-if(td->my_local_thread==0 && performance_iters>0) MSG0("%c: %d> %s/%s %s sync_mode: (%s) tree: %s size: %ld bytes time: %g us", TEST_SECTION_NAME(), td->mythread, addr_mode, num_addrs,\
-                                coll_str, sync_mode, gasnett_getenv("GASNET_COLL_ROOTED_GEOM"), (long int) nelem*sizeof(int), (double)gasnett_ticks_to_us(total_ticks)/performance_iters)
+if(td->my_local_thread==0 && performance_iters>0) MSG0("%c: %d> %s/%s %s sync_mode: (%s) tree: %s size: %"PRIuPTR" bytes time: %g us", \
+                                TEST_SECTION_NAME(), td->mythread, addr_mode, num_addrs,\
+                                coll_str, sync_mode, gasnett_getenv("GASNET_COLL_ROOTED_GEOM"), \
+                                (uintptr_t) nelem*sizeof(int), (double)gasnett_ticks_to_us(total_ticks)/performance_iters)
 #else
 #define print_timer(td, coll_str, addr_mode, num_addrs, sync_mode, nelem, total_ticks)
 #endif
@@ -534,7 +536,8 @@ void run_SINGLE_ADDR_test(thread_data_t *td, uint8_t **dst_arr, uint8_t **src_ar
  #endif
 #endif
 
-  if(td->my_local_thread==0 && VERBOSE_VERIFICATION_OUTPUT) MSG0("%c: %s/SINGLE-addr sync_mode: %s size: %ld bytes root: %d.  PASS", TEST_SECTION_NAME(), output_str, flag_str, (long int) (sizeof(int)*nelem), root_thread);
+  if(td->my_local_thread==0 && VERBOSE_VERIFICATION_OUTPUT) MSG0("%c: %s/SINGLE-addr sync_mode: %s size: %"PRIuPTR" bytes root: %d.  PASS", 
+                                                                 TEST_SECTION_NAME(), output_str, flag_str, (uintptr_t) (sizeof(int)*nelem), root_thread);
   
   COLL_BARRIER();
   test_free(handles);
@@ -944,7 +947,8 @@ void run_MULTI_ADDR_test(thread_data_t *td, uint8_t **dst_arr, uint8_t **src_arr
  #endif
 #endif
   
-  if(td->my_local_thread==0  && VERBOSE_VERIFICATION_OUTPUT) MSG0("%c: %s/MULTI-addr sync_mode: %s size: %ld bytes root: %d.  PASS", TEST_SECTION_NAME(), output_str, flag_str, (long int) (sizeof(int)*nelem), (int) root_thread);
+  if(td->my_local_thread==0  && VERBOSE_VERIFICATION_OUTPUT) MSG0("%c: %s/MULTI-addr sync_mode: %s size: %"PRIuPTR" bytes root: %d.  PASS", 
+                                                                  TEST_SECTION_NAME(), output_str, flag_str, (uintptr_t) (sizeof(int)*nelem), (int) root_thread);
 
   COLL_BARRIER();
   test_free(tmp_src);
@@ -1034,7 +1038,8 @@ void *thread_main(void *arg) {
       if(td->my_local_thread==0  && !VERBOSE_VERIFICATION_OUTPUT) {
         char flag_str[8];
         fill_flag_str(flags, flag_str);
-        MSG0("%c: sync_mode: %s %ld-%ld (powers of 2) bytes root: %d.  PASS",  TEST_SECTION_NAME(), flag_str, (long int) (sizeof(int)*1), (long int) sizeof(int)*max_data_size, (int) root_thread);
+        MSG0("%c: sync_mode: %s %d-%"PRIuPTR" (powers of 2) bytes root: %d.  PASS",  
+             TEST_SECTION_NAME(), flag_str, (int)(sizeof(int)*1), (uintptr_t) sizeof(int)*max_data_size, (int) root_thread);
       }
 
     }
@@ -1122,7 +1127,7 @@ int main(int argc, char **argv)
   {
     size_t curr_req = inner_verification_iters * THREADS * threads_per_node * sizeof(int) * max_data_size * 2;
     size_t max_mem_usage = gasnet_getMaxGlobalSegmentSize()/2;
-    MSG0("command line args: max_data_size=%ld bytes outer_verification_iters=%d inner_verification_iters=%d performance_iters=%d threads_per_node=%d ", (long int)(max_data_size*sizeof(int)), 
+    MSG0("command line args: max_data_size=%"PRIuPTR" bytes outer_verification_iters=%d inner_verification_iters=%d performance_iters=%d threads_per_node=%d ", (uintptr_t)(max_data_size*sizeof(int)), 
          outer_verification_iters, inner_verification_iters, performance_iters, (int) threads_per_node);
     if(curr_req > max_mem_usage) {
       MSG0("WARNING: inner iterations too large.\n");
@@ -1145,7 +1150,7 @@ int main(int argc, char **argv)
         MSG0("ERROR: Segment too small ... can't run testcollperf");
         gasnet_exit(1);
       }
-      MSG0("adjusted args: max_data_size=%ld bytes outer_verification_iters=%d inner_verification_iters=%d performance_iters=%d threads_per_node=%d ", (long int)(max_data_size*sizeof(int)), 
+      MSG0("adjusted args: max_data_size=%"PRIuPTR" bytes outer_verification_iters=%d inner_verification_iters=%d performance_iters=%d threads_per_node=%d ", (uintptr_t)(max_data_size*sizeof(int)), 
            outer_verification_iters, inner_verification_iters, performance_iters, (int) threads_per_node);
     } 
   }

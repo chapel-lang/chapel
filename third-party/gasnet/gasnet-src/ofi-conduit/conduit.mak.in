@@ -20,10 +20,7 @@
 # Some platforms need extra -libs for the socket calls in ssh-spawner:
 @HAVE_BOOTSTRAP_SSH_TRUE@SSH_LIBS = @SSH_SPAWNER_LIBS@
 
-
-CONDUIT_INCLUDES = @OFI_INCLUDES@ ###NOINSTALL###
-
-CONDUIT_LIBDIRS = -L@OFI_LIBDIR@ @PMI_SPAWNER_LIBDIR@
+CONDUIT_LDFLAGS = @OFI_LDFLAGS@ @PMI_SPAWNER_LDFLAGS@
 CONDUIT_LIBS = @OFI_LIBS@ $(MPI_COMPAT_LIBS) $(SSH_LIBS) @PMI_SPAWNER_LIBS@
 
 # Clients may want/need to know which spawners we support:

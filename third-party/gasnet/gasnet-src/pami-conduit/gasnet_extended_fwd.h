@@ -12,7 +12,7 @@
 #ifndef _GASNET_EXTENDED_FWD_H
 #define _GASNET_EXTENDED_FWD_H
 
-#define GASNET_EXTENDED_VERSION      1.0
+#define GASNET_EXTENDED_VERSION      1.1
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         PAMI
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -21,66 +21,6 @@
 #define GASNETE_COLL_CONDUIT_BARRIERS \
 	GASNETE_COLL_BARRIER_PAMIALLREDUCE, \
 	GASNETE_COLL_BARRIER_PAMIDISSEM
-
-/* Hooks for conduit-specific collectives */
-#if !defined(GASNET_NO_PAMI_COLL)
-  /* NOTE: Focus is on blocking collectives because they are simpler, and are all that UPCR uses */
-  #define GASNET_PAMI_NATIVE_COLL 1
-  #define gasnete_coll_init_conduit gasnete_coll_init_pami
-  #define gasnete_coll_team_init_conduit gasnete_coll_team_init_pami
-
-  #define gasnete_coll_broadcast  gasnete_coll_broadcast_pami
-  #define gasnete_coll_broadcastM gasnete_coll_broadcastM_pami
-
-  #define gasnete_coll_exchange   gasnete_coll_exchange_pami
-  #define gasnete_coll_exchangeM  gasnete_coll_exchangeM_pami
-
-  #define gasnete_coll_gather     gasnete_coll_gather_pami
-  #define gasnete_coll_gatherM    gasnete_coll_gatherM_pami
-
-  #define gasnete_coll_gather_all  gasnete_coll_gather_all_pami
-  #define gasnete_coll_gather_allM gasnete_coll_gather_allM_pami
-
-  #define gasnete_coll_scatter    gasnete_coll_scatter_pami
-  #define gasnete_coll_scatterM   gasnete_coll_scatterM_pami
-
-  #if GASNET_PAR
-    #define GASNETE_COLL_TEAM_EXTRA struct {  \
-        /* collective geom & algorithms: */   \
-        pami_geometry_t geom;                 \
-        pami_algorithm_t allga_alg;           \
-        pami_algorithm_t allto_alg;           \
-        pami_algorithm_t bcast_alg;           \
-        pami_algorithm_t gathr_alg;           \
-        pami_algorithm_t scatt_alg;           \
-        pami_algorithm_t allgavi_alg;         \
-        pami_algorithm_t alltovi_alg;         \
-        pami_algorithm_t gathrvi_alg;         \
-        pami_algorithm_t scattvi_alg;         \
-        /* for multi-image intermediates: */  \
-        size_t scratch_max_nbytes;            \
-        size_t scratch_max_nbytes_allto;      \
-        void * scratch_space;                 \
-        int * counts;                         \
-        int * displs;                         \
-        size_t prev_nbytes;                   \
-        /* for syncronization: */             \
-        void * volatile tmp_addr;             \
-        volatile int barrier_phase;           \
-        char _pad[GASNETI_CACHE_LINE_BYTES];  \
-        gasneti_atomic_t barrier_counter[2];  \
-    } pami;
-  #else
-    #define GASNETE_COLL_TEAM_EXTRA struct {  \
-        pami_geometry_t geom;                 \
-        pami_algorithm_t allga_alg;           \
-        pami_algorithm_t allto_alg;           \
-        pami_algorithm_t bcast_alg;           \
-        pami_algorithm_t gathr_alg;           \
-        pami_algorithm_t scatt_alg;           \
-    } pami;
-  #endif
-#endif
 
 #define _GASNET_HANDLE_T
 /*  an opaque type representing a non-blocking operation in-progress initiated using the extended API */
@@ -194,6 +134,11 @@ typedef struct _gasnete_op_t *gasnet_handle_t;
 /* Conduit implements memset directly via amref: */
 #define gasnete_amref_memset_nb     gasnete_memset_nb
 #define gasnete_amref_memset_nbi    gasnete_memset_nbi
+
+/* Conduit-specific collective overrides in gasnet_core_internal: */
+#if !defined(GASNET_NO_PAMI_COLL)
+#define GASNETE_COLL_NEEDS_CORE 1
+#endif
 
 #endif
 

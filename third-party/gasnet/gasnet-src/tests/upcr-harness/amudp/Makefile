@@ -40,7 +40,7 @@ distcheck: force
 	 cp ./amudprun$(EXESUFFIX) $$TESTDIR/amudprun-sa$(EXESUFFIX) && \
 	 cp ./testam$(EXESUFFIX) $$TESTDIR/$@$(EXESUFFIX)
 
-amudprun:
+amudprun amudprun-host:
 	$(MAKE) -C $(AMX_DIR) $@$(EXESUFFIX)
 	@cp $(AMX_DIR)/$@$(EXESUFFIX) .
 

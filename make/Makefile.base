@@ -164,7 +164,6 @@ else
   THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
 endif
 
-include $(THIRD_PARTY_DIR)/amudprun/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include

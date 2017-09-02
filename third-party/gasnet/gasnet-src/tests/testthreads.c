@@ -103,6 +103,7 @@ void	test_get(threaddata_t *tdata);
 void	test_amshort(threaddata_t *tdata);
 void	test_ammedium(threaddata_t *tdata);
 void	test_amlong(threaddata_t *tdata);
+void	test_amlongasync(threaddata_t *tdata);
 #if TEST_MPI
 void init_test_mpi(int *argc, char ***argv);
 void attach_test_mpi(void);
@@ -115,7 +116,7 @@ void mpi_replyhandler(gasnet_token_t token, harg_t tid);
 #endif
 
 testfunc_t	test_functions_all[] = {
-	test_sleep, test_put, test_get, test_amshort, test_ammedium, test_amlong
+	test_sleep, test_put, test_get, test_amshort, test_ammedium, test_amlong, test_amlongasync
 #if TEST_MPI
         , test_mpi
 #endif
@@ -172,13 +173,14 @@ main(int argc, char **argv)
 {
 	int		i;
         const char *getopt_str;
-        int opt_p=0, opt_g=0, opt_a=0, opt_m=0;
+        int opt_p=0, opt_g=0, opt_m=0;
+        int opt_S=0, opt_M=0, opt_L=0, opt_A=0;
 
         #if TEST_MPI
           init_test_mpi(&argc, &argv);
-          getopt_str = "pgamlvtdi:";
+          getopt_str = "pgSMLAamlvtdi:";
         #else
-          getopt_str = "pgalvtdi:";
+          getopt_str = "pgSMLAalvtdi:";
         #endif
 
 	GASNET_Safe(gasnet_init(&argc, &argv));
@@ -192,29 +194,43 @@ main(int argc, char **argv)
         #endif
         #if GASNET_PAR
           #define TEST_THREAD_USAGE " [<threads_per_node>]\n\n" \
-	    "<threads_per_node> must be between 1 and "_STRINGIFY(TEST_MAXTHREADS)"       \n"
+	    "<threads_per_node> must be between 1 and %u       \n"
+          #define TEST_THREAD_USAGE_ARGS (unsigned int)TEST_MAXTHREADS,
         #else
           #define TEST_THREAD_USAGE  "\n\n"
+          #define TEST_THREAD_USAGE_ARGS
         #endif
-	test_init("testthreads",0, "[ -pgalvtd ] [ -i <iters> ]"
+        static char usage[2048];
+        snprintf(usage, sizeof(usage),
+            "[ -pgSMLAalvtd ] [ -i <iters> ]"
             TEST_THREAD_USAGE
-	    "no options means run all tests with "_STRINGIFY(DEFAULT_ITERS)" iterations\n"
+	    "no options means run all tests with %i iterations\n"
 	    "options:                                      \n"
 	    "  -p  use puts                                   \n"
 	    "  -g  use gets                                   \n"
-	    "  -a  use Active Messages                        \n"
+	    "  -S  use Active Message Shorts                  \n"
+	    "  -M  use Active Message Mediums                 \n"
+	    "  -L  use Active Message Longs                   \n"
+	    "  -A  use Active Message LongAsyncs              \n"
+	    "  -a  use all Active Messages (-S -M -L -A)      \n"
 	    "  -l  use local Active Messages                  \n"
             TEST_MPI_USAGE
 	    "  -v  output information about actions taken     \n"
 	    "  -t  include AM handler actions with -v         \n"
 	    "  -d  dynamic thread creation stress test        \n"
-	    "  -i <iters> use <iters> iterations per thread   \n");
+	    "  -i <iters> use <iters> iterations per thread   \n",
+            TEST_THREAD_USAGE_ARGS DEFAULT_ITERS);
+	test_init("testthreads",0, usage);
 
 	while ((i = getopt (argc, argv, getopt_str)) != EOF) {
           switch (i) {
 		case 'p': opt_p = 1; break;
 		case 'g': opt_g = 1; break;
-		case 'a': opt_a = 1; break;
+		case 'S': opt_S = 1; break;
+		case 'M': opt_M = 1; break;
+		case 'L': opt_L = 1; break;
+		case 'A': opt_A = 1; break;
+		case 'a': opt_S = opt_M = opt_L = opt_A = 1; break;
                 case 'm': opt_m = 1; break;
 		case 'l': AM_loopback = 1; break;
 		case 'i': iters = atoi(optarg); break;
@@ -227,11 +243,10 @@ main(int argc, char **argv)
 
         if (opt_p) test_functions[functions_num++] = test_put;
         if (opt_g) test_functions[functions_num++] = test_get;
-        if (opt_a) {
-          test_functions[functions_num++] = test_amshort;
-          test_functions[functions_num++] = test_ammedium;
-          test_functions[functions_num++] = test_amlong;
-        }
+        if (opt_S) test_functions[functions_num++] = test_amshort;
+        if (opt_M) test_functions[functions_num++] = test_ammedium;
+        if (opt_L) test_functions[functions_num++] = test_amlong;
+        if (opt_A) test_functions[functions_num++] = test_amlongasync;
         #if TEST_MPI
           if (opt_m) test_functions[functions_num++] = test_mpi;
         #endif
@@ -257,7 +272,7 @@ main(int argc, char **argv)
 	  threads_num = test_thread_limit(threads_num);
         #endif
 	if (threads_num < 1) {
-		printf("ERROR: Threads must be between 1 and %i\n",TEST_MAXTHREADS);
+		printf("ERROR: Threads must be between 1 and %u\n",(unsigned int)TEST_MAXTHREADS);
 		exit(EXIT_FAILURE);
 	}
 
@@ -630,5 +645,32 @@ test_amlong(threaddata_t *tdata)
 	tdata->flag = -1;
 
 	ACTION_PRINTF("tid=%3d> AMLongRequest to tid=%3d complete.", tdata->tid, peer);
+}
+
+void
+test_amlongasync(threaddata_t *tdata)
+{
+	int 	 	peer = RANDOM_PEER(tdata);
+	int		node = tt_thread_map[peer];
+	void		*laddr = tt_addr_map[tdata->tid];
+	void		*raddr = tt_addr_map[peer];
+	size_t	 	len;
+
+	do {
+		len = RANDOM_SIZE();
+	} while ((len > gasnet_AMMaxLongRequest()) || (len > gasnet_AMMaxLongReply())
+              || (len > TEST_SEGZ_PER_THREAD));
+
+	tdata->flag = -1;
+        gasnett_local_wmb();
+	ACTION_PRINTF("tid=%3d> AMLongAsyncRequest (sz=%7d) to tid=%3d", tdata->tid, (int)len, peer);
+
+	GASNET_Safe(gasnet_AMRequestLongAsync2(node,
+		    hidx_ping_longhandler, laddr, len, raddr,
+		    tdata->ltid, peer));
+	GASNET_BLOCKUNTIL(tdata->flag == 0);
+	tdata->flag = -1;
+
+	ACTION_PRINTF("tid=%3d> AMLongAsyncRequest to tid=%3d complete.", tdata->tid, peer);
 }
 

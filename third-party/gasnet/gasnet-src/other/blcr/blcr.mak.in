@@ -25,7 +25,7 @@ blcr_blddir         = $(top_builddir)/other/blcr
 blcr_sourcelist     = $(blcr_srcdir)/gasnet_blcr.c
 blcr_extraheaders   = # None currently
 blcr_privheaders    = # None currently
-blcr_extralibcflags = -I$(blcr_srcdir) @BLCR_CPPFLAGS@
+blcr_extralibcflags = -I$(blcr_srcdir) @BLCR_CFLAGS@
 blcr_extradeps      = $(blcr_srcdir)/gasnet_blcr.h $(blcr_blddir)/blcr.mak
 blcr_special_objs   = # None currently
 

@@ -18,7 +18,7 @@ Installation:
   shared memory), and enable BLCR support:
         --disable-pshm --enable-blcr
   You may also need
-        --with-blcr=/path/to/install
+        --with-blcr-home=/path/to/install
   if BLCR is not installed in /usr/include and /usr/lib
   For ibv-conduit (InfiniBand) one must also ensure ssh is used for job
   spawning:

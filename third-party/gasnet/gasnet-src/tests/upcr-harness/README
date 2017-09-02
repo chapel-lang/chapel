@@ -9,3 +9,4 @@ gasnet-tests: harness driver for the GASNet unit tests, and some misc checking t
 amudp/ammpi: harness drivers for the AMUDP/AMMPI unit tests. These assume the corresponding
 GASNet conduit has been configured in.
 
+external-*: harness drivers for "smoke testing" with various GASNet clients

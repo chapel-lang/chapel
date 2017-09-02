@@ -36,7 +36,7 @@ endif
 ## PMI bootstrap support (optional)
 ##
 if HAVE_BOOTSTRAP_PMI
-pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_INCLUDES@
+pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_CFLAGS@
 pmi_srcdir = $(top_srcdir)/other/pmi-spawner
 pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
 pmi_deps = $(pmi_srcdir)/*.[ch]

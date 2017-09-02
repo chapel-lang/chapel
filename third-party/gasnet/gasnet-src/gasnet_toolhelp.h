@@ -155,6 +155,8 @@ const char *gasnett_signame_fromval(int sigval);
 /* return a fast but simple/insecure 64-bit checksum of arbitrary data */
 extern uint64_t gasneti_checksum(const void *p, int numbytes);
 
+extern int gasneti_nsleep(uint64_t ns_delay);
+
 /* ------------------------------------------------------------------------------------ */
 /* Count zero bytes in a region w/ or w/o a memcpy(), or in a "register" */
 
@@ -197,7 +199,7 @@ int gasneti_count0s_uint32_t(uint32_t x) {
   int gasneti_count0s_uint64_t(uint64_t x) {
   #if 0
     x |= (x >> 4); x |= (x >> 2); x |= (x >> 1);
-    x &= 0x0101010101010101UL;
+    x &= 0x0101010101010101ULL;
     x += (x >> 32); x += (x >> 16); x += (x >> 8);
     return sizeof(x) - (x & 0xf);
   #else
@@ -618,7 +620,7 @@ typedef enum {
 /* Wrappers for thread-local data storage
    See README-tools for usage information.
 */
-#define _GASNETI_THREADKEY_MAGIC 0xFF00ABCDEF573921ULL
+#define _GASNETI_THREADKEY_MAGIC ((uint64_t)0xFF00ABCDEF573921ULL)
 
 #if GASNETI_THREADS
   #if GASNETI_HAVE_TLS_SUPPORT /* use __thread, if available */
@@ -829,6 +831,7 @@ typedef enum {
 
 extern char *gasneti_format_number(int64_t val, char *buf, size_t bufsz, int is_mem_size);
 extern int64_t gasneti_parse_int(const char *str, uint64_t mem_size_multiplier);
+extern int gasneti_parse_dbl(const char *str, double *result_ptr);
 extern void gasneti_setenv(const char *key, const char *value);
 extern void gasneti_unsetenv(const char *key);
 

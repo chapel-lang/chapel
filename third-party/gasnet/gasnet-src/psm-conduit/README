@@ -1,6 +1,26 @@
 GASNet psm-conduit documentation
 Copyright (c) 2014-2017 Intel Corporation. All rights reserved.
 
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+The psm-conduit is now DEPRECATED.
+No further development of this conduit is anticipated.
+It may be removed in a future release.
+
+Users of Intel(R) Omni-Path Fabric are recommended to use ofi-conduit
+by passing the following to GASNet's configure script.
+  --enable-ofi --disable-psm --disable-ibv
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+
 User Information:
 -----------------
 

@@ -354,7 +354,7 @@ int main(int argc, char **argv)
     GASNET_Safe(gasnet_init(&argc, &argv));
     GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
     snprintf(usagestr, sizeof(usagestr), "iters pollcnt sizes...\n"
-                      "    sizes are limited to %ld", (long)TEST_SEGSZ);
+                      "    sizes are limited to %"PRIuPTR, (uintptr_t)TEST_SEGSZ);
     test_init("testlogGP",1, usagestr);
     
 
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
         int size = atoi(argv[i]);
 
         if (size < 0 || size > TEST_SEGSZ) {
-            MSG0("size is limited to <= %ld\n", (long)TEST_SEGSZ);
+            MSG0("size is limited to <= %"PRIuPTR"\n", (uintptr_t)TEST_SEGSZ);
             continue;
         }
 

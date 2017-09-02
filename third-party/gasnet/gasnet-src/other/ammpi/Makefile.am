@@ -37,7 +37,7 @@ testdir = $(srcdir)/../amxtests
 altincdir = $(srcdir)/..
 INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
-link = $(CC) $(CFLAGS) $(LDFLAGS) $(platform_defines) $(INCLUDES) 
+link = $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
 
 if USE_AMMPI

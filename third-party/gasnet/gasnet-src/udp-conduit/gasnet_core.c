@@ -220,6 +220,21 @@ static int gasnetc_init(int *argc, char ***argv) {
     AMUDP_VerboseErrors = gasneti_VerboseErrors;
     AMUDP_SPMDkillmyprocess = gasneti_killmyprocess;
 
+#if GASNETI_CALIBRATE_TSC
+    // Early x86*/Linux timer initialization before AMUDP_SPMDStartup()
+    //
+    // udp-conduit does not support user-provided values for GASNET_TSC_RATE*
+    // (which fine-tune timer calibration on x86/Linux).  This is partially due
+    // to a dependency cycle at startup with envvar propagation, but more
+    // importantly because the retransmission algorithm (and hence all conduit
+    // comms) rely on gasnet timers to be accurate (at least approximately), so
+    // we don't allow the user to weaken or disable their calibration.
+    gasneti_unsetenv("GASNET_TSC_RATE");
+    gasneti_unsetenv("GASNET_TSC_RATE_TOLERANCE");
+    gasneti_unsetenv("GASNET_TSC_RATE_HARD_TOLERANCE");
+    GASNETI_TICKS_INIT();
+#endif
+
     /*  perform job spawn */
     retval = AMUDP_SPMDStartup(argc, argv, 
       0, 0, NULL, /* dummies */
@@ -230,6 +245,11 @@ static int gasnetc_init(int *argc, char ***argv) {
     gasneti_getenv_hook = (/* cast drops const */ gasneti_getenv_fn_t*)&AMUDP_SPMDgetenvMaster;
     gasneti_mynode = AMUDP_SPMDMyProc();
     gasneti_nodes = AMUDP_SPMDNumProcs();
+
+#if !GASNETI_CALIBRATE_TSC
+    /* Must init timers after global env, and preferably before tracing */
+    GASNETI_TICKS_INIT();
+#endif
 
     /* enable tracing */
     gasneti_trace_init(argc, argv);
@@ -321,8 +341,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   int retval = GASNET_OK;
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
   AMLOCK();
     if (!gasneti_init_done) 
       INITERR(NOT_INIT, "GASNet attach called before init");
@@ -454,7 +474,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 
   GASNETI_TRACE_PRINTF(C,("gasnetc_attach(): primary attach complete\n"));
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(NULL); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -487,6 +510,10 @@ static void gasnetc_traceoutput(int exitcode) {
   if (!gasnetc_exitcalled) {
     gasneti_flush_streams();
     gasneti_trace_finish();
+
+  #if GASNET_PSHM
+    gasneti_pshm_fini();
+  #endif
   }
 }
 extern void gasnetc_trace_finish(void) {
@@ -526,8 +553,8 @@ extern void gasnetc_trace_finish(void) {
       GASNETI_STATS_PRINTF(C,("AMUDP Statistics:"));
       if (!isglobal)
         GASNETI_STATS_PRINTF(C,("*** AMUDP stat dump reflects only local node info, because gasnet_exit is non-collective ***"));
-        statdump = AMUDP_DumpStatistics(NULL, &stats, isglobal);
-        GASNETI_STATS_PRINTF(C,("\n%s",statdump)); /* note, dump has embedded '%' chars */
+      statdump = AMUDP_DumpStatistics(NULL, &stats, isglobal);
+      GASNETI_STATS_PRINTF(C,("\n%s",statdump)); /* note, dump has embedded '%' chars */
       GASNETI_STATS_PRINTF(C,("--------------------------------------------------------------------------------"));
     }
   }
@@ -565,6 +592,10 @@ extern void gasnetc_exit(int exitcode) {
      can't use a blocking lock here, because may be in a signal context
   */
   AMLOCK_CAUTIOUS();
+
+  #if GASNET_PSHM
+    gasneti_pshm_fini();
+  #endif
 
   AMUDP_SPMDExit(exitcode);
   gasneti_fatalerror("AMUDP_SPMDExit failed!");

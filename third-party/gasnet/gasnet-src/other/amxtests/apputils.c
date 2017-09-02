@@ -288,13 +288,14 @@ void free_resource_handler(int sig) {
           char msg[] = "XXXX: Terminating on fatal signal XX\n";
           const size_t len = sizeof(msg); /* Includes \n and \0 */
           int myproc = AMX_SPMDMyProc();
+          static int ignoreerr;
           msg[0] = (myproc < 1000) ? ' ' : digits[(myproc / 1000) % 10];
           msg[1] = (myproc < 100 ) ? ' ' : digits[(myproc / 100 ) % 10];
           msg[2] = (myproc < 10  ) ? ' ' : digits[(myproc / 10  ) % 10];
           msg[3] =                         digits[(myproc       ) % 10];
           msg[len-3] = digits[sig % 10];
           msg[len-4] = (sig < 10) ? ' ' : digits[sig / 10];
-          write(STDERR_FILENO, msg, len - 1);
+          ignoreerr += write(STDERR_FILENO, msg, len - 1);
         }
       }
       first = 0;
