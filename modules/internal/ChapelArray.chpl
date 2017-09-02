@@ -167,6 +167,8 @@ module ChapelArray {
   use ArrayViewRankChange;
   use ArrayViewReindex;
 
+  use Reflection only;
+
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
   pragma "no doc"
@@ -2644,7 +2646,7 @@ module ChapelArray {
 
     pragma "no doc"
     /* Ensure promoted-push_back is serial */
-    proc push_back(vals) where isArray(vals) || isTuple(vals) {
+    proc push_back(vals) where isIterable(vals) {
       for val in vals do
         this.push_back(val);
     }
@@ -2727,7 +2729,7 @@ module ChapelArray {
 
     pragma "no doc"
     /* Ensure promoted-push_front is serial */
-    proc push_front(vals) where isArray(vals) || isTuple(vals) {
+    proc push_front(vals) where isIterable(vals) {
       for val in vals do
         this.push_front(val);
     }
@@ -3026,6 +3028,12 @@ module ChapelArray {
     chpl__transferArray(result, arg);
     return result;
   }
+
+  //
+  // isIterable
+  //
+  proc isIterable(x) param where canResolveMethod(x, 'these') return true;
+  proc isIterable(x) param where !canResolveMethod(x, 'these') return false;
 
 
   //

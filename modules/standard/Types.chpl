@@ -414,6 +414,10 @@ proc isProperSubtype(type sub, type super) param
   return false;
 
 
+/* Returns `true` if the object has an iterable `these()` method */
+proc isIterable(x) param where canResolveMethod(x, 'these') return true;
+pragma "no doc"
+proc isIterable(x) param where !canResolveMethod(x, 'these') return false;
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
