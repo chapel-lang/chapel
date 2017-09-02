@@ -658,6 +658,7 @@ module ChapelLocale {
   //
   pragma "no doc"
   pragma "insert line file info"
+  pragma "inc running task"
   export
   proc chpl_taskRunningCntInc() {
     here.runningTaskCntAdd(1);
@@ -665,9 +666,17 @@ module ChapelLocale {
 
   pragma "no doc"
   pragma "insert line file info"
+  pragma "dec running task"
   export
   proc chpl_taskRunningCntDec() {
     here.runningTaskCntSub(1);
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  export
+  proc chpl_taskRunningCntReset() {
+    here.runningTaskCntSet(0);
   }
 
   //

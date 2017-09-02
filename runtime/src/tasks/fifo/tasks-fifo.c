@@ -85,8 +85,6 @@ typedef struct {
 
 static chpl_bool        initialized = false;
 
-static volatile chpl_bool canCountRunningTasks = false;
-
 static chpl_thread_mutex_t threading_lock;     // critical section lock
 static chpl_thread_mutex_t extra_task_lock;    // critical section lock
 static chpl_thread_mutex_t task_id_lock;       // critical section lock
@@ -142,9 +140,8 @@ static void                    thread_end(void);
 static void                    maybe_add_thread(void);
 static task_pool_p             add_to_task_pool(chpl_fn_int_t, chpl_fn_p,
                                                 chpl_task_bundle_t*, size_t,
-                                                chpl_bool, chpl_bool,
-                                                task_pool_p*, chpl_bool,
-                                                int, int32_t);
+                                                chpl_bool, task_pool_p*,
+                                                chpl_bool, int, int32_t);
 
 //
 // Condition variable methods
@@ -318,7 +315,6 @@ static void setup_main_thread_private_data(void)
                                             CHPL_RT_MD_TASK_POOL_DESC,
                                             0, 0);
 
-  tp->ptask->bundle.countRunning    = false;
   tp->ptask->bundle.is_executeOn    = false;
   tp->ptask->bundle.lineno          = 0;
   tp->ptask->bundle.filename        = CHPL_FILE_IDX_MAIN_PROGRAM;
@@ -460,12 +456,6 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 }
 
 void chpl_task_stdModulesInitialized(void) {
-  //
-  // It's not safe to call the module code to count the main task as
-  // running until after the modules have been initialized.
-  //
-  canCountRunningTasks = true;
-  chpl_taskRunningCntInc(0, 0);
 
   //
   // The task table is implemented in Chapel code in the modules, so
@@ -514,7 +504,6 @@ static void comm_task_wrapper(void* arg) {
                                             CHPL_RT_MD_TASK_POOL_DESC,
                                             0, 0);
 
-  tp->ptask->bundle.countRunning    = false;
   tp->ptask->bundle.is_executeOn    = false;
   tp->ptask->bundle.lineno          = 0;
   tp->ptask->bundle.filename        = CHPL_FILE_IDX_COMM_TASK;
@@ -613,9 +602,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
 
   if (task_list_locale == chpl_nodeID) {
     (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
-                            false, false,
-                            (task_pool_p*) p_task_list_void, is_begin_stmt,
-                            lineno, filename);
+                            false, (task_pool_p*) p_task_list_void,
+                            is_begin_stmt, lineno, filename);
 
   }
   else {
@@ -626,8 +614,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     //
     assert(is_begin_stmt);
     (void) add_to_task_pool(fid, chpl_ftable[fid], arg, arg_size,
-                            false, false,
-                            NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
+                            false, NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
   }
 
   // end critical section
@@ -689,13 +676,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
                            child_ptask->bundle.id,
                            child_ptask->bundle.is_executeOn);
 
-    if (child_ptask->bundle.countRunning)
-        chpl_taskRunningCntInc(0, 0);
-
     (*task_to_run_fun)(&child_ptask->bundle);
-
-    if (child_ptask->bundle.countRunning)
-        chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            child_ptask->bundle.requested_fid,
@@ -742,8 +723,7 @@ void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(fid, fp, arg, arg_size,
-                          canCountRunningTasks, true,
+  (void) add_to_task_pool(fid, fp, arg, arg_size, true,
                           NULL, false, lineno, filename);
 
   // end critical section
@@ -1237,13 +1217,7 @@ thread_begin(void* ptask_void) {
                            ptask->bundle.id,
                            ptask->bundle.is_executeOn);
 
-    if (ptask->bundle.countRunning)
-        chpl_taskRunningCntInc(0, 0);
-
     (ptask->bundle.requested_fn)(&ptask->bundle);
-
-    if (ptask->bundle.countRunning)
-        chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            ptask->bundle.requested_fid,
@@ -1333,7 +1307,6 @@ static void maybe_add_thread(void) {
 static inline
 task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                              chpl_task_bundle_t* a, size_t a_size,
-                             chpl_bool countRunningTasks,
                              chpl_bool is_executeOn,
                              task_pool_p* p_task_list_head,
                              chpl_bool is_begin_stmt,
@@ -1361,7 +1334,6 @@ task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
   ptask->next                   = NULL;
   ptask->prev                   = NULL;
   ptask->chpl_data              = pv;
-  ptask->bundle.countRunning    = countRunningTasks;
   ptask->bundle.is_executeOn    = is_executeOn;
   ptask->bundle.lineno          = lineno;
   ptask->bundle.filename        = filename;
