@@ -932,7 +932,7 @@ module ChapelBase {
 
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
-  // called for sync blocks (implicit or explicit), unbounded coforalls, cobegins.
+  // called for sync blocks (implicit or explicit), unbounded coforalls
   pragma "dont disable remote value forwarding"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) throws {
@@ -961,7 +961,7 @@ module ChapelBase {
       throw new TaskErrors(e.errors);
   }
 
-  // called for bounded coforalls
+  // called for bounded coforalls and cobegins
   pragma "dont disable remote value forwarding"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {

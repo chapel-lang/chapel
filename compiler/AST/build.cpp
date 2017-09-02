@@ -2949,6 +2949,8 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   VarSymbol* cobeginCount = newTempConst("_cobeginCount");
 
+  VarSymbol* numTasks = new_IntSymbol(block->length());
+
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
@@ -2958,13 +2960,13 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     stmt->insertBefore(beginBlk);
     beginBlk->insertAtHead(stmt->remove());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount, gNil));
-    block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
   }
 
+  block->insertAtHead(new CallExpr("_upEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
   block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
   block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", cobeginCount)));
-  block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
+  block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
 
   block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;
