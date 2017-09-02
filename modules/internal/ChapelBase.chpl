@@ -939,13 +939,13 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) throws {
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Remove the task that will just be waiting/yielding in the following
     // waitFor() from the running task count to let others do real work. It is
     // re-added after the waitFor().
     here.runningTaskCntSub(1);
+
+    // See if we can help with any of the started tasks
+    chpl_taskListExecute(e.taskList);
 
     // Wait for all tasks to finish
     e.i.waitFor(0, memory_order_acquire);
