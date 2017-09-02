@@ -913,8 +913,11 @@ module ChapelBase {
   pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
     e.i.add(numTasks:int, memory_order_release);
+
     if countRunningTasks {
       here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+    } else {
+      here.runningTaskCntSub(1);
     }
   }
 
@@ -973,6 +976,8 @@ module ChapelBase {
 
     if countRunningTasks {
       here.runningTaskCntSub(numTasks:int-1);
+    } else {
+      here.runningTaskCntAdd(1);
     }
 
     // Throw any error raised by a task this is waiting for
