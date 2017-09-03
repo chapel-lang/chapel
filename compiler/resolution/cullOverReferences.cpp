@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
