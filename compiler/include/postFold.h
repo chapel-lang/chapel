@@ -20,8 +20,11 @@
 #ifndef _POST_FOLD_H_
 #define _POST_FOLD_H_
 
+class CallExpr;
 class Expr;
 
 Expr* postFold(Expr* expr);
+
+bool  requiresImplicitDestroy(CallExpr* call);
 
 #endif

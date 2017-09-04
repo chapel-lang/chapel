@@ -79,8 +79,6 @@ bool       isInstantiation(Type* sub, Type* super);
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
-bool requiresImplicitDestroy(CallExpr* call);
-
 bool isLeaderIterator(FnSymbol* fn);
 
 bool isStandaloneIterator(FnSymbol* fn);
