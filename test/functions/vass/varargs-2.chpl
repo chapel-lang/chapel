@@ -1,5 +1,5 @@
-// Note there is a TODO in this test.
-// When it is done, update the .good.
+// Ensure const-related errors are generated when accessing vararg tuples.
+
 
 
 var A111: [1..2] int, i222 = 2222;
@@ -18,7 +18,7 @@ proc show_default(xxx...) {
 }
 
 proc show_const(const xxx...) {
-  xxx(1) = 4444;  // TODO: error: can't assign to 'const'
+  xxx(1) = 4444;  // error: can't assign to 'const'
   xxx(2) = 5555;  // error: can't assign to 'const'
   showit(12, xxx(2), xxx(1));
 }
@@ -44,7 +44,7 @@ proc test_default(xxx...) {
 }
 
 proc test_const(const xxx...) {
-  xxx(1) = 4444;  // TODO: error: can't assign to 'const'
+  xxx(1) = 4444;  // error: can't assign to 'const'
   xxx(2) = 5555;  // error: can't assign to 'const'
 }
 

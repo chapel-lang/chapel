@@ -34,11 +34,11 @@ proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
   coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
     b.notify();
-    if t!=hi {            // Use an 'on' to get same results for atomics
-      on b { b.wait(); }  //  and sync/single.  Without the on, there will
-    } else {              //  be additional comm for the sync/single case
-      on b { b.wait(); }  //  due to returning the value to the original
-    }                     //  locale.
+    if t!=hi {                // Use an 'on' to get same results for atomics
+      on b.bar { b.wait(); }  //  and sync/single.  Without the on, there will
+    } else {                  //  be additional comm for the sync/single case
+      on b.bar { b.wait(); }  //  due to returning the value to the original
+    }                         //  locale.
   }
   stopCommDiagnostics();
   printCommDiagnostics(getCommDiagnostics());
