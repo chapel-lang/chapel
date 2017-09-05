@@ -1935,7 +1935,7 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 {
   Symbol* result = NULL;
-  Symbol* fiVarSym = outerVarSym(svar);
+  Symbol* fiVarSym = svar->outerVarSym();
   Expr*   riSpec   = svar->spec();
   SET_LINENO(riSpec);
 
@@ -2039,7 +2039,7 @@ static void createShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowV
 
   for_shadow_vars(svar, temp, fs)
   {
-    Symbol* ovar = outerVarSym(svar);
+    Symbol* ovar = svar->outerVarSym();
     svar->type = ovar->type->getRefType();
     resolveSVarIntent(svar);
 
@@ -2134,7 +2134,7 @@ static void pruneIntentVars(ForallStmt* fs, BlockStmt* body,
         if (idx <= numInitialVars) {
           needToRevert = true;
         } else {
-          SymbolMapElem* elem = outer2shadow.get_record(outerVarSym(svs));
+          SymbolMapElem* elem = outer2shadow.get_record(svs->outerVarSym());
           INT_ASSERT(elem);
           elem->value = markPruned;
           numToReplace--;
@@ -2149,7 +2149,7 @@ static void pruneIntentVars(ForallStmt* fs, BlockStmt* body,
     for_vector(SymExpr, se, symExprs)
       if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol()))
         if (svar->pruneit)
-          se->setSymbol(outerVarSym(svar));
+          se->setSymbol(svar->outerVarSym());
   }
 
   // otherwise ensure there is nothing to replace
@@ -2173,7 +2173,7 @@ static void addActualsToParCallNew(ForallStmt* fs, CallExpr* parCall)
 
   for_shadow_vars(svar, temp, fs)
   {
-    Symbol* ovar = outerVarSym(svar);
+    Symbol* ovar = svar->outerVarSym();
     Symbol* globalOp = svar->reduceGVar;
     Symbol* actual = NULL;
 

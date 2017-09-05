@@ -393,7 +393,8 @@ public:
 
   const char* intentDescrString() const;
   // The corresponding outer var or NULL if not applicable.
-  SymExpr* outerVarSE() const { return (SymExpr*)outerVarRep; }
+  SymExpr* outerVarSE()  const { return (SymExpr*)outerVarRep; }
+  Symbol*  outerVarSym() const;
   bool     isReduce()   const { return intent == TFI_REDUCE;  }
   Expr*    spec()       const;
   void     removeSupportingReferences();
@@ -401,7 +402,7 @@ public:
   ForallIntentTag intent;
 
   // This would be a SymExpr*, if not for checkIdInsideWithClause().
-  // See also: sv->outerVarSE() and outerVarSym(sv).
+  // See also: sv->outerVarSE() and sv->outerVarSym().
   Expr* outerVarRep;
 
   // For a reduce intent, the reduce expression.
