@@ -923,7 +923,7 @@ void AggregateType::buildTypeConstructor() {
 
   if (AggregateType* outerType = toAggregateType(parSym->type)) {
     // Create an "outer" pointer to the outer class in the inner class
-    VarSymbol* tmpOuter = new VarSymbol("outer");
+    VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
 
     outerType->moveConstructorToOuter(fn);
 
@@ -1339,11 +1339,9 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
     SET_LINENO(fieldDefExpr);
 
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-      if (field->hasFlag(FLAG_SUPER_CLASS) == false
-          /*                                       &&
-             strcmp(field->name, "_promotionType") &&
-             strcmp(field->name, "outer")
-          */) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
+          /* strcmp(field->name, "_promotionType") && */
+             strcmp(field->name, "outer")) {
         // Lydia NOTE 06/16/17: The above cases are commented out because I
         // wanted to focus on basic support first.  I suspect these will be
         // useful when I do try to support iterators and nested classes/records
@@ -1575,10 +1573,6 @@ bool AggregateType::needsConstructor() {
     // that the type which is the entry point has defined neither an initializer
     // nor a constructor.
 
-    // For now, nested classes need a default constructor
-    if (outer != NULL)
-      return true;
-
     // Classes that define an initialize() method need a default constructor
     forv_Vec(FnSymbol, method, methods) {
       if (method && strcmp(method->name, "initialize") == 0) {
@@ -1630,10 +1624,6 @@ bool AggregateType::wantsDefaultInitializer() {
 
   // For now, no default initializers for records and unions
   if (isRecord() || isUnion())
-    return false;
-
-  // For now, no default initializers for nested aggregate types
-  if (outer != NULL)
     return false;
 
   // No default initializer for types that have an initialize() method
