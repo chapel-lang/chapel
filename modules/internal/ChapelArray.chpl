@@ -3029,12 +3029,6 @@ module ChapelArray {
     return result;
   }
 
-  //
-  // isIterable
-  //
-  proc isIterable(x) param where canResolveMethod(x, 'these') return true;
-  proc isIterable(x) param where !canResolveMethod(x, 'these') return false;
-
 
   //
   // isXxxType, isXxxValue
