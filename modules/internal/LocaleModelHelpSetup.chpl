@@ -72,7 +72,6 @@ module LocaleModelHelpSetup {
     }
 
     root_accum.setRootLocaleValues(dst);
-    here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
   proc helpSetupRootLocaleNUMA(dst:RootLocale) {
@@ -86,7 +85,6 @@ module LocaleModelHelpSetup {
     }
 
     root_accum.setRootLocaleValues(dst);
-    here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
   proc helpSetupLocaleFlat(dst:LocaleModel, out local_name:string) {

@@ -94,6 +94,11 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 void chpl_rt_preUserCodeHook(void) {
   chpl_comm_barrier("pre-user-code hook begin");
 
+  chpl_taskRunningCntReset(0, 0);
+  if (chpl_nodeID == 0) {
+    chpl_taskRunningCntInc(0, 0);
+  }
+
   //
   // Set up any memory tracking requested.
   //

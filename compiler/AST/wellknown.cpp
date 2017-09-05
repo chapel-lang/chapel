@@ -40,6 +40,8 @@ AggregateType* dtTuple;
 // The well-known functions
 FnSymbol *gChplHereAlloc;
 FnSymbol *gChplHereFree;
+FnSymbol *gChplDecRunningTask;
+FnSymbol *gChplIncRunningTask;
 FnSymbol *gChplDoDirectExecuteOn;
 FnSymbol *gBuildTupleType;
 FnSymbol *gBuildTupleTypeNoRef;
@@ -190,6 +192,18 @@ static WellKnownFn sWellKnownFns[] = {
     "chpl_here_free",
     &gChplHereFree,
     FLAG_LOCALE_MODEL_FREE
+  },
+
+  {
+    "chpl_taskRunningCntInc",
+    &gChplIncRunningTask,
+    FLAG_INC_RUNNING_TASK
+  },
+
+  {
+    "chpl_taskRunningCntDec",
+    &gChplDecRunningTask,
+    FLAG_DEC_RUNNING_TASK
   },
 
   {

@@ -165,6 +165,8 @@ symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which co
 symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
+symbolFlag( FLAG_INC_RUNNING_TASK , ypr, "inc running task" , "running task incrementer" )
+symbolFlag( FLAG_DEC_RUNNING_TASK , ypr, "dec running task" , "running task decrementer" )
 symbolFlag( FLAG_LOCALE_PRIVATE , ypr, "locale private" , ncm )
 
 // The arguments to this function are all values or narrow pointers.

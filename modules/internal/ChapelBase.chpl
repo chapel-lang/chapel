@@ -913,8 +913,11 @@ module ChapelBase {
   pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
     e.i.add(numTasks:int, memory_order_release);
+
     if countRunningTasks {
       here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+    } else {
+      here.runningTaskCntSub(1);
     }
   }
 
@@ -932,17 +935,17 @@ module ChapelBase {
 
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
-  // called for sync blocks (implicit or explicit), unbounded coforalls, cobegins.
+  // called for sync blocks (implicit or explicit), unbounded coforalls
   pragma "dont disable remote value forwarding"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) throws {
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Remove the task that will just be waiting/yielding in the following
     // waitFor() from the running task count to let others do real work. It is
     // re-added after the waitFor().
     here.runningTaskCntSub(1);
+
+    // See if we can help with any of the started tasks
+    chpl_taskListExecute(e.taskList);
 
     // Wait for all tasks to finish
     e.i.waitFor(0, memory_order_acquire);
@@ -961,7 +964,7 @@ module ChapelBase {
       throw new TaskErrors(e.errors);
   }
 
-  // called for bounded coforalls
+  // called for bounded coforalls and cobegins
   pragma "dont disable remote value forwarding"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
@@ -973,6 +976,8 @@ module ChapelBase {
 
     if countRunningTasks {
       here.runningTaskCntSub(numTasks:int-1);
+    } else {
+      here.runningTaskCntAdd(1);
     }
 
     // Throw any error raised by a task this is waiting for
