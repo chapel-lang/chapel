@@ -882,13 +882,6 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 //
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
-  // A 'with' clause for a forall loop.
-  if (ForallIntent* fi = toForallIntent(exprInAst->parentExpr))
-    if (exprInAst == fi->variable()) {
-      errorDotInsideWithClause(origUSE, "forall loop");
-      return;
-    }
-
   // A 'with' clause in a ForallStmt.
   if (isOuterVarOfShadowVar(exprInAst)) {
     errorDotInsideWithClause(origUSE, "forall loop");

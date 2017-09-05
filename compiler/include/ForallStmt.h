@@ -23,43 +23,6 @@
 #include "stmt.h"
 
 
-//////////////////////////
-    // a forall intent //
-   //////////////////////////
-
-class ForallIntent : public Expr 
-{
-public:
-  ForallIntentTag intent()      const;
-  Expr*  variable()    const;  // non-NULL always
-  Expr*  reduceExpr()  const;  // non-NULL only for reduce intents
-  bool   isReduce()    const;
-
-  ForallIntent(ForallIntentTag intent, Expr* var, Expr* reduceExpr = NULL);
-
-  // Expr interface
-  DECLARE_COPY(ForallIntent);
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual Expr*   getFirstChild();
-  virtual Expr*   getFirstExpr();
-  virtual Expr*   getNextExpr(Expr* expr);
-  virtual void    verify();
-  virtual GenRet  codegen();
-  virtual void    accept(AstVisitor* visitor);
-
-private:
-  ForallIntentTag fiIntent;
-  Expr*  fiVar;
-  Expr*  riSpec;
-};
-
-// accessor implementations
-inline ForallIntentTag ForallIntent::intent()     const { return fiIntent; }
-inline Expr*  ForallIntent::variable()   const { return fiVar; }
-inline Expr*  ForallIntent::reduceExpr() const { return riSpec; }
-inline bool   ForallIntent::isReduce()   const { return fiIntent==TFI_REDUCE; }
-
-
 ///////////////////////////////////
     // forall loop statement //
 ///////////////////////////////////
