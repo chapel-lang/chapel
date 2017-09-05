@@ -26,6 +26,8 @@ Functions related to predefined types.
 */
 module Types {
 
+use Reflection only;
+
 pragma "no doc" // joint documentation with the next one
 pragma "no instantiation limit"
 proc isType(type t) param return true;
@@ -415,9 +417,7 @@ proc isProperSubtype(type sub, type super) param
 
 
 /* Returns `true` if the object has an iterable `these()` method */
-proc isIterable(x) param where canResolveMethod(x, 'these') return true;
-pragma "no doc"
-proc isIterable(x) param where !canResolveMethod(x, 'these') return false;
+proc isIterable(x) param return canResolveMethod(x, 'these');
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
