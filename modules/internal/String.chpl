@@ -216,7 +216,7 @@ module String {
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if len <= CHPL_SHORT_STRING_SIZE {
-        c_memcpy(chpl__getInPlaceBufferData(data), buff, len);
+        chpl_string_comm_get(chpl__getInPlaceBufferData(data), locale_id, buff, len);
       }
       return new __serializeHelper(len, buff, _size, locale_id, data);
     }
