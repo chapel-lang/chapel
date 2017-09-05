@@ -167,8 +167,6 @@ module ChapelArray {
   use ArrayViewRankChange;
   use ArrayViewReindex;
 
-  use Reflection only;
-
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
   pragma "no doc"
