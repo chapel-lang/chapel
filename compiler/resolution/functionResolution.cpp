@@ -4455,11 +4455,11 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
-  if (dst->hasFlag(FLAG_NO_COPY)                         == true)  {
+  if (dst->hasFlag(FLAG_NO_COPY)               == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isPrimitiveScalar(srcType)                  == true)  {
+  } else if (isPrimitiveScalar(srcType)        == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
