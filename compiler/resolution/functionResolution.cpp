@@ -4468,7 +4468,8 @@ static void resolveInitVar(CallExpr* call) {
     SymExpr*       rhs = toSymExpr(call->get(2));
 
     // The LHS will "own" the record
-    if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false) {
+    if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
+        rhs->symbol()->hasFlag(FLAG_TEMP)                == true) {
       dst->type       = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
