@@ -2061,6 +2061,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   Expr*   typeExpr = defExpr->exprType->remove();
   Expr*   initExpr = defExpr->init->remove();
   Type*   type     = typeForTypeSpecifier(typeExpr);
+
   // Note: the above line will not obtain a type if the typeExpr is a CallExpr
   // for a generic record or class, as that is a more complicated set of AST.
 
@@ -2087,31 +2088,30 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-    if (isNewExpr(initExpr) == true) {
+    if        (isSymExpr(initExpr) == true) {
+      defExpr->insertAfter(new CallExpr("init", gMethodToken, var, initExpr));
+
+    } else if (isNewExpr(initExpr) == false) {
+      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+
+    } else {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
       CallExpr* argExpr = toCallExpr(arg);
 
       // This call must be in tree before extending argExpr
       defExpr->insertAfter(argExpr);
 
-      // Convert it in to a use of the init method
+      // Convert it to a use of the init method
       argExpr->baseExpr->replace(new UnresolvedSymExpr("init"));
 
       // Add _mt and _this (insert at head in reverse order)
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
-
-    } else {
-      CallExpr* init   = new CallExpr("init", gMethodToken, var);
-      CallExpr* assign = new CallExpr("=",    var,          initExpr);
-
-      defExpr->insertAfter(init);
-      init->insertAfter(assign);
     }
 
     var->type = type;
 
-  } else if (isNewExpr(initExpr)) {
+  } else if (isNewExpr(initExpr) == true) {
     // This check is necessary because the "typeForTypeSpecifier"
     // call will not obtain a type if the typeExpr is a CallExpr,
     // as it is for generic records and classes
