@@ -45,12 +45,12 @@ proc main() {
 
 
 
-proc fnCall(arg100 : MyRecord) {
+proc fnCall(arg100) {
   {
     writeln(' ');
     writeln('  fnCall        CopyInit     rec101 with ', arg100);
 
-    var rec101 : MyRecord = arg100;
+    var rec101 = arg100;
 
     writeln(' ');
     writeln('  fnCall        De-Init      rec101      ', rec101);
@@ -59,7 +59,7 @@ proc fnCall(arg100 : MyRecord) {
   writeln(' ');
 
   {
-    var rec200 : MyRecord = returnRec();
+    var rec200 = returnRec();
 
     writeln(' ');
     writeln('  fnCall        De-Init      rec200      ', rec200);
@@ -71,7 +71,7 @@ proc fnCall(arg100 : MyRecord) {
 
 
 
-proc returnRec() : MyRecord {
+proc returnRec() {
   writeln('    returnRec   DefaultInit  rec200');
 
   var rec200 : MyRecord;

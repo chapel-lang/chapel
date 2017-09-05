@@ -1,0 +1,2 @@
+copy-init-2.chpl:40: In function 'fnCall':
+copy-init-2.chpl:45: error: No copy constructor for initializer
