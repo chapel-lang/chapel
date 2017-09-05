@@ -271,7 +271,14 @@ Recognized environment variables:
 Known problems:
 ---------------
 
-* See the GASNet Bugzilla server for details on known bugs:
+* Udp-conduit does not support user-provided values for GASNET_TSC_RATE* (which
+  fine-tune timer calibration on x86/Linux).  This is partially due to a
+  dependency cycle at startup with propagation of environment variables, but
+  more importantly because the retransmission algorithm (and hence all conduit
+  comms) rely on gasnet timers to be accurate (at least approximately), so we
+  don't allow the user to weaken or disable their calibration.
+
+* See the GASNet Bugzilla server for details on other known bugs:
   http://gasnet-bugs.lbl.gov/
 
 Future work:

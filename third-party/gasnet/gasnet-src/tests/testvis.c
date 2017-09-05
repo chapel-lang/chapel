@@ -11,7 +11,7 @@
 #ifndef TEST_SEGSZ
   /* select a larger than default segment, 
      because this test needs plenty of memory to play with */
-  #define TEST_SEGSZ_EXPR          (16*1048576)
+  #define TEST_SEGSZ          (16*1048576)
 #endif
 #include <test.h>
 
@@ -32,8 +32,8 @@
 #endif
 #if VEC_SZ == 8
   #define VEC_T       uint64_t
-  #define SEG_VALUE(node, idx)   (((uint64_t)0x8000000000000000ull) | ((uint64_t)(node) << 32) | (uint64_t)(idx))
-  #define HEAP_VALUE(node, idx)  (((uint64_t)0x0000000000000000ull) | ((uint64_t)(node) << 32) | (uint64_t)(idx))
+  #define SEG_VALUE(node, idx)   (((uint64_t)0x8000000000000000ULL) | ((uint64_t)(node) << 32) | (uint64_t)(idx))
+  #define HEAP_VALUE(node, idx)  (((uint64_t)0x0000000000000000ULL) | ((uint64_t)(node) << 32) | (uint64_t)(idx))
   #define VEC_FMT      "0x%08x %08x"
   #define VEC_STR(val) (int)TEST_HIWORD(val), (int)TEST_LOWORD(val)
 #elif VEC_SZ == 4

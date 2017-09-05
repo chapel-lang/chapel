@@ -79,17 +79,15 @@ GASNETI_HOT
 void *gasnetc_progress_thread(void * arg)
 {
     char* env_val;
-    struct timespec ts;
-
-    ts.tv_sec = 0;
+    uint64_t ns_delay;
 
     if(gasnetc_rcv_thread_rate == 0)
-        ts.tv_nsec = 0; /* No rate limit */
+        ns_delay = 0; /* No rate limit */
     else
-        ts.tv_nsec = 1000000000L / gasnetc_rcv_thread_rate;
+        ns_delay = 1000000000L / gasnetc_rcv_thread_rate;
 
     while(1) {
-        if(nanosleep(&ts, NULL) != 0) {
+        if(gasneti_nsleep(ns_delay) != 0) {
             pthread_exit(0);
         }
 

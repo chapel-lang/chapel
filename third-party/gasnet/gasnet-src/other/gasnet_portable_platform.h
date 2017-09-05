@@ -26,9 +26,9 @@
 /* Publish and enforce version number for the public interface to this header */
 /* YOU ARE NOT PERMITTED TO CHANGE THIS SECTION WITHOUT DIRECT APPROVAL FROM DAN BONACHEA */
 #if _PORTABLE_PLATFORM_H != PLATFORM_HEADER_VERSION \
-     || PLATFORM_HEADER_VERSION < 3
+     || PLATFORM_HEADER_VERSION < 4
 #undef  PLATFORM_HEADER_VERSION 
-#define PLATFORM_HEADER_VERSION 3
+#define PLATFORM_HEADER_VERSION 4
 #undef  _PORTABLE_PLATFORM_H
 #define _PORTABLE_PLATFORM_H PLATFORM_HEADER_VERSION
 /* End Header versioning handshake */
@@ -111,6 +111,7 @@
 #undef PLATFORM_OS_CNL
 #undef PLATFORM_OS_BGP
 #undef PLATFORM_OS_BGQ
+#undef PLATFORM_OS_WSL
 #undef PLATFORM_OS_K42
 #undef PLATFORM_OS_UCLINUX
 #undef PLATFORM_OS_LINUX
@@ -509,9 +510,12 @@
   #else
     #define PLATFORM_COMPILER_CLANG_C  1
   #endif
-  #define PLATFORM_COMPILER_VERSION \
-          PLATFORM_COMPILER_VERSION_INT(__clang_major__,__clang_minor__,__clang_patchlevel__)
-  #define PLATFORM_COMPILER_VERSION_STR __clang_version__
+  #ifdef __clang_version__
+    /* clang 2.7 (gcc 4.2.1 compliant) and earlier lacked specific version identification */
+    #define PLATFORM_COMPILER_VERSION \
+            PLATFORM_COMPILER_VERSION_INT(__clang_major__,__clang_minor__,__clang_patchlevel__)
+    #define PLATFORM_COMPILER_VERSION_STR __clang_version__
+  #endif
 
 #else /* unknown compiler */
   #define PLATFORM_COMPILER_UNKNOWN  1
@@ -676,6 +680,10 @@
 #elif defined(GASNETI_ARCH_BGQ) || defined(__bgq__)
   #define PLATFORM_OS_BGQ 1
   #define PLATFORM_OS_FAMILYNAME BGQ
+
+#elif defined(GASNETI_ARCH_WSL)
+  #define PLATFORM_OS_WSL 1
+  #define PLATFORM_OS_FAMILYNAME WSL
 
 #elif defined(__K42)
   #define PLATFORM_OS_K42 1

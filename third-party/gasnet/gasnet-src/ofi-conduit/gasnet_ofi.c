@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ofi-conduit/gasnet_ofi.c $
  * Description: GASNet libfabric (OFI) conduit Implementation
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
- * Copyright 2015, Intel Corporation
+ * Copyright 2015-2017, Intel Corporation
  * Terms of use are as specified in license.txt
  */
 #include <gasnet_core_internal.h>
@@ -21,14 +21,24 @@
 #include <sys/uio.h> /* For struct iovec */
 #endif
 
+typedef struct gasnetc_ofi_recv_metadata {
+    struct iovec iov;
+    struct fi_msg am_buff_msg;
+    struct gasnetc_ofi_ctxt am_buff_ctxt;
+} gasnetc_ofi_recv_metadata_t;
+
+#define NUM_OFI_ENDPOINTS 3
+
 #define USE_AV_MAP 0
 static addr_table_t  *addr_table;
 #if USE_AV_MAP
-#define GET_AM_DEST(dest) (fi_addr_t)(addr_table->table[dest*2].dest)
-#define GET_RDMA_DEST(dest) (fi_addr_t)(addr_table->table[dest*2+1].dest)
+#define GET_AM_REQUEST_DEST(dest) (fi_addr_t)(addr_table->table[(dest)*NUM_OFI_ENDPOINTS])
+#define GET_AM_REPLY_DEST(dest) (fi_addr_t)(addr_table->table[(dest)*NUM_OFI_ENDPOINTS+1])
+#define GET_RDMA_DEST(dest) (fi_addr_t)(addr_table->table[(dest)*NUM_OFI_ENDPOINTS+2])
 #else
-#define GET_AM_DEST(dest) (fi_addr_t)(dest*2)
-#define GET_RDMA_DEST(dest) (fi_addr_t)(dest*2+1)
+#define GET_AM_REQUEST_DEST(dest) (fi_addr_t)((dest)*NUM_OFI_ENDPOINTS)
+#define GET_AM_REPLY_DEST(dest) (fi_addr_t)((dest)*NUM_OFI_ENDPOINTS+1)
+#define GET_RDMA_DEST(dest) (fi_addr_t)((dest)*NUM_OFI_ENDPOINTS+2)
 #endif
 
 #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
@@ -91,22 +101,24 @@ static int rdma_periodic_poll_threshold; /* Set via environment variable in init
 /* In this case, inject means "inject into the network". It is not specific
  * to the fi_inject/fi_inject_write functions. fxn must assign a return value
  * to an int named "ret" in the scope in which it is called.*/
-#define OFI_INJECT_RETRY(lock, fxn)\
+#define OFI_INJECT_RETRY(lock, fxn, poll_type)\
     do {\
         GASNETC_OFI_LOCK_EXPR(lock, fxn);\
         while (ret == -FI_EAGAIN) {\
             GASNETI_WAITHOOK();\
-            GASNETC_OFI_POLL_EVERYTHING();\
+            GASNETC_OFI_POLL_SELECTIVE(poll_type);\
             GASNETC_OFI_LOCK_EXPR(lock, fxn);\
         }\
     }while(0)
 
-static gasneti_lifo_head_t ofi_am_pool = GASNETI_LIFO_INITIALIZER;
+static gasneti_lifo_head_t ofi_am_request_pool = GASNETI_LIFO_INITIALIZER;
+static gasneti_lifo_head_t ofi_am_reply_pool = GASNETI_LIFO_INITIALIZER;
 static gasneti_lifo_head_t ofi_bbuf_pool = GASNETI_LIFO_INITIALIZER;
 static gasneti_lifo_head_t ofi_bbuf_ctxt_pool = GASNETI_LIFO_INITIALIZER;
 
-#define OFI_AM_NUM_BLOCK 	8
-#define OFI_AM_BLOCK_SIZE 	1*1024*1024
+static size_t num_multirecv_buffs;
+static size_t multirecv_buff_size;
+static void* receive_region_start = NULL;
 
 /* Variables for bounce buffering of non-blocking, non-bulk puts.
  * The gasnetc_ofi_bbuf_threshold variable is defined in gasnet_ofi.h
@@ -117,6 +129,14 @@ static size_t ofi_num_bbufs;
 static size_t ofi_bbuf_size;
 #define OFI_MAX_NUM_BOUNCE_BUFFERS 32
 
+static void* am_buffers_region_start = NULL;
+static size_t am_buffers_region_size = 0;
+static size_t max_am_send_buffs = 0;
+static size_t num_init_am_send_buffs = 0;
+static int out_of_send_buffers = 0;
+static gasnetc_paratomic_t num_allocated_send_buffers = gasnetc_paratomic_init(0);
+static size_t long_rma_threshold = 0;
+
 static uint64_t             	max_buffered_send;
 static uint64_t             	min_multi_recv;
 
@@ -124,9 +144,7 @@ static int using_psm_provider = 0;
 
 gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
-static struct iovec *am_iov;
-static struct fi_msg *am_buff_msg;
-static gasnetc_ofi_ctxt_t *am_buff_ctxt = NULL;
+static gasnetc_ofi_recv_metadata_t* metadata_array;
 
 static gasnetc_paratomic_t pending_rdma = gasnetc_paratomic_init(0);
 static gasnetc_paratomic_t pending_am = gasnetc_paratomic_init(0);
@@ -136,10 +154,24 @@ static int gasnetc_ofi_inited = 0;
 #define OFI_CONDUIT_VERSION FI_VERSION(1, 0)
 
 #if GASNET_PSHM
-#define GASNETC_OFI_POLL_EVERYTHING() do { gasnetc_ofi_poll(); gasneti_AMPSHMPoll(0);} while (0)
+    #define gasnetc_AMPSHMPoll(repliesOnly) gasneti_AMPSHMPoll(repliesOnly)
 #else
-#define GASNETC_OFI_POLL_EVERYTHING() do { gasnetc_ofi_poll();} while (0)
-#endif
+    #define gasnetc_AMPSHMPoll(repliesOnly) ((void)0)
+#endif 
+
+#define GASNETC_OFI_POLL_EVERYTHING() do { gasnetc_ofi_poll(); gasnetc_AMPSHMPoll(0);} while (0)
+#define GASNETC_OFI_POLL_SELECTIVE(type) do {\
+    if (type == OFI_POLL_ALL) {\
+        gasnetc_ofi_am_recv_poll(1);\
+        gasnetc_AMPSHMPoll(0);\
+    }\
+    else {\
+        gasnetc_AMPSHMPoll(1);\
+    }\
+    gasnetc_ofi_am_recv_poll(0);\
+    gasnetc_ofi_tx_poll();\
+}while(0)
+
 
 #if GASNET_PAR
 static inline int gasnetc_is_exiting(void) {
@@ -156,7 +188,149 @@ static inline int gasnetc_is_exiting(void) {
  * Function Declarations
  *-------------------------------------------------*/
 GASNETI_INLINE(gasnetc_ofi_handle_am)
-void gasnetc_ofi_handle_am(struct fi_cq_data_entry *re, void *buf);
+void gasnetc_ofi_handle_am(gasnetc_ofi_am_send_buf_t *header, int isreq, size_t msg_len, size_t nbytes);
+void gasnetc_ofi_release_request_am(struct fi_cq_data_entry *re, void *buf);
+void gasnetc_ofi_release_reply_am(struct fi_cq_data_entry *re, void *buf);
+void gasnetc_ofi_tx_poll();
+GASNETI_PLEASE_INLINE(gasnetc_ofi_am_recv_poll)
+void gasnetc_ofi_am_recv_poll(int is_request);
+
+/* Reads any user-provided settings from the environment to avoid clogging up
+ * the gasnetc_ofi_init() function with this code. */
+static void gasnetc_ofi_read_env_vars() {
+    const char* max_am_send_buffs_env =  "GASNET_OFI_MAX_SEND_BUFFS";
+    const char* num_init_send_buffs_env = "GASNET_OFI_NUM_INITIAL_SEND_BUFFS";
+    const char* max_err_string =  "%s must be greater than or equal to\n"
+                                  "%s, which is set to %d in this run.\n";
+    const char* init_err_string = "%s must be greater than or equal to 2.\n";
+    max_am_send_buffs = gasneti_getenv_int_withdefault(max_am_send_buffs_env, 1000, 0);
+    num_init_am_send_buffs = gasneti_getenv_int_withdefault(num_init_send_buffs_env, 500, 0);
+
+    if (num_init_am_send_buffs < 2) {
+        gasneti_fatalerror(init_err_string, num_init_send_buffs_env);
+    }
+
+    if (max_am_send_buffs < num_init_am_send_buffs) {
+        gasneti_fatalerror(max_err_string, max_am_send_buffs_env, num_init_send_buffs_env, 
+                (int)num_init_am_send_buffs);
+    }
+
+    /* The number of RMA requests to be issued before a tx_poll takes place */
+    rdma_periodic_poll_threshold = gasneti_getenv_int_withdefault("GASNET_OFI_RMA_POLL_FREQ", 32, 0);
+
+    ofi_num_bbufs = gasneti_getenv_int_withdefault("GASNET_OFI_NUM_BBUFS", 64, 0);
+    ofi_bbuf_size = gasneti_getenv_int_withdefault("GASNET_OFI_BBUF_SIZE", GASNET_PAGESIZE, 1);
+    gasnetc_ofi_bbuf_threshold = gasneti_getenv_int_withdefault("GASNET_OFI_BBUF_THRESHOLD", 4*ofi_bbuf_size, 1);
+
+    if (ofi_num_bbufs < gasnetc_ofi_bbuf_threshold/ofi_bbuf_size)
+        gasneti_fatalerror("The number of bounce buffers must be greater than or equal to the bounce\n"
+                "buffer threshold divided by the bounce buffer size. See the ofi-conduit README.\n");
+
+    if (gasnetc_ofi_bbuf_threshold/ofi_bbuf_size > OFI_MAX_NUM_BOUNCE_BUFFERS) {
+        gasneti_fatalerror("The ofi-conduit limits the max number of bounce buffers used in the non-blocking\n"
+                "put path to %d. Your selections for the bounce buffer tuning parameters exceed this. If you\n" 
+                "truly need more than %d bounce buffers, edit the OFI_MAX_NUM_BOUNCE_BUFFERS macro in\n" 
+                "gasnet_ofi.c and recompile.\n", OFI_MAX_NUM_BOUNCE_BUFFERS, OFI_MAX_NUM_BOUNCE_BUFFERS);
+    }
+
+    const char* num_multirecv_buffs_env = "GASNET_OFI_NUM_RECEIVE_BUFFS";
+    const char* multirecv_size_env = "GASNET_OFI_RECEIVE_BUFF_SIZE";
+    num_multirecv_buffs = gasneti_getenv_int_withdefault(num_multirecv_buffs_env, 8, 0);
+
+    multirecv_buff_size = gasneti_getenv_int_withdefault(multirecv_size_env, 1024*1024, 1);
+    if (num_multirecv_buffs < 2)
+        gasneti_fatalerror("%s must be at least 2.\n", num_multirecv_buffs_env);
+
+    if (multirecv_buff_size < sizeof(gasnetc_ofi_am_buf_t)) {
+        gasneti_fatalerror("%s must be at least %d bytes on this build.\n"
+                "This is the size of gasnet_AMMaxMedium() plus the message header.\n", \
+                multirecv_size_env, (int)sizeof(gasnetc_ofi_am_buf_t));
+    }
+    const char* long_rma_threshold_env = "GASNET_OFI_LONG_AM_RMA_THRESH";
+    long_rma_threshold = gasneti_getenv_int_withdefault(long_rma_threshold_env, OFI_AM_MAX_DATA_LENGTH, 1);
+    if (long_rma_threshold > OFI_AM_MAX_DATA_LENGTH) {
+            gasneti_fatalerror(
+                "The value given for %s exceeds the amount\n"
+                "of data which can be packed into a medium message (%d bytes on this build).\n"
+                "Use a lower value or reconfigure GASNet for a bigger medium message size using\n"
+                "--with-ofi-max-medium=<new size>.\n",
+                long_rma_threshold_env, (int)OFI_AM_MAX_DATA_LENGTH);
+    }
+}
+
+/* The intention of separating this logic from gasnetc_ofi_init() is
+ * to contain the complexity of supporting scalable endpoints in the future to
+ * this function and the relevant get-address macros.
+ */
+static void ofi_setup_address_vector() {
+  int ret = FI_SUCCESS;
+  conn_entry_t *mapped_table;
+  struct fi_av_attr   	av_attr 	= {0};
+
+  /* Open Address Vector and bind the AV to the domain */
+#if USE_AV_MAP
+  av_attr.type        = FI_AV_MAP;
+  addr_table          = (addr_table_t*)gasneti_malloc(gasneti_nodes * NUM_OFI_ENDPOINTS 
+          * sizeof(conn_entry_t) + sizeof(addr_table_t));
+  addr_table->size    = gasneti_nodes * NUM_OFI_ENDPOINTS;
+  mapped_table        = addr_table->table;
+#else
+  av_attr.type        = FI_AV_TABLE;
+  mapped_table        = NULL;
+#endif
+  ret = fi_av_open(gasnetc_ofi_domainfd, &av_attr, &gasnetc_ofi_avfd, NULL);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_av_open failed: %d\n", ret);
+
+  /* Bind AV to endpoints, both RDMA/AM endpoints share the same AV object */
+  ret = fi_ep_bind(gasnetc_ofi_rdma_epfd, &gasnetc_ofi_avfd->fid, 0);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for avfd to rdma_epfd failed: %d\n", ret);
+
+  ret = fi_ep_bind(gasnetc_ofi_request_epfd, &gasnetc_ofi_avfd->fid, 0);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for avfd to am request epfd failed: %d\n", ret);
+
+  ret = fi_ep_bind(gasnetc_ofi_reply_epfd, &gasnetc_ofi_avfd->fid, 0);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for avfd to am reply epfd failed: %d\n", ret);
+}
+
+static void ofi_exchange_addresses() {
+  size_t reqnamelen = 0, repnamelen = 0, rdmanamelen = 0;
+  char* on_node_addresses;
+  int ret = FI_SUCCESS;
+
+  /* Query each endpoint for its address length. While in most cases, these
+   * lengths will be equal, there are some cases where they might not be. For
+   * example, when using both IPv4 and IPv6. */
+  ret = fi_getname(&gasnetc_ofi_request_epfd->fid, NULL, &reqnamelen);
+  gasneti_assert(ret == -FI_ETOOSMALL);
+  ret = fi_getname(&gasnetc_ofi_reply_epfd->fid, NULL, &repnamelen);
+  gasneti_assert(ret == -FI_ETOOSMALL);
+  ret = fi_getname(&gasnetc_ofi_rdma_epfd->fid, NULL, &rdmanamelen);
+  gasneti_assert(ret == -FI_ETOOSMALL);
+
+  size_t total_len = reqnamelen + repnamelen + rdmanamelen;
+  on_node_addresses = gasneti_malloc(total_len);
+
+  char* alladdrs = gasneti_malloc(gasneti_nodes*total_len);
+
+  const char* getname_error_msg = "fi_getname failed for the %s endpoint with error code %d.\n";
+  ret = fi_getname(&gasnetc_ofi_request_epfd->fid, on_node_addresses, &reqnamelen);
+  if (FI_SUCCESS != ret) gasneti_fatalerror(getname_error_msg, "AM request", ret);
+  ret = fi_getname(&gasnetc_ofi_reply_epfd->fid, on_node_addresses+reqnamelen, &repnamelen);
+  if (FI_SUCCESS != ret) gasneti_fatalerror(getname_error_msg, "AM reply", ret);
+  ret = fi_getname(&gasnetc_ofi_rdma_epfd->fid, on_node_addresses+reqnamelen+repnamelen, &rdmanamelen);
+  if (FI_SUCCESS != ret) gasneti_fatalerror(getname_error_msg, "RDMA", ret);
+
+  gasneti_bootstrapExchange(on_node_addresses, total_len, alladdrs);
+  /* NOTE: If AV_MAP is ever to be supported, the NULL in the below call needs to be
+   * changed to point to the AV structure. */
+  ret = fi_av_insert(gasnetc_ofi_avfd, alladdrs, gasneti_nodes*NUM_OFI_ENDPOINTS, 
+          NULL ,0ULL, NULL);
+  if (gasneti_nodes*NUM_OFI_ENDPOINTS != ret) 
+      gasneti_fatalerror("fi_av_insert failed. Expected: %d Actual: %d\n", gasneti_nodes*NUM_OFI_ENDPOINTS, ret);
+
+  gasneti_free(alladdrs);
+  gasneti_free(on_node_addresses);
+}
 
 /*------------------------------------------------
  * Initialize OFI conduit
@@ -168,21 +342,19 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   int result = GASNET_ERR_NOT_INIT;
   struct fi_info		*hints, *info;
   struct fi_cq_attr   	cq_attr 	= {0};
-  struct fi_av_attr   	av_attr 	= {0};
-  char   sockname[256], *alladdrs;
-  size_t socknamelen = sizeof(sockname)/2;
   size_t optlen;
   int num_locks; 
   int i;
-  int iov_len = OFI_AM_BLOCK_SIZE;
-  int num_iov = OFI_AM_NUM_BLOCK;
   
-  conn_entry_t *mapped_table;
   int high_perf_prov = 0;
 
   gasneti_spawner = gasneti_spawnerInit(argc, argv, NULL, &gasneti_nodes, &gasneti_mynode);
   if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
+  /* Must init timers after global env, and preferably before tracing */
+  GASNETI_TICKS_INIT();
+
+  gasnetc_ofi_read_env_vars();
   /* Ensure uniform FI_* env vars */
   /* TODO: what about provider-specific env vars? */
   gasneti_propagate_env("FI_", GASNETI_PROPAGATE_ENV_PREFIX);
@@ -191,7 +363,8 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   gasneti_spinlock_init(&gasnetc_ofi_locks.big_lock);
 #elif GASNET_PAR
   /* This lock is needed in PAR mode to protect the AM reference counting */
-  gasneti_spinlock_init(&gasnetc_ofi_locks.rx_cq);
+  gasneti_spinlock_init(&gasnetc_ofi_locks.rx_request_cq);
+  gasneti_spinlock_init(&gasnetc_ofi_locks.rx_reply_cq);
 #endif
 #if 0
   gasneti_spinlock_init(&gasnetc_ofi_locks.tx_cq);
@@ -208,20 +381,16 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   if (!hints) gasneti_fatalerror("fi_allocinfo for hints failed\n");
 
   /* caps: fabric interface capabilities */
-  hints->caps			= FI_RMA;		/* RMA read/write operations */
-  hints->caps         |= FI_MSG;       /* send/recv messages */
-  hints->caps         |= FI_MULTI_RECV; /* support posting multi-recv
-												buffer */
+  hints->caps			= FI_RMA | FI_MSG | FI_MULTI_RECV;
   /* mode: convey requirements for application to use fabric interfaces */
   hints->mode			= FI_CONTEXT;	/* fi_context is used for per
-											   operation context parameter */
+						   operation context parameter */
   /* addr_format: expected address format for AV/CM calls */
   hints->addr_format		= FI_FORMAT_UNSPEC;
-  hints->tx_attr->op_flags	= FI_DELIVERY_COMPLETE|FI_COMPLETION;
-  hints->rx_attr->op_flags	= FI_MULTI_RECV|FI_COMPLETION;
+  hints->tx_attr->op_flags	= FI_DELIVERY_COMPLETE;
   hints->ep_attr->type		= FI_EP_RDM; /* Reliable datagram */
   /* Threading mode is set by the configure script to FI_THREAD_DOMAIN if
-   * using the psm or psm2 provider and FI_THREAD_SAFE otherwise*/
+   * using the psm2 provider and FI_THREAD_SAFE otherwise*/
 #if GASNETC_OFI_USE_THREAD_DOMAIN || !GASNET_PAR
   hints->domain_attr->threading			= FI_THREAD_DOMAIN;
 #else
@@ -244,8 +413,7 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   /* FIXME: walk list of providers and implement some
    * selection logic */
 
-  if (!strcmp(info->fabric_attr->prov_name, "psm") ||
-		  !strcmp(info->fabric_attr->prov_name, "psm2")){
+  if (!strcmp(info->fabric_attr->prov_name, "psm2")){
 	  high_perf_prov = 1;
       using_psm_provider = 1;
   }
@@ -296,19 +464,36 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   ret = fi_domain(gasnetc_ofi_fabricfd, info, &gasnetc_ofi_domainfd, NULL);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_domain failed: %d\n", ret);
 
+  /* The intention here is to ensure that subsequent calls to fi_getinfo()
+   * won't ever give us a different provider. This is likely unnecessary,
+   * but it is good to be paranoid. */
+  hints->domain_attr->name = gasneti_strdup(info->domain_attr->name);
+
   /* Allocate a new active endpoint for RDMA operations */
-  info->caps      = FI_RMA;       /* RMA read/write operations */
-  info->rx_attr->op_flags = 0;
+  hints->caps = FI_RMA;
+
+  ret = fi_getinfo(OFI_CONDUIT_VERSION, NULL, NULL, 0ULL, hints, &info);
+  if(FI_SUCCESS != ret)
+      gasneti_fatalerror("fi_getinfo() failed querying for RMA endpoint: %d\n", ret);
+
   ret = fi_endpoint(gasnetc_ofi_domainfd, info, &gasnetc_ofi_rdma_epfd, NULL);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_endpoint for rdma failed: %d\n", ret);
 
-  /* Allocate a new active endpoint for AM operations */
-  info->caps          = FI_MSG;       /* send/recv messages */
-  info->caps          |= FI_MULTI_RECV; /* support posting multi-recv
-												buffer */
-  info->rx_attr->op_flags = FI_MULTI_RECV|FI_COMPLETION;
-  ret = fi_endpoint(gasnetc_ofi_domainfd, info, &gasnetc_ofi_am_epfd, NULL);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_endpoint for am failed: %d\n", ret);
+  /* Allocate a new active endpoint for AM operations buffer */
+  hints->caps     = FI_MSG | FI_MULTI_RECV;
+
+  ret = fi_getinfo(OFI_CONDUIT_VERSION, NULL, NULL, 0ULL, hints, &info);
+  if(FI_SUCCESS != ret)
+      gasneti_fatalerror("fi_getinfo() failed querying for MSG endpoints: %d\n", ret);
+
+  gasneti_free(hints->domain_attr->name);
+  hints->domain_attr->name = NULL;
+
+  ret = fi_endpoint(gasnetc_ofi_domainfd, info, &gasnetc_ofi_request_epfd, NULL);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_endpoint for am request endpoint failed: %d\n", ret);
+
+  ret = fi_endpoint(gasnetc_ofi_domainfd, info, &gasnetc_ofi_reply_epfd, NULL);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_endpoint for am reply endpoint failed: %d\n", ret);
 
   /* Allocate a CQ that will be shared for both RDMA and AM tx ops */
   memset(&cq_attr, 0, sizeof(cq_attr));
@@ -319,72 +504,57 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   /* Allocate recv completion queues for AMs */
   memset(&cq_attr, 0, sizeof(cq_attr));
   cq_attr.format    = FI_CQ_FORMAT_DATA;
-  ret = fi_cq_open(gasnetc_ofi_domainfd, &cq_attr, &gasnetc_ofi_am_rcqfd, NULL);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_cq_open for am recv cq failed: %d\n", ret);
+  ret = fi_cq_open(gasnetc_ofi_domainfd, &cq_attr, &gasnetc_ofi_request_cqfd, NULL);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_cq_open for am request cq failed: %d\n", ret);
+
+  ret = fi_cq_open(gasnetc_ofi_domainfd, &cq_attr, &gasnetc_ofi_reply_cqfd, NULL);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_cq_open for am reply cq failed: %d\n", ret);
 
   /* Bind CQs to endpoints */
   ret = fi_ep_bind(gasnetc_ofi_rdma_epfd, &gasnetc_ofi_tx_cqfd->fid, FI_TRANSMIT);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for tx_cq to rdma_epfd failed: %d\n", ret);
 
-  ret = fi_ep_bind(gasnetc_ofi_am_epfd, &gasnetc_ofi_tx_cqfd->fid, FI_TRANSMIT);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for tx_cq to am_epfd failed: %d\n", ret);
+  ret = fi_ep_bind(gasnetc_ofi_request_epfd, &gasnetc_ofi_tx_cqfd->fid, FI_TRANSMIT);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for tx_cq to am request CQ failed: %d\n", ret);
 
-  ret = fi_ep_bind(gasnetc_ofi_am_epfd, &gasnetc_ofi_am_rcqfd->fid, FI_RECV);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for am_rcqfd to am_epfd failed: %d\n", ret);
+  ret = fi_ep_bind(gasnetc_ofi_reply_epfd, &gasnetc_ofi_tx_cqfd->fid, FI_TRANSMIT);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for tx_cq to am reply CQ failed: %d\n", ret);
+
+  ret = fi_ep_bind(gasnetc_ofi_request_epfd, &gasnetc_ofi_request_cqfd->fid, FI_RECV);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for am request cq to am_request_epfd failed: %d\n", ret);
+
+  ret = fi_ep_bind(gasnetc_ofi_reply_epfd, &gasnetc_ofi_reply_cqfd->fid, FI_RECV);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for am reply cq to am_reply_epfd failed: %d\n", ret);
 
   /* Low-water mark for shared receive buffer */
-  min_multi_recv = OFI_AM_MAX_DATA_LENGTH + offsetof(gasnetc_ofi_am_send_buf_t,data);
+  min_multi_recv = OFI_AM_MAX_DATA_LENGTH + offsetof(gasnetc_ofi_am_send_buf_t,long_buf)
+                    + offsetof(gasnetc_ofi_am_long_buf_t, data);
   optlen = min_multi_recv;
-  ret	 = fi_setopt(&gasnetc_ofi_am_epfd->fid, FI_OPT_ENDPOINT, FI_OPT_MIN_MULTI_RECV,
+  ret	 = fi_setopt(&gasnetc_ofi_request_epfd->fid, FI_OPT_ENDPOINT, FI_OPT_MIN_MULTI_RECV,
 		  &optlen,
 		  sizeof(optlen));
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_setopt for am_epfd failed: %d\n", ret);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_setopt for am request epfd failed: %d\n", ret);
+  ret	 = fi_setopt(&gasnetc_ofi_reply_epfd->fid, FI_OPT_ENDPOINT, FI_OPT_MIN_MULTI_RECV,
+		  &optlen,
+		  sizeof(optlen));
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_setopt for am reply epfd failed: %d\n", ret);
 
   /* Cutoff to use fi_inject */
   max_buffered_send = info->tx_attr->inject_size;
 
-  /* Open Address Vector and bind the AV to the domain */
-#if USE_AV_MAP
-  av_attr.type        = FI_AV_MAP;
-  addr_table          = (addr_table_t*)gasneti_malloc(gasneti_nodes * 2 * sizeof(conn_entry_t) + sizeof(addr_table_t));
-  addr_table->size    = gasneti_nodes * 2;
-  mapped_table        = addr_table->table;
-#else
-  av_attr.type        = FI_AV_TABLE;
-  mapped_table        = NULL;
-#endif
-  ret = fi_av_open(gasnetc_ofi_domainfd, &av_attr, &gasnetc_ofi_avfd, NULL);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_av_open failed: %d\n", ret);
-
-  /* Bind AV to endpoints, both RDMA/AM endpoints share the same AV object */
-  ret = fi_ep_bind(gasnetc_ofi_rdma_epfd, &gasnetc_ofi_avfd->fid, 0);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for avfd to rdma_epfd failed: %d\n", ret);
-
-  ret = fi_ep_bind(gasnetc_ofi_am_epfd, &gasnetc_ofi_avfd->fid, 0);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_ep_bind for avfd to am_epfd failed: %d\n", ret);
+  ofi_setup_address_vector();
 
   /* Enable endpoints */
   ret = fi_enable(gasnetc_ofi_rdma_epfd);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_enable for rdma failed: %d\n", ret);
-  ret = fi_enable(gasnetc_ofi_am_epfd);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_enable for am failed: %d\n", ret);
+  ret = fi_enable(gasnetc_ofi_request_epfd);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_enable for am request ep failed: %d\n", ret);
+  ret = fi_enable(gasnetc_ofi_reply_epfd);
+  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_enable for am reply ep failed: %d\n", ret);
 
   gasneti_nodemapInit(gasneti_bootstrapExchange, NULL, 0, 0);
 
-  /* Get the address of AM endpoint and publish to other nodes through bootstrap
-   * exchange function */
-  ret = fi_getname(&gasnetc_ofi_am_epfd->fid, sockname, &socknamelen);
-  ret = fi_getname(&gasnetc_ofi_rdma_epfd->fid, sockname+socknamelen, &socknamelen);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_getepname failed: %d\n", ret);
-  alladdrs = gasneti_malloc(gasneti_nodes*socknamelen*2);
-  gasneti_bootstrapExchange(&sockname, socknamelen*2, alladdrs);
-
-  ret = fi_av_insert(gasnetc_ofi_avfd, alladdrs, gasneti_nodes*2, (fi_addr_t*)mapped_table,
-          0ULL, NULL);
-  if (gasneti_nodes*2 != ret) 
-      gasneti_fatalerror("fi_av_insert failed. Expected: %d Actual: %d\n", gasneti_nodes*2, ret);
-  
-  gasneti_free(alladdrs);
+  ofi_exchange_addresses();
 
   fi_freeinfo(hints);
 
@@ -393,49 +563,35 @@ int gasnetc_ofi_init(int *argc, char ***argv,
       gasneti_assert(gasnetc_ofi_target_keys);
   }
 
-  /* Receive buffers to post */
-  am_iov = (struct iovec *) gasneti_malloc(sizeof(struct iovec)*num_iov);
-  am_buff_msg = (struct fi_msg *) gasneti_malloc(sizeof(struct fi_msg)*num_iov);
-  am_buff_ctxt = (gasnetc_ofi_ctxt_t *) gasneti_malloc(sizeof(gasnetc_ofi_ctxt_t)*num_iov);
+  receive_region_start = gasneti_malloc_aligned(GASNETI_PAGESIZE, multirecv_buff_size*num_multirecv_buffs);
+  metadata_array = gasneti_malloc(sizeof(gasnetc_ofi_recv_metadata_t)*num_multirecv_buffs);
 
-  for(i = 0; i < num_iov; i++) {
-		am_iov[i].iov_base		= gasneti_malloc(iov_len);
-		am_iov[i].iov_len		= iov_len;
-		am_buff_msg[i].msg_iov		= &am_iov[i];
-		am_buff_msg[i].iov_count 	= 1;
-		am_buff_msg[i].addr 		= FI_ADDR_UNSPEC;
-		am_buff_msg[i].desc	  	= NULL;
-		am_buff_msg[i].context 		= &am_buff_ctxt[i].ctxt;
-		am_buff_msg[i].data 		= 0;
-        am_buff_ctxt[i].callback	= gasnetc_ofi_handle_am;
-        am_buff_ctxt[i].index		= i;
-        am_buff_ctxt[i].final_cntr = 0;
-        am_buff_ctxt[i].event_cntr = 0;
-        gasnetc_paratomic_set(&am_buff_ctxt[i].consumed_cntr, 0, 0);
+  for(i = 0; i < num_multirecv_buffs; i++) {
+        gasnetc_ofi_recv_metadata_t* metadata = metadata_array + i;
+        metadata->iov.iov_base = ((char*)receive_region_start) + multirecv_buff_size*i;
+        metadata->iov.iov_len = multirecv_buff_size;
+        metadata->am_buff_msg.msg_iov = &metadata->iov;
+        metadata->am_buff_msg.iov_count = 1;
+        metadata->am_buff_msg.addr = FI_ADDR_UNSPEC;
+        metadata->am_buff_msg.desc = NULL;
+        metadata->am_buff_msg.context = &metadata->am_buff_ctxt.ctxt;
+        metadata->am_buff_msg.data = 0;
+        metadata->am_buff_ctxt.index = i;
+        metadata->am_buff_ctxt.final_cntr = 0;
+        metadata->am_buff_ctxt.event_cntr = 0;
+        gasnetc_paratomic_set(&metadata->am_buff_ctxt.consumed_cntr, 0, 0);
+        metadata->am_buff_ctxt.metadata = metadata;
 		/* Post buffers for Active Messages */
-		ret = fi_recvmsg(gasnetc_ofi_am_epfd, &am_buff_msg[i], FI_MULTI_RECV);
+        if (i % 2 == 0)
+            ret = fi_recvmsg(gasnetc_ofi_request_epfd, &metadata->am_buff_msg, FI_MULTI_RECV);
+        else
+            ret = fi_recvmsg(gasnetc_ofi_reply_epfd, &metadata->am_buff_msg, FI_MULTI_RECV);
+
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_recvmsg failed: %d\n", ret);
 	}
 
-  /* The number of RMA requests to be issued before a tx_poll takes place */
-  rdma_periodic_poll_threshold = gasneti_getenv_int_withdefault("GASNET_OFI_RMA_POLL_FREQ", 32, 0);
-
+  
   /* Allocate bounce buffers*/
-  ofi_num_bbufs = gasneti_getenv_int_withdefault("GASNET_OFI_NUM_BBUFS", 64, 0);
-  ofi_bbuf_size = gasneti_getenv_int_withdefault("GASNET_OFI_BBUF_SIZE", GASNET_PAGESIZE, 1);
-  gasnetc_ofi_bbuf_threshold = gasneti_getenv_int_withdefault("GASNET_OFI_BBUF_THRESHOLD", 4*ofi_bbuf_size, 1);
-
-  if (ofi_num_bbufs < gasnetc_ofi_bbuf_threshold/ofi_bbuf_size)
-      gasneti_fatalerror("The number of bounce buffers must be greater than or equal to the bounce\n"
-              "buffer threshold divided by the bounce buffer size. See the ofi-conduit README.\n");
-
-  if (gasnetc_ofi_bbuf_threshold/ofi_bbuf_size > OFI_MAX_NUM_BOUNCE_BUFFERS) {
-      gasneti_fatalerror("The ofi-conduit limits the max number of bounce buffers used in the non-blocking\n"
-              "put path to %d. Your selections for the bounce buffer tuning parameters exceed this. If you\n" 
-              "truly need more than %d bounce buffers, edit the OFI_MAX_NUM_BOUNCE_BUFFERS macro in\n" 
-              "gasnet_ofi.c and recompile.\n", OFI_MAX_NUM_BOUNCE_BUFFERS, OFI_MAX_NUM_BOUNCE_BUFFERS);
-  }
-
   bounce_region_size = GASNETI_PAGE_ALIGNUP(ofi_num_bbufs * ofi_bbuf_size);
   bounce_region_start = gasneti_malloc_aligned(GASNETI_PAGESIZE, bounce_region_size);
 
@@ -450,6 +606,31 @@ int gasnetc_ofi_init(int *argc, char ***argv,
       gasneti_lifo_push(&ofi_bbuf_pool, container);
       buf -= ofi_bbuf_size;
   }
+
+  /* We need to keep count of how many buffers we allocate so we can place a
+   * limit on them */
+  gasnetc_paratomic_set(&num_allocated_send_buffers, num_init_am_send_buffs, 0);
+  if (max_am_send_buffs == num_init_am_send_buffs) 
+      out_of_send_buffers = 1;
+
+  am_buffers_region_size = GASNETI_PAGE_ALIGNUP(num_init_am_send_buffs*sizeof(gasnetc_ofi_am_buf_t));
+  am_buffers_region_start = gasneti_malloc_aligned(GASNETI_PAGESIZE, am_buffers_region_size);
+  gasneti_leak_aligned(am_buffers_region_start);
+
+  /* Add the buffers to the stack in reverse order to be friendly to the cache. */
+  gasnetc_ofi_am_buf_t * bufp = (gasnetc_ofi_am_buf_t*)am_buffers_region_start + (num_init_am_send_buffs - 1);
+
+  for (i = 0; i < (int)num_init_am_send_buffs/2; i++) {
+     bufp->callback = gasnetc_ofi_release_request_am;
+     gasneti_lifo_push(&ofi_am_request_pool, bufp);
+     bufp--;
+  }  
+  for (; i < (int)num_init_am_send_buffs; i++) {
+      bufp->callback = gasnetc_ofi_release_reply_am;
+      gasneti_lifo_push(&ofi_am_reply_pool, bufp);
+      bufp--;
+  }
+
   gasnetc_ofi_inited = 1;
   return GASNET_OK;
 }
@@ -481,40 +662,33 @@ void gasnetc_ofi_exit(void)
       gasnetc_paratomic_read(&pending_rdma,0))
     GASNETC_OFI_POLL_EVERYTHING();
 
-  /* Drain up CQ before cancel the multi-recv requests */
-  { struct fi_cq_data_entry re = {0};
-    while(fi_cq_read(gasnetc_ofi_am_rcqfd, (void *)&re, 1) != -FI_EAGAIN);
-  }
-
-  if(am_buff_ctxt) {
-    for(i = 0; i < OFI_AM_NUM_BLOCK; i++) {
+    for(i = 0; i < num_multirecv_buffs; i++) {
+        gasnetc_ofi_recv_metadata_t* metadata = metadata_array + i;
+        gasnetc_ofi_ctxt_t am_buff_ctxt = metadata->am_buff_ctxt;
       /* cancel the multi-recv */
-      ret = fi_cancel(&gasnetc_ofi_am_epfd->fid, &am_buff_ctxt[i].ctxt);
-    #if 0 /* If exiting from a AM handler context, or multi-threaded, then cancel could fail */
-      if (FI_SUCCESS != ret) gasneti_fatalerror("failed fi_cancel the %d am_buff_msg\n", i);
-      gasneti_free(am_iov[i].iov_base);
-    #elif GASNETI_CLIENT_THREADS
-      /* Unsafe to free AM buffers if other threads may be using them */
-    #else
-      if (FI_SUCCESS == ret)
-        gasneti_free(am_iov[i].iov_base);
-    #endif
+        if (i % 2 == 0)
+            ret = fi_cancel(&gasnetc_ofi_request_epfd->fid, &am_buff_ctxt.ctxt);
+        else
+            ret = fi_cancel(&gasnetc_ofi_reply_epfd->fid, &am_buff_ctxt.ctxt);
     }
+
   #if GASNETI_CLIENT_THREADS
     /* Unsafe to free resources if other threads may be using them */
   #else
-    gasneti_free(am_buff_ctxt);
-    gasneti_free(am_iov);
-    gasneti_free(am_buff_msg);
+    gasneti_free(metadata_array);
+    gasneti_free_aligned(receive_region_start);
   #endif
-  }
 
   if(fi_close(&gasnetc_ofi_rdma_mrfd->fid)!=FI_SUCCESS) {
     gasneti_fatalerror("close mrfd failed\n");
   }
 
-  if(fi_close(&gasnetc_ofi_am_epfd->fid)!=FI_SUCCESS) {
-    gasneti_fatalerror("close am epfd failed\n");
+  if(fi_close(&gasnetc_ofi_reply_epfd->fid)!=FI_SUCCESS) {
+    gasneti_fatalerror("close am reply epfd failed\n");
+  }
+
+  if(fi_close(&gasnetc_ofi_request_epfd->fid)!=FI_SUCCESS) {
+    gasneti_fatalerror("close am request epfd failed\n");
   }
 
   if(fi_close(&gasnetc_ofi_rdma_epfd->fid)!=FI_SUCCESS) {
@@ -525,10 +699,12 @@ void gasnetc_ofi_exit(void)
     gasneti_fatalerror("close am scqfd failed\n");
   }
 
-  if(fi_close(&gasnetc_ofi_am_rcqfd->fid)!=FI_SUCCESS) {
-    gasneti_fatalerror("close am rcqfd failed\n");
+  if(fi_close(&gasnetc_ofi_reply_cqfd->fid)!=FI_SUCCESS) {
+    gasneti_fatalerror("close am reply cqfd failed\n");
   }
-
+  if(fi_close(&gasnetc_ofi_request_cqfd->fid)!=FI_SUCCESS) {
+    gasneti_fatalerror("close am request cqfd failed\n");
+  }
   if(fi_close(&gasnetc_ofi_avfd->fid)!=FI_SUCCESS) {
     gasneti_fatalerror("close av failed\n");
   }
@@ -553,39 +729,38 @@ void gasnetc_ofi_exit(void)
  * ----------------------------------------------*/
 
 /* Handle Active Messages */
-GASNETI_INLINE(gasnetc_ofi_handle_am_common)
-void gasnetc_ofi_handle_am_common(gasnetc_ofi_am_send_buf_t *header)
+GASNETI_INLINE(gasnetc_ofi_handle_am)
+void gasnetc_ofi_handle_am(gasnetc_ofi_am_send_buf_t *header, int isreq, size_t msg_len, size_t nbytes)
 {
 	uint8_t *addr;
-	int nbytes;
-	int isreq = header->isreq;
 	int handler = header->handler;
 	gasneti_handler_fn_t handler_fn = gasnetc_handler[handler];
-	gasnetc_ofi_token_t token; 
-	gasnetc_ofi_token_t *token_p = &token; 
-	gasnet_handlerarg_t *args = (gasnet_handlerarg_t *)header->data;
+	gasnet_handlerarg_t *args;
 	int numargs = header->argnum;
-	token.sourceid = header->sourceid;
-
+    int data_offset;
 	switch(header->type) {
 		case OFI_AM_SHORT:
-			GASNETI_RUN_HANDLER_SHORT(isreq, handler, handler_fn, token_p, args, numargs);
+            args = (gasnet_handlerarg_t *)header->short_buf.data;
+			GASNETI_RUN_HANDLER_SHORT(isreq, handler, handler_fn, header, args, numargs);
 			break;
 		case OFI_AM_MEDIUM:
-			nbytes = header->nbytes;
-			addr = header->data + header->len - nbytes;
-			GASNETI_RUN_HANDLER_MEDIUM(isreq, handler, handler_fn, token_p, args, numargs, addr, nbytes);
+            data_offset = GASNETI_ALIGNUP(sizeof(gasnet_handlerarg_t)*numargs, GASNETI_MEDBUF_ALIGNMENT);
+            args = (gasnet_handlerarg_t *)header->medium_buf.data;
+			addr = header->medium_buf.data + data_offset;
+			GASNETI_RUN_HANDLER_MEDIUM(isreq, handler, handler_fn, header, args, numargs, addr, nbytes);
 			break;
 		case OFI_AM_LONG:
-			addr = header->dest_ptr;
-			nbytes = header->nbytes;
-			GASNETI_RUN_HANDLER_LONG(isreq, handler, handler_fn, token_p, args, numargs, addr, nbytes);
+            data_offset = sizeof(gasnet_handlerarg_t)*numargs;
+            args = (gasnet_handlerarg_t *)header->long_buf.data;
+			addr = header->long_buf.dest_ptr;
+			GASNETI_RUN_HANDLER_LONG(isreq, handler, handler_fn, header, args, numargs, addr, nbytes);
 			break;
 		case OFI_AM_LONG_MEDIUM:
-			addr = header->dest_ptr;
-			nbytes = header->nbytes;
-			memcpy(addr, header->data+header->len-nbytes, nbytes);
-			GASNETI_RUN_HANDLER_LONG(isreq, handler, handler_fn, token_p, args, numargs, addr, nbytes);
+            data_offset = sizeof(gasnet_handlerarg_t)*numargs;
+            args = (gasnet_handlerarg_t *)header->long_buf.data;
+			addr = header->long_buf.dest_ptr;
+			memcpy(addr, header->long_buf.data + data_offset, nbytes);
+			GASNETI_RUN_HANDLER_LONG(isreq, handler, handler_fn, header, args, numargs, addr, nbytes);
 			break;
 		default:
 			gasneti_fatalerror("undefined header type in gasnetc_ofi_handle_am: %d\n",
@@ -596,19 +771,12 @@ void gasnetc_ofi_handle_am_common(gasnetc_ofi_am_send_buf_t *header)
 #if !GASNET_PSHM
 /* Handle Active Messages from self (not necessary if PSHM is enabled) */
 GASNETI_INLINE(gasnetc_ofi_handle_local_am)
-void gasnetc_ofi_handle_local_am(gasnetc_ofi_am_buf_t *buf)
+void gasnetc_ofi_handle_local_am(gasnetc_ofi_am_buf_t *buf, int isreq, size_t msg_len, int nbytes)
 {
-    gasnetc_ofi_handle_am_common(&buf->sendbuf);
-    gasneti_lifo_push(&ofi_am_pool, buf);
+    gasnetc_ofi_handle_am(&buf->sendbuf, isreq, msg_len, nbytes);
+    gasneti_lifo_push( isreq ? &ofi_am_request_pool : &ofi_am_reply_pool, buf);
 }
 #endif
-
-/* Handle incoming Active Messages */
-GASNETI_INLINE(gasnetc_ofi_handle_am)
-void gasnetc_ofi_handle_am(struct fi_cq_data_entry *re, void *buf)
-{
-    gasnetc_ofi_handle_am_common((gasnetc_ofi_am_send_buf_t*)re->buf);
-}
 
 /* Handle RDMA completion as the initiator */
 GASNETI_INLINE(gasnetc_ofi_handle_rdma)
@@ -649,23 +817,62 @@ void gasnetc_ofi_handle_rdma(void *buf)
 }
 
 /* Release ACKed send buffer */
-GASNETI_INLINE(gasnetc_ofi_release_am)
-void gasnetc_ofi_release_am(struct fi_cq_data_entry *re, void *buf)
+void gasnetc_ofi_release_request_am(struct fi_cq_data_entry *re, void *buf)
 {
 	gasnetc_ofi_am_buf_t *header = (gasnetc_ofi_am_buf_t*)buf;
-	gasneti_lifo_push(&ofi_am_pool, header);
+	gasneti_lifo_push(&ofi_am_request_pool, header);
+}
+void gasnetc_ofi_release_reply_am(struct fi_cq_data_entry *re, void *buf)
+{
+	gasnetc_ofi_am_buf_t *header = (gasnetc_ofi_am_buf_t*)buf;
+	gasneti_lifo_push(&ofi_am_reply_pool, header);
 }
 
 /* Get a send buffer */
 GASNETI_INLINE(gasnetc_ofi_am_header)
-gasnetc_ofi_am_buf_t *gasnetc_ofi_am_header(void)
+gasnetc_ofi_am_buf_t *gasnetc_ofi_am_header(int isreq)
 {
-	gasnetc_ofi_am_buf_t *header = gasneti_lifo_pop(&ofi_am_pool);
-	if_pf (NULL == header) {
-		header = gasneti_malloc(sizeof(gasnetc_ofi_am_buf_t));
-		header->callback = gasnetc_ofi_release_am;
-		gasneti_leak(header);
-	}
+    gasneti_lifo_head_t* pool;
+    int poll_type;
+    if (isreq) {
+        pool = &ofi_am_request_pool;
+    } 
+    else {
+        pool = &ofi_am_reply_pool;
+    }
+
+	gasnetc_ofi_am_buf_t *header = gasneti_lifo_pop(pool);
+    if_pt (header) 
+        return header;
+    else if (!out_of_send_buffers) {
+        // Poll the tx queue and retry the pool before allocating another buffer
+        gasnetc_ofi_tx_poll();
+        header = gasneti_lifo_pop(pool);
+        if (header) return header;
+
+        int tmp = gasnetc_paratomic_add(&num_allocated_send_buffers, 1, GASNETI_ATOMIC_ACQ);
+        if (tmp > max_am_send_buffs ) {
+            goto ofi_spin_for_buffer;
+        }
+        else if (tmp == max_am_send_buffs) {
+            /* This update is not threadsafe. This is okay though, as it is only
+             * to prevent continuously incrementing the atomic counter after all 
+             * buffers have been allocated.*/
+            out_of_send_buffers = 1; 
+        }
+        
+        header = gasneti_malloc(sizeof(gasnetc_ofi_am_buf_t));
+        gasneti_leak(header);
+        header->callback = isreq ? gasnetc_ofi_release_request_am : gasnetc_ofi_release_reply_am;
+        return header;
+    }
+ofi_spin_for_buffer:
+    poll_type = isreq ? OFI_POLL_ALL : OFI_POLL_REPLY;
+    do {
+        GASNETC_OFI_POLL_SELECTIVE(poll_type);
+        GASNETI_WAITHOOK();
+        header = gasneti_lifo_pop(pool);
+    } while(NULL == header);
     return header;
 }
 
@@ -784,26 +991,43 @@ void gasnetc_ofi_tx_poll()
 }
 
 GASNETI_PLEASE_INLINE(gasnetc_ofi_am_recv_poll)
-void gasnetc_ofi_am_recv_poll()
+void gasnetc_ofi_am_recv_poll(int is_request)
 {
 	int ret = 0;
     int post_ret = 0;
 	struct fi_cq_data_entry re = {0};
 	struct fi_cq_err_entry e = {0};
+    struct fid_ep * ep;
+    struct fid_cq * cq;
+    gasneti_atomic_t * lock_p;
+    if (is_request) {
+        ep = gasnetc_ofi_request_epfd;
+        cq = gasnetc_ofi_request_cqfd;
+#if GASNET_PAR && !GASNETC_OFI_USE_THREAD_DOMAIN
+        lock_p = &gasnetc_ofi_locks.rx_request_cq;
+#endif
+    }
+    else {
+        ep = gasnetc_ofi_reply_epfd;
+        cq = gasnetc_ofi_reply_cqfd;
+#if GASNET_PAR && !GASNETC_OFI_USE_THREAD_DOMAIN
+        lock_p = &gasnetc_ofi_locks.rx_reply_cq;
+#endif
+    }
+
 
     /* Read from Completion Queue */
+    if(EBUSY == GASNETC_OFI_PAR_TRYLOCK(lock_p)) return;
 
-    if(EBUSY == GASNETC_OFI_PAR_TRYLOCK(&gasnetc_ofi_locks.rx_cq)) return;
-
-    ret = fi_cq_read(gasnetc_ofi_am_rcqfd, (void *)&re, 1);
+    ret = fi_cq_read(cq, (void *)&re, 1);
 
     if (ret == -FI_EAGAIN) {
-        GASNETC_OFI_PAR_UNLOCK(&gasnetc_ofi_locks.rx_cq);
+        GASNETC_OFI_PAR_UNLOCK(lock_p);
         return;
     } 
     if_pf (ret < 0) {
-        fi_cq_readerr(gasnetc_ofi_am_rcqfd, &e ,0);
-        GASNETC_OFI_PAR_UNLOCK(&gasnetc_ofi_locks.rx_cq);
+        fi_cq_readerr(cq, &e ,0);
+        GASNETC_OFI_PAR_UNLOCK(lock_p);
         if_pf (gasnetc_is_exit_error(e)) return;
         gasneti_fatalerror("fi_cq_read for am_recv_poll failed with error: %s\n", fi_strerror(e.err));
     }
@@ -817,16 +1041,21 @@ void gasnetc_ofi_am_recv_poll()
     if_pf (re.flags & FI_MULTI_RECV) {
         header->final_cntr = header->event_cntr;
     }
-    GASNETC_OFI_PAR_UNLOCK(&gasnetc_ofi_locks.rx_cq);
+    GASNETC_OFI_PAR_UNLOCK(lock_p);
 
-    if_pt (re.flags & FI_RECV) header->callback(&re, header);
+    if_pt (re.flags & FI_RECV) {
+        /* re.data contains the number of bytes transferred in a medium or long message */
+        gasnetc_ofi_handle_am(re.buf, is_request, re.len, re.data);
+    }
 
     /* The atomic here ensures that the buffer is not reposted while an AM handler is
      * still running. */
     uint64_t tmp = gasnetc_paratomic_add(&header->consumed_cntr, 1, GASNETI_ATOMIC_ACQ);
     if_pf (tmp == (GASNETI_ATOMIC_MAX & header->final_cntr)) {
+        gasnetc_ofi_recv_metadata_t* metadata = header->metadata;
+        struct fi_msg* am_buff_msg = &metadata->am_buff_msg;
         GASNETC_OFI_LOCK(&gasnetc_ofi_locks.am_rx);
-        post_ret = fi_recvmsg(gasnetc_ofi_am_epfd, &(am_buff_msg[header->index]), FI_MULTI_RECV);
+        post_ret = fi_recvmsg(ep, am_buff_msg, FI_MULTI_RECV);
         GASNETC_OFI_UNLOCK(&gasnetc_ofi_locks.am_rx);
         if_pf (FI_SUCCESS != post_ret) gasneti_fatalerror("fi_recvmsg failed inside am_recv_poll: %d\n", ret);
     }
@@ -840,9 +1069,9 @@ void gasnetc_ofi_poll()
         gasnetc_ofi_tx_poll();
 
     /* We always need to check for incoming AMs */
-    gasnetc_ofi_am_recv_poll();
+    gasnetc_ofi_am_recv_poll(1);
+    gasnetc_ofi_am_recv_poll(0);
 }
-
 
 /*------------------------------------------------
  * OFI conduit am send functions
@@ -857,45 +1086,59 @@ int gasnetc_ofi_am_send_short(gasnet_node_t dest, gasnet_handler_t handler,
     unsigned int len;
 	gasnetc_ofi_am_buf_t *header;
 	gasnetc_ofi_am_send_buf_t *sendbuf;
+    struct fid_ep* ep;
+    fi_addr_t am_dest;
+    int poll_type;
+    if (isreq) {
+        ep = gasnetc_ofi_request_epfd;
+        am_dest = GET_AM_REQUEST_DEST(dest);
+        poll_type = OFI_POLL_ALL;
+    } 
+    else {
+        ep = gasnetc_ofi_reply_epfd;
+        am_dest = GET_AM_REPLY_DEST(dest);
+        poll_type = OFI_POLL_REPLY;
+    }
 
 	/* Get a send buffer */
-	header = gasnetc_ofi_am_header();
+	header = gasnetc_ofi_am_header(isreq);
 
 	/* Fill in the arguments */
 	sendbuf = &header->sendbuf;
-	sendbuf->len = 0;
-	arglist = (gasnet_handlerarg_t*) sendbuf->data;
+	arglist = (gasnet_handlerarg_t*) sendbuf->short_buf.data;
 	for (i = 0 ; i < numargs ; ++i) {
 		arglist[i] = va_arg(argptr, gasnet_handlerarg_t);
-		sendbuf->len += sizeof(gasnet_handlerarg_t);
 	}
 
 	/* Copy arg and handle into the buffer */
-	sendbuf->isreq = isreq;
 	sendbuf->handler = (uint8_t) handler;
 	sendbuf->sourceid = gasneti_mynode;
 	sendbuf->type = OFI_AM_SHORT;
 	sendbuf->argnum = numargs;
 
-	len = GASNETI_ALIGNUP(sendbuf->len + offsetof(gasnetc_ofi_am_send_buf_t, data), GASNETI_MEDBUF_ALIGNMENT);
+	len = sizeof(gasnet_handlerarg_t) * numargs + offsetof(gasnetc_ofi_am_send_buf_t, short_buf);
+    /* Alignment is added in order to ensure that all messages will be placed into the
+     * multi-recv buffer at an 8 byte aligned address. This is due to medium message
+     * payloads needing to be placed at an 8-byte aligned address. */
+    len = GASNETI_ALIGNUP(len, GASNETI_MEDBUF_ALIGNMENT);
 
 #if !GASNET_PSHM
 	if (dest == gasneti_mynode) {
-		gasnetc_ofi_handle_local_am(header);
+		gasnetc_ofi_handle_local_am(header, isreq, len, 0);
 		return 0;
 	}
 #endif
 
 	if(len <= max_buffered_send) {
             OFI_INJECT_RETRY(&gasnetc_ofi_locks.am_tx,
-                ret = fi_inject(gasnetc_ofi_am_epfd, sendbuf, len, GET_AM_DEST(dest)));
+                ret = fi_inject(ep, sendbuf, len, am_dest), poll_type);
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_inject for short am failed: %d\n", ret);
 
 		/* Data buffer is ready for reuse, handle it by callback function */
 		header->callback(NULL, header);
 	} else {
             OFI_INJECT_RETRY(&gasnetc_ofi_locks.am_tx,
-                ret = fi_send(gasnetc_ofi_am_epfd, sendbuf, len, NULL, GET_AM_DEST(dest), &header->ctxt));
+                ret = fi_send(ep, sendbuf, len, NULL, am_dest, &header->ctxt), poll_type);
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_send for short am failed: %d\n", ret);
 		gasnetc_paratomic_increment(&pending_am,0);
 	}
@@ -912,50 +1155,59 @@ int gasnetc_ofi_am_send_medium(gasnet_node_t dest, gasnet_handler_t handler,
     unsigned int len;
 	gasnetc_ofi_am_buf_t *header;
 	gasnetc_ofi_am_send_buf_t *sendbuf;
+    struct fid_ep* ep;
+    fi_addr_t am_dest;
+    int poll_type;
+    if (isreq) {
+        ep = gasnetc_ofi_request_epfd;
+        am_dest = GET_AM_REQUEST_DEST(dest);
+        poll_type = OFI_POLL_ALL;
+    } 
+    else {
+        ep = gasnetc_ofi_reply_epfd;
+        am_dest = GET_AM_REPLY_DEST(dest);
+        poll_type = OFI_POLL_REPLY;
+    }
 
 	gasneti_assert (nbytes <= gasnet_AMMaxMedium());
 
 	/* Get a send buffer */
-	header = gasnetc_ofi_am_header();
+	header = gasnetc_ofi_am_header(isreq);
 
 	/* Fill in the arguments */
 	sendbuf = &header->sendbuf;
-	sendbuf->len = 0;
-	arglist = (gasnet_handlerarg_t*) sendbuf->data;
+	arglist = (gasnet_handlerarg_t*) sendbuf->medium_buf.data;
 	for (i = 0 ; i < numargs ; ++i) {
 		arglist[i] = va_arg(argptr, gasnet_handlerarg_t);
-		sendbuf->len += sizeof(gasnet_handlerarg_t);
 	}
-	sendbuf->len = GASNETI_ALIGNUP(sendbuf->len, GASNETI_MEDBUF_ALIGNMENT);
+	len = GASNETI_ALIGNUP(sizeof(gasnet_handlerarg_t)*numargs, GASNETI_MEDBUF_ALIGNMENT);
 
-	memcpy((uint8_t *)(sendbuf->data)+sendbuf->len, source_addr, nbytes);
-	sendbuf->len += nbytes;
+	memcpy((uint8_t *)(sendbuf->medium_buf.data)+ len, source_addr, nbytes);
+
+	len += (nbytes + offsetof(gasnetc_ofi_am_send_buf_t, medium_buf));
+    len = GASNETI_ALIGNUP(len, GASNETI_MEDBUF_ALIGNMENT);
 
 	/* Copy arg and handle into the buffer */
-	sendbuf->isreq = isreq;
 	sendbuf->handler = (uint8_t) handler;
 	sendbuf->sourceid = gasneti_mynode;
 	sendbuf->type = OFI_AM_MEDIUM;
 	sendbuf->argnum = numargs;
-	sendbuf->nbytes = nbytes;
-
-	len = GASNETI_ALIGNUP(sendbuf->len + offsetof(gasnetc_ofi_am_send_buf_t, data), GASNETI_MEDBUF_ALIGNMENT);
 
 #if !GASNET_PSHM
 	if (dest == gasneti_mynode) {
-		gasnetc_ofi_handle_local_am(header);
+		gasnetc_ofi_handle_local_am(header, isreq, len, nbytes);
 		return 0;
 	}
 #endif
 
 	if(len <= max_buffered_send) {
             OFI_INJECT_RETRY(&gasnetc_ofi_locks.am_tx,
-                ret = fi_inject(gasnetc_ofi_am_epfd, sendbuf, len, GET_AM_DEST(dest)));
+                ret = fi_injectdata(ep, sendbuf, len, nbytes, am_dest), poll_type);
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_inject for medium ashort failed: %d\n", ret);
 		header->callback(NULL, header);
 	} else {
             OFI_INJECT_RETRY(&gasnetc_ofi_locks.am_tx,
-                ret = fi_send(gasnetc_ofi_am_epfd, sendbuf, len, NULL, GET_AM_DEST(dest), &header->ctxt));
+                ret = fi_senddata(ep, sendbuf, len, NULL, nbytes, am_dest, &header->ctxt), poll_type);
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_send for medium am failed: %d\n", ret);
 		gasnetc_paratomic_increment(&pending_am,0);
 	}
@@ -974,6 +1226,19 @@ int gasnetc_ofi_am_send_long(gasnet_node_t dest, gasnet_handler_t handler,
     unsigned int len;
 	gasnetc_ofi_am_buf_t *header;
 	gasnetc_ofi_am_send_buf_t *sendbuf;
+    struct fid_ep* ep;
+    fi_addr_t am_dest;
+    int poll_type;
+    if (isreq) {
+        ep = gasnetc_ofi_request_epfd;
+        am_dest = GET_AM_REQUEST_DEST(dest);
+        poll_type = OFI_POLL_ALL;
+    } 
+    else {
+        ep = gasnetc_ofi_reply_epfd;
+        am_dest = GET_AM_REPLY_DEST(dest);
+        poll_type = OFI_POLL_REPLY;
+    }
 
 	if(isreq)
 		gasneti_assert (nbytes <= gasnet_AMMaxLongRequest());
@@ -981,29 +1246,26 @@ int gasnetc_ofi_am_send_long(gasnet_node_t dest, gasnet_handler_t handler,
 		gasneti_assert (nbytes <= gasnet_AMMaxLongReply());
 
 	/* Get a send buffer */
-	header = gasnetc_ofi_am_header();
+	header = gasnetc_ofi_am_header(isreq);
 
 	/* Fill in the arguments */
 	sendbuf = &header->sendbuf;
-	sendbuf->len = 0;
-	arglist = (gasnet_handlerarg_t*) sendbuf->data;
+	arglist = (gasnet_handlerarg_t*) sendbuf->long_buf.data;
 	for (i = 0 ; i < numargs ; ++i) {
 		arglist[i] = va_arg(argptr, gasnet_handlerarg_t);
-		sendbuf->len += sizeof(gasnet_handlerarg_t);
 	}
-	sendbuf->len = GASNETI_ALIGNUP(sendbuf->len, GASNETI_MEDBUF_ALIGNMENT);
-
+	len = sizeof(gasnet_handlerarg_t)*numargs;
 #if !GASNET_PSHM
 	if(dest == gasneti_mynode) {
 		memcpy(dest_addr, source_addr, nbytes);
 		sendbuf->type = OFI_AM_LONG;
 	} else
 #endif
-	if(sendbuf->len + nbytes < OFI_AM_MAX_DATA_LENGTH)
+	if(len + nbytes < long_rma_threshold)
 	{
 		/* Pack the payload if it's small enough */
-		memcpy(sendbuf->data + sendbuf->len, source_addr, nbytes);
-		sendbuf->len += nbytes;
+		memcpy(sendbuf->long_buf.data + len, source_addr, nbytes);
+		len += nbytes;
 		sendbuf->type = OFI_AM_LONG_MEDIUM;
 	} else {
 		/* Launch the long data payload transfer with RMA operation */
@@ -1015,7 +1277,7 @@ int gasnetc_ofi_am_send_long(gasnet_node_t dest, gasnet_handler_t handler,
 			GASNETC_OFI_LOCK_EXPR(&gasnetc_ofi_locks.rdma_tx, 
                 OFI_WRITE(gasnetc_ofi_rdma_epfd, source_addr, nbytes, dest, dest_addr, &lam_ctxt.ctxt));
 			while (ret == -FI_EAGAIN) {
-				GASNETC_OFI_POLL_EVERYTHING();
+				GASNETC_OFI_POLL_SELECTIVE(poll_type);
                 GASNETC_OFI_LOCK_EXPR(&gasnetc_ofi_locks.rdma_tx, 
 				    OFI_WRITE(gasnetc_ofi_rdma_epfd, source_addr, nbytes, dest, dest_addr, &lam_ctxt.ctxt));
 			}
@@ -1027,37 +1289,34 @@ int gasnetc_ofi_am_send_long(gasnet_node_t dest, gasnet_handler_t handler,
 			/* we send the am part after confirming the large rdma operation */
 			/* is successful. */
 			while(!lam_ctxt.data_sent) {
-				GASNETC_OFI_POLL_EVERYTHING();
+				GASNETC_OFI_POLL_SELECTIVE(poll_type);
 			}
 		sendbuf->type = OFI_AM_LONG;
 	}
+    len += offsetof(gasnetc_ofi_am_long_buf_t, data) + offsetof(gasnetc_ofi_am_send_buf_t, long_buf);
+    len = GASNETI_ALIGNUP(len, GASNETI_MEDBUF_ALIGNMENT);
 
 	/* Copy arg and handle into the buffer */
-	sendbuf->isreq = isreq;
 	sendbuf->handler = (uint8_t) handler;
 	sendbuf->sourceid = gasneti_mynode;
 	sendbuf->argnum = numargs;
-	sendbuf->dest_ptr = dest_addr;
-	sendbuf->nbytes = nbytes;
-
-	len = GASNETI_ALIGNUP(sendbuf->len + offsetof(gasnetc_ofi_am_send_buf_t, data), 
-			GASNETI_MEDBUF_ALIGNMENT);
+	sendbuf->long_buf.dest_ptr = dest_addr;
 
 #if !GASNET_PSHM
 	if (dest == gasneti_mynode) {
-		gasnetc_ofi_handle_local_am(header);
+		gasnetc_ofi_handle_local_am(header, isreq, len, nbytes);
 		return 0;
 	}
 #endif
 
 	if(len <= max_buffered_send) {
         OFI_INJECT_RETRY(&gasnetc_ofi_locks.am_tx,
-            ret = fi_inject(gasnetc_ofi_am_epfd, sendbuf, len, GET_AM_DEST(dest)));
+            ret = fi_injectdata(ep, sendbuf, len, nbytes, am_dest), poll_type);
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_inject for long ashort failed: %d\n", ret);
 		header->callback(NULL, header);
 	} else {
         OFI_INJECT_RETRY(&gasnetc_ofi_locks.am_tx,
-            ret = fi_send(gasnetc_ofi_am_epfd, sendbuf, len, NULL, GET_AM_DEST(dest), &header->ctxt));
+            ret = fi_senddata(ep, sendbuf, len, NULL, nbytes, am_dest, &header->ctxt), poll_type);
 
 		if (FI_SUCCESS != ret) gasneti_fatalerror("fi_send for long am failed: %d\n", ret);
 		gasnetc_paratomic_increment(&pending_am,0);
@@ -1128,7 +1387,7 @@ int gasnetc_rdma_put_non_bulk(gasnet_node_t dest, void* dest_addr, void* src_add
         msg.rma_iov_count = 1;
         
         OFI_INJECT_RETRY(&gasnetc_ofi_locks.rdma_tx,
-             ret = fi_writemsg(gasnetc_ofi_rdma_epfd, &msg, FI_INJECT | FI_DELIVERY_COMPLETE ));
+             ret = fi_writemsg(gasnetc_ofi_rdma_epfd, &msg, FI_INJECT | FI_DELIVERY_COMPLETE ), OFI_POLL_ALL);
         if_pf (FI_SUCCESS != ret)
             gasneti_fatalerror("fi_writemsg with FI_INJECT failed: %d\n", ret);
 
@@ -1165,7 +1424,7 @@ int gasnetc_rdma_put_non_bulk(gasnet_node_t dest, void* dest_addr, void* src_add
 
             OFI_INJECT_RETRY(&gasnetc_ofi_locks.rdma_tx,
                 OFI_WRITE(gasnetc_ofi_rdma_epfd, buf_container->buf, bytes_to_copy, 
-                    dest, dest_ptr, bbuf_ctxt));
+                    dest, dest_ptr, bbuf_ctxt), OFI_POLL_ALL);
 
             if_pf (FI_SUCCESS != ret)
                 gasneti_fatalerror("fi_writemsg for bounce buffered data failed: %d\n", ret);
@@ -1203,7 +1462,7 @@ gasnetc_rdma_put(gasnet_node_t dest, void *dest_addr, void *src_addr, size_t nby
 
     PERIODIC_RMA_POLL();
     OFI_INJECT_RETRY(&gasnetc_ofi_locks.rdma_tx,
-        OFI_WRITE(gasnetc_ofi_rdma_epfd, src_addr, nbytes, dest, dest_addr, ctxt_ptr));
+        OFI_WRITE(gasnetc_ofi_rdma_epfd, src_addr, nbytes, dest, dest_addr, ctxt_ptr), OFI_POLL_ALL);
 	if (FI_SUCCESS != ret)
 		gasneti_fatalerror("fi_write for normal message failed: %d\n", ret);
 	gasnetc_paratomic_increment(&pending_rdma,0);
@@ -1220,7 +1479,7 @@ gasnetc_rdma_get(void *dest_addr, gasnet_node_t dest, void * src_addr, size_t nb
     PERIODIC_RMA_POLL();
 
     OFI_INJECT_RETRY(&gasnetc_ofi_locks.rdma_tx,
-                     OFI_READ(gasnetc_ofi_rdma_epfd, dest_addr, nbytes, dest, src_addr, ctxt_ptr));
+        OFI_READ(gasnetc_ofi_rdma_epfd, dest_addr, nbytes, dest, src_addr, ctxt_ptr), OFI_POLL_ALL);
 
 	if (FI_SUCCESS != ret)
 		gasneti_fatalerror("fi_read failed: %d\n", ret);

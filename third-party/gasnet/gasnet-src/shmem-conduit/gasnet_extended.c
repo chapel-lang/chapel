@@ -275,8 +275,8 @@ typedef struct {
     int barrier_flags;
 } gasnete_barrier_state_t;
 
-#define BARRIER_INITVAL 0x1234567800000000LL
-#define BARRIER_ANONVAL 0x9abcdef000000000LL
+#define BARRIER_INITVAL ((uint64_t)0x1234567800000000ULL)
+#define BARRIER_ANONVAL ((uint64_t)0x9abcdef000000000ULL)
 
 static uint64_t barrier_value[2] = { BARRIER_INITVAL, BARRIER_INITVAL };
 static int  barrier_mismatch[2] = { 0, 0 };

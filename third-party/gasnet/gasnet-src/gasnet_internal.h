@@ -51,6 +51,9 @@ extern void gasneti_decode_args(int *argc, char ***argv);
 /* extract exit coordination timeout from environment vars (with defaults) */
 extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double dflt_factor, double lower_bound);
 
+/* parse a relative or absolute memory size from an environment var (with default) */
+extern uint64_t gasneti_getenv_memsize_withdefault(const char *key, const char *dflt, uint64_t minimum, uint64_t fraction_of);
+
 /* Safe memory allocation/deallocation 
    Beware - in debug mode, gasneti_malloc/gasneti_calloc/gasneti_free are NOT
    compatible with malloc/calloc/free
@@ -244,6 +247,12 @@ GASNETI_MALLOCP(_gasneti_strndup)
 
 extern void gasneti_freezeForDebugger(void);
 
+#if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+  // dynamic check for Linux flavor, to detect binary porting
+  // return non-zero iff this Linux system is actually Microsoft Windows Subsystem for Linux
+  extern int gasneti_platform_isWSL(void);
+#endif
+
 /* GASNET_DEBUG_VERBOSE is set by configure to request job startup and general 
    status messages on stderr 
 */
@@ -287,7 +296,7 @@ void gasneti_defaultSignalHandler(int sig);
   #define GASNETI_MMAP_OR_PSHM 1
   extern gasnet_seginfo_t gasneti_mmap_segment_search(uintptr_t maxsz);
  #if defined(HAVE_MMAP)
-  extern void gasneti_mmap_fixed(void *segbase, uintptr_t segsize);
+  extern void *gasneti_mmap_fixed(void *segbase, uintptr_t segsize);
   extern void *gasneti_mmap(uintptr_t segsize);
   extern void gasneti_munmap(void *segbase, uintptr_t segsize);
  #endif
@@ -374,12 +383,12 @@ uintptr_t gasneti_auxseg_preattach(uintptr_t client_request_sz);
 
 /* provide auxseg to GASNet components and init secondary segment arrays 
    requires gasneti_seginfo has been initialized to the correct values
+   exchangefn is used only for GASNET_SEGMENT_EVERYTHING and may be NULL
  */
-void gasneti_auxseg_attach(void);
+void gasneti_auxseg_attach(gasneti_bootstrapExchangefn_t exchangefn);
 
 #if GASNET_SEGMENT_EVERYTHING
-  extern void gasnetc_auxseg_reqh(gasnet_token_t token, void *buf, size_t nbytes, 
-                                  gasnet_handlerarg_t msg, gasnet_handlerarg_t offset);
+  extern void gasnetc_auxseg_reqh(gasnet_token_t token, void *buf, size_t nbytes, gasnet_handlerarg_t arg0);
   #define GASNETC_AUXSEG_HANDLERS() \
     gasneti_handler_tableentry_no_bits(gasnetc_auxseg_reqh)
 #endif

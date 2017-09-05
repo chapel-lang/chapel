@@ -176,10 +176,10 @@ void doit1(void) { GASNET_BEGIN_FUNCTION();
       { gasnet_AMRequestMedium0(mynode, hidx_justreply_medhandler, p, 0); });
 
     TIME_OPERATION("Loopback do-nothing gasnet_AMRequestLong0()",
-      { gasnet_AMRequestLong0(mynode, hidx_null_medhandler, p, 0, myseg); });
+      { gasnet_AMRequestLong0(mynode, hidx_null_longhandler, p, 0, myseg); });
 
     TIME_OPERATION("Loopback do nothing AM long request-reply",
-      { gasnet_AMRequestLong0(mynode, hidx_justreply_medhandler, p, 0, myseg); });
+      { gasnet_AMRequestLong0(mynode, hidx_justreply_longhandler, p, 0, myseg); });
 
     doit2();
 }
@@ -294,7 +294,7 @@ GASNETT_THREADKEY_DEFINE(key);
 void doit3(void) { 
   void * volatile x = 0;
   volatile gasnet_threadinfo_t ti;
-  volatile uintptr_t y = 0;
+  static volatile uintptr_t y = 0;
 
   TEST_SECTION_BEGIN();
   { GASNET_BEGIN_FUNCTION();
@@ -318,6 +318,8 @@ void doit3(void) {
    */
   TIME_OPERATION("GASNET_BEGIN_FUNCTION (" _STRINGIFY(TEST_PARSEQ) " mode)", 
       { GASNET_BEGIN_FUNCTION(); });
+  TIME_OPERATION("GASNET_BEGIN_FUNCTION (" _STRINGIFY(TEST_PARSEQ) " mode) w/possible use", 
+      { GASNET_BEGIN_FUNCTION(); if (y) y ^= (uintptr_t)GASNET_GET_THREADINFO(); });
   memset((void *)&ti,0,sizeof(ti));
   TIME_OPERATION("GASNET_POST_THREADINFO (" _STRINGIFY(TEST_PARSEQ) " mode)", 
       { GASNET_POST_THREADINFO(ti); });

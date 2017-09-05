@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "errorHandling.h"
 #include "expr.h"
+#include "postFold.h"
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"

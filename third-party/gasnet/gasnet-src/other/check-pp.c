@@ -1,5 +1,9 @@
 // Test program for gasnet_portable_platform.h
 
+#ifdef CONFIG_HEADER
+#include CONFIG_HEADER
+#endif
+
 #ifndef _CONCAT
 #define _CONCAT_HELPER(a,b) a ## b
 #define _CONCAT(a,b) _CONCAT_HELPER(a,b)

@@ -317,7 +317,7 @@ int main(int argc, char **argv)
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
 
     #ifdef GASNET_SEGMENT_EVERYTHING
-      if (maxsz > TEST_SEGSZ) { ERR("maxsz must be <= %lu on GASNET_SEGMENT_EVERYTHING",(unsigned long)TEST_SEGSZ); gasnet_exit(1); }
+      if (maxsz > TEST_SEGSZ) { ERR("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING",(uintptr_t)TEST_SEGSZ); gasnet_exit(1); }
     #endif
     GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
     test_init("testlarge",1, "[options] (iters) (maxsz) (test_sections)\n"
@@ -336,7 +336,7 @@ int main(int argc, char **argv)
     max_payload = maxsz;
 
     if (max_payload < min_payload) {
-      ERR("maxsz (%li) must be >= %li\n",(long)max_payload,(long)min_payload);
+      ERR("maxsz (%"PRIuPTR") must be >= %"PRIuPTR"\n",(uintptr_t)max_payload,(uintptr_t)min_payload);
       test_usage();
     }
 
@@ -384,13 +384,13 @@ int main(int argc, char **argv)
         assert(((uintptr_t)msgbuf) % PAGESZ == 0);
 
         if (myproc == 0) 
-          MSG("Running %i iterations of %s%s%sbulk put/get with local addresses %sside the segment for sizes: %li...%li\n", 
+          MSG("Running %i iterations of %s%s%sbulk put/get with local addresses %sside the segment for sizes: %"PRIuPTR"...%"PRIuPTR"\n", 
           iters, 
           (firstlastmode ? "first/last " : ""),
           (fullduplexmode ? "full-duplex ": ""),
           (crossmachinemode ? "cross-machine ": ""),
           insegment ? "in" : "out", 
-          (long)min_payload, (long)max_payload);
+          (uintptr_t)min_payload, (uintptr_t)max_payload);
         BARRIER();
 
         if (iamsender && !skipwarmup) { /* pay some warm-up costs */

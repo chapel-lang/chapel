@@ -312,7 +312,7 @@ extern void gasnete_init(void) {
         gasnete_eop_free(eop);
     }
 
-    gasnete_mxm_max_outstanding_msgs = gasneti_getenv_int_withdefault("GASNET_MXM_MAX_OUTSTANDING_MSGS", 500, 1);
+    gasnete_mxm_max_outstanding_msgs = gasneti_getenv_int_withdefault("GASNET_MXM_MAX_OUTSTANDING_MSGS", 500, 0);
     /* Initialize barrier resources */
     gasnete_barrier_init();
 

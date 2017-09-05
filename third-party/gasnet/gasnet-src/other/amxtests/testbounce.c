@@ -25,7 +25,7 @@ uint32_t *VMseg;
 static void large_request_handler(void *token, void *buf, int nbytes, int arg) {
   uint32_t *recvdbuf = (uint32_t *)buf;
   #if VERBOSE
-    printf("%i: large_request_handler(). starting...", myproc); fflush(stdout);
+    printf("%i: large_request_handler(). starting...\n", myproc); fflush(stdout);
   #endif
 
   assert(arg == 666);
@@ -46,7 +46,7 @@ static void large_request_handler(void *token, void *buf, int nbytes, int arg) {
   }
 
   #if VERBOSE
-    printf("%i: large_request_handler(). sending reply...", myproc); fflush(stdout);
+    printf("%i: large_request_handler(). sending reply...\n", myproc); fflush(stdout);
   #endif
 
 

@@ -43,7 +43,13 @@ Recognized environment variables:
 Known problems:
 ---------------
 
-* See the GASNet Bugzilla server for details on known bugs:
+* Bug 3480
+  It has been observed on Cray systems running CLE6 that following a call to
+  munmap(), there may be a delay before the physical page frames are available
+  for reallocation.  For more details see gemini-conduit/README (source), or
+  share/doc/gasnet/README-{aries,gemini} (installed).
+
+* See the GASNet Bugzilla server for details on other known bugs:
   http://gasnet-bugs.lbl.gov/
 
 Future work:

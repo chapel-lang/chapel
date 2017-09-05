@@ -636,11 +636,13 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     ==  true  &&
         lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
         requiresImplicitDestroy(rhs)        ==  true) {
-      // this still seems to be necessary even if
-      // isUserDefinedRecord(lhsSym->type) == true
-      // see call-expr-tmp.chpl for example
-      lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
-      lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+      if (isUserDefinedRecord(lhsSym->type) == false) {
+        lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
+        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      } else {
+        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
     }
 
     if (isReferenceType(lhsSym->type)                          == true  ||
@@ -660,6 +662,31 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
   } else {
     INT_ASSERT(false);
   }
+}
+
+bool requiresImplicitDestroy(CallExpr* call) {
+  bool retval = false;
+
+  if (FnSymbol* fn = call->resolvedFunction()) {
+    FnSymbol* parent = call->getFunction();
+
+    if (parent->hasFlag(FLAG_DONOR_FN)                        == false &&
+        isRecord(fn->retType)                                 == true  &&
+        fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
+        fn->isIterator()                                      == false &&
+        fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
+        fn->hasFlag(FLAG_DONOR_FN)                            == false &&
+        fn->hasFlag(FLAG_INIT_COPY_FN)                        == false &&
+        fn->hasFlag(FLAG_AUTO_II)                             == false &&
+        fn->hasFlag(FLAG_CONSTRUCTOR)                         == false &&
+        fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)                    == false &&
+        strcmp(fn->name, "=")                                 !=     0 &&
+        strcmp(fn->name, "_defaultOf")                        !=     0) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************

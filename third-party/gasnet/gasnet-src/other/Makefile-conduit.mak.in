@@ -248,7 +248,7 @@ do-uninstall-local:
 
 do-error: 
 	@echo "ERROR: $(CONDUIT_NAME)-conduit support was not detected at configure time"
-	@hecho "       try re-running configure with --enable-$(CONDUIT_NAME)"
+	@echo "       try re-running configure with --enable-$(CONDUIT_NAME)"
 	@exit 1
 
 $(top_builddir)/other/Makefile-conduit.mak: $(top_srcdir)/other/Makefile-conduit.mak.in
@@ -275,11 +275,11 @@ $(CONDUIT_NAME)-seq.mak: $(make_fragment_deps)
 	$(MAKE) do-make-fragment thread_model=seq THREAD_MODEL=SEQ
 
 $(CONDUIT_NAME)-par.mak: $(make_fragment_deps)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	$(MAKE) do-make-fragment thread_model=par THREAD_MODEL=PAR
 
 $(CONDUIT_NAME)-parsync.mak: $(make_fragment_deps)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	$(MAKE) do-make-fragment thread_model=parsync THREAD_MODEL=PARSYNC
 
 do-make-fragment: force
@@ -302,11 +302,11 @@ gasnet-$(CONDUIT_NAME)-seq.pc: $(CONDUIT_NAME)-seq.mak $(pkgconfig_conduit)
 	@$(MAKE) do-pkgconfig-conduit thread_model=seq pkgconfig_file="$@" FRAGMENT="$<"
 
 gasnet-$(CONDUIT_NAME)-par.pc: $(CONDUIT_NAME)-par.mak $(pkgconfig_conduit)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	@$(MAKE) do-pkgconfig-conduit thread_model=par pkgconfig_file="$@" FRAGMENT="$<"
 
 gasnet-$(CONDUIT_NAME)-parsync.pc: $(CONDUIT_NAME)-parsync.mak $(pkgconfig_conduit)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	@$(MAKE) do-pkgconfig-conduit thread_model=parsync pkgconfig_file="$@" FRAGMENT="$<"
 
 do-pkgconfig-conduit: force
