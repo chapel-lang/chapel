@@ -65,6 +65,11 @@
   "d20c5afc-1d7e-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/ifa/num.cpp"
   ],
+  "081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5": [
+    "compiler/include/clangBuiltinsWrappedSet.h",
+    "runtime/include/llvm/chapel_libc_wrapper.h",
+    "runtime/include/llvm/clang_builtins_wrapper.h"
+  ],
   "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/codegen.h"
   ],
