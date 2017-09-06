@@ -16,11 +16,10 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv amudprun gasnet gmp hwloc jemalloc libunwind qthread llvm
+all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
-	cd amudprun && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
@@ -34,7 +33,6 @@ clean: FORCE
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
-	cd amudprun && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
@@ -48,7 +46,6 @@ cleanall: FORCE
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
-	cd amudprun && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
@@ -77,7 +74,6 @@ SRC_FILES_FILTER += -iname '*.h++' -o -iname '*.tcc' -o -iname '*.cp'
 # Find 3rd party dependencies -- arg 1 is src dir, arg 2 is top-level dir with Makefiles/README
 find_3p_depend = $(shell find $(1) $(SRC_FILES_FILTER) 2>/dev/null) $(2)/Makefile* $(2)/README
 
-AMUDPRUN_DEPEND       := $(call find_3p_depend, $(AMUDPRUN_SRC_DIR),      $(AMUDPRUN_DIR))
 GASNET_DEPEND         := $(call find_3p_depend, $(GASNET_SUBDIR),         $(GASNET_DIR))
 GMP_DEPEND            := $(call find_3p_depend, $(GMP_SUBDIR),            $(GMP_DIR))
 HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_SUBDIR),          $(HWLOC_DIR))
@@ -95,11 +91,6 @@ $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chpldoc-venv
-
-amudprun: $(AMUDPRUN_INSTALL_DIR)
-$(AMUDPRUN_INSTALL_DIR): $(AMUDPRUN_DEPEND)
-	rm -rf $(AMUDPRUN_INSTALL_DIR) && rm -rf $(AMUDPRUN_BUILD_DIR)
-	cd amudprun && $(MAKE)
 
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)

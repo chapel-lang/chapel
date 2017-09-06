@@ -10,11 +10,31 @@
 use DistributedIters;
 
 /*
+  Test mode (iterator):
+
+  - ``dynamic``
+    The distributed dynamic load-balancing iterator.
+
+  - ``guided``
+    The distributed guided load-balancing iterator.
+*/
+enum iterator
+{
+  dynamic,
+  guided
+};
+
+/*
+  Used to select the test mode (which iterator to use). Defaults to ``guided``.
+  See :data:`iterator` for more information.
+*/
+config const mode:iterator = iterator.guided;
+
+/*
   Control variables. These determine the test variables (defined later) and
   help us check correctness.
 */
 config const n:int = 1000;
-config const numTasks:int = 0;
 
 const controlRange:range = 1..n;
 const controlRangeStrided = (controlRange by 2);
@@ -66,41 +86,66 @@ if numLocales > 1 then
 /*
   Main testing functions.
 */
+proc testIteratorSerial(c)
+{
+  var array:[c]int;
+  select mode
+  {
+    when iterator.dynamic do for i in distributedDynamic(c)
+                             do array[i] = (array[i] + 1);
+    when iterator.guided do for i in distributedGuided(c)
+                            do array[i] = (array[i] + 1);
+  }
+  checkCorrectness(array, c);
+}
+
+proc testIteratorZippered(array,
+                          target,
+                          base,
+                          workerLocales,
+                          coordinated)
+{
+  select mode
+  {
+    when iterator.dynamic
+    {
+      forall (i,j) in zip(distributedDynamic(target,
+                                             coordinated=coordinated,
+                                             workerLocales=workerLocales),
+                          base # target.size)
+      do array[i,j] = (array[i,j] + 1);
+    }
+    when iterator.guided
+    {
+      forall (i,j) in zip(distributedGuided(target,
+                                            coordinated=coordinated,
+                                            workerLocales=workerLocales),
+                          base # target.size)
+      do array[i,j] = (array[i,j] + 1);
+    }
+  }
+  checkCorrectnessZippered(array, target, base);
+}
+
 proc testRangesAndDomainsSerial()
 {
   /*
     Range inputs.
   */
   writeln("Testing a range, non-strided (serial)...");
-  var rNSS:[controlRange]int;
-  for i in distributedGuided(controlRange,
-                             numTasks=numTasks)
-  do rNSS[i] = (rNSS[i] + 1);
-  checkCorrectness(rNSS, controlRange);
+  testIteratorSerial(controlRange);
 
   writeln("Testing a range, strided (serial)...");
-  var rSS:[controlRangeStrided]int;
-  for i in distributedGuided(controlRangeStrided,
-                             numTasks=numTasks)
-  do rSS[i] = (rSS[i] + 1);
-  checkCorrectness(rSS, controlRangeStrided);
+  testIteratorSerial(controlRangeStrided);
 
   /*
     Domain inputs.
   */
   writeln("Testing a domain, non-strided (serial)...");
-  var dNSS:[controlDomain]int;
-  for i in distributedGuided(controlDomain,
-                             numTasks=numTasks)
-  do dNSS[i] = (dNSS[i] + 1);
-  checkCorrectness(dNSS, controlDomain);
+  testIteratorSerial(controlDomain);
 
   writeln("Testing a domain, strided (serial)...");
-  var dSS:[controlDomainStrided]int;
-  for i in distributedGuided(controlDomainStrided,
-                             numTasks=numTasks)
-  do dSS[i] = (dSS[i] + 1);
-  checkCorrectness(dSS, controlDomainStrided);
+  testIteratorSerial(controlDomainStrided);
 }
 
 proc testRangesAndDomainsZippered(workerLocales=Locales, coordinated=false)
@@ -109,47 +154,40 @@ proc testRangesAndDomainsZippered(workerLocales=Locales, coordinated=false)
     Range inputs.
   */
   writeln("Testing a range, non-strided (zippered)...");
-  var rNSZ:[controlRange, controlRange]int;
-  forall (i,j) in zip(distributedGuided(controlRange,
-                                        coordinated=coordinated,
-                                        numTasks=numTasks,
-                                        workerLocales=workerLocales),
-                      controlRange)
-  do rNSZ[i,j] = (rNSZ[i,j] + 1);
-  checkCorrectnessZippered(rNSZ, controlRange, controlRange);
+  var arrayRNS:[controlRange, controlRange]int;
+  testIteratorZippered(array=arrayRNS,
+                       target=controlRange,
+                       base=controlRange,
+                       workerLocales=workerLocales,
+                       coordinated=coordinated);
 
   writeln("Testing a range, strided (zippered)...");
-  var rSZ:[controlRangeStrided, controlRange]int;
-  forall (i,j) in zip(distributedGuided(controlRangeStrided,
-                                        coordinated=coordinated,
-                                        numTasks=numTasks,
-                                        workerLocales=workerLocales),
-                      (controlRange # controlRangeStrided.size))
-  do rSZ[i,j] = (rSZ[i,j] + 1);
-  checkCorrectnessZippered(rSZ, controlRangeStrided, controlRange);
+  var arrayRS:[controlRangeStrided, controlRange]int;
+  testIteratorZippered(array=arrayRS,
+                       target=controlRangeStrided,
+                       base=controlRange,
+                       workerLocales=workerLocales,
+                       coordinated=coordinated);
 
   /*
     Domain inputs.
   */
   writeln("Testing a domain, non-strided (zippered)...");
-  var dNSZ:[controlRange, controlRange]int;
-  forall (i,j) in zip(distributedGuided(controlDomain,
-                                        coordinated=coordinated,
-                                        numTasks=numTasks,
-                                        workerLocales=workerLocales),
-                      controlDomain)
-  do dNSZ[i,j] = (dNSZ[i,j] + 1);
-  checkCorrectnessZippered(dNSZ, controlDomain, controlDomain);
+  var arrayDNS:[controlRange, controlRange]int;
+  testIteratorZippered(array=arrayDNS,
+                       target=controlDomain,
+                       base=controlDomain,
+                       workerLocales=workerLocales,
+                       coordinated=coordinated);
 
   writeln("Testing a domain, strided (zippered)...");
-  var dSZ:[controlRangeStrided, controlRange]int;
-  forall (i,j) in zip(distributedGuided(controlDomainStrided,
-                                        coordinated=coordinated,
-                                        numTasks=numTasks,
-                                        workerLocales=workerLocales),
-                      (controlDomain # controlDomainStrided.size))
-  do dSZ[i,j] = (dSZ[i,j] + 1);
-  checkCorrectnessZippered(dSZ, controlDomainStrided, controlDomain);
+  var arrayDS:[controlRangeStrided, controlRange]int;
+  testIteratorZippered(array=arrayDS,
+                       target=controlDomainStrided,
+                       base=controlDomain,
+                       workerLocales=workerLocales,
+                       coordinated=coordinated);
+
 }
 
 /*

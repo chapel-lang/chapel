@@ -478,7 +478,6 @@ void myth_chpl_create(chpl_bool is_executeOn,
                          lineno,
                          id,
                          is_executeOn);
-  arg->countRunning = false;
   arg->is_executeOn = is_executeOn;
   arg->lineno = lineno;
   arg->filename = filename;

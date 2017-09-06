@@ -48,6 +48,8 @@ extern AggregateType* dtTuple;
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDecRunningTask;
+extern FnSymbol *gChplIncRunningTask;
 extern FnSymbol *gChplDoDirectExecuteOn;
 extern FnSymbol *gBuildTupleType;
 extern FnSymbol *gBuildTupleTypeNoRef;
@@ -58,7 +60,8 @@ extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gGetDynamicEndCount;
 extern FnSymbol *gSetDynamicEndCount;
 extern FnSymbol *gChplUncaughtError;
+extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gSaveTaskErrorFn;
-
+extern FnSymbol *gSaveLineInErrorFn;
 
 #endif

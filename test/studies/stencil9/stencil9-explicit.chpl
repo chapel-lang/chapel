@@ -1,4 +1,4 @@
-use BlockDist, Barrier;
+use BlockDist, Barriers;
 
 config const n = 10;
 

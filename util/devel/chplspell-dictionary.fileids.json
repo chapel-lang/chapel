@@ -284,6 +284,9 @@
   "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/tools/chpldoc/chpldoc.rst"
   ],
+  "f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "doc/rst/tools/mason/mason.rst"
+  ],
   "7ada2798-4027-11e6-907f-843835579daa": [
     "doc/rst/users-guide/base/forloops.rst"
   ],
@@ -375,6 +378,12 @@
   ],
   "2127a88e-1f1a-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/Curl.chpl"
+  ],
+  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "modules/packages/DistributedBag.chpl"
+  ],
+  "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "modules/packages/DistributedDeque.chpl"
   ],
   "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/FFTW.chpl"

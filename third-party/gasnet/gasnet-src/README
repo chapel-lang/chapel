@@ -25,6 +25,7 @@ Contents of this file:
  * Building and Installing GASNet
  * Basic Usage Information
  * Conduit Status
+ * Single-node Development Options
  * Supported Platforms
  * Recognized Environment Variables
  * GASNet tracing & statistical collection
@@ -62,6 +63,33 @@ a library of communication-independent portability tools called the "GASNet tool
 which are used in the conduit implementations and also made available to clients
 (see README-tools for details).
 
+System Requirements
+===================
+GASNet is extremely portable, and runs on most systems that are relevant to HPC
+production or development (and many that are not).
+
+The minimum system requirements are:
+
+ * A POSIX-like environment, e.g. Linux or another version of Unix.
+   For Windows systems, the free 'Cygwin' toolkit (http://www.cygwin.com/).
+   For Mac systems, the free 'XCode command-line tools' from the Apple Store.
+ * Make (we recommend GNU make version 3.79 or newer).
+ * Perl (version 5.005 or newer).
+ * The following standard Unix tools: 'awk', 'sed', 'env', 'basename', 'dirname',
+   and a Bourne-compatible shell (e.g. bash).
+ * A C compiler with at least minimal C99 support.
+
+We explicitly support most OS's, architectures and compilers in widespread use today.
+See the 'Supported Platforms' section for details on systems we've recently validated.
+
+Most distributed-memory GASNet conduits have additional requirements, based on their
+interactions with network hardware and other implementation details. For example:
+
+ * mpi-conduit requires an MPI-1.1 or newer compliant MPI implementation.
+ * udp-conduit requires POSIX socket libraries and a C++98 or newer compiler.
+
+See each conduit README for additional details on system requirements.
+
 Building and Installing GASNet
 ==============================
 Here are the steps to build GASNet:
@@ -78,9 +106,8 @@ GASNet" in README-devel (in the GASNet git repo).
 current working directory.  You can run configure from a different directory to
 place your build files somewhere other than inside the source tree (a nice
 option when maintaining several build trees on the same source tree). 
-  Unlike many other configure-based software, GASNet's configure will ignore
-any setting of CFLAGS or CXXFLAGS.  Therefore, any flags that are required
-(e.g. for the correct ABI) must be included in the values of CC, CXX and MPI_CC.
+Any compiler flags required for correct operation on your system (e.g. to 
+select the correct ABI) should be included in the values of CC, CXX and MPI_CC.
 For example to build 32-bit code when your gcc and g++ default to 64-bit:
   configure CC='gcc -m32' CXX='g++ -m32' MPI_CC='mpicc -m32'
 or similarly, if you want libgasnet to contain debugging symbols:
@@ -101,10 +128,6 @@ or similarly, if you want libgasnet to contain debugging symbols:
     --enable-debug-malloc - use GASNet debugging malloc (see usage info below)
     --enable-segment-{fast,large,everything} - select a GASNet segment 
       configuration (see the GASNet spec for more info)
-    --enable-strict-prototypes - Use strict prototypes in GASNet headers
-      At the expense of slight deviation from the GASNet specification, this
-      option will ensure GASNet's public headers use prototypes that are
-      compatible with the -Wstrict-prototypes flag to gcc and work-alikes.
     --{enable,disable}-smp-safe - Build GASNet for an SMP or uni-processor.
       These options are not normally necessary, since by default configure
       will probe the machine to determine if it is an SMP.  However:
@@ -400,6 +423,42 @@ shmem-conduit: SGI Altix / Cray X1 Shmem   *DEPRECATED*
  and it is officially deprecated. 
  If you have interest in this conduit please contact us!
 
+Single-node Development Options
+===============================
+
+GASNet supports hardware configurations ranging from HPC supercomputers and
+clusters to individual workstations and laptops.  Often the easiest way to
+develop and debug code is in a single-node environment, so this section
+provides conduit recommendations for development.  It should also be noted
+that configure option --enable-debug is highly recommended for finding bugs
+when developing GASNet client code.
+
+Option 1.  smp-conduit
+----------------------
+This is a pure shared-memory implementation and should be the fastest and
+easiest to use option.  GASNet's shared memory support should work "out of
+the box" (no special configuration options required) on common laptop,
+desktop, and workstation environments, including Linux, MacOS, Windows with
+Cygwin, and Solaris.
+
+Option 2.  udp-conduit
+----------------------
+By default this will be a shared-memory implementation within your single
+node, indistinguishable from smp-conduit except for small issues like job
+launch and stdin/out/err handling.  However, one can disable shared memory
+(by passing --disable-pshm at configure time or by setting the environment
+variable GASNET_SUPERNODE_MAXSIZE=1 at runtime).  This may be more realistic
+for testing of the expected behaviors in multi-node systems.
+
+Option 3.  mpi-conduit
+----------------------
+If you have a MPI installed (and in your $PATH when GASNet is configured)
+then everything said for udp-conduit holds true for mpi-conduit, including
+the ability to disable shared-memory support.  Additionally, since MPI will
+very likely use shared-memory internally, you can get multi-node like
+isolation at the GASNet level with the performance of shared-memory
+communication (much better than udp).
+
 Supported Platforms
 ===================
 
@@ -437,6 +496,8 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Solaris11/x86/gcc,SunStudio12/{32,64}: smp, udp, mpi, ibv
 
     * MSWindows-Cygwin/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi (OpenMPI)
+    * MSWindows10-Linux/{gcc,clang}/64: smp, udp, mpi, BETA
+
 
     * MacOSX/PowerPC/{gcc,xlc}/{32,64}: smp, udp, mpi
     * MacOSX/{x86,x86_64}/{gcc,icc,clang}/{32,64}: smp, udp, mpi
@@ -465,6 +526,7 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
 % = System lacks pthreads or they are broken
 & = System has not been tested in recent releases due to lack of access.
     Reports of success or failure on this system are strongly encouraged.
+BETA = Support for this system is in beta state, please report your experiences.
 
 This list is not meant to be exhaustive.
 Other combinations of the platforms above are likely to also work, these are

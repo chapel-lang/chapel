@@ -119,3 +119,7 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
   *local = chpl_macro_tmp;
 }
 
+uint8_t* chpl__getInPlaceBufferData(chpl__inPlaceBuffer* buf) {
+  return buf->data;
+}
+

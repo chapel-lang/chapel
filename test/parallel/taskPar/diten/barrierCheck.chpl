@@ -1,4 +1,4 @@
-use Barrier;
+use Barriers;
 
 config const nTasks = 4;
 config const printSpinCount = false;

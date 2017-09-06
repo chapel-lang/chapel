@@ -61,7 +61,7 @@ extern void AMUDP_InitRetryCache() {
   #if 0  // for debugging retry calc
     for (int i=0; i < STATIC_RETRIES*2; i++) {
       amudp_cputick_t tick = REQUEST_TIMEOUT_TICKS(i);
-      printf("Timeout %2i: %9llu us, %9llu ticks\n",i,(unsigned long long)tick/us2ticks(1),(unsigned long long)tick);
+      printf("Timeout %2i: %9" PRIu64 " us, %9" PRIu64 " ticks\n",i,tick/us2ticks(1),tick);
     }
   #endif
 }
@@ -138,13 +138,13 @@ static amudp_node_t sourceAddrToId(ep_t ep, en_t sourceAddr, amudp_node_t hint) 
   amudp_perproc_info_t * const pinfo = ep->perProcInfo;
   // hint values are 8-bit, try all the matching entries
   for (amudp_node_t i = hint; i < ep->P; i += 256) {
-    register en_t const name = pinfo[i].remoteName;
+    en_t const name = pinfo[i].remoteName;
     if (enEqual(name, sourceAddr)) return i;
   }
   AMUDP_VERBOSE_INFO(("sourceAddrToId hint missed: hint=%i",(int)hint));
   // hint may be wrong with non-uniform translation tables, brute-force scan
   for (amudp_node_t i = 0; i < ep->P; i++) {
-    register en_t const name = pinfo[i].remoteName;
+    en_t const name = pinfo[i].remoteName;
     if (enEqual(name, sourceAddr)) return i;
   }
   return INVALID_NODE;
@@ -218,6 +218,7 @@ static amudp_node_t sourceAddrToId(ep_t ep, en_t sourceAddr, amudp_node_t hint) 
  * Linux (FIONREAD) and Solaris (I_NREAD) get this right, 
  * but all other systems seem to get it wrong, one way or another.
  * Cygwin: (bug 3284) not implemented
+ * WSL (4/8/17) returns raw byte count, which can over or under-report
  * FreeBSD: (bug 2827) returns raw byte count, which can over or under-report
  * others: over-report by returning total bytes in all messages waiting
  */

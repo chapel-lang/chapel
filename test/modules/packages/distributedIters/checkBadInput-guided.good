@@ -1,0 +1,1 @@
+checkBadInput-guided.chpl:16: error: assert failed - DistributedIters: Guided iterator (serial): must use a valid domain or range

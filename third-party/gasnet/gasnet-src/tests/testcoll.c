@@ -57,6 +57,8 @@ static void randomize(thread_data_t *td) {
   local_barrier();
   if (td->local_id == 0) {
     int i;
+    static int srand_phase = 1;
+    TEST_SRAND(srand_phase++);
     for (i=0; i<iters; ++i) {
       R[i] = TEST_RAND(0,1000000000);
     }
@@ -510,7 +512,6 @@ int main(int argc, char **argv)
     MSG0("Running coll test(s) with %d iterations.", iters);
 
     R = test_malloc(iters*sizeof(int));
-    TEST_SRAND(1);
 
     /* Number if ints to store */
 

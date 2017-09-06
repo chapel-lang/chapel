@@ -131,10 +131,14 @@ use BLAS;
 /* Return a vector (1D array) over domain ``{0..#length}``*/
 proc Vector(length, type eltType=real) {
   if (length <= 0) then halt("Vector length must be > 0");
-  var V: [0..#length] eltType;
-  return V;
+  return Vector(0..#length, eltType);
 }
 
+
+/* Return a vector (1D array) over domain ``{space}`` */
+proc Vector(space: range, type eltType=real) {
+  return Vector({space}, eltType);
+}
 
 /* Return a vector (1D array) over domain ``Dom`` */
 proc Vector(Dom: domain(1), type eltType=real) {
@@ -169,7 +173,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
   V[0] = x: eltType;
 
-  for i in 1..n do V[i] = Scalars[i]: eltType;
+  forall i in 1..n do V[i] = Scalars[i]: eltType;
 
   return V;
 }
@@ -178,23 +182,33 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 /* Return a square matrix (2D array) over domain ``{0..#rows, 0..#rows}``*/
 proc Matrix(rows, type eltType=real) where isIntegral(rows) {
   if rows <= 0 then halt("Matrix dimensions must be > 0");
-  var M: [0..#rows, 0..#rows] eltType;
-  return M;
+  return Matrix(0..#rows, 0..#rows, eltType);
 }
 
 
 /* Return a matrix (2D array) over domain ``{0..#rows, 0..#cols}``*/
 proc Matrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(cols) {
   if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
-  var M: [0..#rows, 0..#cols] eltType;
-  return M;
+  return Matrix(0..#rows, 0..#cols, eltType);
+}
+
+
+/* Return a square matrix (2D array) over domain ``{space, space}`` */
+proc Matrix(space: range, type eltType=real) {
+  return Matrix({space, space}, eltType);
+}
+
+
+/* Return a matrix (2D array) over domain ``{rowSpace, colSpace}`` */
+proc Matrix(rowSpace: range, colSpace: range, type eltType=real) {
+  return Matrix({rowSpace, colSpace}, eltType);
 }
 
 
 /* Return a matrix (2D array) over domain ``Dom`` */
 proc Matrix(Dom: domain(2), type eltType=real) where Dom.rank == 2 {
-  var M: [Dom] eltType;
-  return M;
+  var A: [Dom] eltType;
+  return A;
 }
 
 
@@ -579,89 +593,73 @@ private inline proc _raw(D: domain(1), i) {
    Return a Vector containing the diagonal elements of ``A`` if the argument ``A`` is of rank 2.
    Return a diagonal Matrix whose diagonal contains elements of ``A`` if argument ``A`` is of rank 1.
  */
-proc diag(A: [?Adom] ?eltType, k=0){
-  //This should be printed at compile time-"This function only supports 0-based non-strided arrays,
-  //including the vectors and matrices created from this module."
-
-  if(Adom.rank == 2) then{
-    if(k==0) then{
+proc diag(A: [?Adom] ?eltType, k=0) {
+  if (Adom.rank == 2) {
+    if (k == 0) then
       return _diag_vec(A);
-    }
-    else{
+    else
       return _diag_vec(A, k);
-    }
   }
-  else if(Adom.rank == 1) then {
+  else if (Adom.rank == 1) then
     return _diag_mat(A);
-  }
-  else{
-    compilerError("A must have rank 2 or less");
-  }
-
+  else compilerError("A must have rank 2 or less");
 }
 
-private proc _diag_vec(A:[?Adom] ?eltType){
+private proc _diag_vec(A:[?Adom] ?eltType) {
+  const (m, n) = Adom.shape;
+  const d = if m < n then 1 else 2;
+  const dim = Adom.dim(d);
 
-  //better way to do this if type of Adom.dim(1) and Adom.dim(2) can be determined
-  if(Adom.dim(1).length<Adom.dim(2).length) then{
-    var diagonal = Vector(Adom.dim(1).length, eltType);
-    forall i in Adom.dim(1) do{
-      diagonal[i] = A[i,i];
-    }
-    return diagonal;
-  }
-  else{
-    var diagonal = Vector(Adom.dim(2).length, eltType);
-    forall i in Adom.dim(2) do{
-      diagonal[i] = A[i,i];
-    }
-    return diagonal;
-  }
+  var diagonal = Vector(dim, eltType);
+
+  forall i in dim do
+    diagonal[i] = A[i,i];
+
+  return diagonal;
 }
 
-private proc _diag_vec(A:[?Adom] ?eltType, k){
-  if(k>0){
-    //Upper diagonal
-    if(Adom.dim(2).length<k) then halt("k is out of range");
-    var length:int;
-    if((Adom.dim(2).length-k)<Adom.dim(1).length) then{
-      length = Adom.dim(2).length - k;
-    }
-    else{
-      length = Adom.dim(1).length;
-    }
-    var diagonal = Vector(length, eltType);
-    forall i in Adom.dim(1)(..length-1) do{
-      diagonal[i] = A[i,i+k];
-    }
+private proc _diag_vec(A:[?Adom] ?eltType, k) {
+  const (m, n) = Adom.shape;
+  const d = if m < n then 1 else 2;
+  const dim = Adom.dim(d);
+
+  if k > 0 {
+    // Upper diagonal
+    if m < k then halt("k is out of range");
+
+    var length = min(m, n - k);
+    const space = dim.first..#length;
+    var diagonal = Vector(space, eltType);
+
+    forall i in space do
+      diagonal[i] = A[i, i+k];
+
     return diagonal;
   }
   else{
-    //Lower diagonal
-    if(Adom.dim(1).length<abs(k)) then halt("k is out of range");
-    var length:int;
-    if((Adom.dim(1).length-abs(k))<Adom.dim(2).length) then {
-      length = Adom.dim(1).length - abs(k);
-    }
-    else{
-      length = Adom.dim(2).length;
-    }
-    var diagonal = Vector(length, eltType);
-    forall i in Adom.dim(1)(..length-1) do{
-      diagonal[i] = A[i+abs(k),i];
-    }
+    // Lower diagonal
+    const K = abs(k);
+    if m < K then halt("k is out of range");
+
+    var length = min(n, m - K);
+    const space = dim.first..#length;
+    var diagonal = Vector(space, eltType);
+
+    forall i in space do
+      diagonal[i] = A[i+K, i];
+
     return diagonal;
   }
 }
 
 private proc _diag_mat(A:[?Adom] ?eltType){
-  var diagonal = Matrix(Adom.dim(1).length, eltType);
-  forall i in Adom.dim(1) do{
+  var diagonal = Matrix(Adom.dim(1), eltType);
+
+  forall i in Adom.dim(1) do
     diagonal[i, i] = A[i];
-  }
+
   return diagonal;
 }
-
 
 
 /*

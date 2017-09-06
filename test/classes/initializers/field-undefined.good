@@ -1,0 +1,2 @@
+field-undefined.chpl:6: In initializer:
+field-undefined.chpl:9: error: 'c' undeclared (first use this function)

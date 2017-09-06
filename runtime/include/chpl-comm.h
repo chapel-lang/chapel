@@ -67,6 +67,8 @@ extern ptr_wide_ptr_t chpl_globals_registry[];
 
 extern void* const chpl_private_broadcast_table[];
 
+extern void* const chpl_global_serialize_table[];
+
 extern const int chpl_heterogeneous;
 
 
@@ -501,6 +503,8 @@ void chpl_stopCommDiagnosticsHere(void);
 void chpl_gen_stopCommDiagnosticsHere(void);
 void chpl_resetCommDiagnosticsHere(void);
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
+
+void* chpl_get_global_serialize_table(int64_t idx);
 
 #else // LAUNCHER
 

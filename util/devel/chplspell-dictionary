@@ -3621,6 +3621,7 @@ FILEID: 24a5f32a-792f-11e6-807a-843835579daa
 eterm
 intvl
 lzmq
+pyzmq
 rcvhwm
 rcvmore
 rcvtimeo
@@ -4324,16 +4325,27 @@ wmikanik
 FILEID: 3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5
 fieldtag
 linetokens
+ptrhold
 tablename
 tblname
 tblpath
 tokenlist
 
 FILEID: 6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5
+getcid
 todelete
 
 FILEID: a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5
 multipledestructor
+
+FILEID: 733029d2-8aba-11e7-b3f1-10ddb1d4c3d5
+deadcode
+
+FILEID: 838b0068-8aba-11e7-b3f1-10ddb1d4c3d5
+mpmc
+
+FILEID: f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5
+ivrs
 
 NATURAL:
 abcd
@@ -4432,6 +4444,7 @@ backquotes
 backticks
 backtics
 backtraces
+balancer
 balensiefer
 balinese
 bandaid
@@ -4499,6 +4512,7 @@ brandon
 brandt
 branimir
 briggs
+broadcasted
 broadwell
 bruce
 bsouth
@@ -4742,6 +4756,8 @@ densify
 deprioritized
 deps
 dequeue
+dequeuer
+dequeues
 dereference
 dereferenced
 dereferences
@@ -4751,6 +4767,9 @@ deregistration
 descs
 deseret
 deserialization
+deserialize
+deserialized
+deserializer
 destructors
 destructure
 destructured
@@ -4928,6 +4947,8 @@ enotsup
 enotty
 enotuniq
 enqueue
+enqueuer
+enqueues
 enums
 enumsymbol
 enumtype
@@ -5107,6 +5128,7 @@ gettimer
 getvalid
 gflop
 github
+gitignore
 glagolitic
 glibc
 globalattr
@@ -5659,6 +5681,7 @@ multilocale
 multiloop
 multiprecision
 multirealm
+multiset
 multithreaded
 multithreading
 munge
@@ -5856,6 +5879,7 @@ ourself
 outfd
 outfile
 outputfile
+overcommitted
 overlining
 overridable
 oversubscription
@@ -5874,6 +5898,7 @@ paratest
 parens
 parenthesization
 parsable
+partee
 passlist
 passname
 passwordless
@@ -5932,6 +5957,7 @@ precomputing
 prediff
 preexec
 prefixscan
+preformatted
 preorder
 prepended
 prepending
@@ -6040,6 +6066,7 @@ recvtos
 recvttl
 redomclass
 redux
+reentrant
 refactored
 refactoring
 refactorings
@@ -6169,6 +6196,7 @@ september
 seqpacket
 serializability
 serializable
+serializers
 serverkey
 sessionid
 setbit
@@ -6256,6 +6284,7 @@ solaris
 somesuch
 sourceforge
 souza
+spartee
 spawner
 spawnfn
 spawnshell

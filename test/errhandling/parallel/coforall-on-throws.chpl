@@ -7,7 +7,7 @@ proc test() {
       }
     }
     writeln("after coforall block");
-  } catch errors: ErrorGroup {
+  } catch errors: TaskErrors {
     for e in errors { 
       writeln("Caught group error e ", e.msg);
     }

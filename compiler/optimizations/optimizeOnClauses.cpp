@@ -31,6 +31,7 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "wellknown.h"
 
 #include <vector>
 
@@ -133,6 +134,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_LOOKUP_FILENAME:
 
   case PRIM_STACK_ALLOCATE_CLASS:
+
+  case PRIM_CLASS_NAME_BY_ID:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
@@ -564,10 +567,41 @@ removeUnnecessaryFences(FnSymbol* fn)
 }
 
 
+// Insert runningTaskCounter increment and decrement calls for on-stmts.
+//
+// TODO move this into its own pass
+static void addRunningTaskModifiers(void) {
+  compute_call_sites();
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* fn = call->resolvedFunction();
+    if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {
+      // For non-fast on's increment the local runningTaskCounter before
+      // executing the body. Fast on's run directly in the comm-handler and
+      // will not spawn a task.
+      if (fn->hasFlag(FLAG_FAST_ON) == false) {
+        SET_LINENO(fn);
+        fn->insertAtHead(new CallExpr(gChplIncRunningTask));
+        fn->insertBeforeEpilogue(new CallExpr(gChplDecRunningTask));
+      }
+
+      // For on stmts that aren't fast or non-blocking, decrement the local
+      // runningTaskCounter before migrating to a new locale
+      if (fn->hasEitherFlag(FLAG_NON_BLOCKING, FLAG_FAST_ON) == false) {
+        SET_LINENO(call);
+        call->insertBefore(new CallExpr(gChplDecRunningTask));
+        call->insertAfter(new CallExpr(gChplIncRunningTask));
+      }
+    }
+  }
+}
+
 void
 optimizeOnClauses(void) {
-  if (fNoOptimizeOnClauses)
+  if (fNoOptimizeOnClauses) {
+    addRunningTaskModifiers();
     return;
+  }
 
   // If we're not using locks, the extern functions in
   // atomics are local and safe for fast on.
@@ -633,4 +667,5 @@ optimizeOnClauses(void) {
       }
     }
   }
+  addRunningTaskModifiers();
 }

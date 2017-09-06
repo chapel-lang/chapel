@@ -55,6 +55,9 @@
   #define AMX_NDEBUG AMUDP_NDEBUG
   #define AMUDP_DEBUG_CONFIG _NDEBUG
 #endif
+#ifdef AMUDP_DEBUG_VERBOSE
+  #define AMX_DEBUG_VERBOSE AMUDP_DEBUG_VERBOSE
+#endif
 
 /* idiot proofing */
 #if defined(AMUDP_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
@@ -141,9 +144,9 @@ typedef enum {
 
 #define AM_MaxNumHandlers()               AMUDP_MAX_NUMHANDLERS
 #define AM_GetNumHandlers(ep, pnhandlers)  \
-  ((ep) ? ((*(pnhandlers) = AMUDP_MAX_NUMHANDLERS), AM_OK) : AM_ERR_BAD_ARG : AM_ERR_BAD_ARG)
+  ((ep) ? ((*(pnhandlers) = AMUDP_MAX_NUMHANDLERS), AM_OK) : AM_ERR_BAD_ARG)
 #define AM_SetNumHandlers(ep, nhandlers)  \
-  ((ep) ? ((nhandlers) == AMUDP_MAX_NUMHANDLERS ? AM_OK : AM_ERR_RESOURCE)
+  ((ep) ? ((nhandlers) == AMUDP_MAX_NUMHANDLERS ? AM_OK : AM_ERR_RESOURCE) : AM_ERR_BAD_ARG)
 
 #define AM_MaxNumTranslations(trans)      (*(trans) = AMUDP_MAX_NUMTRANSLATIONS,AM_OK)
 

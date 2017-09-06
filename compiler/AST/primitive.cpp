@@ -682,6 +682,8 @@ initPrimitive() {
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
   prim_def(PRIM_FIELD_BY_NUM, "field by num", returnInfoUnknown);
+  prim_def(PRIM_CLASS_NAME_BY_ID, "class name by id", returnInfoStringC);
+
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_IS_EXTERN_CLASS_TYPE, "is extern class type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);

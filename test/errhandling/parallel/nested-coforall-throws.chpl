@@ -1,7 +1,7 @@
-proc printErrors(errors: ErrorGroup)
+proc printErrors(errors: TaskErrors)
 {
   for e in errors { 
-    var g = e:ErrorGroup;
+    var g = e:TaskErrors;
     if g then
       printErrors(g);
     else
@@ -21,7 +21,7 @@ proc test() {
       }
     }
     writeln("after coforall block");
-  } catch errors: ErrorGroup {
+  } catch errors: TaskErrors {
     printErrors(errors);
   } catch e {
     writeln("Caught other error ", e.msg);

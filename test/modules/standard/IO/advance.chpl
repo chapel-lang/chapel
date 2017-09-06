@@ -10,6 +10,6 @@ proc main() {
   writeln(c.read(int));
   c.advance(2);
   writeln(c.read(int));
-  c.advance(2, err);
+  try! c.advance(2);
   writeln(c.read(int));
 }

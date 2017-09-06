@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -781,6 +782,8 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 
   bool forall = (chpl_iter != NULL);
+  // MPF: should be the same as isLoweredForallLoop but it isn't yet
+  //INT_ASSERT(forall == forLoop->isLoweredForallLoop());
   bool zippered = forLoop->zipperedGet() &&
                   (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
                    (chpl_iter != NULL &&

@@ -4,4 +4,4 @@ iterating MyError:
 1
 1
 iterating everything else:
-{msg = other error}
+Error: other error

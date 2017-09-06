@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "stlUtil.h"
 #include "baseAST.h"
+#include "CatchStmt.h"
 #include "config.h"
 #include "DeferStmt.h"
 #include "driver.h"
@@ -34,6 +35,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "TryStmt.h"
 #include "wellknown.h"
 
 #include <map>
@@ -1102,7 +1104,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
-  fifn->insertAtTail(ForLoop::buildForLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
+  fifn->insertAtTail(ForLoop::buildLoweredForallLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
 
   return new CallExpr(new DefExpr(fn), iteratorExpr);
 }
@@ -1163,7 +1165,7 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered, false);
 
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
@@ -1324,7 +1326,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", saIter)));
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
-  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL, false);
+  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL, /*zip*/ false, /*forall*/ true);
   destructureIndices(SABody, indices, new SymExpr(saIdxCopy), false);
   SABody->insertAtHead("'move'(%S, %S)", saIdxCopy, saIdx);
   SABody->insertAtHead(new DefExpr(saIdxCopy));
@@ -1400,7 +1402,8 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
   VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
-  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL, zippered);
+  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL,
+                                           zippered, /*forall*/ true);
 
   VarSymbol* followIdx       = newTemp("chpl__followIdx");
   VarSymbol* followIter      = newTemp("chpl__followIter");
@@ -1585,12 +1588,13 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
     block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", iterator,  new_CStringSymbol("size"))));
     block->insertAtHead(new DefExpr(numTasks));
+    block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
   } else {
     taskBlk->insertBefore(new CallExpr("_upEndCount", coforallCount, countRunningTasks));
+    block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks));
   }
-  block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
 
   block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", useLocalEndCount)));
   block->insertAtHead(new DefExpr(coforallCount));
@@ -1653,7 +1657,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
-  
+
   SET_LINENO(body);
 
   VarSymbol* tmpIter = newTemp("tmpIter");
@@ -2080,12 +2084,12 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   BlockStmt* serialBlock = buildChapelStmt();
   VarSymbol* index = newTemp("_index");
   serialBlock->insertAtTail(new DefExpr(index));
-  serialBlock->insertAtTail(ForLoop::buildForLoop(new SymExpr(index),
-                                                  new SymExpr(data),
-                                                  new BlockStmt(new CallExpr(new CallExpr(".", globalOp,
-                                                                                          new_CStringSymbol("accumulate")), index)),
-                                                  false,
-                                                  zippered));
+  serialBlock->insertAtTail(ForLoop::buildForLoop(
+                                        new SymExpr(index),
+                                        new SymExpr(data),
+                                        new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("accumulate")), index)),
+                                        false,
+                                        zippered));
 
   VarSymbol* leadIdx     = newTemp("chpl__leadIdx");
   VarSymbol* leadIter    = newTemp("chpl__leadIter");
@@ -2097,7 +2101,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL, zippered);
+  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL, zippered, /*forall*/ false);
 
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
 
@@ -2120,7 +2124,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
   followBlock->insertAtTail("'delete'(%S)", localOp);
 
-  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered);
+  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered, /*forall*/ true);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
@@ -2873,11 +2877,54 @@ buildSyncStmt(Expr* stmt) {
   VarSymbol* endCountSave = newTempConst("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
-  block->insertAtTail(stmt);
+  VarSymbol* endCount = newTempConst("_endCount");
+  block->insertAtTail(new DefExpr(endCount));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
+  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
+
+  // Note that a sync statement can contain arbitrary code,
+  // including code that throws. As a result, we need to take
+  // care call _waitDynamicEndCount even if such errors are thrown.
+
+  // This code takes the approach of wrapping the sync body with
+  //
+  //   try {
+  //      orig-body
+  //   } catch e {
+  //      chpl_save_task_error(e);
+  //      e = nil; // don't delete error
+  //   }
+
+  // The result is that an error within a sync block will be reported
+  // in a TaskErrors group. It is that way because there could also be
+  // errors from waited-for tasks.
+  VarSymbol* e = new VarSymbol("error");
+  DefExpr* defError = new DefExpr(e, NULL, new UnresolvedSymExpr("Error"));
+  BlockStmt* saveError = new BlockStmt();
+
+  saveError->insertAtTail(new CallExpr("chpl_save_task_error",  endCount, e));
+  saveError->insertAtTail(new CallExpr(PRIM_MOVE, e, gNil));
+
+  BlockStmt* catches = new BlockStmt();
+  catches->insertAtTail(CatchStmt::build(defError, saveError));
+
+  BlockStmt* body = toBlockStmt(stmt);
+  INT_ASSERT(body);
+
+  TryStmt* t = new TryStmt(/* try! */ false, body, catches);
+
+  block->insertAtTail(t);
+
+  // waitDynamicEndCount might throw, but we need to clean up the
+  // end counts either way.
+
+  BlockStmt* cleanup = new BlockStmt();
+
+  cleanup->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+  cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
+
+  block->insertAtTail(new DeferStmt(cleanup));
   block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
-  block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
   return block;
 }
 
@@ -2902,6 +2949,8 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   VarSymbol* cobeginCount = newTempConst("_cobeginCount");
 
+  VarSymbol* numTasks = new_IntSymbol(block->length());
+
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
@@ -2911,13 +2960,13 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     stmt->insertBefore(beginBlk);
     beginBlk->insertAtHead(stmt->remove());
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount, gNil));
-    block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
   }
 
+  block->insertAtHead(new CallExpr("_upEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
   block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
-  block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
-  block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
+  block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", cobeginCount)));
+  block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
 
   block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;

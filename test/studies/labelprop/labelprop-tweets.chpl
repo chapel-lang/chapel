@@ -17,7 +17,7 @@ Computation consists of these steps:
 /* How can we represent a graph in Chapel?
     * Matrix view - dense or sparse
     * Class instances tree
-    
+
     * Opaque Domain view
     var People = opaque;
     var Child: [People] [1..maxChildren] index(People);
@@ -31,8 +31,8 @@ Computation consists of these steps:
     * Array of Edges view
      -> rectangular array of Vertex by vertex ID
      -> each Vertex contains an array of edges (a bag of values)
-        
-    We don't yet have opaque distributions or associative distributions. 
+
+    We don't yet have opaque distributions or associative distributions.
       -- see test/distributions/bradc/assoc
 
     We don't yet support inner arrays with different sizes.
@@ -187,7 +187,8 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
 
   if progress then
     writeln(fname, " : processing");
- 
+
+  // TODO: convert logfile.readf() to the error handling version
   while true {
     got = logfile.readf("%~jt", tweet, error=err);
     if got && !err {
@@ -285,7 +286,7 @@ proc create_and_analyze_graph(Pairs)
   forall (id, other_id) in Pairs with (ref userIds) {
     if Pairs.member( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
-      
+
       // add to userIds
       userIds += id;
       // Not necessary to add other_id now since we will
@@ -311,7 +312,7 @@ proc create_and_analyze_graph(Pairs)
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }
-  
+
   if printall {
     writeln("idToNode:");
     for id in userIds {
@@ -331,7 +332,7 @@ proc create_and_analyze_graph(Pairs)
     writeln("creating triples");
 
   var triples = [(id, other_id) in Pairs]
-                   if id < other_id && Pairs.member( (other_id, id) ) then 
+                   if id < other_id && Pairs.member( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
 
   if printall {
@@ -368,7 +369,7 @@ proc create_and_analyze_graph(Pairs)
     writeln("created graph in ", createGraphTime.elapsed(), " s ");
   }
 
-  if progress then 
+  if progress then
     writeln("done creating graph");
 
   if printall {
@@ -391,7 +392,7 @@ proc create_and_analyze_graph(Pairs)
 
   var labels:[1..max_nid] atomic int(32);
   forall (lab,i) in zip(labels,1:int(32)..) {
-    // TODO -- elegance - use "atomic counter" that acts as normal var 
+    // TODO -- elegance - use "atomic counter" that acts as normal var
     // or change the default for the atomic
     labels[i].write(i, memory_order_relaxed);
   }
@@ -505,7 +506,7 @@ proc create_and_analyze_graph(Pairs)
       // TODO:
       // Did the existing label correspond to a maximal label?
       // stop when every node has a label a maximum number of neighbors have
-      // (e.g. there might be 2 labels each attaining the maximum) 
+      // (e.g. there might be 2 labels each attaining the maximum)
       if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
         go.write(true, memory_order_relaxed);
       }

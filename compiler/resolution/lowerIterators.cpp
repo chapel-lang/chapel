@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "CForLoop.h"
 #include "driver.h"
+#include "errorHandling.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -1394,6 +1395,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   for_vector(GotoStmt, g, gotos) {
 
     if (g->gotoTag == GOTO_ERROR_HANDLING ||
+        g->gotoTag == GOTO_BREAK_ERROR_HANDLING ||
         g->gotoTag == GOTO_RETURN) {
       // Does the target of this Goto exist within the same function?
       LabelSymbol* target = g->gotoTarget();
@@ -1453,9 +1455,11 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
         INT_ASSERT(errorArg != NULL);
 
         // Replace it with assign / goto return
-        oldErrorDst->remove();
-        oldErrorSrc->remove();
-        prevMoveErr->replace(new CallExpr(PRIM_ASSIGN, errorArg, oldErrorSrc));
+        if (oldErrorDst && oldErrorSrc) {
+          oldErrorDst->remove();
+          oldErrorSrc->remove();
+          prevMoveErr->replace(new CallExpr(PRIM_ASSIGN, errorArg, oldErrorSrc));
+        }
         GotoStmt* newGoto = new GotoStmt(GOTO_RETURN, epilogue);
         g->replace(newGoto);
       }
@@ -1640,11 +1644,30 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
       }
 
+
+      // Remove returns if the command-line argument indicates to
       if (call->isPrimitive(PRIM_RETURN)) {
         if (removeReturn)
           call->remove();
       }
 
+      // Adjust calls to chpl_propagate_error
+      if (FnSymbol* calledFn = call->resolvedFunction()) {
+        if (calledFn == gChplPropagateError) {
+          SymExpr* errSe = toSymExpr(call->get(1));
+          INT_ASSERT(errSe && errSe->typeInfo() == dtError);
+          LabelSymbol* label = NULL;
+          Symbol* error = NULL;
+          if (findFollowingCheckErrorBlock(errSe, label, error)) {
+            errSe->remove();
+            call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
+            call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
+            call->remove();
+          }
+        }
+      }
+
+      // Adjust task functions within the iterator
       if (FnSymbol* cfn = resolvedToTaskFun(call)) {
         // Todo: skip this handling of 'cfn' if it does not have yields
         // in itself or any other taskFns it may call.
@@ -1913,6 +1936,17 @@ expandForLoop(ForLoop* forLoop) {
 
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
+
+    FnSymbol* iterFn = getTheIteratorFn(iterator->type);
+    if (iterFn->throwsError()) {
+      // In this event, the error handling pass added a PRIM_CHECK_ERROR
+      // after the call to the iterator function.
+      // Scroll backwards to find the error handling block.
+
+      // TODO: finish this case
+      //       I think we need to use the ForLoop's break label
+      USR_FATAL("Throwing non-inlined iterators are not yet supported");
+    }
 
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->symbol());

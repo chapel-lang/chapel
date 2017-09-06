@@ -131,7 +131,7 @@ int gasnete_long_msg_init(void)
     uint32_t threshold = 16384;
 
     threshold = gasneti_getenv_int_withdefault(
-            "GASNET_LONG_MSG_THRESHOLD", threshold, 0);
+            "GASNET_LONG_MSG_THRESHOLD", threshold, 1);
     gasnetc_psm_state.long_msg_threshold = threshold;
 
     if(CPUID_MODEL_PHI_GEN2 == get_cpu_model()) {

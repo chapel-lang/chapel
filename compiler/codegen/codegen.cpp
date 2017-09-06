@@ -31,6 +31,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "clangBuiltinsWrappedSet.h"
 #include "virtualDispatch.h"
 
 #ifndef __STDC_FORMAT_MACROS
@@ -841,6 +842,44 @@ static void genUnwindSymbolTable(){
   genGlobalInt32("chpl_sizeSymTable", symbols.size() * 2);
 }
 
+static void
+genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
+  const char* eltType = "c_string";
+  const char* name = "chpl_classNames";
+
+  if(isHeader) {
+    // Just pass NULL when generating header
+    codegenGlobalConstArray(name, eltType, NULL, true);
+    return;
+  }
+
+  std::vector<const char*> names;
+
+  forv_Vec(TypeSymbol, ts, typeSymbol) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
+      if (isObjectOrSubclass(ct)) {
+        int id = ct->classId;
+        INT_ASSERT(id > 0);
+        if (id >= (int)names.size())
+          names.resize(id+1, NULL);
+        names[id] = ts->name;
+      }
+    }
+  }
+
+  std::vector<GenRet> tmp;
+  for(size_t i = 0; i < names.size(); i++) {
+    const char* name = names[i];
+    if (name == NULL)
+      name = "";
+    tmp.push_back(codegenStringForTable(name));
+  }
+
+  // Now emit the global array declaration
+  codegenGlobalConstArray(name, eltType, &tmp, false);
+}
+
+
 static bool
 compareSymbol(void* v1, void* v2) {
   Symbol* s1 = (Symbol*)v1;
@@ -1155,6 +1194,80 @@ static void protectNameFromC(Symbol* sym) {
   //  free(oldName);
 }
 
+static void genGlobalSerializeTable(GenInfo* info) {
+  FILE* hdrfile = info->cfile;
+  std::vector<CallExpr*> serializeCalls;
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
+      SymExpr* se = toSymExpr(call->get(2));
+      INT_ASSERT(se != NULL);
+
+      VarSymbol* imm = toVarSymbol(se->symbol());
+      INT_ASSERT(imm && imm->isImmediate());
+      uint64_t idx = imm->immediate->int_value();
+
+      if (idx+1 > serializeCalls.size()) {
+        serializeCalls.resize(idx+1);
+      }
+
+      serializeCalls[idx] = call;
+    }
+  }
+
+  if( hdrfile ) {
+    fprintf(hdrfile, "\nvoid* const chpl_global_serialize_table[] = {");
+    if (serializeCalls.size() == 0) {
+      // Quiet PGI warning about empty initializer
+      fprintf(hdrfile, "\nNULL,");
+    } else {
+      for (unsigned int i = 0; i < serializeCalls.size(); i++) {
+        CallExpr* call = serializeCalls[i];
+        INT_ASSERT(call != NULL);
+        SymExpr* global = toSymExpr(call->get(1));
+        INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
+
+        const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
+        fprintf(hdrfile, prefix, global->symbol()->cname);
+      }
+    }
+    fprintf(hdrfile, "\n};\n");
+  } else {
+#ifdef HAVE_LLVM
+    llvm::Type *global_serializeTableEntryType =
+      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+
+    std::vector<llvm::Constant *> global_serializeTable;
+
+    for_vector(CallExpr, call, serializeCalls) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+
+      global_serializeTable.push_back(llvm::cast<llvm::Constant>(
+            info->builder->CreatePointerCast(
+              info->lvt->getValue(se->symbol()->cname).val,
+              global_serializeTableEntryType)));
+    }
+
+    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
+          info->module->getNamedGlobal("chpl_global_serialize_table"))) {
+      GVar->eraseFromParent();
+    }
+
+    llvm::ArrayType *global_serializeTableType =
+      llvm::ArrayType::get(global_serializeTableEntryType,
+                          global_serializeTable.size());
+    llvm::GlobalVariable *global_serializeTableGVar =
+      llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal("chpl_global_serialize_table",
+                                          global_serializeTableType));
+    global_serializeTableGVar->setInitializer(
+        llvm::ConstantArray::get(
+          global_serializeTableType, global_serializeTable));
+    info->lvt->addGlobalValue("chpl_global_serialize_table",
+                              global_serializeTableGVar, GEN_PTR, true);
+#endif
+  }
+}
 
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
@@ -1164,6 +1277,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
 
   genClassIDs(types, false);
   genSubclassArray(false);
+  genClassNames(types, false);
 
   genComment("Function Pointer Table");
   genFtable(ftableVec, false);
@@ -1183,6 +1297,9 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
 #ifndef HAVE_LLVM
   zlineToFileIfNeeded(rootModule, info->cfile);
 #endif
+
+  genComment("Global Serialize Table");
+  genGlobalSerializeTable(info);
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, false);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
@@ -1441,6 +1558,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   assignClassIds();
   genClassIDs(types, true);
   genSubclassArray(true);
+  genClassNames(types, true);
 
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
@@ -1855,6 +1973,28 @@ adjustArgSymbolTypesForIntent(void)
 extern bool printCppLineno;
 debug_data *debug_info=NULL;
 
+
+
+
+#ifdef HAVE_LLVM
+static bool hasWrapper(const char *name)
+{
+  auto it = chplClangBuiltinWrappedFunctions.find(name);
+  if(it != end(chplClangBuiltinWrappedFunctions))
+    return true;
+  return false;
+}
+
+static const char* getClangBuiltinWrappedName(const char* name)
+{
+  auto it = chplClangBuiltinWrappedFunctions.find(name);
+  if(it != end(chplClangBuiltinWrappedFunctions))
+    return astr(WRAPPER_PREFIX, name);
+  return name;
+}
+#endif
+
+
 void codegen(void) {
   if (no_codegen)
     return;
@@ -1960,6 +2100,18 @@ void codegen(void) {
     if (fn->getReturnSymbol()) {
       fn->retType = fn->getReturnSymbol()->type;
     }
+  }
+
+  // Wrap calls to chosen functions from c library
+  if( llvmCodegen ) {
+#ifdef HAVE_LLVM
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_EXTERN)) {
+          if(hasWrapper(fn->cname))
+            fn->cname = getClangBuiltinWrappedName(fn->cname);
+      }
+    }
+#endif
   }
 
   if( llvmCodegen ) {

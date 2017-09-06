@@ -457,27 +457,42 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   otherwise is undefined.
 
   + GASNET_PHYSMEM_MAX
-    If non-zero this parameter tells ibv-conduit the maximum amount of
-    physical memory to pin.  The suffixes "M" and "G" are interpreted as
-    Megabytes and Gigabytes respectively.  The current default is zero,
-    which means to probe the limits imposed by the O/S and HCA.
-    Setting to a non-zero value will limit how large the GASNet segment
-    can be, and how much memory is available for firehose (see below),
-    but may speed startup by bounding the probe.  Note, however that
-    setting only this variable bounds the probe, but does not eliminate it.
-    Also be aware that with multiple processes per shared memory node the
-    value given by this variable will be divided by the number of processes
-    per shared memory node to determine the memory available.
+    If set, this parameter is used to determine the maximum amount of memory
+    ibv-conduit may pin.  This limits how large the GASNet segment can be, and
+    how much memory is available for firehose (see below).
+    The value may specify either a relative or absolute size.  If the value
+    parses as a floating-point value less than 1.0 (including fractions such
+    as "5/8"), then this is taken as a fraction of the (estimated) physical
+    memory.  Otherwise the value is taken as an absolute memory size, with "M",
+    "G" and "T" suffixes accepted to indicate units of Megabytes, Gigabytes,
+    and Terabytes, respectively.
+    The default may be set at configure time using --with-ibv-physmem-max=VALUE,
+    and otherwise is "2/3" (pin up to 2/3 of the estimated physical memory).
 
-  + GASNET_PHYSMEM_NOPROBE
-    This gives a boolean: "0" to disable or "1" to enable the use of
-    GASNET_PHYSMEM_MAX without probing.  If GASNET_PHYSMEM_MAX is zero
-    or unset, this variable is ignored.
-    Enabling this setting may greatly speed startup, but can lead to
-    unexpected runtime failures if GASNET_PHYSMEM_MAX exceeds the limits
-    imposed by the O/S and HCA.
-    If GASNET_PHYSMEM_MAX is zero (or unset) this variable is ignored.
-    The default is OFF.
+  + GASNET_PHYSMEM_PROBE
+    This gives a boolean: "1" to enable or "0" to disable the validation
+    (potentially slow) of the GASNET_PHYSMEM_MAX value.
+    By default the environment variable GASNET_PHYSMEM_MAX is trusted if set
+    at runtime or when using a default given at configure time.  If neither
+    source has provided a value, the "2/3" default is taken as a maximum
+    amount of memory that might be possible pinned, but the final limit is
+    determined by probing the limits imposed by the O/S and HCA.  This probe
+    can take a significant period of time on large memory nodes.  Therefore,
+    enabling this probe may greatly slow startup, but can prevent unexpected
+    runtime failures if the user-provided values exceed those imposed by the
+    O/S and HCA.  Therefore, it is recommended to enable this probe if one
+    experiences any runtime failure consistent with an out-of-memory condition.
+    The O/S limits may be hard limits from the kernel (Linux often allows at
+    most 80% of physical memory to be pinned) or from resource limits (see
+    'ulimit' in a Bourne shell or 'limit' in a C-shell).
+    The default is OFF (probe disabled) if configure or environment sets a
+    value of GASNET_PHYSMEM_MAX.  However, this can be changed to a default of
+    ON or OFF by configuring using, respectively, --enable-ibv-physmem-probe
+    or --disable-ibv-physmem-probe.
+
+  + GASNET_PHYSMEM_WARN
+    This gives a boolean: "1" to enable or "0" to disable the warning printed
+    if/when the GASNET_PHYSMEM_MAX value is probed.
 
   Protocol configuration:
   ----------------------
@@ -561,6 +576,16 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     if SRQ support is not used (regardless of why),
     This setting defaults to 1 if SRQ support was enabled at configure
     time.  As a result XRC will be used anytime SRQ is used.
+
+   + GASNET_PIN_MAXSZ
+    This controls the maximum size of a pinned memory region.  The value must
+    be a power-of-two, and no less than the page size.  If the value is larger
+    than the HCA(s) can support, it will be reduced (with a warning).
+    When a GASNet-level transfer spans multiple pinned regions, multiple
+    operations are required at the Verbs layer.  However, some older Mellanox
+    HCAs performed poorly with large pinned regions.  In general there is no
+    need to adjust this parameter.
+    The default is to use largest size supportd by the HCA(s).
 
   Resource usage parameters:
   -------------------------
@@ -857,6 +882,50 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 @ Section: Known Problems @
 
++ Slow PHYSMEM probe at start-up
+  As described in more detail above, the environment variables
+  GASNET_PHYSMEM_MAX and GASNET_PHYSMEM_PROBE can be used to control an
+  upper-bound on the amount of memory that ibv-conduit will attempt to
+  register/pin.  If configure was passed --with-ibv-physmem-max=VALUE, then
+  the given VALUE is used as the default value of GASNET_PHYSMEM_MAX.
+  However, if this environment variable is not set, and no value was given at
+  configure time for GASNET_PHYSMEM_MAX, then the values "2/3" and "yes" are
+  used for these two environment variables and a message will direct the user
+  to this text.  Running with GASNET_PHYSMEM_PROBE=1 will also direct one to
+  this text.
+
+  If all compute nodes probed are found to allow the same amount of memory to
+  be pinned (either in absolute or relative terms), the message issued will
+  indicate the value determined and how to use it at configure or run time.
+  If there is a single memory configuration in use on your system, then
+  configuring (or setting GASNET_PHYSMEM_MAX) as directed in that message will
+  eliminate the time spent on the probe at startup, as well as the message.
+
+  If the memory configuration varies among nodes on the system, it may not be
+  safe to use a single recommended setting.  There are at least three options
+  available:
+  1. To avoid the probe at the potential cost of registering less than the
+     maximum possible memory for communication, one can elect to use the
+     minimum probed value reported by the probe output across all of the node
+     configurations to be used.  Depending of the actual configurations using
+     an absolute (whole number) or relative (fraction or decimal) value may
+     result in using nearer to the maximum memory on all nodes.  The most
+     robust option would be to configure using --with-ibv-physmem-max=VALUE,
+     but running with GASNET_PHYSMEM_MAX=VALUE may be simpler.
+     Unless one has configured with --enable-ibv-physmem-probe, or is running
+     with GASNET_PHYSMEM_PROBE=1 in the environment, the given value will be
+     used without running the probe.
+  2. If the time spent by the probe is not a concern, one can obtain the
+     behavior (default in older releases) of probing for UP TO a (safe)
+     default of 2/3 of apparent physical memory size on every run (without
+     any message) by running with environment variable GASNET_PHYSMEM_WARN=0.
+  3. If 2/3 is too conservative, one can force a probe with an alternative
+     value by configuring using
+       --with-ibv-physmem-max=VALUE --enable-physmem-probe
+     of running with
+       GASNET_PHYSMEM_MAX=VALUE GASNET_PHYSMEM_PROBE=1
+     In either case, one may also want to set GASNET_PHYSMEM_WARN=0.
+
 + Crashes have been seen using QLogic's InfiniPath HCAs with ibv-conduit
   with default parameters.  If you see crashes with a message containing
      FATAL ERROR: aborting on reap of failed send
@@ -865,6 +934,21 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
      GASNET_QP_RD_ATOM=1
   In our testing this resulted in about a 2% reduction in peak bandwidth,
   but eliminated all instances of "aborting on reap of failed send".
+
++ Lack of XRC support
+  XRC is a optional feature in the Open Fabrics Verbs API, for which
+  GASNet's configure script will probe support.  However, that probe is
+  limited to determining if the XRC-related function calls will compile
+  and link, and cannot distinguish platforms on which the calls are
+  present but always fail.  On such systems, the failure will be reported
+  at runtime above a certain number of processes (86 with the defaults
+  for all environment variables) with the following message:
+
+  *** FATAL ERROR: Unable to create an XRC domain.  Please see "Lack of XRC support" under Known Problems in GASNet's README-ibv.
+
+  If you experience this error it is recommended that you reconfigure
+  your build of GASNet with --disable-ibv-xrc.  If that is not possible
+  one can also set GASNET_USE_XRC=0 in your environment.
 
 + Bug 3428
   In this release the code used to checksum AMRDMA traffic is known to be

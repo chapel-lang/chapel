@@ -217,6 +217,7 @@ static void walkBlock(FnSymbol*         fn,
           case GOTO_CONTINUE:
           case GOTO_BREAK:
           case GOTO_ERROR_HANDLING:
+          case GOTO_BREAK_ERROR_HANDLING:
             scope.insertAutoDestroys(fn, stmt, ignoredVariables);
             break;
 

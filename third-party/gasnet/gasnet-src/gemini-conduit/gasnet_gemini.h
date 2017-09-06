@@ -312,15 +312,11 @@ void gasnetc_free_post_descriptor(gasnetc_post_descriptor_t *pd);
 
 int gasnetc_try_pin(void *addr, uintptr_t size);
 
-/* default fraction of phys mem to assume is pinnable under CNL */
-#ifndef GASNETC_DEFAULT_PHYSMEM_PINNABLE_RATIO
-#define GASNETC_DEFAULT_PHYSMEM_PINNABLE_RATIO 0.80
-#endif
-
 /* exit related */
 volatile int gasnetc_shutdownInProgress;
 double gasnetc_shutdown_seconds; /* number of seconds to poll before forceful shutdown */
 int gasnetc_sys_exit(int *exitcode);
+void gasnetc_sys_fini(void);
 
 #if GASNETC_USE_MULTI_DOMAIN
 void gasnetc_create_parallel_domain(gasnete_threadidx_t tidx);
@@ -415,8 +411,6 @@ int gasnetc_next_power_of_2(int x) {
   x += 1;
   return x;
 }
-
-extern int gasnetc_send_control(gasnet_node_t dest, uint8_t op, uint16_t arg);
 
 extern int gasnetc_send_am(gasnetc_post_descriptor_t *gpd);
 gasnetc_post_descriptor_t *gasnetc_alloc_reply_post_descriptor(gasnet_token_t t,

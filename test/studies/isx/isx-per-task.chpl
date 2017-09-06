@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barrier), and timers (Time).
+// synchronization (Barriers), and timers (Time).
 //
-use BlockDist, Barrier, Time;
+use BlockDist, Barriers, Time;
 
 //
 // The type of key to use when sorting.

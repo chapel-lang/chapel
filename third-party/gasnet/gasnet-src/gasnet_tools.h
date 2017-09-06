@@ -151,6 +151,11 @@ GASNETI_BEGIN_NOWARN
 #define GASNETT_MEMBAR_CONFIG        GASNETI_MEMBAR_CONFIG
 
 /* ------------------------------------------------------------------------------------ */
+/* microsecond-resolution sleep */
+
+#define gasnett_nsleep(ns_delay)     gasneti_nsleep(ns_delay)
+
+/* ------------------------------------------------------------------------------------ */
 /* portable high-performance, low-overhead timers */
 
 #define gasnett_tick_t               gasneti_tick_t
@@ -545,9 +550,6 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
     #define gasnett_heapstats_t           gasneti_heapstats_t
     #define gasnett_getheapstats(pstat)   gasneti_getheapstats(pstat)
   #endif
-
-  #define gasnett_malloc_aligned(align,sz) gasneti_malloc_aligned((align),(sz))
-  #define gasnett_free_aligned(ptr)        gasneti_free_aligned(ptr)
 
   /* VIS string formatting */
   #define gasnett_format_memveclist_bufsz gasneti_format_memveclist_bufsz 

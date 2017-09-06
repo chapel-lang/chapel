@@ -35,7 +35,6 @@ extern SymbolMap                      paramMap;
 
 extern Vec<CallExpr*>                 callStack;
 
-extern Vec<CondStmt*>                 tryStack;
 extern bool                           tryFailure;
 
 extern Vec<CallExpr*>                 inits;
@@ -80,8 +79,6 @@ bool       isInstantiation(Type* sub, Type* super);
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
-bool requiresImplicitDestroy(CallExpr* call);
-
 bool isLeaderIterator(FnSymbol* fn);
 
 bool isStandaloneIterator(FnSymbol* fn);
@@ -114,8 +111,8 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
-Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
-                                              SymExpr*    origSE);
+CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
+                                                  SymExpr*    origSE);
 
 void implementForallIntents1(DefExpr* defChplIter);
 
@@ -231,5 +228,17 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
+
+
+extern Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
+
+struct Serializers {
+  FnSymbol* serializer;
+  FnSymbol* deserializer;
+  FnSymbol* broadcaster;
+  FnSymbol* destroyer;
+};
+
+extern std::map<Type*, Serializers> serializeMap;
 
 #endif

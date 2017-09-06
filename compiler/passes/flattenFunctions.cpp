@@ -202,14 +202,14 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
         // no matter the type. This enables e.g. a task function processing
         // array elements to correctly set array argument intent.
         IntentTag temp = INTENT_REF_MAYBE_CONST;
-        if (sym->hasFlag(FLAG_CONST)) {
+        if (sym->isConstant()) {
           temp = INTENT_CONST_REF;
         }
         intent = concreteIntent(temp, type);
         type = type->getValType()->refType;
       } else {
         IntentTag temp = INTENT_BLANK;
-        if (sym->hasFlag(FLAG_CONST) && sym->isRef()) {
+        if (sym->isConstant() && sym->isRef()) {
           // Allows for RVF later
           temp = INTENT_CONST_REF;
         }
@@ -217,25 +217,14 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       }
 
       SET_LINENO(sym);
-      //
-      // BLC: TODO: This routine is part of the reason that we aren't
-      // consistent in representing 'ref' argument intents in the AST.
-      // In particular, the code above uses a certain test to decide
-      // to pass something by reference and changes the formal's type
-      // to the corresponding reference type if it believes it should.
-      // But the blankIntentForType() call below (and the INTENT_BLANK
-      // that was used before it) may pass the argument by 'const in'
-      // which seems inconsistent (because most 'ref' formals reflect
-      // INTENT_REF in the current compiler).  My current thought is
-      // to only indicate ref-ness through intents for most of the
-      // compilation (at a Chapel level) and only worry about ref
-      // types very close to code generation, primarily to avoid
-      // inconsistencies like this and keep things more
-      // uniform/simple; but we haven't made this switch yet.
-      //
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
-        arg->addFlag(FLAG_ARG_THIS);
+          arg->addFlag(FLAG_ARG_THIS);
+      if (sym->hasFlag(FLAG_REF_TO_CONST))
+          arg->addFlag(FLAG_REF_TO_CONST);
+      if (sym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+          arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+
       fn->insertFormalAtTail(new DefExpr(arg));
       vars->put(sym, arg);
     }
@@ -272,15 +261,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
               if (arg->isRef()                            &&
                   form->isRef()                           &&
-                  arg->getValType() == form->getValType() &&
-                  // BHARSH TODO: Can we remove that now that
-                  // removeWrapRecords is gone?
-                  // I observed some increase comm-counts with stream, but
-                  // maybe we shouldn't have deref'd before
-                  !isRecordWrappedType(form->getValType())) {
-                // removeWrapRecords can modify the formal to have the
-                // 'const in' intent. For now it's easier to insert the
-                // DEREF here.
+                  arg->getValType() == form->getValType()) {
                 canPassToFn = true;
               } else if (arg->type == form->type) {
                 canPassToFn = true;

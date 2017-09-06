@@ -1988,8 +1988,9 @@ module DefaultRectangular {
         if step < 0 then
           last <=> first;
 
+        var data = info.theDataChunk(0);
         for i in first..last by step do
-          yield info.data(i);
+          yield data(i);
       }
     } else if useCache {
       for i in viewDom {

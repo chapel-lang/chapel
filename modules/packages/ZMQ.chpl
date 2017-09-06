@@ -165,13 +165,56 @@ versions may expose more features native to ZeroMQ.
 Serialization
 +++++++++++++
 
-In Chapel, sending or receiving messages on a :record:`Socket` uses
-`multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
-and the :chpl:mod:`Reflection` module to serialize primitive and user-defined
-data types whenever possible.  Currently, the ZMQ module serializes primitive
-numeric types, strings, and records composed of these types.  Strings are
-encoded as a length (as `int`) followed by the character array
-(in bytes).
+In Chapel, sending or receiving messages is supported for a variety of types.
+Primitive numeric types and strings are supported as the foundation.
+In addition, user-defined :type:`record` types may be serialized automatically
+as `multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
+by internal use of the :chpl:mod:`Reflection` module.
+Currently, the ZMQ module can serialize records of primitive numeric types,
+strings, and other serializable records.
+
+.. note::
+
+   The serialization protocol for strings changed in Chapel 1.16 in order to
+   support inter-language messaging through ZeroMQ. (See
+   :ref:`notes on interoperability <interop>` below.)
+   As a result, programs using ZMQ that were compiled by Chapel 1.15 or
+   earlier cannot communicate using strings with programs compiled by
+   Chapel 1.16 or later, although such communication can be used between
+   programs compiled by the same version without issue.
+
+   Prior to Chapel 1.16, ZMQ would send a string as two multipart messages:
+   the first sent the length as `int`; the second sent the character array
+   (in bytes).  It was identified that this scheme was incompatible with how
+   other language bindings for ZeroMQ serialize and send strings.
+
+   As of Chapel 1.16, the ZMQ module uses the C-level ``zmq_msg_send()`` and
+   ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
+   respectively, when transmitting strings.  Further, ZMQ sends the string as
+   a single message of only the byte stream of the string's character array.
+   (Recall that Chapel's :type:`string` type currently only supports ASCII
+   strings, not full Unicode strings.)
+
+.. _interop:
+
+Interoperability
+++++++++++++++++
+
+The ZeroMQ messaging library has robust support in many programming languages
+and Chapel's ZMQ module intends on providing interfaces and serialization
+protocols suitable for exchanging data between Chapel and non-Chapel programs.
+
+As an example (and test) of Chapel-Python interoperability over ZeroMQ, the
+following sources demonstrate a :const:`PUSH`-:const:`PULL` socket pair between
+a Chapel server and a Python client using the
+`PyZMQ Python bindings for ZeroMQ <https://pyzmq.readthedocs.io/en/latest/>`_.
+
+.. literalinclude:: ../../../../test/modules/packages/ZMQ/interop-py/server.chpl
+   :language: chapel
+   :lines: 10-
+
+.. literalinclude:: ../../../../test/modules/packages/ZMQ/interop-py/client.py
+   :language: python
 
 Tasking-Layer Interaction
 +++++++++++++++++++++++++
@@ -203,7 +246,7 @@ future Chapel releases.
 One interaction of these features is worth noting explicitly: because multipart
 messages are used to automatically serialize non-primitive data types (e.g.,
 strings and records) and a partially-sent multi-part message cannot be
-cancelled (except by closing the socket), an explicitly non-blocking send call
+canceled (except by closing the socket), an explicitly non-blocking send call
 that encountered an error in the ZeroMQ library during serialization would not
 be in a recoverable state, nor would there be a matching "partial receive".
 
@@ -237,10 +280,18 @@ module ZMQ {
   private extern proc zmq_msg_init(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_msg_init_size(ref msg: zmq_msg_t,
                                         size: size_t): c_int;
+  private extern proc zmq_msg_init_data(ref msg: zmq_msg_t,
+                                        data: c_void_ptr,
+                                        size: size_t,
+                                        ffn: c_fn_ptr,
+                                        hint: c_void_ptr): c_int;
+  private extern proc zmq_msg_data(ref msg: zmq_msg_t): c_void_ptr;
+  private extern proc zmq_msg_size(ref msg: zmq_msg_t): size_t;
   private extern proc zmq_msg_send(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
   private extern proc zmq_msg_recv(ref msg: zmq_msg_t, sock: c_void_ptr,
                                    flags: c_int): c_int;
+  private extern proc zmq_msg_close(ref msg: zmq_msg_t): c_int;
   private extern proc zmq_recv(sock: c_void_ptr, buf: c_void_ptr,
                                len: size_t, flags: c_int): c_int;
   private extern proc zmq_send(sock: c_void_ptr, buf: c_void_ptr,
@@ -377,7 +428,6 @@ module ZMQ {
     indicate that the associated send or receive operation should be performed
     as a non-blocking operation.
    */
-  //const DONTWAIT = ZMQ_DONTWAIT;
   private extern const ZMQ_DONTWAIT: c_int;
 
   /*
@@ -385,7 +435,6 @@ module ZMQ {
     send operation is a multi-part message and that more message parts will
     subsequently be issued.
    */
-  //const SNDMORE = ZMQ_SNDMORE;
   private extern const ZMQ_SNDMORE: c_int;
 
   // -- Security Options
@@ -395,6 +444,11 @@ module ZMQ {
 
   pragma "no doc"
   const unset = -42;
+
+  pragma "no doc"
+  proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
+    chpl_here_free(data);
+  }
 
   /*
     Query the ZMQ library version.
@@ -699,13 +753,27 @@ module ZMQ {
     pragma "no doc"
     proc send(data: string, flags: int = 0) {
       on classRef.home {
-        var copy = data;
-        // message part 1, length
-        send(copy.length:int, ZMQ_SNDMORE | flags);
-        // message part 2, string
-        while (-1 == zmq_send(classRef.socket, copy.c_str():c_void_ptr,
-                              copy.length:size_t,
-                              (ZMQ_DONTWAIT | flags):c_int)) {
+        // Deep-copy the string to the current locale and release ownership
+        // because the ZeroMQ library will take ownership of the underlying
+        // buffer and free it when it is no longer needed.
+        //
+        // TODO: If *not crossing locales*, check for ownership and
+        // conditionally have ZeroMQ free the memory.
+        var copy = new string(s=data, owned=true);
+        copy.owned = false;
+
+        // Create the ZeroMQ message from the string buffer
+        var msg: zmq_msg_t;
+        if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
+                                   copy.length:size_t, c_ptrTo(free_helper),
+                                   c_nil)) {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+        }
+
+        // Send the message
+        while(-1 == zmq_msg_send(msg, classRef.socket,
+                                 (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
@@ -775,12 +843,16 @@ module ZMQ {
     proc recv(type T, flags: int = 0) where isString(T) {
       var ret: T;
       on classRef.home {
-        var len = recv(int, flags);
-        var buf = c_calloc(uint(8), (len+1):size_t);
-        var str = new string(buff=buf, length=len, size=len+1,
-                             owned=true, needToCopy=false);
-        while (-1 == zmq_recv(classRef.socket, buf:c_void_ptr, len:size_t,
-                              (ZMQ_DONTWAIT | flags):c_int)) {
+        // Initialize an empty ZeroMQ message
+        var msg: zmq_msg_t;
+        if (0 != zmq_msg_init(msg)) {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+        }
+
+        // Receive the message
+        while (-1 == zmq_msg_recv(msg, classRef.socket,
+                                  (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
@@ -788,6 +860,19 @@ module ZMQ {
             halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
           }
         }
+
+        // Construct the string on the current locale, copying the data buffer
+        // from the message object; then, release the message object
+        var len = zmq_msg_size(msg):int;
+        var str = new string(buff=zmq_msg_data(msg):c_ptr(uint(8)),
+                             length=len, size=len+1,
+                             owned=true, needToCopy=true);
+        if (0 != zmq_msg_close(msg)) {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+        }
+
+        // Return the string to the calling locale
         ret = str;
       }
       return ret;
