@@ -157,13 +157,12 @@ ArgSymbol* tiMarkForIntent(IntentTag intent) {
 }
 
 
-// Same except uses ForallIntentTag.
-// It is encoded as int to deal with header ordering.
+// Same except uses TFITag. It is encoded as int to deal with header ordering.
 // Do not invoke on TFI_REDUCE.
 ArgSymbol* tiMarkForTFIntent(int tfIntent) {
   ArgSymbol* retval = NULL;
 
-  switch ((ForallIntentTag) tfIntent) {
+  switch ((TFITag) tfIntent) {
     case TFI_DEFAULT:
       retval = tiMarkBlank;
       break;
