@@ -17,17 +17,36 @@
  * limitations under the License.
  */
 
-/*  A cryptographic library based on OpenSSl, targeted at flexible encryption
-    purposes.
+/*  A cryptographic library based on OpenSSL <https://www.openssl.org/>, targeted at
+    flexible encryption purposes.
 
     The Crypto module focuses on providing various cryptographic utilities such as
 
     - Symmetric Ciphers
+
+      + :chpl:class:`AES`
+
     - Asymmetric Ciphers
+
+      + :chpl:class:`RSA`
+
     - Hashing Functions
+
+      + :chpl:class:`Hash`
+
     - Key Derivation Functions
+
+      + :chpl:class:`KDF`
+
     - Cryptographically-Secure Pseudo-Random Number Generators
-    - Miscellaneous Utilities such as CryptoBuffer, Envelopes, etc.
+
+      + :chpl:class:`CryptoRandom`
+
+    - Miscellaneous Utilities.
+
+      + :chpl:class:`CryptoBuffer`
+      + :chpl:class:`RSAKey`
+      + :chpl:class:`Envelope`
 
     .. note::
 
@@ -337,7 +356,7 @@ module Crypto {
     }
 
     /* Returns the name of the hashing function used. For instance,
-      instantiating an object with `var hash = new Hash("SHA256")`,
+      instantiating an object with ``var hash = new Hash("SHA256")``,
       would make this function return the string `SHA256`.
 
       :return: Name of the hashing function.
@@ -555,7 +574,9 @@ module Crypto {
        number of random values as specified by the argument. Halts for number of
        bytes less than 1 (invalid). For instance,
 
-                    `var a = (new CryptoRandom()).createRandomBuffer(5)`
+       .. code-block:: chapel
+
+          var a = (new CryptoRandom()).createRandomBuffer(5)
 
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
@@ -759,7 +780,7 @@ module Crypto {
        The function returns an `Envelope` object that encloses the auto-generated
        IV, AES encrypted ciphertext and an array of `RSA` encrypted key buffers.
        The number of encrypted keys is equal to the number of `RSAKey` objects
-       in the array. This kind of use case, is useful specifically in developing
+       in the array. This kind of use case is useful specifically in developing
        one-to-many systems such as GPG.
 
        For instance, consider a server-client model where the server performs
@@ -796,7 +817,7 @@ module Crypto {
     /* This is the 'RSA' decrypt routine that decrypts the ciphertext buffer. This
        uses `AES` dencryption to decrypt the ciphertext.
 
-       It's accepts the entire `Envelope` object but only a single `RSAKey` object
+       It accepts the entire `Envelope` object but only a single `RSAKey` object
        for unilateral dencryption.
 
        :arg envp: A `CryptoBuffer` representing the plaintext to be
