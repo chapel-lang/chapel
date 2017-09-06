@@ -37,8 +37,6 @@
 #include "view.h"
 #include "wellknown.h"
 
-bool iteratorsLowered = false;
-
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
@@ -289,14 +287,6 @@ static void computeRecursiveIteratorSet() {
       }
     }
   }
-}
-
-
-// Remove supporting references in ShadowVarSymbols.
-// Otherwise flattenNestedFunction() will try to propagate them.
-static void clearUpRefsInShadowVars() {
-  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
-    svar->removeSupportingReferences();
 }
 
 
@@ -2441,8 +2431,6 @@ static void removeUncalledIterators()
 void lowerIterators() {
   nonLeaderParCheck();
 
-  clearUpRefsInShadowVars();
-
   computeRecursiveIteratorSet();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -2517,6 +2505,5 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   cleanupTemporaryVectors();
-
-  iteratorsLowered = true;
 }
+

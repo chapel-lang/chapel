@@ -44,6 +44,7 @@ public:
 
   virtual bool   enterBlockStmt   (BlockStmt*         node);
   virtual bool   enterForallStmt  (ForallStmt*        node);
+  virtual bool   enterForallIntent(ForallIntent*    intent);
   virtual bool   enterWhileDoStmt (WhileDoStmt*       node);
   virtual bool   enterDoWhileStmt (DoWhileStmt*       node);
   virtual bool   enterCForLoop    (CForLoop*          node);

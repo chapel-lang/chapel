@@ -119,6 +119,8 @@ public:
 
   virtual bool     enterBlockStmt      (BlockStmt*         node);
 
+  virtual bool     enterForallIntent   (ForallIntent*    intent);
+
   virtual bool     enterForallStmt     (ForallStmt*        node);
 
   virtual bool     enterWhileDoStmt    (WhileDoStmt*       node);

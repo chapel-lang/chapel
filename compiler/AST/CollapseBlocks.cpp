@@ -141,6 +141,12 @@ void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
   INT_ASSERT(false);
 }
 
+bool CollapseBlocks::enterForallIntent(ForallIntent* intent) {
+  // This should not be invoked.
+  INT_ASSERT(false);
+  return false;
+}
+
 bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
   return enterBlockStmt(node->loopBody());
 }
@@ -338,6 +344,11 @@ void CollapseBlocks::visitUseStmt(UseStmt* node)
 }
 
 void CollapseBlocks::exitBlockStmt(BlockStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitForallIntent(ForallIntent* intent)
 {
 
 }
