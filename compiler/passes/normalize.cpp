@@ -71,7 +71,8 @@ static void normalize(BaseAST* base);
 static void normalizeReturns(FnSymbol* fn);
 static void callConstructor(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
-static void insertCallTemps(CallExpr* call, Expr* stmt = NULL);
+static void insertCallTemps(CallExpr* call);
+static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void normalizeTypeAlias(DefExpr* defExpr);
 static void normalizeArrayAlias(DefExpr* defExpr);
@@ -433,7 +434,7 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
   for_vector(ForallStmt, fs, forallStmts)
     for_shadow_vars(svar, temp, fs)
       if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr()))
-        insertCallTemps(specCall, fs);
+        insertCallTempsWithStmt(specCall, fs);
 }
 
 
@@ -1283,12 +1284,15 @@ static void  evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
 static bool  moveMakesTypeAlias(CallExpr* call);
 static Type* typeForNewNonGenericRecord(CallExpr* call);
 
-static void insertCallTemps(CallExpr* call, Expr* stmt) {
-  if (shouldInsertCallTemps(call) || stmt != NULL) {
+static void insertCallTemps(CallExpr* call) {
+  if (shouldInsertCallTemps(call))
+    insertCallTempsWithStmt(call, call->getStmtExpr());
+}
+
+static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     SET_LINENO(call);
 
     CallExpr*  parentCall = toCallExpr(call->parentExpr);
-    if (!stmt) stmt       = call->getStmtExpr();
     VarSymbol* tmp        = newTemp("call_tmp");
 
     // Add FLAG_EXPR_TEMP unless this tmp is being used
@@ -1356,7 +1360,6 @@ static void insertCallTemps(CallExpr* call, Expr* stmt) {
 
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
     }
-  }
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {

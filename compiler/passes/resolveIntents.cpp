@@ -271,6 +271,7 @@ static void resolveVarIntent(VarSymbol* sym) {
     } else {
       sym->qual = QUAL_VAL;
     }
+    // TODO also check sym->isConstant() and set one of CONST qualifiers
   }
 }
 

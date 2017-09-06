@@ -186,7 +186,7 @@ void ForallIntents::acceptFI(AstVisitor* visitor) {
 // These functions report a user error for an unexpected intent.
 //
 
-static ForallIntentTag it2tfi(Expr* ref, IntentTag intent) {
+static ForallIntentTag argIntentToForallIntent(Expr* ref, IntentTag intent) {
   switch (intent) {
   case INTENT_IN:        return TFI_IN;
   case INTENT_CONST:     return TFI_CONST;
@@ -208,14 +208,14 @@ static ForallIntentTag it2tfi(Expr* ref, IntentTag intent) {
 }
 
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
-  ForallIntentTag tfi = ri ? TFI_REDUCE : it2tfi(var, intent);
+  ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   fi->fiVars.push_back(var);
   fi->fIntents.push_back(tfi);
   fi->riSpecs.push_back(ri);
 }
 
 void addForallIntent(CallExpr* call, Expr* var, IntentTag intent, Expr* ri) {
-  ForallIntentTag tfi = ri ? TFI_REDUCE : it2tfi(var, intent);
+  ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   const char* name = toUnresolvedSymExpr(var)->unresolved;
   ShadowVarSymbol* ss = new ShadowVarSymbol(tfi, name, ri);
   call->insertAtTail(new DefExpr(ss));
