@@ -10,10 +10,10 @@ source $CWD/common-perf.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of implementation changes in forall intents
-GITHUB_USER=vasslitvinov
-GITHUB_BRANCH=improved-forall-intents
-SHORT_NAME=forall-intents
-START_DATE=08/11/17
+GITHUB_USER=bradcray
+GITHUB_BRANCH=range-void-align-fields
+SHORT_NAME=void-aligns
+START_DATE=09/06/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
