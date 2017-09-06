@@ -1577,9 +1577,6 @@ static bool isGenericInstantiation(Type*     actualType,
       atFormal                                != NULL &&
       atFormal->isInstantiatedFrom(atActual)  == true) {
 
-    INT_ASSERT(atActual->initializerStyle != DEFINES_CONSTRUCTOR);
-    INT_ASSERT(strcmp(fn->name, "init")   == 0);
-
     retval = true;
   }
 
