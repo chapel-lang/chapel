@@ -104,7 +104,7 @@ enum ForallIntentTag {
   TFI_REDUCE,
 };
 
-const char* tfiTagDescrString(ForallIntentTag tfiTag);
+const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 /******************************** | *********************************
 *                                                                   *
@@ -392,16 +392,21 @@ public:
   virtual bool    isConstValWillNotChange()                 const;
 
   const char* intentDescrString() const;
+  bool        isReduce()          const { return intent == TFI_REDUCE;  }
+
   // The corresponding outer var or NULL if not applicable.
-  SymExpr* outerVarSE()  const { return (SymExpr*)outerVarRep; }
-  Symbol*  outerVarSym() const;
-  bool     isReduce()   const { return intent == TFI_REDUCE;  }
-  Expr*    spec()       const;
+  SymExpr* outerVarSE()   const { return (SymExpr*)outerVarRep; }
+  Symbol*  outerVarSym()  const;
+  // Returns the EXPR in "with (EXPR reduce x)".
+  Expr*    reduceOpExpr() const;
+  // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();
 
+  // The intent for this variable.
   ForallIntentTag intent;
 
-  // This would be a SymExpr*, if not for checkIdInsideWithClause().
+  // Either a SymExpr* (after scopeResolve) or a UnresolvedSymExpr*.
+  // This would be just a SymExpr*, if not for checkIdInsideWithClause().
   // See also: sv->outerVarSE() and sv->outerVarSym().
   Expr* outerVarRep;
 
@@ -410,7 +415,10 @@ public:
   // Either way, wrapped in a block.  Otherwise it is NULL.
   BlockStmt* specBlock;
 
-  Symbol* reduceGVar;
+  // A reduction class instance aka "Operator".
+  Symbol* reduceGlobalOp;
+
+  // Once pruning is no longer needed, this should be removed.
   bool pruneit;
 };
 
@@ -734,9 +742,6 @@ bool argMustUseCPtr(Type* t);
 
 // Is 'expr' a SymExpr for the outerVar of some ShadowVarSymbol?
 bool isOuterVarOfShadowVar(Expr* expr);
-
-// Verification support.
-void verifyOnFSIntentVarList(DefExpr* def);
 
 // Parser support.
 class ForallIntents;

@@ -1936,7 +1936,7 @@ static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 {
   Symbol* result = NULL;
   Symbol* fiVarSym = svar->outerVarSym();
-  Expr*   riSpec   = svar->spec();
+  Expr*   riSpec   = svar->reduceOpExpr();
   SET_LINENO(riSpec);
 
   if (SymExpr* riSE = toSymExpr(riSpec)) {
@@ -1984,7 +1984,7 @@ static void markOuterVarsWithIntentsNew(ForallStmt* fs)
 {
   for_shadow_vars(sv, temp, fs)
     if (sv->isReduce())
-      sv->reduceGVar = handleRISpec(fs, sv);
+      sv->reduceGlobalOp = handleRISpec(fs, sv);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2174,7 +2174,7 @@ static void addActualsToParCallNew(ForallStmt* fs, CallExpr* parCall)
   for_shadow_vars(svar, temp, fs)
   {
     Symbol* ovar = svar->outerVarSym();
-    Symbol* globalOp = svar->reduceGVar;
+    Symbol* globalOp = svar->reduceGlobalOp;
     Symbol* actual = NULL;
 
     // Pass 'ovar' into the parallel iterator.

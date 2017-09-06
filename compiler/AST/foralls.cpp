@@ -32,7 +32,7 @@
 #include "resolution.h"
 #include "iterator.h"
 
-const char* tfiTagDescrString(ForallIntentTag tfiTag) {
+const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:   return "default";
     case TFI_CONST:     return "const";

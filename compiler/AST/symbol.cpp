@@ -31,6 +31,7 @@
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "files.h"
+#include "ForallStmt.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
@@ -889,7 +890,7 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent, const char* name, Expr
   // For task-private variables, set 'outerVarRep' to NULL.
   outerVarRep(new UnresolvedSymExpr(name)),
   specBlock(NULL),
-  reduceGVar(NULL),
+  reduceGlobalOp(NULL),
   pruneit(false)
 {
   if (intentsResolved)
@@ -922,8 +923,12 @@ void ShadowVarSymbol::verify() {
   if (!type)
     INT_FATAL(this, "ShadowVarSymbol::type is NULL");
   verifyNotOnList(specBlock);
-  if (!resolved)
-    verifyOnFSIntentVarList(defPoint);
+  if (!resolved) {
+    // Verify that this symbol is on a ForallStmt::intentVariables() list.
+    ForallStmt* pfs = toForallStmt(defPoint->parentExpr);
+    INT_ASSERT(pfs);
+    INT_ASSERT(defPoint->list == &(pfs->intentVariables()));
+  }
   bool reduce = isReduce();
   INT_ASSERT(reduce == (intent == TFI_REDUCE));
   if (!iteratorsLowered)
@@ -997,10 +1002,11 @@ const char* ShadowVarSymbol::intentDescrString() const {
   return "unknown intent"; //dummy
 }
 
-Expr* ShadowVarSymbol::spec() const {
+Expr* ShadowVarSymbol::reduceOpExpr() const {
   if (!specBlock)
     return NULL;
   INT_ASSERT(specBlock->body.length == 1);
+  INT_ASSERT(isReduce());
   return specBlock->body.head;
 }
 

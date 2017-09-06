@@ -432,7 +432,7 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
   collectForallStmts(base, forallStmts);
   for_vector(ForallStmt, fs, forallStmts)
     for_shadow_vars(svar, temp, fs)
-      if (CallExpr* specCall = toCallExpr(svar->spec()))
+      if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr()))
         insertCallTemps(specCall, fs);
 }
 
@@ -1188,7 +1188,7 @@ static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent) {
     SymExpr* riSpecMaybe = dest->firstSymExpr();
 
     if (ShadowVarSymbol* svar = toShadowVarSymbol(riSpecMaybe->parentSymbol))
-      if (riSpecMaybe == svar->spec())
+      if (riSpecMaybe == svar->reduceOpExpr())
         return riSpecMaybe;
   }
 

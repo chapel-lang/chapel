@@ -199,13 +199,6 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
   return NULL;
 }
 
-// Verify that 'def' is on a ForallStmt::intentVariables() list.
-void verifyOnFSIntentVarList(DefExpr* def) {
-  ForallStmt* pfs = toForallStmt(def->parentExpr);
-  INT_ASSERT(pfs);
-  INT_ASSERT(def->list == &(pfs->intentVariables()));
-}
-
 // valid after addParIdxVarsAndRestruct()
 VarSymbol* parIdxVar(const ForallStmt* fs) {
   DefExpr* def = toDefExpr(fs->loopBody()->body.head);
@@ -371,7 +364,7 @@ static void fsVerifyNumIterables(ForallStmt* fs) {
 
 static void adjustReduceOpNames(ForallStmt* fs) {
   for_shadow_vars(sv, temp, fs)
-   if (Expr* ri = sv->spec())
+   if (Expr* ri = sv->reduceOpExpr())
     if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ri)) {
       if (!strcmp(sym->unresolved, "max"))
         sym->unresolved = astr("MaxReduceScanOp");

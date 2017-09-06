@@ -375,7 +375,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
       if (fi->isReduce(i))
         fi->riSpecs[i]->accept(this);
 
-      write(true, tfiTagDescrString(fi->fIntents[i]), true);
+      write(true, forallIntentTagDescription(fi->fIntents[i]), true);
 
       fi->fiVars[i]->accept(this);
     }
