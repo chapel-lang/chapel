@@ -46,8 +46,8 @@
 
   1.  Parallel iteration is not apart of the core Collections module as currently the Chapel compiler
       will produce an internal error. As such, the utility methods provided 'for-free' use serial iteration.
-      This issue has been documented `here <https://github.com/chapel-lang/chapel/issues/6998>`_ . Couple this
-      fact with the fact that ``break``ing out of a serial iterator will result in resource leakage, where destructors
+      This issue has been documented under issue `#6998 <https://github.com/chapel-lang/chapel/issues/6998>`_ . Couple this
+      fact with the fact that ``break`` ing out of a serial iterator will result in resource leakage, where destructors
       are not called, hence Collections using some RAII-based resource cleanup will end up leaking and potentially leaving
       the Collection in an undefined state. This has been documented under issue `#6912 <https://github.com/chapel-lang/chapel/issues/6912>`_ .
   2.  There are issues with :proc:`remove` where the compiler will crash (segmentation fault) if the
@@ -87,14 +87,6 @@ module Collection {
       Add all elements in bulk to this data structure. If the data structure
       rejects an element, we cease to offer more. We return the number of elements
       successfully added to this data structure.
-
-      .. warning::
-
-        While this method will add as many items as possible, it will `break`
-        when it is unable to consume more elements. Due to the fact that using `break` in
-        an iterator will cause a memory leak and potentially leave this data structure in
-        a undefined state, this should not be used to append another data structure to a
-        bounded structure unless it is known it will succeed.
     */
     proc addBulk(elts) : int {
       var successful : int;
@@ -207,12 +199,7 @@ module Collection {
   }
 
   /*
-    Syntactic sugar for 'add'.
-
-    **BUG:** Compiler produces a warning that `c` should be a `ref`, when it is not needed
-    because it is a class and can be used by value. Need a pragma to disable this?
-    As such, this cannot be used where `ref` intents cannot be used, such as ``forall``
-    and ``coforall`` loops.
+    Syntactic sugar for :proc:`add`.
   */
   inline proc +=(ref c : CollectionImpl(?eltType), elt : eltType) {
     c.add(elt);
