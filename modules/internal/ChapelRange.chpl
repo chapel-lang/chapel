@@ -306,7 +306,7 @@ module ChapelRange {
                                   boundedType == BoundedRangeType.boundedLow)
     return true;
   pragma "no doc"
-  proc range.aligned param /* !stridable || boundedHigh || boundedNone */
+  proc range.aligned param /* !stridable && (boundedHigh || boundedNone) */
     return false;
 
   /* Return the first element in the sequence the range represents */
