@@ -92,6 +92,9 @@ module Crypto {
     */
     proc init(s: string) {
       this._len = s.length;
+      if (this._len == 0) {
+        halt("Enter a string with length greater than 0 in order to create a buffer");
+      }
       this.buffDomain = {1..this._len};
       for i in this.buffDomain do {
         this.buff[i] = ascii(s[i]);
@@ -110,6 +113,9 @@ module Crypto {
     */
     proc init(s: [] uint(8)) {
       this._len = s.size;
+      if (this._len == 0) {
+        halt("Enter an array with size greater than 0 in order to create a buffer");
+      }
       this.buffDomain = s.domain;
       for i in this.buffDomain do {
         this.buff[i] = s[i];

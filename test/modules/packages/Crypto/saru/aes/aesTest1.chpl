@@ -8,7 +8,7 @@ proc main(){
   var salt = new CryptoBuffer("random_salt");
   var hash = new Hash("SHA256");
   var k = new KDF(a.getByteSize(), 1000, hash);
-  var key = k.PBKDF2_HMAC("random_key", salt);
+  var key = k.passKDF("random_key", salt);
   writeln("Generated Key: ", key.toHex());
   /* Key Generation phase ends */
 
