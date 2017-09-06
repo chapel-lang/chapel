@@ -1074,12 +1074,6 @@ uint32_t chpl_task_getNumQueuedTasks(void)
     return qthread_readstate(NODE_BUSYNESS);
 }
 
-uint32_t chpl_task_getNumRunningTasks(void)
-{
-    chpl_internal_error("chpl_task_getNumRunningTasks() called");
-    return 1;
-}
-
 int32_t chpl_task_getNumBlockedTasks(void)
 {
     // This isn't accurate, but in the absence of better information
