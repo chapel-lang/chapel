@@ -725,6 +725,8 @@ void ArgSymbol::verify() {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
+  if (hasFlag(FLAG_REF_TO_CONST))
+    INT_ASSERT(intent == INTENT_CONST_REF);
   verifyNotOnList(typeExpr);
   verifyNotOnList(defaultExpr);
   verifyNotOnList(variableExpr);
@@ -762,15 +764,10 @@ bool ArgSymbol::isConstant() const {
     retval = type->isDefaultIntentConst();
     break;
 
+  case INTENT_CONST:
   case INTENT_CONST_IN:
   case INTENT_CONST_REF:
     retval = true;
-    break;
-
-  // Noakes: 2016/06/14
-  // It seems odd to me that this case depends on the type
-  case INTENT_CONST:
-    retval = type->isDefaultIntentConst();
     break;
 
   default:

@@ -393,7 +393,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   } else if (isRecordWrappedType(arg->getValType())) {
     retval = true;
 
-
   // If this function accesses sync vars and the argument is not
   // const, then we cannot remote value forward the argument due
   // to the fence implied by the sync var accesses
@@ -409,6 +408,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
+
   } else if (arg->isRef()) {
     // can forward if the actual is a QUAL_CONST_VAL or a ref-to-const
     DotInfo* info = dotLocaleMap[arg];
@@ -466,6 +466,9 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   //
   if (arg->intent == INTENT_CONST_IN  &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
+    retval = true;
+
+  } else if (arg->hasFlag(FLAG_REF_TO_CONST)) {
     retval = true;
 
   // otherwise, conservatively assume it varies

@@ -1,3 +1,2 @@
 set-const-this.chpl:4: In function 'f':
-set-const-this.chpl:6: error: const actual is passed to 'ref' formal 'a' of =
-note: to formal of type int(64)
+set-const-this.chpl:6: error: illegal lvalue in assignment

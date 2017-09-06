@@ -1866,12 +1866,26 @@ static void reissueCompilerWarning(const char* str, int offset) {
 // FLAG_REF_TO_CONST_WHEN_CONST_THIS.
 //
 
+static bool leftCallIsOrContainsRightCall(CallExpr* callLeft,
+                                          CallExpr* callRight) {
+  if (callLeft == callRight)
+    return true;
+
+  if (callLeft == callRight->parentExpr)
+    return true;
+
+  if (ContextCallExpr* cc = toContextCallExpr(callRight->parentExpr))
+    if (callLeft == cc->parentExpr)
+      return true;
+
+  return false;
+}
+
 static void findNonTaskFnParent(CallExpr* call,
                                 FnSymbol*& parent, int& stackIdx) {
   // We assume that 'call' is at the top of the call stack.
   INT_ASSERT(callStack.n >= 1);
-  INT_ASSERT(callStack.v[callStack.n-1] == call ||
-             callStack.v[callStack.n-1] == call->parentExpr);
+  INT_ASSERT(leftCallIsOrContainsRightCall(callStack.v[callStack.n-1], call));
 
   int ix;
   for (ix = callStack.n-1; ix >= 0; ix--) {
@@ -4460,11 +4474,11 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
-  if (dst->hasFlag(FLAG_NO_COPY)                         == true)  {
+  if (dst->hasFlag(FLAG_NO_COPY)               == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isPrimitiveScalar(srcType)                  == true)  {
+  } else if (isPrimitiveScalar(srcType)        == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
@@ -4473,7 +4487,8 @@ static void resolveInitVar(CallExpr* call) {
     SymExpr*       rhs = toSymExpr(call->get(2));
 
     // The LHS will "own" the record
-    if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false) {
+    if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
+        rhs->symbol()->hasFlag(FLAG_TEMP)                == true) {
       dst->type       = src->type;
 
       call->primitive = primitives[PRIM_MOVE];

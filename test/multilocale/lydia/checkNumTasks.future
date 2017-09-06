@@ -1,4 +1,0 @@
-performance: coforalls behave as expected, creating a single task on each locale.  It would be nice to optimize this case so that no new task is created on the starting locale.
-
-Discovered by the usage in Block and Cyclic distributions, as it affects the
-number of tasks created when dataParIgnoreRunningTasks=false.

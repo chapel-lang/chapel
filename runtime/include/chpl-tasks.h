@@ -392,6 +392,7 @@ size_t chpl_task_getDefaultCallStackSize(void);
 //
 extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntReset(int64_t _ln, int32_t _fn);
 
 #ifdef __cplusplus
 } // end extern "C"

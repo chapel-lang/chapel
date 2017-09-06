@@ -53,7 +53,6 @@ typedef intptr_t chpl_taskID_t;
 // Task layer private area argument bundle header
 //
 typedef struct {
-  chpl_bool countRunning;
   chpl_bool is_executeOn;
   int lineno;
   int filename;

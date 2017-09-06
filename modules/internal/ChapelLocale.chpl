@@ -367,6 +367,7 @@ module ChapelLocale {
   // replication, set replicateRootLocale to false.
   pragma "no doc"
   pragma "locale private" var rootLocale : locale = nil;
+  pragma "locale private" var rootLocaleInitialized = false;
 
   pragma "no doc"
   config param replicateRootLocale = true;
@@ -416,6 +417,7 @@ module ChapelLocale {
       for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
         yield locIdx;
         rootLocale = origRootLocale;
+        rootLocaleInitialized = true;
       }
     }
 
@@ -551,6 +553,7 @@ module ChapelLocale {
       const ref tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
+    rootLocaleInitialized = true;
   }
 
   // We need a temporary value for "here" before the architecture is defined.
@@ -658,16 +661,29 @@ module ChapelLocale {
   //
   pragma "no doc"
   pragma "insert line file info"
+  pragma "inc running task"
   export
   proc chpl_taskRunningCntInc() {
-    here.runningTaskCntAdd(1);
+    if rootLocaleInitialized {
+      here.runningTaskCntAdd(1);
+    }
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "dec running task"
+  export
+  proc chpl_taskRunningCntDec() {
+    if rootLocaleInitialized {
+      here.runningTaskCntSub(1);
+    }
   }
 
   pragma "no doc"
   pragma "insert line file info"
   export
-  proc chpl_taskRunningCntDec() {
-    here.runningTaskCntSub(1);
+  proc chpl_taskRunningCntReset() {
+    here.runningTaskCntSet(0);
   }
 
   //
