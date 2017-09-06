@@ -299,8 +299,15 @@ module ChapelRange {
 
   /* Returns true if the range is aligned */
   inline proc range.aligned where stridable return _aligned;
+
   pragma "no doc"
-  proc range.aligned param where !stridable return true;
+  proc range.aligned param where !stridable &&
+                                 (boundedType == BoundedRangeType.bounded ||
+                                  boundedType == BoundedRangeType.boundedLow)
+    return true;
+  pragma "no doc"
+  proc range.aligned param /* !stridable || boundedHigh || boundedNone */
+    return false;
 
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
@@ -435,8 +442,8 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.isNaturallyAligned()
+    where this.boundedType == BoundedRangeType.boundedNone
   {
-    if alignment == 0 then return true;
     return false;
   }
 
@@ -2028,7 +2035,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if f.writing {
-      if ! alignCheckRange.isNaturallyAligned() then
+      if ! alignCheckRange.isNaturallyAligned() && aligned then
         f <~> new ioLiteral(" align ") <~> chpl__mod(alignment, stride);
     } else {
       // try reading an 'align'

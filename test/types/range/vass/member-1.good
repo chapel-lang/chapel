@@ -1,4 +1,4 @@
-r = .. by 3
+r = .. by 3 align 0
 r.member(0) = true
 r.member(1) = false
 r.member(2) = false
