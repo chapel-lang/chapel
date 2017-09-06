@@ -63,6 +63,7 @@ endif
 # Some tasking layers put something in RUNTIME_INCLS first.
 RUNTIME_INCLS += \
         -I. \
+        -I$(CHPL_MAKE_HOME)/modules/packages \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels/$(CHPL_MAKE_LOCALE_MODEL) \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels \
         -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
