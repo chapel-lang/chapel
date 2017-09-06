@@ -101,6 +101,9 @@ private:
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
 
+  bool            isOuterField(DefExpr* field)                           const;
+  void            makeOuterArg();
+
   void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
                                                DefExpr* field)           const;
 

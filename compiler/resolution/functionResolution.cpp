@@ -1577,9 +1577,6 @@ static bool isGenericInstantiation(Type*     actualType,
       atFormal                                != NULL &&
       atFormal->isInstantiatedFrom(atActual)  == true) {
 
-    INT_ASSERT(atActual->initializerStyle != DEFINES_CONSTRUCTOR);
-    INT_ASSERT(strcmp(fn->name, "init")   == 0);
-
     retval = true;
   }
 
@@ -4288,6 +4285,11 @@ static void resolveSetMember(CallExpr* call) {
     INT_FATAL(call, "Unable to resolve field type");
   }
 
+  INT_ASSERT(isFnSymbol(call->parentSymbol));
+  if (isGenericInstantiation(fs->type, t, toFnSymbol(call->parentSymbol))) {
+    fs->type = t;
+  }
+
   if (fs->type == dtUnknown) {
     if (t != dtNil) {
       fs->type = t;
@@ -5269,6 +5271,18 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
 
   VarSymbol* newTmp = newTemp("new_temp", at);
   DefExpr*   def    = new DefExpr(newTmp);
+
+  if (isCallExpr(call->get(1))) {
+    // Happens when the type on which we are calling new is a nested type.
+    // In that case, the second argument to that inner call should be used as
+    // the "outer" argument to the _new or init function.
+    CallExpr* partial = toCallExpr(call->get(1)->remove());
+
+    call->insertAtHead(partial->get(2)->remove());
+    INT_ASSERT(partial->baseExpr == typeExpr);
+    call->insertAtHead(typeExpr);
+  }
+
 
   if (isClass(at) == true) {
     // Convert the PRIM_NEW to a normal call
