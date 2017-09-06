@@ -115,6 +115,9 @@
       and fast way of distributing memory, as currently 'excess' elements are shifted to a single
       node to be redistributed in the next pass. On the note, we need to collapse the pass for moving
       excess elements into a single pass, hopefully with a zero-copy overhead.
+
+  Methods
+  _______
 */
 
 module DistributedBag {

@@ -40,6 +40,33 @@
   .. note::
 
     The documentation for the Collection modules are being incrementally revised and improved.
+  
+  Bugs and Known Issues
+  _____________________
+
+  1.  Parallel iteration is not apart of the core Collections module as currently the Chapel compiler
+      will produce an internal error. As such, the utility methods provided 'for-free' use serial iteration.
+      This issue has been documented `here <https://github.com/chapel-lang/chapel/issues/6998>`_ . Couple this
+      fact with the fact that ``break``ing out of a serial iterator will result in resource leakage, where destructors
+      are not called, hence Collections using some RAII-based resource cleanup will end up leaking and potentially leaving
+      the Collection in an undefined state. This has been documented under issue `#6912 <https://github.com/chapel-lang/chapel/issues/6912>`_ .
+  2.  There are issues with :proc:`remove` where the compiler will crash (segmentation fault) if the
+      return value is not captured at the callsite, documented as issue `#6542 <https://github.com/chapel-lang/chapel/issues/6542>`_ .
+      Furthermore, issues with capturing the return value in a variable declared outside of a loop will trigger
+      a bug with LICM (Loop Invariant Code Motion), a compiler optimization, to lead to undefined behavior.
+      This optimization can be disabled via the ``--no-loop-invariant-code-motion`` flag, and is documented
+      under issue `#7003 <https://github.com/chapel-lang/chapel/issues/7003>`_ . Lastly, there is yet another
+      bug, of which the cause is currently unknown, that triggers a compiler internal error, which requires
+      the user to declare the express type at callsite. A 'safe' way to use :proc:`remove` in a loop is documented below.
+
+      .. code-block:: chapel
+
+        for i in 1 .. N {
+          var retval : (bool, eltType) = c.remove();
+        }
+
+  Methods
+  _______
 */
 
 module Collection {
@@ -61,11 +88,13 @@ module Collection {
       rejects an element, we cease to offer more. We return the number of elements
       successfully added to this data structure.
 
-      **Warning:** While this method will add as many items as possible, it will `break`
-      when it is unable to consume more elements. Due to the fact that using `break` in
-      an iterator will cause a memory leak and potentially leave this data structure in
-      a undefined state, this should not be used to append another data structure to a
-      bounded structure unless it is known it will succeed.
+      .. warning::
+
+        While this method will add as many items as possible, it will `break`
+        when it is unable to consume more elements. Due to the fact that using `break` in
+        an iterator will cause a memory leak and potentially leave this data structure in
+        a undefined state, this should not be used to append another data structure to a
+        bounded structure unless it is known it will succeed.
     */
     proc addBulk(elts) : int {
       var successful : int;
@@ -82,37 +111,6 @@ module Collection {
 
     /*
       Removes an arbitrary element from this data structure.
-
-      **BUG:** Compiler will segfault if the returned value is not captured at callsite.
-      Issue: #6542
-
-      **FIX:** Ensure that you always capture the return value...
-
-      ::
-
-        var capturedRetval = c.remove()
-
-      **BUG:** Loop Invariant Code Motion causes undefined behavior if assigned to a
-      variable declared outside of loop. Issue: #7003
-
-      **FIX:** Use the `--no-loop-invariant-code-motion` to disable LICM.
-      Otherwise, just make sure you always capture the return value inside of a loop
-      in a variable not declared outside of loop...
-
-      .. code-block:: chapel
-
-        for i in 1 .. N {
-          var retval = c.remove();
-        }
-      
-      **BUG:** Sometimes the compiler will produce an internal error related to 'visibility blocks',
-      this can be resolved by declaring the return type rather than letting the compiler infer it.
-      The exact cause has yet to be found.
-
-      .. code-block:: chapel
-  
-        var retval : (bool, eltType) = c.remove();
-
     */
     proc remove() : (bool, eltType) {
       halt("'proc remove() : (bool, eltType)' is not supported...");
@@ -201,13 +199,6 @@ module Collection {
 
     /*
       Iterate over all elements in the data structure.
-
-      **BUG:** Compiler does not currently allow overriding standalone or leader/follower
-      iterators, and as such only serial iterators may be used with the base type. See
-      issue #6998
-
-      **BUG:** Resources are not properly cleaned up when the user breaks or returns
-      from a serial iterator, and so this *must* be avoided at all cost. See issue #6912
     */
     iter these() : eltType {
       halt("'iter these() : eltType' is not supported...");

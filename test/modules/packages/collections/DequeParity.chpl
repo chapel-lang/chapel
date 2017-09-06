@@ -9,7 +9,7 @@ use DistributedDeque;
 // If we are testing a bounded queue...
 config param isBounded = false;
 
-config param nElemsPerTask = 1000;
+config param nElemsPerTask = 100;
 const totalElems = numLocales * here.maxTaskPar * nElemsPerTask;
 
 var cap : int;
