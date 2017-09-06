@@ -7,7 +7,7 @@ proc main(){
   writeln(s);
 
   var digest = SHA.getDigest(new CryptoBuffer(s));
-  writeln(SHA.getDigestName() + " = " + digest.toHexString());
+  writeln(SHA.getDigestName() , " = " , digest.toHex());
   digest = SHA2.getDigest(new CryptoBuffer(s));
-  writeln(SHA2.getDigestName() + " = " + digest.toHexString());
+  writeln(SHA2.getDigestName() , " = " , digest.toHex());
 }

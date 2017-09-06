@@ -137,7 +137,7 @@ module Crypto {
     proc toHex() {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain do {
-        buffHex[i] = "%xu".format(this.buff[i]);
+        buffHex[i] = "%02xu".format(this.buff[i]);
       }
       return buffHex;
     }
@@ -151,7 +151,7 @@ module Crypto {
     proc toHexString() {
       var buffHexString: string;
       for i in this.buffDomain do {
-        buffHexString += "%xu".format(this.buff[i]);
+        buffHexString += "%02xu".format(this.buff[i]);
       }
       return buffHexString;
     }
@@ -834,7 +834,7 @@ module Crypto {
     Refer to the
     `C_OpenSSL documentation <https://www.openssl.org/docs/manmaster/man3/>`_
     of the reference version for the usage of this module.
-    
+
   */
 module C_OpenSSL {
   // The RSA module include needs special treatment since it uses
