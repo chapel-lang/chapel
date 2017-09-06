@@ -101,11 +101,11 @@ void printStatistics(const char* pass) {
   int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
   int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nForallExpr + nForallIntent+ nNamedExpr;
+    nContextCallExpr + nForallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kForallExpr + kForallIntent + kNamedExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
+    kContextCallExpr + kForallExpr + kNamedExpr;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
   int kType = kPrimitiveType+kEnumType+kAggregateType;
 
@@ -138,14 +138,14 @@ void printStatistics(const char* pass) {
             kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kForallExpr, kNamedExpr);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
-            nSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
+    fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
+            nSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nShadowVarSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
-            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+    fprintf(stderr, "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Shd   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
+            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kShadowVarSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
-            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+    fprintf(stderr, "    Sym  %6dK Mod  %6dK Var   %6dK Arg  %6dK Shd    %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
+            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kShadowVarSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d \n",
@@ -497,10 +497,6 @@ const char* BaseAST::astTagAsString() const {
       retval = "ForwardingStmt";
       break;
 
-    case E_ForallIntent:
-      retval = "ForallIntent";
-      break;
-
     case E_ForallStmt:
       retval = "ForallStmt";
       break;
@@ -527,6 +523,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_ArgSymbol:
       retval = "ArgSymbol";
+      break;
+
+    case E_ShadowVarSymbol:
+      retval = "ShadowVarSymbol";
       break;
 
     case E_TypeSymbol:
@@ -657,6 +657,9 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
+
+  } else if (ShadowVarSymbol* ss = toShadowVarSymbol(ast)) {
+    SUB_TYPE(ss->type);
   }
 
   AST_CHILDREN_CALL(ast, update_symbols, map);

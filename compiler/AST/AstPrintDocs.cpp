@@ -176,11 +176,6 @@ bool AstPrintDocs::enterBlockStmt(BlockStmt* node) {
 }
 
 
-bool AstPrintDocs::enterForallIntent(ForallIntent* intent) {
-  return false;
-}
-
-
 bool AstPrintDocs::enterForallStmt(ForallStmt* node) {
   return false;
 }

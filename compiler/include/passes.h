@@ -26,6 +26,7 @@ extern bool parsed;
 extern bool normalized;
 extern bool resolved;
 extern bool intentsResolved;
+extern bool iteratorsLowered;
 
 
 //
