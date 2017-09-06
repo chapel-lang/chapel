@@ -837,10 +837,14 @@ module Crypto {
     
   */
 module C_OpenSSL {
+  // The RSA module include needs special treatment since it uses
+  // I as an argument even though Chapel will have already included
+  // complex.h which defines I. See issue #6824.
+  require "CryptoHandlers/rsa_complex_bypass_handler.h";
+
   require "openssl/evp.h", "openssl/pem.h",
           "openssl/bn.h", "openssl/bio.h",
           "openssl/aes.h", "openssl/rand.h", "-lcrypto";
-  //require "CryptoHandlers/rsa_complex_bypass_handler.h";
 
   extern type EVP_PKEY_CTX;
   extern type EVP_PKEY;
