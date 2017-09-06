@@ -567,7 +567,8 @@ bool VarSymbol::isConstant() const {
 
 
 bool VarSymbol::isConstValWillNotChange() const {
-  return hasFlag(FLAG_CONST);
+  return (hasFlag(FLAG_CONST) && !hasFlag(FLAG_REF_VAR)) ||
+         hasFlag(FLAG_REF_TO_CONST);
 }
 
 
@@ -778,12 +779,14 @@ bool ArgSymbol::isConstant() const {
   return retval;
 }
 
+// keep in sync with isConstValWillNotChange() in visibleFunctions.cpp
 bool ArgSymbol::isConstValWillNotChange() const {
   //
   // This is written to only be called post resolveIntents
   //
   assert (intent != INTENT_BLANK && intent != INTENT_CONST);
-  return (intent == INTENT_CONST_IN);
+  return intent == INTENT_CONST_IN ||
+         hasFlag(FLAG_REF_TO_CONST);
 }
 
 
