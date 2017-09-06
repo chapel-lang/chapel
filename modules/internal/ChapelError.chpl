@@ -97,9 +97,54 @@ module ChapelError {
 
     pragma "no doc"
     proc TaskErrors(ref group:chpl_TaskErrors) {
-      _head = group._head;
+      var cur:Error = group._head;
       group._head = nil;
+      _head = nil;
+
+      // Flatten nested TaskErrors
+
+      while cur != nil {
+        // remove it from that list
+        var curnext = cur._next;
+        cur._next = nil;
+
+        // Add head / errors in it to this list
+        var asTaskErr:TaskErrors = cur:TaskErrors;
+        if asTaskErr == nil {
+          append(cur);
+        } else {
+          // Remove & add errors in the sub-list
+          var sub:Error = asTaskErr._head;
+          asTaskErr._head = nil;
+          while sub != nil {
+            // remove it from that list
+            var subnext = sub._next;
+            sub._next = nil;
+
+            // add it to this list
+            append(sub);
+
+            sub = subnext;
+          }
+          delete asTaskErr;
+        }
+        cur = curnext;
+      }
     }
+
+    // append a single error to the group
+    proc append(err:Error) {
+      var tmp = _head;
+      err._next = tmp;
+      _head = err;
+    }
+
+    /* Create a TaskErrors containing only the passed error */
+    proc TaskErrors(err: Error) {
+      _head = err;
+    }
+
+    /* Create a TaskErrors not containing any errors */
     proc TaskErrors() {
       _head = nil;
     }
