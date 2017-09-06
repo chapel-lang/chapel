@@ -586,21 +586,6 @@ module DistributedDeque {
 
     /*
       Iterate over all elements in the deque in the order specified.
-      
-      
-
-      **FIXME:** Likely can be worked around by either using snapshot iteration approach
-      or by making the lock reentrant and forcing all iterators to acquire all locks in
-      some global locking order.
-
-      **FIXME:** Ordered serial iterators currently are not working well when the head or tail are negative
-      (because the head and tail may need to move backwards, its easily possible for it to be negative. We
-      handle this right now with the core methods, but iteration wasn't the focus during development...), 
-      but there is not enough time to fix it. This is an official warning against using anything but 
-      iteration when `order` == `Ordering.NONE` (A.K.A the default unordered iteration). 
-
-      **TODO:** Need to create a parallel iterator (not really parallel, just allowed to be used in a
-      `forall`) so that the user may attempt to perform a reduction in a specified order.
     */
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.NONE {
       for slot in slots {
