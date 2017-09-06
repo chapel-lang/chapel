@@ -240,8 +240,19 @@ module ChapelError {
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
   // should be replaced by goto-error-handling.
+  pragma "no doc"
   proc chpl_propagate_error(err: Error) {
     chpl_uncaught_error(err);
   }
-
+  // This function is called to "normalize" the error returned
+  // from a forall loop, so that it is always TaskErrors
+  // (since the author of the forall loop shouldn't need to know
+  //  how many tasks were run in that loop).
+  pragma "no doc"
+  proc chpl_forall_error(err: Error):Error {
+    if err:TaskErrors then
+      return err;
+    // If err wasn't a taskError, wrap it in one
+    return new TaskErrors(err);
+  }
 }

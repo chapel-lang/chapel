@@ -63,5 +63,6 @@ extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gSaveTaskErrorFn;
 extern FnSymbol *gSaveLineInErrorFn;
+extern FnSymbol *gChplForallError;
 
 #endif
