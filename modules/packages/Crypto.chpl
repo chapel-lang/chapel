@@ -455,16 +455,19 @@ module Crypto {
 
     */
     proc init(bits: int, mode: string) {
+      var tmpCipher: EVP_CIPHER_PTR = nil;
       if (bits == 128 && mode == "cbc") {
-        this.cipher = EVP_aes_128_cbc();
+        tmpCipher = EVP_aes_128_cbc();
       } else if (bits == 192 && mode == "cbc") {
-        this.cipher = EVP_aes_192_cbc();
+        tmpCipher = EVP_aes_192_cbc();
       } else if (bits == 256 && mode == "cbc") {
-        this.cipher = EVP_aes_256_cbc();
+        tmpCipher = EVP_aes_256_cbc();
       } else {
         halt("The desired variant of AES does not exist.");
       }
+      this.cipher = tmpCipher;
       this.byteLen = bits/8;
+      super.init();
     }
 
     /* This function returns the size in bytes of the key-length/variant of
@@ -624,12 +627,13 @@ module Crypto {
 
     */
     proc init(byteLen: int, iterCount: int, digest: Hash) {
-      if (bitLen < 1) {
+      if (byteLen < 1) {
         halt("Invalid key size specified.");
       }
       this.byteLen = byteLen;
       this.iterCount = iterCount;
       this.hashName = digest.getDigestName();
+      super.init();
     }
 
     /* This function represents Password-Based KDF 2. It generates a secure-key
