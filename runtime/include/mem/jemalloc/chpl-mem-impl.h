@@ -21,11 +21,6 @@
 #ifndef _chpl_mem_impl_H_
 #define _chpl_mem_impl_H_
 
-// jemalloc.h references the token "malloc" (but not the actual function) and
-// our warning macros mess up jemalloc's use of it.
-// Also the CHPL_JE_ macro needs malloc etc to not be #defined
-#include "chpl-mem-no-warning-macros.h"
-
 // Set up a #define to control jemalloc.h
 #ifndef CHPL_JEMALLOC_PREFIX
 // Use the je_ prefix
@@ -36,7 +31,6 @@
 #endif
 
 #include "jemalloc/jemalloc.h"
-
 #include "chpltypes.h"
 
 #define MALLOCX_NO_FLAGS 0
@@ -94,8 +88,5 @@ chpl_bool chpl_mem_impl_localizes(void);
 
 // TODO (EJR 03/11/16): Can/should we consider using the extended API? See JIRA
 // issue 190 (https://chapel.atlassian.net/browse/CHAPEL-190) for more info.
-
-// turn mem warning macros back on
-#include "chpl-mem-warning-macros.h"
 
 #endif

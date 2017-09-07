@@ -38,8 +38,6 @@
 
 #define _noop(x)
 
-#include "chpl-mem-warning-macros.h"
-
 #define exit    dont_use_exit_use_chpl_exit_instead
 
 #endif // LAUNCHER

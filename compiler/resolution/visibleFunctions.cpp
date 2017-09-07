@@ -126,18 +126,21 @@ void findVisibleFunctions(CallInfo&       info,
 
   if ((explainCallLine && explainCallMatch(call)) ||
       call->id == explainCallID) {
-    USR_PRINT(call, "call: %s", toString(&info));
+    USR_PRINT(call, "call: %s", info.toString());
 
-    if (visibleFns.n == 0)
+    if (visibleFns.n == 0) {
       USR_PRINT(call, "no visible functions found");
 
-    bool first = true;
+    } else {
+      bool first = true;
 
-    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-      USR_PRINT(visibleFn, "%s %s",
-                first ? "visible functions are:" : "                      ",
-                toString(visibleFn));
-      first = false;
+      forv_Vec(FnSymbol, visibleFn, visibleFns) {
+        USR_PRINT(visibleFn,
+                  "%s %s",
+                  first ? "visible functions are:" : "                      ",
+                  toString(visibleFn));
+        first = false;
+      }
     }
   }
 }

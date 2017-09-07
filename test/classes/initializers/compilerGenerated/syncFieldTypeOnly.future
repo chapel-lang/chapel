@@ -1,0 +1,11 @@
+bug: default initializer call with no argument for sync field deadlocks
+
+We insert a readFE on the default value we create for the sync field in order to
+fill it - but if the field has no declared initial value, this means that we
+try to readFE an empty sync that can never be filled, leading to a deadlock.
+
+Constructors copy the default sync into the field, leading to no deadlock in
+this case.  We should likely do that here - should we always do that for the
+Phase 1 initialization of sync fields from sync arguments?
+
+When this future is resolved, you can remove the .timeout file.

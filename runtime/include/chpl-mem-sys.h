@@ -20,9 +20,6 @@
 #ifndef _chpl_mem_sys_H_
 #define _chpl_mem_sys_H_
 
-// disable mem warnings since we need to call the system allocator
-#include "chpl-mem-no-warning-macros.h"
-
 #include <stdlib.h>
 #ifdef __GLIBC__
 #include <malloc.h>  // get memalign
@@ -55,8 +52,5 @@ static inline void* sys_realloc(void* ptr, size_t size) {
 static inline void sys_free(void* ptr) {
   free(ptr);
 }
-
-// Now that we've defined our functions, turn the warnings back on.
-#include "chpl-mem-warning-macros.h"
 
 #endif

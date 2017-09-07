@@ -1,0 +1,1 @@
+bug: directly inlined iterators modify local tmp instead of arg (#7231)
