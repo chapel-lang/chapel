@@ -37,10 +37,10 @@ proc main {
       }
     }
     t.stop();
-    _ddata_free(A, n);
     for i in 0..#n do
       if A[i] != niters*i then
         writeln("error: A[",i,"] = ", A[i]);
+    _ddata_free(A, n);
   }
 
   writeln(true);
