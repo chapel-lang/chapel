@@ -395,6 +395,13 @@ private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string,
 // to check if a default argument was supplied
 // (or any way to use 'nil' in pass-by-ref)
 // This one is documented below.
+
+class BadRegexpError : Error {
+  proc BadRegexpError(msg: string) {
+    this.msg = msg;
+  }
+}
+
 pragma "no doc"
 proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
 
@@ -409,7 +416,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   if err {
     var err_str = qio_regexp_error(ret._regexp);
     var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
-    throw new SystemError(err, err_msg);
+    throw new BadRegexpError(err_msg);
   }
   return ret;
 }
