@@ -1983,19 +1983,31 @@ static void collectVisibleMethodsNamed(Type*                   t,
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
 static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
 
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
-  FnSymbol*      retval = NULL;
+  Expr*          retval = NULL;
 
   if (at == NULL || at->defaultInitializer == NULL) {
-    retval = resolveUninsertedCall(chpl_gen_main->body, call);
+    retval = chpl_gen_main->body;
 
   } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
-    retval = resolveUninsertedCall(point, call);
+    retval = point;
 
   } else {
-    retval = resolveUninsertedCall(at->symbol->defPoint, call);
+    retval = at->symbol->defPoint;
   }
+
+  return retval;
+}
+
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+  FnSymbol*      retval = NULL;
+
+  Expr* where = getInsertPointForTypeFunction(type);
+  if (BlockStmt* stmt = toBlockStmt(where))
+    retval = resolveUninsertedCall(stmt, call);
+  else
+    retval = resolveUninsertedCall(where, call);
 
   return retval;
 }
