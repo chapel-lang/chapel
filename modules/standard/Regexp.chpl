@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -198,7 +198,7 @@ RE2 regular expression syntax reference
   [:blank:]    blank (== [\t ])
   [:cntrl:]    control (== [\x00-\x1F\x7F])
   [:digit:]    digits (== [0-9])
-  [:graph:]    graphical (== [!-~] == 
+  [:graph:]    graphical (== [!-~] ==
                  [A-Za-z0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])
   [:lower:]    lower case (== [a-z])
   [:print:]    printable (== [ -~] == [[:graph:]])
@@ -395,32 +395,28 @@ private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string,
 // to check if a default argument was supplied
 // (or any way to use 'nil' in pass-by-ref)
 // This one is documented below.
+
+class BadRegexpError : Error {
+  proc BadRegexpError(msg: string) {
+    this.msg = msg;
+  }
+}
+
 pragma "no doc"
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
+proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
 
   if CHPL_REGEXP == "none" {
     compilerError("Regular expression support not compiled in");
   }
 
-  var opts:qio_regexp_options_t;
-  qio_regexp_init_default_options(opts);
-  opts.utf8 = utf8;
-  opts.posix = posix;
-  opts.literal = literal;
-  opts.nocapture = nocapture;
-  opts.ignorecase = ignorecase;
-  opts.multiline = multiline;
-  opts.dotnl = dotnl;
-  opts.nongreedy = nongreedy;
+  var err: syserr;
+  var ret = compile(pattern, err, utf8, posix, literal, nocapture, ignorecase,
+                    multiline, dotnl, nongreedy);
 
-  // TODO: At present, 'ret' is leaked
-  var ret:regexp;
-  qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
-  if ! qio_regexp_ok(ret._regexp) {
+  if err {
     var err_str = qio_regexp_error(ret._regexp);
-
-    var err_msg = "Error " + err_str:string + " when compiling regexp '" + pattern + "'";
-    __primitive("chpl_error", err_msg.c_str());
+    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    throw new BadRegexpError(err_msg);
   }
   return ret;
 }
@@ -441,7 +437,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
    :arg utf8: (optional, default true) set to `true` to create a regular
                expression matching UTF-8; `false` for binary or ASCII only.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
-               syntax   
+               syntax
    :arg literal: (optional) set to true to treat the regular expression as a
                  literal (ie, create a regexp matching ``pattern`` as a string
                  rather than as a regular expression).
@@ -467,7 +463,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                    ``(?U)``.
 
  */
-proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
+proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
   opts.utf8 = utf8;
@@ -480,7 +476,7 @@ proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=
   opts.nongreedy = nongreedy;
 
   var ret:regexp;
-  qio_regexp_create_compile(pattern, pattern.length, opts, ret._regexp);
+  qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
 
   if qio_regexp_ok(ret._regexp) {
     error = ENOERR;
@@ -539,7 +535,7 @@ record reMatch {
 pragma "no doc"
 proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
   if qio_regexp_string_piece_isnull(p) {
-    return new reMatch(false, -1, 0); 
+    return new reMatch(false, -1, 0);
   } else {
     return new reMatch(true, p.offset, p.len);
   }
@@ -583,8 +579,8 @@ record regexp {
   proc ok:bool {
     return qio_regexp_ok(_regexp);
   }
-  /* 
-     
+  /*
+
      :returns: a string describing any error encountered when compiling this
                regular expression
    */
@@ -788,8 +784,8 @@ record regexp {
      :arg maxsplit: if nonzero, the maximum number of splits to do
      :yields: each split portion, one at a time
    */
-  iter split(text: ?t, maxsplit: int = 0) 
-    where t == string || t == stringPart 
+  iter split(text: ?t, maxsplit: int = 0)
+    where t == string || t == stringPart
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var ncaptures = qio_regexp_get_ncaptures(_regexp);
@@ -862,8 +858,8 @@ record regexp {
      :yields: tuples of :record:`reMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
-  iter matches(text: ?t, param captures=0, maxmatches: int = max(int)) 
-    where t == string || t == stringPart 
+  iter matches(text: ?t, param captures=0, maxmatches: int = max(int))
+    where t == string || t == stringPart
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var nmatches = 1 + captures;
@@ -879,7 +875,7 @@ record regexp {
     textLength = text.length;
     endpos = pos + textLength;
 
-    var nfound = 0; 
+    var nfound = 0;
     var cur = pos;
     while nfound < maxmatches && cur < endpos {
       var got:bool;
@@ -912,7 +908,7 @@ record regexp {
    */
   // TODO -- move subn after sub for documentation clarity
   proc subn(repl:string, text: ?t, global = true ):(string, int)
-    where t == string || t == stringPart 
+    where t == string || t == stringPart
   {
     var pos:int;
     var endpos:int;
@@ -922,8 +918,8 @@ record regexp {
     endpos = pos + text.length;
 
     var replaced:c_string_copy;
-    var nreplaced:int; 
-    var replaced_len:int(64); 
+    var nreplaced:int;
+    var replaced_len:int(64);
     if t == stringPart {
       nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.from.localize().c_str(), text.from.length, pos, endpos, global, replaced, replaced_len);
     } else {
@@ -944,7 +940,7 @@ record regexp {
      :returns: the new string
    */
   proc sub(repl:string, text: ?t, global = true )
-    where t == string || t == stringPart 
+    where t == string || t == stringPart
   {
     var (str, count) = subn(repl, text, global);
     return str;
@@ -1097,7 +1093,7 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
   return pattern.match(this, (...captures));
 }
 
-/* 
+/*
    Split the the receiving string by occurrences of the passed regular
    expression by calling :proc:`regexp.split`.
 
@@ -1112,7 +1108,7 @@ iter string.split(pattern: regexp, maxsplit: int = 0)
   }
 }
 
-/* 
+/*
    Enumerates matches in the receiving string as well as capture groups
    by calling :proc:`regexp.matches`.
 
