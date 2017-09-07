@@ -1,5 +1,0 @@
-bug: using type query field as default argument in generic initializer
-
-Something about this use of a type query field as the default for
-another argument in this generic class's initializer results in
-an internal error.
