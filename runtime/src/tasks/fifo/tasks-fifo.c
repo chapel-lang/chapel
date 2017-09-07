@@ -1359,14 +1359,9 @@ task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
     chpl_thread_mutexUnlock(&taskTable_lock);
   }
 
-  //
-  // If we now have more tasks than threads to run them on (taking
-  // into account that the current parent of a structured parallel
-  // construct can run at least one of that construct's children),
-  // try to start another thread.
-  //
-  if (queued_task_cnt > idle_thread_cnt &&
-      (p_task_list_head == NULL || ptask->list_next != NULL || is_begin_stmt)) {
+  // If we now have more tasks than threads to run them on, try to start
+  // another thread
+  if (queued_task_cnt > idle_thread_cnt) {
     maybe_add_thread();
   }
 
