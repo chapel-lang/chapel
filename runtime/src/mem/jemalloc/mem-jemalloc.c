@@ -33,9 +33,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-// The CHPL_JE_ macro needs malloc etc to not be #defined
-#include "chpl-mem-no-warning-macros.h"
-
 // Decide whether or not to try to use jemalloc's chunk hooks interface
 //   jemalloc < 4.0 didn't support chunk_hooks_t
 //   jemalloc 4.1 changed opt.nareas from size_t to unsigned
