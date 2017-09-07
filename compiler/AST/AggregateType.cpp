@@ -1594,6 +1594,12 @@ bool AggregateType::needsConstructor() {
       }
     }
 
+    // Make a default constructor for extern classes only if we are not forcing
+    // initializers
+    if (symbol->hasFlag(FLAG_EXTERN) && !fUserDefaultInitializers) {
+      return true;
+    }
+
     // If the parent type needs a default constructor, we need a default
     // constructor.
     if (dispatchParents.n > 0) {
