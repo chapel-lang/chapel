@@ -43,4 +43,6 @@ public:
   Vec<const char*> actualNames; // named arguments
 };
 
+const char* toString(CallInfo* info);
+
 #endif

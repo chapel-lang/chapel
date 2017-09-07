@@ -100,10 +100,6 @@ bool canDispatch(Type*     actualType,
 
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
-const char* toString(Type* type);
-const char* toString(CallInfo* info);
-const char* toString(FnSymbol* fn);
-
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
