@@ -244,6 +244,15 @@ static void preNormalize(FnSymbol* fn) {
   } else if (state.isPhase1() == true) {
     preNormalize(fn->body, state);
 
+  // 1) Insert field initializers before the first statement
+  // 2) Pre-normalize the phase2 statements
+  } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+    Expr* head = fn->body->body.head;
+
+    state.initializeFieldsBefore(head);
+
+    preNormalize(fn->body, state, head);
+
   // 1) Insert super.init()
   // 2) Insert field initializers before super.init()
   // 3) Pre-normalize the phase2 statements

@@ -111,6 +111,10 @@ bool InitNormalize::isClass() const {
   return ::isClass(type());
 }
 
+bool InitNormalize::isExtern() const {
+  return type()->symbol->hasFlag(FLAG_EXTERN);
+}
+
 InitNormalize::InitPhase  InitNormalize::currPhase() const {
   return mPhase;
 }
@@ -184,6 +188,10 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
 
     if (isRecord() == true) {
       initStmt->remove();
+
+    } else if (isExtern() == true) {
+      initStmt->remove();
+
     } else {
       transformSuperInit(initStmt);
     }
