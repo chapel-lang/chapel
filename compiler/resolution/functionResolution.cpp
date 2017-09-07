@@ -1960,7 +1960,9 @@ static void collectVisibleMethodsNamed(Type*                   t,
     for (size_t i = maxChildMethods; i < methods.size(); i++) {
       bool remove = false;
       for (size_t j = 0; j < maxChildMethods; j++) {
-        if (signatureMatch(methods[i], methods[j])) {
+        if (methods[i] != NULL &&
+            methods[j] != NULL &&
+            signatureMatch(methods[i], methods[j])) {
           remove = true;
           break;
         }
