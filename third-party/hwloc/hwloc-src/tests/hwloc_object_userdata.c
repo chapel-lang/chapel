@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -50,12 +50,12 @@ static void export_cb(void *reserved, hwloc_topology_t topo, hwloc_obj_t obj)
   assert(err >= 0);
 
   for(i=0; i<RANDOMSTRINGSHORTTESTS; i++) {
-    sprintf(tmp, "EncodedShort%d", i);
+    sprintf(tmp, "EncodedShort%u", i);
     err = hwloc_export_obj_userdata_base64(reserved, topo, obj, tmp, randomstring+i, i);
     assert(err >= 0);
   }
   for(i=0; i<RANDOMSTRINGLONGTESTS; i++) {
-    sprintf(tmp, "EncodedLong%d", i);
+    sprintf(tmp, "EncodedLong%u", i);
     err = hwloc_export_obj_userdata_base64(reserved, topo, obj, tmp, randomstring+(i+1)/2, RANDOMSTRINGLENGTH-i);
     assert(err >= 0);
   }

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2011 Université Bordeaux
- * Copyright © 2012-2014 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -66,7 +66,7 @@ hwloc_cuda_query_devices(struct hwloc_cuda_backend_data_s *data)
 
 static unsigned hwloc_cuda_cores_per_MP(int major, int minor)
 {
-  /* based on CUDA C Programming Guide, Annex G */
+  /* FP32 cores per MP, based on CUDA C Programming Guide, Annex G */
   switch (major) {
     case 1:
       switch (minor) {
@@ -87,9 +87,16 @@ static unsigned hwloc_cuda_cores_per_MP(int major, int minor)
     case 5:
       return 128;
     case 6:
+      switch (minor) {
+        case 0: return 64;
+        case 1:
+        case 2: return 128;
+      }
+      break;
+    case 7:
       return 64;
   }
-  hwloc_debug("unknown compute capability %u.%u, disabling core display.\n", major, minor);
+  hwloc_debug("unknown compute capability %d.%d, disabling core display.\n", major, minor);
   return 0;
 }
 
