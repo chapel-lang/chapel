@@ -197,11 +197,11 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
-void printResolutionErrorAmbiguous(CallInfo&                  info,
-                                   Vec<ResolutionCandidate*>& candidates);
+void printResolutionErrorUnresolved(CallInfo&                  info,
+                                    Vec<FnSymbol*>&            visibleFns);
 
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
-                                    CallInfo*       info);
+void printResolutionErrorAmbiguous (CallInfo&                  info,
+                                    Vec<ResolutionCandidate*>& candidates);
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 

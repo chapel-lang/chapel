@@ -976,7 +976,7 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
   if (promotion_wrapper_required) {
     if (fReportPromotion) {
-      USR_WARN(info->call, "promotion on %s", toString(info));
+      USR_WARN(info->call, "promotion on %s", info->toString());
     }
 
     promoted_subs.put(fn, (Symbol*)info->call->square);
