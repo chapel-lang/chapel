@@ -101,6 +101,10 @@
 /* Embedded mode; just assume we do not have Valgrind support */
 #undef HAVE_DECL_RUNNING_ON_VALGRIND
 
+/* Define to 1 if you have the declaration of `sched_getcpu', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SCHED_GETCPU
+
 /* Define to 1 if you have the declaration of `snprintf', and to 0 if you
    don't. */
 #undef HAVE_DECL_SNPRINTF
@@ -229,6 +233,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `mkstemp' function. */
+#undef HAVE_MKSTEMP
 
 /* Define to 1 if we have -lmyriexpress */
 #undef HAVE_MYRIEXPRESS

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * Copyright © 2013 Université Bordeaux.  All right reserved.
  * See COPYING in top-level directory.
  */
@@ -88,7 +88,8 @@ hwloc_opencl_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unuse
 		return 0;
 	}
 
-	sprintf(path, "/sys/bus/pci/devices/0000:%02x:%02x.%01x/local_cpus", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+	sprintf(path, "/sys/bus/pci/devices/0000:%02x:%02x.%01x/local_cpus",
+		(unsigned) amdtopo.pcie.bus, (unsigned) amdtopo.pcie.device, (unsigned) amdtopo.pcie.function);
 	sysfile = fopen(path, "r");
 	if (!sysfile)
 		return -1;

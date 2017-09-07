@@ -712,6 +712,7 @@ EXTRA_DIST = \
 
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_object_info_attrsdir = $(man3dir)
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_object_info_attrs_DATA = \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwlocality_info_attr.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_get_info_by_name.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3
 

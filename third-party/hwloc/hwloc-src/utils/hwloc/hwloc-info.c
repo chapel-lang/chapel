@@ -29,7 +29,7 @@ static hwloc_obj_cache_type_t show_ancestor_attrcachetype = (hwloc_obj_cache_typ
 static int show_children = 0;
 static int show_descendants_depth = HWLOC_TYPE_DEPTH_UNKNOWN;
 static int show_index_prefix = 0;
-static int current_obj;
+static unsigned current_obj;
 
 void usage(const char *name, FILE *where)
 {
@@ -182,7 +182,7 @@ hwloc_info_show_obj(hwloc_obj_t obj, const char *type, const char *prefix, int v
     break;
   }
 
-  printf("%s symmetric subtree = %u\n", prefix, obj->symmetric_subtree);
+  printf("%s symmetric subtree = %d\n", prefix, obj->symmetric_subtree);
 
   for(i=0; i<obj->infos_count; i++) {
     printf("%s info %s = %s\n", prefix, obj->infos[i].name, obj->infos[i].value);
@@ -532,7 +532,7 @@ main (int argc, char *argv[])
     err = hwloc_topology_restrict (topology, restrictset, 0);
     if (err) {
       perror("Restricting the topology");
-      /* fallthrough */
+      /* FALLTHRU */
     }
     hwloc_bitmap_free(restrictset);
     free(restrictstring);
@@ -563,7 +563,7 @@ main (int argc, char *argv[])
     DO(cpubind, get_thread_cpubind);
     DO(cpubind, get_thisproc_last_cpu_location);
     DO(cpubind, get_proc_last_cpu_location);
-    DO(cpubind, get_thisthread_cpubind);
+    DO(cpubind, get_thisthread_last_cpu_location);
 
     DO(membind, set_thisproc_membind);
     DO(membind, get_thisproc_membind);

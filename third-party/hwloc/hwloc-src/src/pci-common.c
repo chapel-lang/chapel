@@ -32,7 +32,7 @@ hwloc_pci_traverse_print_cb(void * cbdata __hwloc_attribute_unused,
     if (pcidev->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_HOST)
       hwloc_debug("HostBridge");
     else
-      hwloc_debug("Bridge [%04x:%04x]", busid,
+      hwloc_debug("%s Bridge [%04x:%04x]", busid,
 		  pcidev->attr->pcidev.vendor_id, pcidev->attr->pcidev.device_id);
     hwloc_debug(" to %04x:[%02x:%02x]\n",
 		pcidev->attr->bridge.downstream.pci.domain, pcidev->attr->bridge.downstream.pci.secondary_bus, pcidev->attr->bridge.downstream.pci.subordinate_bus);

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -590,7 +590,7 @@ hwloc__nolibxml_export_new_child(hwloc__xml_export_state_t parentstate,
   ndata->nr_children = 0;
   ndata->has_content = 0;
 
-  res = hwloc_snprintf(ndata->buffer, ndata->remaining, "%*s<%s", npdata->indent, "", name);
+  res = hwloc_snprintf(ndata->buffer, ndata->remaining, "%*s<%s", (int) npdata->indent, "", name);
   hwloc__nolibxml_export_update_buffer(ndata, res);
 }
 
@@ -615,7 +615,7 @@ hwloc__nolibxml_export_end_object(hwloc__xml_export_state_t state, const char *n
   if (ndata->has_content) {
     res = hwloc_snprintf(ndata->buffer, ndata->remaining, "</%s>\n", name);
   } else if (ndata->nr_children) {
-    res = hwloc_snprintf(ndata->buffer, ndata->remaining, "%*s</%s>\n", npdata->indent, "", name);
+    res = hwloc_snprintf(ndata->buffer, ndata->remaining, "%*s</%s>\n", (int) npdata->indent, "", name);
   } else {
     res = hwloc_snprintf(ndata->buffer, ndata->remaining, "/>\n");
   }

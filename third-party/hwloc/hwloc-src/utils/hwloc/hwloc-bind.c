@@ -79,10 +79,10 @@ int main(int argc, char *argv[])
   int only_hbm = -1;
   int logical = 1;
   int taskset = 0;
-  int cpubind_flags = 0;
+  unsigned cpubind_flags = 0;
   hwloc_membind_policy_t membind_policy = HWLOC_MEMBIND_BIND;
   int got_mempolicy = 0;
-  int membind_flags = 0;
+  unsigned membind_flags = 0;
   int opt;
   int ret;
   int pid_number = -1;
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 	err = hwloc_topology_restrict (topology, restrictset, 0);
 	if (err) {
 	  perror("Restricting the topology");
-	  /* fallthrough */
+	  /* FALLTHRU */
 	}
 	hwloc_bitmap_free(restrictset);
 	argc--;
@@ -426,10 +426,10 @@ int main(int argc, char *argv[])
       char *s;
       hwloc_bitmap_asprintf(&s, membind_set);
       if (pid_number > 0)
-        fprintf(stderr, "hwloc_set_proc_membind %s (policy %u flags %x) PID %d failed (errno %d %s)\n",
+        fprintf(stderr, "hwloc_set_proc_membind %s (policy %d flags %x) PID %d failed (errno %d %s)\n",
 		s, membind_policy, membind_flags, pid_number, bind_errno, errmsg);
       else
-        fprintf(stderr, "hwloc_set_membind %s (policy %u flags %x) failed (errno %d %s)\n",
+        fprintf(stderr, "hwloc_set_membind %s (policy %d flags %x) failed (errno %d %s)\n",
 		s, membind_policy, membind_flags, bind_errno, errmsg);
       free(s);
     }

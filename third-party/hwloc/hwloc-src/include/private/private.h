@@ -305,14 +305,10 @@ extern int hwloc_decode_from_base64(char const *src, char *target, size_t targsi
  * to a colon or \0 */
 extern int hwloc_namecoloncmp(const char *haystack, const char *needle, size_t n);
 
-#ifdef HWLOC_HAVE_ATTRIBUTE_FORMAT
-# if HWLOC_HAVE_ATTRIBUTE_FORMAT
+#if HWLOC_HAVE_ATTRIBUTE_FORMAT
 #  define __hwloc_attribute_format(type, str, arg)  __attribute__((__format__(type, str, arg)))
-# else
-#  define __hwloc_attribute_format(type, str, arg)
-# endif
 #else
-# define __hwloc_attribute_format(type, str, arg)
+#  define __hwloc_attribute_format(type, str, arg)
 #endif
 
 #define hwloc_memory_size_printf_value(_size, _verbose) \
@@ -340,4 +336,5 @@ extern char * hwloc_progname(struct hwloc_topology *topology);
 /** \brief Compare bitmaps \p bitmap1 and \p bitmap2 from an inclusion point of view.
  */
 HWLOC_DECLSPEC int hwloc_bitmap_compare_inclusion(hwloc_const_bitmap_t bitmap1, hwloc_const_bitmap_t bitmap2) __hwloc_attribute_pure;
+
 #endif /* HWLOC_PRIVATE_H */
