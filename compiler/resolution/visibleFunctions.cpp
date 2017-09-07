@@ -268,6 +268,8 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
 // with blank and 'const' intents.
 //
 static bool isConstValWillNotChange(Symbol* sym) {
+  if (sym->hasFlag(FLAG_REF_TO_CONST))
+    return true;
   if (ArgSymbol* arg = toArgSymbol(sym)) {
     IntentTag cInt = concreteIntent(arg->intent, arg->type->getValType());
     return cInt == INTENT_CONST_IN;
