@@ -3110,6 +3110,11 @@ static bool populateForwardingMethods(CallInfo& info) {
       // Never give an error when returning 'void' from a forwarding fn
       fn->removeFlag(FLAG_VOID_NO_RETURN_VALUE);
 
+      // Also, don't consider it an iterator, since instead it is a
+      // function returning an iterator.
+      //  (e.g. proc these() return _value.these(); )
+      fn->removeFlag(FLAG_ITERATOR_FN);
+
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_INLINE);
       fn->addFlag(FLAG_FORWARDING_FN);
