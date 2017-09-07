@@ -2185,11 +2185,11 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
         if (tryStack.n > 0) {
           tryFailure = true;
 
-        } else if (candidates.n > 0) {
-          printResolutionErrorAmbiguous(info, candidates);
+        } else if (candidates.n == 0) {
+          printResolutionErrorUnresolved(info, visibleFns);
 
         } else {
-          printResolutionErrorUnresolved(visibleFns, &info);
+          printResolutionErrorAmbiguous (info, candidates);
         }
       }
     }
@@ -2480,7 +2480,118 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void generateMsg(Vec<FnSymbol*>& visibleFns, CallInfo* info);
+static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
+
+void printResolutionErrorUnresolved(CallInfo&       info,
+                                    Vec<FnSymbol*>& visibleFns) {
+  if (info.call == NULL) {
+    INT_FATAL("call is NULL");
+
+  } else {
+    CallExpr* call = userCall(info.call);
+
+    if (call->isCast() == true) {
+      if (info.actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+        USR_FATAL_CONT(call, "illegal cast to non-type");
+      } else {
+        USR_FATAL_CONT(call,
+                       "illegal cast from %s to %s",
+                       toString(info.actuals.v[1]->type),
+                       toString(info.actuals.v[0]->type));
+      }
+
+    } else if (strcmp("these", info.name) == 0) {
+      if (info.actuals.n          == 2 &&
+          info.actuals.v[0]->type == dtMethodToken) {
+
+        if (info.actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+          USR_FATAL_CONT(call,
+                         "unable to iterate over type '%s'",
+                         toString(info.actuals.v[1]->type));
+        } else {
+          USR_FATAL_CONT(call,
+                         "cannot iterate over values of type %s",
+                         toString(info.actuals.v[1]->type));
+        }
+
+      } else {
+        generateMsg(info, visibleFns);
+      }
+
+    } else if (strcmp("_type_construct__tuple", info.name) == 0) {
+      if (info.call->argList.length == 0) {
+        USR_FATAL_CONT(call, "tuple size must be specified");
+
+      } else {
+        SymExpr* sym = toSymExpr(info.call->get(1));
+
+        if (sym == NULL) {
+          USR_FATAL_CONT(call, "tuple size must be static");
+
+        } else if (sym->symbol()->isParameter() == false) {
+          USR_FATAL_CONT(call, "tuple size must be static");
+
+        } else {
+          USR_FATAL_CONT(call, "invalid tuple");
+        }
+      }
+
+    } else if (info.name == astrSequals) {
+      if        (info.actuals.v[0]                              !=  NULL  &&
+                 info.actuals.v[1]                              !=  NULL  &&
+                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
+                 info.actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) ==  true) {
+        USR_FATAL_CONT(call,
+                       "illegal assignment of type to value");
+
+      } else if (info.actuals.v[0]                              != NULL   &&
+                 info.actuals.v[1]                              != NULL   &&
+                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true   &&
+                 info.actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+        USR_FATAL_CONT(call,
+                       "illegal assignment of value to type");
+
+      } else if (info.actuals.v[1]->type == dtNil) {
+        USR_FATAL_CONT(call,
+                       "type mismatch in assignment from nil to %s",
+                       toString(info.actuals.v[0]->type));
+
+      } else {
+        USR_FATAL_CONT(call,
+                       "type mismatch in assignment from %s to %s",
+                       toString(info.actuals.v[1]->type),
+                       toString(info.actuals.v[0]->type));
+      }
+
+    } else if (info.name == astrThis) {
+      Type* type = info.actuals.v[1]->getValType();
+
+      if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        USR_FATAL_CONT(call,
+                       "illegal access of iterator or promoted expression");
+
+      } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+        USR_FATAL_CONT(call,
+                       "illegal access of first class function");
+
+      } else {
+        USR_FATAL_CONT(call,
+                       "unresolved access of '%s' by '%s'",
+                       toString(info.actuals.v[1]->type),
+                       info.toString());
+      }
+
+    } else {
+      generateMsg(info, visibleFns);
+    }
+
+    if (developer == true) {
+      USR_PRINT(call, "unresolved call had id %i", call->id);
+    }
+
+    USR_STOP();
+  }
+}
 
 void printResolutionErrorAmbiguous(CallInfo&                  info,
                                    Vec<ResolutionCandidate*>& candidates) {
@@ -2538,141 +2649,27 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   USR_STOP();
 }
 
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
-                                    CallInfo*       info) {
-  if (info == NULL) {
-    INT_FATAL("CallInfo is NULL");
-
-  } else if (info->call == NULL) {
-    INT_FATAL("call is NULL");
-
-  } else {
-    CallExpr* call = userCall(info->call);
-
-    if (call->isCast() == true) {
-      if (info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-        USR_FATAL_CONT(call, "illegal cast to non-type");
-      } else {
-        USR_FATAL_CONT(call,
-                       "illegal cast from %s to %s",
-                       toString(info->actuals.v[1]->type),
-                       toString(info->actuals.v[0]->type));
-      }
-
-    } else if (strcmp("these", info->name) == 0) {
-      if (info->actuals.n          == 2 &&
-          info->actuals.v[0]->type == dtMethodToken) {
-
-        if (info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-          USR_FATAL_CONT(call,
-                         "unable to iterate over type '%s'",
-                         toString(info->actuals.v[1]->type));
-        } else {
-          USR_FATAL_CONT(call,
-                         "cannot iterate over values of type %s",
-                         toString(info->actuals.v[1]->type));
-        }
-
-      } else {
-        generateMsg(visibleFns, info);
-      }
-
-    } else if (strcmp("_type_construct__tuple", info->name) == 0) {
-      if (info->call->argList.length == 0) {
-        USR_FATAL_CONT(call, "tuple size must be specified");
-
-      } else {
-        SymExpr* sym = toSymExpr(info->call->get(1));
-
-        if (sym == NULL) {
-          USR_FATAL_CONT(call, "tuple size must be static");
-
-        } else if (sym->symbol()->isParameter() == false) {
-          USR_FATAL_CONT(call, "tuple size must be static");
-
-        } else {
-          USR_FATAL_CONT(call, "invalid tuple");
-        }
-      }
-
-    } else if (info->name == astrSequals) {
-      if        (info->actuals.v[0]                              !=  NULL  &&
-                 info->actuals.v[1]                              !=  NULL  &&
-                 info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
-                 info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) ==  true) {
-        USR_FATAL_CONT(call,
-                       "illegal assignment of type to value");
-
-      } else if (info->actuals.v[0]                              != NULL   &&
-                 info->actuals.v[1]                              != NULL   &&
-                 info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true   &&
-                 info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-        USR_FATAL_CONT(call,
-                       "illegal assignment of value to type");
-
-      } else if (info->actuals.v[1]->type == dtNil) {
-        USR_FATAL_CONT(call,
-                       "type mismatch in assignment from nil to %s",
-                       toString(info->actuals.v[0]->type));
-
-      } else {
-        USR_FATAL_CONT(call,
-                       "type mismatch in assignment from %s to %s",
-                       toString(info->actuals.v[1]->type),
-                       toString(info->actuals.v[0]->type));
-      }
-
-    } else if (info->name == astrThis) {
-      Type* type = info->actuals.v[1]->getValType();
-
-      if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-        USR_FATAL_CONT(call,
-                       "illegal access of iterator or promoted expression");
-
-      } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-        USR_FATAL_CONT(call,
-                       "illegal access of first class function");
-
-      } else {
-        USR_FATAL_CONT(call,
-                       "unresolved access of '%s' by '%s'",
-                       toString(info->actuals.v[1]->type),
-                       info->toString());
-      }
-
-    } else {
-      generateMsg(visibleFns, info);
-    }
-
-    if (developer == true) {
-      USR_PRINT(call, "unresolved call had id %i", call->id);
-    }
-
-    USR_STOP();
-  }
-}
-
-static void generateMsg(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
-  CallExpr*   call = userCall(info->call);
+static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
+  CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
 
-  if (info->scope != NULL) {
-    ModuleSymbol* mod = toModuleSymbol(info->scope->parentSymbol);
+  if (info.scope != NULL) {
+    ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
 
     INT_ASSERT(mod);
 
-    str = astr(mod->name, ".", info->toString());
+    str = astr(mod->name, ".", info.toString());
 
   } else {
-    str = info->toString();
+    str = info.toString();
   }
 
-  if (strncmp("_type_construct_", info->name, 16) == 0) {
+  if (strncmp("_type_construct_", info.name, 16) == 0) {
     USR_FATAL_CONT(call, "unresolved type specifier '%s'", str);
 
-  } else if (info->actuals.n                              >  1             &&
-             info->actuals.v[0]->getValType()             == dtMethodToken &&
-             isEnumType(info->actuals.v[1]->getValType()) == true) {
+  } else if (info.actuals.n                              >  1             &&
+             info.actuals.v[0]->getValType()             == dtMethodToken &&
+             isEnumType(info.actuals.v[1]->getValType()) == true) {
     USR_FATAL_CONT(call,
                    "unresolved enumerated type symbol or call '%s'",
                    str);
@@ -2710,7 +2707,7 @@ static void generateMsg(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
 
   if (visibleFns.n                                == 1 &&
       visibleFns.v[0]->numFormals()               == 0 &&
-      strncmp("_type_construct_", info->name, 16) == 0) {
+      strncmp("_type_construct_", info.name, 16) == 0) {
     USR_PRINT(call, "did you forget the 'new' keyword?");
   }
 }
