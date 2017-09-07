@@ -34,6 +34,8 @@ public:
 
   void             haltNotWellFormed()                                   const;
 
+  const char*      toString();
+
   CallExpr*        call;        // call expression
   BlockStmt*       scope;       // module scope as in M.call
 
@@ -42,7 +44,5 @@ public:
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
 };
-
-const char* toString(CallInfo* info);
 
 #endif

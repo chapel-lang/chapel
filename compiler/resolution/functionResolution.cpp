@@ -2491,11 +2491,11 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     USR_FATAL_CONT(call,
                    "ambiguous access of '%s' by '%s'",
                    toString(info.actuals.v[1]->type),
-                   toString(&info));
+                   info.toString());
 
   } else {
     const char* entity = "call";
-    const char* str    = toString(&info);
+    const char* str    = info.toString();
 
     if (strncmp("_type_construct_", info.name, 16) == 0) {
       entity = "type specifier";
@@ -2637,7 +2637,7 @@ void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
         USR_FATAL_CONT(call,
                        "unresolved access of '%s' by '%s'",
                        toString(info->actuals.v[1]->type),
-                       toString(info));
+                       info->toString());
       }
 
     } else {
@@ -2661,10 +2661,10 @@ static void generateMsg(Vec<FnSymbol*>& visibleFns, CallInfo* info) {
 
     INT_ASSERT(mod);
 
-    str = astr(mod->name, ".", toString(info));
+    str = astr(mod->name, ".", info->toString());
 
   } else {
-    str = toString(info);
+    str = info->toString();
   }
 
   if (strncmp("_type_construct_", info->name, 16) == 0) {
