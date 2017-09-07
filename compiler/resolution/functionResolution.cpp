@@ -2997,6 +2997,22 @@ static bool populateForwardingMethods(CallInfo& info) {
     // Make sure methodName is a blessed string
     methodName = astr(methodName);
 
+    // Populate delegate->scratchFn now
+    if (delegate->scratchFn == NULL) {
+      FnSymbol* scratch = new FnSymbol("delegate_scratch_fn");
+      scratch->addFlag(FLAG_COMPILER_GENERATED);
+
+      Expr* where = getInsertPointForTypeFunction(at);
+      if (BlockStmt* stmt = toBlockStmt(where))
+        stmt->insertAtHead(new DefExpr(scratch));
+      else
+        stmt->insertBefore(new DefExpr(scratch));
+
+      normalize(scratch);
+
+      delegate->scratchFn = scratch;
+    }
+
     // There are 2 ways that more methods can be added to
     // delegate->type during resolution:
     //   1) delegate->type itself use a 'delegate'
@@ -3033,11 +3049,9 @@ static bool populateForwardingMethods(CallInfo& info) {
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(test);
 
-      forCall->getStmtExpr()->insertAfter(block);
+      delegate->scratchFn->insertAtHead(block);
 
       tryResolveCall(test);
-
-      block->remove();
     }
 
     // Now, forward all methods named 'methodName' as 'calledName'.

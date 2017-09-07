@@ -289,6 +289,10 @@ public:
   // (i.e. the type of the expression to forward to).
   // Used during resolution to avoid repeated work.
   Type*               type;
+  // Contains a function that resolution can use to store some expressions
+  // it computes. This function should remain in the tree for proper
+  // scoping comparisons during resolution, but isn't needed after that.
+  FnSymbol*           scratchFn;
 
   // The names of symbols from an 'except' or 'only' list
   std::set<const char *> named;
