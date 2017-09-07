@@ -729,10 +729,6 @@ proc SparseBlockArr.doiCanBulkTransfer() {
     for param i in 1..rank do
       if dom.whole.dim(i).stride != 1 then return false;
 
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
-
   return true;
 }
 
