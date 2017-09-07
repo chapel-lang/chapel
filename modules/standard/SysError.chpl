@@ -58,7 +58,7 @@ class SystemError : Error {
     var errstr : c_string = sys_strerror_syserr_str(err, strerror_err);
     var err_msg: string   = errstr:string;
     if !msg.isEmptyString() then
-      err_msg = errstr:string + " '" + msg + "'";
+      err_msg = errstr:string + " (" + msg + ")";
 
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new BlockingIOError(err, err_msg);
