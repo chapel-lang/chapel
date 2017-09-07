@@ -10,18 +10,18 @@ proc main() {
   cobegin {
     {
       coforall 1..tasksPerLoc {
-        begin {
+        sync {
+          begin { mytask(); }
           mytask();
         }
-        mytask();
       }
     }
     {
       coforall 1..tasksPerLoc {
-        begin {
+        sync {
+          begin { mytask(); }
           mytask();
         }
-        mytask();
       }
     }
   }
