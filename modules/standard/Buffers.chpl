@@ -373,7 +373,7 @@ module Buffers {
   // TODO -- shouldn't have to write this this way!
   pragma "init copy fn"
   pragma "no doc"
-  proc chpl__initCopy(x: buffer) throws {
+  proc chpl__initCopy(x: buffer) {
     if x.home == here {
       qbuffer_retain(x._buf_internal);
       return x;
@@ -402,7 +402,7 @@ module Buffers {
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
-        if err then try ioerror(err, "in buffer init copy");
+        if err then try! ioerror(err, "in buffer init copy");
       }
 
       ret.append(b);
