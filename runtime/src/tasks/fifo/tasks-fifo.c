@@ -765,7 +765,11 @@ void chpl_task_startMovedTask(chpl_fn_int_t  fid, chpl_fn_p fp,
 
 
 chpl_taskID_t chpl_task_getId(void) {
-  return get_current_ptask()->bundle.id;
+  task_pool_p ptask = get_current_ptask();
+  if (ptask)
+    return ptask->bundle.id;
+  else
+    return (chpl_taskID_t) -1;
 }
 
 chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
