@@ -85,11 +85,11 @@ class SystemError : Error {
   */
   proc type fromSyserr(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-      return new BlockingIOError(err, details);
+      return new BlockingIOError(details, err);
     } else if err == ECHILD {
       return new ChildProcessError(details, err);
     } else if err == EPIPE || err == ESHUTDOWN {
-      return new BrokenPipeError(err, details);
+      return new BrokenPipeError(details, err);
     } else if err == ECONNABORTED {
       return new ConnectionAbortedError(details, err);
     } else if err == ECONNREFUSED {
@@ -107,7 +107,7 @@ class SystemError : Error {
     } else if err == ENOTDIR {
       return new NotADirectoryError(details, err);
     } else if err == EACCES || err == EPERM {
-      return new PermissionError(err, details);
+      return new PermissionError(details, err);
     } else if err == ESRCH {
       return new ProcessLookupError(details, err);
     } else if err == ETIMEDOUT {
@@ -144,9 +144,9 @@ class SystemError : Error {
 
 */
 class BlockingIOError : SystemError {
-  proc BlockingIOError(err: syserr, details: string = "") {
-    this.err     = err;
+  proc BlockingIOError(details: string = "", err: syserr = EWOULDBLOCK) {
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -158,15 +158,15 @@ class BlockingIOError : SystemError {
 */
 class ChildProcessError : SystemError {
   proc ChildProcessError(details: string = "", err: syserr = ECHILD) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
 /*
 
    ``ConnectionError`` is the subclass of ``SystemError`` that serves as the
-   base class for all connection-based system errors.
+   base class for all system errors regarding connections.
 
 */
 class ConnectionError : SystemError { }
@@ -178,9 +178,9 @@ class ConnectionError : SystemError { }
 
 */
 class BrokenPipeError : ConnectionError {
-  proc BrokenPipeError(err: syserr, details: string = "") {
-    this.err     = err;
+  proc BrokenPipeError(details: string = "", err: syserr = EPIPE) {
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -192,8 +192,8 @@ class BrokenPipeError : ConnectionError {
 */
 class ConnectionAbortedError : ConnectionError {
   proc ConnectionAbortedError(details: string = "", err: syserr = ECONNABORTED) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -205,8 +205,8 @@ class ConnectionAbortedError : ConnectionError {
 */
 class ConnectionRefusedError : ConnectionError {
   proc ConnectionRefusedError(details: string = "", err: syserr = ECONNREFUSED) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -218,8 +218,8 @@ class ConnectionRefusedError : ConnectionError {
 */
 class ConnectionResetError : ConnectionError {
   proc ConnectionResetError(details: string = "", err: syserr = ECONNRESET) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -231,8 +231,8 @@ class ConnectionResetError : ConnectionError {
 */
 class FileExistsError : SystemError {
   proc FileExistsError(details: string = "", err: syserr = EEXIST) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -244,8 +244,8 @@ class FileExistsError : SystemError {
 */
 class FileNotFoundError : SystemError {
   proc FileNotFoundError(details: string = "", err: syserr = ENOENT) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -257,8 +257,8 @@ class FileNotFoundError : SystemError {
 */
 class InterruptedError : SystemError {
   proc InterruptedError(details: string = "", err: syserr = EINTR) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -270,8 +270,8 @@ class InterruptedError : SystemError {
 */
 class IsADirectoryError : SystemError {
   proc IsADirectoryError(details: string = "", err: syserr = EISDIR) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -283,8 +283,8 @@ class IsADirectoryError : SystemError {
 */
 class NotADirectoryError : SystemError {
   proc NotADirectoryError(details: string = "", err: syserr = ENOTDIR) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -295,9 +295,9 @@ class NotADirectoryError : SystemError {
 
 */
 class PermissionError : SystemError {
-  proc PermissionError(err: syserr, details: string = "") {
-    this.err     = err;
+  proc PermissionError(details: string = "", err: syserr = EPERM) {
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -309,8 +309,8 @@ class PermissionError : SystemError {
 */
 class ProcessLookupError : SystemError {
   proc ProcessLookupError(details: string = "", err: syserr = ESRCH) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -322,8 +322,8 @@ class ProcessLookupError : SystemError {
 */
 class TimeoutError : SystemError {
   proc TimeoutError(details: string = "", err: syserr = ETIMEDOUT) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -335,8 +335,8 @@ class TimeoutError : SystemError {
 */
 class EOFError : SystemError {
   proc EOFError(details: string = "", err: syserr = EEOF) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -348,8 +348,8 @@ class EOFError : SystemError {
 */
 class UnexpectedEOFError : SystemError {
   proc UnexpectedEOFError(details: string = "", err: syserr = ESHORT) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -361,8 +361,8 @@ class UnexpectedEOFError : SystemError {
 */
 class BadFormatError : SystemError {
   proc BadFormatError(details: string = "", err: syserr = EFORMAT) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
@@ -374,8 +374,8 @@ class BadFormatError : SystemError {
 */
 class InvalidArgumentError : SystemError {
   proc InvalidArgumentError(details: string = "", err: syserr = EINVAL) {
-    this.err     = err;
     this.details = details;
+    this.err     = err;
   }
 }
 
