@@ -2023,7 +2023,7 @@ record ioNewline {
   pragma "no doc"
   proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
-    f.write("\n");
+    f <~> "\n";
   }
 }
 
@@ -2052,7 +2052,7 @@ record ioLiteral {
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
-    f.write(val);
+    f <~> val;
   }
 }
 
@@ -2075,7 +2075,7 @@ record ioBits {
   pragma "no doc"
   proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
-    f.write(v);
+    f <~> v;
   }
 }
 
