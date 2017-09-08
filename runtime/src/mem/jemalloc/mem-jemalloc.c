@@ -47,7 +47,7 @@ static struct shared_heap {
   size_t size;
   size_t cur_offset;
   pthread_mutex_t alloc_lock;
-} heap; // static, will be "zero" initialized automatically
+} heap;
 
 
 // compute aligned index into our shared heap, alignment must be a power of 2
@@ -270,7 +270,7 @@ static chpl_bool addressNotInHeap(void* ptr) {
   uintptr_t u_ptr = (uintptr_t)ptr;
   uintptr_t u_base = (uintptr_t)heap.base;
   uintptr_t u_top = u_base + heap.size;
-  return (u_ptr < u_base) || (u_ptr > u_top);
+  return (u_ptr < u_base) || (u_ptr >= u_top);
 }
 
 // grab (and leak) whatever memory jemalloc got on it's own, that's not in

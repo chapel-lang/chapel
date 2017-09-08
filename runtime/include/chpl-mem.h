@@ -164,16 +164,11 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
     if (p == NULL) {
       p = chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                              lineno, filename);
-      // TODO is this right?
       do_localize = (subloc == c_sublocid_all) ? true : false;
     }
 
     if (do_localize) {
-      if (subloc == c_sublocid_all) {
-        // TODO can this be removed? I think it's multi-ddata only?
-        chpl_topo_setMemSubchunkLocality(p, size, true, NULL);
-      }
-      else if (isActualSublocID(subloc)) {
+      if (isActualSublocID(subloc)) {
         chpl_topo_setMemLocality(p, size, true, subloc);
       }
     }
