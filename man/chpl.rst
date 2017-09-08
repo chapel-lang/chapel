@@ -528,10 +528,6 @@ OPTIONS
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
 
-**--[no-]strict-errors**
-
-    Enable [disable] strict mode for error handling.
-
 **--[no-]task-tracking**
 
     Enable [disable] the Chapel-implemented task tracking table that
