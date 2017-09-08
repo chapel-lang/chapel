@@ -2600,12 +2600,14 @@ module ChapelArray {
       return this[this.domain.alignedHigh];
     }
 
-    /* Return a range that is grown or shrunk from r to accommodate 'r2' */
+    /* Return a range that is grown shrunk from
+       this._value.dataAllocRange to accommodate 'r2'
+     */
     pragma "no doc"
-    inline proc resizeAllocRange(r: range, r2: range,
-                                 factor=arrayAsVecGrowthFactor,
+    inline proc resizeAllocRange(r2: range, factor=arrayAsVecGrowthFactor,
                                  param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
+      const r = this._value.dataAllocRange;
       const lo = r.low,
             hi = r.high,
             size = r.size;
@@ -2658,7 +2660,7 @@ module ChapelArray {
           }
           const oldRange = this._value.dataAllocRange;
           // TODO: Refactor to remove first arg (can be implied)
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=direction);
+          const nextAllocRange = resizeAllocRange(newRange, direction=direction);
           if debugArrayAsVec then
             writeln("reallocateArray: ",
                     oldRange, " => ", nextAllocRange,
@@ -2738,7 +2740,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           if debugArrayAsVec then
             writeln("pop_back reallocate: ",
                     oldRng, " => ", nextAllocRange,
@@ -2814,7 +2816,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, direction=-1, grow=-1);
           if debugArrayAsVec then
             writeln("pop_front reallocate: ",
                     oldRng, " => ", nextAllocRange,
@@ -2907,7 +2909,7 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           this._value.dsiReallocate((nextAllocRange,));
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
@@ -2942,7 +2944,7 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           this._value.dsiReallocate((nextAllocRange,));
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
