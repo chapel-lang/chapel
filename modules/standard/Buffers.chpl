@@ -146,10 +146,10 @@ module Buffers {
     this.home = here;
   }
   pragma "no doc"
-  proc bytes.bytes(len:int(64)) throws {
+  proc bytes.bytes(len:int(64)) {
     var error:syserr = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
-    if error then try ioerror(error, "in bytes constructor");
+    if error then try! ioerror(error, "in bytes constructor");
     // The buffer is retained internally on construction, but only on success.
     this.home = here;
   }
@@ -347,7 +347,8 @@ module Buffers {
     } else {
       var dst_locale = here;
       var dst_len:int(64) = range.len;
-      ret = new bytes(dst_len);
+      ret = new bytes(dst_len, error=error);
+      if error then return ret;
       var dst_addr = qbytes_data(ret._bytes_internal);
       on this.home {
         // Copy the buffer to the bytes...
@@ -387,7 +388,11 @@ module Buffers {
         end_offset = qbuffer_end_offset(x._buf_internal);
       }
 
-      var b = new bytes(end_offset - start_offset);
+      var allocErr:syserr = ENOERR;
+      var b = new bytes(end_offset - start_offset, error=allocErr);
+      if allocErr then
+        try! ioerror(allocErr, "could not allocate bytes in buffer copy");
+
       var len = qbytes_len(b._bytes_internal);
       var ptr = qbytes_data(b._bytes_internal);
 
@@ -402,10 +407,14 @@ module Buffers {
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
-        if err then try! ioerror(err, "in buffer init copy");
+        if err then try! ioerror(err, "put failed in buffer copy");
       }
 
-      ret.append(b);
+      var appendErr:syserr = ENOERR;
+      ret.append(b, error=appendErr);
+      if appendErr then
+        try! ioerror(appendErr, "append failed in buffer copy");
+
       return ret;
     }
   }
