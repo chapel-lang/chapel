@@ -42,173 +42,268 @@ module SysError {
 use SysBasic;
 
 class SystemError : Error {
-  var err: syserr;
+  var err:     syserr;
+  var details: string;
 
-  proc SystemError(err: syserr, msg: string) {
-    this.err = err;
-    this.msg = msg;
+  proc SystemError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc message() {
+    var strerror_err: err_t = ENOERR;
+    var errstr:  c_string   = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg: string     = errstr:string;
+
+    if !details.isEmptyString() then
+      err_msg = errstr:string + " (" + details + ")";
+
+    return err_msg;
   }
 
   proc writeThis(f) {
     try! f.write(msg);
   }
 
-  proc type fromSyserr(err: syserr, msg: string = "") {
-    var strerror_err: err_t = ENOERR;
-    var errstr : c_string = sys_strerror_syserr_str(err, strerror_err);
-    var err_msg: string   = errstr:string;
-    if !msg.isEmptyString() then
-      err_msg = errstr:string + " (" + msg + ")";
+  // TODO: finish chpldoc
+ /* Return the matching SystemError for a given syserr, with an optional
+    string containing extra details.
 
+   :arg err: the syserr to generate from
+   :arg details: extra information to print after the error description
+ */
+  proc type fromSyserr(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-      return new BlockingIOError(err, err_msg);
+      return new BlockingIOError(err, details);
     } else if err == ECHILD {
-      return new ChildProcessError(err_msg);
-    } else if err == ENOENT {
-      return new FileNotFoundError(err_msg);
+      return new ChildProcessError(err, details);
     } else if err == EPIPE || err == ESHUTDOWN {
-      return new BrokenPipeError(err, err_msg);
+      return new BrokenPipeError(err, details);
     } else if err == ECONNABORTED {
-      return new ConnectionAbortedError(err_msg);
+      return new ConnectionAbortedError(err, details);
     } else if err == ECONNREFUSED {
-      return new ConnectionRefusedError(err_msg);
+      return new ConnectionRefusedError(err, details);
     } else if err == ECONNRESET {
-      return new ConnectionResetError(err_msg);
+      return new ConnectionResetError(err, details);
     } else if err == EEXIST {
-      return new FileExistsError(err_msg);
+      return new FileExistsError(err, details);
     } else if err == ENOENT {
-      return new FileNotFoundError(err_msg);
+      return new FileNotFoundError(err, details);
     } else if err == EINTR {
-      return new InterruptedError(err_msg);
+      return new InterruptedError(err, details);
     } else if err == EISDIR {
-      return new IsADirectoryError(err_msg);
+      return new IsADirectoryError(err, details);
     } else if err == ENOTDIR {
-      return new NotADirectoryError(err_msg);
+      return new NotADirectoryError(err, details);
     } else if err == EACCES || err == EPERM {
-      return new PermissionError(err, err_msg);
+      return new PermissionError(err, details);
     } else if err == ESRCH {
-      return new ProcessLookupError(err_msg);
+      return new ProcessLookupError(err, details);
     } else if err == ETIMEDOUT {
-      return new TimeoutError(err_msg);
+      return new TimeoutError(err, details);
+    } else if err == EEOF {
+      return new EOFError(err, details);
+    } else if err == ESHORT {
+      return new UnexpectedEOFError(err, details);
+    } else if err == EFORMAT {
+      return new BadFormatError(err, details);
+    } else if err == EINVAL {
+      return new InvalidArgumentError(err, details);
     }
 
-    return new SystemError(err, err_msg);
+    return new SystemError(err, details);
   }
 
-  proc type fromSyserr(err: int, msg: string) {
-    return fromSyserr(err:syserr, msg);
+  proc type fromSyserr(err: int, details: string) {
+    return fromSyserr(err:syserr, details);
   }
 }
 
 class BlockingIOError : SystemError {
-  /*
-  proc BlockingIOError(err: syserr, msg: string) where err == EAGAIN ||
-      err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-      */
-  proc BlockingIOError(err: syserr, msg: string) {
-    this.err = err;
-    this.msg = msg;
+  proc BlockingIOError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
   }
 }
 
 class ChildProcessError : SystemError {
-  proc ChildProcessError(msg: string) {
-    this.err = ECHILD;
-    this.msg = msg;
+  proc ChildProcessError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc ChildProcessError(details: string) {
+    ChildProcessError(ECHILD, details);
   }
 }
 
 class ConnectionError : SystemError { }
 
 class BrokenPipeError : ConnectionError {
-  /*
-  proc BrokenPipeError(err: syserr, msg: string) where
-      err == EPIPE || err == ESHUTDOWN {
-      */
-  proc BrokenPipeError(err: syserr, msg: string) {
-    this.err = err;
-    this.msg = msg;
+  proc BrokenPipeError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
   }
 }
 
 class ConnectionAbortedError : ConnectionError {
-  proc ConnectionAbortedError(msg: string) {
-    this.err = ECONNABORTED;
-    this.msg = msg;
+  proc ConnectionAbortedError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc ConnectionAbortedError(details: string) {
+    ConnectionAbortedError(ECONNABORTED, details);
   }
 }
 
 class ConnectionRefusedError : ConnectionError {
-  proc ConnectionRefusedError(msg: string) {
-    this.err = ECONNREFUSED;
-    this.msg = msg;
+  proc ConnectionRefusedError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc ConnectionRefusedError(details: string) {
+    ConnectionRefusedError(ECONNREFUSED, details);
   }
 }
 
 class ConnectionResetError : ConnectionError {
-  proc ConnectionResetError(msg: string) {
-    this.err = ECONNRESET;
-    this.msg = msg;
+  proc ConnectionResetError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc ConnectionResetError(details: string) {
+    ConnectionResetError(ECONNRESET, details);
   }
 }
 
 class FileExistsError : SystemError {
-  proc FileExistsError(msg: string) {
-    this.err = EEXIST;
-    this.msg = msg;
+  proc FileExistsError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc FileExistsError(details: string) {
+    FileExistsError(EEXIST, details);
   }
 }
 
 class FileNotFoundError : SystemError {
-  proc FileNotFoundError(msg: string) {
-    this.err = ENOENT;
-    this.msg = msg;
+  proc FileNotFoundError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc FileNotFoundError(details: string) {
+    FileNotFoundError(ENOENT, details);
   }
 }
 
 class InterruptedError : SystemError {
-  proc InterruptedError(msg: string) {
-    this.err = EINTR;
-    this.msg = msg;
+  proc InterruptedError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc InterruptedError(details: string) {
+    InterruptedError(EINTR, details);
   }
 }
 
 class IsADirectoryError : SystemError {
-  proc IsADirectoryError(msg: string) {
-    this.err = EISDIR;
-    this.msg = msg;
+  proc IsADirectoryError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc IsADirectoryError(details: string) {
+    IsADirectoryError(EISDIR, details);
   }
 }
 
 class NotADirectoryError : SystemError {
-  proc NotADirectoryError(msg: string) {
-    this.err = ENOTDIR;
-    this.msg = msg;
+  proc NotADirectoryError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc NotADirectoryError(details: string) {
+    NotADirectoryError(ENOTDIR, details);
   }
 }
 
 class PermissionError : SystemError {
-  /*
-  proc PermissionError(err:syserr, msg: string) where err == EACCES ||
-      err == EPERM {
-   */
-  proc PermissionError(err:syserr, msg: string) {
-    this.err = err;
-    this.msg = msg;
+  proc PermissionError(err:syserr, details: string) {
+    this.err     = err;
+    this.details = details;
   }
 }
 
 class ProcessLookupError : SystemError {
-  proc ProcessLookupError(msg: string) {
-    this.err = ESRCH;
-    this.msg = msg;
+  proc ProcessLookupError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc ProcessLookupError(details: string) {
+    ProcessLookupError(ESRCH, details);
   }
 }
 
 class TimeoutError : SystemError {
-  proc TimeoutError(msg: string) {
-    this.err = ETIMEDOUT;
-    this.msg = msg;
+  proc TimeoutError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc TimeoutError(details: string) {
+    TimeoutError(ETIMEDOUT, details);
+  }
+}
+
+class EOFError : SystemError {
+  proc EOFError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc EOFError(details: string) {
+    EOFError(EEOF, details);
+  }
+}
+
+class UnexpectedEOFError : SystemError {
+  proc UnexpectedEOFError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc UnexpectedEOFError(details: string) {
+    UnexpectedEOFError(ESHORT, details);
+  }
+}
+
+class BadFormatError : SystemError {
+  proc BadFormatError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc BadFormatError(details: string) {
+    BadFormatError(EFORMAT, details);
+  }
+}
+
+class InvalidArgumentError : SystemError {
+  proc InvalidArgumentError(err: syserr, details: string) {
+    this.err     = err;
+    this.details = details;
+  }
+
+  proc InvalidArgumentError(details: string) {
+    InvalidArgumentError(EINVAL, details);
   }
 }
 
@@ -265,8 +360,8 @@ proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
     const quotedpath = quote_string(path, path.length:ssize_t): string;
-    var   msg_path   = msg + " with path " + quotedpath;
-    throw SystemError.fromSyserr(error, msg_path);
+    var   details    = msg + " with path " + quotedpath;
+    throw SystemError.fromSyserr(error, details);
   }
 }
 
@@ -284,9 +379,9 @@ proc ioerror(error:syserr, msg:string, path:string) throws
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if error {
-    const quotedpath      = quote_string(path, path.length:ssize_t): string;
-    var   msg_path_offset = msg + " with path " + quotedpath + " offset " + offset:string;
-    throw SystemError.fromSyserr(error, msg_path_offset);
+    const quotedpath = quote_string(path, path.length:ssize_t): string;
+    var   details    = msg + " with path " + quotedpath + " offset " + offset:string;
+    throw SystemError.fromSyserr(error, details);
   }
 }
 
@@ -307,8 +402,8 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
   const quotedpath = quote_string(path, path.length:ssize_t): string;
-  const err_msg    = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-  throw SystemError.fromSyserr(EIO:syserr, err_msg);
+  const details    = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
+  throw SystemError.fromSyserr(EIO:syserr, details);
 }
 
 /* Convert a syserr error code to a human-readable string describing that
