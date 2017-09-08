@@ -7,6 +7,7 @@
    support unstructured arrays like graphs. They are a special case of
    :ref:`associative domains and arrays <primers-associative>`.
 */
+pragma "error mode fatal"
 module Opaque {
 
 //

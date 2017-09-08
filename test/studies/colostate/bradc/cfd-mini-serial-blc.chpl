@@ -6,7 +6,8 @@
 * written in Chapel in order to explore the use of Chapel iterators and
 * performance.
 *******************************************************************************/
-module CFD_mini { 
+pragma "error mode fatal"
+module CFD_mini {
 
  use Time;
 
