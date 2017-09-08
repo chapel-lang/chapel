@@ -19,9 +19,12 @@
 
 #undef I
 #include <openssl/rsa.h>
+#include <openssl/evp.h>
 #undef I
 #ifdef _Imaginary_I
 #define I _Imaginary_I
 #else
 #define I _Complex_I
 #endif
+typedef const EVP_MD* CONST_EVP_MD_PTR;
+typedef const EVP_CIPHER* CONST_EVP_CIPHER_PTR;

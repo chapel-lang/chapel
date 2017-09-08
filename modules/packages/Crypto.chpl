@@ -314,7 +314,8 @@ module Crypto {
     var hash: [0..#hashLen] uint(8); ;
     var retHashLen: c_uint = 0;
 
-    const md = EVP_get_digestbyname(digestName.c_str());
+    var md: CONST_EVP_MD_PTR;
+    md = EVP_get_digestbyname(digestName.c_str());
 
     EVP_MD_CTX_init(ctx);
     EVP_DigestInit_ex(ctx, md, c_nil: ENGINE_PTR);
@@ -392,7 +393,7 @@ module Crypto {
   }
 
   pragma "no doc"
-  proc aesEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, const cipher: EVP_CIPHER_PTR) {
+  proc aesEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx: EVP_CIPHER_CTX;
     EVP_CIPHER_CTX_init(ctx);
@@ -426,7 +427,7 @@ module Crypto {
   }
 
   pragma "no doc"
-  proc aesDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: EVP_CIPHER_PTR) {
+  proc aesDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx: EVP_CIPHER_CTX;
     EVP_CIPHER_CTX_init(ctx);
@@ -461,7 +462,7 @@ module Crypto {
 
   class AES {
     pragma "no doc"
-    const cipher: EVP_CIPHER_PTR;
+    var cipher: CONST_EVP_CIPHER_PTR;
     pragma "no doc"
     var byteLen: int;
 
@@ -480,7 +481,7 @@ module Crypto {
 
     */
     proc init(bits: int, mode: string) {
-      var tmpCipher: EVP_CIPHER_PTR = nil;
+      var tmpCipher: CONST_EVP_CIPHER_PTR;
       if (bits == 128 && mode == "cbc") {
         tmpCipher = EVP_aes_128_cbc();
       } else if (bits == 192 && mode == "cbc") {
@@ -610,18 +611,16 @@ module Crypto {
 
     var key: [0..#byteLen] uint(8);
     var salt = saltBuff.getBuffData();
+    var saltLen = saltBuff.getBuffSize();
     var userKeyLen = userKey.length;
 
-    const md = EVP_get_digestbyname(digestName.c_str());
+    var md: CONST_EVP_MD_PTR;
+    md = EVP_get_digestbyname(digestName.c_str());
 
-    PKCS5_PBKDF2_HMAC(userKey.c_str(),
-                      userKeyLen: c_int,
-                      c_ptrTo(salt): c_ptr(c_uchar),
-                      byteLen: c_int,
-                      iterCount: c_int,
-                      md,
-                      byteLen: c_int,
-                      c_ptrTo(key): c_ptr(c_uchar));
+    var ret = C_OpenSSL.PKCS5_PBKDF2_HMAC(userKey.c_str(), userKeyLen: c_int,
+                                          c_ptrTo(salt): c_ptr(c_uchar),
+                                          saltLen: c_int, iterCount: c_int, md,
+                                          byteLen: c_int, c_ptrTo(key): c_ptr(c_uchar));
 
     return key;
   }
@@ -637,8 +636,8 @@ module Crypto {
     /* The `KDF` class constructor that initializes the common data used by most
        of the Key Derivation Functions.
 
-       :arg bitLen: Size of the expected key in bytes / key length.
-       :type bitLen: `int`
+       :arg byteLen: Size of the expected key in bytes / key length.
+       :type byteLen: `int`
 
        :arg iterCount: The iteration count used by OpenSSL to repeat the `Update`
                        primitive. Min. recommended value = 1000. Greater the
@@ -869,9 +868,8 @@ module C_OpenSSL {
   // complex.h which defines I. See issue #6824.
   require "CryptoHandlers/rsa_complex_bypass_handler.h";
 
-  require "openssl/evp.h", "openssl/pem.h",
-          "openssl/bn.h", "openssl/bio.h",
-          "openssl/aes.h", "openssl/rand.h", "-lcrypto";
+  require "openssl/pem.h", "openssl/bn.h", "openssl/bio.h", "openssl/evp.h",
+          "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
 
   extern type EVP_PKEY_CTX;
   extern type EVP_PKEY;
@@ -879,6 +877,8 @@ module C_OpenSSL {
 
   extern type EVP_PKEY_CTX_PTR = c_ptr(EVP_PKEY_CTX);
   extern type EVP_PKEY_PTR = c_ptr(EVP_PKEY);
+  extern type CONST_EVP_MD_PTR;
+  extern type CONST_EVP_CIPHER_PTR;
 
   extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
   extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
@@ -888,14 +888,14 @@ module C_OpenSSL {
   extern proc EVP_PKEY_keygen(ctx: EVP_PKEY_CTX_PTR, ref ppkey: EVP_PKEY_PTR): c_int;
   extern proc EVP_PKEY_CTX_free(ctx: EVP_PKEY_CTX_PTR);
 
-  extern proc EVP_SealInit(ref ctx: EVP_CIPHER_CTX, const types: EVP_CIPHER_PTR,
+  extern proc EVP_SealInit(ref ctx: EVP_CIPHER_CTX, types: CONST_EVP_CIPHER_PTR,
                            ek: c_ptr(c_ptr(c_uchar)), ekl: c_ptr(c_int),
                            iv: c_ptr(c_uchar), pubk: c_ptr(EVP_PKEY_PTR), npubk: c_int): c_int;
   extern proc EVP_SealUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
                              outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
   extern proc EVP_SealFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
-  extern proc EVP_OpenInit(ref ctx: EVP_CIPHER_CTX, types: EVP_CIPHER_PTR,
+  extern proc EVP_OpenInit(ref ctx: EVP_CIPHER_CTX, types: CONST_EVP_CIPHER_PTR,
                            ek: c_ptr(c_uchar), ekl: c_int, iv: c_ptr(c_uchar), priv: EVP_PKEY_PTR): c_int;
   extern proc EVP_OpenUpdate(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar),
                              outl: c_ptr(c_int), inp: c_ptr(c_uchar), inl: c_int): c_int;
@@ -910,9 +910,9 @@ module C_OpenSSL {
   extern type ENGINE_PTR = c_ptr(ENGINE);
 
   extern proc OpenSSL_add_all_digests();
-  extern proc EVP_get_digestbyname(name: c_string): EVP_MD_PTR;
+  extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
   extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): c_int;
-  extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, const types: EVP_MD_PTR, impl: ENGINE_PTR): c_int;
+  extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
   extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
   extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
@@ -924,12 +924,21 @@ module C_OpenSSL {
 
   extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
 
-  extern proc EVP_sha256(): EVP_MD_PTR;
+  extern proc EVP_sha256(): CONST_EVP_MD_PTR;
+
+  extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
+                                passlen: c_int,
+                                const salt: c_ptr(c_uchar),
+                                saltlen: c_int,
+                                iterCount: c_int,
+                                digest: CONST_EVP_MD_PTR,
+                                keylen: c_int,
+                                outx: c_ptr(c_uchar)): c_int;
 
   extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
   extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): c_int;
   extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
-                                const cipher: EVP_CIPHER_PTR,
+                                cipher: CONST_EVP_CIPHER_PTR,
                                 impl: ENGINE_PTR,
                                 const key: c_ptr(c_uchar),
                                 const iv: c_ptr(c_uchar)): c_int;
@@ -942,7 +951,7 @@ module C_OpenSSL {
                                   outm: c_ptr(c_uchar),
                                   outl: c_ptr(c_int)): c_int;
   extern proc EVP_DecryptInit_ex(ref ctx: EVP_CIPHER_CTX,
-                                const cipher: EVP_CIPHER_PTR,
+                                cipher: CONST_EVP_CIPHER_PTR,
                                 impl: ENGINE_PTR,
                                 const key: c_ptr(c_uchar),
                                 const iv: c_ptr(c_uchar)): c_int;
@@ -955,26 +964,18 @@ module C_OpenSSL {
                                   outm: c_ptr(c_uchar),
                                   outl: c_ptr(c_int)): c_int;
 
-  extern proc EVP_aes_128_cbc(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_128_ecb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_128_cfb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_128_ofb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_192_cbc(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_192_ecb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_192_cfb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_192_ofb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_256_cbc(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_256_ecb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_256_cfb(): EVP_CIPHER_PTR;
-  extern proc EVP_aes_256_ofb(): EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_cbc(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_ecb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_cfb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_128_ofb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_cbc(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_ecb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_cfb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_192_ofb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_cbc(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_ecb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_cfb(): CONST_EVP_CIPHER_PTR;
+  extern proc EVP_aes_256_ofb(): CONST_EVP_CIPHER_PTR;
 
-  extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
-                                passlen: c_int,
-                                const salt: c_ptr(c_uchar),
-                                saltlen: c_int,
-                                iterCount: c_int,
-                                const digest: EVP_MD_PTR,
-                                keylen: c_int,
-                                outx: c_ptr(c_uchar)): c_int;
   extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
 }
