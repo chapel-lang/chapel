@@ -336,6 +336,10 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
+      // TODO: remove this check
+      if (node->id == 193214) {
+        gdbShouldBreakHere();
+      }
 
       SET_LINENO(node);
 
