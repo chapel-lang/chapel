@@ -865,19 +865,37 @@ canBlockStmtThrow(BlockStmt* block)
 
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
+
   error_checking_mode_t mode;
 
-  ModuleSymbol* mod = fn->getModule();
-  if (mod->hasFlag(FLAG_ERROR_MODE_FATAL))
-    mode = ERROR_MODE_FATAL;
-  else if (mod->hasFlag(FLAG_ERROR_MODE_RELAXED))
+  // Compute the error handling mode to use
+  //
+  // Go up symbols, starting with fn, looking for flag
+  // This allows the flag to be set on an outer module in the
+  // case of nested modules.
+  {
+    Symbol* cur = fn;
+
+    // This is the default for non-implicit modules.
     mode = ERROR_MODE_RELAXED;
-  else if (mod->hasFlag(FLAG_ERROR_MODE_STRICT))
-    mode = ERROR_MODE_STRICT;
-  else if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
-    mode = ERROR_MODE_FATAL;
-  else
-    mode = ERROR_MODE_RELAXED;
+
+    while (cur != NULL && cur->defPoint != NULL) {
+      if (cur->hasFlag(FLAG_ERROR_MODE_FATAL)) {
+        mode = ERROR_MODE_FATAL;
+        break;
+      } else if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
+        mode = ERROR_MODE_RELAXED;
+        break;
+      } else if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
+        mode = ERROR_MODE_STRICT;
+        break;
+      } else if (cur->hasFlag(FLAG_IMPLICIT_MODULE)) {
+        mode = ERROR_MODE_FATAL;
+        break;
+      }
+      cur = cur->defPoint->parentSymbol;
+    }
+  }
 
   ErrorCheckingVisitor visit(fn->throwsError(), mode, reasons);
 
