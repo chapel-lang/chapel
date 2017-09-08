@@ -85,6 +85,9 @@ public:
   int   paramPrefers;
 };
 
+// map: (block id) -> (map: sym -> sym)
+typedef std::map<int, SymbolMap*> CapturedValueMap;
+
 //#
 //# Global Variables
 //#
@@ -130,6 +133,9 @@ static Map<Type*,     FnSymbol*>   runtimeTypeToValueMap;
 static Map<FnSymbol*, const char*> innerCompilerWarningMap;
 
 static Map<FnSymbol*, const char*> outerCompilerWarningMap;
+
+static CapturedValueMap            capturedValues;
+
 
 //#
 //# Static Function Declarations
@@ -221,6 +227,14 @@ static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
+
+static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
@@ -2739,31 +2753,47 @@ static void findVisibleFunctionsAndCandidates(
                                 CallInfo&                  info,
                                 Vec<FnSymbol*>&            visibleFns,
                                 Vec<ResolutionCandidate*>& candidates) {
+  CallExpr* call = info.call;
+  FnSymbol* fn   = call->resolvedFunction();
+
   // First, try finding candidates without delegation
-  findVisibleFunctions (info, visibleFns);
+  if (fn != NULL) {
+    visibleFns.add(fn);
+
+    handleTaskIntentArgs(info, fn);
+
+  } else {
+    findVisibleFunctions(info, visibleFns);
+  }
+
   findVisibleCandidates(info, visibleFns, candidates);
 
   // If no candidates were found and it's a method, try delegating
-  if (candidates.n == 0) {
-    if (info.call->numActuals()       >= 1 &&
-        info.call->get(1)->typeInfo() == dtMethodToken) {
-      Type* receiverType = info.call->get(2)->typeInfo()->getValType();
+  if (candidates.n             == 0 &&
+      call->numActuals()       >= 1 &&
+      call->get(1)->typeInfo() == dtMethodToken) {
+    Type* receiverType = call->get(2)->typeInfo()->getValType();
 
-      if (typeUsesForwarding(receiverType) == true) {
-        if (populateForwardingMethods(info) == true) {
-          visibleFns.clear();
+    if (typeUsesForwarding(receiverType) == true &&
+        populateForwardingMethods(info)  == true) {
+      visibleFns.clear();
 
-          forv_Vec(ResolutionCandidate*, candidate, candidates) {
-            delete candidate;
-          }
-
-          candidates.clear();
-
-          // try again to include forwarded functions
-          findVisibleFunctions (info, visibleFns);
-          findVisibleCandidates(info, visibleFns, candidates);
-        }
+      forv_Vec(ResolutionCandidate*, candidate, candidates) {
+        delete candidate;
       }
+
+      candidates.clear();
+
+      if (fn != NULL) {
+        visibleFns.add(fn);
+
+        handleTaskIntentArgs(info, fn);
+
+      } else {
+        findVisibleFunctions(info, visibleFns);
+      }
+
+      findVisibleCandidates(info, visibleFns, candidates);
     }
   }
 
@@ -3815,6 +3845,277 @@ static void testArgMapping(FnSymbol*                    fn1,
   } else {
     EXPLAIN("O: no information gained from argument\n");
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool  isConstValWillNotChange(Symbol* sym);
+
+static void  captureTaskIntentValues(int        argNum,
+                                     ArgSymbol* formal,
+                                     Expr*      actual,
+                                     Symbol*    varActual,
+                                     CallInfo&  info,
+                                     FnSymbol*  taskFn);
+
+static void  verifyTaskFnCall(BlockStmt* parent, CallExpr* call);
+
+static Expr* parentToMarker(BlockStmt* parent, CallExpr* call);
+
+//
+// Copy the type of the actual into the type of the corresponding formal
+// of a task function. Also do captureTaskIntentValues() when needed.
+//
+static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
+  CallExpr* call = info.call;
+
+  INT_ASSERT(taskFn);
+
+  if (needsCapture(taskFn) == false) {
+    // A task function should have args only if it needsCapture.
+    if (taskFn->hasFlag(FLAG_ON) == true) {
+      // Documenting the current state: fn_on gets a chpl_localeID_t arg.
+      INT_ASSERT(call->numActuals() == 1);
+
+    } else {
+      INT_ASSERT(call->numActuals() == 0 || isTaskFun(taskFn) == false);
+    }
+
+  } else {
+    int argNum = 0;
+
+    for_formals_actuals(formal, actual, call) {
+      SymExpr* symexpActual = toSymExpr(actual);
+
+      if (symexpActual == NULL) {
+        // We add NamedExpr args in propagateExtraLeaderArgs().
+        NamedExpr* namedexpActual = toNamedExpr(actual);
+
+        INT_ASSERT(namedexpActual);
+
+        symexpActual = toSymExpr(namedexpActual->actual);
+      }
+
+      INT_ASSERT(symexpActual); // because of how we invoke a task function
+
+      Symbol* varActual = symexpActual->symbol();
+
+      // If 'call' is in a generic function, it will have been instantiated by
+      // now. Otherwise our task function has to remain generic.
+      INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
+
+      // Need to copy varActual->type even for type variables.
+      // BTW some formals' types may have been set in createTaskFunctions().
+      formal->type = varActual->type;
+
+      // If the actual is a ref, still need to capture it => remove ref.
+      if (isReferenceType(varActual->type) == true) {
+        Type* deref = varActual->type->getValType();
+
+        // todo: replace needsCapture() with always resolveArgIntent(formal)
+        // then checking (formal->intent & INTENT_FLAG_IN)
+        if (needsCapture(deref) == true) {
+          formal->type = deref;
+
+          // If the formal has a ref intent, DO need a ref type => restore it.
+          resolveArgIntent(formal);
+
+          if (formal->intent & INTENT_FLAG_REF) {
+            formal->type = varActual->type;
+          }
+
+          if (varActual->isConstant() == true) {
+            int newIntent = formal->intent | INTENT_FLAG_CONST;
+
+            // and clear INTENT_FLAG_MAYBE_CONST flag
+            newIntent      &= ~INTENT_FLAG_MAYBE_CONST;
+            formal->intent =  (IntentTag) newIntent;
+          }
+        }
+      }
+
+      if (varActual->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        formal->addFlag(FLAG_TYPE_VARIABLE);
+      }
+
+      // This does not capture records/strings that are passed
+      // by blank or const intent. As of this writing (6'2015)
+      // records and strings are (incorrectly) captured at the point
+      // when the task function/arg bundle is created.
+      if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
+          isConstValWillNotChange(varActual)        == false &&
+          (concreteIntent(formal->intent, formal->type->getValType())
+           & INTENT_FLAG_IN)) {
+        // skip dummy_locale_arg: chpl_localeID_t
+        if (argNum != 0 || taskFn->hasFlag(FLAG_ON) == false) {
+          captureTaskIntentValues(argNum,
+                                  formal,
+                                  actual,
+                                  varActual,
+                                  info,
+                                  taskFn);
+        }
+      }
+
+      argNum = argNum + 1;
+    }
+
+    // Even if some formals are (now) types, if 'taskFn' remained generic,
+    // gatherCandidates() would not instantiate it, for some reason.
+    taskFn->removeFlag(FLAG_GENERIC);
+  }
+}
+
+//
+// Allow invoking isConstValWillNotChange() even on formals
+// with blank and 'const' intents.
+//
+static bool isConstValWillNotChange(Symbol* sym) {
+  bool retval = false;
+
+  if (ArgSymbol* arg = toArgSymbol(sym)) {
+    IntentTag cInt = concreteIntent(arg->intent, arg->type->getValType());
+
+    retval = cInt == INTENT_CONST_IN;
+
+  } else {
+    retval = sym->isConstValWillNotChange();
+  }
+
+  return retval;
+}
+
+//
+// Generate code to store away the value of 'varActual' before
+// the cobegin or the coforall loop starts. Use this value
+// instead of 'varActual' as the actual to the task function,
+// meaning (later in compilation) in the argument bundle.
+//
+// This is to ensure that all task functions use the same value
+// for their respective formal when that has an 'in'-like intent,
+// even if 'varActual' is modified between creations of
+// the multiple task functions.
+//
+static void captureTaskIntentValues(int        argNum,
+                                    ArgSymbol* formal,
+                                    Expr*      actual,
+                                    Symbol*    varActual,
+                                    CallInfo&  info,
+                                    FnSymbol*  taskFn) {
+  CallExpr*  call   = info.call;
+  BlockStmt* parent = toBlockStmt(call->parentExpr);
+
+  INT_ASSERT(parent);
+
+  if (taskFn->hasFlag(FLAG_ON) && !parent->isForLoop()) {
+    // coforall ... { on ... { .... }} ==> there is an intermediate BlockStmt
+    parent = toBlockStmt(parent->parentExpr);
+
+    INT_ASSERT(parent);
+  }
+
+  if (fVerify == true) {
+    if (argNum == 0 || (argNum == 1 && taskFn->hasFlag(FLAG_ON) == true)) {
+      verifyTaskFnCall(parent, call); //assertions only
+    }
+  }
+
+  Expr* marker = parentToMarker(parent, call);
+
+  if (varActual->hasFlag(FLAG_NO_CAPTURE_FOR_TASKING) == true) {
+
+  } else if (varActual->defPoint->parentExpr == parent) {
+    // Index variable of the coforall loop? Do not capture it!
+    INT_ASSERT(varActual->hasFlag(FLAG_COFORALL_INDEX_VAR));
+
+  } else {
+    SymbolMap*& symap   = capturedValues[parent->id];
+    Symbol*     capTemp = NULL;
+
+    if (symap != NULL) {
+      capTemp = symap->get(varActual);
+
+    } else {
+      symap = new SymbolMap();
+    }
+
+    if (capTemp == NULL) {
+      capTemp = newTemp(astr(formal->name, "_captemp"), formal->type);
+
+      marker->insertBefore(new DefExpr(capTemp));
+
+      if (hasAutoCopyForType(formal->type) == true) {
+        FnSymbol* autoCopy = getAutoCopy(formal->type);
+
+        marker->insertBefore("'move'(%S,%S(%S))",
+                             capTemp,
+                             autoCopy,
+                             varActual);
+
+      } else if (isReferenceType(varActual->type) ==  true &&
+                 isReferenceType(capTemp->type)   == false) {
+        marker->insertBefore("'move'(%S,'deref'(%S))", capTemp, varActual);
+
+      } else {
+        marker->insertBefore("'move'(%S,%S)", capTemp, varActual);
+      }
+
+      symap->put(varActual, capTemp);
+    }
+
+    actual->replace(new SymExpr(capTemp));
+
+    INT_ASSERT(info.actuals.v[argNum] == varActual);
+
+    info.actuals.v[argNum] = capTemp;
+  }
+}
+
+// Ensure 'parent' is the block before which we want to do the capturing.
+static void verifyTaskFnCall(BlockStmt* parent, CallExpr* call) {
+  if (call->isNamed("coforall_fn") == true ||
+      call->isNamed("on_fn")       == true) {
+    INT_ASSERT(parent->isForLoop());
+
+  } else if (call->isNamed("cobegin_fn") == true) {
+    DefExpr* first = toDefExpr(parent->getFirstExpr());
+
+    // just documenting the current state
+    INT_ASSERT(first && !strcmp(first->sym->name, "_cobeginCount"));
+
+  } else {
+    INT_ASSERT(call->isNamed("begin_fn"));
+  }
+}
+
+//
+// Returns the expression that we want to capture before.
+//
+// Why not just 'parent'? In users/shetag/fock/fock-dyn-prog-cntr.chpl,
+// we cannot do parent->insertBefore() because parent->list is null.
+// That's because we have: if ... then cobegin ..., so 'parent' is
+// immediately under CondStmt. This motivated me for cobegins to capture
+// inside of the 'parent' block, at the beginning of it.
+//
+static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
+  Expr*  retval = parent;
+
+  if (call->isNamed("cobegin_fn") == true) {
+    DefExpr*  def  = toDefExpr(parent->body.head);
+    CallExpr* move = toCallExpr(def->next);
+    SymExpr*  arg1 = toSymExpr(move->get(1));
+
+    INT_ASSERT(strcmp(def->sym->name, "_cobeginCount") == 0);
+    INT_ASSERT(arg1->symbol()                          == def->sym);
+
+    retval = move->next;
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -7156,6 +7457,12 @@ void resolve() {
   freeCache(promotionsCache);
 
   visibleFunctionsClear();
+
+  std::map<int, SymbolMap*>::iterator it;
+
+  for (it = capturedValues.begin(); it != capturedValues.end(); ++it) {
+    delete it->second;
+  }
 
   clearPartialCopyDataFnMap();
 
