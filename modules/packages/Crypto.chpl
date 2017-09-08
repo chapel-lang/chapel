@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/*  A cryptographic library based on OpenSSL <https://www.openssl.org/>, targeted at
+/*  A cryptographic library based on `OpenSSL <https://www.openssl.org/>`_, targeted at
     flexible encryption purposes.
 
     The Crypto module focuses on providing various cryptographic utilities such as
@@ -855,8 +855,7 @@ module Crypto {
       This submodule wraps the C_OpenSSL implementation, providing access to
       most of the C_OpenSSL calls.
 
-      Refer to the
-      `C_OpenSSL documentation <https://www.openssl.org/docs/manmaster/man3/>`_
+      Refer to the `C_OpenSSL documentation <https://www.openssl.org/docs/manmaster/man3/>`_
       of the reference version for the usage of this module.
 
     */
