@@ -1235,7 +1235,7 @@ for testname in testsrc:
                                          numlocales, maxLocalesAvailable))
                 continue
         if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1):
-            sys.stdout.write('[Warning: skipping {0} because it does not '
+            sys.stdout.write('[Skipping {0} because it does not '
                              'use more than one locale]\n'
                              .format(os.path.join(localdir, test_filename)))
             continue
