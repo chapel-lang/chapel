@@ -2618,6 +2618,7 @@ module ChapelArray {
           return ..hi#-newSize;
         }
       } else {
+        // TODO: grow <= 0 is not tested for |r2.size - r1.size| > 1
         const newSize = min(size-1, (size/factor):int);
         if direction > 0 {
           var newRange = lo..#newSize;
