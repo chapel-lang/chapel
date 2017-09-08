@@ -1,2 +1,2 @@
-relaxed-try-nothrows.chpl:5: In function 'propError':
-relaxed-try-nothrows.chpl:6: error: throwing call in non-throwing function without try or try! (relaxed mode)
+implicit-relaxed-try-nothrows.chpl:5: In function 'propError':
+implicit-relaxed-try-nothrows.chpl:6: error: throwing call in non-throwing function without try or try! (relaxed mode)

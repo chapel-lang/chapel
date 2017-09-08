@@ -876,24 +876,36 @@ static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
   {
     Symbol* cur = fn;
 
-    // This is the default for non-implicit modules.
-    mode = ERROR_MODE_RELAXED;
+    bool explicitMode = false;
 
     while (cur != NULL && cur->defPoint != NULL) {
       if (cur->hasFlag(FLAG_ERROR_MODE_FATAL)) {
         mode = ERROR_MODE_FATAL;
-        break;
-      } else if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
-        mode = ERROR_MODE_RELAXED;
-        break;
-      } else if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
-        mode = ERROR_MODE_STRICT;
-        break;
-      } else if (cur->hasFlag(FLAG_IMPLICIT_MODULE)) {
-        mode = ERROR_MODE_FATAL;
+        explicitMode = true;
         break;
       }
+      if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
+        mode = ERROR_MODE_RELAXED;
+        explicitMode = true;
+        break;
+      }
+      if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
+        mode = ERROR_MODE_STRICT;
+        explicitMode = true;
+        break;
+      }
+
       cur = cur->defPoint->parentSymbol;
+    }
+
+    if (explicitMode == false) {
+      // No mode was chosen explicitly, find the default.
+
+      ModuleSymbol* mod = fn->getModule();
+      if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+        mode = ERROR_MODE_FATAL;
+      else
+        mode = ERROR_MODE_RELAXED;
     }
   }
 
