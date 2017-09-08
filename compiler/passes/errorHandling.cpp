@@ -690,6 +690,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
 }
 
 typedef enum {
+  ERROR_MODE_UNKNOWN,
   ERROR_MODE_FATAL,
   ERROR_MODE_RELAXED,
   ERROR_MODE_STRICT,
@@ -863,51 +864,52 @@ canBlockStmtThrow(BlockStmt* block)
   return visit.throws();
 }
 
+// Compute the error handling mode to use
+//
+// Go up symbols, starting with fn, looking for flag
+// This allows the flag to be set on an outer module in the
+// case of nested modules.
+static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
+{
+  error_checking_mode_t mode = ERROR_MODE_UNKNOWN;
+
+  Symbol* cur = fn;
+
+  while (cur != NULL && cur->defPoint != NULL) {
+    if (cur->hasFlag(FLAG_ERROR_MODE_FATAL)) {
+      mode = ERROR_MODE_FATAL;
+      break;
+    }
+    if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
+      mode = ERROR_MODE_RELAXED;
+      break;
+    }
+    if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
+      mode = ERROR_MODE_STRICT;
+      break;
+    }
+
+    cur = cur->defPoint->parentSymbol;
+  }
+
+  if (mode == ERROR_MODE_UNKNOWN) {
+    // No mode was chosen explicitly, find the default.
+
+    ModuleSymbol* mod = fn->getModule();
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+      mode = ERROR_MODE_FATAL;
+    else
+      mode = ERROR_MODE_RELAXED;
+  }
+
+  return mode;
+}
+
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
 
-  error_checking_mode_t mode;
-
-  // Compute the error handling mode to use
-  //
-  // Go up symbols, starting with fn, looking for flag
-  // This allows the flag to be set on an outer module in the
-  // case of nested modules.
-  {
-    Symbol* cur = fn;
-
-    bool explicitMode = false;
-
-    while (cur != NULL && cur->defPoint != NULL) {
-      if (cur->hasFlag(FLAG_ERROR_MODE_FATAL)) {
-        mode = ERROR_MODE_FATAL;
-        explicitMode = true;
-        break;
-      }
-      if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
-        mode = ERROR_MODE_RELAXED;
-        explicitMode = true;
-        break;
-      }
-      if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
-        mode = ERROR_MODE_STRICT;
-        explicitMode = true;
-        break;
-      }
-
-      cur = cur->defPoint->parentSymbol;
-    }
-
-    if (explicitMode == false) {
-      // No mode was chosen explicitly, find the default.
-
-      ModuleSymbol* mod = fn->getModule();
-      if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
-        mode = ERROR_MODE_FATAL;
-      else
-        mode = ERROR_MODE_RELAXED;
-    }
-  }
+  error_checking_mode_t mode = computeErrorCheckingMode(fn);
+  INT_ASSERT(mode != ERROR_MODE_UNKNOWN);
 
   ErrorCheckingVisitor visit(fn->throwsError(), mode, reasons);
 
