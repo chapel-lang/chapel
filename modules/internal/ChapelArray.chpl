@@ -2608,15 +2608,17 @@ module ChapelArray {
       // This should only be called for 1-dimensional arrays
       const lo = r.low,
             hi = r.high,
-            size = hi - lo + 1;
+            size = r.size;
+
       if grow > 0 {
-        const newSize = max(size+1, (size*factor):int); // Always grow by at least 1.
+        const newSize = max(size+1, (size*factor):int, r2.size); // Always grow by at least 1.
         if direction > 0 {
           return lo..#newSize;
         } else {
           return ..hi#-newSize;
         }
       } else {
+        // TODO: grow <= 0 is not tested for |r2.size - r1.size| > 1
         const newSize = min(size-1, (size/factor):int);
         if direction > 0 {
           var newRange = lo..#newSize;
