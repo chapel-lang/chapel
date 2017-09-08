@@ -34,10 +34,15 @@
 #include "llvmUtil.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "genret.h" 
-#include "llvm/Support/Dwarf.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include <iostream>
 #include "llvm/ADT/DenseMap.h"
+
+#if HAVE_LLVM_VER >= 50
+#include "llvm/BinaryFormat/Dwarf.h"
+#else
+#include "llvm/Support/Dwarf.h"
+#endif
 /*
 LLVM provides a class called DIBuilder, you pass the LLVM module to this
 class and it will attach the debug information to the LLVM code after the
@@ -192,6 +197,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         get_type(type->getValType()),//it should return the pointee's DIType
         layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
         0, /* alignment */
+#if HAVE_LLVM_VER >= 50
+        llvm::None,
+#endif
         name);
 
       myTypeDescriptors[type] = N;
@@ -215,6 +223,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
             pteIntDIType, 
             layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
+#if HAVE_LLVM_VER >= 50
+            llvm::None,
+#endif
             name);
 
           myTypeDescriptors[type] = N;
@@ -247,6 +258,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
             pteStrDIType,
             layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
+#if HAVE_LLVM_VER >= 50
+            llvm::None,
+#endif
             name);
         
           myTypeDescriptors[type] = N;
@@ -269,6 +283,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
               get_type(vt),
               layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
               0,
+#if HAVE_LLVM_VER >= 50
+              llvm::None,
+#endif
               name);
             
             myTypeDescriptors[type] = N;
@@ -535,8 +552,10 @@ LLVM_DINAMESPACE debug_data::construct_module_scope(ModuleSymbol* modSym)
 #if HAVE_LLVM_VER >= 40
   return this->dibuilder.createNameSpace(file, /* Scope */
                                          modSym->name, /* Name */
+#if HAVE_LLVM_VER < 50
                                          file, /* File */
                                          line, /* LineNo */
+#endif
                                          false /* ExportSymbols */
                                         );
 #else

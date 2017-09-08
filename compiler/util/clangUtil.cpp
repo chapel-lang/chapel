@@ -287,7 +287,11 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   if( debugPrint) printf("Adding macro %s\n", id->getName().str().c_str());
 
   //Handling only simple string or integer defines
+#if HAVE_LLVM_VER >= 50
+  if(macro->getNumParams() > 0) {
+#else
   if(macro->getNumArgs() > 0) {
+#endif
     if( debugPrint) {
       printf("the macro takes arguments\n");
     }
@@ -1153,7 +1157,9 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder) {
     PMBuilder.OptLevel = 3;
     PMBuilder.LoopVectorize = true;
     PMBuilder.SLPVectorize = true;
+#if HAVE_LLVM_VER < 50
     PMBuilder.BBVectorize = true;
+#endif
     PMBuilder.DisableUnrollLoops = true;
     // TODO: what other flags on PMBuilder should we set?
   } else {
@@ -1989,7 +1995,11 @@ void setupForGlobalToWide(void) {
   llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
-                          dummy, retType, argType, NULL);
+                          dummy, retType, argType
+#if HAVE_LLVM_VER < 50
+                          , NULL
+#endif
+                          );
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
