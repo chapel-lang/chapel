@@ -3232,14 +3232,23 @@ inline proc channel.readwrite(ref x) where !this.writing {
   /*
      Write a sequence of bytes.
    */
-  proc channel.writeBytes(x, len:ssize_t) {
-    // TODO -- do nothing if error in channel?
+  proc channel.writeBytes(x, len:ssize_t, out error:syserr):bool {
     on this.home {
       try! this.lock();
-      var err:syserr;
-      err = qio_channel_write_amt(false, _channel_internal, x, len);
-      _qio_channel_set_error_unlocked(_channel_internal, err);
+      error = qio_channel_write_amt(false, _channel_internal, x, len);
       this.unlock();
+    }
+    return !error;
+  }
+
+  pragma "no doc"
+  proc channel.writeBytes(x, len:ssize_t):bool throws {
+    var e:syserr = ENOERR;
+    this.writeBytes(x, len, error=e);
+    if !e then return true;
+    else {
+      try this._ch_ioerror(e, "in channel.writeBytes()");
+      return false;
     }
   }
 
@@ -4065,13 +4074,13 @@ proc channel.flush() throws {
 }
 
 /* Assert that a channel has reached end-of-file.
-   Halts with an error message if the receiving channel is not currently
+   Throws an error if the receiving channel is not currently
    at EOF.
 
    :arg error: an optional string argument which will be printed
                out if the assert fails. The default prints "Not at EOF".
  */
-proc channel.assertEOF(error:string) throws {
+proc channel.assertEOF(error:string = "- Not at EOF") throws {
   if writing {
     try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
   } else {
@@ -4082,12 +4091,6 @@ proc channel.assertEOF(error:string) throws {
       try this._ch_ioerror("assert failed", error);
     }
   }
-}
-
-// documented in error:string version
-pragma "no doc"
-proc channel.assertEOF() {
-  this.assertEOF("- Not at EOF");
 }
 
 /*
