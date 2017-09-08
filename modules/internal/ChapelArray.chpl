@@ -2666,8 +2666,7 @@ module ChapelArray {
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
           //this._value.dsiReallocate((nextAllocRange,));
 
-          // TODO: work-around until resizeAllocRange fixed
-          this._value.dsiReallocate((newRange,));
+          this._value.dsiReallocate((nextAllocRange,));
         }
         this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
