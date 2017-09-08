@@ -1350,7 +1350,11 @@ namespace {
           if (CS.getInstruction()) {
             assert(CS.getCalledFunction() == F); 
             Instruction *Call = CS.getInstruction(); 
+#if HAVE_LLVM_VER >= 50
             const AttributeList &CallPAL = CS.getAttributes();
+#else
+            const AttributeSet &CallPAL = CS.getAttributes();
+#endif
 
             // Loop over the operands, inserting globalToWide function calls in
             // the caller as appropriate.
