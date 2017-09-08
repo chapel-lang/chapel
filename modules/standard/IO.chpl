@@ -4255,19 +4255,19 @@ proc stderrInit() {
   }
 }
 
-/* Equivalent to stdout.write. See :proc:`channel.write` */
-proc write(const args ...?n) throws {
-  stdout.write((...args));
+/* Equivalent to try! stdout.write. See :proc:`channel.write` */
+proc write(const args ...?n) {
+  try! stdout.write((...args));
 }
-/* Equivalent to stdout.writeln. See :proc:`channel.writeln` */
-proc writeln(const args ...?n) throws {
-  stdout.writeln((...args));
+/* Equivalent to try! stdout.writeln. See :proc:`channel.writeln` */
+proc writeln(const args ...?n) {
+  try! stdout.writeln((...args));
 }
 
 // documented in the arguments version.
 pragma "no doc"
-proc writeln() throws {
-  stdout.writeln();
+proc writeln() {
+  try! stdout.writeln();
 }
 
 /* Equivalent to stdin.read. See :proc:`channel.read` */
@@ -6552,14 +6552,18 @@ proc channel.readf(fmt:string) throws {
   }
 }
 
-/* Call ``stdout.writef``; see :proc:`channel.writef`. */
-proc writef(fmt:string, const args ...?k):bool throws {
-  return stdout.writef(fmt, (...args));
+/* Call ``try! stdout.writef``; see :proc:`channel.writef`. */
+proc writef(fmt:string, const args ...?k):bool {
+  try! {
+    return stdout.writef(fmt, (...args));
+  }
 }
 // documented in string version
 pragma "no doc"
-proc writef(fmt:string):bool throws {
-  return stdout.writef(fmt);
+proc writef(fmt:string):bool {
+  try! {
+    return stdout.writef(fmt);
+  }
 }
 /* Call ``stdout.readf``; see :proc:`channel.readf`. */
 proc readf(fmt:string, ref args ...?k):bool throws {
@@ -6694,10 +6698,10 @@ proc string.format(args ...?k, out error:syserr):string {
 
 // documented in the error= version
 pragma "no doc"
-proc string.format(args ...?k):string throws {
+proc string.format(args ...?k):string {
   var err:syserr = ENOERR;
   var ret = chpl_do_format(this, (...args), error=err);
-  if err then ioerror(err, "in string.format");
+  if err then try! ioerror(err, "in string.format");
   return ret;
 }
 
