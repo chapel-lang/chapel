@@ -6609,29 +6609,58 @@ proc channel.skipField() throws {
 
 
 private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):string {
+
   // Open a memory buffer to store the result
-  var f = openmem();
+  var f = openmem(error=error);
+  defer {
+    var closeError:syserr;
+    f.close(error=closeError);
+    // Propagate an error on closing only if there wasn't an original error.
+    if !error then
+      error = closeError;
+  }
 
-  var w = f.writer(locking=false);
+  if error then return "";
 
-  w.writef(fmt, (...args), error=error);
+  var offset:int = 0;
 
-  var offset = w.offset();
+  {
+    var w = f.writer(error=error, locking=false);
+    defer {
+      var closeError:syserr;
+      w.close(error=closeError);
+      if !error then
+        error = closeError;
+    }
+
+    // Don't try to write if there was an error creating it
+    if error then return "";
+
+    w.writef(fmt, (...args), error=error);
+
+    offset = w.offset();
+
+    // w should be closed by the defer statement at this point.
+  }
+
+  // Don't try to read if there was an error writing
+  if error then return "";
 
   var buf = c_malloc(uint(8), offset+1);
 
-  // you might need a flush here if
-  // close went away
-  w.close();
+  var r = f.reader(error=error, locking=false);
+  defer {
+    var closeError:syserr;
+    r.close(error=closeError);
+    if !error then
+      error = closeError;
+  }
 
-  var r = f.reader(locking=false);
 
-  r.readBytes(buf, offset:ssize_t);
+  r.readBytes(buf, offset:ssize_t, error=error);
+
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
-  r.close();
-
-  f.close();
 
   return new string(buf, offset, offset+1, owned=true, needToCopy=false);
 }
