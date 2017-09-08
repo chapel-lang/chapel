@@ -551,7 +551,8 @@ module ChapelArray {
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
   proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
-    if (isArrayType(eltType)) {
+    if isArrayType(eltType) {
+      arr._decEltRefCounts = true;
       var ev: eltType;
       ev.domain._value.add_containing_arr(arr);
       chpl_incRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
@@ -559,7 +560,10 @@ module ChapelArray {
   }
 
   proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
-    if (isArrayType(eltType)) {
+    if isArrayType(eltType) {
+      if arr._decEltRefCounts == false then
+        halt("Decrementing array's elements' ref counts without having incremented first!");
+
       var ev: eltType;
       const refcount = ev.domain._value.remove_containing_arr(arr);
       if refcount == 0 then

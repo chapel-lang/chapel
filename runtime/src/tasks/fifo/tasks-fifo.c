@@ -95,7 +95,6 @@ static volatile task_pool_p
                            task_pool_tail;     // tail of task pool
 
 static int                 queued_task_cnt;    // number of tasks in task pool
-static int                 running_task_cnt;   // number of running tasks
 static int64_t             extra_task_cnt;     // number of tasks being run by
                                                //   threads occupied already
 static int                 blocked_thread_cnt; // number of threads that
@@ -335,7 +334,6 @@ void chpl_task_init(void) {
   chpl_thread_mutexInit(&task_id_lock);
   chpl_thread_mutexInit(&task_list_lock);
   queued_task_cnt = 0;
-  running_task_cnt = 1;                     // only main task running
   blocked_thread_cnt = 0;
   idle_thread_cnt = 0;
   extra_task_cnt = 0;
@@ -765,7 +763,11 @@ void chpl_task_startMovedTask(chpl_fn_int_t  fid, chpl_fn_p fp,
 
 
 chpl_taskID_t chpl_task_getId(void) {
-  return get_current_ptask()->bundle.id;
+  task_pool_p ptask = get_current_ptask();
+  if (ptask)
+    return ptask->bundle.id;
+  else
+    return (chpl_taskID_t) -1;
 }
 
 chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
@@ -844,14 +846,11 @@ size_t chpl_task_getCallStackSize(void) {
   return chpl_thread_getCallStackSize();
 }
 
-uint32_t chpl_task_getNumQueuedTasks(void) { return queued_task_cnt; }
-
-uint32_t chpl_task_getNumRunningTasks(void) {
-  chpl_internal_error("chpl_task_getNumRunningTasks() called");
-  return 1;
+uint32_t chpl_task_getNumQueuedTasks(void) {
+  return queued_task_cnt;
 }
 
-int32_t  chpl_task_getNumBlockedTasks(void) {
+int32_t chpl_task_getNumBlockedTasks(void) {
   if (blockreport) {
     int numBlockedTasks;
 
@@ -1188,14 +1187,12 @@ thread_begin(void* ptask_void) {
       progress_cnt++;
 
     //
-    // start new task; increment running count and remove task from pool
-    // also add to task to task-table (structure in ChapelRuntime that keeps
-    // track of currently running tasks for task-reports on deadlock or
-    // Ctrl+C).
+    // start new task; remove task from pool also add to task to task-table
+    // (structure in ChapelRuntime that keeps track of currently running tasks
+    // for task-reports on deadlock or Ctrl+C).
     //
     ptask = task_pool_head;
     idle_thread_cnt--;
-    running_task_cnt++;
 
     dequeue_task(ptask);
 
@@ -1239,10 +1236,8 @@ thread_begin(void* ptask_void) {
     chpl_thread_mutexLock(&threading_lock);
 
     //
-    // finished task; decrement running count and increment idle count
+    // finished task; increment idle count
     //
-    assert(running_task_cnt > 0);
-    running_task_cnt--;
     idle_thread_cnt++;
 
     // end critical section
@@ -1359,14 +1354,9 @@ task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
     chpl_thread_mutexUnlock(&taskTable_lock);
   }
 
-  //
-  // If we now have more tasks than threads to run them on (taking
-  // into account that the current parent of a structured parallel
-  // construct can run at least one of that construct's children),
-  // try to start another thread.
-  //
-  if (queued_task_cnt > idle_thread_cnt &&
-      (p_task_list_head == NULL || ptask->list_next != NULL || is_begin_stmt)) {
+  // If we now have more tasks than threads to run them on, try to start
+  // another thread
+  if (queued_task_cnt > idle_thread_cnt) {
     maybe_add_thread();
   }
 

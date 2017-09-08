@@ -435,14 +435,22 @@ void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
   SET_LINENO(node);
 
   BlockStmt* handler = new BlockStmt();
+  // Always wrap errors from foralls in a TaskErrors
+  VarSymbol* err = info.errorVar;
+  VarSymbol* normErr = newTemp("forall_error", dtError);
+  handler->insertAtTail(new DefExpr(normErr));
+
+  handler->insertAtTail(new CallExpr(PRIM_MOVE, normErr,
+                                     new CallExpr(gChplForallError, err)));
+
   if (!tryStack.empty()) {
-    handler->insertAtTail(setOuterErrorAndGotoHandler(info.errorVar));
+    handler->insertAtTail(setOuterErrorAndGotoHandler(normErr));
   } else if (outError != NULL) {
-    handler->insertAtTail(setOutGotoEpilogue(info.errorVar));
+    handler->insertAtTail(setOutGotoEpilogue(normErr));
   } else {
-    handler->insertAtTail(haltExpr(info.errorVar, false));
+    handler->insertAtTail(haltExpr(normErr, false));
   }
-  info.handlerLabel->defPoint->insertAfter(errorCond(info.errorVar, handler));
+  info.handlerLabel->defPoint->insertAfter(errorCond(err, handler));
 }
 
 // Sets the fn out variable with the given error, then goes to the fn epilogue.

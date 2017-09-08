@@ -1002,7 +1002,7 @@ proc StencilArr.setup() {
   if doRADOpt && disableStencilLazyRAD then setupRADOpt();
 }
 
-proc StencilArr.dsiDestroyArr(isslice : bool) {
+proc StencilArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       if !ignoreFluff then
@@ -1383,7 +1383,6 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 pragma "no copy return"
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
-  a._arrAlias = _value;
   return _newArray(a);
 }
 
@@ -1701,10 +1700,6 @@ proc StencilArr.doiCanBulkTransfer(viewDom) {
   if dom.stridable then
     for param i in 1..rank do
       if viewDom.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }

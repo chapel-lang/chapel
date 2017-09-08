@@ -33,11 +33,12 @@ endif
 
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
-CHPL_GASNET_CFG_OPTIONS += --enable-gni-multi-domain
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
+CHPL_GASNET_CFG_OPTIONS += --enable-gemini-multi-domain
 else
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),aries)
 CHPL_GASNET_CFG_OPTIONS += --enable-aries
+CHPL_GASNET_CFG_OPTIONS += --enable-aries-multi-domain
 else
 # We need to do this because the auto-detect stuff for gemini is not
 # yet working as well as the portals auto-detect

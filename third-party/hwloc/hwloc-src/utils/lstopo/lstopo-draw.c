@@ -523,7 +523,7 @@ lstopo_set_object_color(struct draw_methods *methods,
       break;
     }
     assert(arg == 1); /* Machine printed as a System (when root) */
-    /* fallthrough */
+    /* FALLTHRU */
   case HWLOC_OBJ_SYSTEM:
     s->bg.r = SYSTEM_R_COLOR;
     s->bg.g = SYSTEM_G_COLOR;

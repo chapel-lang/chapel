@@ -1,7 +1,7 @@
 /*
  * Copyright © 2009 CNRS
  * Copyright © 2009-2017 Inria.  All rights reserved.
- * Copyright © 2009-2012, 2015 Université Bordeaux
+ * Copyright © 2009-2012, 2015, 2017 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -21,7 +21,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <assert.h>
-#ifdef HAVE_TIME_T
+#ifdef HAVE_TIME_H
 #include <time.h>
 #endif
 
@@ -37,6 +37,12 @@
 
 #include "lstopo.h"
 #include "misc.h"
+
+#ifdef __MINGW32__
+# ifdef HAVE_CLOCK_GETTIME
+#  undef HAVE_CLOCK_GETTIME
+# endif
+#endif
 
 int lstopo_pid_number = -1;
 hwloc_pid_t lstopo_pid;
@@ -138,7 +144,7 @@ static void add_process_objects(hwloc_topology_t topology)
     long local_pid_number;
     hwloc_pid_t local_pid;
     char *end;
-    char name[64];
+    char name[80];
     int proc_cpubind;
 
     local_pid_number = strtol(dirent->d_name, &end, 10);
@@ -154,68 +160,148 @@ static void add_process_objects(hwloc_topology_t topology)
 
 #ifdef HWLOC_LINUX_SYS
     {
-      /* Get the process name */
+      char comm[16];
       char *path;
-      unsigned pathlen = 6 + strlen(dirent->d_name) + 1 + 7 + 1;
-      char cmd[64], *c;
-      int file;
-      ssize_t n;
+      size_t pathlen = 6 + strlen(dirent->d_name) + 1 + 7 + 1;
 
       path = malloc(pathlen);
-      snprintf(path, pathlen, "/proc/%s/cmdline", dirent->d_name);
-      file = open(path, O_RDONLY);
-      free(path);
 
-      if (file >= 0) {
-        n = read(file, cmd, sizeof(cmd) - 1);
+      {
+        /* Get the process name */
+        char cmd[64];
+        int file;
+        ssize_t n;
+
+        snprintf(path, pathlen, "/proc/%s/cmdline", dirent->d_name);
+        file = open(path, O_RDONLY);
+        if (file < 0) {
+          /* Ignore errors */
+          free(path);
+          continue;
+        }
+        n = read(file, cmd, sizeof(cmd));
         close(file);
 
-        if (n <= 0)
+        if (n <= 0) {
           /* Ignore kernel threads and errors */
+          free(path);
           continue;
-
-        cmd[n] = 0;
-        if ((c = strchr(cmd, ' ')))
-          *c = 0;
-        snprintf(name, sizeof(name), "%ld %s", local_pid_number, cmd);
-      }
-    }
-
-    {
-      /* Get threads */
-      char *path;
-      unsigned pathlen = 6+strlen(dirent->d_name) + 1 + 4 + 1;
-      DIR *task_dir;
-      struct dirent *task_dirent;
-
-      path = malloc(pathlen);
-      snprintf(path, pathlen, "/proc/%s/task", dirent->d_name);
-      task_dir = opendir(path);
-      free(path);
-
-      if (task_dir) {
-        while ((task_dirent = readdir(task_dir))) {
-          long local_tid;
-          char *task_end;
-          char task_name[64];
-
-          local_tid = strtol(task_dirent->d_name, &task_end, 10);
-          if (*task_end)
-            /* Not a number, or the main task */
-            continue;
-
-          if (hwloc_linux_get_tid_cpubind(topology, local_tid, task_cpuset))
-            continue;
-
-          if (proc_cpubind && hwloc_bitmap_isequal(task_cpuset, cpuset))
-            continue;
-
-          snprintf(task_name, sizeof(task_name), "%s %li", name, local_tid);
-
-          insert_task(topology, task_cpuset, task_name);
         }
-        closedir(task_dir);
+
+        snprintf(path, pathlen, "/proc/%s/comm", dirent->d_name);
+        file = open(path, O_RDONLY);
+
+        if (file >= 0) {
+          n = read(file, comm, sizeof(comm) - 1);
+          close(file);
+          if (n > 0) {
+            comm[n] = 0;
+            if (n > 1 && comm[n-1] == '\n')
+              comm[n-1] = 0;
+          } else {
+            snprintf(comm, sizeof(comm), "(unknown)");
+          }
+        } else {
+          /* Old kernel, have to look at old file */
+          char stats[32];
+          char *parenl = NULL, *parenr;
+
+          snprintf(path, pathlen, "/proc/%s/stat", dirent->d_name);
+          file = open(path, O_RDONLY);
+
+          if (file < 0) {
+            /* Ignore errors */
+            free(path);
+            continue;
+          }
+
+          /* "pid (comm) ..." */
+          n = read(file, stats, sizeof(stats) - 1);
+          close(file);
+          if (n > 0) {
+            stats[n] = 0;
+            parenl = strchr(stats, '(');
+            parenr = strchr(stats, ')');
+            if (!parenr)
+              parenr = &stats[sizeof(stats)-1];
+            *parenr = 0;
+          }
+          if (!parenl) {
+            snprintf(comm, sizeof(comm), "(unknown)");
+          } else {
+            snprintf(comm, sizeof(comm), parenl+1);
+          }
+        }
+
+        snprintf(name, sizeof(name), "%ld %s", local_pid_number, comm);
       }
+
+      {
+        /* Get threads */
+        DIR *task_dir;
+        struct dirent *task_dirent;
+
+        snprintf(path, pathlen, "/proc/%s/task", dirent->d_name);
+        task_dir = opendir(path);
+
+        if (task_dir) {
+          while ((task_dirent = readdir(task_dir))) {
+            long local_tid;
+            char *task_end;
+            const size_t tid_len = sizeof(local_tid)*3+1;
+            size_t task_pathlen = 6 + strlen(dirent->d_name) + 1 + 4 + 1
+                                    + strlen(task_dirent->d_name) + 1 + 4 + 1;
+            char *task_path;
+            int comm_file;
+            char task_comm[16] = "";
+            char task_name[sizeof(name) + 1 + tid_len + 1 + sizeof(task_comm) + 1];
+            ssize_t n;
+
+            local_tid = strtol(task_dirent->d_name, &task_end, 10);
+            if (*task_end)
+              /* Not a number, or the main task */
+              continue;
+
+            task_path = malloc(task_pathlen);
+            snprintf(task_path, task_pathlen, "/proc/%s/task/%s/comm",
+                     dirent->d_name, task_dirent->d_name);
+            comm_file = open(task_path, O_RDONLY);
+            free(task_path);
+
+            if (comm_file >= 0) {
+              n = read(comm_file, task_comm, sizeof(task_comm) - 1);
+              if (n < 0)
+                n = 0;
+              close(comm_file);
+              task_comm[n] = 0;
+              if (n > 1 && task_comm[n-1] == '\n')
+                task_comm[n-1] = 0;
+              if (!strcmp(comm, task_comm))
+                /* Same as process comm, do not show it again */
+                n = 0;
+            } else {
+              n = 0;
+            }
+
+            if (hwloc_linux_get_tid_cpubind(topology, local_tid, task_cpuset))
+              continue;
+
+            if (proc_cpubind && hwloc_bitmap_isequal(task_cpuset, cpuset))
+              continue;
+
+            if (n) {
+              snprintf(task_name, sizeof(task_name), "%s %li %s", name, local_tid, task_comm);
+            } else {
+              snprintf(task_name, sizeof(task_name), "%s %li", name, local_tid);
+            }
+
+            insert_task(topology, task_cpuset, task_name);
+          }
+          closedir(task_dir);
+        }
+      }
+
+      free(path);
     }
 #endif /* HWLOC_LINUX_SYS */
 
@@ -488,6 +574,7 @@ main (int argc, char *argv[])
   putenv("HWLOC_XML_VERBOSE=1");
   putenv("HWLOC_SYNTHETIC_VERBOSE=1");
 
+  /* Use localized time prints, and utf-8 characters in the ascii output */
 #ifdef HAVE_SETLOCALE
   setlocale(LC_ALL, "");
 #endif
@@ -834,7 +921,7 @@ main (int argc, char *argv[])
     err = hwloc_topology_restrict (topology, restrictset, restrict_flags);
     if (err) {
       perror("Restricting the topology");
-      /* fallthrough */
+      /* FALLTHRU */
     }
     hwloc_bitmap_free(restrictset);
     free(restrictstring);

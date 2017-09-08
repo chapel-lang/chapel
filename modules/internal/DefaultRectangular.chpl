@@ -1199,19 +1199,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiDestroyArr(isalias:bool) {
-
-      // data in an array alias will be destroyed when the original array
-      // is destroyed.
-      if isalias {
-        // A multi-ddata alias nevertheless has its own mData.
-        if !defRectSimpleDData {
-          _ddata_free(mData, mdNumChunks);
-        }
-
-        return;
-      }
-
+    proc dsiDestroyArr() {
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = dataChunk(0);
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
@@ -1816,7 +1804,7 @@ module DefaultRectangular {
         str = copy.str;
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
-        dsiDestroyArr(false);
+        dsiDestroyArr();
         if defRectSimpleDData {
           data = copy.data;
         } else {

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -13,10 +13,6 @@
 #include <private/autogen/config.h>
 #include <private/private.h>
 #include <hwloc.h>
-
-#ifdef HAVE_SETLOCALE
-#include <locale.h>
-#endif /* HAVE_SETLOCALE */
 
 #ifdef HAVE_NL_LANGINFO
 #include <langinfo.h>
@@ -496,11 +492,6 @@ void output_ascii(struct lstopo_output *loutput, const char *filename)
     fprintf(stderr, "Failed to open %s for writing (%s)\n", filename, strerror(errno));
     return;
   }
-
-  /* Try to use utf-8 characters */
-#ifdef HAVE_SETLOCALE
-  setlocale(LC_ALL, "");
-#endif /* HAVE_SETLOCALE */
 
 #ifdef HWLOC_HAVE_LIBTERMCAP
   /* If we are outputing to a tty, use colors */

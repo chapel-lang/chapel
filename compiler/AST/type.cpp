@@ -109,12 +109,24 @@ void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
 }
 
+const char* toString(Type* type) {
+  const char* retval = NULL;
+
+  if (type != NULL) {
+    retval = type->getValType()->symbol->name;
+
+  } else {
+    retval = "null type";
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Qualifier and QualifiedType                                                 *
 *                                                                             *
 ************************************** | *************************************/
-
 
 const char* qualifierToStr(Qualifier q) {
     switch (q) {

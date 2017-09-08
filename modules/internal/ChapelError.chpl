@@ -97,9 +97,54 @@ module ChapelError {
 
     pragma "no doc"
     proc TaskErrors(ref group:chpl_TaskErrors) {
-      _head = group._head;
+      var cur:Error = group._head;
       group._head = nil;
+      _head = nil;
+
+      // Flatten nested TaskErrors
+
+      while cur != nil {
+        // remove it from that list
+        var curnext = cur._next;
+        cur._next = nil;
+
+        // Add head / errors in it to this list
+        var asTaskErr:TaskErrors = cur:TaskErrors;
+        if asTaskErr == nil {
+          append(cur);
+        } else {
+          // Remove & add errors in the sub-list
+          var sub:Error = asTaskErr._head;
+          asTaskErr._head = nil;
+          while sub != nil {
+            // remove it from that list
+            var subnext = sub._next;
+            sub._next = nil;
+
+            // add it to this list
+            append(sub);
+
+            sub = subnext;
+          }
+          delete asTaskErr;
+        }
+        cur = curnext;
+      }
     }
+
+    // append a single error to the group
+    proc append(err:Error) {
+      var tmp = _head;
+      err._next = tmp;
+      _head = err;
+    }
+
+    /* Create a TaskErrors containing only the passed error */
+    proc TaskErrors(err: Error) {
+      _head = err;
+    }
+
+    /* Create a TaskErrors not containing any errors */
     proc TaskErrors() {
       _head = nil;
     }
@@ -240,8 +285,19 @@ module ChapelError {
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
   // should be replaced by goto-error-handling.
+  pragma "no doc"
   proc chpl_propagate_error(err: Error) {
     chpl_uncaught_error(err);
   }
-
+  // This function is called to "normalize" the error returned
+  // from a forall loop, so that it is always TaskErrors
+  // (since the author of the forall loop shouldn't need to know
+  //  how many tasks were run in that loop).
+  pragma "no doc"
+  proc chpl_forall_error(err: Error):Error {
+    if err:TaskErrors then
+      return err;
+    // If err wasn't a taskError, wrap it in one
+    return new TaskErrors(err);
+  }
 }

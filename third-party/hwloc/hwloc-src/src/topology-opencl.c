@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2014 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * Copyright © 2013 Université Bordeaux.  All right reserved.
  * See COPYING in top-level directory.
  */
@@ -105,7 +105,7 @@ hwloc_opencl_query_devices(struct hwloc_opencl_backend_data_s *data)
     cl_ulong globalmemsize;
     cl_uint computeunits;
 
-    hwloc_debug("Looking device %p\n", device_ids[i]);
+    hwloc_debug("Looking device %p\n", (void *) device_ids[i]);
 
     info->platformname[0] = '\0';
     clret = clGetDeviceInfo(device_ids[i], CL_DEVICE_PLATFORM, sizeof(platform_id), &platform_id, NULL);
@@ -155,7 +155,7 @@ hwloc_opencl_query_devices(struct hwloc_opencl_backend_data_s *data)
     info->platformdeviceidx = curpfdvidx;
     curpfdvidx++;
 
-    hwloc_debug("This is opencl%dd%d\n", info->platformidx, info->platformdeviceidx);
+    hwloc_debug("This is opencl%ud%u\n", info->platformidx, info->platformdeviceidx);
 
 #ifdef CL_DEVICE_TOPOLOGY_AMD
     clret = clGetDeviceInfo(device_ids[i], CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL);
@@ -174,7 +174,8 @@ hwloc_opencl_query_devices(struct hwloc_opencl_backend_data_s *data)
     info->specific.amd.pcidev = amdtopo.pcie.device;
     info->specific.amd.pcifunc = amdtopo.pcie.function;
 
-    hwloc_debug("OpenCL device on PCI 0000:%02x:%02x.%u\n", amdtopo.pcie.bus, amdtopo.pcie.device, amdtopo.pcie.function);
+    hwloc_debug("OpenCL device on PCI 0000:%02x:%02x.%01x\n",
+		(unsigned) amdtopo.pcie.bus, (unsigned) amdtopo.pcie.device, (unsigned) amdtopo.pcie.function);
 
     /* validate this device */
     data->nr_devices++;
@@ -240,7 +241,7 @@ hwloc_opencl_backend_notify_new_object(struct hwloc_backend *backend, struct hwl
       continue;
 
     osdev = hwloc_alloc_setup_object(HWLOC_OBJ_OS_DEVICE, -1);
-    snprintf(buffer, sizeof(buffer), "opencl%dd%d", info->platformidx, info->platformdeviceidx);
+    snprintf(buffer, sizeof(buffer), "opencl%ud%u", info->platformidx, info->platformdeviceidx);
     osdev->name = strdup(buffer);
     osdev->depth = (unsigned) HWLOC_TYPE_DEPTH_UNKNOWN;
     osdev->attr->osdev.type = HWLOC_OBJ_OSDEV_COPROC;

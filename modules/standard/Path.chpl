@@ -93,10 +93,10 @@ proc realPath(out error: syserr, name: string): string {
    :return: A canonical version of the argument.
    :rtype: `string`
 */
-proc realPath(name: string): string {
+proc realPath(name: string): string throws {
   var err: syserr = ENOERR;
   var ret = realPath(err, name);
-  if err != ENOERR then ioerror(err, "in realPath of", name);
+  if err != ENOERR then try ioerror(err, "in realPath of", name);
   return ret;
 }
 
@@ -129,10 +129,10 @@ proc file.realPath(out error: syserr): string {
             occur
    :rtype: `string`
 */
-proc file.realPath(): string {
+proc file.realPath(): string throws {
   var err: syserr = ENOERR;
   var ret = realPath(err);
-  if err != ENOERR then ioerror(err, "in file.realPath");
+  if err != ENOERR then try ioerror(err, "in file.realPath");
   return ret;
 }
 
@@ -218,10 +218,10 @@ proc file.realPath(): string {
   :return: The parent directory of the file
   :rtype: `string`
  */
- proc file.getParentName(): string {
+ proc file.getParentName(): string throws {
    var err: syserr = ENOERR;
    var ret = getParentName(err);
-   if err != ENOERR then ioerror(err, "in file.getParentName");
+   if err != ENOERR then try ioerror(err, "in file.getParentName");
    return ret;
  }
 

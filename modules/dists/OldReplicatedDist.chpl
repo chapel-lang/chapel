@@ -594,7 +594,7 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr
   }
 }
 
-proc OldReplicatedArr.dsiDestroyArr(isslice:bool) {
+proc OldReplicatedArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) do
       delete localArrs(localeIdx);

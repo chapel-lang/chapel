@@ -318,7 +318,7 @@ move_x11(struct lstopo_x11_output *disp)
     disp->coutput.max_x = 0;
     disp->coutput.max_y = 0;
     topo_cairo_paint(&disp->coutput);
-    if (disp->coutput.max_x > disp->width || disp->coutput.max_y > disp->height) {
+    if (disp->coutput.max_x > (unsigned) disp->width || disp->coutput.max_y > (unsigned) disp->height) {
       /* need to extend the window and redraw */
       x11_destroy(disp);
       x11_create(disp, disp->coutput.max_x, disp->coutput.max_y);
@@ -348,7 +348,7 @@ move_x11(struct lstopo_x11_output *disp)
 }
 
 void
-output_x11(struct lstopo_output *loutput, const char *filename)
+output_x11(struct lstopo_output *loutput, const char *filename __hwloc_attribute_unused)
 {
   struct lstopo_x11_output _disp, *disp = &_disp;
   struct lstopo_cairo_output *coutput;

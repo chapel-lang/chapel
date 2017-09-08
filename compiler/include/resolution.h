@@ -100,10 +100,6 @@ bool canDispatch(Type*     actualType,
 
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
-const char* toString(Type* type);
-const char* toString(CallInfo* info);
-const char* toString(FnSymbol* fn);
-
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
@@ -201,11 +197,11 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
-void printResolutionErrorAmbiguous(CallInfo&                  info,
-                                   Vec<ResolutionCandidate*>& candidates);
+void printResolutionErrorUnresolved(CallInfo&                  info,
+                                    Vec<FnSymbol*>&            visibleFns);
 
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
-                                    CallInfo*       info);
+void printResolutionErrorAmbiguous (CallInfo&                  info,
+                                    Vec<ResolutionCandidate*>& candidates);
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 

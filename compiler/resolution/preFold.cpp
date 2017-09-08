@@ -1305,7 +1305,16 @@ static Symbol* determineQueriedField(CallExpr* call) {
     // field queried by position
     int position = var->immediate->int_value();
     Vec<ArgSymbol*> args;
-    for_formals(arg, ct->defaultTypeConstructor) {
+
+    FnSymbol* typeConstruct = ct->defaultTypeConstructor;
+    AggregateType* source   = ct->instantiatedFrom;
+    while (typeConstruct == NULL) {
+      INT_ASSERT(source != NULL);
+      typeConstruct = source->defaultTypeConstructor;
+      source = source->instantiatedFrom;
+    }
+
+    for_formals(arg, typeConstruct) {
       args.add(arg);
     }
     for (int i = 2; i < call->numActuals(); i++) {

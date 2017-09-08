@@ -26,9 +26,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-// This file needs to be able to use real allocator names
-#include "chpl-mem-no-warning-macros.h"
-
 // This file always declares this function at least.
 void chpl_mem_replace_malloc_if_needed(void);
 

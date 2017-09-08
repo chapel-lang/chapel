@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -38,7 +38,7 @@ rgb_to_color(int r, int g, int b)
   if (color != -1)
     return color;
 
-  fprintf(stderr, "color #%02x%02x%02x not declared\n", r, g, b);
+  fprintf(stderr, "color #%02x%02x%02x not declared\n", (unsigned) r, (unsigned) g, (unsigned) b);
   exit(EXIT_FAILURE);
 }
 

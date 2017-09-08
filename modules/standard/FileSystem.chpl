@@ -172,10 +172,10 @@ proc locale.chdir(out error: syserr, name: string) {
    :arg name: The intended current working directory
    :type name: `string`
 */
-proc locale.chdir(name: string) {
+proc locale.chdir(name: string) throws {
   var err: syserr = ENOERR;
   chdir(err, name);
-  if err != ENOERR then ioerror(err, "in chdir", name);
+  if err != ENOERR then try ioerror(err, "in chdir", name);
 }
 
 pragma "no doc"
@@ -200,10 +200,10 @@ proc chmod(out error: syserr, name: string, mode: int) {
               values.
    :type mode: `int`
 */
-proc chmod(name: string, mode: int) {
+proc chmod(name: string, mode: int) throws {
   var err: syserr = ENOERR;
   chmod(err, name, mode);
-  if err != ENOERR then ioerror(err, "in chmod", name);
+  if err != ENOERR then try ioerror(err, "in chmod", name);
 }
 
 
@@ -229,10 +229,10 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
              same.
    :type gid: `int`
 */
-proc chown(name: string, uid: int, gid: int) {
+proc chown(name: string, uid: int, gid: int) throws {
   var err: syserr = ENOERR;
   chown(err, name, uid, gid);
-  if err != ENOERR then ioerror(err, "in chown", name);
+  if err != ENOERR then try ioerror(err, "in chown", name);
 }
 
 // FUTURE WORK:
@@ -301,10 +301,10 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
                   with the source file.  It is set to `false` by default.
    :type metadata: `bool`
 */
-proc copy(src: string, dest: string, metadata: bool = false) {
+proc copy(src: string, dest: string, metadata: bool = false) throws {
   var err: syserr = ENOERR;
   copy(err, src, dest, metadata);
-  if err != ENOERR then ioerror(err, "in copy(" + src + ", " + dest + ")");
+  if err != ENOERR then try ioerror(err, "in copy(" + src + ", " + dest + ")");
 }
 
 pragma "no doc"
@@ -385,10 +385,10 @@ proc copyFile(out error: syserr, src: string, dest: string) {
    :arg dest: The intended destination of the contents.
    :type dest: `string`
 */
-proc copyFile(src: string, dest: string) {
+proc copyFile(src: string, dest: string) throws {
   var err: syserr = ENOERR;
   copyFile(err, src, dest);
-  if err != ENOERR then ioerror(err, "in copyFile(" + src + ", " + dest + ")");
+  if err != ENOERR then try ioerror(err, "in copyFile(" + src + ", " + dest + ")");
 }
 
 pragma "no doc"
@@ -413,10 +413,10 @@ proc copyMode(out error: syserr, src: string, dest: string) {
    :arg dest: The intended destination of the permissions.
    :type dest: `string`
 */
-proc copyMode(src: string, dest: string) {
+proc copyMode(src: string, dest: string) throws {
   var err: syserr = ENOERR;
   copyMode(err, src, dest);
-  if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
+  if err != ENOERR then try ioerror(err, "in copyMode " + src, dest);
 }
 
 private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
@@ -496,10 +496,10 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
                           `false` by default
    :type copySymbolically: `bool`
 */
-proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
+proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
   var err: syserr = ENOERR;
   copyTree(err, src, dest, copySymbolically);
-  if err != ENOERR then ioerror(err, "in copyTree(" + src + ", " + dest + ")");
+  if err != ENOERR then try ioerror(err, "in copyTree(" + src + ", " + dest + ")");
 }
 
 pragma "no doc"
@@ -535,10 +535,10 @@ proc locale.cwd(out error: syserr): string {
    :return: The current working directory for the locale in question.
    :rtype: `string`
 */
-proc locale.cwd(): string {
+proc locale.cwd(): string throws {
   var err: syserr = ENOERR;
   var ret = cwd(err);
-  if err != ENOERR then ioerror(err, "in cwd");
+  if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
 }
 
@@ -564,10 +564,10 @@ proc exists(out error: syserr, name: string): bool {
             symbolic links.
    :rtype: `bool`
 */
-proc exists(name: string): bool {
+proc exists(name: string): bool throws {
   var err: syserr = ENOERR;
   var ret = exists(err, name);
-  if err != ENOERR then ioerror(err, "in exists");
+  if err != ENOERR then try ioerror(err, "in exists");
   return ret;
 }
 
@@ -635,10 +635,10 @@ proc getGID(out error: syserr, name: string): int {
    :return: The group id of the file or directory in question
    :rtype: `int`
 */
-proc getGID(name: string): int {
+proc getGID(name: string): int throws {
   var err: syserr = ENOERR;
   var ret = getGID(err, name);
-  if err != ENOERR then ioerror(err, "in getGID");
+  if err != ENOERR then try ioerror(err, "in getGID");
   return ret;
 }
 
@@ -664,10 +664,10 @@ proc getMode(out error: syserr, name: string): int {
             values.
    :rtype: `int`
 */
-proc getMode(name: string): int {
+proc getMode(name: string): int throws {
   var err:syserr = ENOERR;
   var result = getMode(err, name);
-  if err != ENOERR then ioerror(err, "in getMode", name);
+  if err != ENOERR then try ioerror(err, "in getMode", name);
   return result;
 }
 
@@ -691,10 +691,10 @@ proc getFileSize(out error: syserr, name: string): int {
    :return: The size in bytes of the file in question
    :rtype: `int`
 */
-proc getFileSize(name: string): int {
+proc getFileSize(name: string): int throws {
   var err: syserr = ENOERR;
   var ret = getFileSize(err, name);
-  if err != ENOERR then ioerror(err, "in getFileSize", name);
+  if err != ENOERR then try ioerror(err, "in getFileSize", name);
   return ret;
 }
 
@@ -719,10 +719,10 @@ proc getUID(out error: syserr, name: string): int {
    :return: The user id of the specified file or directory
    :rtype: `int`
 */
-proc getUID(name: string): int {
+proc getUID(name: string): int throws {
   var err: syserr = ENOERR;
   var ret = getUID(err, name);
-  if err != ENOERR then ioerror(err, "in getUID");
+  if err != ENOERR then try ioerror(err, "in getUID");
   return ret;
 }
 
@@ -870,10 +870,10 @@ proc isDir(out error:syserr, name:string):bool {
    :return: `true` if the path is a directory, `false` if it is not
    :rtype: `bool`
 */
-proc isDir(name:string):bool {
+proc isDir(name:string):bool throws {
   var err:syserr;
   var ret = isDir(err, name);
-  if err != ENOERR then ioerror(err, "in isDir", name);
+  if err != ENOERR then try ioerror(err, "in isDir", name);
   return ret;
 }
 
@@ -902,10 +902,10 @@ proc isFile(out error:syserr, name:string):bool {
    :return: `true` if the path is a file, `false` if it is not
    :rtype: `bool`
 */
-proc isFile(name:string):bool {
+proc isFile(name:string):bool throws {
   var err:syserr;
   var ret = isFile(err, name);
-  if err != ENOERR then ioerror(err, "in isFile", name);
+  if err != ENOERR then try ioerror(err, "in isFile", name);
   return ret;
 }
 
@@ -931,10 +931,10 @@ proc isLink(out error:syserr, name: string): bool {
             if symbolic links are not supported.
    :rtype: `bool`
 */
-proc isLink(name: string): bool {
+proc isLink(name: string): bool throws {
   var err:syserr;
   var ret = isLink(err, name);
-  if err != ENOERR then ioerror(err, "in isLink", name);
+  if err != ENOERR then try ioerror(err, "in isLink", name);
   return ret;
 }
 
@@ -968,10 +968,10 @@ proc isMount(out error:syserr, name: string): bool {
    :return: `true` if the path is a mount point, `false` if it is not.
    :rtype: `bool`
 */
-proc isMount(name: string): bool {
+proc isMount(name: string): bool throws {
   var err:syserr;
   var ret = isMount(err, name);
-  if err != ENOERR then ioerror(err, "in isMount", name);
+  if err != ENOERR then try ioerror(err, "in isMount", name);
   return ret;
 }
 
@@ -1082,10 +1082,10 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
                  to occur.
    :type parents: `bool`
 */
-proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
+proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   var err: syserr = ENOERR;
   mkdir(err, name, mode, parents);
-  if err != ENOERR then ioerror(err, "in mkdir", name);
+  if err != ENOERR then try ioerror(err, "in mkdir", name);
 }
 
 pragma "no doc"
@@ -1150,13 +1150,13 @@ proc moveDir(out error: syserr, src: string, dest: string) {
    :arg dest: the location to move it to.
    :type dest: `string`
 */
-proc moveDir(src: string, dest: string) {
+proc moveDir(src: string, dest: string) throws {
   var err: syserr = ENOERR;
   moveDir(err, src, dest);
   if err == EEXIST {
     halt("Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
   }
-  if err != ENOERR then ioerror(err, "in moveDir(" + src + ", " + dest + ")");
+  if err != ENOERR then try ioerror(err, "in moveDir(" + src + ", " + dest + ")");
 }
 
 pragma "no doc"
@@ -1176,10 +1176,10 @@ proc rename(out error: syserr, oldname, newname: string) {
    :arg newname: Name which should be used to refer to the file in the future.
    :type newname: `string`
 */
- proc rename(oldname: string, newname: string) {
+ proc rename(oldname: string, newname: string) throws {
   var err:syserr = ENOERR;
   rename(err, oldname, newname);
-  if err != ENOERR then ioerror(err, "in rename", oldname);
+  if err != ENOERR then try ioerror(err, "in rename", oldname);
 }
 
 pragma "no doc"
@@ -1196,10 +1196,10 @@ proc remove(out error: syserr, name: string) {
    :arg name: The file/directory to remove
    :type name: `string`
 */
-proc remove(name: string) {
+proc remove(name: string) throws {
   var err:syserr = ENOERR;
   remove(err, name);
-  if err != ENOERR then ioerror(err, "in remove", name);
+  if err != ENOERR then try ioerror(err, "in remove", name);
 }
 
 private proc rmTreeHelper(out error: syserr, root: string) {
@@ -1257,10 +1257,10 @@ proc rmTree(out error: syserr, root: string) {
               with its entire contents.
    :type root: `string`
 */
-proc rmTree(root: string) {
+proc rmTree(root: string) throws {
   var err: syserr = ENOERR;
   rmTree(err, root);
-  if err != ENOERR then ioerror(err, "in rmTree(" + root + ")");
+  if err != ENOERR then try ioerror(err, "in rmTree(" + root + ")");
 }
 
 pragma "no doc"
@@ -1288,10 +1288,10 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
             `false` otherwise.
    :rtype: `bool`
 */
-proc sameFile(file1: string, file2: string): bool {
+proc sameFile(file1: string, file2: string): bool throws {
   var err:syserr = ENOERR;
   var result = sameFile(err, file1, file2);
-  if err != ENOERR then ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
+  if err != ENOERR then try ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
   return result;
 }
 
@@ -1340,10 +1340,10 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
             otherwise.
    :rtype: `bool`
 */
-proc sameFile(file1: file, file2: file): bool {
+proc sameFile(file1: file, file2: file): bool throws {
   var err:syserr = ENOERR;
   var result = sameFile(err, file1, file2);
-  if err != ENOERR then ioerror(err, "in sameFile " + file1.path, file2.path);
+  if err != ENOERR then try ioerror(err, "in sameFile " + file1.path, file2.path);
   return result;
 }
 
@@ -1363,10 +1363,10 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    :arg newName: The location where the symbolic link should live
    :type newName: `string`
 */
-proc symlink(oldName: string, newName: string) {
+proc symlink(oldName: string, newName: string) throws {
   var err:syserr = ENOERR;
   symlink(err, oldName, newName);
-  if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
+  if err != ENOERR then try ioerror(err, "in symlink " + oldName, newName);
 }
 
 /* Sets the file creation mask of the current locale to `mask`, and returns
