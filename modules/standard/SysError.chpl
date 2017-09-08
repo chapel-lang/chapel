@@ -41,15 +41,26 @@ module SysError {
 
 use SysBasic;
 
+/*
+
+   ``SystemError`` is a base class for ``Errors`` generated from ``syserr``.
+   It provides factory methods to create different subtypes based on the
+   ``syserr`` that is passed.
+
+*/
 class SystemError : Error {
   var err:     syserr;
   var details: string;
 
-  proc SystemError(err: syserr, details: string) {
+  proc SystemError(err: syserr, details: string = "") {
     this.err     = err;
     this.details = details;
   }
 
+  /*
+     Provides a formatted string output for ``SystemError``, generated
+     from the internal ``err`` and the ``details`` string.
+  */
   proc message() {
     var strerror_err: err_t = ENOERR;
     var errstr:  c_string   = sys_strerror_syserr_str(err, strerror_err);
@@ -65,245 +76,306 @@ class SystemError : Error {
     try! f.write(msg);
   }
 
-  // TODO: finish chpldoc
- /* Return the matching SystemError for a given syserr, with an optional
-    string containing extra details.
+  /*
+    Return the matching ``SystemError`` subtype for a given ``syserr``,
+    with an optional string containing extra details.
 
-   :arg err: the syserr to generate from
-   :arg details: extra information to print after the error description
- */
+    :arg err: the syserr to generate from
+    :arg details: extra information to include with the error
+  */
   proc type fromSyserr(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new BlockingIOError(err, details);
     } else if err == ECHILD {
-      return new ChildProcessError(err, details);
+      return new ChildProcessError(details, err);
     } else if err == EPIPE || err == ESHUTDOWN {
       return new BrokenPipeError(err, details);
     } else if err == ECONNABORTED {
-      return new ConnectionAbortedError(err, details);
+      return new ConnectionAbortedError(details, err);
     } else if err == ECONNREFUSED {
-      return new ConnectionRefusedError(err, details);
+      return new ConnectionRefusedError(details, err);
     } else if err == ECONNRESET {
-      return new ConnectionResetError(err, details);
+      return new ConnectionResetError(details, err);
     } else if err == EEXIST {
-      return new FileExistsError(err, details);
+      return new FileExistsError(details, err);
     } else if err == ENOENT {
-      return new FileNotFoundError(err, details);
+      return new FileNotFoundError(details, err);
     } else if err == EINTR {
-      return new InterruptedError(err, details);
+      return new InterruptedError(details, err);
     } else if err == EISDIR {
-      return new IsADirectoryError(err, details);
+      return new IsADirectoryError(details, err);
     } else if err == ENOTDIR {
-      return new NotADirectoryError(err, details);
+      return new NotADirectoryError(details, err);
     } else if err == EACCES || err == EPERM {
       return new PermissionError(err, details);
     } else if err == ESRCH {
-      return new ProcessLookupError(err, details);
+      return new ProcessLookupError(details, err);
     } else if err == ETIMEDOUT {
-      return new TimeoutError(err, details);
+      return new TimeoutError(details, err);
     } else if err == EEOF {
-      return new EOFError(err, details);
+      return new EOFError(details, err);
     } else if err == ESHORT {
-      return new UnexpectedEOFError(err, details);
+      return new UnexpectedEOFError(details, err);
     } else if err == EFORMAT {
-      return new BadFormatError(err, details);
+      return new BadFormatError(details, err);
     } else if err == EINVAL {
-      return new InvalidArgumentError(err, details);
+      return new InvalidArgumentError(details, err);
     }
 
     return new SystemError(err, details);
   }
 
-  proc type fromSyserr(err: int, details: string) {
+  /*
+    Return the matching ``SystemError`` subtype for a given error number,
+    with an optional string containing extra details.
+
+    :arg err: the number to generate from
+    :arg details: extra information to include with the error
+  */
+  proc type fromSyserr(err: int, details: string = "") {
     return fromSyserr(err:syserr, details);
   }
 }
 
+/*
+
+   ``BlockingIOError`` is the subclass of ``SystemError`` corresponding to
+   ``EAGAIN``, ``EALREADY``, ``EWOULDBLOCK``, and ``EINPROGRESS``.
+
+*/
 class BlockingIOError : SystemError {
-  proc BlockingIOError(err: syserr, details: string) {
+  proc BlockingIOError(err: syserr, details: string = "") {
     this.err     = err;
     this.details = details;
   }
 }
 
+/*
+
+   ``ChildProcessError`` is the subclass of ``SystemError`` corresponding to
+   ``ECHILD``.
+
+*/
 class ChildProcessError : SystemError {
-  proc ChildProcessError(err: syserr, details: string) {
+  proc ChildProcessError(details: string = "", err: syserr = ECHILD) {
     this.err     = err;
     this.details = details;
   }
-
-  proc ChildProcessError(details: string) {
-    ChildProcessError(ECHILD, details);
-  }
 }
 
+/*
+
+   ``ConnectionError`` is the subclass of ``SystemError`` that serves as the
+   base class for all connection-based system errors.
+
+*/
 class ConnectionError : SystemError { }
 
+/*
+
+   ``BrokenPipeError`` is the subclass of ``ConnectionError`` corresponding
+   to ``EPIPE`` and ``ESHUTDOWN``.
+
+*/
 class BrokenPipeError : ConnectionError {
-  proc BrokenPipeError(err: syserr, details: string) {
+  proc BrokenPipeError(err: syserr, details: string = "") {
     this.err     = err;
     this.details = details;
   }
 }
 
+/*
+
+   ``ConnectionAbortedError`` is the subclass of ``ConnectionError``
+   corresponding to ``ECONNABORTED``.
+
+*/
 class ConnectionAbortedError : ConnectionError {
-  proc ConnectionAbortedError(err: syserr, details: string) {
+  proc ConnectionAbortedError(details: string = "", err: syserr = ECONNABORTED) {
     this.err     = err;
     this.details = details;
   }
-
-  proc ConnectionAbortedError(details: string) {
-    ConnectionAbortedError(ECONNABORTED, details);
-  }
 }
 
+/*
+
+   ``ConnectionRefusedError`` is the subclass of ``ConnectionError``
+   corresponding to ``ECONNREFUSED``.
+
+*/
 class ConnectionRefusedError : ConnectionError {
-  proc ConnectionRefusedError(err: syserr, details: string) {
+  proc ConnectionRefusedError(details: string = "", err: syserr = ECONNREFUSED) {
     this.err     = err;
     this.details = details;
   }
-
-  proc ConnectionRefusedError(details: string) {
-    ConnectionRefusedError(ECONNREFUSED, details);
-  }
 }
 
+/*
+
+   ``ConnectionResetError`` is the subclass of ``ConnectionError``
+   corresponding to ``ECONNRESET``.
+
+*/
 class ConnectionResetError : ConnectionError {
-  proc ConnectionResetError(err: syserr, details: string) {
+  proc ConnectionResetError(details: string = "", err: syserr = ECONNRESET) {
     this.err     = err;
     this.details = details;
   }
-
-  proc ConnectionResetError(details: string) {
-    ConnectionResetError(ECONNRESET, details);
-  }
 }
 
+/*
+
+   ``FileExistsError`` is the subclass of ``SystemError`` corresponding to
+   ``EEXIST``.
+
+*/
 class FileExistsError : SystemError {
-  proc FileExistsError(err: syserr, details: string) {
+  proc FileExistsError(details: string = "", err: syserr = EEXIST) {
     this.err     = err;
     this.details = details;
   }
-
-  proc FileExistsError(details: string) {
-    FileExistsError(EEXIST, details);
-  }
 }
 
+/*
+
+   ``FileNotFoundError`` is the subclass of ``SystemError`` corresponding to
+   ``ENOENT``.
+
+*/
 class FileNotFoundError : SystemError {
-  proc FileNotFoundError(err: syserr, details: string) {
+  proc FileNotFoundError(details: string = "", err: syserr = ENOENT) {
     this.err     = err;
     this.details = details;
   }
-
-  proc FileNotFoundError(details: string) {
-    FileNotFoundError(ENOENT, details);
-  }
 }
 
+/*
+
+   ``InterruptedError`` is the subclass of ``SystemError`` corresponding to
+   ``EINTR``.
+
+*/
 class InterruptedError : SystemError {
-  proc InterruptedError(err: syserr, details: string) {
+  proc InterruptedError(details: string = "", err: syserr = EINTR) {
     this.err     = err;
     this.details = details;
   }
-
-  proc InterruptedError(details: string) {
-    InterruptedError(EINTR, details);
-  }
 }
 
+/*
+
+   ``IsADirectoryError`` is the subclass of ``SystemError`` corresponding to
+   ``EISDIR``.
+
+*/
 class IsADirectoryError : SystemError {
-  proc IsADirectoryError(err: syserr, details: string) {
+  proc IsADirectoryError(details: string = "", err: syserr = EISDIR) {
     this.err     = err;
     this.details = details;
   }
-
-  proc IsADirectoryError(details: string) {
-    IsADirectoryError(EISDIR, details);
-  }
 }
 
+/*
+
+   ``NotADirectoryError`` is the subclass of ``SystemError`` corresponding to
+   ``ENOTDIR``.
+
+*/
 class NotADirectoryError : SystemError {
-  proc NotADirectoryError(err: syserr, details: string) {
+  proc NotADirectoryError(details: string = "", err: syserr = ENOTDIR) {
     this.err     = err;
     this.details = details;
   }
-
-  proc NotADirectoryError(details: string) {
-    NotADirectoryError(ENOTDIR, details);
-  }
 }
 
+/*
+
+   ``PermissionError`` is the subclass of ``SystemError`` corresponding to
+   ``EACCES`` and ``EPERM``.
+
+*/
 class PermissionError : SystemError {
-  proc PermissionError(err:syserr, details: string) {
+  proc PermissionError(err: syserr, details: string = "") {
     this.err     = err;
     this.details = details;
   }
 }
 
+/*
+
+   ``ProcessLookupError`` is the subclass of ``SystemError`` corresponding to
+   ``ESRCH``.
+
+*/
 class ProcessLookupError : SystemError {
-  proc ProcessLookupError(err: syserr, details: string) {
+  proc ProcessLookupError(details: string = "", err: syserr = ESRCH) {
     this.err     = err;
     this.details = details;
   }
-
-  proc ProcessLookupError(details: string) {
-    ProcessLookupError(ESRCH, details);
-  }
 }
 
+/*
+
+   ``TimeoutError`` is the subclass of ``SystemError`` corresponding to
+   ``ETIMEDOUT``.
+
+*/
 class TimeoutError : SystemError {
-  proc TimeoutError(err: syserr, details: string) {
+  proc TimeoutError(details: string = "", err: syserr = ETIMEDOUT) {
     this.err     = err;
     this.details = details;
   }
-
-  proc TimeoutError(details: string) {
-    TimeoutError(ETIMEDOUT, details);
-  }
 }
 
+/*
+
+   ``EOFError`` is the subclass of ``SystemError`` corresponding to
+   ``EEOF``.
+
+*/
 class EOFError : SystemError {
-  proc EOFError(err: syserr, details: string) {
+  proc EOFError(details: string = "", err: syserr = EEOF) {
     this.err     = err;
     this.details = details;
   }
-
-  proc EOFError(details: string) {
-    EOFError(EEOF, details);
-  }
 }
 
+/*
+
+   ``UnexpectedEOFError`` is the subclass of ``SystemError`` corresponding to
+   ``ESHORT``.
+
+*/
 class UnexpectedEOFError : SystemError {
-  proc UnexpectedEOFError(err: syserr, details: string) {
+  proc UnexpectedEOFError(details: string = "", err: syserr = ESHORT) {
     this.err     = err;
     this.details = details;
   }
-
-  proc UnexpectedEOFError(details: string) {
-    UnexpectedEOFError(ESHORT, details);
-  }
 }
 
+/*
+
+   ``BadFormatError`` is the subclass of ``SystemError`` corresponding to
+   ``EFORMAT``.
+
+*/
 class BadFormatError : SystemError {
-  proc BadFormatError(err: syserr, details: string) {
+  proc BadFormatError(details: string = "", err: syserr = EFORMAT) {
     this.err     = err;
     this.details = details;
-  }
-
-  proc BadFormatError(details: string) {
-    BadFormatError(EFORMAT, details);
   }
 }
 
+/*
+
+   ``InvalidArgumentError`` is the subclass of ``SystemError`` corresponding to
+   ``EINVAL``.
+
+*/
 class InvalidArgumentError : SystemError {
-  proc InvalidArgumentError(err: syserr, details: string) {
+  proc InvalidArgumentError(details: string = "", err: syserr = EINVAL) {
     this.err     = err;
     this.details = details;
-  }
-
-  proc InvalidArgumentError(details: string) {
-    InvalidArgumentError(EINVAL, details);
   }
 }
 
