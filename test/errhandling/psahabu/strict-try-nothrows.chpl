@@ -2,13 +2,15 @@ pragma "error mode strict"
 module mymodule {
   use ThrowError;
 
-  proc propError() throws {
+  proc propError() {
     throwAnError();
   }
+
+  writeln("should not compile");
 
   try {
     propError();
   } catch {
-    writeln("did not fail strict mode");
+    writeln("in catch");
   }
 }

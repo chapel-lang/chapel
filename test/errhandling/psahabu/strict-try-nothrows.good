@@ -1,0 +1,2 @@
+strict-try-nothrows.chpl:5: In function 'propError':
+strict-try-nothrows.chpl:6: error: throwing call without try or try! (strict mode)

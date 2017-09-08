@@ -1,4 +1,4 @@
-pragma "error mode strict"
+pragma "error mode fatal"
 module mymodule {
   use ThrowError;
 
@@ -9,6 +9,6 @@ module mymodule {
   try {
     propError();
   } catch {
-    writeln("did not fail strict mode");
+    writeln("OK");
   }
 }
