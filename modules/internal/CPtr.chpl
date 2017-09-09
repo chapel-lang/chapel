@@ -353,7 +353,7 @@ module CPtr {
 
     :arg data: the c_ptr to memory that was allocated
     */
-  inline proc c_free(data: c_ptr) {
+  inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
 
