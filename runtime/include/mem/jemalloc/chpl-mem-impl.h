@@ -31,9 +31,7 @@
 #endif
 
 #include "jemalloc/jemalloc.h"
-#include "chpltypes.h"
 
-#define MALLOCX_NO_FLAGS 0
 
 // Default configuration of jemalloc names the routines
 // like je_malloc, je_free, etc; but the Chapel configuration
@@ -50,6 +48,9 @@
 #define CHPL_JE_FREE CHPL_JE_(free)
 #define CHPL_JE_NALLOCX CHPL_JE_(nallocx)
 #define CHPL_JE_MALLCTL CHPL_JE_(mallctl)
+
+
+#define MALLOCX_NO_FLAGS 0
 
 static inline void* chpl_calloc(size_t n, size_t size) {
   return CHPL_JE_CALLOC(n,size);
@@ -79,14 +80,5 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
   if (minSize == 0) { return 0; }
   return CHPL_JE_NALLOCX(minSize, MALLOCX_NO_FLAGS);
 }
-
-
-chpl_bool chpl_mem_impl_localizes(void);
-
-#define CHPL_MEM_IMPL_LOCALIZES() chpl_mem_impl_localizes()
-
-
-// TODO (EJR 03/11/16): Can/should we consider using the extended API? See JIRA
-// issue 190 (https://chapel.atlassian.net/browse/CHAPEL-190) for more info.
 
 #endif
