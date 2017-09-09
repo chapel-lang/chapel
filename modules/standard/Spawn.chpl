@@ -279,7 +279,8 @@ module Spawn {
     proc stdin throws {
       try _throw_on_launch_error();
       if stdin_pipe == false {
-        throw new Error("subprocess was not configured with a stdin pipe");
+        throw SystemError.fromSyserr(
+            EINVAL, "subprocess was not configured with a stdin pipe");
       }
       return stdin_channel;
     }
