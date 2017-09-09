@@ -1,0 +1,2 @@
+#7176: forall inside a throwing function containing a throws must be wrapped
+in a try when in strict mode

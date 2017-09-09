@@ -1,0 +1,1 @@
+forall-errors.chpl:8: error: throwing call without try or try! (strict mode)
