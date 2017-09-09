@@ -79,6 +79,18 @@ module CPtr {
     inline proc deref() ref {
       return __primitive("array_get", this, 0);
     }
+    /* Print this pointer */
+    inline proc writeThis(ch) {
+      (this:c_void_ptr).writeThis(ch);
+    }
+  }
+
+  pragma "no doc"
+  inline proc c_void_ptr.writeThis(ch) {
+    if this == c_nil then
+      ch.writef("(nil)");
+    else
+      ch.writef("0x%xu", this:uint(64));
   }
 
   pragma "no doc"
@@ -125,7 +137,14 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:object {
     return __primitive("cast", t, x);
   }
-
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:uint(64) && x.type:c_ptr {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:uint(64) && x.type:c_void_ptr {
+    return __primitive("cast", t, x);
+  }
 
   pragma "compiler generated"
   pragma "last resort"
