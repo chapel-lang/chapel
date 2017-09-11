@@ -950,11 +950,11 @@ private module AlignedTSupport {
   // read/write support
   proc aligned_t.writeThis(f) {
     var tmp : uint(64) = this : uint(64);
-    f.write(tmp);
+    f <~> tmp;
   }
   proc aligned_t.readThis(f) {
     var tmp : uint(64);
-    f.read(tmp);
+    f <~> tmp;
     this = tmp : aligned_t;
   }
 }
