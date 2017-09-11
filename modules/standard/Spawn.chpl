@@ -296,7 +296,8 @@ module Spawn {
     proc stdout throws {
       try _throw_on_launch_error();
       if stdout_pipe == false {
-        throw new Error("subprocess was not configured with a stdout pipe");
+        throw SystemError.fromSyserr(
+            EINVAL, "subprocess was not configured with a stdout pipe");
       }
       return stdout_channel;
     }
@@ -312,7 +313,8 @@ module Spawn {
     proc stderr throws {
       try _throw_on_launch_error();
       if stderr_pipe == false {
-        throw new Error("subprocess was not configured with a stderr pipe");
+        throw SystemError.fromSyserr(
+            EINVAL, "subprocess was not configured with a stderr pipe");
       }
       return stderr_channel;
     }
@@ -474,9 +476,10 @@ module Spawn {
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = env_c_str;
             if env_str.count("HUGETLB") > 0 then
-              throw new Error("spawn with more than 1 locale ",
-                              "for CHPL_COMM=ugni with hugepages currently ",
-                              "requires stdin, stdout, stderr=FORWARD");
+              throw SystemError.fromSyserr(EINVAL,
+                  "spawn with more than 1 locale ",
+                  "for CHPL_COMM=ugni with hugepages currently ",
+                  "requires stdin, stdout, stderr=FORWARD");
           }
         }
 
