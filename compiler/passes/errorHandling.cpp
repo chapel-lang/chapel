@@ -700,28 +700,39 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
+typedef enum {
+  ERROR_MODE_UNKNOWN,
+  ERROR_MODE_FATAL,
+  ERROR_MODE_RELAXED,
+  ERROR_MODE_STRICT,
+} error_checking_mode_t;
 
 class ErrorCheckingVisitor : public AstVisitorTraverse {
 
 public:
-  ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* reasons);
+  ErrorCheckingVisitor(bool inThrowingFn, error_checking_mode_t inMode,
+                       implicitThrowsReasons_t* reasons);
 
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
   virtual bool enterCallExpr (CallExpr*  node);
 
 private:
-  implicitThrowsReasons_t* reasons;
-
   int  tryDepth;
   bool fnCanThrow;
+  error_checking_mode_t mode;
+
+  implicitThrowsReasons_t* reasons;
 
   void checkCatches(TryStmt* tryStmt);
 };
 
-ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* inReasons) {
+ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn,
+    error_checking_mode_t inMode, implicitThrowsReasons_t* inReasons) {
+
   tryDepth = 0;
   fnCanThrow = inThrowingFn;
+  mode = inMode;
   reasons = inReasons;
 }
 
@@ -783,8 +794,15 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
         // OK
       } else {
         if (shouldEnforceStrict(node)) {
-          if (fStrictErrorHandling) {
+          bool inThrowingFunction = false;
+          if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+            inThrowingFunction = parentFn->throwsError();
+          }
+          if (mode == ERROR_MODE_STRICT) {
             USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+            printReason(node, reasons);
+          } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
+            USR_FATAL_CONT(node, "throwing call in non-throwing function without try or try! (relaxed mode)");
             printReason(node, reasons);
           }
         }
@@ -857,9 +875,56 @@ canBlockStmtThrow(BlockStmt* block)
   return visit.throws();
 }
 
+// Compute the error handling mode to use
+//
+// Go up symbols, starting with fn, looking for flag
+// This allows the flag to be set on an outer module in the
+// case of nested modules.
+static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
+{
+  error_checking_mode_t mode = ERROR_MODE_UNKNOWN;
+
+  Symbol* cur = fn;
+
+  while (cur != NULL && cur->defPoint != NULL) {
+    if (cur->hasFlag(FLAG_ERROR_MODE_FATAL)) {
+      mode = ERROR_MODE_FATAL;
+      break;
+    }
+    if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
+      mode = ERROR_MODE_RELAXED;
+      break;
+    }
+    if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
+      mode = ERROR_MODE_STRICT;
+      break;
+    }
+
+    cur = cur->defPoint->parentSymbol;
+  }
+
+  if (mode == ERROR_MODE_UNKNOWN) {
+    // No mode was chosen explicitly, find the default.
+
+    ModuleSymbol* mod = fn->getModule();
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+      mode = ERROR_MODE_FATAL;
+    else
+      mode = ERROR_MODE_FATAL; // TODO: this should be ERROR_MODE_RELAXED
+                               // this is commented out for now to separate
+                               // PRs.
+  }
+
+  return mode;
+}
+
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
-  ErrorCheckingVisitor visit(fn->throwsError(), reasons);
+
+  error_checking_mode_t mode = computeErrorCheckingMode(fn);
+  INT_ASSERT(mode != ERROR_MODE_UNKNOWN);
+
+  ErrorCheckingVisitor visit(fn->throwsError(), mode, reasons);
 
   fn->body->accept(&visit);
 }

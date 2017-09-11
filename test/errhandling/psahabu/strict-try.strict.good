@@ -1,2 +1,0 @@
-strict-try.chpl:3: In function 'propError':
-strict-try.chpl:4: error: throwing call without try or try! (strict mode)

@@ -314,6 +314,7 @@ module ChapelIteratorSupport {
   }
 
   pragma "no implicit copy"
+  pragma "error mode fatal" // avoid compiler errors here
   inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
 

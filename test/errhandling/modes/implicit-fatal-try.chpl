@@ -1,3 +1,5 @@
+
+
 use ThrowError;
 
 proc propError() throws {
@@ -7,5 +9,5 @@ proc propError() throws {
 try {
   propError();
 } catch {
-  writeln("did not fail strict mode");
+  writeln("OK");
 }

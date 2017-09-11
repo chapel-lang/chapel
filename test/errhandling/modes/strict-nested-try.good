@@ -1,0 +1,2 @@
+strict-nested-try.chpl:7: In function 'propError':
+strict-nested-try.chpl:8: error: throwing call without try or try! (strict mode)
