@@ -350,8 +350,15 @@ void AggregateType::codegenDef() {
 
         llvm::StructType * st;
         // handle an empty union.
-        if( largestType ) st = llvm::StructType::get(largestType, NULL);
-        else st = llvm::StructType::get(info->module->getContext());
+        if( largestType ) {
+          st = llvm::StructType::get(largestType
+#if HAVE_LLVM_VER < 50
+                                     , NULL
+#endif
+                                     );
+        } else {
+          st = llvm::StructType::get(info->module->getContext());
+        }
         params.push_back(st);
         GEPMap.insert(std::pair<std::string, int>("_u", paramID++));
       } else {

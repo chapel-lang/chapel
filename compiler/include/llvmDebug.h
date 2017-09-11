@@ -25,8 +25,13 @@
 #ifdef HAVE_LLVM
 
 #include "llvmUtil.h"
-#include "llvm/Support/Dwarf.h"
 #include "llvm/Support/raw_os_ostream.h"
+
+#if HAVE_LLVM_VER >= 50
+#include "llvm/BinaryFormat/Dwarf.h"
+#else
+#include "llvm/Support/Dwarf.h"
+#endif
 
 #if HAVE_LLVM_VER >= 35
 #include "llvm/IR/DebugInfo.h"
