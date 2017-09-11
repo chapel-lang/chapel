@@ -3,6 +3,7 @@ Chapel's Library for `Tom's Obvious, Minimal Language (TOML)
               <https://github.com/toml-lang/toml>`_.
 This module provides support for parsing and writing toml files.
 */
+pragma "error mode fatal"
 module TOML {
 
 
