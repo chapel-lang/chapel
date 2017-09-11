@@ -2392,13 +2392,15 @@ This function is equivalent to calling :proc:`open` and then
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
 // channel presumably).
-// TODO: change out err -> out error for consistency
 // TODO: include optional iostyle argument for consistency
-proc openreader(out err: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
+proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(false, kind, locking) {
-  var fl:file = open(err, path, iomode.r, url=url);
-  var reader = fl.reader(kind, locking, start, end, hints, fl._style);
+  var fl:file = open(error=error, path, iomode.r, url=url);
+  if error then
+    return new channel(writing=false, kind=kind, locking=locking);
+
+  var reader = fl.reader(error=error, kind, locking, start, end, hints, fl._style);
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
   // and not having any handles attached to it, it will close the underlying file for the channel.
@@ -2413,7 +2415,7 @@ proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""):channel(false, kind, locking) throws {
   var err:syserr = ENOERR;
-  var reader = openreader(err=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
+  var reader = openreader(error=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
   if err then try ioerror(err, "in openreader()");
   return reader;
 }
@@ -2424,9 +2426,9 @@ Open a file at a particular path or URL and return a writing channel for it.
 This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
-:arg err: optional argument to capture an error code. If this argument
-          is not provided and an error is encountered, this function
-          will halt with an error message.
+:arg error: optional argument to capture an error code. If this argument
+            is not provided and an error is encountered, this function
+            will halt with an error message.
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
@@ -2457,11 +2459,13 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
           error, returns the default :record:`channel` value.
 
 */
-proc openwriter(out err: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
+proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(true, kind, locking) {
-  var fl:file = open(err, path, iomode.cw, url=url);
-  var writer = fl.writer(kind, locking, start, end, hints, fl._style);
+  var fl:file = open(error=error, path, iomode.cw, url=url);
+  if error then
+    return new channel(writing=true, kind=kind, locking=locking);
+  var writer = fl.writer(error=error, kind, locking, start, end, hints, fl._style);
   // Need to look at this some more and verify it:
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
@@ -2476,7 +2480,7 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(true, kind, locking) throws {
   var err: syserr = ENOERR;
-  var writer = openwriter(err=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
+  var writer = openwriter(error=err, path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
   if err then try ioerror(err, "in openwriter()");
   return writer;
 }
@@ -3294,7 +3298,7 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
  */
 iter channel.lines() {
 
-  this.lock();
+  try! this.lock();
 
   // Save iostyle
   const saved_style: iostyle = this._style();
@@ -3313,7 +3317,7 @@ iter channel.lines() {
   // Set the iostyle back to original state
   this._set_style(saved_style);
 
-  this.unlock();
+  try! this.unlock();
 }
 
 
@@ -3877,7 +3881,7 @@ proc channel.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
  */
-proc channel.readln(type t ...?numTypes) where numTypes > 1 {
+proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   for param i in 1..(numTypes-1) do
     tupleVal(i) = this.read(t(i));
@@ -3892,7 +3896,7 @@ proc channel.readln(type t ...?numTypes) where numTypes > 1 {
    :arg t: more than one type to read
    :returns: a tuple of the read values
  */
-proc channel.read(type t ...?numTypes) where numTypes > 1 {
+proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   for param i in 1..numTypes do
     tupleVal(i) = this.read(t(i));
@@ -4174,8 +4178,8 @@ record ItemReader {
   proc read(out arg:ItemType, out error:syserr):bool {
     return ch.read(arg, error=error);
   }
-  /* read a single item, halting on error */
-  proc read(out arg:ItemType):bool {
+  /* read a single item, throwing on error */
+  proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
   }
 
@@ -4214,8 +4218,8 @@ record ItemWriter {
   proc write(arg:ItemType, out error:syserr):bool {
     return ch.write(arg, error=error);
   }
-  /* write a single item, halting on error */
-  proc write(arg:ItemType):bool {
+  /* write a single item, throwing on error */
+  proc write(arg:ItemType):bool throws {
     return ch.write(arg);
   }
 }
@@ -7113,7 +7117,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   param nret = captures+1;
   var ret:nret*reMatch;
 
-  lock();
+  try! lock();
   on this.home do error = _mark();
   // TODO should be try not try!
   if error then try! this._ch_ioerror(error, "in channel.matches mark");
@@ -7157,7 +7161,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
     i += 1;
   }
   _commit();
-  unlock();
+  try! unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = ENOERR;
   // TODO should be try not try!
