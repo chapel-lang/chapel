@@ -6702,10 +6702,10 @@ proc string.format(args ...?k, out error:syserr):string {
 
 // documented in the error= version
 pragma "no doc"
-proc string.format(args ...?k):string {
+proc string.format(args ...?k):string throws {
   var err:syserr = ENOERR;
   var ret = chpl_do_format(this, (...args), error=err);
-  if err then try! ioerror(err, "in string.format");
+  if err then try ioerror(err, "in string.format");
   return ret;
 }
 
