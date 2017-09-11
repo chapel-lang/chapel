@@ -537,7 +537,7 @@ static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
       if (calledFn->throwsError()) {
         if (reasons->count(calledFn)) {
           BaseAST* reason = (*reasons)[calledFn];
-          USR_PRINT(reason, "is reason function throws");
+          USR_PRINT(reason, "call to throwing function here");
           printReason(reason, reasons);
         }
       }
