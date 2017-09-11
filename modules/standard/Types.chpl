@@ -26,8 +26,6 @@ Functions related to predefined types.
 */
 module Types {
 
-use Reflection only;
-
 pragma "no doc" // joint documentation with the next one
 pragma "no instantiation limit"
 proc isType(type t) param return true;
@@ -414,6 +412,8 @@ proc isProperSubtype(type sub, type super) param
 pragma "no doc"
 proc isProperSubtype(type sub, type super) param
   return false;
+
+
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
