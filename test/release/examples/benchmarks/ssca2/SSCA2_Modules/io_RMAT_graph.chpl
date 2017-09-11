@@ -2,6 +2,7 @@
 // Input/output of an RMAT graph to files in binary format.
 // Presently, uses the XMT/KM RMAT graph storage format for SSCA#2.
 //
+pragma "error mode fatal"
 module io_RMAT_graph
 {
   use SSCA2_compilation_config_params, Time, ReplicatedDist;
