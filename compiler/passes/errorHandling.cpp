@@ -537,7 +537,7 @@ static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
       if (calledFn->throwsError()) {
         if (reasons->count(calledFn)) {
           BaseAST* reason = (*reasons)[calledFn];
-          USR_PRINT(reason, " is reason function throws");
+          USR_PRINT(reason, "call to throwing function here");
           printReason(reason, reasons);
         }
       }
@@ -799,10 +799,18 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
             inThrowingFunction = parentFn->throwsError();
           }
           if (mode == ERROR_MODE_STRICT) {
-            USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+            USR_FATAL_CONT(node, "call to throwing function %s "
+                                 "without try or try! (strict mode)",
+                                 calledFn->name);
+            USR_PRINT(calledFn, "throwing function %s defined here",
+                                calledFn->name);
             printReason(node, reasons);
           } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
-            USR_FATAL_CONT(node, "throwing call in non-throwing function without try or try! (relaxed mode)");
+            USR_FATAL_CONT(node, "call to throwing function %s "
+                                 "without throws, try, or try! (relaxed mode)",
+                                 calledFn->name);
+            USR_PRINT(calledFn, "throwing function %s defined here",
+                                calledFn->name);
             printReason(node, reasons);
           }
         }
