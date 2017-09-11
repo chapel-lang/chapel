@@ -243,18 +243,9 @@ module Spawn {
     var spawn_error:syserr;
 
     pragma "no doc"
-    proc _start_stdin_buffering() {
-      var err = stdin_channel._mark();
-      if ! err {
-        stdin_buffering = true;
-      }
-      return err;
-    }
-
-    pragma "no doc"
     proc _stop_stdin_buffering() {
-      if this.stdin_buffering {
-        this.stdin._commit();
+      if this.stdin_buffering && this.stdin_pipe {
+        this.stdin_channel._commit();
         this.stdin_buffering = false; // Don't commit again on close again
       }
     }
@@ -657,7 +648,7 @@ module Spawn {
   proc spawnshell(command:string, env:[] string=Spawn.empty_env,
                   stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
                   executable="/bin/sh", shellarg="-c",
-                  param kind=iokind.dynamic, param locking=true)
+                  param kind=iokind.dynamic, param locking=true) throws
   {
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
