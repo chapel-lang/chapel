@@ -116,7 +116,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \
 	packages/DistributedBag.chpl \
-	packages/DistributedDeque.chpl
+	packages/DistributedDeque.chpl \
+	packages/DistributedIters.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
