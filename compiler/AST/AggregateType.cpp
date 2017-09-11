@@ -1594,8 +1594,9 @@ bool AggregateType::needsConstructor() {
       }
     }
 
-    // For now, extern classes need a default constructor
-    if (symbol->hasFlag(FLAG_EXTERN)) {
+    // Make a default constructor for extern classes only if we are not forcing
+    // initializers
+    if (symbol->hasFlag(FLAG_EXTERN) && !fUserDefaultInitializers) {
       return true;
     }
 
@@ -1646,10 +1647,6 @@ bool AggregateType::wantsDefaultInitializer() {
       }
     }
   }
-
-  // For now, no default initializers for extern types
-  if (symbol->hasFlag(FLAG_EXTERN))
-    return false;
 
   // For now, no default initializers for ref
   if (symbol->hasFlag(FLAG_REF))
