@@ -2704,15 +2704,13 @@ module ChapelArray {
 
       chpl__assertSingleArrayDomain("push_back");
 
-      var idx = this.domain.high+1;
+      const thisRange = this.domain.high+1..#vals.size,
+            valsRange = vals.domain.dim(1),
+            newRange = this.domain.low..(this.domain.high + vals.size);
 
-      const newRange = this.domain.low..(this.domain.high + vals.size);
       reallocateArray(newRange);
 
-      for val in vals {
-        this[idx] = val;
-        idx += 1;
-      }
+      this[thisRange] = vals[valsRange];
     }
 
     /* Remove the last element from the array, reducing the size of the
@@ -2781,14 +2779,13 @@ module ChapelArray {
 
       chpl__assertSingleArrayDomain("push_front");
 
-      const newRange = (this.domain.low - vals.size)..this.domain.high;
+      const thisRange = (this.domain.low-vals.size)..#vals.size,
+            valsRange = vals.domain.dim(1),
+            newRange = (this.domain.low - vals.size)..this.domain.high;
+
       reallocateArray(newRange, direction=-1);
 
-      var idx = this.domain.low;
-      for val in vals {
-        this[idx] = val;
-        idx += 1;
-      }
+      this[thisRange] = vals[valsRange];
     }
 
 
@@ -2861,6 +2858,15 @@ module ChapelArray {
 
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
+
+       Aliasing arguments is not supported for this method. For example, the
+       following call would not work as intended:
+
+       .. code-block:: chapel
+
+          var A = [1, 2, 3, 4];
+          A.insert(3, A); // Will result in runtime error
+
     */
     proc insert(pos: this.idxType, vals) where isArray(vals) {
       if (!chpl__isDense1DArray()) then
@@ -2868,18 +2874,19 @@ module ChapelArray {
 
       chpl__assertSingleArrayDomain("insert");
 
-      const prevHigh = this.domain.high;
-      const newRange = this.domain.low..(this.domain.high + vals.size);
+      const shift = vals.size,
+            shiftRange = pos..this.domain.high,
+            newRange = this.domain.low..(this.domain.high + vals.size);
 
       if boundsChecking && !newRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
       reallocateArray(newRange);
 
-      for i in pos..prevHigh by -1 do
-        this[i + vals.size] = this[i];
+      for i in shiftRange by -1 do
+        this[i + shift] = this[i];
 
-      this[pos..#vals.size] = vals;
+      this[pos..#shift] = vals;
     }
 
     /* Remove the element at index ``pos`` from the array and shift the array
