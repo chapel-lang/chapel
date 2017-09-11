@@ -1040,11 +1040,13 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
     proc chpl__serialize() where this._value.type : DefaultRectangularDom {
       return this.dims();
     }
 
     // TODO: we *SHOULD* be allowed to query param properties from a type....
+    pragma "no doc"
     proc type chpl__deserialize(data) {
       // BHARSH TODO: Is the use of 'this' here documented anywhere?
       const x : this;
