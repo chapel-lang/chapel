@@ -1029,7 +1029,7 @@ inline proc _cast(type t, x: regexp) where t == string {
 }
 // Cast string to regexp
 pragma "no doc"
-inline proc _cast(type t, x: string) where t == regexp {
+inline proc _cast(type t, x: string) throws where t == regexp {
   return compile(x);
 }
 
