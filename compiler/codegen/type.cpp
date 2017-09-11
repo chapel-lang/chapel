@@ -356,8 +356,9 @@ void AggregateType::codegenDef() {
                                      , NULL
 #endif
                                      );
-        } else
+        } else {
           st = llvm::StructType::get(info->module->getContext());
+        }
         params.push_back(st);
         GEPMap.insert(std::pair<std::string, int>("_u", paramID++));
       } else {

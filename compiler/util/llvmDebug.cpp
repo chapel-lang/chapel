@@ -26,23 +26,14 @@
 #include "codegen.h"
 #include "symbol.h"
 #include "vec.h"
-#include "type.h"
 #include "alist.h"
 #include "version.h"
 
 #ifdef HAVE_LLVM
-#include "llvmUtil.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "genret.h" 
-#include "llvm/Support/raw_os_ostream.h"
-#include <iostream>
 #include "llvm/ADT/DenseMap.h"
 
-#if HAVE_LLVM_VER >= 50
-#include "llvm/BinaryFormat/Dwarf.h"
-#else
-#include "llvm/Support/Dwarf.h"
-#endif
 /*
 LLVM provides a class called DIBuilder, you pass the LLVM module to this
 class and it will attach the debug information to the LLVM code after the
