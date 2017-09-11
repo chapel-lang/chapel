@@ -5747,10 +5747,12 @@ formalRequiresTemp(ArgSymbol* formal) {
      // 'in' and 'const in' also require a copy, but for simple types
      // (like ints or class references), we can rely on C's copy when
      // passing the argument, as long as the routine is not
-     // inlined.
+     // inlined or an iterator.
      //
      ((formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) &&
-      (backendRequiresCopyForIn(formal->type)))
+      (backendRequiresCopyForIn(formal->type) ||
+       fn->hasFlag(FLAG_INLINE) ||
+       fn->hasFlag(FLAG_ITERATOR_FN)))
      );
 }
 
