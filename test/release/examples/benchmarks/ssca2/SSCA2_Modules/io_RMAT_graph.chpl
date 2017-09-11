@@ -449,8 +449,8 @@ module io_RMAT_graph
   // Especially useful with --checkOnlyOnRead.
   //
   proc myerror(args...) {
-    stderr.writeln("ERROR: ", (...args));
-    stderr.writeln("(proceeding nonetheless)");
+    try! stderr.writeln("ERROR: ", (...args));
+    try! stderr.writeln("(proceeding nonetheless)");
   }
 
   proc reportNumVerticesError(G, snapshot_prefix, vCount) {
