@@ -1,3 +1,3 @@
-uncaught SystemError: Not a directory in copyTree(blah.txt, thatWasntADirectory)
+uncaught NotADirectoryError: Not a directory (in copyTree(blah.txt, thatWasntADirectory))
   src_not_dir.chpl:3: thrown here
   src_not_dir.chpl:3: uncaught here

@@ -96,7 +96,7 @@ proc realPath(out error: syserr, name: string): string {
 proc realPath(name: string): string throws {
   var err: syserr = ENOERR;
   var ret = realPath(err, name);
-  if err != ENOERR then try ioerror(err, "in realPath of", name);
+  if err != ENOERR then try ioerror(err, "realPath", name);
   return ret;
 }
 

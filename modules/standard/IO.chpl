@@ -311,18 +311,20 @@ Their types' ``kind`` argument is ``dynamic``
 Error Handling
 --------------
 
-Most I/O routines accept an optional `error=` argument. If that argument
-is used, instead of halting when an error is encountered, the function
-will return the error code.
+Most I/O routines throw a :class:`SysError.SystemError`, and can be handled
+appropriately with ``try`` and ``catch``. For legacy reasons most I/O routines
+can also can accept an optional `error=` argument.
 
-These error codes are stored with the type :type:`SysBasic.syserr`. Success is
-represented by :proc:`SysBasic.ENOERR`. The error codes and their meaning
-are described in :mod:`SysBasic`. Some of these error codes that are commonly used within the I/O implementation  include:
+Some of these errors commonly used within the I/O implementation include:
 
- * :proc:`SysBasic.EEOF` - the end of file was reached
- * :proc:`SysBasic.ESHORT` - a read or write only returned part of the
-   requested data
- * :proc:`SysBasic.EFORMAT` - data read did not adhere to the requested format
+ * :class:`SystemError.EOFError` - the end of file was reached
+ * :class:`SystemError.UnexpectedEOFError` - a read or write only returned
+   part of the requested data
+ * :class:`SystemError.BadFormatError` - data read did not adhere to the
+   requested format
+
+Some of the legacy error codes used include:
+
  * :const:`SysBasic.EILSEQ` - illegal multibyte sequence (e.g. there was a
    UTF-8 format error)
  * :const:`SysBasic.EOVERFLOW` - data read did not fit into requested type
