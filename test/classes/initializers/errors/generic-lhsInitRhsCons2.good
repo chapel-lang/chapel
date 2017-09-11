@@ -1,0 +1,1 @@
+generic-lhsInitRhsCons2.chpl:20: error: type mismatch in assignment from hasConstruct(int(64)) to hasInit
