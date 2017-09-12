@@ -2600,12 +2600,14 @@ module ChapelArray {
       return this[this.domain.alignedHigh];
     }
 
-    /* Return a range that is grown or shrunk from r to accommodate 'r2' */
+    /* Return a range that is grown shrunk from
+       this._value.dataAllocRange to accommodate 'r2'
+     */
     pragma "no doc"
-    inline proc resizeAllocRange(r: range, r2: range,
-                                 factor=arrayAsVecGrowthFactor,
+    inline proc resizeAllocRange(r2: range, factor=arrayAsVecGrowthFactor,
                                  param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
+      const r = this._value.dataAllocRange;
       const lo = r.low,
             hi = r.high,
             size = r.size;
@@ -2642,6 +2644,37 @@ module ChapelArray {
       }
     }
 
+    pragma "no doc"
+    /* Internal helper method to reallocate an array */
+    proc reallocateArray(newRange: range, param direction=1,
+                         debugMsg="reallocateArray")
+    {
+      on this._value {
+        const check = if direction > 0 then newRange.high else newRange.low;
+        if !this._value.dataAllocRange.member(check) {
+          /* The new index is not in the allocated space.  We'll need to
+             realloc it. */
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            /* If dataAllocRange has fewer indices than this.domain it must not
+               be set correctly.  Set it to match this.domain to start.
+             */
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
+          }
+          const oldRange = this._value.dataAllocRange;
+          const nextAllocRange = resizeAllocRange(newRange, direction=direction);
+
+          if debugArrayAsVec then
+            writeln(debugMsg, ": ",
+                    oldRange, " => ", nextAllocRange, " (", newRange, ")");
+
+          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
+          this._value.dsiReallocate((nextAllocRange,));
+        }
+        this.domain.setIndices((newRange,));
+        this._value.dsiPostReallocate();
+      }
+    }
+
     /* Add element ``val`` to the back of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
 
@@ -2653,32 +2686,33 @@ module ChapelArray {
         compilerError("push_back() is only supported on dense 1D arrays");
 
       chpl__assertSingleArrayDomain("push_back");
-      const lo = this.domain.low,
-            hi = this.domain.high+1;
-      const newRange = lo..hi;
-      on this._value {
-        if !this._value.dataAllocRange.member(hi) {
-          /* The new index is not in the allocated space.  We'll need to
-             realloc it. */
-          if this._value.dataAllocRange.length < this.domain.numIndices {
-            /* if dataAllocRange has fewer indices than this.domain it must not
-               be set correctly.  Set it to match this.domain to start.
-             */
-            this._value.dataAllocRange = this.domain.low..this.domain.high;
-          }
-          const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
-          if debugArrayAsVec then
-            writeln("push_back reallocate: ",
-                    oldRng, " => ", nextAllocRange,
-                    " (", newRange, ")");
-          this._value.dsiReallocate((nextAllocRange,));
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-      this[hi] = val;
+
+      const newRange = this.domain.low..(this.domain.high+1);
+
+      reallocateArray(newRange, debugMsg="push_back reallocate");
+
+      this[this.domain.high] = val;
+    }
+
+    /* Extend array with elements of array ``vals``, extending the
+       array's domain by ``vals.size`` in the ascending direction.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
+     */
+    proc push_back(vals) where isArray(vals) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("push_back() is only supported on dense 1D arrays");
+
+      chpl__assertSingleArrayDomain("push_back");
+
+      const thisRange = this.domain.high+1..#vals.size,
+            valsRange = vals.domain.dim(1),
+            newRange = this.domain.low..(this.domain.high + vals.size);
+
+      reallocateArray(newRange, debugMsg="push_back reallocate");
+
+      this[thisRange] = vals[valsRange];
     }
 
     /* Remove the last element from the array, reducing the size of the
@@ -2705,7 +2739,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           if debugArrayAsVec then
             writeln("pop_back reallocate: ",
                     oldRng, " => ", nextAllocRange,
@@ -2731,25 +2765,31 @@ module ChapelArray {
       const lo = this.domain.low-1,
             hi = this.domain.high;
       const newRange = lo..hi;
-      on this._value {
-        if !this._value.dataAllocRange.member(lo) {
-          if this._value.dataAllocRange.length < this.domain.numIndices {
-            this._value.dataAllocRange = this.domain.low..this.domain.high;
-          }
-          const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
-          if debugArrayAsVec then
-            writeln("push_front reallocate: ",
-                    oldRng, " => ", nextAllocRange,
-                    " (", newRange, ")");
-          this._value.dsiReallocate((nextAllocRange,));
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
+      reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
       this[lo] = val;
     }
+
+    /* Prepend array with elements of array ``vals``, extending the
+       array's domain by ``vals.size`` in the descending direction.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
+     */
+    proc push_front(vals) where isArray(vals) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("push_front() is only supported on dense 1D arrays");
+
+      chpl__assertSingleArrayDomain("push_front");
+
+      const thisRange = (this.domain.low-vals.size)..#vals.size,
+            valsRange = vals.domain.dim(1),
+            newRange = (this.domain.low - vals.size)..this.domain.high;
+
+      reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
+
+      this[thisRange] = vals[valsRange];
+    }
+
 
     /* Remove the first element of the array reducing the size of the
        domain by one.  If the domain was ``{1..5}`` it will become ``{2..5}``.
@@ -2774,7 +2814,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, direction=-1, grow=-1);
           if debugArrayAsVec then
             writeln("pop_front reallocate: ",
                     oldRng, " => ", nextAllocRange,
@@ -2799,27 +2839,56 @@ module ChapelArray {
         compilerError("insert() is only supported on dense 1D arrays");
 
       chpl__assertSingleArrayDomain("insert");
-      const lo = this.domain.low,
-            hi = this.domain.high+1;
-      const newRange = lo..hi;
+
+      const prevHigh = this.domain.high;
+      const newRange = this.domain.low..(this.domain.high + 1);
 
       if boundsChecking && !newRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
-      on this._value {
-        if !this._value.dataAllocRange.member(hi) {
-          if this._value.dataAllocRange.length < this.domain.numIndices {
-            this._value.dataAllocRange = this.domain.low..this.domain.high;
-          }
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
-          this._value.dsiReallocate((nextAllocRange,));
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-      for i in pos..hi-1 by -1 do this[i+1] = this[i];
+      reallocateArray(newRange, debugMsg="insert reallocate");
+
+      for i in pos..prevHigh by -1 do
+        this[i+1] = this[i];
       this[pos] = val;
+    }
+
+    /* Insert elements of ``vals`` into the array at index ``pos``.
+       Shift the array elements above ``pos`` up ``vals.size`` indices.
+       If the domain was ``{1..5}`` and ``vals.size`` is ``3``,it will become
+       ``{1..8}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
+
+       Aliasing arguments are not supported for this method. For example, the
+       following call would not work as intended:
+
+       .. code-block:: chapel
+
+          var A = [1, 2, 3, 4];
+          A.insert(3, A); // Will result in runtime error
+
+    */
+    proc insert(pos: this.idxType, vals) where isArray(vals) {
+      if (!chpl__isDense1DArray()) then
+        compilerError("insert() is only supported on dense 1D arrays");
+
+      chpl__assertSingleArrayDomain("insert");
+
+      const shift = vals.size,
+            shiftRange = pos..this.domain.high,
+            newRange = this.domain.low..(this.domain.high + vals.size);
+
+      if boundsChecking && !newRange.member(pos) then
+        halt("insert at position " + pos + " out of bounds");
+
+      reallocateArray(newRange, debugMsg="insert reallocate");
+
+      for i in shiftRange by -1 do
+        this[i + shift] = this[i];
+
+      this[pos..#shift] = vals;
     }
 
     /* Remove the element at index ``pos`` from the array and shift the array
@@ -2848,7 +2917,7 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           this._value.dsiReallocate((nextAllocRange,));
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
@@ -2883,7 +2952,7 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const nextAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
           this._value.dsiReallocate((nextAllocRange,));
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
         }
@@ -2974,7 +3043,7 @@ module ChapelArray {
      as argument ``that`` and all elements of this array are
      equal to the corresponding element in ``that``. Otherwise
      return false. */
-  proc _array.equals(that: _array) {
+  proc _array.equals(that: _array): bool {
     //
     // quick path for identical arrays
     //
@@ -2997,11 +3066,19 @@ module ChapelArray {
         if this.domain.dim(d).size != that.domain.dim(d).size then
           return false;
     }
+
     //
     // if all the above tests match, see if zippered equality is
     // true everywhere
     //
-    return && reduce (this == that);
+    if isArrayType(this.eltType) {
+      var ret: bool;
+      forall (thisArr, thatArr) in zip(this, that) with (&& reduce ret) do
+        ret &&= thisArr.equals(thatArr);
+      return ret;
+    } else {
+      return && reduce (this == that);
+    }
   }
 
   // The same as the built-in _cast, except accepts a param arg.
