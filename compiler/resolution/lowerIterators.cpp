@@ -1247,8 +1247,7 @@ expandIteratorInline(ForLoop* forLoop) {
   FnSymbol* iterator = getTheIteratorFn(ic);
 
   if (fReportInlinedIterators) {
-    ModuleSymbol *mod = toModuleSymbol(iterator->getModule());
-    INT_ASSERT(mod);
+    ModuleSymbol *mod = iterator->getModule();
 
     if (developer || mod->modTag == MOD_USER) {
       printf("Inlined iterator (%s) in module %s (%s:%d)\n", iterator->cname,
@@ -1776,7 +1775,7 @@ canInlineIterator(FnSymbol* iterator) {
   int count = countYieldsInFn(iterator);
 
   // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
-  return (count >= 1 && count <= inline_iter_yield_limit) ? true : false;
+  return (count >= 1 && count <= inline_iter_yield_limit);
 }
 
 static void
