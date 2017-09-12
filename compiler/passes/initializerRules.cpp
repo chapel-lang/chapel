@@ -38,6 +38,8 @@ static bool      isInitStmt (Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit (Expr* stmt);
 
+static bool      isErrHandlingStmt(Expr* stmt);
+
 static void      preNormalize(FnSymbol* fn);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
@@ -234,6 +236,11 @@ static void preNormalize(FnSymbol* fn) {
     fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
   }
 
+  if (fn->throwsError() == true) {
+    // For now.  Remove when we allow it.
+    USR_FATAL(fn, "initializers are not yet allowed to throw errors");
+  }
+
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
@@ -313,6 +320,12 @@ static InitNormalize preNormalize(BlockStmt*    block,
   state.checkPhase(block);
 
   while (stmt != NULL) {
+    if (isErrHandlingStmt(stmt) == true) {
+      USR_FATAL(stmt,
+                "Error handling structures are not yet allowed in "
+                "initializers");
+    }
+
     if (isDefExpr(stmt) == true) {
       if (state.fieldUsedBeforeInitialized(stmt) == true) {
         USR_FATAL(stmt, "Field used before it is initialized");
@@ -701,6 +714,19 @@ static const char* initName(CallExpr* expr) {
     }
   }
 
+  return retval;
+}
+
+/* Determine if the expr given is one of the error handling constructs */
+static bool isErrHandlingStmt(Expr* stmt) {
+  bool retval = false;
+  if (isTryStmt(stmt)) {
+    retval = true;
+  } else if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_THROW)) {
+      retval = true;
+    }
+  }
   return retval;
 }
 
