@@ -222,7 +222,7 @@ module LocaleModel {
 
     proc deinit() {
       if (debugAPULocale) {
-	chpl_debug_writeln("** Destructing CPU/GPU locales and shutting down HSA.");
+        chpl_debug_writeln("** Destructing CPU/GPU locales and shutting down HSA.");
       }
       delete CPU;
       delete GPU;
