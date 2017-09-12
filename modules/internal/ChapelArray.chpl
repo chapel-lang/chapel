@@ -2646,7 +2646,9 @@ module ChapelArray {
 
     pragma "no doc"
     /* Internal helper method to reallocate an array */
-    proc reallocateArray(newRange: range, param direction=1) {
+    proc reallocateArray(newRange: range, param direction=1,
+                         debugMsg="reallocateArray")
+    {
       on this._value {
         const check = if direction > 0 then newRange.high else newRange.low;
         if !this._value.dataAllocRange.member(check) {
@@ -2659,12 +2661,11 @@ module ChapelArray {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRange = this._value.dataAllocRange;
-          // TODO: Refactor to remove first arg (can be implied)
           const nextAllocRange = resizeAllocRange(newRange, direction=direction);
+
           if debugArrayAsVec then
-            writeln("reallocateArray: ",
-                    oldRange, " => ", nextAllocRange,
-                    " (", newRange, ")");
+            writeln(debugMsg, ": ",
+                    oldRange, " => ", nextAllocRange, " (", newRange, ")");
 
           // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
           this._value.dsiReallocate((nextAllocRange,));
@@ -2687,7 +2688,8 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_back");
 
       const newRange = this.domain.low..(this.domain.high+1);
-      reallocateArray(newRange);
+
+      reallocateArray(newRange, debugMsg="push_back reallocate");
 
       this[this.domain.high] = val;
     }
@@ -2708,7 +2710,7 @@ module ChapelArray {
             valsRange = vals.domain.dim(1),
             newRange = this.domain.low..(this.domain.high + vals.size);
 
-      reallocateArray(newRange);
+      reallocateArray(newRange, debugMsg="push_back reallocate");
 
       this[thisRange] = vals[valsRange];
     }
@@ -2763,7 +2765,7 @@ module ChapelArray {
       const lo = this.domain.low-1,
             hi = this.domain.high;
       const newRange = lo..hi;
-      reallocateArray(newRange, direction=-1);
+      reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
       this[lo] = val;
     }
 
@@ -2783,7 +2785,7 @@ module ChapelArray {
             valsRange = vals.domain.dim(1),
             newRange = (this.domain.low - vals.size)..this.domain.high;
 
-      reallocateArray(newRange, direction=-1);
+      reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
 
       this[thisRange] = vals[valsRange];
     }
@@ -2844,7 +2846,7 @@ module ChapelArray {
       if boundsChecking && !newRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
-      reallocateArray(newRange);
+      reallocateArray(newRange, debugMsg="insert reallocate");
 
       for i in pos..prevHigh by -1 do
         this[i+1] = this[i];
@@ -2881,7 +2883,7 @@ module ChapelArray {
       if boundsChecking && !newRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
-      reallocateArray(newRange);
+      reallocateArray(newRange, debugMsg="insert reallocate");
 
       for i in shiftRange by -1 do
         this[i + shift] = this[i];
