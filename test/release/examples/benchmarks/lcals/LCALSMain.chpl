@@ -100,8 +100,13 @@ module main {
     run_loop[LoopKernelID.IMP_HYDRO_2D  ] = runC_impHydro2D;
     run_loop[LoopKernelID.FIND_FIRST_MIN] = runC_findFirstMin;
 
-    if output_dirname.length > 0 then
-      try! mkdir(output_dirname, parents=true);
+    if output_dirname.length > 0 {
+      // Note: using error= version so it compiles with older Chapel
+      var err:syserr = ENOERR;
+      mkdir(error=err, output_dirname, parents=true);
+      if err then
+        halt("Error in mkdir for ", output_dirname);
+    }
 
     if run_variantRaw then
       run_variants[LoopVariantID.RAW] = true;
