@@ -467,10 +467,9 @@ module Spawn {
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = env_c_str;
             if env_str.count("HUGETLB") > 0 then
-              throw SystemError.fromSyserr(EINVAL,
-                  "spawn with more than 1 locale ",
-                  "for CHPL_COMM=ugni with hugepages currently ",
-                  "requires stdin, stdout, stderr=FORWARD");
+              throw SystemError.fromSyserr(
+                  EINVAL,
+                  "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=FORWARD");
           }
         }
 
