@@ -7,8 +7,6 @@
    support unstructured arrays like graphs. They are a special case of
    :ref:`associative domains and arrays <primers-associative>`.
 */
-pragma "error mode fatal"
-module Opaque {
 
 //
 // Opaque domains are declared by specifying the ``opaque`` keyword
@@ -289,6 +287,3 @@ proc createRandomGraph() {
 
   delete myRandNums;
 }
-
-//
-} // module Opaque
