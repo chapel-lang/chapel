@@ -81,6 +81,7 @@ module String {
   private extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
   private extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
 
+  pragma "no doc"
   type bufferType = c_ptr(uint(8));
 
   pragma "no doc"
