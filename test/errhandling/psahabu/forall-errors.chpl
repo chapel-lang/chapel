@@ -1,10 +1,14 @@
 pragma "error mode strict"
+module TestModule {
 
-proc throwingFn() throws {
-  forall i in 1..5 {
-    throw new Error("iteration: " + i);
+  proc throwingFn() throws {
+    forall i in 1..5 {
+      throw new Error("iteration: " + i);
+    }
+    return "OK";
   }
-  return "OK";
-}
 
-writeln(throwingFn());
+  proc main() {
+    writeln(throwingFn());
+  }
+}
