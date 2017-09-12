@@ -27,6 +27,7 @@ CONDUITMODE_EXTRADIST = \
 	smp-collectives	\
 	myxml	\
 	detect-pshm.c \
+	pkgconfig-conduit.pc \
   # 	exclude these from distribution for now
   # 	cross-configure-help.c
 # GASNET_TOOLSONLY_FALSE_END
@@ -34,12 +35,17 @@ SUBDIRS = $(CONDUITMODE_SUBDIRS)
 
 EXTRA_DIST =        			\
         $(CONDUITMODE_EXTRADIST) 	\
+	Makefile-echovar.mak            \
+	pkgconfig-tools.pc              \
 	detect-cachesz.c 		\
+	check-pp.c                      \
+	check-header-erase.pl           \
 	tools-toggle.pl
 
 include_HEADERS = \
 	portable_inttypes.h \
-	portable_platform.h
+	portable_platform.h \
+	gasnet_portable_platform.h
 
 if CONDUIT_MODE
 if USE_UDP_CONDUIT                           
@@ -57,6 +63,32 @@ tests tests-clean run-tests check-exports:
 CONDUITMODE_TARGETS = Makefile-conduit.mak mpirun_common
 endif
 
+# Automated correctness checks for portable_platform.h
+#
+CHECK_PP_C = $(srcdir)/check-pp.c
+$(CHECK_PP_C): gasnet_portable_platform.h portable_platform.h
+
+check-pp-tgt: $(CHECK_PP_C)
+	@CC@ @CFLAGS@ @LDFLAGS@ -I$(srcdir) -I$(top_builddir) '-DCONFIG_HEADER="gasnet_config.h"' -D_IN_GASNET_TOOLS_H=1 $(MANUAL_DEFINES) $(MANUAL_CFLAGS) $(MANUAL_LDFLAGS) -o $@ $< @LIBS@ $(MANUAL_LIBS)
+
+# Disabled until we have a more compelling need for configure detection of HOST_CC
+#check-pp-host: $(CHECK_PP_C)
+#	@HOST_CC@ @HOST_CFLAGS@ @HOST_LDFLAGS@ -I$(srcdir) $(MANUAL_DEFINES) $(MANUAL_CFLAGS) $(MANUAL_LDFLAGS) -o $@ $< @HOST_LIBS@ $(MANUAL_LIBS)
+
+if CROSS_COMPILING
+check-pp-run: check-pp-tgt
+else
+check-pp-run: check-pp-tgt
+	./check-pp-tgt
+endif
+.PHONY: check-pp-run
+CLEANFILES = check-pp-tgt$(EXESUFFIX)
+
+check-pp: check-pp-run
+	@PERL@ $(srcdir)/check-header-erase.pl $(srcdir)/gasnet_portable_platform.h 1
+
+check-local: check-pp
+
 # If we add plpa to EXTRA_DIST, then automake-1.9 tries to package
 # plpa/config/acinclude.m4 more than once.
 dist-hook:
@@ -73,6 +105,8 @@ endif
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
 	$(INSTALL_DATA) $(srcdir)/ssh-spawner/README $(DESTDIR)$(docdir)/README-ssh-spawner
+	$(INSTALL_DATA) $(srcdir)/mpi-spawner/README $(DESTDIR)$(docdir)/README-mpi-spawner
+	$(INSTALL_DATA) $(srcdir)/pmi-spawner/README $(DESTDIR)$(docdir)/README-pmi-spawner
 uninstall-local:
 	rm -Rf $(DESTDIR)$(docdir)
 # GASNET_TOOLSONLY_FALSE_END

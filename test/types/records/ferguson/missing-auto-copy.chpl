@@ -1,22 +1,6 @@
 record R {
   var x: int = 0;
 }
-
-pragma "donor fn"
-pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
-
-  // TODO - is no auto destroy necessary here?
-  pragma "no auto destroy"
-  var ret: R;
-
-  ret.x = arg.x + 1;
-
-  writeln("autoCopy");
-
-  return ret;
-}
-
 // I'd like this to be ref, but that breaks
 //    var outerX: R; begin { var x = outerX; }
 pragma "init copy fn"

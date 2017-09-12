@@ -18,7 +18,7 @@
  ***********************************************************************/
 
 // allow executable command-line specification of number of bottles 
-// (e.g., ./a.out -snumBottles=999999)
+// (e.g., ./beer -snumBottles=999999)
 config const numBottles = 99;
 const numVerses = numBottles+1;
 

@@ -94,7 +94,7 @@
  *
  * NOTE: If tempted to clone this file into your conduit in order to get
  * finer-grained control over what is build, then instead *please* email
- * upc-devel@lbl.gov to request even finer-grained GASNETE_BUILD_AMREF_*.
+ * gasnet-devel@lbl.gov to request even finer-grained GASNETE_BUILD_AMREF_*.
  */
 
 /* ------------------------------------------------------------------------------------ */

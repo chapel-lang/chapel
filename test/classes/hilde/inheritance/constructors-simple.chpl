@@ -1,4 +1,4 @@
-class C{ proc C(){} }
+class C{ proc init(){} }
 
 class D:C {}
 

@@ -1,0 +1,4 @@
+bug: TOML cannot handle quoted keys with periods
+
+keys such as "this.key" = 'value' are currently not supported as the
+period inside of the quotation throws off the lexer.

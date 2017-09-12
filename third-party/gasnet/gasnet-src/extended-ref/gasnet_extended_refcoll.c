@@ -554,7 +554,6 @@ gasnet_coll_handle_t gasnete_coll_threads_get_handle(GASNETE_THREAD_FARG_ALONE) 
   /*can't be the first thread for this op*/
 #if !ALL_THREADS_POLL && GASNET_PAR
   {
-    GASNETI_UNUSED_UNLESS_DEBUG
     int first_thread=gasnete_coll_threads_first(GASNETE_THREAD_PASS_ALONE);
     gasneti_assert(first_thread==0);
   }
@@ -594,7 +593,6 @@ gasnete_coll_threads_get_handle_and_data(gasnete_coll_generic_data_t **data_p GA
 
 #if !ALL_THREADS_POLL && GASNET_PAR
   {
-    GASNETI_UNUSED_UNLESS_DEBUG
     int first_thread=gasnete_coll_threads_first(GASNETE_THREAD_PASS_ALONE);
     gasneti_assert(first_thread==0);
   }
@@ -2027,7 +2025,6 @@ gasnete_coll_op_generic_init_with_scratch(gasnete_coll_team_t team, int flags,
   gasnet_coll_handle_t handle = GASNET_COLL_INVALID_HANDLE;
   gasnete_coll_op_t *op;
 #if !ALL_THREADS_POLL && GASNET_PAR
-  GASNETI_UNUSED_UNLESS_DEBUG
   gasnete_coll_threaddata_t *td = GASNETE_COLL_MYTHREAD_NOALLOC;
   int first_thread;
 #endif

@@ -121,12 +121,26 @@ then
   DEST_THIRD_PARTY="$PREFIX/lib/chapel/$VERS/third-party"
   DEST_CHPL_HOME="$PREFIX/share/chapel/$VERS"
   echo "Installing Chapel split to bin, lib, share to $PREFIX"
+  if [ "$CHPL_HOME" = "$PREFIX" ]
+  then
+    echo
+    echo "Error: destination prefix is Chapel source directory"
+    echo "Please run configure again to select a different installation path"
+    exit -1
+  fi
 else
   DEST_RUNTIME_LIB="$DEST_DIR/lib"
   DEST_RUNTIME_INCL="$DEST_DIR/runtime/include"
   DEST_THIRD_PARTY="$DEST_DIR/third-party"
   DEST_CHPL_HOME="$DEST_DIR"
   echo "Installing Chapel-as-a-directory to $DEST_DIR"
+  if [ "$CHPL_HOME" = "$DEST_DIR" ]
+  then
+    echo
+    echo "Error: destination directory is Chapel source directory"
+    echo "Please run configure again to select a different installation path"
+    exit -1
+  fi
 fi
 
 echo "  Installing runtime lib to      $DEST_RUNTIME_LIB"

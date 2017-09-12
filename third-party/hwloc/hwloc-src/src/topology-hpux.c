@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2013 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -90,7 +90,7 @@ hwloc_hpux_set_proc_cpubind(hwloc_topology_t topology, hwloc_pid_t pid, hwloc_co
 
   cpu = hwloc_hpux_find_spu(topology, hwloc_set);
   if (cpu != -1)
-    return mpctl(flags & HWLOC_CPUBIND_STRICT ? MPC_SETPROCESS_FORCE : MPC_SETPROCESS, cpu, pid);
+    return mpctl((flags & HWLOC_CPUBIND_STRICT) ? MPC_SETPROCESS_FORCE : MPC_SETPROCESS, cpu, pid);
 
   errno = EXDEV;
   return -1;
@@ -122,7 +122,7 @@ hwloc_hpux_set_thread_cpubind(hwloc_topology_t topology, hwloc_thread_t pthread,
 
   cpu = hwloc_hpux_find_spu(topology, hwloc_set);
   if (cpu != -1)
-    return pthread_processor_bind_np(flags & HWLOC_CPUBIND_STRICT ? PTHREAD_BIND_FORCED_NP : PTHREAD_BIND_ADVISORY_NP, &cpu2, cpu, pthread);
+    return pthread_processor_bind_np((flags & HWLOC_CPUBIND_STRICT) ? PTHREAD_BIND_FORCED_NP : PTHREAD_BIND_ADVISORY_NP, &cpu2, cpu, pthread);
 
   errno = EXDEV;
   return -1;
@@ -188,7 +188,7 @@ hwloc_look_hpux(struct hwloc_backend *backend)
   hwloc_alloc_obj_cpusets(topology->levels[0][0]);
 
   if (has_numa) {
-    nbnodes = mpctl(topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM ?
+    nbnodes = mpctl((topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM) ?
       MPC_GETNUMLDOMS_SYS : MPC_GETNUMLDOMS, 0, 0);
 
     hwloc_debug("%d nodes\n", nbnodes);
@@ -196,7 +196,7 @@ hwloc_look_hpux(struct hwloc_backend *backend)
     nodes = malloc(nbnodes * sizeof(*nodes));
 
     i = 0;
-    currentnode = mpctl(topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM ?
+    currentnode = mpctl((topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM) ?
       MPC_GETFIRSTLDOM_SYS : MPC_GETFIRSTLDOM, 0, 0);
     while (currentnode != -1 && i < nbnodes) {
       hwloc_debug("node %d is %d\n", i, currentnode);
@@ -207,14 +207,14 @@ hwloc_look_hpux(struct hwloc_backend *backend)
       /* TODO: obj->attr->node.memory_kB */
       /* TODO: obj->attr->node.huge_page_free */
 
-      currentnode = mpctl(topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM ?
+      currentnode = mpctl((topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM) ?
         MPC_GETNEXTLDOM_SYS : MPC_GETNEXTLDOM, currentnode, 0);
       i++;
     }
   }
 
   i = 0;
-  currentcpu = mpctl(topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM ?
+  currentcpu = mpctl((topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM) ?
       MPC_GETFIRSTSPU_SYS : MPC_GETFIRSTSPU, 0,0);
   while (currentcpu != -1) {
     obj = hwloc_alloc_setup_object(HWLOC_OBJ_PU, currentcpu);
@@ -242,7 +242,7 @@ hwloc_look_hpux(struct hwloc_backend *backend)
     /* Add cpu */
     hwloc_insert_object_by_cpuset(topology, obj);
 
-    currentcpu = mpctl(topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM ?
+    currentcpu = mpctl((topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM) ?
       MPC_GETNEXTSPU_SYS : MPC_GETNEXTSPU, currentcpu, 0);
   }
 

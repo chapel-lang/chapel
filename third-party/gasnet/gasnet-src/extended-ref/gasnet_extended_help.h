@@ -109,7 +109,6 @@ typedef struct _gasnete_thread_cleanup {
 /* high-water mark on highest thread index allocated thus far */
 extern int gasnete_maxthreadidx;
 #define gasnete_assert_valid_threadid(threadidx) do {   \
-    GASNETI_UNUSED_UNLESS_DEBUG                         \
     int _thid = (threadidx);                            \
     gasneti_assert(_thid <= gasnete_maxthreadidx);      \
     gasneti_assert(gasnete_threadtable[_thid] != NULL); \
@@ -498,12 +497,18 @@ typedef union {
       gasnete_loopbackput_memsync();            \
       _GASNETI_RETURN_##rt;                     \
     }} while(0)
+  #define GASNETI_SUPERNODE_LOCAL(node) gasneti_pshm_in_supernode(node) 
 #else
   #define GASNETI_CHECKPSHM_GET(align, rt) ((void)0)
   #define GASNETI_CHECKPSHM_PUT(align, rt) ((void)0)
   #define GASNETI_CHECKPSHM_GETVAL()       ((void)0)
   #define GASNETI_CHECKPSHM_PUTVAL(rt)     ((void)0)
   #define GASNETI_CHECKPSHM_MEMSET(rt)     ((void)0)
+  #if GASNET_CONDUIT_SMP
+    #define GASNETI_SUPERNODE_LOCAL(node)    (1)
+  #else 
+    #define GASNETI_SUPERNODE_LOCAL(node)    ((node) == gasnet_mynode()) 
+  #endif
 #endif
 
 /* ------------------------------------------------------------------------------------ */

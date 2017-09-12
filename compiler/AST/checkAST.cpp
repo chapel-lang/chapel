@@ -232,6 +232,8 @@ void checkPrimitives()
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
+     case PRIM_GET_DYNAMIC_END_COUNT:
+     case PRIM_SET_DYNAMIC_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
      case PRIM_SIZEOF:
@@ -254,7 +256,6 @@ void checkPrimitives()
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
      case PRIM_ARRAY_ALLOC:
      case PRIM_ARRAY_FREE:
-     case PRIM_ARRAY_FREE_ELTS:
      case PRIM_ARRAY_GET:
      case PRIM_ARRAY_GET_VALUE:
      case PRIM_ARRAY_SHIFT_BASE_POINTER:

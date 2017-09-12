@@ -21,7 +21,7 @@ executable.  For example:
 
   .. code-block:: sh
 
-    ./a.out --help
+    ./myprogram --help
 
 This flag lists all of the standard flags that can be used with a
 Chapel program, as well as a list of the configuration variables
@@ -44,13 +44,13 @@ these elements.  Thus, the general form is:
 
   .. code-block:: sh
 
-    ./a.out --<cfgVar>=<val>
+    ./myprogram --<cfgVar>=<val>
 
 or:
 
   .. code-block:: sh
 
-    ./a.out -s<cfgVar>=<val>
+    ./myprogram -s<cfgVar>=<val>
 
 As an example, compile the hello2-module.chpl example which prints a
 user-definable message:
@@ -91,6 +91,22 @@ or:
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
+Configuration values can also be passed to a Chapel program through a
+configuration file, specified by the execution time ``-f`` option. These
+configuration files can contain a whitespace- or newline-separated list of
+configuration assignments. Comments are supported with the ``#`` character.
+
+For example:
+
+    .. code-block:: sh
+
+        # hello2-module.input
+        message="Hello from a Chapel configuration file"
+
+    .. code-block:: sh
+
+        ./hello2-module -fhello2-module.input
+
 Chapel programs can also accept C-like command line arguments to their
 ``main()`` procedure in addition to the aforementioned configuration
 variables. See :ref:`readme-main` for more
@@ -109,19 +125,19 @@ execute on four locales, one could use:
 
   .. code-block:: sh
 
-    ./a.out -nl 4
+    ./myprogram -nl 4
 
 or:
 
   .. code-block:: sh
 
-    ./a.out --numLocales=4
+    ./myprogram --numLocales=4
 
 or:
 
   .. code-block:: sh
 
-    ./a.out -snumLocales=4
+    ./myprogram -snumLocales=4
 
 For users running with ``CHPL_COMM=none`` (the default), only one
 locale can be used.  See :ref:`readme-multilocale` for more

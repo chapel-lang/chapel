@@ -70,6 +70,9 @@
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
+  macro(DeferStmt) sep                             \
+  macro(ForallIntent) sep                          \
+  macro(ForallStmt) sep                            \
   macro(TryStmt) sep                               \
   macro(ForwardingStmt) sep                        \
   macro(CatchStmt) sep                             \
@@ -81,6 +84,7 @@
 #define for_alive_in_Vec(TYPE, VAR, VEC)           \
   forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
 
+class BaseAST;
 class AstVisitor;
 class Expr;
 class GenRet;
@@ -102,6 +106,17 @@ class QualifiedType;
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
+
+#define def_vec_hash(SomeType) \
+    template<> \
+    uintptr_t _vec_hasher(SomeType* obj);
+
+foreach_ast(def_vec_hash);
+def_vec_hash(Symbol);
+def_vec_hash(Type);
+def_vec_hash(BaseAST);
+
+#undef def_vec_hash
 
 //
 // declare global vectors for all AST node types
@@ -146,11 +161,14 @@ enum AstTag {
   E_ForwardingStmt,
   E_NamedExpr,
   E_UseStmt,
+  E_DeferStmt,
   E_TryStmt,
   E_CatchStmt,
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
+  E_ForallIntent,
+  E_ForallStmt,
   E_ExternBlockStmt,
 
   E_ModuleSymbol,
@@ -335,6 +353,9 @@ def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
+def_is_ast(DeferStmt)
+def_is_ast(ForallIntent)
+def_is_ast(ForallStmt)
 def_is_ast(TryStmt)
 def_is_ast(ForwardingStmt)
 def_is_ast(CatchStmt)
@@ -379,6 +400,9 @@ def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
+def_to_ast(DeferStmt)
+def_to_ast(ForallIntent)
+def_to_ast(ForallStmt)
 def_to_ast(TryStmt)
 def_to_ast(ForwardingStmt)
 def_to_ast(CatchStmt)
@@ -406,6 +430,58 @@ def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
 
 #undef def_to_ast
+
+#define def_less_ast(SomeType) \
+  namespace std { \
+    template<> struct less<SomeType*> { \
+      bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
+        if (lhs == NULL && rhs != NULL) return true; \
+        if (lhs != NULL && rhs == NULL) return false; \
+        if (lhs == NULL && rhs == NULL) return false; \
+        return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id; \
+      } \
+    }; \
+  }
+
+def_less_ast(SymExpr)
+def_less_ast(UnresolvedSymExpr)
+def_less_ast(DefExpr)
+def_less_ast(ContextCallExpr)
+def_less_ast(ForallExpr)
+def_less_ast(NamedExpr)
+def_less_ast(UseStmt)
+def_less_ast(BlockStmt)
+def_less_ast(CondStmt)
+def_less_ast(GotoStmt)
+def_less_ast(DeferStmt)
+def_less_ast(ForallStmt)
+def_less_ast(TryStmt)
+def_less_ast(ForwardingStmt)
+def_less_ast(CatchStmt)
+def_less_ast(ExternBlockStmt)
+def_less_ast(Expr)
+def_less_ast(ModuleSymbol)
+def_less_ast(VarSymbol)
+def_less_ast(ArgSymbol)
+def_less_ast(TypeSymbol)
+def_less_ast(FnSymbol)
+def_less_ast(EnumSymbol)
+def_less_ast(LabelSymbol)
+def_less_ast(Symbol)
+def_less_ast(PrimitiveType)
+def_less_ast(EnumType)
+def_less_ast(AggregateType)
+def_less_ast(Type)
+
+def_less_ast(LoopStmt);
+def_less_ast(WhileStmt);
+def_less_ast(WhileDoStmt);
+def_less_ast(DoWhileStmt);
+def_less_ast(ForLoop);
+def_less_ast(CForLoop);
+def_less_ast(ParamForLoop);
+
+#undef def_less_ast
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {
@@ -545,13 +621,27 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_ForwardingStmt:                                                \
     AST_CALL_CHILD(_a, ForwardingStmt, toFnDef, call, __VA_ARGS__);     \
     break;                                                              \
+  case E_DeferStmt:                                                     \
+    AST_CALL_CHILD(_a, DeferStmt, body(), call, __VA_ARGS__);           \
+    break;                                                              \
   case E_TryStmt:                                                       \
-    AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);             \
+    AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);              \
     AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);            \
     break;                                                              \
   case E_CatchStmt:                                                     \
-    AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);           \
+    AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
     break;                                                              \
+  case E_ForallIntent:                                                  \
+    AST_CALL_CHILD(_a, ForallIntent, variable(), call, __VA_ARGS__);    \
+    AST_CALL_CHILD(_a, ForallIntent, reduceExpr(), call, __VA_ARGS__);  \
+    break;                                                              \
+  case E_ForallStmt:                                                          \
+    AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
+    AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
+    AST_CALL_LIST (_a, ForallStmt, intentVariables(),     call, __VA_ARGS__); \
+    AST_CALL_LIST (_a, ForallStmt, forallIntents(),       call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
+    break;                                                                    \
   case E_ModuleSymbol:                                                  \
     AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
     break;                                                              \

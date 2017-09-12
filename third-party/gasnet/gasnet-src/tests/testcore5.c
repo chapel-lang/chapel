@@ -6,7 +6,7 @@
 
 #include <gasnet.h>
 
-uintptr_t maxsz = 0;
+size_t maxsz = 0;
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ_EXPR (2*(uintptr_t)maxsz)
 #endif
@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
   if (argc > 1) iters = atoi(argv[1]);
   if (iters <= 0) iters = 10;
 
-  if (argc > 2) maxsz = atoi(argv[2]);
+  if (argc > 2) maxsz = (size_t)gasnett_parse_int(argv[2], 1);
   if (maxsz <= 0) maxsz = 2*1024*1024;
   medsz = gasnet_AMMaxMedium();
   medsz = MIN(maxsz, medsz);
@@ -252,8 +252,8 @@ int main(int argc, char **argv) {
   rand_payload = test_malloc(maxsz);
 
 
-  MSG0("Running %i iterations of var args AM interface tests with medsz=%ld longsz=%ld seed=%u",
-       iters, (long)medsz, (long)longsz, seed);
+  MSG0("Running %i iterations of var args AM interface tests with medsz=%"PRIuPTR" longsz=%"PRIuPTR" seed=%u",
+       iters, (uintptr_t)medsz, (uintptr_t)longsz, seed);
 
   MSG0("testing 0-argument AM calls");
   for (i = 0; i < iters; ++i) {

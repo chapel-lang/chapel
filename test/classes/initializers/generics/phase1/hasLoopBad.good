@@ -1,0 +1,2 @@
+hasLoopBad.chpl:4: In initializer:
+hasLoopBad.chpl:9: error: cannot initialize fields in an if statement in phase 1

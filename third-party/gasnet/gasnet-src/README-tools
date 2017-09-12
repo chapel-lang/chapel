@@ -3,7 +3,7 @@ README file for GASNet tools
 ============================
 Originally by: Dan Bonachea <bonachea@cs.berkeley.edu>
 Currently maintained by: Paul H. Hargrove <PHHargrove@lbl.gov>
-GASNet tools specification version: 1.9
+GASNet tools specification version: 1.10
 
 The GASNet tools are a set of communication-independent utilities that are used
 to implement GASNet, and constitute a useful portability tool for GASNet
@@ -74,6 +74,9 @@ tools).
   generated Makefile fragments $prefix/include/gasnet_tools-{seq,par}.mak
   in their Makefile and using the provided make variables they provide.
   See the comments at the top of those files for exact usage documentation.
+  Alternatively, pkg-config files for the gasnet_tools-{seq,par} packages
+  are installed in $prefix/lib/pkgconfig and provide the same build information.
+  See README for pkg-config usage instructions.
 
 ===============================
 GASNet Tools User Documentation
@@ -106,7 +109,7 @@ General Usage
   GASNet README. They may work on others as well. Please contact us if you have
   a new platform you'd like to see supported.
 
-* For questions on using the GASNet tools, contact upc-devel@lbl.gov. 
+* For questions on using the GASNet tools, contact gasnet-users@lbl.gov. 
   It's especially recommended to contact us before bundling the tools in your
   software package.
 
@@ -133,6 +136,44 @@ system-specific support, where available.
   GASNETT_TICK_MIN - a value representing the minimum value storable in a gasnett_tick_t
 
   GASNETT_TICK_MAX - a value representing the maximum value storable in a gasnett_tick_t
+
+  Environment:
+    For Linux on x86, x86-64 or MIC processors, the default timer is the TSC
+    which requires choosing a mechanism for calibration.  This can be controlled
+    via environment variables:
+
+    * GASNET_TSC_RATE
+      GASNET_TSC_RATE=walltime
+        Measures the TSC tick rate against the OS-provided wallclock time.
+        This is the default.
+      GASNET_TSC_RATE=cpuinfo
+        Obtains the TSC tick rate from information in /proc/cpuinfo
+        This is known to be incorrect for certain recent CPU models.
+      GASNET_TSC_RATE=[Hz]
+        If given an integer in the range 1 Million to 100 Billon, this will be
+        taken as the TSC tick rate in Hz (cycles per second).  To avoid the
+        ambiguity between binary (M=2^20) and decimal (M=10^6), no suffixes are
+        accepted.
+
+    * GASNET_TSC_RATE_TOLERANCE
+      This is a floating-point value (read by gasnett_getenv_dbl_withdefault())
+      which indicates the relative error permitted in the calibration of the
+      TSC.  For instance the value 0.001 would permit a relative error as
+      large as 1 part in 1000, or 0.1%.  Exceeding this level of permitted
+      relative error will result in a warning message.
+
+    * GASNET_TSC_RATE_HARD_TOLERANCE
+      This environment variable functions like GASNET_TSC_RATE_TOLERANCE, except
+      that exceeeding this value results in a fatal error.
+
+-----
+Sleep
+-----
+
+  int gasnett_nsleep(uint64_t ns_delay) - nanosecond resolution sleep
+    Sleep for at least the indicated number of nanoseconds.  If interrupted by a
+    signal, may terminate the sleep early returnining non-zero with errno = EINTR.
+    If ns_delay is zero, this function returns without sleeping.
 
 ---------------
 Memory barriers
@@ -300,7 +341,7 @@ the section on strong atomics below.
   GASNETT_ATOMIC_SIGNED_MIN     The smallest (most negative) representable signed value.
   GASNETT_ATOMIC_SIGNED_MAX     The largest (most positive) representable signed value.
 
- The atomic type is guaranteed to wrap around at it's minimum and maximum values in
+ The atomic type is guaranteed to wrap around at its minimum and maximum values in
  the normal manner expected of two's-complement integers.  This includes the 'oldval'
  and 'newval' arguments to gasnett_atomic_compare_and_swap(), and the 'v' arguments
  to gasnett_atomic_init() and gasnett_atomic_set() which are wrapped (not clipped)
@@ -509,7 +550,7 @@ platform features, so that #if tests can be written concisely with expressions l
 
 #if PLATFORM_COMPILER_GNU && PLATFORM_OS_SOLARIS && PLATFORM_ARCH_X86
 
-See the comments in portable_platform.h for the details of the provided defines.
+See the comments in gasnet_portable_platform.h for the details of the provided defines.
 
 ----------------------------------
 Portable fixed-width integer types
@@ -652,7 +693,7 @@ if_pt(cond) S;
 gasnett_constant_p(expr)
 
   This expands to use of __builtin_constant_p() on compilers with the necessary
-  suport, or to the constant 0 otherwise.
+  support, or to the constant 0 otherwise.
 
 -----------------------------------------------------
 Error-checking System Mutexes and Condition Variables
@@ -1247,3 +1288,11 @@ COMPILER.
   unconditional use of true locking (even without GASNETT_THREAD_SAFE=1).
   NOTE: For proper operation this must be defined BOTH when the GASNet(-tools) library
   is built, and when compiling client code that includes gasnet.h or gasnet_tools.h.
+
+--------------------------------------------------------------------------
+  The canonical version of this document is located here:
+    http://bitbucket.org/berkeleylab/gasnet/src/master/README-tools
+
+  For more information, please email: gasnet-users@lbl.gov
+  or visit the GASNet home page at:   http://gasnet.lbl.gov
+--------------------------------------------------------------------------

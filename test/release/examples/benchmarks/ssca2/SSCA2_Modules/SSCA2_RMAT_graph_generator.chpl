@@ -1,3 +1,4 @@
+pragma "error mode fatal"
 module SSCA2_RMAT_graph_generator
 
 {
@@ -213,7 +214,7 @@ module SSCA2_RMAT_graph_generator
       forall (w, rnd) in zip(Edge_Weight,
         NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
       do
-       local
+       local do
         w = floor (1 + rnd * MAX_EDGE_WEIGHT) : int;
       rndPos += n_raw_edges;
 
@@ -339,6 +340,7 @@ module SSCA2_RMAT_graph_generator
 	  permutation (v) <=> permutation (new_id);
 	};
 
+      delete Rand_Gen;
     } // if newEG
 
       forall e in Edges do {

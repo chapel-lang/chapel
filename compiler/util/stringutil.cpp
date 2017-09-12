@@ -88,14 +88,18 @@ astr(const char* s1, const char* s2, const char* s3, const char* s4,
 
 const char* astr(const char* s1)
 {
+  const char* ss = chapelStringsTable.get(s1);
+  if (ss)
+    // return an existing entry
+    return ss;
+
+  // add a new entry - always a fresh malloc
   int len;
   len = strlen(s1);
   char* s = (char*)malloc(len+1);
   strcpy(s, s1);
-  const char* t = canonicalize_string(s);
-  if (s != t)
-    free(s);
-  return t;
+  chapelStringsTable.put(s,s);
+  return s;
 }
 
 const char* astr(const std::string& s)

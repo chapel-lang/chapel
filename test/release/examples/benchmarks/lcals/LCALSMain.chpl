@@ -101,7 +101,7 @@ module main {
     run_loop[LoopKernelID.FIND_FIRST_MIN] = runC_findFirstMin;
 
     if output_dirname.length > 0 then
-      mkdir(output_dirname, parents=true);
+      try! mkdir(output_dirname, parents=true);
 
     if run_variantRaw then
       run_variants[LoopVariantID.RAW] = true;

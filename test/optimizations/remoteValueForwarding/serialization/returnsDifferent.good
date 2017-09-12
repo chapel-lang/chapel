@@ -1,0 +1,1 @@
+returnsDifferent.chpl:9: error: chpl__deserialize returning 'int(64)' when it must return 'Foo'

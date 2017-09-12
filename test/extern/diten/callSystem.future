@@ -1,0 +1,4 @@
+bug: extern function 'system' crashes with CHPL_GASNET_SEGMENT=fast
+
+On our Linux test systems with CHPL_COMM=gasnet and CHPL_GASNET_SEGMENT=fast
+the extern function 'system' crashes.

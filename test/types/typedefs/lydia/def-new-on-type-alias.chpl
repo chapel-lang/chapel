@@ -1,6 +1,6 @@
 /* Feature request: Allow type aliases to be used to instantiate objects */
 class Foo {
-  proc Foo() {
+  proc init() {
     writeln("Create a new Foo using the alias bar");
   }
 }

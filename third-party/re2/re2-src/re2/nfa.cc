@@ -107,8 +107,8 @@ class NFA {
 
   // Run runq on byte c, appending new states to nextq.
   // Updates matched_ and match_ as new, better matches are found.
-  // p is the position of the previous byte (the one before c)
-  // in the input string, used when processing Match instructions.
+  // p is the position of byte c in the input string for AddToThreadq;
+  // p-1 will be used when processing Match instructions.
   // flag is the bitwise OR of Bol, Eol, etc., specifying whether
   // ^, $ and \b match the current input position (after c).
   // Frees all the threads on runq.
@@ -340,8 +340,8 @@ void NFA<StrPiece>::AddToThreadq(Threadq* q, int id0, int c, int flag,
 
 // Run runq on byte c, appending new states to nextq.
 // Updates matched_ and match_ as new, better matches are found.
-// p is the position of the previous byte (the one before c)
-// in the input string, used when processing Match instructions.
+// p is the position of byte c in the input string for AddToThreadq;
+// p-1 will be used when processing Match instructions.
 // flag is the bitwise OR of Bol, Eol, etc., specifying whether
 // ^, $ and \b match the current input position (after c).
 // Frees all the threads on runq.
@@ -373,7 +373,7 @@ int NFA<StrPiece>::Step(Threadq* runq, Threadq* nextq, int c, int flag, typename
         break;
 
       case kInstByteRange:
-        AddToThreadq(nextq, ip->out(), c, flag, p+1, t);
+        AddToThreadq(nextq, ip->out(), c, flag, p, t);
         break;
 
       case kInstAltMatch:
@@ -394,8 +394,13 @@ int NFA<StrPiece>::Step(Threadq* runq, Threadq* nextq, int c, int flag, typename
         }
         break;
 
-      case kInstMatch:
-        if (endmatch_ && p != etext_)
+      case kInstMatch: {
+        // Avoid invoking undefined behavior when p happens
+        // to be null - and p-1 would be meaningless anyway.
+        if (p == NULL)
+          break;
+
+        if (endmatch_ && p-1 != etext_)
           break;
 
         if (longest_) {
@@ -403,16 +408,16 @@ int NFA<StrPiece>::Step(Threadq* runq, Threadq* nextq, int c, int flag, typename
           // it is either farther to the left or at the same
           // point but longer than an existing match.
           if (!matched_ || t->capture[0] < match_[0] ||
-              (t->capture[0] == match_[0] && p > match_[1])) {
+              (t->capture[0] == match_[0] && p-1 > match_[1])) {
             CopyCapture(match_, t->capture);
-            match_[1] = p;
+            match_[1] = p-1;
             matched_ = true;
           }
         } else {
           // Leftmost-biased mode: this match is by definition
           // better than what we've already found (see next line).
           CopyCapture(match_, t->capture);
-          match_[1] = p;
+          match_[1] = p-1;
           matched_ = true;
 
           // Cut off the threads that can only find matches
@@ -425,6 +430,7 @@ int NFA<StrPiece>::Step(Threadq* runq, Threadq* nextq, int c, int flag, typename
           return 0;
         }
         break;
+      }
     }
     Decref(t);
   }
@@ -563,12 +569,8 @@ bool NFA<StrPiece>::Search(const StrPiece& text, const StrPiece& const_context,
       fprintf(stderr, "\n");
     }
 
-    // Note that we pass p-1 to Step() because it needs the previous pointer
-    // value in order to handle Match instructions appropriately. It plumbs
-    // c and flag through to AddToThreadq() along with p-1+1, which is p.
-    //
     // This is a no-op the first time around the loop because runq is empty.
-    int id = Step(runq, nextq, p < text.end() ? p[0] & 0xFF : -1, flag, p-1);
+    int id = Step(runq, nextq, p < text.end() ? p[0] & 0xFF : -1, flag, p);
     DCHECK_EQ(runq->size(), 0);
     using std::swap;
     swap(nextq, runq);

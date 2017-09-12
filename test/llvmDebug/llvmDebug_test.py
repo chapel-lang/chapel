@@ -34,12 +34,12 @@ else:
     print 'checking module --FAIL'
 
 # Verify the functions
-if 'My_sayhello' in output:
-    if 'My_factorial' in output:
-        if 'main' in output:
-            print 'checking functions --PASS'
-else:
-    print 'checking functions --FAIL'
+#if 'My_sayhello' in output:
+#    if 'My_factorial' in output:
+#        if 'main' in output:
+#            print 'checking functions --PASS'
+#else:
+#    print 'checking functions --FAIL'
 
 # Verify the struct types
 if 'My_Actor' in output:

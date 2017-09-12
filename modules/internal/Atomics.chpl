@@ -426,7 +426,7 @@ module Atomics {
 
     pragma "no doc"
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -529,7 +529,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -632,7 +632,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -735,7 +735,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -838,7 +838,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -941,7 +941,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -1044,7 +1044,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -1146,7 +1146,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -1360,7 +1360,7 @@ module Atomics {
 
     pragma "no doc"
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
 
   }
@@ -1440,7 +1440,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
   
@@ -1519,7 +1519,7 @@ module Atomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 

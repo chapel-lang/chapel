@@ -501,9 +501,10 @@ sub expand {
 	  $exename = `cygpath -a -m $exename`;
 	  chomp($exename);
 	}
-        die("gasnetrun: unable to locate program '$exebase'\n")
-		    unless (defined($exename) && -x $exename);
+        die("gasnetrun: unable to locate program '$exebase'\n") unless defined($exename);
         print("gasnetrun: located executable '$exename'\n") if ($verbose);
+        die("gasnetrun: missing execute permissions for '$exename'\n") unless -x $exename;
+
     } else {
         $exename = $exebase;
     }

@@ -9,7 +9,7 @@
 #endif
 
 /* Clang can be picky */
-#if PLATFORM_COMPILER_CLANG
+#if PLATFORM_COMPILER_CLANG && PLATFORM_COMPILER_VERSION_GE(2,8,0)
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wconstant-logical-operand"
 #endif
@@ -677,6 +677,7 @@ gasnet_handle_t gasnete_puts_gather(gasnete_strided_stats_t const *stats, gasnet
     gasnete_strided_pack_all(srcaddr, srcstrides, count, stridelevels, packedbuf);
     visop->type = GASNETI_VIS_CAT_PUTS_GATHER;
     visop->handle = gasnete_put_nb_bulk(dstnode, dstaddr, packedbuf, nbytes GASNETE_THREAD_PASS);
+    gasneti_assert(visop->handle != GASNET_INVALID_HANDLE);
     GASNETE_PUSH_VISOP_RETURN(td, visop, synctype, 0);
   }
 }
@@ -715,6 +716,7 @@ gasnet_handle_t gasnete_gets_scatter(gasnete_strided_stats_t const *stats, gasne
     visop->addr = dstaddr;
     visop->len = stridelevels;
     visop->handle = gasnete_get_nb_bulk(packedbuf, srcnode, srcaddr, nbytes GASNETE_THREAD_PASS);
+    gasneti_assert(visop->handle != GASNET_INVALID_HANDLE);
     GASNETE_PUSH_VISOP_RETURN(td, visop, synctype, 1);
   }
 }
@@ -825,7 +827,6 @@ void gasnete_puts_AMPipeline_reqh_inner(gasnet_token_t token,
   size_t * const packetstrides = packetcount + stridelevels + 1;
   size_t * const packedbuf = packetstrides + stridelevels;
   size_t const limit = stridelevels - gasnete_strided_nulldims(packetcount, stridelevels);
-  GASNETI_UNUSED_UNLESS_DEBUG /* but still need side-effects */
   uint8_t * const end = gasnete_strided_unpack_partial(&dstaddr, packetstrides, packetcount, contiglevel, limit,
                                                        packetchunks, packetinit+contiglevel, 0, 0, packedbuf);
   gasneti_assert(end - (uint8_t *)addr == nbytes);
@@ -990,8 +991,7 @@ void gasnete_gets_AMPipeline_reph_inner(gasnet_token_t token,
 
   gasneti_assert(visop->type == GASNETI_VIS_CAT_GETS_AMPIPELINE);
 
-  { GASNETI_UNUSED_UNLESS_DEBUG /* but still need side-effects */
-    uint8_t * const end = gasnete_strided_unpack_partial(&dstaddr, tablestrides, tablecount, contiglevel, limit,
+  { uint8_t * const end = gasnete_strided_unpack_partial(&dstaddr, tablestrides, tablecount, contiglevel, limit,
                                                        packetchunks, tableinit+contiglevel, 0, 0, addr);
     gasneti_assert(end - (uint8_t *)addr == nbytes);
   }
@@ -1154,8 +1154,8 @@ extern gasnet_handle_t gasnete_puts(gasnete_synctype_t synctype,
   /* catch silly degenerate cases */
   if_pf (stats.totalsz == 0) /* empty */
     return GASNET_INVALID_HANDLE;
-  if_pf (dstnode == gasneti_mynode || /* purely local */ 
-         stats.dualcontiguity == stridelevels) {/* fully contiguous */
+  if (GASNETI_SUPERNODE_LOCAL(dstnode) || /* purely local */ 
+      stats.dualcontiguity == stridelevels) {/* fully contiguous */
     return gasnete_puts_ref_indiv(&stats,synctype,dstnode,dstaddr,dststrides,srcaddr,srcstrides,count,stridelevels GASNETE_THREAD_PASS);
   }
 
@@ -1200,8 +1200,8 @@ extern gasnet_handle_t gasnete_gets(gasnete_synctype_t synctype,
   /* catch silly degenerate cases */
   if_pf (stats.totalsz == 0) /* empty */
     return GASNET_INVALID_HANDLE;
-  if_pf (srcnode == gasneti_mynode || /* purely local */ 
-         stats.dualcontiguity == stridelevels) {/* fully contiguous */
+  if (GASNETI_SUPERNODE_LOCAL(srcnode) || /* purely local */ 
+      stats.dualcontiguity == stridelevels) {/* fully contiguous */
     return gasnete_gets_ref_indiv(&stats,synctype,dstaddr,dststrides,srcnode,srcaddr,srcstrides,count,stridelevels GASNETE_THREAD_PASS);
   }
 
@@ -1233,7 +1233,7 @@ extern gasnet_handle_t gasnete_gets(gasnete_synctype_t synctype,
   return GASNET_INVALID_HANDLE; /* avoid warning on MIPSPro */
 }
 
-#if PLATFORM_COMPILER_CLANG
+#if PLATFORM_COMPILER_CLANG && PLATFORM_COMPILER_VERSION_GE(2,8,0)
   #pragma clang diagnostic pop
 #endif
 

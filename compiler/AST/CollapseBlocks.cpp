@@ -77,6 +77,7 @@
 #include "CForLoop.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
+#include "ForallStmt.h"
 
 #include "alist.h"
 #include "stmt.h"
@@ -138,6 +139,16 @@ void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
   // Need to define this so CollapseBlocks is not abstract.
   // However, it should not be invoked.
   INT_ASSERT(false);
+}
+
+bool CollapseBlocks::enterForallIntent(ForallIntent* intent) {
+  // This should not be invoked.
+  INT_ASSERT(false);
+  return false;
+}
+
+bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
+  return enterBlockStmt(node->loopBody());
 }
 
 
@@ -337,6 +348,16 @@ void CollapseBlocks::exitBlockStmt(BlockStmt* node)
 
 }
 
+void CollapseBlocks::exitForallIntent(ForallIntent* intent)
+{
+
+}
+
+void CollapseBlocks::exitForallStmt(ForallStmt* node)
+{
+
+}
+
 void CollapseBlocks::exitWhileDoStmt(WhileDoStmt* node)
 {
 
@@ -388,6 +409,20 @@ bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node)
 }
 
 void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterDeferStmt(DeferStmt* node)
+{
+  // Defer statements really need to be lowered *before*
+  // running CollapseBlocks. Otherwise, how can we know
+  // what variables or defer blocks are "in scope"?
+  INT_ASSERT("Defer statement discovered in CollapseBlocks");
+  return true;
+}
+
+void CollapseBlocks::exitDeferStmt(DeferStmt* node)
 {
 
 }

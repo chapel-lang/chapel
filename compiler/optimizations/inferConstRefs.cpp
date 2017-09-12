@@ -640,7 +640,9 @@ static bool inferRefToConst(Symbol* sym) {
         } else {
           // Passing a non-ref actual to a reference formal is currently
           // considered to be the same as an addr-of
-          if (actual->qualType().getQual() != QUAL_CONST_VAL) {
+          // BHARSH TODO: we shouldn't be seeing QUAL_CONST here.
+          Qualifier q = actual->qualType().getQual();
+          if (q != QUAL_CONST_VAL && q != QUAL_CONST) {
             isRefToConst = false;
           }
         }

@@ -110,6 +110,9 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
+  PRIM_GET_DYNAMIC_END_COUNT,  // get/set end count for 'begin' -
+  PRIM_SET_DYNAMIC_END_COUNT,  // manipulates task-local storage
+
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 
@@ -136,7 +139,6 @@ enum PrimitiveTag {
 
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
-  PRIM_ARRAY_FREE_ELTS,
   PRIM_ARRAY_GET,
   PRIM_ARRAY_GET_VALUE,
   PRIM_ARRAY_SHIFT_BASE_POINTER,
@@ -176,6 +178,9 @@ enum PrimitiveTag {
   PRIM_CALL_DESTRUCTOR,         // call destructor on type (do not free)
 
   PRIM_LOGICAL_FOLDER,          // Help fold logical && and ||
+
+  PRIM_WIDE_MAKE,               // create a wide pointer from
+                                // (type, localeID, addr)
 
   PRIM_WIDE_GET_LOCALE,         // Returns the "locale" portion of a wide pointer.
 
@@ -224,7 +229,9 @@ enum PrimitiveTag {
   PRIM_FIELD_NUM_TO_NAME,
   PRIM_FIELD_NAME_TO_NUM,
   PRIM_FIELD_BY_NUM,
+  PRIM_CLASS_NAME_BY_ID,
   PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL,
+  PRIM_IS_EXTERN_CLASS_TYPE,
   PRIM_IS_UNION_TYPE,
   PRIM_IS_ATOMIC_TYPE,
   PRIM_IS_REF_ITER_TYPE,
@@ -250,33 +257,37 @@ enum PrimitiveTag {
   PRIM_ZIP,
   PRIM_REQUIRE,
 
+  PRIM_CHECK_ERROR, // used in error-handling conditional. args: error variable
+
   NUM_KNOWN_PRIMS
 };
 
 class PrimitiveOp { public:
-  PrimitiveTag tag;
-  const char *name;
+  PrimitiveTag  tag;
+  const char*   name;
   QualifiedType (*returnInfo)(CallExpr*);
-  bool isEssential; // has effects visible outside of the function
-  bool passLineno;  // pass line number and filename to this primitive
+  bool          isEssential; // has effects visible outside of the function
+  bool          passLineno;  // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, const char *aname, QualifiedType (*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag  atag,
+              const char*   aname,
+              QualifiedType (*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
-extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
-
-void printPrimitiveCounts(const char* passName);
-void initPrimitive();
+extern PrimitiveOp*     primitives[NUM_KNOWN_PRIMS];
 
 extern Vec<const char*> memDescsVec;
+
+void       printPrimitiveCounts(const char* passName);
+
+void       initPrimitive();
+
 VarSymbol* newMemDesc(const char* str);
+
 VarSymbol* newMemDesc(Type* type);
 
-
-bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
-
-void makeNoop(CallExpr* call);
+bool       getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
 
 #endif

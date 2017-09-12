@@ -175,6 +175,17 @@ bool AstPrintDocs::enterBlockStmt(BlockStmt* node) {
   return node->parentExpr == NULL;
 }
 
+
+bool AstPrintDocs::enterForallIntent(ForallIntent* intent) {
+  return false;
+}
+
+
+bool AstPrintDocs::enterForallStmt(ForallStmt* node) {
+  return false;
+}
+
+
 bool AstPrintDocs::enterWhileDoStmt(WhileDoStmt* node) {
   return false;
 }

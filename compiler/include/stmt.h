@@ -113,6 +113,7 @@ public:
   virtual bool        deadBlockCleanup();
 
   void                appendChapelStmt(BlockStmt* stmt);
+  void                flattenAndRemove();
 
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
@@ -153,10 +154,10 @@ private:
   CallExpr*           blockInfo;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class CondStmt : public Stmt {
 public:
@@ -175,17 +176,17 @@ public:
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
-  Expr*               foldConstantCondition();
+  CallExpr*           foldConstantCondition();
 
   Expr*               condExpr;
   BlockStmt*          thenStmt;
   BlockStmt*          elseStmt;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 enum GotoTag {
   GOTO_NORMAL,
@@ -195,7 +196,8 @@ enum GotoTag {
   GOTO_GETITER_END,
   GOTO_ITER_RESUME,
   GOTO_ITER_END,
-  GOTO_ERROR_HANDLING
+  GOTO_ERROR_HANDLING,
+  GOTO_BREAK_ERROR_HANDLING
 };
 
 
@@ -225,10 +227,11 @@ class GotoStmt : public Stmt {
   LabelSymbol*        gotoTarget()                                     const;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class ExternBlockStmt : public Stmt {
 public:
@@ -252,10 +255,10 @@ public:
 };
 
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class ForwardingStmt : public Stmt {
 public:
@@ -296,19 +299,19 @@ public:
 };
 
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 extern Vec<LabelSymbol*>         removedIterResumeLabels;
 extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
-
 
 // Probably belongs in Expr; doesn't really mean Stmt, but rather
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+// Serving ForallStmt and forall intents.
 bool isDirectlyUnderBlockStmt(const Expr* expr);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,

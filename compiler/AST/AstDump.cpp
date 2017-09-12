@@ -513,6 +513,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
     case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
     case GOTO_ITER_END:       write("gotoIterEnd");       break;
     case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
+    case GOTO_BREAK_ERROR_HANDLING: write("gotoBreakErrorHandling"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {
@@ -524,6 +525,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
   return true;
 }
 
+
 //
 // ForwardingStmt
 //
@@ -534,6 +536,25 @@ bool AstDump::enterForwardingStmt(ForwardingStmt* node) {
 
 void AstDump::exitForwardingStmt(ForwardingStmt* node) {
   write(")");
+}
+
+
+//
+// DeferStmt
+//
+bool AstDump::enterDeferStmt(DeferStmt* node) {
+  newline();
+  write("Defer");
+  newline();
+  write("{");
+  ++mIndent;
+  return true;
+}
+
+void AstDump::exitDeferStmt(DeferStmt* node) {
+  --mIndent;
+  newline();
+  write("}");
 }
 
 

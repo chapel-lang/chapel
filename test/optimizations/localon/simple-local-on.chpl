@@ -5,7 +5,7 @@ class Foo {
 proc main() {
   var f = new Foo();
 
-  local on here do writeln(__primitive("is wide pointer", f));
+  local do on here do writeln(__primitive("is wide pointer", f));
 
   delete f;
 }

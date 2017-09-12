@@ -12,7 +12,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#define GASNET_CORE_VERSION      0.3
+#define GASNET_CORE_VERSION      0.5
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         OFI
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -56,6 +56,13 @@
 #define GASNETC_USE_INTERRUPTS 1
 #endif
 
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+#if 0
+#define GASNETC_AMREGISTER 1
+#endif
+
   /* define these to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */
@@ -69,6 +76,9 @@ typedef ### gasnetc_handler_t;
 
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
-#define GASNETC_CONDUIT_STATS(CNT,VAL,TIME) 
+#define GASNETC_CONDUIT_STATS(CNT,VAL,TIME)  \
+    CNT(C, NB_PUT_INJECT, cnt)               \
+    CNT(C, NB_PUT_BOUNCE, cnt)               \
+    CNT(C, NB_PUT_BLOCK, cnt)                   
 
 #endif

@@ -23,7 +23,7 @@
     locations (e.g. /opt/mellanox/fca) during configure stage. Available
     configure paramaters:
 
-    * "--with-fca=<PATH>":                 forces BUPC to use user specified 
+    * "--with-fca-home=<PATH>":            forces BUPC to use user specified 
                                            path to FCA
 
     * "--enable-fca" and "--disable-fca":  enable/disable FCA support

@@ -80,4 +80,12 @@ Found back edge {F}<---{C}
 * init_rank  *
 **************
 Init rank for {A} to 1
-graph.chpl:267: error: halt reached - Edge from {A} to {B} but ranks are 1 -> 0
+	B of rank 2
+	 propagate_rank(B)
+	D of rank 3
+	 propagate_rank(D)
+	C of rank 2
+	 propagate_rank(C)
+	F of rank 1
+	 propagate_rank(F)
+graph.chpl:256: error: halt reached - Edge from {C} to {F} but ranks are 2 -> 1

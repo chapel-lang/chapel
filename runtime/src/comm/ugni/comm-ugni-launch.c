@@ -33,4 +33,6 @@
 void chpl_comm_preLaunch(void) {
   if (setenv("HUGETLB_VERBOSE", "0", 1) != 0)
     chpl_error("cannot setenv HUGETLB_VERBOSE=0", 0, 0);
+  if (setenv("HUGETLB_NO_RESERVE", "yes", 0) != 0)
+    chpl_error("cannot setenv HUGETLB_NO_RESERVE=yes", 0, 0);
 }

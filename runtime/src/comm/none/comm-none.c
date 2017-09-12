@@ -131,7 +131,7 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
 }
 
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+void chpl_comm_get_registered_heap(void** start_p, size_t* size_p) {
   *start_p = NULL;
   *size_p  = 0;
 }
@@ -490,7 +490,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
 
   chpl_task_startMovedTask(fid, chpl_ftable[fid],
                            chpl_comm_on_bundle_task_bundle(arg), arg_size,
-                           subloc, chpl_nullTaskID, false);
+                           subloc, chpl_nullTaskID);
 }
 
 // Same as chpl_comm_execute_on()

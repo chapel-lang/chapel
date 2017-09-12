@@ -197,9 +197,11 @@
 %code {
   #include "build.h"
   #include "CatchStmt.h"
+  #include "DeferStmt.h"
   #include "DoWhileStmt.h"
   #include "driver.h"
   #include "flex-chapel.h"
+  #include "ForallStmt.h"
   #include "ForLoop.h"
   #include "parser.h"
   #include "stmt.h"
@@ -289,7 +291,7 @@
 //
 %token TALIGN TAS TATOMIC TBEGIN TBREAK TBY TCATCH
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN
+%token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TFORWARDING
 %token TIF TIN TINDEX TINLINE TINOUT TITER
@@ -385,6 +387,7 @@
 %type <pblockstmt> forwarding_stmt
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> return_stmt
+%type <pblockstmt> defer_stmt
 %type <pblockstmt> try_stmt
 %type <pblockstmt> throw_stmt
 %type <pblockstmt> catch_stmt_ls
@@ -466,6 +469,7 @@ stmt:
 | if_stmt
 | loop_stmt
 | select_stmt
+| defer_stmt
 | try_stmt
 | throw_stmt
 | return_stmt
@@ -477,7 +481,8 @@ stmt:
 | TCONTINUE opt_ident TSEMI            { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
 | TDELETE expr TSEMI                   { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
 | TLABEL ident stmt                    { $$ = buildLabelStmt($2, $3); }
-| TLOCAL stmt                          { $$ = buildLocalStmt($2); }
+| TLOCAL expr do_stmt                  { $$ = buildLocalStmt($2, $3); }
+| TLOCAL do_stmt                       { $$ = buildLocalStmt($2); }
 | TON expr do_stmt                     { $$ = buildOnStmt($2, $3); }
 | TSERIAL expr do_stmt                 { $$ = buildSerialStmt($2, $3); }
 | TSERIAL do_stmt                      { $$ = buildSerialStmt(new SymExpr(gTrue), $2); }
@@ -663,49 +668,49 @@ loop_stmt:
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
 | TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
 | TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
-| TFORALL expr TIN expr                                 do_stmt    { $$ = buildForallLoopStmt($2, $4, NULL, $5); }
-| TFORALL expr TIN expr            forall_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, $4, $5,   $6); }
-| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = buildForallLoopStmt($2, zipToTuple($4), NULL, $5, true); }
-| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = buildForallLoopStmt($2, zipToTuple($4), $5,   $6, true); }
-| TFORALL expr                                          do_stmt    { $$ = buildForallLoopStmt(NULL, $2, NULL, $3); }
-| TFORALL expr                     forall_intent_clause do_stmt    { $$ = buildForallLoopStmt(NULL, $2, $3,   $4); }
+| TFORALL expr TIN expr                                 do_stmt    { $$ = ForallStmt::build($2, $4, NULL, $5); }
+| TFORALL expr TIN expr            forall_intent_clause do_stmt    { $$ = ForallStmt::build($2, $4, $5,   $6); }
+| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = ForallStmt::build($2, $4, NULL, $5, true); }
+| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build($2, $4, $5,   $6, true); }
+| TFORALL expr                                          do_stmt    { $$ = ForallStmt::build(NULL, $2, NULL, $3); }
+| TFORALL expr                     forall_intent_clause do_stmt    { $$ = ForallStmt::build(NULL, $2, $3,   $4); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, NULL, new BlockStmt($6));
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6));
     }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, $5,   new BlockStmt($7));
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7));
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), zipToTuple($4), NULL, new BlockStmt($6), true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true);
     }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), zipToTuple($4), $5,   new BlockStmt($7), true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true);
     }
 | TLSBR expr_ls TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4));
+        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4));
       else
-        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), NULL, new BlockStmt($4));
+        $$ = ForallStmt::build(NULL, $2->get(1)->remove(), NULL, new BlockStmt($4));
     }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3,   new BlockStmt($5));
+        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3,   new BlockStmt($5));
       else
-        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), $3,   new BlockStmt($5));
+        $$ = ForallStmt::build(NULL, $2->get(1)->remove(), $3,   new BlockStmt($5));
     }
 ;
 
@@ -719,6 +724,9 @@ if_stmt:
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
 ;
+
+defer_stmt:
+  TDEFER stmt             { $$ = DeferStmt::build($2); }
 
 try_stmt:
   TTRY     expr            TSEMI         { $$ = TryStmt::build(false, $2); }
@@ -1390,7 +1398,6 @@ actual_ls:
 actual_expr:
   ident TASSIGN query_expr  { $$ = buildNamedActual($1, $3); }
 | ident TASSIGN expr        { $$ = buildNamedActual($1, $3); }
-| ident TALIAS expr         { $$ = buildNamedAliasActual($1, $3); }
 | query_expr                { $$ = $1; }
 | expr
 ;

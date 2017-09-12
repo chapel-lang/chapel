@@ -3,7 +3,7 @@ use util;
 
 proc main() {
   var A, B : [1..10, 1..10] int;
-  ref RE = A.reindex({1..100 by 10, 1..100 by 10});
+  ref RE = A.reindex(1..100 by 10, 1..100 by 10);
   write("Testing reindex...");
   stridedAssign(RE, B);
   stridedAssign(B, RE);
@@ -16,7 +16,7 @@ proc main() {
   writeln("OK");
 
   write("Testing reindex of reindex...");
-  var MoreRE = RE.reindex({1..10, 1..10});
+  var MoreRE = RE.reindex(1..10, 1..10);
   stridedAssign(MoreRE, B);
   stridedAssign(B, MoreRE);
   writeln("OK");
@@ -28,7 +28,7 @@ proc main() {
   writeln("OK");
 
   ref rankChange = A[1,..];
-  ref RCRE = rankChange.reindex({1..100 by 10});
+  ref RCRE = rankChange.reindex(1..100 by 10);
   write("Testing reindex of rank-change...");
   stridedAssign(RCRE, B[1,..]);
   stridedAssign(B[1,..], RCRE);

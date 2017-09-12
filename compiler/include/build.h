@@ -45,7 +45,6 @@ CallExpr* buildTuple(CallExpr* call);
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 
 Expr* buildNamedActual(const char* name, Expr* expr);
-Expr* buildNamedAliasActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
@@ -155,6 +154,7 @@ void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildForwardingStmt(Expr* expr);
 BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except);
 BlockStmt* buildForwardingDeclStmt(BlockStmt*);
+BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);

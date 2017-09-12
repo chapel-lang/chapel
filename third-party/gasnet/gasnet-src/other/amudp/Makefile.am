@@ -17,8 +17,8 @@ else
 endif
 
 if BLCR_ENABLED
-  blcr_defines = -DAMUDP_BLCR_ENABLED=1 -DBLCR_BINDIR=\"@BLCR_BINDIR@\" @BLCR_CPPFLAGS@
-  blcr_ldflags = @BLCR_LIBDIR@ @BLCR_LIBS@
+  blcr_defines = -DAMUDP_BLCR_ENABLED=1 -DBLCR_BINDIR=\"@BLCR_BINDIR@\" @BLCR_CFLAGS@
+  blcr_ldflags = @BLCR_LDFLAGS@ @BLCR_LIBS@
 else
   blcr_defines =
   blcr_ldflags =
@@ -38,7 +38,7 @@ LDFLAGS = @LDFLAGS@ @cxxLDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
 
-platform_defines = @GASNET_MACHINE_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMUDP_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMUDP_ENV_PREFIX=GASNET $(blcr_defines) $(MANUAL_DEFINES)
 
 platform_libraries = -L$(top_builddir) -lgasnet_tools-seq @LIBS@ @GASNET_UDP_LIBS@ $(blcr_ldflags)
 
@@ -46,13 +46,14 @@ VPATH = $(srcdir)
 testdir = $(srcdir)/../amxtests
 altincdir = $(srcdir)/..
 gasnet_tools = -I$(srcdir)/../.. -I../.. -DHAVE_GASNET_TOOLS
-INCLUDES = -I$(srcdir) -I$(altincdir) $(platform_defines) $(gasnet_tools)
+INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines) $(gasnet_tools)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
 cxxcompile = $(CXX) $(CXXFLAGS) $(INCLUDES)
 link = $(CXX) $(CXXFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
 
 if USE_UDP_CONDUIT
+BUILT_SOURCES = amudp_portable_platform.h
 lib_LIBRARIES = libamudp.a
 bin_PROGRAMS = amudprun
 endif
@@ -68,8 +69,9 @@ headers = \
 	socklist.h		\
 	sockutil.h		
 
+allheaders = $(BUILT_SOURCES) $(headers)
+
 libamudp_a_SOURCES = \
-	$(headers)		\
 	amudp_cdefs.c		\
 	amudp_ep.cpp		\
 	amudp_reqrep.cpp	\
@@ -80,12 +82,19 @@ libamudp_a_SOURCES = \
 	socklist.cpp		\
 	sockutil.cpp		
 
+amudp_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+	cp -f $< $@
+
 libamudp_a_DEPENDENCIES = $(libamudp_a_SOURCES:%.cpp=%.o) $(libamudp_a_SOURCES:%.c=%.o)
 
+$(libamudp_a_DEPENDENCIES): $(allheaders)
+
+# Makefile.{standalone,common,generic} enable amudprun-host
 EXTRA_DIST = \
-	Makefile.common 	\
-	Makefile.generic 	\
-	Makefile.standalone 	\
+        $(headers)              \
+        Makefile.common         \
+        Makefile.generic        \
+        Makefile.standalone     \
 	Makefile.tests  	\
 	Makefile.titanium.in 	\
 	amudprun.c              \
@@ -116,23 +125,39 @@ tests-clean:
 
 include Makefile.tests
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(headers)
+test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
 	$(compile) -DAMUDP -I$(testdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(headers)
+apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
 	$(compile) -DAMUDP -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
 
 amudprun$(EXEEXT): amudprun.o $(headers) libamudp.a
 	$(link) -o $@ $< -L. -lamudp $(linkend)
 
-%.o: %.c $(headers)
-	$(compile) -o $@ -c $<
+%.o: %.c $(allheaders)
+	$(compile) -o $@ -c `test -f $(srcdir)/$< && echo "$(srcdir)/"`$<
 
-%.o: %.cpp $(headers) $(top_builddir)/libgasnet_tools-seq.a
-	$(cxxcompile) -o $@ -c $<
+%.o: %.cpp $(allheaders) $(top_builddir)/libgasnet_tools-seq.a
+	$(cxxcompile) -o $@ -c `test -f $(srcdir)/$< && echo "$(srcdir)/"`$<
 
 $(top_builddir)/libgasnet_tools-seq.a: force
 	@cd $(top_builddir) && $(MAKE) libgasnet_tools-seq.a
+
+# WARNING: This is NOT an officially supported feature and may be removed in the future!
+# This target attempts to build amudprun for the host system and output binary amudprun-host
+# It may require explicitly providing working C/C++ compilers for the host, eg:
+#   gmake -C other/amudp amudprun-host CC=clang CXX=clang++
+amudprun-host$(EXEEXT): force
+	@ srcdir=`cd $(srcdir) && pwd`; \
+	set -x && \
+	mkdir -p host && \
+	cd host && \
+	ln -sf $$srcdir/Makefile* . && \
+	ln -sf $$srcdir/../portable_inttypes.h . && \
+	ln -sf $$srcdir/../gasnet_portable_platform.h amudp_portable_platform.h && \
+	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMUDP_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
+	mv amudprun ../amudprun-host && \
+	cd .. && rm -Rf host
 
 if USE_UDP_CONDUIT
 if GNU_NM
@@ -140,6 +165,7 @@ check-exports: libamudp.a
 	@echo Checking libamudp exports...
 	@lib=libamudp.a ; \
             @NM@ --defined-only $$lib |                                             \
+	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
             grep -v -e ' [\._]*amudp_' -e ' [\._]*AMUDP_' -e ' [\._]*AM_'           \
                     -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
                     -e 'get_pc_thunk'                                               \
@@ -162,7 +188,7 @@ endif
 # No check-exports by default due to name mangling
 check: tests
 
-clean_local_files = libamudp.a *.o core .test-results
+clean_local_files = libamudp.a *.o core .test-results amudprun-host $(BUILT_SOURCES)
 clean-local:
 	@for f in $(testprograms); do                                \
 	  cmd="rm -f '$$f$(EXESUFFIX)'"; echo "$$cmd"; eval "$$cmd" || exit $$? ; \

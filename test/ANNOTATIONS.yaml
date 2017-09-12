@@ -239,6 +239,34 @@ all:
     - Make the multi-ddata specific fields in DR arrays 'void' when not using them (#5723)
   05/03/17:
     - Flag some compiler temps as const (#6154)
+  06/08/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: Single node XC, 16 node XC
+  06/10/17:
+    - text: bounded-coforall optimization for remote coforalls (#6419)
+      config: 16 node XC
+  06/14/17:
+    - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
+      config: chapcs, chap04
+  06/16/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: chapcs, chap04
+  06/20/17:
+    - text: revert gnu target compiler from 7.1.0 to 6.3.0
+      config: Single node XC, 16 node XC
+  06/21/17:
+    - change tmp directory
+  07/26/17:
+    - Add dsiAssignDomain (#6722)
+    - Move EndCount to task local storage (#6765)
+  07/31/17:
+    - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
+      config: 16 node XC
+  08/08/17:
+    - text: With comm=ugni, register large arrays dynamically (#6947)
+      config: 16 node XC
+  08/15/17:
+    - add error handling to the IO module (#6890)
 
 
 AllCompTime:
@@ -273,6 +301,10 @@ array-of-strings-read:
 arr-forall:
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+
+array_iter:
+  06/19/17:
+    - Reduce amount of locking in associative array dsiAccess (#6244)
 
 arguments:
   03/10/17:
@@ -330,9 +362,17 @@ blackscholes_promote:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
+build-associative:
+  07/14/17:
+    - Extend parallel array initialization to POD arrays (#6675)
+
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
+
+CoMD:
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 compSampler-timecomp:
   09/09/16:
@@ -379,8 +419,12 @@ ep-b:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
 ep.ml-perf:
-  06/08/17:
-    - Mothball multi-ddata (#6390)
+  07/26/17:
+    - Update PR 5296 (#6722)
+
+ep.ml-time:
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 fannkuch-redux:
   07/22/14:
@@ -416,6 +460,8 @@ fasta:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 fastaredux:
   01/14/14:
@@ -464,10 +510,14 @@ hpl_performance:
 hpl.hpcc2012.ml-perf:
   03/03/17:
     - Modified test as part of array views (#5338)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 hpl.hpcc2012.ml-time:
   03/03/17:
     - Modified test as part of array views (#5338)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 init:
   05/03/16:
@@ -533,11 +583,17 @@ jacobi:
     - add param versions of min/max for ints (#5073)
   01/13/17:
     - refactoring of rectangular IO (#5157)
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 knucleotide:
   10/17/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/16/17:
+    - Let parSafe revert to default in blc study version (#6475)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -637,6 +693,18 @@ memleaks:
     - Rank change dom dist view (#5694)
   03/23/17:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/06/17:
+    - Close more leaks in DimensionalDist2D (#6590)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
 
 memleaksfull:
   07/08/14:
@@ -659,6 +727,21 @@ memleaksfull:
     - Rank change dom dist view (#5694)
   03/23/17:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
+  06/19/17:
+    - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/04/17:
+    - LLNL version of CoMD added, leaks memory (#6553)
+  07/06/17:
+    - skip LLNL CoMD for memory leaks (#6611)
+    - Close more leaks in DimensionalDist2D (#6590)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
 
 meteor:
   12/18/13:
@@ -667,10 +750,20 @@ meteor:
     - Updated meteor's lock to yield less frequently (#4300)
 
 mg-b:
+  05/23/17:
+    - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+  06/22/17:
+    - Only perform packed updateFluff when there are multiple locales (#6512)
+
+mg.ml-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
   05/23/17:
     - Fix NPB MG (#6284)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 miniMD:
   12/21/13:
@@ -735,6 +828,8 @@ prk-stencil:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-stencil.ml-perf:
   04/08/16:
@@ -751,10 +846,16 @@ prk-stencil.ml-perf:
     - Use nonblocking transactions for strided transfers (#6262)
   06/06/17:
     - Increase the PRK stencil problem size (#6380)
+  06/13/17:
+    - Optimize updateFluff (#6418)
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 prk-stencil-time:
   05/11/17:
     - Move chpl_getPrivatizedClass() into chpl-privatization.h (#6212)
+  06/13/17:
+    - Optimize updateFluff (#6418)
 
 prk-transpose: &transpose-base
   05/04/17:
@@ -796,10 +897,14 @@ regexdna:
     - implemented good_alloc_size for jemalloc(#3446)
   04/20/17:
     - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 regexdna-redux:
   04/20/17:
     - Update RE2 (#6024)
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -900,6 +1005,10 @@ temporary-copies:
   04/20/17:
     - Update RE2 (#6024)
 
+twopt-paircount:
+  06/22/17:
+    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+
 search:
   04/20/17:
     - Update RE2 (#6024)
@@ -956,6 +1065,8 @@ timeVectorArray:
     - upgrade jemalloc to 4.2.0 (#3919)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  07/26/17:
+    - Allow domains to implement specialized assignment (#6722)
 
 dynamic:
   02/28/17:

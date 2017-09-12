@@ -1,3 +1,0 @@
-in loopThrow, r=(x = 3)
-destroying R(x=3)
-throws-destroys.chpl:15: error: uncaught error

@@ -252,10 +252,6 @@ proc ReplicatedDist.dsiPrivatize(privatizeData)
 // global domain class
 //
 class OldReplicatedDom : BaseRectangularDom {
-  // to support rectangular domains
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
@@ -388,6 +384,10 @@ proc OldReplicatedDom.dsiGetIndices(): rank * range(idxType,
                                                  BoundedRangeType.bounded,
                                                  stridable) {
   return redirectee().getIndices();
+}
+
+proc OldReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 // Iterators over the domain's indices (serial, leader, follower).
@@ -594,7 +594,7 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr
   }
 }
 
-proc OldReplicatedArr.dsiDestroyArr(isslice:bool) {
+proc OldReplicatedArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) do
       delete localArrs(localeIdx);
@@ -625,7 +625,7 @@ iter OldReplicatedArr.these(param tag: iterKind, followThis) ref where tag == it
 
 
 /////////////////////////////////////////////////////////////////////////////
-// slicing, reindexing, etc.
+// reallocation
 
 // This supports reassignment of the array's domain.
 /*
@@ -647,6 +647,3 @@ proc OldReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 proc OldReplicatedArr.dsiLocalSubdomain() {
   return localArrs[here.id].myDom.domLocalRep;
 }
-
-// todo? these two seem to work (written by analogy with DefaultRectangular)
-proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;

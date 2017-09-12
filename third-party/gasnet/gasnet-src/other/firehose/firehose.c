@@ -687,7 +687,7 @@ fh_request_free(firehose_request_t *req)
  *
  * Recognizes modifiers [Mm][Kk][Gg] in numbers 
  */ 
-unsigned long fh_getenv(const char *var, unsigned long multiplier) {
+int64_t fh_getenv(const char *var, unsigned long multiplier) {
   const char *env = gasneti_getenv(var);
   return gasneti_parse_int(env, multiplier);
 }

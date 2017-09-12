@@ -42,7 +42,7 @@ use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
 use SparseBlockDist;
-use LayoutCSR;
+use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can
@@ -241,7 +241,7 @@ a stridable domain, the stride information will be ignored and the
 
 When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
 ``sparseLayoutType`` will be the layout of these sparse domains. The default is
-currently coordinate, but :class:`LayoutCSR.CSR` is an interesting alternative.
+currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 
 **Data-Parallel Iteration**
 
@@ -338,9 +338,6 @@ class LocBlock {
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class BlockDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
@@ -373,11 +370,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
@@ -436,8 +429,8 @@ proc Block.Block(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && sparseLayoutType == CSR then 
-    compilerError("CSR layout is only supported for 2 dimensional domains");
+  if rank != 2 && isCSType(sparseLayoutType) then 
+    compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
     halt("Block() requires a non-empty boundingBox");
@@ -617,99 +610,6 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
-proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
-  proc anyStridable(space, param i=1) param
-    return if i == space.size then space(i).stridable
-           else space(i).stridable || anyStridable(space, i+1);
-
-  // Should this error be in ChapelArray or not an error at all?
-  if newSpace(1).idxType != oldSpace(1).idxType then
-    compilerError("index type of reindex domain must match that of original domain");
-  if anyStridable(newSpace) || anyStridable(oldSpace) then
-    compilerWarning("reindexing stridable Block arrays is not yet fully supported");
-
-  /* To shift the bounding box, we must perform the following operation for
-   *  each dimension:
-   *
-   *   bbox(r).low - (oldSpace(r).low - newSpace(r).low)
-   *   bbox(r).high - (oldSpace(r).low - newSpace(r).low)
-   *
-   * The following is guaranteed on entry:
-   *
-   *   oldSpace(r).low-newSpace(r).low = oldSpace(r).high-newSpace(r).high
-   *
-   * We need to be able to do this without going out of range of the index
-   *  type.  The approach we take is to check if there is a way to perform
-   *  the calculation without having any of the intermediate results go out
-   *  of range.
-   *
-   *    newBbLow = bbLow - (oldLow - newLow)
-   *    newBbLow = bbLow - oldLow + newLow
-   *
-   * Can be performed as:
-   *
-   *    t = oldLow-newLow;
-   *    newBbLow = bbLow-t;
-   * or
-   *    t = bbLow-oldLow;
-   *    newBbLow = t+newLow;
-   * or
-   *    t = bbLow+newLow;
-   *    newBbLow = t-oldLow;
-   *
-   */
-  proc adjustBound(bbound, oldBound, newBound) {
-    var t: bbound.type;
-    if safeSub(oldBound, newBound) {
-      t = oldBound-newBound;
-      if safeSub(bbound, t) {
-        return (bbound-t, true);
-      }
-    }
-    if safeSub(bbound, oldBound) {
-      t = bbound-oldBound;
-      if safeAdd(t, newBound) {
-        return (t+newBound, true);
-      }
-    }
-    if safeAdd(bbound, newBound) {
-      t = bbound+newBound;
-      if safeSub(t, oldBound) {
-        return(t-oldBound, true);
-      }
-    }
-    return (bbound, false);
-  }
-
-  var myNewBbox = boundingBox.dims();
-  for param r in 1..rank {
-    var oldLow = oldSpace(r).low;
-    var newLow = newSpace(r).low;
-    var oldHigh = oldSpace(r).high;
-    var newHigh = newSpace(r).high;
-    var valid: bool;
-    if oldLow != newLow {
-      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
-      if !valid then // try with high
-        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
-      if !valid then
-        halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
-
-      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
-      if !valid then
-        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
-      if !valid then // try with low
-        halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
-    }
-  }
-  var d = {(...myNewBbox)};
-  var newDist = new Block(d, targetLocales, 
-                          dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                          dataParMinGranularity);
-  return newDist;
-}
-
-
 proc LocBlock.LocBlock(param rank: int,
                       type idxType, 
                       locid, // the locale index from the target domain
@@ -839,6 +739,8 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
+// TODO: Can we just re-use the DefaultRectangularDom follower here?
+//
 iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
@@ -854,7 +756,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -921,6 +823,10 @@ proc BlockDom.dsiSetIndices(x) {
 
 proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
+}
+
+proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 // dsiLocalSlice
@@ -1011,7 +917,7 @@ proc BlockArr.setup() {
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
-proc BlockArr.dsiDestroyArr(isslice:bool) {
+proc BlockArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);
@@ -1130,7 +1036,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1246,7 +1152,8 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-proc BlockArr.dsiReallocate(d: domain) {
+proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+{
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
@@ -1380,10 +1287,6 @@ proc BlockArr.doiCanBulkTransfer(viewDom) {
   if viewDom.stridable then
     for param i in 1..rank do
       if viewDom.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }

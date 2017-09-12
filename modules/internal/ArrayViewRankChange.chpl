@@ -77,7 +77,8 @@ module ArrayViewRankChange {
                                               stridable=stridable,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
-                                              dist=this);
+                                              distPid=this.pid,
+                                              distInst=this);
       newdom.dsiSetIndices(inds);
       return newdom;
     }
@@ -87,10 +88,24 @@ module ArrayViewRankChange {
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
 
-    proc dsiDestroyDist() {
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downDistInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (downDistPid, downDistInst, collapsedDim, idx);
     }
 
-    // TODO: privatization
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewRankChangeDist(downDistPid = privatizeData(1),
+                                         downDistInst = privatizeData(2),
+                                         collapsedDim = privatizeData(3),
+                                         idx = privatizeData(4));
+    }
+
+    proc dsiDestroyDist() {
+    }
   }
 
   //
@@ -101,10 +116,6 @@ module ArrayViewRankChange {
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
  class ArrayViewRankChangeDom: BaseRectangularDom {
-    param rank;
-    type idxType;
-    param stridable;
-
     // the lower-dimensional index set that we represent upwards
     var upDom: DefaultRectangularDom(rank, idxType, stridable);
 
@@ -115,7 +126,15 @@ module ArrayViewRankChange {
     const collapsedDim;
     const idx;
 
-    const dist;  // a reference back to our ArrayViewRankChangeDist
+    const distPid;  // a reference back to our ArrayViewRankChangeDist
+    const distInst;
+
+    inline proc dist {
+      if _isPrivatized(distInst) then
+        return chpl_getPrivatizedCopy(distInst.type, distPid);
+      else
+        return distInst;
+    }
 
     // the higher-dimensional domain that we're equivalent to
     var downDomPid:int;
@@ -147,8 +166,7 @@ module ArrayViewRankChange {
       pragma "no auto destroy"
       const downarr = _newArray(downDom.dsiBuildArray(eltType));
       return new ArrayViewRankChangeArr(eltType  =eltType,
-      // TODO: Update once we start privatizing vvv
-                                        _DomPid = nullPid,
+                                        _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
@@ -229,6 +247,10 @@ module ArrayViewRankChange {
       downDomInst = downDomLoc._instance;
     }
 
+    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
+    }
+
     proc dsiMember(i) {
       return upDom.dsiMember(i);
     }
@@ -243,14 +265,22 @@ module ArrayViewRankChange {
       }
     }
 
-    iter these(param tag: iterKind) where tag == iterKind.standalone && !localeModelHasSublocales {
-      if chpl__isDROrDRView(downDom) {
-        for i in upDom.these(tag) do
-          yield i;
-      } else {
-        for i in downDom.these(tag) do
-          yield downIdxToUpIdx(i);
-      }
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !localeModelHasSublocales
+      && chpl__isDROrDRView(downDom)
+      && __primitive("method call resolves", upDom, "these", tag)
+    {
+      for i in upDom.these(tag) do
+        yield i;
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !localeModelHasSublocales
+      && !chpl__isDROrDRView(downDom)
+      && __primitive("method call resolves", downDom, "these", tag)
+    {
+      for i in downDom.these(tag) do
+        yield downIdxToUpIdx(i);
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -391,7 +421,43 @@ module ArrayViewRankChange {
         _delete_dom(downDomInst, _isPrivatized(downDomInst));
     }
 
-  } // end of class ArrayViewRankChangeDom
+    // Don't want to privatize a DefaultRectangular, so pass the query on to
+    // the wrapped array
+    proc dsiSupportsPrivatization() param
+      return downDomInst.dsiSupportsPrivatization();
+
+    proc dsiGetPrivatizeData() {
+      return (upDom, collapsedDim, idx, distPid, distInst, downDomPid, downDomInst);
+    }
+
+    proc dsiPrivatize(privatizeData) {
+      return new ArrayViewRankChangeDom(rank = this.rank,
+                                        idxType = this.idxType,
+                                        stridable = this.stridable,
+                                        upDom = privatizeData(1),
+                                        collapsedDim = privatizeData(2),
+                                        idx = privatizeData(3),
+                                        distPid = privatizeData(4),
+                                        distInst = privatizeData(5),
+                                        downDomPid = privatizeData(6),
+                                        downDomInst = privatizeData(7));
+    }
+
+    proc dsiGetReprivatizeData() {
+      return (upDom, downDomPid, downDomInst);
+    }
+
+    proc dsiReprivatize(other, reprivatizeData) {
+      upDom = reprivatizeData(1);
+      //      collapsedDim = other.collapsedDim;
+      //      idx = other.idx;
+      //      distPid = other.distPid;
+      //      distInst = other.distInst;
+      downDomPid = reprivatizeData(2);
+      downDomInst = reprivatizeData(3);
+    }
+
+ } // end of class ArrayViewRankChangeDom
 
   //
   // The class representing a rank-change slice of an array.  Like
@@ -481,7 +547,8 @@ module ArrayViewRankChange {
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
     iter these(param tag: iterKind) ref
-      where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && !localeModelHasSublocales &&
+           __primitive("method call resolves", privDom, "these", tag) {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getDataIndex(i))
@@ -801,7 +868,7 @@ module ArrayViewRankChange {
       return this;
     }
 
-    proc dsiDestroyArr(isalias:bool) {
+    proc dsiDestroyArr() {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

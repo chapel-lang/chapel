@@ -34,13 +34,13 @@ class Vector {
   // comment can/should be reverted (the introduction of the 'd' field
   // above and the three routines that follow).
   //
-  proc Vector(initN: int, initA: [1..initN] elemType) {
+  proc init(initN: int, initA: [1..initN] elemType) {
     n = initN;
     d = {1..n};
     a = initA;
   }
 
-  proc Vector(initN: int) {
+  proc init(initN: int) {
     n = initN;
     d = {1..n};
   }

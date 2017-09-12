@@ -1,2 +1,4 @@
 calling propError
-propagate-implicit.chpl:9: error: uncaught error
+uncaught Error: 
+  ./ThrowError.chpl:2: thrown here
+  propagate-implicit.chpl:9: uncaught here

@@ -15,7 +15,7 @@ proc vartype() type {
 
 class c {
   var v: vartype();
-  proc c() { if enabled then v = 5; }
+  proc init() { if enabled then v = 5; }
 }
 
 writeln(new c());

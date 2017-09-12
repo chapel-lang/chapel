@@ -6,7 +6,7 @@ record Panel2D {
     const cols : int;
 
     ref panel =
-        matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex({1..rows, 1..cols});
+        matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1].reindex(1..rows, 1..cols);
 };
 
 

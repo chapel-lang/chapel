@@ -397,8 +397,9 @@ A["a"] = 1;
 A["b"] = 2;
 var x = A["a"];
 \end{chapel}
-Here, the indices "a" and "b" are implicitly added the domain D. Reading from
+Here, the indices "a" and "b" are implicitly added to the domain D. Reading from
 an index not in the array is still an out-of-bounds error.
+
 \begin{chapel}
 // writeln(A["c"]); // halts if "c" is not in A's domain
 \end{chapel}
@@ -406,6 +407,11 @@ An important restriction for this method is that A may not share its domain
 with another array. This restriction exists because it may be surprising to
 seemingly modify one array, and to then see a change in another array. This
 restriction is checked at runtime.
+
+Note that extending an associative array via indexing in this way is
+not parallel-safe.  Thus, if multiple tasks are adding elements to a
+single array via indexing simultaneously, the responsibility of
+synchronizing between the tasks to avoid races is the user's.
 \end{chapelexample}
 
 

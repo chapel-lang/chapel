@@ -1,5 +1,0 @@
-bug: integer if expr not usable as lvalue without --baseline
-
-This test works as expected with --baseline.
-If the bug is fixed, besides removing this future, remove
-the ifi-baseline test and ifi.skipif.

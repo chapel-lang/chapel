@@ -7,7 +7,7 @@
 #INSTRUCTIONS# See the conduit-writer instructions in the generated fragments
 #INSTRUCTIONS# or $(top_srcdir)/other/fragment-head.mak.in for usage info.
 
-CONDUIT_DEFINES = @SHMEM_FLAGS@
-CONDUIT_LIBDIRS = -L@SHMEM_LIBDIR@
+CONDUIT_INCLUDES = @SHMEM_INCLUDES@
+CONDUIT_LDFLAGS = @SHMEM_LDFLAGS@
 CONDUIT_LIBS = @SHMEM_LIBS@
 

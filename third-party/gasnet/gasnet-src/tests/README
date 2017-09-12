@@ -12,7 +12,7 @@ Coding standards for GASNet tests:
 ---------------------------------
 All GASNet test code must adhere to the following coding standards:
 
-* All of the general linguistic coding standards listed in the top-level GASNet README 
+* All of the general linguistic coding standards listed in the top-level GASNet README-devel
 
 * Tests should only use public GASNet interfaces (ie prefixed with gasnet_ or gasnett_).
 Tests must never invoke gasneti_, gasnetc_ or gasnete_ interfaces - this ensures test

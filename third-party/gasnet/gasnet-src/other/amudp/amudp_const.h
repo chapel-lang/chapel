@@ -6,7 +6,8 @@
 #ifndef __AMUDP_CONST_H
 #define __AMUDP_CONST_H
 
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 /* naming policy:
   AM-defined things start with AM_
@@ -23,7 +24,7 @@
 #define AMUDP 1
 #endif
 
-#define AMUDP_LIBRARY_VERSION      3.13
+#define AMUDP_LIBRARY_VERSION      3.14
 #define AMUDP_LIBRARY_VERSION_STR  AMUDP_STRINGIFY(AMUDP_LIBRARY_VERSION)
 
 #if !defined(AMUDP_DEBUG) && !defined(AMUDP_NDEBUG)
@@ -54,12 +55,13 @@
   #define AMX_NDEBUG AMUDP_NDEBUG
   #define AMUDP_DEBUG_CONFIG _NDEBUG
 #endif
+#ifdef AMUDP_DEBUG_VERBOSE
+  #define AMX_DEBUG_VERBOSE AMUDP_DEBUG_VERBOSE
+#endif
 
 /* idiot proofing */
 #if defined(AMUDP_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
-  #ifndef _IN_GASNET_TESTS_DELAY_C
     #error Tried to compile AMUDP client code with optimization enabled but also AMUDP_DEBUG (which seriously hurts performance). Disable C and C++ compiler optimization or reconfigure/rebuild without --enable-debug
-  #endif
 #endif
 
 
@@ -142,9 +144,9 @@ typedef enum {
 
 #define AM_MaxNumHandlers()               AMUDP_MAX_NUMHANDLERS
 #define AM_GetNumHandlers(ep, pnhandlers)  \
-  ((ep) ? ((*(pnhandlers) = AMUDP_MAX_NUMHANDLERS), AM_OK) : AM_ERR_BAD_ARG : AM_ERR_BAD_ARG)
+  ((ep) ? ((*(pnhandlers) = AMUDP_MAX_NUMHANDLERS), AM_OK) : AM_ERR_BAD_ARG)
 #define AM_SetNumHandlers(ep, nhandlers)  \
-  ((ep) ? ((nhandlers) == AMUDP_MAX_NUMHANDLERS ? AM_OK : AM_ERR_RESOURCE)
+  ((ep) ? ((nhandlers) == AMUDP_MAX_NUMHANDLERS ? AM_OK : AM_ERR_RESOURCE) : AM_ERR_BAD_ARG)
 
 #define AM_MaxNumTranslations(trans)      (*(trans) = AMUDP_MAX_NUMTRANSLATIONS,AM_OK)
 

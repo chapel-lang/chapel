@@ -58,6 +58,9 @@
 #define GASNETT_RELEASE_VERSION_PATCH GASNET_RELEASE_VERSION_PATCH
 
 #include <gasnet_basic.h>
+
+GASNETI_BEGIN_NOWARN
+
 #include <gasnet_toolhelp.h>
 
 /* allow conduit-specific tool helpers (eg elan timers) */
@@ -146,6 +149,11 @@
 #define gasnett_weak_mb()            gasneti_sync_mem()
 #define gasnett_compiler_fence()     gasneti_compiler_fence()
 #define GASNETT_MEMBAR_CONFIG        GASNETI_MEMBAR_CONFIG
+
+/* ------------------------------------------------------------------------------------ */
+/* microsecond-resolution sleep */
+
+#define gasnett_nsleep(ns_delay)     gasneti_nsleep(ns_delay)
 
 /* ------------------------------------------------------------------------------------ */
 /* portable high-performance, low-overhead timers */
@@ -444,7 +452,6 @@ extern gasnett_backtrace_type_t gasnett_backtrace_user;
   #include <stdarg.h>
 #endif
 GASNETI_FORMAT_PRINTF(_gasnett_trace_printf_noop,1,2,
-GASNETI_UNUSED
 static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #if PLATFORM_COMPILER_PGI
     va_list _ap; va_start(_ap,_format); va_end(_ap); /* avoid a silly warning */
@@ -543,9 +550,6 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
     #define gasnett_heapstats_t           gasneti_heapstats_t
     #define gasnett_getheapstats(pstat)   gasneti_getheapstats(pstat)
   #endif
-
-  #define gasnett_malloc_aligned(align,sz) gasneti_malloc_aligned((align),(sz))
-  #define gasnett_free_aligned(ptr)        gasneti_free_aligned(ptr)
 
   /* VIS string formatting */
   #define gasnett_format_memveclist_bufsz gasneti_format_memveclist_bufsz 
@@ -648,6 +652,7 @@ static int *gasnett_linkconfig_idiotcheck(void)
 
 /* ------------------------------------------------------------------------------------ */
 
+GASNETI_END_NOWARN
 GASNETI_END_EXTERNC
 
 #undef _IN_GASNET_TOOLS_H

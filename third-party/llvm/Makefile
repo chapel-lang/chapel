@@ -66,10 +66,10 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    $(CHPL_LLVM_DEBUG) \
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
-	    -DLLVM_BUILD_TOOLS=0 \
 	    -DCLANG_ENABLE_ARCMT=0 \
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
+	    -DLLVM_INSTALL_UTILS=ON \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
@@ -93,7 +93,7 @@ $(LLVM_HEADER_FILE):
 	if [ -f $(LLVM_CONFIGURE_FILE) ]; then \
 	  cd $(LLVM_BUILD_DIR) && make install-local ; \
 	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target installhdrs ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
 	fi
 
 # note: the conditional below allows parallel make to continue
@@ -146,7 +146,7 @@ $(LLVM_CLANG_CONFIG_FILE):
 
 configure-llvm: $(LLVM_CONFIGURED_HEADER_FILE)
 
-llvm: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CONFIG_FILE) $(LLVM_CLANG_FILE) $(LLVM_CLANG_CONFIG_FILE)
+llvm: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CLANG_FILE) $(LLVM_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE)
 
 llvm-minimal: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CONFIG_FILE)
 

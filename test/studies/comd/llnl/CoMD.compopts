@@ -1,0 +1,2 @@
+# From LLNL's Makefile
+--fast -suseBulkTransferStride -sdataParTasksPerLocale=5 -sdefaultDoRADOpt=true -sdisableAliasedBulkTransfer=false -M utils -ssimpleTimings

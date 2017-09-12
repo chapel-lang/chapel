@@ -1,6 +1,6 @@
 class RefCount {
   var count:int;
-  proc RefCount() {
+  proc init() {
     writeln("Initializing a RefCount");
     count = 1;
   }

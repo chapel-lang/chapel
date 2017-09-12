@@ -471,9 +471,6 @@ proc LocBlockCyclic.writeThis(x) {
 // BlockCyclic Domain Class
 //
 class BlockCyclicDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   //
   // LEFT LINK: a pointer to the parent distribution
   //
@@ -607,6 +604,10 @@ proc BlockCyclicDom.dsiSetIndices(x) {
   //
   whole.setIndices(x);
   setup();
+}
+
+proc BlockCyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 proc BlockCyclicDom.dsiGetIndices() {
@@ -774,11 +775,7 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-class BlockCyclicArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class BlockCyclicArr: BaseRectangularArr {
 
   //
   // LEFT LINK: the global domain descriptor for this array
@@ -808,7 +805,7 @@ proc BlockCyclicArr.setup() {
   }
 }
 
-proc BlockCyclicArr.dsiDestroyArr(isslice:bool) {
+proc BlockCyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       delete locArr(localeIdx);

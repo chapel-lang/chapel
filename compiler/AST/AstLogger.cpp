@@ -130,6 +130,20 @@ void AstLogger::exitBlockStmt(BlockStmt* node) {
 void AstLogger::visitForallIntents(ForallIntents* clause) {
 }
 
+bool AstLogger::enterForallIntent(ForallIntent* intent) {
+  return true;
+}
+
+void AstLogger::exitForallIntent(ForallIntent* intent) {
+}
+
+bool AstLogger::enterForallStmt(ForallStmt* node) {
+  return true;
+}
+
+void AstLogger::exitForallStmt(ForallStmt* node) {
+}
+
 bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) {
   return true;
 }
@@ -187,6 +201,13 @@ bool AstLogger::enterForwardingStmt(ForwardingStmt* node) {
 }
 
 void AstLogger::exitForwardingStmt(ForwardingStmt* node) {
+}
+
+bool AstLogger::enterDeferStmt(DeferStmt* node) {
+  return true;
+}
+
+void AstLogger::exitDeferStmt(DeferStmt* node) {
 }
 
 bool AstLogger::enterTryStmt(TryStmt* node) {

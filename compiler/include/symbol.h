@@ -92,10 +92,11 @@ ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForTFIntent(int tfIntent);
 
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class Symbol : public BaseAST {
 public:
@@ -168,6 +169,15 @@ public:
   SymExpr*           getSingleUse()                            const;
   // Return the single def of this Symbol, or NULL if there are 0 or >= 2
   SymExpr*           getSingleDef()                            const;
+
+  // The compiler really ought to view a call to `init` that
+  // constructs a const record as the single "def". However it
+  // might consider it a "use" for various reasons. This method
+  // is useful for finding such cases.
+  // This function finds the statement expression that is responsible
+  // for initializing this symbol.
+  Expr*              getInitialization()                       const;
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
@@ -205,16 +215,15 @@ private:
 bool isString(Symbol* symbol);
 bool isUserDefinedRecord(Symbol* symbol);
 
-/******************************** | *********************************
-*                                                                   *
-* This class has two roles:                                         *
-*    1) A common abstract base class for VarSymbol and ArgSymbol.   *
-*    2) Maintain location state as an IPE "optimization".           *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+* This class has two roles:                                                   *
+*    1) A common abstract base class for VarSymbol and ArgSymbol.             *
+*    2) Maintain location state as an IPE "optimization".                     *
+*                                                                             *
+************************************** | *************************************/
 
-class LcnSymbol : public Symbol
-{
+class LcnSymbol : public Symbol {
 public:
   int       depth()                                            const;
   int       offset()                                           const;
@@ -235,10 +244,11 @@ private:
   int       mOffset;               // Byte offset within frame
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class VarSymbol : public LcnSymbol {
 public:
@@ -287,13 +297,13 @@ public:
   void* llvmDIGlobalVariable;
   void* llvmDIVariable;
 #endif
-
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class ArgSymbol : public LcnSymbol {
 public:
@@ -347,10 +357,11 @@ public:
 #endif
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class TypeSymbol : public Symbol {
  public:
@@ -359,19 +370,21 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
-  llvm::MDNode* llvmTbaaNode;
-  llvm::MDNode* llvmConstTbaaNode;
-  llvm::MDNode* llvmTbaaStructNode;
-  llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmTbaaTypeDescriptor;
+  llvm::MDNode* llvmTbaaAccessTag;
+  llvm::MDNode* llvmConstTbaaAccessTag;
+  llvm::MDNode* llvmTbaaStructCopyNode;
+  llvm::MDNode* llvmConstTbaaStructCopyNode;
   llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  void* llvmTbaaTypeDescriptor;
+  void* llvmTbaaAccessTag;
+  void* llvmConstTbaaAccessTag;
+  void* llvmTbaaStructCopyNode;
+  void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
 #endif
 
@@ -383,6 +396,7 @@ class TypeSymbol : public Symbol {
 
   void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
   void renameInstantiatedSingle(Symbol* sym);
+  void renameInstantiatedFromSuper(TypeSymbol* superSym);
 
   GenRet codegen();
   void codegenDef();
@@ -532,6 +546,8 @@ private:
   bool                       _throwsError;
 };
 
+const char* toString(FnSymbol* fn);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -650,6 +666,16 @@ void       verifyInTree(BaseAST* ast, const char* msg);
 const char* retTagDescrString(RetTag    retTag);
 const char* intentDescrString(IntentTag intent);
 
+// cache some popular strings
+extern const char* astrSdot;
+extern const char* astrSequals;
+extern const char* astr_cast;
+extern const char* astrInit;
+extern const char* astrDeinit;
+extern const char* astrTag;
+extern const char* astrThis;
+void initAstrConsts();
+
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
@@ -692,22 +718,11 @@ extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
-extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gAddModuleFn;
-extern FnSymbol *gChplHereAlloc;
-extern FnSymbol *gChplHereFree;
-extern FnSymbol *gChplDoDirectExecuteOn;
+
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
-extern FnSymbol *gChplDeleteError;
-
-// These global symbols point to generic functions that
-// will be instantiated.
-extern FnSymbol *gBuildTupleType;
-extern FnSymbol *gBuildStarTupleType;
-extern FnSymbol *gBuildTupleTypeNoRef;
-extern FnSymbol *gBuildStarTupleTypeNoRef;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -720,11 +735,25 @@ extern char llvmPrintIrName[FUNC_NAME_MAX+1];
 extern char llvmPrintIrStage[FUNC_NAME_MAX+1];
 
 namespace llvmStageNum {
-typedef enum { NOPRINT = 0,
+typedef enum {
+       // The first options here refer to high-level Chapel LLVM optimization
+       NOPRINT = 0,
        NONE,
        BASIC,
        FULL,
-       LAST
+       // These options allow instrumenting the pass pipeline
+       // and match ExtensionPointTy in PassManagerBuilder
+       EarlyAsPossible,
+       ModuleOptimizerEarly,
+       LoopOptimizerEnd,
+       ScalarOptimizerLate,
+       OptimizerLast,
+       VectorizerStart,
+       EnabledOnOptLevel0,
+       Peephole,
+       // Updating these? Be sure to leave LAST as the last
+       // element and update llvmStageName to reflect this order.
+       LAST,
      } llvmStageNum_t;
 }
 using llvmStageNum::llvmStageNum_t;

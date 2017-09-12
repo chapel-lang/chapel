@@ -36,6 +36,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+#include "wellknown.h"
 
 
 
@@ -349,8 +350,15 @@ void AggregateType::codegenDef() {
 
         llvm::StructType * st;
         // handle an empty union.
-        if( largestType ) st = llvm::StructType::get(largestType, NULL);
-        else st = llvm::StructType::get(info->module->getContext());
+        if( largestType ) {
+          st = llvm::StructType::get(largestType
+#if HAVE_LLVM_VER < 50
+                                     , NULL
+#endif
+                                     );
+        } else {
+          st = llvm::StructType::get(info->module->getContext());
+        }
         params.push_back(st);
         GEPMap.insert(std::pair<std::string, int>("_u", paramID++));
       } else {
@@ -400,7 +408,7 @@ void AggregateType::codegenDef() {
         if( fLLVMWideOpt ) {
           // These are here so that the types are generated during codegen..
           if( ! info->globalToWideInfo.localeIdType ) {
-            Type* localeType = LOCALE_ID_TYPE;
+            Type* localeType = dtLocaleID->typeInfo();
             info->globalToWideInfo.localeIdType = localeType->codegen().type;
           }
           if( ! info->globalToWideInfo.nodeIdType ) {

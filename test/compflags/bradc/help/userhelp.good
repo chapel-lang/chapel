@@ -13,11 +13,7 @@ Parallelism Control Options:
 
 Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
-      --cache-remote                  Enable cache for remote data (must be
-                                      enabled specifically)
-      --conditional-dynamic-dispatch-limit <limit>
-                                      Set limit on # of inline conditionals
-                                      used for dynamic dispatch
+      --[no-]cache-remote             [Don't] enable cache for remote data
       --[no-]copy-propagation         Enable [disable] copy propagation
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
       --fast                          Use fast default settings
@@ -41,6 +37,8 @@ Optimization Control Options:
       --[no-]privatization            Enable [disable] privatization of
                                       distributed arrays and domains
       --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
+      --[no-]remote-serialization     Enable [disable] serialization for
+                                      remote consts
       --[no-]remove-copy-calls        Enable [disable] remove copy calls
       --[no-]scalar-replacement       Enable [disable] scalar replacement
       --scalar-replace-limit <limit>  Limit on the size of tuples being
@@ -103,6 +101,8 @@ LLVM Code Generation Options:
       --llvm-print-ir-stage <stage>   Specifies from which LLVM optimization
                                       stage to print function: none, basic,
                                       full
+      --mllvm <flags>                 LLVM flags (can be specified multiple
+                                      times)
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
@@ -125,8 +125,6 @@ Miscellaneous Options:
       --[no-]print-unused-functions   [Don't] print the name and location of
                                       unused functions
   -s, --set <name>[=<value>]          Set config param value
-      --[no-]strict-errors            Enable [disable] strict mode for error
-                                      handling
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions

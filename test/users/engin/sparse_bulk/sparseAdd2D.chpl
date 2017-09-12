@@ -1,4 +1,4 @@
-use LayoutCSR;
+use LayoutCS;
 
 config const N = 16;
 
@@ -24,7 +24,7 @@ SparseSQ += diagIndArr1;
 
 //define a hardcoded CSR subdomain for second quadrant
 const FourthQuadrant = {N/2..N-1, N/2..N-1};
-var SparseFQ: sparse subdomain(FourthQuadrant) dmapped CSR();
+var SparseFQ: sparse subdomain(FourthQuadrant) dmapped CS();
 
 //create diagonal indices
 var diagIndArr2 : [{0..#N}] 2*int;

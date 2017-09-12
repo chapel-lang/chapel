@@ -65,6 +65,8 @@ module LocaleModelHelpFlat {
       // the compiler calls this version in some cases.
       chpl_ftable_call(fn, args);
     } else {
+      var tls = chpl_task_getChapelData();
+      chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),
                            fn, args, args_size);
     }
@@ -86,6 +88,8 @@ module LocaleModelHelpFlat {
       // don't call the runtime fast execute_on function if we can stay local
       chpl_ftable_call(fn, args);
     } else {
+      var tls = chpl_task_getChapelData();
+      chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on_fast(node, chpl_sublocFromLocaleID(loc),
                                 fn, args, args_size);
     }
@@ -106,17 +110,23 @@ module LocaleModelHelpFlat {
     // non-blocking "on" in order to serialize the execute_ons.
     //
     const node = chpl_nodeFromLocaleID(loc);
+    var tls = chpl_task_getChapelData();
+    var isSerial = chpl_task_data_getSerial(tls);
     if (node == chpl_nodeID) {
-      if __primitive("task_get_serial") then
-        // don't call the runtime nb execute_on function if we can stay local
+      // don't call the runtime nb execute_on function if we can stay local
+      if isSerial {
         chpl_ftable_call(fn, args);
-      else
+      } else {
+        chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
         chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_any);
+      }
     } else {
-      if __primitive("task_get_serial") then
+      chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
+      if isSerial {
         chpl_comm_execute_on(node, c_sublocid_any, fn, args, args_size);
-      else
+      } else {
         chpl_comm_execute_on_nb(node, c_sublocid_any, fn, args, args_size);
+      }
     }
   }
 }

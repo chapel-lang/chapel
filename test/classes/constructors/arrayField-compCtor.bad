@@ -1,2 +1,0 @@
-arrayField-compCtor.chpl:14: error: unresolved call 'C.init([BlockDom(1,int(64),false,DefaultDist)] real(64))'
-arrayField-compCtor.chpl:3: note: candidates are: C.init(X: [domain(1,int(64),false)] real(64))

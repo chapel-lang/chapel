@@ -8,12 +8,12 @@
 
 if test -n "$USE_GCC" ; then
     # GCC-based compilers
-    CC='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-gcc -Wno-unused'
-    CXX='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-g++ -Wno-unused'
+    CC='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-gcc'
+    CXX='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc64-bgq-linux-g++'
 elif test -n "$USE_CLANG" ; then
     # CLANG-based compilers
-    CC='bgclang -fno-integrated-as -Wno-unused -U__GNUC__'
-    CXX='bgclang++ -fno-integrated-as -Wno-unused -U__GNUC__'
+    CC='bgclang -U__GNUC__'
+    CXX='bgclang++ -U__GNUC__'
 else
     # XLC-based compilers
     CC='bgxlc_r -qarch=qp -qtune=qp'
@@ -39,7 +39,7 @@ if test -n "$USE_GCC" ; then
     MPI_CC='mpicc'
 elif test -n "$USE_CLANG" ; then
     # CLANG-based compilers
-    MPI_CC='env MPICH_CC=bgclang mpicc'
+    MPI_CC='mpiclang'
 else
     # XLC-based compilers
     MPI_CC='mpixlc -qarch=qp -qtune=qp'
@@ -121,28 +121,20 @@ if test ! -f "$SRCDIR/configure" ; then
   echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
   exit 1
 fi
-# Detect the build host machine type
-HOST_ARG=`echo "$@" | grep -e --host`
+# Detect the build+host machine type
 HOST_APPEND=
-if test "$HOST_ARG" = ""; then
-  oldCC_FOR_BUILD="$CC_FOR_BUILD"
-  oldHOST_CC="$HOST_CC"
-  oldCC="$CC"
-  CC_FOR_BUILD=
-  HOST_CC=
-  CC=
-  if test "$HOST_ID" = ""; then
-    HOST_ID=`$SRCDIR/config-aux/config.guess`
+for sys in host build; do
+  SYS_ARG=`echo "$@" | grep -i -e --$sys`
+  if test -z "$SYS_ARG"; then
+    if test -z "$HOST_ID"; then
+      HOST_ID=`env CC= HOST_CC= CC_FOR_BUILD= $SRCDIR/config-aux/config.guess`
+      if test -z "$HOST_ID"; then
+        echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid --build=machineid to identify the host machine running this script'
+        exit 1
+      fi
+    fi
+    HOST_APPEND="$HOST_APPEND --$sys=$HOST_ID"
   fi
-  if test "$HOST_ID" = ""; then
-    echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid to identify the host machine running this script'
-    exit 1
-  else
-    HOST_APPEND="--host=$HOST_ID"
-  fi
-  CC_FOR_BUILD="$oldCC_FOR_BUILD"
-  HOST_CC="$oldHOST_CC"
-  CC="$oldCC"
-fi
+done
 # Now that everything is setup, run the actual configure script
-$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
+$SRCDIR/configure --enable-cross-compile$HOST_APPEND --target=$TARGET_ID $EXTRA_CONFIGURE_ARGS "$@"

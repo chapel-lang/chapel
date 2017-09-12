@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# This script generates this file:
-
 srcDir=`dirname $0`
 
 function doit() {

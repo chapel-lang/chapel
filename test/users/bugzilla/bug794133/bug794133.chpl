@@ -4,8 +4,9 @@ record myNode {
     var D: domain(1);
     var myArray: [D][1..2] uint(8);
 
-    proc myNode(w: uint(8)) {
+    proc init(w: uint(8)) {
         this.D = {0..w:int};
+        super.init();
         this.myArray[w][1] = 1;
     }
 }
@@ -17,10 +18,10 @@ proc main() {
     //
     //    writeln("It is this big: ", sizeof(myNode));
     writeln("The array is ", node.myArray.size, " by ", node.myArray[0].size);
-    ref A = node.myArray[W:int][1..2].reindex({0..1});
+    ref A = node.myArray[W:int][1..2].reindex(0..1);
     ref B = node.myArray[W:int];
     var C: [2..4] int;
-    ref CC = C.reindex({0..2});
+    ref CC = C.reindex(0..2);
     CC[0] = 5;
     A[1] = 2;
     writeln(A);

@@ -22,6 +22,8 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"
@@ -32,6 +34,7 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"
+#include "wellknown.h"
 #include "WhileStmt.h"
 
 #include "oldCollectors.h" // Deprecated. To be removed.
@@ -417,8 +420,8 @@ int isDefAndOrUse(SymExpr* se) {
 
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
-          (strcmp(fn->name, "=") == 0   &&
-           fn->getFormal(1)      == arg &&
+          (fn->name == astrSequals &&
+           fn->getFormal(1) == arg &&
            isRecord(arg->type))) {
 
           // special case for record-wrapped types originated in
@@ -781,6 +784,12 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
     if (fn->hasFlag(FLAG_EXPORT))
       pruneVisit(fn, fns, types);
 
+  // Mark well-known functions as visible
+  std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
+  for_vector(FnSymbol, fn, wellKnownFns) {
+    pruneVisit(fn, fns, types);
+  }
+
   pruneVisitFn(gAddModuleFn, fns, types);
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (mod->initFn)
@@ -943,8 +952,7 @@ prune() {
 }
 
 
-// Done this way because the log letter and hence the pass name for
-// each pass must be unique.  See initLogFlags() in runpasses.cpp.
+// Done this way to make the pass name for each pass unique.
 void prune2() { prune(); } // Synonym for prune.
 
 /*

@@ -15,10 +15,11 @@ class mysumreduce {
     return x;
   }
 
-  proc mysumreduce(type in_t) {
+  proc init(type in_t) {
     intype = in_t;
     statetype = in_t;
     outtype = in_t;
+    super.init();
   }
 }
 

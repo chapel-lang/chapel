@@ -33,11 +33,11 @@ proc return_slice(A: []) {
 }
 
 proc create_reindex(A: []) {
-  A.reindex({3..6});
+  A.reindex(3..6);
   if dummy then writeln(A.domain);
 }
 proc return_reindex(A: []) {
-  return A.reindex({3..6});
+  return A.reindex(3..6);
 }
 
 use Memory;
@@ -155,7 +155,7 @@ proc main() {
   writeln("Calling pass_original() with reindex:");
   m1 = memoryUsed();
   serial {
-    pass_original(A.reindex({3..6}));
+    pass_original(A.reindex(3..6));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
@@ -164,7 +164,7 @@ proc main() {
   writeln("Calling return_original() with reindex:");
   m1 = memoryUsed();
   serial {
-    return_original(A.reindex({3..6}));
+    return_original(A.reindex(3..6));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
@@ -173,7 +173,7 @@ proc main() {
   writeln("Calling return_original() with reindex and assignment:");
   m1 = memoryUsed();
   serial {
-    var A2 = return_original(A.reindex({3..6}));
+    var A2 = return_original(A.reindex(3..6));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");

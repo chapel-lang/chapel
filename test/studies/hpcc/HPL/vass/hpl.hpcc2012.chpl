@@ -469,7 +469,7 @@ proc panelSolve(
 
     // replicate
     on cornerLocale {
-      local
+      local do
         for j in dim2[k+1..] do
           replK[0,j] = Ab[k,j];
       replicateK(blk);
@@ -647,7 +647,7 @@ proc updateBlockRow(
   // 'tl' is a Dimensional-mapped domain, so has stuff
   // on all locales, even where the index set is empty
   on cornerLocale {
-    local
+    local do
       // we do not need the last row of tl, but pruning it off seems expensive
       forall (i,j) in {dim1, dim2} do
         replU[i-blk, j-blk] = Ab[i,j];
@@ -778,7 +778,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
     replicateK(diaFrom);  // replicates replX
 
     // Reset partial values for future use.
-    local for ps in myPartSums do ps = 0;
+    local do for ps in myPartSums do ps = 0;
 
   } else {
     // off the diagonal
@@ -794,7 +794,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
                    myPartSums, gotBlocks);
 
     // Reset partial values for future use.
-    local for ps in myPartSums do ps = 0;
+    local do for ps in myPartSums do ps = 0;
   }
 }
 
@@ -821,7 +821,7 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
       // TODO: bulkify, unless it is already
       locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));
     }
-    local
+    local do
       bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB);
   }
 }
@@ -865,7 +865,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
     }
   } // proc ihelper
 
-  local
+  local do
     while toIncorporate > 0 {
       seenOther = false;
       // since incorporation in ihelper

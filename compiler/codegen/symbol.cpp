@@ -46,7 +46,6 @@
 #include "type.h"
 #include "resolution.h"
 
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -69,6 +68,14 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "none", //llvmStageNum::NONE
   "basic", //llvmStageNum::BASIC
   "full", //llvmStageNum::FULL
+  "early-as-possible",
+  "module-optimizer-early",
+  "loop-optimizer-end",
+  "scalar-optimizer-late",
+  "optimizer-last",
+  "vectorizer-start",
+  "enabled-on-opt-level0",
+  "peephole",
 };
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum) {
@@ -889,7 +896,7 @@ void TypeSymbol::codegenDef() {
 void TypeSymbol::codegenMetadata() {
 #ifdef HAVE_LLVM
   // Don't do anything if we've already visited this type.
-  if( llvmTbaaNode ) return;
+  if( llvmTbaaTypeDescriptor ) return;
 
   GenInfo* info = gGenInfo;
   llvm::LLVMContext& ctx = info->module->getContext();
@@ -902,7 +909,7 @@ void TypeSymbol::codegenMetadata() {
 
   // Set the llvmTbaaNode to non-NULL so that we can
   // avoid recursing.
-  llvmTbaaNode = info->tbaaRootNode;
+  llvmTbaaTypeDescriptor = info->tbaaRootNode;
 
   AggregateType* ct = toAggregateType(type);
 
@@ -919,12 +926,9 @@ void TypeSymbol::codegenMetadata() {
   }
 
   llvm::MDNode* parent = info->tbaaRootNode;
-  llvm::MDNode* constParent = info->tbaaRootNode;
   if( superType ) {
-    parent = superType->symbol->llvmTbaaNode;
-    constParent = superType->symbol->llvmConstTbaaNode;
+    parent = superType->symbol->llvmTbaaTypeDescriptor;
     INT_ASSERT( parent );
-    INT_ASSERT( constParent );
   }
 
   // Ref and _ddata are really the same, and can conceivably
@@ -933,8 +937,9 @@ void TypeSymbol::codegenMetadata() {
     Type* eltType = getDataClassType(this)->typeInfo();
     Type* refType = getOrMakeRefTypeDuringCodegen(eltType);
     refType->symbol->codegenMetadata();
-    this->llvmTbaaNode = refType->symbol->llvmTbaaNode;
-    this->llvmConstTbaaNode = refType->symbol->llvmConstTbaaNode;
+    this->llvmTbaaTypeDescriptor = refType->symbol->llvmTbaaTypeDescriptor;
+    this->llvmTbaaAccessTag = refType->symbol->llvmTbaaAccessTag;
+    this->llvmConstTbaaAccessTag = refType->symbol->llvmConstTbaaAccessTag;
     return;
   }
 
@@ -952,15 +957,25 @@ void TypeSymbol::codegenMetadata() {
       LLVM_METADATA_OPERAND_TYPE* Ops[2];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = parent;
-      llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
+      llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, Ops);
     }
     {
       LLVM_METADATA_OPERAND_TYPE* Ops[3];
-      Ops[0] = llvm::MDString::get(ctx, cname);
-      Ops[1] = constParent;
+      Ops[0] = llvmTbaaTypeDescriptor;
+      Ops[1] = llvmTbaaTypeDescriptor;
       Ops[2] = llvm_constant_as_metadata(
+                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0));
+      llvmTbaaAccessTag = llvm::MDNode::get(ctx, Ops);
+    }
+    {
+      LLVM_METADATA_OPERAND_TYPE* Ops[4];
+      Ops[0] = llvmTbaaTypeDescriptor;
+      Ops[1] = llvmTbaaTypeDescriptor;
+      Ops[2] = llvm_constant_as_metadata(
+                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0));
+      Ops[3] = llvm_constant_as_metadata(
                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
-      llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
+      llvmConstTbaaAccessTag = llvm::MDNode::get(ctx, Ops);
     }
   }
 
@@ -992,20 +1007,18 @@ void TypeSymbol::codegenMetadata() {
         fieldType = info->lvt->getType(fct->classStructName(true));
       }
       INT_ASSERT(fieldType);
-      if( ct ) {
-        unsigned gep = ct->getMemberGEP(field->cname);
-        llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
-        llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-        Ops.push_back(llvm_constant_as_metadata(off));
-        Ops.push_back(llvm_constant_as_metadata(sz));
-        Ops.push_back(field->type->symbol->llvmTbaaNode);
-        ConstOps.push_back(llvm_constant_as_metadata(off));
-        ConstOps.push_back(llvm_constant_as_metadata(sz));
-        ConstOps.push_back(field->type->symbol->llvmConstTbaaNode);
-        llvmTbaaStructNode = llvm::MDNode::get(ctx, Ops);
-        llvmConstTbaaStructNode = llvm::MDNode::get(ctx, ConstOps);
-      }
+      unsigned gep = ct->getMemberGEP(field->cname);
+      llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
+      llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
+      Ops.push_back(llvm_constant_as_metadata(off));
+      Ops.push_back(llvm_constant_as_metadata(sz));
+      Ops.push_back(field->type->symbol->llvmTbaaAccessTag);
+      ConstOps.push_back(llvm_constant_as_metadata(off));
+      ConstOps.push_back(llvm_constant_as_metadata(sz));
+      ConstOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
     }
+    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, Ops);
+    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstOps);
   }
 #endif
 }
@@ -1168,12 +1181,19 @@ void FnSymbol::codegenPrototype() {
     std::vector<const char *> argumentNames;
 
     int numArgs = 0;
+    std::vector<int> refArgs;
     for_formals(arg, this) {
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(arg->codegenType().type);
       argumentNames.push_back(arg->cname);
+
+      arg->codegenType();
       numArgs++;
+      // LLVM Arguments indices in function API are 1-based not 0-based
+      // that's why we push numArgs after increment
+      if(arg->isRef())
+        refArgs.push_back(numArgs);
     }
 
     llvm::FunctionType *type = llvm::cast<llvm::FunctionType>(
@@ -1211,6 +1231,9 @@ void FnSymbol::codegenPrototype() {
                                : llvm::Function::InternalLinkage,
           cname,
           info->module);
+
+    for(auto argNumber : refArgs)
+      func->addAttribute(argNumber, llvm::Attribute::NonNull);
 
     int argID = 0;
     for(llvm::Function::arg_iterator ai = func->arg_begin();
@@ -1260,8 +1283,10 @@ void FnSymbol::codegenDef() {
     func = getFunctionLLVM(cname);
 
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT
-            && strcmp(llvmPrintIrName, name) == 0)
+            && strcmp(llvmPrintIrName, name) == 0) {
+        func->addFnAttr(llvm::Attribute::NoInline);
         llvmPrintIrCName = cname;
+    }
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
@@ -1283,10 +1308,12 @@ void FnSymbol::codegenDef() {
         continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
-        info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
+        llvm::Argument& llArg = *ai;
+        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(type));
       } else {
         GenRet gArg;
-        gArg.val = ai;
+        llvm::Argument& llArg = *ai;
+        gArg.val = &llArg;
         gArg.chplType = arg->typeInfo();
         GenRet tempVar = createTempVarWith(gArg);
 
@@ -1349,6 +1376,9 @@ void FnSymbol::codegenDef() {
     // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
+
+    // (note, in particular, the default pass manager's
+    //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
     if(llvmPrintIrStageNum == llvmStageNum::BASIC
             && strcmp(llvmPrintIrName, name) == 0)

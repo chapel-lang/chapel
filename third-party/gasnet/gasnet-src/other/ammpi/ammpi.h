@@ -25,7 +25,7 @@ AMMPI_BEGIN_EXTERNC
 #define _STRINGIFY_HELPER(x) #x
 #define _STRINGIFY(x) _STRINGIFY_HELPER(x)
 
-#define AMMPI_LIBRARY_VERSION      2.7
+#define AMMPI_LIBRARY_VERSION      2.8
 #define AMMPI_LIBRARY_VERSION_STR  _STRINGIFY(AMMPI_LIBRARY_VERSION)
 
 /* naming policy:
@@ -262,6 +262,8 @@ extern const ammpi_stats_t AMMPI_initial_stats; /* the "empty" values for counte
 #define amx_stats_t               ammpi_stats_t
 #define amx_handler_fn_t          ammpi_handler_fn_t
 #define AMX_FatalErr              AMMPI_FatalErr
+#define AMX_GetSourceId           AMMPI_GetSourceId
+#define AMX_enEqual               AMMPI_enEqual
 
 #if !defined(AMMPI_DEBUG) && !defined(AMMPI_NDEBUG)
   #if defined(GASNET_DEBUG) || defined(AMX_DEBUG)
@@ -296,9 +298,7 @@ extern const ammpi_stats_t AMMPI_initial_stats; /* the "empty" values for counte
 #endif
 
 #if defined(AMMPI_DEBUG) && (defined(__OPTIMIZE__) || defined(NDEBUG))
-  #ifndef _IN_GASNET_TESTS_DELAY_C
     #error Tried to compile AMMPI client code with optimization enabled but also AMMPI_DEBUG (which seriously hurts performance). Disable C and MPI_CC compiler optimization or reconfigure/rebuild without --enable-debug
-  #endif
 #endif
 
 #ifndef _CONCAT
@@ -339,7 +339,7 @@ extern int AM_SetTag(ep_t ea, tag_t tag);
 extern int AMMPI_Map(ep_t ea, int index, en_t *name, tag_t tag);
 extern int AMMPI_MapAny(ep_t ea, int *index, en_t *name, tag_t tag);
 #define AM_Map(ea, index, name, tag)    AMMPI_Map((ea), (index), &(name), (tag))
-#define AM_MapAny(ea, index, name, tag) AMMPI_Map((ea), (index), &(name), (tag))
+#define AM_MapAny(ea, index, name, tag) AMMPI_MapAny((ea), (index), &(name), (tag))
 extern int AM_UnMap(ep_t ea, int index);
 extern int AM_GetTranslationInuse(ep_t ea, int i);
 extern int AM_GetTranslationTag(ep_t ea, int i, tag_t *tag);
@@ -355,9 +355,9 @@ extern int _AM_SetHandler(ep_t ea, handler_t handler, ammpi_handler_fn_t functio
 extern int _AM_SetHandlerAny(ep_t ea, handler_t *handler, ammpi_handler_fn_t function);
 #define AM_SetHandlerAny(ea, handler, function) _AM_SetHandlerAny((ea), (handler), (ammpi_handler_fn_t)(function))
 #define AM_GetNumHandlers(ep, pnhandlers)  \
-  ((ep) ? ((*(pnhandlers) = AMMPI_MAX_NUMHANDLERS), AM_OK) : AM_ERR_BAD_ARG : AM_ERR_BAD_ARG)
+  ((ep) ? ((*(pnhandlers) = AMMPI_MAX_NUMHANDLERS), AM_OK) : AM_ERR_BAD_ARG)
 #define AM_SetNumHandlers(ep, nhandlers)  \
-  ((ep) ? ((nhandlers) == AMMPI_MAX_NUMHANDLERS ? AM_OK : AM_ERR_RESOURCE)
+  ((ep) ? ((nhandlers) == AMMPI_MAX_NUMHANDLERS ? AM_OK : AM_ERR_RESOURCE) : AM_ERR_BAD_ARG)
 
 /* Events */
 extern int AM_GetEventMask(eb_t eb, int *mask);
@@ -370,6 +370,7 @@ extern int AM_GetSourceEndpoint(void *token, en_t *gan);
 extern int AM_GetDestEndpoint(void *token, ep_t *endp);
 extern int AM_GetMsgTag(void *token, tag_t *tagp);
 extern int AMMPI_GetSourceId(void *token, int *srcid);
+extern int AMMPI_enEqual(en_t en1, en_t en2);
 
 /* Poll */
 extern int AM_Poll(eb_t bundle);

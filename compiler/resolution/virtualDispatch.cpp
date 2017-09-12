@@ -72,13 +72,18 @@ static bool isSubType(Type* sub, Type* super);
 ************************************** | *************************************/
 
 static void buildVirtualMaps();
+
 static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
+
 static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
+
 static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         Type*           ct,
+                                         AggregateType*  at,
                                          FnSymbol*       pfn);
-static void collectInstantiatedAggregateTypes(std::vector<AggregateType*>& icts,
-                                              AggregateType*               ct);
+
+static void collectInstantiatedAggregateTypes(
+                                        std::vector<AggregateType*>& icts,
+                                        AggregateType*               at);
 
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
@@ -88,7 +93,6 @@ static void filterVirtualChildren();
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 void resolveDynamicDispatches() {
@@ -296,7 +300,7 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   collectMethodsForVirtualMaps(methods, ct, pfn);
 
   forv_Vec(FnSymbol, cfn, methods) {
-    if (cfn && !cfn->instantiatedFrom) {
+    if (cfn != NULL && cfn->instantiatedFrom == NULL) {
       std::vector<AggregateType*> types;
 
       if (ct->symbol->hasFlag(FLAG_GENERIC)) {
@@ -386,7 +390,25 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
               USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
               USR_STOP();
+            } else if (fn->throwsError() != pfn->throwsError()) {
+              USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
+              const char* pfnThrowing = NULL;
+              const char* fnThrowing = NULL;
+
+              if (pfn->throwsError()) {
+                pfnThrowing = "throwing";
+                fnThrowing = "non-throwing";
+              } else {
+                pfnThrowing = "non-throwing";
+                fnThrowing = "throwing";
+              }
+
+              USR_FATAL_CONT(pfn, "%s function '%s'",pfnThrowing,toString(pfn));
+              USR_FATAL_CONT(fn, "overridden by %s function '%s'",
+                             fnThrowing, toString(fn));
+              USR_STOP();
             }
+
             {
               Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
               if (!fns) fns = new Vec<FnSymbol*>();
@@ -439,19 +461,20 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 // but does not add instantiated generics, since addToVirtualMaps
 // will instantiate again.
 static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         Type*           ct,
+                                         AggregateType*  ct,
                                          FnSymbol*       pfn) {
   Vec<FnSymbol*>      tmp;
   std::set<FnSymbol*> generics;
 
   // Gather the generic, concrete, instantiated methods
-  for (Type* fromType = ct;
+  for (AggregateType* fromType = ct;
        fromType != NULL;
        fromType = fromType->instantiatedFrom) {
 
     forv_Vec(FnSymbol, cfn, fromType->methods) {
-      if (cfn && possibleSignatureMatch(pfn, cfn))
+      if (cfn != NULL && possibleSignatureMatch(pfn, cfn) == true) {
         tmp.add(cfn);
+      }
     }
   }
 
@@ -460,17 +483,17 @@ static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
   // re-instantiate.
 
   // So, gather a set of generic versions.
-  forv_Vec(FnSymbol, cfn, tmp)
-    if (cfn->hasFlag(FLAG_GENERIC))
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->hasFlag(FLAG_GENERIC) == true) {
       generics.insert(cfn);
+    }
+  }
 
   // Then, add anything not instantiated from something in
   // the set.
   forv_Vec(FnSymbol, cfn, tmp) {
-    if (cfn->instantiatedFrom && generics.count(cfn->instantiatedFrom)) {
-      // skip it
-    } else {
-      // add it
+    if (cfn->instantiatedFrom                 == NULL ||
+        generics.count(cfn->instantiatedFrom) ==    0) {
       methods.add(cfn);
     }
   }
@@ -479,19 +502,22 @@ static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
 //
 // add to vector icts all types instantiated from ct
 //
-static void collectInstantiatedAggregateTypes(std::vector<AggregateType*>& icts,
-                                              AggregateType* ct) {
+static void collectInstantiatedAggregateTypes(
+                                        std::vector<AggregateType*>& icts,
+                                        AggregateType*               at) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    AggregateType* instanceT = toAggregateType(ts->type);
-    if (instanceT && instanceT->defaultTypeConstructor)
-      if (!ts->hasFlag(FLAG_GENERIC) &&
-          instanceT->defaultTypeConstructor->instantiatedFrom ==
-          ct->defaultTypeConstructor) {
-        icts.push_back(instanceT);
+    if (AggregateType* instanceT = toAggregateType(ts->type)) {
 
-        INT_ASSERT(isInstantiation(instanceT, ct));
-        INT_ASSERT(instanceT->instantiatedFrom == ct);
+      if (FnSymbol* fn = instanceT->defaultTypeConstructor) {
+        if (ts->hasFlag(FLAG_GENERIC) == false &&
+            fn->instantiatedFrom      == at->defaultTypeConstructor) {
+          icts.push_back(instanceT);
+
+          INT_ASSERT(isInstantiation(instanceT, at));
+          INT_ASSERT(instanceT->instantiatedFrom == at);
+        }
       }
+    }
   }
 }
 
@@ -571,7 +597,7 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 
 // Checks that types match.
 // Note - does not currently check that instantiated params match.
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
+bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name) {
     return false;
   }
@@ -617,143 +643,73 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
   return true;
 }
 
-
-
-
 /************************************* | **************************************
 *                                                                             *
+* At this point calls to class methods have been resolved to the most         *
+* specific method based on the static type of the receiver.  This phase       *
+* inspects every call to determine if 1 or more derived classes define an     *
+* override for the method.  These calls are generally be converted to be uses *
+* of PRIM_VIRTUAL_METHOD_CALL.  There are two exceptions:                     *
 *                                                                             *
+*    1) The receiver is "super".  This is intended to allow an overriding     *
+*       method to invoke the most specific method that is being overridden    *
+*       c.f. Java and Swift. It is likely that the current implementation     *
+*       (7/6/2017) is more general than this.                                 *
+*                                                                             *
+*    2) The call is to an init method.  The intent is to support uses of      *
+*       this.init(...) c.f. convenience initializers in Swift.  Note that     *
+*       super.init() is covered by exception 1.                               *
 *                                                                             *
 ************************************** | *************************************/
 
+static bool wasSuperDot(CallExpr* call);
+
 void insertDynamicDispatchCalls() {
-  // Select resolved calls whose function appears in the virtualChildrenMap.
-  // These are the dynamically-dispatched calls.
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (!call->parentSymbol) continue;
-    if (!call->getStmtExpr()) continue;
+    if (call->parentSymbol != NULL) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
 
-    FnSymbol* key = call->resolvedFunction();
+        if (virtualChildrenMap.get(fn) != NULL  &&   // There are overrides
+            wasSuperDot(call)          == false &&   // Not super.<foo>()
+            call->isNamed("init")      == false) {   // Not an initializer
+          SET_LINENO(call);
 
-    if (!key) continue;
+          // The variable <cid> must have the same size as the type
+          // of chpl__class_id / chpl_cid_* to ensure the value is
+          // transmitted correctly for a remote class.
+          // See test/classes/sungeun/remoteDynamicDispatch.chpl
+          // (on certain machines and configurations).
+          Type*      cidType = dtInt[INT_SIZE_32];
+          VarSymbol* cid     = newTemp("_virtual_method_tmp_", cidType);
 
-    Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
+          Expr*      _this   = call->get(2);
+          CallExpr*  getCid  = new CallExpr(PRIM_GETCID, _this->copy());
 
-    if (!fns) continue;
+          Expr*      stmt    = call->getStmtExpr();
 
-    SET_LINENO(call);
+          stmt->insertBefore(new DefExpr(cid));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, cid, getCid));
 
-    bool isSuperAccess = false;
-    if (SymExpr* base = toSymExpr(call->get(2))) {
-      isSuperAccess = base->symbol()->hasFlag(FLAG_SUPER_TEMP);
-    }
+          // Note that call->get(1) is re-defined by each insertion
+          call->get(1)->insertBefore(new SymExpr(cid));
+          call->get(1)->insertBefore(call->baseExpr->remove());
 
-    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && !isSuperAccess ) {
-      //
-      // change call of root method into virtual method call;
-      // Insert function SymExpr and virtual method temp at head of argument
-      // list.
-      //
-      // N.B.: The following variable must have the same size as the type of
-      // chpl__class_id / chpl_cid_* -- otherwise communication will cause
-      // problems when it tries to read the cid of a remote class.  See
-      // test/classes/sungeun/remoteDynamicDispatch.chpl (on certain
-      // machines and configurations).
-      VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
-      call->getStmtExpr()->insertBefore(new DefExpr(cid));
-      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
-      call->get(1)->insertBefore(new SymExpr(cid));
-      // "remove" here means VMT calls are not really "resolved".
-      // That is, calls to isResolved() return NULL.
-      call->get(1)->insertBefore(call->baseExpr->remove());
-      call->primitive = primitives[PRIM_VIRTUAL_METHOD_CALL];
-      // This clause leads to necessary reference temporaries not being inserted,
-      // while the clause below works correctly. <hilde>
-      // Increase --conditional-dynamic-dispatch-limit to see this.
-    } else {
-      forv_Vec(FnSymbol, fn, *fns) {
-        Type* type = fn->getFormal(2)->type;
-        CallExpr* subcall = call->copy();
-        SymExpr* tmp = new SymExpr(gNil);
-
-      // Build the IF block.
-        BlockStmt* ifBlock = new BlockStmt();
-        VarSymbol* cid = newTemp("_dynamic_dispatch_tmp_", dtBool);
-        ifBlock->insertAtTail(new DefExpr(cid));
-
-        Expr* getCid = NULL;
-        if (isSuperAccess) {
-          // We're in a call on the super type.  We already know the answer to
-          // this if conditional
-          getCid = new SymExpr(gFalse);
-        } else {
-          getCid = new CallExpr(PRIM_TESTCID, call->get(2)->copy(),
-                                type->symbol);
+          call->primitive = primitives[PRIM_VIRTUAL_METHOD_CALL];
         }
-
-        ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid, getCid));
-        VarSymbol* _ret = NULL;
-        if (key->retType != dtVoid) {
-          _ret = newTemp("_return_tmp_", key->retType);
-          ifBlock->insertAtTail(new DefExpr(_ret));
-        }
-      // Build the TRUE block.
-        BlockStmt* trueBlock = new BlockStmt();
-        if (fn->retType == key->retType) {
-          if (_ret)
-            trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret, subcall));
-          else
-            trueBlock->insertAtTail(subcall);
-        } else if (isSubType(fn->retType, key->retType)) {
-          // Insert a cast to the overridden method's return type
-          VarSymbol* castTemp = newTemp("_cast_tmp_", fn->retType);
-          trueBlock->insertAtTail(new DefExpr(castTemp));
-          trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, castTemp,
-                                               subcall));
-          INT_ASSERT(_ret);
-          trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret,
-                                    new CallExpr(PRIM_CAST,
-                                                 key->retType->symbol,
-                                                 castTemp)));
-        } else
-          INT_FATAL(key, "unexpected case");
-
-      // Build the FALSE block.
-        BlockStmt* falseBlock = NULL;
-        if (_ret)
-          falseBlock = new BlockStmt(new CallExpr(PRIM_MOVE, _ret, tmp));
-        else
-          falseBlock = new BlockStmt(tmp);
-
-        ifBlock->insertAtTail(new CondStmt(
-                                new SymExpr(cid),
-                                trueBlock,
-                                falseBlock));
-        if (key->retType == dtUnknown)
-          INT_FATAL(call, "bad parent virtual function return type");
-        call->getStmtExpr()->insertBefore(ifBlock);
-        if (_ret)
-          call->replace(new SymExpr(_ret));
-        else
-          call->remove();
-        tmp->replace(call);
-        subcall->baseExpr->replace(new SymExpr(fn));
-        if (SymExpr* se = toSymExpr(subcall->get(2))) {
-          VarSymbol* tmp = newTemp("_cast_tmp_", type);
-          se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new
-                CallExpr(PRIM_CAST, type->symbol, se->symbol())));
-          se->replace(new SymExpr(tmp));
-        } else if (CallExpr* ce = toCallExpr(subcall->get(2)))
-          if (ce->isPrimitive(PRIM_CAST))
-            ce->get(1)->replace(new SymExpr(type->symbol));
-          else
-            INT_FATAL(subcall, "unexpected");
-        else
-          INT_FATAL(subcall, "unexpected");
       }
     }
   }
+}
+
+// Return true if this call was originally super.<method>()
+static bool wasSuperDot(CallExpr* call) {
+  bool retval = false;
+
+  if (SymExpr* base = toSymExpr(call->get(2))) {
+    retval = base->symbol()->hasFlag(FLAG_SUPER_TEMP);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************

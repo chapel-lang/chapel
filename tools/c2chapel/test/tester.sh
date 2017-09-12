@@ -2,9 +2,16 @@
 
 # This script must be run within c2chapel/test
 
-NORMAL="\033[0m"
-RED="\033[0;31m"
-GREEN="\033[0;32m"
+# Only use colors for stdout with a color-supporting terminal
+if test -t 1; then
+  nc=$(tput colors)
+
+  if test $? -eq 0 && test $nc -ge 8; then
+    NORMAL=$(tput sgr0)
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+  fi
+fi
 
 if ! type "c2chapel" > /dev/null 2>&1; then
   printf "${RED}Failure: c2chapel command not found${NORMAL}\n"

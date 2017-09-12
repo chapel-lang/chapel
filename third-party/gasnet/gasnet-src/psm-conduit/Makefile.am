@@ -12,21 +12,21 @@ CONDUIT_NAME=psm
 ##
 ## SSH bootstrap support (built unless fork() is unavailable)
 ##
-if IBV_BOOTSTRAP_SSH
+if HAVE_BOOTSTRAP_SSH
 ssh_defines = -DHAVE_SSH_SPAWNER
 ssh_srcdir = $(top_srcdir)/other/ssh-spawner
 ssh_sources = $(ssh_srcdir)/gasnet_bootstrap_ssh.c
-ssh_deps = $(ssh_srcdir)/*.h
+ssh_deps = $(ssh_srcdir)/*.[ch]
 endif
 
 ##
 ## MPI bootstrap support (optional)
 ## XXX: should have a way to control this independent of MPI conduit
 ##
-if IBV_BOOTSTRAP_MPI
+if HAVE_BOOTSTRAP_MPI
 mpi_defines = -DHAVE_MPI_SPAWNER
 mpi_srcdir = $(top_srcdir)/other/mpi-spawner
-mpi_deps = $(mpi_srcdir)/*.h $(mpi_srcdir)/*.c
+mpi_deps = $(mpi_srcdir)/*.[ch]
 # We must compile this one object with MPI_CC.
 mpi_special_objs = $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o
 $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
@@ -38,10 +38,10 @@ endif
 ## PMI bootstrap support (optional)
 ##
 if HAVE_BOOTSTRAP_PMI
-pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_INCLUDES@
+pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_CFLAGS@
 pmi_srcdir = $(top_srcdir)/other/pmi-spawner
 pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
-pmi_deps = $(pmi_srcdir)/*.h
+pmi_deps = $(pmi_srcdir)/*.[ch]
 endif
 
 # any conduit-specific subdirectories containing Makefile.am's
@@ -74,7 +74,7 @@ CONDUIT_SOURCELIST =          \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @PSM_INCLUDE@ $(ssh_defines) $(mpi_defines) $(pmi_cppflags)
+CONDUIT_EXTRALIBCFLAGS = @PSM_CFLAGS@ $(ssh_defines) $(mpi_defines) $(pmi_cppflags)
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS =

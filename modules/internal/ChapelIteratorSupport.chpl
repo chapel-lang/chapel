@@ -35,6 +35,7 @@
   be moved to a standard module and will likely require a ``use`` statement to
   make it available.
  */
+pragma "error mode fatal" // avoid compiler errors here
 module ChapelIteratorSupport {
   use ChapelStandard;
 

@@ -573,13 +573,14 @@ Known Constraints and Bugs
 * Our PBS launcher explicitly supports PBS Pro, Moab/Torque, and the
   NCCS site versions of PBS.  It may also work with other versions.
   If our PBS launcher does not work for you, you can fall back on a
-  more manual launch of your program.  For example:
+  more manual launch of your program. For example, supposing the
+  program is compiled to ``myprogram``:
 
-  - Launch the ``a.out_real`` binary manually using aprun and your own
+  - Launch the ``myprogram_real`` binary manually using aprun and your own
     qsub script or command.
 
-  - Use ``./a.out --generate-qsub-script`` to generate a qsub script.
-    Then edit the generated script and launch the ``a.out_real`` binary
+  - Use ``./myprogram --generate-qsub-script`` to generate a qsub script.
+    Then edit the generated script and launch the ``myprogram_real`` binary
     manually as above.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub

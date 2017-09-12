@@ -178,12 +178,13 @@ class FTree {
     const coeffDom: domain(1);
     const tree    : [LocaleSpace] LocTree;
 
-    proc FTree(order: int) {
+    proc init(order: int) {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
         this.order = order;
         this.coeffDom = {0..order-1};
+        super.init();
 
         coforall loc in Locales do
             on loc do tree[loc.id] = new LocTree(coeffDom);

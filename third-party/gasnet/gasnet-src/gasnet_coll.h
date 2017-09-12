@@ -10,6 +10,7 @@
 #include <gasnet.h>
 
 GASNETI_BEGIN_EXTERNC
+GASNETI_BEGIN_NOWARN
 #define GASNETI_COLL_FN_HEADER(FNNAME) extern
 /*---------------------------------------------------------------------------------*/
 /* Flag values: */
@@ -690,6 +691,7 @@ void _gasnet_coll_scanM(gasnet_team_handle_t team,
 
 #undef GASNETI_COLL_FN_HEADER
 
+GASNETI_END_NOWARN
 GASNETI_END_EXTERNC
 
 #endif

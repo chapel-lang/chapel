@@ -7,4 +7,4 @@ var b = a;
 
 if b == a then writeln("OK");
 
-_ddata_free(a);
+_ddata_free(a, size);

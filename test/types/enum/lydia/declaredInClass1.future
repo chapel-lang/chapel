@@ -1,0 +1,8 @@
+bug: enums declared in class scope can't have fields use their constants via explicit naming
+
+The spec says that it is legal to declare an enum within the top level scope of
+a class (as well as classes, records, and unions).  However, trying to use one
+of the constants declared in that enum as the initial value of field runs into
+issues.
+
+This future covers trying to use a constant with explicit naming.

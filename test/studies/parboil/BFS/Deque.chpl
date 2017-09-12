@@ -19,7 +19,9 @@ module Deque {
   record deque {
     type eltType;
     var d: deque_t;
-    proc deque(type eltType) {
+    proc init(type eltType) {
+      this.eltType = eltType;
+      super.init();
       deque_init(sizeof(eltType), d, 0);
     }
     proc deinit() {

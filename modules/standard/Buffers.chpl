@@ -149,7 +149,7 @@ module Buffers {
   proc bytes.bytes(len:int(64)) {
     var error:syserr = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
-    if error then ioerror(error, "in bytes constructor");
+    if error then try! ioerror(error, "in bytes constructor");
     // The buffer is retained internally on construction, but only on success.
     this.home = here;
   }
@@ -164,10 +164,10 @@ module Buffers {
     return ret;
   }
   pragma "no doc"
-  private proc create_iobuf():bytes {
+  private proc create_iobuf():bytes throws {
     var err:syserr = ENOERR;
     var ret = create_iobuf(err);
-    if err then ioerror(err, "in create_iobuf");
+    if err then try ioerror(err, "in create_iobuf");
     return ret;
   }
 
@@ -311,11 +311,11 @@ module Buffers {
     error = qbuffer_create(this._buf_internal);
   }
   pragma "no doc"
-  proc buffer.buffer() {
+  proc buffer.buffer() throws {
     var error:syserr = ENOERR;
     this.home = here;
     error = qbuffer_create(this._buf_internal);
-    if error then ioerror(error, "in buffer constructor");
+    if error then try ioerror(error, "in buffer constructor");
   }
   /*
      defaultOf appears to be unnecessary since the initializer
@@ -347,7 +347,8 @@ module Buffers {
     } else {
       var dst_locale = here;
       var dst_len:int(64) = range.len;
-      ret = new bytes(dst_len);
+      ret = new bytes(dst_len, error=error);
+      if error then return ret;
       var dst_addr = qbytes_data(ret._bytes_internal);
       on this.home {
         // Copy the buffer to the bytes...
@@ -361,12 +362,12 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.flatten(range:buffer_range) {
+  proc buffer.flatten(range:buffer_range) throws {
   //proc buffer.flatten(range:buffer_range):bytes {
     var error:syserr = ENOERR;
     var ret:bytes = new bytes();
     ret = this.flatten(range,error);
-    if error then ioerror(error, "in buffer.flatten");
+    if error then try ioerror(error, "in buffer.flatten");
     return ret;
   }
 
@@ -387,7 +388,11 @@ module Buffers {
         end_offset = qbuffer_end_offset(x._buf_internal);
       }
 
-      var b = new bytes(end_offset - start_offset);
+      var allocErr:syserr = ENOERR;
+      var b = new bytes(end_offset - start_offset, error=allocErr);
+      if allocErr then
+        try! ioerror(allocErr, "could not allocate bytes in buffer copy");
+
       var len = qbytes_len(b._bytes_internal);
       var ptr = qbytes_data(b._bytes_internal);
 
@@ -402,16 +407,20 @@ module Buffers {
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
-        if err then ioerror(err, "in buffer init copy");
+        if err then try! ioerror(err, "put failed in buffer copy");
       }
 
-      ret.append(b);
+      var appendErr:syserr = ENOERR;
+      ret.append(b, error=appendErr);
+      if appendErr then
+        try! ioerror(appendErr, "append failed in buffer copy");
+
       return ret;
     }
   }
 
   pragma "no doc"
-  proc =(ref ret:buffer, x:buffer) {
+  proc =(ref ret:buffer, x:buffer) throws {
     ret.home = here;
     // retain -- release
     if( x.home == ret.home ) {
@@ -453,7 +462,7 @@ module Buffers {
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
-        if err then ioerror(err, "in buffer assignment");
+        if err then try ioerror(err, "in buffer assignment");
       }
 
       ret.append(b);
@@ -498,10 +507,10 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
+  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
     var err:syserr = ENOERR;
     this.append(b, skip_bytes, len_bytes, err);
-    if err then ioerror(err, "in buffer.append");
+    if err then try ioerror(err, "in buffer.append");
   }
 
   /* Append a :record:`buffer` object to a :record:`buffer`.
@@ -522,10 +531,10 @@ module Buffers {
     }
   }
   pragma "no doc"
-  proc buffer.append(buf:buffer, part:buffer_range = buf.all()) {
+  proc buffer.append(buf:buffer, part:buffer_range = buf.all()) throws {
     var err:syserr = ENOERR;
     this.append(buf, part, err);
-    if err then ioerror(err, "in buffer.append");
+    if err then try ioerror(err, "in buffer.append");
   }
 
   /* Prepend a :record:`bytes` object to a :record:`buffer`.
@@ -547,10 +556,10 @@ module Buffers {
     }
   }
   pragma "no doc"
-  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
+  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
     var err:syserr = ENOERR;
     this.prepend(b, skip_bytes, len_bytes, err);
-    if err then ioerror(err, "in buffer.prepend");
+    if err then try ioerror(err, "in buffer.prepend");
   }
 
   /* :return: a :record:`buffer_iterator` to the start of a buffer */
@@ -686,10 +695,10 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator throws {
     var err:syserr = ENOERR;
     var ret = this.copyout(it, value, err);
-    if err then ioerror(err, "in buffer.copyout");
+    if err then try ioerror(err, "in buffer.copyout");
     return ret;
   }
 
@@ -757,10 +766,10 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
+  proc buffer.copyin( it:buffer_iterator, value):buffer_iterator throws {
     var err:syserr = ENOERR;
     var ret = this.copyin(it, value, err);
-    if err then ioerror(err, "in buffer.copyin");
+    if err then try ioerror(err, "in buffer.copyin");
     return ret;
   }
 }

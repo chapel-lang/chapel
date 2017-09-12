@@ -17,7 +17,7 @@ writeln(A, "\n");
 assignViaZip(A[1..3, 1..3], A[4..6, 4..6]);
 writeln(A, "\n");
 
-assignViaZip(A[1..3, 1..3], A[7..9, 7..9].reindex({4..6, 4..6}));
+assignViaZip(A[1..3, 1..3], A[7..9, 7..9].reindex(4..6, 4..6));
 writeln(A, "\n");
 
 assignViaZip(A[2, 1..3], B[1..3]);
@@ -38,7 +38,7 @@ writeln(A, "\n");
 assignViaZip(A[4..6, 4..6], A[1..3, 1..3]);
 writeln(A, "\n");
 
-assignViaZip(A[7..9, 7..9].reindex({4..6, 4..6}), A[1..3, 1..3]);
+assignViaZip(A[7..9, 7..9].reindex(4..6, 4..6), A[1..3, 1..3]);
 writeln(A, "\n");
 
 assignViaZip(B[1..3], A[2, 1..3]);

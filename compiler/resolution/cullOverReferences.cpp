@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -82,13 +83,16 @@ static bool shouldTrace(Symbol* sym)
 
 typedef enum {
   USE_REF = 1,
-  USE_CONST_REF = 2,
-  USE_VALUE = 3
+  USE_CONST_REF,
+  USE_VALUE,
 } choose_type_t;
 
 static bool symExprIsSet(SymExpr* sym);
 static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
+static void lowerContextCallPreferRefConstRef(ContextCallExpr* cc);
+static void lowerContextCallPreferConstRefValue(ContextCallExpr* cc);
+static void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst);
 
@@ -205,6 +209,13 @@ bool symExprIsUsedAsConstRef(SymExpr* use) {
       if (call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         Symbol* lhsSymbol = lhs->symbol();
+
+        if (lhsSymbol->hasFlag(FLAG_REF_VAR)) {
+          // intended to handle 'const ref'
+          // it would be an error to reach this point if it is not const
+          INT_ASSERT(lhsSymbol->hasFlag(FLAG_CONST));
+          return true;
+        }
 
         if (lhs != use &&
             lhsSymbol->isRef() &&
@@ -603,6 +614,22 @@ struct IteratorDetails {
   }
 };
 
+/* Given chpl_iter for a "new-style" forall loop ie generated from ForallStmt,
+   find the corresponding chpl__iterLF variable, if it exists.
+   That's because it has the corresponding _build_tuple call that
+   we can extract information from.
+ */
+static Symbol* findNewIterLF(Symbol* chpl_iter) {
+  INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterPAR"));
+  Expr* iprev = chpl_iter->defPoint->prev;
+  if (!iprev) return NULL;
+  DefExpr* defExp = toDefExpr(iprev->prev);
+  if (!defExp) return NULL;
+  Symbol* defSym = defExp->sym;
+  if (!defSym->hasFlag(FLAG_CHPL__ITER)) return NULL;
+  INT_ASSERT(!strcmp(defSym->name, "chpl__iterLF"));
+  return defSym;
+}
 
 /* Collapse compiler-introduced copies of references
    to variables marked "index var"
@@ -719,6 +746,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
   bool isFollower = (0 == strcmp(index->name, "chpl__followIdx") ||
                      0 == strcmp(index->name, "chpl__fastFollowIdx"));
   bool isLeader = (0 == strcmp(index->name, "chpl__leadIdx"));
+  bool isPar = (0 == strcmp(index->name, "chpl__parIdx"));
 
   if (isFollower) {
     // Find the leader loop and run the analysis on that.
@@ -754,10 +782,22 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 
   bool forall = (chpl_iter != NULL);
+  // MPF: should be the same as isLoweredForallLoop but it isn't yet
+  //INT_ASSERT(forall == forLoop->isLoweredForallLoop());
   bool zippered = forLoop->zipperedGet() &&
                   (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
                    (chpl_iter != NULL &&
                     chpl_iter->type->symbol->hasFlag(FLAG_TUPLE)));
+
+  // Adjust for new-style forall loops - the counterpart of chpl_iter.
+  Symbol* newIterLF = (forall && isPar) ? findNewIterLF(chpl_iter) : NULL;
+  if (newIterLF) {
+    isLeader = true;
+    if (SymExpr* useSE = newIterLF->getSingleUse())
+      if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
+        if (useCall->isNamed("_toFollowerZip"))
+          zippered = true;
+  }
 
   isForall = forall;
   detailsVector.clear();
@@ -977,7 +1017,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       // Find the iterables
 
-      SymExpr* def = chpl_iter->getSingleDef();
+      SymExpr* def = (newIterLF ? newIterLF : chpl_iter)->getSingleDef();
       CallExpr* move = toCallExpr(def->parentExpr);
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
@@ -1043,6 +1083,22 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 }
 
+
+static bool considerAllowRefCall(CallExpr* move, FnSymbol* calledFn) {
+  if (! calledFn->hasFlag(FLAG_ALLOW_REF) )
+    return true;
+
+  // Also allow _build_tuple_always_allow_ref into user index vars, ex.
+  //   forall tup in zip(A,B) ...
+  //   functions/ferguson/ref-pair/iterating-over-arrays.chpl
+  Symbol* lhs = toSymExpr(move->get(1))->symbol();
+  if (lhs->hasFlag(FLAG_INDEX_VAR) && !lhs->hasFlag(FLAG_TEMP))
+    return true;
+
+  // workaround for compiler-introduced
+  // _build_tuple_always_allow_ref calls
+  return false;
+}
 
 static
 bool isRefOrTupleWithRef(Symbol* index, int tupleElement)
@@ -1309,6 +1365,13 @@ void cullOverReferences() {
                   FnSymbol* iteratorFn  = detailsVector[i].iterator;
                   SymExpr* iterableSe = toSymExpr(iterable);
 
+                  // Also check if we are iterating using these() method
+                  // ex. functions/ferguson/ref-pair/const-error-iterated*
+                  if (!iterableSe)
+                    if (CallExpr* iterableCall = toCallExpr(iterable))
+                      if (iterableCall->isNamed("these"))
+                        iterableSe = toSymExpr(iterableCall->get(1));
+
                   /*
                   printf("  i %i\n", (int) i);
                   printf("  iterable %i %i\n", iterableSe->symbol()->id, iterableTupleElement);
@@ -1360,9 +1423,7 @@ void cullOverReferences() {
           if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
             if (CallExpr* move = toCallExpr(call->parentExpr)) {
               if (move->isPrimitive(PRIM_MOVE) &&
-                  // workaround for compiler-introduced
-                  // _build_tuple_always_allow_ref calls
-                  ! calledFn->hasFlag(FLAG_ALLOW_REF)) {
+                  considerAllowRefCall(move, calledFn)) {
                 SymExpr* lhs       = toSymExpr(move->get(1));
                 Symbol*  lhsSymbol = lhs->symbol();
                 int      j         = 1;
@@ -1684,26 +1745,19 @@ void cullOverReferences() {
 
     CallExpr* move = toCallExpr(cc->parentExpr);
 
-    choose_type_t which = USE_CONST_REF;
+    bool notConst = false;
+    Symbol* lhsSymbol = NULL;
 
     if (move) {
       SymExpr* lhs = toSymExpr(move->get(1));
-      Symbol* lhsSymbol = lhs->symbol();
+      lhsSymbol = lhs->symbol();
       Qualifier qual = lhsSymbol->qualType().getQual();
 
-      INT_ASSERT(qual == QUAL_REF || qual == QUAL_CONST_REF);
       if (qual == QUAL_REF)
-        which = USE_REF;
-      else {
-        // Check: should we use the const-ref or value version?
-        // Use value version if it's never passed/returned as const ref
-        which = USE_VALUE;
-        if (symbolIsUsedAsConstRef(lhsSymbol))
-          which = USE_CONST_REF;
-      }
+        notConst = true;
     }
 
-    lowerContextCall(cc, which);
+    lowerContextCallComputeConstRef(cc, notConst, lhsSymbol);
   }
 
   // We already changed INTENT_REF_MAYBE_CONST in
@@ -1718,15 +1772,20 @@ void cullOverReferences() {
 static
 bool firstPassLowerContextCall(ContextCallExpr* cc)
 {
-  CallExpr* refCall = cc->getRefCall();
-  CallExpr* valueCall = cc->getRValueCall();
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
 
-  INT_ASSERT(refCall && valueCall);
+  cc->getCalls(refCall, valueCall, constRefCall);
 
-  FnSymbol* refFn = refCall->resolvedFunction();
-  INT_ASSERT(refFn);
-  FnSymbol* valueFn = valueCall->resolvedFunction();
-  INT_ASSERT(valueFn);
+  INT_ASSERT(refCall || valueCall || constRefCall);
+
+  CallExpr* someCall = refCall;
+  if (someCall == NULL) someCall = constRefCall;
+  if (someCall == NULL) someCall = valueCall;
+
+  FnSymbol* fn = someCall->resolvedFunction();
+  INT_ASSERT(fn);
 
   CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
   SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
@@ -1738,8 +1797,8 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
   //  would require specific support for iterators since yielding
   //  is not the same as returning.)
   move = toCallExpr(cc->parentExpr);
-  if (refFn->isIterator()) {
-    lowerContextCall(cc, USE_REF);
+  if (fn->isIterator()) {
+    lowerContextCallPreferRefConstRef(cc);
     return true;
   } else if (move) {
     INT_ASSERT(move->isPrimitive(PRIM_MOVE));
@@ -1753,11 +1812,87 @@ bool firstPassLowerContextCall(ContextCallExpr* cc)
     // should use 'getter'
     // MPF - note 2016-01: this code does not seem to be triggered
     // in the present compiler.
-    lowerContextCall(cc, USE_CONST_REF);
+    lowerContextCallPreferConstRefValue(cc);
     return true;
   }
 }
 
+static
+void lowerContextCallPreferRefConstRef(ContextCallExpr* cc)
+{
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  choose_type_t which;
+
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  if (refCall) {
+    which = USE_REF;
+  } else if(constRefCall) {
+    which = USE_CONST_REF;
+  } else {
+    which = USE_VALUE;
+    INT_ASSERT("lowering context call with only 1 option");
+  }
+
+  lowerContextCall(cc, which);
+}
+
+static
+void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
+{
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  choose_type_t which;
+
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  if(constRefCall) {
+    which = USE_CONST_REF;
+  } else if(valueCall) {
+    which = USE_VALUE;
+  } else {
+    which = USE_REF;
+    INT_ASSERT("lowering context call with only 1 option");
+  }
+
+  lowerContextCall(cc, which);
+}
+
+static
+void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol)
+{
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  choose_type_t which = USE_CONST_REF;
+
+  cc->getCalls(refCall, valueCall, constRefCall);
+
+  if (notConst) {
+    which = USE_REF;
+    // it would be a program error if the ref version didn't exist
+  } else {
+    // Check: should we use the const-ref or value version?
+    // Use value version if it's never passed/returned as const ref
+    if (valueCall != NULL && constRefCall != NULL) {
+      if (lhsSymbol == NULL || symbolIsUsedAsConstRef(lhsSymbol))
+        which = USE_CONST_REF;
+      else
+        which = USE_VALUE;
+    } else {
+      // Use whichever value version we have.
+      if (constRefCall != NULL)
+        which = USE_CONST_REF;
+      else
+        which = USE_VALUE;
+    }
+  }
+
+  lowerContextCall(cc, which);
+}
 
 static
 void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
@@ -1768,10 +1903,22 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
-  // For now, ref version is required for a ref-pair
-  INT_ASSERT(refCall);
-  FnSymbol* refFn = refCall->resolvedFunction();
-  INT_ASSERT(refFn);
+  // Check that whatever was selected is available.
+  if (which == USE_REF)
+    INT_ASSERT(refCall != NULL);
+  if (which == USE_CONST_REF)
+    INT_ASSERT(constRefCall != NULL);
+  if (which == USE_VALUE)
+    INT_ASSERT(valueCall != NULL);
+  
+  CallExpr* someCall = refCall;
+  if (someCall == NULL) someCall = constRefCall;
+  if (someCall == NULL) someCall = valueCall;
+
+  FnSymbol* fn = someCall->resolvedFunction();
+  INT_ASSERT(fn);
+
+  // TODO tidy up below based upon the above assumptions.
 
   bool useValueCall = (which == USE_VALUE || which == USE_CONST_REF);
   CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
@@ -1784,9 +1931,10 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
   //  would require specific support for iterators since yielding
   //  is not the same as returning.)
   move = toCallExpr(cc->parentExpr);
-  if (refFn->isIterator())
+  if (fn->isIterator()) {
+    INT_ASSERT(which == USE_REF);
     useValueCall = false;
-  else if (move) {
+  } else if (move) {
     lhs = toSymExpr(move->get(1));
     // useValueCall set from useSetter argument to this function
   } else {
@@ -1796,9 +1944,10 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
     // MPF - note 2016-01: this code does not seem to be triggered
     // in the present compiler.
     useValueCall = true;
+    INT_ASSERT(which == USE_CONST_REF || which == USE_VALUE);
   }
 
-  refCall->remove();
+  if (refCall) refCall->remove();
   if (valueCall) valueCall->remove();
   if (constRefCall) constRefCall->remove();
 
@@ -1875,7 +2024,8 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
   } else {
     // Replace the ContextCallExpr with the ref call
-    cc->replace(refCall);
+    if (refCall) cc->replace(refCall);
+    else if(constRefCall) cc->replace(constRefCall);
   }
 }
 
@@ -2009,6 +2159,11 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
         // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
         if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+          error = false;
+        }
+
+        // A 'const' record should be able to be initialized
+        if (calledFn->name == astrInit) {
           error = false;
         }
 

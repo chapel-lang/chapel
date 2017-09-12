@@ -155,10 +155,10 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
                          gasneti_current_loc);                                 \
     if_pf (_ptr == NULL || !segtest(_node,_ptr,_nbytes))                       \
       gasneti_fatalerror("Remote address out of range "                        \
-         "(node=%lu ptr=" GASNETI_LADDRFMT" nbytes=%lu) at %s"                 \
+         "(node=%lu ptr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR ") at %s"        \
          "\n  clientsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")"       \
          "\n    fullsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")",      \
-         (unsigned long)_node, GASNETI_LADDRSTR(_ptr), (unsigned long)_nbytes, \
+         (unsigned long)_node, GASNETI_LADDRSTR(_ptr), (uintptr_t)_nbytes,     \
          gasneti_current_loc,                                                  \
          GASNETI_LADDRSTR(gasneti_seginfo_client[_node].addr),                 \
          GASNETI_LADDRSTR(gasneti_seginfo_client_ub[_node]),                   \
@@ -406,13 +406,18 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
        So, PLEASE don't add GASNETI_UNUSED annotations here. */
 
   #if GASNETI_LAZY_BEGINFUNCTION
+    // bug 3498: Ensure a sequence point after the assignment to gasnete_threadinfo_cache
+    GASNETI_INLINE(gasneti_lazy_get_threadinfo) GASNETI_WARN_UNUSED_RESULT
+    gasnet_threadinfo_t gasneti_lazy_get_threadinfo(gasnet_threadinfo_t * const _p_ti, 
+                                                    gasnet_threadinfo_t _ti_val) {
+      return (*_p_ti = _ti_val);
+    }
     #define GASNET_GET_THREADINFO()                              \
       ( (sizeof(gasnete_threadinfo_available) == 1) ?            \
         (gasnet_threadinfo_t)gasnete_mythread() :                \
-        ( (uintptr_t)gasnete_threadinfo_cache == 0 ?             \
-          (gasnete_threadinfo_cache =                            \
-            (gasnet_threadinfo_t)gasnete_mythread()) :           \
-          gasnete_threadinfo_cache) )
+        (GASNETT_PREDICT_TRUE(gasnete_threadinfo_cache) ? gasnete_threadinfo_cache :   \
+        gasneti_lazy_get_threadinfo(&gasnete_threadinfo_cache,(gasnet_threadinfo_t)gasnete_mythread()))  \
+      )
   #else
     #define GASNET_GET_THREADINFO()                   \
       ( (sizeof(gasnete_threadinfo_available) == 1) ? \
@@ -433,8 +438,12 @@ extern uint64_t gasnet_max_segsize; /* client-overrideable max segment size */
   #endif
 
 #else
-  #define GASNET_POST_THREADINFO(info)   \
-    static uint8_t gasnete_dummy = sizeof(gasnete_dummy) /* prevent a parse error */
+  #if GASNET_DEBUG
+    #define GASNET_POST_THREADINFO(info)   \
+      static uint8_t gasnete_dummy = sizeof(gasnete_dummy) /* diagnose duplicate POST in a scope */
+  #else
+    #define GASNET_POST_THREADINFO(info) ((void)0)
+  #endif
   #define GASNET_GET_THREADINFO() (NULL)
   #define GASNET_BEGIN_FUNCTION() GASNET_POST_THREADINFO(GASNET_GET_THREADINFO())
 #endif
@@ -568,7 +577,9 @@ typedef void (*gasneti_progressfn_t)(void);
     extern int gasnetc_AMPoll(void);
   #endif
 
-  #if GASNETI_THROTTLE_FEATURE_ENABLED && (GASNET_PAR || GASNETI_CONDUIT_THREADS)
+  #if GASNETI_THROTTLE_FEATURE_ENABLED /* enabled by configure */ \
+      && GASNETC_USING_SUSPEND_RESUME /* implemented by the conduit */ \
+      && (GASNET_PAR || GASNETI_CONDUIT_THREADS) /* appropriate threading mode */
     #define GASNETI_THROTTLE_POLLERS 1
   #else
     #define GASNETI_THROTTLE_POLLERS 0
@@ -747,17 +758,17 @@ extern int gasneti_wait_mode; /* current waitmode hint */
 #endif
 
 #ifndef _GASNET_MYNODE
-#define _GASNET_MYNODE
-#define _GASNET_MYNODE_DEFAULT
   extern gasnet_node_t gasneti_mynode;
   #define gasnet_mynode() (GASNETI_CHECKINIT(), (gasnet_node_t)gasneti_mynode)
+#else
+  #error "Unsupported define of _GASNET_MYNODE"
 #endif
 
 #ifndef _GASNET_NODES
-#define _GASNET_NODES
-#define _GASNET_NODES_DEFAULT
   extern gasnet_node_t gasneti_nodes;
   #define gasnet_nodes() (GASNETI_CHECKINIT(), (gasnet_node_t)gasneti_nodes)
+#else
+  #error "Unsupported define of _GASNET_NODES"  
 #endif
 
 #ifndef _GASNET_GETMAXSEGMENTSIZE

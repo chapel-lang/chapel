@@ -87,6 +87,11 @@ public:
   virtual void   exitBlockStmt       (BlockStmt*         node);
 
   virtual void   visitForallIntents  (ForallIntents*   clause);
+  virtual bool   enterForallIntent   (ForallIntent*    intent);
+  virtual void   exitForallIntent    (ForallIntent*    intent);
+
+  virtual bool   enterForallStmt     (ForallStmt*        node);
+  virtual void   exitForallStmt      (ForallStmt*        node);
 
   virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
   virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
@@ -113,6 +118,9 @@ public:
 
   virtual bool   enterForwardingStmt (ForwardingStmt*    node);
   virtual void   exitForwardingStmt  (ForwardingStmt*    node);
+
+  virtual bool   enterDeferStmt      (DeferStmt*         node);
+  virtual void   exitDeferStmt       (DeferStmt*         node);
 
   virtual bool   enterTryStmt        (TryStmt*           node);
   virtual void   exitTryStmt         (TryStmt*           node);

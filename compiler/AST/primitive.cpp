@@ -24,6 +24,7 @@
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
+#include "wellknown.h"
 
 static QualifiedType
 returnInfoUnknown(CallExpr* call) {
@@ -59,6 +60,19 @@ static QualifiedType
 returnInfoStringCopy(CallExpr* call) {
   return QualifiedType(dtStringCopy, QUAL_VAL);
 }
+
+static QualifiedType
+returnInfoWideMake(CallExpr* call) {
+  Type* t1 = call->get(1)->typeInfo();
+  if (t1->symbol->hasFlag(FLAG_REF))
+    INT_FATAL("ref not supported here yet");
+
+  if (wideClassMap.get(t1))
+    t1 = wideClassMap.get(t1);
+
+  return QualifiedType(t1, QUAL_VAL);
+}
+
 
 static QualifiedType
 returnInfoLocaleID(CallExpr* call) {
@@ -535,6 +549,10 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
+  prim_def(PRIM_GET_DYNAMIC_END_COUNT, "get dynamic end count", returnInfoEndCount);
+  prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
+
+
   // task primitives
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
@@ -567,7 +585,6 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
-  prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
@@ -605,6 +622,7 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
+  prim_def(PRIM_WIDE_MAKE, "_wide_make", returnInfoWideMake, false, true);
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
   // MPF - 10/9/2015 - neither _wide_get_node nor _wide_get_addr
   // is used in the module or test code. insertWideReferences uses
@@ -664,7 +682,10 @@ initPrimitive() {
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
   prim_def(PRIM_FIELD_BY_NUM, "field by num", returnInfoUnknown);
+  prim_def(PRIM_CLASS_NAME_BY_ID, "class name by id", returnInfoStringC);
+
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
+  prim_def(PRIM_IS_EXTERN_CLASS_TYPE, "is extern class type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
@@ -696,6 +717,8 @@ initPrimitive() {
   prim_def(PRIM_STACK_ALLOCATE_CLASS, "stack allocate class", returnInfoFirst);
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
+
+  prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
@@ -741,15 +764,3 @@ bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src)
 
   return false;
 }
-
-void makeNoop(CallExpr* call) {
-  if (call->baseExpr)
-    call->baseExpr->remove();
-
-  while (call->numActuals())
-    call->get(1)->remove();
-
-  call->primitive = primitives[PRIM_NOOP];
-}
-
-

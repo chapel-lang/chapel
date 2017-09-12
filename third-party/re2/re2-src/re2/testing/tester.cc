@@ -465,14 +465,6 @@ void TestInstance::RunSearch(Engine type,
         break;
       }
       result->have_submatch = true;
-
-      // Work around RE interface bug: PCRE returns -1 as the
-      // offsets for an unmatched subexpression, and RE should
-      // turn that into StringPiece(NULL) but in fact it uses
-      // StringPiece(text.begin() - 1, 0).  Oops.
-      for (int i = 0; i < nsubmatch; i++)
-        if (result->submatch[i].begin() == text.begin() - 1)
-          result->submatch[i] = StringPiece();
       delete[] argptr;
       delete[] a;
       break;

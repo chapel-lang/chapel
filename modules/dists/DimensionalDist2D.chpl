@@ -23,11 +23,6 @@
 
 // TODO
 //
-// * Implement reindexing and rank change directly within Dimensional.
-//  That will probably be more efficient than going through WrapperDist.
-//  For that, will need allow Dimensional to have smaller rank.
-//  Can use "reindexing" dimension specifiers - will only
-//  need two - one for replicated and one for any non-replicated.
 // * Ensure that reallocation works with block-cyclic 1-d distribution
 //  when the domain's stride changes.
 
@@ -277,9 +272,6 @@ class DimensionalDist2D : BaseDist {
 
 class DimensionalDom : BaseRectangularDom {
   // required
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   const dist; // not reprivatized
 
   // convenience
@@ -338,11 +330,15 @@ class LocDimensionalDom {
 
   // subordinate 1-d local domain descriptors
   var doml1, doml2;
+
+  proc deinit() {
+    if isClass(doml2) then delete doml2;
+    if isClass(doml1) then delete doml1;
+  }
 }
 
-class DimensionalArr : BaseArr {
+class DimensionalArr : BaseRectangularArr {
   // required
-  type eltType;
   const dom; // must be a DimensionalDom
 
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
@@ -808,6 +804,10 @@ proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
   _dsiSetIndicesHelper(newRanges);
 }
 
+proc DimensionalDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
+}
+
 // not part of DSI
 proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   _traceddd(this, ".dsiSetIndices", newRanges);
@@ -879,7 +879,10 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
     else chpl_getPrivatizedCopy(objectType = this.allocDom.type,
                                 objectPid  = idAllocDom);
 
-  const result = new DimensionalArr(eltType  = this.eltType,
+  const result = new DimensionalArr(rank     = this.rank,
+                                    idxType  = this.idxType,
+                                    stridable= this.stridable,
+                                    eltType  = this.eltType,
                                     dom      = privDom,
                                     allocDom = privAllocDom);
 
@@ -907,18 +910,20 @@ proc DimensionalArr.isAlias
   return this.dom != this.allocDom;
 
 
-//== creation
+//== creation and destruction
 
 // create a new array over this domain
 proc DimensionalDom.dsiBuildArray(type eltType)
-  : DimensionalArr(eltType, this.type)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
-  const result = new DimensionalArr(eltType  = eltType,
+  const result = new DimensionalArr(rank = rank,
+                                    idxType = idxType,
+                                    stridable = stridable,
+                                    eltType  = eltType,
                                     dom      = this,
                                     allocDom = this);
   coforall (loc, locDdesc, locAdesc)
@@ -928,6 +933,16 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
   assert(!result.isAlias);
   return result;
+}
+
+
+proc DimensionalDom.dsiDestroyDom() {
+  coforall desc in localDdescs do
+    on desc do
+      delete desc;
+
+  if isClass(dom2) then delete dom2;
+  if isClass(dom1) then delete dom1;
 }
 
 
@@ -998,7 +1013,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
 }
 
 
-/// slicing, reindexing, rank change, reallocation //////////////////////////
+/// local slicing, reallocation //////////////////////////
 
 pragma "no copy return"
 proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
@@ -1020,13 +1035,6 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   return locAdesc.myStorageArr[r1, r2];
 }
 
-/* The following are using the standalone WrapperDist, currently not provided.
-
-proc DimensionalDist2D.dsiCreateReindexDist(newSpace, oldSpace) {
-  return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
-}
-
-*/
 /* do not use the above comment for chpldoc */
 
 proc DimensionalArr.dsiReallocate(d: domain) {
@@ -1036,6 +1044,12 @@ proc DimensionalArr.dsiReallocate(d: domain) {
 
 proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
+}
+
+proc DimensionalArr.dsiDestroyArr() {
+  coforall desc in localAdescs do
+    on desc do
+      delete desc;
 }
 
 

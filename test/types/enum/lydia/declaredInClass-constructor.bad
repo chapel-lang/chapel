@@ -1,0 +1,2 @@
+declaredInClass-constructor.chpl:21: In initializer 'Sample':
+declaredInClass-constructor.chpl:22: error: unresolved enumerated type symbol or call 'type classTag.field2'

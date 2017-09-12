@@ -1,3 +1,0 @@
-in loopThrow, r=(x = 101)
-destroying R(x=101)
-throws-destroys.chpl:21: error: uncaught error

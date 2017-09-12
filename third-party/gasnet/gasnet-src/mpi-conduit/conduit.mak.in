@@ -17,7 +17,7 @@ GASNET_LD_REQUIRES_MPI = 1
 
 # hooks for using AMMPI library from within build tree ###NOINSTALL### 
 # (nothing additional required for installed copy)     ###NOINSTALL###
-CONDUIT_INCLUDES = -I@TOP_SRCDIR@/other/ammpi          ###NOINSTALL###
+CONDUIT_INCLUDES = -I@TOP_SRCDIR@/other/ammpi -I@TOP_BUILDDIR@/other/ammpi ###NOINSTALL###
 CONDUIT_LIBDIRS =  -L@TOP_BUILDDIR@/other/ammpi        ###NOINSTALL###
 
-CONDUIT_LIBS = -lammpi @MPI_LIBS@
+CONDUIT_LIBS = $(CONDUIT_LIBDIRS) -lammpi @MPI_LIBS@

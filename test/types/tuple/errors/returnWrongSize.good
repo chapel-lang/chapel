@@ -1,0 +1,4 @@
+returnWrongSize.chpl:1: In function 'foo':
+returnWrongSize.chpl:3: error: tuple size mismatch (expected 3, got 2)
+returnWrongSize.chpl:1: In function 'foo':
+returnWrongSize.chpl:5: error: tuple size mismatch (expected 3, got 4)

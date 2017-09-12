@@ -408,7 +408,7 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
     else
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
-  ref result = locAdesc.myStorageArr[r1, r2].reindex({(...reindexExpr)});;
+  ref result = locAdesc.myStorageArr[r1, r2].reindex(reindexExpr);
   return result;
 }
 
@@ -697,7 +697,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
     vmsgmore("  bsR-diag replicateK");
 
     // Reset partial values for future use.
-    local for ps in myPartSums do ps = 0;
+    local do for ps in myPartSums do ps = 0;
     vmsgmore("  bsR-diag reset myPartSums");
 
   } else {
@@ -720,7 +720,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
                    myPartSums, gotBlocks);
 
     // Reset partial values for future use.
-    local for ps in myPartSums do ps = 0;
+    local do for ps in myPartSums do ps = 0;
   }
 }
 
@@ -752,7 +752,7 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
     on targetLocaleReplForAbIndex(diaFrom, n+1) {
       if checkBsub {
         // verify that that is really a local slice
-        local ref testDummy = Ab._value.dsiLocalSlice1((diaSlice, n+1));
+        local do ref testDummy = Ab._value.dsiLocalSlice1((diaSlice, n+1));
       }
       // TODO: bulkify, unless it is already
       locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));

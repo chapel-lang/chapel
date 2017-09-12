@@ -409,7 +409,6 @@ void *gasnetc_sr_desc_init(struct ibv_send_wr *result, struct ibv_sge *sg_lst_p)
 #define GASNETC_DECL_SR_DESC(_name, _sg_lst_len)                        \
 	struct ibv_send_wr _name[1];                                      \
 	struct ibv_sge _CONCAT(_name,_sg_lst)[_sg_lst_len];              \
-	GASNETI_UNUSED                                                  \
 	void *_CONCAT(_name,_dummy) = gasnetc_sr_desc_init(_name, _CONCAT(_name,_sg_lst)) /* note intentional lack of final semicolon */
 
 /* Use of IB's 32-bit immediate data:
@@ -900,11 +899,11 @@ static int gasnetc_snd_reap(int limit) {
 
   #if GASNETC_IB_MAX_HCAS > 1
     /* Simple round-robin (w/ a harmless multi-thread race) */
-    gasnetc_hca_t *hca;
-    static volatile int index = 0;
-    int tmp = index;
-    index = ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1;
-    hca = &gasnetc_hca[tmp];
+    /* Note use of casts to volatile are require to work around bug 1586 */
+    static int index = 0;
+    int tmp = *(volatile int *)(&index);
+    *(volatile int *)(&index) = ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1;
+    gasnetc_hca_t *hca = &gasnetc_hca[tmp];
   #else
     gasnetc_hca_t *hca = &gasnetc_hca[0];
   #endif
@@ -1510,11 +1509,9 @@ void gasnetc_poll_rcv_hca(gasnetc_hca_t *hca, int limit) {
 
   /* Poll round-robin over the AMRDMA landing zones and the CQ */
   while (limit && limit2--) {
-    /* NOTE: bug 1586 work-around requires the volatile casts */
-    static int prev = 0;
-    int index = *(volatile int *)(&prev); /* The associated data race is harmless */
+    int index = hca->amrdma_rcv.prev; /* The associated data race is harmless */
     index = (index == 0) ? count : (index - 1);
-    *(volatile int *)(&prev) = index;
+    hca->amrdma_rcv.prev = index;
 
     gasneti_assert(limit > 0);
     gasneti_assert(limit2 >= 0);
@@ -1541,11 +1538,11 @@ void gasnetc_do_poll(int poll_rcv, int poll_snd) {
   if (poll_rcv) {
   #if GASNETC_IB_MAX_HCAS > 1
     /* Simple round-robin (w/ a harmless multi-thread race) */
-    gasnetc_hca_t *hca;
-    static volatile int index = 0;
-    int tmp = index;
-    index = ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1;
-    hca = &gasnetc_hca[tmp];
+    /* Note use of casts to volatile are require to work around bug 1586 */
+    static int index = 0;
+    int tmp = *(volatile int *)(&index);
+    *(volatile int *)(&index) = ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1;
+    gasnetc_hca_t *hca = &gasnetc_hca[tmp];
   #else
     gasnetc_hca_t *hca = &gasnetc_hca[0];
   #endif
@@ -1684,8 +1681,8 @@ void gasnetc_snd_validate(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, int
         uintptr_t l_addr = sr_desc->sg_list[j].addr;
         size_t    len    = sr_desc->sg_list[j].length;
 	unsigned  lkey   = sr_desc->sg_list[j].lkey;
-        GASNETI_TRACE_PRINTF(D,("  %i: lkey=0x%08x len=%lu local=[%p-%p] remote=N/A\n",
-			        j, lkey, (unsigned long)len,
+        GASNETI_TRACE_PRINTF(D,("  %i: lkey=0x%08x len=%"PRIuPTR" local=[%p-%p] remote=N/A\n",
+			        j, lkey, (uintptr_t)len,
 			        (void *)l_addr, (void *)(l_addr + (len - 1))));
       }
       break;
@@ -1696,8 +1693,8 @@ void gasnetc_snd_validate(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, int
         uintptr_t l_addr = sr_desc->sg_list[j].addr;
         size_t    len    = sr_desc->sg_list[j].length;
 	unsigned  lkey   = sr_desc->sg_list[j].lkey;
-        GASNETI_TRACE_PRINTF(D,("  %i: lkey=0x%08x len=%lu local=[%p-%p] remote=[%p-%p]\n",
-			        j, lkey, (unsigned long)len,
+        GASNETI_TRACE_PRINTF(D,("  %i: lkey=0x%08x len=%"PRIuPTR" local=[%p-%p] remote=[%p-%p]\n",
+			        j, lkey, (uintptr_t)len,
 				(void *)l_addr, (void *)(l_addr + (len - 1)),
 				(void *)r_addr, (void *)(r_addr + (len - 1))));
 	r_addr += len;
@@ -1710,8 +1707,8 @@ void gasnetc_snd_validate(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, int
         uintptr_t l_addr = sr_desc->sg_list[j].addr;
         size_t    len    = sr_desc->sg_list[j].length;
 	unsigned  lkey   = sr_desc->sg_list[j].lkey;
-        GASNETI_TRACE_PRINTF(D,("  %i: lkey=0x%08x len=%lu local=[%p-%p] remote=[%p-%p]\n",
-			        j, lkey, (unsigned long)len,
+        GASNETI_TRACE_PRINTF(D,("  %i: lkey=0x%08x len=%"PRIuPTR" local=[%p-%p] remote=[%p-%p]\n",
+			        j, lkey, (uintptr_t)len,
 				(void *)l_addr, (void *)(l_addr + (len - 1)),
 				(void *)r_addr, (void *)(r_addr + (len - 1))));
 	r_addr += len;
@@ -3387,6 +3384,7 @@ extern int gasnetc_sndrcv_init(void) {
         gasneti_leak(hca->cep);
       }
       gasnetc_atomic_set(&hca->amrdma_rcv.count, 0, 0);
+      hca->amrdma_rcv.prev = 0;
       if (gasnetc_amrdma_max_peers && hca->max_qps) {
 	const int max_peers = hca->amrdma_rcv.max_peers = MIN(gasnetc_amrdma_max_peers, hca->max_qps);
 	size_t alloc_size = GASNETI_PAGE_ALIGNUP(max_peers * (gasnetc_amrdma_depth << GASNETC_AMRDMA_SZ_LG2) + GASNETC_AMRDMA_PAD);
@@ -3435,7 +3433,7 @@ extern int gasnetc_sndrcv_init(void) {
   /* create the SND CQ and associated semaphores */
   if (NULL == gasnetc_cq_semas) {
     gasnetc_cq_semas = (gasnetc_sema_t *)
-	  gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES, gasnetc_num_hcas*sizeof(gasnetc_sema_t));
+	  gasneti_malloc_aligned(GASNETI_CACHE_LINE_BYTES, gasnetc_num_hcas*sizeof(gasnetc_sema_t));
     gasneti_leak_aligned(gasnetc_cq_semas);
   }
   gasnetc_op_oust_per_qp = MAX(1, gasnetc_op_oust_per_qp); /* Avoid error in single-node case */
@@ -3778,7 +3776,7 @@ extern int gasnetc_sndrcv_shutdown(void) {
 #if GASNETC_USE_RCV_THREAD
 extern void gasnetc_sndrcv_start_thread(void) {
   if (gasnetc_remote_nodes && gasnetc_use_rcv_thread) {
-    int rcv_max_rate = gasneti_getenv_int_withdefault("GASNET_RCV_THREAD_RATE", 0, 1);
+    int rcv_max_rate = gasneti_getenv_int_withdefault("GASNET_RCV_THREAD_RATE", 0, 0);
     gasnetc_hca_t *hca;
 
     GASNETC_FOR_ALL_HCA(hca) {
@@ -3786,7 +3784,7 @@ extern void gasnetc_sndrcv_start_thread(void) {
       hca->rcv_thread.fn = gasnetc_rcv_thread;
       hca->rcv_thread.fn_arg = hca;
       if (rcv_max_rate > 0) {
-        hca->rcv_thread.min_us = ((uint64_t)1000000) / rcv_max_rate;
+        hca->rcv_thread.min_ns = ((uint64_t)1E9) / rcv_max_rate;
       }
       gasnetc_spawn_progress_thread(&hca->rcv_thread);
     }
@@ -4106,9 +4104,12 @@ extern int gasnetc_RequestGeneric(gasnetc_category_t category,
 
 #if GASNET_PSHM
   if_pt (gasneti_pshm_in_supernode(dest)) {
-    return gasneti_AMPSHM_RequestGeneric(category, dest, handler,
+    int retval;
+    retval = gasneti_AMPSHM_RequestGeneric(category, dest, handler,
                                          src_addr, nbytes, dst_addr,
                                          numargs, argptr);
+    if_pf (completed) gasnetc_atomic_increment(completed,0);
+    return retval;
   }
 #endif
 
@@ -4127,9 +4128,11 @@ extern int gasnetc_ReplyGeneric(gasnetc_category_t category,
 
 #if GASNET_PSHM
   if_pt (gasnetc_token_is_pshm(token)) {
-      return gasneti_AMPSHM_ReplyGeneric(category, token, handler,
+    retval = gasneti_AMPSHM_ReplyGeneric(category, token, handler,
                                          src_addr, nbytes, dst_addr,
                                          numargs, argptr);
+    if_pf (completed) gasnetc_atomic_increment(completed,0);
+    return retval;
   }
 #endif
 

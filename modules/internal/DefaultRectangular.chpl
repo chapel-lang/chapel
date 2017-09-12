@@ -82,8 +82,6 @@ module DefaultRectangular {
 
     proc dsiAssign(other: this.type) { }
 
-    proc dsiCreateReindexDist(newSpace, oldSpace) return this;
-
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
 
@@ -114,9 +112,6 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
-    param rank : int;
-    type idxType;
-    param stridable: bool;
     var dist: DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
@@ -148,6 +143,10 @@ module DefaultRectangular {
 
     proc dsiSetIndices(x) {
       ranges = x;
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     iter these_help(param d: int) {
@@ -333,7 +332,7 @@ module DefaultRectangular {
           }
         } else {
           coforall chunk in 0..#numChunks { // make sure coforall on can trigger
-            local on here.getChild(chunk) {
+            local do on here.getChild(chunk) {
               if debugDataParNuma {
                 if chunk!=chpl_getSubloc() then
                   chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
@@ -1118,11 +1117,11 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularArr: BaseArr {
-    type eltType;
+  class DefaultRectangularArr: BaseRectangularArr {
+    /*type eltType;
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param stridable: bool;*/
 
     type idxSignedType = chpl__signedType(idxType);
 
@@ -1200,19 +1199,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiDestroyArr(isalias:bool) {
-
-      // data in an array alias will be destroyed when the original array
-      // is destroyed.
-      if isalias {
-        // A multi-ddata alias nevertheless has its own mData.
-        if !defRectSimpleDData {
-          _ddata_free(mData);
-        }
-
-        return;
-      }
-
+    proc dsiDestroyArr() {
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = dataChunk(0);
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
@@ -1242,15 +1229,18 @@ module DefaultRectangular {
         }
       }
 
+      const size = blk(1) * dom.dsiDim(1).length;
       if defRectSimpleDData {
-        _ddata_free(dataChunk(0));
+        _ddata_free(dataChunk(0), size);
       } else {
         for chunk in 0..#mdNumChunks {
+          const chunkSize = size / mdRLen * mData(chunk).pdr.length;
           _ddata_free(_ddata_shift(eltType,
                                    dataChunk(chunk),
-                                   mData(chunk).dataOff));
+                                   mData(chunk).dataOff),
+                      chunkSize);
         }
-        _ddata_free(mData);
+        _ddata_free(mData, mdNumChunks);
       }
     }
 
@@ -1384,7 +1374,7 @@ module DefaultRectangular {
                            "### dom.dsiDims = ", dom.dsiDims());
       }
       coforall chunk in 0..#mdNumChunks { // make sure coforall on can trigger
-        local on here.getChild(chunk) { // eventually, on dataChunk(chunk).locale
+        local do on here.getChild(chunk) { // eventually, on dataChunk(chunk).locale
           if debugDataParMultiDData {
             if chunk != chpl_getSubloc() then
               writeln("*** ERROR: multiDD:  ON WRONG SUBLOC (should be ",
@@ -1413,7 +1403,7 @@ module DefaultRectangular {
             chpl_debug_writeln("### multiDD: chunk ", chunk,
                                ", followMe ", followMe,
                                ", numChunks2 ", numChunks2);
-          coforall chunk2 in 0..#numChunks2 do local on here {
+          coforall chunk2 in 0..#numChunks2 do local do on here {
             var locBlock2: rank*range(idxType);
             for param i in 1..rank do
               locBlock2(i) = followMe(i).low..followMe(i).high;
@@ -1541,10 +1531,15 @@ module DefaultRectangular {
       for param dim in 1..(rank-1) by -1 do
         blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
       computeFactoredOffs();
-      var size = blk(1) * dom.dsiDim(1).length;
+      const size = blk(1) * dom.dsiDim(1).length;
 
-      if defRectSimpleDData {
+      if !localeModelHasSublocales {
         data = _ddata_allocate(eltType, size);
+      } else if defRectSimpleDData {
+        data = _ddata_allocate(eltType, size,
+                               subloc = (if here.getChildCount() > 1
+                                         then c_sublocid_all
+                                         else c_sublocid_none));
       } else {
         //
         // Checking the size first (and having a large-ish size hurdle)
@@ -1590,12 +1585,12 @@ module DefaultRectangular {
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           mData(0).data =
             _ddata_allocate(eltType, size,
-                            locStyle = if here.maxTaskPar < 2
-                                       then localizationStyle_t.locNone
-                                       else localizationStyle_t.locSubchunks);
+                            subloc = (if here.getChildCount() > 1
+                                      then c_sublocid_all
+                                      else c_sublocid_none));
         } else {
           var dataOff: idxType = 0;
-          for i in 0..#mdNumChunks do local on here.getChild(i) {
+          for i in 0..#mdNumChunks do local do on here.getChild(i) {
             mData(i).dataOff = dataOff;
             const (lo, hi) = mdChunk2Ind(i);
             if stridable then
@@ -1604,7 +1599,6 @@ module DefaultRectangular {
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;
             const dd = _ddata_allocate(eltType, chunkSize,
-                                       locStyle = localizationStyle_t.locWhole,
                                        subloc = i:chpl_sublocID_t);
             mData(i).data = _ddata_shift(eltType, dd, -dataOff:idxSignedType);
             dataOff += chunkSize;
@@ -1791,13 +1785,18 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiReallocate(d: domain) {
-      if (d._value.type == dom.type) {
-        on this {
+    // TODO
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      //if (d._value.type == dom.type) {
+
+      on this {
+        var d = {(...bounds)};
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
                                             dom=d._value);
+
+        // MPF: could this be parallel?
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
@@ -1805,7 +1804,7 @@ module DefaultRectangular {
         str = copy.str;
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
-        dsiDestroyArr(false);
+        dsiDestroyArr();
         if defRectSimpleDData {
           data = copy.data;
         } else {
@@ -1836,10 +1835,13 @@ module DefaultRectangular {
         dataAllocRange = copy.dataAllocRange;
         //numelm = copy.numelm;
         delete copy;
-        }
-      } else {
-        halt("illegal reallocation");
       }
+      //} else {
+      //  halt("illegal reallocation");
+      //}
+    }
+    proc dsiPostReallocate() {
+      // No action necessary here
     }
 
     proc dsiLocalSlice(ranges) {
@@ -1974,8 +1976,9 @@ module DefaultRectangular {
         if step < 0 then
           last <=> first;
 
+        var data = info.theDataChunk(0);
         for i in first..last by step do
-          yield info.data(i);
+          yield data(i);
       }
     } else if useCache {
       for i in viewDom {
@@ -1993,7 +1996,7 @@ module DefaultRectangular {
 
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     for i in viewDom {
-      const dataIdx = if arr.isReindexArrayView() then arr.chpl_reindexConvertIdx(i)
+      const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
                       else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;
       const info = if chpl__isArrayView(arr) then arr.arr else arr;
@@ -2214,11 +2217,14 @@ module DefaultRectangular {
         const src = arr.theDataChunk(0);
         const idx = arr.getDataIndex(dom.dsiLow);
         const size = len:ssize_t*elemSize:ssize_t;
+        var error:syserr = ENOERR;
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         }
+        if error then
+          f.setError(error);
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#arr.mdNumChunks {
@@ -2238,11 +2244,15 @@ module DefaultRectangular {
             const inner = arr.mData(chunk).pdr;
             const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
+            var error:syserr = ENOERR;
             if f.writing {
-              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size,
+                  error=error);
             } else {
-              f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
             }
+            if error then
+              f.setError(error);
           }
         }
       }

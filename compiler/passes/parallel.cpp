@@ -25,6 +25,7 @@
 
 #include "astutil.h"
 #include "driver.h"
+#include "errorHandling.h"
 #include "expr.h"
 #include "files.h"
 #include "optimizations.h"
@@ -33,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
@@ -91,10 +93,15 @@ typedef struct {
   AggregateType* ctype;
   FnSymbol*  wrap_fn;
   std::vector<uint8_t> needsDestroy;
+  bool adjustErrors;
+  // TODO -- more directly record the mapping between
+  // actuals, formals, and bundle class fields
 } BundleArgsFnData;
 
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
 static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
+
+static int broadcastGlobalID = 0;
 
 static void insertEndCounts();
 static void passArgsToNestedFns();
@@ -151,7 +158,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 
   // add the function args as fields in the class
   int i = 0;    // Fields are numbered for uniqueness.
-  for_actuals(arg, fcall) {
+  for_formals_actuals(formal, arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->symbol(); // arg or var
 
@@ -175,12 +182,35 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
       // reference.
       var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
     }
+
     VarSymbol* field = new VarSymbol(astr("_", istr(i), "_", var->name), var->getValType());
 
+    // Mark error variables with flag, so we can remove them later.
+    // the rest of parallel.cpp is less
+    // confusing if there's still a slot for them.
+    // Error variables aren't actually used in the bundle.
+    if (var->hasFlag(FLAG_ERROR_VARIABLE)) {
+      field->addFlag(FLAG_ERROR_VARIABLE);
+    }
+
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
-    // BHARSH TODO: This really belongs in RVF
-    // BHARSH TODO: Use 'formal->isRef()' instead of the var's ref-ness
-    if (!isRecordWrappedType(var->getValType()) && !autoCopy && var->isRef()) field->qual = QUAL_REF;
+    if (isRecordWrappedType(var->getValType()))
+      field->qual = QUAL_VAL;
+    // If we needed to auto-copy it, it should be stored by value
+    else if (autoCopy)
+      field->qual = QUAL_VAL; // this is a no-op
+    // If the actual is a reference, store a reference
+    else if (var->isRef())
+      field->qual = QUAL_REF;
+    // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
+    // in 'needsAutoCopyAutoDestroyForArg'
+    // If the formal is constant, store a value
+    else if (formal->isConstant())
+      field->qual = QUAL_VAL;
+    // Otherwise, if the formal is a reference, store a reference.
+    // This is important for on-throw.chpl for example.
+    else if (formal->isRef())
+      field->qual = QUAL_REF;
 
     ctype->fields.insertAtTail(new DefExpr(field));
     i++;
@@ -190,6 +220,13 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   mod->block->insertAtHead(new DefExpr(new_c));
 
   baData.ctype = ctype;
+
+  // Also set adjustErrors to 'true' for any nonblocking
+  // task/on that throws.
+  baData.adjustErrors = fn->throwsError() &&
+                        (fn->hasFlag(FLAG_NON_BLOCKING) ||
+                         fn->hasFlag(FLAG_BEGIN) ||
+                         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
 }
 
 /// Optionally autoCopies an argument being inserted into an argument bundle.
@@ -318,8 +355,7 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
 
   if (autoDestroyFn == NULL) return;
 
-  // BHARSH TODO: This seems to be (poorly) checking if arg is a ref
-  if (arg->typeInfo() != baseType)
+  if (arg->isRef())
   {
     // BHARSH: This code used to be special cased for ref counted types.
     // Some changes in support of qualified refs made it possible for syncs
@@ -363,6 +399,18 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   int i = 1;
   for_actuals(arg, fcall)
   {
+    // For anything nonblocking, don't bundle error variables,
+    // handle them directly
+    if (baData.adjustErrors) {
+      if (SymExpr* se = toSymExpr(arg)) {
+        if (se->symbol()->hasFlag(FLAG_ERROR_VARIABLE)) {
+          baData.needsDestroy.push_back(false);
+          i++;
+          continue;
+        }
+      }
+    }
+
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls (and some other cases).
     Symbol  *var = NULL;
@@ -414,24 +462,9 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   if (!fn->hasFlag(FLAG_ON)) {
     for_actuals(arg, fcall) {
-      bool strcmp_found = false;
-      bool type_found = false;
 
       Type* baseType = arg->getValType();
       if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
-        type_found = true;
-      }
-
-      // This strcmp code was moved from expr.cpp codegen,
-      // but there has got to be a better way to do this!
-      if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
-        strcmp_found = true;
-      }
-
-      // If this assert never fires, we can remove the strcmp version.
-      INT_ASSERT(type_found == strcmp_found);
-
-      if( type_found || strcmp_found ) {
         SymExpr* symexp = toSymExpr(arg);
         endCount = symexp->symbol();
 
@@ -443,37 +476,40 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       }
     }
 
-    INT_ASSERT(endCount);
+    if (!fn->hasFlag(FLAG_BEGIN))
+      INT_ASSERT(endCount);
 
-    // Now get the taskList field out of the end count.
+    if (endCount != NULL) {
+      // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr->refType);
+      taskList = newTemp(astr("_taskList", fn->name), QualifiedType(QUAL_REF, dtCVoidPtr));
 
-    // If the end count is a reference, dereference it.
-    // EndCount is a class.
-    if (endCount->isRef()) {
-      VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
-                                         endCount->getValType());
-      fcall->insertBefore(new DefExpr(endCountDeref));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, endCountDeref,
-                                         new CallExpr(PRIM_DEREF, endCount)));
-      endCount = endCountDeref;
+      // If the end count is a reference, dereference it.
+      // EndCount is a class.
+      if (endCount->isRef()) {
+        VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
+                                           endCount->getValType());
+        fcall->insertBefore(new DefExpr(endCountDeref));
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, endCountDeref,
+                                           new CallExpr(PRIM_DEREF, endCount)));
+        endCount = endCountDeref;
+      }
+
+      fcall->insertBefore(new DefExpr(taskList));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
+                                       new CallExpr(PRIM_GET_MEMBER,
+                                                    endCount,
+                                                    endCount->typeInfo()->getField("taskList"))));
+
+
+      // Now get the node ID field for the end count,
+      // which is where the task list is stored.
+      taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
+      fcall->insertBefore(new DefExpr(taskListNode));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
+                                       new CallExpr(PRIM_WIDE_GET_NODE,
+                                                    endCount)));
     }
-
-    fcall->insertBefore(new DefExpr(taskList));
-    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
-                                     new CallExpr(PRIM_GET_MEMBER,
-                                                  endCount,
-                                                  endCount->typeInfo()->getField("taskList"))));
-
-
-    // Now get the node ID field for the end count,
-    // which is where the task list is stored.
-    taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
-    fcall->insertBefore(new DefExpr(taskListNode));
-    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
-                                     new CallExpr(PRIM_WIDE_GET_NODE,
-                                                  endCount)));
   }
 
   // create wrapper-function that uses the class instance
@@ -492,7 +528,7 @@ static CallExpr* helpFindDownEndCount(BlockStmt* block)
   while (cur && (isCallExpr(cur) || isDefExpr(cur) || isBlockStmt(cur))) {
     if (CallExpr* call = toCallExpr(cur)) {
       if (call->isResolved())
-        if (strcmp(call->resolvedFunction()->name, "_downEndCount") == 0)
+        if (call->resolvedFunction()->hasFlag(FLAG_DOWN_END_COUNT_FN))
           return call;
     } else if (BlockStmt* inner = toBlockStmt(cur)) {
       // Need to handle local blocks since the compiler
@@ -518,8 +554,24 @@ static CallExpr* findDownEndCount(FnSymbol* fn)
   return helpFindDownEndCount(fn->body);
 }
 
+static bool isGetDynamicEndCount(CallExpr* call)
+{
+  if (call->isPrimitive(PRIM_GET_DYNAMIC_END_COUNT))
+    return true;
+  FnSymbol* fn = call->resolvedFunction();
+  if (fn && fn == gGetDynamicEndCount)
+    return true;
 
-static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, AggregateType* ctype)
+  return false;
+}
+
+// TODO: Could we represent the AST differently so that
+// the work of this pass is easier? E.g. don't add downEndCount until
+// this point?
+
+// Returns the EndCount variable used in the wrapper.
+static
+void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, AggregateType* ctype, Symbol* error)
 {
   if (fn->hasFlag(FLAG_NON_BLOCKING) ||
       fn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
@@ -531,11 +583,33 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 
     FnSymbol* downEndCountFn = downEndCount->resolvedFunction();
 
+    if (downEndCount->numActuals() == 1) {
+      // Call downEndCount in the wrapper.
+      CallExpr* call = new CallExpr(downEndCountFn);
+      if (error != NULL)
+        call->insertAtTail(error);
+      else
+        call->insertAtTail(gNil);
+
+      wrap_fn->insertAtTail(call);
+
+      // Remove downEndCount from the task fn since it
+      // is now in the wrapper.
+      downEndCount->remove();
+
+      return;
+    }
+
     Expr* endCountTmp = downEndCount->get(1);
+
+    QualifiedType endCountType = endCountTmp->qualType();
+
     Expr* cur = downEndCount->prev;
     ArgSymbol* whichArg = NULL;
+    bool getDynamicEndCount = false;
     // Which argument is passed to the downEndCount?
-    // This loop is meant to handle control-flow regions only.
+    // Or is it gotten dynamically?
+    // This loop is meant to handle control-free regions only.
     while (true) {
       SymExpr* se = toSymExpr(endCountTmp);
       if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
@@ -550,53 +624,76 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
             if (dst->symbol() == se->symbol()) {
               if (SymExpr* src = toSymExpr(call->get(2)))
                 endCountTmp = src;
-              else if (CallExpr* subcall = toCallExpr(call->get(2)))
+              else if (CallExpr* subcall = toCallExpr(call->get(2))) {
                 if (subcall->isPrimitive(PRIM_DEREF))
                   endCountTmp = subcall->get(1);
+                else if (isGetDynamicEndCount(subcall)) {
+                  getDynamicEndCount = true;
+                  break;
+                }
+              }
             }
       cur = cur->prev;
     }
 
-    INT_ASSERT(whichArg != NULL);
+    INT_ASSERT(whichArg != NULL || getDynamicEndCount == true);
 
-    // figure out which arg is the i'th arg
-    int i = 1;
-    for_formals(formal, fn) {
-      if (formal == whichArg) break;
-      i++;
-    }
-    INT_ASSERT(i <= fn->numFormals());
-    // Now get the i'th class member. It should be an end count.
-    // Change that to the downEndCount call.
+    VarSymbol* localEndCount = NULL;
 
-    Symbol *field = ctype->getField(i+1); // +1 for rt header
-    INT_ASSERT(field->getValType()->symbol->hasFlag(FLAG_END_COUNT));
+    if (whichArg != NULL) {
+      // figure out which arg is the i'th arg
+      int i = 1;
+      for_formals(formal, fn) {
+        if (formal == whichArg) break;
+        i++;
+      }
+      INT_ASSERT(i <= fn->numFormals());
+      // Now get the i'th class member. It should be an end count.
+      // Change that to the downEndCount call.
 
-    VarSymbol* tmp = newTemp("endcount", field->qualType());
-    wrap_fn->insertAtTail(new DefExpr(tmp));
-    wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+      Symbol *field = ctype->getField(i+1); // +1 for rt header
+      INT_ASSERT(field->getValType()->symbol->hasFlag(FLAG_END_COUNT));
 
-    if (isReferenceType(field->type)) {
-      VarSymbol* derefTmp = newTemp("endcountDeref", field->type->getValType());
-      wrap_fn->insertAtTail(new DefExpr(derefTmp));
+      localEndCount = newTemp("endcount", field->qualType());
+      wrap_fn->insertAtTail(new DefExpr(localEndCount));
       wrap_fn->insertAtTail(
-          new CallExpr(PRIM_MOVE, derefTmp,
-          new CallExpr(PRIM_DEREF, tmp)));
+          new CallExpr(PRIM_MOVE, localEndCount,
+          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-      tmp = derefTmp;
+      if (field->isRef()) {
+        VarSymbol* derefTmp = newTemp("endcountDeref", field->type->getValType());
+        wrap_fn->insertAtTail(new DefExpr(derefTmp));
+        wrap_fn->insertAtTail(
+            new CallExpr(PRIM_MOVE, derefTmp,
+            new CallExpr(PRIM_DEREF, localEndCount)));
+
+        localEndCount = derefTmp;
+      }
+    } else if (getDynamicEndCount == true) {
+      localEndCount = newTemp("endcount", endCountType);
+      wrap_fn->insertAtTail(new DefExpr(localEndCount));
+      wrap_fn->insertAtTail(
+          new CallExpr(PRIM_MOVE, localEndCount,
+            new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+    } else {
+      INT_FATAL("error");
     }
 
     // Call downEndCount in the wrapper.
-    wrap_fn->insertAtTail(new CallExpr(downEndCountFn, tmp));
+    CallExpr* call = new CallExpr(downEndCountFn, localEndCount);
+    if (error != NULL)
+      call->insertAtTail(error);
+    else
+      call->insertAtTail(gNil);
+
+    wrap_fn->insertAtTail(call);
 
     // Remove downEndCount from the task fn since it
     // is now in the wrapper.
     downEndCount->remove();
+
+    INT_ASSERT(localEndCount != NULL);
   }
-
-
 }
 
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
@@ -606,6 +703,16 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   AggregateType* ctype = baData.ctype;
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
+
+  Symbol* error = NULL;
+
+  // Create error variable, but not for blocking on statement
+  // This function will handle errors for non-blocking tasks/on
+  if (baData.adjustErrors) {
+    // Create an error variable
+    error = newTemp("error", dtError);
+    wrap_fn->insertAtTail(new DefExpr(error));
+  }
 
   // Add a special flag to the wrapper-function as appropriate.
   // These control aspects of code generation.
@@ -679,23 +786,29 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   {
     // Skip runtime header
     if (i > 0) {
-      // insert args
-      VarSymbol* tmp = newTemp(field->name, field->qualType());
-      wrap_fn->insertAtTail(new DefExpr(tmp));
-      wrap_fn->insertAtTail(
-          new CallExpr(PRIM_MOVE, tmp,
-          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+      if (error != NULL && field->hasFlag(FLAG_ERROR_VARIABLE)) {
+        // Add the error argument
+        INT_ASSERT(error != NULL);
+        call_orig->insertAtTail(error);
+      } else {
+        // insert args
+        VarSymbol* tmp = newTemp(field->name, field->qualType());
+        wrap_fn->insertAtTail(new DefExpr(tmp));
+        wrap_fn->insertAtTail(
+            new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-      // Special case:
-      // If this is an on block, remember the first field,
-      // but don't add to the list of actuals passed to the original on_fn.
-      // It contains the locale on which the new task is launched.
-      if (first && fn->hasFlag(FLAG_ON))
-        /* no-op */;
-      else
-        call_orig->insertAtTail(tmp);
+        // Special case:
+        // If this is an on block, remember the first field,
+        // but don't add to the list of actuals passed to the original on_fn.
+        // It contains the locale on which the new task is launched.
+        if (first && fn->hasFlag(FLAG_ON))
+          /* no-op */;
+        else
+          call_orig->insertAtTail(tmp);
 
-      first = false;
+        first = false;
+      }
     }
 
     i++;
@@ -709,7 +822,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   for_fields(field, ctype)
   {
     // Skip runtime header
-    if (i > 0) {
+    if (i > 0 && baData.needsDestroy[i]) {
       // insert auto destroy calls
       VarSymbol* tmp = newTemp(field->name, field->qualType());
       wrap_fn->insertAtTail(new DefExpr(tmp));
@@ -717,17 +830,15 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
           new CallExpr(PRIM_MOVE, tmp,
           new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-      if (baData.needsDestroy[i])
-        insertAutoDestroyForVar(tmp, wrap_fn);
+      insertAutoDestroyForVar(tmp, wrap_fn);
     }
 
     i++;
   }
 
-
   // Move the downEndCount at the tail of fn, if any,
   // to the wrapper.
-  moveDownEndCountToWrapper(fn, wrap_fn, wrap_c, ctype);
+  moveDownEndCountToWrapper(fn, wrap_fn, wrap_c, ctype, error);
 
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
@@ -790,82 +901,53 @@ insertEndCount(FnSymbol* fn,
   }
 }
 
+static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
+  // Disable serialized broadcasting for internal globals until have a way of
+  // finding the point where the runtime is sufficiently 'set up' such that
+  // we can use the Locales array.
+  bool isInternalModule = sym->getModule()->modTag == MOD_INTERNAL;
 
-static void
-replicateGlobalRecordWrappedVars(DefExpr *def) {
-  ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
-  Expr* stmt = mod->initFn->body->body.head;
-  Expr* useFirst = NULL;
-  Symbol *currDefSym = def->sym;
-  bool found = false;
-  // Try to find the first definition of this variable in the
-  //   module initialization function
-  while (stmt && !found)
-  {
-    std::vector<SymExpr*> symExprs;
-    collectSymExprs(stmt, symExprs);
-    for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == currDefSym) {
-        INT_ASSERT(se->parentExpr);
-        int result = isDefAndOrUse(se);
-        if (result & 1) {
-          // first use/def of the variable is a def (normal case)
+  bool isVariableRecordWrappedType = isRecordWrappedType(sym->getValType()) && sym->hasFlag(FLAG_CONST) == false;
 
-          // 'useFirst' may not be NULL if the 'result & 2' branch below is
-          // taken. Consider the following scenario:
-          //   (move refA (addr-of origSym))
-          // The second branch will set 'currDefSym = refA', and we will begin
-          // to iterate over its defs/uses. Finding the same expression should
-          // not count as 'finding' the right statement.
-          bool isOldStmt = useFirst == se->getStmtExpr() && currDefSym->isRef();
+  if (isInternalModule == false &&
+      isVariableRecordWrappedType == false &&
+      serializeMap.find(sym->type) != serializeMap.end()) {
 
-          if (useFirst == NULL || !isOldStmt) {
-            found = true;
-            break;
-          }
-        } else if (result & 2) {
-          if (useFirst == NULL) {
-            // This statement captures a reference to the variable
-            // to pass it to the function that builds the initializing
-            // expression
-            CallExpr *parent = toCallExpr(se->parentExpr);
-            INT_ASSERT(parent);
-            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF));
-            INT_ASSERT(isCallExpr(parent->parentExpr));
-            // Now start looking for the first use of the captured
-            // reference
-            currDefSym = toSymExpr(toCallExpr(parent->parentExpr)->get(1))->symbol();
-            INT_ASSERT(currDefSym);
-            // This is used to flag that we have found the first use
-            // of the variable
-            useFirst = stmt;
-          } else {
-            // This statement builds the initializing expression, so
-            // we can insert the broadcast after this statement
+    Serializers ser       = serializeMap[sym->type];
+    FnSymbol* broadcastFn = ser.broadcaster;
+    FnSymbol* destroyFn   = ser.destroyer;
+    INT_ASSERT(broadcastFn != NULL && destroyFn != NULL);
 
-            // These checks may need to change if we change the way
-            // we handle domain literals, forall expressions, and/or
-            // depending on how we add array literals to the language
-            INT_ASSERT(toCallExpr(stmt));
-            INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
-            found = true;
-            break;
+    VarSymbol* broadcastID = new_IntSymbol(broadcastGlobalID++);
+    beforeExpr->insertAfter(new CallExpr(broadcastFn, sym, broadcastID));
+
+    FnSymbol* autoDestroyFn = autoDestroyMap.get(sym->type);
+
+    if (autoDestroyFn != NULL) {
+      Expr* destroyExpr = NULL;
+
+      // We expect to find an autoDestroy call inserted by callDestructors'
+      // 'insertGlobalAutoDestroyCalls' function.
+      for_SymbolSymExprs(se, sym) {
+        CallExpr* call = toCallExpr(se->parentExpr);
+        if (call && call->isResolved()) {
+          FnSymbol* fn = call->resolvedFunction();
+          if (fn == autoDestroyFn) {
+            // Fail if multiple destroys are found
+            INT_ASSERT(destroyExpr == NULL);
+            destroyExpr = call->getStmtExpr();
           }
         }
       }
+      INT_ASSERT(destroyExpr != NULL);
+
+      // Destroy broadcasted copies before the original.
+      destroyExpr->insertBefore(new CallExpr(destroyFn, sym, broadcastID));
     }
-    if (found)
-      break;
-
-    stmt = stmt->next;
+  } else {
+    beforeExpr->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, sym));
   }
-  if (found)
-    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
-  else
-    mod->initFn->insertBeforeEpilogue(new CallExpr
-                                     (PRIM_PRIVATE_BROADCAST, def->sym));
 }
-
 
 static AggregateType*
 buildHeapType(Type* type) {
@@ -1109,7 +1191,7 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
-    // BHARSH TODO: Add a check only continue if def is not a reference
+    // BHARSH TODO: Add a check to only continue if def is not a reference
     if (!fLocal                                 &&
         isModuleSymbol(def->parentSymbol)       &&
         def->parentSymbol != rootModule         &&
@@ -1130,23 +1212,32 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
             !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
-            (def->sym->type != dtString)))) {
-        // replicate global const of primitive type
-        INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
+            !(def->sym->type == dtString && def->sym->isImmediate())))) {
 
-        for_defs(se, defMap, def->sym) {
-          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
-                                                      def->sym));
-        }
+        // replicate global const of primitive/record type
+
+        Expr* initialization = def->sym->getInitialization();
+
+        INT_ASSERT(initialization);
+        insertBroadcast(initialization, def->sym);
 
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions
-        replicateGlobalRecordWrappedVars(def);
+        Expr* initialization = def->sym->getInitialization();
+
+        INT_ASSERT(initialization);
+        insertBroadcast(initialization, def->sym);
 
       } else {
         // put other global constants and all global variables on the heap
-        varSet.set_add(def->sym);
-        varVec.add(def->sym);
+        // ... but not type variables without a runtime type component
+        Symbol* sym = def->sym;
+        if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+            !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // Don't add type variables without runtime type
+          varSet.set_add(sym);
+          varVec.add(sym);
+        }
       }
     }
   }
@@ -1348,7 +1439,7 @@ makeHeapAllocations() {
         } else if (call->isPrimitive(PRIM_ASSIGN)) {
           // ensure what we assign into is what we expect
           INT_ASSERT(toSymExpr(call->get(1))->symbol() == var);
-          VarSymbol* tmp = newTemp(var->type->refType);
+          VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
@@ -1377,7 +1468,7 @@ makeHeapAllocations() {
 
     for_uses(use, useMap, var) {
       if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        if (call->isPrimitive(PRIM_ADDR_OF)) {
+        if (call->isPrimitive(PRIM_ADDR_OF) || call->isPrimitive(PRIM_SET_REFERENCE)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move && (move->isPrimitive(PRIM_MOVE)));
           if (move->get(1)->typeInfo() == heapType) {
@@ -1424,7 +1515,7 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
-          VarSymbol* tmp = newTemp(var->type->refType);
+          VarSymbol* tmp = newTemp(var->qualType().toRef());
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
@@ -1490,7 +1581,7 @@ reprivatizeIterators() {
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
           VarSymbol* valTmp = newTemp(lhs->getValType());
           move->insertBefore(new DefExpr(valTmp));
-          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_SET_REFERENCE, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
           AggregateType* ct = toAggregateType(se->symbol()->type);
@@ -1519,14 +1610,28 @@ void parallel() {
 
   reprivatizeIterators();
 
-  makeHeapAllocations();
+  if (requireOutlinedOn()) {
+    makeHeapAllocations();
+  }
 
   insertEndCounts();
 
   passArgsToNestedFns();
+
+  // Lower error handling check error primitives
+  // now that callDestructors and parallel have
+  // had the benefit of more straightforward error-handling AST.
+  lowerCheckErrorPrimitive();
 }
 
 
+/* Lowers PRIM_GET_END_COUNT / PRIM_SET_END_COUNT for
+   managing the end-counts for cobegin and coforall.
+
+   End counts for sync/begin are managed by
+   PRIM_GET_DYNAMIC_END_COUNT / PRIM_SET_DYNAMIC_END_COUNT.
+   These are lowered here in to the corresponding calls.
+ */
 static void insertEndCounts()
 {
   Vec<FnSymbol*> queue;
@@ -1543,7 +1648,13 @@ static void insertEndCounts()
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
         insertEndCount(pfn, call->get(1)->typeInfo(), queue, endCountMap);
+      INT_ASSERT(call->numActuals() >= 1);
       call->replace(new CallExpr(PRIM_MOVE, endCountMap.get(pfn), call->get(1)->remove()));
+    } else if (call->isPrimitive(PRIM_GET_DYNAMIC_END_COUNT)) {
+      call->replace(new CallExpr(gGetDynamicEndCount));
+    } else if (call->isPrimitive(PRIM_SET_DYNAMIC_END_COUNT)) {
+      INT_ASSERT(call->numActuals() >= 1);
+      call->replace(new CallExpr(gSetDynamicEndCount, call->get(1)->remove()));
     }
   }
 
@@ -1656,6 +1767,21 @@ static void passArgsToNestedFns() {
         }
 
         localeArg->remove();
+      }
+
+      // Remove any error fields - they shouldn't be code-generated
+      // since the errors are handled directly.
+      if (baData.adjustErrors) {
+        AggregateType* ctype = baData.ctype;
+        Symbol* toRemove = NULL;
+        for_fields(field, ctype) {
+          if (field->hasFlag(FLAG_ERROR_VARIABLE))
+            toRemove = field;
+        }
+        if (toRemove != NULL) {
+          INT_ASSERT(toRemove->firstSymExpr() == NULL);
+          toRemove->defPoint->remove();
+        }
       }
     }
   }

@@ -10,6 +10,8 @@ class Force {
 
   var wipetime, maintime: real;
 
+  proc init() { }
+
   proc compute(store : bool) : void {}
 }
 
@@ -50,7 +52,7 @@ class ForceEAM : Force  {
 
   var funcfl : Funcfl;
 
-  proc ForceEAM(cf : real) {
+  proc init(cf : real) {
     // use the fluff domain already calculated for communication
     coforall ijk in LocaleGridDom {
       on LocaleGrid[ijk] {
@@ -334,7 +336,7 @@ class ForceEAM : Force  {
 
 // Lennard-Jones potential
 class ForceLJ : Force {
-  proc ForceLJ(cf : real) {
+  proc init(cf : real) {
     cutforcesq = cf * cf;
   }
 
@@ -373,7 +375,7 @@ class ForceLJ : Force {
         // by using an atomic variable, we can make the outer loop parallel
         var eng, vir : atomic real;
 
-        forall (b,p,c) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real], Me.Real) {
+        forall (b,p,c) in zip(Me.Bins, Me.Pos[Me.Real], Me.Count[Me.Real]) {
           for (a, x) in zip(b[1..c],p[1..c]) {
             for(n,i) in a.neighs[1..a.ncount] {
               const del = x - Me.Pos[n][i];

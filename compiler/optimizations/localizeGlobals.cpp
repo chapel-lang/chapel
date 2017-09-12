@@ -47,7 +47,7 @@ void localizeGlobals() {
         Symbol* var = se->symbol();
         ModuleSymbol* parentmod = toModuleSymbol(var->defPoint->parentSymbol);
         CallExpr* parentExpr = toCallExpr(se->parentExpr);
-        bool inAddrOf = parentExpr && parentExpr->isPrimitive(PRIM_ADDR_OF);
+        bool inAddrOf = parentExpr && (parentExpr->isPrimitive(PRIM_ADDR_OF) || parentExpr->isPrimitive(PRIM_SET_REFERENCE));
         bool lhsOfMove = parentExpr && isMoveOrAssign(parentExpr) && (parentExpr->get(1) == se);
 
         // Is var a global constant?

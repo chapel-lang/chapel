@@ -20,16 +20,6 @@
 GASNETI_IDENT(gasnetc_IdentString_Version, "$GASNetCoreLibraryVersion: " GASNET_CORE_VERSION_STR " $");
 GASNETI_IDENT(gasnetc_IdentString_Name,    "$GASNetCoreLibraryName: " GASNET_CORE_NAME_STR " $");
 
-#if HAVE_SSH_SPAWNER
-  GASNETI_IDENT(gasnetc_IdentString_HaveSSHSpawner, "$GASNetSSHSpawner: 1 $");
-#endif
-#if HAVE_MPI_SPAWNER
-  GASNETI_IDENT(gasnetc_IdentString_HaveMPISpawner, "$GASNetMPISpawner: 1 $");
-#endif
-#if HAVE_PMI_SPAWNER
-  GASNETI_IDENT(gasnetc_IdentString_HavePMISpawner, "$GASNetPMISpawner: 1 $");
-#endif
-
 /* ------------------------------------------------------------------------------------ */
 /*
   Configuration
@@ -147,6 +137,7 @@ int		gasnetc_bbuf_limit;
 
 /* Maximum pinning capabilities of the HCA */
 typedef struct gasnetc_pin_info_t_ {
+    uint64_t    physmemsz;
     uintptr_t	memory;		/* How much pinnable (per proc) */
     uint32_t	regions;
     int		num_local;	/* How many procs */
@@ -154,9 +145,6 @@ typedef struct gasnetc_pin_info_t_ {
 static gasnetc_pin_info_t gasnetc_pin_info;
 
 gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS]; /* handler table */
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered);
 
 static char *gasnetc_ibv_ports;
 
@@ -172,19 +160,7 @@ static int gasnetc_did_firehose_init = 0;
   Bootstrap collectives
 */
 
-static void (*gasneti_bootstrapBarrier_p)(void) = NULL;
-static void (*gasneti_bootstrapExchange_p)(void *src, size_t len, void *dest) = NULL;
-void (*gasneti_bootstrapFini_p)(void) = NULL;
-void (*gasneti_bootstrapAbort_p)(int exitcode) = NULL;
-void (*gasneti_bootstrapAlltoall_p)(void *src, size_t len, void *dest) = NULL;
-void (*gasneti_bootstrapBroadcast_p)(void *src, size_t len, void *dest, int rootnode) = NULL;
-void (*gasneti_bootstrapSNodeCast_p)(void *src, size_t len, void *dest, int rootnode) = NULL;
-void (*gasneti_bootstrapCleanup_p)(void) = NULL;
-#if GASNET_BLCR
-static int (*gasneti_bootstrapPreCheckpoint_p)(int fd) = NULL;
-static int (*gasneti_bootstrapPostCheckpoint_p)(int fd, int is_restart) = NULL;
-static int (*gasneti_bootstrapRollback_p)(const char *dir) = NULL;
-#endif
+gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
 static int gasneti_bootstrap_native_coll = 0;
 static int gasnetc_bootstrapBarrier_phase = 0;
@@ -223,6 +199,7 @@ static void gasnetc_sys_coll_init(void)
   gasnetc_bootstrapExchange_phase = 0;
 
   /* Construct vector of the dissemination peers */
+  gasnetc_dissem_peers = 0;
   for (i = 1; i < size; i *= 2) {
     ++gasnetc_dissem_peers;
   }
@@ -322,7 +299,7 @@ done:
   gasneti_assert(! gasneti_bootstrap_native_coll);
   gasneti_bootstrap_native_coll = 1;
 #if !GASNETC_IBV_SHUTDOWN
-  gasneti_bootstrapCleanup(); /* No futher use of ssh/mpi/pmi collectives */
+  gasneti_spawner->Cleanup(); /* No futher use of ssh/mpi/pmi collectives */
 #endif
 }
 
@@ -342,7 +319,6 @@ static void gasnetc_sys_coll_fini(void)
  #endif
 #endif
 
-  gasnetc_dissem_peers = 0;
   gasneti_bootstrap_native_coll = 0;
 }
 
@@ -385,7 +361,7 @@ static void gasnetc_sys_barrier_reqh(gasnet_token_t token, uint32_t arg)
 #endif
 }
 
-extern void gasnetc_bootstrapBarrier_ib(void)
+static void gasnetc_bootstrapBarrier_ib(void)
 {
     int phase = gasnetc_bootstrapBarrier_phase;
     int i;
@@ -425,7 +401,7 @@ extern void gasneti_bootstrapBarrier(void)
   #endif
     gasnetc_bootstrapBarrier_ib();
   } else {
-    (*gasneti_bootstrapBarrier_p)();
+    gasneti_spawner->Barrier();
   }
 }
 
@@ -503,7 +479,7 @@ static void gasnetc_sys_exchange_reqh(gasnet_token_t token, void *buf,
   gasnetc_sys_exchange_inc(phase, step);
 }
 
-extern void gasnetc_bootstrapExchange_ib(void *src, size_t len, void *dest)
+static void gasnetc_bootstrapExchange_ib(void *src, size_t len, void *dest)
 {
     int phase = gasnetc_bootstrapExchange_phase;
 
@@ -596,7 +572,7 @@ extern void gasneti_bootstrapExchange(void *src, size_t len, void *dest)
   #endif
     gasnetc_bootstrapExchange_ib(src, len, dest);
   } else {
-    (*gasneti_bootstrapExchange_p)(src, len, dest);
+    gasneti_spawner->Exchange(src, len, dest);
   }
 }
 
@@ -705,37 +681,183 @@ static void gasnetc_fakepin(uintptr_t limit, uintptr_t step) {
 }
 #endif
 
+#ifndef GASNETC_PHYSMEM_MIN
+#define GASNETC_PHYSMEM_MIN (128*1024*1024)
+#endif
+
+static void gasnetc_physmem_check(const char *reason, uintptr_t limit) {
+  if (limit < GASNETC_PHYSMEM_MIN) {
+    char min_display[16];
+    char limit_display[16];
+    gasneti_format_number(GASNETC_PHYSMEM_MIN, min_display, sizeof(min_display), 1);
+    gasneti_format_number(limit, limit_display, sizeof(limit_display), 1);
+    gasneti_fatalerror(
+            "%s yields GASNET_PHYSMEM_MAX of %"PRIuPTR" (%s), "
+            "which is less than the minimum supported value of %s.",
+            reason, limit, limit_display, min_display);
+  }
+}
+
+static void gasnetc_physmem_report(double elapsed, gasnetc_pin_info_t *all_info)
+{
+  fprintf(stderr, "WARNING: Probe of max pinnable memory completed in %gs.\n", elapsed);
+  char valstr1[80], valstr2[80], valstr3[80];
+  double sum_frac, min_frac, max_frac;
+  uintptr_t min_mem, max_mem;
+  uint64_t sum_mem, sum_pin, min_pin, max_pin;
+  sum_pin = min_pin = max_pin = all_info[0].memory;
+  sum_mem = min_mem = max_mem = all_info[0].physmemsz;
+  sum_frac = min_frac = max_frac = sum_pin / (double)sum_mem;
+  for (gasnet_node_t i = 1; i < gasneti_nodes; ++i) {
+    uintptr_t pin = all_info[i].memory;
+    if (pin == ~((uintptr_t)0)) continue;  // Not probed
+    sum_pin += pin;
+    min_pin = MIN(min_pin, pin);
+    max_pin = MAX(max_pin, pin);
+
+    uintptr_t mem = all_info[i].physmemsz;
+    sum_mem += mem;
+    min_mem = MIN(min_mem, mem);
+    max_mem = MAX(max_mem, mem);
+
+    double frac = pin / (double)mem;
+    sum_frac += frac;
+    min_frac = MIN(min_frac, frac);
+    max_frac = MAX(max_frac, frac);
+  }
+  int single_valued = 0;
+  if ((max_pin - min_pin) < ((uintptr_t)1 << 30)) {
+    // less than 1G difference in ABSOLUTE size
+    gasneti_format_number(min_pin, valstr1, sizeof(valstr1), 1);
+    single_valued = 1;
+  } else if ((max_frac - min_frac) < 0.05) {
+    // less than 5 percentage points difference in RELATIVE size
+    snprintf(valstr1, sizeof(valstr1), "%.3g", min_frac);
+    single_valued = 1;
+  }
+  if (single_valued) {
+    fprintf(stderr, "WARNING:   Probe of max pinnable memory has yielded '%s'.\n", valstr1);
+    fprintf(stderr, "WARNING:   If you have the same memory configuration on all nodes, then\n");
+    fprintf(stderr, "WARNING:   to avoid this probe in the future either reconfigure using\n");
+    fprintf(stderr, "WARNING:      --with-ibv-physmem-max='%s'\n", valstr1);
+    fprintf(stderr, "WARNING:   or run with environment variable\n");
+    fprintf(stderr, "WARNING:      GASNET_PHYSMEM_MAX='%s'.\n", valstr1);
+  } else {
+    fprintf(stderr, "WARNING:   Probe of max pinnable memory found varying results\n");
+    gasneti_format_number(sum_mem/gasneti_nodemap_global_count, valstr1, sizeof(valstr1), 1);
+    gasneti_format_number(min_mem, valstr2, sizeof(valstr2), 1);
+    gasneti_format_number(max_mem, valstr3, sizeof(valstr3), 1);
+    fprintf(stderr, "WARNING:   Physical memory   MEAN/MIN/MAX = %s / %s / %s\n",
+                    valstr1, valstr2, valstr3);
+    gasneti_format_number(sum_pin/gasneti_nodemap_global_count, valstr1, sizeof(valstr1), 1);
+    gasneti_format_number(min_pin, valstr2, sizeof(valstr2), 1);
+    gasneti_format_number(max_pin, valstr3, sizeof(valstr3), 1);
+    fprintf(stderr, "WARNING:   Pinnable memory   MEAN/MIN/MAX = %s / %s / %s\n",
+                    valstr1, valstr2, valstr3);
+    snprintf(valstr1, sizeof(valstr1), "%.3g", sum_frac/gasneti_nodemap_global_count);
+    snprintf(valstr2, sizeof(valstr2), "%.3g", min_frac);
+    snprintf(valstr3, sizeof(valstr3), "%.3g", max_frac);
+    fprintf(stderr, "WARNING:   Pinnable fraction MEAN/MIN/MAX = %s / %s / %s\n",
+                    valstr1, valstr2, valstr3);
+
+    // Report memory "lost" at min absolute size
+    uintptr_t try_abs = min_pin;
+    uintptr_t lost = all_info[0].memory - try_abs;
+    sum_mem = max_mem = lost;
+    sum_frac = max_frac = lost / (double)all_info[0].memory;
+    for (gasnet_node_t i = 1; i < gasneti_nodes; ++i) {
+      uintptr_t pin = all_info[i].memory;
+      if (pin == ~((uintptr_t)0)) continue;  // Not probed
+      lost = pin - try_abs;
+      sum_mem += lost;
+      max_mem = MAX(max_mem, lost);
+
+      double frac = lost / (double)pin;
+      sum_frac += frac;
+      max_frac = MAX(max_frac, frac);
+    }
+    gasneti_format_number(try_abs, valstr1, sizeof(valstr1), 1);
+    fprintf(stderr, "WARNING:   Unusable pinned memory with an absolute max of '%s':\n", valstr1);
+    gasneti_format_number(sum_mem, valstr1, sizeof(valstr1), 1);
+    gasneti_format_number(sum_mem/gasneti_nodemap_global_count, valstr2, sizeof(valstr2), 1);
+    gasneti_format_number(max_mem, valstr3, sizeof(valstr3), 1);
+    fprintf(stderr, "WARNING:     SUM/MEAN/MAX = %s / %s / %s\n", valstr1, valstr2, valstr3);
+
+    // Report memory "lost" at min relative size
+    double try_rel = min_frac;
+    lost = all_info[0].memory - (try_rel * all_info[0].physmemsz);
+    sum_mem = max_mem = lost;
+    sum_frac = max_frac = lost / (double)all_info[0].memory;
+    for (gasnet_node_t i = 1; i < gasneti_nodes; ++i) {
+      uintptr_t pin = all_info[i].memory;
+      if (pin == ~((uintptr_t)0)) continue;  // Not probed
+      lost = pin - (try_rel * all_info[i].physmemsz);
+      sum_mem += lost;
+      max_mem = MAX(max_mem, lost);
+
+      double frac = lost / (double)pin;
+      sum_frac += frac;
+      max_frac = MAX(max_frac, frac);
+    }
+    fprintf(stderr, "WARNING:   Unusable pinned memory with a relative max of '%.3g':\n", try_rel);
+    gasneti_format_number(sum_mem, valstr1, sizeof(valstr1), 1);
+    gasneti_format_number(sum_mem/gasneti_nodemap_global_count, valstr2, sizeof(valstr2), 1);
+    gasneti_format_number(max_mem, valstr3, sizeof(valstr3), 1);
+    fprintf(stderr, "WARNING:     SUM/MEAN/MAX = %s / %s / %s\n", valstr1, valstr2, valstr3);
+  }
+  fprintf(stderr, "WARNING: For more information see \"Slow PHYSMEM probe at start-up\"\n");
+  fprintf(stderr, "WARNING: in ibv-conduit's README.\n");
+}
+
 /* Search for the total amount of memory we can pin per process.
  */
 static void gasnetc_init_pin_info(int first_local, int num_local) {
   gasnetc_pin_info_t *all_info = gasneti_malloc(gasneti_nodes * sizeof(gasnetc_pin_info_t));
-  unsigned long limit;
-  int do_probe = 1;
   int i;
 
   /* 
    * We bound our search by the smallest of:
-   *   2/3 of physical memory (1/4 or 1GB for Darwin)
+   *   env(GASNET_PHYSMEM_MAX) as described in README
    *   User's current (soft) mlock limit (optional)
-   *   env(GASNET_PHYSMEM_MAX)
    *   if FIREHOSE_M and FIREHOSE_MAXVICTIM_M are both set:
    *     (SEGMENT_FAST ? MMAP_LIMIT : 0 ) + (FIREHOSE_M + FIREHOSE_MAXVICTIM_M + eplison)
+   *
+   * Unless env(GASNET_PHYSMEM_PROBE) is set to a "true" value, we will NOT verify any value
+   * set by configure or the GASNET_PHYSMEM_MAX environment variable.
    */
 
-#if PLATFORM_OS_DARWIN
-  /* Note bug #532: Pin requests >= 1GB kill Cluster X nodes */
-  limit = MIN((gasneti_getPhysMemSz(1) / 4) - 1, 0x3fffffff /*1GB-1*/);
-#else
-  limit = 2 * (gasneti_getPhysMemSz(1) / 3);
+  #ifdef GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
+    #define GASNETC_DEFAULT_PHYSMEM_MAX GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
+    int do_probe_default = 0;
+  #else
+    #define GASNETC_DEFAULT_PHYSMEM_MAX "2/3"
+    int do_probe_default = ! gasneti_getenv("GASNET_PHYSMEM_MAX");
+  #endif
+  #ifdef GASNETC_IBV_PHYSMEM_PROBE_CONFIGURE
+    do_probe_default = GASNETC_IBV_PHYSMEM_PROBE_CONFIGURE;
+  #else
+    // Will probe on request or if neither configure nor environment has provided a value
+  #endif
+  const int do_probe = gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_PROBE", do_probe_default);
+
+  uint64_t physmemsz = gasneti_getPhysMemSz(1);
+  uint64_t limit = gasneti_getenv_memsize_withdefault(
+                           "GASNET_PHYSMEM_MAX", GASNETC_DEFAULT_PHYSMEM_MAX,
+                           GASNETC_PHYSMEM_MIN, physmemsz);
+#if PLATFORM_ARCH_32
+   limit = MIN(limit, 0xFFFFFFFF);
 #endif
+
   #if defined(RLIMIT_MEMLOCK) && GASNETC_HONOR_RLIMIT_MEMLOCK
   { /* Honor soft mlock limit (build-time option) */
     struct rlimit r;
     if ((getrlimit(RLIMIT_MEMLOCK, &r) == 0) && (r.rlim_cur != RLIM_INFINITY)) {
       limit = MIN(limit, r.rlim_cur);
+      gasnetc_physmem_check("Application of RLIMIT_MEMLOCK", limit);
     }
   }
   #endif
+
   { /* Honor Firehose params if set */
     unsigned long fh_M = gasneti_parse_int(gasnet_getenv("GASNET_FIREHOSE_M"),(1<<20));
     unsigned long fh_VM = gasneti_parse_int(gasnet_getenv("GASNET_FIREHOSE_MAXVICTIM_M"),(1<<20));
@@ -745,25 +867,14 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
       #else
 	limit = MIN(limit, (fh_M + fh_VM + GASNETI_MMAP_GRANULARITY));
       #endif
+      limit = GASNETI_PAGE_ALIGNDOWN(limit);
+      gasnetc_physmem_check("Application of GASNET_FIREHOSE_M and GASNET_FIREHOSE_MAXVICTIM_M", limit);
     }
   }
-  { /* Honor PHYSMEM_MAX if set */
-    unsigned long tmp = gasneti_getenv_int_withdefault("GASNET_PHYSMEM_MAX", 0, 1);
-    if (tmp) {
-      limit = MIN(limit, tmp);
-      if_pf (gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_NOPROBE", 0)) {
-	/* Force use of PHYSMEM_MAX w/o probing */
-	limit = tmp;
-	do_probe = 0;
-      }
-    }
-  }
-  limit = GASNETI_PAGE_ALIGNDOWN(limit);
 
-  if_pf (limit == 0) {
-    gasneti_fatalerror("Failed to determine the available physical memory");
-  }
+  GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_PHYSMEM_MAX=%"PRIu64, limit));
 
+  gasnetc_pin_info.physmemsz = physmemsz;
   gasnetc_pin_info.memory    = ~((uintptr_t)0);
   gasnetc_pin_info.num_local = num_local;
   gasnetc_pin_info.regions = gasnetc_fh_maxregions;
@@ -772,6 +883,26 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
   }
 
   if (do_probe) {
+    int quiet = !gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_WARN", 1);
+    int did_warn = 0;
+    gasneti_tick_t start_time = gasneti_ticks_now();
+    // Warn if any node has more than 2G (unless QUIET)
+    if (! quiet) {
+      uint64_t *all_limits = gasneti_malloc(gasneti_nodes * sizeof(uint64_t));
+      gasnetc_bootstrapExchange_ib(&limit, sizeof(uint64_t), all_limits);
+      if (!gasneti_mynode) {
+        uint64_t max_limit = all_limits[0];
+        for (gasnet_node_t i = 1; i < gasneti_nodes; ++i) {
+          max_limit = MAX(max_limit, all_limits[i]);
+        }
+        if (max_limit > ((uint64_t)2 << 30)) {
+          fprintf(stderr, "WARNING: Beginning a potentially slow probe of max pinnable memory...\n");
+          fflush(stderr);
+          did_warn = 1;
+        }
+      }
+      gasneti_free(all_limits);
+    }
     /* Now search for largest pinnable memory, on one process per machine */
     uintptr_t step = ~(uintptr_t)0;
     GASNETC_FOR_ALL_HCA_INDEX(i) {
@@ -791,6 +922,16 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
       gasnetc_pin_info.memory = size;
     }
     gasnetc_bootstrapExchange_ib(&gasnetc_pin_info, sizeof(gasnetc_pin_info_t), all_info);
+    if (! quiet && ! gasneti_mynode) {
+      // If warned above, or too slow, print the results and what to do with them.
+      // We define "too slow" as 10s + log2(nodes) * 5s.
+      double elapsed = 1.e-9 * gasneti_ticks_to_ns(gasneti_ticks_now() - start_time);
+      double too_slow = 10.;
+      for (gasnet_node_t i = gasneti_nodes/2; i; i >>= 1) too_slow += 5.;
+      if (did_warn || (elapsed > too_slow)) {
+        gasnetc_physmem_report(elapsed, all_info);
+      }
+    }
 #if GASNET_ALIGNED_SEGMENTS  /* Just a waste of time otherwise */
     if (gasneti_mynode != first_local) {
       /* Extra mmap traffic to ensure compatible VM spaces */
@@ -808,6 +949,7 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
   for (i = 0; i < gasneti_nodes; i++) {
     gasnetc_pin_info_t *info = &all_info[i];
 
+    limit = MIN(limit, info->memory);
     info->memory = GASNETI_PAGE_ALIGNDOWN(info->memory / info->num_local);
     info->regions /= info->num_local;
 
@@ -815,6 +957,8 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
     gasnetc_pin_info.regions = MIN(gasnetc_pin_info.regions, info->regions);
   }
   gasneti_free(all_info);
+
+  gasnetc_physmem_check("Probing O/S limits and HCA capabilities", limit);
 }
 
 #if GASNET_TRACE
@@ -930,9 +1074,14 @@ static int gasnetc_load_settings(void) {
   }
   if_pf (gasnetc_amrdma_cycle > (GASNETI_ATOMIC_MAX >> 2)) {
     fprintf(stderr,
-            "WARNING: GASNET_AMRDMA_CYCLE reduced from the requested value, 0x%lx, to the maximum supported value, 0x%lx.\n",
-            (unsigned long)gasnetc_amrdma_cycle, (unsigned long)(GASNETI_ATOMIC_MAX >> 2));
+            "WARNING: GASNET_AMRDMA_CYCLE reduced from the requested value, 0x%"PRIx64", to the maximum supported value, 0x%"PRIx64".\n",
+            (uint64_t)gasnetc_amrdma_cycle, (uint64_t)(GASNETI_ATOMIC_MAX >> 2));
     gasnetc_amrdma_cycle = (GASNETI_ATOMIC_MAX >> 2);
+  }
+
+  // Bug 3441: zero values of GASNET_AMRDMA_{LIMIT,CYCLE} should prevent allocation of pinned memory
+  if (!gasnetc_amrdma_limit || !gasnetc_amrdma_cycle) {
+    gasnetc_amrdma_max_peers = 0;
   }
 
   #if GASNETC_PIN_SEGMENT
@@ -940,15 +1089,15 @@ static int gasnetc_load_settings(void) {
     if (!gasnetc_pin_maxsz) {
       /* 0=automatic (default).  Will setup later */
     } else if (!GASNETI_POWEROFTWO(gasnetc_pin_maxsz)) {
-      gasneti_fatalerror("GASNET_PIN_MAXSZ (%llu) is not a power of 2", (unsigned long long)gasnetc_pin_maxsz);
+      gasneti_fatalerror("GASNET_PIN_MAXSZ (%"PRIu64") is not a power of 2", gasnetc_pin_maxsz);
     } else if (gasnetc_pin_maxsz < GASNET_PAGESIZE) {
-      gasneti_fatalerror("GASNET_PIN_MAXSZ (%lu) is less than GASNET_PAGESIZE (%lu)",
-                         (unsigned long)gasnetc_pin_maxsz, (unsigned long)GASNET_PAGESIZE);
+      gasneti_fatalerror("GASNET_PIN_MAXSZ (%"PRIu64") is less than GASNET_PAGESIZE (%lu)",
+                         gasnetc_pin_maxsz, (unsigned long)GASNET_PAGESIZE);
     }
   #else
     GASNETC_ENVINT(gasnetc_putinmove_limit, GASNET_PUTINMOVE_LIMIT, GASNETC_DEFAULT_PUTINMOVE_LIMIT, 0, 1);
     if_pf (gasnetc_putinmove_limit > GASNETC_PUTINMOVE_LIMIT_MAX) {
-      gasneti_fatalerror("GASNET_PUTINMOVE_LIMIT (%lu) is larger than the max permitted (%lu)", (unsigned long)gasnetc_putinmove_limit, (unsigned long)GASNETC_PUTINMOVE_LIMIT_MAX);
+      gasneti_fatalerror("GASNET_PUTINMOVE_LIMIT (%"PRIuPTR") is larger than the max permitted (%"PRIuPTR")", (uintptr_t)gasnetc_putinmove_limit, (uintptr_t)GASNETC_PUTINMOVE_LIMIT_MAX);
     }
   #endif
   gasnetc_use_rcv_thread = gasneti_getenv_yesno_withdefault("GASNET_RCV_THREAD", 0);
@@ -1049,7 +1198,7 @@ static int gasnetc_load_settings(void) {
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_USE_XRC                  = %d", gasnetc_use_xrc));
 #endif
 #if GASNETC_PIN_SEGMENT
-  GASNETI_TRACE_PRINTF(I,  ("  GASNET_PIN_MAXSZ                = %lu%s", (unsigned long)gasnetc_pin_maxsz,
+  GASNETI_TRACE_PRINTF(I,  ("  GASNET_PIN_MAXSZ                = %"PRIu64"%s", gasnetc_pin_maxsz,
 				(!gasnetc_pin_maxsz ? " (automatic)" : "")));
 #endif
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_INLINESEND_LIMIT         = %d%s", (int)gasnetc_inline_limit,
@@ -1061,7 +1210,7 @@ static int gasnetc_load_settings(void) {
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_MAX_PEERS         = %u", (unsigned int)gasnetc_amrdma_max_peers));
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_DEPTH             = %u", (unsigned int)gasnetc_amrdma_depth));
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_LIMIT             = %u", (unsigned int)gasnetc_amrdma_limit));
-  GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_CYCLE             = %lu", (unsigned long)gasnetc_amrdma_cycle));
+  GASNETI_TRACE_PRINTF(I,  ("  GASNET_AMRDMA_CYCLE             = %"PRIu64"", (uint64_t)gasnetc_amrdma_cycle));
 #if GASNETC_USE_RCV_THREAD
   GASNETI_TRACE_PRINTF(I,  ("  GASNET_RCV_THREAD               = %d (%sabled)", gasnetc_use_rcv_thread,
 				gasnetc_use_rcv_thread ? "en" : "dis"));
@@ -1081,98 +1230,6 @@ static int gasnetc_load_settings(void) {
 						GASNETC_DEFAULT_EXITTIMEOUT_MIN);
 
   return GASNET_OK;
-}
-
-static int  gasneti_bootstrapInit(int *argc_p, char ***argv_p,
-				  gasnet_node_t *nodes_p, gasnet_node_t *mynode_p) {
-  const char *not_set = "(not set)";
-  char *spawner = gasneti_getenv_withdefault("GASNET_SPAWNER", not_set);
-  int res = GASNET_ERR_NOT_INIT;
-
-#if HAVE_SSH_SPAWNER
-  /* Sigh.  We can't assume GASNET_SPAWNER has been set except in the master.
-   * However, gasneti_bootstrapInit_ssh() verifies the command line args and
-   * returns GASNET_ERR_NOT_INIT on failure witout any noise on stderr.
-   * So, when the env var is not set, we try ssh-based spawn first.
-   */
-  if (GASNET_OK != res && (!strcmp(spawner, "ssh") || (spawner == not_set)) &&
-      GASNET_OK == (res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p))) {
-    gasneti_bootstrapFini_p	= &gasneti_bootstrapFini_ssh;
-    gasneti_bootstrapAbort_p	= &gasneti_bootstrapAbort_ssh;
-    gasneti_bootstrapBarrier_p	= &gasneti_bootstrapBarrier_ssh;
-    gasneti_bootstrapExchange_p	= &gasneti_bootstrapExchange_ssh;
-    gasneti_bootstrapAlltoall_p	= &gasneti_bootstrapAlltoall_ssh;
-    gasneti_bootstrapBroadcast_p= &gasneti_bootstrapBroadcast_ssh;
-    gasneti_bootstrapSNodeCast_p= &gasneti_bootstrapSNodeBroadcast_ssh;
-    gasneti_bootstrapCleanup_p  = &gasneti_bootstrapCleanup_ssh;
-  #if GASNET_BLCR
-    gasneti_bootstrapPreCheckpoint_p   = &gasneti_bootstrapPreCheckpoint_ssh;
-    gasneti_bootstrapPostCheckpoint_p  = &gasneti_bootstrapPostCheckpoint_ssh;
-    gasneti_bootstrapRollback_p        = &gasneti_bootstrapRollback_ssh;
-  #endif
-  }
-#endif
-
-#if HAVE_MPI_SPAWNER
-  /* Only try MPI-based spawn when spawner == "mpi".
-   * Otherwise things could hang or fail in "messy" ways here.
-   */
-  if (GASNET_OK != res && !strcmp(spawner, "mpi") && 
-      GASNET_OK == (res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p))) {
-    gasneti_bootstrapFini_p	= &gasneti_bootstrapFini_mpi;
-    gasneti_bootstrapAbort_p	= &gasneti_bootstrapAbort_mpi;
-    gasneti_bootstrapBarrier_p	= &gasneti_bootstrapBarrier_mpi;
-    gasneti_bootstrapExchange_p	= &gasneti_bootstrapExchange_mpi;
-    gasneti_bootstrapAlltoall_p	= &gasneti_bootstrapAlltoall_mpi;
-    gasneti_bootstrapBroadcast_p= &gasneti_bootstrapBroadcast_mpi;
-    gasneti_bootstrapSNodeCast_p= &gasneti_bootstrapSNodeBroadcast_mpi;
-    gasneti_bootstrapCleanup_p  = &gasneti_bootstrapCleanup_mpi;
-  #if GASNET_BLCR && 0 /* BLCR-TODO: support mpi spawner */
-    gasneti_bootstrapPreCheckpoint_p   = &gasneti_bootstrapPreCheckpoint_mpi;
-    gasneti_bootstrapPostCheckpoint_p  = &gasneti_bootstrapPostCheckpoint_mpi;
-    gasneti_bootstrapRollback_p        = &gasneti_bootstrapRollback_mpi;
-  #endif
-  }
-#endif
-
-#if HAVE_PMI_SPAWNER
-  /* Don't really expect GASNET_SPAWNER set if launched directly by srun, mpirun, yod, etc.
-   * So, when the env var is not set, we try pmi-based spawn last.
-   */
-  if (GASNET_OK != res && (!strcmp(spawner, "pmi") || (spawner == not_set)) &&
-      GASNET_OK == (res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p))) {
-    gasneti_bootstrapFini_p	= &gasneti_bootstrapFini_pmi;
-    gasneti_bootstrapAbort_p	= &gasneti_bootstrapAbort_pmi;
-    gasneti_bootstrapBarrier_p	= &gasneti_bootstrapBarrier_pmi;
-    gasneti_bootstrapExchange_p	= &gasneti_bootstrapExchange_pmi;
-    gasneti_bootstrapAlltoall_p	= &gasneti_bootstrapAlltoall_pmi;
-    gasneti_bootstrapBroadcast_p= &gasneti_bootstrapBroadcast_pmi;
-    gasneti_bootstrapSNodeCast_p= &gasneti_bootstrapSNodeBroadcast_pmi;
-    gasneti_bootstrapCleanup_p  = &gasneti_bootstrapCleanup_pmi;
-  #if GASNET_BLCR && 0 /* BLCR-TODO: support pmi spawner */
-    gasneti_bootstrapPreCheckpoint_p   = &gasneti_bootstrapPreCheckpoint_pmi;
-    gasneti_bootstrapPostCheckpoint_p  = &gasneti_bootstrapPostCheckpoint_pmi;
-    gasneti_bootstrapRollback_p        = &gasneti_bootstrapRollback_pmi;
-  #endif
-  }
-#endif
-
-  if (GASNET_OK != res
-#if HAVE_SSH_SPAWNER
-      && strcmp(spawner, "ssh")
-#endif
-#if HAVE_MPI_SPAWNER
-      && strcmp(spawner, "mpi")
-#endif
-#if HAVE_PMI_SPAWNER
-      && strcmp(spawner, "pmi")
-#endif
-      )
-  {
-    gasneti_fatalerror("Requested spawner \"%s\" is unknown or not supported in this build", spawner);
-  }
-
-  return res;
 }
 
 /* Info used while probing for HCAs/ports */
@@ -1531,14 +1588,15 @@ static int gasnetc_init(int *argc, char ***argv) {
     /* note - can't call trace macros during gasnet_init because trace system not yet initialized */
     fprintf(stderr,"gasnetc_init(): about to spawn...\n"); fflush(stderr);
   #endif
-  i = gasneti_bootstrapInit(argc, argv, &gasneti_nodes, &gasneti_mynode);
-  if (i != GASNET_OK) {
-    return i;
-  }
+  gasneti_spawner = gasneti_spawnerInit(argc, argv, NULL, &gasneti_nodes, &gasneti_mynode);
+  if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
   gasneti_init_done = 1; /* enable early to allow tracing */
 
   gasneti_freezeForDebugger();
+
+  /* Must init timers after global env, and preferably before tracing */
+  GASNETI_TICKS_INIT();
 
   /* Now enable tracing of all the following steps */
   gasneti_trace_init(argc, argv);
@@ -1708,13 +1766,13 @@ static int gasnetc_init(int *argc, char ***argv) {
     int numreg = 0;
     gasneti_assert(ctable);
     while (ctable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
     gasneti_assert(numreg == len);
   #if !GASNETC_PIN_SEGMENT
     gasneti_assert(ftable);
     while (ftable[flen].fnptr) flen++; /* calc len */
-    if (gasnetc_reghandlers(ftable, flen, len+1, 63, 1, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ftable, flen, len+1, 63, 1, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE, "Error registering firehose handlers");
     gasneti_assert(numreg == flen);
   #endif
@@ -1799,22 +1857,31 @@ static int gasnetc_init(int *argc, char ***argv) {
   }
  
   #if GASNET_SEGMENT_FAST
-  {
     /* Reserved memory needed by firehose on each node */
     /* NOTE: We reserve this memory even when firehose is disabled, since the disable
      * is only made available for debugging. */
     size_t reserved_mem = GASNETC_MIN_FH_MEM;
 
     if_pf (gasnetc_pin_info.memory < reserved_mem) {
-      gasneti_fatalerror("Pinnable memory (%lu) is less than reserved minimum %lu\n", (unsigned long)gasnetc_pin_info.memory, (unsigned long)reserved_mem);
+      gasneti_fatalerror("Pinnable memory (%"PRIuPTR") is less than reserved minimum %"PRIuPTR, 
+                         (uintptr_t)gasnetc_pin_info.memory, (uintptr_t)reserved_mem);
     }
-    gasneti_segmentInit((gasnetc_pin_info.memory - reserved_mem), &gasnetc_bootstrapExchange_ib);
-  }
+    uintptr_t local_limit = (gasnetc_pin_info.memory - reserved_mem);
   #elif GASNET_SEGMENT_LARGE
+    uintptr_t local_limit = (uintptr_t)-1;
+  #endif
+
+  #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
   {
-    uintptr_t limit = gasneti_mmapLimit((uintptr_t)-1, (uint64_t)-1,
+    #ifdef GASNETI_MMAP_OR_PSHM
+      uintptr_t limit = gasneti_mmapLimit(
+                                  local_limit, (uint64_t)-1,
                                   &gasnetc_bootstrapExchange_ib,
                                   &gasnetc_bootstrapBarrier_ib);
+    #else
+      uintptr_t limit = local_limit; // No better info available
+    #endif
+
     gasneti_segmentInit(limit, &gasnetc_bootstrapExchange_ib);
   }
   #elif GASNET_SEGMENT_EVERYTHING
@@ -1849,54 +1916,6 @@ extern int gasnet_init(int *argc, char ***argv) {
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
-static char checkuniqhandler[256] = { 0 };
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-  int i;
-  *numregistered = 0;
-  for (i = 0; i < numentries; i++) {
-    int newindex;
-
-    if ((table[i].index == 0 && !dontcare) || 
-        (table[i].index && dontcare)) continue;
-    else if (table[i].index) newindex = table[i].index;
-    else { /* deterministic assignment of dontcare indexes */
-      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-        if (!checkuniqhandler[newindex]) break;
-      }
-      if (newindex > highlimit) {
-        char s[255];
-        snprintf(s, sizeof(s), "Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-        GASNETI_RETURN_ERRR(BAD_ARG, s);
-      }
-    }
-
-    /*  ensure handlers fall into the proper range of pre-assigned values */
-    if (newindex < lowlimit || newindex > highlimit) {
-      char s[255];
-      snprintf(s, sizeof(s), "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-      GASNETI_RETURN_ERRR(BAD_ARG, s);
-    }
-
-    /* discover duplicates */
-    if (checkuniqhandler[newindex] != 0) 
-      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-    checkuniqhandler[newindex] = 1;
-
-    /* register the handler */
-    gasnetc_handler[newindex] = table[i].fnptr;
-
-    /* The check below for !table[i].index is redundant and present
-     * only to defeat the over-aggressive optimizer in pathcc 2.1
-     */
-    if (dontcare && !table[i].index) table[i].index = newindex;
-
-    (*numregistered)++;
-  }
-  return GASNET_OK;
-}
-/* ------------------------------------------------------------------------------------ */
 /* Helper for firehose init
  * Returns address (in static storage) of an array of preregistered regions
  */
@@ -1927,8 +1946,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   int numreg = 0;
   gasnet_node_t i;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -1962,7 +1981,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int len = 0;
     gasneti_assert(ctable);
     while (ctable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(ctable, len, 1, GASNETE_HANDLER_BASE-1, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ctable, len, 1, GASNETE_HANDLER_BASE-1, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
     gasneti_assert(numreg == len);
   }
@@ -1973,7 +1992,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int len = 0;
     gasneti_assert(etable);
     while (etable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(etable, len, GASNETE_HANDLER_BASE, 127, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(etable, len, GASNETE_HANDLER_BASE, 127, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering extended API handlers");
     gasneti_assert(numreg == len);
   }
@@ -1983,11 +2002,11 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int numreg2 = 0;
 
     /*  first pass - assign all fixed-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
+    if (gasneti_amregister(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
 
     /*  second pass - fill in dontcare-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
+    if (gasneti_amregister(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
 
     gasneti_assert(numreg1 + numreg2 == numentries);
@@ -2102,7 +2121,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
         uintptr_t		addr;
         hca->rkeys = gasneti_calloc(gasneti_nodes*gasnetc_max_regs, sizeof(uint32_t));
         gasneti_leak(hca->rkeys);
-        hca->seg_lkeys = gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
+        hca->seg_lkeys = gasneti_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
                                                 gasnetc_max_regs * sizeof(uint32_t));
         gasneti_leak_aligned(hca->seg_lkeys);
       #if GASNETC_IBV_SHUTDOWN
@@ -2221,7 +2240,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
          gasneti_seginfo[gasneti_mynode].size == segsize);
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(gasnetc_bootstrapExchange_ib); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -2235,6 +2257,14 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   /* ensure extended API is initialized across nodes */
   gasnetc_bootstrapBarrier_ib();
   gasnetc_sys_coll_fini();
+
+#if GASNET_DEBUG
+  /* Ensure fini-init-fini works (required for checkpoint/restart) */
+  gasnetc_sys_coll_init();
+  gasneti_spawner->Barrier();
+  gasnetc_bootstrapBarrier_ib();
+  gasnetc_sys_coll_fini();
+#endif
 
   return GASNET_OK;
 }
@@ -2343,7 +2373,7 @@ void gasnetc_post_checkpoint(int is_restart) {
   }
 
 #if GASNET_PSHM
-#error Not YET supporting PSHM
+#error BLCR integration does not YET support PSHM - configure with --disable-blcr or --disable-pshm
   /* Need to pointer to conduit-specific shared mem for lid table and xrc */
 #endif
 
@@ -2370,7 +2400,7 @@ void gasnetc_post_checkpoint(int is_restart) {
     /* transpose remote lids into port_tbl */
     /* BLCR-TODO: factor this step once PSHM support ready */
   #if GASNET_PSHM
-    #error NOT implemented
+    // BLCR-TODO: NOT implemented
   #else
     for (i = 0; i < gasnetc_num_ports; ++i) {
       gasnet_node_t node;
@@ -2382,9 +2412,8 @@ void gasnetc_post_checkpoint(int is_restart) {
     gasneti_free(remote_lid);
   }
 
-#if GASNETC_IBV_XRC
-#error Not YET supporting PSHM (and thus XRC)
-  /* Skip for now as we are initially not supporting PSHM */
+#if GASNETC_IBV_XRC && 0 // BLCR integration does not YET include PSHM (and thus XRC)
+  // BLCR-TODO: Skipped for now as we are initially not supporting PSHM */
   if (gasnetc_use_xrc) {
     rc = gasnetc_xrc_init(&shared_mem);
     if (i != GASNET_OK) {
@@ -2524,8 +2553,8 @@ int gasnet_all_rollback(const char *dir) {
     gasnetc_pre_checkpoint();
 
     /* BLCR-TODO: error reporting/recovery */
-    if (NULL != gasneti_bootstrapRollback_p) {
-      (void) (*gasneti_bootstrapRollback_p)(dir);
+    if (gasneti_spawner->Rollback) {
+      (void) gasneti_spawner->Rollback(dir);
       /* BLCR-TODO: error checking */
     }
 
@@ -2551,8 +2580,8 @@ int gasnet_all_checkpoint(const char *dir_arg) {
       int fd = fd = gasneti_checkpoint_create(dir);
       /* BLCR-TODO: error handling (curently _create() dies on error) */
 
-      if (NULL != gasneti_bootstrapPreCheckpoint_p) {
-        (void) (*gasneti_bootstrapPreCheckpoint_p)(fd);
+      if (gasneti_spawner->PreCheckpoint) {
+        (void) gasneti_spawner->PreCheckpoint(fd);
         /* BLCR-TODO: error checking */
       }
 
@@ -2562,8 +2591,8 @@ int gasnet_all_checkpoint(const char *dir_arg) {
       }
       /* BLCR-TODO: better error handling/recovery */
 
-      if (NULL != gasneti_bootstrapPostCheckpoint_p) {
-        (void) (*gasneti_bootstrapPostCheckpoint_p)(fd, rc);
+      if (gasneti_spawner->PostCheckpoint) {
+        (void) gasneti_spawner->PostCheckpoint(fd, rc);
         /* BLCR-TODO: error checking */
       }
 
@@ -3121,15 +3150,14 @@ static void gasnetc_exit_body(void) {
     gasneti_getheapstats(&stats);
     GASNETI_TRACE_PRINTF(I, ("Conduit-internal memory use (%scludes segment):",
                              GASNETC_PIN_SEGMENT ? "in" : "ex"));
-    GASNETI_TRACE_PRINTF(I, ("  allocated: %12llu bytes in %8llu objects",
-                             (long long unsigned)stats.live_bytes,
-                             (long long unsigned)stats.live_objects));
-    GASNETI_TRACE_PRINTF(I, ("     pinned: %12llu bytes in %8llu objects",
-                             (long long unsigned)gasnetc_pinned_bytes,
-                             (long long unsigned)gasnetc_pinned_blocks));
-    GASNETI_TRACE_PRINTF(I, ("      total: %12llu bytes in %8llu objects",
-                             (long long unsigned)(stats.live_bytes + gasnetc_pinned_bytes),
-                             (long long unsigned)(stats.live_objects + gasnetc_pinned_blocks)));
+    GASNETI_TRACE_PRINTF(I, ("  allocated: %12"PRIu64" bytes in %8"PRIu64" objects",
+                             stats.live_bytes, stats.live_objects));
+    GASNETI_TRACE_PRINTF(I, ("     pinned: %12"PRIu64" bytes in %8"PRIu64" objects",
+                             (uint64_t)gasnetc_pinned_bytes,
+                             (uint64_t)gasnetc_pinned_blocks));
+    GASNETI_TRACE_PRINTF(I, ("      total: %12"PRIu64" bytes in %8"PRIu64" objects",
+                             (uint64_t)(stats.live_bytes + gasnetc_pinned_bytes),
+                             (uint64_t)(stats.live_objects + gasnetc_pinned_blocks)));
   }
  #if PLATFORM_OS_LINUX
   { FILE *fp;

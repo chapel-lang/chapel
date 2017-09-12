@@ -1,9 +1,8 @@
 README file for GASNet
-by: Dan Bonachea <bonachea@cs.berkeley.edu>
+http://gasnet.lbl.gov
 
-This is a combination user manual and design document for GASNet. Anyone
-planning on using, modifying or adding to the GASNet code base should read this
-file.
+This is a user manual for GASNet. Anyone planning on using GASNet (either
+directly or indirectly) should consult this file for usage instructions.
 
 Other documentation:
  * In this README the "docs directory" means either docs/ in the source
@@ -16,47 +15,103 @@ Other documentation:
  * Additional information, including the GASNet specification and our bug
    tracking database, is available from http://gasnet.lbl.gov
  * Anyone planning to modify or add to the GASNet code base should also read
-   + README-devel: rules developers are expected to follow when committing
-   + README-git: overview and examples of GASNet's recommended git workflow
-   README-git has instructions for obtaining the latest GASNet source code.
+   the developer documents, available in the GASNet git repository, which 
+   can be browsed online: http://bitbucket.org/berkeleylab/gasnet/src/develop
+   + README-devel: GASNet design information and coding standards
+   + README-git: Rules developers are expected to follow when committing
 
 Contents of this file:
+ * Introduction
  * Building and Installing GASNet
  * Basic Usage Information
  * Conduit Status
+ * Single-node Development Options
  * Supported Platforms
  * Recognized Environment Variables
  * GASNet tracing & statistical collection
  * GASNet Collectives
  * GASNet debug malloc services
+ * GASNet inter-Process SHared Memory (PSHM)
  * MPI Interoperability
- * GASNet Design Information
- * System Organization
- * GASNet coding standards
- * GASNet porting guide
- * Source Control and GASNet
+ * Contact Info and Support
+
+Introduction
+============
+
+GASNet is a language-independent, low-level networking layer that provides
+network-independent, high-performance communication primitives tailored for
+implementing parallel global address space SPMD languages and libraries such as
+UPC, UPC++, Co-Array Fortran, Legion, Chapel, and many others. The interface is
+primarily intended as a compilation target and for use by runtime library
+writers (as opposed to end users), and the primary goals are high performance,
+interface portability, and expressiveness. GASNet stands for "Global-Address
+Space Networking".
+
+The GASNet API is defined in the specification, which is included with this 
+archive in docs/, and the definitive version is located on the GASNet webpage:
+
+  http://gasnet.lbl.gov/
+
+This README accompanies the GASNet source distribution, which includes
+implementations of the GASNet API for various popular HPC and general-purpose
+network hardwares.  We use the term "conduit" to refer to any complete
+implementation of the GASNet API which targets a specific network device or
+lower-level networking layer. A conduit is comprised of any required headers,
+source files and supporting libraries necessary to provide the functionality of
+the GASNet API to GASNet clients. This distribution additionally includes
+a library of communication-independent portability tools called the "GASNet tools",
+which are used in the conduit implementations and also made available to clients
+(see README-tools for details).
+
+System Requirements
+===================
+GASNet is extremely portable, and runs on most systems that are relevant to HPC
+production or development (and many that are not).
+
+The minimum system requirements are:
+
+ * A POSIX-like environment, e.g. Linux or another version of Unix.
+   For Windows systems, the free 'Cygwin' toolkit (http://www.cygwin.com/).
+   For Mac systems, the free 'XCode command-line tools' from the Apple Store.
+ * Make (we recommend GNU make version 3.79 or newer).
+ * Perl (version 5.005 or newer).
+ * The following standard Unix tools: 'awk', 'sed', 'env', 'basename', 'dirname',
+   and a Bourne-compatible shell (e.g. bash).
+ * A C compiler with at least minimal C99 support.
+
+We explicitly support most OS's, architectures and compilers in widespread use today.
+See the 'Supported Platforms' section for details on systems we've recently validated.
+
+Most distributed-memory GASNet conduits have additional requirements, based on their
+interactions with network hardware and other implementation details. For example:
+
+ * mpi-conduit requires an MPI-1.1 or newer compliant MPI implementation.
+ * udp-conduit requires POSIX socket libraries and a C++98 or newer compiler.
+
+See each conduit README for additional details on system requirements.
 
 Building and Installing GASNet
 ==============================
 Here are the steps to build GASNet:
 
-* optional: ./Bootstrap  
+* Step 0 (optional): ./Bootstrap  
   Runs the autoconf tools to build a configure script (this can be done on any
 system and may already have been done for you).
   If you are keeping a copy of the GASNet sources in your own source control
 repository (CVS, svn, Hg, Git, etc.), then please also see "Source Control and
-GASNet", below.
+GASNet" in README-devel (in the GASNet git repo).
 
-* ./configure (options)
+* Step 1: ./configure (options)
   Generate the Makefiles tailored to your system, creating a build tree in the
 current working directory.  You can run configure from a different directory to
 place your build files somewhere other than inside the source tree (a nice
 option when maintaining several build trees on the same source tree). 
-  Unlike many other configure-based software, GASNet's configure will ignore
-any setting of CFLAGS or CXXFLAGS.  Therefore, any flags that are required
-(e.g. for the correct ABI) must be included in the values of CC, CXX and MPI_CC.
-For example to build 64-bit code when your gcc and g++ default to 32-bit:
-  CC='gcc -m64' CXX='g++ -m64'
+Any compiler flags required for correct operation on your system (e.g. to 
+select the correct ABI) should be included in the values of CC, CXX and MPI_CC.
+For example to build 32-bit code when your gcc and g++ default to 64-bit:
+  configure CC='gcc -m32' CXX='g++ -m32' MPI_CC='mpicc -m32'
+or similarly, if you want libgasnet to contain debugging symbols:
+  configure CC='gcc -g' CXX='g++ -g'   (however also see --enable-debug, below)
 
   Some of the useful configure options:
 
@@ -65,16 +120,14 @@ For example to build 64-bit code when your gcc and g++ default to 32-bit:
     --enable-debug - build GASNet in a debugging mode. This turns on C-level
       debugger options and also enables extensive error and sanity checking 
       system-wide, which is highly recommended for developing and debugging 
-      GASNet clients (but should not be used for performance testing). 
+      GASNet clients (but should NEVER be used for performance testing). 
+      --enable-debug also implies --enable-{trace,stats,debug-malloc},
+      but these can still be selectively --disable'd.
     --enable-trace - turn on GASNet tracing (see usage info below)
     --enable-stats - turn on GASNet statistical collection (see usage info below)
     --enable-debug-malloc - use GASNet debugging malloc (see usage info below)
     --enable-segment-{fast,large,everything} - select a GASNet segment 
       configuration (see the GASNet spec for more info)
-    --enable-strict-prototypes - Use strict prototypes in GASNet headers
-      At the expense of slight deviation from the GASNet specification, this
-      option will ensure GASNet's public headers use prototypes that are
-      compatible with the -Wstrict-prototypes flag to gcc and work-alikes.
     --{enable,disable}-smp-safe - Build GASNet for an SMP or uni-processor.
       These options are not normally necessary, since by default configure
       will probe the machine to determine if it is an SMP.  However:
@@ -89,7 +142,8 @@ For example to build 64-bit code when your gcc and g++ default to 32-bit:
       are multi-threading via a PAR or PARSYNC build; or use of the conduit's
       API to perform the communication).
       Note that not all conduits and operating systems support this feature.
-      For more information, see the file pshm-design.txt in the docs directory.
+      For more information, see the section below entitled "GASNet inter-Process
+      SHared Memory (PSHM)".
     --with-segment-mmap-max=<n>GB - configure maximum segment size.
       Many of the GASNet network conduits obtain memory for the shared segment
       (in FAST and LARGE segment configurations) using mmap().  By default
@@ -113,9 +167,9 @@ invoke it in place of configure.  Example for the IBM BlueGene/Q:
   For cross-compilation support on platforms without scripts in other/contrib
 see the instructions in other/cross-configure-help.c.
 [NOTE: We currently don't distribute the cross-configure-help.c in our
-normal distribution.  If you think you need it, contact us at upc@lbl.gov]
+normal distribution.  If you think you need it, contact us at gasnet-devel@lbl.gov]
 
-* make all
+* Step 2: make all
   Build the GASNet libraries. A number of other useful makefile targets 
   are available from the top-level:
     make {seq,par,parsync}
@@ -156,20 +210,25 @@ normal distribution.  If you think you need it, contact us at upc@lbl.gov]
     make MANUAL_DEFINES=...   Flags to add on all compiles for GASNet libs, clients & tests
     make MANUAL_LDFLAGS=...   Linker flags to add for GASNet clients & tests
     make MANUAL_LIBS=...      Linker library flags to add for GASNet clients & tests
+  Note this feature should be used sparingly, as some flags can invalidate the
+  results of tests performed at configure time. The preferred way to add arbitrary
+  flags is in the $CC, $CXX and $MPI_CC variables passed to configure.
   The following misc make variables can also be set to affect GASNet compilation:
     make SEPARATE_CC=1        
       Build libgasnet using separate C compiler invocations, rather than one big one.
     make KEEPTMPS=1           
       Keep temporary files generated by the C compiler, if supported.
 
-* make install
+* Step 3 (optional): make install
   Install GASNet to the directory chosen at configure time. This will create an
 include directory with a sub-directory for each supported conduit, and a lib
 directory containing a library file for each supported conduit, as well as any
 supporting libraries.
+  GASNet may also be used directly from the build directory, as a convenience to
+eliminate steps if you are making changes to GASNet or its configuration.
 
 Manual control over compile and link flags
-===================
+==========================================
 
 As described in the previous section, the recommended mechanism for passing
 flags to the compilers used by GASNet is to include them in the definition of
@@ -205,8 +264,8 @@ makefile fragments (next section) use these variables when compiling client
 code.
 
 Basic Usage Information
-=================
-See the README for each GASNet core implementations for specific usage
+=======================
+See the README for each GASNet conduit implementation for specific usage
 information, but generally client programs should #include <gasnet.h>
 (and nothing else), and use the conduit-provided compilation settings.
 
@@ -217,12 +276,12 @@ rules for your GASNet client code.
 
 For example:
   ----------------------------
-  include /install/path/include/mpi-conduit/mpi-seq.mak 
+  include $(gasnet_prefix)/include/mpi-conduit/mpi-seq.mak 
 
   .c.o:
 	  $(GASNET_CC) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) -c -o $@ $<
 
-  .cxx.o:
+  .cc.o:
 	  $(GASNET_CXX) $(GASNET_CXXCPPFLAGS) $(GASNET_CXXFLAGS) -c -o $@ $<
 
   myprog: myprog.o
@@ -240,6 +299,56 @@ For more fine-grained control, the flags variables break-down as follows:
      $(GASNET_OPT_CXXFLAGS) $(GASNET_MISC_CXXFLAGS)
   GASNET_CXXCPPFLAGS is an alias for:
      $(GASNET_MISC_CXXCPPFLAGS) $(GASNET_DEFINES) $(GASNET_INCLUDES)
+
+The content of these variables follow these general guidelines:
+* GASNET_[CC,CXX] contain the configure-detected C and C++ compilers used to build
+  GASNet and guaranteed to work with any compiler-specific flags embedded in the
+  corresponding variables. Clients are strongly advised to compile all modules
+  using these same compilers to ensure object compatibility.
+* GASNET_INCLUDES contains only and all -I preprocessor flags
+* GASNET_DEFINES contains only and all -D or -U preprocessor flags
+* GASNET_OPT_* contain compiler-specific flags controlling the debug/opt level
+* GASNET_MISC_* contain other needed compiler-specific compile-time flags
+* GASNET_LD contains one of the configure-detected compilers (CC, CXX or MPI_CC)
+  which should be used to link the GASNet client executable, in order to guarantee
+  satisfaction of conduit library dependencies (eg on C++ or MPI).
+* GASNET_LIBS contains only and all -L or -l link-time flags
+* GASNET_LDFLAGS contains other needed link-time flags, which may be GASNET_LD-specific
+This summary is provided for informational purposes only - altering or omitting
+any of the flags contained in these variables could result in a non-functional
+build environment.
+
+Using GASNet with pkg-config 
+----------------------------
+
+As a convenience, the same variables described in the previous section are also
+available via the UNIX pkg-config utility.  For example, if pkg-config is installed
+on your system and the GASNet .pc files are in your PKG_CONFIG_PATH, then you
+can retrieve the value for GASNET_CC for udp-conduit in GASNET_SEQ mode with a
+command like:
+
+   pkg-config gasnet-udp-seq --variable=GASNET_CC
+
+Note the pkg-config --cflags and --libs arguments retrieve the appropriate subset of 
+GASNet variables, but pkg-config does not offer aliases corresponding to GASNET_CC,
+GASNET_LD or the GASNET_*CXX* variables. Use the `pkg-config --variable=` syntax 
+to retrieve these.
+
+Here is a complete example of using pkg-config with GASNet in a Makefile:
+
+  PKG_CONFIG_PATH = $(gasnet_prefix)/lib/pkgconfig
+  pkg = gasnet-udp-seq
+
+  .c.o:
+          `pkg-config $(pkg) --variable=GASNET_CC` `pkg-config $(pkg) --cflags` -c -o $@ $<
+
+  .cc.o:
+          `pkg-config $(pkg) --variable=GASNET_CXX` `pkg-config $(pkg) --variable=GASNET_CXXCPPFLAGS` \
+                         `pkg-config $(pkg) --variable=GASNET_CXXFLAGS` -c -o $@ $<
+
+  myprog: myprog.o
+          `pkg-config $(pkg) --variable=GASNET_LD` -o $@ $< `pkg-config $(pkg) --libs`
+
 
 Conduit Status
 ==============
@@ -314,6 +423,42 @@ shmem-conduit: SGI Altix / Cray X1 Shmem   *DEPRECATED*
  and it is officially deprecated. 
  If you have interest in this conduit please contact us!
 
+Single-node Development Options
+===============================
+
+GASNet supports hardware configurations ranging from HPC supercomputers and
+clusters to individual workstations and laptops.  Often the easiest way to
+develop and debug code is in a single-node environment, so this section
+provides conduit recommendations for development.  It should also be noted
+that configure option --enable-debug is highly recommended for finding bugs
+when developing GASNet client code.
+
+Option 1.  smp-conduit
+----------------------
+This is a pure shared-memory implementation and should be the fastest and
+easiest to use option.  GASNet's shared memory support should work "out of
+the box" (no special configuration options required) on common laptop,
+desktop, and workstation environments, including Linux, MacOS, Windows with
+Cygwin, and Solaris.
+
+Option 2.  udp-conduit
+----------------------
+By default this will be a shared-memory implementation within your single
+node, indistinguishable from smp-conduit except for small issues like job
+launch and stdin/out/err handling.  However, one can disable shared memory
+(by passing --disable-pshm at configure time or by setting the environment
+variable GASNET_SUPERNODE_MAXSIZE=1 at runtime).  This may be more realistic
+for testing of the expected behaviors in multi-node systems.
+
+Option 3.  mpi-conduit
+----------------------
+If you have a MPI installed (and in your $PATH when GASNet is configured)
+then everything said for udp-conduit holds true for mpi-conduit, including
+the ability to disable shared-memory support.  Additionally, since MPI will
+very likely use shared-memory internally, you can get multi-node like
+isolation at the GASNet level with the performance of shared-memory
+communication (much better than udp).
+
 Supported Platforms
 ===================
 
@@ -325,8 +470,9 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/x86-Mellanox/gcc/32:     smp, mpi, udp, ibv
     * Linux/x86/IntelC/32:           smp, mpi, udp
     * Linux/x86/PortlandGroupC/32:   smp, mpi, udp
-    * Linux/x86_64-Ethernet/{gcc,PortlandGroup,SunC}/{32,64}: smp, mpi, udp
-    * Linux/x86_64-Mellanox/{gcc,PathScale,IntelC,SunC}/64: smp, mpi, udp, ibv, mxm
+    * Linux/x86_64-Ethernet/{gcc,clang,PGI,SunC}/{32,64}: smp, mpi, udp, ofi
+    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,IntelC,SunC}/64: smp, mpi, udp, ibv, mxm
+    * Linux/x86_64-OmniPath/gcc/64: smp, mpi, udp, ofi, psm
     * Linux/x86_64/x86-Open64/64:   smp, udp, #
 
     * Linux/PowerPC-Ethernet/{gcc,xlc,clang}/{32,64}: smp, mpi, udp
@@ -349,18 +495,20 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Solaris11Express/x86/gcc,SunStudio12/{32,64}: smp, udp, mpi, ibv
     * Solaris11/x86/gcc,SunStudio12/{32,64}: smp, udp, mpi, ibv
 
-    * MSWindows-Cygwin/x86/gcc/32: smp, udp, mpi (MPICH.NT,MPICH2)
+    * MSWindows-Cygwin/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi (OpenMPI)
+    * MSWindows10-Linux/{gcc,clang}/64: smp, udp, mpi, BETA
+
 
     * MacOSX/PowerPC/{gcc,xlc}/{32,64}: smp, udp, mpi
     * MacOSX/{x86,x86_64}/{gcc,icc,clang}/{32,64}: smp, udp, mpi
-    * MacOSX/{x86,x86_64}/{PGI}/{32,64}: smp, udp, #
+    * MacOSX/{x86,x86_64}/PGI/{32,64}: smp, udp, #
 
     * CNL/Cray-XT/{gcc,PGI,PathScale,Intel}/64: smp, mpi &
 
-    * CNL/Cray-XE/{gcc,PGI,PathScale,Intel}/64: smp, mpi, gemini
-    * CNL/Cray-XK/{gcc,PGI,PathScale,Intel}/64: smp, mpi, gemini
+    * CNL/Cray-XE/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi, gemini
+    * CNL/Cray-XK/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi, gemini
 
-    * CNL/Cray-XC/{gcc,Intel}/64: smp, mpi, aries
+    * CNL/Cray-XC/{gcc,Intel,Cray}/64: smp, mpi, aries, ofi
 
     * Linux/Cray-XD1/{gcc,PGI}/64: smp, mpi &
 
@@ -378,6 +526,7 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
 % = System lacks pthreads or they are broken
 & = System has not been tested in recent releases due to lack of access.
     Reports of success or failure on this system are strongly encouraged.
+BETA = Support for this system is in beta state, please report your experiences.
 
 This list is not meant to be exhaustive.
 Other combinations of the platforms above are likely to also work, these are
@@ -556,8 +705,8 @@ application-specific support.
 
 * GASNET_VIS_REMOTECONTIG - enables a pack & RDMA algorithm for gather puts and
  scatter gets - i.e. cases that are locally non-contiguous but remotely
- contiguous. Currently unsafe for use on many conduits, thus disabled by default.
- (Currently ibv is known or suspected to be unsafe).
+ contiguous. Currently unsafe for use on some conduits, thus disabled by default.
+ (Currently ibv is known to be unsafe without GASNET_DISABLE_MUNMAP).
 
 * GASNET_COLL_OPT - set to 1 to enable the optimized versions of 
  the collectives. These include binomial trees for the rooted collectives 
@@ -635,14 +784,15 @@ GASNet tracing & statistical collection
 
 GASNet includes an extensive tracing and statistical collection 
 utility for monitoring communication events in GASNet applications.
-To use, configure with --enable-stats and/or --enable-trace, and
+To use, configure with --enable-stats and/or --enable-trace 
+(or --enable-debug, which implies both of these by default), and
 run your program as usual. In order to see the trace/stats output, 
 you must set the environment variable GASNET_TRACEFILE and/or 
 GASNET_STATSFILE as explained below.
 
 Note that system performance is likely to be degraded as a result of tracing and 
 statistical collection. This is still true even when output is disabled
-by not setting this GASNET_TRACEFILE/GASNET_STATSFILE (so production platforms 
+by not setting this GASNET_TRACEFILE/GASNET_STATSFILE (so production builds
 should not enable tracing/stats at GASNet configure time).
 
 Optional environment variable settings:
@@ -704,7 +854,7 @@ GASNet Collectives
 GASNet includes interfaces for collective operations, which is still
 evolving.  The design for the interfaces is located under the source directory
 in docs/collective_notes.txt.  Anyone planning to implement a client that
-uses these collective should contact us (upc@lbl.gov) first to determine
+uses these collective should contact us (gasnet-devel@lbl.gov) first to determine
 the completeness and stability of the relevant portions of the implementation.
 
 In GASNet 1.14.0 we introduce a mechanism for auto-tuning of collectives
@@ -776,6 +926,229 @@ GASNET_MALLOCFILE: specify a file name to receive a report of malloc heap
 
 GASNET_MALLOCNODES: limit which nodes will generate a malloc report.
    operates analogously to GASNET_TRACENODES
+
+GASNet inter-Process SHared Memory (PSHM)
+=========================================
+
+GASNet's PSHM support provides mechanism to communicate through shared memory among
+processes on the same compute node (ie sharing a cache-coherent physical memory).
+Inter-process communication through shared memory is usually the fastest way for
+processes sharing a compute node to communicate. GASNet clients are free to use
+any combination of processes communicating through PSHM and client pthreads within 
+processes (in GASNET_PAR mode) to implement on-node parallelism, and all such 
+execution contexts may perform network communication (with an appropriate conduit).
+
+GASNet's PSHM support is enabled by default unless one is cross-compiling, or
+running Cygwin prior to version 2.0.  However, most cross-compilation scripts
+enable it with any additional settings as required.  If desired, PSHM can be
+disabled by passing --disable-pshm at configure time.
+
+In addition to configure-time control, the environment variable
+GASNET_SUPERNODE_MAXSIZE sets a limit on the number of processes that will be
+grouped into a shared-memory "supernode".  By default all co-located processes
+are grouped into one supernode, but the value can be set to 1 to disable the
+use of shared-memory for communication.
+
+The PSHM support in GASNet can operate via three generic mechanisms: POSIX
+shared memory, SystemV shared memory, or mmap()ed disk files.
+
+POSIX shared memory is recommended as the best option in most cases, but is
+not always available (many kernels can be configured not to support it).
+
+In the absence of the POSIX shared memory, users are advised to use the
+SystemV shared memory as the next-best option.  However, see the next section
+for information about configuring a system to use SystemV shared memory.
+
+In the absence of both POSIX and SystemV shared memory, a user may try
+using mmap()ed disk files.  However, on some systems we see significant
+performance degradation when using files (apparently due to committing the
+changes from memory to disk).
+
+Unless PSHM is disabled, the default behavior of the configure step is to probe
+for support via exactly one preferred mechanism.  For Solaris the preferred
+mechanism is SystemV, while for all other platforms it is POSIX.  If the
+preferred mechanism is not supported (or is explicitly disabled) the then there
+is no automatic fallback to any other mechanism.  So, if one wishes to use
+another mechanism, one should explicitly disable the default (POSIX or SysV)
+support and enable the desired mechanism:
+
+        Common Usage Summary (flags to pass to the configure script):
+        ----------------------------------------------------------
+          OFF: --disable-pshm
+        POSIX: no flags required (default unless cross-compiling)
+         SYSV: --disable-pshm-posix --enable-pshm-sysv
+         FILE: --disable-pshm-posix --enable-pshm-file
+
+        Solaris Usage Summary (as above except that SysV is default)
+        ----------------------------------------------------------
+          OFF: --disable-pshm
+        POSIX: --disable-pshm-sysv --enable-pshm-posix
+         SYSV: no flags required (default)
+         FILE: --disable-pshm-sysv --enable-pshm-file
+
+There are also implementations which are specific to certain platforms:
+
+For Cray XE, XK and XC systems, PSHM-over-XPMEM is enabled automatically
+by the corresponding cross-configure scripts.  However, one can also
+optionally enable PSHM-over-XPMEM on an SGI Altix as follows:
+        XPMEM: --enable-pshm --disable-pshm-posix --enable-pshm-xpmem
+
+For BlueGene/Q, PSHM via the "common heap" is enabled automatically by
+the corresponding cross-configure scripts.  However, one can also use:
+        GHEAP: --enable-pshm --disable-pshm-posix --enable-pshm-gheap
+Note on BG/Q one must set BG_MAPCOMMONHEAP=1 in the compute node environment.
+This is handled automatically by the gasnetrun_mpi and gasnetrun_pami
+scripts, but must be handled manually when using runjob directly (or
+a wrapper like qsub from ANL's Cobalt suite).
+
+For Linux systems with libhugetlbfs and a hugetlbfs mount, there is also
+experimental support for mmap()ed files on hugetlbfs, which can be
+enabled with:
+    HUGETLBFS: --disable-pshm-posix --enable-pshm-hugetlbfs
+
+PSHM includes an environment variable for controlling use of memory for
+intra-memory AM traffic:
+
+  GASNET_PSHMNET_QUEUE_DEPTH
+     Minimum number of PSHM-AMs a process must be capable of sending before
+     it may stall (default 32).  The shared memory allocated on a compute
+     node with P processes is roughly (2 * P * Depth * MaxMsgSz).
+
+Kernel settings for SystemV:
+---------------------------
+On most operating systems the amount of available SystemV shared memory
+and the number of shared memory segments is controlled by the kernel
+parameters: shmmax, shmall and shmmni.
+   shmmax = largest size of a shared memory segment (in bytes)
+   shmall = total amount of memory allocatable as shared (in pages)
+   shmmni = maximum number of shared memory segments
+
+Insufficient amount of SystemV shared memory will lead to failures at
+start-up of any application using a runtime configured to use PSHM over
+SystemV.  Setting these parameters is system-specific and requires
+administrator privileges.
+
+* Examples of configuration:
+
+These examples are for 64-bit systems, and essentially allow
+unlimited amounts of memory to be used for GASNet segments.
+
+These assume you are running no more than 127 processes per
+node.  If you have more cores (or cpu threads) then increase
+the shmmni value to the maximum number of processes you wish
+to be be able to run, plus 1.  Some examples below do not
+include a setting for shmmni because the system defaults are
+large enough in general, and often cannot be reduced.
+
+For 32-bit systems, use 2147483647 for the shmmax value to
+avoid a potential overflow.
+
+   - Linux:
+        Add the following three lines to /etc/sysctl.conf (sudo required):
+kernel.shmmax=1099511627776
+kernel.shmall=268435456
+kernel.shmmni=128
+
+        To activate the new settings reboot, or run the following:
+        sudo /sbin/sysctl -p /etc/sysctl.conf
+
+   - MacOS:
+        Add the following three lines to /etc/sysctl.conf (sudo required):
+kern.sysv.shmmax=1099511627776
+kern.sysv.shmall=268435456
+kern.sysv.shmmni=128
+
+        To activate the new settings reboot, or run the following:
+        grep ^kern.sysv.shm /etc/sysctl.conf | sudo xargs /usr/sbin/sysctl -w
+
+   - FreeBSD:
+        Add the following two lines to /etc/sysctl.conf (sudo required):
+kern.ipc.shmmax=1099511627776
+kern.ipc.shmall=268435456
+
+        To activate the new settings reboot, or run the following:
+        sudo /sbin/sysctl -f /etc/sysctl.conf
+
+   - NetBSD:
+        Add the following two lines to /etc/sysctl.conf (sudo required):
+kern.ipc.shmmax=1099511627776
+kern.ipc.shmmaxpgs=268435456
+
+        To activate the new settings reboot, or run the following:
+        sudo /sbin/sysctl -f /etc/sysctl.conf
+
+   - OpenBSD:
+        Add the following two lines to /etc/sysctl.conf (sudo required):
+kern.shminfo.shmmax=2147483647
+kern.shminfo.shmall=268435456
+
+        To activate the new settings reboot, or run the following:
+        grep ^kern.shminfo /etc/sysctl.conf | sudo xargs /sbin/sysctl -w
+
+   - Solaris:
+        Depends on version.  Please see the Sun/Oracle documentation.
+        However, on recent releases the defaults are sufficient.
+
+   - Cygwin:
+        If you have not done so yet, please Read the Cygwin documentation
+        on "cygserver-config" to create an initial /etc/cygsever.conf
+        and start the server as a Windows service (optional).
+        You may then edit /etc/cygserver to edit
+          kern.ipc.shmmaxpgs
+          kern.ipc.shmmni
+          kern.ipc.shmseg
+        Except for shmmaxpgs, the defaults are often large enough.
+        These configuration values are only read when cygserver starts.
+        So, read the Cygwin documentation to determine if/how to restart
+        the cygserver service.
+        Under Cygwin-1.5 you may also need to add "server" to the value
+        of the CYGWIN environment variable.  Again, you should see the
+        Cygwin documentation for more information on this subject.
+
+Warning to users of Mac OS X:
+-----------------------------
+We have evidence which suggests that there is a kernel bug in all releases of
+Mac OS X though at least 10.12 (Sierra) which leads to a small leak of kernel
+memory (perhaps a few 10s of bytes) each time POSIX or SystemV shared memory
+is used.  This may, after tens of thousands of runs of GASNet applications
+using PSHM, lead to a low memory condition contributing to slow performance
+and eventually to total memory exhaustion.  In normal usage, it is reasonable
+to expect that a Mac laptop or desktop system will be rebooted for software
+updates frequently enough that this leak will not impact normal users.
+Also note that --enable-pshm-file is NOT recommended for use on OSX, where
+it has been seen to cause VERY slow startup times.
+
+IMPORTANT: SYSTEM CLEANING OF PSHM OBJECTS:
+------------------------------------------
+If a GASNet application using PSHM is terminated before ending the
+initialization phase, there is a possibility that the shared memory objects
+will remain in the system.  A large amount of memory or disk space can
+remain allocated, preventing users from fully utilizing all available
+hardware resources.
+
+In the SystemV case, the allocated (but not released) shared memory
+segments can be listed via the "ipcs" command, and can be removed via the
+"ipcrm" command.  Note that on the systems with a batch scheduler, the
+"ipcs" and "ipcrm" instructions need to be run on the compute nodes.
+
+In the mmap()ed file case, the allocated but not released shared memory files
+can be found in the directory pointed by the TMPDIR environment variable
+(default: /tmp). These files are named with the prefix GASNT (the lack of an
+'E' is not a typo), and can be deleted using the "rm" command.
+
+The case of mmap()ed file on hugetlbfs is like the regular mmap()ed file
+case except that the directory will be the hugetlbfs mount point.  This is
+typically something like /dev/hugepages.  If uncertain of the mount point,
+the command "mount|grep hugetlbfs" should locate it for you.
+
+The case of POSIX shared memory is OS-specific, but in most cases the
+shared memory objects are visible in the file system.  On systems we use
+for development, we have observed the following defaults:
+* Linux:   located in /dev/shm with a filename prefix of "GASNT"
+* Cygwin:  located in /dev/shm with a filename prefix of "GASNT"
+* Solaris: located in /tmp with a filename prefix of ".SHMDGASNT"
+* OpenBSD: located in /tmp with long random names suffixed by ".shm"
+* NetBSD:  located in /var/shm with a filename prefix of ".shmobj_GASNT"
 
 MPI Interoperability
 ====================
@@ -876,7 +1249,7 @@ There are a few other important caveats to be aware of when mixing GASNet and MP
  (e.g. UPC shared accesses) can easily lead to deadlock. In order to ensure
  safety and portably correct operation across networks, GASNet communication
  operations and user MPI calls should be isolated from each other by barriers, 
- by strictly adhering to the following protocol:
+ by strictly adhering to the following "Time-Phasing" protocol:
 
    - When the application starts, the first MPI or GASNet call issued from any
      node should be considered to put the application in 'MPI' or 'GASNet'
@@ -889,14 +1262,14 @@ There are a few other important caveats to be aware of when mixing GASNet and MP
     'GASNet' mode. 
 
    - When an application is in 'GASNet' mode, and an MPI call that may cause
-     network traffic is needed, a collective call to 'gasnet_notify()' followed
-     by a 'gasnet_wait()' should be executed as the last GASNet communication
+     network traffic is needed, a collective call to 'gasnet_barrier_notify()' followed
+     by a 'gasnet_barrier_wait()' should be executed as the last GASNet communication
      before any MPI calls are made. Once any MPI functions have been called from any
      thread, the program should be considered to be in 'MPI' mode. 
 
  If this simple construct--GASNet code must be followed by a GASNet barrier,
- and MPI code must be followed by an MPI_Barrier--is followed, deadlock should
- not occur. This usage is demonstrated in the code above.
+ and MPI code must be followed by an MPI_Barrier--is followed, this deadlock should
+ not occur. This protocol is demonstrated in the code above.
 
 * GASNet and MPI both number processes with a unique non-negative index (i.e. gasnet_mynode()
   and MPI_Comm_rank(MPI_COMM_WORLD)). Every attempt is made to ensure this
@@ -917,399 +1290,32 @@ There are a few other important caveats to be aware of when mixing GASNet and MP
  and spawning mechanisms. Please see the README file in each conduit directory
  for network-specific discussion of issues with MPI interoperability.
 
+Contact Info and Support
+========================
 
-GASNet Design Information
-=========================
+For the latest GASNet downloads, publications, and specifications, please visit:
 
-See the GASNet specification for information about the GASNet API. A copy is
-included with this archive in docs/, and the definitive version is located on
-the GASNet webpage here:
+  http://gasnet.lbl.gov
 
-  http://gasnet.lbl.gov/
+For bug reports and feature requests, please submit a ticket in the GASNet Bugzilla:
 
-The GASNet API is a two-level interface consisting of the lower-level "core API"
-and the upper-level "extended API". All of the functions in the extended API can
-be implemented using the core API, but some implementations may choose to
-implement them directly for performance reasons. We use the term "conduit" to
-refer to any complete implementation of the GASNet API (both layers), which
-targets a specific network device or lower-level networking layer. A conduit
-is comprised of any required headers, source files and supporting libraries
-necessary to provide the functionality of the GASNet API to GASNet clients. Some
-conduits may be monolithic - implementing the entire GASNet API directly on the
-lower-level network system, and others may be layered - directly implementing
-just the GASNet core API and borrowing a reference implementation of the
-extended API which is written using the core primitives.
+  http://gasnet-bugs.lbl.gov
 
-This distribution provides several conduits for different networks that are
-packaged together for convenience because they share some code and general
-infrastructure. However, each conduit is logically a stand-alone implementation
-of the GASNet API. Note there may eventually be other GASNet conduits (e.g.
-provided by vendors) which need not be included as part of this distribution -
-all that's required of a conduit is that it implements the standardized GASNet API.
+You may find an instant solution to your problem by searching the bug database!
 
-System Organization
-===================
+GASNet has several mailing lists for support:
 
-The directory tree for this distribution looks something like this:
+  gasnet-users@lbl.gov     General questions or inquiries regarding the installation or 
+                           use of GASNet. Any users can join the list from the web site above.
 
-top-level/
- \__ config-aux/
- \__ tests/
- \__ docs/
- \__ extended-ref/
- \__ {conduitname1}-conduit/
- \__ {conduitname2}-conduit/
- \__ template-conduit/
- \__ other/
+  gasnet-devel@lbl.gov     GASNet developers list (multi-institution)
 
-* top-level: contains the GASNet configuration scripts and master Makefile and
-GASNet headers.
+  gasnet-announce@lbl.gov  GASNet release announcements. Join on the web site above.
 
-  When making changes to GASNet (esp the configure script), please remember that
-GASNet is not only a communication system for UPC, but also a self-contained
-product used as the communication system for other languages (like Titanium) so
-the configuration scripts, header files, etc. should not rely on anything from
-outside directories not included in this distribution (other than basic system
-headers and lower-level networking libraries).
+--------------------------------------------------------------------------
+  The canonical version of this document is located here:
+    http://bitbucket.org/berkeleylab/gasnet/src/master/README
 
-* Header files: The GASNet master header file (gasnet.h) #includes
-several files which should be provided by each conduit:
-
-<gasnet.h> includes the following files:
-   <gasnet_config.h> Created by the configure script, this header helps in
-		     customizing gasnet for site-specific and platform-specific
-		     information.
-   <gasnet_basic.h>  Defines various basic and optimizing compiler macros,
-                     platform-independent integer types and c++ binding macros.
-   <gasnet_help.h> Extended and core API platform independent helpers
-                    (providing services which aren't part of GASNet API, but are
-		     required by code in gasnet.h)
-   <gasnet_trace.h> Implements GASNet's sophisticated
-                    internal tracing and statistical collection system
-   <gasnet_core_fwd.h> definitions of basic constants and types used by the
-		       core API and included early in the gasnet.h file
-		       (gasnet.h provides some default values for various
-		       constants and types that can be overridden here)
-   <gasnet_extended_fwd.h>  Allows a specific extended implementation to
-			    override the default gasnet types such as handles
-			    and threadinfo.
-   <gasnet_core.h> Provides the public interface for the GASNet core API
-		   (function prototypes and/or inline functions for
-		   implementing the core API).
-      .. <gasnet_core_help.h> This is the core's entry point to provide access
-			      to private symbols which might be required by the 
-			      core header (e.g.: node's node id, number of nodes
-			      in job), but which should not really be publicly
-			      visible to client code (i.e. not part of GASNet API)
-   <gasnet_extended.h> Provides the public interface for the GASNet extended API
-      .. <gasnet_extended_help.h> Extended API's entry point to define private symbols
-				  used by the extended header (e.g.segment info, 
-				  thread info) but which should not really be publicly
-			          visible to client code (i.e. not part of GASNet API)
-
-Many conduits also have <gasnet_core_internal.h> and <gasnet_extended_internal.h> files
-which are _not_ included by gasnet.h (and therefore not visible to client code) and
-are exclusively for use in building the conduit libraries. 
-<gasnet_internal.h> is the conduit-independent version of these files at the top level.
-Internal GASNet implementation should include <gasnet_internal.h> instead of <gasnet.h>.
-
-<gasnet_coll.h> and <gasnet_vis.h> are headers providing a set of proposed additions
-to the GASNet spec (for collective operations and non-contiguous put/get,
-respectively).  Since these interfaces are not finalized in a written specification,
-we strongly recommend you contact us before using them.
-
-<gasnet_tools.h> is header providing a set of conduit-independent general system 
-utilities which are not specified by the GASNet spec. The header can and is used 
-independently of libgasnet*.a (even on systems with no supported conduits) - 
-all that's required is a successful configure and #include <gasnet_tools.h>.
-See README-tools for documentation on the GASNet Tools interface.
-
-* config-aux: helper scripts for configure
-
-* {conduitname}-conduit: the complete implementation for a particular GASNet conduit. 
-This directory is in charge of providing/installing the headers listed above,
-compiling any appropriate tests and building/installing the following libraries:
-
- libgasnet-conduitname-seq.a - GASNET_SEQ implementation of GASNet
- libgasnet-conduitname-par.a - GASNET_PAR implementation of GASNet
- libgasnet-conduitname-parsync.a - GASNET_PARSYNC implementation of GASNet
-
-* template-conduit: A conduit template which should be used as a starting point for 
-new conduit implementations. See the README.template file in this directory for detailed 
-instructions.
-
-* other: A container directory for any external supporting libraries or
-utilities used by one or more conduits.
-
-* extended-ref: the reference implementation of the GASNet extended API. Conduits
-can optionally use some or all of the files in this directory by compiling the
-sources into the conduit library and installing the headers into the appropriate
-conduit include directory. See mpi-conduit for an example of how to use the
-reference extended API implementation (the template-conduit is setup to use the
-extended-ref implementation by default).
-
-* tests: basic tests written to the GASNet API that should run on any GASNet
-conduit. These can be sucked in and compiled in each conduit directory (see
-mpi-conduit for an example).
-
-* docs: documentation on GASNet and various conduits
-
-GASNet coding standards
-=======================
-All GASNet conduit code is required to meet the following coding standards:
-
-* Naming Conventions for macros and identifiers:
-  - All entry points required by GASNet spec are lower-case identifiers with
-    the prefix gasnet_ 
-  - All constants or macros required by GASNet spec are upper-case and preceded
-    with the prefix GASNET_
-  - All private symbols in the reference extended API implementation are
-    prefixed with gasnete_ (or GASNETE_ for macros)
-  - All private symbols in a core API implementation are prefixed with gasnetc_
-    (or GASNETC_ for macros)
-  - All private symbols shared throughout GASNet are prefixed with gasneti_ (or
-    GASNETI_ for macros)
-  - All GASNET_ or GASNETI_ configuration selection macros are either #defined
-    to 1 or #undef'd
-
-* All non-normative identifiers appearing in public header files should use
-  either one of the GASNet internal name-space prefixes from the previous rule,
-  or a _ prefix to reduce the possibility of identifier name capture (eg
-  -Dfoo= before the #include of gasnet.h). This especially applies to
-  macro/function names, function arguments, local variables declared in macros
-  or inline functions, type/enum names, and struct field names.
-  This rule was added in July 2016 and applies to all new code.
-
-* GASNet code should be as close to C89 as possible (i.e. never differing without
-  good reason), because many C compilers still do not provide full C99 support,
-  and differ quite widely in the supported features. 
-  The following is the COMPLETE list of features introduced by C99 we PERMIT:
-   1. C++/C99-style // comments
-   2. Mid-block declarations (mixing declarations and code)
-   3. Conditional expression declarations, only in for loop headers, 
-      ie: for (int i=...) { ..i.. }
-  All GASNet code should otherwise adhere to C89 restrictions.
-  Most notably, we PROHIBIT: (incomplete list)
-   - Do not use variable-length array declarations
-   - Do not use zero-length structure fields (aka flexible array member)
-   - Do not use compound literals or named struct field initializers
-   - Do not use printf format specifiers added in C99, such as: ll,j,z,t,L
-   - Do not include any header files introduced by C99 or any features they introduce
-   - Do not use restrict, __func__ or _Pragma/#pragma directly
-     (use GASNETI_RESTRICT, GASNETI_CURRENT_FUNCTION, and the various attribute
-      wrapper macros defined in gasnet_basic.h using configure detection)
-   - Do not use other GNU or vendor extensions (unless properly #ifdef protected w/ fallback)
-
-* GASNet code should use full prototypes whenever possible:
-    NO:  extern void foo();
-    YES: extern void foo(void);
-    NO:  int bar() { return xyz; }
-    YES: int bar(void) { return xyz; }
-  Configuring with --enable-strict-prototypes and compiling with the GNU or
-  PathScale compilers will give you warnings for violations of this rule.
-
-* All code in public header files should be C++98-compliant to support C++
-  GASNet clients. Most notably this means using GASNETI_{BEGIN,END}_EXTERNC
-  around all extern function prototypes, and ensuring any inline function code
-  or macro code passes the C++ type checker.  It is especially important for
-  code in public headers to avoid the few dozen C constructs which are not
-  present in the C subset of the C++98 standard. Most notably: (incomplete list)
-   - Do not use C++ keywords in identifiers
-   - Do not use long long types or printf specifiers
-   - Do not use tentative definitions
-   - Do not use empty preprocessor function macro arguments FOO(,,,)
-  See bug 3296 for a complete list.
-  Run a "make testcxx" to verify compliance.
-
-* GASNet conduit code should never call any of the following functions 
-  directly:
-   malloc, calloc, realloc, free, str(n)dup, assert, sched_yield, 
-   getenv, (un)setenv, mmap, pthread_*
-  Instead, you should use the gasneti_* wrapper functions of the same name.
-
-* GASNet code may leak "permanent" data structures with a lifetime that extends
-  through gasnet_exit(), such as frequently re-used structures kept on freelists.
-  Any such dynamic allocation should be annotated with calls to gasneti_leak()
-  or gasneti_leak_aligned() to preserve the value of GASNET_MALLOCFILE for the
-  identification of unintended leaks.
-
-* The calls gasneti_malloc(), _calloc and _realloc all return NULL for zero-byte
-  allocations.  Correspondingly, gasneti_free() and gasneti_realloc() accept NULL
-  for the pointer argument, and GASNet code should therefore NOT make an
-  unnecessary check for NULL before calling these functions.
-
-* The calls gasneti_malloc(), _calloc, _realloc and str(n)dup all check for
-  NULL return, and GASNet code should therefore NOT make a redundant check.
-  The call gasneti_malloc_allowfail() exists for the rare occasion when the
-  caller is prepared to respond to a NULL return with something better than
-  a fatal error.
-  However, as noted above, a NULL return is expected for a zero-byte allocation.
-
-* Use gasneti_fatalerror() to signal fatal errors - the arguments work
-  just like printf. NEVER use "gasneti_assert(0)" (it will be compiled away), 
-  and gasneti_fatalerror() with a useful message is always preferable to abort().
-
-* Conditional compilation for platform-specific features should be done using
-  the standardized platform macros provided by other/portable_platform.h, not ad-hoc
-  vendor or compiler-provided preprocessor macros.
-
-* Code should never make assumptions about integer data type sizes. In cases that
-  call for a specific size integral type, the (u)int(sz)_t types provided by
-  other/portable_inttypes.h should always be used (e.g. "uint64_t" = unsigned 64-bit int).
-
-* Do NOT make assumptions about the width of values stored in type "gasneti_atomic_t".
-  On some platforms the width may be neither 32 nor 64 bits.
-  See README-tools for complete documentation. 
-
-* Conduit code may use any of the GASNet tools documented in README-tools, but should
-  use the gasneti_ version when referring to these tools in public headers, because
-  gasnet_tools.h is not included by gasnet.h.
-
-* Learn how to use the tracing macros and use them to trace interesting
-  events in your conduit. They're invaluable for debugging mysterious behavior.
-  See the comments in gasnet_trace.h for usage information.
-
-* Do NOT make trivial and/or non-meaningful changes to the code or
-  makefile framework inherited from template-conduit or cloned from
-  the extended-ref directory (e.g. re-indenting lines, 
-  moving code into different files, renaming existing identifiers, etc.)
-  as this makes it more difficult to patch your conduit if a bug is 
-  discovered in template-conduit or a GASNet-wide change is required.
-
-* Do NOT use tab characters in GASNet code files. Use spaces to ensure correct
-  formatting in any editor. 
-    Emacs users should: (setq-default indent-tabs-mode nil)
-    Vim users should: :set expandtab
-
-* Do NOT commit gratuitous changes to whitespace, even to remove tab characters.
-  Such changes have no semantic content and can make use of revision history more
-  difficult.  You can preview your changes with the following two commands:
-     git diff -u | wc -l
-     git diff -u -b | wc -l
-  and if the outputs differ, then your changes include lines that have changed
-  in only the whitespace characters.
-
-* Do not make any conduit-specific changes to the files in the
-  extended-ref or tests directories.  They do not have any Makefiles because they
-  just provide a centralized place for files used in other directories.
-
-* When implementing the extended API for your conduit, please clone only the
-  necessary files from the extended-ref directory that you need to change 
-  (and continue to include the unchanged files) to reduce maintenance headache
-  (this applies especially to gasnet_extended.h, gasnet_extended_help.h, and
-  gasnet_extended_common.c. which should never be cloned).
-
-* Makefiles should never use GNU-make specific features (vanilla BSD make only).
-  Makefile commands and configure scripts should adhere strictly to simple
-  Bourne shell usage (not bash).
-  Currently there are some violations of this rule, but these should NOT be
-  taken as license to create additional dependencies on GNU-make.
-
-* Perl code should only use features and modules available in all installations
-  of Perl 5.005+.
-
-* Test code should follow these standards and also those listed in tests/README
-  Only the tests are currently using GNU-make specific features, and we'd stop
-  doing so if we could.
-
-GASNet porting guide
-====================
-
-This section documents the list of changes usually required when porting GASNet
-to a new, UNIX-like operating system, CPU and/or C compiler. Porting existing 
-GASNet conduits to a new system is usually a 1-2 day effort. Writing a new 
-conduit is more complicated (and is not covered in this section), although the
-"fill-in-the-blanks" template-conduit framework is very helpful - given high
-degree of familiarity with the target network hardware, a functional conduit
-can usually be constructed within a week.  Subsequent tuning can take up to
-several months, depending on the level of NIC hardware support available to be
-exploited.
-
-Required porting steps:
-
-* For a new OS, add OS detection to configure.in and acconfig.h, with 
-  appropriate settings for GASNET_MACHINE_DEFINES, GASNET_THREAD_DEFINES,
-  GASNET_THREAD_LIBS.  If the system supports MPI, add appropriate configure.in
-  defaults for MPI_CC, MPI_CFLAGS, MPI_LIBS and MPIRUN_CMD. 
-
-* For a new C/C++ compiler, add a detection check for the new compiler to 
-  acinclude.m4:GASNET_FAMILY_CACHE_CHECK. Add configure.in settings for 
-  MISC_CFLAGS and MISC_CXXFLAGS if appropriate. 
-
-* For a new CPU, OS or C/C++ compiler, update portable_platform.h to create
-  an appropriate canonical platform identifier for that component. You will
-  need the canonical identifier(s) for most of the steps that follow.
-
-* For a new C/C++ compiler, implement GASNETI_ASM for inline assembly 
-  in gasnet_asm.h, if supported by the compiler. Ensure configure
-  inline modifier detection worked, otherwise tweak it in gasnet_basic.h.
-
-* For a new CPU, implement atomic increment/decrement operations in 
-  gasnet_atomic_bits.h, or enable GASNETI_USE_GENERIC_ATOMICOPS if the CPU does
-  not support atomic operations. Implement atomic compare-and-swap, if supported
-  by the system.
-  For an outline of the yet-to-be-written "Atomic OPS HOWTO" see
-  http://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
-
-* For a new CPU, implement appropriate memory barriers in gasnet_membar.h:
-  gasneti_local_wmb and gasneti_local_rmb (one or both may be no-ops, depending
-  on the memory consistency semantics enforced by hardware).
-
-* Fix any misc compile errors that arise.
-
-* Run the gasnet tests for all supported conduits (gmake run-tests-seq run-tests-par).
-  Pay special attention to testtools, which tests the functionality above and
-  is the most likely to fail on a new system.
-
-Optional porting steps:
-
-* Implement GASNet high-performance timers (gasneti_tick_t) in gasnet_timer.h,
-  if supported by the system.
-
-* Implement a new conduit for the network hardware (see template-conduit/README.template).
-
-Source Control and GASNet
-=========================
-
-If you are using GASNet in your own project and wish to track any
-local changes you make, then you'll probably keep a copy of the GASNet
-sources in your project's Source Control repository (CVS, svn, Hg, Git,
-etc.).  If so, you should be aware of potentially undesirable
-interactions between timestamps as maintained by your Source Control
-software and the files generated by GASNet's Bootstrap script.  The
-issues are well described here:
-  http://www.gnu.org/software/hello/manual/automake/CVS.html
-
-To summarize the link above, you must decide whether or not to commit to
-Source Control those files generated by GASNet's Bootstrap script.
-Each approach has arguments for and against.  We do not dictate
-that users of GASNet must use one approach or the other, and we provide
-the tools to implement either approach.
-
-* If you keep Bootstrap-generated files under Source Control
-
-You need a mechanism to ensure that the files you checkout will be
-treated as being up-to-date by the rules in GASNet's Makefiles,
-regardless of what your Source Control software has done with
-timestamps.  Running
-    ./Bootstrap -T
-will touch the generated files in an order that ensures that they
-appear to be up-to-date.
-
-Caution: This is intended to correct for lost timestamp information
-when you retrieve files.  Using "./Bootstrap -T" in the presence of
-locally modified versions of Bootstrap's input files will prevent
-those changes from being propagated to the dependent files.  Inputs
-include configure.in, and all acinclude.m4 and Makefile.am files (and
-possibly others).
-
-* If you omit Bootstrap-generated files from Source Control
-
-You need a way to identify the files generated by Bootstrap to ignore
-or delete them.  Running
-    ./unBootstrap
-will remove the generated files.  One may examine the contents of
-unBootstrap to identify files that Source Control software may be
-configured to ignore.  Note that the set of Bootstrap-generated files
-may change from one release of GASNet to the next, but unBootstrap
-will be kept current in each release.
+  For more information, please email: gasnet-users@lbl.gov
+  or visit the GASNet home page at:   http://gasnet.lbl.gov
+--------------------------------------------------------------------------

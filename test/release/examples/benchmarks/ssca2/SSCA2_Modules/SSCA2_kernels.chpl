@@ -15,7 +15,7 @@ module SSCA2_kernels
 //  +==========================================================================+
 
 { 
-  use SSCA2_compilation_config_params, Time;
+  use SSCA2_compilation_config_params, Time, Barriers;
 
   var stopwatch : Timer;
 
@@ -326,9 +326,9 @@ module SSCA2_kernels
           BCaux[s].path_count$.write(1.0);
         }
 
-        const barrier = tpv.barrier;
+        var barrier = new Barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining) do on loc {
+        coforall loc in Locales with (ref remaining, ref barrier) do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {
@@ -496,10 +496,15 @@ module SSCA2_kernels
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {
           var tpv = TPV[t];
-          delete tpv.barrier;
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
             var level = al[here.id];
+            var prev = level.previous;
+            while prev != nil {
+              var p2 = prev.previous;
+              delete prev;
+              prev = p2;
+            }
             while level != nil {
                 var l2 = level.next;
                 delete level;
@@ -567,7 +572,6 @@ module SSCA2_kernels
     const vertex_domain;
     var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
-    var barrier = new Barrier(numLocales);
     var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
   }
 
@@ -587,80 +591,6 @@ module SSCA2_kernels
     }
     proc releaseTPV(tid) {
       this.TPV[tid].used.clear();
-    }
-  }
-
-  //
-  // reusable barrier implementation
-  //
-  class Barrier {
-    param reusable = true;
-    var n: int;
-    var count: atomic int;
-    var tasksFinished: [PrivateSpace] atomic bool;
-
-    proc Barrier(_n: int) {
-      reset(_n);
-    }
-  
-    inline proc reset(_n: int) {
-      on this {
-        n = _n;
-        count.write(n);
-        for loc in tasksFinished {
-          loc.write(false);
-        }
-      }
-    }
-  
-    inline proc barrier() {
-      const myc = count.fetchSub(1);
-      if myc <= 1 {
-        if tasksFinished[here.id].read() {
-          halt("too many callers to barrier()");
-        } 
-        for loc in tasksFinished {
-          loc.write(true);
-        }
-        if reusable {
-          count.waitFor(n-1);
-          count.add(1);
-          for loc in tasksFinished {
-            loc.clear();
-          }
-        }
-      } else {
-        tasksFinished[here.id].waitFor(true);
-        if reusable {
-          count.add(1);
-          tasksFinished[here.id].waitFor(false);
-        }
-      }
-    }
-  
-    inline proc notify() {
-      const myc = count.fetchSub(1);
-      if myc <= 1 {
-        if tasksFinished[here.id].read() {
-          halt("too many callers to notify()");
-        }
-        for loc in tasksFinished {
-          loc.write(true);
-        }
-      }
-   }
-  
-    inline proc wait() {
-      tasksFinished[here.id].waitFor(true);
-      if reusable {
-        var sum = count.fetchAdd(1);
-        if sum == n-1 then tasksFinished.clear();
-        else tasksFinished[here.id].waitFor(false);
-      }
-    }
-  
-    inline proc check() {
-      return tasksFinished[here.id].read();
     }
   }
 }

@@ -42,6 +42,7 @@ module torus_graph_generator_utilities {
     // Neither library nor compiler support this yet for tuples.
     // ---------------------------------------------------------------------
 
+    delete Rand_Gen;
   }
 }
 

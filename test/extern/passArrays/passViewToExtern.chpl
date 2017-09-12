@@ -11,10 +11,10 @@ extern proc printThree(ptr: [] real);
 printThree(A);
 printThree(B);
 printThree(A[3..]);
-printThree(A.reindex({0..8}));
+printThree(A.reindex(0..8));
 printThree(B[3, ..]);
 printThree(B[2..3, ..]);
-printThree(B.reindex({0..2, 1..6 by 2}));
+printThree(B.reindex(0..2, 1..6 by 2));
 
 // The following do _something_... but should they?  (they currently
 // wrap around in memory rather than sticking to the pseudo-array's

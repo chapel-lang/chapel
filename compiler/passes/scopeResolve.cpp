@@ -22,18 +22,17 @@
 #include "astutil.h"
 #include "build.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "clangUtil.h"
 #include "driver.h"
-#include "expr.h"
 #include "externCResolve.h"
+#include "ForallStmt.h"
 #include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "ResolveScope.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "TryStmt.h"
 #include "visibleFunctions.h"
 
@@ -64,14 +63,6 @@
 //
 static std::map<BlockStmt*, Vec<UseStmt*>*>   moduleUsesCache;
 static bool                                   enableModuleUsesCache = false;
-
-//
-// The aliasFieldSet is a set of names of fields for which arrays may
-// be passed in by named argument as aliases, as in new C(A=>GA) (see
-// test/arrays/deitz/test_array_alias_field.chpl).
-//
-static Vec<const char*>                       aliasFieldSet;
-
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
@@ -122,49 +113,15 @@ void scopeResolve() {
   }
 
   //
-  // determine fields (by name) that may be passed in arrays to alias
-  //
-  forv_Vec(NamedExpr, ne, gNamedExprs) {
-    if (strncmp(ne->name, "chpl__aliasField_", 17) == 0) {
-      CallExpr* pne  = toCallExpr(ne->parentExpr);
-      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
-
-      if (!ppne || !ppne->isPrimitive(PRIM_NEW)) {
-        USR_FATAL(ne,
-                  "alias-named-argument passing can only be used "
-                  "in constructor calls");
-      }
-
-      aliasFieldSet.set_add(astr(&ne->name[17]));
-    }
-  }
-
-  //
   // add implicit fields for implementing alias-named-argument passing
   //
-  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    for_fields(field, ct) {
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    for_fields(field, at) {
       if (strcmp(field->name, "outer") == 0) {
         USR_FATAL_CONT(field,
                        "Cannot have a field named 'outer'. "
                        "'outer' is used to refer to an outer class "
                        "from within a nested class.");
-      }
-
-      if (aliasFieldSet.set_in(field->name)) {
-        SET_LINENO(field);
-
-        const char* aliasName  = astr("chpl__aliasField_", field->name);
-        Symbol*     aliasField = new VarSymbol(aliasName);
-        DefExpr*    def        = new DefExpr(aliasField);
-
-        aliasField->addFlag(FLAG_CONST);
-        aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
-
-        def->init     = new UnresolvedSymExpr("false");
-        def->exprType = new UnresolvedSymExpr("bool");
-
-        ct->fields.insertAtTail(def);
       }
     }
   }
@@ -418,10 +375,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
     }
   }
 
-
   // Should process use statements here
-
-
 
   // Process the remaining statements
   for_alist(stmt, alist) {
@@ -467,6 +421,25 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
           INT_ASSERT(false);
         }
       }
+
+    } else if (ForallStmt* forallStmt = toForallStmt(stmt)) {
+      BlockStmt* fBody = forallStmt->loopBody();
+      // or, we could construct ResolveScope specifically for forallStmt
+      ResolveScope* bodyScope = new ResolveScope(fBody, scope);
+      // cf. scopeResolve(FnSymbol*,parent)
+      for_alist(ivdef, forallStmt->inductionVariables()) {
+        Symbol* sym = toDefExpr(ivdef)->sym;
+        // "chpl__tuple_blank" indicates the underscore placeholder for
+        // the induction variable. Do not add it. Because if there are two
+        // (legally) ex. "forall (_,_) in ...", we get an error.
+        if (strcmp(sym->name, "chpl__tuple_blank"))
+          bodyScope->extend(sym);
+      }
+
+      scopeResolve(fBody->body, bodyScope);
+
+    } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
+      scopeResolve(deferStmt->body(), scope);
 
     } else if (isUseStmt(stmt)           == true ||
                isCallExpr(stmt)          == true ||
@@ -632,7 +605,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
   const char* name = usymExpr->unresolved;
 
-  if (strcmp(name, ".") == 0 || usymExpr->parentSymbol == NULL) {
+  if (name == astrSdot || usymExpr->parentSymbol == NULL) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
@@ -682,7 +655,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
     updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
-    if (externC == true && tryCResolve(usymExpr->getModule(), name) == true) {
+    if (tryCResolve(usymExpr->getModule(), name) == true) {
       // Try resolution again since the symbol should exist now
       resolveUnresolvedSymExpr(usymExpr);
     }
@@ -907,16 +880,11 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a forall loop.
-  if (BlockStmt* parent = toBlockStmt(exprInAst->parentExpr)) {
-    if (ForallIntents* fi = parent->forallIntents) {
-      for_vector(Expr, fiVar, fi->fiVars) {
-        if (exprInAst == fiVar) {
-          errorDotInsideWithClause(origUSE, "forall loop");
-          return;
-        }
-      }
+  if (ForallIntent* fi = toForallIntent(exprInAst->parentExpr))
+    if (exprInAst == fi->variable()) {
+      errorDotInsideWithClause(origUSE, "forall loop");
+      return;
     }
-  }
 
   // A 'with' clause for a task construct.
   if (Expr* parent1 = exprInAst->parentExpr) {
@@ -935,58 +903,63 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym);
+
 static void resolveModuleCall(CallExpr* call) {
-  if (call->isNamed(".") == true) {
+  if (call->isNamedAstr(astrSdot) == true) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         SET_LINENO(call);
 
-        ModuleSymbol* enclosingModule = call->getModule();
-        Symbol*       sym             = NULL;
-        const char*   mbrName         = get_string(call->get(2));
+        ModuleSymbol* currModule = call->getModule();
+        ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
+        const char*   mbrName    = get_string(call->get(2));
 
-        enclosingModule->moduleUseAdd(mod);
+        currModule->moduleUseAdd(mod);
 
-        if (ResolveScope* scope = ResolveScope::getScopeFor(mod->block)) {
-          sym = scope->lookupNameLocally(mbrName);
-        }
+        if (Symbol* sym  = scope->lookupNameLocally(mbrName)) {
+          if (sym->isVisible(call) == true) {
+            if (FnSymbol* fn = toFnSymbol(sym)) {
+              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+                call->replace(new CallExpr(fn));
 
-        if (sym != NULL) {
-          if (sym->isVisible(call) == false) {
-            // The symbol is not visible at this scope because it is
-            // private to mod!  Error out
+              } else {
+                CallExpr* parent = toCallExpr(call->parentExpr);
+
+                call->replace(new UnresolvedSymExpr(mbrName));
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
+              }
+
+            } else if (resolveModuleIsNewExpr(call, sym) == true) {
+              CallExpr* parent = toCallExpr(call->parentExpr);
+
+              call->replace(new SymExpr(sym));
+
+              parent->insertAtHead(mod);
+              parent->insertAtHead(gModuleToken);
+
+            } else {
+              call->replace(new SymExpr(sym));
+            }
+
+          } else {
             USR_FATAL(call,
                       "Cannot access '%s', '%s' is private to '%s'",
                       mbrName,
                       mbrName,
                       mod->name);
-
-          } else if (FnSymbol* fn = toFnSymbol(sym)) {
-            if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS)) {
-              call->replace(new CallExpr(fn));
-
-            } else {
-              UnresolvedSymExpr* se     = new UnresolvedSymExpr(mbrName);
-
-              call->replace(se);
-
-              CallExpr*          parent = toCallExpr(se->parentExpr);
-
-              INT_ASSERT(parent);
-
-              parent->insertAtHead(mod);
-              parent->insertAtHead(gModuleToken);
-            }
-
-          } else {
-            call->replace(new SymExpr(sym));
           }
 
 #ifdef HAVE_LLVM
-        } else if (externC                                 == true &&
-                   tryCResolve(call->getModule(), mbrName) == true) {
-          // Try to resolve again now that the symbol should
-          // be in the table
+        } else if (tryCResolve(currModule, mbrName) == true) {
           resolveModuleCall(call);
 #endif
 
@@ -1001,15 +974,38 @@ static void resolveModuleCall(CallExpr* call) {
   }
 }
 
+static bool resolveModuleIsNewExpr(CallExpr* call, Symbol* sym) {
+  bool retval = false;
+
+  if (TypeSymbol* ts = toTypeSymbol(sym)) {
+    if (isAggregateType(ts->type) == true) {
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
+
+          retval = grandParentCall->isPrimitive(PRIM_NEW);
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 #ifdef HAVE_LLVM
 static bool tryCResolve(ModuleSymbol*                     module,
                         const char*                       name,
                         llvm::SmallSet<ModuleSymbol*, 24> visited);
 
 static bool tryCResolve(ModuleSymbol* module, const char* name) {
-  llvm::SmallSet<ModuleSymbol*, 24> visited;
+  bool retval = false;
 
-  return tryCResolve(module, name, visited);
+  if (externC == true) {
+    llvm::SmallSet<ModuleSymbol*, 24> visited;
+
+    retval = tryCResolve(module, name, visited);
+  }
+
+  return retval;
 }
 
 static bool tryCResolve(ModuleSymbol*                     module,
@@ -1079,7 +1075,6 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
 #endif
 
-
 /************************************* | **************************************
 *                                                                             *
 * resolves EnumTypeName.fieldName to the symbol named fieldName in the        *
@@ -1089,7 +1084,7 @@ static bool tryCResolve(ModuleSymbol*                     module,
 
 static void resolveEnumeratedTypes() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isNamed(".")) {
+    if (call->isNamedAstr(astrSdot)) {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {

@@ -3,7 +3,8 @@
  * Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
 
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -346,7 +347,7 @@ static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, Socket
 #if USE_ASYNC_TCP_CONTROL
   extern "C" void AMUDP_SPMDControlSocketCallback(int sig) {
     AMUDP_SPMDIsActiveControlSocket = TRUE;
-    AMUDP_VERBOSE_INFO("got an AMUDP_SIGIO signal");
+    AMUDP_VERBOSE_INFO(("got an AMUDP_SIGIO signal"));
     reghandler(AMUDP_SIGIO, AMUDP_SPMDControlSocketCallback);
   }
 #endif
@@ -612,11 +613,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     // append WORKERIP which it is needed before the master env is sent
     { char *network = AMUDP_getenv_prefixed_withdefault("WORKERIP","");
       if (network && network[0]) {
-        #if HAVE_GETIFADDRS
-          strncat(slave_env, network, remain-1);
-        #else
-          AMUDP_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
-        #endif
+        strncat(slave_env, network, remain-1);
       }
     }
     if (!remain) { // ran out of space!
@@ -1087,16 +1084,18 @@ pollentry:
       /* here we assume the interface used to contact the master is the same 
          one to be used for UDP endpoints */
       SockAddr myinterface = getsockname(AMUDP_SPMDControlSocket);
-      #if HAVE_GETIFADDRS // allow user to override our same-interface assumption
-        if (network && network[0]) {
+      if (network && network[0]) {
+        #if HAVE_GETIFADDRS // allow user to override our same-interface assumption
           SockAddr networkaddr(network, 0);
           char subnets[1024];
           if (! getIfaceAddr(networkaddr, myinterface, subnets, sizeof(subnets))) {
             AMUDP_Err("Failed to find interface on requested subnet %s. Available subnets: %s", network, subnets);
             AMUDP_RETURN(AM_ERR_RESOURCE);
           }
-        }
-      #endif
+        #else
+          AMUDP_Warn("WORKERIP set in the environment, but your platform lacks the required getifaddrs() support.  Ignoring WORKERIP.");
+        #endif
+      }
       if (!AMUDP_SilentMode) AMUDP_Info("slave using IP %s", myinterface.IPStr());
       AMUDP_SetUDPInterface(myinterface.IP());
         
@@ -1614,6 +1613,7 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
   if (retval == NULL) {
     retval = (char *)defaultval;
     dflt = "   (default)";
+    usingdefault = 1;
   }
 #ifdef gasnett_envstr_display
   { char displaykey[255];

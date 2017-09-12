@@ -58,6 +58,9 @@ typedef uint16_t gasnet_node_t;
    */
 /* #define GASNETC_USE_INTERRUPTS 1 */
 
+/* udp-conduit supports top-level poll throttling */
+#define GASNETC_USING_SUSPEND_RESUME 1
+
 /*  override default error values to use those defined by AMUDP */
 #define _GASNET_ERRORS
 #define _GASNET_ERR_BASE 10000
@@ -66,6 +69,11 @@ typedef uint16_t gasnet_node_t;
 #define GASNET_ERR_BAD_ARG              2
 #define GASNET_ERR_NOT_READY            (_GASNET_ERR_BASE+4)
 #define GASNET_ERR_BARRIER_MISMATCH     (_GASNET_ERR_BASE+5)
+
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+#define GASNETC_AMREGISTER 1
 
   /* define these to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)

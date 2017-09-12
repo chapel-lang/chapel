@@ -1,11 +1,11 @@
 .\" -*- nroff -*-
 .\" Copyright © 2010 Jirka Hladky
-.\" Copyright © 2010-2016 Inria.  All rights reserved.
+.\" Copyright © 2010-2017 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-GATHER-TOPOLOGY "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
 .SH NAME
 hwloc-gather-topology \- Saves the relevant Linux topology files
-and the lstopo output for later (possibly offline) usage
+and the lstopo textual and XML outputs for later (possibly offline) usage
 .
 .\" **************************
 .\"    Synopsis Section
@@ -36,7 +36,8 @@ Display help message and exit
 .SH DESCRIPTION
 .
 \fBhwloc-gather-topology\fR saves all the relevant topology files into an
-archive (\fB<path>.tar.bz2\fR) and the lstopo output (\fB<path>.output\fR).
+archive (\fB<path>.tar.bz2\fR), the lstopo output (\fB<path>.output\fR),
+and the lstopo XML (\fB<path>.xml\fR).
 The utility for example stores the \fB/proc/cpuinfo\fR file and the entire
 \fB/sys/devices/system/node/\fR directory tree.
 .
@@ -49,7 +50,7 @@ library will read by setting the extracted path in the \fBHWLOC_FSROOT\fR
 environment variable.
 .
 .PP
-Both archive and lstopo output may also be submitted to hwloc developers
+The archive and the lstopo textual and XML outputs may also be submitted to hwloc developers
 to debug issues remotely.
 .
 .PP
@@ -59,7 +60,7 @@ on other operating systems.
 .PP
 .B NOTE:
 \fBhwloc-gather-topology\fR gathers many hardware details about the platform.
-The output and tarball should not be posted on public lists or websites
+The outputs and tarball should not be posted on public lists or websites
 unless it is clear that they contain no sensitive information.
 .
 .PP
@@ -78,7 +79,8 @@ a different host) please run:
 	hwloc-gather-topology /tmp/myhost
 
 It will store all relevant topology files in the \fB/tmp/myhost.tar.bz2\fR
-archive and the lstopo output in the \fB/tmp/myhost.output\fR file.
+archive, the lstopo output in the \fB/tmp/myhost.output\fR file,
+and the lstopo XML in the \fB/tmp/myhost.xml\fR file.
 .
 These files can be transferred on another host for later/offline
 analysis and/or as the input to various hwloc utilities.
@@ -126,7 +128,7 @@ Upon successful execution, \fBhwloc-gather-topology\fR will exit with the code 0
 .
 .PP
 \fBhwloc-gather-topology\fR will return nonzero exit status if any kind of error occurs,
-such as (but not limited to) failure to create the archive or output file.
+such as (but not limited to) failure to create the archive or output files.
 .
 .\" **************************
 .\"    See also section

@@ -345,27 +345,6 @@ proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable:
   return dom;
 } 
 
-proc Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
-  proc anyStridable(space, param i=1) param
-    return if i == space.size
-      then space(i).stridable
-      else space(i).stridable || anyStridable(space, i+1);
-
-  if anyStridable(newSpace) || anyStridable(oldSpace) then
-    compilerWarning("reindexing stridable Cyclic arrays is not yet fully supported");
-
-  var newLow: rank*idxType;
-  for param i in 1..rank {
-    newLow(i) = newSpace(i).low - oldSpace(i).low + startIdx(i);
-  }
-  var newDist = new Cyclic(rank=rank, idxType=idxType, startIdx=newLow,
-                           targetLocales=targetLocs,
-                           dataParTasksPerLocale=dataParTasksPerLocale,
-                           dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
-                           dataParMinGranularity=dataParMinGranularity);
-  return newDist;
-}
-
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:
@@ -458,10 +437,6 @@ class LocCyclic {
 
 
 class CyclicDom : BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-
   const dist: Cyclic(rank, idxType);
 
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
@@ -538,6 +513,10 @@ proc CyclicDom.dsiSetIndices(x: domain) {
 proc CyclicDom.dsiSetIndices(x) {
   whole.setIndices(x);
   setup();
+}
+
+proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 proc CyclicDom.dsiSerialWrite(x) {
@@ -621,7 +600,7 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
   for param i in 1..rank {
     // NOTE: unsigned idxType with negative stride will not work
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).low;
+    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
   }
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
@@ -667,11 +646,7 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
-class CyclicArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: CyclicDom(rank, idxType, stridable);
 
@@ -739,7 +714,7 @@ proc CyclicArr.setup() {
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
 }
 
-proc CyclicArr.dsiDestroyArr(isslice:bool) {
+proc CyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       delete locArr(localeIdx);
@@ -875,7 +850,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     const      lo = (followThis(i).low * iStride):idxType,
                hi = (followThis(i).high * iStride):idxType,
            stride = (followThis(i).stride*wholestride):strType;
-    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i).alignedLow;
   }
   const myFollowThis = {(...t)};
   if fast {
@@ -940,7 +915,7 @@ proc CyclicArr.dsiSerialWrite(f) {
   }
 }
 
-proc CyclicArr.dsiReallocate(d: domain) {
+proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
   // The reallocation happens when the LocCyclicDom.myBlock field is changed
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }

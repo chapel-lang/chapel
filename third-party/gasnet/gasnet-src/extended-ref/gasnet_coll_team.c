@@ -309,7 +309,7 @@ void gasnete_coll_team_init(gasnet_team_handle_t team,
 
 void gasnete_coll_team_fini(gasnet_team_handle_t team)
 {
-  GASNETI_UNUSED_UNLESS_DEBUG int i;
+  int i;
   gasneti_assert(team != NULL);
   /* free data members of the team, such as scratch space and etc. */
   gasneti_free(team->rel2act_map);

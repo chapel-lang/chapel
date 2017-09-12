@@ -23,6 +23,14 @@ else
     echo "[Warning: llvm may not build correctly with python: $(which python)]"
 fi
 
+# 2017-08-10 : Developer-installed cmake version required by LLVM 4
+cmake_setup=/data/cf/chapel/setup_cmake39.bash
+if [ -f "${cmake_setup}" ] ; then
+    source ${cmake_setup}
+else
+    echo "[Warning: llvm may not build correctly with cmake: $(which cmake)]"
+fi
+
 # Run examples and test/extern/ferguson/.
 export CHPL_NIGHTLY_TEST_DIRS="extern/ferguson"
 

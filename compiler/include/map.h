@@ -75,13 +75,25 @@ template <class K, class C> class MapElem {
   C     value;
   bool operator==(MapElem &e) { return e.key == key; }
 
-  operator uintptr_t()     { return (uintptr_t) key; }
+  //
+  // A Map needs some way of indicating whether a slot is full or empty.
+  // We use the pointer value of a key to indicate that status. Note that
+  // a key can be a BaseAST, which can be deleted over the course of
+  // compilation. Therefore, we cannot access the memory pointed to by
+  // this key in order to test full/empty status.
+  //
+  operator uintptr_t()     { return (uintptr_t)key; }
 
   MapElem()                 : key(0)                     { }
   MapElem(K akey, C avalue) : key(akey),  value(avalue)  { }
   MapElem(MapElem &e)       : key(e.key), value(e.value) { }
   MapElem(unsigned long x)                               { assert(!x); key = 0; }
 };
+
+template<class K, class C>
+uintptr_t _vec_hasher(MapElem<K,C> obj) {
+  return _vec_hasher(obj.key);
+}
 
 template <class K, class C> class Map : public Vec<MapElem<K,C> > {
  public:
@@ -247,8 +259,7 @@ template <class K, class C> inline void
 Map<K,C>::get_values(Vec<C> &values) {
   for (int i = 0; i < n; i++)
     if (v[i].key)
-      values.set_add(v[i].value);
-  values.set_to_vec();
+      values.add(v[i].value);
 }
 
 template <class K, class C> inline MapElem<K,C> *

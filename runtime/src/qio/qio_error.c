@@ -47,7 +47,8 @@ qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a)
 
 
 const char* qio_err_msg(qioerr a) {
-  intptr_t num = (intptr_t) a;  if( num == 0 ) return 0;
+  intptr_t num = (intptr_t) a;
+  if( num == 0 ) return 0;
   if( num & 1 ) {
     // byte-aligned so can't be an error record.
     return NULL;

@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/Barrier.chpl:24: warning: the 'Barrier' module has been renamed 'Barriers' and the 'Barrier' name is deprecated

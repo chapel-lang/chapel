@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -194,13 +194,13 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // task bundle as requested_fid and requested_fn respectively. If both
 // are provided, the function pointer will be used. In this way,
 // the comms layer can use task-wrapper functions.
-void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry 
+void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry
                               chpl_fn_p,          // function to call
                               chpl_task_bundle_t*,// function arg
                               size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
-                              chpl_taskID_t,      // task identifier
-                              chpl_bool);         // serial state
+                              chpl_taskID_t      // task identifier
+                             );
 
 //
 // Get and set the current task's sublocale.  Setting the sublocale
@@ -252,12 +252,6 @@ void chpl_task_yield(void);
 //
 void chpl_task_sleep(double);
 
-//
-// Get and set dynamic serial state.
-//
-chpl_bool chpl_task_getSerial(void);
-void      chpl_task_setSerial(chpl_bool);
-
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support
 // proper initialization order with a task model .h
@@ -266,6 +260,31 @@ void      chpl_task_setSerial(chpl_bool);
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
 chpl_task_prvData_t* chpl_task_getPrvData(void);
 #endif
+
+#ifndef CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL
+chpl_task_bundle_t* chpl_task_getPrvBundle(void);
+#endif
+
+// Get the Chapel module-code managed task private data portion
+// of a task bundle.
+static inline
+chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b)
+{
+  // this code assumes each chpl_task_bundle_t has a state field
+  // of type chpl_task_ChapelData_t.
+  return &b->state;
+}
+
+//
+// Get Chapel module-code managed task private data
+//
+static inline
+chpl_task_ChapelData_t* chpl_task_getChapelData(void)
+{
+  chpl_task_bundle_t* prv = chpl_task_getPrvBundle();
+  return chpl_task_getBundleChapelData(prv);
+}
+
 
 //
 // Can this tasking layer support remote caching?
@@ -309,17 +328,6 @@ size_t chpl_task_getCallStackSize(void);
 // not including any that have already started running.
 //
 uint32_t chpl_task_getNumQueuedTasks(void);
-
-//
-// returns the number of tasks that are running on the current locale,
-// including any that may be blocked waiting for something.
-// Note that the value returned could be larger than the limit on the maximum
-// number of threads, since a thread could be "suspended," particularly if it
-// is waiting at the end of a cobegin, e.g.  In this case, it could be
-// executing a task inside the cobegin, so in effect the same thread would be
-// executing more than one task.
-//
-uint32_t chpl_task_getNumRunningTasks(void);
 
 //
 // returns the number of tasks that are blocked waiting on a sync or single
@@ -373,6 +381,7 @@ size_t chpl_task_getDefaultCallStackSize(void);
 //
 extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntReset(int64_t _ln, int32_t _fn);
 
 #ifdef __cplusplus
 } // end extern "C"

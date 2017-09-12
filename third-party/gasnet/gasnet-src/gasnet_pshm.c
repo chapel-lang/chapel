@@ -54,6 +54,8 @@ static struct gasneti_pshm_info {
 #define pshmnet_get_struct_addr_from_field_addr(structname, fieldname, fieldaddr) \
         ((structname*)(((uintptr_t)fieldaddr) - offsetof(structname,fieldname)))
 
+static void (*gasnetc_pshm_abort_callback)(void);
+
 void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_sz) {
   size_t vnetsz, mmapsz;
   int discontig = 0;
@@ -578,8 +580,8 @@ gasneti_pshmnet_init(void *region, size_t regionlen, gasneti_pshm_rank_t pshmnod
 
   if (regionlen < (szonce + szpernode * pshmnodes))
     gasneti_fatalerror("Internal error: not enough memory for pshmnet: \n"
-                       " given %lu effective bytes, but need %lu", 
-                       (unsigned long)regionlen, (unsigned long)(szonce + szpernode * pshmnodes));
+                       " given %"PRIuPTR" effective bytes, but need %"PRIuPTR, 
+                       (uintptr_t)regionlen, (uintptr_t)(szonce + szpernode * pshmnodes));
 
   vnet = gasneti_malloc(sizeof(gasneti_pshmnet_t));
   vnet->nodecount = pshmnodes;
@@ -739,7 +741,10 @@ void gasneti_pshmnet_bootstrapBarrier(void)
   gasneti_assert_always(target < GASNETI_PSHM_BSB_LIMIT); /* Die if we were ever to reach the limit */
 
   gasneti_waitwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) < target);
-  if_pf (curr >= GASNETI_PSHM_BSB_LIMIT) gasnet_exit(1);
+  if_pf (curr >= GASNETI_PSHM_BSB_LIMIT) {
+    if (gasnetc_pshm_abort_callback) gasnetc_pshm_abort_callback();
+    gasnet_exit(1);
+  }
 
   generation = target;
 }
@@ -749,30 +754,95 @@ void gasneti_pshmnet_bootstrapBarrier(void)
  * they are potentially blocked in gasneti_pshmnet_bootstrapBarrier().
  * These DO NOT nest (but there is no checking to ensure that).
  ******************************************************************************/
-static gasneti_sighandlerfn_t gasneti_prev_abort_handler = NULL;
+static struct {
+  int sig;
+  gasneti_sighandlerfn_t old_hand;
+} gasneti_pshm_catch_signals[] = {
+#ifdef SIGABRT
+  { SIGABRT, NULL },
+#endif
+#ifdef SIGILL
+  { SIGILL,  NULL },
+#endif
+#ifdef SIGSEGV
+  { SIGSEGV, NULL },
+#endif
+#ifdef SIGBUS
+  { SIGBUS,  NULL },
+#endif
+#ifdef SIGFPE
+  { SIGFPE,  NULL },
+#endif
+#ifdef SIGINT
+  { SIGINT,  NULL },
+#endif
+#ifdef SIGTERM
+  { SIGTERM, NULL },
+#endif
+#ifdef SIGQUIT
+  { SIGQUIT, NULL },
+#endif
+#ifdef SIGPIPE
+  { SIGPIPE, NULL },
+#endif
+#ifdef SIGHUP
+  { SIGHUP,  NULL },
+#endif
+  { 0, NULL }
+};
 
 static void gasneti_pshm_abort_handler(int sig) {
+  // Invoke callback, if any
+  if (gasnetc_pshm_abort_callback) gasnetc_pshm_abort_callback();
+
+  // Force others to exit from barrier:
   gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_gen, GASNETI_PSHM_BSB_LIMIT, 0);
 
-  gasneti_reghandler(SIGABRT, gasneti_prev_abort_handler);
+  // Best-effort message if this is not due to gasneti_fatalerror()
+  if (sig != SIGABRT) {
+    const char msg1[] = "*** FATAL ERROR: fatal ";
+    const char msg2[] = " while mapping shared memory\n";
+    const char *signame = gasnett_signame_fromval(sig);
+    if (!signame) signame = "signal";
+    char msg[128] = { '\0', };
+    gasneti_assert(strlen(msg1) + strlen(signame) + strlen(msg2) + 1 <= sizeof(msg));
+    strcat(strcat(strcat(msg, msg1), signame), msg2);
+    int ignore = write(STDERR_FILENO, msg, strlen(msg));
+  }
+
+  // Reraise the signal
+  for (int i = 0; gasneti_pshm_catch_signals[i].sig; ++i) {
+    if (gasneti_pshm_catch_signals[i].sig != sig) continue;
+    gasneti_reghandler(sig, gasneti_pshm_catch_signals[i].old_hand);
+    break;
+  }
 #if HAVE_SIGPROCMASK /* Is this ever NOT the case? */
   { sigset_t new_set, old_set;
     sigemptyset(&new_set);
-    sigaddset(&new_set, SIGABRT);
+    sigaddset(&new_set, sig);
     sigprocmask(SIG_UNBLOCK, &new_set, &old_set);
   }
 #endif
-  raise(SIGABRT);
+  raise(sig);
 }
 
-void gasneti_pshm_cs_enter(void)
+void gasneti_pshm_cs_enter(void (*callback)(void))
 {
-  gasneti_prev_abort_handler = gasneti_reghandler(SIGABRT, &gasneti_pshm_abort_handler);
+  gasnetc_pshm_abort_callback = callback;
+  for (int i = 0; gasneti_pshm_catch_signals[i].sig; ++i) {
+    gasneti_pshm_catch_signals[i].old_hand =
+      gasneti_reghandler(gasneti_pshm_catch_signals[i].sig,
+                         &gasneti_pshm_abort_handler);
+  }
 }
 
 void gasneti_pshm_cs_leave(void)
 {
-  gasneti_reghandler(SIGABRT, gasneti_prev_abort_handler);
+  gasnetc_pshm_abort_callback = NULL;
+  for (int i = 0; gasneti_pshm_catch_signals[i].sig; ++i) {
+    gasneti_reghandler(gasneti_pshm_catch_signals[i].sig,
+                       gasneti_pshm_catch_signals[i].old_hand);
+  }
 }
 
 /******************************************************************************
@@ -1188,6 +1258,7 @@ int gasnetc_AMPSHM_ReqRepGeneric(int category, int isReq, gasnet_node_t dest,
     if_pf (msg == NULL) {
       /* Grow the free pool with buffers sized and aligned for the largest Medium */
       void *tmp = gasneti_malloc(sizeof(gasneti_AMPSHM_medmsg_t)+7);
+      gasneti_leak(tmp);
       uintptr_t offset = (uintptr_t)GASNETI_AMPSHM_MSG_MED_DATA(tmp) & 7;
       /* Align the (macro-adjusted) Medium payload field, not the msg itself */
       msg = (void*)((uintptr_t)tmp + (offset ? (8-offset) : 0));

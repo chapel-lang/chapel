@@ -6,6 +6,14 @@ class C {
   proc baz() { writeln("in C.baz()"); }
 }
 
+class D {
+  var field:int;
+  proc foo() { writeln("in D.foo()"); }
+  proc bar() { writeln("in D.bar()"); }
+  proc baz() { writeln("in D.baz()"); }
+}
+
+
 record WrapperOne {
   var instance; // e.g. some class
   forwarding instance;
@@ -20,10 +28,18 @@ record WrapperTwo {
 }
 
 
-var r = new WrapperTwo(new WrapperOne(new C()));
+{
+  var a = new WrapperTwo(new WrapperOne(new C(1)));
 
-r.foo(); // should call WrapperTwo.foo
-r.bar(); // should call WrapperOne.bar
-r.baz(); // should call C.baz
+  a.foo(); // should call WrapperTwo.foo
+  a.bar(); // should call WrapperOne.bar
+  a.baz(); // should call C.baz
+}
 
+{
+  var b = new WrapperTwo(new WrapperOne(new D(2)));
 
+  b.foo(); // should call WrapperTwo.foo
+  b.bar(); // should call WrapperOne.bar
+  b.baz(); // should call D.baz
+}

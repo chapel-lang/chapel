@@ -1,0 +1,4 @@
+bug: putting method calls in if/else expressions hides them from our initializer error messages
+
+Method calls in Phase 1 are not allowed, but if you put one in an if/else
+expression, we don't recognize them and give the appropriate error message.

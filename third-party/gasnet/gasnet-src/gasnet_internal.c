@@ -125,16 +125,14 @@ extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *table, int numentr
   return GASNET_ERR_NOT_INIT;
 }
 
+/* global definitions of GASNet-wide internal variables
+   not subject to override */
+gasnet_node_t gasneti_mynode = (gasnet_node_t)-1;
+gasnet_node_t gasneti_nodes = 0;
+
 /* Default global definitions of GASNet-wide internal variables
    if conduits override one of these, they must
    still provide variable or macro definitions for these tokens */
-#ifdef _GASNET_MYNODE_DEFAULT
-  gasnet_node_t gasneti_mynode = (gasnet_node_t)-1;
-#endif
-#ifdef _GASNET_NODES_DEFAULT
-  gasnet_node_t gasneti_nodes = 0;
-#endif
-
 #if defined(_GASNET_GETMAXSEGMENTSIZE_DEFAULT) && !GASNET_SEGMENT_EVERYTHING
   uintptr_t gasneti_MaxLocalSegmentSize = 0;
   uintptr_t gasneti_MaxGlobalSegmentSize = 0;
@@ -300,6 +298,68 @@ extern void gasneti_defaultAMHandler(gasnet_token_t token) {
   gasneti_fatalerror("GASNet node %i/%i received an AM message from node %i for a handler index "
                      "with no associated AM handler function registered", 
                      (int)gasnet_mynode(), (int)gasnet_nodes(), (int)srcnode);
+}
+/* ------------------------------------------------------------------------------------ */
+#if GASNETC_AMREGISTER
+  /* Use conduit-specific impl */
+  extern int gasnetc_amregister(gasnet_handler_t, gasneti_handler_fn_t);
+#else
+  /* Use default/recommended impl */
+  extern gasneti_handler_fn_t gasnetc_handler[];
+  static int gasnetc_amregister(gasnet_handler_t index, gasneti_handler_fn_t fnptr) {
+    /* register a single handler */
+    gasneti_assert(gasnetc_handler[index] == gasneti_defaultAMHandler);
+    gasnetc_handler[index] = fnptr;
+    return GASNET_OK;
+  }
+#endif
+extern int gasneti_amregister(gasnet_handlerentry_t *table, int numentries,
+                               int lowlimit, int highlimit,
+                               int dontcare, int *numregistered) {
+  static char checkuniqhandler[256] = { 0 };
+  int i;
+  *numregistered = 0;
+  for (i = 0; i < numentries; i++) {
+    int newindex;
+
+    if ((table[i].index == 0 && !dontcare) ||
+        (table[i].index && dontcare)) continue;
+    else if (table[i].index) newindex = table[i].index;
+    else { /* deterministic assignment of dontcare indexes */
+      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
+        if (!checkuniqhandler[newindex]) break;
+      }
+      if (newindex > highlimit) {
+        char s[255];
+        snprintf(s, sizeof(s), "Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
+        GASNETI_RETURN_ERRR(BAD_ARG, s);
+      }
+    }
+
+    /*  ensure handlers fall into the proper range of pre-assigned values */
+    if (newindex < lowlimit || newindex > highlimit) {
+      char s[255];
+      snprintf(s, sizeof(s), "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
+      GASNETI_RETURN_ERRR(BAD_ARG, s);
+    }
+
+    /* discover duplicates */
+    if (checkuniqhandler[newindex] != 0)
+      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
+    checkuniqhandler[newindex] = 1;
+
+    /* register the handler */
+    int rc = gasnetc_amregister((gasnet_handler_t)newindex, (gasneti_handler_fn_t)table[i].fnptr);
+    if (GASNET_OK != rc) return rc;
+
+    /* The check below for !table[i].index is redundant and present
+     * only to defeat the over-aggressive optimizer in pathcc 2.1
+     */
+    if (dontcare && !table[i].index) table[i].index = newindex;
+
+    (*numregistered)++;
+  }
+  return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
 
@@ -640,6 +700,52 @@ extern void gasneti_decode_args(int *argc, char ***argv) {
   }
 }
 
+/* Propagate requested env vars from GASNet global env to the local env */
+
+void (*gasneti_propagate_env_hook)(const char *, int) = NULL; // spawner- or conduit-specific hook
+
+extern void gasneti_propagate_env_helper(const char *environ, const char * keyname, int flags) {
+  const int is_prefix = flags & GASNETI_PROPAGATE_ENV_PREFIX;
+  const char *p = environ;
+
+  gasneti_assert(environ);
+  gasneti_assert(keyname && !strchr(keyname,'='));
+
+  int keylen = strlen(keyname);
+  while (*p) {
+    if (!strncmp(keyname, p, keylen) && (is_prefix || p[keylen] == '=')) {
+      gasneti_assert(NULL != strchr(p+keylen, '='));
+      char *var = gasneti_strdup(p);
+      char *val = strchr(var, '=');
+      *(val++) = '\0';
+      if (gasnett_decode_envval_fn) {
+        val = (char *)((*gasnett_decode_envval_fn)(val));
+      }
+      gasnett_setenv(var, val);
+      GASNETI_TRACE_PRINTF(I,("gasneti_propagate_env(%s) => '%s'", var, val));
+      gasneti_free(var);
+      if (!is_prefix) break;
+    }
+    p += strlen(p) + 1;
+  }
+}
+
+extern void gasneti_propagate_env(const char * keyname, int flags) {
+  gasneti_assert(keyname);
+  gasneti_assert(NULL == strchr(keyname, '='));
+
+  // First look for matches in gasneti_globalEnv (if any)
+  if (gasneti_globalEnv) {
+    gasneti_propagate_env_helper(gasneti_globalEnv, keyname, flags);
+  }
+
+  // Next allow conduit-specific getenv (if any) to overwrite
+  if (gasneti_propagate_env_hook) {
+    gasneti_propagate_env_hook(keyname, flags);
+  }
+}
+
+
 /* Process environment for exittimeout.
  * If (GASNET_EXITTIMEOUT is set), it is returned
  * else return = min(GASNET_EXITTIMEOUT_MAX,
@@ -665,6 +771,57 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
   }
 
   return result;
+}
+
+// Parse an environment variable as a memory size as follows:
+//  + If parses as double between 0. and 1., multiply by "fraction_of".
+//  + If parses as integer (w/ optional suffix) take as an absolute size.
+// In either case, align down to PAGESIZE and then die if below "minimum".
+extern uint64_t gasneti_getenv_memsize_withdefault(const char *key, const char *dflt, uint64_t minimum, uint64_t fraction_of)
+{
+  const char *str = gasneti_getenv(key);
+  int using_default = (NULL == str);
+  if (using_default) str = dflt;
+
+  double dbl;
+  int64_t val;
+  int is_fraction = 0;
+  if (0 == gasneti_parse_dbl(str, &dbl)) {
+    if ((dbl > 0.) && (dbl < 1.)) {
+      is_fraction = 1;
+      val = dbl * fraction_of;
+    } else {
+      val = dbl;
+    }
+  } else {
+    // Note: default suffix is irrelevant since un-suffixed case was parsed as a double
+    val = gasneti_parse_int(str, 1);
+  }
+  gasneti_envint_display(key, val, using_default, 1);
+
+  // check sign before ALIGNDOWN
+  if (val < 0) {
+    gasneti_fatalerror("%s='%s' is negative.", key, str);
+  }
+
+  // ALIGNDOWN before checking against minimum
+  val = GASNETI_PAGE_ALIGNDOWN(val);
+  GASNETI_TRACE_PRINTF(I, ("%s='%s' yields %"PRId64,
+                           key, str, val));
+
+  if (val < minimum) {
+    const char *parsed_as = is_fraction ? "a fraction" : "an amount";
+    char min_display[16];
+    char val_display[16];
+    gasneti_format_number(minimum, min_display, sizeof(min_display), 1);
+    gasneti_format_number(val,     val_display, sizeof(val_display), 1);
+    gasneti_fatalerror(
+            "Parsing '%s' as %s of memory yields %s of %"PRId64" (%s), "
+            "which is less than the minimum supported value of %s.",
+            str, parsed_as, key, val, val_display, min_display);
+  }
+
+  return (uint64_t) val;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -1270,6 +1427,79 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
 #endif /* gasneti_getline */
 
 /* ------------------------------------------------------------------------------------ */
+// Internal conduit interface to spawner
+
+#if HAVE_SSH_SPAWNER
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_ssh(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+#endif
+#if HAVE_MPI_SPAWNER
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+#endif
+#if HAVE_PMI_SPAWNER
+  extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_pmi(int *argc, char ***argv, gasnet_node_t *nodes, gasnet_node_t *mynode);
+#endif
+
+extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_p,
+                                  const char *force_spawner,
+                                  gasnet_node_t *nodes_p, gasnet_node_t *mynode_p) {
+  gasneti_spawnerfn_t const *res = NULL;
+  const char *not_set = "(not set)";
+  const char *spawner;
+  char *tmp = NULL;
+  if (force_spawner) spawner = force_spawner;
+  else { 
+    // Purposely hide this variable from verbose output, since it's only for use as an internal hand-off
+    // from gasnetrun scripts. End users should set GASNET_<conduit>_SPAWNER
+    spawner = gasneti_getenv("GASNET_SPAWN_CONTROL");
+    if (!spawner) spawner = not_set;
+  }
+
+  if (spawner != not_set) { // upper-case
+    tmp = gasneti_strdup(spawner);
+    for (char *p = tmp; *p; p++) *p = toupper(*p);
+    spawner = tmp;
+  }
+
+#if HAVE_MPI_SPAWNER
+  /* bug 3406: Try MPI-based spawn first, EVEN if the var is not set.
+   * This is a requirement for spawning using bare mpirun
+   */
+  if (!res && (spawner == not_set || !strcmp(spawner, "MPI"))) {
+    res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p);
+  }
+#endif
+
+#if HAVE_SSH_SPAWNER
+  /* GASNET_SPAWN_CONTROL=ssh is set by gasnetrun for the ssh spawn master,
+   * and by the ssh command line for other processes (ie all normal uses).
+   * We no longer claim to support ssh-based launch without gasnetrun.
+   * TODO: should we remove the "spawner == not_set" case?
+   */
+  if (!res && (spawner == not_set || !strcmp(spawner, "SSH"))) {
+    res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p);
+  }
+#endif
+
+#if HAVE_PMI_SPAWNER
+  /* GASNET_SPAWN_CONTROL=pmi is set by gasnetrun for the pmi spawn case.
+   * We no longer claim to support direct launch with srun, yod, etc.
+   * TODO: should we remove the "spawner == not_set" case?
+   */
+  if (!res && (spawner == not_set || !strcmp(spawner, "PMI"))) {
+    res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p);
+  }
+#endif
+
+  if (!res) {
+    gasneti_fatalerror("Requested spawner \"%s\" is unknown or not supported in this build", spawner);
+  }
+
+  gasneti_free(tmp);
+
+  return res;
+}
+
+/* ------------------------------------------------------------------------------------ */
 /* Debug memory management
    debug memory format:
   | prev | next | allocdesc (2*sizeof(void*)) | datasz | BEGINPOST | <user data> | ENDPOST |
@@ -1324,10 +1554,10 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
   static int gasneti_memalloc_envisinit = 0;
   static gasneti_mutex_t gasneti_memalloc_lock = GASNETI_MUTEX_INITIALIZER;
   static gasneti_memalloc_desc_t *gasneti_memalloc_pos = NULL;
-  #define GASNETI_MEM_BEGINPOST   ((uint64_t)0xDEADBABEDEADBABEllu)
-  #define GASNETI_MEM_LEAKMARK    ((uint64_t)0xBABEDEADCAFEBEEFllu)
-  #define GASNETI_MEM_ENDPOST     ((uint64_t)0xCAFEDEEDCAFEDEEDllu)
-  #define GASNETI_MEM_FREEMARK    ((uint64_t)0xBEEFEFADBEEFEFADllu)
+  #define GASNETI_MEM_BEGINPOST   ((uint64_t)0xDEADBABEDEADBABEULL)
+  #define GASNETI_MEM_LEAKMARK    ((uint64_t)0xBABEDEADCAFEBEEFULL)
+  #define GASNETI_MEM_ENDPOST     ((uint64_t)0xCAFEDEEDCAFEDEEDULL)
+  #define GASNETI_MEM_FREEMARK    ((uint64_t)0xBEEFEFADBEEFEFADULL)
   #define GASNETI_MEM_HEADERSZ    (sizeof(gasneti_memalloc_desc_t))
   #define GASNETI_MEM_TAILSZ      8     
   #define GASNETI_MEM_EXTRASZ     (GASNETI_MEM_HEADERSZ+GASNETI_MEM_TAILSZ)     
@@ -1340,8 +1570,8 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
        Quiet NaN: any bit pattern between 0x7ff8000000000000 and 0x7fffffffffffffff 
                or any bit pattern between 0xfff8000000000000 and 0xffffffffffffffff
     */
-    uint64_t sNAN = 0x7ff7ffffffffffffllu; 
-    uint64_t qNAN = 0x7fffffffffffffffllu;
+    uint64_t sNAN = ((uint64_t)0x7ff7ffffffffffffULL); 
+    uint64_t qNAN = ((uint64_t)0x7fffffffffffffffULL);
     uint64_t val = 0;
     const char *envval = gasneti_getenv_withdefault(name, deflt);
     const char *p = envval;
@@ -1612,16 +1842,17 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
     gasneti_assert_always((((uintptr_t)ret) & 0x3) == 0); /* should have at least 4-byte alignment */
     if_pf (ret == NULL) {
       char curlocstr[GASNETI_MAX_LOCSZ];
+      strcpy(curlocstr, "\n   at: %s");
       if (allowfail) {
         if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
-        GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%lu): %s",
-                                (unsigned long)nbytes, _gasneti_format_curloc(curlocstr,curloc)));
+        GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%"PRIuPTR")%s",
+                                (uintptr_t)nbytes, _gasneti_format_curloc(curlocstr,curloc)));
         return NULL;
       }
-      gasneti_fatalerror("Debug malloc(%lu) failed (%lu bytes in use, in %lu objects): %s", 
-                     (unsigned long)nbytes, 
-                     (unsigned long)(gasneti_memalloc_allocatedbytes - gasneti_memalloc_freedbytes),
-                     (unsigned long)(gasneti_memalloc_allocatedobjects - gasneti_memalloc_freedobjects),
+      gasneti_fatalerror("Debug malloc(%"PRIuPTR") failed (%"PRIu64" bytes in use, in %"PRIu64" objects)%s", 
+                     (uintptr_t)nbytes, 
+                     (gasneti_memalloc_allocatedbytes - gasneti_memalloc_freedbytes),
+                     (gasneti_memalloc_allocatedobjects - gasneti_memalloc_freedobjects),
                      _gasneti_format_curloc(curlocstr,curloc));
     } else {
       uint64_t gasneti_endpost_ref = GASNETI_MEM_ENDPOST;

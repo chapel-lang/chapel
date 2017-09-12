@@ -28,19 +28,21 @@ LDFLAGS = @LDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
 
-platform_defines = @GASNET_MACHINE_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
+platform_defines = @GASNET_EXTRA_DEFINES@ $(BUILDCONFIG_DEFINES) @INTTYPES_DEFINES@ -DAMMPI_DISABLE_AMTAGS $(MANUAL_DEFINES)
 
 platform_libraries = @LIBS@ @MPI_LIBS@
 
 VPATH = $(srcdir)
 testdir = $(srcdir)/../amxtests
 altincdir = $(srcdir)/..
-INCLUDES = -I$(srcdir) -I$(altincdir) $(platform_defines)
+INCLUDES = -I$(srcdir) -I. -I$(altincdir) $(platform_defines)
 compile = $(CC) $(CFLAGS) $(INCLUDES)
-link = $(CC) $(CFLAGS) $(LDFLAGS) $(platform_defines) $(INCLUDES) 
+link = $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) 
 linkend = $(platform_libraries) $(MANUAL_LIBS)
 
 if USE_AMMPI
+BUILT_SOURCES = ammpi_portable_platform.h
+
 lib_LIBRARIES = libammpi.a
 endif
 headers = 	     \
@@ -48,18 +50,22 @@ headers = 	     \
     ammpi_internal.h \
     ammpi_spmd.h
 
+allheaders = $(BUILT_SOURCES) $(headers)
+
 libammpi_a_SOURCES = \
-    $(headers)       \
     ammpi_ep.c       \
     ammpi_reqrep.c   \
     ammpi_spmd.c     
 
-libammpi_a_DEPENDENCIES = $(libammpi_a_SOURCES:%.c=%.o)
+ammpi_portable_platform.h: $(altincdir)/gasnet_portable_platform.h
+	cp -f $< $@
+
+libammpi_a_DEPENDENCIES = $(libammpi_a_SOURCES:%.c=%.o)  
+
+$(libammpi_a_DEPENDENCIES): $(allheaders)
 
 EXTRA_DIST = \
-	Makefile.common 	\
-	Makefile.generic 	\
-	Makefile.standalone 	\
+        $(headers)              \
 	Makefile.tests  	\
 	Makefile.titanium.in	\
 	license.txt
@@ -79,10 +85,10 @@ testprograms =    		\
 
 tests: apputils.o $(testprograms)
 
-test%.o : $(testdir)/test%.c $(testdir)/*.h $(headers)
+test%.o : $(testdir)/test%.c $(testdir)/*.h $(allheaders)
 	$(compile) -DAMMPI -I$(testdir) -c $< -o $@
 
-apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(headers)
+apputils.o : $(testdir)/apputils.c $(testdir)/apputils.h $(allheaders)
 	$(compile) -DAMMPI -I$(testdir) -c $(testdir)/apputils.c -o apputils.o
 
 test%: test%.o apputils.o libammpi.a 
@@ -102,10 +108,15 @@ if GNU_NM
 check-exports: libammpi.a
 	@echo Checking libammpi exports...
 	@lib=libammpi.a ; \
+	    if test x$(CHECK_EXPORTS) = x0; then                                    \
+	      echo Skipped by user request ;                                        \
+	      exit 0 ;                                                              \
+	    fi ;                                                                    \
             @NM@ --defined-only $$lib |                                             \
+	    @PERL@ -pe 's/ \.refptr\.//' |                                          \
             grep -v -e ' [\._]*ammpi_' -e ' [\._]*AMMPI_' -e ' [\._]*AM_'           \
                     -e ' [\._]*gasnett_' -e ' [\._]*gasneti_'                       \
-                    -e 'get_pc_thunk'                                               \
+                    -e ' [\._][\._]*debug_' -e 'get_pc_thunk'                       \
                     -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e debug_info_seg |      \
             @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
           if test -s .$$lib.exp ; then                                              \
@@ -124,7 +135,7 @@ endif
 
 check: check-exports tests
 
-clean_local_files = libammpi.a *.o core .test-results
+clean_local_files = libammpi.a *.o core .test-results $(BUILT_SOURCES)
 clean-local:
 	@for f in $(testprograms); do                                \
 	  cmd="rm -f '$$f$(EXESUFFIX)'"; echo "$$cmd"; eval "$$cmd" || exit $$? ; \

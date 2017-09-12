@@ -41,6 +41,9 @@ public:
   virtual QualifiedType qualType();
   virtual void    verify();
 
+  void verify(AstTag expectedTag); // ensure tag is as expected, then verify()
+  void verifyParent(const Expr* child); // verify proper child->parentExpr
+
   // New interface
   virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
@@ -267,11 +270,14 @@ public:
 
   FnSymbol*       theFnSymbol()                                          const;
 
-  bool            isNamed(const char*);
+  bool            isNamed(const char*)                                   const;
+  bool            isNamedAstr(const char*)                               const;
 
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
+
+  void            convertToNoop();
 
 private:
   GenRet          codegenPrimitive();
@@ -285,48 +291,74 @@ private:
   bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
-// For storing several call expressions, where
-// choosing between them depends on context
-// (and that choice might need to be done later in resolution).
-// These should only exist between resolution and cullOverReferences.
-// A ContextCall has a designated call.
-// The designated call will be returned if toCallExpr() is called
-// on the context call.
-// typeInfo/qualType on the context call will return the type info for
-// the designated call.
-// isCallExpr() will return true for a ContextCallExpr.
-class ContextCallExpr : public Expr {
- public:
-  // The options list always contains two CallExprs.
-  // The first is the value/const ref return intent
-  // and the second is the ref return intent version of a call.
-  // Storing the ref call after the value call allows a
-  // postorder traversal to skip the value call.
-  // The order is important also - the first is always the value.
-  AList options;
 
-  ContextCallExpr();
+//
+// A ContextCallExpr
+//
+// There are situations in which function resolution is unable to make a
+// final selection for the function to be used for a particular call
+// because of incomplete information about "ref-ness".
+//
+// When this occurs the CallExpr is replaced with a ContextCallExpr that
+// contains either 2 or 3 CallExprs. These are stored in a consistent
+// order in an AList :-
+//
+//     the best "value"     function
+//     the best "const-ref" function
+//     the best "ref"       function
+//
+// and flags are used to indicate which functions are present.  The final
+// CallExpr is selected in cullReferences
+//
+// A ContextCall has a designated call.  The designated call will be returned
+// if toCallExpr() is called on the context call.
+//
+// typeInfo/qualType on the context call will return the type info
+// for the designated call.
+//
+// isCallExpr() will return true for a ContextCallExpr
+//
+class ContextCallExpr : public Expr {
+public:
+                         ContextCallExpr();
 
   DECLARE_COPY(ContextCallExpr);
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
-  virtual QualifiedType qualType();
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream *o);
+  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
 
-  virtual Expr*   getFirstChild();
+  virtual void           verify();
+  virtual void           accept(AstVisitor* visitor);
+  virtual QualifiedType  qualType();
+  virtual GenRet         codegen();
+  virtual void           prettyPrint(std::ostream* o);
 
-  virtual Expr*   getFirstExpr();
+  virtual Expr*          getFirstChild();
+  virtual Expr*          getFirstExpr();
 
-  void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
-  void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
-  CallExpr*       getRefCall();
-  CallExpr*       getRValueCall();
-  void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
+  void                   setRefValueConstRefOptions(CallExpr* refCall,
+                                                    CallExpr* valueCall,
+                                                    CallExpr* constRefCall);
+
+  void                   getCalls(CallExpr*& refCall,
+                                  CallExpr*& valueCall,
+                                  CallExpr*& constRefCall)               const;
+
+  CallExpr*              getValueCall()                                  const;
+  CallExpr*              getConstRefCall()                               const;
+  CallExpr*              getRefCall()                                    const;
+
+  AList                  options;
+
+private:
+  bool                   hasValue;
+  bool                   hasConstRef;
+  bool                   hasRef;
 };
 
+//
+//
+//
+//
 
 class ForallExpr : public Expr {
 public:

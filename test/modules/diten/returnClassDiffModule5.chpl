@@ -1,3 +1,4 @@
+pragma "error mode fatal"
 module M1 {
   var a = 1;
   class C {

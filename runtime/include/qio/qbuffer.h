@@ -24,10 +24,6 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
 #endif
-// This macro set to obtain SIZE_MAX
-#ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS 1
-#endif
 
 #include "sys_basic.h"
 #include "qio_error.h"
@@ -38,15 +34,6 @@
 
 #include <inttypes.h>
 #include <stdint.h>
-
-// Last resort way to get SIZE_MAX. This should be correct,
-// but we'd rather use the system's definition... which should
-// theoretically be provided by the above (__STDC_LIMIT_MACROS+stdint.h)
-// but that isn't happening for me on GCC 4.7.2 when this file is included
-// by a C++ program.
-#ifndef SIZE_MAX
-#define SIZE_MAX (~((size_t)0))
-#endif
 
 #include <sys/uio.h>
 #include "deque.h"
@@ -467,11 +454,11 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #ifdef _chplrt_H_
 
 #include "chpl-mem.h"
-#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
-#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
+#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
+#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, 0)
 #define qio_memalign(boundary, size)  chpl_memalign(boundary, size)
-#define qio_free(ptr) chpl_mem_free(ptr, 0, 0)
+#define qio_free(ptr) chpl_mem_free(ptr, __LINE__, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
 typedef chpl_bool qio_bool;

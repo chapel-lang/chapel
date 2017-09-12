@@ -1,0 +1,6 @@
+bug: compiler incorrectly applies 'const ref' intent to 'this' formal of initializer
+
+The 'this' formal of an initializer should have INTENT_REF. If it doesn't, it
+may confuse later passes expecting to find a def of the formal (by looking
+for INTENT_REF). In this case, it trips an assertion in def/use analysis while
+attempting to broadcast a const global record.

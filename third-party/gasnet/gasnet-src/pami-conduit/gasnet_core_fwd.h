@@ -11,9 +11,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#include <pami.h>
-
-#define GASNET_CORE_VERSION      1.0
+#define GASNET_CORE_VERSION      1.1
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         PAMI
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -35,7 +33,15 @@
 #endif
 
 #define _GASNET_NODE_T
-typedef pami_task_t gasnet_node_t;
+#if GASNETI_SIZEOF_PAMI_TASK_T == 8
+typedef uint64_t gasnet_node_t;
+#elif GASNETI_SIZEOF_PAMI_TASK_T == 4
+typedef uint32_t gasnet_node_t;
+#elif GASNETI_SIZEOF_PAMI_TASK_T == 2
+typedef uint16_t gasnet_node_t;
+#else
+#error "Invalid (or missing) GASNETI_SIZEOF_PAMI_TASK_T"
+#endif
 
   /* define to 1 if conduit allows internal GASNet fns to issue put/get for remote
      addrs out of segment - not true when PSHM is used */
@@ -56,6 +62,13 @@ typedef pami_task_t gasnet_node_t;
    */
 #if 0
 #define GASNETC_USE_INTERRUPTS 1
+#endif
+
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+#if 0
+#define GASNETC_AMREGISTER 1
 #endif
 
   /* define these to 1 if your conduit supports PSHM, but cannot use the

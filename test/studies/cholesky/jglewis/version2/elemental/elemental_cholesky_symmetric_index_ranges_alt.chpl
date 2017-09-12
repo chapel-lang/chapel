@@ -53,7 +53,7 @@ module elemental_cholesky_symmetric_index_ranges_alt {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers are implemented in the Barrier
+  // execution model more closely.  Barriers are implemented in the Barriers
   // standard module for synchronization beyond the specific functionality of
   // coforall and sync statements.
   // =========================================================================
@@ -67,7 +67,7 @@ module elemental_cholesky_symmetric_index_ranges_alt {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist, Barrier;
+  use CyclicDist, Barriers;
 
   use elemental_schur_complement, 
       local_reduced_matrix_cyclic_partition_alt,

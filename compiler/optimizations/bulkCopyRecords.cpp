@@ -37,7 +37,7 @@ static bool isAssignment(FnSymbol* fn)
 {
   if (! fn->hasFlag(FLAG_ASSIGNOP))
     return false;
-  if (strcmp(fn->name, "="))
+  if (fn->name != astrSequals)
     return false;
 
   return true;

@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ This module makes the following assumptions:
 
 1. The file has been opened for reading and a reader channel has been created
 
-2. The programmer has created a record (NOT a class) in which all fields 
+2. The programmer has created a record (NOT a class) in which all fields
    can be cast from strings (i.e no subrecords, arrays etc).
 
 3. The number of captures in the regex string provided MUST match the number
@@ -86,8 +86,8 @@ Example 2
     var profileName:  string;
     var text: string;
   }
-  
-      
+
+
   var strt = "\\s*beer/name: (.*)\\s*beer/beerId: (.*)\\s*beer/brewerId: (.*)\\s*beer/ABV: (.*)\\s*beer/style: (.*)\\s*review/appearance: (.*)\\s*review/aroma: (.*)\\s*review/palate: (.*)\\s*review/taste: (.*)\\s*review/overall: (.*)\\s*review/time: (.*)\\s*review/profileName: (.*)\\s*review/text: (.*)";
 
   var N = new RecordReader(Beer, ffr, strt);
@@ -121,11 +121,11 @@ class RecordReader {
 
   /* Create a RecordReader to match an auto-generated regular expression
      for a record created by the :proc:`createRegexp` routine.
-     
+
      :arg t: the record type to read
      :arg myReader: the channel to read from
    */
-  proc RecordReader(type t, myReader) {
+  proc RecordReader(type t, myReader) throws {
     matchRegexp = compile(createRegexp());
   }
 
@@ -137,7 +137,7 @@ class RecordReader {
                    currently must be a string, but in the future might be a
                    compiled regular expression.
    */
-  proc RecordReader(type t, myReader, mRegexp) {
+  proc RecordReader(type t, myReader, mRegexp) throws {
     matchRegexp = compile(mRegexp);
   }
 
@@ -159,54 +159,57 @@ class RecordReader {
   }
 
   /* Yield records for the range offst..offst+len, but assumes that the
-     channel is already at offst. 
+     channel is already at offst.
 
      :arg offst: the current position of the channel
      :arg len: the number of bytes to read
    */
-  iter stream_num(offst: int(64), len: int(64)) { 
-    do {
-      var (rec, once) = _get_internal(offst, len);
-      if (once == true) {
-        if (myReader.offset() >= offst+len) { // rec.end >= start + len
-          // So yield and break
+  iter stream_num(offst: int(64), len: int(64)) {
+    try! { // TODO -- should be throws instead, once that is working
+      do {
+        var (rec, once) = _get_internal(offst, len);
+        if (once == true) {
+          if (myReader.offset() >= offst+len) { // rec.end >= start + len
+            // So yield and break
+            yield rec;
+            break;
+          }
           yield rec;
-          break;
-        } 
-        yield rec;
-      }
-    } while(once);
-
+        }
+      } while(once);
+    }
   }
 
   /* Read the next record */
-  proc get() { 
+  proc get() throws {
     var (rec, once) = _get_internal();
-    if(!once) // We havent gotten everything that we should have. 
+    if(!once) // We havent gotten everything that we should have.
       then halt("EOF reached -- record not populated");
     return rec;
   }
 
   /* Yield the records read */
-  iter stream() { 
-    do {
-      var (rec, once) = _get_internal();
-      if (once == true) // Populated
-        then yield rec;
-    } while(once);
+  iter stream() {
+    try! { // TODO -- should be throws, once that is working for iterators
+      do {
+        var (rec, once) = _get_internal();
+        if (once == true) // Populated
+          then yield rec;
+      } while(once);
+    }
   }
 
   /*
 
      An internal function that we use with all our user visible code.  When
      called with no arguments it does no checking about block boundaries.
-     
+
      HDFS specific when offst and len are given. Checks for block boundaries
      for parallel file IO
 
    */
   pragma "no doc"
-  proc _get_internal(offst: int(64) = 0, len: int(64) = -1) { 
+  proc _get_internal(offst: int(64) = 0, len: int(64) = -1) throws {
     var rec: t; // create record
     var once = false; // We havent populated yet
     // This will only loop through  at most one time before returning
@@ -220,12 +223,12 @@ class RecordReader {
         var tmp = __primitive("field by num", rec, n);
         var s: string;
         myReader.extractMatch(m(n + 1), s);
-        if(s == "") 
+        if(s == "")
           then __primitive("field by num", rec, n) = tmp;
         else __primitive("field by num", rec, n) = s:tmp.type;
         once = true;
       }
-    } 
+    }
     return (rec, once);
   }
 

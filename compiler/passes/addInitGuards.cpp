@@ -36,6 +36,7 @@
 #include "build.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "wellknown.h"
 
 static void addModuleInitBlocks();
 static void addInitGuards();

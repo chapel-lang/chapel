@@ -1,0 +1,2 @@
+grandparentAccess.chpl:22: In initializer:
+grandparentAccess.chpl:23: error: Cannot access inherited field 'a' during phase 1

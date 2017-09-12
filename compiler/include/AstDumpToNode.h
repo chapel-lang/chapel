@@ -22,6 +22,7 @@
 
 #include "AstLogger.h"
 
+#include "alist.h"
 #include <cstdio>
 
 class BaseAST;
@@ -118,6 +119,10 @@ public:
 
   virtual bool     enterBlockStmt      (BlockStmt*         node);
 
+  virtual bool     enterForallIntent   (ForallIntent*    intent);
+
+  virtual bool     enterForallStmt     (ForallStmt*        node);
+
   virtual bool     enterWhileDoStmt    (WhileDoStmt*       node);
 
   virtual bool     enterDoWhileStmt    (DoWhileStmt*       node);
@@ -137,6 +142,8 @@ public:
   virtual bool     enterTryStmt        (TryStmt*           node);
 
   virtual bool     enterCatchStmt      (CatchStmt*         node);
+
+  virtual bool     enterDeferStmt      (DeferStmt*         node);
 
 private:
                    AstDumpToNode();
@@ -158,23 +165,12 @@ private:
 
   void             newline();
 
-  void             logEnter(BaseAST* node);
-  void             logEnter(BaseAST* node, const char* fmt, ...);
-  void             logEnter(const char* fmt, ...);
-
-  void             logExit (BaseAST* node);
-  void             logExit (const char* fmt, ...);
-
-  void             logVisit(BaseAST* node);
-  void             logVisit(const char* fmt, ...);
-
-  void             logWrite(const char* fmt, ...);
-
   // enable compact mode
   void             enterNode(BaseAST* node)                             const;
   void             enterNodeSym(Symbol* node, const char* name = 0)     const;
   void             exitNode(BaseAST* node, bool addNewline = false)     const;
   void             writeField(const char* msg, int offset, BaseAST* field);
+  void             writeField(const char* msg, AList& list);
   void             writeLongString(const char* msg, const char* arg)    const;
   void             writeNodeID(BaseAST* node,
                                bool     spaceBefore,

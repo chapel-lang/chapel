@@ -7,7 +7,8 @@
 #define SOCKET_H
 
 #include <portable_inttypes.h>
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 #include <sys/types.h>     /*  Solaris 2.5.1 fix: u_short, required by sys/socket.h */
 #include <sys/socket.h>    /*  sockets */
@@ -46,6 +47,22 @@
   /* Cray CC botches the inline assembly implementing FD_ZERO in Linux */
   #undef FD_ZERO
   #define FD_ZERO(pfd_set) (memset(pfd_set, 0, sizeof(*(pfd_set))))
+#endif
+
+#if PLATFORM_COMPILER_PGI && PLATFORM_OS_DARWIN
+  /* bug 3379: workaround PGI optimizer bug */
+  extern uint16_t ntoh16(uint16_t v);
+  extern uint32_t ntoh32(uint32_t v);
+  extern uint16_t hton16(uint16_t v);
+  extern uint32_t hton32(uint32_t v);
+  #undef  htons
+  #define htons hton16
+  #undef  ntohs
+  #define ntohs ntoh16
+  #undef  htonl
+  #define htonl hton32
+  #undef  ntohl
+  #define ntohl ntoh32
 #endif
 
 /*  these constants are useful, but appear to be specific to */
@@ -94,7 +111,8 @@ typedef unsigned int SOCKET;
 typedef fd_set FD_SET;
 
 /*  resolve disagreements about types of arguments to misc. functions */
-#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || \
+#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL || \
+    PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || \
     PLATFORM_OS_SOLARIS || (PLATFORM_OS_AIX && defined(_AIX51))
 #  define GETSOCKNAME_LENGTH_T socklen_t
 #  define GETSOCKOPT_LENGTH_T socklen_t
@@ -110,7 +128,8 @@ typedef fd_set FD_SET;
 #define ioctlsocket ioctl
 
 #if PLATFORM_OS_CYGWIN || PLATFORM_OS_AIX || PLATFORM_OS_SOLARIS || \
-    PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_TRU64 || PLATFORM_OS_SUPERUX || \
+    PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL || \
+    PLATFORM_OS_TRU64 || PLATFORM_OS_SUPERUX || \
     PLATFORM_OS_DARWIN || /* bug 2428 */ \
     PLATFORM_ARCH_CRAYX1 /* X1 docs claim it's a size_t, they lie */
   #define IOCTL_FIONREAD_ARG_T unsigned int
@@ -121,7 +140,8 @@ typedef fd_set FD_SET;
 #endif
 
 /* addr-length argument type fiasco.. */
-#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_FREEBSD || PLATFORM_OS_AIX || \
+#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL || \
+    PLATFORM_OS_FREEBSD || PLATFORM_OS_AIX || \
     PLATFORM_OS_SOLARIS || PLATFORM_OS_NETBSD
 #  define LENGTH_PARAM socklen_t
 #elif PLATFORM_OS_TRU64

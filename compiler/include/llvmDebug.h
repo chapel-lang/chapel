@@ -25,8 +25,13 @@
 #ifdef HAVE_LLVM
 
 #include "llvmUtil.h"
-#include "llvm/Support/Dwarf.h"
 #include "llvm/Support/raw_os_ostream.h"
+
+#if HAVE_LLVM_VER >= 50
+#include "llvm/BinaryFormat/Dwarf.h"
+#else
+#include "llvm/Support/Dwarf.h"
+#endif
 
 #if HAVE_LLVM_VER >= 35
 #include "llvm/IR/DebugInfo.h"
@@ -128,6 +133,18 @@ static inline LLVM_DIVARIABLE toDIVARIABLE(llvm::MDNode* N)
 #endif
 
 
+
+// LLVM 4.0 added DIGlobalVariableExpression but previously
+// it was basically stored in DIGlobalVariable
+#if HAVE_LLVM_VER >= 40
+#define LLVM_DIGLOBALVARIABLEEXPRESSION llvm::DIGlobalVariableExpression*
+#else
+#define LLVM_DIGLOBALVARIABLEEXPRESSION llvm::DIGlobalVariable*
+#endif
+
+
+
+
 #endif
 
 struct lessAstr {
@@ -158,8 +175,8 @@ class debug_data
   LLVM_DISUBPROGRAM construct_function(FnSymbol *function);
   LLVM_DISUBPROGRAM get_function(FnSymbol *function);
 
-  LLVM_DIGLOBALVARIABLE construct_global_variable(VarSymbol *gVarSym);
-  LLVM_DIGLOBALVARIABLE get_global_variable(VarSymbol *gVarSym);
+  LLVM_DIGLOBALVARIABLEEXPRESSION construct_global_variable(VarSymbol *gVarSym);
+  LLVM_DIGLOBALVARIABLEEXPRESSION get_global_variable(VarSymbol *gVarSym);
   LLVM_DIVARIABLE construct_variable(VarSymbol *varSym);
   LLVM_DIVARIABLE get_variable(VarSymbol *varSym);
   LLVM_DIVARIABLE construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);

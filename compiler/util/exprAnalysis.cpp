@@ -210,7 +210,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_METHOD_CALL_RESOLVES:
     case PRIM_ENUM_MIN_BITS:
     case PRIM_ENUM_IS_SIGNED:
-    case PRIM_GET_COMPILER_VAR:k
+    case PRIM_GET_COMPILER_VAR:
 */
 bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
   PrimitiveOp* prim = ce->primitive;
@@ -231,6 +231,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_NOOP:
     case PRIM_LOOKUP_FILENAME:
     case PRIM_REF_TO_STRING:
+    case PRIM_CLASS_NAME_BY_ID:
     case PRIM_BLOCK_LOCAL:
     case PRIM_UNARY_MINUS:
     case PRIM_UNARY_PLUS:
@@ -271,6 +272,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_DYNAMIC_CAST:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
+    case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:
     case PRIM_WIDE_GET_ADDR:
@@ -281,6 +283,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_STACK_ALLOCATE_CLASS:
+    case PRIM_GET_DYNAMIC_END_COUNT:
       return true;
     case PRIM_UNKNOWN:
       if(strcmp(prim->name, "string_length") == 0 ||

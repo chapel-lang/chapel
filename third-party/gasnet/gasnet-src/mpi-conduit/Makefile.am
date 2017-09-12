@@ -29,10 +29,12 @@ CONDUIT_SOURCELIST =          \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/ammpi
+CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/ammpi -I$(top_builddir)/other/ammpi
 
 # additional conduit header files to install from external, non-standard directories
-CONDUIT_EXTRAHEADERS = $(top_srcdir)/other/ammpi/ammpi.h 
+CONDUIT_EXTRAHEADERS =                                      \
+      $(top_srcdir)/other/ammpi/ammpi.h                     \
+      $(top_builddir)/other/ammpi/ammpi_portable_platform.h 
 
 # headers selected by default rules that should NOT be installed
 CONDUIT_PRIVATEHEADERS =
@@ -43,6 +45,8 @@ CONDUIT_EXTRADEPS = $(top_builddir)/other/ammpi/libammpi.a $(top_srcdir)/other/a
 
 $(top_builddir)/other/ammpi/libammpi.a: force
 	cd $(top_builddir)/other/ammpi && $(MAKE) libammpi.a
+
+$(top_builddir)/other/ammpi/ammpi_portable_platform.h: $(top_builddir)/other/ammpi/libammpi.a
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as

@@ -654,7 +654,10 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
     // The dead module may have used other modules.  If so add them
     // to the current module
     forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
-      if (modUseList.index(modUsedByDeadMod) < 0) {
+      if (modUseList.index(modUsedByDeadMod) < 0 && modUsedByDeadMod != this) {
+        if (modUsedByDeadMod == mod) {
+          INT_FATAL("Dead module using itself");
+        }
         SET_LINENO(this);
 
         if (inBlock == true) {

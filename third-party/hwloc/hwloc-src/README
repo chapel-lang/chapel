@@ -19,7 +19,7 @@ hwloc supports the following operating systems:
  knowledge of cpusets, ScaleMP vSMP and Kerrighed support, etc.) on all
  supported hardware, including Intel Xeon Phi (KNL and KNC, either
  standalone or as a coprocessor) and NumaScale NumaConnect.
-  * Solaris
+  * Solaris (with support for processor sets and logical domains)
   * AIX
   * Darwin / OS X
   * FreeBSD and its variants (such as kFreeBSD/GNU)

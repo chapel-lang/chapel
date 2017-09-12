@@ -52,8 +52,8 @@ GASNETI_NORETURNP(gasnetc_exit)
   #define gasnet_hold_interrupts    gasnetc_hold_interrupts
   #define gasnet_resume_interrupts  gasnetc_resume_interrupts
 #else
-  #define gasnet_hold_interrupts()
-  #define gasnet_resume_interrupts()
+  #define gasnet_hold_interrupts()   ((void)0)
+  #define gasnet_resume_interrupts() ((void)0)
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -72,7 +72,7 @@ typedef struct _gasnet_hsl_t {
     /* more state may be required for conduits using interrupts */
     #error interrupts not implemented
   #endif
-} gasnet_hsl_t GASNETI_THREAD_TYPEDEF;
+} gasnet_hsl_t;
 
 #if GASNETI_STATS_OR_TRACE
   #define GASNETC_LOCK_STAT_INIT ,0 
@@ -130,19 +130,18 @@ typedef struct _gasnet_hsl_t {
 */
 
 #define gasnet_AMMaxArgs()          ((size_t)16)
-#define GASNETC_MAX_MEDIUM_ 4096 /*TODO: medium size? */
-#define GASNET_LONG_MSG_LIMIT (0x7fffffff)
+#define GASNETC_LONG_MSG_LIMIT (0x7fffffff)
 #if GASNET_PSHM
   /* (###) If supporting PSHM a conduit must "negotiate" the maximum size of a
    * Medium message.  This can either be done by lowering the conduit's value to
    * the default PSHM value (as shown here), or GASNETI_MAX_MEDIUM_PSHM can be
    * defined in gasnet_core_fwd.h to give the conduit complete control. */
-  #define gasnet_AMMaxMedium()      ((size_t)MIN(GASNETC_MAX_MEDIUM_, GASNETI_MAX_MEDIUM_PSHM))
+  #define gasnet_AMMaxMedium()      ((size_t)MIN(GASNETC_OFI_MAX_MEDIUM, GASNETI_MAX_MEDIUM_PSHM))
 #else
-  #define gasnet_AMMaxMedium()      ((size_t)GASNETC_MAX_MEDIUM_) 
+  #define gasnet_AMMaxMedium()      ((size_t)GASNETC_OFI_MAX_MEDIUM) 
 #endif
-#define gasnet_AMMaxLongRequest()   ((size_t)GASNET_LONG_MSG_LIMIT)
-#define gasnet_AMMaxLongReply()     ((size_t)GASNET_LONG_MSG_LIMIT)
+#define gasnet_AMMaxLongRequest()   ((size_t)GASNETC_LONG_MSG_LIMIT)
+#define gasnet_AMMaxLongReply()     ((size_t)GASNETC_LONG_MSG_LIMIT)
 
 /* ------------------------------------------------------------------------------------ */
 /*

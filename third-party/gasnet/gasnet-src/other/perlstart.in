@@ -94,6 +94,8 @@ done
 dir=`"$dirname" ${scriptname}`;
 scriptname=`cd ${dir} >/dev/null 2>&1; $pwd_prog`/`"$basename" ${scriptname}`;
 
+PERL="$perl"
+export PERL
 PERLSTART_FLAGS="$perlopts $PERLSTART_FLAGS"
 export PERLSTART_FLAGS
 

@@ -11,8 +11,8 @@ and aries are meant.
 
 Because these Cray systems have non-trivial differences between the login
 nodes and the compute nodes, one must use a cross-configure script to build
-either of these conduits.  See other/contrib/cross-configure-crayxe-linux
-for Gemini and other/contrib/cross-configure-crayxc-linux for Aries.
+either of these conduits.  See other/contrib/cross-configure-cray-gemini-*
+for Gemini and other/contrib/cross-configure-cray-aries-* for Aries.
 
 Where this conduit runs:
 -----------------------
@@ -26,23 +26,102 @@ The aries-conduit runs on systems with Cray's "Aries" interconnect, including
 their XC series machines.  To the best of our knowledge, there are no known
 compatibility issues with any release of the XC series system software.
 
+Optional configure-time settings:
+------------------------------
+
+--with-gni-max-medium=[value]
+   By default gasnet_AMMaxMedium() is 4032: a 4096 byte buffer minus
+   64 bytes reserved for up to 16 handler arguments.  This configure
+   option allows control over the value of gasnet_AMMaxMedium().
+   The value must be a multiple of 64, and cannot be less than 512.
+   The default value is 4032.
+
+--enable-gni-multi-domain
+   This configure option enables EXPERIMENTAL support for improved
+   performance of RDMA operations in a PAR (multi-threaded) build of
+   Gemini or Aries conduit by allocating multiple GNI Communication
+   Domains and distributing the clients threads over these domains.
+   Since operations on a given domain must be serialized (we use a
+   pthread mutex), use of multiple domains can significantly reduce
+   lock contention.  The trade-offs are that with multiple domains
+   the maximum size of the GASNet segment may be reduced, and progress
+   on Active Messages may be slowed.
+
+   The following three environment variables are honored when
+   multi-domain support is enabled:
+
+   GASNET_DOMAIN_COUNT
+   This is the number of Communication Domains to create per process.
+   The multi-domain support has no benefits unless this is set to a
+   value larger than 1.
+   The default value is 1 (a single domain with no benefits).
+
+   GASNET_GNI_PTHREADS_PER_DOMAIN
+   This is the number of threads to assign to the first domain before
+   assigning any to the second.  When the last domain has been assigned
+   this many threads, then assignment resumes at the first domain.
+   The default value is 1 (cyclic/round-robin assignment).
+
+   GASNET_AM_DOMAIN_POLL_MASK
+   This value controls how often threads in domains other than the
+   first poll for arrival of Active Messages (threads in the first 
+   domain poll on every call to gasnet_AMPoll).  Since all Active
+   Message traffic arrives via the first domain, polling by more than
+   one thread will increase lock contention, but a total lack of
+   polling by threads in other domains can lead to deadlock in some
+   circumstances.
+   A value of 0 will result in polling for Active Messages on every
+   call (explicit or implicit) to gasnet_AMPoll().
+   Values of 1, 3, 7, 15, etc. will result in progressively lower
+   average frequencies (1 in (n+1)).
+   The default is 255 (1 in every 256 polls by threads outside the
+   first domain will poll for AM arrivals).
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+in gemini-conduit/gasnet_gemini.h:
+
+GASNETC_USE_SPINLOCK	- 0 user gasneti_mutex_t (default)
+			  1 use gasneti_spinlock_t
+
+The _DEFAULT values for all of the GASNET_GNI_ environment variables.
+
+in gemini-conduit/gasnet_gemini.c:
+
+int gasnetc_poll_burst = 10;   /* number of rdma completions to get at once */
+
+Sets the number of events for arriving active messages taken at once
+#define AM_BURST 20
+
 Configuring job launch:
 ----------------------
 
-Both ALPS (srun) and native SLURM (srun) are supported for job-launch by the
+Both ALPS (aprun) and native SLURM (srun) are supported for job-launch by the
 provided gasnetrun_gemini and gasnetrun_aries scripts.  The value of the
-environment variable MPIRUN_CMD can be used to choose between these two.  The
+environment variable PMIRUN_CMD can be used to choose between these two.  The
 value when configure is run establishes a default, which a value set at
-job-launch time can override.  Our recommended settings are
- + For ALPS (default):   MPIRUN_CMD="aprun -n %N %C"
- + For native SLURM:     MPIRUN_CMD="srun -K0 -W60 %V -mblock -n %N %C"
+job-launch time can override.  The corresponding cross-configure scripts
+establish the following default (recommended) values:
+ + For ALPS:             PMIRUN_CMD="aprun -n %N %C"
+ + For native SLURM:     PMIRUN_CMD="srun -K0 -W60 %V -mblock -n %N %C"
 
-For SLURM-based systems, one can simply set APRUN="srun -K0 -W60 %V -mblock"
-in ones environment when running the appropriate cross-configure script.
+If set at cross-configure time, the APRUN or SRUN environment variables
+can be used to provide full paths to the respective utilities.  If you
+require additional customization, please cross-configure with the option
+    --with-pmirun-cmd=VALUE
+where VALUE is the desired PMIRUN_CMD value (the format of which is the
+same as for MPIRUN_CMD, documented in mpi-conduit's README).
 
-If you desire additional customization, please see mpi-conduit's README for
-documentation regarding the MPIRUN_CMD environment variable.  Note, that it
-is NOT required that one compile mpi-conduit to use gemini or aries conduits.
+NOTE:
+This release uses two distinct options when configuring Cray systems:
+    --with-mpirun-cmd=VALUE    used to configure gasnetrun_mpi
+    --with-pmirun-cmd=VALUE    used to configure gasnetrun_{gemini,aries}
+However, to support legacy configuration scripts, if one passes only the
+option '--with-mpirun-cmd=...' then it will set a default value for *both*
+the MPIRUN_CMD and PMIRUN_CMD environment variables.
 
 Recognized environment variables:
 ---------------------------------
@@ -58,15 +137,15 @@ GASNET_BARRIER - barrier algorithm selection
 
 GASNET_NETWORKDEPTH_SPACE - volume of AM Request queue
   This determines the maximum volume of AM Requests (in bytes) that can
-  be oustanding between a given pair of peers before flow-control.  This
+  be outstanding between a given pair of peers before flow-control.  This
   differs from most other conduits in which the depth is given by a
   count.  Values smaller than 2 maximum size Medium AMs, or larger than
-  64 maximum sized Medium AMs, will be silenly adjusted to that range.
+  64 maximum sized Medium AMs, will be silently adjusted to that range.
   The default value is 12K.
 
 GASNET_NETWORKDEPTH_TOTAL - depth of AM Reply queue
   This determines the maximum number of AM Requests that can be
-  oustanding from one peer to all others before flow-control.
+  outstanding from one peer to all others before flow-control.
   The default value is 64, and the minimum is 1.
 
 GASNET_GNI_NUM_PD - number of post descriptors
@@ -138,14 +217,44 @@ GASNET_GNI_MEMREG
   parameter, or in the extreme you may wish to set GASNET_USE_UDREG=0 to
   disable use of UDREG by GASNet.
 
-GASNET_PHYSMEM_PINNABLE_RATIO - default 0.80
-GASNET_PHYSMEM_MAX - default <size of physmem> * <pinnable ratio>
-GASNET_PHYSMEM_NOPROBE - default 0
-  The logic for setting the maximum size of the segment is copied from
-  portals-conduit, which uses the following setting to control the
-  maximum size of the segment.  If you set PINNABLE_RATIO 1 (or higher)
-  and PHYSMEM_MAX, and PHYSMEM_NOPROBE you will bypass all the checking.
-  Of course mmap might fail, or you might be swapping the segment...
+GASNET_GNI_FMA_SHARING
+  This controls the use of shared versus dedicated FMA resources, used for
+  the initiation of AMs and of Puts and Gets of size below the respective
+  GASNET_GNI_{PUT,GET}_FMA_RDMA_CUTOVER value.
+  The value is a boolean: "0" to disable or "1" to enable the use of shared
+  FMA resources.
+  The default is to use dedicated FMA resources (which are expected to give
+  better performance) unless it can be determined that the required resources
+  would exceed the available resources in dedicated mode.
+
+GASNET_GNI_MDD_SHARING
+  This controls the use of shared versus dedicated MDD resources, used for
+  the registration of memory with the NIC for Puts and Gets of size over
+  the respective GASNET_GNI_{PUT,GET}_FMA_RDMA_CUTOVER value.
+  Use of dedicated MDD resources may reduce latency of some operations at
+  the expense of being able to register less memory simultaneously.
+  The value is a boolean: "0" to disable or "1" to enable the use of shared
+  MDD resources.
+  The default is use of shared MDD resources.
+
+GASNET_GNI_BTE_MULTI_CHANNEL
+  The value is a boolean: "0" to disable or "1" to enable the use of all
+  available Block Transfer Engine (BTE) channels.  Rarely, an application
+  may benefit from use of a single channel (a setting of "0").  However,
+  for most applications the use of all channels gives higher sustained
+  bandwidth for large transfers.
+  The default is "1" (enabled).
+
+GASNET_PHYSMEM_MAX
+  If set, this parameter is used to determine the maximum amount of memory
+  the conduit may pin.  This limits how large the GASNet segment can be.
+  The value may specify either a relative or absolute size.  If the value
+  parses as a floating-point value less than 1.0 (including fractions such
+  as "5/8"), then this is taken as a fraction of the (estimated) physical
+  memory.  Otherwise the value is taken as an absolute memory size, with "M",
+  "G" and "T" suffixes accepted to indicate units of Megabytes, Gigabytes,
+  and Terabytes, respectively.
+  The default is "0.8" (80% of estimated physical memory).
 
 GASNET_USE_UDREG
   AVAILABLE UNLESS CONFIGURED WITH --disable-gni-udreg.
@@ -154,19 +263,12 @@ GASNET_USE_UDREG
   intended primarily for debugging purposes.
   The default is enabled.
 
-GASNET_USE_FIREHOSE
-  AVAILABLE ONLY IF CONFIGURED WITH --enable-gni-firehose.
-  This gives a boolean: "0" to disable or "1" to enable the use
-  of the firehose dynamic pinning library for local memory
-  registration, and is intended primarily for debugging purposes.
-  The default is enabled.
-
 GASNET_DOMAIN_COUNT
 GASNET_GNI_PTHREADS_PER_DOMAIN
 GASNET_AM_DOMAIN_POLL_MASK
   AVAILABLE ONLY IF CONFIGURED WITH --enable-gni-multi-domain.
   For their use, please see the multi-domain documentation under the
-  "Optional configure-time settings" section, below.
+  "Optional configure-time settings" section, above.
 
 PMI_GNI_LOC_ADDR   - NIC address on local node
 PMI_GNI_COOKIE     - Access code shared by all nodes in job
@@ -174,98 +276,31 @@ PMI_GNI_PTAG       - Protection tag shared by all nodes in job
 PMI_GNI_DEV_ID     - Device ID (Selects which NIC is in use)
   Provided by Cray runtime system.  Don't mess with these.
 
-Optional configure-time settings:
-------------------------------
-
---with-gni-max-medium=[value]
-   By default gasnet_AMMaxMedium() is 4032: a 4096 byte buffer minus
-   64 bytes reserved for up to 16 handler arguments.  This configure
-   option allows control over the value of gasnet_AMMaxMedium().
-   The value must be a multiple of 64, and cannot be less than 512.
-   The default value is 4032.
-
---enable-gni-multi-domain
-   This configure option enables EXPERMIENTAL support for improved
-   performance of RDMA operations in a PAR (multi-threaded) build of
-   Gemini or Aries conduit by allocating multiple GNI Communication
-   Domains and distributing the clients threads over these domains.
-   Since operations on a given domain must be serialized (we use a
-   pthread mutex), use of multiple domains can significantly reduce
-   lock contention.  The trade-offs are that with multiple domains
-   the maximum size of the GASNet segment may be reduced, and progress
-   on Active Messages may be slowed.
-
-   The following three environment variables are honored when
-   multi-domain support is enabled:
-
-   GASNET_DOMAIN_COUNT
-   This is the number of Communication Domains to create per process.
-   The multi-domain support has no benefits unless this is set to a
-   value larger than 1.
-   The default value is 1 (a single domain with no benefits).
-
-   GASNET_GNI_PTHREADS_PER_DOMAIN
-   This is the number of threads to assign to the first domain before
-   assigning any to the second.  When the last domain has been assigned
-   this many threads, then assignment resumes at the first domain.
-   The default value is 1 (cyclic/round-robin assignment).
-
-   GASNET_AM_DOMAIN_POLL_MASK
-   This value controls how often threads in domains other than the
-   first poll for arrival of Active Messages (threads in the first 
-   domain poll on every call to gasnet_AMPoll).  Since all Active
-   Message traffic arrives via the first domain, polling by more than
-   one thread will increase lock contention, but a total lack of
-   polling by threads in other domains can lead to deadlock in some
-   circumstances.
-   A value of 0 will result in polling for Active Messages on every
-   call (explicit or implict) to gasnet_AMPoll().
-   Values of 1, 3, 7, 15, etc. will result in progressively lower
-   average frequencies (1 in (n+1)).
-   The default is 255 (1 in every 256 polls by threads outside the
-   first domain will poll for AM arrivals).
-
---enable-gni-firehose
-   This configure option enables EXPERMIENTAL support for the firehose
-   dynamic memory registration library for caching of dynamic memory
-   registration.  This is only caching of local registration, and NOT
-   the "full" firehose which provides cached remote registration (as
-   for GASNET_SEGMENT_EVERYTHING support).
-   NOTE: This option is largely superseded by the (ON by default) use
-   of Cray UDREG, which does not suffer from firehose's vulnerability
-   when memory is unmapped.
-
-
-Optional compile-time settings:
-------------------------------
-
-* All the compile-time settings from extended-ref (see the extended-ref README)
-
-in gemini-conduit/gasnet_gemini.h:
-
-GASNETC_USE_SPINLOCK	- 0 user gasneti_mutex_t (default)
-			  1 use gasneti_spinlock_t
-
-The _DEFAULT values for all of the GASNET_GNI_ environment variables.
-
-in gemini-conduit/gasnet_gemini.c:
-
-int gasnetc_poll_burst = 10;   /* number of rdma completions to get at once */
-
-Sets the number of events for arriving active messages taken at once
-#define AM_BURST 20
-
 Known problems:
 ---------------
 
-* See the Berkeley UPC Bugzilla server for details on known bugs.
+* Bug 3480
+  It has been observed on Cray systems running CLE6 that following a call to
+  munmap(), there may be a delay before the physical page frames are available
+  for reallocation.  At startup GASNet normally tries to determine the largest
+  available mmap() region, which is then unmapped, leading to the possibility
+  that subsequent allocation of a large GASNet segment may fail if timing is
+  "just right".  The configure option --enable-bug3480-workaround will enable
+  retries and an additional barrier to prevent the failure mode described
+  above, at the cost of a small additional delay at startup.
+  In this release, the provided cross-configure-cray-* scripts AUTOMATICALLY
+  enable the work-around if CLE6 is detected.  If you do *not* desire the
+  work-around, then you may pass the option --disable-bug3480-workaround to
+  the cross-configure script.
+  The most up-to-date information on this bug is maintained at:
+    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3480
+  It is currently unknown if this problem is specific to Cray systems.
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------
-
- * Caching of memory registrations (Firehose?)
-
-gemini-conduit uses a single fixed memory registration for the GASNet segment. It uses another for the AM receive buffers, and transiently uses additional registrations for large RDMA transfers outside the segment.  There are only a modest number of mapping registers available per rank, so large numbers of registrations are inappropriate, but small numbers could be cached rather than per-rdma transient.
 
  * Inline
 
@@ -273,7 +308,9 @@ It should be possible to inline the special cases of short blocking GET and shor
 
  * Alternative designs
 
-The O(N) AM buffers queues could be used only for wakeup, leaving AM transport to RDMA, more along the lines of the shmem-conduit.  This would reduce buffer requirements for large jobs.
+The O(N) AM buffers queues could be used only for wakeup, leaving AM transport
+to RDMA, more along the lines of the shmem-conduit.  This would reduce buffer
+requirements for large jobs.
 
 ==============================================================================
 
@@ -285,9 +322,9 @@ based on the gemini interconnect.  Initial work done on the XE6.
 
 References:
 
-Cray documentation "Using the GNI and DMAPP APIs" document S-2446-3102
+Cray documentation "Using the GNI and DMAPP APIs" document S-2446-3102/S-2446-5202
 
-http://docs.cray.com/cgi-bin/craydoc.cgi?mode=SideMap;f=xe_sitemap
+http://docs.cray.com/books/S-2446-5202/S-2446-5202.pdf
 
 APIs:
 

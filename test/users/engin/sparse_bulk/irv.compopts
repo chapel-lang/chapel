@@ -1,2 +1,2 @@
 -ssparseLayoutType=DefaultDist
--ssparseLayoutType=CSR
+-ssparseLayoutType=CS

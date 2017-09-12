@@ -6,16 +6,21 @@ config const niters = 10000000;
 config param printTimes = false;
 
 proc main {
-  var A: [0..#n] int;
-  var AA = _ddata_allocate(int, n);
   var t = new Timer();
-  t.start();
-  for j in 0..#niters {
-    for i in 0..#n {
-      A[i] += i;
+
+  {
+    var A: [0..#n] int;
+    t.start();
+    for j in 0..#niters {
+      for i in 0..#n {
+        A[i] += i;
+      }
     }
+    t.stop();
+    for i in 0..#n do
+      if A[i] != niters*i then
+        writeln("error: A[",i,"] = ", A[i]);
   }
-  t.stop();
 
   if printTimes {
     writeln("array ", t.elapsed());
@@ -23,17 +28,23 @@ proc main {
 
   t.clear();
 
-  t.start();
-  for j in 0..#niters {
-    for i in 0..#n {
-      AA[i] += i;
+  {
+    var A = _ddata_allocate(int, n);
+    t.start();
+    for j in 0..#niters {
+      for i in 0..#n {
+        A[i] += i;
+      }
     }
+    t.stop();
+    for i in 0..#n do
+      if A[i] != niters*i then
+        writeln("error: A[",i,"] = ", A[i]);
+    _ddata_free(A, n);
   }
-  t.stop();
-  writeln(AA[n-1] == A[n-1]);
+
+  writeln(true);
   if printTimes {
     writeln("ddata ", t.elapsed());
   }
-
-  _ddata_free(AA);
 }

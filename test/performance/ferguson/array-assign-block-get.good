@@ -1,3 +1,2 @@
 1
 100000
-(get = 13, get_nb = 0, put = 2, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 3, execute_on_fast = 3, execute_on_nb = 0) (get = 9, get_nb = 0, put = 2, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 3, execute_on_fast = 0, execute_on_nb = 3)

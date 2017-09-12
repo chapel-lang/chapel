@@ -10,6 +10,8 @@ class Force {
 
   var wipetime, maintime: real;
 
+  proc init() {}
+
   proc compute(store : bool) : void {}
 }
 
@@ -45,7 +47,7 @@ class ForceEAM : Force  {
 
   var funcfl : Funcfl;
 
-  proc ForceEAM(cf : real) {
+  proc init(cf : real) {
     // use the fluff domain already calculated for communication
     cutforcesq = cf*cf;
     coeff("Cu_u6.eam");
@@ -307,7 +309,7 @@ class ForceEAM : Force  {
 
 // Lennard-Jones potential
 class ForceLJ : Force {
-  proc ForceLJ(cf : real) {
+  proc init(cf : real) {
     cutforcesq = cf * cf;
   }
 

@@ -25,9 +25,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h> /* gasneti_system_redirected_coprocess */
+#include <sys/select.h>
 #include <fcntl.h>
-#include <time.h> /* gasneti_gettimeofday_us */
-#include <sys/time.h> /* gasneti_gettimeofday_us */
+#include <time.h> /* gasneti_gettimeofday_us, gasneti_nsleep */
+#include <sys/time.h> /* gasneti_gettimeofday_us, gasneti_nsleep */
 #include <signal.h>
 
 #if HAVE_EXECINFO_H
@@ -100,6 +101,12 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
 }
 #endif
 
+#if GASNETI_THREADS && GASNETI_BUG3430_WORKAROUND
+  gasneti_mutex_t gasneti_bug3430_lock = GASNETI_MUTEX_INITIALIZER;
+  gasneti_cond_t gasneti_bug3430_cond = GASNETI_COND_INITIALIZER;
+  volatile int gasneti_bug3430_creating = 0;
+#endif
+
 /* ------------------------------------------------------------------------------------ */
 /* rwlock support */
 
@@ -114,7 +121,7 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
      gasneti_rwlock_t const *l;
      struct _S_gasnet_rwlocklist *next;
      _gasneti_rwlock_state state;
-  } _gasneti_rwlocklist_t GASNETI_THREAD_TYPEDEF;
+  } _gasneti_rwlocklist_t;
 
   extern _gasneti_rwlock_state _gasneti_rwlock_query(gasneti_rwlock_t const *l) {
     _gasneti_rwlocklist_t const *list = gasneti_threadkey_get(_gasneti_rwlock_list);
@@ -164,8 +171,7 @@ extern void gasneti_mutex_cautious_init(/*gasneti_mutex_t*/void *_pl) {
 /* ------------------------------------------------------------------------------------ */
 /* call-based membar/atomic support for C++ compilers which lack inline assembly */
 #if defined(GASNETI_USING_SLOW_ATOMICS) || \
-    defined(GASNETI_USING_SLOW_MEMBARS) || \
-    defined(GASNETI_USING_SLOW_TIMERS)
+    defined(GASNETI_USING_SLOW_MEMBARS)
 #error gasnet_tools.c must be compiled with support for inline assembly
 #endif
 
@@ -387,7 +393,48 @@ extern const char *gasnett_performance_warning_str(void) {
 }
 
 /* ------------------------------------------------------------------------------------ */
+/* sleep/delay support */
+
+/* Sleep for at least ns_delay nanoseconds
+ * If interrupted by signal, may terminate early returning non-zero with errno = EINTR
+ */
+extern int gasneti_nsleep(uint64_t ns_delay) {
+  if_pf (!ns_delay) return 0;
+  #if HAVE_NANOSLEEP
+    struct timespec ts;
+    ts.tv_sec  = ns_delay / (uint64_t)1E9;
+    ts.tv_nsec = ns_delay % (uint64_t)1E9;
+    return nanosleep(&ts, NULL);
+  #elif HAVE_CLOCK_NANOSLEEP
+    struct timespec ts;
+    ts.tv_sec  = ns_delay / (uint64_t)1E9;
+    ts.tv_nsec = ns_delay % (uint64_t)1E9;
+    return clock_nanosleep(CLOCK_REALTIME, 0, &ts, NULL);
+  #elif HAVE_NSLEEP
+    struct timespec ts;
+    ts.tv_sec  = ns_delay / (uint64_t)1E9;
+    ts.tv_nsec = ns_delay % (uint64_t)1E9;
+    return nsleep(&ts, NULL);
+  #elif HAVE_USLEEP && 0
+    // Disabled because:
+    // 1) some systems prohibit us_delay > 1 million
+    // 2) some systems have undesired interactions with alarm()
+    return usleep(ns_delay / 1000);
+  #else
+    struct timeval tv;
+    uint64_t us_delay = ns_delay / 1000;
+    tv.tv_sec  = us_delay / (uint64_t)1E6;
+    tv.tv_usec = us_delay % (uint64_t)1E6;
+    return select(0, NULL, NULL, NULL, &tv);
+  #endif
+}
+
+/* ------------------------------------------------------------------------------------ */
 /* timer support */
+
+#ifdef GASNETI_TIMER_DEFN
+  GASNETI_TIMER_DEFN
+#endif
 
 extern uint64_t gasneti_gettimeofday_us(void) {
   uint64_t retval;
@@ -395,6 +442,26 @@ extern uint64_t gasneti_gettimeofday_us(void) {
   gasneti_assert_zeroret(gettimeofday(&tv, NULL));
   retval = ((uint64_t)tv.tv_sec) * 1000000 + (uint64_t)tv.tv_usec;
   return retval;
+}
+
+extern uint64_t gasneti_wallclock_ns(void) {
+  #if HAVE_CLOCK_GETTIME
+    struct timespec tm;
+    #if defined(_POSIX_MONOTONIC_CLOCK)
+      static clockid_t clockid = CLOCK_MONOTONIC;
+      if_pf (clock_gettime(clockid,&tm)) {
+        clockid = CLOCK_REALTIME; // next call will succeed
+        gasneti_assert_zeroret(clock_gettime(CLOCK_REALTIME,&tm));
+      }
+    #else
+      gasneti_assert_zeroret(clock_gettime(CLOCK_REALTIME,&tm));
+    #endif
+    return tm.tv_sec*((uint64_t)1E9)+tm.tv_nsec;
+  #else
+    struct timeval tv;
+    gasneti_assert_zeroret(gettimeofday(&tv, NULL));
+    return ((uint64_t)tv.tv_sec)*1000000000 + ((uint64_t)tv.tv_usec)*1000;
+  #endif
 }
 
 extern double gasneti_tick_metric(int idx) {
@@ -430,13 +497,25 @@ extern double gasneti_tick_metric(int idx) {
 volatile int gasnet_frozen = 0;
 extern void gasneti_fatalerror(const char *msg, ...) {
   va_list argptr;
-  char expandedmsg[255];
+  #ifndef GASNETI_FATALERROR_LEN
+  #define GASNETI_FATALERROR_LEN 80
+  #endif
+  char expandedmsg[GASNETI_FATALERROR_LEN];
+  const char prefix[] = "*** FATAL ERROR: ";
+  const size_t maxmsg = sizeof(expandedmsg)-sizeof(prefix)-4;
+  const size_t msglen = strlen(msg);
 
-  strcpy(expandedmsg, "*** FATAL ERROR: ");
-  strcat(expandedmsg, msg);
-  strcat(expandedmsg, "\n");
   va_start(argptr, msg); /*  pass in last argument */
-    vfprintf(stderr, expandedmsg, argptr);
+    if (msglen <= maxmsg) { /* short enough to send to stderr in a single operation */
+      strcpy(expandedmsg, prefix);
+      strncat(expandedmsg, msg, maxmsg);
+      if (expandedmsg[strlen(expandedmsg)-1] != '\n') strcat(expandedmsg, "\n");
+      vfprintf(stderr, expandedmsg, argptr);
+    } else { /* long format msg */
+      fprintf(stderr, prefix);
+      vfprintf(stderr, msg, argptr);
+      if (msg[strlen(msg)-1] != '\n') fprintf(stderr, "\n");
+    }
     fflush(stderr);
   va_end(argptr);
 
@@ -808,6 +887,9 @@ extern void gasneti_qualify_path(char *path_out, const char *path_in) {
 #if defined(IDB_PATH) && !GASNETI_NO_FORK
   #define GASNETI_BT_IDB	&gasneti_bt_idb
 #endif
+#if defined(LLDB_PATH) && !GASNETI_NO_FORK
+  #define GASNETI_BT_LLDB	&gasneti_bt_lldb
+#endif
 #if defined(PGDBG_PATH) && !GASNETI_NO_FORK
   #define GASNETI_BT_PGDBG	&gasneti_bt_pgdbg
 #endif
@@ -1015,6 +1097,17 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
   }
 #endif
 
+#ifdef GASNETI_BT_LLDB
+  static int gasneti_bt_lldb(int fd) {
+    const char fmt[] = "%s -p %d -o 'bt all' -o quit";
+    static char cmd[sizeof(fmt) + 2*GASNETI_BT_PATHSZ];
+    const char *lldb = (access(LLDB_PATH, X_OK) ? "lldb" : LLDB_PATH);
+    int rc = snprintf(cmd, sizeof(cmd), fmt, lldb, (int)getpid());
+    if ((rc < 0) || (rc >= sizeof(cmd))) return -1;
+    return gasneti_system_redirected_coprocess(cmd, fd);
+  }
+#endif
+
 #ifdef GASNETI_BT_GSTACK
   static int gasneti_bt_gstack(int fd) {
     static char cmd[12 + GASNETI_BT_PATHSZ];
@@ -1157,6 +1250,9 @@ out:
 
 /* table of known/detected backtrace mechanisms */
 static gasnett_backtrace_type_t gasneti_backtrace_mechanisms[] = {
+  /*
+   * Debuggers capable of backtracing all threads:
+   */
   #ifdef GASNETI_BT_LADEBUG
   { "LADEBUG", GASNETI_BT_LADEBUG, 1 },
   #endif
@@ -1169,22 +1265,34 @@ static gasnett_backtrace_type_t gasneti_backtrace_mechanisms[] = {
   #ifdef GASNETI_BT_GDB
   { "GDB", GASNETI_BT_GDB, 1 },
   #endif
-  #ifdef GASNETI_BT_DBX
-  { "DBX", GASNETI_BT_DBX, 0 },
-  #endif
-  #ifdef GASNETI_BT_EXECINFO
-  { "EXECINFO", GASNETI_BT_EXECINFO, 1 },
-  #endif
-  #ifdef GASNETI_BT_PRINTSTACK
-  { "PRINTSTACK", GASNETI_BT_PRINTSTACK, 1 },
-  #endif
   #ifdef GASNETI_BT_IDB
   { "IDB", GASNETI_BT_IDB, 1 },
   #endif
   #ifdef GASNETI_BT_PGDBG
   { "PGDBG", GASNETI_BT_PGDBG, 1 },
   #endif
-  { NULL, NULL, 0 } /* Space for registration of optional user mechanism */
+  #ifdef GASNETI_BT_LLDB
+  { "LLDB", GASNETI_BT_LLDB, 1 },
+  #endif
+  /*
+   * Debuggers NOT capable of backtracing all threads:
+   */
+  #ifdef GASNETI_BT_DBX
+  { "DBX", GASNETI_BT_DBX, 0 },
+  #endif
+  /*
+   * Library calls capable of backtracing only the calling thread:
+   */
+  #ifdef GASNETI_BT_EXECINFO
+  { "EXECINFO", GASNETI_BT_EXECINFO, 1 },
+  #endif
+  #ifdef GASNETI_BT_PRINTSTACK
+  { "PRINTSTACK", GASNETI_BT_PRINTSTACK, 1 },
+  #endif
+  /*
+   * Space for registration of optional user mechanism
+   */
+  { NULL, NULL, 0 }
 };
 static int gasneti_backtrace_mechanism_count = /* excludes the NULL */
    (sizeof(gasneti_backtrace_mechanisms)/sizeof(gasneti_backtrace_mechanisms[0])) - 1;
@@ -1223,7 +1331,7 @@ extern void gasneti_backtrace_init(const char *exename) {
   }
 
   { static char btlist_def[255];
-    GASNETI_UNUSED_UNLESS_THREADS int th;
+    int th;
     int i;
     btlist_def[0] = '\0';
     #if GASNETI_THREADS
@@ -1531,12 +1639,41 @@ extern char *gasneti_format_number(int64_t val, char *buf, size_t bufsz, int is_
   } 
 
   if (divisor > 0) {
-    snprintf(buf, bufsz, "%s%llu%s", neg, (unsigned long long)(val/divisor), unit);
+    snprintf(buf, bufsz, "%s%"PRId64"%s", neg, (val/divisor), unit);
   } else if (divisor == -1) {
     if (*neg) val = -val;
-    snprintf(buf, bufsz, "0x%llx", (unsigned long long)val);
+    snprintf(buf, bufsz, "0x%"PRIx64, val);
   } else gasneti_fatalerror("internal error in gasneti_format_number");
   return buf;
+}
+
+// Parses a floating-point number or fraction, with result by reference.
+// Errors return non-zero (and result possibly modified)
+// NULL is not an error, and yields 0.
+extern int gasneti_parse_dbl(const char *str, double *result_p) {
+  double result = 0.;
+  if (str != NULL) {
+    char *endptr;
+    result = strtod(str, &endptr);
+    if (endptr != str) {
+      while (*endptr && isspace(*endptr)) endptr++; /* Skip whitespace */
+      if (*endptr == '/') {
+        char *endptr2;
+        double denom = strtod(1+endptr, &endptr2);
+        if ((denom != 0) && (endptr2 != (1+endptr))) {
+          for (endptr = endptr2; *endptr && isspace(*endptr); endptr++) {/* Skip whitespace */}
+          result /= denom;
+        } else {
+          /* endptr is left pointing at '/', triggering rejection below */
+        }
+      }
+    }
+    if ((endptr == str) || (*endptr != '\0')) { /* match was empty or has trailing non-whitespace */
+      return 1;
+    }
+  }
+  *result_p = result;
+  return 0;
 }
 /* ------------------------------------------------------------------------------------ */
 /* environment support */
@@ -1602,15 +1739,16 @@ GASNETT_TENTATIVE_EXTERN
 const char * (*gasnett_decode_envval_fn)(const char *);
 GASNETT_TENTATIVE_EXTERN
 int (*gasneti_verboseenv_fn)(void);
-gasneti_getenv_fn_t *gasneti_conduit_getenv = NULL;
+gasneti_getenv_fn_t *gasneti_getenv_hook = NULL;
 char *gasneti_globalEnv = NULL;
 
-extern char *gasneti_getenv(const char *keyname) {
+// Internal function which will not trace or call envdecode hook (if any)
+static char *gasneti_getenv_early(const char *keyname) {
   char *retval = NULL;
 
-  if (keyname && gasneti_conduit_getenv) {
-    /* highest priority given to conduit-specific getenv */
-    retval = (*gasneti_conduit_getenv)(keyname);
+  if (keyname && gasneti_getenv_hook) {
+    /* highest priority given to spawner- or conduit-specific getenv */
+    retval = (*gasneti_getenv_hook)(keyname);
   }
 
   if (keyname && !retval && gasneti_globalEnv) { 
@@ -1631,6 +1769,12 @@ extern char *gasneti_getenv(const char *keyname) {
   if (keyname && !retval) /* try local environment */
     retval = getenv(keyname);
   
+  return retval;
+}
+
+extern char *gasneti_getenv(const char *keyname) {
+  char *retval = gasneti_getenv_early(keyname);
+
   if (retval && gasnett_decode_envval_fn && /* check if environment value needs decoding */
       strcmp(keyname, "GASNET_DISABLE_ENVDECODE") &&
       strcmp(keyname, "GASNET_VERBOSEENV")) { /* prevent inf recursion */ 
@@ -1666,7 +1810,6 @@ extern void gasneti_envstr_display(const char *key, const char *val, int is_dflt
   else if (strlen(val) == 0) displayval = "*empty*";
   GASNETT_TRACE_PRINTF("ENV parameter: %s = %s%s", key, displayval, dflt);
   if (verbose) {
-    GASNETI_UNUSED_UNLESS_THREADS
     static gasneti_mutex_t envmutex = GASNETI_MUTEX_INITIALIZER;
     static gasneti_verboseenv_t *displaylist = NULL;
     static gasneti_verboseenv_t *displaylist_tail = NULL;
@@ -1720,6 +1863,7 @@ extern void gasneti_envdbl_display(const char *key, double val, int is_dflt) {
 
   snprintf(valstr, sizeof(valstr), "%g", val);
   rawval = gasneti_getenv(key);
+  gasneti_assert(is_dflt || rawval);
 
   if (is_dflt || !strcmp(rawval,valstr)) { /* Use the numerical value */
     strcpy(displayval, valstr);
@@ -1736,6 +1880,7 @@ extern void gasneti_envint_display(const char *key, int64_t val, int is_dflt, in
 
   gasneti_format_number(val, valstr, 80, is_mem_size);
   rawval = gasneti_getenv(key);
+  gasneti_assert(is_dflt || rawval);
 
   if (is_dflt) { /* Use the numerical value */
     strcpy(displayval, valstr);
@@ -1793,23 +1938,8 @@ extern double gasneti_getenv_dbl_withdefault(const char *keyname, double default
   const char * envval = gasneti_getenv(keyname);
 
   if (envval != NULL) {
-    char *endptr;
-    retval = strtod(envval, &endptr);
     is_dflt = 0;
-    if (endptr != envval) {
-      while (*endptr && isspace(*endptr)) endptr++; /* Skip whitespace */
-      if (*endptr == '/') {
-        char *endptr2;
-        double denom = strtod(1+endptr, &endptr2);
-        if ((denom != 0) && (endptr2 != (1+endptr))) {
-          for (endptr = endptr2; *endptr && isspace(*endptr); endptr++) {/* Skip whitespace */}
-          retval /= denom;
-        } else {
-          /* endptr is left pointing at '/', triggering rejection below */
-        }
-      }
-    }
-    if ((endptr == envval) || (*endptr != '\0')) { /* match was empty or has trailing non-whitespace */
+    if (gasneti_parse_dbl(envval, &retval)) {
       gasneti_fatalerror("If used, environment variable '%s' must be a valid floating point value or fraction", keyname);
     }
   }
@@ -1905,16 +2035,16 @@ int gasnett_maximize_rlimit(int res, const char *lim_desc) {
       } else {                                                                                  \
         gasneti_assert(newval.rlim_cur <= newval.rlim_max);                                     \
         newval.rlim_cur = newval.rlim_max;                                                      \
-        snprintf(newvalstr, sizeof(newvalstr), "%llu", (unsigned long long)newval.rlim_cur);    \
+        snprintf(newvalstr, sizeof(newvalstr), "%"PRIu64, (uint64_t)newval.rlim_cur);           \
       }                                                                                         \
       if (newval.rlim_cur != oldval.rlim_cur) {                                                 \
         if (set_fp(res, &newval)) {                                                             \
-          GASNETT_TRACE_PRINTF("gasnett_maximize_rlimit:                                        \
-            "#setrlimit"(%s, %s) failed: %s", lim_desc, newvalstr, strerror(errno));            \
+          GASNETT_TRACE_PRINTF("gasnett_maximize_rlimit: "#setrlimit"(%s, %s) failed: %s",      \
+                               lim_desc, newvalstr, strerror(errno));                           \
         } else {                                                                                \
-          GASNETT_TRACE_PRINTF("gasnett_maximize_rlimit:                                        \
-          "#setrlimit"(%s, %s) raised limit from %llu", lim_desc, newvalstr,                    \
-          (unsigned long long)oldval.rlim_cur);                                                 \
+          GASNETT_TRACE_PRINTF("gasnett_maximize_rlimit: "#setrlimit"(%s, %s)"                  \
+                               " raised limit from %"PRIu64,                                    \
+                               lim_desc, newvalstr, (uint64_t)oldval.rlim_cur);                 \
           success = 1;                                                                          \
         }                                                                                       \
       }                                                                                         \
@@ -1989,7 +2119,7 @@ extern int gasneti_cpu_count(void) {
 extern uint64_t gasneti_getPhysMemSz(int failureIsFatal) {
   uint64_t retval = _gasneti_getPhysMemSysconf();
   if (retval) return retval;
-  #if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX
+  #if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL
     #define _BUFSZ        120
     { FILE *fp;
       char line[_BUFSZ+1];
@@ -1998,15 +2128,14 @@ extern uint64_t gasneti_getPhysMemSz(int failureIsFatal) {
         gasneti_fatalerror("Failed to open /proc/meminfo in gasneti_getPhysMemSz()");
 
       while (fgets(line, _BUFSZ, fp)) {
-        unsigned long memul = 0;
-        unsigned long long memull = 0;
+        uint64_t memval = 0;
         /* MemTotal: on 2.4 and 2.6 kernels - preferred because less chance of scanf overflow */
-        if (sscanf(line, "MemTotal: %lu kB", &memul) > 0 && memul > 0) {
-          retval = ((uint64_t)memul) * 1024;
+        if (sscanf(line, "MemTotal: %"SCNu64" kB", &memval) > 0 && memval > 0) {
+          retval = memval * 1024;
         }
         /* Mem: only on 2.4 kernels */
-        else if (sscanf(line, "Mem: %llu", &memull) > 0 && memull > 0 && !retval) {
-          retval = (uint64_t)memull;
+        else if (sscanf(line, "Mem: %"SCNu64, &memval) > 0 && memval > 0 && !retval) {
+          retval = memval;
         }
       }
       fclose(fp);
@@ -2065,20 +2194,56 @@ static int gasneti_set_affinity_cpus(void) {
     }
     return cpus;
 }
+#if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+// return non-zero iff this Linux system is actually Microsoft Windows Subsystem for Linux
+extern int gasneti_platform_isWSL(void) {
+    // Ideally we would use uname(2) here, but direct experimentation on the 4/16/17 version
+    // of WSL reveals that uname does not return any identifying marks to distinguish Microsoft's
+    // emulated Ubuntu kernel. 
+    // Microsoft devs suggest grepping /proc/version or /proc/sys/kernel/osrelease for "Microsoft"
+    int fd = open("/proc/sys/kernel/osrelease", O_RDONLY);
+    if (fd < 0) return 0;
+
+    static char line[255];
+    line[0] = 0;
+    ssize_t rc = read(fd, line, sizeof(line));
+    close(fd);
+    if (rc > 0 && strstr(line, "Microsoft")) return 1;
+    else return 0;
+}
+#endif
 void gasneti_set_affinity_default(int rank) {
   #if HAVE_PLPA
   {
+    static int no_op = 0;
     gasneti_plpa_cpu_set_t mask;
     int cpus = gasneti_set_affinity_cpus();
 
-    if (cpus == 1) {
-      /* NO-OP on single-processor platform */
+    if (no_op == 1) {
+      /* NO-OP as determined by an earlier call */
       return;
     }
+
+    if (cpus == 1) {
+      /* NO-OP on single-processor platform */
+      no_op = 1;
+      return;
+    }
+
+    // Dynamically handle binaries built on native Ubuntu and ported to Microsoft's WSL kernel
+    // emulator, which currently fail inside plpa_sched_setaffinity with EINVAL.
+  #if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+    if (gasneti_platform_isWSL()) {
+        /* NO-OP on WSL */
+        no_op = 1;
+        return;
+    }
+  #endif
     
     /* Try a GET first to check for support */
     if_pf (ENOSYS == gasneti_plpa_sched_getaffinity(0, sizeof(mask), &mask)) {
       /* becomes a NO-OP */
+      no_op = 1;
       return;
     }
     
@@ -2179,7 +2344,6 @@ void gasneti_set_affinity(int rank) {
   #endif
 #endif
 const char *gasneti_gethostname(void) {
-  GASNETI_UNUSED_UNLESS_THREADS
   static gasneti_mutex_t hnmutex = GASNETI_MUTEX_INITIALIZER;
   static int firsttime = 1;
   static char hostname[MAXHOSTNAMELEN];
@@ -2483,6 +2647,8 @@ gasneti_count0s_copy(void * GASNETI_RESTRICT dst, const void * GASNETI_RESTRICT 
   const uint8_t *s = src;
   while (bytes--) zeros += !(*(d++) = *(s++));
   return zeros;
+#elif PLATFORM_COMPILER_PATHSCALE /* avoid bug 3428 using pre-memcpy/post-count0s */
+  size_t zeros = gasneti_count0s(memcpy(dst, src, bytes), bytes);
 #else /* Carefully optimized (but still portable) word-oriented loop */
   size_t tmp, remain, zeros;
   const uint8_t *s;
@@ -2572,16 +2738,317 @@ gasneti_count0s(const void * src, size_t bytes) {
 /* ------------------------------------------------------------------------------------ */
 /* "out-of-line" helper(s) for calibration of timers */
 
-#if (PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64) && \
-    (PLATFORM_OS_LINUX || PLATFORM_OS_CNL)
-extern double gasneti_calibrate_tsc(void) {
-  static int firstTime = 1;
-  static double Tick = 0.0; /* Inverse GHz */
+// gasneti_clock_t: (struct timespec) or (struct timeval)
+// gasneti_clock_init(x):     required initialization (not thread-safe)
+// gasneti_clock_gettime(&x): record current wallclock as opaque gasneti_clock_t (struct)
+// gasneti_clock_to_ns(x):    convert gasneti_clock_t to nanoseconds since arbitrary base
+// gasneti_clock_getns(x):    return current wallcock as nanoseconds since arbitrary base
+#if HAVE_CLOCK_GETTIME
+  static clockid_t gasneti_clockid = CLOCK_REALTIME;
+  typedef struct timespec gasneti_clock_t;
+  #define gasneti_clock_to_ns(x) ((x).tv_sec*((uint64_t)1E9)+(x).tv_nsec)
+#else
+  typedef struct timeval gasneti_clock_t;
+  #define gasneti_clock_to_ns(x) ((x).tv_sec*((uint64_t)1E9)+1000*(x).tv_usec)
+#endif
+static int gasneti_clock_is_init = 0;
+static void gasneti_clock_init(void) {
+  if (gasneti_clock_is_init) return;
+  gasneti_clock_is_init = 1;
+  #if HAVE_CLOCK_GETTIME
+    #ifdef _POSIX_MONOTONIC_CLOCK
+    struct timespec tm;
+    if (!clock_gettime(CLOCK_MONOTONIC, &tm)) {
+      // Monotonic but subject to rate adjustment by NTP
+      gasneti_clockid = CLOCK_MONOTONIC;
+      #if GASNET_DEBUG_VERBOSE
+      fprintf(stderr, "TICKS: using clock_gettime(CLOCK_MONOTONIC)\n");
+      #endif
+    } else
+    #endif
+    {
+      // May be adjusted by both ntp and by clock_settime()
+      gasneti_assert(gasneti_clockid == CLOCK_REALTIME);
+      #if GASNET_DEBUG_VERBOSE
+      fprintf(stderr, "TICKS: using clock_gettime(CLOCK_REALTIME)\n");
+      #endif
+    }
+  #elif GASNET_DEBUG_VERBOSE
+    fprintf(stderr, "TICKS: using gettimeofday()\n");
+  #endif
+}
+GASNETI_INLINE(gasneti_clock_gettime)
+void gasneti_clock_gettime(gasneti_clock_t *x) {
+  gasneti_assert(gasneti_clock_is_init);
+  #if HAVE_CLOCK_GETTIME
+    gasneti_assert_zeroret(clock_gettime(gasneti_clockid, x));
+  #else
+    gasneti_assert_zeroret(gettimeofday(x, NULL));
+  #endif
+}
+GASNETI_INLINE(gasneti_clock_getns)
+uint64_t gasneti_clock_getns(void) {
+  gasneti_clock_t tmp;
+  gasneti_clock_gettime(&tmp);
+  return gasneti_clock_to_ns(tmp);
+}
+
+// Estimate gasneti_ticks_now() rate in GHz by comparision to
+// the OS-provided wallclock an interval of the specified length.
+static double gasneti_approx_tick_ghz(uint64_t ns_interval) {
+  gasneti_assert(ns_interval > 0);
+  uint64_t ref, ref_base;
+  uint64_t tsc, tsc_base;
+  uint64_t goal;
+  ref_base = gasneti_clock_getns();
+  tsc_base = gasneti_ticks_now();
+  ref = ref_base;
+  goal = ref_base + ns_interval;
+  do {
+    gasneti_nsleep(goal - ref);
+    ref = gasneti_clock_getns();
+    tsc = gasneti_ticks_now();
+  } while (ref < goal);
+  return (tsc-tsc_base) / (double)(ref-ref_base);
+}
+
+// Calibrate GHz rate of gasneti_ticks_now() against the OS-provided wallclock.
+//
+// This algorithm is based on use of upper- and lower-bounds which are collected
+// using sampling methodologies with one-sided errors, and combined via MIN()
+// and MAX() to yield an estimate that is nearly oblivous to noise and outliers.
+//
+// Consider the following code
+//   1.   A0 = sample_timer_A();
+//   2.   B0 = sample_timer_B();
+//   3.   delay();
+//   4.   B1 = sample_timer_B();
+//   5.   A1 = sample_timer_A();
+// If one assumes the delay is sufficiently long relative to the resolutions and
+// overheads of timers A and B, then the ratio (A1-A0)/(B1-B0) will always
+// over-estimate the true ratio of their rates, since the B samples are taken
+// closer togther than the A samples.  The introduction of delays between lines
+// 1 and 2, or between lines 4 and 5 can only increase the ratio, since the
+// diffence in B samples is unchanged.  Meanwhile, any delays beween lines 2 and
+// 4 will increase both the A and B intervals equally (up to their respective
+// resolutions).  A repetition of the AB-BA pattern is the basis for measuring
+// an upper bound on the true ratio of the rates of timers A and B.  By taking
+// the MIN() over many pairs a fairly tight upper-bound is obtained.  The
+// simultaneous collection of a BA-BA pattern provides a fairly tight
+// lower-bound without the need for an additional delay, and the mid-point
+// between the the two bounds is returned as the calibrated rate.
+//
+// IN: ref_res should be a estimated resolution in nanoseconds of the
+// gasneti_clock_getns() timer if available, or 1E9 otherwise.
+//
+// OUT: If non-NULL, err_p is a location in which to store the relative
+// error of the calibration.
+//
+// RETURN: the rate gasneti_ticks_now() in units of GHz.
+static double gasneti_calibrate_tick_ghz(uint64_t ref_res, double *err_p) {
+  #ifndef GASNETI_TICKS_WC_ITERS
+  #define GASNETI_TICKS_WC_ITERS 10
+  #endif
+  #ifndef GASNETI_TICKS_WC_MIN_INTERVAL
+  #define GASNETI_TICKS_WC_MIN_INTERVAL 100E6 // 100ms
+  #endif
+  #ifndef GASNETI_TICKS_WC_MIN_REF_TICKS
+  #define GASNETI_TICKS_WC_MIN_REF_TICKS 1000
+  #endif
+  #ifndef GASNETI_TICKS_WC_MAX_RETRY
+  #define GASNETI_TICKS_WC_MAX_RETRY 1
+  #endif
+
+  // Collected start and end times:
+  gasneti_clock_t wc0[GASNETI_TICKS_WC_ITERS], wc1[GASNETI_TICKS_WC_ITERS]; // wallclock samples
+  uint64_t lo0[GASNETI_TICKS_WC_ITERS], lo1[GASNETI_TICKS_WC_ITERS]; // "too low" ticks samples
+  uint64_t hi0[GASNETI_TICKS_WC_ITERS], hi1[GASNETI_TICKS_WC_ITERS]; // "too high" ticks samples
+  int trycnt = 0;
+
+retry_calibration:;
+  // Collect start-time samples and compute {ticks,ref}_res.
+  uint64_t ticks_res = 1E9;
+  const int count = GASNETI_TICKS_WC_ITERS;
+  for (int i = 0; i < count; ++i) {
+    gasneti_compiler_fence(); hi0[i] = gasneti_ticks_now();
+    gasneti_compiler_fence(); gasneti_clock_gettime(&wc0[i]);
+    gasneti_compiler_fence(); lo0[i] = gasneti_ticks_now();
+    gasneti_compiler_fence();
+
+    // Ensure next samples will be distinct, and refine *_res estimates.
+    // Use of ">=" is (quite limited) protection against ticks samples going backwards
+    uint64_t tmp1, tmp2;
+    tmp1 = lo0[i];
+    while (tmp1 >= (tmp2 = gasneti_ticks_now())) { gasneti_compiler_fence(); }
+    tmp2 -= tmp1;
+    ticks_res = MIN(ticks_res, tmp2);
+    tmp1 = gasneti_clock_getns();
+    while (tmp1 >= (tmp2 = gasneti_clock_getns())) { gasneti_compiler_fence(); }
+    tmp2 -= tmp1;
+    ref_res = MIN(ref_res, tmp2);
+  }
+
+  #if GASNET_DEBUG_VERBOSE
+  fprintf(stderr, "TICKS: ticks and wallclock resolutions are %d and %d ns (or better)\n",
+          (int)ticks_res, (int)ref_res);
+  #endif
+
+  // Delay, with a default interval of MAX(100ms, 1000 ref ticks)
+  const uint64_t interval_ns = MAX(GASNETI_TICKS_WC_MIN_INTERVAL,
+                                   GASNETI_TICKS_WC_MIN_REF_TICKS * ref_res);
+  uint64_t now = gasneti_clock_to_ns(wc0[count - 1]);
+  uint64_t end = now + interval_ns;
+  do {
+    gasneti_nsleep(end - now);
+    now = gasneti_clock_getns();
+  } while (now < end);
+
+  // Collect end-time samples
+  static volatile double acc = 0.;
+  for (int i = 0; i < count; ++i) {
+    gasneti_compiler_fence(); lo1[i] = gasneti_ticks_now();
+    gasneti_compiler_fence(); gasneti_clock_gettime(&wc1[i]);
+    gasneti_compiler_fence(); hi1[i] = gasneti_ticks_now();
+    gasneti_compiler_fence();
+
+    // Busy-work to supply some inter-sample delay
+    for (int j = 0; j < i; ++j) { acc += (double)hi1[j]; }
+  }
+
+  // Sanity check: detect the largest monotonicity violations in the sample set
+  uint64_t max_err_tick = 0;
+  uint64_t max_err_wcns = 0;
+  uint64_t samp_tick = hi0[0];
+  uint64_t samp_wcns = gasneti_clock_to_ns(wc0[0]);
+  #define CHECK_NEXT_TICK(this_tick) do {              \
+    if (this_tick + ticks_res < samp_tick) {           \
+      uint64_t back_step = samp_tick - this_tick;      \
+      max_err_tick = MAX(max_err_tick, back_step);     \
+    }                                                  \
+    samp_tick = this_tick;                             \
+  } while (0)
+  #define CHECK_NEXT_WC(this_wc) do {                  \
+    uint64_t this_wcns = gasneti_clock_to_ns(this_wc); \
+    if (this_wcns + ref_res < samp_wcns) {             \
+      uint64_t back_step = samp_wcns - this_wcns;      \
+      max_err_wcns = MAX(max_err_wcns, back_step);     \
+    }                                                  \
+    samp_wcns = this_wcns;                             \
+  } while (0)
+  for (int i = 0; i < count; ++i) {
+    CHECK_NEXT_TICK(hi0[i]); // do not reorder these calls
+    CHECK_NEXT_TICK(lo0[i]);
+    CHECK_NEXT_WC(wc0[i]);
+  }
+  for (int i = 0; i < count; ++i) {
+    CHECK_NEXT_TICK(lo1[i]); // do not reorder these calls
+    CHECK_NEXT_TICK(hi1[i]);
+    CHECK_NEXT_WC(wc1[i]);
+  }
+  #undef CHECK_NEXT_TICK
+  #undef CHECK_NEXT_WCE
+
+  // Compute the best lower- and upper-bounds from the collected samples
+  // Worst case each difference is too high or low by its respective granulatity
+  double lo = 0;
+  double hi = 1E12;
+  for (int i = 0; i < count; ++i) {
+    for (int j = 0; j < count; ++j) {
+      const uint64_t delta  = gasneti_clock_to_ns(wc1[i]) - gasneti_clock_to_ns(wc0[j]);
+      double new_lo = (lo1[i] - lo0[j] - ticks_res) / (double)(delta + ref_res);
+      double new_hi = (hi1[i] - hi0[j] + ticks_res) / (double)(delta - ref_res);
+      lo = MAX(lo, new_lo);
+      hi = MIN(hi, new_hi);
+    }
+  }
+
+  // Sanity check: detect violations of the relationship between computed frequency bounds
+  // This should never happen with properly-behaved clocks (ie those that
+  // reliably return samples with a fixed linear relationship to true time,
+  // within resolution error), but might concievably occur if calibration coincides
+  // with a process migration across cores with sufficiently de-synchronized time bases.
+  if (lo > hi || 
+      max_err_tick > 0 || max_err_wcns > 0) {  // also report monotonicity violations
+    fprintf(stderr, "WARNING: GASNet timer calibration detected non-linear timer behavior: "
+                    "max_err_tick=%"PRIu64" max_err_wcns=%"PRIu64" ticks_res=%"PRIu64" ref_res=%"PRIu64" lo=%"PRIu64" hi=%"PRIu64". See docs for GASNET_TSC_RATE."
+                    "%s\n",
+                    max_err_tick, max_err_wcns, 
+                    ticks_res, ref_res,
+                    (uint64_t)(1e9 * lo), (uint64_t)(1e9 * hi), 
+                    (trycnt < GASNETI_TICKS_WC_MAX_RETRY?" Retrying...":""));
+    if (++trycnt <= GASNETI_TICKS_WC_MAX_RETRY) goto retry_calibration;
+
+    if (lo > hi) { // retry did not help
+      // swap hi and lo to prevent sign errors below and continue
+      double tmp = lo; lo = hi; hi = tmp;
+    }
+  }
+
+  // Find mid-point between the two bounds, and its associated relative error
+  gasneti_assert(lo <= hi);
+  double mid = (hi + lo) / 2.;
+  double half_width = mid - lo;
+  double err = half_width / hi;
+  if (err_p) *err_p = err;
+
+  #if GASNET_DEBUG_VERBOSE
+  double sum = 0;
+  for (int i = 0; i < count; ++i) {
+    const double delta  = gasneti_clock_to_ns(wc1[i]) - gasneti_clock_to_ns(wc0[i]);
+    sum += (hi1[i] - lo0[i]) / delta;
+    sum += (lo1[i] - hi0[i]) / delta;
+  }
+  double mean = sum / (2 * count);
+  fprintf(stderr, "TICKS: range: %"PRIu64" +/- %"PRIu64"  mean: %"PRIu64"  offset: %"PRId64"\n",
+          (uint64_t)(1e9 * mid),  (uint64_t)(1e9 * half_width),
+          (uint64_t)(1e9 * mean), (int64_t)(1e9 * (mean-mid)));
+  fprintf(stderr, "TICKS: calibrated to err of %g in %d iters\n", err, GASNETI_TICKS_WC_ITERS);
+  #endif
+
+  return mid;
+}
+
+#if GASNETI_CALIBRATE_TSC /* x86, x86-64, MIC and ia64 */
+extern double gasneti_calibrate_tsc_from_kernel(void) {
+  double Tick = 0.0; /* Inverse GHz */
+
+  #if GASNETI_HAVE_SYSCTL_MACHDEP_TSC_FREQ /* FreeBSD and NetBSD */
+    int64_t cpuspeed = 0;
+    size_t len = sizeof(cpuspeed);
+    if (sysctlbyname("machdep.tsc_freq", &cpuspeed, &len, NULL, 0) == -1)
+      gasneti_fatalerror("*** ERROR: Failure in sysctlbyname('machdep.tsc_freq')=%s",strerror(errno));
+    gasneti_assert(cpuspeed > 1E6 && cpuspeed < 1E11); /* ensure it looks reasonable */
+    Tick = 1.0E9 / cpuspeed;
+  #elif PLATFORM_OS_OPENBSD
+    int MHz = 0;
+    size_t len = sizeof(MHz);
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_CPUSPEED;
+    if (sysctl(mib, 2, &MHz, &len, NULL, 0))
+      gasneti_fatalerror("*** ERROR: Failure in sysctl(CTL_HW.HW_CPUSPEED)=%s",strerror(errno));
+    gasneti_assert(MHz > 1 && MHz < 100000); /* ensure it looks reasonable */
+    Tick = 1000. / MHz;
+  #elif PLATFORM_ARCH_IA64  /* && ( PLATFORM_OS_LINUX || PLATFORM_OS_CNL ) */
+    FILE *fp = fopen("/proc/cpuinfo","r");
+    char input[255];
+    if (!fp) gasneti_fatalerror("*** ERROR: Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
+    while (!feof(fp) && fgets(input, sizeof(input), fp)) {
+      if (strstr(input,"itc MHz")) {
+        char *p = strchr(input,':');
+        double MHz = 0.0;
+        if (p) MHz = atof(p+1);
+        gasneti_assert(MHz > 1 && MHz < 100000); /* ensure it looks reasonable */
+        Tick = 1000. / MHz;
+        break;
+      }
+    }
+    fclose(fp);
+  #else /* (X86 || X86_64 || MIC) && (Linux || CNL || WSL) */
   FILE *fp = NULL;
   char input[512]; /* 256 is too small for "flags" line in /proc/cpuino */
   double MHz = 0.0;
 
- if_pf (firstTime) {
   fp = fopen("/proc/cpuinfo","r");
   if (!fp) gasneti_fatalerror("*** ERROR: Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
 
@@ -2636,10 +3103,221 @@ extern double gasneti_calibrate_tsc(void) {
   }
 
   fclose(fp);
+  #endif
 
-  gasneti_sync_writes();
-  firstTime = 0;
- } else gasneti_sync_reads();
+  return Tick;
+}
+
+extern double gasneti_calibrate_tsc(void) {
+  static int firstTime = 1;
+  static double Tick = 0.0; /* Inverse GHz */
+
+  if_pt (! firstTime) {
+    gasneti_sync_reads();
+    return Tick;
+  }
+
+  // Serialize threads attempting initialization
+  static gasneti_mutex_t tscmutex = GASNETI_MUTEX_INITIALIZER;
+  gasneti_mutex_lock(&tscmutex);
+  // NOTICE:
+  //   To avoid potential mutual-recursion with the tracing code, one must not
+  //   make any calls that may produce tracing output until 'firstTime' has been
+  //   set to zero.  In particular one must use gasneti_getenv_early() for any
+  //   reads of environment variables.  However, GASNETI_TSC_TRACE_OUTPUT() can
+  //   be defined to perform tracing calls, such as to gasneti_env*_display(),
+  //   and will run when it is safe.
+  if_pf (firstTime) {
+  #if !(PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64 || PLATFORM_ARCH_MIC) || \
+      !(PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL)
+    Tick = gasneti_calibrate_tsc_from_kernel();
+  #else /* (X86 || X86_64 || MIC) && (Linux || CNL || WSL) */
+    #ifndef GASNETI_DEFAULT_TSC_RATE
+    // TODO: need logic to default to "cpuinfo" when we can determine CPU model is trustworthy
+    #define GASNETI_DEFAULT_TSC_RATE "wallclock"
+    #endif
+    const char *tsc_rate = gasneti_getenv_early("GASNET_TSC_RATE");
+    int tsc_rate_dflt = (NULL == tsc_rate);
+    if (tsc_rate_dflt) tsc_rate = GASNETI_DEFAULT_TSC_RATE;
+    enum {
+      tsc_source_cpuinfo,    // "cpuinfo"    - parse /proc/cpuinfo for the TSC rate
+      tsc_source_wallclock,  // "wallclock"  - calibrate TSC against OS-provided wallclock
+      tsc_source_user,       // rate in Hz   - user provided rate (subject to verification)
+    } tsc_source;
+    if (0 == strcmp(tsc_rate, "cpuinfo")) {
+      tsc_source = tsc_source_cpuinfo;
+    } else if (0 == strcmp(tsc_rate, "wallclock")) {
+      tsc_source = tsc_source_wallclock;
+    } else {
+      tsc_source = tsc_source_user;
+      int64_t Hz = gasneti_parse_int(tsc_rate, 0);
+      if (Hz < 1E6 || Hz > 1E11) { // 1MHz to 100GHz (same range accepted elsewhere)
+        gasneti_fatalerror("GASNET_TSC_RATE must be a rate in Hz (no M or G suffix) or the name of a known source ('cpuinfo' or 'wallclock'), but was set to '%s'.", tsc_rate);
+      }
+      Tick = 1e9 / Hz;
+    }
+
+    // Allowable relative error for the calibrated TSC rate.
+    // GASNETI_DEFAULT_TSC_RATE_TOLERANCE      - warn if we can't meet this
+    // GASNETI_DEFAULT_TSC_RATE_HARD_TOLERANCE - fatalerror if we can't meet this
+    // Zero values disable the associated checks.
+    // NOTE: "wallclock" calibration applies this slightly differently than others.
+    #ifndef GASNETI_DEFAULT_TSC_RATE_TOLERANCE
+    #define GASNETI_DEFAULT_TSC_RATE_TOLERANCE 0.0005 // 0.05% - matches testtools default
+    #endif
+    double soft_tolerance = GASNETI_DEFAULT_TSC_RATE_TOLERANCE;
+    const char *soft_tol_str = gasneti_getenv_early("GASNET_TSC_RATE_TOLERANCE");
+    int soft_tol_dflt = (NULL == soft_tol_str);
+    if (!soft_tol_dflt && gasneti_parse_dbl(soft_tol_str, &soft_tolerance)) {
+      gasneti_fatalerror("If set, environment variable GASNET_TSC_RATE_TOLERANCE must be a valid floating point value or fraction");
+    }
+    const int check_soft = soft_tolerance > 0.0;
+    if ((soft_tolerance < 0.0) || (soft_tolerance > 1.0)) {
+      gasneti_fatalerror(
+          "GASNET_TSC_RATE_TOLERANCE must be in the range 0.0 - 1.0, inclusive, but '%g' was given",
+          soft_tolerance);
+    }
+    #ifndef GASNETI_DEFAULT_TSC_RATE_HARD_TOLERANCE
+    #define GASNETI_DEFAULT_TSC_RATE_HARD_TOLERANCE 0.02 // 2%
+    #endif
+    double hard_tolerance = GASNETI_DEFAULT_TSC_RATE_HARD_TOLERANCE;
+    const char *hard_tol_str = gasneti_getenv_early("GASNET_TSC_RATE_HARD_TOLERANCE");
+    int hard_tol_dflt = (NULL == hard_tol_str);
+    if (!hard_tol_dflt && gasneti_parse_dbl(hard_tol_str, &hard_tolerance)) {
+      gasneti_fatalerror("If set, environment variable GASNET_TSC_RATE_HARD_TOLERANCE must be a valid floating point value or fraction");
+    }
+    const int check_hard = hard_tolerance > 0.0;
+    if ((hard_tolerance < 0.0) || (hard_tolerance > 1.0)) {
+      gasneti_fatalerror(
+          "GASNET_TSC_RATE_HARD_TOLERANCE must be in the range 0.0 - 1.0, inclusive, but '%g' was given",
+          hard_tolerance);
+    }
+
+    // We test using the smaller of the "active" tolerances
+    double tolerance;
+    if (check_hard) {
+      if (check_soft) {
+        tolerance = MIN(hard_tolerance, soft_tolerance);
+      } else {
+        tolerance = hard_tolerance;
+      }
+    } else {
+      tolerance = soft_tolerance; // Even if zero
+    }
+
+    #define GASNETI_TSC_TRACE_OUTPUT()  do { \
+      gasneti_envstr_display("GASNET_TSC_RATE", tsc_rate, tsc_rate_dflt); \
+      gasneti_envdbl_display("GASNET_TSC_RATE_TOLERANCE", soft_tolerance, soft_tol_dflt); \
+      gasneti_envdbl_display("GASNET_TSC_RATE_HARD_TOLERANCE", hard_tolerance, hard_tol_dflt); \
+    } while (0)
+
+    // Determine/initialize the best available wallclock timer
+    gasneti_clock_init();
+
+    #if GASNET_DEBUG_VERBOSE
+    uint64_t begin_tsc_calibration = gasneti_clock_getns();
+    #endif
+
+    // Approximate the resolution of the reference clock in ns (if needed)
+    uint64_t ref_res = (uint64_t)1E9;
+    if ((tsc_source == tsc_source_wallclock) || (tolerance > 0.0)) {
+      const uint64_t max_res = 5000;     // We actually only care that it is below 5us
+      const uint64_t max_sum = 20000000; // And we don't want to spend more than 20ms here
+      uint64_t sum = 0;
+      int i;
+      for (i=0; (i < 1000) && (ref_res > max_res) && (i < 10 || sum < max_sum); i++) {
+        uint64_t start, next;
+        start = gasneti_clock_getns();
+        while (start == (next = gasneti_clock_getns()));
+        uint64_t delta = (next-start);
+        ref_res = MIN(ref_res, delta);
+        sum += delta;
+      }
+      #if GASNET_DEBUG_VERBOSE
+      fprintf(stderr, "TICKS: reference resolution is %d ns or better (in %d iters, %lu ns)\n",
+                      (int)ref_res, i, (unsigned long)sum);
+      #endif
+      if_pf (ref_res > max_res) {
+        gasneti_fatalerror("Reference timer resolution of %lu ns is not acceptable for calibration of the TSC.\n"
+                           "Please reconfigure with --enable-force-gettimeofday or --enable-force-posix-realtime.\n",
+                           (unsigned long)ref_res);
+      }
+    }
+
+    if (tsc_source == tsc_source_cpuinfo) {
+      Tick = gasneti_calibrate_tsc_from_kernel();
+    } else if (tsc_source == tsc_source_wallclock) {
+      double err, rate = gasneti_calibrate_tick_ghz(ref_res , &err);
+      Tick = 1. / rate; // Inverse GHz
+
+      // Check that we converged within given tolerance
+      if (check_hard && (err > hard_tolerance)) {
+        gasneti_fatalerror(
+            "TSC calibration did not converge with reasonable certainty (%g > %g).\n"
+            "Please see GASNet's README-tools for a description of GASNET_TSC_RATE_HARD_TOLERANCE or "
+            "reconfigure with either --enable-force-gettimeofday or --enable-force-posix-realtime.",
+            err, hard_tolerance);
+      }
+      if (check_soft && (err > soft_tolerance)) {
+        fprintf(stderr, "WARNING: "
+            "TSC calibration did not converge with reasonable certainty (%g > %g).  "
+            "Please see GASNet's README-tools for a description of GASNET_TSC_RATE_TOLERANCE or "
+            "reconfigure with either --enable-force-gettimeofday or --enable-force-posix-realtime.\n",
+            err, soft_tolerance);
+      }
+    } else {
+      gasneti_assert(tsc_source == tsc_source_user);
+    }
+
+    // Don't blindly trust either the user or cpuinfo
+    // Validate Tick by comparison to reference wallclock over 10ms interval
+    // Zero or negative GASNET_TSC_RATE_TOLERANCE disables this check
+    if ((tsc_source != tsc_source_wallclock) && (tolerance > 0.0)) {
+      const int max_tries = 3;
+      double best = 1e4;
+      int i;
+      for (i = 0; i < max_tries; ++i) { // Retry in case we get unlucky
+        double ratio = Tick * gasneti_approx_tick_ghz(10000000);
+        if (ratio < best) {
+          best = ratio;
+          if ((best > (1. - tolerance)) && (best < (1. + tolerance))) break; // Pass
+        }
+      }
+      if (i == max_tries) {
+        if (check_hard && ((best < (1. - hard_tolerance)) || (best > (1. + hard_tolerance)))) {
+            gasneti_fatalerror(
+                "Reference timer and calibrated TSC differ too much (ratio %g).\n"
+                "Please see GASNet's README-tools for a description of GASNET_TSC_RATE_HARD_TOLERANCE or "
+                "reconfigure with either --enable-force-gettimeofday or --enable-force-posix-realtime.",
+                best);
+        }
+        if (check_soft && ((best < (1. - soft_tolerance)) || (best > (1. + soft_tolerance)))) {
+            fprintf(stderr, "WARNING: "
+                "Reference timer and calibrated TSC differ too much (ratio %g).  "
+                "Please see GASNet's README-tools for a description of GASNET_TSC_RATE_TOLERANCE or "
+                "reconfigure with either --enable-force-gettimeofday or --enable-force-posix-realtime.\n",
+                best);
+        }
+      }
+      #if GASNET_DEBUG_VERBOSE
+      fprintf(stderr, "TICKS: relative to wallclock = %g\n", best);
+      #endif
+    }
+
+    #if GASNET_DEBUG_VERBOSE
+    fprintf(stderr, "TICKS: rate calibrated to %g MHz in %g sec\n",
+            1e3/Tick, 1e-9*(gasneti_clock_getns()-begin_tsc_calibration));
+    #endif
+  #endif
+
+    gasneti_sync_writes();
+    firstTime = 0;
+
+  #ifdef GASNETI_TSC_TRACE_OUTPUT
+    GASNETI_TSC_TRACE_OUTPUT();
+  #endif
+  }
+  gasneti_mutex_unlock(&tscmutex);
 
   return Tick;
 }

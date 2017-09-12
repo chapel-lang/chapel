@@ -47,12 +47,13 @@ Syntax
 ------
 
 The ``local`` construct is a statement. It consists of the ``local`` keyword
-followed by a statement:
+followed by a do statement or block:
 
 .. code-block:: none
 
     local-statement:
-        "local" statement
+        "local" [condition] do statement
+        "local" [condition] block-statement
 
 
 Examples
@@ -62,7 +63,7 @@ Here is an example of a ``local`` statement:
 
 .. code-block:: chapel
 
-    local
+    local do
       x = A(5);
 
 The inner statement is often a block, commonly referred to as a
@@ -71,8 +72,8 @@ The inner statement is often a block, commonly referred to as a
 .. code-block:: chapel
 
     local {
-      initializeMyData();
-      compute();
+      initializeMyData(data);
+      compute(data);
     }
 
 In the above examples, the Chapel implementation checks whether ``x``,
@@ -82,18 +83,53 @@ are located on the current locale. Otherwise an error is reported.
 Analogously, if ``on`` statement(s) are executed during these calls
 that attempt to execute on a different locale, an error is reported.
 
+Conditional `local`
+-------------------
 
-The 'local on' Statement
-========================
+The ``local`` statement behavior can be controlled via the optional
+conditional expression.
+
+.. code-block:: chapel
+
+    local data.locale == here {
+      initializeMyData(data);
+      compute(data);
+    }
+
+The above example will be localized only if ``data`` resides in the
+current locale. Conditional local statement above compiled identically
+as:
+
+.. code-block:: chapel
+
+    if data.locale == here {
+      local {
+        initializeMyData(data);
+        compute(data);
+      }
+    }
+    else {
+      initializeMyData(data);
+      compute(data);
+    }
+
+This implies that local statements in outer dynamic/static scopes will
+override the inner ones. i.e. if ``data.locale == here`` evaluates to
+``true``, localized bodies of ``initializeMyData`` and ``compute`` will be
+used whether they have any ``local`` statement, or not. (This includes
+``local false`` blocks).
+
+The 'local do on' Statement
+===========================
 
 
-The ``local on`` construct in Chapel performs an on-statement on a sublocale
-within the current node. For example:
+The ``local do on`` construct in Chapel performs an on-statement on a
+sublocale within the current node. For example:
 
 .. code-block:: chapel
 
   for i in 0..#here.getChildCount() {
-    local on here.getChild(i) {
+    local do on here.getChild(i) {
       writeln("On sublocale ", here);
     }
   }
@@ -109,22 +145,24 @@ of locales is greater than one:
 .. code-block:: chapel
 
   var LastLocale = Locales[numLocales-1];
-  local on LastLocale {
+  local do on LastLocale {
     writeln("On remote locale ", LastLocale);
   }
 
 Output::
 
-  > ./a.out -nl 2
+  > ./local-on-err -nl 2
   local-on-err.chpl:2: error: Local-on is not local
 
-This program begins executing on Locale 0, so when the ``local on`` attempts to
-execute on a different node (the last Locale) we see a runtime error.
+This program begins executing on Locale 0, so when the ``local do on``
+attempts to execute on a different node (the last Locale) we see a
+runtime error.
 
-The ``local on`` construct functions similarly to a normal on-statement in all
-other ways. Note that it is unrelated to ``local`` statements or ``local``
-blocks, and that it has no impact on what communication is or is not allowed
-(other than where the on-statement can execute).
+The ``local do on`` construct functions similarly to a normal
+on-statement in all other ways. Note that it is unrelated to ``local``
+statements or ``local`` blocks, and that it has no impact on what
+communication is or is not allowed (other than where the on-statement
+can execute).
 
 With this information the compiler can reduce overhead associated with wide
 pointers and hopefully improve performance.

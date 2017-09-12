@@ -24,6 +24,7 @@ AST_SRCS =                                          \
            build.cpp                                \
            CatchStmt.cpp                            \
            checkAST.cpp                             \
+           DeferStmt.cpp                            \
            dominator.cpp                            \
            expr.cpp                                 \
            iterator.cpp                             \
@@ -36,8 +37,10 @@ AST_SRCS =                                          \
            symbol.cpp                               \
            TryStmt.cpp                              \
            UseStmt.cpp                              \
+           ForallStmt.cpp                           \
            type.cpp                                 \
            view.cpp                                 \
+           wellknown.cpp                            \
                                                     \
            LoopStmt.cpp                             \
                                                     \
@@ -54,6 +57,8 @@ AST_SRCS =                                          \
            AstDump.cpp                              \
            AstDumpToHtml.cpp                        \
            AstDumpToNode.cpp                        \
+                                                    \
+           AstCount.cpp                             \
                                                     \
            AstPrintDocs.cpp                         \
                                                     \

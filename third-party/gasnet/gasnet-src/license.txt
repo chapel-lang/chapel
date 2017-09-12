@@ -3,7 +3,7 @@
  * are subject to the following licensing terms: 
  *
  * ---------------------------------------------------------------------------
- * "Copyright (c) 2000-2016 The Regents of the University of California.
+ * "Copyright (c) 2000-2017 The Regents of the University of California.
  * All rights reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -23,12 +23,12 @@
  * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
  * ---------------------------------------------------------------------------
  *
- * Please see the license.txt file, if any, within each *-conduit directory
- * for the licensing terms governing those contributed components.
+ * Please see the license.txt file, if any, within each subdirectory
+ * for additional licensing terms governing those contributed components.
  *
  * The authors/contributors of GASNet include:
  *
- *  Dan Bonachea <bonachea@cs.berkeley.edu>:
+ *  Dan Bonachea <dobonachea@lbl.gov>:
  *    General infrastructure & documentation
  *    mpi-conduit
  *    elan-conduit
@@ -36,32 +36,32 @@
  *    udp-conduit
  *    extended-ref
  *    template-conduit
- *  Christian Bell <csbell@cs.berkeley.edu>: gm-conduit, shmem-conduit
- *  Mike Welcome <mlwelcome@lbl.gov>: lapi-conduit, portals-conduit
+ *  Christian Bell: gm-conduit, shmem-conduit
+ *  Mike Welcome: lapi-conduit, portals-conduit
  *  Paul H. Hargrove <PHHargrove@lbl.gov>:
  *     vapi-conduit, ibv-conduit, pami-conduit, aries-conduit, atomics
- *  Rajesh Nishtala <rajeshn@cs.berkeley.edu>: collectives, dcmf-conduit
- *  Parry Husbands <PJRHusbands@lbl.gov>: lapi-conduit
- *  Filip Blagojevic <FBlagojevic@lbl.gov>: shared-memory support
- *  Yili Zheng <YZheng@lbl.gov>: team collectives, DCMF native collectives
+ *  Rajesh Nishtala: collectives, dcmf-conduit
+ *  Parry Husbands: lapi-conduit
+ *  Filip Blagojevic: shared-memory support
+ *  Yili Zheng: team collectives, DCMF native collectives
  *  Larry Stewart <stewart@serissa.com>: gemini-conduit
  *  Yevgeny Kliteynik <kliteyn@mellanox.com>: FCA and mxm-conduit
  *  Valentin Petrov <valentin.petrov@itseez.com>: FCA and mxm-conduit
- *  Brian Barrett <bwbarre@sandia.gov>: portals4-conduit
- *  Eric Hoffman <eahoffman@lbl.gov>: gemini/aries conduit
+ *  Brian Barrett: portals4-conduit
+ *  Eric Hoffman: gemini/aries conduit
  *  Andrew Friedley <andrew.friedley@intel.com>: psm-conduit
  *  Matias Cabral <matias.a.cabral@intel.com>: psm-conduit
- *  Miao Luo <miao.luo@intel.com>: ofi-conduit
+ *  Miao Luo: ofi-conduit
  *  Erik Paulson <erik.r.paulson@intel.com>: ofi-conduit
  *  Sayantan Sur <sayantan.sur@intel.com>: ofi-conduit
  * 
  * For more information about GASNet, visit our home page at:
  *  http://gasnet.lbl.gov/
  * Or send email to:
- *  <upc@lbl.gov>
+ *  <gasnet-devel@lbl.gov>
  *
  * Source code contributions (fixes, patches, extensions etc.) should be 
- * sent to <upc@lbl.gov> to be reviewed for acceptance into the primary 
+ * sent to <gasnet-devel@lbl.gov> to be reviewed for acceptance into the primary 
  * distribution. Contributions are most likely to be accepted if they
  * are provided as public domain, or under a BSD-style license such as 
  * the one above.

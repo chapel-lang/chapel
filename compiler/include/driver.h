@@ -33,7 +33,6 @@ extern int  instantiation_limit;
 
 // optimization control flags
 extern bool fFastFlag;
-extern int  fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
@@ -54,6 +53,7 @@ extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
+extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
@@ -136,6 +136,7 @@ extern bool fPrintUnusedInternalFns;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fUserDefaultInitializers;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -159,6 +160,7 @@ extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fUseNoinit;
+extern bool fNoUserConstructors;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
@@ -181,8 +183,6 @@ extern bool fReportPromotion;
 extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
-
-extern bool fStrictErrorHandling;
 
 extern bool debugCCode;
 extern bool optimizeCCode;
@@ -209,5 +209,8 @@ extern bool fIncrementalCompilation;
 // Set to true if we want to use the experimental
 // Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;
+
+// LLVM flags (-mllvm)
+extern std::string llvmFlags;
 
 #endif

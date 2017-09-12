@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,7 +36,7 @@ module ChapelDistribution {
     var _free_when_no_doms: bool; // true when the original _distribution
                                   // has been destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
-  
+
     proc deinit() {
     }
 
@@ -109,7 +109,7 @@ module ChapelDistribution {
         _unlock_doms();
       }
     }
-  
+
     inline proc _lock_doms() {
       // WARNING: If you are calling this function directly from
       // a remote locale, you should consider wrapping the call in
@@ -117,37 +117,37 @@ module ChapelDistribution {
       // testAndSet()
       while (_domsLock.testAndSet()) do chpl_task_yield();
     }
-  
+
     inline proc _unlock_doms() {
       _domsLock.clear();
     }
-  
+
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
-  
+
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
       compilerError("associative domains not supported by this distribution");
     }
-  
+
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
     where isEnumType(idxType) {
       compilerError("enumerated domains not supported by this distribution");
     }
-  
+
     proc dsiNewOpaqueDom(type idxType, param parSafe: bool) {
       compilerError("opaque domains not supported by this distribution");
     }
-  
+
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
-  
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
-  
+
     proc dsiDestroyDist() { }
-  
+
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
     // Does the distribution keep a list of domains? Can the domains
@@ -162,7 +162,7 @@ module ChapelDistribution {
     proc singleton() param return false;
     // We could add dsiSingleton as a dynamically-dispatched counterpart
   }
-  
+
   //
   // Abstract domain classes
   //
@@ -178,7 +178,7 @@ module ChapelDistribution {
     var _arrsLock: atomicbool; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
-  
+
     proc deinit() {
     }
 
@@ -186,7 +186,7 @@ module ChapelDistribution {
       halt("internal error: dsiMyDist is not implemented");
       return nil;
     }
-  
+
     // Returns (dom, dist).
     // if this domain should be deleted, dom=this; otherwise it is nil.
     // dist is nil or a distribution that should be removed.
@@ -249,7 +249,7 @@ module ChapelDistribution {
       }
       return (count==0);
     }
-  
+
     inline proc add_arr(x:BaseArr, param locking=true) {
       on this {
         if locking then
@@ -259,7 +259,7 @@ module ChapelDistribution {
           _unlock_arrs();
       }
     }
-  
+
     inline proc remove_containing_arr(x:BaseArr): int {
       var count = -1;
       on this {
@@ -287,34 +287,35 @@ module ChapelDistribution {
       // testAndSet()
       while (_arrsLock.testAndSet()) do chpl_task_yield();
     }
-  
+
     inline proc _unlock_arrs() {
       _arrsLock.clear();
     }
-  
+
     // used for associative domains/arrays
+    // MPF:  why do these need to be in BaseDom at all?
     proc _backupArrays() {
       for arr in _arrs do
         arr._backupArray();
     }
-  
+
     proc _removeArrayBackups() {
       for arr in _arrs do
         arr._removeArrayBackup();
     }
-  
+
     proc _preserveArrayElements(oldslot, newslot) {
       for arr in _arrs do
         arr._preserveArrayElement(oldslot, newslot);
     }
-  
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
-  
+
     // Does the distribution keep a list of domains? Can the
     // domains keep the distribution alive longer?
     proc linksDistribution() param return true;
-  
+
     // dynamically-dispatched counterpart of linksDistribution
     proc dsiLinksDistribution() return true;
 
@@ -334,9 +335,43 @@ module ChapelDistribution {
     proc isSliceDomainView() param return false; // likely unnecessary?
     proc isRankChangeDomainView() param return false;
     proc isReindexDomainView() param return false;
+
+    // proc dsiAssignDomain is a required overload to implement domain
+    // assignment. It is not declared here because we do not wish
+    // to use virtual dispatch to versions for all domain arguments.
+    //
+    // It should be declared like so:
+    //     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool)
+    //
+    // if lhsPrivate=true, the receiver is a private variable
+    // that:
+    //  hasn't yet been shared with other tasks
+    //  doesn't yet have any arrays declared over it
+    //
+    // Note that assigning to a domain typically causes arrays
+    // declared over that domain to be reallocated.
+    //
+    // Rectangular domains can implement this function with:
+    //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    //     chpl_assignDomainWithGetSetIndices(this, rhs);
+    //   }
+    //
+    // Irregular domains can implement this function with:
+    //   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    //     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    //   }
   }
-  
+
   class BaseRectangularDom : BaseDom {
+    param rank : int;
+    type idxType;
+    param stridable: bool;
+
+    proc getBaseArrType() type {
+      var tmp = new BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      return tmp.type;
+    }
+
     proc deinit() {
       // this is a bug workaround
     }
@@ -344,18 +379,18 @@ module ChapelDistribution {
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
-  
+
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
       return 0;
     }
-  
+
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
       return 0;
     }
   }
-  
+
   class BaseSparseDomImpl : BaseSparseDom {
 
     var nnzDom = {1..nnz};
@@ -369,25 +404,44 @@ module ChapelDistribution {
 
       if !dataSorted && preserveInds {
         var _inds = inds;
-        return bulkAdd_help(_inds, dataSorted, isUnique); 
+        return bulkAdd_help(_inds, dataSorted, isUnique);
       }
       else {
         return bulkAdd_help(inds, dataSorted, isUnique);
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
     }
 
-    inline proc _grow(size: int){
+    // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
+    //       - would have to put the conditional outside of the call
+    /* Grow domain if necesary */
+    inline proc _grow(size: int, factor=arrayAsVecGrowthFactor) {
       const oldNNZDomSize = nnzDom.size;
       if (size > oldNNZDomSize) {
-        const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
-        nnzDom = {1.._newNNZDomSize};
+        const _newNNZDomSize = if (oldNNZDomSize) then ceil(factor*oldNNZDomSize):int else 1;
+        nnzDom = {1..#_newNNZDomSize};
+      }
+    }
+
+    // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
+    //       - would have to put the conditional outside of the call
+    /* Shrink domain if necessary */
+    inline proc _shrink(size: int, factor=arrayAsVecGrowthFactor) {
+      if size == 0 {
+        nnzDom = {1..0};
+      } else {
+        // TODO: floor() ?
+        const shrinkThreshold = (nnzDom.size / (factor**2)): int;
+        if (size < shrinkThreshold) {
+          const _newNNZDomSize = (nnzDom.size / factor): int;
+          nnzDom = {1.._newNNZDomSize};
+        }
       }
     }
 
@@ -418,13 +472,13 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique) {
+    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
       use Sort;
-      if !dataSorted then sort(inds);
+      if !dataSorted then sort(inds, comparator=cmp);
 
       //verify sorted and no duplicates if not --fast
       if boundsChecking {
-        if dataSorted && !isSorted(inds) then
+        if dataSorted && !isSorted(inds, comparator=cmp) then
           halt("bulkAdd: Data not sorted, call the function with \
               dataSorted=false");
 
@@ -447,7 +501,7 @@ module ChapelDistribution {
     }
 
     // this is a helper function for bulkAdd functions in sparse subdomains.
-    // NOTE:it assumes that nnz array of the sparse domain has non-negative 
+    // NOTE:it assumes that nnz array of the sparse domain has non-negative
     // indices. If, for some reason it changes, this function and bulkAdds have to
     // be refactored. (I think it is a safe assumption at this point and keeps the
     // function a bit cleaner than some other approach. -Engin)
@@ -461,7 +515,7 @@ module ChapelDistribution {
       //eliminate duplicates --assumes sorted
       if !isUnique {
         //make sure lastInd != inds[inds.domain.low]
-        var lastInd = inds[inds.domain.low] + 1; 
+        var lastInd = inds[inds.domain.low] + 1;
         for (i, p) in zip(inds, indivInsertPts)  {
           if i == lastInd then p = -1;
           else lastInd = i;
@@ -516,7 +570,7 @@ module ChapelDistribution {
     proc dsiClear() {
       halt("clear not implemented for this distribution - BaseSparseDom");
     }
-  
+
     proc dsiBulkAdd(inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true){
 
@@ -554,40 +608,7 @@ module ChapelDistribution {
 
   } // end BaseSparseDom
 
-  // BaseSparseDom operator overloads
-  proc +=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) && 
-    sd.rank==1 {
 
-    if inds.size == 0 then return;
-
-    sd._value.dsiBulkAdd(inds);
-  }
-
-  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType) where isSparseDom(sd) &&
-    sd.rank>1 {
-
-    if inds.size == 0 then return;
-
-    sd._value.dsiBulkAdd(inds);
-  }
-
-  // Currently this is not optimized for addition of a sparse
-  proc +=(ref sd: domain, d: domain)
-  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
-
-    if d.size == 0 then return;
-
-    type _idxType = if sd.rank==1 then int else sd.rank*int;
-    const indCount = d.numIndices;
-    const arr: [{0..#indCount}] _idxType;
-
-    //this could be a parallel loop. but ranks don't match -- doesn't compile
-    for (a,i) in zip(arr,d) do a=i;
-
-    sd._value.dsiBulkAdd(arr, true, true, false);
-  }
-  // end BaseSparseDom operators
-  
   class BaseAssociativeDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -601,9 +622,9 @@ module ChapelDistribution {
       compilerError("Index addition is not supported by this domain");
       return 0;
     }
-  
+
   }
-  
+
   class BaseOpaqueDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -612,9 +633,9 @@ module ChapelDistribution {
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
-  
+
   }
-  
+
   //
   // Abstract array class
   //
@@ -623,8 +644,8 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = nullPid; // privatized ID, if privatization is supported
+    var _decEltRefCounts : bool = false;
 
     proc isSliceArrayView() param {
       return false;
@@ -633,7 +654,7 @@ module ChapelDistribution {
     proc isRankChangeArrayView() param {
       return false;
     }
-  
+
     proc isReindexArrayView() param {
       return false;
     }
@@ -642,12 +663,12 @@ module ChapelDistribution {
     }
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
-  
+
     proc dsiGetBaseDom(): BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
       return nil;
     }
-  
+
     // returns (arr, dom)
     // arr is this if it should be deleted, or nil.
     // dom is a domain that should be removed, or nil.
@@ -667,26 +688,26 @@ module ChapelDistribution {
 
       return (ret_arr, ret_dom);
     }
-  
-    proc dsiDestroyArr(isalias:bool) { }
-  
+
+    proc dsiDestroyArr() { }
+
     proc dsiReallocate(d: domain) {
       halt("reallocating not supported for this array type");
     }
-  
+
     proc dsiPostReallocate() {
     }
-  
+
     // This method is unsatisfactory -- see bradc's commit entries of
     // 01/02/08 around 14:30 for details
     proc _purge( ind: int) {
       halt("purging not supported for this array type");
     }
-  
+
     proc _resize( length: int, old_map) {
       halt("resizing not supported for this array type");
     }
-  
+
     //
     // Ultimately, these routines should not appear here; instead, we'd
     // like to do a dynamic cast in the sparse array class(es) that call
@@ -699,7 +720,7 @@ module ChapelDistribution {
     proc sparseShiftArray(shiftrange, initrange) {
       halt("sparseGrowDomain not supported for non-sparse arrays");
     }
-  
+
     proc sparseShiftArrayBack(shiftrange) {
       halt("sparseShiftArrayBack not supported for non-sparse arrays");
     }
@@ -707,45 +728,90 @@ module ChapelDistribution {
     proc sparseBulkShiftArray(shiftMap, oldnnz) {
       halt("sparseBulkShiftArray not supported for non-sparse arrays");
     }
-  
+
     // methods for associative arrays
-    proc clearEntry(idx, haveLock:bool = false) {
+    // MPF:  why do these need to be in BaseDom at all?
+    proc clearEntry(idx) {
       halt("clearEntry() not supported for non-associative arrays");
     }
-  
+
     proc _backupArray() {
       halt("_backupArray() not supported for non-associative arrays");
     }
-  
+
     proc _removeArrayBackup() {
       halt("_removeArrayBackup() not supported for non-associative arrays");
     }
-  
+
     proc _preserveArrayElement(oldslot, newslot) {
       halt("_preserveArrayElement() not supported for non-associative arrays");
     }
-  
+
     proc dsiSupportsAlignedFollower() param return false;
-  
+
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
-  
+
     proc dsiSupportsBulkTransfer() param return false;
     proc doiCanBulkTransfer() param return false;
     proc doiBulkTransfer(B, viewDom) {
       halt("This array type does not support bulk transfer.");
     }
-  
+
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
     proc isDefaultRectangular() param return false;
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride(viewDom) param return false;
   }
 
+  /* BaseArrOverRectangularDom has this signature so that dsiReallocate
+     can be overridden with the right tuple size.
+
+     Note that eltType is not included here. eltType could be included
+     in a base class, but here we're looking for a way to narrow
+     overloaded functions to only those working with a particular
+     kind of bounding box. So if eltType is included, we should make
+     another base class.
+   */
+  pragma "base array"
+  class BaseArrOverRectangularDom: BaseArr {
+    param rank : int;
+    type idxType;
+    param stridable: bool;
+
+    // the dsiReallocate to overload only uses the argument with
+    // the matching tuple of ranges.
+
+    // Q. Should this pass in a BaseRectangularDom or ranges?
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      halt("reallocating not supported for this array type");
+    }
+
+    proc dsiPostReallocate() {
+    }
+
+    proc ~BaseArrOverRectangularDom() {
+      // this is a bug workaround
+    }
+
+
+  }
+
+  pragma "base array"
+  class BaseRectangularArr: BaseArrOverRectangularDom {
+    /* rank, idxType, stridable are from BaseArrOverRectangularDom */
+    type eltType;
+
+    proc ~BaseRectangularArr() {
+      // this is a bug workaround
+    }
+  }
+
   /*
    * BaseSparseArr is very basic/generic so that we have some flexibility in
    * implementing sparse array classes.
    */
+  pragma "base array"
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -768,6 +834,7 @@ module ChapelDistribution {
    * All the common helpers/methods in implementations of internal sparse arrays
    * go here.
    */
+  pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc deinit() {
@@ -784,10 +851,10 @@ module ChapelDistribution {
       return irv;
     }
 
-    // shifts data array according to shiftMap where shiftMap[i] is the new index 
+    // shifts data array according to shiftMap where shiftMap[i] is the new index
     // of the ith element of the array. Called at the end of bulkAdd to move the
     // existing items in data array and initialize new indices with irv.
-    // oldnnz is the number of elements in the array. As the function is called 
+    // oldnnz is the number of elements in the array. As the function is called
     // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
     proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
@@ -861,13 +928,10 @@ module ChapelDistribution {
   // arr is a subclass of :BaseArr but is generic so
   // that arr.eltType is meaningful.
   proc _delete_arr(arr, param privatized:bool) {
-    // decide whether or not the array is an alias
-    var isalias = (arr._arrAlias != nil) || chpl__isArrayView(arr);
-
     // array implementation can destroy data or other members
-    arr.dsiDestroyArr(isalias);
+    arr.dsiDestroyArr();
 
-    if !isalias {
+    if arr._decEltRefCounts {
       // unlink domain referred to by arr.eltType
       // not necessary for aliases/slices because the original
       // array will take care of it.
@@ -892,4 +956,74 @@ module ChapelDistribution {
   pragma "no doc"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
+  // domain assignment helpers
+
+  // Implement simple reallocate/set indices/post reallocate
+  // for compatibility.
+  // Domain implementations may supply their own dsiAssignDomain
+  // that does something else.
+  // lhs is a subclass of BaseRectangularDom
+  proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
+    where t:BaseRectangularDom
+  {
+    type arrType = lhs.getBaseArrType();
+    param rank = lhs.rank;
+    type idxType = lhs.idxType;
+    param stridable = lhs.stridable;
+
+    for e in lhs._arrs do {
+      on e {
+        var eCast = e:arrType;
+        if eCast == nil then
+          halt("internal error: ", t.type:string,
+               " contains an bad array type ", arrType:string);
+
+        var inds = rhs.getIndices();
+        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+
+        // set tmp = inds with some error checking
+        for param i in 1..rank {
+          var from = inds(i);
+          tmp(i) =
+            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+        }
+
+        eCast.dsiReallocate(tmp);
+      }
+    }
+    lhs.dsiSetIndices(rhs.getIndices());
+    for e in lhs._arrs do {
+      var eCast = e:arrType;
+      on e do eCast.dsiPostReallocate();
+    }
+
+    if lhs.dsiSupportsPrivatization() {
+      _reprivatize(lhs);
+    }
+  }
+
+
+  proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
+    where t:BaseSparseDom || t:BaseAssociativeDom || t:BaseOpaqueDom
+  {
+    //
+    // BLC: It's tempting to do a clear + add here, but because
+    // we need to preserve array values that are in the intersection
+    // between the old and new index sets, we use the following
+    // instead.
+    //
+    // A domain implementation is free to write their own
+    // dsiAssignDomain instead of using this method.
+
+    for i in lhs.dsiIndsIterSafeForRemoving() {
+      if !rhs.member(i) {
+        lhs.dsiRemove(i);
+      }
+    }
+    for i in rhs {
+      if !lhs.dsiMember(i) {
+        lhs.dsiAdd(i);
+      }
+    }
+  }
 }

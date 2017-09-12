@@ -53,8 +53,8 @@ GASNETI_NORETURNP(gasnetc_exit)
 #define gasnet_hold_interrupts    gasnetc_hold_interrupts
 #define gasnet_resume_interrupts  gasnetc_resume_interrupts
 #else
-#define gasnet_hold_interrupts()
-#define gasnet_resume_interrupts()
+#define gasnet_hold_interrupts()   ((void)0)
+#define gasnet_resume_interrupts() ((void)0)
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -73,7 +73,7 @@ typedef struct _gasnet_hsl_t {
     /* more state may be required for conduits using interrupts */
 #error interrupts not implemented
 #endif
-} gasnet_hsl_t GASNETI_THREAD_TYPEDEF;
+} gasnet_hsl_t;
 
 #if GASNETI_STATS_OR_TRACE
 #define GASNETC_LOCK_STAT_INIT ,0

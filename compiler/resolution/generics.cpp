@@ -262,37 +262,33 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
  * \param call The call that is being resolved (used for scope)
  * \param type The generic type we wish to instantiate
  */
-static AggregateType*
-instantiateTypeForTypeConstructor(FnSymbol* fn,
-                                  SymbolMap& subs,
-                                  CallExpr* call,
-                                  AggregateType* ct) {
-  Type* newType = NULL;
-  newType = ct->symbol->copy()->type;
-
-  Type *oldParentTy = NULL;
-  Type* newParentTy = NULL;
-  AggregateType* newCt = toAggregateType(newType);
+static AggregateType* instantiateTypeForTypeConstructor(FnSymbol*      fn,
+                                                        SymbolMap&     subs,
+                                                        CallExpr*      call,
+                                                        AggregateType* ct) {
+  Type*          newType     = ct->symbol->copy()->type;
+  Type*          oldParentTy = NULL;
+  Type*          newParentTy = NULL;
+  AggregateType* newCt       = toAggregateType(newType);
 
   // Get the right super type if we are using a super constructor.
   // This only matters for generic parent types.
   if (ct->dispatchParents.n > 0) {
-    if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
+    if (AggregateType* parentTy = toAggregateType(ct->dispatchParents.v[0])) {
       if (parentTy->symbol->hasFlag(FLAG_GENERIC)) {
-        // Set the type of super to be the instantiated
-        // parent with substitutions.
-
-        CallExpr* parentTyCall = new CallExpr(astr("_type_construct_",
-                                                   parentTy->symbol->name));
+        // Set the type of super to be the instantiated parent with subs
+        const char* parentName   = parentTy->symbol->name;
+        const char* parentTyName = astr("_type_construct_", parentName);
+        CallExpr*   parentTyCall = new CallExpr(parentTyName);
+        DefExpr*    superDef     = NULL;
 
         // Pass the special formals to the superclass type constructor.
         for_formals(arg, fn) {
           if (arg->hasFlag(FLAG_PARENT_FIELD)) {
             Symbol* value = subs.get(arg);
 
-            if (!value) {
+            if (value == NULL) {
               value = arg;
-              // Or error?
             }
 
             parentTyCall->insertAtTail(value);
@@ -300,6 +296,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn,
         }
 
         call->insertBefore(parentTyCall);
+
         resolveCallAndCallee(parentTyCall);
 
         oldParentTy = parentTy;
@@ -307,17 +304,13 @@ instantiateTypeForTypeConstructor(FnSymbol* fn,
 
         parentTyCall->remove();
 
-        // Now adjust the super field's type.
-
-        DefExpr* superDef = NULL;
-
-        // Find the super field
         for_alist(tmp, newCt->fields) {
           DefExpr* def = toDefExpr(tmp);
+
           INT_ASSERT(def);
 
           if (VarSymbol* field = toVarSymbol(def->sym)) {
-            if (field->hasFlag(FLAG_SUPER_CLASS)) {
+            if (field->hasFlag(FLAG_SUPER_CLASS) == true) {
               superDef = def;
             }
           }
@@ -338,38 +331,46 @@ instantiateTypeForTypeConstructor(FnSymbol* fn,
 
   newCt->symbol->copyFlags(fn);
 
-  if (isSyncType(newCt) || isSingleType(newCt))
+  if (isSyncType(newCt) == true || isSingleType(newCt) == true) {
     newCt->defaultValue = NULL;
+  }
 
   newCt->substitutions.copy(fn->retType->substitutions);
 
   // Add dispatch parents, but replace parent type with
   // instantiated parent type.
   forv_Vec(Type, t, fn->retType->dispatchParents) {
-    Type *useT = t;
+    Type* useT = t;
 
-    if (t == oldParentTy)
+    if (t == oldParentTy) {
       useT = newParentTy;
+    }
 
     newCt->dispatchParents.add(useT);
   }
 
   forv_Vec(Type, t, fn->retType->dispatchParents) {
-    Type *useT = t;
+    Type* useT = t;
 
-    if (t == oldParentTy)
+    if (t == oldParentTy) {
       useT = newParentTy;
+    }
 
-    bool inserted = useT->dispatchChildren.add_exclusive(newCt);
-
-    INT_ASSERT(inserted);
+    INT_ASSERT(useT->dispatchChildren.add_exclusive(newCt));
   }
 
-  if (newCt->dispatchChildren.n)
+  if (newCt->dispatchChildren.n > 0) {
     INT_FATAL(fn, "generic type has subtypes");
+  }
 
-  newCt->instantiatedFrom = fn->retType;
+  if (AggregateType* at = toAggregateType(fn->retType)) {
+    newCt->instantiatedFrom = at;
+  } else {
+    INT_ASSERT(false);
+  }
+
   newCt->substitutions.map_union(subs);
+
   newCt->symbol->removeFlag(FLAG_GENERIC);
 
   return newCt;
@@ -427,7 +428,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
+            !e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
           INT_FATAL(fn, "illegal instantiation with a generic type");
         }
 
@@ -476,7 +478,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         INT_ASSERT(isAggregateType(fn->retType));
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle != DEFINES_INITIALIZER) {
+        if (ct->initializerStyle != DEFINES_INITIALIZER &&
+            !ct->wantsDefaultInitializer()) {
           newType = instantiateTypeForTypeConstructor(fn,
                                                       subs,
                                                       call,
@@ -519,6 +522,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       if (newFn->numFormals()       >  1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
+        // MPF: should only visible functions go in to type->methods?
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 

@@ -42,17 +42,14 @@
 
 static bool isDerivedType(Type* type, Flag flag);
 
-Type::Type(AstTag astTag, Symbol* init_defaultVal) :
-  BaseAST(astTag),
-
-  symbol(NULL),
-  refType(NULL),
-  hasGenericDefaults(false),
-  defaultValue(init_defaultVal),
-  destructor(NULL),
-  isInternalType(false),
-  instantiatedFrom(NULL),
-  scalarPromotionType(NULL) {
+Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
+  symbol              = NULL;
+  refType             = NULL;
+  hasGenericDefaults  = false;
+  defaultValue        = iDefaultVal;
+  destructor          = NULL;
+  isInternalType      = false;
+  scalarPromotionType = NULL;
 }
 
 Type::~Type() {
@@ -62,10 +59,9 @@ Type::~Type() {
 void Type::verify() {
 }
 
-void Type::addSymbol(TypeSymbol* newsymbol) {
-  symbol = newsymbol;
+void Type::addSymbol(TypeSymbol* newSymbol) {
+  symbol = newSymbol;
 }
-
 
 bool Type::inTree() {
   if (symbol)
@@ -101,6 +97,95 @@ Symbol* Type::getField(const char* name, bool fatal) {
   return NULL;
 }
 
+bool Type::hasDestructor() const {
+  return destructor != NULL;
+}
+
+FnSymbol* Type::getDestructor() const {
+  return destructor;
+}
+
+void Type::setDestructor(FnSymbol* fn) {
+  destructor = fn;
+}
+
+const char* toString(Type* type) {
+  const char* retval = NULL;
+
+  if (type != NULL) {
+    retval = type->getValType()->symbol->name;
+
+  } else {
+    retval = "null type";
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Qualifier and QualifiedType                                                 *
+*                                                                             *
+************************************** | *************************************/
+
+const char* qualifierToStr(Qualifier q) {
+    switch (q) {
+      case QUAL_UNKNOWN:
+        return "unknown";
+
+      case QUAL_CONST:
+        return "const";
+      case QUAL_REF:
+        return "ref";
+      case QUAL_CONST_REF:
+        return "const-ref";
+
+      case QUAL_PARAM:
+        return "param";
+
+      case QUAL_VAL:
+        return "val";
+      case QUAL_NARROW_REF:
+        return "narrow-ref";
+      case QUAL_WIDE_REF:
+        return "wide-ref";
+
+      case QUAL_CONST_VAL:
+        return "const-val";
+      case QUAL_CONST_NARROW_REF:
+        return "const-narrow-ref";
+      case QUAL_CONST_WIDE_REF:
+        return "const-wide-ref";
+    }
+
+    INT_FATAL("Unhandled Qualifier");
+    return "UNKNOWN-QUAL";
+}
+
+bool QualifiedType::isRefType() const {
+  return _type->symbol->hasFlag(FLAG_REF);
+}
+
+bool QualifiedType::isWideRefType() const {
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
+}
+
+const char* QualifiedType::qualStr() const {
+  if (isRefType())
+    return qualifierToStr(QUAL_REF);
+
+  if (isWideRefType())
+    return qualifierToStr(QUAL_WIDE_REF);
+
+  // otherwise
+  return qualifierToStr(_qual);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
   Type(E_PrimitiveType, init)
@@ -134,7 +219,6 @@ PrimitiveType::copyInner(SymbolMap* map) {
 void PrimitiveType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in PrimitiveType::replaceChild");
 }
-
 
 
 void PrimitiveType::verify() {
@@ -182,14 +266,6 @@ std::string PrimitiveType::docsDirective() {
 
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
-}
-
-bool QualifiedType::isRefType() const {
-  return _type->symbol->hasFlag(FLAG_REF);
-}
-
-bool QualifiedType::isWideRefType() const {
-  return _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 EnumType::EnumType() :
@@ -755,40 +831,6 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-DefExpr* defineObjectClass() {
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an int32_t field identifying the classes
-  //  in the program.  We never create the actual field within the
-  //  IR (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      NULL,
-                                      AGGREGATE_CLASS,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
-
-  retval->sym->addFlag(FLAG_OBJECT_CLASS);
-
-  // Prevents removal in pruneResolvedTree().
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
-  retval->sym->addFlag(FLAG_NO_OBJECT);
-
-  dtObject = retval->sym->type;
-
-  return retval;
-}
-
 void initChplProgram(DefExpr* objectDef) {
   theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
@@ -971,6 +1013,10 @@ bool isClass(Type* t) {
   return false;
 }
 
+bool isClassOrNil(Type* t) {
+  if (t == dtNil) return true;
+  return isClass(t);
+}
 
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
@@ -1324,7 +1370,11 @@ bool isNonGenericClassWithInitializers(Type* type) {
 
   if (isNonGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1350,7 +1400,11 @@ bool isGenericClassWithInitializers(Type* type) {
 
   if (isGenericClass(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1363,7 +1417,8 @@ bool isClassWithInitializers(Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isClass()                    == true  &&
         at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        at->initializerStyle             == DEFINES_INITIALIZER) {
+        (at->initializerStyle == DEFINES_INITIALIZER ||
+         at->wantsDefaultInitializer())) {
       retval = true;
     }
   }
@@ -1390,7 +1445,11 @@ bool isNonGenericRecordWithInitializers(Type* type) {
 
   if (isNonGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1416,7 +1475,11 @@ bool isGenericRecordWithInitializers(Type* type) {
 
   if (isGenericRecord(type) == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      retval = at->initializerStyle == DEFINES_INITIALIZER;
+      if (at->initializerStyle == DEFINES_INITIALIZER) {
+        retval = true;
+      } else if (at->wantsDefaultInitializer()) {
+        retval = true;
+      }
     }
   }
 
@@ -1429,7 +1492,8 @@ bool isRecordWithInitializers(Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
         at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        at->initializerStyle             == DEFINES_INITIALIZER) {
+        (at->initializerStyle == DEFINES_INITIALIZER ||
+         at->wantsDefaultInitializer())) {
       retval = true;
     }
   }

@@ -316,6 +316,12 @@ class UserMapAssocDom: BaseAssociativeDom {
     }
   }
 
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    if !lhsPrivate then
+      halt("UserMapAssoc domain assignment not yet supported");
+    for i in rhs do
+      dsiAdd(i);
+  }
 
   proc dsiRequestCapacity(numKeys:int) {
     // TODO

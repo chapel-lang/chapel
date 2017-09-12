@@ -10,7 +10,6 @@
 #include <gasnet_extended_internal.h>
 #include <gasnet_handler.h>
 #include <gasnet_core_internal.h>
-#include <pmi-spawner/gasnet_bootstrap_internal.h>
 
 #include <errno.h>
 #include <unistd.h>
@@ -46,6 +45,8 @@ static ptl_uid_t uid = PTL_UID_ANY;
 static ptl_size_t bootstrap_barrier_calls = 0;
 static ptl_handle_ct_t bootstrap_barrier_ct_h;
 static ptl_handle_me_t bootstrap_barrier_me_h;
+
+gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
 /* 16 blocks of 1MB each for AM reception */
 static int p4_am_size = 1 * 1024 * 1024;
@@ -242,8 +243,11 @@ gasnetc_p4_init(gasnet_node_t *rank_p, gasnet_node_t *size_p)
     p4_rdma_eq_len = gasneti_getenv_int_withdefault("GASNET_EXTENDED_EVENT_QUEUE_LENGTH", p4_rdma_eq_len, 0);
     p4_poll_limit = p4_am_eq_len / 8; /* arbitrary */
 
-    ret = gasneti_bootstrapInit_pmi(NULL, NULL, size_p, rank_p);
-    if (GASNET_OK != ret) return ret;
+    gasneti_spawner = gasneti_spawnerInit(NULL, NULL, "PMI", size_p, rank_p);
+    if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
+
+    /* Must init timers after global env, and preferably before tracing */
+    GASNETI_TICKS_INIT();
 
     /* Setup data structures */
     p4_long_hash = gasnetc_hash_create();
@@ -311,7 +315,7 @@ gasnetc_p4_init(gasnet_node_t *rank_p, gasnet_node_t *size_p)
 
     /* build id map */
     desired = gasneti_malloc(sizeof(ptl_process_t) * gasneti_nodes);
-    gasneti_bootstrapExchange_pmi(&my_id, sizeof(ptl_process_t), desired);
+    gasneti_spawner->Exchange(&my_id, sizeof(ptl_process_t), desired);
 
     gasneti_nodemapInit(NULL, &desired[0].phys.nid,
                         sizeof(desired[0].phys.nid),
@@ -515,9 +519,9 @@ gasnetc_p4_init(gasnet_node_t *rank_p, gasnet_node_t *size_p)
        for the bootstrapBarrier before the info exchange and therefore
        not care about synchronization until the segmentInit later in
        gasnet_init(). */
-    gasneti_bootstrapBarrier_pmi();
+    gasneti_spawner->Barrier();
 
-    gasneti_bootstrapCleanup_pmi(); /* no more PMI-based collectives */
+    gasneti_spawner->Cleanup(); /* no more PMI-based collectives */
 
     return GASNET_OK;
 }
@@ -642,7 +646,7 @@ gasnetc_p4_exit(void)
     PtlFini();
 
     /* Currently, regardless whether make this call, non-collective exits hang */
-    gasneti_bootstrapFini_pmi();
+    gasneti_spawner->Fini();
 }
 
 
@@ -887,8 +891,8 @@ p4_poll(const ptl_handle_eq_t *eq_handles, unsigned int size, unsigned int limit
 		        p4_free_long_match(match);
                       }
                     } else {
-                        gasneti_fatalerror("unknown active message type.  MB: 0x%lx",
-                                           (unsigned long)ev.match_bits);
+                        gasneti_fatalerror("unknown active message type.  MB: 0x%"PRIx64,
+                                           (uint64_t)ev.match_bits);
                     }
 #ifdef GASNET_PAR
                     gasneti_weakatomic_add(&block->op_count, 1, 0);
@@ -1121,8 +1125,8 @@ p4_poll(const ptl_handle_eq_t *eq_handles, unsigned int size, unsigned int limit
                        until the other thread finishes processing the
                        events associated with this ME */
   #ifdef P4_DEBUG
-                    fprintf(stderr, "%03d: spinning waiting for block to finish %ld, %ld\n",
-                            gasneti_mynode, ct.success + ct.failure, (long)val);
+                    fprintf(stderr, "%03d: spinning waiting for block to finish %"PRIu64", %"PRIu64"\n",
+                            gasneti_mynode, (uint64_t)(ct.success + ct.failure), (uint64_t)val);
   #endif
                     GASNETI_WAITHOOK();
                     val = gasneti_weakatomic_read(&block->op_count, 0);

@@ -28,8 +28,9 @@ my $exeindex = undef;
 my $envlist = undef;
 my $nodefile = $ENV{'GASNET_NODEFILE'} || $ENV{'PBS_NODEFILE'};
 my @tmpfiles = (defined($nodefile) && $ENV{'GASNET_RM_NODEFILE'}) ? ("$nodefile") : ();
-my $spawner = $ENV{'GASNET_SPAWNER'};
+my $spawner = $ENV{'GASNET_SPAWN_CONTROL'}; # from the wrapper script
 my $conduit = $ENV{'GASNET_SPAWN_CONDUIT'};
+my $spawn_control;
 
 sub usage
 {
@@ -37,22 +38,21 @@ sub usage
 
     print "usage: gasnetrun -n <n> [options] [--] prog [program args]\n";
     print "    options:\n";
-    print "      -n <n>                number of processes to run\n";
-    print "      -N <N>                number of nodes to run on (not always supported)\n";
-    print "      -E <VAR1[,VAR2...]>   list of environment vars to propagate\n";
-    print "      -v                    be verbose about what is happening\n";
-    print "      -t                    test only, don't execute anything (implies -v)\n";
-    print "      -k                    keep any temporary files created (implies -v)\n";
-    print "      -spawner=(ssh|mpi)    force use of MPI or SSH for spawning\n";
-    print "      --                    ends option parsing\n";
+    print "      -n <n>                 number of processes to run\n";
+    print "      -N <N>                 number of nodes to run on (not always supported)\n";
+    print "      -E <VAR1[,VAR2...]>    list of environment vars to propagate\n";
+    print "      -v                     be verbose about what is happening\n";
+    print "      -t                     test only, don't execute anything (implies -v)\n";
+    print "      -k                     keep any temporary files created (implies -v)\n";
+    print "      -spawner=(ssh|mpi|pmi) force use of a specific spawner\n";
+    print "      --                     ends option parsing\n";
     if ($ENV{'GASNET_BLCR_ENABLED'}) {
         print "\n";
         print "usage: gasnetrun [options] [--] -restart dir\n";
         print "    options:\n";
-        print "      -v                    be verbose about what is happening\n";
-        print "      -t                    test only, don't execute anything (implies -v)\n";
-        print "      -spawner=(ssh|mpi)    force use of MPI or SSH for spawning\n";
-        print "      --                    ends option parsing\n";
+        print "      -v                     be verbose about what is happening\n";
+        print "      -t                     test only, don't execute anything (implies -v)\n";
+        print "      --                     ends option parsing\n";
     }
     exit 1;
 }
@@ -115,11 +115,11 @@ sub fullpath($)
 	    usage ("-E option given without an argument\n") unless @ARGV >= 1;
 	} elsif ($_ =~ /^-spawner=(.+)$/) {
 	    $spawner = $1;
-	    pop @mpi_args;	# not known to mpi spawner
+	    pop @mpi_args;	# not known to mpi/pmi spawner
 	} elsif ($_ eq '-restart') {
 	    shift;
 	    $restart = 1;
-	    pop @mpi_args;	# not known to mpi spawner
+	    pop @mpi_args;	# not known to mpi/pmi spawner
 	    usage "-restart option given without an argument\n" unless @ARGV >= 1;
 	    last;
 	} elsif ($_ eq '-v') {
@@ -143,11 +143,18 @@ sub fullpath($)
     if (!defined($spawner)) {
         usage "Option -spawner was not given and no default is set\n"
     }
-    $spawner = uc($spawner);
-    die "gasnetrun: $conduit-conduit was configured for PMI-based launch\n"
-        if ($spawner eq 'PMI');
-    if (($spawner eq 'MPI') && !$ENV{GASNET_SPAWN_HAVE_MPI}) {
+    $ENV{'GASNET_SPAWN_CONTROL'} = lc($spawner);
+    $spawn_control = $spawner = uc($spawner);
+    if ($spawner eq 'MPI') {
         usage "Spawner is set to MPI, but MPI support was not compiled in\n"
+            unless $ENV{'GASNET_SPAWN_HAVE_MPI'};
+    }
+    elsif ($spawner eq 'PMI') {
+        usage "Spawner is set to PMI, but PMI support was not compiled in\n"
+            unless $ENV{'GASNET_SPAWN_HAVE_PMI'};
+        # From this point onward, MPI and PMI support converge:
+        $spawner = 'MPI';
+        $ENV{'MPIRUN_CMD'} = $ENV{'PMIRUN_CMD'};
     }
 
 # Restart-specific options processing
@@ -196,13 +203,18 @@ sub fullpath($)
 # Find the program (possibly a wrapper)
     $exebase = $ARGV[0] or usage "No program specified\n";
     $exepath = fullpath($exebase);
-    die "gasnetrun: unable to locate program '$exebase'\n"
-			unless (defined($exepath) && -x $exepath);
+    die "gasnetrun: unable to locate program '$exebase'\n" unless defined($exepath);
     print "gasnetrun: located executable '$exepath'\n" if ($verbose);
+    die "gasnetrun: missing execute permissions for '$exepath'\n" unless -x $exepath;
     $ARGV[0] = $exepath;
 
+# Bug 3578:
+if (($conduit eq 'IBV') && !exists($ENV{'OMPI_MCA_mpi_warn_on_fork'})) {
+  $ENV{'OMPI_MCA_mpi_warn_on_fork'} = 0;
+}
+
 # Find the GASNet executable and verify its capabilities
-    my $pattern = "^GASNet" . $spawner . "Spawner: 1 \\\$";
+    my $pattern = "^GASNet" . $spawn_control . "Spawner: 1 \\\$";
     my $found = undef;
     $exeindex = 0;
     foreach my $arg (@ARGV) {
@@ -215,7 +227,7 @@ sub fullpath($)
 	{   local $/ = '$'; # use $ as the line break symbol
             while (<FILE>) {
                 next unless(/^GASNet/);
-		if (/GASNetConduitName: $conduit $/) { $is_gasnet = 1; next; }
+		if (/GASNetConduitName: $conduit \$/o) { $is_gasnet = 1; next; }
                 if (/$pattern/o) { $found = 1; last; }
             }
         }
@@ -227,14 +239,13 @@ sub fullpath($)
 	    }
 	    last;
 	} elsif ($is_gasnet) {
-	    die "GASNet executable '$file' does not support spawner '$spawner'\n";
+	    die "GASNet executable '$file' does not support spawner '$spawn_control'\n";
 	}
     }
     warn "gasnetrun: unable to locate a GASNet program in '@ARGV'\n" unless ($found);
 
 # Run it which ever way makes sense
     $ENV{"GASNET_VERBOSEENV"} = "1" if ($verbose);
-    $ENV{'GASNET_SPAWNER'} = lc($spawner);
     if ($spawner eq 'MPI') {
         print("gasnetrun: forwarding to mpi-based spawner\n") if ($verbose);
         @ARGV = (@mpi_args, @ARGV);

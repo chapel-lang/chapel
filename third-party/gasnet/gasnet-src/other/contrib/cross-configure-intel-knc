@@ -42,7 +42,7 @@ EXTRA_CONFIGURE_ARGS='--disable-aligned-segments --enable-pshm' ; export EXTRA_C
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
 #   by running config-aux/config.guess on the target machine
-TARGET_ID='mic-unknown-linux-gnu'
+TARGET_ID='k1om-unknown-linux-gnu'
 
 # 3. Optionally cross-compile and run the detect-cachesz.c utility and
 #    fill in the value below and uncomment.  If not set the default is 128.
@@ -106,28 +106,20 @@ if test ! -f "$SRCDIR/configure" ; then
   echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
   exit 1
 fi
-# Detect the build host machine type
-HOST_ARG=`echo "$@" | grep -e --host`
+# Detect the build+host machine type
 HOST_APPEND=
-if test "$HOST_ARG" = ""; then
-  oldCC_FOR_BUILD="$CC_FOR_BUILD"
-  oldHOST_CC="$HOST_CC"
-  oldCC="$CC"
-  CC_FOR_BUILD=
-  HOST_CC=
-  CC=
-  if test "$HOST_ID" = ""; then
-    HOST_ID=`$SRCDIR/config-aux/config.guess`
+for sys in host build; do
+  SYS_ARG=`echo "$@" | grep -i -e --$sys`
+  if test -z "$SYS_ARG"; then
+    if test -z "$HOST_ID"; then
+      HOST_ID=`env CC= HOST_CC= CC_FOR_BUILD= $SRCDIR/config-aux/config.guess`
+      if test -z "$HOST_ID"; then
+        echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid --build=machineid to identify the host machine running this script'
+        exit 1
+      fi
+    fi
+    HOST_APPEND="$HOST_APPEND --$sys=$HOST_ID"
   fi
-  if test "$HOST_ID" = ""; then
-    echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid to identify the host machine running this script'
-    exit 1
-  else
-    HOST_APPEND="--host=$HOST_ID"
-  fi
-  CC_FOR_BUILD="$oldCC_FOR_BUILD"
-  HOST_CC="$oldHOST_CC"
-  CC="$oldCC"
-fi
+done
 # Now that everything is setup, run the actual configure script
-$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
+$SRCDIR/configure --enable-cross-compile$HOST_APPEND --target=$TARGET_ID $EXTRA_CONFIGURE_ARGS "$@"

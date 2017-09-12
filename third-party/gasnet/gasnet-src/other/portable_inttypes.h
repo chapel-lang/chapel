@@ -27,6 +27,10 @@
      if configure reports that a standards-compliant 
      system header is available, then use it */
   #if defined(COMPLETE_INTTYPES_H)
+    /* inttypes.h is preferred, because it also provides format specifiers */
+    #ifndef __STDC_FORMAT_MACROS
+    #define __STDC_FORMAT_MACROS 1 /* C99 mandates this predef for C++ clients */
+    #endif
     #include <inttypes.h>
   #elif defined(COMPLETE_STDINT_H)
     #include <stdint.h>
@@ -79,9 +83,14 @@
     typedef          long    intptr_t; 
     typedef unsigned long   uintptr_t; 
   #elif defined(__CYGWIN__)
+   #include <cygwin/version.h>
+   #if CYGWIN_VERSION_DLL_MAJOR >= 2005
+    /* stdint.h is complete on modern cygwin */
+    #include <stdint.h>
+   #else
     /* what a mess - 
        inttypes.h and stdint.h are incomplete or missing on 
-       various versions of cygwin, with no easy way to check */
+       older versions of cygwin, with no easy way to check */
     #ifdef HAVE_INTTYPES_H
       #include <inttypes.h>
     #endif
@@ -101,6 +110,7 @@
       typedef          int     intptr_t; 
       typedef unsigned int    uintptr_t; 
     #endif
+   #endif
   #elif defined(SIZEOF_CHAR) && \
         defined(SIZEOF_SHORT) && \
         defined(SIZEOF_INT) && \
@@ -204,5 +214,103 @@
     #include <inttypes.h>
   #endif
 #endif /* _INTTYPES_DEFINED */
+
+#ifndef _INTTYPE_FORMATS_DEFINED
+#define _INTTYPE_FORMATS_DEFINED
+
+  /* Fixed-width printf/scanf format specifiers to go with the types defined above.
+   * C99-compliant inttypes.h should already provide these, so here we just ensure
+   * that's the case for the ones we care about and provide a last-ditch effort otherwise.
+   *
+   * Currently only worry about the 64-bit and PTR versions, since everything else can portably be 
+   * handled as an (unsigned) int on all platforms of interest.
+   */
+  #if SIZEOF_VOID_P == 4 || PLATFORM_ARCH_32 || __INTPTR_MAX__ == 2147483647
+    #ifndef __PRI64_PREFIX
+    #define __PRI64_PREFIX "ll"
+    #endif
+    #ifndef __PRIPTR_PREFIX
+    #define __PRIPTR_PREFIX 
+    #endif
+  #else /* assume 64-bit if unsure */
+    #ifndef __PRI64_PREFIX
+    #define __PRI64_PREFIX  "l"
+    #endif
+    #ifndef __PRIPTR_PREFIX
+    #define __PRIPTR_PREFIX "l"
+    #endif
+  #endif
+
+  #ifndef PRIi64
+  #define PRIi64 __PRI64_PREFIX "i"
+  #endif
+  #ifndef PRId64
+  #define PRId64 __PRI64_PREFIX "d"
+  #endif
+  #ifndef PRIu64
+  #define PRIu64 __PRI64_PREFIX "u"
+  #endif
+  #ifndef PRIo64
+  #define PRIo64 __PRI64_PREFIX "o"
+  #endif
+  #ifndef PRIx64
+  #define PRIx64 __PRI64_PREFIX "x"
+  #endif
+  #ifndef PRIX64
+  #define PRIX64 __PRI64_PREFIX "X"
+  #endif
+
+  #ifndef PRIiPTR
+  #define PRIiPTR __PRIPTR_PREFIX "i"
+  #endif
+  #ifndef PRIdPTR
+  #define PRIdPTR __PRIPTR_PREFIX "d"
+  #endif
+  #ifndef PRIuPTR
+  #define PRIuPTR __PRIPTR_PREFIX "u"
+  #endif
+  #ifndef PRIoPTR
+  #define PRIoPTR __PRIPTR_PREFIX "o"
+  #endif
+  #ifndef PRIxPTR
+  #define PRIxPTR __PRIPTR_PREFIX "x"
+  #endif
+  #ifndef PRIXPTR
+  #define PRIXPTR __PRIPTR_PREFIX "X"
+  #endif
+
+  #ifndef SCNi64
+  #define SCNi64 __PRI64_PREFIX "i"
+  #endif
+  #ifndef SCNd64
+  #define SCNd64 __PRI64_PREFIX "d"
+  #endif
+  #ifndef SCNu64
+  #define SCNu64 __PRI64_PREFIX "u"
+  #endif
+  #ifndef SCNo64
+  #define SCNo64 __PRI64_PREFIX "o"
+  #endif
+  #ifndef SCNx64
+  #define SCNx64 __PRI64_PREFIX "x"
+  #endif
+
+  #ifndef SCNiPTR
+  #define SCNiPTR __PRIPTR_PREFIX "i"
+  #endif
+  #ifndef SCNdPTR
+  #define SCNdPTR __PRIPTR_PREFIX "d"
+  #endif
+  #ifndef SCNuPTR
+  #define SCNuPTR __PRIPTR_PREFIX "u"
+  #endif
+  #ifndef SCNoPTR
+  #define SCNoPTR __PRIPTR_PREFIX "o"
+  #endif
+  #ifndef SCNxPTR
+  #define SCNxPTR __PRIPTR_PREFIX "x"
+  #endif
+
+#endif /* _INTTYPE_FORMATS_DEFINED */
 
 #endif /* _PORTABLE_INTTYPES_H */

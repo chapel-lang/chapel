@@ -16,11 +16,10 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv amudprun gasnet gmp hwloc jemalloc libunwind qthread llvm
+all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
-	cd amudprun && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
@@ -34,7 +33,6 @@ clean: FORCE
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
-	cd amudprun && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
@@ -48,7 +46,6 @@ cleanall: FORCE
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
-	cd amudprun && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
@@ -62,6 +59,31 @@ clobber: FORCE
 
 depend:
 
+# Third-party dependencies. If any of these files (3rd party source dirs or our
+# Makefiles) change, then rebuild the 3rd party lib. This allows us to
+# automatically rebuild on 3rd party version upgrades or if we specify
+# different option in the Makefile.
+
+# Common C/C++ file extensions
+SRC_FILES_FILTER += -iname '*.c'   -o -iname '*.h'   -o -iname '*.cpp' -o
+SRC_FILES_FILTER += -iname '*.cc'  -o -iname '*.cxx' -o -iname '*.hpp' -o
+# Less common C++ extensions
+SRC_FILES_FILTER += -iname '*.c++' -o -iname '*.hp'  -o -iname '*.hxx' -o
+SRC_FILES_FILTER += -iname '*.h++' -o -iname '*.tcc' -o -iname '*.cp'
+
+# Find 3rd party dependencies -- arg 1 is src dir, arg 2 is top-level dir with Makefiles/README
+find_3p_depend = $(shell find $(1) $(SRC_FILES_FILTER) 2>/dev/null) $(2)/Makefile* $(2)/README
+
+GASNET_DEPEND         := $(call find_3p_depend, $(GASNET_SUBDIR),         $(GASNET_DIR))
+GMP_DEPEND            := $(call find_3p_depend, $(GMP_SUBDIR),            $(GMP_DIR))
+HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_SUBDIR),          $(HWLOC_DIR))
+JEMALLOC_DEPEND       := $(call find_3p_depend, $(JEMALLOC_SUBDIR),       $(JEMALLOC_DIR))
+LIBUNWIND_DEPEND      := $(call find_3p_depend, $(LIBUNWIND_SUBDIR),      $(LIBUNWIND_DIR))
+MASSIVETHREADS_DEPEND := $(call find_3p_depend, $(MASSIVETHREADS_SUBDIR), $(MASSIVETHREADS_DIR))
+QTHREAD_DEPEND        := $(call find_3p_depend, $(QTHREAD_SUBDIR),        $(QTHREAD_DIR))
+RE2_DEPEND            := $(call find_3p_depend, $(RE2_SUBDIR),            $(RE2_DIR))
+
+
 test-venv: $(CHPL_VENV_TEST_REQS)
 $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) test-venv
@@ -70,13 +92,10 @@ chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
-amudprun: $(AMUDPRUN_INSTALL_DIR)
-$(AMUDPRUN_INSTALL_DIR):
-	cd amudprun && $(MAKE)
-
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)
-$(GASNET_INSTALL_DIR):
+$(GASNET_INSTALL_DIR): $(GASNET_DEPEND)
+	rm -rf $(GASNET_INSTALL_DIR) && rm -rf $(GASNET_BUILD_DIR)
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
 try-gmp: FORCE
@@ -88,31 +107,42 @@ else ifeq ($(wildcard $(GMP_H_FILE)),)
 endif
 
 gmp: $(GMP_H_FILE)
-$(GMP_H_FILE):
+$(GMP_H_FILE): $(GMP_DEPEND)
+	rm -rf $(GMP_INSTALL_DIR) && rm -rf $(GMP_BUILD_DIR)
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
-$(HWLOC_INSTALL_DIR):
+$(HWLOC_INSTALL_DIR): $(HWLOC_DEPEND)
+	rm -rf $(HWLOC_INSTALL_DIR) && rm -rf $(HWLOC_BUILD_DIR)
 	cd hwloc && $(MAKE)
 
 jemalloc: $(JEMALLOC_INSTALL_DIR)
-$(JEMALLOC_INSTALL_DIR):
+$(JEMALLOC_INSTALL_DIR): $(JEMALLOC_DEPEND)
+	rm -rf $(JEMALLOC_INSTALL_DIR) && rm -rf $(JEMALLOC_BUILD_DIR)
 	cd jemalloc && $(MAKE)
 
 libunwind: $(LIBUNWIND_INSTALL_DIR)
-$(LIBUNWIND_INSTALL_DIR):
+$(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
+	rm -rf $(LIBUNWIND_INSTALL_DIR) && rm -rf $(LIBUNWIND_BUILD_DIR)
 	cd libunwind && $(MAKE)
 
 massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
-$(MASSIVETHREADS_INSTALL_DIR):
+$(MASSIVETHREADS_INSTALL_DIR): $(MASSIVETHREADS_DEPEND)
+	rm -rf $(MASSIVETHREADS_INSTALL_DIR) && rm -rf $(MASSIVETHREADS_BUILD_DIR)
 	cd massivethreads && $(MAKE)
 
+# Qthreads may use hwloc and/or jemalloc. Ensure they are built first
 ifeq ($(CHPL_MAKE_HWLOC), hwloc)
-qthread: $(HWLOC_INSTALL_DIR) $(QTHREAD_INSTALL_DIR)
-else
-qthread: $(QTHREAD_INSTALL_DIR)
+QTHREAD_DEPEND_INSTALL_DIRS += $(HWLOC_INSTALL_DIR)
 endif
-$(QTHREAD_INSTALL_DIR):
+ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
+QTHREAD_DEPEND_INSTALL_DIRS += $(JEMALLOC_INSTALL_DIR)
+endif
+QTHREAD_DEPEND_INSTALL_DIRS += $(QTHREAD_INSTALL_DIR)
+qthread: $(QTHREAD_DEPEND_INSTALL_DIRS)
+
+$(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(HWLOC_DEPEND) $(JEMALLOC_DEPEND)
+	rm -rf $(QTHREAD_INSTALL_DIR) && rm -rf $(QTHREAD_BUILD_DIR)
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
 
@@ -133,7 +163,8 @@ endif
 endif
 
 re2: $(RE2_H_FILE)
-$(RE2_H_FILE):
+$(RE2_H_FILE): $(RE2_DEPEND)
+	rm -rf $(RE2_INSTALL_DIR) && rm -rf $(RE2_BUILD_DIR)
 	cd re2 && $(MAKE)
 
 -include Makefile.devel

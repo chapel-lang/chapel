@@ -239,7 +239,7 @@ module DefaultSparse {
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
-      bulkAdd_prepareInds(inds, dataSorted, isUnique);
+      bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
 
       if nnz == 0 {
 
@@ -334,6 +334,10 @@ module DefaultSparse {
       }
       halt("dimIter() not yet implemented for sparse domains");
       yield indices(1);
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
   }
 
@@ -489,29 +493,29 @@ module DefaultSparse {
 
   proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) {
     if (rank == 1) {
-      if printBrackets then f.write("{");
+      if printBrackets then f <~> "{";
       if (nnz >= 1) {
-        f.write(indices(1));
+        f <~> indices(1);
         for i in 2..nnz {
-          f.write(" ", indices(i));
+          f <~> " " <~> indices(i);
         }
       }
-      if printBrackets then f.write("}");
+      if printBrackets then f <~> "}";
     } else {
-      if printBrackets then f.writeln("{");
+      if printBrackets then f <~> "{\n";
       if (nnz >= 1) {
         var prevInd = indices(1);
-        f.write(" ", prevInd);
+        f <~> " " <~> prevInd;
         for i in 2..nnz {
           if (prevInd(1) != indices(i)(1)) {
-            f.writeln();
+            f <~> "\n";
           }
           prevInd = indices(i);
-          f.write(" ", prevInd);
+          f <~> " " <~> prevInd;
         }
-        f.writeln();
+        f <~> "\n";
       }
-      if printBrackets then f.writeln("}");
+      if printBrackets then f <~> "}\n";
     }
   }
 
@@ -519,25 +523,25 @@ module DefaultSparse {
   proc DefaultSparseArr.dsiSerialWrite(f) {
     if (rank == 1) {
       if (dom.nnz >= 1) {
-        f.write(data(1));
+        f <~> data(1);
         for i in 2..dom.nnz {
-          f.write(" ", data(i));
+          f <~> " " <~> data(i);
         }
       }
     } else {
       if (dom.nnz >= 1) {
         var prevInd = dom.indices(1);
-        f.write(data(1));
+        f <~> data(1);
         for i in 2..dom.nnz {
           if (prevInd(1) != dom.indices(i)(1)) {
-            f.writeln();
+            f <~> "\n";
           } else {
-            f.write(" ");
+            f <~> " ";
           }
           prevInd = dom.indices(i);
-          f.write(data(i));
+          f <~> data(i);
         }
-        f.writeln();
+        f <~> "\n";
       }
     }
   }

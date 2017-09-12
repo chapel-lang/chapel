@@ -332,7 +332,6 @@ static void gasnete_check_config(void) {
 }
 
 extern void gasnete_init(void) {
-  GASNETI_UNUSED_UNLESS_DEBUG
   static int firstcall = 1;
   GASNETI_TRACE_PRINTF(C,("gasnete_init()"));
   gasneti_assert(firstcall); /*  make sure we haven't been called before */

@@ -60,7 +60,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
   const dist: Block(rank, idxType, sparseLayoutType);
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
 
@@ -229,7 +229,13 @@ class SparseBlockDom: BaseSparseDomImpl {
       yield i;
   }
 
-  iter these(param tag: iterKind) where tag == iterKind.standalone {
+  iter these(param tag: iterKind) where tag == iterKind.standalone &&
+    // Ensure it is legal to invoke the standalone iterator
+    // on locDom.mySparseBlock below.
+    __primitive("method call resolves",
+                locDoms[createTuple(rank,int,0)].mySparseBlock._value,
+                "these", tag)
+  {
     coforall locDom in locDoms {
       on locDom {
         for i in locDom.mySparseBlock._value.these(tag) {
@@ -253,6 +259,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiMyDist() return dist;
+
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    if !lhsPrivate then
+      halt("SparseBlock domain assignment not yet supported");
+    for i in rhs do
+      dsiAdd(i);
+  }
+
 }
 
 //
@@ -367,7 +381,13 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
+    // Ensure it is legal to invoke the standalone iterator
+    // on locA.myElems below.
+    __primitive("method call resolves",
+                locArr[locArrDom.low].myElems._value,
+                "these", tag)
+   {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       for i in locA.myElems._value.these(tag) {
@@ -378,28 +398,28 @@ class SparseBlockArr: BaseSparseArr {
 
 
   proc dsiAccess(i: rank*idxType) ref {
-    //    local { // TODO: Turn back on once privatization is on
-      if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
+    local {
+      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
         return myLocArr.dsiAccess(i);
-        //      }
+      }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
   where shouldReturnRvalueByValue(eltType) {
-    //    local { // TODO: Turn back on once privatization is on
-      if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
+    local {
+      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
         return myLocArr.dsiAccess(i);
-        //      }
+      }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
-    //    local { // TODO: Turn back on once privatization is on
-      if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
+    local {
+      if myLocArr != nil && myLocArr.locDom.parentDom.member(i) {
         return myLocArr.dsiAccess(i);
-        //      }
+      }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
@@ -662,14 +682,15 @@ proc LocSparseBlockArr.dsiSerialWrite(f) {
 }
 
 
-proc SparseBlockDom.dsiSupportsPrivatization() param return false;
+proc SparseBlockDom.dsiSupportsPrivatization() param return true;
 
 proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new SparseBlockDom(rank=rank, idxType=idxType, stridable=stridable,
-      dist=privdist, whole=whole);
+  var c = new SparseBlockDom(rank=rank, idxType=idxType,
+      sparseLayoutType=sparseLayoutType, dist=privdist, whole=whole,
+      parentDom=parentDom);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -684,13 +705,15 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc SparseBlockArr.dsiSupportsPrivatization() param return false;
+proc SparseBlockArr.dsiSupportsPrivatization() param return true;
 
 proc SparseBlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc SparseBlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new SparseBlockArr(sparseLayoutType=sparseLayoutType,
+      eltType=eltType, rank=rank, idxType=idxType, stridable=stridable,
+      dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
@@ -705,10 +728,6 @@ proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
     for param i in 1..rank do
       if dom.whole.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }

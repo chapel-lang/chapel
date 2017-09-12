@@ -1,0 +1,3 @@
+forall containing a throws inside a throwing function must be wrapped
+in a try when in strict mode. This may not be a bug, but may be a convenience
+we want to enable for users in the future.

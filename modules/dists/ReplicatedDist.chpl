@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,19 +70,23 @@ referring to the domain or array.
 
   .. code-block:: chapel
 
-    const Dbase = {1..5};  // a default-distributed domain
+    const Dbase = {1..5};  // A default-distributed domain
     const Drepl = Dbase dmapped Replicated();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
-    // only the current locale's replicand is accessed
+    // Only the current locale's replicand is accessed
     Arepl[3] = 4;
 
-    // only the current locale's replicand is accessed
+    // Only the current locale's replicand is accessed
     forall (b,r) in zip(Abase,Arepl) do b = r;
     Abase = Arepl;
 
+    // Access other locales' replicand with the replicand(loc) method
+    Arepl.replicand(Locales[1]) = Arepl;
 
+See the :ref:`primers-replicated` primer for more examples of the Replicated
+distribution.
 
 **Constructor Arguments**
 
@@ -170,10 +174,6 @@ proc Replicated.dsiPrivatize(privatizeData)
 // global domain class
 //
 class ReplicatedDom : BaseRectangularDom {
-  // to support rectangular domains
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
@@ -397,6 +397,11 @@ proc ReplicatedDom.dsiDestroyDom() {
   }
 }
 
+proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  // Don't do anything for the arrays (no dsiReallocate/dsiPostReallocate)
+  this.dsiSetIndices(rhs.getIndices());
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // arrays
 
@@ -424,6 +429,19 @@ class ReplicatedArr : BaseArr {
         halt("locale ", here.id, " has no local replicand");
     return localArrs[here.id];
   }
+
+  //
+  // Access another locale's local array representation
+  //
+  proc replicand(loc: locale) ref {
+    return localArrs[loc.id].arrLocalRep;
+  }
+}
+
+pragma "no doc"
+// TODO: Placeholder until we can do forwarding on _value fields
+proc _array.replicand(loc: locale) ref {
+  return _value.replicand(loc);
 }
 
 //
@@ -523,7 +541,7 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
-proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
+proc ReplicatedArr.dsiDestroyArr() {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc do
       delete locArr;
@@ -552,7 +570,7 @@ iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterK
 
 
 /////////////////////////////////////////////////////////////////////////////
-// slicing, reindexing, etc.
+// reallocation
 
 // This supports reassignment of the array's domain.
 /*
@@ -561,10 +579,12 @@ prior to calling this.dom.dsiSetIndices().
 So this needs to adjust anything in the array that won't be taken care of
 in this.dom.dsiSetIndices(). In our case, that's nothing.
 */
+/* no longer called
 proc ReplicatedArr.dsiReallocate(d: domain): void {
   if traceReplicatedDist then
     writeln("ReplicatedArr.dsiReallocate ", dom.domRep, " -> ", d, " (no-op)");
 }
+*/
 
 // Note: returns an associative array
 proc ReplicatedArr.dsiTargetLocales() {
@@ -576,8 +596,5 @@ proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 proc ReplicatedArr.dsiLocalSubdomain() {
   return chpl_myLocArr().myDom.domLocalRep;
 }
-
-// todo? these two seem to work (written by analogy with DefaultRectangular)
-proc Replicated.dsiCreateReindexDist(newSpace, oldSpace) return this;
 
 use OldReplicatedDist;

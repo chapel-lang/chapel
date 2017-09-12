@@ -212,7 +212,7 @@ module Random {
 
   // remove this deprecation version when appropriate
   pragma "no doc"
-  pragma "compiler generated"
+  pragma "last resort"
   proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
                         type eltType = real(64),
@@ -596,7 +596,7 @@ module Random {
 
       // remove this deprecation version when appropriate
       pragma "no doc"
-      pragma "compiler generated"
+      pragma "last resort"
       proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                         param parSafe: bool = true,
                         type eltType = real(64)) {
@@ -2099,7 +2099,7 @@ module Random {
       }
 
       pragma "no doc"
-      pragma "compiler generated"
+      pragma "last resort"
       proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                            param parSafe: bool = true,
                            type eltType = real(64)) {
@@ -2251,6 +2251,18 @@ module Random {
         if parSafe then
           NPBRandomStreamPrivate_lock$;
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
+      }
+
+      // Forward the leader iterator as well.
+      pragma "no doc"
+      proc iterate(D: domain, param tag, type resultType=real)
+        where tag == iterKind.leader
+      {
+        // Note that proc iterate() for the serial case (i.e. the one above)
+        // is going to be invoked as well, so we should not be taking
+        // any actions here other than the forwarding.
+        const start = NPBRandomStreamPrivate_count;
+        return NPBRandomPrivate_iterate(resultType, D, seed, start, tag);
       }
 
       pragma "no doc"

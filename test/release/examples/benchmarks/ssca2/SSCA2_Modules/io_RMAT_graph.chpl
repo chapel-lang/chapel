@@ -2,6 +2,7 @@
 // Input/output of an RMAT graph to files in binary format.
 // Presently, uses the XMT/KM RMAT graph storage format for SSCA#2.
 //
+pragma "error mode fatal"
 module io_RMAT_graph
 {
   use SSCA2_compilation_config_params, Time, ReplicatedDist;
@@ -99,7 +100,7 @@ module io_RMAT_graph
 
     if PRINT_TIMING_STATISTICS then {
       stopwatch.stop ();
-      writeln ( "Elapsed time for writing RMAT graph: ", stopwatch.elapsed (), 
+      writeln ( "Elapsed time for writing RMAT graph: ", stopwatch.elapsed (),
                 " seconds");
       stopwatch.clear ();
     }
@@ -157,7 +158,7 @@ module io_RMAT_graph
 
     if vCount != graphNumVertices(G) then
       reportNumVerticesError(G, snapshot_prefix, vCount);
-    
+
     ref GRow = G.Row;
     const uxIDs = GRow.domain.dim(1);
     type VType = uxIDs.idxType;
@@ -246,7 +247,7 @@ module io_RMAT_graph
 
     if PRINT_TIMING_STATISTICS then {
       stopwatch.stop ();
-      writeln ( "Elapsed time for reading RMAT graph: ", stopwatch.elapsed (), 
+      writeln ( "Elapsed time for reading RMAT graph: ", stopwatch.elapsed (),
                 " seconds");
       stopwatch.clear ();
     }
@@ -389,7 +390,7 @@ module io_RMAT_graph
     if dEdge then writeln(dstyle, " vertex ", u);
 
     // we know how many neighbors we have for this vertex
-    // 
+    //
     GRow(u).ndom = 1..numEdges;
     ref neighborList = GRow(u).neighborList;
 
@@ -449,8 +450,8 @@ module io_RMAT_graph
   // Especially useful with --checkOnlyOnRead.
   //
   proc myerror(args...) {
-    stderr.writeln("ERROR: ", (...args));
-    stderr.writeln("(proceeding nonetheless)");
+    try! stderr.writeln("ERROR: ", (...args));
+    try! stderr.writeln("(proceeding nonetheless)");
   }
 
   proc reportNumVerticesError(G, snapshot_prefix, vCount) {
@@ -505,12 +506,15 @@ module io_RMAT_graph
   }
 
   proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
-    var err:syserr = ENOERR, temp:IONumType;
-    chan.read(temp, error=err);
-    // temp==0 is a workaround for unending large files
-    if err != EEOF && temp != 0 then
-      myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
-              "'  the next value is ", temp);
+    var temp:IONumType;
+    try! {
+      chan.read(temp);
+    } catch e: SystemError {
+      // temp==0 is a workaround for unending large files
+      if e.err != EEOF && temp != 0 then
+        myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
+                "'  the next value is ", temp);
+    }
   }
 
   proc writeNum(ch, num): void { ch.write(num:IONumType); }

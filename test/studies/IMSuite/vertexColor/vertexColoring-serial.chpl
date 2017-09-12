@@ -19,7 +19,7 @@
    (C) Copyright IMSuite 2013-present.
  */
 
-
+pragma "error mode fatal"
 module vertexColoring {
 
     use Random;

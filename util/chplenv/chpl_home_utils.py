@@ -25,8 +25,8 @@ def get_chpl_third_party():
 
 @memoize
 def using_chapel_module():
-    chpl_home = overrides.get('CHPL_HOME', '')
-    if chpl_home != '':
-        return chpl_home == os.environ.get('CHPL_MODULE_HOME', '')
+    chpl_home = overrides.get('CHPL_HOME', None)
+    chpl_module_home = os.environ.get('CHPL_MODULE_HOME', None)
+    if chpl_home and chpl_module_home:
+        return os.path.normpath(chpl_home) == os.path.normpath(chpl_module_home)
     return False
-

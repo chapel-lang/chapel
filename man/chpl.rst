@@ -121,20 +121,12 @@ OPTIONS
     Turns off all optimizations in the Chapel compiler and generates naive C
     code with many temporaries.
 
-**--cache-remote**
+**--[no-]cache-remote**
 
     Enables the cache for remote data. This cache can improve communication
     performance for some programs by adding aggregation, write behind, and
     read ahead. This cache is not enabled by any other optimization
     *options* such as **--fast**.
-
-**--conditional-dynamic-dispatch-limit**
-
-    When greater than zero, this limit controls when the compiler will
-    generate code to handle dynamic dispatch with conditional statements. If
-    the number of possible method calls is less than or equal to this limit,
-    a (possibly nested) conditional statement will be used for dynamic
-    dispatch instead of the virtual method table. The default is zero.
 
 **--[no-]copy-propagation**
 
@@ -224,6 +216,10 @@ OPTIONS
 
     Enable [disable] remote value forwarding of read-only values to remote
     threads if reading them early does not violate program semantics.
+
+**--[no-]remote-serialization**
+
+    Enable [disable] serialization for globals and remote constants.
 
 **--[no-]scalar-replacement**
 
@@ -398,8 +394,8 @@ OPTIONS
 
 **-o, --output <filename>**
 
-    Specify the name of the compiler-generated executable (defaults to a.out
-    if unspecified).
+    Specify the name of the compiler-generated executable. Defaults to
+    the main module name if unspecified.
 
 **--static**
 
@@ -446,6 +442,11 @@ OPTIONS
     Note that sometimes function might not be printed, for example when
     one optimization pass notes that function is unused and decides to remove
     it.
+
+**--mllvm <option>**
+    Pass an option to the LLVM optimization and transformation passes.
+    This option can be specified multiple times.
+
 
 *Compilation Trace Options*
 
@@ -530,10 +531,6 @@ OPTIONS
     Overrides the default value of a configuration parameter in the code.
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
-
-**--[no-]strict-errors**
-
-    Enable [disable] strict mode for error handling.
 
 **--[no-]task-tracking**
 

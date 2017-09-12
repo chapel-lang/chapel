@@ -24,10 +24,10 @@
 #include "symbol.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "bb.h"
 #include "build.h"
 #include "docsDriver.h"
+#include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "files.h"
@@ -38,10 +38,10 @@
 #include "PartialCopyData.h"
 #include "passes.h"
 #include "resolution.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "visibleCandidates.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -87,21 +87,10 @@ VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
-FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gAddModuleFn = NULL;
-FnSymbol* gChplHereAlloc = NULL;
-FnSymbol* gChplHereFree = NULL;
-FnSymbol* gChplDoDirectExecuteOn = NULL;
 FnSymbol *gGenericTupleTypeCtor = NULL;
 FnSymbol *gGenericTupleInit = NULL;
 FnSymbol *gGenericTupleDestroy = NULL;
-FnSymbol *gBuildTupleType = NULL;
-FnSymbol *gBuildStarTupleType = NULL;
-FnSymbol *gBuildTupleTypeNoRef = NULL;
-FnSymbol *gBuildStarTupleTypeNoRef = NULL;
-FnSymbol* gChplDeleteError = NULL;
-
-
 
 std::map<FnSymbol*,int> ftableMap;
 std::vector<FnSymbol*> ftableVec;
@@ -242,7 +231,7 @@ bool Symbol::isRenameable() const {
 
 bool Symbol::isRef() {
   QualifiedType q = qualType();
-  return (q.isRef() || type->symbol->hasFlag(FLAG_REF));
+  return (type != NULL) && (q.isRef() || type->symbol->hasFlag(FLAG_REF));
 }
 
 bool Symbol::isWideRef() {
@@ -389,6 +378,82 @@ SymExpr* Symbol::getSingleDef() const {
 }
 
 
+Expr* Symbol::getInitialization() const {
+  // In theory, this should be the first "def" for the symbol,
+  // but that might be obfuscated by PRIM_ADDR_OF.
+
+  FnSymbol* fn = toFnSymbol(defPoint->parentSymbol);
+  ModuleSymbol* mod = toModuleSymbol(defPoint->parentSymbol);
+  if (fn == NULL && mod != NULL ) {
+    // Global variables are initialized in their module init function
+    fn = mod->initFn;
+  }
+
+  Expr* stmt;
+  // We'll search statements starting with stmt for the one
+  // initializing our variable.
+  if (mod != NULL) {
+    stmt = fn->body->body.head;
+  } else {
+    stmt = defPoint->getStmtExpr()->next;
+  }
+
+  const Symbol *curSym = this;
+  const Symbol *refSym = NULL;
+
+  while (stmt != NULL) {
+    std::vector<SymExpr*> symExprs;
+    collectSymExprs(stmt, symExprs);
+
+    bool isDef = false;
+    bool isUse = false;
+
+    for_vector(SymExpr, se, symExprs) {
+      Symbol* sym = se->symbol();
+      if (sym == curSym || sym == refSym) {
+        int result = isDefAndOrUse(se);
+        isDef |= (result & 1);
+        isUse |= (result & 2);
+      }
+    }
+
+    if (isDef) {
+      // first use/def of the variable is a def (normal case)
+      return stmt->getStmtExpr();
+
+    } else if (isUse) {
+      bool handled = false;
+
+      // handle PRIM_MOVE refTmp, PRIM_ADDR_OF curSym or
+      // handle PRIM_MOVE refTmp, PRIM_SET_REFERENCE curSym
+      if (CallExpr* call = toCallExpr(stmt)) {
+        if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* dstSe = toSymExpr(call->get(1));
+          CallExpr* getRef = toCallExpr(call->get(2));
+
+          if (getRef != NULL) {
+            if (getRef->isPrimitive(PRIM_ADDR_OF) ||
+                getRef->isPrimitive(PRIM_SET_REFERENCE)) {
+              // Start looking for the first def of the captured reference
+
+              INT_ASSERT(dstSe);
+              // Doesn't handle multiple refs before finding initialization
+              INT_ASSERT(refSym == NULL);
+              refSym = dstSe->symbol();
+              handled = true;
+            }
+          }
+        }
+      }
+
+      INT_ASSERT(handled); // did we encounter new AST pattern?
+    }
+    stmt = stmt->next;
+  }
+
+  INT_FATAL(defPoint, "couldn't find initialization");
+  return NULL;
+}
 
 
 bool Symbol::isImmediate() const {
@@ -661,6 +726,8 @@ void ArgSymbol::verify() {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
+  if (hasFlag(FLAG_REF_TO_CONST))
+    INT_ASSERT(intent == INTENT_CONST_REF);
   verifyNotOnList(typeExpr);
   verifyNotOnList(defaultExpr);
   verifyNotOnList(variableExpr);
@@ -698,15 +765,10 @@ bool ArgSymbol::isConstant() const {
     retval = type->isDefaultIntentConst();
     break;
 
+  case INTENT_CONST:
   case INTENT_CONST_IN:
   case INTENT_CONST_REF:
     retval = true;
-    break;
-
-  // Noakes: 2016/06/14
-  // It seems odd to me that this case depends on the type
-  case INTENT_CONST:
-    retval = type->isDefaultIntentConst();
     break;
 
   default:
@@ -810,8 +872,9 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
-    llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmTbaaTypeDescriptor(NULL),
+    llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
+    llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL)
 {
@@ -896,6 +959,20 @@ void TypeSymbol::renameInstantiatedSingle(Symbol* sym) {
     renameInstantiatedIndividual(sym);
   }
   renameInstantiatedEnd();
+}
+
+void TypeSymbol::renameInstantiatedFromSuper(TypeSymbol* superSym) {
+  renameInstantiatedStart();
+  const char* afterParentName = std::find(superSym->name,
+                                          superSym->name+strlen(superSym->name),
+                                          '(');
+  const char* afterParentCname = std::find(superSym->cname,
+                                           superSym->cname+strlen(superSym->cname),
+                                           '_');
+  this->name  = astr(this->name , afterParentName+1);
+  this->cname = astr(this->cname, afterParentCname+1);
+  // Don't call renameInstantiatedEnd() because the parent name already has the
+  // end parenthesis.
 }
 
 void TypeSymbol::renameInstantiatedStart() {
@@ -1073,6 +1150,8 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
    * method.
    */
   newFn->copyFlags(this);
+  if (this->throwsError())
+    newFn->throwsErrorInit();
 
   for_formals(formal, this) {
     newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
@@ -1509,9 +1588,6 @@ FnSymbol::collapseBlocks() {
 }
 
 
-
-
-
 //
 // If the function is not currently marked as generic
 //    then if it is generic
@@ -1544,7 +1620,6 @@ bool FnSymbol::tagIfGeneric() {
 }
 
 
-
 //
 // Scan the formals and return:
 //   2 is there is at least 1 generic formal and every generic
@@ -1562,7 +1637,7 @@ int FnSymbol::hasGenericFormals() const {
   bool resolveInit = false;
   if (this->hasFlag(FLAG_METHOD) && _this) {
     if (AggregateType* at = toAggregateType(_this->type)) {
-      if (at->initializerStyle == DEFINES_INITIALIZER  &&
+      if (at->initializerStyle != DEFINES_CONSTRUCTOR  &&
           strcmp(name, "init") == 0) {
         resolveInit = true;
       }
@@ -1587,6 +1662,14 @@ int FnSymbol::hasGenericFormals() const {
     }
 
     if (isGeneric == true) {
+      if (hasFlag(FLAG_EXPORT)) {
+        if (!hasGenericFormal) {
+          USR_FATAL_CONT(this,
+                         "exported function `%s` can't be generic", name);
+        }
+        USR_PRINT(this,
+                  "   formal argument '%s' causes it to be", formal->name);
+      }
       hasGenericFormal = true;
 
       if (formal->defaultExpr == NULL) {
@@ -1610,29 +1693,6 @@ int FnSymbol::hasGenericFormals() const {
 
   return retval;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 bool FnSymbol::isResolved() const {
   return hasFlag(FLAG_RESOLVED);
@@ -1804,6 +1864,150 @@ bool FnSymbol::retExprDefinesNonVoid() const {
 
   } else {
     retval = true;
+  }
+
+  return retval;
+}
+
+const char* toString(FnSymbol* fn) {
+  const char* retval = NULL;
+
+  if (fn->userString != NULL) {
+    if (developer == true) {
+      retval = astr(fn->userString, " [", istr(fn->id), "]");
+    } else {
+      retval = fn->userString;
+    }
+
+  } else {
+    int  start      =     1;
+    bool first      =  true;
+    bool skipParens = false;
+
+    if (developer == true) {
+      // report the name as-is and include all args
+      retval = fn->name;
+
+    } else {
+      if (fn->instantiatedFrom != NULL) {
+        fn = fn->instantiatedFrom;
+      }
+
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        // if not, make sure 'str' is built as desired
+        INT_ASSERT(strncmp("_type_construct_", fn->name, 16) == 0);
+        retval = astr(fn->name + 16);
+
+      } else if (fn->hasFlag(FLAG_CONSTRUCTOR) == true) {
+        if (strncmp("_construct_", fn->name, 11) == 0) {
+          retval = astr(fn->name + 11, ".init");
+
+        } else if (strcmp("init", fn->name) == 0) {
+          retval = "init";
+
+        } else {
+          INT_FATAL(fn,
+                    "flagged as constructor but not named "
+                    "_construct_ or init");
+        }
+
+      } else if (fn->isPrimaryMethod() == true) {
+        Flag flag = FLAG_FIRST_CLASS_FUNCTION_INVOCATION;
+
+        if (fn->name == astrThis) {
+          INT_ASSERT(fn->hasFlag(flag) == true);
+
+          retval = astr(toString(fn->getFormal(2)->type));
+          start  = 2;
+
+        } else {
+          INT_ASSERT(fn->hasFlag(flag) == false);
+
+          retval = astr(toString(fn->getFormal(2)->type), ".", fn->name);
+          start  = 3;
+        }
+
+      } else if (fn->hasFlag(FLAG_MODULE_INIT) == true) {
+        INT_ASSERT(strncmp("chpl__init_", fn->name, 11) == 0);
+
+        retval = astr("top-level module statements for ", fn->name + 11);
+
+      } else {
+        retval = astr(fn->name);
+      }
+    }
+
+    if        (fn->hasFlag(FLAG_NO_PARENS)        == true) {
+      skipParens =  true;
+
+    } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true &&
+               fn->numFormals()                   ==    0) {
+      skipParens =  true;
+
+    } else if (fn->hasFlag(FLAG_MODULE_INIT)      == true &&
+               developer                          == false) {
+      skipParens =  true;
+
+    } else {
+      skipParens = false;
+      retval     = astr(retval, "(");
+    }
+
+    for (int i = start; i <= fn->numFormals(); i++) {
+      ArgSymbol* arg = fn->getFormal(i);
+
+      if (arg->hasFlag(FLAG_IS_MEME) == false) {
+        if (first == true) {
+          first = false;
+
+          if (skipParens == true) {
+            retval = astr(retval, " ");
+          }
+        } else {
+          retval = astr(retval, ", ");
+        }
+
+        if (arg->intent                           == INTENT_PARAM ||
+            arg->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
+          retval = astr(retval, "param ");
+        }
+
+        if (arg->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+          retval = astr(retval, "type ", arg->name);
+
+        } else if (arg->type == dtUnknown) {
+          if (arg->typeExpr != NULL) {
+            if (SymExpr* sym = toSymExpr(arg->typeExpr->body.tail)) {
+              retval = astr(retval, arg->name, ": ", sym->symbol()->name);
+
+            } else {
+              retval = astr(retval, arg->name);
+            }
+
+          } else {
+            retval = astr(retval, arg->name);
+          }
+
+        } else if (arg->type == dtAny) {
+          retval = astr(retval, arg->name);
+
+        } else {
+          retval = astr(retval, arg->name, ": ", toString(arg->type));
+        }
+
+        if (arg->variableExpr != NULL) {
+          retval = astr(retval, " ...");
+        }
+      }
+    }
+
+    if (skipParens == false) {
+      retval = astr(retval, ")");
+    }
+
+    if (developer  == true) {
+      retval = astr(retval, " [", istr(fn->id), "]");
+    }
   }
 
   return retval;
@@ -2365,6 +2569,27 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   }
 
   return s->flags & mask;
+}
+
+
+// cache some popular strings
+
+const char* astrSdot = NULL;
+const char* astrSequals = NULL;
+const char* astr_cast = NULL;
+const char* astrInit = NULL;
+const char* astrDeinit = NULL;
+const char* astrTag = NULL;
+const char* astrThis = NULL;
+
+void initAstrConsts() {
+  astrSdot    = astr(".");
+  astrSequals = astr("=");
+  astr_cast   = astr("_cast");
+  astrInit    = astr("init");
+  astrDeinit  = astr("deinit");
+  astrTag     = astr("tag");
+  astrThis    = astr("this");
 }
 
 /************************************* | **************************************
