@@ -2861,7 +2861,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
 
-       Aliasing arguments is not supported for this method. For example, the
+       Aliasing arguments are not supported for this method. For example, the
        following call would not work as intended:
 
        .. code-block:: chapel
