@@ -229,12 +229,6 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   } else {
     catchesStack.push(info);
   }
-
-  // may be NULL due to replacement of an enclosing try
-  if (tryBody->parentExpr)
-    tryBody->remove();
-
-  node->replace(tryBody);
 }
 
 void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
@@ -317,7 +311,12 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     }
   }
 
-  info.tryBody->insertAtTail(errorCond(errorVar, handlers));
+  BlockStmt* tryBody = info.tryBody;
+  tryBody->insertAtTail(errorCond(errorVar, handlers));
+
+  // after lowering its catches, replace the TryStmt with its body
+  tryBody->remove();
+  info.tryStmt->replace(tryBody);
 }
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
@@ -336,14 +335,11 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
-
       SET_LINENO(node);
 
       VarSymbol* errorVar    = NULL;
       BlockStmt* errorPolicy = new BlockStmt();
       Expr*      insert      = node->getStmtExpr();
-      if (insert == NULL)
-        insert = node;
 
       if (insideTry) {
         TryInfo info = tryStack.top();
