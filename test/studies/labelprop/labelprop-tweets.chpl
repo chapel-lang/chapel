@@ -54,7 +54,7 @@ use Spawn;
 use Time;
 use Graph;
 use Random;
-//use UserMapAssoc;
+use UserMapAssoc;
 use BlockDist;
 
 // packing twitter user IDs to numbers
@@ -188,12 +188,10 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
     writeln(fname, " : processing");
 
   while true {
-    got = false;
-
     try! {
       try {
         got = logfile.readf("%~jt", tweet);
-      } catch e: SystemError {
+      } catch e: BadFormatError {
         if e.err == EFORMAT {
           if verbose then
             stdout.writeln("error reading tweets ", fname, " offset ",
@@ -202,12 +200,10 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
           // read over something else
           got = logfile.readf("%~jt", empty);
         }
-
-        if !got then throw e;
       }
+    } catch e: EOFError {
+      break;
     } catch e: SystemError {
-      if e.err == EEOF then break;
-
       stderr.writeln("severe error reading tweets ", fname, " offset ",
         logfile.offset(), " : ", errorToString(e.err));
 
