@@ -767,7 +767,7 @@ module DistributedDeque {
 
     pragma "no doc"
     proc Destroy() {
-      for slot in slots do delete slot;
+      for slot in slots do on slot do delete slot;
       delete globalHead;
       delete globalTail;
       delete queueSize;
@@ -1043,18 +1043,16 @@ module DistributedDeque {
     }
 
     proc ~LocalDeque() {
-      on this {
-        var curr = head;
+      var curr = head;
 
-        while curr != nil {
-          var tmp = curr.next;
-          delete curr;
-          curr = tmp;
-        }
+      while curr != nil {
+        var tmp = curr.next;
+        delete curr;
+        curr = tmp;
+      }
 
-        if cached != nil {
-          delete cached;
-        }
+      if cached != nil {
+        delete cached;
       }
     }
   }
