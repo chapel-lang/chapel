@@ -1246,6 +1246,17 @@ expandIteratorInline(ForLoop* forLoop) {
   Symbol*   ic       = forLoop->iteratorGet()->symbol();
   FnSymbol* iterator = getTheIteratorFn(ic);
 
+  if (fReportInlinedIterators) {
+    ModuleSymbol *mod = toModuleSymbol(iterator->getModule());
+    INT_ASSERT(mod);
+
+    if (developer || mod->modTag == MOD_USER) {
+      printf("Inlined iterator (%s) in module %s (%s:%d)\n", iterator->cname,
+              mod->name, iterator->fname(), iterator->linenum());
+    }
+  }
+
+
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
 

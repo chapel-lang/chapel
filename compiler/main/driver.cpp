@@ -182,6 +182,7 @@ bool fPrintEmittedCodeSize = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fReportOptimizedLoopIterators = false;
+bool fReportInlinedIterators = false;
 bool fReportOrderIndependentLoops = false;
 bool fReportOptimizedOn = false;
 bool fReportPromotion = false;
@@ -936,6 +937,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
+ {"report-inlined-iterators", ' ', NULL, "Print stats on inlined iterators", "F", &fReportInlinedIterators, NULL, NULL},
  {"report-order-independent-loops", ' ', NULL, "Print stats on order independent loops", "F", &fReportOrderIndependentLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},

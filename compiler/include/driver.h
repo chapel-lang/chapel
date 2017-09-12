@@ -176,6 +176,7 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
 extern bool fReportOptimizedLoopIterators;
+extern bool fReportInlinedIterators;
 extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;

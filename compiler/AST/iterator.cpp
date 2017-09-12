@@ -1501,7 +1501,7 @@ void lowerIterator(FnSymbol* fn) {
     // Isn't that bad?
     if (singleLoop) {
       if (fReportOptimizedLoopIterators) {
-        ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+        ModuleSymbol *mod = toModuleSymbol(fn->getModule());
         INT_ASSERT(mod);
 
         if (developer || mod->modTag == MOD_USER) {
