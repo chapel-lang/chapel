@@ -8263,7 +8263,7 @@ static void printUnusedFunctions() {
 #endif
   // map from generic functions to instantiated versions
   // a generic function is 'used' if it is instantiated.
-  std::map<FnSymbol*, std::vector<FnSymbol*>> instantiations;
+  std::map<FnSymbol*, std::vector<FnSymbol*> > instantiations;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (FnSymbol* instantiatedFrom = fn->instantiatedFrom) {
