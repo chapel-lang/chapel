@@ -178,7 +178,6 @@ record Empty {
 proc process_json(logfile:channel, fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
-  var err:syserr;
   var got:bool;
 
   var ntweets = 0;
@@ -188,10 +187,33 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
   if progress then
     writeln(fname, " : processing");
 
-  // TODO: convert logfile.readf() to the error handling version
   while true {
-    got = logfile.readf("%~jt", tweet, error=err);
-    if got && !err {
+    try! {
+      try {
+        got = logfile.readf("%~jt", tweet);
+      } catch e: BadFormatError {
+        if e.err == EFORMAT {
+          if verbose then
+            stdout.writeln("error reading tweets ", fname, " offset ",
+              logfile.offset(), " : ", errorToString(e.err));
+
+          // read over something else
+          got = logfile.readf("%~jt", empty);
+        }
+      }
+    } catch e: EOFError {
+      break;
+    } catch e: SystemError {
+      stderr.writeln("severe error reading tweets ", fname, " offset ",
+        logfile.offset(), " : ", errorToString(e.err));
+
+      halt("ERROR");
+
+      // advance to the next line.
+      logfile.readln();
+    }
+
+    if got {
       if verbose then writef("%jt\n", tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
@@ -205,24 +227,6 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
         }
       }
       ntweets += 1;
-    }
-    if err == EFORMAT {
-      if verbose then
-          stdout.writeln("error reading tweets ", fname, " offset ",
-            logfile.offset(), " : ", errorToString(err));
-
-      // read over something else
-      got = logfile.readf("%~jt", empty, error=err);
-    }
-    if err == EEOF then break;
-    if err {
-      stderr.writeln("severe error reading tweets ", fname, " offset ",
-          logfile.offset(), " : ", errorToString(err));
-
-      halt("ERROR");
-
-      // advance to the next line.
-      logfile.readln();
     }
     nlines += 1;
   }
