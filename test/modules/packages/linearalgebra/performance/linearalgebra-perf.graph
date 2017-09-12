@@ -1,5 +1,17 @@
-perfkeys: LinearAlgebra.transpose: ,BLAS.transpose:,LinearAlgebra.transpose: ,BLAS.transpose:,LinearAlgebra.transpose:
-files: m10.dat m1000.dat m10000.dat
-graphkeys: 10x10, 1000x1000, 10000x10000
-graphtitle: Transpose
+perfkeys: LinearAlgebra.transpose:, BLAS.transpose:
+files: m10.dat, m10.dat
+graphkeys: native, BLAS
+graphtitle: Transpose 10x10
+ylabel: Time
+
+perfkeys: LinearAlgebra.transpose:, BLAS.transpose:
+files: m1000.dat, m1000.dat
+graphkeys: native, BLAS
+graphtitle: Transpose 1000x1000
+ylabel: Time
+
+perfkeys: LinearAlgebra.transpose:
+files: m10000.dat
+graphkeys: native
+graphtitle: Transpose 10000x10000
 ylabel: Time
