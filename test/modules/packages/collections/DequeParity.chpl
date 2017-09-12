@@ -9,7 +9,7 @@ use DistributedDeque;
 // If we are testing a bounded queue...
 config param isBounded = false;
 
-config param nElemsPerTask = 1000;
+config param nElemsPerTask = 100;
 const totalElems = numLocales * here.maxTaskPar * nElemsPerTask;
 
 var cap : int;
@@ -19,7 +19,7 @@ if isBounded {
   cap = -1;
 }
 
-var deque = new DistributedDeque(int, cap=cap);
+var deque = new DistDeque(int, cap=cap);
 var barrier = new Barrier(numLocales * here.maxTaskPar);
 
 // Concurrent add... Ensure they all start around same time...
