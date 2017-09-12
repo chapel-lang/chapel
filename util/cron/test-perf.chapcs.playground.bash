@@ -22,11 +22,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of making alignment fields 'void' for non-stridable ranges
-GITHUB_USER=bradcray
-GITHUB_BRANCH=range-void-align-fields
-SHORT_NAME=void-aligns
-START_DATE=09/06/17
+# Test performance of inlining all direct iters (not just those with 1 yield)
+GITHUB_USER=ronawho
+GITHUB_BRANCH=inline-all-direct-iters
+SHORT_NAME=inline-all-direct-iters
+START_DATE=09/11/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
