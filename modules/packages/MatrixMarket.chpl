@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+pragma "error mode fatal"
 module MatrixMarket {
 
   use IO;

@@ -956,7 +956,7 @@ record regexp {
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    f.write("new regexp(\"", pattern, "\")");
+    f <~> "new regexp(\"" <~> pattern <~> "\")";
   }
 
   pragma "no doc"
@@ -966,7 +966,8 @@ record regexp {
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
-    if(f.read(litOne, pattern, litTwo)) {
+    var err:syserr = ENOERR;
+    if(f.read(error=err, litOne, pattern, litTwo)) {
       on this.home {
         var localPattern = pattern.localize();
         var opts:qio_regexp_options_t;
@@ -974,6 +975,8 @@ record regexp {
         qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
       }
     }
+    if err then
+      f.setError(err);
   }
 }
 
@@ -1026,7 +1029,7 @@ inline proc _cast(type t, x: regexp) where t == string {
 }
 // Cast string to regexp
 pragma "no doc"
-inline proc _cast(type t, x: string) where t == regexp {
+inline proc _cast(type t, x: string) throws where t == regexp {
   return compile(x);
 }
 

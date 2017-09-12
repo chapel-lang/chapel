@@ -704,19 +704,19 @@ module ChapelIO {
   pragma "no doc"
   proc _ddata.writeThis(f) {
     compilerWarning("printing _ddata class");
-    f.write("<_ddata class cannot be printed>");
+    f <~> "<_ddata class cannot be printed>";
   }
 
   pragma "no doc"
   proc chpl_taskID_t.writeThis(f) {
     var tmp : uint(64) = this : uint(64);
-    f.write(tmp);
+    f <~> (tmp);
   }
 
   pragma "no doc"
   proc chpl_taskID_t.readThis(f) {
     var tmp : uint(64);
-    f.read(tmp);
+    f <~> tmp;
     this = tmp : chpl_taskID_t;
   }
 

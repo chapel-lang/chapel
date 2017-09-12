@@ -1,3 +1,4 @@
+pragma "error mode fatal"
 module SSCA2_RMAT_graph_generator
 
 {

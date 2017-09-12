@@ -918,9 +918,7 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
     if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
       mode = ERROR_MODE_FATAL;
     else
-      mode = ERROR_MODE_FATAL; // TODO: this should be ERROR_MODE_RELAXED
-                               // this is commented out for now to separate
-                               // PRs.
+      mode = ERROR_MODE_RELAXED;
   }
 
   return mode;
