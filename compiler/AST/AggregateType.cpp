@@ -922,6 +922,14 @@ void AggregateType::buildTypeConstructor() {
   Symbol* parSym = symbol->defPoint->parentSymbol;
 
   if (AggregateType* outerType = toAggregateType(parSym->type)) {
+    if (outerType->initializerStyle == DEFINES_INITIALIZER ||
+        initializerStyle            == DEFINES_INITIALIZER) {
+      if (outerType->isGeneric() || isGeneric()) {
+        USR_FATAL(this, "initializers not supported on nested types when either"
+                  " type is generic");
+      }
+    }
+
     // Create an "outer" pointer to the outer class in the inner class
     VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
 
