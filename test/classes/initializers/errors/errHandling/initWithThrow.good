@@ -1,0 +1,2 @@
+initWithThrow.chpl:7: In initializer:
+initWithThrow.chpl:9: error: Error handling structures are not yet allowed in initializers

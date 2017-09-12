@@ -1,0 +1,2 @@
+initWithTryBang.chpl:7: In initializer:
+initWithTryBang.chpl:9: error: Error handling structures are not yet allowed in initializers
