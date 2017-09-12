@@ -23,6 +23,9 @@ Optimization Control Options:
       --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
+      --inline-iterators-yield-limit <limit>
+                                      Limit number of yields permitted in
+                                      inlined iterators
       --[no-]live-analysis            Enable [disable] live variable analysis
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code

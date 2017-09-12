@@ -174,6 +174,11 @@ OPTIONS
     optimizes the invocation of an iterator in a loop header by inlining the
     iterator's definition around the loop body.
 
+**--inline-iterators-yield-limit**
+
+    Limit on the number of yield statements permitted in an inlined iterator.
+    The default value is 10.
+
 **--[no-]live-analysis**
 
     Enable [disable] live variable analysis, which is currently only used to

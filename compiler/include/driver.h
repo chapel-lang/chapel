@@ -67,6 +67,7 @@ extern bool fRemoveUnreachableBlocks;
 extern bool fReplaceArrayAccessesWithRefTemps;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
+extern int  inline_iter_yield_limit;
 extern int  tuple_copy_limit;
 
 
