@@ -168,12 +168,7 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupLocaleAPU(dst:LocaleModel, out local_name:string, out numSublocales) {
-    const _node_id = chpl_nodeID: int;
-
     helpSetupLocaleFlat(dst, local_name);
-
-    extern proc chpl_task_getNumSublocales(): int(32);
-    numSublocales = chpl_task_getNumSublocales();
 
     extern proc chpl_task_getMaxPar(): uint(32);
 
@@ -184,13 +179,6 @@ module LocaleModelHelpSetup {
     //    if (initHsa == 1) {
     //      halt("Could not initialize HSA");
     //    }
-
-    var comm, spawnfn : c_string;
-    extern proc chpl_nodeName() : c_string;
-    if sys_getenv("CHPL_COMM".c_str(), comm) == 0 && comm == "gasnet" &&
-       sys_getenv("GASNET_SPAWNFN".c_str(), spawnfn) == 0 && spawnfn == "L"
-    then local_name = chpl_nodeName():string + "-" + _node_id : string;
-    else local_name = chpl_nodeName():string;
 
     // Hardcode two sublocales, 1 CPU and 1 GPU
     numSublocales = 2;

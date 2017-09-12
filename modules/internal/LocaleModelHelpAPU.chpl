@@ -23,6 +23,9 @@ module LocaleModelHelpAPU {
   use LocaleModelHelpSetup;
   use LocaleModelHelpRuntime;
 
+  pragma "no doc"
+  config param debugAPULocale = false;
+
   //////////////////////////////////////////
   //
   // utilities
@@ -84,14 +87,19 @@ module LocaleModelHelpAPU {
                      ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
-    if (dsubloc == 0) {
-        warning("executing on CPU");
-    }
-    else if (dsubloc == 1) {
-        warning("executing on GPU");
+    
+    if (debugAPULocale) {
+      if (dsubloc == 0) {
+          chpl_debug_writeln("** executing on CPU");
+      }
+      else if (dsubloc == 1) {
+          chpl_debug_writeln("** executing on GPU");
+      }
     }
 
    if dnode != chpl_nodeID {
+      var tls = chpl_task_getChapelData();
+      chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
     } else {
       // run directly on this node
@@ -121,6 +129,8 @@ module LocaleModelHelpAPU {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
+      var tls = chpl_task_getChapelData();
+      chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on_fast(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
@@ -151,16 +161,22 @@ module LocaleModelHelpAPU {
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
+    var tls = chpl_task_getChapelData();
+    var isSerial = chpl_task_data_getSerial(tls);
     if dnode == chpl_nodeID {
-      if __primitive("task_get_serial") then
+      if isSerial {
         chpl_ftable_call(fn, args);
-      else
+      } else {
+        chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
         chpl_comm_taskCallFTable(fn, args, args_size, dsubloc);
+      }
     } else {
-      if __primitive("task_get_serial") then
+      chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
+      if isSerial {
         chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
-      else
+      } else {
         chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
+      }
     }
   }
 }

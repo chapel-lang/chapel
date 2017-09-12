@@ -219,6 +219,14 @@ module LocaleModel {
       helpSetupLocaleAPU(this, local_name, numSublocales);
     }
     //------------------------------------------------------------------------}
+
+    proc deinit() {
+      if (debugAPULocale) {
+	chpl_debug_writeln("** Destructing CPU/GPU locales and shutting down HSA.");
+      }
+      delete CPU;
+      delete GPU;
+    }
  }
 
   //
@@ -290,6 +298,11 @@ module LocaleModel {
         return (myLocales[node:int]):locale;
       else
         return (myLocales[node:int].getChild(subloc:int)):locale;
+    }
+
+    proc deinit() {
+      for loc in myLocales do
+        delete loc;
     }
   }
 }
