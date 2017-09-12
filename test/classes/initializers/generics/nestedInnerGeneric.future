@@ -1,0 +1,6 @@
+bug: nested types involving generics cause problems with initializers
+
+This test demonstrates the issue when the inner class is generic (instead of
+just the outer class, as is the case in the other futures)
+
+(It works if you switch to using a constructor)
