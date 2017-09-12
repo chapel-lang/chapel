@@ -21,7 +21,7 @@
    (C) Copyright IMSuite 2013-present.
  */
 
-
+ pragma "error mode fatal"
  module leader_elect_lcr {
 
      config const inputFile = "input/inputleader_elect_lcr_8.txt";
