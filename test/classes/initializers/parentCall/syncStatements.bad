@@ -1,0 +1,2 @@
+syncStatements.chpl:7: In initializer:
+syncStatements.chpl:9: error: Error handling structures are not yet allowed in initializers
