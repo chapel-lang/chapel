@@ -1531,11 +1531,11 @@ proc BlockArr.doiBulkTransferFrom(Barg, viewDom)
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFrom()");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const Src = chpl__getActualArray(Barg);
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest    = this;
+  const Src     = chpl__getActualArray(Barg);
+  const srcView = chpl__getViewDom(Barg);
+  type el       = Dest.idxType;
+  if Dest.rank == Src.rank {
     coforall i in Dest.dom.dist.targetLocDom {
       on Dest.dom.dist.targetLocales(i) {
         var regionDest = Dest.dom.locDoms(i).myBlock[viewDom];
