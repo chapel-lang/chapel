@@ -196,7 +196,7 @@ module Crypto {
      class `RSAKey` may be decided by the user.
 
      Calling the `RSAKey` constructor without using any key import or export
-     functions may result in generation of a single object the contains both the
+     functions may result in generation of a single object that contains both the
      keys (public and private).
 
      In order to separate out the key objects, keys can be imported
@@ -238,12 +238,12 @@ module Crypto {
     // TODO: Key access functions to be added
   }
 
-  /* The `Envelope` class wraps the all the data returned by encrypt function
+  /* The `Envelope` class wraps all the data returned by the encrypt function
      of the `RSA` class along with some utility data. An `RSA` encrypt function
      returns an array of `RSA` encrypted symmetric keys and a single `AES`
      encrypted message. The `Envelope` also encloses the initialization vector
      used during encryption such that it can be utilized during the decryption
-     phase.
+     phase as well.
 
   */
   class Envelope {
@@ -841,14 +841,14 @@ module Crypto {
     /* RSA is one of the first practical public-key cryptosystems and is widely
        used for secure data transmission. A user of the `RSA` first generates the
        public and private keys using the `RSAKey` class. The `RSAKey` object is
-       then passed to the `RSA` costructor for further encryption and decryption
+       then passed to the `RSA` functions for further encryption and decryption
        purposes.
 
        The `encrypt` function of this class takes in an array of `RSAKey` objects
        and uses all of them to perform the encryption.
 
-       Similarly, decryption can be done individually (without passing an array as
-        an argument) by passing a single `RSAKey` object everytime.
+       Similarly, decryption can be done individually performed (without passing an array
+       as an argument) by passing a single `RSAKey` object everytime the decryption takes place.
 
     */
   class RSA {
