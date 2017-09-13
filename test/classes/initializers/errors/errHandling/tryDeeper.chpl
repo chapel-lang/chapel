@@ -1,4 +1,4 @@
-// Verifies we currently don't allow initializers to have try! statements in
+// Verifies we currently don't allow initializers to have try statements in
 // their body, even when the statement is wrapped by something else.
 // We hope to eventually allow it.
 class Foo {
@@ -7,7 +7,7 @@ class Foo {
   proc init() {
     x = 10;
     {
-      try! outerFunc();
+      try outerFunc();
     }
     super.init();
   }

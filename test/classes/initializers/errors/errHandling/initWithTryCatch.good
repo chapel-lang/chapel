@@ -1,2 +1,2 @@
 initWithTryCatch.chpl:7: In initializer:
-initWithTryCatch.chpl:9: error: Error handling structures are not yet allowed in initializers
+initWithTryCatch.chpl:8: error: Only catch-less try! statements are allowed in initializers for now

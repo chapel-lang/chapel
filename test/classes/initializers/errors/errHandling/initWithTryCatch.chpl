@@ -5,9 +5,9 @@ class Foo {
   var x: int;
 
   proc init() {
-    x = 10;
     try {
       outerFunc();
+      x = 10;
     } catch {
       writeln("Look ma, I caught an error!");
     }

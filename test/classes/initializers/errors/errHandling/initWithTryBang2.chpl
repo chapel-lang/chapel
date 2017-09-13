@@ -1,6 +1,5 @@
-// Verifies we currently don't allow initializers to have try! statements in
-// their body.
-// We hope to eventually allow it.
+// Verifies we currently allow initializers to have try! statements in their
+// body, as long as it doesn't have a catch block.
 class Foo {
   var x: int;
 

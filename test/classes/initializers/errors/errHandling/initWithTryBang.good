@@ -1,2 +1,3 @@
-initWithTryBang.chpl:7: In initializer:
-initWithTryBang.chpl:9: error: Error handling structures are not yet allowed in initializers
+uncaught Error: 
+  initWithTryBang.chpl:16: thrown here
+  initWithTryBang.chpl:19: uncaught here
