@@ -164,6 +164,7 @@ void scopeResolve() {
   // build constructors (type and value versions)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
+    ct->createOuterWhenRelevant();
     ct->buildConstructors();
   }
 
