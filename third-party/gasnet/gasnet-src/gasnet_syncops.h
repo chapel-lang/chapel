@@ -686,6 +686,9 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial_SEQ(gasneti_semaphore_t_S
  * pointer, we prohibit any use of the LIFO in which a former element becomes unmapped
  * unless one can ensure that no partially-completed POP could be referencing the
  * object.
+ *
+ * NOTE: Because of the specifics of the representation, it is not permitted to copy
+ * a gasneti_lifo_head_t by value.
  */
 
 
