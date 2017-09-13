@@ -640,7 +640,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to trmm".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to trmm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -698,7 +698,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
