@@ -1076,6 +1076,8 @@ CallExpr* CallExpr::copyInner(SymbolMap* map) {
   _this->partialTag = partialTag;
   _this->methodTag  = methodTag;
   _this->square     = square;
+  _this->inTry      = inTry;
+  _this->inTryBang  = inTryBang;
 
   return _this;
 }
