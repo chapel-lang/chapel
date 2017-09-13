@@ -109,6 +109,7 @@ public:
   bool                        isGeneric()                                const;
   void                        markAsGeneric();
 
+  void                        createOuterWhenRelevant();
   void                        buildConstructors();
 
   void                        addRootType();

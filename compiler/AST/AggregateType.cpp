@@ -740,6 +740,31 @@ void AggregateType::buildConstructors() {
   }
 }
 
+void AggregateType::createOuterWhenRelevant() {
+  SET_LINENO(this);
+  Symbol* parSym = symbol->defPoint->parentSymbol;
+
+  if (AggregateType* outerType = toAggregateType(parSym->type)) {
+
+    // Lydia NOTE 09/12/17: (Temporary) error case
+    if (outerType->initializerStyle == DEFINES_INITIALIZER ||
+        initializerStyle            == DEFINES_INITIALIZER) {
+      if (outerType->isGeneric() || isGeneric()) {
+        USR_FATAL(this, "initializers not supported on nested types when either"
+                  " type is generic");
+      }
+    }
+
+    // Create an "outer" pointer to the outer class in the inner class
+    VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
+
+    // Save the pointer to the outer class
+    fields.insertAtTail(new DefExpr(tmpOuter));
+
+    outer = tmpOuter;
+  }
+}
+
 // Create the (default) type constructor for this class.
 void AggregateType::buildTypeConstructor() {
   // Do nothing if it is already built
@@ -769,6 +794,8 @@ void AggregateType::buildTypeConstructor() {
 
   // and insert it into the class type.
   defaultTypeConstructor = fn;
+
+  symbol->defPoint->insertBefore(new DefExpr(fn));
 
   // Create "this".
   fn->_this = new VarSymbol("this", this);
@@ -838,6 +865,16 @@ void AggregateType::buildTypeConstructor() {
           fn->insertAtTail(newSet);
         }
 
+        continue;
+      } else if (field == this->outer) {
+        if (AggregateType* outerType = toAggregateType(outer->type)) {
+          outerType->moveConstructorToOuter(fn);
+
+          fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
+                                        fn->_this,
+                                        new_CStringSymbol("outer"),
+                                        fn->_outer));
+        }
         continue;
       }
 
@@ -914,37 +951,8 @@ void AggregateType::buildTypeConstructor() {
 
   fn->retType = this;
 
-  symbol->defPoint->insertBefore(new DefExpr(fn));
-
   // Make implicit references to 'this' explicit.
   AggregateType::insertImplicitThis(fn, fieldNamesSet);
-
-  Symbol* parSym = symbol->defPoint->parentSymbol;
-
-  if (AggregateType* outerType = toAggregateType(parSym->type)) {
-    if (outerType->initializerStyle == DEFINES_INITIALIZER ||
-        initializerStyle            == DEFINES_INITIALIZER) {
-      if (outerType->isGeneric() || isGeneric()) {
-        USR_FATAL(this, "initializers not supported on nested types when either"
-                  " type is generic");
-      }
-    }
-
-    // Create an "outer" pointer to the outer class in the inner class
-    VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
-
-    outerType->moveConstructorToOuter(fn);
-
-    // Save the pointer to the outer class
-    fields.insertAtTail(new DefExpr(tmpOuter));
-
-    fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
-                                  fn->_this,
-                                  new_CStringSymbol("outer"),
-                                  fn->_outer));
-
-    outer = tmpOuter;
-  }
 
   addToSymbolTable(fn);
 }
