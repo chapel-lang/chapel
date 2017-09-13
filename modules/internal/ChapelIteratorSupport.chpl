@@ -76,10 +76,10 @@ module ChapelIteratorSupport {
     var first: bool = true;
     for e in this {
       if !first then
-        f.write(" ");
+        f <~> " ";
       else
         first = false;
-      f.write(e);
+      f <~> e;
     }
   }
 

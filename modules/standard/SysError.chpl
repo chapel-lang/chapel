@@ -68,7 +68,7 @@ class SystemError : Error {
   }
 
   proc writeThis(f) {
-    try! f.write(msg);
+    f <~> msg;
   }
 
   /*
