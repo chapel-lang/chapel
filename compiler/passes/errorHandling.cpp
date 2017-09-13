@@ -868,15 +868,26 @@ bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
   bool inTry = false;
   bool inTryBang = false;
 
-  if (isTry || isTryBang) {
-    // if isTry or isTryBang is set, override any parent try/try!
-    inTry = isTry;
-    inTryBang = isTryBang;
-  } else if (!stack.empty()) {
-    // Otherwise, inherit parent inTry/inTryBang
+  bool parentTry = false;
+  bool parentTryBang = false;
+
+  if (!stack.empty()) {
+    // Gather parent try/tryBang
     TryExprInfo t = stack.top();
-    inTry = t.inTry;
-    inTryBang = t.inTryBang;
+    parentTry = t.inTry;
+    parentTryBang = t.inTryBang;
+  }
+
+  if (isTryBang || parentTryBang) {
+    // try! on this expr or a parent always makes it try!
+    inTryBang = true;
+  } else if (isTry) {
+    // if we're in a try, keep that
+    inTry = true;
+  } else {
+    // Otherwise, inherit from parent
+    inTry = parentTry;
+    inTryBang = parentTryBang;
   }
 
   TryExprInfo t = {inTry, inTryBang};
