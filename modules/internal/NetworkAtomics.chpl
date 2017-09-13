@@ -183,7 +183,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -374,7 +374,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -565,7 +565,7 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -755,8 +755,8 @@ module NetworkAtomics {
       _v = value;
     }
 
-    proc writeThis(const x) {
-      x.write(read());
+    proc const writeThis(x) {
+      x <~> read();
     }
   }
 
@@ -847,7 +847,7 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
@@ -1005,7 +1005,7 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
     }
 
     proc const writeThis(x) {
-      x.write(read());
+      x <~> read();
     }
   }
 
