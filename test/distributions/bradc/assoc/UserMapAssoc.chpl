@@ -152,15 +152,15 @@ class UserMapAssoc : BaseDist {
   //
   // print out the distribution
   //
-  proc WriteThis(x) {
-    x.writeln("UserMapAssoc");
-    x.writeln("-------");
-    x.writeln("distributed using: ", mapper);
-    x.writeln("across locales: ", targetLocales);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
+  proc writeThis(x) {
+    x <~> "UserMapAssoc\n";
+    x <~> "-------\n";
+    x <~> "distributed using: " <~> mapper <~> "\n";
+    x <~> "across locales: " <~> targetLocales <~> "\n";
+    x <~> "indexed via: " <~> targetLocDom <~> "\n";
+    x <~> "resulting in: " <~> "\n";
     //for locid in targetLocDom do
-    //  x.writeln("  [", locid, "] ", locDist(locid));
+    //  x <~> "  [" <~> locid <~> "] " <~> locDist(locid) <~> "\n";
   }
 
   //
@@ -439,7 +439,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //
       //        ("locale" + here.id + " owns: ").writeThis(x);
 
-        x.write(locDom);
+        x <~> locDom;
       //      }
   }
 
@@ -763,11 +763,11 @@ class UserMapAssocArr: BaseArr {
         if first {
           first = false;
         } else {
-          x.write(" ");
+          x <~> " ";
         }
       }
-      x.write(locArr);
-      stdout.flush();
+      x <~> locArr;
+      try! stdout.flush();
     }
   }
 
