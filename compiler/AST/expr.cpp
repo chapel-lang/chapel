@@ -819,7 +819,9 @@ CallExpr::CallExpr(BaseAST* base,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false)
+  square(false),
+  inTry(false),
+  inTryBang(false)
 {
   if (Symbol* b = toSymbol(base)) {
     baseExpr = new SymExpr(b);
@@ -853,7 +855,10 @@ CallExpr::CallExpr(PrimitiveOp* prim,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false) {
+  square(false),
+  inTry(false),
+  inTryBang(false)
+{
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
@@ -877,7 +882,10 @@ CallExpr::CallExpr(PrimitiveTag prim,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false) {
+  square(false),
+  inTry(false),
+  inTryBang(false)
+{
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
@@ -902,7 +910,10 @@ CallExpr::CallExpr(const char* name,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false) {
+  square(false),
+  inTry(false),
+  inTryBang(false)
+{
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);

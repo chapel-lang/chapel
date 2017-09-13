@@ -199,6 +199,8 @@ public:
   bool         partialTag;
   bool         methodTag;        // Set to true if the call is a method call.
   bool         square;           // true if call made with square brackets
+  bool         inTry;
+  bool         inTryBang;
 
   CallExpr(BaseAST*     base,
            BaseAST*     arg1 = NULL,
