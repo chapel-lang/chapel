@@ -72,6 +72,14 @@ module Crypto {
    return localKeyPair;
   }
 
+  /* The `CryptoBuffer` class is a wrapper around the internal representation
+     of how the values in this library are stored. Every sequence of bytes going
+     into a Crypto utility or coming out of it, is a `CryptoBuffer`.
+
+     A `CryptoBuffer` can enclose a `string` or a `[] uint(8)` passed to its
+     constructor and provides helper functions to access those values.
+
+  */
   class CryptoBuffer {
     pragma "no doc"
     var _len: int = 0;
@@ -182,6 +190,19 @@ module Crypto {
     }
   }
 
+  /* `RSAKey` class encloses the `EVP_PKEY` object provided by the
+     OpenSSL primitives. The `EVP_PKEY` object can contain the public key,
+     private key or both of them. Hence, the contents of an object of the
+     class `RSAKey` may be decided by the user.
+
+     Calling the `RSAKey` constructor without using any key import or export
+     functions may result in generation of a single object the contains both the
+     keys (public and private).
+
+     In order to separate out the key objects, keys can be imported
+     from a `.pem` file. (TODO)
+
+  */
   class RSAKey {
     pragma "no doc"
     var keyLen: int;
@@ -217,6 +238,14 @@ module Crypto {
     // TODO: Key access functions to be added
   }
 
+  /* The `Envelope` class wraps the all the data returned by encrypt function
+     of the `RSA` class along with some utility data. An `RSA` encrypt function
+     returns an array of `RSA` encrypted symmetric keys and a single `AES`
+     encrypted message. The `Envelope` also encloses the initialization vector
+     used during encryption such that it can be utilized during the decryption
+     phase.
+
+  */
   class Envelope {
     pragma "no doc"
     var keyDomain: domain(1);
@@ -325,6 +354,11 @@ module Crypto {
     return hash;
   }
 
+  /* The `Hash` class represents all the hashing functions provided by the
+     OpenSSL primitives. It supports all the prominent and most commonly used
+     deterministic hashing functions.
+
+  */
   class Hash {
     pragma "no doc"
     var hashLen: int;
@@ -460,6 +494,21 @@ module Crypto {
    return plaintext;
   }
 
+  /* The `AES` class represents the symmetric encryption algorithm, AES.
+     The Advanced Encryption Standard (AES), also known by its original name Rijndael
+     is a specification for the encryption of electronic data established by the
+     U.S. National Institute of Standards and Technology (NIST) in 2001.
+
+     It is the most widely used symmetric cipher and is also used to encrypt
+     messages in public-key cryptography such as within `RSA`.
+
+     Currently, the `AES` class allows symmetric encryption using only the CBC or
+     Cipher Block Chaining mode in 128, 192, and 256 key size variants.
+
+     After thorough testing, ECB, OCB and other chaining mode variants will also
+     be added to this library(TODO).
+
+  */
   class AES {
     pragma "no doc"
     var cipher: CONST_EVP_CIPHER_PTR;
@@ -576,6 +625,14 @@ module Crypto {
     return buff;
   }
 
+  /* The `CryptoRandom` class represents a CSPRNG provided by OpenSSL that
+     automatically does the seeding part before returning a random sequence
+     of bytes of the type `CryptoBuffer`.
+
+     Given the length of the buffer required by the user, it generates a random
+     buffer of the same size.
+
+  */
   class CryptoRandom {
     /* This function represents a CSPRNG that generates and allocates the desired
        number of random values as specified by the argument. Halts for number of
@@ -625,6 +682,12 @@ module Crypto {
     return key;
   }
 
+  /* The `KDF` class contains the most widely used key derivation functions.
+     Currently it supports a single password based key derivation function which
+     is the most secure one as of writing this library. More KDFs will be added
+     to this in the future.
+
+  */
   class KDF {
     pragma "no doc"
     var byteLen: int;
@@ -775,6 +838,19 @@ module Crypto {
       return plaintext;
     }
 
+    /* RSA is one of the first practical public-key cryptosystems and is widely
+       used for secure data transmission. A user of the `RSA` first generates the
+       public and private keys using the `RSAKey` class. The `RSAKey` object is
+       then passed to the `RSA` costructor for further encryption and decryption
+       purposes.
+
+       The `encrypt` function of this class takes in an array of `RSAKey` objects
+       and uses all of them to perform the encryption.
+
+       Similarly, decryption can be done individually (without passing an array as
+        an argument) by passing a single `RSAKey` object everytime.
+
+    */
   class RSA {
 
     /* This is the 'RSA' encrypt routine that encrypts the plaintext buffer. This
