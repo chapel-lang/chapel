@@ -158,9 +158,11 @@ module ChapelTaskTable {
     if (chpldev_taskTable == nil) then return;
   
     for taskID in chpldev_taskTable.dom {
-      stderr.writeln("- ", chpl_lookupFilename(chpldev_taskTable.map[taskID].filename):string,
-                     ":",  chpldev_taskTable.map[taskID].lineno,
-                     " is ", chpldev_taskTable.map[taskID].state);
+      try! stderr.writeln(
+             "- ",
+             chpl_lookupFilename(chpldev_taskTable.map[taskID].filename):string,
+             ":",  chpldev_taskTable.map[taskID].lineno,
+             " is ", chpldev_taskTable.map[taskID].state);
     }
   }
   
