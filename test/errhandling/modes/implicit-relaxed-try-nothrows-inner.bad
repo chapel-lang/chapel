@@ -1,5 +1,0 @@
-In outer implicit module
-in test
-uncaught Error: 
-  ./ThrowError.chpl:2: thrown here
-  implicit-relaxed-try-nothrows-inner.chpl:6: uncaught here

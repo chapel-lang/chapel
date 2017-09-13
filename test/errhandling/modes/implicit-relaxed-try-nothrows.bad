@@ -1,4 +1,0 @@
-should not compile
-uncaught Error: 
-  ./ThrowError.chpl:2: thrown here
-  implicit-relaxed-try-nothrows.chpl:6: uncaught here
