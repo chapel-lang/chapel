@@ -3853,8 +3853,6 @@ static void testArgMapping(FnSymbol*                    fn1,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  isConstValWillNotChange(Symbol* sym);
-
 static void  captureTaskIntentValues(int        argNum,
                                      ArgSymbol* formal,
                                      Expr*      actual,
@@ -3947,7 +3945,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // records and strings are (incorrectly) captured at the point
       // when the task function/arg bundle is created.
       if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
-          isConstValWillNotChange(varActual)        == false &&
+          !varActual->isConstValWillNotChange_AnyIntent()   &&
           (concreteIntent(formal->intent, formal->type->getValType())
            & INTENT_FLAG_IN)) {
         // skip dummy_locale_arg: chpl_localeID_t
@@ -3968,25 +3966,6 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
     // gatherCandidates() would not instantiate it, for some reason.
     taskFn->removeFlag(FLAG_GENERIC);
   }
-}
-
-//
-// Allow invoking isConstValWillNotChange() even on formals
-// with blank and 'const' intents.
-//
-static bool isConstValWillNotChange(Symbol* sym) {
-  bool retval = false;
-
-  if (ArgSymbol* arg = toArgSymbol(sym)) {
-    IntentTag cInt = concreteIntent(arg->intent, arg->type->getValType());
-
-    retval = cInt == INTENT_CONST_IN;
-
-  } else {
-    retval = sym->isConstValWillNotChange();
-  }
-
-  return retval;
 }
 
 //

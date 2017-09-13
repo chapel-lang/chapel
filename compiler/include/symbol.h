@@ -114,6 +114,7 @@ public:
 
   virtual bool       isConstant()                              const;
   virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isConstValWillNotChange_AnyIntent()       const;
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
@@ -267,6 +268,7 @@ public:
 
   virtual bool       isConstant()                              const;
   virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isConstValWillNotChange_AnyIntent()       const;
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
   virtual bool       isType()                                  const;
@@ -329,6 +331,7 @@ public:
   // New interface
   virtual bool    isConstant()                              const;
   virtual bool    isConstValWillNotChange()                 const;
+  virtual bool    isConstValWillNotChange_AnyIntent()       const;
   virtual bool    isParameter()                             const;
 
   virtual bool    isVisible(BaseAST* scope)                 const;

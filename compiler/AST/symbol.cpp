@@ -38,6 +38,7 @@
 #include "PartialCopyData.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -218,6 +219,10 @@ bool Symbol::isConstant() const {
 }
 
 bool Symbol::isConstValWillNotChange() const {
+  return false;
+}
+
+bool Symbol::isConstValWillNotChange_AnyIntent() const {
   return false;
 }
 
@@ -567,8 +572,19 @@ bool VarSymbol::isConstant() const {
 }
 
 
+static bool isConstVWNChgHelp(const VarSymbol* var) {
+  // todo: how about QUAL_CONST ?
+  return var->qual == QUAL_CONST_VAL         ||
+         var->hasFlag(FLAG_REF_TO_IMMUTABLE) ||
+         (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_REF_VAR));
+}
+
 bool VarSymbol::isConstValWillNotChange() const {
-  return hasFlag(FLAG_CONST);
+  return isConstVWNChgHelp(this);
+}
+
+bool VarSymbol::isConstValWillNotChange_AnyIntent() const {
+  return isConstVWNChgHelp(this);
 }
 
 
@@ -726,7 +742,7 @@ void ArgSymbol::verify() {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
-  if (hasFlag(FLAG_REF_TO_CONST))
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
     INT_ASSERT(intent == INTENT_CONST_REF);
   verifyNotOnList(typeExpr);
   verifyNotOnList(defaultExpr);
@@ -779,15 +795,46 @@ bool ArgSymbol::isConstant() const {
   return retval;
 }
 
-bool ArgSymbol::isConstValWillNotChange() const {
-  //
-  // This is written to only be called post resolveIntents
-  //
-  assert (intent != INTENT_BLANK && intent != INTENT_CONST);
-  return (intent == INTENT_CONST_IN);
+//
+// Compute isConstValWillNotChange() for 'sym' if its intent were 'intent'.
+// 'intent' must be concrete and not a type intent.
+//
+static bool isConstVWNChgHelp(const ArgSymbol* arg, IntentTag intent) {
+  if (arg->hasFlag(FLAG_REF_TO_IMMUTABLE))
+    return true;
+
+  switch (intent)
+  {
+    case INTENT_CONST_IN:
+    case INTENT_PARAM:
+      return true;
+
+    case INTENT_IN:
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_REF:
+    case INTENT_CONST_REF:
+    case INTENT_REF_MAYBE_CONST:
+      return false;
+
+    case INTENT_CONST:
+    case INTENT_TYPE:
+    case INTENT_BLANK:
+      INT_ASSERT(false); // caller responsibility
+      return false;
+  }
+  return false; // dummy
 }
 
+// This is written to only be called post resolveIntents.
+bool ArgSymbol::isConstValWillNotChange() const {
+  return isConstVWNChgHelp(this, intent);
+}
 
+// This works any time 'this' has a valid type.
+bool ArgSymbol::isConstValWillNotChange_AnyIntent() const {
+  return isConstVWNChgHelp(this, concreteIntent(intent, type->getValType()));
+}
 
 bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);

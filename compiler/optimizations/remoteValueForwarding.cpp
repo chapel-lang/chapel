@@ -335,8 +335,8 @@ static bool shouldSerialize(ArgSymbol* arg) {
     //
     // BHARSH TODO: This seems a bit flimsy. If 'arg' is a reference to a
     // const domain (as written by the user), why doesn't it have the flag
-    // FLAG_REF_TO_CONST? That said, we don't seem to be leaking...
-    retval = arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_CONST);
+    // FLAG_REF_TO_IMMUTABLE? That said, we don't seem to be leaking...
+    retval = arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_IMMUTABLE);
   } else {
     retval = hasSerializer;
   }
@@ -423,7 +423,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         // never written to, we can simply RVF the class pointer.
         retval = true;
       } else {
-        retval = arg->hasFlag(FLAG_REF_TO_CONST);
+        retval = arg->hasFlag(FLAG_REF_TO_IMMUTABLE);
       }
     } else {
       retval = false;
@@ -468,7 +468,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
       !arg->type->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
-  } else if (arg->hasFlag(FLAG_REF_TO_CONST)) {
+  } else if (arg->hasFlag(FLAG_REF_TO_IMMUTABLE)) {
     retval = true;
 
   // otherwise, conservatively assume it varies
