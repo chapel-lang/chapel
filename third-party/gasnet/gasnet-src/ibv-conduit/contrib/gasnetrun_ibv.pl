@@ -203,10 +203,15 @@ sub fullpath($)
 # Find the program (possibly a wrapper)
     $exebase = $ARGV[0] or usage "No program specified\n";
     $exepath = fullpath($exebase);
-    die "gasnetrun: unable to locate program '$exebase'\n"
-			unless (defined($exepath) && -x $exepath);
+    die "gasnetrun: unable to locate program '$exebase'\n" unless defined($exepath);
     print "gasnetrun: located executable '$exepath'\n" if ($verbose);
+    die "gasnetrun: missing execute permissions for '$exepath'\n" unless -x $exepath;
     $ARGV[0] = $exepath;
+
+# Bug 3578:
+if (($conduit eq 'IBV') && !exists($ENV{'OMPI_MCA_mpi_warn_on_fork'})) {
+  $ENV{'OMPI_MCA_mpi_warn_on_fork'} = 0;
+}
 
 # Find the GASNet executable and verify its capabilities
     my $pattern = "^GASNet" . $spawn_control . "Spawner: 1 \\\$";

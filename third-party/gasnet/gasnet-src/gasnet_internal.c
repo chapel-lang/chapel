@@ -125,16 +125,14 @@ extern int gasneti_internal_idiotcheck(gasnet_handlerentry_t *table, int numentr
   return GASNET_ERR_NOT_INIT;
 }
 
+/* global definitions of GASNet-wide internal variables
+   not subject to override */
+gasnet_node_t gasneti_mynode = (gasnet_node_t)-1;
+gasnet_node_t gasneti_nodes = 0;
+
 /* Default global definitions of GASNet-wide internal variables
    if conduits override one of these, they must
    still provide variable or macro definitions for these tokens */
-#ifdef _GASNET_MYNODE_DEFAULT
-  gasnet_node_t gasneti_mynode = (gasnet_node_t)-1;
-#endif
-#ifdef _GASNET_NODES_DEFAULT
-  gasnet_node_t gasneti_nodes = 0;
-#endif
-
 #if defined(_GASNET_GETMAXSEGMENTSIZE_DEFAULT) && !GASNET_SEGMENT_EVERYTHING
   uintptr_t gasneti_MaxLocalSegmentSize = 0;
   uintptr_t gasneti_MaxGlobalSegmentSize = 0;
@@ -773,6 +771,57 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
   }
 
   return result;
+}
+
+// Parse an environment variable as a memory size as follows:
+//  + If parses as double between 0. and 1., multiply by "fraction_of".
+//  + If parses as integer (w/ optional suffix) take as an absolute size.
+// In either case, align down to PAGESIZE and then die if below "minimum".
+extern uint64_t gasneti_getenv_memsize_withdefault(const char *key, const char *dflt, uint64_t minimum, uint64_t fraction_of)
+{
+  const char *str = gasneti_getenv(key);
+  int using_default = (NULL == str);
+  if (using_default) str = dflt;
+
+  double dbl;
+  int64_t val;
+  int is_fraction = 0;
+  if (0 == gasneti_parse_dbl(str, &dbl)) {
+    if ((dbl > 0.) && (dbl < 1.)) {
+      is_fraction = 1;
+      val = dbl * fraction_of;
+    } else {
+      val = dbl;
+    }
+  } else {
+    // Note: default suffix is irrelevant since un-suffixed case was parsed as a double
+    val = gasneti_parse_int(str, 1);
+  }
+  gasneti_envint_display(key, val, using_default, 1);
+
+  // check sign before ALIGNDOWN
+  if (val < 0) {
+    gasneti_fatalerror("%s='%s' is negative.", key, str);
+  }
+
+  // ALIGNDOWN before checking against minimum
+  val = GASNETI_PAGE_ALIGNDOWN(val);
+  GASNETI_TRACE_PRINTF(I, ("%s='%s' yields %"PRId64,
+                           key, str, val));
+
+  if (val < minimum) {
+    const char *parsed_as = is_fraction ? "a fraction" : "an amount";
+    char min_display[16];
+    char val_display[16];
+    gasneti_format_number(minimum, min_display, sizeof(min_display), 1);
+    gasneti_format_number(val,     val_display, sizeof(val_display), 1);
+    gasneti_fatalerror(
+            "Parsing '%s' as %s of memory yields %s of %"PRId64" (%s), "
+            "which is less than the minimum supported value of %s.",
+            str, parsed_as, key, val, val_display, min_display);
+  }
+
+  return (uint64_t) val;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -1415,8 +1464,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   /* bug 3406: Try MPI-based spawn first, EVEN if the var is not set.
    * This is a requirement for spawning using bare mpirun
    */
-  if (!res && (spawner == not_set || !strcmp(spawner, "MPI")) &&
-      (res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p))) {
+  if (!res && (spawner == not_set || !strcmp(spawner, "MPI"))) {
+    res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p);
   }
 #endif
 
@@ -1426,8 +1475,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
    * We no longer claim to support ssh-based launch without gasnetrun.
    * TODO: should we remove the "spawner == not_set" case?
    */
-  if (!res && (spawner == not_set || !strcmp(spawner, "SSH")) &&
-      (res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p))) {
+  if (!res && (spawner == not_set || !strcmp(spawner, "SSH"))) {
+    res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p);
   }
 #endif
 
@@ -1436,8 +1485,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
    * We no longer claim to support direct launch with srun, yod, etc.
    * TODO: should we remove the "spawner == not_set" case?
    */
-  if (!res && (spawner == not_set || !strcmp(spawner, "PMI")) &&
-      (res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p))) {
+  if (!res && (spawner == not_set || !strcmp(spawner, "PMI"))) {
+    res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p);
   }
 #endif
 
@@ -1505,10 +1554,10 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   static int gasneti_memalloc_envisinit = 0;
   static gasneti_mutex_t gasneti_memalloc_lock = GASNETI_MUTEX_INITIALIZER;
   static gasneti_memalloc_desc_t *gasneti_memalloc_pos = NULL;
-  #define GASNETI_MEM_BEGINPOST   ((uint64_t)0xDEADBABEDEADBABEllu)
-  #define GASNETI_MEM_LEAKMARK    ((uint64_t)0xBABEDEADCAFEBEEFllu)
-  #define GASNETI_MEM_ENDPOST     ((uint64_t)0xCAFEDEEDCAFEDEEDllu)
-  #define GASNETI_MEM_FREEMARK    ((uint64_t)0xBEEFEFADBEEFEFADllu)
+  #define GASNETI_MEM_BEGINPOST   ((uint64_t)0xDEADBABEDEADBABEULL)
+  #define GASNETI_MEM_LEAKMARK    ((uint64_t)0xBABEDEADCAFEBEEFULL)
+  #define GASNETI_MEM_ENDPOST     ((uint64_t)0xCAFEDEEDCAFEDEEDULL)
+  #define GASNETI_MEM_FREEMARK    ((uint64_t)0xBEEFEFADBEEFEFADULL)
   #define GASNETI_MEM_HEADERSZ    (sizeof(gasneti_memalloc_desc_t))
   #define GASNETI_MEM_TAILSZ      8     
   #define GASNETI_MEM_EXTRASZ     (GASNETI_MEM_HEADERSZ+GASNETI_MEM_TAILSZ)     
@@ -1521,8 +1570,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
        Quiet NaN: any bit pattern between 0x7ff8000000000000 and 0x7fffffffffffffff 
                or any bit pattern between 0xfff8000000000000 and 0xffffffffffffffff
     */
-    uint64_t sNAN = 0x7ff7ffffffffffffllu; 
-    uint64_t qNAN = 0x7fffffffffffffffllu;
+    uint64_t sNAN = ((uint64_t)0x7ff7ffffffffffffULL); 
+    uint64_t qNAN = ((uint64_t)0x7fffffffffffffffULL);
     uint64_t val = 0;
     const char *envval = gasneti_getenv_withdefault(name, deflt);
     const char *p = envval;
@@ -1793,16 +1842,17 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     gasneti_assert_always((((uintptr_t)ret) & 0x3) == 0); /* should have at least 4-byte alignment */
     if_pf (ret == NULL) {
       char curlocstr[GASNETI_MAX_LOCSZ];
+      strcpy(curlocstr, "\n   at: %s");
       if (allowfail) {
         if_pt (gasneti_attach_done) { gasnet_resume_interrupts(); }
-        GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%lu): %s",
-                                (unsigned long)nbytes, _gasneti_format_curloc(curlocstr,curloc)));
+        GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%"PRIuPTR")%s",
+                                (uintptr_t)nbytes, _gasneti_format_curloc(curlocstr,curloc)));
         return NULL;
       }
-      gasneti_fatalerror("Debug malloc(%lu) failed (%lu bytes in use, in %lu objects): %s", 
-                     (unsigned long)nbytes, 
-                     (unsigned long)(gasneti_memalloc_allocatedbytes - gasneti_memalloc_freedbytes),
-                     (unsigned long)(gasneti_memalloc_allocatedobjects - gasneti_memalloc_freedobjects),
+      gasneti_fatalerror("Debug malloc(%"PRIuPTR") failed (%"PRIu64" bytes in use, in %"PRIu64" objects)%s", 
+                     (uintptr_t)nbytes, 
+                     (gasneti_memalloc_allocatedbytes - gasneti_memalloc_freedbytes),
+                     (gasneti_memalloc_allocatedobjects - gasneti_memalloc_freedobjects),
                      _gasneti_format_curloc(curlocstr,curloc));
     } else {
       uint64_t gasneti_endpost_ref = GASNETI_MEM_ENDPOST;

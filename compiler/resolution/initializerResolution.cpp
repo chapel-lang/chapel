@@ -116,11 +116,10 @@ static void resolveInitCall(CallExpr* call) {
 
     if (best == NULL) {
       if (call->partialTag == false) {
-        if (candidates.n > 0) {
-          printResolutionErrorAmbiguous(info, candidates);
-
+        if (candidates.n == 0) {
+          printResolutionErrorUnresolved(info, visibleFns);
         } else {
-          printResolutionErrorUnresolved(visibleFns, &info);
+          printResolutionErrorAmbiguous (info, candidates);
         }
       }
 

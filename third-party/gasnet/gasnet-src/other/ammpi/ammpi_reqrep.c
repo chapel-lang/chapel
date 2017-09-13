@@ -311,11 +311,11 @@ void AMMPI_processPacket(ammpi_buf_t *buf, int isloopback) {
       if_pf (seqnum != seqnum_exp)
         AMMPI_FatalErr("MPI message ordering violation detected on %s arrival: \n"
                        "  myMPIrank=%i sourceId=%i remoteMPIrank=%i\n"
-                       "  message seqnum: %llu, expected: %llu",
+                       "  message seqnum: %"PRIu64", expected: %"PRIu64,
                        (isrequest?"request":"reply"),
                         (int)ep->name.mpirank, (int)sourceId,
                         (int)ep->perProcInfo[sourceId].remoteName.mpirank,
-                        (unsigned long long)seqnum, (unsigned long long)seqnum_exp);
+                        seqnum, seqnum_exp);
     }
   #endif
 

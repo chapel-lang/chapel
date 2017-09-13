@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,7 +49,7 @@ config param disableCyclicLazyRAD = defaultDisableLazyRADOpt;
 //     dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity
 //   supports RAD opt, Bulk Transfer optimization, localSubdomain
 //   disableCyclicLazyRAD
-//   
+//
 /*
 This Cyclic distribution maps indices to locales in a round-robin pattern
 starting at a given index.
@@ -183,7 +183,7 @@ class Cyclic: BaseDist {
              dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
              dataParMinGranularity=getDataParMinGranularity(),
              param rank: int = _determineRankFromStartIdx(startIdx),
-             type idxType = _determineIdxTypeFromStartIdx(startIdx)) 
+             type idxType = _determineIdxTypeFromStartIdx(startIdx))
     where isTuple(startIdx) || isIntegralType(startIdx.type) {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
@@ -211,7 +211,7 @@ class Cyclic: BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do {
         var thisRange = targetLocales.domain.dim(i);
-        ranges(i) = 0..#thisRange.length; 
+        ranges(i) = 0..#thisRange.length;
       }
       targetLocDom = {(...ranges)};
       targetLocs = reshape(targetLocales, targetLocDom);
@@ -343,7 +343,7 @@ proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable:
   var dom = new CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
-} 
+}
 
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
@@ -369,10 +369,11 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 proc Cyclic.writeThis(x) {
-  x.writeln(this.type:string);
-  x.writeln("------");
+  x <~> this.type:string <~> "\n";
+  x <~> "------\n";
   for locid in targetLocDom do
-    x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
+    x <~> " [" <~> locid <~> "=" <~> targetLocs(locid) <~> "] owns chunk: " <~>
+      locDist(locid).myChunk <~> "\n";
 }
 
 proc Cyclic.targetLocsIdx(i: idxType) {
@@ -521,13 +522,14 @@ proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 
 proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
-    x.writeln(this.type:string);
-    x.writeln("------");
+    x <~> this.type:string <~> "\n";
+    x <~> "------\n";
     for loc in dist.targetLocDom {
-      x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
+      x <~> "[" <~> loc <~> "=" <~> dist.targetLocs(loc) <~> "] owns " <~>
+        locDoms(loc).myBlock <~> "\n";
     }
   } else {
-    x.write(whole);
+    x <~> whole;
   }
 }
 
@@ -714,7 +716,7 @@ proc CyclicArr.setup() {
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
 }
 
-proc CyclicArr.dsiDestroyArr(isslice:bool) {
+proc CyclicArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       delete locArr(localeIdx);
@@ -1030,13 +1032,13 @@ proc CyclicArr.doiUseBulkTransferStride(B) {
          || (oneDData && chpl__getActualArray(B).oneDData);
 }
 
-//For assignments of the form: "Cyclic = any" 
+//For assignments of the form: "Cyclic = any"
 //where "any" means any array that implements the bulk transfer interface
 proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
 {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFrom()");
-  
+
   if this.rank == Barg.rank {
     const Dest = this;
     const Src = chpl__getActualArray(Barg);
@@ -1044,7 +1046,7 @@ proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
     type el = Dest.idxType;
     coforall i in Dest.dom.dist.targetLocDom do // for all locales
       on Dest.dom.dist.targetLocs(i)
-      { 
+      {
         var regionDest = Dest.dom.locDoms(i).myBlock[viewDom];
         const regionSrc = Src.dom.locDoms(i).myBlock[srcView];
         if regionDest.numIndices>0
@@ -1052,7 +1054,7 @@ proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
           const ini=bulkCommConvertCoordinate(regionDest.first, viewDom, srcView);
           const end=bulkCommConvertCoordinate(regionDest.last, viewDom, srcView);
           const sb=chpl__tuplify(regionSrc.stride);
-        
+
           var r1,r2: rank * range(idxType = el,stridable = true);
           r2=regionDest.dims();
           //In the case that the number of elements in dimension t for r1 and r2
@@ -1063,7 +1065,7 @@ proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
             if r1[t].length != r2[t].length then
               r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
           }
-         
+
           if debugCyclicDistBulkTransfer then
             writeln("B[",(...r1),"] ToDR A[",regionDest, "] ");
 
@@ -1073,13 +1075,13 @@ proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
   }
 }
 
-//For assignments of the form: DR = Cyclic 
+//For assignments of the form: DR = Cyclic
 //(default rectangular array = cyclic distributed array)
 proc CyclicArr.doiBulkTransferToDR(Barg, viewDom)
 {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferToDR()");
-  
+
   if this.rank == Barg.rank {
     const Src = this;
     const Dest = chpl__getActualArray(Barg);
@@ -1094,7 +1096,7 @@ proc CyclicArr.doiBulkTransferToDR(Barg, viewDom)
           const ini=bulkCommConvertCoordinate(inters.first, viewDom, destView);
           const end=bulkCommConvertCoordinate(inters.last, viewDom, destView);
           const sa = chpl__tuplify(destView.stride); //return a tuple
-          
+
           //r2 is the domain to refer the elements of A in locale j
           //r1 is the domain to refer the corresponding elements of B
           var r1,r2: rank * range(idxType = el,stridable = true);
@@ -1107,8 +1109,8 @@ proc CyclicArr.doiBulkTransferToDR(Barg, viewDom)
             if r1[t].length != r2[t].length then
               r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
           }
-              
-          if debugCyclicDistBulkTransfer then 
+
+          if debugCyclicDistBulkTransfer then
             writeln(" A[",(...r1),"] = B[",(...r2), "]");
 
           Barg[(...r1)] = Src.locArr[j].myElems[(...r2)];
@@ -1117,13 +1119,13 @@ proc CyclicArr.doiBulkTransferToDR(Barg, viewDom)
   }
 }
 
-//For assignments of the form: Cyclic = DR 
+//For assignments of the form: Cyclic = DR
 //(cyclic distributed array = default rectangular)
 proc CyclicArr.doiBulkTransferFromDR(Barg, viewDom)
 {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFromDR()");
-  
+
   if this.rank == Barg.rank {
     const Dest = this;
     const Src = chpl__getActualArray(Barg);
@@ -1138,7 +1140,7 @@ proc CyclicArr.doiBulkTransferFromDR(Barg, viewDom)
           const ini=bulkCommConvertCoordinate(inters.first, viewDom, srcView);
           const end=bulkCommConvertCoordinate(inters.last, viewDom, srcView);
           const sb = chpl__tuplify(srcView.stride); //return a tuple
-          
+
           var r1,r2: rank * range(idxType = el,stridable = true);
           r2=inters.dims();
           //In the case that the number of elements in dimension t for r1 and r2
@@ -1149,7 +1151,7 @@ proc CyclicArr.doiBulkTransferFromDR(Barg, viewDom)
             if r1[t].length != r2[t].length then
               r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
           }
-          
+
           if debugCyclicDistBulkTransfer then
               writeln("A[",(...r2),"] = B[",(...r1), "] ");
 

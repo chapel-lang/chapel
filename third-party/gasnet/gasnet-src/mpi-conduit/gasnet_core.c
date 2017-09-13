@@ -145,6 +145,7 @@ static int gasnetc_init(int *argc, char ***argv) {
     AMMPI_VerboseErrors = gasneti_VerboseErrors;
     AMMPI_SPMDkillmyprocess = gasneti_killmyprocess;
     #if !GASNETI_DISABLE_MPI_INIT_THREAD
+    { // this scope silences a warning on Cray C about INITERR bypassing this initialization:
       #if GASNETI_THREADS
         int usingthreads = 1;
       #else
@@ -166,6 +167,7 @@ static int gasnetc_init(int *argc, char ***argv) {
                       , pstr);
         tmsgstr = tmsg;
       }
+    }
     #endif
 
     /*  perform job spawn */
@@ -179,6 +181,9 @@ static int gasnetc_init(int *argc, char ***argv) {
     /* do this before trace_init to make sure it gets right environment */
     gasneti_setupGlobalEnvironment(gasneti_nodes, gasneti_mynode, 
                                    gasnetc_bootstrapExchange, gasnetc_bootstrapBroadcast);
+
+    /* Must init timers after global env, and preferably before tracing */
+    GASNETI_TICKS_INIT();
 
     /* enable tracing */
     gasneti_trace_init(argc, argv);
@@ -255,8 +260,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   int retval = GASNET_OK;
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
   AMLOCK();
     if (!gasneti_init_done) 
       INITERR(NOT_INIT, "GASNet attach called before init");
@@ -393,7 +398,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 
   GASNETI_TRACE_PRINTF(C,("gasnetc_attach(): primary attach complete\n"));
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(gasnetc_bootstrapExchange); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -479,6 +487,10 @@ extern void gasnetc_exit(int exitcode) {
      gasneti_sched_yield();
    }
   }
+
+  #if GASNET_PSHM
+    gasneti_pshm_fini();
+  #endif
 
   AMMPI_SPMDExit(exitcode);
   gasneti_fatalerror("AMMPI_SPMDExit failed");

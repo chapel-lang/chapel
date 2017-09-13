@@ -51,6 +51,7 @@ public:
 
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
+  bool            isExtern()                                             const;
 
   InitPhase       currPhase()                                            const;
 
@@ -100,6 +101,9 @@ private:
   InitPhase       startPhase(FnSymbol*  fn)                              const;
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
+
+  bool            isOuterField(DefExpr* field)                           const;
+  void            makeOuterArg();
 
   void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
                                                DefExpr* field)           const;

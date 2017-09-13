@@ -122,6 +122,13 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
+const char* toString(Type* type);
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // a Qualifier allows the compiler to distinguish between
 // different properties of a variable (const or ref-ness in particular)
@@ -228,27 +235,33 @@ public:
     return (_qual == QUAL_UNKNOWN || _qual == QUAL_CONST ||
             _qual == QUAL_REF || _qual == QUAL_CONST_REF);
   }
+
   bool isVal() const {
     return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL);
   }
+
   bool isRef() const {
     return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
             _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF ||
             isRefType());
   }
+
   bool isWideRef() const {
     return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF ||
             isWideRefType());
   }
+
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();
   }
+
   bool isConst() const {
     return qualifierIsConst(_qual);
   }
   // TODO: isImmutable
 
   bool isRefType() const;
+
   bool isWideRefType() const;
 
   QualifiedType toRef() {
@@ -259,8 +272,6 @@ public:
     return QualifiedType(QUAL_VAL, _type->getValType());
   }
 
-
-
   QualifiedType toConst() {
     return QualifiedType(qualifierToConst(_qual), _type);
   }
@@ -268,6 +279,7 @@ public:
   Type* type() const {
     return _type;
   }
+
   Qualifier getQual() const {
     return _qual;
   }
@@ -278,6 +290,12 @@ private:
   Type*      _type;
   Qualifier  _qual;
 };
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class EnumType : public Type {
  public:

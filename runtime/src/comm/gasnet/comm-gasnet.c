@@ -778,6 +778,7 @@ static void set_max_segsize() {
 }
 
 static void set_num_comm_domains() {
+#if defined(GASNET_CONDUIT_GEMINI) || defined(GASNET_CONDUIT_ARIES)
   char num_cpus_val[22]; // big enough for an unsigned 64-bit quantity
   int num_cpus;
 
@@ -791,6 +792,15 @@ static void set_num_comm_domains() {
   if (setenv("GASNET_AM_DOMAIN_POLL_MASK", "3", 0) != 0) {
     chpl_error("Cannot setenv(\"GASNET_AM_DOMAIN_POLL_MASK\")", 0, 0);
   }
+
+  // for some reason a higher GASNET_DOMAIN_COUNT increases the exit time
+  if (setenv("GASNET_EXITTIMEOUT_FACTOR", "0.5", 0) != 0) {
+    chpl_error("Cannot setenv(\"GASNET_EXITTIMEOUT_FACTOR\")", 0, 0);
+  }
+  if (setenv("GASNET_EXITTIMEOUT_MIN", "5.0", 0) != 0) {
+    chpl_error("Cannot setenv(\"GASNET_EXITTIMEOUT_MIN\")", 0, 0);
+  }
+#endif
 }
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {

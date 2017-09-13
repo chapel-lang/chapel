@@ -1,0 +1,3 @@
+--no-loop-invariant-code-motion -sisDeque
+--no-loop-invariant-code-motion -sisBag
+--no-loop-invariant-code-motion -sisBoundedDeque

@@ -429,7 +429,7 @@ proc OldReplicatedDom.dsiSerialWrite(f): void {
   // redirect to DefaultRectangular
   redirectee()._value.dsiSerialWrite(f);
   if printReplicatedLocales {
-    f.write(" replicated over ");
+    f <~> " replicated over ";
     var temp : [1..0] locale;
     for idx in dist.targetLocDom.sorted() {
       temp.push_back(dist.targetLocales[idx]);
@@ -573,9 +573,10 @@ proc OldReplicatedArr.dsiSerialWrite(f): void {
   var neednl = false;
   for idx in dom.dist.targetLocDom.sorted() {
 //  on locArr {  // may cause deadlock
-      if neednl then f.write("\n"); neednl = true;
+      if neednl then f <~> "\n";
+      neednl = true;
       if printReplicatedLocales then
-        f.write(localArrs[idx].locale, ":\n");
+        f <~> localArrs[idx].locale <~> ":\n";
       localArrs[idx].arrLocalRep._value.dsiSerialWrite(f);
 //  }
   }
@@ -586,15 +587,16 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr
   const actual = chpl__getActualArray(arr);
   for idx in actual.dom.dist.targetLocDom.sorted() {
     on actual.localArrs[idx] {
-      if neednl then f.write("\n"); neednl = true;
+      if neednl then f <~> "\n";
+      neednl = true;
       if printReplicatedLocales then
-        f.write(actual.localArrs[idx].locale, ":\n");
+        f <~> actual.localArrs[idx].locale <~> ":\n";
       chpl_serialReadWriteRectangularHelper(f, arr, dom);
     }
   }
 }
 
-proc OldReplicatedArr.dsiDestroyArr(isslice:bool) {
+proc OldReplicatedArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) do
       delete localArrs(localeIdx);

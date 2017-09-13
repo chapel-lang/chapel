@@ -24,7 +24,7 @@ fca_blddir = $(top_builddir)/other/fca
 fca_sourcelist = 
 fca_extraheaders = $(fca_srcdir)/gasnet_fca.h
 fca_privheaders = gasnet_fca_api.h
-fca_extralibcflags = -I$(fca_srcdir) @FCA_INCLUDES@
+fca_extralibcflags = -I$(fca_srcdir) @FCA_CFLAGS@
 fca_extradeps = $(fca_srcdir)/*.[ch] $(fca_blddir)/fca.mak
 fca_special_objs =                                   \
 	$(builddir)/fca-component-$(THREAD_MODEL).o      \
@@ -33,11 +33,11 @@ fca_special_objs =                                   \
 # Some source files need special treatment:
 $(builddir)/fca-component-$(THREAD_MODEL).o: force
 	keeptmps='$(KEEPTMPS)'; \
-	@CC@ $(LIBCFLAGS)  @FCA_INCLUDES@ -o $@ -c $(fca_srcdir)/gasnet_fca_component.c
+	@CC@ $(LIBCFLAGS)  @FCA_CFLAGS@ -o $@ -c $(fca_srcdir)/gasnet_fca_component.c
 
 $(builddir)/fca-ops-$(THREAD_MODEL).o: force
 	keeptmps='$(KEEPTMPS)'; \
-	@CC@ $(LIBCFLAGS)  @FCA_INCLUDES@ -o $@ -c $(fca_srcdir)/gasnet_fca_ops.c
+	@CC@ $(LIBCFLAGS)  @FCA_CFLAGS@ -o $@ -c $(fca_srcdir)/gasnet_fca_ops.c
 
 # How to rebuild this file
 $(fca_blddir)/fca.mak: $(fca_srcdir)/fca.mak.in

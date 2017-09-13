@@ -74,7 +74,7 @@ typedef struct {
   int idx;
 } testam_payload_t;
 #define TESTAM_DOUBLEVAR_VAL  (2.5f)
-#define TESTAM_INT64VAR_VAL   (0xFACEFEEDDEAFBEEFllu)
+#define TESTAM_INT64VAR_VAL   ((uint64_t)0xFACEFEEDDEAFBEEFULL)
 
 #define ABASE ((handlerarg_t)0xBABE7000)
 

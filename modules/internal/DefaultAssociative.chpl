@@ -756,6 +756,21 @@ module DefaultAssociative {
     proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
+
+    proc dsiDestroyArr() {
+      //
+      // BHARSH 2017-09-08: Workaround to avoid recursive iterator generation.
+      //
+      // If this method didn't exist, the compiler would incorrectly think
+      // that there was recursion between Replicated, DefaultAssociative, and
+      // DefaultRectangular due to virtual method dispatch on dsiDestroyArr.
+      //
+      // The generated recursive iterator would result in a use-after-free bug
+      // for the following test under --no-local:
+      //
+      // users/npadmana/bugs/replicated_invalid_ref_return/replicated_bug.chpl
+      //
+    }
   }
   
   

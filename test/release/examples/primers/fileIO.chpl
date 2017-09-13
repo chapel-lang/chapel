@@ -3,7 +3,7 @@ File I/O Primer
 */
 
 // Some configuration to set up the examples.
-config var n = 9,               
+config var n = 9,
            filename = "Arr.dat";
 config const num = 128*1024;
 config const example = 0;
@@ -51,7 +51,7 @@ if example == 0 || example == 1 {
 
 // This procedure writes a square array out to a file.
 proc writeSquareArray(n, X, filename) {
-  
+
   // Create and open an output file with the specified filename in write mode.
   var outfile = open(filename, iomode.cw);
   var writer = outfile.writer();
@@ -127,7 +127,7 @@ if example == 0 || example == 2 {
 
   {
     // Get a binary writing channel for the start of the file.
-    var w = f.writer(kind=ionative); 
+    var w = f.writer(kind=ionative);
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -169,7 +169,7 @@ if example == 0 || example == 2 {
 
 if example == 0 || example == 3 {
   writeln("Running Example 3");
-  
+
 // First, open up a file and write to it.
   {
     var f = open(testfile, iomode.cwr);
@@ -274,19 +274,26 @@ Error handling
 if example == 0 || example == 5 {
   writeln("Running Example 5");
 
-  // Error handling.
-  var err:syserr;
+  try! {
+    // Who knows, maybe 1st unlink succeeds.
+    unlink(testfile);
 
-  // Who knows, maybe 1st unlink succeeds.
-  unlink(testfile, error=err);
+    // File does not exist by now, for sure.
+    unlink(testfile);
 
-  // File does not exist by now, for sure.
-  unlink(testfile, error=err);
-  assert(err == ENOENT);
+    assert(false); // never reached
+  } catch e: SystemError {
+    assert(e.err == ENOENT);
+  }
 
-  // What happens if we try to open a non-existent file?
-  var f = open(testfile, iomode.r, error=err);
-  assert(err == ENOENT);
+  try! {
+    // What happens if we try to open a non-existent file?
+    var f = open(testfile, iomode.r);
+
+    assert(false); // never reached
+  } catch e: SystemError {
+    assert(e.err == ENOENT);
+  }
 }
 
 // Note that if an ``error=`` argument is not supplied to an

@@ -32,6 +32,7 @@ extern int verbosity;
 void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx);
 void chpl_warning_explicit(const char *message, int32_t lineno,
                            const char *filename);
+void chpl_error_preformatted(const char* message);
 void chpl_error(const char* message, int32_t lineno, int32_t filenameIdx);
 void chpl_error_explicit(const char *message, int32_t lineno,
                          const char *filename);

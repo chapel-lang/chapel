@@ -220,12 +220,11 @@ static Expr* findTailInsertionPoint(Expr* fromHere, bool isCoforall) {
 
   INT_ASSERT(result);
 
-  CallExpr* freeEC = toCallExpr(result->next);
-
-  // Currently these two calls come together.
-  INT_ASSERT(freeEC && freeEC->isNamed("_endCountFree"));
-
-  return freeEC;
+  // MPF 2017-08-25:
+  // This used to also cover _endCountFree, but now it is in
+  // a DeferStmt before _waitEndCount, so finding _waitEndCount is
+  // sufficient.
+  return result;
 }
 
 /*

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2014 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -30,7 +30,7 @@ int main(void)
     printf("nvmlDeviceGetCount failed %d\n", nvres);
     return 0;
   }
-  printf("nvmlDeviceGetCount found %d devices\n", count);
+  printf("nvmlDeviceGetCount found %u devices\n", count);
 
   hwloc_topology_init(&topology);
   hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
@@ -71,11 +71,11 @@ int main(void)
     set = hwloc_bitmap_alloc();
     err = hwloc_nvml_get_device_cpuset(topology, device, set);
     if (err < 0) {
-      printf("failed to get cpuset for device %d\n", i);
+      printf("failed to get cpuset for device %u\n", i);
     } else {
       char *cpuset_string = NULL;
       hwloc_bitmap_asprintf(&cpuset_string, set);
-      printf("got cpuset %s for device %d\n", cpuset_string, i);
+      printf("got cpuset %s for device %u\n", cpuset_string, i);
       free(cpuset_string);
       if (hwloc_bitmap_isequal(hwloc_topology_get_complete_cpuset(topology), hwloc_topology_get_topology_cpuset(topology)))
 	/* only compare if the topology is complete, otherwise things can be significantly different */

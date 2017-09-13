@@ -240,7 +240,7 @@ typedef union {
 /* Define non-zero if we want to allow the mlock rlimit to bound the
  * amount of memory we will pin. */
 #ifndef GASNETC_HONOR_RLIMIT_MEMLOCK
-  #define GASNETC_HONOR_RLIMIT_MEMLOCK 0
+  #define GASNETC_HONOR_RLIMIT_MEMLOCK 1
 #endif
 
 /* Use alloca()?  (e.g. to work-around bug 2079) */
@@ -431,7 +431,7 @@ typedef char gasnetc_amrdma_buf_t[GASNETC_AMRDMA_SZ];
     /* Initialized by create_cq or spawn_progress_thread: */
     pthread_t               thread_id;
     uint64_t                prev_time;
-    uint64_t                min_us;
+    uint64_t                min_ns;
     struct ibv_cq *         cq;
     struct ibv_comp_channel *compl;
     volatile int            done;
@@ -508,6 +508,7 @@ typedef struct {
     gasnetc_atomic_val_t max_peers;
     gasnetc_atomic_t	count;
     gasnetc_cep_t	**cep;
+    volatile int        prev;
   }	  amrdma_rcv;
   struct {
     gasnetc_atomic_t		count;

@@ -22,11 +22,17 @@ module ChapelError {
 
   // Base class for errors
   // TODO: should base class Error have a string message at all?
-  // TODO: should Error include list pointers for ErrorGroup?
+  // TODO: should Error include list pointers for TaskErrors?
   class Error {
     var msg: string;
     pragma "no doc"
-    var _next: Error = nil; // managed by lock in record ErrorGroupRecord
+    var _next: Error = nil; // managed by lock in record TaskErrorsRecord
+
+    // These fields save the line/file where the error was thrown.
+    pragma "no doc"
+    var thrownLine:int;
+    pragma "no doc"
+    var thrownFileId:int(32);
 
     proc Error() {
       _next = nil;
@@ -37,9 +43,13 @@ module ChapelError {
       _next = nil;
     }
 
+    proc message() {
+      return msg;
+    }
+
     proc writeThis(f) {
-      //f <~> "Error: " <~> msg;
-      f <~> "{msg = " <~> msg <~> "}";
+      var description = chpl_describe_error(this);
+      f <~> description;
     }
   }
 
@@ -50,7 +60,7 @@ module ChapelError {
   // errors have completed; at that point it no longer needs
   // to be parallel-safe.
   pragma "no doc"
-  record chpl_ErrorGroup {
+  record chpl_TaskErrors {
     var _head: Error;
     var _errorsLock: atomicbool;
     // this atomic controls:
@@ -82,15 +92,60 @@ module ChapelError {
   }
 
   // stores multiple errors when they can come up.
-  class ErrorGroup : Error {
+  class TaskErrors : Error {
     var _head: Error = nil;
 
     pragma "no doc"
-    proc ErrorGroup(ref group:chpl_ErrorGroup) {
-      _head = group._head;
+    proc TaskErrors(ref group:chpl_TaskErrors) {
+      var cur:Error = group._head;
       group._head = nil;
+      _head = nil;
+
+      // Flatten nested TaskErrors
+
+      while cur != nil {
+        // remove it from that list
+        var curnext = cur._next;
+        cur._next = nil;
+
+        // Add head / errors in it to this list
+        var asTaskErr:TaskErrors = cur:TaskErrors;
+        if asTaskErr == nil {
+          append(cur);
+        } else {
+          // Remove & add errors in the sub-list
+          var sub:Error = asTaskErr._head;
+          asTaskErr._head = nil;
+          while sub != nil {
+            // remove it from that list
+            var subnext = sub._next;
+            sub._next = nil;
+
+            // add it to this list
+            append(sub);
+
+            sub = subnext;
+          }
+          delete asTaskErr;
+        }
+        cur = curnext;
+      }
     }
-    proc ErrorGroup() {
+
+    // append a single error to the group
+    proc append(err:Error) {
+      var tmp = _head;
+      err._next = tmp;
+      _head = err;
+    }
+
+    /* Create a TaskErrors containing only the passed error */
+    proc TaskErrors(err: Error) {
+      _head = err;
+    }
+
+    /* Create a TaskErrors not containing any errors */
+    proc TaskErrors() {
       _head = nil;
     }
 
@@ -112,62 +167,49 @@ module ChapelError {
       }
     }
 
-    proc writeThis(f) {
-      f <~> "ErrorGroup with ";
-
-      var Msgs:domain(string);
-      var byMsg:[Msgs] list(Error);
+    proc message() : string {
       var n = 0;
-
-      for e in these() {
-        Msgs += e.msg;
-        byMsg[e.msg].append(e);
-        n += 1;
-      }
-
-      if n > 1 then
-        f <~> n <~> " errors";
-
 
       var minMsg:string;
       var maxMsg:string;
-      for msg in Msgs {
-        if minMsg == "" || msg < minMsg then
-          minMsg = msg;
-        if maxMsg == "" || msg > maxMsg then
-          maxMsg = msg;
-      }
-
       var first:Error;
       var last:Error;
 
+      for e in these() {
+        if minMsg == "" || e.message() < minMsg then
+          minMsg = e.message();
+        if maxMsg == "" || e.message() > maxMsg then
+          maxMsg = e.message();
+
+        n += 1;
+      }
+
       // Set first and last.
       {
-        const ref minErrs = byMsg[minMsg];
-        for e in minErrs {
-          if first == nil then
-            first = e;
-          last = e;
-        }
-        if minMsg != maxMsg {
-          const ref maxErrs = byMsg[maxMsg];
-          for e in maxErrs {
+        for e in these() {
+          if e.message() == minMsg {
             if first == nil then
               first = e;
             last = e;
           }
         }
+        if minMsg != maxMsg {
+          for e in these() {
+            if e.message() == maxMsg {
+              last = e;
+            }
+          }
+        }
       }
 
-      var nMsgs = Msgs.size;
-
-      if nMsgs > 1 then
-        f <~> " and " <~> nMsgs <~> " messages:: ";
+      var ret = n + " errors: ";
 
       if first != last then
-        f <~> first <~> " ... " <~> last;
+        ret += chpl_describe_error(first) + " ... " + chpl_describe_error(last);
       else
-        f <~> first;
+        ret += chpl_describe_error(first);
+
+      return ret;
     }
 
     // convenience methods
@@ -190,12 +232,72 @@ module ChapelError {
   }
 
   pragma "no doc"
-  proc chpl_delete_error(err: Error) {
-    delete err;
+  proc chpl_error_type_name(err: Error) : string {
+    var cid =  __primitive("getcid", err);
+    var nameC: c_string = __primitive("class name by id", cid);
+    var nameS = nameC:string;
+    return nameS;
   }
+  pragma "no doc"
+  proc chpl_describe_error(err: Error) : string {
+    var nameS = chpl_error_type_name(err);
+
+    var ret = nameS + ": " + err.message();
+
+    return ret;
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
+  proc chpl_save_line_in_error(err: Error) {
+    const line = __primitive("_get_user_line");
+    const fileId = __primitive("_get_user_file");
+    err.thrownLine = line;
+    err.thrownFileId = fileId;
+  }
+  pragma "no doc"
+  proc chpl_delete_error(err: Error) {
+    if err != nil then delete err;
+  }
+  pragma "no doc"
   pragma "function terminates program"
+  pragma "insert line file info"
   proc chpl_uncaught_error(err: Error) {
-    var tmpstring = "uncaught error - " + stringify(err);
-    __primitive("chpl_error", tmpstring.c_str());
+    extern proc chpl_error_preformatted(c_string);
+
+    const myFileC:c_string = __primitive("chpl_lookupFilename",
+                                         __primitive("_get_user_file"));
+    const myFileS = myFileC:string;
+    const myLine = __primitive("_get_user_line");
+
+
+
+    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+                                             err.thrownFileId);
+    const thrownFileS = thrownFileC:string;
+    const thrownLine = err.thrownLine;
+
+    var s = "uncaught " + chpl_describe_error(err) +
+            "\n  " + thrownFileS + ":" + thrownLine + ": thrown here" +
+            "\n  " + myFileS + ":" + myLine + ": uncaught here";
+    chpl_error_preformatted(s.c_str());
+  }
+  // This is like the above, but it is only ever added by the
+  // compiler. In case of iterator inlining (say), this call
+  // should be replaced by goto-error-handling.
+  pragma "no doc"
+  proc chpl_propagate_error(err: Error) {
+    chpl_uncaught_error(err);
+  }
+  // This function is called to "normalize" the error returned
+  // from a forall loop, so that it is always TaskErrors
+  // (since the author of the forall loop shouldn't need to know
+  //  how many tasks were run in that loop).
+  pragma "no doc"
+  proc chpl_forall_error(err: Error):Error {
+    if err:TaskErrors then
+      return err;
+    // If err wasn't a taskError, wrap it in one
+    return new TaskErrors(err);
   }
 }

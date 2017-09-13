@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010 inria.  All rights reserved.
+.\" Copyright © 2010-2017 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-PS "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
@@ -21,23 +21,33 @@ hwloc-ps \- List currently-running processes or threads that are bound
 .
 .TP 10
 \fB\-a\fR
-list all processes, even those that are not bound to any
+List all processes, even those that are not bound to any
 specific part of the machine.
 .TP
+\fB\-\-pid <pid>\fR
+Only show process of PID \fI<pid>\fR,
+even if it is not bound to any specific part of the machine.
+.TP
+\fB\-\-name <name>\fR
+Only show processes whose name contains \fI<name>\fR,
+even if they are not bound to any specific part of the machine.
+This is not supported on all operating systems.
+.TP
 \fB\-p\fR \fB\-\-physical\fR
-report OS/physical indexes instead of logical indexes
+Report OS/physical indexes instead of logical indexes
 .TP
 \fB\-l\fR \fB\-\-logical\fR
-report logical indexes instead of physical/OS indexes (default)
+Report logical indexes instead of physical/OS indexes (default)
 .TP
 \fB\-c\fR \fB\-\-cpuset\fR
-show process bindings as cpusets instead of objects.
+Show process bindings as cpusets instead of objects.
 .TP
 \fB\-t\fR \fB\-\-threads\fR
-show threads inside processes.
+Show threads inside processes.
 If \fB\-a\fR is given as well, list all threads within each process.
 Otherwise, show all threads inside each process where at least one
 thread is bound.
+This is currently only supported on Linux.
 .TP
 \fB\-e\fR \fB\-\-get\-last\-cpu\-location\fR
 Report  the last processors where the process/thread ran.
@@ -97,7 +107,7 @@ If a process is bound, it appears in the default output:
     4759	Core:0		myprogram
 
 If a process is not bound but 3 of his 4 threads are bound,
-it only appears in the thread-aware output:
+it only appears in the thread-aware output (or if explicitly selected):
 
     $ utils/hwloc-ps
 
@@ -107,6 +117,9 @@ it only appears in the thread-aware output:
      4761	PU:0
      4762	PU:2
      4765	PU:1
+
+    $ utils/hwloc-ps --pid 4759
+    4759	Machine:0		myprogram
 
 To display the binding of already running MPI processes (launched by
 Open MPI) and append their MPI rank (in MPI_COMM_WORLD) to each line:

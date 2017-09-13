@@ -1,0 +1,5 @@
+This test is sporadically timing out on cygwin and under valgrind
+
+The test intentionally deadlocks, so it's really just that our deadlock
+reporting is sporadically failing. Skip the test until I have more time to
+investigate (which may be never given the low importance of this feature.)

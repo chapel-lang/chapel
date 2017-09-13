@@ -81,7 +81,17 @@ module String {
   private extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
   private extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
 
-  type        bufferType         = c_ptr(uint(8));
+  pragma "no doc"
+  type bufferType = c_ptr(uint(8));
+
+  pragma "no doc"
+  extern const CHPL_SHORT_STRING_SIZE : c_int;
+
+  pragma "no doc"
+  extern record chpl__inPlaceBuffer {};
+
+  pragma "no doc"
+  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
 
   private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                            src_addr: bufferType, len: integral) {
@@ -96,6 +106,15 @@ module String {
   }
 
   private config param debugStrings = false;
+
+  pragma "no doc"
+  record __serializeHelper {
+    var len       : int;
+    var buff      : bufferType;
+    var size      : int;
+    var locale_id : chpl_nodeID.type;
+    var shortData : chpl__inPlaceBuffer;
+  }
 
   //
   // String Implementation
@@ -194,6 +213,31 @@ module String {
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_here_free(this.buff);
         }
+      }
+    }
+
+    pragma "no doc"
+    proc chpl__serialize() {
+      var data : chpl__inPlaceBuffer;
+      if len <= CHPL_SHORT_STRING_SIZE {
+        chpl_string_comm_get(chpl__getInPlaceBufferData(data), locale_id, buff, len);
+      }
+      return new __serializeHelper(len, buff, _size, locale_id, data);
+    }
+
+    pragma "no doc"
+    proc type chpl__deserialize(data) {
+      if data.locale_id != chpl_nodeID {
+        if data.len <= CHPL_SHORT_STRING_SIZE {
+          return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
+                            data.size, owned=true, needToCopy=true);
+        } else {
+          var localBuff = copyRemoteBuffer(data.locale_id, data.buff, data.len);
+          return new string(localBuff, data.len, data.size,
+                            owned=true, needToCopy=false);
+        }
+      } else {
+        return new string(data.buff, data.len, data.size, owned = false, needToCopy=false);
       }
     }
 

@@ -56,7 +56,7 @@ static void * gasnetc_progress_thread(void *arg)
   struct ibv_comp_channel * const compl_hndl= pthr_p->compl;
   void (* const fn)(struct ibv_wc *, void *)= pthr_p->fn;
   void * const fn_arg                       = pthr_p->fn_arg;
-  const uint64_t min_us                     = pthr_p->min_us;
+  const uint64_t min_ns                     = pthr_p->min_ns;
   int fd = compl_hndl->fd;
   fd_set readfds;
 
@@ -84,36 +84,15 @@ static void * gasnetc_progress_thread(void *arg)
       (fn)(&comp, fn_arg);
 
       /* Throttle thread's rate */
-      if_pf (min_us) {
+      if_pf (min_ns) {
         uint64_t prev = pthr_p->prev_time;
         if_pt (prev) {
-          uint64_t elapsed = gasneti_ticks_to_us(gasneti_ticks_now() - prev);
+          uint64_t elapsed = gasneti_ticks_to_ns(gasneti_ticks_now() - prev);
     
           my_cancel_enable();
-          while (elapsed < min_us) {
-          #if HAVE_NANOSLEEP
-            uint64_t ns_delay = 1000 * (min_us - elapsed);
-            struct timespec ts;
-            ts.tv_sec = ns_delay / 1000000000L;
-            ts.tv_nsec = ns_delay % 1000000000L;
-            nanosleep(&ts, NULL);
-          #elif HAVE_NSLEEP
-            uint64_t ns_delay = 1000 * (min_us - elapsed);
-            struct timespec ts;
-            ts.tv_sec = ns_delay / 1000000000L;
-            ts.tv_nsec = ns_delay % 1000000000L;
-            nsleep(&ts, NULL);
-          #elif HAVE_USLEEP
-            uint64_t us_delay = (min_us - elapsed);
-            usleep(us_delay);
-          #else
-            uint64_t us_delay = (min_us - elapsed);
-            struct timeval tv;
-            tv.tv_sec = us_delay / 1000000L;
-            tv.tv_usec = us_delay % 1000000L;
-            select(0, NULL, NULL, NULL, &tv);
-          #endif
-            elapsed = gasneti_ticks_to_us(gasneti_ticks_now() - prev);
+          while (elapsed < min_ns) {
+            gasneti_nsleep(min_ns - elapsed);
+            elapsed = gasneti_ticks_to_ns(gasneti_ticks_now() - prev);
           }
           pthread_testcancel();
           my_cancel_disable();
@@ -191,8 +170,8 @@ gasnetc_spawn_progress_thread(gasnetc_progress_thread_t *pthr_p)
         }
       }
     }
-    GASNETI_TRACE_PRINTF(I, ("Stack size for progress thread(s) set to %lu%s",
-                              (unsigned long)stack_sz,
+    GASNETI_TRACE_PRINTF(I, ("Stack size for progress thread(s) set to %"PRIuPTR"%s",
+                              (uintptr_t)stack_sz,
                               (stack_sz == stack_dflt) ? " (default)" : ""));
   }
   gasneti_mutex_unlock(&init_lock);
@@ -201,8 +180,8 @@ gasnetc_spawn_progress_thread(gasnetc_progress_thread_t *pthr_p)
   if (stack_sz) gasneti_assert_zeroret(pthread_attr_setstacksize(&attr, stack_sz));
   gasneti_assert_zeroret(pthread_create(&pthr_p->thread_id, &attr, gasnetc_progress_thread, pthr_p));
   gasneti_assert_zeroret(pthread_attr_destroy(&attr));
-  GASNETI_TRACE_PRINTF(I, ("Spawned progress thread with id 0x%lx",
-                           (unsigned long)(uintptr_t)(pthr_p->thread_id)));
+  GASNETI_TRACE_PRINTF(I, ("Spawned progress thread with id 0x%"PRIxPTR,
+                           (uintptr_t)(pthr_p->thread_id)));
 }
 
 extern void
@@ -216,12 +195,12 @@ gasnetc_stop_progress_thread(gasnetc_progress_thread_t *pthr_p, int block)
 #if GASNETC_THREAD_CANCEL
   (void)pthread_cancel(tid); /* ignore failure */
 #endif
-  GASNETI_TRACE_PRINTF(I, ("Requested termination of progress thread with id 0x%lx",
-                           (unsigned long)(uintptr_t)(tid)));
+  GASNETI_TRACE_PRINTF(I, ("Requested termination of progress thread with id 0x%"PRIxPTR,
+                           (uintptr_t)(tid)));
   if (block) {
     (void)pthread_join(tid, NULL);
-    GASNETI_TRACE_PRINTF(I, ("Joined progress thread with id 0x%lx",
-                             (unsigned long)(uintptr_t)(tid)));
+    GASNETI_TRACE_PRINTF(I, ("Joined progress thread with id 0x%"PRIxPTR,
+                             (uintptr_t)(tid)));
   } else {
     (void)pthread_detach(tid);
   }

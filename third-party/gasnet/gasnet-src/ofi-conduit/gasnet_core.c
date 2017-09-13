@@ -106,8 +106,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -237,7 +237,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
          gasneti_seginfo[gasneti_mynode].size == segsize);
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(NULL); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -430,7 +433,7 @@ extern int gasnetc_AMGetMsgSource(gasnet_token_t token, gasnet_node_t *srcindex)
 #endif
   {
     /* add code here to write the source index into sourceid. */
-    sourceid = ((gasnetc_ofi_token_t*)token)->sourceid;
+    sourceid = ((gasnetc_ofi_am_send_buf_t*)token)->sourceid;
   }
 
   gasneti_assert(sourceid < gasneti_nodes);
@@ -572,7 +575,7 @@ extern int gasnetc_AMReplyShortM(
   } else
 #endif
   { 
-    retval = gasnetc_ofi_am_send_short(((gasnetc_ofi_token_t*)token)->sourceid, handler, numargs, argptr, 0);
+    retval = gasnetc_ofi_am_send_short(((gasnetc_ofi_am_send_buf_t*)token)->sourceid, handler, numargs, argptr, 0);
   }
   va_end(argptr);
   GASNETI_RETURN(retval);
@@ -595,7 +598,7 @@ extern int gasnetc_AMReplyMediumM(
   } else
 #endif
   {
-    retval = gasnetc_ofi_am_send_medium(((gasnetc_ofi_token_t*)token)->sourceid, handler, source_addr, nbytes, numargs, argptr, 0);
+    retval = gasnetc_ofi_am_send_medium(((gasnetc_ofi_am_send_buf_t*)token)->sourceid, handler, source_addr, nbytes, numargs, argptr, 0);
   }
   va_end(argptr);
   GASNETI_RETURN(retval);
@@ -619,7 +622,7 @@ extern int gasnetc_AMReplyLongM(
   } else
 #endif
   {
-    retval = gasnetc_ofi_am_send_long(((gasnetc_ofi_token_t*)token)->sourceid, handler, source_addr, nbytes, dest_addr, numargs, argptr, 0, 0);
+    retval = gasnetc_ofi_am_send_long(((gasnetc_ofi_am_send_buf_t*)token)->sourceid, handler, source_addr, nbytes, dest_addr, numargs, argptr, 0, 0);
   }
   va_end(argptr);
   GASNETI_RETURN(retval);

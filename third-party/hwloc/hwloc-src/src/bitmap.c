@@ -463,7 +463,7 @@ int hwloc_bitmap_list_sscanf(struct hwloc_bitmap_s *set, const char * __hwloc_re
   while (*current != '\0') {
 
     /* ignore empty ranges */
-    while (*current == ',')
+    while (*current == ',' || *current == ' ')
       current++;
 
     val = strtoul(current, &next, 0);
@@ -487,7 +487,7 @@ int hwloc_bitmap_list_sscanf(struct hwloc_bitmap_s *set, const char * __hwloc_re
 	begin = val;
       }
 
-    } else if (*next == ',' || *next == '\0') {
+    } else if (*next == ',' || *next == ' ' || *next == '\0') {
       /* single digit */
       hwloc_bitmap_set(set, val);
     }

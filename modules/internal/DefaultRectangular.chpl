@@ -1199,19 +1199,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiDestroyArr(isalias:bool) {
-
-      // data in an array alias will be destroyed when the original array
-      // is destroyed.
-      if isalias {
-        // A multi-ddata alias nevertheless has its own mData.
-        if !defRectSimpleDData {
-          _ddata_free(mData, mdNumChunks);
-        }
-
-        return;
-      }
-
+    proc dsiDestroyArr() {
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = dataChunk(0);
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
@@ -1816,7 +1804,7 @@ module DefaultRectangular {
         str = copy.str;
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
-        dsiDestroyArr(false);
+        dsiDestroyArr();
         if defRectSimpleDData {
           data = copy.data;
         } else {
@@ -1988,8 +1976,9 @@ module DefaultRectangular {
         if step < 0 then
           last <=> first;
 
+        var data = info.theDataChunk(0);
         for i in first..last by step do
-          yield info.data(i);
+          yield data(i);
       }
     } else if useCache {
       for i in viewDom {
@@ -2228,11 +2217,14 @@ module DefaultRectangular {
         const src = arr.theDataChunk(0);
         const idx = arr.getDataIndex(dom.dsiLow);
         const size = len:ssize_t*elemSize:ssize_t;
+        var error:syserr = ENOERR;
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         }
+        if error then
+          f.setError(error);
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#arr.mdNumChunks {
@@ -2252,11 +2244,15 @@ module DefaultRectangular {
             const inner = arr.mData(chunk).pdr;
             const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
+            var error:syserr = ENOERR;
             if f.writing {
-              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size,
+                  error=error);
             } else {
-              f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
             }
+            if error then
+              f.setError(error);
           }
         }
       }

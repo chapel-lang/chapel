@@ -77,18 +77,21 @@ at configure time, and pmi-spawner must be instructed how to execute the
 corresponding PMI server.  The following configure options are used for those
 purposes:
 
-  --with-pmi[=DIR]
-    If passed without an argument, then configure will search the standard
-    locations for headers and libraries.  If a DIR is given it is taken as
+  --{enable,disable}-pmi
+    Enables or disables PMI support. Default is to probe for availability.
+    If '--enable-pmi' is given then configure will fail if a PMI client library
+    cannot be identified.
+
+  --with-pmi-home=DIR
+    Explicitly provide DIR as the install prefix of the PMI support. DIR is taken as
     the directory containing an "include" subdirectory, and is also searched
     for "lib", "lib32" or "lib64" (as appropriate) unless the configure option
-    '--with-pmi-libdir=DIR' is also specified.
-    If '--with-pmi' is given (with or without an argument) then configure will
-    fail if a PMI client library can not be identified.
+    '--with-pmi-ldflags' is also specified.  Without this option configure will
+    search the standard locations for headers and libraries.  
 
-  --with-pmi-libdir=DIR
-    This option specifies the directory containing the PMI client library,
-    overriding the default search.
+  --with-pmi-ldflags=-L/path/to/pmi/lib
+    This option specifies the linker flags needed to link the PMI client library,
+    overriding the default search. Usually of the form -L/path/to/pmi/lib
 
   --with-pmi-libs=VALUE
     This option disables the default search logic for a PMI client library

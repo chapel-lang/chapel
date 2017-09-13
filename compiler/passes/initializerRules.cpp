@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "InitNormalize.h"
+#include "passes.h"
 #include "stmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
@@ -243,6 +244,15 @@ static void preNormalize(FnSymbol* fn) {
   } else if (state.isPhase1() == true) {
     preNormalize(fn->body, state);
 
+  // 1) Insert field initializers before the first statement
+  // 2) Pre-normalize the phase2 statements
+  } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+    Expr* head = fn->body->body.head;
+
+    state.initializeFieldsBefore(head);
+
+    preNormalize(fn->body, state, head);
+
   // 1) Insert super.init()
   // 2) Insert field initializers before super.init()
   // 3) Pre-normalize the phase2 statements
@@ -284,7 +294,8 @@ static void preNormalize(FnSymbol* fn) {
   // If this is a non-generic class then create a type method
   // to wrap this initializer
   if (isClass(at) == true && at->isGeneric() == false) {
-    buildClassAllocator(fn);
+    FnSymbol* _newFn = buildClassAllocator(fn);
+    normalize(_newFn);
 
     fn->addFlag(FLAG_INLINE);
   }
@@ -565,7 +576,10 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
 static bool hasReferenceToThis(Expr* expr) {
   bool retval = false;
 
-  if (SymExpr* symExpr = toSymExpr(expr)) {
+  if (isUnresolvedSymExpr(expr) == true) {
+    retval = false;
+
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
     if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
       retval = arg->hasFlag(FLAG_ARG_THIS);
     }
@@ -885,7 +899,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   FnSymbol*      fn          = new FnSymbol("_new");
   BlockStmt*     body        = fn->body;
-  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "t", at);
+  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "chpl_t", at);
   VarSymbol*     newInstance = newTemp("instance", at);
   CallExpr*      allocCall   = callChplHereAlloc(at);
   CallExpr*      initCall    = NULL;
@@ -918,11 +932,13 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   //   2) add that formal to the call to "init"
   //
   int count = 1;
+  SymbolMap initArgToNewArgMap;
 
   for_formals(formal, initMethod) {
     // Ignore _mt and this
     if (count >= 3) {
       ArgSymbol* arg = formal->copy();
+      initArgToNewArgMap.put(formal, arg);
 
       fn->insertFormalAtTail(arg);
 
@@ -935,16 +951,14 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
       } else {
         initCall->insertAtTail(new SymExpr(arg));
       }
-
-      // Don't want to be referencing the argument in the initializer, want to
-      // reference our new argument.
-      if (fn->where != NULL) {
-        subSymbol(fn->where, formal, arg);
-      }
     }
 
     count = count + 1;
   }
+
+  // Don't reference arguments to the initializer in the _new argument list
+  // or where clause.
+  update_symbols(fn, &initArgToNewArgMap);
 
   // Construct the body
   body->insertAtTail(new DefExpr(newInstance));

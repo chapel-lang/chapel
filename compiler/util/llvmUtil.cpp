@@ -121,6 +121,9 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   // stack overflow.
   llvm::Function *func = insertBefore->getParent()->getParent();
   llvm::BasicBlock* entryBlock = & func->getEntryBlock();
+#if HAVE_LLVM_VER >= 50
+  const llvm::DataLayout &DL = func->getParent()->getDataLayout();
+#endif
 
   if( insertBefore->getParent() == entryBlock ) {
     // Add before specific instruction in entry block.
@@ -138,9 +141,17 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
     llvm::ConstantInt::get(llvm::Type::getInt32Ty(type->getContext()), n);
 
   if( insertBefore ) {
-    tempVar = new llvm::AllocaInst(type, size, align, name, insertBefore);
+    tempVar = new llvm::AllocaInst(type,
+#if HAVE_LLVM_VER >= 50
+                                   DL.getAllocaAddrSpace(),
+#endif
+                                   size, align, name, insertBefore);
   } else {
-    tempVar = new llvm::AllocaInst(type, size, align, name, entryBlock);
+    tempVar = new llvm::AllocaInst(type,
+#if HAVE_LLVM_VER >= 50
+                                   DL.getAllocaAddrSpace(),
+#endif
+                                   size, align, name, entryBlock);
   }
 
   return tempVar;

@@ -59,9 +59,9 @@ class Function {
     const r0   : [dcDom] real;
     const rp   : [dcDom] real;
 
-    proc Function(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2, 
-                 max_level:int=30, autorefine:bool=true, compressed:bool=false, 
-                 sumC:FTree=new FTree(order=k), diffC:FTree=new FTree(order=k)) {
+    proc init(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2,
+              max_level:int=30, autorefine:bool=true, compressed:bool=false,
+              sumC:FTree=new FTree(order=k), diffC:FTree=new FTree(order=k)) {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
         this.k = k;
         this.thresh = thresh;
@@ -74,65 +74,32 @@ class Function {
         this.diffC = diffC;
        
         if debug then writeln("  initializing two-scale relation coefficients");
-        init_twoscale(k);
-       
-        if debug then writeln("  initializing quadrature coefficients");
-        init_quadrature(k);
-
-        if debug then writeln("  initializing tridiagonal derivative operator");
-        make_dc_periodic(k);
-
-        // initial refinement of analytic function f(x)
-        if f != nil {
-            if debug then writeln("  performing initial refinement of f(x)");
-            for l in 0..2**initial_level-1 {
-                const node = new Node(initial_level, l);
-                refine(node);
-            }
-        }
-        
-        if debug then writeln("done.");
-    }
-
-
-    proc deinit() {
-        delete sumC;
-        delete diffC;
-    }
-
-
-    /** Initialize the two-scale relation coefficient matricies.
-     */
-    proc init_twoscale(k) {
         hgDom = {0..2*k-1, 0..2*k-1};
         hg = hg_getCoeffs(k);
-        [(i,j) in hgDom] hgT[i,j] = hg[j,i];
-    }
 
-
-    /** Initialize the quadrature coefficient matricies.
-     */
-    proc init_quadrature(k) {
+       
+        if debug then writeln("  initializing quadrature coefficients");
         quadDom = {0..k-1};
         quad_x = gl_getPoints(k);
         quad_w = gl_getWeights(k);
-        
+
         quad_phiDom = {0..k-1, 0..k-1};
+
+
+        if debug then writeln("  initializing tridiagonal derivative operator");
+        dcDom = {0..k-1, 0..k-1};
+
+        super.init();
+
+        [(i,j) in hgDom] hgT[i,j] = hg[j,i];
+
         for i in quad_phiDom.dim(1) {
             const p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
             quad_phiw[i, ..] = quad_w[i] * p;
             quad_phiT[.., i] = p;
         }
-    }
 
-
-    /** Return the level-0 blocks rm, r0, rp of the central
-        difference derivative operator with periodic boundary
-        conditions on either side.
-     */
-    proc make_dc_periodic(k) {
-        dcDom = {0..k-1, 0..k-1};
         var iphase = 1.0;
         for i in dcDom.dim(1) {
             var jphase = 1.0;
@@ -148,8 +115,25 @@ class Function {
             }
             iphase = -iphase;
         }
+
+
+        // initial refinement of analytic function f(x)
+        if f != nil {
+            if debug then writeln("  performing initial refinement of f(x)");
+            for l in 0..2**initial_level-1 {
+                const node = new Node(initial_level, l);
+                refine(node);
+            }
+        }
+
+        if debug then writeln("done.");
     }
 
+
+    proc deinit() {
+        delete sumC;
+        delete diffC;
+    }
 
     /** Return a deep copy of this Function
      */

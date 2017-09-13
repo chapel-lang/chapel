@@ -51,7 +51,7 @@ endif
 ## PMI bootstrap support (optional)
 ##
 if HAVE_BOOTSTRAP_PMI
-pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_INCLUDES@
+pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_CFLAGS@
 pmi_srcdir = $(top_srcdir)/other/pmi-spawner
 pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
 pmi_deps = $(pmi_srcdir)/*.[ch]
@@ -101,8 +101,8 @@ CONDUIT_SOURCELIST =                 \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @IBV_INCLUDES@ $(fh_extralibcflags) $(ssh_defines) $(mpi_defines) $(pmi_cppflags) $(fca_extralibcflags)\
-			 @IBV_LIBCFLAGS@ $(ibv_thread_defines) $(blcr_extralibcflags)
+CONDUIT_EXTRALIBCFLAGS = @IBV_CFLAGS@ $(fh_extralibcflags) $(ssh_defines) $(mpi_defines) $(pmi_cppflags) $(fca_extralibcflags)\
+			 $(ibv_thread_defines) $(blcr_extralibcflags)
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = $(fh_extraheaders) $(fca_extraheaders) $(blcr_extraheaders)

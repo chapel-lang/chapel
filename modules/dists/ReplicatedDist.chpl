@@ -541,7 +541,7 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where chpl__getActualArray(arr
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
-proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
+proc ReplicatedArr.dsiDestroyArr() {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc do
       delete locArr;

@@ -148,7 +148,6 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_task_bundle_t chpl_qthread_process_bundle = {
-                                   .countRunning = false,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
@@ -158,7 +157,6 @@ chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .id = chpl_nullTaskID };
 
 chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
-                                   .countRunning = false,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
@@ -182,8 +180,6 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 //
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-
-static volatile chpl_bool canCountRunningTasks = false;
 
 void chpl_task_yield(void)
 {
@@ -784,8 +780,6 @@ static aligned_t main_wrapper(void *arg)
 
     *tls = pv;
 
-    // main call doesn't need countRunning / chpl_taskRunningCntInc
-
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (m_bundle->chpl_main)();
@@ -804,17 +798,11 @@ static aligned_t chapel_wrapper(void *arg)
 
     *tls = pv;
 
-    if (bundle->countRunning)
-      chpl_taskRunningCntInc(0, 0);
-
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
 
     wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
-
-    if (bundle->countRunning)
-      chpl_taskRunningCntDec(0, 0);
 
     return 0;
 }
@@ -841,7 +829,6 @@ void chpl_task_callMain(void (*chpl_main)(void))
     // Be sure to initialize Chapel managed task-local state with zeros
     main_wrapper_bundle_t arg = { .chpl_main = NULL };
 
-    arg.arg.countRunning      = false;
     arg.arg.is_executeOn      = false;
     arg.arg.requestedSubloc   = c_sublocid_any_val;
     arg.arg.requested_fid     = FID_NONE;
@@ -859,13 +846,6 @@ void chpl_task_callMain(void (*chpl_main)(void))
 
 void chpl_task_stdModulesInitialized(void)
 {
-    //
-    // It's not safe to call the module code to count the main task as
-    // running until after the modules have been initialized.  That's
-    // when this function is called, so now count the main task.
-    //
-    canCountRunningTasks = true;
-    chpl_taskRunningCntInc(0, 0);
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn,
@@ -904,7 +884,6 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
     c_sublocid_t execution_subloc =
       chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
-    arg->countRunning      = false;
     arg->is_executeOn      = false;
     arg->requestedSubloc   = full_subloc;
     arg->requested_fid     = fid;
@@ -937,7 +916,6 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
     c_sublocid_t execution_subloc =
       chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
-    bundle->countRunning       = canCountRunningTasks;
     bundle->is_executeOn       = true;
     bundle->requestedSubloc    = full_subloc;
     bundle->requested_fid      = fid;
@@ -1094,12 +1072,6 @@ size_t chpl_task_getCallStackSize(void)
 uint32_t chpl_task_getNumQueuedTasks(void)
 {
     return qthread_readstate(NODE_BUSYNESS);
-}
-
-uint32_t chpl_task_getNumRunningTasks(void)
-{
-    chpl_internal_error("chpl_task_getNumRunningTasks() called");
-    return 1;
 }
 
 int32_t chpl_task_getNumBlockedTasks(void)

@@ -12,7 +12,7 @@ proc test() {
         throw new Error("other error");
     }
     writeln("after coforall block");
-  } catch errors: ErrorGroup {
+  } catch errors: TaskErrors {
     var hasMyError = errors.contains(MyError);
     writeln("contains MyError? ", hasMyError);
     writeln("iterating MyError:");

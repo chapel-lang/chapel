@@ -1,11 +1,14 @@
-proc printErrors(errors: ErrorGroup)
+config const option = 2;
+
+proc printErrors(errors: TaskErrors, depth:int)
 {
   for e in errors { 
-    var g = e:ErrorGroup;
-    if g then
-      printErrors(g);
-    else
-      writeln("err:", e.msg);
+    var g = e:TaskErrors;
+    if g {
+      writeln(" "*depth, "TaskErrors");
+      printErrors(g, depth + 1);
+    } else
+      writeln(" "*depth, "err:", e.msg);
   }
 }
 
@@ -16,13 +19,14 @@ proc test() {
     coforall i in 1..2 {
       coforall j in 1..2 {
         coforall k in 1..2 {
-          throw new Error("test error");
+          if k <= option then
+            throw new Error("test error");
         }
       }
     }
     writeln("after coforall block");
-  } catch errors: ErrorGroup {
-    printErrors(errors);
+  } catch errors: TaskErrors {
+    printErrors(errors,0);
   } catch e {
     writeln("Caught other error ", e.msg);
   }

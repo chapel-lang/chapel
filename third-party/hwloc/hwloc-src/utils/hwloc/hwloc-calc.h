@@ -138,7 +138,7 @@ hwloc_calc_get_obj_inside_sets_by_depth(struct hwloc_calc_location_context_s *lc
 	return obj;
       i++;
     } else {
-      if (obj->os_index == i)
+      if (obj->os_index == ind)
 	return obj;
     }
   }
@@ -193,9 +193,9 @@ hwloc_calc_depth_of_type(struct hwloc_calc_location_context_s *lcontext,
       depth = hwloc_get_cache_type_depth(topology, depthattr, cachetype);
       if (verbose >= 0) {
 	if (depth == HWLOC_TYPE_DEPTH_UNKNOWN)
-	  fprintf(stderr, "Cache with custom depth %d and type %d does not exist\n", depthattr, cachetype);
+	  fprintf(stderr, "Cache with custom depth %d and type %d does not exist\n", depthattr, (int) cachetype);
 	else if (depth == HWLOC_TYPE_DEPTH_MULTIPLE)
-	  fprintf(stderr, "Cache with custom depth %d and type %d has multiple possible depths\n", depthattr, cachetype);
+	  fprintf(stderr, "Cache with custom depth %d and type %d has multiple possible depths\n", depthattr, (int) cachetype);
       }
       return depth;
     } else
@@ -255,7 +255,7 @@ hwloc_calc_parse_depth_prefix(struct hwloc_calc_location_context_s *lcontext,
   }
   if ((unsigned) depth >= topodepth) {
     if (verbose >= 0)
-      fprintf(stderr, "ignoring invalid depth %u\n", depth);
+      fprintf(stderr, "ignoring invalid depth %d\n", depth);
     return -1;
   }
   *typep = (hwloc_obj_type_t) -1;
@@ -281,7 +281,7 @@ hwloc_calc_parse_range(const char *_string,
     len = strlen(_string);
   }
   if (len >= sizeof(string)) {
-    fprintf(stderr, "invalid range `%s', too long\n", string);
+    fprintf(stderr, "invalid range `%s', too long\n", _string);
     return -1;
   }
   memcpy(string, _string, len);
@@ -412,10 +412,10 @@ hwloc_calc_append_object_range(struct hwloc_calc_location_context_s *lcontext,
       if (rootnodeset)
 	hwloc_bitmap_asprintf(&sn, rootnodeset);
       if (obj)
-	printf("using object #%u depth %u below cpuset %s nodeset %s\n",
+	printf("using object #%u depth %d below cpuset %s nodeset %s\n",
 	       i, depth, sc, sn);
       else
-	fprintf(stderr, "object #%u depth %u below cpuset %s nodeset %s does not exist\n",
+	fprintf(stderr, "object #%u depth %d below cpuset %s nodeset %s does not exist\n",
 		i, depth, sc, sn);
       free(sc);
       if (rootnodeset)

@@ -2381,18 +2381,24 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
   CallExpr* wCall = findForwardingCallAndUnresolve(wDest);
 
   // Extend wDest with formals to match parCall's actuals.
-  SymExpr* curArg = toSymExpr(
+  SymExpr* curArgSE = toSymExpr(
     parCall->get(parCall->numActuals() - numExtraArgs + 1));
+
   do {
-    ArgSymbol* curFormal = new ArgSymbol(INTENT_BLANK,
-      curArg->symbol()->name, curArg->symbol()->type);
-    curFormal->qual = curArg->symbol()->qual;
+    Symbol*    curArg    = curArgSE->symbol();
+    IntentTag  fIntent   = concreteIntent(INTENT_BLANK, curArg->type);
+    ArgSymbol* curFormal = new ArgSymbol(fIntent, curArg->name, curArg->type);
+
+    curFormal->qual = curArg->qual;
+
+    if (curFormal->isRef() &&
+        curArg->isConstValWillNotChange())
+      curFormal->addFlag(FLAG_REF_TO_CONST);
 
     wCall->insertAtTail(curFormal);
     wDest->insertFormalAtTail(curFormal);
 
-    curArg = toSymExpr(curArg->next);
-  } while (curArg);
+  } while ((curArgSE = toSymExpr(curArgSE->next)));
 
   // Handle whatever wDest is wrapping or forwarding to.
   implementForallIntents2New(fs, wCall->resolvedFunction(),

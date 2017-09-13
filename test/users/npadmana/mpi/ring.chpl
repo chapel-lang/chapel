@@ -1,7 +1,7 @@
 use MPI;
 use C_MPI;
 use Time;
-use Barrier;
+use Barriers;
 
 enum BarrierType {None, Chapel, MPI};
 

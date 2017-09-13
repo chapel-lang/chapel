@@ -1,0 +1,3 @@
+--inline-iterators --report-inlined-iterators                                   # inline-iters-report.default.good
+--inline-iterators --report-inlined-iterators --inline-iterators-yield-limit 1  # inline-iters-report.small.good
+--inline-iterators --report-inlined-iterators --inline-iterators-yield-limit 25 # inline-iters-report.large.good

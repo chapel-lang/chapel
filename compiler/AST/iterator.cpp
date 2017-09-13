@@ -1501,8 +1501,7 @@ void lowerIterator(FnSymbol* fn) {
     // Isn't that bad?
     if (singleLoop) {
       if (fReportOptimizedLoopIterators) {
-        ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
-        INT_ASSERT(mod);
+        ModuleSymbol *mod = fn->getModule();
 
         if (developer || mod->modTag == MOD_USER) {
           printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",

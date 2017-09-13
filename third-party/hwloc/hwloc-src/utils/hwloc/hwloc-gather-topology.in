@@ -65,6 +65,15 @@ name="$1"
 basename=`basename "$name"`
 dirname=`dirname "$name"`
 
+
+if [ x$gatherio = x0 ]; then
+  echo "I/O files won't be saved (--io not given)."
+fi
+if [ x$gatherdmi = x0 ]; then
+  echo "DMI files won't be saved (--dmi not given)."
+fi
+echo
+
 if ! mkdir -p "$dirname" ; then
     error "Failed to create directory $dirname."
     exit 1
@@ -219,6 +228,8 @@ echo "Topology files gathered in $dirname/$basename.tar.bz2 and kept in $destdir
 export HWLOC_THISSYSTEM=0
 "$lstopo" - -v > "$dirname/$basename.output"
 echo "Expected topology output stored in $dirname/$basename.output"
+"$lstopo" -.xml --whole-system > "$dirname/$basename.xml"
+echo "XML topology stored in in $dirname/$basename.xml"
 
 echo
 echo "WARNING: Do not post these files on a public list or website unless you"

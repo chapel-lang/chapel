@@ -180,26 +180,30 @@ proc hdfsChapelConnect(out error: syserr, path: c_string, port: int): c_void_ptr
 }
 
 /* Connect to HDFS and create a filesystem ptr per locale */
-proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem {
+proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem throws {
   var ret: hdfsChapelFileSystem;
-  forall loc in Locales with (ref ret) {
-    on loc {
-      var err: syserr;
-      const tmpstr = path.localize();
-      rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
-      if err then ioerror(err, "Unable to connect to HDFS", tmpstr);
+  try {
+    forall loc in Locales with (ref ret) {
+      on loc {
+        var err: syserr;
+        const tmpstr = path.localize();
+        rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
+        if err then try ioerror(err, "Unable to connect to HDFS", tmpstr);
+      }
     }
   }
   return ret;
 }
 
 /* Disconnect from the configured HDFS filesystem on each locale */
-proc hdfsChapelFileSystem.hdfsChapelDisconnect() {
-  forall loc in Locales {
-    on loc {
-      var err: syserr;
-      err = hdfs_disconnect(rcLocal(this._internal_file));
-      if err then ioerror(err, "Unable to disconnect from HDFS");
+proc hdfsChapelFileSystem.hdfsChapelDisconnect() throws {
+  try {
+    forall loc in Locales {
+      on loc {
+        var err: syserr;
+        err = hdfs_disconnect(rcLocal(this._internal_file));
+        if err then try ioerror(err, "Unable to disconnect from HDFS");
+      }
     }
   }
 }
@@ -208,13 +212,15 @@ proc hdfsChapelFileSystem.hdfsChapelDisconnect() {
 
 /* Open a file on each locale */
 proc hdfsChapelFileSystem.hdfsOpen(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
-    defaultIOStyle()):hdfsChapelFile {
+    defaultIOStyle()):hdfsChapelFile throws {
   var ret: hdfsChapelFile;
-  forall loc in Locales with (ref ret) {
-    on loc {
-      var err:syserr = ENOERR;
-      rcLocal(ret.files) = open(err, path, mode, hints, style, rcLocal(this._internal_file));
-      if err then ioerror(err, "in foreign open", path);
+  try {
+    forall loc in Locales with (ref ret) {
+      on loc {
+        var err:syserr = ENOERR;
+        rcLocal(ret.files) = open(err, path, mode, hints, style, rcLocal(this._internal_file));
+        if err then try ioerror(err, "in foreign open", path);
+      }
     }
   }
   return ret;
@@ -226,12 +232,14 @@ proc hdfsChapelFile.hdfsClose(out err: syserr) {
 }
 
 /* Close a file opened with :proc:`hdfsChapelFileSystem.hdfsOpen` */
-proc hdfsChapelFile.hdfsClose() {
-  forall loc in Locales {
-    on loc {
-      var err: syserr = ENOERR;
-      this.hdfsClose(err);
-      if err then ioerror(err, "Unable to close HDFS file");
+proc hdfsChapelFile.hdfsClose() throws {
+  try {
+    forall loc in Locales {
+      on loc {
+        var err: syserr = ENOERR;
+        this.hdfsClose(err);
+        if err then try ioerror(err, "Unable to close HDFS file");
+      }
     }
   }
 }
@@ -279,28 +287,27 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 }
 
 /* Open a file on an HDFS filesystem for a single locale */
-proc hdfsChapelFileSystem_local.hdfs_chapel_open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
+proc hdfsChapelFileSystem_local.hdfs_chapel_open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var err:syserr = ENOERR;
   var ret = open(err, path, mode, hints, style, this._internal_);
-  if err then ioerror(err, "in foreign open", path);
+  if err then try ioerror(err, "in foreign open", path);
   return ret;
 }
 
 pragma "no doc"
-proc hdfsChapelFileSystem_local.hdfs_chapel_disconnect() {
+proc hdfsChapelFileSystem_local.hdfs_chapel_disconnect() throws {
   on this.home {
     var err: syserr;
     err = hdfs_disconnect(this._internal_);
-    if err then ioerror(err, "Unable to disconnect from HDFS");
+    if err then try ioerror(err, "Unable to disconnect from HDFS");
   }
 }
 
 /* Connect to an HDFS filesystem on a single locale */
-proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local{
-
+proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local throws {
   var err: syserr;
   var ret = hdfs_chapel_connect(err, path, port);
-  if err then ioerror(err, "Unable to connect to HDFS", path);
+  if err then try ioerror(err, "Unable to connect to HDFS", path);
   return ret;
 }
 
@@ -313,7 +320,7 @@ proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFi
 }
 
 pragma "no doc"
-proc getHosts(f: file) {
+proc getHosts(f: file) throws {
   var ret: hdfsChapelFile_local;
   var ret_num: c_int;
   var arr: char_ptr_ptr = hdfs_alloc_array(numLocales);
@@ -321,7 +328,7 @@ proc getHosts(f: file) {
     hdfs_create_locale_mapping(arr, loc.id, loc.name.localize().c_str());
   }
   var err = hdfs_get_owners(f._file_internal, ret._internal_, ret_num, arr, numLocales);
-  if err then ioerror(err, "Unable to get owners for HDFS file");
+  if err then try ioerror(err, "Unable to get owners for HDFS file");
   return (ret, ret_num);
 }
 

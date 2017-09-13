@@ -602,7 +602,7 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
 // output domain
 //
 proc AccumStencilDom.dsiSerialWrite(x) {
-  x.write(whole);
+  x <~> whole;
 }
 
 //
@@ -789,7 +789,7 @@ proc AccumStencilArr.setup() {
   if doRADOpt && disableAccumStencilLazyRAD then setupRADOpt();
 }
 
-proc AccumStencilArr.dsiDestroyArr(isslice : bool) {
+proc AccumStencilArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       if !ignoreFluff then
@@ -1004,16 +1004,16 @@ proc AccumStencilArr.dsiSerialWrite(f) {
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f.write(dsiAccess(i));
+    f <~> dsiAccess(i);
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! binary then f.write(" ");
+      if ! binary then f <~> " ";
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 1..rank-1 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank {
-            f.writeln();
+            f <~> "\n";
             i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
@@ -1216,7 +1216,6 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
 pragma "no copy return"
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
-  a._arrAlias = _value;
   return _newArray(a);
 }
 
@@ -1528,10 +1527,6 @@ proc AccumStencilArr.doiCanBulkTransfer(viewDom) {
   if dom.stridable then
     for param i in 1..rank do
       if viewDom.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }

@@ -330,17 +330,6 @@ size_t chpl_task_getCallStackSize(void);
 uint32_t chpl_task_getNumQueuedTasks(void);
 
 //
-// returns the number of tasks that are running on the current locale,
-// including any that may be blocked waiting for something.
-// Note that the value returned could be larger than the limit on the maximum
-// number of threads, since a thread could be "suspended," particularly if it
-// is waiting at the end of a cobegin, e.g.  In this case, it could be
-// executing a task inside the cobegin, so in effect the same thread would be
-// executing more than one task.
-//
-uint32_t chpl_task_getNumRunningTasks(void);
-
-//
 // returns the number of tasks that are blocked waiting on a sync or single
 // variable.
 // Note that this information may only available if the program is run with
@@ -392,6 +381,7 @@ size_t chpl_task_getDefaultCallStackSize(void);
 //
 extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntReset(int64_t _ln, int32_t _fn);
 
 #ifdef __cplusplus
 } // end extern "C"

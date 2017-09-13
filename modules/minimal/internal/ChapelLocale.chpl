@@ -47,10 +47,17 @@ module ChapelLocale {
   // The runtime calls these to adjust the running task count.
   //
   pragma "insert line file info"
+  pragma "inc running task"
   export
   proc chpl_taskRunningCntInc() { }
 
   pragma "insert line file info"
+  pragma "dec running task"
   export
   proc chpl_taskRunningCntDec() { }
+
+  pragma "insert line file info"
+  export
+  proc chpl_taskRunningCntReset() { }
+
 }

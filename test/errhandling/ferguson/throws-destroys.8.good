@@ -1,0 +1,7 @@
+in loopThrow, r=(x = 101)
+destroying R(x=101)
+in loopThrow, r=(x = 102)
+destroying R(x=102)
+uncaught Error: 
+  throws-destroys.chpl:63: thrown here
+  throws-destroys.chpl:23: uncaught here

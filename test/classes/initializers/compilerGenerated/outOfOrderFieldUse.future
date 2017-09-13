@@ -1,0 +1,4 @@
+feature request: expand support for default initializers
+
+This test should generate a reasonable user-facing error message, but instead
+encounters an internal error when creating the call info.

@@ -59,6 +59,9 @@ typedef struct gasneti_pshmnet gasneti_pshmnet_t;
    Returns pointer to shared memory of length "aux_sz" available for conduit-specific use */
 extern void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t localbcastfn, size_t aux_sz);
 
+/* Unmap all pshm segments */
+extern void gasneti_pshm_fini(void);
+
 /*  PSHMnets needed for PSHM active messages.
  *
  * - Conduits using GASNET_PSHM must initialize these two vnets

@@ -214,8 +214,16 @@
     (GASNETI_COMPILER_IS_MPI_CC && GASNETI_HAVE_MPI_CC_PRAGMA_GCC_DIAGNOSTIC) || \
     (GASNETI_COMPILER_IS_CXX && GASNETI_HAVE_CXX_PRAGMA_GCC_DIAGNOSTIC)
   #define GASNETI_USE_PRAGMA_GCC_DIAGNOSTIC 1
+  #if defined(__cplusplus)
+    #define _GASNETI_NOWARN_IGNORES_C_ONLY
+  #else
+    #define _GASNETI_NOWARN_IGNORES_C_ONLY \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wstrict-prototypes") \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wmissing-prototypes")
+  #endif
   #define GASNETI_BEGIN_NOWARN                                          \
           GASNETI_PRAGMA(GCC diagnostic push)                           \
+          _GASNETI_NOWARN_IGNORES_C_ONLY                                \
           GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-function")    \
           GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-variable")    \
           GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-value")       \

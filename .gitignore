@@ -208,6 +208,8 @@ tags
 
 /test/localeModels/gbt/maxTaskPar.good
 
+/test/mason/.mason
+
 /test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log

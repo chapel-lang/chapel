@@ -31,26 +31,342 @@
    In the second form, no error is returned, and instead the task will halt
    with a fatal error if an error is encountered.
 
-   .. note::
-
-      This module is unrelated to the implementation of error handling in
-      Chapel generally, and is being maintained for legacy reasons.
-
  */
 module SysError {
 
 use SysBasic;
 
-class SystemError : Error {
-  var err: syserr;
+/*
 
-  proc SystemError(err: syserr, msg: string) {
-    this.err = err;
-    this.msg = msg;
+   ``SystemError`` is a base class for ``Errors`` generated from ``syserr``.
+   It provides factory methods to create different subtypes based on the
+   ``syserr`` that is passed.
+
+*/
+class SystemError : Error {
+  var err:     syserr;
+  var details: string;
+
+  proc SystemError(err: syserr, details: string = "") {
+    this.err     = err;
+    this.details = details;
+  }
+
+  /*
+     Provides a formatted string output for ``SystemError``, generated
+     from the internal ``err`` and the ``details`` string.
+  */
+  proc message() {
+    var strerror_err: err_t = ENOERR;
+    var errstr:  c_string   = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg: string     = errstr:string;
+
+    if !details.isEmptyString() then
+      err_msg = errstr:string + " (" + details + ")";
+
+    return err_msg;
   }
 
   proc writeThis(f) {
-    try! f.write(msg);
+    f <~> msg;
+  }
+
+  /*
+    Return the matching ``SystemError`` subtype for a given ``syserr``,
+    with an optional string containing extra details.
+
+    :arg err: the syserr to generate from
+    :arg details: extra information to include with the error
+  */
+  proc type fromSyserr(err: syserr, details: string = "") {
+    if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
+      return new BlockingIOError(details, err);
+    } else if err == ECHILD {
+      return new ChildProcessError(details, err);
+    } else if err == EPIPE || err == ESHUTDOWN {
+      return new BrokenPipeError(details, err);
+    } else if err == ECONNABORTED {
+      return new ConnectionAbortedError(details, err);
+    } else if err == ECONNREFUSED {
+      return new ConnectionRefusedError(details, err);
+    } else if err == ECONNRESET {
+      return new ConnectionResetError(details, err);
+    } else if err == EEXIST {
+      return new FileExistsError(details, err);
+    } else if err == ENOENT {
+      return new FileNotFoundError(details, err);
+    } else if err == EINTR {
+      return new InterruptedError(details, err);
+    } else if err == EISDIR {
+      return new IsADirectoryError(details, err);
+    } else if err == ENOTDIR {
+      return new NotADirectoryError(details, err);
+    } else if err == EACCES || err == EPERM {
+      return new PermissionError(details, err);
+    } else if err == ESRCH {
+      return new ProcessLookupError(details, err);
+    } else if err == ETIMEDOUT {
+      return new TimeoutError(details, err);
+    } else if err == EEOF {
+      return new EOFError(details, err);
+    } else if err == ESHORT {
+      return new UnexpectedEOFError(details, err);
+    } else if err == EFORMAT {
+      return new BadFormatError(details, err);
+    }
+
+    return new SystemError(err, details);
+  }
+
+  /*
+    Return the matching ``SystemError`` subtype for a given error number,
+    with an optional string containing extra details.
+
+    :arg err: the number to generate from
+    :arg details: extra information to include with the error
+  */
+  proc type fromSyserr(err: int, details: string = "") {
+    return fromSyserr(err:syserr, details);
+  }
+}
+
+/*
+
+   ``BlockingIOError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EAGAIN`, :const:`SysBasic.EALREADY`,
+   :const:`SysBasic.EWOULDBLOCK`, and :const:`SysBasic.EINPROGRESS`.
+
+*/
+class BlockingIOError : SystemError {
+  proc BlockingIOError(details: string = "", err: syserr = EWOULDBLOCK) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``ChildProcessError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.ECHILD`.
+
+*/
+class ChildProcessError : SystemError {
+  proc ChildProcessError(details: string = "", err: syserr = ECHILD) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``ConnectionError`` is the subclass of ``SystemError`` that serves as the
+   base class for all system errors regarding connections.
+
+*/
+class ConnectionError : SystemError { }
+
+/*
+
+   ``BrokenPipeError`` is the subclass of ``ConnectionError`` corresponding
+   to :const:`SysBasic.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
+
+*/
+class BrokenPipeError : ConnectionError {
+  proc BrokenPipeError(details: string = "", err: syserr = EPIPE) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``ConnectionAbortedError`` is the subclass of ``ConnectionError``
+   corresponding to :const:`SysBasic.ECONNABORTED`.
+
+*/
+class ConnectionAbortedError : ConnectionError {
+  proc ConnectionAbortedError(details: string = "", err: syserr = ECONNABORTED) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``ConnectionRefusedError`` is the subclass of ``ConnectionError``
+   corresponding to :const:`SysBasic.ECONNREFUSED`.
+
+*/
+class ConnectionRefusedError : ConnectionError {
+  proc ConnectionRefusedError(details: string = "", err: syserr = ECONNREFUSED) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``ConnectionResetError`` is the subclass of ``ConnectionError``
+   corresponding to :const:`SysBasic.ECONNRESET`.
+
+*/
+class ConnectionResetError : ConnectionError {
+  proc ConnectionResetError(details: string = "", err: syserr = ECONNRESET) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``FileExistsError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EEXIST`.
+
+*/
+class FileExistsError : SystemError {
+  proc FileExistsError(details: string = "", err: syserr = EEXIST) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``FileNotFoundError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.ENOENT`.
+
+*/
+class FileNotFoundError : SystemError {
+  proc FileNotFoundError(details: string = "", err: syserr = ENOENT) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``InterruptedError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EINTR`.
+
+*/
+class InterruptedError : SystemError {
+  proc InterruptedError(details: string = "", err: syserr = EINTR) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``IsADirectoryError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EISDIR`.
+
+*/
+class IsADirectoryError : SystemError {
+  proc IsADirectoryError(details: string = "", err: syserr = EISDIR) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``NotADirectoryError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.ENOTDIR`.
+
+*/
+class NotADirectoryError : SystemError {
+  proc NotADirectoryError(details: string = "", err: syserr = ENOTDIR) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``PermissionError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EACCES` and :const:`SysBasic.EPERM`.
+
+*/
+class PermissionError : SystemError {
+  proc PermissionError(details: string = "", err: syserr = EPERM) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``ProcessLookupError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.ESRCH`.
+
+*/
+class ProcessLookupError : SystemError {
+  proc ProcessLookupError(details: string = "", err: syserr = ESRCH) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``TimeoutError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.ETIMEDOUT`.
+
+*/
+class TimeoutError : SystemError {
+  proc TimeoutError(details: string = "", err: syserr = ETIMEDOUT) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``IOError`` is the subclass of ``SystemError`` that serves as the
+   base class for all errors regarding inputs and their formatting.
+   They are typically not directly generated by the OS, but they are
+   used and emitted by the IO module.
+
+*/
+class IOError : SystemError { }
+
+/*
+
+   ``EOFError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EEOF`.
+
+*/
+class EOFError : IOError {
+  proc EOFError(details: string = "", err: syserr = EEOF) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``UnexpectedEOFError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.ESHORT`.
+
+*/
+class UnexpectedEOFError : IOError {
+  proc UnexpectedEOFError(details: string = "", err: syserr = ESHORT) {
+    this.details = details;
+    this.err     = err;
+  }
+}
+
+/*
+
+   ``BadFormatError`` is the subclass of ``SystemError`` corresponding to
+   :const:`SysBasic.EFORMAT`.
+
+*/
+class BadFormatError : IOError {
+  proc BadFormatError(details: string = "", err: syserr = EFORMAT) {
+    this.details = details;
+    this.err     = err;
   }
 }
 
@@ -90,13 +406,7 @@ proc quote_string(s:string, len:ssize_t) {
  */
 proc ioerror(error:syserr, msg:string) throws
 {
-  if( error ) {
-    var errstr:c_string;
-    var strerror_err:err_t = ENOERR;
-    errstr = sys_strerror_syserr_str(error, strerror_err);
-    const err_msg: string = errstr:string + " " + msg;
-    throw new SystemError(error, err_msg);
-  }
+  if error then throw SystemError.fromSyserr(error, msg);
 }
 
 /* Halt with a useful message if there was an error. Do nothing if the error
@@ -111,12 +421,10 @@ proc ioerror(error:syserr, msg:string) throws
  */
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
-  if( error ) {
-    var strerror_err:err_t = ENOERR;
-    const errstr = sys_strerror_syserr_str(error, strerror_err):string;
-    const quotedpath = quote_string(path, path.length:ssize_t):string;
-    const err_msg: string = errstr + " " + msg + " with path " + quotedpath;
-    throw new SystemError(error, err_msg);
+  if error {
+    const quotedpath = quote_string(path, path.length:ssize_t): string;
+    var   details    = msg + " with path " + quotedpath;
+    throw SystemError.fromSyserr(error, details);
   }
 }
 
@@ -133,12 +441,10 @@ proc ioerror(error:syserr, msg:string, path:string) throws
  */
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
-  if( error ) {
-    var strerror_err:err_t = ENOERR;
-    const errstr = sys_strerror_syserr_str(error, strerror_err): string;
+  if error {
     const quotedpath = quote_string(path, path.length:ssize_t): string;
-    const err_msg: string = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-    throw new SystemError(error, err_msg);
+    var   details    = msg + " with path " + quotedpath + " offset " + offset:string;
+    throw SystemError.fromSyserr(error, details);
   }
 }
 
@@ -159,8 +465,8 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
   const quotedpath = quote_string(path, path.length:ssize_t): string;
-  const err_msg = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
-  throw new SystemError(EIO:syserr, err_msg);
+  const details    = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
+  throw SystemError.fromSyserr(EIO:syserr, details);
 }
 
 /* Convert a syserr error code to a human-readable string describing that

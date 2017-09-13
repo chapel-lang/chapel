@@ -1433,26 +1433,29 @@ void CallExpr::convertToNoop() {
 *                                                                             *
 ************************************** | *************************************/
 
-ContextCallExpr::ContextCallExpr() :
-  Expr(E_ContextCallExpr),
-  hasValue(false),
-  hasConstRef(false),
-  hasRef(false),
-  options()
-{
+ContextCallExpr::ContextCallExpr() : Expr(E_ContextCallExpr) {
   options.parent = this;
+
+  hasValue       = false;
+  hasConstRef    = false;
+  hasRef         = false;
+
   gContextCallExprs.add(this);
 }
 
-ContextCallExpr*
-ContextCallExpr::copyInner(SymbolMap* map) {
+ContextCallExpr* ContextCallExpr::copyInner(SymbolMap* map) {
   ContextCallExpr* _this = 0;
-  _this = new ContextCallExpr();
-  _this->hasValue = hasValue;
+
+  _this              = new ContextCallExpr();
+
+  _this->hasValue    = hasValue;
   _this->hasConstRef = hasConstRef;
-  _this->hasRef = hasRef;
-  for_alist(expr, options)
+  _this->hasRef      = hasRef;
+
+  for_alist(expr, options) {
     _this->options.insertAtTail(COPY_INT(expr));
+  }
+
   return _this;
 }
 
@@ -1460,21 +1463,25 @@ CallExpr* getDesignatedCall(const ContextCallExpr* a) {
   return toCallExpr(a->options.tail);
 }
 
-void
-ContextCallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+void ContextCallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
   INT_FATAL(this, "unexpected case in ContextCallExpr::replaceChild");
 }
 
-void
-ContextCallExpr::verify() {
+void ContextCallExpr::verify() {
   Expr::verify(E_ContextCallExpr);
+
   for_alist(expr, options) {
     verifyParent(expr);
-    if (isContextCallExpr(expr))
+
+    if (isContextCallExpr(expr) == true) {
       INT_FATAL(this, "ContextCallExpr cannot contain a ContextCallExpr");
-    if (!isCallExpr(expr))
+    }
+
+    if (isCallExpr(expr) == false) {
       INT_FATAL(this, "ContextCallExpr must contain only CallExpr");
+    }
   }
+
   // ContextCallExpr handles ref/value/const ref, so there should
   // be 2 or 3 options.
   if (options.length < 2 || options.length > 3)
@@ -1493,18 +1500,24 @@ void ContextCallExpr::accept(AstVisitor* visitor) {
 }
 
 QualifiedType ContextCallExpr::qualType() {
-  CallExpr* mainCall = getDesignatedCall(this);
-  if (mainCall)
-    return mainCall->qualType();
-  return QualifiedType(dtUnknown);
+  CallExpr*     mainCall = getDesignatedCall(this);
+  QualifiedType retval   = QualifiedType(dtUnknown);
+
+  if (mainCall) {
+    retval = mainCall->qualType();
+  }
+
+  return retval;
 }
 
-void ContextCallExpr::prettyPrint(std::ostream *o) {
+void ContextCallExpr::prettyPrint(std::ostream* o) {
   *o << "(options";
+
   for_alist(expr, options) {
     *o << " ";
     expr->prettyPrint(o);
   }
+
   *o << " )";
 }
 
@@ -1524,18 +1537,21 @@ void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
   // always use order of value, const ref, ref
   // ContextCallExpr::getCalls depends on this order
   int n = 0;
+
   if (valueCall != NULL) {
     options.insertAtTail(valueCall);
     parent_insert_help(this, valueCall);
     hasValue = true;
     n++;
   }
+
   if (constRefCall != NULL) {
     options.insertAtTail(constRefCall);
     parent_insert_help(this, constRefCall);
     hasConstRef = true;
     n++;
   }
+
   if (refCall != NULL) {
     options.insertAtTail(refCall);
     parent_insert_help(this, refCall);
@@ -1547,25 +1563,27 @@ void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
   INT_ASSERT(n >= 2);
 }
 
-void  ContextCallExpr::getCalls(CallExpr*& refCall,
-                                CallExpr*& valueCall,
-                                CallExpr*& constRefCall) {
+void ContextCallExpr::getCalls(CallExpr*& refCall,
+                               CallExpr*& valueCall,
+                               CallExpr*& constRefCall) const {
 
   // always use order of value, const ref, ref
-
   int n = 1;
+
   if (hasValue) {
     valueCall = toCallExpr(options.get(n));
     n++;
   } else {
     valueCall = NULL;
   }
+
   if (hasConstRef) {
     constRefCall = toCallExpr(options.get(n));
     n++;
   } else {
     constRefCall = NULL;
   }
+
   if (hasRef) {
     refCall = toCallExpr(options.get(n));
     n++;
@@ -1574,10 +1592,44 @@ void  ContextCallExpr::getCalls(CallExpr*& refCall,
   }
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+CallExpr* ContextCallExpr::getValueCall() const {
+  CallExpr* retval = NULL;
+
+  if (hasValue == true) {
+    retval = toCallExpr(options.get(1));
+  }
+
+  return retval;
+}
+
+CallExpr* ContextCallExpr::getConstRefCall() const {
+  CallExpr* retval = NULL;
+
+  if (hasConstRef == true) {
+    int n = (hasValue == true) ? 2 : 1;
+
+    retval = toCallExpr(options.get(n));
+  }
+
+  return retval;
+}
+
+CallExpr* ContextCallExpr::getRefCall() const {
+  CallExpr* retval = NULL;
+
+  if (hasRef == true) {
+    int n = (hasValue == true && hasConstRef == true) ? 3 : 2;
+
+    retval = toCallExpr(options.get(n));
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 ForallExpr::ForallExpr(Expr* indices,
                        Expr* iteratorExpr,

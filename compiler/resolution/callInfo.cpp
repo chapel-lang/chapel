@@ -20,12 +20,15 @@
 #include "callInfo.h"
 
 #include "baseAST.h"
+#include "driver.h"
 #include "expr.h"
+#include "iterator.h"
+#include "stringutil.h"
 
 CallInfo::CallInfo() {
-  call    = NULL;
-  scope   = NULL;
-  name    = NULL;
+  call  = NULL;
+  scope = NULL;
+  name  = NULL;
 }
 
 bool CallInfo::isNotWellFormed(CallExpr* callExpr) {
@@ -120,4 +123,104 @@ void CallInfo::haltNotWellFormed() const {
       }
     }
   }
+}
+
+const char* CallInfo::toString() {
+  bool        method = false;
+  bool        _this  = false;
+  int         start  = 0;
+  const char* retval = "";
+
+  if (actuals.n            >  1 &&
+      actuals.head()->type == dtMethodToken) {
+    method = true;
+    start  =    2;
+  }
+
+  if (name == astrThis) {
+    _this  =  true;
+    method = false;
+    start  =     2;
+  }
+
+  if (method == true) {
+    if (actuals.v[1] &&
+        actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      retval = astr(retval, "type ", ::toString(actuals.v[1]->type), ".");
+
+    } else {
+      retval = astr(retval,          ::toString(actuals.v[1]->type), ".");
+    }
+  }
+
+  if (developer                                   == false &&
+      strncmp("_type_construct_", name, 16) == 0) {
+    retval = astr(retval, name+16);
+
+  } else if (developer == false &&
+             strncmp("_construct_", name, 11) == 0) {
+    retval = astr(retval, name + 11);
+    retval = astr(retval, ".init");
+
+  } else if (_this == false) {
+    retval = astr(retval, name);
+  }
+
+  if (call->methodTag == false) {
+    if (call->square == true) {
+      retval = astr(retval, "[");
+    } else {
+      retval = astr(retval, "(");
+    }
+  }
+
+  for (int i = start; i < actuals.n; i++) {
+    Symbol*        sym  = actuals.v[i];
+    VarSymbol*     var  = toVarSymbol(sym);
+    Type*          type = sym->type;
+    AggregateType* at   = toAggregateType(type);
+    IteratorInfo*  ii   = (at != NULL) ? at->iteratorInfo : NULL;
+
+    if (i > start) {
+      retval = astr(retval, ", ");
+    }
+
+    if (actualNames.v[i] != NULL) {
+      retval = astr(retval, actualNames.v[i], "=");
+    }
+
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)   == true &&
+        ii->iterator->hasFlag(FLAG_PROMOTION_WRAPPER) == true) {
+      retval = astr(retval, "promoted expression");
+
+    } else if (sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      retval = astr(retval, "type ", ::toString(type));
+
+    } else if (var != NULL && var->immediate != NULL) {
+      if (var->immediate->const_kind == CONST_KIND_STRING) {
+        retval = astr(retval, "\"", var->immediate->v_string, "\"");
+
+      } else {
+        const size_t bufSize = 512;
+        char         buff[bufSize];
+
+        snprint_imm(buff, bufSize, *var->immediate);
+
+        retval = astr(retval, buff);
+      }
+
+    } else {
+      retval = astr(retval, ::toString(type));
+    }
+  }
+
+  if (call->methodTag == false) {
+    if (call->square == true) {
+      retval = astr(retval, "]");
+    } else {
+      retval = astr(retval, ")");
+    }
+  }
+
+  return retval;
 }

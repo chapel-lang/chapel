@@ -1,1 +1,3 @@
-permission_error.chpl:9: error: uncaught error - SYS_ERR in chown with path "file.txt"
+uncaught PermissionError: SYS_ERR (in chown with path "file.txt")
+  permission_error.chpl:9: thrown here
+  permission_error.chpl:9: uncaught here

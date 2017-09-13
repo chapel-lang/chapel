@@ -1,1 +1,3 @@
-dest_existed.chpl:3: error: uncaught error - File exists in copyTree(a, existing_dir)
+uncaught FileExistsError: File exists (in copyTree(a, existing_dir))
+  dest_existed.chpl:3: thrown here
+  dest_existed.chpl:3: uncaught here

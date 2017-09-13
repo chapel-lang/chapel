@@ -21,6 +21,7 @@
 
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "DeferStmt.h"
 #include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"
@@ -184,7 +185,7 @@ void AstDumpToNode::enterNode(BaseAST* node) const
   {
     if (FnSymbol* fn = toFnSymbol(node))
     {
-      fprintf(mFP, "%s%-12s", delimitEnter, node->astTagAsString());
+      fprintf(mFP, "%s%-14s", delimitEnter, node->astTagAsString());
 
       writeNodeID(node, true, false);
 
@@ -196,13 +197,13 @@ void AstDumpToNode::enterNode(BaseAST* node) const
 
     else if (isUnresolvedSymExpr(node) == true)
     {
-      fprintf(mFP, "%s%-12s", delimitEnter, "UsymExpr");
+      fprintf(mFP, "%s%-14s", delimitEnter, "UsymExpr");
       writeNodeID(node, true, false);
     }
 
     else
     {
-      fprintf(mFP, "%s%-12s", delimitEnter, node->astTagAsString());
+      fprintf(mFP, "%s%-14s", delimitEnter, node->astTagAsString());
       writeNodeID(node, true, false);
     }
   }
@@ -985,15 +986,20 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
 
 bool AstDumpToNode::enterCallExpr(CallExpr* node)
 {
-  if (node->primitive == 0)
-    fprintf(mFP, compact ? "%s%s " : "%s%-13s", delimitEnter, "Call");
+  if (node->primitive == NULL)
+    fprintf(mFP, compact ? "%s%s " : "%s%-15s", delimitEnter, "Call");
+
+  else if (node->isPrimitive(PRIM_MOVE))
+    fprintf(mFP, compact ? "%s%s " : "%s%-15s", delimitEnter, "PrimMove");
 
   else if (node->isPrimitive(PRIM_RETURN))
-    fprintf(mFP, compact ? "%s%s " : "%s%-13s", delimitEnter, "Return");
+    fprintf(mFP, compact ? "%s%s " : "%s%-15s", delimitEnter, "Return");
 
   else
-    fprintf(mFP, compact ? "%sPrimOp %s " : "%sPrimOp %-18s",
-            delimitEnter, node->primitive->name);
+    fprintf(mFP,
+            compact ? "%sPrimOp %s " : "%sPrimOp %-18s",
+            delimitEnter,
+            node->primitive->name);
 
   writeNodeID(node, false, false);
 
@@ -1241,6 +1247,11 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
     case GOTO_ERROR_HANDLING:
       fprintf(mFP, "tag:   gotoErrorHandling");
       break;
+
+    case GOTO_BREAK_ERROR_HANDLING:
+      fprintf(mFP, "tag:   gotoBreakErrorHandling");
+      break;
+
   }
 
   if (SymExpr* label = toSymExpr(node->label))
@@ -1303,6 +1314,27 @@ bool AstDumpToNode::enterCatchStmt(CatchStmt* node)
   {
     mOffset = mOffset + 2;
     node->_body->accept(this);
+    mOffset = mOffset - 2;
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+
+  return false;
+}
+
+bool AstDumpToNode::enterDeferStmt(DeferStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+  newline();
+
+  if (BlockStmt* body = node->body())
+  {
+    mOffset = mOffset + 2;
+    body->accept(this);
     mOffset = mOffset - 2;
   }
 
@@ -2010,7 +2042,8 @@ int AstDumpToNode::writeType(Type* type, bool announce) const
     exitNode(type);
   }
 
-  else if (EnumType*      t = toEnumType(type)) {
+  else if (EnumType*      t = toEnumType(type))
+  {
     enterNode(type);
     fprintf(mFP, " %s", t->symbol->name);
     exitNode(type);

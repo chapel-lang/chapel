@@ -3940,6 +3940,7 @@
     <docanchor file="a00335" title="Why do I need hwloc-dump-hwdata for memory on Intel Knights Landing Xeon Phi?">faq_knl_dump</docanchor>
     <docanchor file="a00335" title="How do I build for Intel Xeon Phi coprocessor?">faq_phi</docanchor>
     <docanchor file="a00335" title="How do I build hwloc for BlueGene/Q?">faq_bgq</docanchor>
+    <docanchor file="a00335" title="How do I build hwloc for Windows?">faq_windows</docanchor>
     <docanchor file="a00335" title="How to get useful topology information on NetBSD?">faq_netbsd_bind</docanchor>
   </compound>
   <compound kind="page">

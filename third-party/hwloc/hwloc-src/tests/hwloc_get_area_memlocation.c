@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Inria.  All rights reserved.
+ * Copyright © 2016-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -31,7 +31,7 @@ int main(void)
 
   buffer = hwloc_alloc(topology, LEN);
   assert(buffer);
-  printf("buffer %p length %u\n", buffer, LEN);
+  printf("buffer %p length %d\n", buffer, LEN);
 
   err = hwloc_get_area_memlocation(topology, buffer, LEN, set, HWLOC_MEMBIND_BYNODESET);
   if (err < 0 && errno == ENOSYS) {
@@ -40,7 +40,7 @@ int main(void)
   }
   assert(!err);
   hwloc_bitmap_asprintf(&s, set);
-  printf("address %p length %u allocated in nodeset %s\n", buffer, LEN, s);
+  printf("address %p length %d allocated in nodeset %s\n", buffer, LEN, s);
   free(s);
   hwloc_bitmap_copy(total, set);
 
@@ -63,7 +63,7 @@ int main(void)
   err = hwloc_get_area_memlocation(topology, buffer, 1, set, HWLOC_MEMBIND_BYNODESET);
   assert(!err);
   hwloc_bitmap_asprintf(&s, set);
-  printf("address %p length %u allocated in nodeset %s\n", buffer, LEN/4, s);
+  printf("address %p length %d allocated in nodeset %s\n", buffer, LEN/4, s);
   free(s);
   hwloc_bitmap_or(total, total, set);
 
@@ -81,7 +81,7 @@ int main(void)
   err = hwloc_get_area_memlocation(topology, buffer+LEN/4, LEN/4, set, HWLOC_MEMBIND_BYNODESET);
   assert(!err);
   hwloc_bitmap_asprintf(&s, set);
-  printf("address %p length %u allocated in nodeset %s\n", buffer+LEN/4, LEN/4, s);
+  printf("address %p length %d allocated in nodeset %s\n", buffer+LEN/4, LEN/4, s);
   free(s);
   hwloc_bitmap_or(total, total, set);
 
@@ -99,7 +99,7 @@ int main(void)
   err = hwloc_get_area_memlocation(topology, buffer+LEN/2, LEN/4, set, HWLOC_MEMBIND_BYNODESET);
   assert(!err);
   hwloc_bitmap_asprintf(&s, set);
-  printf("address %p length %u allocated in nodeset %s\n", buffer+LEN/2, LEN/4, s);
+  printf("address %p length %d allocated in nodeset %s\n", buffer+LEN/2, LEN/4, s);
   free(s);
   hwloc_bitmap_or(total, total, set);
 
@@ -117,7 +117,7 @@ int main(void)
   err = hwloc_get_area_memlocation(topology, buffer+3*LEN/4, LEN/4, set, HWLOC_MEMBIND_BYNODESET);
   assert(!err);
   hwloc_bitmap_asprintf(&s, set);
-  printf("address %p length %u allocated in nodeset %s\n", buffer+3*LEN/4, LEN/4, s);
+  printf("address %p length %d allocated in nodeset %s\n", buffer+3*LEN/4, LEN/4, s);
   free(s);
   hwloc_bitmap_or(total, total, set);
 
@@ -125,7 +125,7 @@ int main(void)
   err = hwloc_get_area_memlocation(topology, buffer, LEN, set, HWLOC_MEMBIND_BYNODESET);
   assert(!err);
   hwloc_bitmap_asprintf(&s, set);
-  printf("address %p length %u located on %s\n", buffer, LEN, s);
+  printf("address %p length %d located on %s\n", buffer, LEN, s);
   free(s);
   assert(hwloc_bitmap_isincluded(total, set));
 

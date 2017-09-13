@@ -35,7 +35,6 @@ extern SymbolMap                      paramMap;
 
 extern Vec<CallExpr*>                 callStack;
 
-extern Vec<CondStmt*>                 tryStack;
 extern bool                           tryFailure;
 
 extern Vec<CallExpr*>                 inits;
@@ -80,8 +79,6 @@ bool       isInstantiation(Type* sub, Type* super);
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
-bool requiresImplicitDestroy(CallExpr* call);
-
 bool isLeaderIterator(FnSymbol* fn);
 
 bool isStandaloneIterator(FnSymbol* fn);
@@ -103,10 +100,6 @@ bool canDispatch(Type*     actualType,
 
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
-const char* toString(Type* type);
-const char* toString(CallInfo* info);
-const char* toString(FnSymbol* fn);
-
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
@@ -114,8 +107,8 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
-Expr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
-                                              SymExpr*    origSE);
+CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
+                                                  SymExpr*    origSE);
 
 void implementForallIntents1(DefExpr* defChplIter);
 
@@ -204,11 +197,11 @@ FnSymbol* getUnalias(Type* t);
 bool isPOD(Type* t);
 
 // resolution errors and warnings
-void printResolutionErrorAmbiguous(CallInfo&                  info,
-                                   Vec<ResolutionCandidate*>& candidates);
+void printResolutionErrorUnresolved(CallInfo&                  info,
+                                    Vec<FnSymbol*>&            visibleFns);
 
-void printResolutionErrorUnresolved(Vec<FnSymbol*>& visibleFns,
-                                    CallInfo*       info);
+void printResolutionErrorAmbiguous (CallInfo&                  info,
+                                    Vec<ResolutionCandidate*>& candidates);
 
 void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 
@@ -231,5 +224,17 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
+
+
+extern Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
+
+struct Serializers {
+  FnSymbol* serializer;
+  FnSymbol* deserializer;
+  FnSymbol* broadcaster;
+  FnSymbol* destroyer;
+};
+
+extern std::map<Type*, Serializers> serializeMap;
 
 #endif

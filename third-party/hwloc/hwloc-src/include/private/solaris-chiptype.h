@@ -1,6 +1,7 @@
 /*
  * Copyright © 2009-2010 Oracle and/or its affiliates.  All rights reserved.
  *
+ * Copyright © 2017 Inria.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -21,39 +22,22 @@
 #ifndef HWLOC_PRIVATE_SOLARIS_CHIPTYPE_H
 #define HWLOC_PRIVATE_SOLARIS_CHIPTYPE_H
 
-/* SPARC Chip Modes. */
-#define MODE_UNKNOWN            0
-#define MODE_SPITFIRE           1
-#define MODE_BLACKBIRD          2
-#define MODE_CHEETAH            3
-#define MODE_SPARC64_VI         4
-#define MODE_T1                 5
-#define MODE_T2                 6
-#define MODE_SPARC64_VII        7
-#define MODE_ROCK               8
+struct hwloc_solaris_chip_info_s {
+  char *model;
+  char *type;
+  /* L1i, L1d, L2, L3 */
+#define HWLOC_SOLARIS_CHIP_INFO_L1I 0
+#define HWLOC_SOLARIS_CHIP_INFO_L1D 1
+#define HWLOC_SOLARIS_CHIP_INFO_L2I 2
+#define HWLOC_SOLARIS_CHIP_INFO_L2D 3
+#define HWLOC_SOLARIS_CHIP_INFO_L3  4
+  long cache_size[5]; /* cleared to -1 if we don't want of that cache */
+  unsigned cache_linesize[5];
+  unsigned cache_associativity[5];
+  int l2_unified;
+};
 
-/* SPARC Chip Implementations. */
-#define IMPL_SPARC64_VI         0x6
-#define IMPL_SPARC64_VII        0x7
-#define IMPL_SPITFIRE           0x10
-#define IMPL_BLACKBIRD          0x11
-#define IMPL_SABRE              0x12
-#define IMPL_HUMMINGBIRD        0x13
-#define IMPL_CHEETAH            0x14
-#define IMPL_CHEETAHPLUS        0x15
-#define IMPL_JALAPENO           0x16
-#define IMPL_JAGUAR             0x18
-#define IMPL_PANTHER            0x19
-#define IMPL_NIAGARA            0x23
-#define IMPL_NIAGARA_2          0x24
-#define IMPL_ROCK               0x25
-
-/* Default Mfg, Cache, Speed settings */
-#define TI_MANUFACTURER         0x17
-#define TWO_MEG_CACHE           2097152
-#define SPITFIRE_SPEED          142943750
-
-char* hwloc_solaris_get_chip_type(void);
-char* hwloc_solaris_get_chip_model(void);
+/* fills the structure with 0 on error */
+extern void hwloc_solaris_get_chip_info(struct hwloc_solaris_chip_info_s *info);
 
 #endif /* HWLOC_PRIVATE_SOLARIS_CHIPTYPE_H */

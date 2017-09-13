@@ -249,7 +249,7 @@ void print_stat(nbr_t *nb, int myproc, stat_struct_t *st, const char *name)
 	    c = nb->stats0[i].category;
 	    assert(c >= 0 && c <= 3);
 	    /*
-	    printf("%d> iter=%d, time=%lf\n", myproc, nb->stats0[i].iters,
+	    printf("%d> iter=%d, time=%f\n", myproc, nb->stats0[i].iters,
 			    (float)nb->stats0[i].time);
 			    */
 	    cattimes[c] += ((float)nb->stats0[i].time) / nb->stats0[i].iters;

@@ -175,16 +175,16 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   proc dsiSerialWrite(f) {
     if (rank == 1) {
-      f.write("{");
+      f <~> "{";
       for locdom in locDoms do {
         // on locdom do {
         if (locdom.dsiNumIndices) {
-            f.write(" ");
+            f <~> " ";
             locdom.dsiSerialWrite(f);
           }
           //}
       }
-      f.write("}");
+      f <~> "}";
     } else {
       compilerError("Can't write out multidimensional sparse distributed domains yet");
     }
@@ -662,16 +662,16 @@ proc LocSparseBlockArr.this(i) ref {
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
-    f.write("[");
+    f <~> "[";
     for locarr in locArr do {
       // on locdom do {
       if (locarr.locDom.dsiNumIndices) {
-        f.write(" ");
+        f <~> " ";
         locarr.dsiSerialWrite(f);
       }
       // }
     }
-    f.write("]");
+    f <~> "]";
   } else {
     compilerError("Can't write out multidimensional sparse distributed arrays yet");
   }
@@ -728,10 +728,6 @@ proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
     for param i in 1..rank do
       if dom.whole.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }

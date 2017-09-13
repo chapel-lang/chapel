@@ -1,0 +1,6 @@
+bug: previous field representation in later domain field flawed
+
+For some reason, computeSubstitutions is trying to handle the domain field
+prior to determining the type for the previous 'n' field, even though this is
+part of its defaultExpr and so should trigger another partial instantiation
+(so far as I am aware).

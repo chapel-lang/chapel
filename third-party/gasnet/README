@@ -2,7 +2,7 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet 1.28.2 is being released with Chapel for
+This copy of GASNet 1.30.0 is being released with Chapel for
 convenience and was obtained from
 
   https://gasnet.lbl.gov/
@@ -27,9 +27,6 @@ as follows:
 * Added preliminary support for 64-bit ARM.  This adds the new file
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.
-
-* Copied the standalone amudp Makefiles from GASNet's source tree to support
-  building the amudprun launcher for the host platform.
 
 Upgrading GASNet versions
 =========================

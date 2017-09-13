@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2017 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -116,24 +116,24 @@ do_run_with_output()
   rm $file
 }
 
-export HWLOC_NO_LIBXML_IMPORT
-export HWLOC_NO_LIBXML_EXPORT
+export HWLOC_LIBXML_IMPORT
+export HWLOC_LIBXML_EXPORT
 
 if test "$filename" = "${basename}.xml"; then
   echo "Importing with default parser and reexporting with minimalistic implementation..."
-  HWLOC_NO_LIBXML_IMPORT=0
-  HWLOC_NO_LIBXML_EXPORT=1
+  HWLOC_LIBXML_IMPORT=1
+  HWLOC_LIBXML_EXPORT=0
   do_run "$dirname" "$basename"
   echo "Importing with minimalistic parser and reexporting with default implementation..."
-  HWLOC_NO_LIBXML_IMPORT=1
-  HWLOC_NO_LIBXML_EXPORT=0
+  HWLOC_LIBXML_IMPORT=0
+  HWLOC_LIBXML_EXPORT=1
   do_run "$dirname" "$basename"
 else if test "$filename" = "${basename}.output"; then
   echo "Importing with default parser"
-  HWLOC_NO_LIBXML_IMPORT=0
+  HWLOC_LIBXML_IMPORT=1
   do_run_with_output "$dirname" "$basename"
   echo "Importing with minimalistic parser"
-  HWLOC_NO_LIBXML_IMPORT=1
+  HWLOC_LIBXML_IMPORT=0
   do_run_with_output "$dirname" "$basename"
 else
   echo "Filename must end with either .xml or .output"

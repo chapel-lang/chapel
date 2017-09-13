@@ -53,8 +53,8 @@ GASNETI_NORETURNP(gasnetc_exit)
 #define gasnet_hold_interrupts    gasnetc_hold_interrupts
 #define gasnet_resume_interrupts  gasnetc_resume_interrupts
 #else
-#define gasnet_hold_interrupts()
-#define gasnet_resume_interrupts()
+#define gasnet_hold_interrupts()   ((void)0)
+#define gasnet_resume_interrupts() ((void)0)
 #endif
 
 /* ------------------------------------------------------------------------------------ */

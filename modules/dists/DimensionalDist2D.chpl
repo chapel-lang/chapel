@@ -737,7 +737,7 @@ proc DimensionalDom.dimSpecifier(param dim: int) {
 //== writing
 
 proc DimensionalDom.dsiSerialWrite(f): void {
-  f.write(whole);
+  f <~> whole;
 }
 
 
@@ -1046,7 +1046,7 @@ proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
 }
 
-proc DimensionalArr.dsiDestroyArr(isslice: bool) {
+proc DimensionalArr.dsiDestroyArr() {
   coforall desc in localAdescs do
     on desc do
       delete desc;

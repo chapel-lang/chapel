@@ -75,7 +75,7 @@ class Private: BaseDist {
   }
 
   proc writeThis(x) {
-    x.writeln("Private Distribution");
+    x <~> "Private Distribution\n";
   }
   // acts like a singleton
   proc dsiClone() return this;
@@ -104,7 +104,7 @@ class PrivateDom: BaseRectangularDom {
       yield i;
   }
 
-  proc dsiSerialWrite(x) { x.write("Private Domain"); }
+  proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
   proc dsiBuildArray(type eltType)
     return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
@@ -194,8 +194,8 @@ iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind
 proc PrivateArr.dsiSerialWrite(x) {
   var first: bool = true;
   for i in dom {
-    if first then first = !first; else write(" ");
-    write(dsiAccess(i));
+    if first then first = !first; else x <~> " ";
+    x <~> dsiAccess(i);
   }
 }
 
