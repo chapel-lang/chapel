@@ -610,6 +610,9 @@ static bool hasReferenceToThis(Expr* expr) {
       }
     }
 
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    retval = hasReferenceToThis(named->actual);
+
   } else {
     INT_ASSERT(false);
   }
