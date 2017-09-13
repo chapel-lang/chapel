@@ -24,6 +24,7 @@
 #include "InitNormalize.h"
 #include "passes.h"
 #include "stmt.h"
+#include "TryStmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
 
@@ -38,7 +39,7 @@ static bool      isInitStmt (Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit (Expr* stmt);
 
-static bool      isErrHandlingStmt(Expr* stmt);
+static bool      isUnacceptableTry(Expr* stmt);
 
 static void      preNormalize(FnSymbol* fn);
 
@@ -320,10 +321,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
   state.checkPhase(block);
 
   while (stmt != NULL) {
-    if (isErrHandlingStmt(stmt) == true) {
+    if (isUnacceptableTry(stmt) == true) {
       USR_FATAL(stmt,
-                "Error handling structures are not yet allowed in "
-                "initializers");
+                "Only catch-less try! statements are allowed in initializers"
+                " for now");
     }
 
     if (isDefExpr(stmt) == true) {
@@ -334,6 +335,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      if (callExpr->isPrimitive(PRIM_THROW)) {
+        USR_FATAL(callExpr, "initializers are not yet allowed to throw errors");
+      }
+
       // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
@@ -717,13 +722,17 @@ static const char* initName(CallExpr* expr) {
   return retval;
 }
 
-/* Determine if the expr given is one of the error handling constructs */
-static bool isErrHandlingStmt(Expr* stmt) {
+/* Determine if the expr given is a banned error handling construct */
+static bool isUnacceptableTry(Expr* stmt) {
   bool retval = false;
-  if (isTryStmt(stmt)) {
-    retval = true;
-  } else if (CallExpr* call = toCallExpr(stmt)) {
-    if (call->isPrimitive(PRIM_THROW)) {
+  if (TryStmt* ts = toTryStmt(stmt)) {
+    if (ts->tryBang() == false) {
+      // Only allow try! statements in initializers at the moment
+      retval = true;
+    } else if (ts->_catches.length != 0) {
+      // But don't allow any catches for a try! statement, as that might
+      // permit the initializer to return without having completely initialized
+      // the instance.
       retval = true;
     }
   }
