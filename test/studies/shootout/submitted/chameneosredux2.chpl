@@ -1,55 +1,18 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Hannah Hemmaplardh, Lydia Duncan, and Brad Chamberlain
+   contributed by Hannah Hemmaplardh, Lydia Duncan, Brad Chamberlain,
+     and Elliot Ronaghan
    derived in part from the GNU C version by Dmitry Vyukov
 */
 
 config const n = 600,              // number of meetings (must be >= 0)
              popSize1 = 3,         // size of population 1 (must be > 1)
-             popSize2 = 10;        // size of population 2 (must be > 1)
+             popSize2 = 10,        // size of population 2 (must be > 1)
+             spinLimit = 15;       // number of times to spin before yielding
 
 enum Color {blue=0, red, yellow};  // the chameneos colors
 use Color;                         // permit unqualified references to them
-
-
-//
-// Print the color equations and simulate the two population sizes.
-//
-proc main() {
-  printColorEquations();
-
-  simulate(popSize1);
-  simulate(popSize2);
-}
-
-
-//
-// Print the results of getNewColor() for all color pairs.
-//
-proc printColorEquations() {
-  const colors = (blue, red, yellow);
-
-  for c1 in colors do
-    for c2 in colors do
-      writeln(c1, " + ", c2, " -> ", getNewColor(c1, c2));
-  writeln();
-}
-
-
-//
-// Given a number of chameneos as input, create a population of that
-// size, have it print its colors, host 'n' meetings, and print notes
-// about the meetings.
-//
-proc simulate(numChameneos) {
-  const group = new Population(numChameneos);
-
-  group.printColors();
-  group.holdMeetings(n);
-  group.printNotes();
-}
-
 
 //
 // special colors to use for a chameneos population of size 10
@@ -57,63 +20,68 @@ proc simulate(numChameneos) {
 const colors10 = [blue, red, yellow, red, yellow, blue, red, yellow, red, blue];
 
 //
-// a chameneos population
+// Print the color equations and simulate the two population sizes.
 //
-record Population {
-  const size = 0;   // the size of the population
+proc main() {
+  printColorEquations();
 
-  //
-  // an array of chameneos objects representing the population
-  //
-  var chameneos = [i in 1..size]
-                    new Chameneos(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+  const group1 = [i in 1..popSize1] new Chameneos(i, ((i-1)%3):Color);
+  const group2 = [i in 1..popSize2] new Chameneos(i, colors10[i]);
 
-  //
-  // Print the colors of the current population.
-  //
-  proc printColors() {
-    for c in chameneos do
-      write(" ", c.color);
-    writeln();
+  cobegin {
+    holdMeetings(group1, n);
+    holdMeetings(group2, n);
   }
 
-  //
-  // Hold meetings among the population by creating a shared meeting
-  // place, and then creating per-chameneos tasks to have meetings.
-  //
-  proc holdMeetings(numMeetings) {
-    const place = new MeetingPlace(numMeetings);
+  print(group1);
+  print(group2);
 
-    coforall c in chameneos do           // create a task per chameneos
-      c.haveMeetings(place, chameneos);
+  for c in group1 do delete c;
+  for c in group2 do delete c;
+}
 
-    delete place;
+
+//
+// Print the results of getNewColor() for all color pairs.
+//
+proc printColorEquations() {
+  for c1 in Color do
+    for c2 in Color do
+      writeln(c1, " + ", c2, " -> ", getNewColor(c1, c2));
+  writeln();
+}
+
+
+//
+// Hold meetings among the population by creating a shared meeting
+// place, and then creating per-chameneos tasks to have meetings.
+//
+proc holdMeetings(population, numMeetings) {
+  const place = new MeetingPlace(numMeetings);
+
+  coforall c in population do           // create a task per chameneos
+    c.haveMeetings(place, population);
+
+  delete place;
+}
+
+//
+// Print the chameneos' initial colors, the number of meetings each
+// had, and the number of self-meetings each had (spelled out).
+// Then spell out the total number of meetings for the population
+//
+proc print(population) {
+  for c in population do
+    write(" ", c.initialColor);
+  writeln();
+
+  for c in population {
+    write(c.meetings);
+    spellInt(c.meetingsWithSelf);
   }
 
-  //
-  // Print notes about the meetings by having each chameneos print the
-  // number of meetings it had and spell out the number of
-  // self-meetings it had.  Then spell out the total number of
-  // meetings for the population.
-  //
-  proc printNotes() {
-    for c in chameneos {
-      write(c.meetings);
-      spellInt(c.meetingsWithSelf);
-    }
-    
-    spellInt(+ reduce chameneos.meetings);
-    writeln();
-  }
-
-  //
-  // Delete the chameneos objects.
-  //
-  proc ~Population {
-    for c in chameneos do
-      delete c;
-  }
+  spellInt(+ reduce population.meetings);
+  writeln();
 }
 
 
@@ -123,6 +91,7 @@ record Population {
 class Chameneos {
   const id: int;                       // its unique ID
   var color: Color;                    // its current color
+  const initialColor = color;          // its initial color
   var meetings,                        // the number of meetings it's had
       meetingsWithSelf: int;           // the number of meetings with itself
   var meetingCompleted: atomic bool;   // used to coordinate meeting endings
@@ -148,7 +117,7 @@ class Chameneos {
         // participant:
         // - If we're the first to arrive, leave the number of
         //   meetings unchanged and store our ID
-        // - Otherwise, we're the second to arrive, so decrement 
+        // - Otherwise, we're the second to arrive, so decrement
         //   the number of meetings and reset the ID to zero.
         //
         if place.attemptToStore(currentState,
@@ -172,7 +141,13 @@ class Chameneos {
   // to become 'true' and then resetting it to 'false'.
   //
   proc waitForMeetingToEnd() {
-    meetingCompleted.waitFor(true);
+    var spinCount = spinLimit;
+    while meetingCompleted.read() == false {
+      if spinCount then
+        spinCount -= 1;
+      else
+        chpl_task_yield();
+    }
     meetingCompleted.write(false);
   }
 
@@ -189,7 +164,6 @@ class Chameneos {
 
     peer.color = newColor;
     peer.meetings += 1;
-    peer.meetingsWithSelf += (peer == this);
     peer.meetingCompleted.write(true);
 
     color = newColor;
