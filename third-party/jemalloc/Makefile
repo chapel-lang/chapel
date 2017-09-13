@@ -18,6 +18,17 @@ CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=$(CHPL_JEMALLOC_PREFIX) \
 			     --with-private-namespace=chpl_
 
+# Can't build under CCE with high levels of interprocedural analysis on. We get
+# runtime errors with -hipa3 (the default) or higher so limit to -hipa2.
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
+ifeq ($(OPTIMIZE), 1)
+CFLAGS += -hipa2
+else
+CFLAGS += -hipa0
+endif
+endif
+
+
 # Unless the user explicitly asks for stats gathering, disable it since
 # there is some runtime overhead of this capability
 ifeq (, $(CHPL_JEMALLOC_ENABLE_STATS))
