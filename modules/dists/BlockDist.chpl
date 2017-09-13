@@ -550,14 +550,15 @@ proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
 // output distribution
 //
 proc Block.writeThis(x) {
-  x.writeln("Block");
-  x.writeln("-------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
+  x <~> "Block" <~> "\n";
+  x <~> "-------" <~> "\n";
+  x <~> "distributes: " <~> boundingBox <~> "\n";
+  x <~> "across locales: " <~> targetLocales <~> "\n";
+  x <~> "indexed via: " <~> targetLocDom <~> "\n";
+  x <~> "resulting in: " <~> "\n";
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
+    x <~> "  [" <~> locid <~> "] locale " <~> locDist(locid).locale.id <~>
+      " owns chunk: " <~> locDist(locid).myChunk <~> "\n";
 }
 
 proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -767,7 +768,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 // output domain
 //
 proc BlockDom.dsiSerialWrite(x) {
-  x.write(whole);
+  x <~> whole;
 }
 
 //
@@ -1092,16 +1093,16 @@ proc BlockArr.dsiSerialWrite(f) {
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f.write(dsiAccess(i));
+    f <~> dsiAccess(i);
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! binary then f.write(" ");
+      if ! binary then f <~> " ";
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 1..rank-1 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank {
-            f.writeln();
+            f <~> "\n";
             i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;

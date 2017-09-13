@@ -137,7 +137,7 @@ function resolution error if the class NoRead is read.
     var x: int;
     var y: int;
     proc writeThis(f) {
-      f.writeln("hello");
+      f <~> "hello";
     }
     // Note that no readThis function will be generated.
   }
@@ -622,16 +622,12 @@ module ChapelIO {
         } else {
           start = new ioLiteral("(");
         }
-        //writeln("BEFORE READING START");
-        //writeln("ERROR IS ", reader.error():int);
         reader.readwrite(start);
-        //writeln("POST ERROR IS ", reader.error():int);
       }
   
       var needsComma = false;
   
       if ! reader.error() {
-        //writeln("READING FIELDS\n");
         readThisFieldsDefaultImpl(reader, t, x, needsComma);
       }
       if ! reader.error() {
@@ -646,10 +642,7 @@ module ChapelIO {
         } else {
           end = new ioLiteral(")");
         }
-        //writeln("BEFORE READING END ERROR IS ", reader.error():int);
-        //writeln("BEFORE READING END OFFSET IS ", reader.offset());
         reader.readwrite(end);
-        //writeln("AFTER READING END ERROR IS ", reader.error():int);
       }
     }
   
