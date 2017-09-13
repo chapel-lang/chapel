@@ -341,7 +341,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       BlockStmt* errorPolicy = new BlockStmt();
       Expr*      insert      = node->getStmtExpr();
 
-      if (insideTry) {
+      if (insideTry && !node->inTryBang) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
@@ -353,7 +353,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL)
+        if (outError != NULL && !node->inTryBang)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
           errorPolicy->insertAtTail(haltExpr(errorVar, false));
@@ -672,7 +672,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
     markImplicitThrows(calledFn, visited, reasons);
 
     if (calledFn->throwsError()) {
-      if (insideTry) {
+      if (insideTry || node->inTryBang) {
         // OK
       } else {
 
@@ -786,14 +786,27 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     if (calledFn->throwsError()) {
-      if (insideTry) {
+
+      bool inThrowingFunction = false;
+      if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+        inThrowingFunction = parentFn->throwsError();
+      }
+
+      if (insideTry || node->inTryBang) {
+
         // OK
+      } else if(node->inTry) {
+        if (!inThrowingFunction) {
+          USR_FATAL_CONT(node, "call to throwing function %s "
+                               "is in a try but not handled",
+                               calledFn->name);
+          USR_PRINT(calledFn, "throwing function %s defined here",
+                              calledFn->name);
+          printReason(node, reasons);
+        }
+
       } else {
         if (shouldEnforceStrict(node)) {
-          bool inThrowingFunction = false;
-          if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-            inThrowingFunction = parentFn->throwsError();
-          }
           if (mode == ERROR_MODE_STRICT) {
             USR_FATAL_CONT(node, "call to throwing function %s "
                                  "without try or try! (strict mode)",
@@ -823,6 +836,73 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   }
   return true;
 }
+
+class NormalizeTryExprsVisitor : public AstVisitorTraverse {
+
+public:
+  NormalizeTryExprsVisitor();
+
+  virtual bool enterCallExpr  (CallExpr*   call);
+  virtual void exitCallExpr   (CallExpr*   call);
+
+private:
+
+  struct TryExprInfo {
+    bool inTry;
+    bool inTryBang;
+  };
+
+  std::stack<TryExprInfo> stack;
+};
+
+NormalizeTryExprsVisitor::NormalizeTryExprsVisitor()
+  : stack()
+{
+}
+
+bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
+
+  bool isTry = call->isPrimitive(PRIM_TRY_EXPR);
+  bool isTryBang = call->isPrimitive(PRIM_TRYBANG_EXPR);
+
+  bool inTry = false;
+  bool inTryBang = false;
+
+  if (isTry || isTryBang) {
+    // if isTry or isTryBang is set, override any parent try/try!
+    inTry = isTry;
+    inTryBang = isTryBang;
+  } else if (!stack.empty()) {
+    // Otherwise, inherit parent inTry/inTryBang
+    TryExprInfo t = stack.top();
+    inTry = t.inTry;
+    inTryBang = t.inTryBang;
+  }
+
+  TryExprInfo t = {inTry, inTryBang};
+  stack.push(t);
+
+  call->inTry = inTry;
+  call->inTryBang = inTryBang;
+
+  return true;
+}
+
+void NormalizeTryExprsVisitor::exitCallExpr(CallExpr* call) {
+  stack.pop();
+
+  bool isTry = call->isPrimitive(PRIM_TRY_EXPR);
+  bool isTryBang = call->isPrimitive(PRIM_TRYBANG_EXPR);
+
+  if (isTry || isTryBang) {
+    Expr* sub = call->get(1);
+    INT_ASSERT(sub);
+    sub->remove();
+    call->replace(sub);
+  }
+
+}
+
 
 } /* end anon namespace */
 
@@ -983,6 +1063,13 @@ void lowerCheckErrorPrimitive()
     }
   }
 }
+
+void lowerTryExprs(BaseAST* ast)
+{
+  NormalizeTryExprsVisitor n;
+  ast->accept(&n);
+}
+
 
 bool isCheckErrorStmt(Expr* e)
 {
