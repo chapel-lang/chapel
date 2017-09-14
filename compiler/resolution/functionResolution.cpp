@@ -3003,10 +3003,10 @@ static bool populateForwardingMethods(CallInfo& info) {
       scratch->addFlag(FLAG_COMPILER_GENERATED);
 
       Expr* where = getInsertPointForTypeFunction(at);
-      if (BlockStmt* stmt = toBlockStmt(where))
-        stmt->insertAtHead(new DefExpr(scratch));
+      if (BlockStmt* block = toBlockStmt(where))
+        block->insertAtHead(new DefExpr(scratch));
       else
-        stmt->insertBefore(new DefExpr(scratch));
+        where->insertBefore(new DefExpr(scratch));
 
       normalize(scratch);
 
