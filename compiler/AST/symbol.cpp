@@ -818,7 +818,8 @@ bool ArgSymbol::isConstValWillNotChange() const {
   if (hasFlag(FLAG_REF_TO_IMMUTABLE))
     return true;
 
-  bool absIntent, result;
+  bool absIntent = false;
+  bool result    = false;
   isConstValWillNotChangeHelp(intent, result, absIntent);
 
   if (absIntent) {
