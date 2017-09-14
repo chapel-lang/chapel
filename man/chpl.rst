@@ -533,6 +533,14 @@ OPTIONS
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
 
+**--[no-]permit-unhandled-module-errors**
+
+    Normally, the compiler ensures that all errors are handled for code
+    inside of a module declaration (unless the module overrides that
+    behavior). This flag overrides this default, so that the compiler
+    will compile code in a module that does not handle its errors. If any
+    error comes up during execution, it will cause the program to halt.
+
 **--[no-]task-tracking**
 
     Enable [disable] the Chapel-implemented task tracking table that
