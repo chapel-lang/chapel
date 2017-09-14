@@ -255,16 +255,16 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   proc chpl_fix_thrown_error(err: Error): Error {
-    var err_fix: Error = err;
-    if err_fix == nil then
-      err_fix = new NilThrownError();
+    var fixErr: Error = err;
+    if fixErr == nil then
+      fixErr = new NilThrownError();
 
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
-    err_fix.thrownLine = line;
-    err_fix.thrownFileId = fileId;
+    fixErr.thrownLine = line;
+    fixErr.thrownFileId = fileId;
 
-    return err_fix;
+    return fixErr;
   }
   pragma "no doc"
   proc chpl_delete_error(err: Error) {
