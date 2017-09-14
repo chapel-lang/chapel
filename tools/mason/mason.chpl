@@ -64,25 +64,26 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 proc main(args: [] string) {
   if args.size < 2 {
     masonHelp();
-    exit();}
-
-  select (args[1]) {
-  when 'new' do masonNew(args);
-  when 'build' do masonBuild(args);
-  when 'update' do UpdateLock();
-  when 'run' do masonRun(args);
-  when 'doc' do masonDoc(args);
-  when 'clean' do masonClean();
-  when '--list' do masonList();
-  when '-h' do masonHelp();
-  when '--help' do masonHelp();
-  when '-V' do printVersion();
-  when '--version' do printVersion();
-  otherwise {
-    writeln('error: no such subcommand');
-    writeln('try mason --help');
     exit();
   }
+
+  select (args[1]) {
+    when 'new' do masonNew(args);
+    when 'build' do masonBuild(args);
+    when 'update' do UpdateLock(args);
+    when 'run' do masonRun(args);
+    when 'doc' do masonDoc(args);
+    when 'clean' do masonClean();
+    when '--list' do masonList();
+    when '-h' do masonHelp();
+    when '--help' do masonHelp();
+    when '-V' do printVersion();
+    when '--version' do printVersion();
+    otherwise {
+      writeln('error: no such subcommand');
+      writeln('try mason --help');
+      exit();
+    }
   }
 }
 

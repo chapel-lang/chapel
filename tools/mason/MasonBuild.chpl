@@ -47,7 +47,7 @@ proc masonBuild(args) {
       } 
     }
   }
-  UpdateLock();
+  UpdateLock(args);
   BuildProgram(release, show, compopts);
 }
 
