@@ -924,7 +924,8 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
 
     ModuleSymbol* mod = fn->getModule();
     if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
-        fPermitUnhandledModuleErrors)
+        fPermitUnhandledModuleErrors ||
+        mod->hasFlag(FLAG_PROTOTYPE_MODULE))
       mode = ERROR_MODE_FATAL;
     else
       mode = ERROR_MODE_RELAXED;

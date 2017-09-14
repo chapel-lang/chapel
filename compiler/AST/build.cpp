@@ -669,6 +669,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
+                          bool        prototype,
                           const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
 
@@ -678,6 +679,10 @@ ModuleSymbol* buildModule(const char* name,
 
   if (priv == true) {
     mod->addFlag(FLAG_PRIVATE);
+  }
+
+  if (prototype == true) {
+    mod->addFlag(FLAG_PROTOTYPE_MODULE);
   }
 
   mod->filename = astr(filename);

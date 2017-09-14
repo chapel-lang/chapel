@@ -296,7 +296,7 @@
 %token TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
-%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
+%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE
@@ -350,6 +350,7 @@
 
 %type <flag> opt_config
 %type <b> access_control
+%type <b> opt_prototype
 %type <b> opt_throws_error
 
 %type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
@@ -493,10 +494,11 @@ stmt:
 ;
 
 module_decl_stmt:
-  access_control TMODULE ident TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($3, currentModuleType, new BlockStmt(), yyfilename, $1, @1.comment))); }
-| access_control TMODULE ident TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($3, currentModuleType, $5, yyfilename, $1, @1.comment))); }
+  access_control opt_prototype TMODULE ident TLCBR TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType,
+    new BlockStmt(), yyfilename, $1, $2, @1.comment))); }
+| access_control opt_prototype TMODULE ident TLCBR stmt_ls TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType, $6, yyfilename, $1, $2, @1.comment))); }
 ;
 
 access_control:
@@ -505,7 +507,10 @@ access_control:
 | TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
 ;
 
-
+opt_prototype:
+             { $$ = false; }
+| TPROTOTYPE { $$ = true;  }
+;
 
 /* Grouping of statements into blocks.
 

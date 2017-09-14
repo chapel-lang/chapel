@@ -264,6 +264,7 @@ symbolFlag( FLAG_PRINT_MODULE_INIT_INDENT_LEVEL , ypr, "print module init indent
 symbolFlag( FLAG_PRIVATIZED_CLASS , ypr, "privatized class" , "privatized array or domain class" )
 symbolFlag( FLAG_PRIVATE, npr, "private", ncm )
 symbolFlag( FLAG_PROMOTION_WRAPPER , npr, "promotion wrapper" , ncm )
+symbolFlag( FLAG_PROTOTYPE_MODULE , npr, "prototype module" , ncm )
 symbolFlag( FLAG_RANGE , ypr, "range" , "indicates the range type" )
 symbolFlag( FLAG_RECURSIVE_ITERATOR , npr, "recursive iterator" , "iterators which call themselves" )
 symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
