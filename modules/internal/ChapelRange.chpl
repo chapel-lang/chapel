@@ -441,7 +441,7 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  inline proc range.isNaturallyAligned()
+  inline proc range.isNaturallyAligned() param
     where this.boundedType == BoundedRangeType.boundedNone
   {
     return false;
