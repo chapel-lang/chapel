@@ -2549,9 +2549,13 @@ static void propagateExtraLeaderArgsNew(ForallStmt* fs, CallExpr* call,
     IntentTag efInt = isReduce ? INTENT_BLANK :
       concreteIntent(argIntentForForallIntent(svar->intent), eActual->type);
     Type* efType = eActual->type;
+    bool  addFlagImm  = false;
+
     if (efInt & INTENT_FLAG_REF) {
       INT_ASSERT(!isReduce); // otherwise efType may be unknown
       INT_ASSERT(efType != dtUnknown && efType != dtAny);
+
+      //
       // For ref intents, we need to make it a ref type.
       // Because eFormal will be passed to _build_tuple_always_allow_ref()
       // - the call is created in propagateThroughYieldNew.
@@ -2560,10 +2564,16 @@ static void propagateExtraLeaderArgsNew(ForallStmt* fs, CallExpr* call,
       // component of the resulting tuple will be non-ref, which will break
       // SSCA2 and test/parallel/forall/vass/intents-all-int.chpl.
       // Todo: fix resolution of _build_tuple_always_allow_ref.
+      //
       efType = efType->getRefType();
+
+      if (eActual->isConstValWillNotChange())
+        addFlagImm = true;
     }
     
     ArgSymbol*  eFormal = new ArgSymbol(efInt, eName, efType);
+    if (addFlagImm || eActual->hasFlag(FLAG_REF_TO_IMMUTABLE))
+      eFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
 
     call->insertAtTail(new NamedExpr(eName, new SymExpr(eActual)));
     fn->insertFormalAtTail(eFormal);
