@@ -53,10 +53,9 @@ FnSymbol *gSetDynamicEndCount;
 FnSymbol *gChplDeleteError;
 FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
-FnSymbol *gSaveTaskErrorFn;
-FnSymbol *gSaveLineInErrorFn;
+FnSymbol *gChplSaveTaskErrorFn;
+FnSymbol *gChplFixThrownError;
 FnSymbol *gChplForallError;
-FnSymbol *gChplCheckNilError;
 
 /************************************* | **************************************
 *                                                                             *
@@ -276,13 +275,13 @@ static WellKnownFn sWellKnownFns[] = {
 
   {
     "chpl_save_task_error",
-    &gSaveTaskErrorFn,
+    &gChplSaveTaskErrorFn,
     FLAG_UNKNOWN
   },
 
   {
-    "chpl_save_line_in_error",
-    &gSaveLineInErrorFn,
+    "chpl_fix_thrown_error",
+    &gChplFixThrownError,
     FLAG_UNKNOWN
   },
 
@@ -292,11 +291,6 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
-  {
-    "chpl_check_nil_error",
-    &gChplCheckNilError,
-    FLAG_UNKNOWN
-  },
 };
 
 void gatherWellKnownFns() {

@@ -54,10 +54,8 @@ module ChapelError {
   }
 
   class NilThrownError : Error {
-    const nil_thrown_msg = "thrown error was nil";
-
     proc message() {
-      return nil_thrown_msg;
+      return "thrown error was nil";
     }
   }
 
@@ -254,14 +252,19 @@ module ChapelError {
 
     return ret;
   }
-
   pragma "no doc"
-  pragma "insert line file info"
-  proc chpl_save_line_in_error(err: Error) {
+  pragma "replace nil, insert line file info"
+  proc chpl_fix_thrown_error(err: Error): Error {
+    var err_fix: Error = err;
+    if err_fix == nil then
+      err_fix = new NilThrownError();
+
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
-    err.thrownLine = line;
-    err.thrownFileId = fileId;
+    err_fix.thrownLine = line;
+    err_fix.thrownFileId = fileId;
+
+    return err_fix;
   }
   pragma "no doc"
   proc chpl_delete_error(err: Error) {
@@ -277,8 +280,6 @@ module ChapelError {
                                          __primitive("_get_user_file"));
     const myFileS = myFileC:string;
     const myLine = __primitive("_get_user_line");
-
-
 
     const thrownFileC:c_string = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
@@ -307,14 +308,5 @@ module ChapelError {
       return err;
     // If err wasn't a taskError, wrap it in one
     return new TaskErrors(err);
-  }
-  // This function is called to check if a thrown error is nil.
-  // If so, a NilThrownError is returned.
-  pragma "no doc"
-  proc chpl_check_nil_error(err: Error):Error {
-    if err != nil then
-      return err;
-
-    return new NilThrownError();
   }
 }

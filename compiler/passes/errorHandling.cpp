@@ -379,21 +379,20 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     BlockStmt* throwBlock = new BlockStmt();
     node->replace(throwBlock);
 
-    SymExpr*   thrownExpr    = toSymExpr(node->get(1)->remove());
-    VarSymbol* thrownError   = toVarSymbol(thrownExpr->symbol());
+    SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
+    VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
-    VarSymbol* notNilError   = newTemp("not_nil_error", dtError);
-    CallExpr*  checkNilError = new CallExpr(gChplCheckNilError,
-                                            castToError(thrownError));
+    VarSymbol* fixedError  = newTemp("fixed_error", dtError);
+    CallExpr*  fixError    = new CallExpr(gChplFixThrownError,
+                                          castToError(thrownError));
 
-    throwBlock->insertAtTail(new DefExpr(notNilError));
-    throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, notNilError, checkNilError));
-    throwBlock->insertAtTail(new CallExpr(gSaveLineInErrorFn, notNilError));
+    throwBlock->insertAtTail(new DefExpr(fixedError));
+    throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
 
     if (insideTry) {
-      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(notNilError));
+      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
     } else if (outError != NULL) {
-      throwBlock->insertAtTail(setOutGotoEpilogue(notNilError));
+      throwBlock->insertAtTail(setOutGotoEpilogue(fixedError));
     } else {
       INT_FATAL(node, "cannot throw in a non-throwing function");
     }

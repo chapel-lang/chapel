@@ -61,9 +61,8 @@ extern FnSymbol *gSetDynamicEndCount;
 extern FnSymbol *gChplDeleteError;
 extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
-extern FnSymbol *gSaveTaskErrorFn;
-extern FnSymbol *gSaveLineInErrorFn;
+extern FnSymbol *gChplSaveTaskErrorFn;
+extern FnSymbol *gChplFixThrownError;
 extern FnSymbol *gChplForallError;
-extern FnSymbol *gChplCheckNilError;
 
 #endif
