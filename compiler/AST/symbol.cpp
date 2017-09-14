@@ -222,10 +222,6 @@ bool Symbol::isConstValWillNotChange() const {
   return false;
 }
 
-bool Symbol::isConstValWillNotChange_AnyIntent() const {
-  return false;
-}
-
 bool Symbol::isParameter() const {
   return false;
 }
@@ -572,19 +568,11 @@ bool VarSymbol::isConstant() const {
 }
 
 
-static bool isConstVWNChgHelp(const VarSymbol* var) {
-  // todo: how about QUAL_CONST ?
-  return var->qual == QUAL_CONST_VAL         ||
-         var->hasFlag(FLAG_REF_TO_IMMUTABLE) ||
-         (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_REF_VAR));
-}
-
 bool VarSymbol::isConstValWillNotChange() const {
-  return isConstVWNChgHelp(this);
-}
-
-bool VarSymbol::isConstValWillNotChange_AnyIntent() const {
-  return isConstVWNChgHelp(this);
+  // todo: how about QUAL_CONST ?
+  return qual == QUAL_CONST_VAL         ||
+         hasFlag(FLAG_REF_TO_IMMUTABLE) ||
+         (hasFlag(FLAG_CONST) && !hasFlag(FLAG_REF_VAR));
 }
 
 
@@ -795,19 +783,16 @@ bool ArgSymbol::isConstant() const {
   return retval;
 }
 
-//
-// Compute isConstValWillNotChange() for 'sym' if its intent were 'intent'.
-// 'intent' must be concrete and not a type intent.
-//
-static bool isConstVWNChgHelp(const ArgSymbol* arg, IntentTag intent) {
-  if (arg->hasFlag(FLAG_REF_TO_IMMUTABLE))
-    return true;
-
+// For an abstract 'intent', set absIntent=true.
+// For a concrete 'intent', set absIntent=false and result=
+// whether the formal with that intent does not change.
+static void isConstValWillNotChangeHelp(IntentTag intent,
+                                        bool& result, bool& absIntent) {
   switch (intent)
   {
     case INTENT_CONST_IN:
     case INTENT_PARAM:
-      return true;
+      result = true; absIntent = false; return;
 
     case INTENT_IN:
     case INTENT_OUT:
@@ -815,25 +800,35 @@ static bool isConstVWNChgHelp(const ArgSymbol* arg, IntentTag intent) {
     case INTENT_REF:
     case INTENT_CONST_REF:
     case INTENT_REF_MAYBE_CONST:
-      return false;
+      result = false; absIntent = false; return;
 
     case INTENT_CONST:
-    case INTENT_TYPE:
     case INTENT_BLANK:
-      INT_ASSERT(false); // caller responsibility
-      return false;
+      result = false; absIntent = true; return;
+
+    case INTENT_TYPE:
+      INT_ASSERT(false); // caller responsibility to avoid this
+      result = false; absIntent = true; return; // dummy
   }
-  return false; // dummy
-}
 
-// This is written to only be called post resolveIntents.
+  return; // dummy
+}  
+
 bool ArgSymbol::isConstValWillNotChange() const {
-  return isConstVWNChgHelp(this, intent);
-}
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
+    return true;
 
-// This works any time 'this' has a valid type.
-bool ArgSymbol::isConstValWillNotChange_AnyIntent() const {
-  return isConstVWNChgHelp(this, concreteIntent(intent, type->getValType()));
+  bool absIntent, result;
+  isConstValWillNotChangeHelp(intent, result, absIntent);
+
+  if (absIntent) {
+    // Try again with the corresponding concrete intent.
+    // Caller is responsibile that concreteIntent() succeeds.
+    isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
+                                result, absIntent);
+    INT_ASSERT(!absIntent);
+  }
+  return result;
 }
 
 bool ArgSymbol::isParameter() const {

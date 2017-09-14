@@ -3945,7 +3945,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // records and strings are (incorrectly) captured at the point
       // when the task function/arg bundle is created.
       if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
-          !varActual->isConstValWillNotChange_AnyIntent()   &&
+          varActual->isConstValWillNotChange()      == false &&
           (concreteIntent(formal->intent, formal->type->getValType())
            & INTENT_FLAG_IN)) {
         // skip dummy_locale_arg: chpl_localeID_t
