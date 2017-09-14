@@ -253,7 +253,7 @@ module ChapelError {
     return ret;
   }
   pragma "no doc"
-  pragma "replace nil, insert line file info"
+  pragma "insert line file info"
   proc chpl_fix_thrown_error(err: Error): Error {
     var err_fix: Error = err;
     if err_fix == nil then
