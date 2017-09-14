@@ -172,6 +172,30 @@ void preNormalizeInitMethod(FnSymbol* fn) {
 
   } else {
     preNormalize(fn);
+
+    errorOnFieldsInArgList(fn);
+  }
+}
+
+// Generates an error if a field is used in the argument list to an initializer
+// or constructor
+// Lydia NOTE 09/14/17: Make this static and unexported once constructors are
+// deprecated
+void errorOnFieldsInArgList(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    std::vector<SymExpr*> symExprs;
+
+    collectSymExprs(formal, symExprs);
+
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == fn->_this) {
+        USR_FATAL_CONT(se,
+                       "invalid access of class member in "
+                       "initializer argument list");
+
+        break;
+      }
+    }
   }
 }
 
