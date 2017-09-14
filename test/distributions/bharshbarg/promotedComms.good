@@ -1,4 +1,4 @@
-LOCALE0: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 3)
-LOCALE1: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 1, execute_on_nb = 0)
-LOCALE2: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 1, execute_on_nb = 0)
-LOCALE3: (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 1, execute_on_nb = 0)
+LOCALE0: (execute_on_nb = 3)
+LOCALE1: (execute_on_fast = 1)
+LOCALE2: (execute_on_fast = 1)
+LOCALE3: (execute_on_fast = 1)
