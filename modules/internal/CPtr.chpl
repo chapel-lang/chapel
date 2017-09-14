@@ -87,10 +87,14 @@ module CPtr {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
-    if this == c_nil then
-      ch.writef("(nil)");
-    else
-      ch.writef("0x%xu", this:uint(64));
+    if this == c_nil {
+      ch <~> "(nil)";
+    } else {
+      var err:syserr = ENOERR;
+      ch.writef(error=err, "0x%xu", this:uint(64));
+      if err then
+        ch.setError(err);
+    }
   }
 
   pragma "no doc"
@@ -370,7 +374,8 @@ module CPtr {
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
 
-    :arg data: the c_ptr to memory that was allocated
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
   inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
