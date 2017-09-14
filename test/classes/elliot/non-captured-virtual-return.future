@@ -1,0 +1,1 @@
+bug: not capturing return value of virtual calls casues compiler segfault (#6542)
