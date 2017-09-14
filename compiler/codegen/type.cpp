@@ -369,8 +369,7 @@ void AggregateType::codegenDef() {
       // Is it a class or a record?
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
-      if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          fLLVMWideOpt ) {
+      if( this->isWidePtrType() && fLLVMWideOpt ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
         unsigned globalAddressSpace = 0;
