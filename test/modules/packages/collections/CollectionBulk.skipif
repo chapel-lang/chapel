@@ -1,2 +1,0 @@
-# 'fifo' tasking layer results in a double free in the runtime of a pthread_condvar. Works on Qthread
-CHPL_TASKS == fifo

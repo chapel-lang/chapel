@@ -51,9 +51,10 @@ var barrier = new Barrier(here.maxTaskPar * numLocales);
 coforall loc in Locales do on loc {
   var perLocaleActual : atomic int;
   const _c = c;
+  var (hasElem, elt) : (bool, int);
   coforall tid in 0..#here.maxTaskPar {
     barrier.barrier();
-    var (hasElem, elt) : (bool, int) = (true, 0);
+    (hasElem, elt) = (true, 0);
     var perTaskActual : int;
     while hasElem {
       perTaskActual = perTaskActual + elt;
