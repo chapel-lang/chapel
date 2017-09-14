@@ -2005,29 +2005,6 @@ void codegen(void) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
-    if ( widePointersStruct ) {
-      // generating global pointers of size > 64 bits is not
-      // possible with LLVM 3.3; it might be possible in the future.
-
-      // If we have -fLLVMWideOpt, we must use packed wide
-      // pointers (because optimizations assume pointer size
-      //  is the same - at most 64 bits - for all address spaces.
-      //  'multiple address space' patch series, submitted to LLVM 3.2,
-      //  was backed out mostly for lack of testing. Perhaps the situation
-      //  will be resolved in LLVM 3.4).
-      USR_FATAL("--llvm-wide-opt requires packed wide pointers; " \
-                "try export CHPL_WIDE_POINTERS=node16");
-    }
-  }
-
-  if( widePointersStruct ) {
-    // OK
-  } else {
-    // While the C code generator can emit packed pointers,
-    // it does so only to help make sure that packed pointer code
-    // generation is correct. It is not a "supported configuration".
-    if( ! llvmCodegen )
-      USR_WARN("C code generation for packed pointers not supported");
   }
 
   // Set the executable name if it isn't set already.

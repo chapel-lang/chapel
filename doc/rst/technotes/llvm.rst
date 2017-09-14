@@ -24,7 +24,7 @@ Building the LLVM support
 -------------------------
 
 To build the compiler with LLVM support for extern blocks, ``--llvm`` code
-generation, but no support for ``--llvm-wide-opt``:
+generation, and support for ``--llvm-wide-opt``:
 
 .. code-block:: sh
 
@@ -32,18 +32,6 @@ generation, but no support for ``--llvm-wide-opt``:
   export CHPL_LLVM=llvm
   # or, if you have already installed compatible LLVM libraries
   # export CHPL_LLVM=system
-
-  make # you might want to do e.g. make -j 16 for a parallel build
-
-To build the compiler with LLVM support for extern blocks, ``--llvm code``
-generation, and also support ``--llvm-wide-opt``:
-
-.. code-block:: sh
-
-  source ./util/setchplenv.bash
-  export CHPL_LLVM=llvm
-  export CHPL_WIDE_POINTERS=node16 # optional but useful with --llvm-wide-opt
-                                   # see discussion below
 
   make # you might want to do e.g. make -j 16 for a parallel build
 
@@ -81,27 +69,15 @@ Passing ``--fast`` will cause LLVM optimizations to run.
 The ``--ccflags`` option can control which LLVM optimizations are run, using the
 same syntax as flags to clang.
 
-Additionally, if you build your compiler with ``CHPL_WIDE_POINTERS=node16`` and
-then compile a program with ``--llvm --llvm-wide-opt --fast``, you will allow
-LLVM optimizations to work with global memory. For example, the Loop Invariant
-Code Motion (LICM) optimization might be able to hoist an access of a remote
-variable - ie, a 'get' - out of a loop.  This optimization has produced better
-performance with some benchmarks.
-
-CHPL_WIDE_POINTERS=node16 is necessary to use ``--llvm-wide-opt`` because of
-historical limitations in LLVM support for pointers in different address spaces
-having different sizes.  The default ``CHPL_WIDE_POINTERS=struct`` uses a
-128-bit wide pointer, but ``CHPL_WIDE_POINTERS=node16`` packs wide pointers
-into a pointer-sized value (normally 64 bits) which includes 16 bits of node
-number in order to avoid these problems.  We plan to remove this requirement in
-the future to enable ``--llvm-wide-opt`` to work with
-``CHPL_WIDE_POINTERS=struct``.
+Additionally, if you compile a program with ``--llvm --llvm-wide-opt
+--fast``, you will allow LLVM optimizations to work with global memory.
+For example, the Loop Invariant Code Motion (LICM) optimization might be
+able to hoist an access of a remote variable - ie, a 'get' - out of a
+loop.  This optimization has produced better performance with some
+benchmarks.
 
 Caveats:
 
-* ``--llvm-wide-opt`` currently requires ``CHPL_WIDE_POINTERS=node16``, which
-  means that it will not work with the numa locale model since packed pointers
-  will not have a sublocale.
 * ``--llvm-wide-opt`` may add communication to or from a task's stack, so it
   may not function correctly for combinations of tasking and communication
   layers in which some task has a stack outside of an acceptable region for

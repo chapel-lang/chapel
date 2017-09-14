@@ -259,60 +259,46 @@ void AggregateType::codegenDef() {
     }
   } else {
     if( outfile ) {
-      if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! widePointersStruct ) ) {
-        // Reach this branch when generating a wide/wide class as a
-        // global pointer!
-        Type* baseType = this->getField("addr")->type;
-        GenRet c = baseType;
-
-        // could use __attribute__(address_space(101))
-        //  if we wanted to emit packed pointers in a different AS with clang.
-        fprintf(outfile, "typedef %s * %s;\n",
-            baseType->symbol->codegen().c.c_str(),
-            this->classStructName(true));
-      } else {
-        fprintf(outfile, "typedef struct %s", this->classStructName(false));
-        if (aggregateTag == AGGREGATE_CLASS && dispatchParents.n > 0) {
-          /* Add a comment to class definitions listing super classes */
-          bool first = true;
-          fprintf(outfile, " /* : ");
-          forv_Vec(Type, parent, dispatchParents) {
-            if (parent) {
-              if (!first) {
-                fprintf(outfile, ", ");
-              }
-              fprintf(outfile, "%s", parent->symbol->codegen().c.c_str());
-              first = false;
+      fprintf(outfile, "typedef struct %s", this->classStructName(false));
+      if (aggregateTag == AGGREGATE_CLASS && dispatchParents.n > 0) {
+        /* Add a comment to class definitions listing super classes */
+        bool first = true;
+        fprintf(outfile, " /* : ");
+        forv_Vec(Type, parent, dispatchParents) {
+          if (parent) {
+            if (!first) {
+              fprintf(outfile, ", ");
             }
-          }
-          fprintf(outfile, " */");
-        }
-        fprintf(outfile, " {\n");
-        if (symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS) {
-          fprintf(outfile, "chpl__class_id chpl__cid;\n");
-        } else if (aggregateTag == AGGREGATE_UNION) {
-          fprintf(outfile, "int64_t _uid;\n");
-          if (this->fields.length != 0)
-            fprintf(outfile, "union {\n");
-        } else if (this->fields.length == 0) {
-          // TODO: remove and enforce at least 1 element in a union
-          fprintf(outfile, "uint8_t dummyFieldToAvoidWarning;\n");
-        }
-
-        if (this->fields.length != 0) {
-          for_fields(field, this) {
-            field->codegenDef();
+            fprintf(outfile, "%s", parent->symbol->codegen().c.c_str());
+            first = false;
           }
         }
-        flushStatements();
-
-        if (aggregateTag == AGGREGATE_UNION) {
-          if (this->fields.length != 0)
-            fprintf(outfile, "} _u;\n");
-        }
-        fprintf(outfile, "} %s;\n\n", this->classStructName(true));
+        fprintf(outfile, " */");
       }
+      fprintf(outfile, " {\n");
+      if (symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS) {
+        fprintf(outfile, "chpl__class_id chpl__cid;\n");
+      } else if (aggregateTag == AGGREGATE_UNION) {
+        fprintf(outfile, "int64_t _uid;\n");
+        if (this->fields.length != 0)
+          fprintf(outfile, "union {\n");
+      } else if (this->fields.length == 0) {
+        // TODO: remove and enforce at least 1 element in a union
+        fprintf(outfile, "uint8_t dummyFieldToAvoidWarning;\n");
+      }
+
+      if (this->fields.length != 0) {
+        for_fields(field, this) {
+          field->codegenDef();
+        }
+      }
+      flushStatements();
+
+      if (aggregateTag == AGGREGATE_UNION) {
+        if (this->fields.length != 0)
+          fprintf(outfile, "} _u;\n");
+      }
+      fprintf(outfile, "} %s;\n\n", this->classStructName(true));
     } else {
 #ifdef HAVE_LLVM
       int paramID = 0;
@@ -384,13 +370,12 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! widePointersStruct ) ) {
+          fLLVMWideOpt ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
         unsigned globalAddressSpace = 0;
 
-        if( fLLVMWideOpt )
-          globalAddressSpace = info->globalToWideInfo.globalSpace;
+        globalAddressSpace = info->globalToWideInfo.globalSpace;
 
         Type* baseType = this->getField("addr")->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;

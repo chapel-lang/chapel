@@ -580,15 +580,11 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
     } else if (ct->symbol->hasFlag(FLAG_WIDE_REF) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol)) {
-        if (widePointersStruct) {
-          //
-          // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
-          // file in the runtime, for the selected locale model.
-          //
-          str += " = {CHPL_LOCALEID_T_INIT, NULL}";
-        } else {
-          str += " = ((wide_ptr_t) NULL)";
-        }
+        //
+        // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
+        // file in the runtime, for the selected locale model.
+        //
+        str += " = {CHPL_LOCALEID_T_INIT, NULL}";
       }
     }
   }

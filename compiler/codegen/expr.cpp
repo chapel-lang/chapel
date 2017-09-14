@@ -287,7 +287,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   INT_ASSERT(wideRefType);
 
   locale = codegenValue(locale);
-  if( widePointersStruct ) {
+  if( !fLLVMWideOpt ) {
     // Create a stack-local stored wide pointer
     // of the appropriate type.
     ret = createTempVar(wideRefType);
@@ -328,34 +328,27 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     // Load whatever we stored...
     ret = codegenValue(ret);
   } else {
-    if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
-      GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
-      llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
+    GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
+    llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
 
-      // call GLOBAL_FN_GLOBAL_MAKE dummy function
-      llvm::Function* fn = getMakeFn(info->module, &info->globalToWideInfo,
-                                     addrType);
-      INT_ASSERT(fn);
-      llvm::Type* eltType = addrType->getElementType();
-      llvm::Type* locAddrType = llvm::PointerType::getUnqual(eltType);
-      // Null pointers require us to possibly cast to the pointer type
-      // we are supposed to have since null has type void*.
-      llvm::Value* locAddr = raddr.val;
-      locAddr = info->builder->CreatePointerCast(locAddr, locAddrType);
+    // call GLOBAL_FN_GLOBAL_MAKE dummy function
+    llvm::Function* fn = getMakeFn(info->module, &info->globalToWideInfo,
+                                   addrType);
+    INT_ASSERT(fn);
+    llvm::Type* eltType = addrType->getElementType();
+    llvm::Type* locAddrType = llvm::PointerType::getUnqual(eltType);
+    // Null pointers require us to possibly cast to the pointer type
+    // we are supposed to have since null has type void*.
+    llvm::Value* locAddr = raddr.val;
+    locAddr = info->builder->CreatePointerCast(locAddr, locAddrType);
 #if HAVE_LLVM_VER >= 37
-      ret.val = info->builder->CreateCall(fn, {locale.val, locAddr});
+    ret.val = info->builder->CreateCall(fn, {locale.val, locAddr});
 #else
-      ret.val = info->builder->CreateCall2(fn, locale.val, locAddr);
+    ret.val = info->builder->CreateCall2(fn, locale.val, locAddr);
 #endif
 
 #endif
-    } else {
-      // Packed wide pointers.
-      ret = codegenCallExpr("chpl_return_wide_ptr_loc",
-                            locale, codegenCastToVoidStar(raddr));
-      ret = codegenCast(wideRefType, ret);
-    }
   }
 
   ret.chplType = wideRefType->getValType();
@@ -657,6 +650,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
 
 // This function casts a wide pointer to a void* wide pointer (ie wide_ptr_t)
 // for use with packed wide pointers.
+/*
 static GenRet codegenCastWideToVoid(GenRet wide) {
 
   INT_ASSERT(wide.isLVPtr == GEN_WIDE_PTR ||
@@ -679,6 +673,7 @@ static GenRet codegenCastWideToVoid(GenRet wide) {
 
   return codegenCast("wide_ptr_t", wide);
 }
+*/
 
 // Extract a field of a wide string/ptr, returning an lvalue-pointer to the that
 // field if we have a pointer to the wide string/ptr.  We need this function
@@ -755,27 +750,21 @@ GenRet codegenRaddr(GenRet wide)
 
   type = getRefTypesForWideThing(wide, &wideRefType);
 
-  if( widePointersStruct ) {
+  if( !fLLVMWideOpt ) {
     ret = codegenValue(codegenWideThingField(wide, WIDE_GEP_ADDR));
   } else {
-    if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
-      GenInfo* info = gGenInfo;
-      if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
-      GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
-      llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
+    GenInfo* info = gGenInfo;
+    if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
+    GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
+    llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
 
-      // call GLOBAL_FN_GLOBAL_ADDR dummy function
-      llvm::Function* fn = getAddrFn(info->module, &info->globalToWideInfo,
-                                     addrType);
-      INT_ASSERT(fn);
-      ret.val = info->builder->CreateCall(fn, wide.val);
+    // call GLOBAL_FN_GLOBAL_ADDR dummy function
+    llvm::Function* fn = getAddrFn(info->module, &info->globalToWideInfo,
+                                   addrType);
+    INT_ASSERT(fn);
+    ret.val = info->builder->CreateCall(fn, wide.val);
 #endif
-    } else {
-      // Packed wide pointers
-      ret = codegenCallExpr("chpl_wide_ptr_get_address",
-                            codegenCastWideToVoid(wide));
-    }
     ret = codegenCast(type, ret);
   }
   ret.chplType = type;
@@ -788,38 +777,22 @@ static GenRet codegenRlocale(GenRet wide)
   GenRet ret;
   Type* type = LOCALE_ID_TYPE;
 
-  if( widePointersStruct ) {
+  if( !fLLVMWideOpt ) {
     ret = codegenWideThingField(wide, WIDE_GEP_LOC);
   } else {
-    if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
-      Type* wideRefType = NULL;
-      GenInfo* info = gGenInfo;
-      getRefTypesForWideThing(wide, &wideRefType);
-      if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
-      GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
-      llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
+    Type* wideRefType = NULL;
+    GenInfo* info = gGenInfo;
+    getRefTypesForWideThing(wide, &wideRefType);
+    if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
+    GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
+    llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
 
-      // call GLOBAL_FN_GLOBAL_LOCID dummy function
-      llvm::Function* fn = getLocFn(info->module, &info->globalToWideInfo, addrType);
-      INT_ASSERT(fn);
-      ret.val = info->builder->CreateCall(fn, wide.val);
+    // call GLOBAL_FN_GLOBAL_LOCID dummy function
+    llvm::Function* fn = getLocFn(info->module, &info->globalToWideInfo, addrType);
+    INT_ASSERT(fn);
+    ret.val = info->builder->CreateCall(fn, wide.val);
 #endif
-    } else {
-
-      // Packed wide pointers
-      ret = codegenCallExpr("chpl_wide_ptr_get_localeID",
-                            codegenCastWideToVoid(wide));
-#ifdef HAVE_LLVM
-      GenInfo* info = gGenInfo;
-      if (!info->cfile) {
-        assert(ret.val);
-        GenRet expectType = LOCALE_ID_TYPE;
-        ret.val = convertValueToType(ret.val, expectType.type);
-        assert(ret.val);
-      }
-#endif
-    }
   }
   ret.chplType = type;
   return ret;
@@ -829,31 +802,25 @@ static GenRet codegenRnode(GenRet wide){
   GenRet ret;
   Type* type = NODE_ID_TYPE;
 
-  if( widePointersStruct ) {
+  if( !fLLVMWideOpt ) {
     ret = codegenCallExpr("chpl_nodeFromLocaleID",
                           codegenAddrOf(codegenValuePtr(
                               codegenWideThingField(wide, WIDE_GEP_LOC))),
                           /*ln*/codegenZero(), /*fn*/codegenZero32());
   } else {
-    if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
-      Type* wideRefType = NULL;
-      GenInfo* info = gGenInfo;
-      getRefTypesForWideThing(wide, &wideRefType);
-      if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
-      GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
-      llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
+    Type* wideRefType = NULL;
+    GenInfo* info = gGenInfo;
+    getRefTypesForWideThing(wide, &wideRefType);
+    if (wide.isLVPtr == GEN_PTR) wide = codegenValue(wide);
+    GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
+    llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
 
-      // call GLOBAL_FN_GLOBAL_NODEID dummy function
-      llvm::Function* fn = getNodeFn(info->module, &info->globalToWideInfo, addrType);
-      INT_ASSERT(fn);
-      ret.val = info->builder->CreateCall(fn, wide.val);
+    // call GLOBAL_FN_GLOBAL_NODEID dummy function
+    llvm::Function* fn = getNodeFn(info->module, &info->globalToWideInfo, addrType);
+    INT_ASSERT(fn);
+    ret.val = info->builder->CreateCall(fn, wide.val);
 #endif
-    } else {
-      // Packed wide pointers
-      ret = codegenCallExpr("chpl_wide_ptr_get_node",
-                            codegenCastWideToVoid(wide));
-    }
   }
 
   ret.chplType = type;
