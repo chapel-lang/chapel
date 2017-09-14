@@ -166,4 +166,7 @@ CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
+Expr* tryExpr(Expr*);
+Expr* tryBangExpr(Expr*);
+
 #endif

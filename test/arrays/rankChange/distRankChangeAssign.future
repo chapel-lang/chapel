@@ -1,8 +1,0 @@
-distributed bulk interface breaks for rank-change views
-
-Something about the distributed bulk interface seems to break when
-assigning between a rank-change view.  From what I'm seeing in
-ArrayViewRankChange.chpl, it seems that there's no conversion in
-the domain passed in when passing it down to the underlying array
-in routines like doiBulkTransferToDR(), but that's just based on
-a quick glance.

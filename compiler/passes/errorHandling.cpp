@@ -229,12 +229,6 @@ void ErrorHandlingVisitor::exitTryStmt(TryStmt* node) {
   } else {
     catchesStack.push(info);
   }
-
-  // may be NULL due to replacement of an enclosing try
-  if (tryBody->parentExpr)
-    tryBody->remove();
-
-  node->replace(tryBody);
 }
 
 void ErrorHandlingVisitor::exitCatchStmt(CatchStmt* node) {
@@ -317,24 +311,37 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
     }
   }
 
-  info.tryBody->insertAtTail(errorCond(errorVar, handlers));
+  BlockStmt* tryBody = info.tryBody;
+  tryBody->insertAtTail(errorCond(errorVar, handlers));
+
+  // after lowering its catches, replace the TryStmt with its body
+  tryBody->remove();
+  info.tryStmt->replace(tryBody);
 }
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
-  if (FnSymbol* calledFn = node->resolvedFunction()) {
-    if (calledFn->throwsError()) {
+  // The common case of a user-level call to a resolved function
+  FnSymbol* calledFn = node->resolvedFunction();
 
+  // Also handle the PRIMOP for a virtual method call
+  if (calledFn == NULL) {
+    if (node->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        SymExpr* arg1 = toSymExpr(node->get(1));
+        calledFn = toFnSymbol(arg1->symbol());
+    }
+  }
+
+  if (calledFn != NULL) {
+    if (calledFn->throwsError()) {
       SET_LINENO(node);
 
       VarSymbol* errorVar    = NULL;
       BlockStmt* errorPolicy = new BlockStmt();
       Expr*      insert      = node->getStmtExpr();
-      if (insert == NULL)
-        insert = node;
 
-      if (insideTry) {
+      if (insideTry && node->tryTag != TRY_TAG_IN_TRYBANG) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
@@ -346,7 +353,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL)
+        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
           errorPolicy->insertAtTail(haltExpr(errorVar, false));
@@ -526,7 +533,7 @@ static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
       if (calledFn->throwsError()) {
         if (reasons->count(calledFn)) {
           BaseAST* reason = (*reasons)[calledFn];
-          USR_PRINT(reason, " is reason function throws");
+          USR_PRINT(reason, "call to throwing function here");
           printReason(reason, reasons);
         }
       }
@@ -665,7 +672,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
     markImplicitThrows(calledFn, visited, reasons);
 
     if (calledFn->throwsError()) {
-      if (insideTry) {
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
         // OK
       } else {
 
@@ -689,28 +696,39 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
+typedef enum {
+  ERROR_MODE_UNKNOWN,
+  ERROR_MODE_FATAL,
+  ERROR_MODE_RELAXED,
+  ERROR_MODE_STRICT,
+} error_checking_mode_t;
 
 class ErrorCheckingVisitor : public AstVisitorTraverse {
 
 public:
-  ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* reasons);
+  ErrorCheckingVisitor(bool inThrowingFn, error_checking_mode_t inMode,
+                       implicitThrowsReasons_t* reasons);
 
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
   virtual bool enterCallExpr (CallExpr*  node);
 
 private:
-  implicitThrowsReasons_t* reasons;
-
   int  tryDepth;
   bool fnCanThrow;
+  error_checking_mode_t mode;
+
+  implicitThrowsReasons_t* reasons;
 
   void checkCatches(TryStmt* tryStmt);
 };
 
-ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn, implicitThrowsReasons_t* inReasons) {
+ErrorCheckingVisitor::ErrorCheckingVisitor(bool inThrowingFn,
+    error_checking_mode_t inMode, implicitThrowsReasons_t* inReasons) {
+
   tryDepth = 0;
   fnCanThrow = inThrowingFn;
+  mode = inMode;
   reasons = inReasons;
 }
 
@@ -768,12 +786,43 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     if (calledFn->throwsError()) {
-      if (insideTry) {
-        // OK
+
+      bool inThrowingFunction = false;
+      if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+        inThrowingFunction = parentFn->throwsError();
+      }
+
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
+
+        // OK, in a try { } or marked with try!
+
+      } else if(node->tryTag == TRY_TAG_IN_TRY) {
+        if (!inThrowingFunction) {
+          USR_FATAL_CONT(node, "call to throwing function %s "
+                               "is in a try but not handled",
+                               calledFn->name);
+          USR_PRINT(calledFn, "throwing function %s defined here",
+                              calledFn->name);
+          printReason(node, reasons);
+        }
+
+        // Otherwise, OK, a try in a throwing function
+
       } else {
         if (shouldEnforceStrict(node)) {
-          if (fStrictErrorHandling) {
-            USR_FATAL_CONT(node, "throwing call without try or try! (strict mode)");
+          if (mode == ERROR_MODE_STRICT) {
+            USR_FATAL_CONT(node, "call to throwing function %s "
+                                 "without try or try! (strict mode)",
+                                 calledFn->name);
+            USR_PRINT(calledFn, "throwing function %s defined here",
+                                calledFn->name);
+            printReason(node, reasons);
+          } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
+            USR_FATAL_CONT(node, "call to throwing function %s "
+                                 "without throws, try, or try! (relaxed mode)",
+                                 calledFn->name);
+            USR_PRINT(calledFn, "throwing function %s defined here",
+                                calledFn->name);
             printReason(node, reasons);
           }
         }
@@ -846,9 +895,54 @@ canBlockStmtThrow(BlockStmt* block)
   return visit.throws();
 }
 
+// Compute the error handling mode to use
+//
+// Go up symbols, starting with fn, looking for flag
+// This allows the flag to be set on an outer module in the
+// case of nested modules.
+static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
+{
+  error_checking_mode_t mode = ERROR_MODE_UNKNOWN;
+
+  Symbol* cur = fn;
+
+  while (cur != NULL && cur->defPoint != NULL) {
+    if (cur->hasFlag(FLAG_ERROR_MODE_FATAL)) {
+      mode = ERROR_MODE_FATAL;
+      break;
+    }
+    if (cur->hasFlag(FLAG_ERROR_MODE_RELAXED)) {
+      mode = ERROR_MODE_RELAXED;
+      break;
+    }
+    if (cur->hasFlag(FLAG_ERROR_MODE_STRICT)) {
+      mode = ERROR_MODE_STRICT;
+      break;
+    }
+
+    cur = cur->defPoint->parentSymbol;
+  }
+
+  if (mode == ERROR_MODE_UNKNOWN) {
+    // No mode was chosen explicitly, find the default.
+
+    ModuleSymbol* mod = fn->getModule();
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+      mode = ERROR_MODE_FATAL;
+    else
+      mode = ERROR_MODE_RELAXED;
+  }
+
+  return mode;
+}
+
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
-  ErrorCheckingVisitor visit(fn->throwsError(), reasons);
+
+  error_checking_mode_t mode = computeErrorCheckingMode(fn);
+  INT_ASSERT(mode != ERROR_MODE_UNKNOWN);
+
+  ErrorCheckingVisitor visit(fn->throwsError(), mode, reasons);
 
   fn->body->accept(&visit);
 }

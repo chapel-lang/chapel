@@ -37,6 +37,8 @@
 #include "view.h"
 #include "wellknown.h"
 
+bool iteratorsLowered = false;
+
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
@@ -287,6 +289,14 @@ static void computeRecursiveIteratorSet() {
       }
     }
   }
+}
+
+
+// Remove supporting references in ShadowVarSymbols.
+// Otherwise flattenNestedFunction() will try to propagate them.
+static void clearUpRefsInShadowVars() {
+  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
+    svar->removeSupportingReferences();
 }
 
 
@@ -1246,6 +1256,16 @@ expandIteratorInline(ForLoop* forLoop) {
   Symbol*   ic       = forLoop->iteratorGet()->symbol();
   FnSymbol* iterator = getTheIteratorFn(ic);
 
+  if (fReportInlinedIterators) {
+    ModuleSymbol *mod = iterator->getModule();
+
+    if (developer || mod->modTag == MOD_USER) {
+      printf("Inlined iterator (%s) in module %s (%s:%d)\n", iterator->cname,
+              mod->name, iterator->fname(), iterator->linenum());
+    }
+  }
+
+
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
 
@@ -1735,11 +1755,11 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 // createTaskFunctions, but contain statements -- including yields -- that
 // actually "belong" to the calling function.  Recursive calls of this function
 // effectively inline those out-lined functions so we get an accurate count.
-static unsigned
+static int
 countYieldsInFn(FnSymbol* fn)
 
 {
-  unsigned count = 0;
+  int count = 0;
 
   std::vector<CallExpr*> calls;
 
@@ -1758,13 +1778,14 @@ countYieldsInFn(FnSymbol* fn)
 
 // Returns true if the iterator can be inlined; false otherwise.
 //
-// It can be inlined if it contains exactly one yield statement.
+// Iterators can be inlined if they contains between 1 and
+// inline_iter_yield_limit yield statements
 static bool
 canInlineIterator(FnSymbol* iterator) {
-  unsigned count = countYieldsInFn(iterator);
+  int count = countYieldsInFn(iterator);
 
   // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
-  return (count == 1) ? true : false;
+  return (count >= 1 && count <= inline_iter_yield_limit);
 }
 
 static void
@@ -2431,6 +2452,8 @@ static void removeUncalledIterators()
 void lowerIterators() {
   nonLeaderParCheck();
 
+  clearUpRefsInShadowVars();
+
   computeRecursiveIteratorSet();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -2505,5 +2528,6 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   cleanupTemporaryVectors();
-}
 
+  iteratorsLowered = true;
+}

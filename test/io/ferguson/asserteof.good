@@ -1,4 +1,4 @@
 Past First Check
-uncaught SystemError: assert failed - Not at EOF with path "asserteof.test.nums" offset 3
+uncaught SystemError: Input/output error (assert failed - Not at EOF with path "asserteof.test.nums" offset 3)
   asserteof.chpl:28: thrown here
   asserteof.chpl:28: uncaught here

@@ -185,6 +185,11 @@ class UnresolvedSymExpr : public Expr {
 };
 
 
+enum TryTag {
+  TRY_TAG_NONE,
+  TRY_TAG_IN_TRY,
+  TRY_TAG_IN_TRYBANG
+};
 
 // Note -- isCallExpr() returns true for CallExpr and also
 // ContextCallExpr. Therefore, it is important to use toCallExpr()
@@ -199,6 +204,7 @@ public:
   bool         partialTag;
   bool         methodTag;        // Set to true if the call is a method call.
   bool         square;           // true if call made with square brackets
+  TryTag       tryTag;
 
   CallExpr(BaseAST*     base,
            BaseAST*     arg1 = NULL,
@@ -464,6 +470,10 @@ static inline bool needsCapture(FnSymbol* taskFn) {
   return taskFn->hasFlag(FLAG_BEGIN) ||
          taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
+inline Symbol* ShadowVarSymbol::outerVarSym() const {
+  return this->outerVarSE()->symbol();
 }
 
 // E.g. NamedExpr::actual, DefExpr::init.

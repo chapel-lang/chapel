@@ -1,3 +1,4 @@
-coforall-throws-strict-error.chpl:1: In function 'test':
-coforall-throws-strict-error.chpl:2: error: throwing call without try or try! (strict mode)
-coforall-throws-strict-error.chpl:3: note:  is reason function throws
+coforall-throws-strict-error.chpl:3: In function 'test':
+coforall-throws-strict-error.chpl:4: error: call to throwing function coforall_fn without try or try! (strict mode)
+coforall-throws-strict-error.chpl:4: note: throwing function coforall_fn defined here
+coforall-throws-strict-error.chpl:5: note: call to throwing function here

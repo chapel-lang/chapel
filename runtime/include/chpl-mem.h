@@ -29,7 +29,6 @@
 #include "arg.h"
 #include "chpl-comm.h"
 #include "chpl-mem-hook.h"
-#include "chplsys.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
@@ -65,10 +64,6 @@ void chpl_mem_exit(void);
 
 int chpl_mem_inited(void);
 
-// predeclared here because we need them below; actual definitions
-// are near the end
-static chpl_bool chpl_mem_localizes(void);
-static size_t chpl_mem_localizationThreshold(void);
 
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
@@ -169,14 +164,11 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
     if (p == NULL) {
       p = chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                              lineno, filename);
-      do_localize = !chpl_mem_localizes();
+      do_localize = (subloc == c_sublocid_all) ? true : false;
     }
 
     if (do_localize) {
-      if (subloc == c_sublocid_all) {
-        chpl_topo_setMemSubchunkLocality(p, size, true, NULL);
-      }
-      else if (isActualSublocID(subloc)) {
+      if (isActualSublocID(subloc)) {
         chpl_topo_setMemLocality(p, size, true, subloc);
       }
     }
@@ -264,29 +256,6 @@ void chpl_mem_layerExit(void);
 void* chpl_mem_layerAlloc(size_t, int32_t lineno, int32_t filename);
 void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, int32_t filename);
 void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
-
-//
-// Does the implementation provide allocated memory that is already
-// localized to the calling sublocale?  That is, when the locale model
-// has sublocales and an allocation is done while running on one, will
-// the allocated memory be localized to that sublocale?  Note that the
-// answer doesn't have to be completely truthful, but inaccuracy can
-// result in poor performance for applications sensitive to sublocale
-// (NUMA, for example) affinity.
-//
-#ifndef CHPL_MEM_IMPL_LOCALIZES
-  #define CHPL_MEM_IMPL_LOCALIZES() false
-#endif
-
-static inline
-chpl_bool chpl_mem_localizes(void) {
-  return CHPL_MEM_IMPL_LOCALIZES();
-}
-
-static inline
-size_t chpl_mem_localizationThreshold(void) {
-  return chpl_topo_getNumNumaDomains() * 2 * chpl_getHeapPageSize();
-}
 
 #else // LAUNCHER
 

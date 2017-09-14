@@ -538,13 +538,14 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiSerialWrite(f) {
-    f.writeln("{");
+    f <~> "{\n";
     if this.compressRows {
       for r in rowRange {
         const lo = startIdx(r),
               hi = stopIdx(r);
         for c in lo..hi {
-          f.write(" (", r, ", ", idx(c), ")", if (c==hi) then "\n" else "");
+          f <~> " (" <~> r <~> ", " <~> idx(c) <~> ")" <~>
+            if (c==hi) then "\n" else "";
         }
       }
     } else {
@@ -553,11 +554,12 @@ class CSDom: BaseSparseDomImpl {
         const lo = startIdx(c),
               hi = stopIdx(c);
         for r in lo..hi {
-          f.write(" (", idx(r), ", ", c, ")", if (r==hi) then "\n" else "");
+          f <~> " (" <~> idx(r) <~> ", " <~> c <~> ")" <~>
+            if (r==hi) then "\n" else "";
         }
       }
     }
-    f.writeln("}");
+    f <~> "}\n";
   }
 
 } // CSDom
@@ -640,7 +642,7 @@ class CSArr: BaseSparseArrImpl {
         const lo = dom.startIdx(r);
         const hi = dom.stopIdx(r);
         for c in lo..hi {
-          f.write(data(c), if (c==hi) then "\n" else " ");
+          f <~> data(c) <~> if (c==hi) then "\n" else " ";
         }
       }
     } else {
@@ -648,7 +650,7 @@ class CSArr: BaseSparseArrImpl {
         const lo = dom.startIdx(c);
         const hi = dom.stopIdx(c);
         for r in lo..hi {
-          f.write(data(r), if (r==hi) then "\n" else " ");
+          f <~> data(r) <~> if (r==hi) then "\n" else " ";
         }
       }
     }

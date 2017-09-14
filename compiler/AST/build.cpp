@@ -3106,3 +3106,13 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
 
   return retval;
 }
+
+Expr* tryExpr(Expr* e)
+{
+  return new CallExpr(PRIM_TRY_EXPR, e);
+}
+
+Expr* tryBangExpr(Expr* e)
+{
+  return new CallExpr(PRIM_TRYBANG_EXPR, e);
+}

@@ -656,9 +656,41 @@ private proc _diag_mat(A:[?Adom] ?eltType){
 
 
 /*
-   Return lower triangular part of matrix, below the diagonal + ``k``,
-   where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
-   diagonal
+   Return lower triangular part of matrix, above the diagonal + ``k``,
+   where ``k = 0`` includes the diagonal, and ``k = -1`` does *not* include
+   the diagonal. For example:
+
+   .. code-block:: chapel
+
+    var A = Matrix(4, 4, eltType=int);
+    A = 1;
+
+    tril(A);
+    /* Returns:
+
+        1    0    0    0
+        1    1    0    0
+        1    1    1    0
+        1    1    1    1
+    */
+
+    tril(A, 1);
+    /* Returns:
+
+        1    1    0    0
+        1    1    1    0
+        1    1    1    1
+        1    1    1    1
+    */
+
+    tril(A, -1);
+    /* Returns:
+
+        0    0    0    0
+        1    0    0    0
+        1    1    0    0
+        1    1    1    0
+    */
  */
 proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
@@ -672,8 +704,40 @@ proc tril(A: [?D] ?eltType, k=0) {
 
 /*
    Return upper triangular part of matrix, above the diagonal + ``k``,
-   where ``k = 0`` does *not* include the diagonal, and ``k = -1`` includes the
-   diagonal
+   where ``k = 0`` includes the diagonal, and ``k = 1`` does *not* include
+   the diagonal. For example:
+
+   .. code-block:: chapel
+
+      var A = Matrix(4, 4, eltType=int);
+      A = 1;
+
+      triu(A);
+      /* Returns:
+
+          1    1    1    1
+          0    1    1    1
+          0    0    1    1
+          0    0    0    1
+      */
+
+      triu(A, 1);
+      /* Returns:
+
+          0    1    1    1
+          0    0    1    1
+          0    0    0    1
+          0    0    0    0
+      */
+
+      triu(A, -1);
+      /* Returns:
+
+          1    1    1    1
+          1    1    1    1
+          0    1    1    1
+          0    0    1    1
+      */
  */
 proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then

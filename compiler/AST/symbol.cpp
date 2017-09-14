@@ -31,6 +31,7 @@
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "files.h"
+#include "ForallStmt.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
@@ -38,6 +39,7 @@
 #include "PartialCopyData.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -531,6 +533,17 @@ VarSymbol::VarSymbol(const char *init_name,
   }
 }
 
+VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
+  LcnSymbol(astTag, initName, initType),
+  immediate(NULL),
+  doc(NULL),
+  isField(false),
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
+{
+  // The subclass is to take care of the rest.
+}
+
 
 VarSymbol::~VarSymbol() {
   if (immediate)
@@ -568,7 +581,10 @@ bool VarSymbol::isConstant() const {
 
 
 bool VarSymbol::isConstValWillNotChange() const {
-  return hasFlag(FLAG_CONST);
+  // todo: how about QUAL_CONST ?
+  return qual == QUAL_CONST_VAL         ||
+         hasFlag(FLAG_REF_TO_IMMUTABLE) ||
+         (hasFlag(FLAG_CONST) && !hasFlag(FLAG_REF_VAR));
 }
 
 
@@ -715,18 +731,17 @@ void ArgSymbol::verify() {
   if (variableExpr && variableExpr->parentSymbol != this)
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
   // ArgSymbols appear only in formal parameter lists.
-  // If this one has a successor but the successor is not an argsymbol
-  // the formal parameter list is corrupted.
-  if (defPoint && defPoint->next &&
-        (!toDefExpr(defPoint->next)->sym ||
-         !toArgSymbol(toDefExpr(defPoint->next)->sym)))
-    INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
+  if (defPoint) {
+    FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol);
+    INT_ASSERT(pfs);
+    INT_ASSERT(defPoint->list == &(pfs->formals));
+  }
   if (intentsResolved) {
     if (intent == INTENT_BLANK || intent == INTENT_CONST) {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
-  if (hasFlag(FLAG_REF_TO_CONST))
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
     INT_ASSERT(intent == INTENT_CONST_REF);
   verifyNotOnList(typeExpr);
   verifyNotOnList(defaultExpr);
@@ -779,15 +794,54 @@ bool ArgSymbol::isConstant() const {
   return retval;
 }
 
+// For an abstract 'intent', set absIntent=true.
+// For a concrete 'intent', set absIntent=false and result=
+// whether the formal with that intent does not change.
+static void isConstValWillNotChangeHelp(IntentTag intent,
+                                        bool& result, bool& absIntent) {
+  switch (intent)
+  {
+    case INTENT_CONST_IN:
+    case INTENT_PARAM:
+      result = true; absIntent = false; return;
+
+    case INTENT_IN:
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_REF:
+    case INTENT_CONST_REF:
+    case INTENT_REF_MAYBE_CONST:
+      result = false; absIntent = false; return;
+
+    case INTENT_CONST:
+    case INTENT_BLANK:
+      result = false; absIntent = true; return;
+
+    case INTENT_TYPE:
+      INT_ASSERT(false); // caller responsibility to avoid this
+      result = false; absIntent = true; return; // dummy
+  }
+
+  return; // dummy
+}  
+
 bool ArgSymbol::isConstValWillNotChange() const {
-  //
-  // This is written to only be called post resolveIntents
-  //
-  assert (intent != INTENT_BLANK && intent != INTENT_CONST);
-  return (intent == INTENT_CONST_IN);
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
+    return true;
+
+  bool absIntent = false;
+  bool result    = false;
+  isConstValWillNotChangeHelp(intent, result, absIntent);
+
+  if (absIntent) {
+    // Try again with the corresponding concrete intent.
+    // Caller is responsibile that concreteIntent() succeeds.
+    isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
+                                result, absIntent);
+    INT_ASSERT(!absIntent);
+  }
+  return result;
 }
-
-
 
 bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);
@@ -862,6 +916,151 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
     visitor->exitArgSym(this);
   }
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+// todo: a constructor that also gives a type (and qualifier)?
+
+ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent, const char* name, Expr* spec):
+  VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
+  intent(iIntent),
+  // For task-private variables, set 'outerVarRep' to NULL.
+  outerVarRep(new UnresolvedSymExpr(name)),
+  specBlock(NULL),
+  reduceGlobalOp(NULL),
+  pruneit(false)
+{
+  if (intentsResolved)
+    if (intent == TFI_DEFAULT || intent == TFI_CONST)
+      INT_FATAL(this, "must be a concrete intent");
+
+  // According to CallExpr::verify(), each CallExpr shall have a parentExpr.
+  if (spec)
+    specBlock = new BlockStmt(spec);
+
+  gShadowVarSymbols.add(this);
+}
+
+void ShadowVarSymbol::verify() {
+  Symbol::verify();
+  if (astTag != E_ShadowVarSymbol)
+    INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
+  if (!iteratorsLowered)
+    INT_ASSERT(outerVarRep);
+  if (outerVarRep && outerVarRep->parentSymbol != this)
+    INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
+  if (specBlock && specBlock->parentSymbol != this)
+    INT_FATAL(this, "Bad ShadowVarSymbol::specBlock::parentSymbol");
+  if (outerVarRep) {
+    verifyNotOnList(outerVarRep);
+    // this assert hold already after scopeResolve
+    INT_ASSERT(!normalized || isSymExpr(outerVarRep));
+  }
+  // for VarSymbol
+  if (!type)
+    INT_FATAL(this, "ShadowVarSymbol::type is NULL");
+  verifyNotOnList(specBlock);
+  if (!resolved) {
+    // Verify that this symbol is on a ForallStmt::intentVariables() list.
+    ForallStmt* pfs = toForallStmt(defPoint->parentExpr);
+    INT_ASSERT(pfs);
+    INT_ASSERT(defPoint->list == &(pfs->intentVariables()));
+  }
+  bool reduce = isReduce();
+  INT_ASSERT(reduce == (intent == TFI_REDUCE));
+  if (!iteratorsLowered)
+    INT_ASSERT(reduce == (specBlock != NULL));
+}
+
+void ShadowVarSymbol::accept(AstVisitor* visitor) {
+  visitor->visitVarSym(this);
+  if (outerVarRep)
+    outerVarRep->accept(visitor);
+  if (specBlock)
+    specBlock->accept(visitor);
+}
+
+ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
+  ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name, NULL);
+  ss->type = type;
+  ss->qual = qual;
+  ss->outerVarRep = COPY_INT(outerVarRep);
+  ss->specBlock   = COPY_INT(specBlock);
+  ss->copyFlags(this);
+  ss->cname = cname;
+  return ss;
+}
+
+void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
+  if (oldAst == outerVarRep)
+    outerVarRep = toSymExpr(newAst);
+  else if (oldAst == specBlock)
+    specBlock = toBlockStmt(newAst);
+  else
+    INT_FATAL(this, "Unexpected case in ShadowVarSymbol::replaceChild");
+}
+
+bool ShadowVarSymbol::isConstant() const {
+  switch (intent) {
+    case TFI_DEFAULT:
+      return type->isDefaultIntentConst();
+    case TFI_CONST:
+    case TFI_CONST_IN:
+    case TFI_CONST_REF:
+      return true;
+    case TFI_IN:
+    case TFI_REF:
+    case TFI_REDUCE:
+      return false;
+  }
+  return false; // dummy
+}
+
+bool ShadowVarSymbol::isConstValWillNotChange() const {
+  //
+  // This is written to only be called post resolveIntents
+  //
+  INT_ASSERT(intent != TFI_DEFAULT && intent != TFI_CONST);
+  return intent == TFI_CONST_IN;
+}
+
+// describes the intent (for use in an English sentence)
+const char* ShadowVarSymbol::intentDescrString() const {
+  switch (intent) {
+    case TFI_DEFAULT:   return "default intent";
+    case TFI_CONST:     return "'const' intent";
+    case TFI_IN:        return "'in' intent";
+    case TFI_CONST_IN:  return "'const in' intent";
+    case TFI_REF:       return "'ref' intent";
+    case TFI_CONST_REF: return "'const ref' intent";
+    case TFI_REDUCE:    return "'reduce' intent";
+  }
+  INT_FATAL(this, "unknown intent");
+  return "unknown intent"; //dummy
+}
+
+Expr* ShadowVarSymbol::reduceOpExpr() const {
+  if (!specBlock)
+    return NULL;
+  INT_ASSERT(specBlock->body.length == 1);
+  INT_ASSERT(isReduce());
+  return specBlock->body.head;
+}
+
+void ShadowVarSymbol::removeSupportingReferences() {
+  if (outerVarRep) outerVarRep->remove();
+  if (specBlock)   specBlock->remove();
+}
+
+bool isOuterVarOfShadowVar(Expr* expr) {
+  if (ShadowVarSymbol* ss = toShadowVarSymbol(expr->parentSymbol))
+    if (expr == ss->outerVarSE())
+      return true;
+  return false;
 }
 
 /******************************** | *********************************
@@ -1105,6 +1304,12 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::retExprType::parentSymbol");
   if (body && body->parentSymbol != this)
     INT_FATAL(this, "Bad FnSymbol::body::parentSymbol");
+
+  for_alist(fExpr, formals) {
+    DefExpr* argDef = toDefExpr(fExpr);
+    INT_ASSERT(argDef);
+    INT_ASSERT(isArgSymbol(argDef->sym));
+  }
 
   verifyInTree(retType, "FnSymbol::retType");
   verifyNotOnList(where);

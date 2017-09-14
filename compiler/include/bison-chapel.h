@@ -120,7 +120,6 @@
     ProcIter                  procIter;
     FlagSet*                  flagSet;
     IntentExpr                pIntentExpr;
-    ForallIntents*            pForallIntents;
     std::vector<OnlyRename*>* ponlylist;
   };
 
@@ -128,7 +127,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 136 "chapel.ypp"
+#line 135 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -148,7 +147,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 158 "chapel.ypp"
+#line 157 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -179,7 +178,7 @@
 
 
 /* Line 2068 of yacc.c  */
-#line 183 "../include/bison-chapel.h"
+#line 182 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -384,7 +383,7 @@ void yypstate_delete ();
 /* "%code provides" blocks.  */
 
 /* Line 2068 of yacc.c  */
-#line 189 "chapel.ypp"
+#line 188 "chapel.ypp"
 
   extern int yydebug;
 
@@ -395,4 +394,4 @@ void yypstate_delete ();
 
 
 /* Line 2068 of yacc.c  */
-#line 399 "../include/bison-chapel.h"
+#line 398 "../include/bison-chapel.h"

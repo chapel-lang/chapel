@@ -108,6 +108,9 @@ symbolFlag( FLAG_DOWN_END_COUNT_FN , ypr, "down end count fn" , ncm )
 symbolFlag( FLAG_END_COUNT , ypr, "end count" , ncm )
 symbolFlag( FLAG_ERRONEOUS_AUTOCOPY, ypr, "erroneous autocopy", ncm)
 symbolFlag( FLAG_ERRONEOUS_INITCOPY, ypr, "erroneous initcopy", ncm)
+symbolFlag( FLAG_ERROR_MODE_FATAL, ypr, "error mode fatal", ncm)
+symbolFlag( FLAG_ERROR_MODE_RELAXED, ypr, "error mode relaxed", ncm)
+symbolFlag( FLAG_ERROR_MODE_STRICT, ypr, "error mode strict", ncm)
 symbolFlag( FLAG_ERROR_VARIABLE, npr, "error variable", ncm)
 symbolFlag( FLAG_EPILOGUE_LABEL , npr, "epilogue label" , "distinguishes the epilogue label from other labels" )
 symbolFlag( FLAG_ERROR_LABEL, ypr, "error label", ncm)
@@ -267,11 +270,12 @@ symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
-// Does FLAG_REF_TO_CONST means reference to immutable?
-// maybe it is intended to, but that is not true in
-// setFlagsAndCheckForConstAccess
+// "ref to const" is like Chapel's 'const ref' variable:
+// * it is illegal to modify the referenced thing through this variable
+// * the referenced thing may change, observably through this variable
 symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result" )
 symbolFlag( FLAG_REF_TO_CONST_WHEN_CONST_THIS , ypr, "reference to const when const this" , "a function that returns a reference to a Chapel const when 'this' is const" )
+symbolFlag( FLAG_REF_TO_IMMUTABLE , npr, "ref to immutable" , "a reference to something that never changes during its lifetime")
 symbolFlag( FLAG_REF_VAR , ypr, "ref var" , "reference variable" )
 symbolFlag( FLAG_REMOVABLE_ARRAY_ACCESS, ypr, "removable array access", "array access calls that can be replaced with a reference")
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )

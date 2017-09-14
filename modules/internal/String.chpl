@@ -81,13 +81,16 @@ module String {
   private extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
   private extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
 
+  pragma "no doc"
   type bufferType = c_ptr(uint(8));
 
+  pragma "no doc"
   extern const CHPL_SHORT_STRING_SIZE : c_int;
 
   pragma "no doc"
   extern record chpl__inPlaceBuffer {};
 
+  pragma "no doc"
   extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : c_ptr(uint(8));
 
   private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
@@ -213,6 +216,7 @@ module String {
       }
     }
 
+    pragma "no doc"
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if len <= CHPL_SHORT_STRING_SIZE {
@@ -221,6 +225,7 @@ module String {
       return new __serializeHelper(len, buff, _size, locale_id, data);
     }
 
+    pragma "no doc"
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {

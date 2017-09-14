@@ -17,7 +17,7 @@ TARGETS = \
 	iterators \
 	locales \
 	modules \
-	opaque \
+	opaque-domains \
 	parIters \
 	procedures \
 	randomNumbers \

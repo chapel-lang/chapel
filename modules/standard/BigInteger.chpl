@@ -360,7 +360,7 @@ module BigInteger {
         }
       }
 
-      writer.write(s);
+      writer <~> s;
     }
   }
 

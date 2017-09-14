@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+outfile=$2
+cat $outfile | sed 's/0x[0-9A-Fa-f][0-9A-Fa-f]*/0x???/' > $outfile.tmp
+mv $outfile.tmp $outfile

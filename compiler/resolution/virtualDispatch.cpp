@@ -390,7 +390,25 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
               USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
               USR_STOP();
+            } else if (fn->throwsError() != pfn->throwsError()) {
+              USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
+              const char* pfnThrowing = NULL;
+              const char* fnThrowing = NULL;
+
+              if (pfn->throwsError()) {
+                pfnThrowing = "throwing";
+                fnThrowing = "non-throwing";
+              } else {
+                pfnThrowing = "non-throwing";
+                fnThrowing = "throwing";
+              }
+
+              USR_FATAL_CONT(pfn, "%s function '%s'",pfnThrowing,toString(pfn));
+              USR_FATAL_CONT(fn, "overridden by %s function '%s'",
+                             fnThrowing, toString(fn));
+              USR_STOP();
             }
+
             {
               Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
               if (!fns) fns = new Vec<FnSymbol*>();

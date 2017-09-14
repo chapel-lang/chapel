@@ -1,6 +1,6 @@
-use DistributedBag;
-use DistributedDeque;
 use Barriers;
+use DistributedDeque;
+use DistributedBag;
 
 // For this test, we implement a simple counter; we add a predetermined number
 // of elements, then concurrently remove all elements from it until it is empty,
@@ -13,9 +13,9 @@ config param nElems = 1000;
 const expected = (nElems * (nElems + 1)) / 2;
 
 var c = (
-  if isBoundedDeque then new DistributedDeque(int, cap=nElems)
-  else if isDeque then new DistributedDeque(int)
-  else if isBag then new DistributedBag(int)
+  if isBoundedDeque then new DistDeque(int, cap=nElems)
+  else if isDeque then new DistDeque(int)
+  else if isBag then new DistBag(int)
   else compilerError("Require 'isBoundedDeque', 'isDeque', or 'isBag' to be set...")
 );
 
@@ -25,7 +25,7 @@ for i in 1 .. nElems {
   c.add(i);
 }
 
-assert(c.size == nElems);
+assert(c.getSize() == nElems);
 assert(c.contains((nElems / 2) : int));
 
 // Iterate over the collection.
@@ -34,7 +34,7 @@ for elem in c {
   actual = actual + elem;
 }
 assert(actual == expected);
-assert(c.size == nElems);
+assert(c.getSize() == nElems);
 
 // Iterate concurrently over the collection.
 var concurrentActual : atomic int;
@@ -42,7 +42,7 @@ forall elem in c {
   concurrentActual.add(elem);
 }
 assert(concurrentActual.read() == expected);
-assert(c.size == nElems);
+assert(c.getSize() == nElems);
 
 // Empty collection. Make sure all tasks start around same time...
 if isBag then c.balance();
@@ -65,5 +65,5 @@ coforall loc in Locales do on loc {
 }
 
 assert(concurrentActual.read() == expected);
-assert(c.size == 0 && c.isEmpty());
+assert(c.getSize() == 0 && c.isEmpty());
 writeln("SUCCESS");

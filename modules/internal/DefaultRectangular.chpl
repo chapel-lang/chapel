@@ -2217,11 +2217,14 @@ module DefaultRectangular {
         const src = arr.theDataChunk(0);
         const idx = arr.getDataIndex(dom.dsiLow);
         const size = len:ssize_t*elemSize:ssize_t;
+        var error:syserr = ENOERR;
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         }
+        if error then
+          f.setError(error);
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#arr.mdNumChunks {
@@ -2241,11 +2244,15 @@ module DefaultRectangular {
             const inner = arr.mData(chunk).pdr;
             const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
+            var error:syserr = ENOERR;
             if f.writing {
-              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size,
+                  error=error);
             } else {
-              f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
             }
+            if error then
+              f.setError(error);
           }
         }
       }

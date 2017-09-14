@@ -314,7 +314,11 @@ proc copyFile(out error: syserr, src: string, dest: string) {
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
   // I did not look at the other functions in that file, except for copyfileobj
   // (which copyfile called).
-  if (!exists(src)) {
+  var exist = exists(error=error, src);
+  if error then
+    return;
+
+  if (!exist) {
     error = ENOENT;
     // Source didn't exist, we can't copy it.
     return;
@@ -341,10 +345,32 @@ proc copyFile(out error: syserr, src: string, dest: string) {
   }
 
   // Open src for reading, open dest for writing
-  var srcFile = open(src, iomode.r);
-  var destFile = open(dest, iomode.cw);
-  var srcChnl = srcFile.reader(kind=ionative, locking=false);
-  var destChnl = destFile.writer(kind=ionative, locking=false);
+  var srcFile = open(src, iomode.r, error=error);
+  if error then return;
+  var destFile = open(dest, iomode.cw, error=error);
+  if error {
+    var ignore:syserr;
+    srcFile.close(error=ignore);
+    return;
+  }
+  var srcChnl = srcFile.reader(kind=ionative, locking=false, error=error);
+  if error {
+    var ignore:syserr;
+    destFile.close(error=ignore);
+    srcFile.close(error=ignore);
+    return;
+  }
+
+  var destChnl = destFile.writer(kind=ionative, locking=false, error=error);
+  if error {
+    var ignore:syserr;
+    srcChnl.close(error=ignore);
+    destFile.close(error=ignore);
+    srcFile.close(error=ignore);
+    return;
+  }
+
+
   // read in, write out.
   var line: [0..1023] uint(8);
   var numRead: int = 0;
@@ -362,14 +388,16 @@ proc copyFile(out error: syserr, src: string, dest: string) {
 
     // Some of these routines don't exist with Chapel wrappers now
 
-    destChnl.write(line[0..#numRead]);
+    destChnl.write(line[0..#numRead], error=error);
+    if error then break;
   }
   if error == EEOF then error = ENOERR;
-  destChnl.close();
-  srcChnl.close();
 
-  srcFile.close();
-  destFile.close();
+  destChnl.close(error=error);
+  srcChnl.close(error=error);
+
+  srcFile.close(error=error);
+  destFile.close(error=error);
 }
 
 /* Copies the contents of the file indicated by `src` into the file indicated
@@ -420,7 +448,8 @@ proc copyMode(src: string, dest: string) throws {
 }
 
 private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
-  var oldMode = getMode(src);
+  var oldMode = getMode(error=error, src);
+  if error != ENOERR then return;
   mkdir(error, dest, mode=oldMode, parents=true);
   if error != ENOERR then return;
   // Create dest
@@ -429,13 +458,18 @@ private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySy
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
-    if (isLink(fileSrcName) && copySymbolically) {
+    if (isLink(error=error, fileSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
-      symlink(error, realPath(fileSrcName), fileDestName);
+      var realp:string;
+      if !error then
+        realp = realPath(error=error, fileSrcName);
+      if !error then
+        symlink(error, realp, fileDestName);
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      copy(error, fileSrcName, fileDestName, metadata=true);
+      if !error then
+        copy(error, fileSrcName, fileDestName, metadata=true);
     }
     if (error != ENOERR) then return;
   }
@@ -443,13 +477,18 @@ private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySy
   for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
-    if (isLink(dirSrcName) && copySymbolically) {
+    if (isLink(error=error, dirSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
-      symlink(error, realPath(dirSrcName), dirDestName);
+      var realp:string;
+      if !error then
+        realp = realPath(error=error, dirSrcName);
+      if !error then
+        symlink(error, realp, dirDestName);
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked directory, not a link itself.
-      copyTreeHelper(error, dirSrcName, dirDestName, copySymbolically);
+      if !error then
+        copyTreeHelper(error, dirSrcName, dirDestName, copySymbolically);
     }
     if (error != ENOERR) then return;
   }
@@ -471,7 +510,8 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
     return;
   }
 
-  var srcPath = realPath(src);
+  var srcPath = realPath(error, src);
+  if (error != ENOERR) then return; // Some error occurred in realPath
 
   copyTreeHelper(error, srcPath, dest, copySymbolically);
 }
@@ -946,7 +986,7 @@ proc isMount(out error:syserr, name: string): bool {
   if (error != ENOERR || !doesExist) {
     return false;
   }
-  if (isFile(name)) {
+  if (isFile(error=error, name)) {
     // Files aren't mount points.  That would be silly.
     error = ENOERR;
     return false;
@@ -1016,6 +1056,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
   var dir: DIRptr;
   var ent: direntptr;
+  var err:syserr = ENOERR;
   dir = opendir(path.localize().c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
@@ -1025,11 +1066,17 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 
-          if (listlinks || !isLink(fullpath)) {
-            if (dirs && isDir(fullpath)) then
+          if (listlinks || !isLink(error=err, fullpath)) {
+            if (dirs && isDir(error=err, fullpath)) then
               yield filename;
-            else if (files && isFile(fullpath)) then
+            else if (files && isFile(error=err, fullpath)) then
               yield filename;
+          }
+
+          if err {
+            // TODO: revisit error handling for this method
+            writeln("error in listdir(): ", errorToString(err));
+            break;
           }
         }
       }
@@ -1108,7 +1155,7 @@ proc moveDir(out error: syserr, src: string, dest: string) {
       // Note: Python gives EEXIST in this case, but I think ENOTDIR is
       // clearer.
     } else if (aDir) {
-      if (sameFile(src, dest)) {
+      if (sameFile(error=error, src, dest)) {
         // Python's behavior when calling move over the same directory for
         // source and destination is to fail with a helpful error message.
         // Since this error code shouldn't occur otherwise, it signals to
@@ -1116,7 +1163,8 @@ proc moveDir(out error: syserr, src: string, dest: string) {
         error = EEXIST;
       } else {
         // dest is a directory, we'll copy src inside it
-        error = EISDIR;
+        if error == ENOERR then // could have gotten an error in sameFile
+          error = EISDIR;
         // NOT YET SUPPORTED.  Requires basename and joinPath
       }
     } else {
@@ -1245,7 +1293,10 @@ proc rmTree(out error: syserr, root: string) {
     return;
   }
 
-  var rootPath = realPath(root);
+  var rootPath = realPath(error=error, root);
+  if error != ENOERR then // error occured in realPath
+    return;
+
   rmTreeHelper(error, rootPath);
 }
 

@@ -1123,6 +1123,7 @@ thread_begin(void* ptask_void) {
                                                0, 0);
   chpl_thread_setPrivateData(tp);
 
+  tp->ptask = NULL;
   tp->lockRprt = NULL;
   if (blockreport)
     initializeLockReportForThread();

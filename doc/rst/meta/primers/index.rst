@@ -58,7 +58,7 @@ Data Parallelism
    Array Vector Operations <arrayVectorOps>
    Sparse Domains and Arrays <sparse>
    Associative Domains and Arrays <associative>
-   Opaque Domains and Arrays <opaque>
+   Opaque Domains and Arrays <opaque-domains>
    Reductions <reductions>
    Distributions <distributions>
    Replicated Distribution <replicated>

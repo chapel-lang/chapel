@@ -11,7 +11,7 @@ sub SystemOrDie{
   $arg = shift;
   print( "+ $arg \n");
   if (system($arg) != 0) {
-    die "Command failed with error code: $?";
+    die "[gen_release] Command failed with error code: $?";
   }
 }
 
@@ -59,7 +59,7 @@ $rootdir = "$tmpdir/chpl_home";
 if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
     # copy the current CHPL_HOME into the directory where chapel will be built
-    print "Creating build workspace with tar...\n";
+    print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...\n";
     SystemOrDie("cd $chplhome && tar -cf - . | (cd $archive_dir && tar -xf -)");
 
     $resultdir = "$chplhome/tar";
@@ -76,17 +76,19 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
         $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
     }
 
-    print "Cloning the sources (repo: $git_url branch: $git_branch)...\n";
+    print "[gen_release] Cloning the sources (repo: $git_url branch: $git_branch)...\n";
     SystemOrDie("git clone --branch $git_branch $git_url $rootdir");
 
     if (exists($ENV{'CHPL_GEN_RELEASE_COMMIT'})) {
         $commit = $ENV{'CHPL_GEN_RELEASE_COMMIT'};
-        print "Checking out revision $commit...\n";
-        SystemOrDie("cd $rootdir && git reset --hard $commit")
+        print "[gen_release] Checking out revision $commit...\n";
+        SystemOrDie("cd $rootdir && git reset --hard $commit");
     }
 
+    print "[gen_release] Confirm final Git source version used.\n";
+    SystemOrDie("cd $rootdir && git status && git log -1");
 
-    print "Creating build workspace with git archive...\n";
+    print "[gen_release] Creating build workspace with git archive...\n";
     SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
 
     if (defined($ENV{"CHPL_HOME"})) {
@@ -154,18 +156,18 @@ chdir "$archive_dir";
 
 # Docs/man page must be built first so we can get rid of any extra files
 # (chpldoc) with a clobber
-print "Building the docs...\n";
+print "[gen_release] Building the docs...\n";
 # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
 # existing because we haven't built the third-party libs
 $ENV{'CHPL_HOME'} = "$archive_dir";
 $ENV{'CHPL_COMM'} = "none";
-print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
+print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
-print "Building the html docs...\n";
+print "[gen_release] Building the html docs...\n";
 SystemOrDie("make -j docs");
 
 # TODO - make this more elegant / maintainable
-print "Pruning the docs directory...\n";
+print "[gen_release] Pruning the docs directory...\n";
 SystemOrDie("cd doc && make clean-symlinks");
 SystemOrDie("cd doc && make prunedocs");
 SystemOrDie("cd doc && rm -f Makefile*");
@@ -176,45 +178,45 @@ SystemOrDie("cd doc && rm -f rst/*/index.rst");
 SystemOrDie("cd doc && rm -rf rst/developer"); # remove when dev-docs enabled
 SystemOrDie("cd doc && rm -rf rst/meta");
 
-print "Building the man pages...\n";
+print "[gen_release] Building the man pages...\n";
 SystemOrDie("make man");
 SystemOrDie("make man-chpldoc");
 SystemOrDie("make clobber");
 
-print "Creating the examples directory...\n";
+print "[gen_release] Creating the examples directory...\n";
 SystemOrDie("rm examples"); # remove examples symbolic link
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
-print "Removing Makefiles that are not intended for release...\n";
+print "[gen_release] Removing Makefiles that are not intended for release...\n";
 SystemOrDie("cd make/platform && rm Makefile.sunos_old");
 
-print "Removing compiler directories that are not intended for release...\n";
+print "[gen_release] Removing compiler directories that are not intended for release...\n";
 SystemOrDie("cd compiler/include && rm -r sunos_old");
 
-print "Removing runtime directories that are not ready for release...\n";
+print "[gen_release] Removing runtime directories that are not ready for release...\n";
 SystemOrDie("cd runtime/src/launch && rm -r dummy");
 SystemOrDie("cd runtime/src/launch && rm -r mpirun");
 SystemOrDie("cd runtime/include && rm -r sunos_old");
 
-print "Removing third-party directories that are not intended for release...\n";
+print "[gen_release] Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");
 SystemOrDie("cd third-party/chpl-venv && rm *.devel*");
 SystemOrDie("cd third-party/chpl-venv && rm chplspell-requirements.txt");
 
-print "Removing Git metadata files not intended for release...\n";
+print "[gen_release] Removing Git metadata files not intended for release...\n";
 SystemOrDie('find . -type f \( -name .gitignore -o -name .gitattributes \) -exec rm -f {} \; -print');
 
 chdir "$archive_dir";
 
-print "Chmodding the hierarchy\n";
+print "[gen_release] Chmodding the hierarchy\n";
 SystemOrDie("chmod -R ugo+rX .");
 SystemOrDie("chmod -R go-w .");
 
 foreach $file (@files) {
     if (!(-e $file)) {
-        print "$file does not exist\n";
+        print "[gen_release] $file does not exist\n";
         exit( 9);
     }
     push @tarfiles, "$reldir/$file";
@@ -235,7 +237,7 @@ foreach $dir (@code_dirs) {
 
 foreach $dir (@complete_dirs) {
     if (!(-e $dir)) {
-        print "$dir does not exist\n";
+        print "[gen_release] $dir does not exist\n";
     }
     push @tarfiles, "$reldir/$dir";
 }
@@ -249,9 +251,9 @@ if (! -d $resultdir) {
 $tarball_name = "$resultdir/$reldir.tar.gz";
 $cmd = "tar -cz -f $tarball_name @tarfiles";
 chdir "..";
-print "$cmd\n";
+print "[gen_release] $cmd\n";
 SystemOrDie ($cmd);
 
-print "Left result in $tarball_name\n";
+print "[gen_release] Left result in $tarball_name\n";
 
 chdir $origCwd;

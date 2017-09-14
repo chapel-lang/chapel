@@ -26,28 +26,13 @@
 #include "stlUtil.h"
 
 //
-// TFITag: a task or forall intent
-//
-enum TFITag {
-  TFI_DEFAULT, // aka TFI_BLANK
-  TFI_CONST,
-  TFI_IN,
-  TFI_CONST_IN,
-  TFI_REF,
-  TFI_CONST_REF,
-  TFI_REDUCE,
-};
-
-const char* tfiTagDescrString(TFITag tfiTag);
-
-//
 // ForallIntents: with clause/forall intents
 // TODO: replace with LoopIntentVars / ForallStmt::intentVariables
 //
 class ForallIntents {
 public:
   std::vector<Expr*>   fiVars;   // affected variables
-  std::vector<TFITag>  fIntents; // associated intents
+  std::vector<ForallIntentTag>  fIntents; // associated intents
   std::vector<Expr*>   riSpecs;  // reduce intent info
 
   // used in implementForallIntents1()

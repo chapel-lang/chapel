@@ -886,7 +886,7 @@ RBC:
   02/22/17:
     - update logic for pruning unused module level variables (#5395)
 
-regexdna:
+regexdna: &regexdna-base
   10/07/14:
     - Add c_string_copy type
   11/29/15:
@@ -901,10 +901,13 @@ regexdna:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 regexdna-redux:
-  04/20/17:
-    - Update RE2 (#6024)
-  06/22/17:
-    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+  <<: *regexdna-base
+
+regexdna-submitted:
+  <<: *regexdna-base
+
+regexdnaredux-submitted:
+  <<: *regexdna-base
 
 return-array-8: &return-array-base
   03/04/17:

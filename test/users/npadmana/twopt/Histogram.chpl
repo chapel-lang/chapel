@@ -56,7 +56,8 @@ module Histogram {
 
   } // UniformBins
 
-  proc writeHist(ff : channel, hh : UniformBins, fmt : string = "%20.14er ") {
+  proc writeHist(ff : channel, hh : UniformBins, fmt : string = "%20.14er ")
+    throws {
     // Dump out values
     for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
     ff.writeln();

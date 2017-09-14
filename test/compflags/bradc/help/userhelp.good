@@ -23,6 +23,9 @@ Optimization Control Options:
       --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
+      --inline-iterators-yield-limit <limit>
+                                      Limit number of yields permitted in
+                                      inlined iterators
       --[no-]live-analysis            Enable [disable] live variable analysis
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code
@@ -123,8 +126,6 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
-      --[no-]strict-errors            Enable [disable] strict mode for error
-                                      handling
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions

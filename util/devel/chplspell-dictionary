@@ -4347,6 +4347,19 @@ mpmc
 FILEID: f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5
 ivrs
 
+FILEID: 081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5
+cabsf
+cabsl
+cimag
+cimagf
+cimagl
+conjf
+conjl
+creal
+crealf
+creall
+sqrtl
+
 NATURAL:
 abcd
 abcdefg

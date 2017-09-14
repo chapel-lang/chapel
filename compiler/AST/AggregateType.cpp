@@ -740,6 +740,31 @@ void AggregateType::buildConstructors() {
   }
 }
 
+void AggregateType::createOuterWhenRelevant() {
+  SET_LINENO(this);
+  Symbol* parSym = symbol->defPoint->parentSymbol;
+
+  if (AggregateType* outerType = toAggregateType(parSym->type)) {
+
+    // Lydia NOTE 09/12/17: (Temporary) error case
+    if (outerType->initializerStyle == DEFINES_INITIALIZER ||
+        initializerStyle            == DEFINES_INITIALIZER) {
+      if (outerType->isGeneric() || isGeneric()) {
+        USR_FATAL(this, "initializers not supported on nested types when either"
+                  " type is generic");
+      }
+    }
+
+    // Create an "outer" pointer to the outer class in the inner class
+    VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
+
+    // Save the pointer to the outer class
+    fields.insertAtTail(new DefExpr(tmpOuter));
+
+    outer = tmpOuter;
+  }
+}
+
 // Create the (default) type constructor for this class.
 void AggregateType::buildTypeConstructor() {
   // Do nothing if it is already built
@@ -769,6 +794,8 @@ void AggregateType::buildTypeConstructor() {
 
   // and insert it into the class type.
   defaultTypeConstructor = fn;
+
+  symbol->defPoint->insertBefore(new DefExpr(fn));
 
   // Create "this".
   fn->_this = new VarSymbol("this", this);
@@ -838,6 +865,16 @@ void AggregateType::buildTypeConstructor() {
           fn->insertAtTail(newSet);
         }
 
+        continue;
+      } else if (field == this->outer) {
+        if (AggregateType* outerType = toAggregateType(outer->type)) {
+          outerType->moveConstructorToOuter(fn);
+
+          fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
+                                        fn->_this,
+                                        new_CStringSymbol("outer"),
+                                        fn->_outer));
+        }
         continue;
       }
 
@@ -914,29 +951,8 @@ void AggregateType::buildTypeConstructor() {
 
   fn->retType = this;
 
-  symbol->defPoint->insertBefore(new DefExpr(fn));
-
   // Make implicit references to 'this' explicit.
   AggregateType::insertImplicitThis(fn, fieldNamesSet);
-
-  Symbol* parSym = symbol->defPoint->parentSymbol;
-
-  if (AggregateType* outerType = toAggregateType(parSym->type)) {
-    // Create an "outer" pointer to the outer class in the inner class
-    VarSymbol* tmpOuter = new VarSymbol("outer", outerType);
-
-    outerType->moveConstructorToOuter(fn);
-
-    // Save the pointer to the outer class
-    fields.insertAtTail(new DefExpr(tmpOuter));
-
-    fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
-                                  fn->_this,
-                                  new_CStringSymbol("outer"),
-                                  fn->_outer));
-
-    outer = tmpOuter;
-  }
 
   addToSymbolTable(fn);
 }
@@ -1594,8 +1610,9 @@ bool AggregateType::needsConstructor() {
       }
     }
 
-    // For now, extern classes need a default constructor
-    if (symbol->hasFlag(FLAG_EXTERN)) {
+    // Make a default constructor for extern classes only if we are not forcing
+    // initializers
+    if (symbol->hasFlag(FLAG_EXTERN) && !fUserDefaultInitializers) {
       return true;
     }
 
@@ -1646,10 +1663,6 @@ bool AggregateType::wantsDefaultInitializer() {
       }
     }
   }
-
-  // For now, no default initializers for extern types
-  if (symbol->hasFlag(FLAG_EXTERN))
-    return false;
 
   // For now, no default initializers for ref
   if (symbol->hasFlag(FLAG_REF))
@@ -1885,11 +1898,29 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
                 isCtor ? " constructor" : "n initializer");
     }
 
+    if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&
+        fn->getModule() != t->getModule()) {
+      // We are looking at a secondary initializer defined in a module
+      // other than the module defining the type.
+      USR_WARN(fn, "initializers defined outside the module where the "
+               "type was originally defined may cause issues");
+      USR_PRINT(fn, "This will no longer be a problem when constructors "
+                "are deprecated");
+    }
+
     if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
       // We hadn't previously seen a constructor or initializer definition.
       // Update the field on the type appropriately.
       if (isInit) {
-        ct->initializerStyle = DEFINES_INITIALIZER;
+        if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
+            fn->getModule() == t->getModule()) {
+          // Only mark the type as defining an initializer if the initializer
+          // we found was in the same module as the type itself.  If there is
+          // no such initializer, we would need to define a default constructor
+          // or initializer for the scopes where the secondary initializer is
+          // not visible.
+          ct->initializerStyle = DEFINES_INITIALIZER;
+        }
 
       } else if (isCtor) {
         ct->initializerStyle = DEFINES_CONSTRUCTOR;

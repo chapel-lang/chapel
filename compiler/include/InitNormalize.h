@@ -51,6 +51,7 @@ public:
 
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
+  bool            isExtern()                                             const;
 
   InitPhase       currPhase()                                            const;
 

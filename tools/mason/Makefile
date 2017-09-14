@@ -35,11 +35,12 @@ REGISTRY=https://github.com/chapel-lang/mason-registry
 
 registry = $(MASON_HOME)/.mason/registry/
 
+MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonUtils.chpl mason.chpl
 
 all: mason
 
 
-mason:	
+mason: $(MASON_SOURCES)
 	@if [ $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_regexp.py) != re2 ]; then \
         echo "CHPL_REGEXP=re2 is required to build mason"; \
         exit 1;\
