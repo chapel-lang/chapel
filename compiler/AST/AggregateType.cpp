@@ -1898,11 +1898,29 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
                 isCtor ? " constructor" : "n initializer");
     }
 
+    if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&
+        fn->getModule() != t->getModule()) {
+      // We are looking at a secondary initializer defined in a module
+      // other than the module defining the type.
+      USR_WARN(fn, "initializers defined outside the module where the "
+               "type was originally defined may cause issues");
+      USR_PRINT(fn, "This will no longer be a problem when constructors "
+                "are deprecated");
+    }
+
     if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
       // We hadn't previously seen a constructor or initializer definition.
       // Update the field on the type appropriately.
       if (isInit) {
-        ct->initializerStyle = DEFINES_INITIALIZER;
+        if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
+            fn->getModule() == t->getModule()) {
+          // Only mark the type as defining an initializer if the initializer
+          // we found was in the same module as the type itself.  If there is
+          // no such initializer, we would need to define a default constructor
+          // or initializer for the scopes where the secondary initializer is
+          // not visible.
+          ct->initializerStyle = DEFINES_INITIALIZER;
+        }
 
       } else if (isCtor) {
         ct->initializerStyle = DEFINES_CONSTRUCTOR;
