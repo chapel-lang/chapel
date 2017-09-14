@@ -54,8 +54,10 @@ module ChapelError {
   }
 
   class NilThrownError : Error {
-    proc NilThrownError() {
-      this.msg = "thrown error was nil";
+    const nil_msg = "thrown error was nil";
+
+    proc message() {
+      return nil_msg;
     }
   }
 
@@ -309,7 +311,7 @@ module ChapelError {
   // This function is called to check if a thrown error is nil.
   // If so, a NilThrownError is returned.
   pragma "no doc"
-  proc chpl_nil_thrown_error(err: Error):Error {
+  proc chpl_check_nil_error(err: Error):Error {
     if err != nil then
       return err;
 

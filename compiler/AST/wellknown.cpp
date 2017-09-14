@@ -56,7 +56,7 @@ FnSymbol *gChplPropagateError;
 FnSymbol *gSaveTaskErrorFn;
 FnSymbol *gSaveLineInErrorFn;
 FnSymbol *gChplForallError;
-FnSymbol *gChplNilThrownError;
+FnSymbol *gChplCheckNilError;
 
 /************************************* | **************************************
 *                                                                             *
@@ -293,8 +293,8 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
-    "chpl_nil_thrown_error",
-    &gChplNilThrownError,
+    "chpl_check_nil_error",
+    &gChplCheckNilError,
     FLAG_UNKNOWN
   },
 };
