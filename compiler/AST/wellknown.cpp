@@ -47,15 +47,16 @@ FnSymbol *gBuildTupleType;
 FnSymbol *gBuildTupleTypeNoRef;
 FnSymbol *gBuildStarTupleType;
 FnSymbol *gBuildStarTupleTypeNoRef;
-FnSymbol *gChplDeleteError;
 FnSymbol *gPrintModuleInitFn;
 FnSymbol *gGetDynamicEndCount;
 FnSymbol *gSetDynamicEndCount;
+FnSymbol *gChplDeleteError;
 FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gSaveTaskErrorFn;
 FnSymbol *gSaveLineInErrorFn;
 FnSymbol *gChplForallError;
+FnSymbol *gChplNilThrownError;
 
 /************************************* | **************************************
 *                                                                             *
@@ -238,12 +239,6 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
-    "chpl_delete_error",
-    &gChplDeleteError,
-    FLAG_UNKNOWN
-  },
-
-  {
     "printModuleInit",
     &gPrintModuleInitFn,
     FLAG_PRINT_MODULE_INIT_FN
@@ -258,6 +253,12 @@ static WellKnownFn sWellKnownFns[] = {
   {
     "chpl_task_setDynamicEndCount",
     &gSetDynamicEndCount,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_delete_error",
+    &gChplDeleteError,
     FLAG_UNKNOWN
   },
 
@@ -291,6 +292,11 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "chpl_nil_thrown_error",
+    &gChplNilThrownError,
+    FLAG_UNKNOWN
+  },
 };
 
 void gatherWellKnownFns() {

@@ -379,11 +379,16 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     BlockStmt* throwBlock = new BlockStmt();
     node->replace(throwBlock);
 
-    SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
-    VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
+    SymExpr*   thrownExpr    = toSymExpr(node->get(1)->remove());
+    VarSymbol* thrownError   = toVarSymbol(thrownExpr->symbol());
 
-    throwBlock->insertAtTail(new CallExpr(gSaveLineInErrorFn,
-                                          castToError(thrownError)));
+    VarSymbol* nilErrorTemp  = newTemp("nil_error", dtError);
+    CallExpr*  checkNilError = new CallExpr(gChplNilThrownError,
+                                            castToError(thrownError));
+
+    throwBlock->insertAtTail(new DefExpr(nilErrorTemp));
+    throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, nilErrorTemp, checkNilError));
+    throwBlock->insertAtTail(new CallExpr(gSaveLineInErrorFn, nilErrorTemp));
 
     if (insideTry) {
       throwBlock->insertAtTail(setOuterErrorAndGotoHandler(thrownError));

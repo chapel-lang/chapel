@@ -53,6 +53,12 @@ module ChapelError {
     }
   }
 
+  class NilThrownError : Error {
+    proc NilThrownError() {
+      this.msg = "thrown error was nil";
+    }
+  }
+
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors
@@ -299,5 +305,14 @@ module ChapelError {
       return err;
     // If err wasn't a taskError, wrap it in one
     return new TaskErrors(err);
+  }
+  // This function is called to check if a thrown error is nil.
+  // If so, a NilThrownError is returned.
+  pragma "no doc"
+  proc chpl_nil_thrown_error(err: Error):Error {
+    if err != nil then
+      return err;
+
+    return new NilThrownError();
   }
 }
