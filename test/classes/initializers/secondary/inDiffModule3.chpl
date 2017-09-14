@@ -1,6 +1,20 @@
 // Verified the behavior of types with only secondary initializers when the
 // initializer is defined in a module outside of the module where the type is
 // originally defined.
+
+// Variation on inDiffModule.chpl where the modules are defined in a different
+// order
+module B {
+  use A;
+
+  proc Foo.init(xVal) {
+    writeln("In secondary initializer of class Foo");
+    x = xVal;
+    y = xVal > 5;
+    super.init();
+  }
+}
+
 module A {
   class Foo {
     var x: int;
@@ -13,16 +27,5 @@ module A {
     // create those).
     writeln(f); // expect 10, false
     delete f;
-  }
-}
-
-module B {
-  use A;
-
-  proc Foo.init(xVal) {
-    writeln("In secondary initializer of class Foo");
-    x = xVal;
-    y = xVal > 5;
-    super.init();
   }
 }
