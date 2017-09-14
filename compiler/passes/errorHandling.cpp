@@ -341,7 +341,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       BlockStmt* errorPolicy = new BlockStmt();
       Expr*      insert      = node->getStmtExpr();
 
-      if (insideTry) {
+      if (insideTry && node->tryTag != TRY_TAG_IN_TRYBANG) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
@@ -353,7 +353,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL)
+        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
           errorPolicy->insertAtTail(haltExpr(errorVar, false));
@@ -672,7 +672,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
     markImplicitThrows(calledFn, visited, reasons);
 
     if (calledFn->throwsError()) {
-      if (insideTry) {
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
         // OK
       } else {
 
@@ -786,14 +786,30 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     if (calledFn->throwsError()) {
-      if (insideTry) {
-        // OK
+
+      bool inThrowingFunction = false;
+      if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+        inThrowingFunction = parentFn->throwsError();
+      }
+
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
+
+        // OK, in a try { } or marked with try!
+
+      } else if(node->tryTag == TRY_TAG_IN_TRY) {
+        if (!inThrowingFunction) {
+          USR_FATAL_CONT(node, "call to throwing function %s "
+                               "is in a try but not handled",
+                               calledFn->name);
+          USR_PRINT(calledFn, "throwing function %s defined here",
+                              calledFn->name);
+          printReason(node, reasons);
+        }
+
+        // Otherwise, OK, a try in a throwing function
+
       } else {
         if (shouldEnforceStrict(node)) {
-          bool inThrowingFunction = false;
-          if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-            inThrowingFunction = parentFn->throwsError();
-          }
           if (mode == ERROR_MODE_STRICT) {
             USR_FATAL_CONT(node, "call to throwing function %s "
                                  "without try or try! (strict mode)",

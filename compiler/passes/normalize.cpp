@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "initializerRules.h"
+#include "lowerTryExprs.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -450,6 +451,13 @@ static void normalizeTheProgram() {
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 static void normalize(BaseAST* base) {
+
+  //
+  // Phase 0
+  //
+  lowerTryExprs(base);
+
+
   //
   // Phase 1
   //

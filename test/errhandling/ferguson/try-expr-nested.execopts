@@ -1,0 +1,6 @@
+--test=1 # try-expr-nested.1.good
+--test=2 # try-expr-nested.2.good
+--test=3 # try-expr-nested.3.good
+--test=4 # try-expr-nested.4.good
+--test=5 # try-expr-nested.5.good
+--test=6 # try-expr-nested.6.good

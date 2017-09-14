@@ -17,19 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef _ERROR_HANDLING_H_
-#define _ERROR_HANDLING_H_
+#ifndef _LOWER_TRY_EXPRS_H_
+#define _LOWER_TRY_EXPRS_H_
 
-class BlockStmt;
 class BaseAST;
-class Expr;
-class Symbol;
 
-void lowerErrorHandling();
-void lowerCheckErrorPrimitive();
 void lowerTryExprs(BaseAST* ast);
-
-bool isCheckErrorStmt(Expr* e);
-Symbol* getErrorSymbolFromCheckErrorStmt(Expr* e);
 
 #endif
