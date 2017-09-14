@@ -69,16 +69,17 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     var sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
 
-    // Get compile flags
-    var cmpFlags = getCompopts(lockFile);
-    if cmpFlags != ' ' then compopts.push_back(cmpFlags);
+    // Checks if dependencies exist and retrieves them for compilation
+    if lockFile.pathExists('root.compopts') {
+      const cmpFlags = lockFile["root"]["compopts"].s;
+      compopts.push_back(cmpFlags);
+    }
 
     // Compile Program
     if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
     else writeln("Build Failed");
-
     // Close memory
      delete lockFile;
      toParse.close();

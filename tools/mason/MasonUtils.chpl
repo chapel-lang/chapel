@@ -22,7 +22,7 @@
 /* A helper file of utilities for Mason */
 use Spawn;
 use FileSystem;
-use TOML;
+
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -32,15 +32,6 @@ proc getEnv(name: string): string {
   return value:string;
 }
 
-
-/* Retrieves the compilation flags from lock file */
-proc getCompopts(lock: Toml) {
-  if lock.pathExists('root.compopts') {
-    var compopts = lock['root']['compopts'].s;
-    return compopts;
-  }
-  else return ' ';
-}
 
 
 /* Uses the Spawn module to create a subprocess */
