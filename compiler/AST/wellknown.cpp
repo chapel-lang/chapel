@@ -47,14 +47,14 @@ FnSymbol *gBuildTupleType;
 FnSymbol *gBuildTupleTypeNoRef;
 FnSymbol *gBuildStarTupleType;
 FnSymbol *gBuildStarTupleTypeNoRef;
-FnSymbol *gChplDeleteError;
 FnSymbol *gPrintModuleInitFn;
 FnSymbol *gGetDynamicEndCount;
 FnSymbol *gSetDynamicEndCount;
+FnSymbol *gChplDeleteError;
 FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
-FnSymbol *gSaveTaskErrorFn;
-FnSymbol *gSaveLineInErrorFn;
+FnSymbol *gChplSaveTaskError;
+FnSymbol *gChplFixThrownError;
 FnSymbol *gChplForallError;
 
 /************************************* | **************************************
@@ -238,12 +238,6 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
-    "chpl_delete_error",
-    &gChplDeleteError,
-    FLAG_UNKNOWN
-  },
-
-  {
     "printModuleInit",
     &gPrintModuleInitFn,
     FLAG_PRINT_MODULE_INIT_FN
@@ -262,6 +256,12 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
+    "chpl_delete_error",
+    &gChplDeleteError,
+    FLAG_UNKNOWN
+  },
+
+  {
     "chpl_uncaught_error",
     &gChplUncaughtError,
     FLAG_UNKNOWN
@@ -275,13 +275,13 @@ static WellKnownFn sWellKnownFns[] = {
 
   {
     "chpl_save_task_error",
-    &gSaveTaskErrorFn,
+    &gChplSaveTaskError,
     FLAG_UNKNOWN
   },
 
   {
-    "chpl_save_line_in_error",
-    &gSaveLineInErrorFn,
+    "chpl_fix_thrown_error",
+    &gChplFixThrownError,
     FLAG_UNKNOWN
   },
 

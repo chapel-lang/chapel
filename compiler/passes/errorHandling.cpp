@@ -382,13 +382,17 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
-    throwBlock->insertAtTail(new CallExpr(gSaveLineInErrorFn,
-                                          castToError(thrownError)));
+    VarSymbol* fixedError  = newTemp("fixed_error", dtError);
+    CallExpr*  fixError    = new CallExpr(gChplFixThrownError,
+                                          castToError(thrownError));
+
+    throwBlock->insertAtTail(new DefExpr(fixedError));
+    throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
 
     if (insideTry) {
-      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(thrownError));
+      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
     } else if (outError != NULL) {
-      throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
+      throwBlock->insertAtTail(setOutGotoEpilogue(fixedError));
     } else {
       INT_FATAL(node, "cannot throw in a non-throwing function");
     }
