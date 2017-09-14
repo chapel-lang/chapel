@@ -895,23 +895,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Expr*         rhs       = call->get(3)->remove();
     Expr*         lhs       = call->get(2)->remove();
     ForallStmt*   fs        = enclosingForallStmt(call);
-    ForallIntent* fi        = fs->getForallIntent(rOpIdx);
+    // rOpIdx was computed by reduceIntentIdx()
+    ShadowVarSymbol*   svar = fs->getForallIntent(rOpIdx);
+    Symbol*       globalOp  = toSymExpr(svar->reduceOpExpr())->symbol();
 
-    INT_ASSERT(strcmp(toSymExpr(lhs)->symbol()->name,
-                      toSymExpr(fi->variable())->symbol()->name) == 0);
-
-    INT_ASSERT(fi->isReduce());
-
-    Symbol* globalOp = toSymExpr(fi->reduceExpr())->symbol();
-
+    INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name, svar->name));
+    INT_ASSERT(svar->isReduce());
     INT_ASSERT(isReduceOp(globalOp->type));
 
     retval = new_Expr("accumulateOntoState(%S,%S,%E,%E)",
-                      gMethodToken,
-                      globalOp,
-                      lhs,
-                      rhs);
-
+                      gMethodToken, globalOp, lhs, rhs);
     call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
@@ -1146,7 +1139,6 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
     }
-
   } else if (call->isNamed("==")) {
     if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
       Type* lt = call->get(1)->getValType();

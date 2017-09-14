@@ -77,6 +77,12 @@ void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
     defExprs.push_back(defExpr);
 }
 
+void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
+  AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
+  if (ForallStmt* defExpr = toForallStmt(ast))
+    forallStmts.push_back(defExpr);
+}
+
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))

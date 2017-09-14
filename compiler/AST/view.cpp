@@ -135,7 +135,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       if (expr == pfs->loopBody()) {
         printf("\n%6c", ' ');
         for (int i = 0; i < indent; i++) printf(" ");
-        if (pfs->numForallIntents() == 0)
+        if (pfs->numIntentVars() == 0)
           printf("with() ");
         printf("do\n");
         indent -= 2;
@@ -272,7 +272,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         for (int i = 0; i < indent; i++) printf(" ");
         printf("in%s", pfs->zippered() ? " zip" : "");
       } else if (expr == pfs->iteratedExpressions().tail &&
-                 pfs->numForallIntents() > 0)
+                 pfs->numIntentVars() > 0)
       {
         printf("\n      ");
         for (int i = 0; i < indent; i++) printf(" ");

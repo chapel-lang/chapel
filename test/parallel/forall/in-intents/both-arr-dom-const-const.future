@@ -1,8 +1,0 @@
-bug: "in" forall intent does not capture an array
-
-Due to #5295.
-
-Prior to #5295, it worked "for a wrong reason". That's because
-the array is passed by default intent to _toStandalone(), which
-stashes it into an iterator record then invokes chpl__autoCopy()
-on the ir. So the array gets deep-copied as a field or this ir.

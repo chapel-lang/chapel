@@ -441,7 +441,7 @@ void AstDumpToHtml::visitForallIntents(ForallIntents* clause) {
   for (int i = 0; i < clause->numVars(); i++) {
     if (i > 0) fprintf(mFP, ", ");
     if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
-    fprintf(mFP, "<B>%s</B> ", tfiTagDescrString(clause->fIntents[i]));
+    fprintf(mFP, "<B>%s</B> ", forallIntentTagDescription(clause->fIntents[i]));
     clause->fiVars[i]->accept(this);
   }
   fprintf(mFP, ")" );

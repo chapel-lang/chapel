@@ -91,6 +91,20 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForTFIntent(int tfIntent);
 
+//
+// ForallIntentTag: a task- or forall-intent tag
+//
+enum ForallIntentTag {
+  TFI_DEFAULT, // aka TFI_BLANK
+  TFI_CONST,
+  TFI_IN,
+  TFI_CONST_IN,
+  TFI_REF,
+  TFI_CONST_REF,
+  TFI_REDUCE,
+};
+
+const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 /************************************* | **************************************
 *                                                                             *
@@ -289,6 +303,10 @@ private:
   virtual std::string docsDirective();
   bool isField;
 
+protected:
+  // for subclasses
+  VarSymbol(AstTag astTag, const char* initName, Type* initType);
+
 public:
 #ifdef HAVE_LLVM
   llvm::MDNode *llvmDIGlobalVariable;
@@ -362,6 +380,54 @@ public:
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+class ShadowVarSymbol : public VarSymbol {
+public:
+  ShadowVarSymbol(ForallIntentTag iIntent, const char* iName, Expr* iSpec = NULL);
+
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  DECLARE_SYMBOL_COPY(ShadowVarSymbol);
+
+  virtual void    replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  virtual bool    isConstant()                              const;
+  virtual bool    isConstValWillNotChange()                 const;
+
+  const char* intentDescrString() const;
+  bool        isReduce()          const { return intent == TFI_REDUCE;  }
+
+  // The corresponding outer var or NULL if not applicable.
+  SymExpr* outerVarSE()   const { return (SymExpr*)outerVarRep; }
+  Symbol*  outerVarSym()  const;
+  // Returns the EXPR in "with (EXPR reduce x)".
+  Expr*    reduceOpExpr() const;
+  // Remove no-longer-needed references to outside symbols when lowering.
+  void     removeSupportingReferences();
+
+  // The intent for this variable.
+  ForallIntentTag intent;
+
+  // Either a SymExpr* (after scopeResolve) or a UnresolvedSymExpr*.
+  // This would be just a SymExpr*, if not for checkIdInsideWithClause().
+  // See also: sv->outerVarSE() and sv->outerVarSym().
+  Expr* outerVarRep;
+
+  // For a reduce intent, the reduce expression.
+  // For a task-private variable, the initialization expression.
+  // Either way, wrapped in a block.  Otherwise it is NULL.
+  BlockStmt* specBlock;
+
+  // A reduction class instance aka "Operator".
+  Symbol* reduceGlobalOp;
+
+  // Once pruning is no longer needed, this should be removed.
+  bool pruneit;
+};
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 class TypeSymbol : public Symbol {
  public:
@@ -660,8 +726,6 @@ VarSymbol* newTempConst(Type* type);
 VarSymbol* newTempConst(const char* name, QualifiedType qt);
 VarSymbol* newTempConst(QualifiedType qt);
 
-void       verifyInTree(BaseAST* ast, const char* msg);
-
 // for use in an English sentence
 const char* retTagDescrString(RetTag    retTag);
 const char* intentDescrString(IntentTag intent);
@@ -680,9 +744,13 @@ void initAstrConsts();
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
 
+// Is 'expr' a SymExpr for the outerVar of some ShadowVarSymbol?
+bool isOuterVarOfShadowVar(Expr* expr);
+
 // Parser support.
 class ForallIntents;
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
+void addForallIntent(CallExpr* fi,      Expr* var, IntentTag intent, Expr* ri);
 void addTaskIntent(CallExpr* ti,        Expr* var, IntentTag intent, Expr* ri);
 
 extern bool localTempNames;

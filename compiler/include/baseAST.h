@@ -53,6 +53,7 @@
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol)    sep                          \
   macro(ArgSymbol)    sep                          \
+  macro(ShadowVarSymbol) sep                       \
   macro(TypeSymbol)   sep                          \
   macro(FnSymbol)     sep                          \
   macro(EnumSymbol)   sep                          \
@@ -71,7 +72,6 @@
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
   macro(DeferStmt) sep                             \
-  macro(ForallIntent) sep                          \
   macro(ForallStmt) sep                            \
   macro(TryStmt) sep                               \
   macro(ForwardingStmt) sep                        \
@@ -167,13 +167,13 @@ enum AstTag {
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
-  E_ForallIntent,
   E_ForallStmt,
   E_ExternBlockStmt,
 
   E_ModuleSymbol,
   E_VarSymbol,
   E_ArgSymbol,
+  E_ShadowVarSymbol,
   E_TypeSymbol,
   E_FnSymbol,
   E_EnumSymbol,
@@ -292,6 +292,8 @@ int    lastNodeIDUsed();
 // trace various AST node removals
 void   trace_remove(BaseAST* ast, char flag);
 
+void verifyInTree(BaseAST* ast, const char* msg);
+
 
 //
 // macro to update the global line number used to set the line number
@@ -331,7 +333,10 @@ static inline bool isType(const BaseAST* a)
 { return a && isType(a->astTag); }
 
 static inline bool isLcnSymbol(const BaseAST* a)
-{ return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol); }
+{ return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol || a->astTag == E_ShadowVarSymbol); }
+
+static inline bool isVarSymbol(const BaseAST* a)
+{ return a && (a->astTag == E_VarSymbol || a->astTag == E_ShadowVarSymbol); }
 
 static inline bool isCallExpr(const BaseAST* a)
 { return a && (a->astTag == E_CallExpr || a->astTag == E_ContextCallExpr); }
@@ -354,15 +359,14 @@ def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
 def_is_ast(DeferStmt)
-def_is_ast(ForallIntent)
 def_is_ast(ForallStmt)
 def_is_ast(TryStmt)
 def_is_ast(ForwardingStmt)
 def_is_ast(CatchStmt)
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
-def_is_ast(VarSymbol)
 def_is_ast(ArgSymbol)
+def_is_ast(ShadowVarSymbol)
 def_is_ast(TypeSymbol)
 def_is_ast(FnSymbol)
 def_is_ast(EnumSymbol)
@@ -401,7 +405,6 @@ def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
 def_to_ast(DeferStmt)
-def_to_ast(ForallIntent)
 def_to_ast(ForallStmt)
 def_to_ast(TryStmt)
 def_to_ast(ForwardingStmt)
@@ -411,6 +414,7 @@ def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
 def_to_ast(VarSymbol)
 def_to_ast(ArgSymbol)
+def_to_ast(ShadowVarSymbol)
 def_to_ast(TypeSymbol)
 def_to_ast(FnSymbol)
 def_to_ast(EnumSymbol)
@@ -463,6 +467,7 @@ def_less_ast(Expr)
 def_less_ast(ModuleSymbol)
 def_less_ast(VarSymbol)
 def_less_ast(ArgSymbol)
+def_less_ast(ShadowVarSymbol)
 def_less_ast(TypeSymbol)
 def_less_ast(FnSymbol)
 def_less_ast(EnumSymbol)
@@ -631,15 +636,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_CatchStmt:                                                     \
     AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
     break;                                                              \
-  case E_ForallIntent:                                                  \
-    AST_CALL_CHILD(_a, ForallIntent, variable(), call, __VA_ARGS__);    \
-    AST_CALL_CHILD(_a, ForallIntent, reduceExpr(), call, __VA_ARGS__);  \
-    break;                                                              \
   case E_ForallStmt:                                                          \
     AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, intentVariables(),     call, __VA_ARGS__); \
-    AST_CALL_LIST (_a, ForallStmt, forallIntents(),       call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
     break;                                                                    \
   case E_ModuleSymbol:                                                  \
@@ -649,6 +649,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, ArgSymbol, typeExpr, call, __VA_ARGS__);         \
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
+    break;                                                              \
+  case E_ShadowVarSymbol:                                               \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep, call, __VA_ARGS__);\
+    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,   call, __VA_ARGS__);\
     break;                                                              \
   case E_TypeSymbol:                                                    \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
