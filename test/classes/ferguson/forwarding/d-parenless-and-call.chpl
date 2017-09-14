@@ -16,6 +16,8 @@ proc test() {
   var ii = new Inner(1);
   var c = new C(ii);
   c.getit(2);
+  delete c;
+  delete ii;
 }
 
 
