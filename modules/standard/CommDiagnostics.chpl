@@ -218,50 +218,49 @@ module CommDiagnostics
 
     proc writeThis(c) {
       var first = true;
-      c.write("(");
+      c <~> "(";
       if (get != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("get = ", get);
+        if first then first = false; else c <~> ", ";
+        c <~> "get = " <~> get;
       }
       if (get_nb != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("get_nb = ", get_nb);
+        if first then first = false; else c <~> ", ";
+        c <~> "get_nb = " <~> get_nb;
       }
       if (put != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("put = ", put);
+        if first then first = false; else c <~> ", ";
+        c <~> "put = " <~> put;
       }
       if (put_nb != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("put_nb = ", put_nb);
+        if first then first = false; else c <~> ", ";
+        c <~> "put_nb = " <~> put_nb;
       }
       if (test_nb != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("test_nb = ", test_nb);
+        if first then first = false; else c <~> ", ";
+        c <~> "test_nb = " <~> test_nb;
       }
       if (wait_nb != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("wait_nb = ", wait_nb);
+        if first then first = false; else c <~> ", ";
+        c <~> "wait_nb = " <~> wait_nb;
       }
       if (try_nb != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("try_nb = ", try_nb);
+        if first then first = false; else c <~> ", ";
+        c <~> "try_nb = " <~> try_nb;
       }
       if (execute_on != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("execute_on = ", execute_on);
+        if first then first = false; else c <~> ", ";
+        c <~> "execute_on = " <~> execute_on;
       }
       if (execute_on_fast != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("execute_on_fast = ", execute_on_fast);
+        if first then first = false; else c <~> ", ";
+        c <~> "execute_on_fast = " <~> execute_on_fast;
       }
       if (execute_on_nb != 0) {
-        if first then first = false; else c.write(", ");
-        c.write("execute_on_nb = ", execute_on_nb);
+        if first then first = false; else c <~> ", ";
+        c <~> "execute_on_nb = " <~> execute_on_nb;
       }
-      if first then c.write("<no communication>");
-      c.write(")");
-      }
+      if first then c <~> "<no communication>";
+      c <~> ")";
     }
   };
 
