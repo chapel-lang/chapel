@@ -263,6 +263,18 @@ void resolveArgIntent(ArgSymbol* arg) {
   arg->intent = intent;
 }
 
+static void resolveVarIntent(VarSymbol* sym) {
+  QualifiedType q = sym->qualType();
+  if (q.getQual() == QUAL_UNKNOWN) {
+    if (sym->isRef()) {
+      sym->qual = QUAL_REF;
+    } else {
+      sym->qual = QUAL_VAL;
+    }
+    // TODO also check sym->isConstant() and set one of CONST qualifiers
+  }
+}
+
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     resolveArgIntent(arg);
@@ -271,14 +283,10 @@ void resolveIntents() {
   // BHARSH TODO: This shouldn't be necessary, but will be until we fully
   // switch over to qualified types.
   forv_Vec(VarSymbol, sym, gVarSymbols) {
-    QualifiedType q = sym->qualType();
-    if (q.getQual() == QUAL_UNKNOWN) {
-      if (sym->isRef()) {
-        sym->qual = QUAL_REF;
-      } else {
-        sym->qual = QUAL_VAL;
-      }
-    }
+    resolveVarIntent(sym);
+  }
+  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
+    resolveVarIntent(sym);
   }
 
   intentsResolved = true;

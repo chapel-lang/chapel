@@ -1,7 +1,0 @@
-both-arr-dom-var-const.chpl:2: In function 'main':
-both-arr-dom-var-const.chpl:13: warning: Arrays, domains, and distributions currently can be passed into the forall loop by 'const', 'ref' or 'const ref' intent only. 'ARR' will be passed by 'const ref' intent.
-both-arr-dom-var-const.chpl:13: warning: Arrays, domains, and distributions currently can be passed into the forall loop by 'const', 'ref' or 'const ref' intent only. 'DOM' will be passed by 'const ref' intent.
-777 888 {777..888}
-777 888 {777..888}
-777 888 {777..888}
-done 777 888 {777..888}
