@@ -2756,7 +2756,7 @@ static void findVisibleFunctionsAndCandidates(
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
 
-  // First, try finding candidates without delegation
+  // First, try finding candidates without forwarding
   if (fn != NULL) {
     visibleFns.add(fn);
 
@@ -2768,7 +2768,7 @@ static void findVisibleFunctionsAndCandidates(
 
   findVisibleCandidates(info, visibleFns, candidates);
 
-  // If no candidates were found and it's a method, try delegating
+  // If no candidates were found and it's a method, try forwarding
   if (candidates.n             == 0 &&
       call->numActuals()       >= 1 &&
       call->get(1)->typeInfo() == dtMethodToken) {
@@ -3001,6 +3001,11 @@ static bool populateForwardingMethods(CallInfo& info) {
 
 
       int        i        = 0;
+
+      // The test call should have the same parentheses-less/partial
+      // properties as the call we are working with.
+      test->methodTag = forCall->methodTag;
+      test->partialTag = forCall->partialTag;
 
       for_actuals(actual, forCall) {
         if (i > 1) { // skip method token, object
