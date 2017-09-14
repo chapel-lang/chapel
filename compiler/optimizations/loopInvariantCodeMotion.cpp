@@ -110,6 +110,21 @@ public:
       delete bitExits;
     }
 
+    // Check if an expr is inside this loop (or in the init/test/incr clause of
+    // a CForLoop)
+    bool astInLoop(Expr* expr) {
+      if (header->exprs.size() != 0) {
+	if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
+	  if (blockStmt->isLoopStmt()) {
+	    return blockStmt == LoopStmt::findEnclosingLoop(expr);
+	  } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+            return CForLoop::loopForClause(blockStmt) == LoopStmt::findEnclosingLoop(expr);
+	  }
+	}
+      }
+      return false;
+    }
+
     // This function exists to place an expr in the
     // "preheader" of the loop,
     void insertBefore(Expr* expr) {
@@ -876,23 +891,24 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         }
       }
     }
-    // Find where the variable is defined.
-    Symbol* defScope = symExpr->symbol()->defPoint->parentSymbol;
-    // if the variable is a module level (global) variable
-    if (isModuleSymbol(defScope)) {
-      // if there are any function calls inside the loop, assume that one of
-      // the functions may have changed the value of the global. Note that we
-      // don't have to worry about a different task updating the global since
-      // that would have to be protected with a sync or be atomic in which case
-      // no hoisting will occur in the function at all. Any defs to the global
-      // inside of this loop will be detected just like any other variable
-      // definitions.
-      // TODO this could be improved to check which functions modify the global
-      // and see if any of those functions are being called in this loop.
+
+    // For global variables, or any variable declared outside of this loop, a
+    // function call may modify the variable without us having visibility of
+    // the change, so conservatively assume any function call has changed it.
+    // Note that we could do some interprocedural analysis to do a better job
+    if (loop->astInLoop(symExpr->symbol()->defPoint) == false) {
       if (callsInLoop.size() != 0) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }
+    for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+      if (loop->astInLoop(aliasSym->defPoint) == false) {
+        if (callsInLoop.size() != 0) {
+          mightHaveBeenDeffedElseWhere = true;
+        }
+      }
+    }
+
     //if there were no defs of the symbol, it is invariant 
     if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
       loopInvariantOperands.insert(symExpr);
