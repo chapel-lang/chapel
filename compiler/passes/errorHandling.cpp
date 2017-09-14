@@ -794,7 +794,8 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
       if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
 
-        // OK
+        // OK, in a try { } or marked with try!
+
       } else if(node->tryTag == TRY_TAG_IN_TRY) {
         if (!inThrowingFunction) {
           USR_FATAL_CONT(node, "call to throwing function %s "
@@ -804,6 +805,8 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
                               calledFn->name);
           printReason(node, reasons);
         }
+
+        // Otherwise, OK, a try in a throwing function
 
       } else {
         if (shouldEnforceStrict(node)) {
@@ -836,68 +839,6 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   }
   return true;
 }
-
-class NormalizeTryExprsVisitor : public AstVisitorTraverse {
-
-public:
-  NormalizeTryExprsVisitor();
-
-  virtual bool enterCallExpr  (CallExpr*   call);
-  virtual void exitCallExpr   (CallExpr*   call);
-
-private:
-
-  std::stack<TryTag> stack;
-};
-
-NormalizeTryExprsVisitor::NormalizeTryExprsVisitor()
-  : stack()
-{
-}
-
-bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
-
-  bool isTry = call->isPrimitive(PRIM_TRY_EXPR);
-  bool isTryBang = call->isPrimitive(PRIM_TRYBANG_EXPR);
-
-  TryTag tag = TRY_TAG_NONE;
-  TryTag parentTag = TRY_TAG_NONE;
-
-  if (!stack.empty()) {
-    // Gather parent try/tryBang
-    parentTag = stack.top();
-  }
-
-  if (isTryBang || parentTag == TRY_TAG_IN_TRYBANG) {
-    // try! on this expr or a parent always makes it try!
-    tag = TRY_TAG_IN_TRYBANG;
-  } else if (isTry || parentTag == TRY_TAG_IN_TRY) {
-    // if we're in a try, or parent is in a try (and not a try!)
-    tag = TRY_TAG_IN_TRY;
-  }
-
-  stack.push(tag);
-
-  call->tryTag = tag;
-
-  return true;
-}
-
-void NormalizeTryExprsVisitor::exitCallExpr(CallExpr* call) {
-  stack.pop();
-
-  bool isTry = call->isPrimitive(PRIM_TRY_EXPR);
-  bool isTryBang = call->isPrimitive(PRIM_TRYBANG_EXPR);
-
-  if (isTry || isTryBang) {
-    Expr* sub = call->get(1);
-    INT_ASSERT(sub);
-    sub->remove();
-    call->replace(sub);
-  }
-
-}
-
 
 } /* end anon namespace */
 
@@ -1058,13 +999,6 @@ void lowerCheckErrorPrimitive()
     }
   }
 }
-
-void lowerTryExprs(BaseAST* ast)
-{
-  NormalizeTryExprsVisitor n;
-  ast->accept(&n);
-}
-
 
 bool isCheckErrorStmt(Expr* e)
 {
