@@ -841,4 +841,269 @@ proc trace(A: [?D] ?eltType) {
     return trace;
 }
 
+
+/* Linear Algebra Sparse Submodule
+
+A high-level interface to linear algebra operations and procedures for sparse
+ matrices (2D arrays).
+
+Sparse matrices are represented as 2D arrays domain mapped to a sparse *layout*.
+
+See the `Sparse Primer <TODO>`_ for more information on sparse arrays in Chapel.
+
+``LinearAlgebra.Sparse`` currently supports the compressed sparse row format,
+which is represented as a 2D array domain mapped to ``CS(compressRows=true)``
+from :module:layoutCS.
+
+When using sparse matrices, only the procedures provided in this submodule are
+supported.
+
+.. note::
+  This is an early prototype package submodule. As a result, interfaces may
+  change over the next release.
+
+*/
+module Sparse {
+
+  use LayoutCS;
+
+  /* Return a CSR square matrix (2D array) over parent domain
+     ``{0..#rows, 0..#rows}``
+   */
+  proc CSRMatrix(rows, type eltType=real) where isIntegral(rows) {
+    if rows <= 0 then halt("Matrix dimensions must be > 0");
+    return CSRMatrix(0..#rows, 0..#rows, eltType);
+  }
+
+
+  /* Return an empty CSR matrix (2D array) over parent domain ``{0..#rows, 0..#cols}``*/
+  proc CSRMatrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(cols) {
+    if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
+    return CSRMatrix(0..#rows, 0..#cols, eltType);
+  }
+
+
+  /* Return an empty CSR square matrix (2D array) over parent domain ``{space, space}`` */
+  proc CSRMatrix(space: range, type eltType=real) {
+    return CSRMatrix({space, space}, eltType);
+  }
+
+
+  /* Return an empty CSR matrix (2D array) over parent domain ``{rowSpace, colSpace}`` */
+  proc CSRMatrix(rowSpace: range, colSpace: range, type eltType=real) {
+    return CSRMatrix({rowSpace, colSpace}, eltType);
+  }
+
+
+  /* Return a CSR matrix (2D array) over domain ``Dom``
+
+    If ``Dom`` is dense, it will be interpreted as the parent domain, and the
+    matrix will be empty.
+
+    If ``Dom`` is sparse (``CS``), the matrix domain will contain its indices.
+
+    TODO: Examples
+  */
+  proc CSRMatrix(Dom: domain(2), type eltType=real) where Dom.rank == 2 {
+    var csrDom: sparse subdomain(Dom) dmapped CS();
+    var A: [csrDom] eltType;
+    return A;
+  }
+
+  pragma "no doc"
+  /* Return an empty CSR matrix (2D array) over parent domain ``Dom`` */
+  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && Dom._value.dist: CS {
+    var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS();
+    csrDom += Dom;
+    var A: [csrDom] eltType;
+    return A;
+  }
+
+
+  /* Return a CSR matrix (2D array) with domain and values of ``A``.
+      ``A`` can be a dense or sparse array. */
+  proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 {
+    // TODO: Dense -> CSR conversion
+    var M: [Dom] eltType = A: eltType;
+    return M;
+  }
+
+
+  /*
+      TODO: construct CSR array from JC, IC, NUM
+
+      Return a matrix (2D array), given 2 or more vectors, such that the vectors
+      form the rows of the matrix. In other words, the vectors are
+      concatenated such that the ``ith`` vector corresponds to the matrix slice:
+      ``A[i, ..]``
+
+      If `type` is omitted, it will be inferred from the first array.
+
+      For example:
+
+      .. code-block:: chapel
+
+          var A = Matrix([1, 2, 3],
+                         [4, 5, 6],
+                         [7, 8, 9]);
+          /* Produces the 3x3 matrix of integers:
+               1 2 3
+               4 5 6
+               7 8 9
+           */
+
+  */
+  //proc Matrix(const Arrays...?n, type eltType) {
+  //  // TODO -- assert all array domains are same length
+  //  //         Can this be done via type query?
+  //
+  //  if Arrays(1).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
+  //
+  //  const dim2 = 0..#Arrays(1).domain.dim(1).length,
+  //        dim1 = 0..#n;
+  //
+  //  var M: [{dim1, dim2}] eltType;
+  //
+  //  for i in dim1 do
+  //    M[i, ..] = Arrays(i+1)[..]: eltType;
+  //
+  //  return M;
+  //}
+
+  // TODO: Implement for CSR
+
+  /*
+      Generic matrix multiplication, ``A`` and ``B`` can be a scalar, vector, or
+      CSR matrix.
+
+      When ``A`` is a vector and ``B`` is a matrix, this function implicitly
+      computes ``dot(transpose(A), B)``, which may not be as efficient as
+      passing ``A`` and ``B`` in the reverse order.
+  */
+  proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where A._value.dist: CS || B._value.dist: CS {
+    // matrix-(vector|matrix)
+    return matMult(A, B);
+  }
+
+  /* Explicit matrix-(matrix|vector) multiplication */
+  private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where A._value.dist: CS || B._value.dist: CS {
+    // matrix-vector
+    if Adom.rank == 2 && Bdom.rank == 1 then
+      return _matvecMult(A, B);
+    // vector-matrix
+    else if Adom.rank == 1 && Bdom.rank == 2 then
+      return _matvecMult(B, A, trans=true);
+    // matrix-matrix
+    else if Adom.rank == 2 && Bdom.rank == 2 then
+      return _matmatMult(A, B);
+    else
+      compilerError("Rank sizes are not 1 or 2");
+  }
+
+  private proc _matvecMult(A: [?subDA], B: [?subDB]) where A._value.dist: CS {
+    // TODO
+    return B;
+  }
+
+  private proc _vecmatMult(A: [?subDA], B: [?subDB]) where B._value.dist: CS {
+    // TODO
+    return A;
+  }
+
+  private proc _matmatMult(A: [?subDA], B: [?subDB]) where A._value.dist: CS || B._value.dist : CS {
+    // Matrix-matrix multiplication
+    const D = subDA._value.parentDom;
+    var subDC: sparse subdomain(D) dmapped CS();
+    var C: [subDC] A.eltType;
+    // pre-allocate nnz(A) + nnz(B) -- shrink later
+    const nnzAB = subDA._value.nnz + subDB._value.nnz;
+    subDC._value.nnzDom = {1..nnzAB};
+
+    var spa = new _SPA(cols=D.dim(1).size, eltType=A.eltType);
+
+    /*
+     IR (row)     - nnz-rows  - A.domain._value.startIdx
+     JC (column)  - nnz       - A.domain._value.idx
+     VAL (values) - nnz       - A._value.data
+    */
+    for i in A.domain.dim(1) {
+      const colRange = A.IR(i)..(A.IR(i+1)-1);
+      for k in colRange {
+        if A.JC(k) == 0 then continue; // questionable..
+        const jRange = B.IR(A.JC(k))..(B.IR(A.JC(k)+1)-1);
+        for j in jRange {
+          const value = A.NUM(k) * B.NUM(j),
+                pos = B.JC(j);
+          if pos == 0 then continue; // questionable..
+          spa.scatter(value, pos);
+        }
+      }
+      const nznew = spa.gather(C, i);
+      C.IR[i+1] = C.IR[i] + nznew;
+      spa.reset();
+    }
+    return C;
+  }
+
+  /* Sparse-accumulator */
+  record _SPA {
+    var cols: int;
+    type eltType = int;
+    var D = {1..cols},
+        b: [D] bool,      // occupation
+        w: [D] eltType,   // values
+        ls: list(int);  // indices
+
+    /* Reset w, b, and ls to empty */
+    proc reset() {
+      b = false;
+      w = 0;
+      ls.destroy();
+    }
+
+    /* Accumulate nonzeros in SPA */
+    proc scatter(const value, const pos) {
+      if this.b[pos] == 0 {
+        this.w[pos] = value;
+        this.b[pos] = true;
+        this.ls.append(pos);
+      } else {
+        this.w[pos] += value;
+      }
+    }
+
+    // TODO: Only pass in slice by reference?
+    proc gather(ref C: [], i) {
+      const nzcur = C.IR[i];
+      var nzi = 0;
+      //writeln('C.JC.domain:');
+      //writeln(C.JC.domain);
+      //writeln('nzcur: ', nzcur);
+      for idx in this.ls {
+        if nzcur + nzi  > C.JC.size then break;
+        C.JC[nzcur+nzi] = idx;
+        C.NUM[nzcur+nzi] = w[idx];
+        nzi += 1;
+      }
+      return nzi;
+    }
+  }
+
+  // proc transpose()
+
+  // proc add()
+
+  // proc _array.add()
+
+  // proc _array.minus()
+
+  // proc _array.div()
+
+  // proc _array.dot()
+
+  // proc _array.t
+
+  } // submodule LinearAlgebra.Sparse
+
+
 } // module LinearAlgebra
