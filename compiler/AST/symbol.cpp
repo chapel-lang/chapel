@@ -38,6 +38,7 @@
 #include "PartialCopyData.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -568,7 +569,10 @@ bool VarSymbol::isConstant() const {
 
 
 bool VarSymbol::isConstValWillNotChange() const {
-  return hasFlag(FLAG_CONST);
+  // todo: how about QUAL_CONST ?
+  return qual == QUAL_CONST_VAL         ||
+         hasFlag(FLAG_REF_TO_IMMUTABLE) ||
+         (hasFlag(FLAG_CONST) && !hasFlag(FLAG_REF_VAR));
 }
 
 
@@ -726,7 +730,7 @@ void ArgSymbol::verify() {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
-  if (hasFlag(FLAG_REF_TO_CONST))
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
     INT_ASSERT(intent == INTENT_CONST_REF);
   verifyNotOnList(typeExpr);
   verifyNotOnList(defaultExpr);
@@ -779,15 +783,54 @@ bool ArgSymbol::isConstant() const {
   return retval;
 }
 
+// For an abstract 'intent', set absIntent=true.
+// For a concrete 'intent', set absIntent=false and result=
+// whether the formal with that intent does not change.
+static void isConstValWillNotChangeHelp(IntentTag intent,
+                                        bool& result, bool& absIntent) {
+  switch (intent)
+  {
+    case INTENT_CONST_IN:
+    case INTENT_PARAM:
+      result = true; absIntent = false; return;
+
+    case INTENT_IN:
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_REF:
+    case INTENT_CONST_REF:
+    case INTENT_REF_MAYBE_CONST:
+      result = false; absIntent = false; return;
+
+    case INTENT_CONST:
+    case INTENT_BLANK:
+      result = false; absIntent = true; return;
+
+    case INTENT_TYPE:
+      INT_ASSERT(false); // caller responsibility to avoid this
+      result = false; absIntent = true; return; // dummy
+  }
+
+  return; // dummy
+}  
+
 bool ArgSymbol::isConstValWillNotChange() const {
-  //
-  // This is written to only be called post resolveIntents
-  //
-  assert (intent != INTENT_BLANK && intent != INTENT_CONST);
-  return (intent == INTENT_CONST_IN);
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
+    return true;
+
+  bool absIntent = false;
+  bool result    = false;
+  isConstValWillNotChangeHelp(intent, result, absIntent);
+
+  if (absIntent) {
+    // Try again with the corresponding concrete intent.
+    // Caller is responsibile that concreteIntent() succeeds.
+    isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
+                                result, absIntent);
+    INT_ASSERT(!absIntent);
+  }
+  return result;
 }
-
-
 
 bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);

@@ -2393,7 +2393,7 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
 
     if (curFormal->isRef() &&
         curArg->isConstValWillNotChange())
-      curFormal->addFlag(FLAG_REF_TO_CONST);
+      curFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
 
     wCall->insertAtTail(curFormal);
     wDest->insertFormalAtTail(curFormal);
