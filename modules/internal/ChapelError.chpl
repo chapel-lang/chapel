@@ -54,10 +54,10 @@ module ChapelError {
   }
 
   class NilThrownError : Error {
-    const nil_msg = "thrown error was nil";
+    const nil_thrown_msg = "thrown error was nil";
 
     proc message() {
-      return nil_msg;
+      return nil_thrown_msg;
     }
   }
 
