@@ -400,10 +400,11 @@ module ArrayViewReindex {
     const ownsArrInstance = false;
 
     proc downdom {
-      var arr = if _isPrivatized(_ArrInstance) then
-        chpl_getPrivatizedCopy(_ArrInstance.type, _ArrPid)
-      else
-        _ArrInstance;
+      // TODO: This routine may get a remote domain if this is a view
+      // of a view and is called on a locale other than the
+      // originating one for the domain.  Relax the requirement that
+      // arrays have a field named 'dom' and let arr.dom return
+      // whatever domain class is nearby/cheap.
       return arr.dom;
     }
 
@@ -454,7 +455,7 @@ module ArrayViewReindex {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          yield arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
+          yield arr.dsiAccess(chpl_reindexConvertIdx(i, privDom, downdom));
         }
       }
     }
@@ -472,7 +473,7 @@ module ArrayViewReindex {
           const dataIdx = indexCache.getDataIndex(i);
           yield indexCache.getDataElem(dataIdx);
         } else {
-          yield arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
+          yield arr.dsiAccess(chpl_reindexConvertIdx(i, privDom, downdom));
         }
       }
     }
@@ -525,7 +526,7 @@ module ArrayViewReindex {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
+        return arr.dsiAccess(chpl_reindexConvertIdx(i, privDom, downdom));
       }
     }
 
@@ -536,7 +537,7 @@ module ArrayViewReindex {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
+        return arr.dsiAccess(chpl_reindexConvertIdx(i, privDom, downdom));
       }
     }
 
@@ -547,20 +548,20 @@ module ArrayViewReindex {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
       } else {
-        return arr.dsiAccess(chpl_reindexConvertIdx(i, dom, downdom));
+        return arr.dsiAccess(chpl_reindexConvertIdx(i, privDom, downdom));
       }
     }
 
     inline proc dsiLocalAccess(i) ref
-      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, dom, downdom));
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i)
       where shouldReturnRvalueByValue(eltType)
-      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, dom, downdom));
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)
-      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, dom, downdom));
+      return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc checkBounds(i) {
       if boundsChecking then
@@ -605,7 +606,7 @@ module ArrayViewReindex {
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
-      return (_DomPid, dom, _ArrPid, _ArrInstance);
+      return (_DomPid, privDom, _ArrPid, _ArrInstance);
     }
 
     proc dsiPrivatize(privatizeData) {
@@ -630,7 +631,7 @@ module ArrayViewReindex {
       if dims.size != dom.rank {
         compilerError("Error while composing view domain for reindex view.");
       }
-      const goodDims = chpl_reindexConvertDom(dims, dom, downdom).dims();
+      const goodDims = chpl_reindexConvertDom(dims, privDom, downdom).dims();
       if _containsRCRE() {
         var nextView = arr._getRCREView();
         return nextView._viewHelper(goodDims);
@@ -641,7 +642,7 @@ module ArrayViewReindex {
 
     proc _getViewDom() {
       // BHARSH TODO
-      return _viewHelper(dom.dsiDims());
+      return _viewHelper(privDom.dsiDims());
     }
 
     proc doiUseBulkTransfer(B) {
@@ -733,7 +734,7 @@ module ArrayViewReindex {
 
     // not sure what this is, but everyone seems to have one...
     inline proc dsiGetBaseDom() {
-      return dom;
+      return privDom;
     }
 
     proc _getActualArray() {
