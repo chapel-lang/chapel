@@ -341,7 +341,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       BlockStmt* errorPolicy = new BlockStmt();
       Expr*      insert      = node->getStmtExpr();
 
-      if (insideTry && !node->inTryBang) {
+      if (insideTry && node->tryTag != TRY_TAG_IN_TRYBANG) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
@@ -353,7 +353,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL && !node->inTryBang)
+        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
           errorPolicy->insertAtTail(haltExpr(errorVar, false));
@@ -672,7 +672,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
     markImplicitThrows(calledFn, visited, reasons);
 
     if (calledFn->throwsError()) {
-      if (insideTry || node->inTryBang) {
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
         // OK
       } else {
 
@@ -792,10 +792,10 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
         inThrowingFunction = parentFn->throwsError();
       }
 
-      if (insideTry || node->inTryBang) {
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
 
         // OK
-      } else if(node->inTry) {
+      } else if(node->tryTag == TRY_TAG_IN_TRY) {
         if (!inThrowingFunction) {
           USR_FATAL_CONT(node, "call to throwing function %s "
                                "is in a try but not handled",
@@ -847,12 +847,7 @@ public:
 
 private:
 
-  struct TryExprInfo {
-    bool inTry;
-    bool inTryBang;
-  };
-
-  std::stack<TryExprInfo> stack;
+  std::stack<TryTag> stack;
 };
 
 NormalizeTryExprsVisitor::NormalizeTryExprsVisitor()
@@ -865,36 +860,25 @@ bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
   bool isTry = call->isPrimitive(PRIM_TRY_EXPR);
   bool isTryBang = call->isPrimitive(PRIM_TRYBANG_EXPR);
 
-  bool inTry = false;
-  bool inTryBang = false;
-
-  bool parentTry = false;
-  bool parentTryBang = false;
+  TryTag tag = TRY_TAG_NONE;
+  TryTag parentTag = TRY_TAG_NONE;
 
   if (!stack.empty()) {
     // Gather parent try/tryBang
-    TryExprInfo t = stack.top();
-    parentTry = t.inTry;
-    parentTryBang = t.inTryBang;
+    parentTag = stack.top();
   }
 
-  if (isTryBang || parentTryBang) {
+  if (isTryBang || parentTag == TRY_TAG_IN_TRYBANG) {
     // try! on this expr or a parent always makes it try!
-    inTryBang = true;
-  } else if (isTry) {
-    // if we're in a try, keep that
-    inTry = true;
-  } else {
-    // Otherwise, inherit from parent
-    inTry = parentTry;
-    inTryBang = parentTryBang;
+    tag = TRY_TAG_IN_TRYBANG;
+  } else if (isTry || parentTag == TRY_TAG_IN_TRY) {
+    // if we're in a try, or parent is in a try (and not a try!)
+    tag = TRY_TAG_IN_TRY;
   }
 
-  TryExprInfo t = {inTry, inTryBang};
-  stack.push(t);
+  stack.push(tag);
 
-  call->inTry = inTry;
-  call->inTryBang = inTryBang;
+  call->tryTag = tag;
 
   return true;
 }
