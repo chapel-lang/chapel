@@ -2,6 +2,7 @@
 [brick]
 name = "Tester"
 version = "0.1.0"
+chplVersion = "1.16.0"
 author = "Sam Partee"
 
 [dependencies]
