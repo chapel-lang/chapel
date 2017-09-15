@@ -455,6 +455,12 @@ Un-do the last commit (leaving changed files in your working directory)
 
     git reset --soft HEAD~1
 
+Reapplying changes from the current branch onto an updated version of master:
+
+.. code-block:: bash
+
+    git rebase master
+
 Pushing such changes to your repository (again, **this may cause problems** if
 other repositories have pulled the changes):
 
