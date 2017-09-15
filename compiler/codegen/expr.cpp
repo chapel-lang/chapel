@@ -235,9 +235,11 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
 }
 #endif
 
-#define WIDE_GEP_LOC 0
-#define WIDE_GEP_ADDR 1
-#define WIDE_GEP_SIZE 2
+enum WideThingField {
+  WIDE_GEP_LOC=0,
+  WIDE_GEP_ADDR=1,
+  WIDE_GEP_SIZE=2
+};
 
 static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 
@@ -612,7 +614,7 @@ GenRet codegenWideHere(GenRet addr, Type* wideType = NULL)
 static bool isWide(GenRet x)
 {
   if( x.isLVPtr == GEN_WIDE_PTR ) return true;
-  if( x.chplType && x.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) return true;
+  if( x.chplType && x.chplType->isWidePtrType() ) return true;
   return false;
 }
 
@@ -686,7 +688,7 @@ static GenRet codegenCastWideToVoid(GenRet wide) {
 // Works for wide strings or wide pointers.
 //
 // field is WIDE_GEP_LOC, WIDE_GEP_ADDR, or WIDE_GEP_SIZE.
-static GenRet codegenWideThingField(GenRet ws, int field)
+static GenRet codegenWideThingField(GenRet ws, WideThingField field)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
@@ -4425,6 +4427,11 @@ GenRet CallExpr::codegenPrimitive() {
       // (instead of just using the node number)
       GenRet lc = codegenLocaleForNode(locale);
 
+      remoteAddr = codegenWideAddr(lc, remoteAddr);
+
+      if (remoteAddr.isLVPtr == GEN_WIDE_PTR)
+        remoteAddr = codegenAddrOf(remoteAddr);
+
       if (localAddr.isLVPtr == GEN_PTR)
         localAddr = codegenAddrOf(localAddr);
 
@@ -4433,11 +4440,11 @@ GenRet CallExpr::codegenPrimitive() {
 
       if (isget) {
         codegenCallMemcpy(localAddr,
-                          codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
+                          remoteAddr,
                           size,
                           NULL);
       } else {
-        codegenCallMemcpy(codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
+        codegenCallMemcpy(remoteAddr,
                           localAddr,
                           size,
                           NULL);
@@ -5245,6 +5252,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         // of the wide pointer
         GenRet getField = codegenFieldPtr(call->get(1), se);
 
+        gdbShouldBreakHere();
         ret = codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR));
 
         retval = true;
