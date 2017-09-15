@@ -1,0 +1,7 @@
+
+[brick]
+name = "unbounded"
+version = "0.1.0"
+chplVersion = "1.15"
+
+[dependencies]
