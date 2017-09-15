@@ -129,7 +129,7 @@
   Executing this on two locales with the ``-nl 2`` command line
   option results in the following output::
 
-    (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 1, execute_on_fast = 0, execute_on_nb = 0) (get = 1, get_nb = 0, put = 1, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
+    (execute_on = 1) (get = 1, put = 1)
 
   The first parenthesized group contains the counts for locale 0, and
   the second contains the counts for locale 1.  So, for the
@@ -215,6 +215,22 @@ module CommDiagnostics
       non-blocking remote executions
      */
     var execute_on_nb: uint(64);
+
+    proc writeThis(c) {
+      use Reflection;
+
+      var first = true;
+      c <~> "(";
+      for param i in 1..numFields(chpl_commDiagnostics) {
+        const val = getField(this, i);
+        if val != 0 {
+          if first then first = false; else c <~> ", ";
+          c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+        }
+      }
+      if first then c <~> "<no communication>";
+      c <~> ")";
+    }
   };
 
   /*
