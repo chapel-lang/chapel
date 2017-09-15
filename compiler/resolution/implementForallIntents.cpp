@@ -1784,26 +1784,8 @@ static void resolveSVarIntent(ShadowVarSymbol* svar) {
 // findOuterVarsNew() and helpers
 //
 
-//
-// A forall-intents variation on isOuterVar() in createTaskFunctions.cpp:
 // Is 'sym' defined outside 'block'?
-//
 static bool isOuterVarNew(Symbol* sym, BlockStmt* block) {
-  if (sym->isParameter()               || // includes isImmediate()
-      sym->hasFlag(FLAG_INSTANTIATED_PARAM)    || // also a param
-      sym->hasFlag(FLAG_TEMP)          || // exclude these
-
-      // Consts need no special semantics for begin/cobegin/coforall/on.
-      // Implementation-wise, it is uniform with consts in nested functions.
-      sym->hasFlag(FLAG_CONST)         ||
-
-      // NB 'type' formals do not have INTENT_TYPE
-      sym->hasFlag(FLAG_TYPE_VARIABLE)     // 'type' aliases or formals
-  ) {
-    // these are either not variables or not defined outside of 'fn'
-    return false;
-  }
-
   DefExpr*  defPt = sym->defPoint;
   Expr* parentExp = defPt->parentExpr;
 
@@ -1858,6 +1840,11 @@ static void findOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
 
     if (isLcnSymbol(sym)             && // include only variable-like things
         sym->type != dtMethodToken   && // not a method token
+        sym->defPoint->parentSymbol != rootModule && // not a system symbol
+        !sym->isParameter()          && // not a param, including isImmediate()
+        !sym->hasFlag(FLAG_INSTANTIATED_PARAM) && // not a param, again
+        !sym->hasFlag(FLAG_TYPE_VARIABLE)      && // not a type alias or formal
+        !sym->hasFlag(FLAG_TEMP)     && // not a temp
         !isFsIndexVar(fs, sym)       && // not fs's index var
         !isFsIntentVar(fs, sym)      && // not fs's intent var
         !sym->hasFlag(FLAG_ARG_THIS) && // todo: no special case for 'this'
