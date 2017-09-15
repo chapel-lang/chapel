@@ -69,8 +69,8 @@ config const infoDistributedIters:bool = false;
 
   :arg localeChunkSize: Chunk size to yield to each locale. Must be
     nonnegative. If this argument has value 0, the iterator will use
-    ``chunkSize * here.maxTaskPar`` in seeking parallelism at both locale and
-    task level.
+    an undefined heuristic in an attempt to choose a value that will
+    perform well.
   :type localeChunkSize: `int`
 
   :arg coordinated: If true (and multi-locale), then have the locale invoking
@@ -234,9 +234,13 @@ where tag == iterKind.leader
       with (ref dynamicStageCount, ref localeTimes)
       do on L
       {
-        const actualLocaleChunkSize = if localeChunkSize == 0
-                                      then (chunkSize * here.maxTaskPar)
-                                      else localeChunkSize;
+        // TODO: Find a better heuristic backed by experimentation
+        const computedSize = if localeChunkSize == 0
+                             then denseRange.size / actualWorkerLocales.size / 10
+                             else localeChunkSize;
+        // localeChunkSize should not be less than chunkSize
+        const maxSize = max(computedSize, chunkSize);
+        const actualLocaleChunkSize = min(maxSize, denseRange.size);
         var localeTime:Timer;
         if timeDistributedIters then localeTime.start();
 
