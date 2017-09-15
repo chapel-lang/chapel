@@ -1,5 +1,0 @@
-#!/usr/bin/env sh
-
-if [ -d ./newTest ]; then
-  rm -rf ./newTest
-fi
