@@ -217,47 +217,16 @@ module CommDiagnostics
     var execute_on_nb: uint(64);
 
     proc writeThis(c) {
+      use Reflection;
+
       var first = true;
       c <~> "(";
-      if (get != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "get = " <~> get;
-      }
-      if (get_nb != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "get_nb = " <~> get_nb;
-      }
-      if (put != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "put = " <~> put;
-      }
-      if (put_nb != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "put_nb = " <~> put_nb;
-      }
-      if (test_nb != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "test_nb = " <~> test_nb;
-      }
-      if (wait_nb != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "wait_nb = " <~> wait_nb;
-      }
-      if (try_nb != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "try_nb = " <~> try_nb;
-      }
-      if (execute_on != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "execute_on = " <~> execute_on;
-      }
-      if (execute_on_fast != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "execute_on_fast = " <~> execute_on_fast;
-      }
-      if (execute_on_nb != 0) {
-        if first then first = false; else c <~> ", ";
-        c <~> "execute_on_nb = " <~> execute_on_nb;
+      for param i in 1..numFields(chpl_commDiagnostics) {
+        const val = getField(this, i);
+        if val != 0 {
+          if first then first = false; else c <~> ", ";
+          c <~> getFieldName(chpl_commDiagnostics, i) <~> " = " <~> val;
+        }
       }
       if first then c <~> "<no communication>";
       c <~> ")";
