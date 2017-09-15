@@ -127,7 +127,7 @@ public:
                                   BaseAST* newAst)               = 0;
 
   virtual bool       isConstant()                              const;
-  virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isConstValWillNotChange();
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
@@ -280,7 +280,7 @@ public:
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   virtual bool       isConstant()                              const;
-  virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isConstValWillNotChange();
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
   virtual bool       isType()                                  const;
@@ -346,7 +346,7 @@ public:
 
   // New interface
   virtual bool    isConstant()                              const;
-  virtual bool    isConstValWillNotChange()                 const;
+  virtual bool    isConstValWillNotChange();
   virtual bool    isParameter()                             const;
 
   virtual bool    isVisible(BaseAST* scope)                 const;
@@ -391,7 +391,7 @@ public:
 
   virtual void    replaceChild(BaseAST* oldAst, BaseAST* newAst);
   virtual bool    isConstant()                              const;
-  virtual bool    isConstValWillNotChange()                 const;
+  virtual bool    isConstValWillNotChange();
 
   const char* intentDescrString() const;
   bool        isReduce()          const { return intent == TFI_REDUCE;  }

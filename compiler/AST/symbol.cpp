@@ -219,7 +219,7 @@ bool Symbol::isConstant() const {
   return false;
 }
 
-bool Symbol::isConstValWillNotChange() const {
+bool Symbol::isConstValWillNotChange() {
   return false;
 }
 
@@ -580,11 +580,12 @@ bool VarSymbol::isConstant() const {
 }
 
 
-bool VarSymbol::isConstValWillNotChange() const {
+bool VarSymbol::isConstValWillNotChange() {
   // todo: how about QUAL_CONST ?
   return qual == QUAL_CONST_VAL         ||
          hasFlag(FLAG_REF_TO_IMMUTABLE) ||
-         (hasFlag(FLAG_CONST) && !hasFlag(FLAG_REF_VAR));
+         (hasFlag(FLAG_CONST) &&
+          !(hasFlag(FLAG_REF_VAR) || isRef()));
 }
 
 
@@ -825,7 +826,7 @@ static void isConstValWillNotChangeHelp(IntentTag intent,
   return; // dummy
 }  
 
-bool ArgSymbol::isConstValWillNotChange() const {
+bool ArgSymbol::isConstValWillNotChange() {
   if (hasFlag(FLAG_REF_TO_IMMUTABLE))
     return true;
 
@@ -1020,7 +1021,7 @@ bool ShadowVarSymbol::isConstant() const {
   return false; // dummy
 }
 
-bool ShadowVarSymbol::isConstValWillNotChange() const {
+bool ShadowVarSymbol::isConstValWillNotChange() {
   //
   // This is written to only be called post resolveIntents
   //
