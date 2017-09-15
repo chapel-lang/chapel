@@ -52,11 +52,7 @@
       the Collection in an undefined state. This has been documented under issue `#6912 <https://github.com/chapel-lang/chapel/issues/6912>`_ .
   2.  There are issues with :proc:`remove` where the compiler will crash (segmentation fault) if the
       return value is not captured at the callsite, documented as issue `#6542 <https://github.com/chapel-lang/chapel/issues/6542>`_ .
-      Furthermore, issues with capturing the return value in a variable declared outside of a loop will trigger
-      a bug with LICM (Loop Invariant Code Motion), a compiler optimization, to lead to undefined behavior.
-      This optimization can be disabled via the ``--no-loop-invariant-code-motion`` flag, and is documented
-      under issue `#7003 <https://github.com/chapel-lang/chapel/issues/7003>`_ . Lastly, there is yet another
-      bug, of which the cause is currently unknown, that triggers a compiler internal error, which requires
+      Lastly, there is yet another bug, of which the cause is currently unknown, that triggers a compiler internal error, which requires
       the user to declare the express type at callsite. A 'safe' way to use :proc:`remove` in a loop is documented below.
 
       .. code-block:: chapel
@@ -118,8 +114,9 @@ module Collection {
       var arr : [dom] eltType;
       var idx = 0;
 
+      var (hasElt, elt) : (bool, eltType);
       for 1 .. nElts {
-        var (hasElt, elt) = remove();
+        (hasElt, elt) = remove();
         if !hasElt {
           dom = {0..#idx};
           break;
@@ -153,8 +150,9 @@ module Collection {
       Clears all elements in this collection.
     */
     proc clear() {
+      var (hasElt, elt) : (bool, eltType);
       while true {
-        var (hasElt, elt) = remove();
+        (hasElt, elt) = remove();
         if !hasElt {
           break;
         }

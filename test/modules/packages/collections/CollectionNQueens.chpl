@@ -156,9 +156,10 @@ coforall loc in Locales do on loc {
   coforall tid in 0 .. #here.maxTaskPar {
     barrier.barrier();
     var nSpins : int;
+    // BUG: If we do not specify the type here, we get a compiler internal error...
+    var (exists, myBoard) : (bool, boardType);
     while found.read() < totalSolutions {
-      // BUG: If we do not specify the type here, we get a compiler internal error...
-      var (exists, myBoard) : (bool, boardType) = c.remove();
+      (exists, myBoard) = c.remove();
       // Spin: We haven't found solution yet...
       if !exists {
         nSpins = nSpins + 1;
