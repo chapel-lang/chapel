@@ -23,7 +23,7 @@ use Spawn;
 use FileSystem;
 use MasonUtils;
 use MasonHelp;
-
+use MasonUpdate;
 
 
 proc masonBuild(args) {
@@ -47,10 +47,19 @@ proc masonBuild(args) {
       } 
     }
   }
-  UpdateLock();
+  UpdateLock(args);
   BuildProgram(release, show, compopts);
 }
 
+private proc checkChplVersion(lockFile : Toml) {
+  const root = lockFile["root"];
+  const (success, low, hi) = verifyChapelVersion(root);
+
+  if success == false {
+    writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
+    exit(1);
+  }
+}
 
 proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
@@ -66,6 +75,7 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     //Install dependencies into .mason/src
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
+    checkChplVersion(lockFile);
     var sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
 

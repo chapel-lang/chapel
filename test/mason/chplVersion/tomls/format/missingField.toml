@@ -1,7 +1,6 @@
 
 [brick]
-name = "Tester"
+name = "missingField"
 version = "0.1.0"
-chplVersion = "1.16.0"
 
 [dependencies]
