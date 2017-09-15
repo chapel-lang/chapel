@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "ForLoop.h"
 #include "driver.h"
 #include "stmt.h"
@@ -295,8 +296,16 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
         currHandler = nextHandler;
       }
     }
-    catchBody->insertAtTail(
-        new CallExpr(gChplDeleteError, castToError(toDelete)));
+
+    BlockStmt* deferDeleteBody = new BlockStmt();
+    DeferStmt* deferDelete     = new DeferStmt(deferDeleteBody);
+    CallExpr*  deleteError     = new CallExpr(gChplDeleteError,
+                                              castToError(toDelete));
+    AList      deleteCond      = errorCond(toDelete,
+                                           new BlockStmt(deleteError));
+
+    deferDeleteBody->insertAtHead(deleteCond);
+    catchBody->insertAtHead(deferDelete);
   }
 
   if (!hasCatchAll) {
@@ -469,6 +478,8 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
   return ret;
 }
+
+
 
 GotoStmt* ErrorHandlingVisitor::gotoHandler() {
 
