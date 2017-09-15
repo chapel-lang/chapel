@@ -142,14 +142,11 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:c_intptr && x.type:c_ptr {
+  inline proc _cast(type t, x)
+  where (t:c_intptr||t:c_uintptr||t:int(64)||t:uint(64)) &&
+        (x.type:c_void_ptr||x.type:c_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
-  inline proc _cast(type t, x) where t:c_uintptr && x.type:c_void_ptr {
-    return __primitive("cast", t, x);
-  }
-
 
   pragma "compiler generated"
   pragma "last resort"
