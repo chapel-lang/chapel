@@ -1198,6 +1198,30 @@ void CallExpr::setResolvedFunction(FnSymbol* fn) {
   }
 }
 
+// This function returns the resolved function, if it's totally resolved,
+// or some resolved virtual function (probably a virtual parent that
+// won't actually called at runtime) if it's a virtual method call.
+// This function is useful for transformations on calls that work
+// depending on the called function's signature (since the virtual
+// parent and children will have the same signature).
+FnSymbol* CallExpr::resolvedOrVirtualFunction() const {
+  // The common case of a user-level call to a resolved function
+  FnSymbol* fn = this->resolvedFunction();
+
+  // Also handle the PRIMOP for a virtual method call
+  if (fn == NULL)
+  {
+    if (this->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true)
+    {
+      SymExpr* arg1 = toSymExpr(this->get(1));
+
+      fn = toFnSymbol(arg1->symbol());
+    }
+  }
+
+  return fn;
+}
+
 FnSymbol* CallExpr::theFnSymbol() const {
   FnSymbol* retval = NULL;
 

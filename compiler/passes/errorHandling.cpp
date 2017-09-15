@@ -323,15 +323,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
   // The common case of a user-level call to a resolved function
-  FnSymbol* calledFn = node->resolvedFunction();
-
-  // Also handle the PRIMOP for a virtual method call
-  if (calledFn == NULL) {
-    if (node->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-        SymExpr* arg1 = toSymExpr(node->get(1));
-        calledFn = toFnSymbol(arg1->symbol());
-    }
-  }
+  FnSymbol* calledFn = node->resolvedOrVirtualFunction();
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
