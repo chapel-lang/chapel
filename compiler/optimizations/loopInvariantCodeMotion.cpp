@@ -114,13 +114,13 @@ public:
     // a CForLoop)
     bool astInLoop(Expr* expr) {
       if (header->exprs.size() != 0) {
-	if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-	  if (blockStmt->isLoopStmt()) {
-	    return blockStmt == LoopStmt::findEnclosingLoop(expr);
-	  } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
+          if (blockStmt->isLoopStmt()) {
+            return blockStmt == LoopStmt::findEnclosingLoop(expr);
+          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
             return CForLoop::loopForClause(blockStmt) == LoopStmt::findEnclosingLoop(expr);
-	  }
-	}
+          }
+        }
       }
       return false;
     }
