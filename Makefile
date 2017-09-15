@@ -136,6 +136,10 @@ chplvis: compiler third-party-fltk FORCE
 mason: compiler chpldoc FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
+c2chapel: FORCE
+	cd tools/c2chapel && $(MAKE)
+	cd tools/c2chapel && $(MAKE) install
+
 
 third-party-fltk: FORCE
 	cd third-party/fltk && $(MAKE)
@@ -167,6 +171,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
+	cd tools/c2chapel && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib
