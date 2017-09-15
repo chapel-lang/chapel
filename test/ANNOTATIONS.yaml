@@ -267,6 +267,9 @@ all:
       config: 16 node XC
   08/15/17:
     - add error handling to the IO module (#6890)
+  09/06/17:
+    - text: Improve the accuracy of our running task counter (#7193)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -1070,6 +1073,8 @@ timeVectorArray:
     - upgrade jemalloc to 4.4.0 (#5278)
   07/26/17:
     - Allow domains to implement specialized assignment (#6722)
+  09/13/17:
+    - Support arrays as args to array.{push_front,push_back,insert} (#7180)
 
 dynamic:
   02/28/17:
