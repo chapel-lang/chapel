@@ -1,0 +1,4 @@
+bug: should be able to init arrays of records of const fields
+
+This test demonstrates that arrays of records that have const fields
+can't be initialized, though it seems that they should be able to.
