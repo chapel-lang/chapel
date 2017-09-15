@@ -53,7 +53,7 @@ record Population {
   // construct the population in terms of an array of colors passed in
   //
   proc init(colors) {
-    chameneos = new Chameneos(colors.domain, colors);
+    chameneos = new Chameneos(1..colors.size, colors);
     super.init();
   }
 
