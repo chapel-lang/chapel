@@ -1,0 +1,10 @@
+
+[brick]
+name = "innerBadDep"
+version = "0.2.0"
+chplVersion = "1.1..1.1"
+author = "foo"
+source = "foo"
+
+[dependencies]
+
