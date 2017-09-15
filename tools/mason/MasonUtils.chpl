@@ -18,9 +18,11 @@
  */
 
 
+
 /* A helper file of utilities for Mason */
 use Spawn;
 use FileSystem;
+
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -29,6 +31,7 @@ proc getEnv(name: string): string {
   var value = getenv(cname);
   return value:string;
 }
+
 
 
 /* Uses the Spawn module to create a subprocess */
