@@ -32,6 +32,7 @@ This tool has the following prerequisites:
 - A GNU-compatible version of 'make'
 - A C preprocessor
 - Python 2.7 or Python 3.5
+- virtualenv
 
 Other versions of Python may work, but only 2.7 and 3.5 have been tested as of
 version 0.1.0.
