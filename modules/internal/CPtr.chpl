@@ -91,7 +91,7 @@ module CPtr {
       ch <~> "(nil)";
     } else {
       var err:syserr = ENOERR;
-      ch.writef(error=err, "0x%xu", this:c_uintptr);
+      ch.writef(error=err, "0x%xu", this:uint(64):c_uintptr);
       if err then
         ch.setError(err);
     }
@@ -142,13 +142,14 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_ptr {
+  inline proc _cast(type t, x) where t:c_intptr && x.type:c_ptr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_void_ptr {
+  inline proc _cast(type t, x) where t:c_uintptr && x.type:c_void_ptr {
     return __primitive("cast", t, x);
   }
+
 
   pragma "compiler generated"
   pragma "last resort"
