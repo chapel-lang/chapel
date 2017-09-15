@@ -180,6 +180,47 @@ namespace {
     return ConstantInt::get(ty, val);
   }
 
+  Instruction* createRaddr(GlobalToWideInfo* info, Value* widePtr, Instruction* insertBefore) {
+    // Assuming widePtr is a struct wide-pointer, extract the address
+    assert(widePtr->getType()->isStructTy());
+
+    return ExtractValueInst::Create(widePtr,
+                                    info->wideAddrGEP,
+                                    "", insertBefore);
+  }
+  Instruction* createRlocale(GlobalToWideInfo* info, Value* widePtr, Instruction* insertBefore) {
+    // Assuming widePtr is a struct wide-pointer, extract the address
+    assert(widePtr->getType()->isStructTy());
+
+    return ExtractValueInst::Create(widePtr,
+                                    info->wideLocaleGEP,
+                                    "", insertBefore);
+  }
+  Instruction* createRnode(GlobalToWideInfo* info, Value* widePtr, Instruction* insertBefore) {
+    // Assuming widePtr is a struct wide-pointer, extract the address
+    assert(widePtr->getType()->isStructTy());
+
+    return ExtractValueInst::Create(widePtr,
+                                    info->wideNodeGEP,
+                                    "", insertBefore);
+  }
+  Instruction* createWideAddr(GlobalToWideInfo* info,
+                        Value* localeId, Value* addr,
+                        Type* widePtrType,
+                        Instruction* insertBefore) {
+    
+    Constant* undefWidePtr = UndefValue::get(widePtrType);
+
+    Instruction* locSet = InsertValueInst::Create(undefWidePtr, localeId,
+                                                  info->wideLocaleGEP,
+                                                  "", insertBefore);
+
+    Instruction* ptrSet = InsertValueInst::Create(locSet, addr,
+                                                  info->wideAddrGEP,
+                                                  "", insertBefore);
+    return ptrSet;
+  }
+
   Value* createWideBitCast(GlobalToWideInfo* info, Value* widePtr, Type* widePtrType, Instruction* insertBefore) {
     /* a sketch of how it would work with structs:
      *
@@ -261,10 +302,6 @@ namespace {
     llvm::Type* i8Ty;
 
     // See llvmGlobalToWide.h for descriptions of these functions
-    llvm::Constant* addrFn;
-    llvm::Constant* locFn;
-    llvm::Constant* nodeFn;
-    llvm::Constant* makeFn;
     llvm::Constant* getFn;
     llvm::Constant* putFn;
     llvm::Constant* getPutFn;
@@ -294,54 +331,10 @@ namespace {
       assert(voidPtrTy);
       assert(wideVoidPtrTy);
 
-      addrFn = info->addrFn;
-      if( ! addrFn ) {
-        addrFn = M.getOrInsertFunction("chpl_wide_ptr_get_address_sym",
-                                       voidPtrTy, wideVoidPtrTy
-#if HAVE_LLVM_VER < 50
-                                       , NULL
-#endif
-                                       );
-      }
-      checkFunctionExistAndHasArgs(addrFn, 1);
-
-      locFn = info->locFn;
-      if( ! locFn ) {
-        locFn = M.getOrInsertFunction("chpl_wide_ptr_read_localeID_sym",
-                                      voidTy, wideVoidPtrTy, ptrLocTy
-#if HAVE_LLVM_VER < 50
-                                      , NULL
-#endif
-                                      );
-      }
-      checkFunctionExistAndHasArgs(locFn, 2);
-
-      nodeFn = info->nodeFn;
-      if( ! nodeFn ) {
-        nodeFn = M.getOrInsertFunction("chpl_wide_ptr_get_node_sym",
-                                       info->nodeIdType, wideVoidPtrTy
-#if HAVE_LLVM_VER < 50
-                                       , NULL
-#endif
-                                       );
-      }
-      checkFunctionExistAndHasArgs(nodeFn, 1);
-
-      makeFn = info->makeFn;
-      if( ! makeFn ) {
-        makeFn = M.getOrInsertFunction("chpl_return_wide_ptr_loc_sym",
-                                       wideVoidPtrTy, ptrLocTy, voidPtrTy
-#if HAVE_LLVM_VER < 50
-                                       , NULL
-#endif
-                                       );
-      }
-      checkFunctionExistAndHasArgs(makeFn, 2);
-
       getFn = info->getFn;
       if( ! getFn ) {
         getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
-                                      voidPtrTy, wideVoidPtrTy,
+                                      voidPtrTy, info->nodeIdType, voidPtrTy,
                                       i64Ty, i64Ty
 #if HAVE_LLVM_VER < 50
                                       , NULL
@@ -353,7 +346,7 @@ namespace {
       putFn = info->putFn;
       if( ! putFn ) {
         putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
-                                      wideVoidPtrTy, voidPtrTy,
+                                      info->nodeIdType, voidPtrTy, voidPtrTy,
                                       i64Ty, i64Ty
 #if HAVE_LLVM_VER < 50
                                       , NULL
@@ -365,7 +358,8 @@ namespace {
       getPutFn = info->getPutFn;
       if( ! getPutFn ) {
         getPutFn = M.getOrInsertFunction("chpl_gen_comm_getput_sym", voidTy,
-                                         wideVoidPtrTy, wideVoidPtrTy,
+                                         info->nodeIdType, voidPtrTy,
+                                         info->nodeIdType, voidPtrTy,
                                          i64Ty
 #if HAVE_LLVM_VER < 50
                                          , NULL
@@ -377,7 +371,8 @@ namespace {
       memsetFn = info->memsetFn;
       if( ! memsetFn ) {
         memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
-                                         wideVoidPtrTy, i8Ty, i64Ty
+                                         info->nodeIdType, voidPtrTy,
+                                         i8Ty, i64Ty
 #if HAVE_LLVM_VER < 50
                                          , NULL
 #endif
@@ -590,13 +585,14 @@ namespace {
             // first, alloca a temporary to 'get' into
             Value* alloc = makeAlloca(wLoadedTy, "", oldLoad); 
             Value* castAlloc = new BitCastInst(alloc, voidPtrTy, "", oldLoad);
-            Value* args[4];
+            Value* rNode = createRnode(info, wAddr, oldLoad);
+            Value* rAddr = createRaddr(info, wAddr, oldLoad);
+            Value* args[5];
             args[0] = castAlloc;
-            args[1] = createWideBitCast(info, wAddr,
-                                        wideVoidPtrTy,
-                                        oldLoad);
-            args[2] = createSizeof(info, wLoadedTy);
-            args[3] = createLoadStoreControl(M, info, oldLoad->getOrdering(),
+            args[1] = rNode;
+            args[2] = rAddr;
+            args[3] = createSizeof(info, wLoadedTy);
+            args[4] = createLoadStoreControl(M, info, oldLoad->getOrdering(),
 #if HAVE_LLVM_VER >= 50
                                              oldLoad->getSyncScopeID()
 #else
@@ -661,13 +657,12 @@ namespace {
             assert(st);
 
             // Now put from the alloc'd area
-            Value* args[4];
-            args[0] = createWideBitCast(info, wPtrOp,
-                                        wideVoidPtrTy,
-                                        oldStore);
-            args[1] = castAlloc;
-            args[2] = createSizeof(info, wStoredTy);
-            args[3] = createLoadStoreControl(M, info, oldStore->getOrdering(),
+            Value* args[5];
+            args[0] = createRnode(info, wPtrOp, oldStore);
+            args[1] = createRaddr(info, wPtrOp, oldStore);
+            args[2] = castAlloc;
+            args[3] = createSizeof(info, wStoredTy);
+            args[4] = createLoadStoreControl(M, info, oldStore->getOrdering(),
 #if HAVE_LLVM_VER >= 50
                                              oldStore->getSyncScopeID()
 #else
@@ -705,11 +700,7 @@ namespace {
               Type* wLocAddrTy = convertTypeGlobalToWide(&M, info, glLocAddrTy);
               Value* wAddr = callGlobalToWideFn(glAddr, call);
 
-              Value* args[1];
-              args[0] = createWideBitCast(info, wAddr,
-                                          wideVoidPtrTy,
-                                          call);
-              Instruction* extr = CallInst::Create(addrFn, args, "", call);
+              Instruction* extr = createRaddr(info, wAddr, call);
               if( extr->getType() != calledFn->getReturnType() ) {
                 extr = CastInst::CreatePointerCast(extr, wLocAddrTy, "", call);
               }
@@ -728,14 +719,8 @@ namespace {
 
               Value* wAddr = callGlobalToWideFn(glAddr, call);
 
-              Value* localePtr = makeAlloca(info->localeIdType, "", call);
-              Value* args[2];
-              args[0] = createWideBitCast(info, wAddr,
-                                          wideVoidPtrTy,
-                                          call);
-              args[1] = localePtr;
-              CallInst::Create(locFn, args, "", call);
-              Instruction* loc = new LoadInst(localePtr, "", call);
+              Instruction* loc = createRlocale(info, wAddr, call);
+
               assert(!loc->getType()->isPointerTy());
               myReplaceInstWithInst(call, loc);
             } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_NODEID)){
@@ -746,11 +731,7 @@ namespace {
 
               Value* wAddr = callGlobalToWideFn(glAddr, call);
 
-              Value* args[1];
-              args[0] = createWideBitCast(info, wAddr,
-                                          wideVoidPtrTy,
-                                          call);
-              Instruction* node = CallInst::Create(nodeFn, args, "", call);
+              Instruction* node = createRnode(info, wAddr, call);
               assert(!node->getType()->isPointerTy());
               myReplaceInstWithInst(call, node);
             } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_MAKE) ){
@@ -765,25 +746,8 @@ namespace {
               Type* gResType = calledFn->getReturnType();
               Type* wResType = convertTypeGlobalToWide(&M, info, gResType);
               
-              Value* addr = wLocAddr;
-              if( wLocAddr->getType() != voidPtrTy ) {
-                addr = CastInst::CreatePointerCast(addr,
-                                                   voidPtrTy,
-                                                   "", call);
-              }
-              // Create a temporary with the locale value.
-              Value* localePtr = makeAlloca(info->localeIdType, "", call);
-              new StoreInst(locale, localePtr, call);
-              Value* args[2];
-              args[0] = localePtr;
-              args[1] = addr;
-              Instruction* make = CallInst::Create(makeFn, args, "", call);
-              if( make->getType() != wResType ) {
-                make = CastInst::CreatePointerCast(make,
-                                                wResType,
-                                                "", call);
-              }
-              assert(make->getType()->isPointerTy());
+              Instruction* make = createWideAddr(info, locale, wLocAddr,
+                                                 wResType, call);
 
               make = callWideToGlobalFn(make, gResType, call);
 
@@ -826,36 +790,32 @@ namespace {
               if( dstSpace == info->globalSpace &&
                   srcSpace != info->globalSpace ) {
                 // It's a PUT
-                Value* args[4];
-                args[0] = createWideBitCast(info, wDst,
-                                            wideVoidPtrTy,
-                                            call);
-                args[1] = wSrc;
-                args[2] = n;
-                args[3] = ctl;
+                Value* args[5];
+                args[0] = createRnode(info, wDst, call);
+                args[1] = createRaddr(info, wDst, call);
+                args[2] = wSrc;
+                args[3] = n;
+                args[4] = ctl;
 
                 putget = CallInst::Create(putFn, args, "", call);
               } else if( srcSpace == info->globalSpace &&
                          dstSpace != info->globalSpace ) {
                 // It's a GET
-                Value* args[4];
+                Value* args[5];
                 args[0] = wDst;
-                args[1] = createWideBitCast(info, wSrc,
-                                            wideVoidPtrTy,
-                                            call);
-                args[2] = n;
-                args[3] = ctl;
+                args[1] = createRnode(info, wSrc, call);
+                args[2] = createRaddr(info, wSrc, call);
+                args[3] = n;
+                args[4] = ctl;
 
                 putget = CallInst::Create(getFn, args, "", call);
               } else {
-                Value* args[3];
-                args[0] = createWideBitCast(info, wDst,
-                                            wideVoidPtrTy,
-                                            call);
-                args[1] = createWideBitCast(info, wSrc,
-                                            wideVoidPtrTy,
-                                            call);
-                args[2] = n;
+                Value* args[5];
+                args[0] = createRnode(info, wDst, call);
+                args[1] = createRaddr(info, wDst, call);
+                args[2] = createRnode(info, wSrc, call);
+                args[3] = createRaddr(info, wSrc, call);
+                args[4] = n;
 
                 assert(getPutFn && "Missing get-put-function for global-to-global memcpy");
                 putget = CallInst::Create(getPutFn, args, "", call);
@@ -872,12 +832,11 @@ namespace {
 
               Instruction* mset = NULL;
 
-              Value* args[3];
-              args[0] = createWideBitCast(info, wDst,
-                                          wideVoidPtrTy,
-                                          call);
-              args[1] = c;
-              args[2] = n;
+              Value* args[4];
+              args[0] = createRnode(info, wDst, call);
+              args[1] = createRaddr(info, wDst, call);
+              args[2] = c;
+              args[3] = n;
               assert(memsetFn && "Missing memset-function for global memset");
               mset = CallInst::Create(memsetFn, args, "", call);
               myReplaceInstWithInst(call, mset);
@@ -923,7 +882,7 @@ namespace {
           // TODO -- remove the bitcasts we added earlier.
           assert(0);
         }
-      } 
+      }
       // Otherwise, return NULL to indicate we opted out
       //  of modifying the constant directly.
       return NULL;
@@ -936,7 +895,7 @@ namespace {
                             RemapFlags Flags,
                             TypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(C);
-    
+
     // If the value already exists in the map, use it.
     if (I != VM.end() && I->second) return cast<Constant>(I->second);
 
@@ -990,7 +949,7 @@ namespace {
                       RemapFlags Flags,
                       TypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(V);
-    
+
     // If the value already exists in the map, use it.
     if (I != VM.end() && I->second) return I->second;
 
@@ -1029,7 +988,7 @@ namespace {
 
       // Check for it in the map.
       ValueToValueMapTy::iterator I = VM.find(V);
-    
+
       // If the value already exists in the map, use it.
       if (I != VM.end() && I->second) newV = I->second;
       else {
@@ -1224,7 +1183,7 @@ namespace {
       assert(info->nodeIdType != 0);
 
       GlobalTypeFixer fixer(M, info, debugPassTwo);
-      GlobalTypeFixer* TypeMapper = &fixer; 
+      GlobalTypeFixer* TypeMapper = &fixer;
 
       /* This transformation operates in two major parts parts:
        *  - (as a prerequisite, source that has global address space pointers,
@@ -1238,7 +1197,7 @@ namespace {
        *    to call put/get functions and lower all instructions to operate
        *    exclusively on wide types, so that the global types are no
        *    longer used (even if they still exist in the LLVM context).
-       */ 
+       */
 
       for (Module::iterator next_func = M.begin(); next_func!= M.end(); )
       {
@@ -1279,7 +1238,7 @@ namespace {
         std::vector<Type*> Params;
 
         unsigned i = 0;
-        for (Function::arg_iterator I = F->arg_begin(), 
+        for (Function::arg_iterator I = F->arg_begin(),
                 E = F->arg_end(); I!=E; ++I, ++i) {
           if (containsGlobalPointers(info, I->getType())) {
             Type *new_type = convertTypeGlobalToWide(&M, info, I->getType());
@@ -1290,7 +1249,7 @@ namespace {
           }
         }
 
-        
+       
         if( debugPassOne ) {
           // Wait until we have converted the argument types since
           // we might rename them... before dumping the fn.
@@ -1348,8 +1307,8 @@ namespace {
           ++UI;
           CallSite CS(Old);
           if (CS.getInstruction()) {
-            assert(CS.getCalledFunction() == F); 
-            Instruction *Call = CS.getInstruction(); 
+            assert(CS.getCalledFunction() == F);
+            Instruction *Call = CS.getInstruction();
 #if HAVE_LLVM_VER >= 50
             const AttributeList &CallPAL = CS.getAttributes();
 #else
@@ -1373,7 +1332,7 @@ namespace {
               }
             }
 
-            
+
             // replace_with = add a new call
             Instruction *New;
 
@@ -1467,7 +1426,7 @@ namespace {
           }
 
           if (containsGlobalPointers(info, F->getReturnType())) {
-            for (Function::iterator BB = NF->begin(), E = NF->end(); 
+            for (Function::iterator BB = NF->begin(), E = NF->end();
                     BB != E; ++BB) {
               if (ReturnInst *RI = dyn_cast<ReturnInst>(BB->getTerminator())) {
                 Instruction *New;
@@ -1814,10 +1773,6 @@ static RegisterPass<GlobalToWide> X("global-to-wide", "GlobalToWide Pass");
 
 ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout)
 {
-  assert(info->addrFn);
-  assert(info->locFn);
-  assert(info->nodeFn);
-  assert(info->makeFn);
   assert(info->getFn);
   assert(info->putFn);
   assert(info->getPutFn);

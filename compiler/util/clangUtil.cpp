@@ -73,7 +73,7 @@ using namespace llvm;
 
 #define GLOBAL_PTR_SPACE 100
 #define WIDE_PTR_SPACE 101
-#define GLOBAL_PTR_SIZE 64
+#define GLOBAL_PTR_SIZE 128
 #define GLOBAL_PTR_ABI_ALIGN 64
 #define GLOBAL_PTR_PREF_ALIGN 64
 
@@ -217,8 +217,6 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 
   if( fLLVMWideOpt && ! info->parseOnly ) {
     char buf[200]; //needs to store up to 8 32-bit numbers in decimal
-
-    assert(GLOBAL_PTR_SIZE == GLOBAL_PTR_BITS);
 
     // Add global pointer info to layout.
     snprintf(buf, sizeof(buf), "-p%u:%u:%u:%u-p%u:%u:%u:%u", GLOBAL_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN, WIDE_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN);
@@ -1954,19 +1952,16 @@ void setupForGlobalToWide(void) {
   GenInfo* ginfo = gGenInfo;
   GlobalToWideInfo* info = &ginfo->globalToWideInfo;
 
+  info->wideLocaleGEP.push_back(0);
+  info->wideNodeGEP.push_back(0);
+  info->wideNodeGEP.push_back(0);
+  info->wideAddrGEP.push_back(1);
+
   info->localeIdType = ginfo->lvt->getType("chpl_localeID_t");
   assert(info->localeIdType);
   info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
   assert(info->nodeIdType);
 
-  info->addrFn = getFunctionLLVM("chpl_wide_ptr_get_address");
-  INT_ASSERT(info->addrFn);
-  info->locFn = getFunctionLLVM("chpl_wide_ptr_read_localeID");
-  INT_ASSERT(info->locFn);
-  info->nodeFn = getFunctionLLVM("chpl_wide_ptr_get_node");
-  INT_ASSERT(info->nodeFn);
-  info->makeFn = getFunctionLLVM("chpl_return_wide_ptr_loc_ptr");
-  INT_ASSERT(info->makeFn);
   info->getFn = getFunctionLLVM("chpl_gen_comm_get_ctl");
   INT_ASSERT(info->getFn);
   info->putFn = getFunctionLLVM("chpl_gen_comm_put_ctl");
@@ -2004,8 +1999,7 @@ void setupForGlobalToWide(void) {
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
   ginfo->builder->SetInsertPoint(block);
 
-  llvm::Constant* fns[] = {info->addrFn, info->locFn, info->nodeFn,
-                           info->makeFn, info->getFn, info->putFn,
+  llvm::Constant* fns[] = {info->getFn, info->putFn,
                            info->getPutFn, info->memsetFn, NULL};
 
   llvm::Value* ret = llvm::Constant::getNullValue(retType);
