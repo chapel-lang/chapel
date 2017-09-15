@@ -826,6 +826,7 @@ static Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
 
 
 static FnSymbol* copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved) {
+  SET_LINENO(origFn->defPoint);
   FnSymbol* copyFn = origFn->copy();
   copyFn->addFlag(FLAG_INVISIBLE_FN);
   origFn->defPoint->insertAfter(new DefExpr(copyFn));
