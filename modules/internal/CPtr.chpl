@@ -91,7 +91,7 @@ module CPtr {
       ch <~> "(nil)";
     } else {
       var err:syserr = ENOERR;
-      ch.writef(error=err, "0x%xu", this:uint(64):c_uintptr);
+      ch.writef(error=err, "0x%xu", this:c_uintptr);
       if err then
         ch.setError(err);
     }
