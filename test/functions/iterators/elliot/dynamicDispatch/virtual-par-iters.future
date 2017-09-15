@@ -1,1 +1,1 @@
-bug: virtual parallel iterators cause compiler segfault (#6998)
+bug: parallel iterators don't dynamically dispatch correctly (#6998)
