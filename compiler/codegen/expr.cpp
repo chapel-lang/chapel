@@ -719,18 +719,36 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
     }
   } else {
 #ifdef HAVE_LLVM
-    if (ws.val->getType()->isPointerTy()){
-      ret.isLVPtr = GEN_PTR;
-      ret.val = info->builder->CreateConstInBoundsGEP2_32(
+    if ( !fLLVMWideOpt ) {
+      if (ws.val->getType()->isPointerTy()){
+        ret.isLVPtr = GEN_PTR;
+        ret.val = info->builder->CreateConstInBoundsGEP2_32(
 #if HAVE_LLVM_VER >= 37
-                                          NULL,
+                                            NULL,
 #endif
-                                          ws.val, 0, field);
+                                            ws.val, 0, field);
+      } else {
+        ret.isLVPtr = GEN_VAL;
+        ret.val = info->builder->CreateExtractValue(ws.val, field);
+      }
+      assert(ret.val);
     } else {
-      ret.isLVPtr = GEN_VAL;
-      ret.val = info->builder->CreateExtractValue(ws.val, field);
+
+      // Workaround: for LLVMWideOpt, get pointers to parts
+      // of addresses, but only support that when they are rvalues.
+
+      // TODO: replace this code with an assert.
+
+      // It would probably be better to fix InsertWideReferences.
+      // The problematic pattern comes up when the optimization
+      //  local _array -> local _array._instance fires in the
+      // array's deinit/_do_destroy code.
+      if( field == WIDE_GEP_LOC ) {
+        ret = createTempVarWith(codegenRlocale(ws));
+      } else if( field == WIDE_GEP_ADDR ) {
+        ret = createTempVarWith(codegenRaddr(ws));
+      }
     }
-    assert(ret.val);
 #endif
   }
 
@@ -5248,7 +5266,6 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         // of the wide pointer
         GenRet getField = codegenFieldPtr(call->get(1), se);
 
-        gdbShouldBreakHere();
         ret = codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR));
 
         retval = true;
