@@ -238,7 +238,6 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
 enum WideThingField {
   WIDE_GEP_LOC=0,
   WIDE_GEP_ADDR=1,
-  WIDE_GEP_SIZE=2
 };
 
 static const char* wide_fields[] = {"locale", "addr", "size", NULL};
@@ -687,19 +686,16 @@ static GenRet codegenCastWideToVoid(GenRet wide) {
 //
 // Works for wide strings or wide pointers.
 //
-// field is WIDE_GEP_LOC, WIDE_GEP_ADDR, or WIDE_GEP_SIZE.
+// field is WIDE_GEP_LOC, WIDE_GEP_ADDR
 static GenRet codegenWideThingField(GenRet ws, WideThingField field)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
 
   INT_ASSERT(field == WIDE_GEP_LOC ||
-             field == WIDE_GEP_ADDR ||
-             field == WIDE_GEP_SIZE );
+             field == WIDE_GEP_ADDR);
 
-  if( field == WIDE_GEP_SIZE ) {
-    ret.chplType = SIZE_TYPE;
-  } else if( field == WIDE_GEP_LOC ) {
+  if( field == WIDE_GEP_LOC ) {
     ret.chplType = LOCALE_ID_TYPE;
   } else if( field == WIDE_GEP_ADDR ) {
     // get the local reference type
