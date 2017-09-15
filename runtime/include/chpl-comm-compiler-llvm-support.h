@@ -36,18 +36,14 @@
 //       atomic_ordering = loadOrStoreInst->getOrdering()
 
 static inline
-void chpl_gen_comm_get_ctl(void *dst_addr, wide_ptr_t src, int64_t n, int64_t ctl)
+void chpl_gen_comm_get_ctl(void *dst_addr, c_nodeid_t src_node, void *src_addr, int64_t n, int64_t ctl)
 {
-  c_nodeid_t src_node = chpl_wide_ptr_get_node(src);
-  void* src_addr = chpl_wide_ptr_get_address(src);
   chpl_gen_comm_get(dst_addr, src_node, src_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
 
 static inline
-void chpl_gen_comm_put_ctl(wide_ptr_t dst, void *src_addr, int64_t n, int64_t ctl)
+void chpl_gen_comm_put_ctl(c_nodeid_t dst_node, void* dst_addr, void *src_addr, int64_t n, int64_t ctl)
 {
-  c_nodeid_t dst_node = chpl_wide_ptr_get_node(dst);
-  void* dst_addr = chpl_wide_ptr_get_address(dst);
   chpl_gen_comm_put(src_addr, dst_node, dst_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
 
@@ -56,13 +52,9 @@ void chpl_gen_comm_put_ctl(wide_ptr_t dst, void *src_addr, int64_t n, int64_t ct
 // such code, but it could appear during optimization. Note that the
 // dst and src regions could overlap.
 static inline
-void chpl_gen_comm_getput(wide_ptr_t dst, wide_ptr_t src, int64_t n)
+void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
+                          c_nodeid_t src_node, void* src_addr, int64_t n)
 {
-  c_nodeid_t src_node = chpl_wide_ptr_get_node(src);
-  void* src_addr = chpl_wide_ptr_get_address(src);
-  c_nodeid_t dst_node = chpl_wide_ptr_get_node(dst);
-  void* dst_addr = chpl_wide_ptr_get_address(dst);
-
   if (chpl_nodeID == dst_node && chpl_nodeID == src_node) {
     memmove(dst_addr, src_addr, n);
   } else if( chpl_nodeID == dst_node ) {
@@ -85,11 +77,8 @@ void chpl_gen_comm_getput(wide_ptr_t dst, wide_ptr_t src, int64_t n)
 }
 
 static inline
-void chpl_gen_comm_memset(wide_ptr_t dst, int8_t src, int64_t n)
+void chpl_gen_comm_memset(c_nodeid_t dst_node, void* dst_addr, int8_t src, int64_t n)
 {
-  c_nodeid_t dst_node = chpl_wide_ptr_get_node(dst);
-  void* dst_addr = chpl_wide_ptr_get_address(dst);
-
   if (chpl_nodeID == dst_node) {
     memset(dst_addr, src, n);
   } else {

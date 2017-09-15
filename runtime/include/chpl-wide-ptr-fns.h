@@ -44,8 +44,8 @@ wide_ptr_t chpl_return_wide_ptr_node(c_nodeid_t node, void* addr)
 static inline
 void chpl_check_wide_ptr(wide_ptr_t ptr)
 {
-  if( chpl_rt_nodeFromLocaleID(ptr.locale) < 0 )
-    chpl_internal_error("Bad wide pointer");
+  //if( chpl_rt_nodeFromLocaleID(ptr.locale) < 0 )
+  //  chpl_internal_error("Bad wide pointer");
 }
 
 static inline
