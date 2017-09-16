@@ -24,8 +24,8 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of a licm bug fix
 GITHUB_USER=ronawho
-GITHUB_BRANCH=fix-licm-bug
-SHORT_NAME=fix-licm-bug
+GITHUB_BRANCH=licm-2
+SHORT_NAME=licm-2
 START_DATE=09/14/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
