@@ -1495,41 +1495,37 @@ void lowerIterator(FnSymbol* fn) {
   //------------------------------------------------------------------------
 
   IteratorInfo* ii = fn->iteratorInfo;
-  if (!fn->hasFlag(FLAG_INLINE_ITERATOR)) {
-    // Does this force iterators marked as inline to be inlined
-    // even if --no-inline-iterators is specified?
-    // Isn't that bad?
-    if (singleLoop) {
-      if (fReportOptimizedLoopIterators) {
-        ModuleSymbol *mod = fn->getModule();
+  if (singleLoop) {
+    if (fReportOptimizedLoopIterators) {
+      ModuleSymbol *mod = fn->getModule();
 
-        if (developer || mod->modTag == MOD_USER) {
-          printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",
-                 fn->cname, mod->name, fn->fname(), fn->linenum());
-        }
+      if (developer || mod->modTag == MOD_USER) {
+        printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",
+               fn->cname, mod->name, fn->fname(), fn->linenum());
       }
-
-      buildZip1(ii, asts, singleLoop);
-      buildZip2(ii, asts, singleLoop);
-      buildZip3(ii, asts, singleLoop);
-      buildZip4(ii, asts, singleLoop);
-    } else {
-      // For iterators that are not single-loop/single-yield, zip2 and zip4 are
-      // no-ops and zip1 and zip3 simply call advance().
-      ii->zip1->insertAtHead(new CallExpr(ii->advance, ii->zip1->_this));
-      ii->zip3->insertAtHead(new CallExpr(ii->advance, ii->zip3->_this));
     }
-    buildAdvance(fn, asts, local2field, locals);
-    // Note that buildInit and buildIncr are essentially no-ops for non c for
-    // loops and that the behavior of buildHasMore changes for C for loops.
-    // For c for loops these basically just takes the init, test, and incr
-    // expressions from the c for loop primitives and put them in the iterator
-    // functions.
-    buildHasMore(ii, singleLoop);
-    buildGetValue(ii, singleLoop);
-    buildInit(ii, singleLoop);
-    buildIncr(ii, singleLoop);
+
+    buildZip1(ii, asts, singleLoop);
+    buildZip2(ii, asts, singleLoop);
+    buildZip3(ii, asts, singleLoop);
+    buildZip4(ii, asts, singleLoop);
+  } else {
+    // For iterators that are not single-loop/single-yield, zip2 and zip4 are
+    // no-ops and zip1 and zip3 simply call advance().
+    ii->zip1->insertAtHead(new CallExpr(ii->advance, ii->zip1->_this));
+    ii->zip3->insertAtHead(new CallExpr(ii->advance, ii->zip3->_this));
   }
+  buildAdvance(fn, asts, local2field, locals);
+  // Note that buildInit and buildIncr are essentially no-ops for non c for
+  // loops and that the behavior of buildHasMore changes for C for loops.
+  // For c for loops these basically just takes the init, test, and incr
+  // expressions from the c for loop primitives and put them in the iterator
+  // functions.
+  buildHasMore(ii, singleLoop);
+  buildGetValue(ii, singleLoop);
+  buildInit(ii, singleLoop);
+  buildIncr(ii, singleLoop);
+
   rebuildIterator(ii, local2rfield, locals);
   rebuildGetIterator(ii);
 }
