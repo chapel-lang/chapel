@@ -52,7 +52,7 @@ endif
 	@echo "Registry - $(registry)"
 	@git -C $(MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
-	@chpl mason.chpl
+	@./buildMason
 
 install: mason
 ifneq ($(wildcard $(link)),)
@@ -66,7 +66,7 @@ endif
 
 update:
 	@echo "Re-building Mason..."
-	@chpl mason.chpl
+	@./buildMason
 
 clean:
 	@echo "Removing Mason..."
