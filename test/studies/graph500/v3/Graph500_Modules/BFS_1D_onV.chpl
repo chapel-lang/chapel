@@ -81,6 +81,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
       }
 
 
+      delete rcLocal(Active_Level);
       rcLocal(Active_Level) = rcLocal(Next_Level);
       rcLocal(Next_Level) = new Level_Set (Vertex_List);
 
@@ -92,6 +93,8 @@ proc BFS ( root : vertex_id, ParentTree, G )
   }
 
 
+  delete rcLocal(Active_Level);
+  delete rcLocal(Next_Level);
 }
 
 
