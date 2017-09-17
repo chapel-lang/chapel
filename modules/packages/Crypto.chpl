@@ -170,7 +170,7 @@ module Crypto {
     proc toHex() {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain do {
-        buffHex[i] = "%02xu".format(this.buff[i]);
+        try! buffHex[i] = "%02xu".format(this.buff[i]);
       }
       return buffHex;
     }
@@ -184,7 +184,7 @@ module Crypto {
     proc toHexString() {
       var buffHexString: string;
       for i in this.buffDomain do {
-        buffHexString += "%02xu".format(this.buff[i]);
+        try! buffHexString += "%02xu".format(this.buff[i]);
       }
       return buffHexString;
     }
