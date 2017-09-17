@@ -53,6 +53,28 @@
       This module is currently under development and will expand significantly
       in upcoming releases.
 
+    Compiling with Crypto
+    ----------------------
+
+    In order to compile a Chapel program that uses this module, the
+    Crypto and C_OpenSSL (C wrappers to OpenSSL) libraries must be installed on the system.
+    The paths to both the ``openssl/<module>.h`` header files and OpenSSL library
+    must be passed to the ``-I`` and ``-L`` compiler arguments. The library name,
+    typically ``crypto``, must be passed to the ``-l`` argument as well.
+
+    The compilation command should look something like this:
+
+    .. code-block:: sh
+
+        chpl -I$PATH_TO_OPENSSL_DIR \
+             -L$PATH_TO_OPENSSL_LIBS -lcrypto source.chpl
+
+    This would also work by setting the ``LDFLAGS`` and ``CPPFLAGS`` environment
+    variables to the expected paths on certain systems.
+
+
+    Chapel Crypto API
+    ------------------
 */
 
 module Crypto {
@@ -372,7 +394,9 @@ module Crypto {
     /* The `Hash` class constructor that initializes the hashing function
        to be used. This constructor sets the byte length of the
        respective hash and allocates a domain for memory allocation
-       for hashing.
+       for hashing. It currently supports the following hashing functions -
+       ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512`` and
+       ``RIPEMD160``.
 
        :arg digestName: Name of the hashing function to be used.
        :type digestName: `string`
