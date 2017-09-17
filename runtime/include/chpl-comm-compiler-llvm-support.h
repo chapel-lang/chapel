@@ -58,9 +58,9 @@ void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
   if (chpl_nodeID == dst_node && chpl_nodeID == src_node) {
     memmove(dst_addr, src_addr, n);
   } else if( chpl_nodeID == dst_node ) {
-    chpl_gen_comm_get_ctl(dst_addr, src, n, 0);
+    chpl_gen_comm_get_ctl(dst_addr, src_node, src_addr, n, 0);
   } else if( chpl_nodeID == src_node ) {
-    chpl_gen_comm_put_ctl(dst, src_addr, n, 0);
+    chpl_gen_comm_put_ctl(dst_node, dst_addr, src_addr, n, 0);
   } else {
     char buf[1024];
     int64_t chunk;
@@ -68,10 +68,10 @@ void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
     for( i = 0; i < n; i += chunk) {
       chunk = n - i;
       if( chunk > sizeof(buf) ) chunk = sizeof(buf);
-      chpl_gen_comm_get_ctl(buf, src, chunk, 0);
-      chpl_gen_comm_put_ctl(dst, buf, chunk, 0);
-      src = chpl_return_wide_ptr_add(src, chunk);
-      dst = chpl_return_wide_ptr_add(dst, chunk);
+      chpl_gen_comm_get_ctl(buf, src_node, src_addr, chunk, 0);
+      chpl_gen_comm_put_ctl(dst_node, dst_addr, buf, chunk, 0);
+      src_addr = ((unsigned char*)src_addr) + chunk;
+      dst_addr = ((unsigned char*)dst_addr) + chunk;
     }
   }
 }
@@ -92,8 +92,8 @@ void chpl_gen_comm_memset(c_nodeid_t dst_node, void* dst_addr, int8_t src, int64
     for( i = 0; i < n; i += chunk) {
       chunk = n - i;
       if( chunk > sizeof(buf) ) chunk = sizeof(buf);
-      chpl_gen_comm_put_ctl(dst, buf, chunk, 0);
-      dst = chpl_return_wide_ptr_add(dst, chunk);
+      chpl_gen_comm_put_ctl(dst_node, dst_addr, buf, chunk, 0);
+      dst_addr = ((unsigned char*)dst_addr) + chunk;
     }
   }
 }
