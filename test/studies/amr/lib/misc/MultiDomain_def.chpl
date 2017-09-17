@@ -62,9 +62,12 @@ class MultiDomain
   var root: MDNode(rank,stridable);
 
 
-  proc initialize ()
+  proc init (param rank=0, param stridable=false)
   {
+    this.rank = rank;
+    this.stridable = stridable;
     root = new MDNode( rank, stridable );
+    super.init();
   }
 
 
@@ -74,7 +77,7 @@ class MultiDomain
   proc copy ()
   {
     const new_mD = new MultiDomain(rank,stridable);
-    new_mD.root = root.copy();
+    root.copy(new_mD.root);  // the initializer has already allocated 'root', so pass it in for re-use
     return new_mD;
   }
 
@@ -241,9 +244,10 @@ class MDNode
   }
 
 
-  proc copy () : MDNode(rank,stridable)
+  proc copy (in new_node: MDNode(rank, stridable) = nil) : MDNode(rank,stridable)
   {
-    const new_node = new MDNode(rank, stridable);
+    if new_node == nil then
+      new_node = new MDNode(rank, stridable);
 
     new_node.Domain     = Domain;
     new_node.bisect_dim = bisect_dim;
