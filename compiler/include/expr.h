@@ -273,6 +273,7 @@ public:
   bool            isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
+  FnSymbol*       resolvedOrVirtualFunction()                            const;
 
   FnSymbol*       theFnSymbol()                                          const;
 
