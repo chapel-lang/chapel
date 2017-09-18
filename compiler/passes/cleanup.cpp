@@ -48,8 +48,6 @@ static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 static void changeCastInWhere(FnSymbol* fn);
 
-static void addParensToDeinitFns(FnSymbol* fn);
-
 static void fixupVoidReturnFn(FnSymbol* fn);
 
 void cleanup() {
@@ -110,7 +108,6 @@ static void cleanup(ModuleSymbol* module) {
         }
 
         changeCastInWhere(fn);
-        addParensToDeinitFns(fn);
         fixupVoidReturnFn(fn);
       }
     }
@@ -392,18 +389,5 @@ static void changeCastInWhere(FnSymbol* fn) {
         }
       }
     }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Make paren-less decls act as paren-ful.                                     *
-* Otherwise "arg.deinit()" in proc chpl__delete(arg) would not resolve.       *
-*                                                                             *
-************************************** | *************************************/
-
-static void addParensToDeinitFns(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-    fn->removeFlag(FLAG_NO_PARENS);
   }
 }
