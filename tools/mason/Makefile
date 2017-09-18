@@ -47,7 +47,7 @@ mason: $(MASON_SOURCES)
         exit 1;\
 	fi;
 	@echo "Building Mason..."
-	@./buildMason
+	@chplBinDir=$(bdir) ./buildMason
 
 install: mason
 ifneq ($(wildcard $(link)),)
@@ -61,7 +61,7 @@ endif
 
 update:
 	@echo "Re-building Mason..."
-	@./buildMason
+	@chplBinDir=$(bdir) ./buildMason
 
 clean:
 	@echo "Removing Mason..."
