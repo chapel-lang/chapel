@@ -923,7 +923,8 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
     // No mode was chosen explicitly, find the default.
 
     ModuleSymbol* mod = fn->getModule();
-    if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
+        fPermitUnhandledModuleErrors)
       mode = ERROR_MODE_FATAL;
     else
       mode = ERROR_MODE_RELAXED;

@@ -184,6 +184,8 @@ extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 
+extern bool fPermitUnhandledModuleErrors;
+
 extern bool debugCCode;
 extern bool optimizeCCode;
 extern bool specializeCCode;
