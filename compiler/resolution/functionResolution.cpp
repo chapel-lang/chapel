@@ -8254,6 +8254,16 @@ static void cleanupAfterRemoves() {
 
 
 static void printUnusedFunctions() {
+/* Defining the macro PRINT_UNUSED_FNS_TO_FILE will cause
+   --print-unused-internal-functions to print the unused functions to a file
+   named 'execFilename.unused'. Then paratest can be run to print all unused
+   functions across the test suite into files to determine what functions
+   are not used by any tests.
+
+   The macro EXIT_AFTER_PRINTING_UNUSED_FNS can also be defined to cause the
+   compiler to immediately exit after printing unused functions for faster
+   checking.
+*/
 #ifdef PRINT_UNUSED_FNS_TO_FILE
   char fname[FILENAME_MAX+1];
   snprintf(fname, FILENAME_MAX, "%s.%s", executableFilename, "unused");
@@ -8274,6 +8284,8 @@ static void printUnusedFunctions() {
     }
   }
 
+  bool first = true;
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
@@ -8283,7 +8295,11 @@ static void printUnusedFunctions() {
           if (instantiations.count(fn) == 0 || instantiations[fn].size() == 0) {
             if (fPrintUnusedInternalFns ||
                 fn->defPoint->getModule()->modTag == MOD_USER) {
-              fprintf(outFile, "%s:%d: %s\n",
+              if (first) {
+                first = false;
+                fprintf(outFile, "The following functions are unused:\n");
+              }
+              fprintf(outFile, "  %s:%d: %s\n",
                       fn->defPoint->fname(), fn->defPoint->linenum(), fn->name);
             }
           }
