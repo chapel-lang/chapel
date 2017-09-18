@@ -93,8 +93,10 @@ proc BFS ( root : vertex_id, ParentTree, G )
   }
 
 
-  delete rcLocal(Active_Level);
-  delete rcLocal(Next_Level);
+  coforall loc in Locales do on loc {
+    delete rcLocal(Active_Level);
+    delete rcLocal(Next_Level);
+  }
 }
 
 
