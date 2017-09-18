@@ -461,6 +461,15 @@ Reapplying changes from the current branch onto an updated version of master:
 
     git rebase master
 
+Reapplying changes from the current branch onto an updated version of
+upstream/master, without updating your local master (note: you will need to
+perform a pull next time you checkout your local master):
+
+.. code-block:: bash
+
+    git fetch upstream
+    git rebase upstream/master
+
 Pushing such changes to your repository (again, **this may cause problems** if
 other repositories have pulled the changes):
 
