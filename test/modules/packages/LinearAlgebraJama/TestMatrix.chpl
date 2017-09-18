@@ -208,6 +208,7 @@ Jama is public domain and developed by MathWorks and NIST
         writeln(A.arrayRightDivideEquals(B),R);
         writeln("arrayTimesEquals... ","");
         writeln("arrayTimesEquals... ","(A = R, A = A.*B, but A./B != R)");
+      delete S;
 
 /**
       LA methods:
@@ -232,6 +233,7 @@ Jama is public domain and developed by MathWorks and NIST
 **/
 
       writeln("\nTesting linear algebra methods...\n");
+      delete A;
       A = new Matrix(columnwise,3);
       T = new Matrix(tvals);
       writeln("transpose...","");
@@ -239,6 +241,7 @@ Jama is public domain and developed by MathWorks and NIST
       writeln(A.transpose(),T);
       writeln("transpose...","");
       check(A.transpose(),T);
+      delete T;
 
       A.transpose();
       writeln("norm1...","");
@@ -256,7 +259,10 @@ Jama is public domain and developed by MathWorks and NIST
       check(A.times(A.transpose()),SQ);
       writeln("times(double)...","");
       check(A.times(0.0),Z);
+      delete SQ;
+      delete Z;
 
+      delete A;
       A = new Matrix(columnwise,4);
       var QR = A.qr();
       R = QR.getR();
@@ -268,11 +274,13 @@ Jama is public domain and developed by MathWorks and NIST
       DEF = new Matrix(rankdef);
       check(DEF.rank(),min(DEF.getRowDimension(),DEF.getColumnDimension())-1);
       writeln("rank()...","");
+      delete DEF;
       B = new Matrix(condmat);
       SVD = B.svd(); 
       var singularvalues = SVD.getSingularValues();
       check(B.cond(),singularvalues[1]/singularvalues[min(B.getRowDimension(),B.getColumnDimension())]);
       writeln("cond()...","");
+      delete B;
       var n = A.getColumnDimension();
       A = A.getMatrix(1,n,1,n);
       A.set(1,1,0.0);
@@ -283,12 +291,17 @@ Jama is public domain and developed by MathWorks and NIST
       check(A.times(X),identity(3,3));
       writeln("inverse()...","");
 
+      delete O;
       O = new Matrix(SUB.getRowDimension(),1,1.0);
       SOL = new Matrix(sqSolution);
       SQ = SUB.getMatrix(1,SUB.getRowDimension(),1,SUB.getRowDimension());
 
       check(SQ.solve(SOL),O); 
       writeln("solve()...","");
+      delete SOL;
+      delete O;
+      delete A;
+      delete SUB;
       A = new Matrix(pvals);
       var Chol = A.chol(); 
       var L = Chol.getL();
@@ -299,17 +312,20 @@ Jama is public domain and developed by MathWorks and NIST
       var V = Eig.getV();
       check(A.times(V),V.times(D));
       writeln("EigenvalueDecomposition (symmetric)...","");
+      delete A;
       A = new Matrix(evals);
       Eig = A.eig();
       D = Eig.getD();
       V = Eig.getV();
       check(A.times(V),V.times(D));
       writeln("EigenvalueDecomposition (nonsymmetric)...","");
+      delete A;
 
       writeln("\nTesting Eigenvalue; If this hangs, we've failed\n");
       var bA = new Matrix(badeigs);
       var bEig = bA.eig();
       writeln("EigenvalueDecomposition (hang)...","");
+      delete bA;
 
       writeln("\nTestMatrix completed.\n");
 
@@ -345,6 +361,8 @@ Jama is public domain and developed by MathWorks and NIST
       var A = new Matrix(x);
       var B = new Matrix(y);
       check(A,B);
+      delete A;
+      delete B;
    }
 
    /** Check norm of difference of Matrices. **/
