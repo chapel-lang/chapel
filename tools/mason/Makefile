@@ -44,13 +44,6 @@ mason: $(MASON_SOURCES)
         echo "CHPL_REGEXP=re2 is required to build mason"; \
         exit 1;\
 	fi;
-	@mkdir -p $(MASON_HOME)/.mason/src
-ifneq ($(wildcard $(registry)),)
-	@echo "Removing old registry..."
-	@rm -rf $(MASON_HOME)/.mason/registry
-endif
-	@echo "Registry - $(registry)"
-	@git -C $(MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
 	@./buildMason
 
