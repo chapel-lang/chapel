@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,11 +18,11 @@
  */
 
 //===----------------------------------------------------------------------===//
-// Chapel LLVM Wide Opt 
+// Chapel LLVM Wide Opt
 //===----------------------------------------------------------------------===//
 // When --llvm-wide-opt is invoked, the code generator generates global
 // pointers - ie, those with a special address space - instead of wide
-// pointer structures. 
+// pointer structures.
 //
 // Then, LLVM optimizations are run on this bitcode if you supply --fast.
 // This pass then is run to lower the operations on global pointers to
@@ -132,17 +132,17 @@ namespace {
     assert(New->getParent());
     assert(New && "Value::replaceAllUsesWith(<null>) is invalid!");
     assert(New != Old && "this->replaceAllUsesWith(this) is NOT valid!");
-  
+
     // Notify all ValueHandles (if present) that this value is going away.
     if (Old->hasValueHandle())
       ValueHandleBase::ValueIsRAUWd(Old, New);
-  
+
     while (!Old->use_empty()) {
       User* U = Old->use_back();
 
       U->replaceUsesOfWith(Old, New);
     }
- 
+
     Old->eraseFromParent();
   }
 #endif
@@ -220,7 +220,7 @@ namespace {
                         Value* localeId, Value* addr,
                         Type* widePtrType,
                         Instruction* insertBefore) {
-    
+
     Constant* undefWidePtr = UndefValue::get(widePtrType);
 
     Instruction* locSet = InsertValueInst::Create(undefWidePtr, localeId,
@@ -236,7 +236,7 @@ namespace {
   Value* createWideBitCast(GlobalToWideInfo* info, Value* widePtr, Type* widePtrType, Instruction* insertBefore) {
     // The destination type should be a wide pointer.
     assert(widePtrType->isStructTy());
-    
+
     if( widePtr->getType() == widePtrType ) return widePtr;
 
     Value* loc = ExtractValueInst::Create(widePtr,
@@ -526,13 +526,13 @@ namespace {
 
           // First,  workaround a problem introduced by LLVM
           // optimization.
-          
+
           Type* srcTy = oldCast->getSrcTy();
           Type* dstTy = oldCast->getDestTy();
 
-          bool fromOk = srcTy->isPointerTy() || 
+          bool fromOk = srcTy->isPointerTy() ||
                         srcTy->isFunctionTy();
-          bool toOK = dstTy->isPointerTy() || 
+          bool toOK = dstTy->isPointerTy() ||
                       dstTy->isFunctionTy();
 
           bool fromGlobal = srcTy->isPointerTy() &&
@@ -642,7 +642,7 @@ namespace {
             Type* wLoadedTy = convertTypeGlobalToWide(&M, info, glLoadedTy);
             // Create a call to 'get'
             // first, alloca a temporary to 'get' into
-            Value* alloc = makeAlloca(wLoadedTy, "", oldLoad); 
+            Value* alloc = makeAlloca(wLoadedTy, "", oldLoad);
             Value* castAlloc = new BitCastInst(alloc, voidPtrTy, "", oldLoad);
             Value* node = createRnode(info, wAddr, oldLoad);
             Value* raddr = createRaddr(info, wAddr, oldLoad);
@@ -808,7 +808,7 @@ namespace {
 
               Type* gResType = calledFn->getReturnType();
               Type* wResType = convertTypeGlobalToWide(&M, info, gResType);
-              
+
               Instruction* make = createWideAddr(info, locale, wLocAddr,
                                                  wResType, call);
 
@@ -1317,7 +1317,7 @@ namespace {
           }
         }
 
-       
+
         if( debugPassOne ) {
           // Wait until we have converted the argument types since
           // we might rename them... before dumping the fn.
@@ -1520,8 +1520,8 @@ namespace {
                 BB->getInstList().erase(RI);
               }
             }
-          } 
-    
+          }
+
           // DEBUG: verify function
           if( debugPassOne ) {
             errs() << "verifying new function after pass one: ";
@@ -1658,7 +1658,7 @@ namespace {
           if( debugPassTwo ) F->dump();
           errs() << "-----------------------------\n";
         }
- 
+
         /*
          for all functions
             for all basic blocks
@@ -1693,7 +1693,7 @@ namespace {
             }
 
             ++I;
-      
+
             fixer.fixInstruction(insn);
 
             if( debugPassTwo ) {
@@ -1733,11 +1733,11 @@ namespace {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
-  
+
           //if( debugPassTwo ) {
           //  errs() << BB->getName() << ":\n";
           //}
- 
+
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             ++I;
@@ -1766,7 +1766,7 @@ namespace {
           BasicBlock& BBRef = *BI;
           BasicBlock* BB = &BBRef;
           ++BI;
-  
+
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
             Instruction *insn = &*I;
             ++I;
@@ -1783,7 +1783,7 @@ namespace {
           insn->setName("");
           insn->dropAllReferences();
         }
- 
+
         // Delete any junk we have accumulated...
         // we should have removed all references to global fn's.
         // references.
@@ -1797,11 +1797,11 @@ namespace {
             BasicBlock& BBRef = *BI;
             BasicBlock* BB = &BBRef;
             ++BI;
-  
+
             if( debugPassTwo ) {
               errs() << BB->getName() << ":\n";
             }
-   
+
             for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
               Instruction *insn = &*I;
               ++I;
@@ -1832,7 +1832,7 @@ namespace {
                                        E = info->specialFunctions.end();
           I != E; ++I ) {
         Function* F = *I;
-        assert( F->use_empty() && "Special functions should've been replaced"); 
+        assert( F->use_empty() && "Special functions should've been replaced");
         F->eraseFromParent();
       }
 
@@ -2144,7 +2144,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     wideArgTypes.resize(fnType->getNumParams());
 
     int i = 0;
-    for (FunctionType::param_iterator A = fnType->param_begin(), 
+    for (FunctionType::param_iterator A = fnType->param_begin(),
           A_end = fnType->param_end(); A != A_end; ++A, i++){
       Type* param_type = *A;
       wideArgTypes[i] = convertTypeGlobalToWide(module, info, param_type);
@@ -2175,7 +2175,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
 
     return ArrayType::get(wideEltType, arrTy->getNumElements());
   }
- 
+
   if (t->isVectorTy()){
     VectorType *vecTy = cast<VectorType>(t);
     Type *eltType = vecTy->getElementType();
@@ -2184,7 +2184,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
 
     return VectorType::get(wideEltType, vecTy->getNumElements());
   }
- 
+
   assert(0);
 }
 
