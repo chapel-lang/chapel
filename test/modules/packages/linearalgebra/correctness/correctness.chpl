@@ -532,6 +532,11 @@ config const correctness = true;
     assertEqual(D, Dom, "CSRDomain(parentDom)");
   }
 
+  // TODO:
+  // CSRDomain(dom)
+  // CSRMatrix(dom) (dense/sparse)
+
+
   /* Array - Dense -> CSR */
   {
     var I = eye(3,3);

@@ -34,8 +34,8 @@ to have a BLAS implementation available on your system. See the :mod:`BLAS`
 documentation for further details.
 
 
-Linear Algebra API
-------------------
+Linear Algebra Interface
+------------------------
 
 **Matrix and Vector representation**
 
@@ -856,20 +856,54 @@ private proc isDefaultDom (D: domain) param { return false; }
 /* Linear Algebra Sparse Submodule
 
 A high-level interface to linear algebra operations and procedures for sparse
- matrices (2D arrays).
+matrices (2D arrays).
 
-Sparse matrices are represented as 2D arrays domain mapped to a sparse *layout*.
+Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
+Only the ``CS(compressRows=true)`` (CSR) layout of the
+`:mod:`LayoutCS` layout module is currently supported.
 
-See the `Sparse Primer <TODO>`_ for more information on sparse arrays in Chapel.
+See the `Sparse Primer <primers-sparse>`_ for more information about working
+with sparse domains and arrays in Chapel.
 
-``LinearAlgebra.Sparse`` currently supports the compressed sparse row format,
-which is represented as a 2D array domain mapped to ``CS(compressRows=true)``
-from :module:layoutCS.
+Sparse Linear Algebra Interface
+-------------------------------
 
-When using sparse matrices, only the procedures provided in this submodule are
-supported.
+``LinearAlgebra.Sparse`` follows the same conventions and interface choices
+ as the parent module, ``LinearAlgebra``, with few exceptions. These
+ exceptions are detailed below.
 
-TODO: Discussion about working with sparse domains
+
+**Sparse Domains**
+
+In Chapel, implicit changes to the index set of a sparse array must be made
+directly on the sparse domain. When working with sparse arrays that will
+require index modification, it is necessary to maintain access to their sparse
+domains as well. As a result of this, the sparse linear algebra interface
+provides helper functions for creating both sparse domains and sparse arrays.
+
+A common usage of this interface might look like this:
+
+.. code-block:: chapel
+
+  // Create an empty 3x3 CSR domain
+  var D = CSRDomain(3,3);
+
+  // Create a CSR matrix over this domain
+  var A = CSRMatrix(D, int);
+  // The above is equivalent to:
+  // var A: [D] int;
+
+  // Add nonzero indices to the sparse domain along the diagonal
+  D += (0,0);
+  D += (1,1);
+  D += (2,2);
+
+  // Set all nonzero indices to the value of 1
+  A = 1;
+
+  // A is now a 3x3 sparse identity matrix
+  writeln(A);
+
 
 .. note::
   This is an early prototype package submodule. As a result, interfaces may
@@ -880,7 +914,7 @@ module Sparse {
 
   use LayoutCS;
 
-  /* Return a CSR square domain (2D array) over parent domain
+  /* Return an empty CSR domain over parent domain:
      ``{0..#rows, 0..#rows}``
    */
   proc CSRDomain(rows) where isIntegral(rows) {
@@ -889,58 +923,61 @@ module Sparse {
   }
 
 
-  /* Return an empty CSR domain (2D array) over parent domain ``{0..#rows, 0..#cols}``*/
+  /* Return an empty CSR domain  over parent domain: ``{0..#rows, 0..#cols}``*/
   proc CSRDomain(rows, cols) where isIntegral(rows) && isIntegral(cols) {
     if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
     return CSRDomain(0..#rows, 0..#cols);
   }
 
 
-  /* Return an empty CSR square domain (2D array) over parent domain ``{space, space}`` */
+  /* Return an empty CSR domain over parent domain: ``{space, space}`` */
   proc CSRDomain(space: range) {
     return CSRDomain({space, space});
   }
 
 
-  /* Return an empty CSR domain (2D array) over parent domain ``{rowSpace, colSpace}`` */
+  /* Return an empty CSR domain over parent domain: ``{rowSpace, colSpace}`` */
   proc CSRDomain(rowSpace: range, colSpace: range) {
     return CSRDomain({rowSpace, colSpace});
   }
 
-
-  /* Return a CSR matrix (2D array) over domain ``Dom``
+  /* Return a CSR domain based on domain: ``Dom``
 
     If ``Dom`` is dense, it will be interpreted as the parent domain, and the
-    matrix will be empty.
+    domain returned will be empty.
 
-    If ``Dom`` is sparse (``CS``), the matrix domain will contain its indices.
-
-    TODO: Examples
+    If ``Dom`` is sparse (CSR), the domain returned will contain the same
+    nonzeros as ``Dom``
   */
-  proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
-    var csrDom: sparse subdomain(Dom) dmapped CS();
-    return csrDom;
-  }
-
-  pragma "no doc"
-  /* Return an empty CSR domain (2D array) over parent domain ``Dom`` */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
     var csrDom: sparse subdomain(Dom._value.parentDom) dmapped CS();
     csrDom += Dom;
     return csrDom;
   }
 
-  // TODO: test
-  /* Return a CSR matrix (2D array) with domain of ``Dom`` where ``Dom`` can
-     be dense or sparse */
+  pragma "no doc"
+  /* Return a CSR domain based on domain: ``Dom`` - Dense case */
+  proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
+    var csrDom: sparse subdomain(Dom) dmapped CS();
+    return csrDom;
+  }
+
+
+  /* Return a CSR matrix over domain: ``Dom``
+
+    If ``Dom`` is dense, it will be interpreted as the parent domain, and the
+    matrix returned will be empty.
+
+    If ``Dom`` is sparse (CSR), the matrix returned will contain the same
+    nonzeros as ``Dom``
+  */
   proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && isCSDom(Dom) {
     var M: [Dom] eltType;
     return M;
   }
 
-  // TODO test
   pragma "no doc"
-  /* Dense domain -> CSR array */
+  /* Return a CSR matrix over domain: ``Dom`` - Dense case */
   proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && isDefaultDom(Dom) {
     var csrDom = CSRDomain(Dom);
     var M: [csrDom] eltType;
@@ -948,23 +985,22 @@ module Sparse {
   }
 
 
-  /* Return a CSR matrix (2D array) with domain and values of ``A``.
-      ``A`` can be a dense or sparse array.
+  /* Return a CSR matrix with domain and values of ``A``
 
-    TODO: Note about domain accessor
-  */
+    ``A`` can be a dense or sparse matrix.
+   */
   proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 && isCSArr(A) {
     var M: [Dom] eltType = A: eltType;
     return M;
   }
 
   pragma "no doc"
-  /* Dense -> CSR conversion */
+  /* Return a CSR matrix with domain and values of ``A`` - Dense case */
   proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 && isDefaultArr(A) {
     var D = CSRDomain(Dom);
     var M: [D] eltType;
 
-    const zero = 0:Atype;
+    const zero = 0: Atype;
     for (i,j) in Dom {
       if A[i,j] != zero {
         D += (i,j);
@@ -975,14 +1011,9 @@ module Sparse {
     return M;
   }
 
-
-  /* Construct CSR domain from internal representation */
-  // TODO
-  // proc CSRDomain(JC: int, IC: int) { }
-
   /*
-      Generic matrix multiplication, ``A`` and ``B`` can be a scalar, vector, or
-      CSR matrix.
+      Generic matrix multiplication, ``A`` and ``B`` can be a scalar, dense
+      vector, or sparse matrix.
 
       When ``A`` is a vector and ``B`` is a matrix, this function implicitly
       computes ``dot(transpose(A), B)``, which may not be as efficient as
@@ -990,18 +1021,11 @@ module Sparse {
 
   */
   proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isSparseArr(B) || isSparseArr(A) {
-    // matrix-(vector|matrix)
+    // Assumes matrix-(vector|matrix) case
     return matMult(A, B);
   }
 
-  //
-  // Type helpers
-  //
-  private proc isCSArr(A: []) param { return isCSType(A.domain._value.dist.type); }
-  private proc isCSDom(D: domain) param { return isCSType(D._value.dist.type); }
-
-
-  /* Explicit sparse matrix-(matrix|vector) multiplication */
+  /* CSR matrix-(matrix|vector) multiplication */
   private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where (isSparseArr(A) || isSparseArr(B)) {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
@@ -1026,8 +1050,16 @@ module Sparse {
     }
   }
 
+  /* Compute the dot-product */
+  proc _array.dot(A: []) where isCSArr(A) {
+    return dot(this, A);
+  }
+
+
+  /* CSR Matrix-vector multiplication */
   private proc _csrmatvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType,
-                              trans=false) where isCSArr(A) {
+                              trans=false) where isCSArr(A)
+  {
 
     if Adom.rank != 2 || Xdom.rank != 1 then
       compilerError("Rank sizes are not 2 and 1");
@@ -1061,7 +1093,7 @@ module Sparse {
   }
 
 
-  /* Matrix-matrix multiplication
+  /* CSR matrix-matrix multiplication
 
     Implementation derived from:
 
@@ -1113,6 +1145,7 @@ module Sparse {
 
   }
 
+  pragma "no doc"
   /* Sparse-accumulator */
   record _SPA {
     var cols: int;
@@ -1153,10 +1186,6 @@ module Sparse {
     }
   }
 
-  proc _array.dot(A: []) where isCSArr(A) {
-    return dot(this, A);
-  }
-
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
     var indices: [1..0] 2*D.idxType;
@@ -1171,7 +1200,7 @@ module Sparse {
     return Dom;
   }
 
-  /* Transpose CSR array */
+  /* Transpose CSR matrix */
   proc transpose(A: [?Adom] ?eltType) where isCSArr(A) {
     var Dom = transpose(Adom);
     var B: [Dom] eltType;
@@ -1184,6 +1213,10 @@ module Sparse {
     return B;
   }
 
+  /* Transpose CSR matrix */
+  proc _array.T where isCSArr(this) { return transpose(this); }
+
+  /* Element-wise addition */
   proc _array.plus(A) where isCSArr(this) && isCSArr(A) {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot add sparse arrays with non-matching parent domains');
@@ -1202,6 +1235,7 @@ module Sparse {
     return B;
   }
 
+  /* Element-wise subtraction */
   proc _array.minus(A) where isCSArr(this) && isCSArr(A) {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot add sparse arrays with non-matching parent domains');
@@ -1257,14 +1291,17 @@ module Sparse {
     return B;
   }
 
-  // TODO
   /* Matrix division (solve) */
   pragma "no doc"
   proc _array.div(A) where isCSArr(this) && isCSArr(A) {
-    //if this.domain._value.parentDom != A.domain._value.parentDom then
-    //  halt('Cannot divide sparse arrays with non-matching parent domains');
     halt("Matrix division not yet supported for sparse matrices */");
   }
+
+  //
+  // Type helpers
+  //
+  private proc isCSArr(A: []) param { return isCSType(A.domain._value.dist.type); }
+  private proc isCSDom(D: domain) param { return isCSType(D._value.dist.type); }
 
 } // submodule LinearAlgebra.Sparse
 
