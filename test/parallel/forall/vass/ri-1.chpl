@@ -45,6 +45,7 @@ proc main {
     xxx = iii * 10 + zzz;
   }
   writeln(xxx);
+  xxx = 0;
   forall jjj in myiter() with (+ reduce xxx, + reduce yyy) {
     xxx += zzz;
     yyy = zzz;
