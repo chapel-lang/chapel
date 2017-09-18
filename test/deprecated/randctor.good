@@ -1,3 +1,0 @@
-randctor.chpl:3: warning: Deprecated call to RandomStream constructor. Please fix by passing eltType as the first argument.
-randctor.chpl:7: warning: Deprecated call to NPBRandomStream constructor. Please fix by passing eltType as the first argument.
-randctor.chpl:11: warning: Deprecated call to makeRandomStream function. Please fix by passing eltType as the first argument.
