@@ -72,5 +72,3 @@ endif
 
 
 clobber: clean
-	@echo "Removing Registry..."
-	rm -rf $(MASON_HOME)/.mason/registry
