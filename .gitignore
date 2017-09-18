@@ -172,14 +172,6 @@ tags
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple.comm-gasnet.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc_all.good
-/test/distributions/robust/arithmetic/performance/multilocale/assign.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignSlice.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduce.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceSlice.good
 
 /test/domains/shannon/OUTPUT
 
