@@ -96,6 +96,7 @@ MODULES_TO_DOCUMENT = \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/BLAS.chpl \
+	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
