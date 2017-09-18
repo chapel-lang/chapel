@@ -158,6 +158,7 @@ module Graph500_main
                     BFS_time_array(1), BFS_nedges_traversed(1) );
 
     delete Rand_Gen;
+    delete G;
   }
 
   // make it possible to call the above code from other files

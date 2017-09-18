@@ -24,6 +24,7 @@
 #include "InitNormalize.h"
 #include "passes.h"
 #include "stmt.h"
+#include "TryStmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
 
@@ -37,6 +38,8 @@ enum InitStyle {
 static bool      isInitStmt (Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit (Expr* stmt);
+
+static bool      isUnacceptableTry(Expr* stmt);
 
 static void      preNormalize(FnSymbol* fn);
 
@@ -169,6 +172,30 @@ void preNormalizeInitMethod(FnSymbol* fn) {
 
   } else {
     preNormalize(fn);
+
+    errorOnFieldsInArgList(fn);
+  }
+}
+
+// Generates an error if a field is used in the argument list to an initializer
+// or constructor
+// Lydia NOTE 09/14/17: Make this static and unexported once constructors are
+// deprecated
+void errorOnFieldsInArgList(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    std::vector<SymExpr*> symExprs;
+
+    collectSymExprs(formal, symExprs);
+
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == fn->_this) {
+        USR_FATAL_CONT(se,
+                       "invalid access of class member in "
+                       "initializer argument list");
+
+        break;
+      }
+    }
   }
 }
 
@@ -232,6 +259,11 @@ static void preNormalize(FnSymbol* fn) {
 
   if (at->isGeneric() == true) {
     fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+  }
+
+  if (fn->throwsError() == true) {
+    // For now.  Remove when we allow it.
+    USR_FATAL(fn, "initializers are not yet allowed to throw errors");
   }
 
   // The body contains at least one instance of this.init()
@@ -313,6 +345,12 @@ static InitNormalize preNormalize(BlockStmt*    block,
   state.checkPhase(block);
 
   while (stmt != NULL) {
+    if (isUnacceptableTry(stmt) == true) {
+      USR_FATAL(stmt,
+                "Only catch-less try! statements are allowed in initializers"
+                " for now");
+    }
+
     if (isDefExpr(stmt) == true) {
       if (state.fieldUsedBeforeInitialized(stmt) == true) {
         USR_FATAL(stmt, "Field used before it is initialized");
@@ -321,6 +359,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      if (callExpr->isPrimitive(PRIM_THROW)) {
+        USR_FATAL(callExpr, "initializers are not yet allowed to throw errors");
+      }
+
       // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
@@ -592,6 +634,9 @@ static bool hasReferenceToThis(Expr* expr) {
       }
     }
 
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    retval = hasReferenceToThis(named->actual);
+
   } else {
     INT_ASSERT(false);
   }
@@ -701,6 +746,23 @@ static const char* initName(CallExpr* expr) {
     }
   }
 
+  return retval;
+}
+
+/* Determine if the expr given is a banned error handling construct */
+static bool isUnacceptableTry(Expr* stmt) {
+  bool retval = false;
+  if (TryStmt* ts = toTryStmt(stmt)) {
+    if (ts->tryBang() == false) {
+      // Only allow try! statements in initializers at the moment
+      retval = true;
+    } else if (ts->_catches.length != 0) {
+      // But don't allow any catches for a try! statement, as that might
+      // permit the initializer to return without having completely initialized
+      // the instance.
+      retval = true;
+    }
+  }
   return retval;
 }
 

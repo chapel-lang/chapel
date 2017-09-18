@@ -375,7 +375,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
       if (fi->isReduce(i))
         fi->riSpecs[i]->accept(this);
 
-      write(true, tfiTagDescrString(fi->fIntents[i]), true);
+      write(true, forallIntentTagDescription(fi->fIntents[i]), true);
 
       fi->fiVars[i]->accept(this);
     }
@@ -396,34 +396,6 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 //
 //
 
-bool AstDumpToNode::enterForallIntent(ForallIntent* node)
-{
-  enterNode(node);
-  mOffset = mOffset + 2;
-
-  fprintf(mFP, " %s", tfiTagDescrString(node->intent()));
-
-  newline();
-  fputs("variable:   ", mFP);
-  node->variable()->accept(this);
-
-  if (node->isReduce()) {
-    newline();
-    fputs("reduceExpr: ", mFP);
-    node->reduceExpr()->accept(this);
-  }
-
-  mOffset = mOffset - 2;
-  if (!compact) newline();
-  exitNode(node);
-
-  return false;
-}
-
-//
-//
-//
-
 bool AstDumpToNode::enterForallStmt(ForallStmt* node)
 {
   enterNode(node);
@@ -436,7 +408,6 @@ bool AstDumpToNode::enterForallStmt(ForallStmt* node)
   writeField("inductionVariables:  ", node->inductionVariables());
   writeField("iteratedExpressions: ", node->iteratedExpressions());
   writeField("intentVariables:     ", node->intentVariables());
-  writeField("forallIntents:       ", node->forallIntents());
 
   newline();
   writeField("loopBody: ", 10, node->loopBody());

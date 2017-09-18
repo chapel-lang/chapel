@@ -77,6 +77,12 @@ void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
     defExprs.push_back(defExpr);
 }
 
+void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
+  AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
+  if (ForallStmt* defExpr = toForallStmt(ast))
+    forallStmts.push_back(defExpr);
+}
+
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
@@ -373,6 +379,7 @@ bool isRelationalOperator(CallExpr* call) {
 //  an attempt to do so is in the commented-out sections below
 //  but would require also fixing a bug in copy-propagation
 //  with e.g. functions/deitz/nested/test_nested_var_iterator2.chpl
+// TODO this should handle PRIM_VIRTUAL_METHOD_CALL and PRIM_FTABLE_CALL
 //
 // which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def

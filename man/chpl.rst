@@ -519,7 +519,6 @@ OPTIONS
     Only a single call to each function is displayed from within any given
     parent function.
 
-
 **--[no-]print-callstack-on-error**
 
     Accompany certain error and warning messages with the Chapel call stack
@@ -527,11 +526,24 @@ OPTIONS
     location. This is useful when the underlying cause of the issue is in
     one of the callers.
 
+**--[no-]print-unused-functions**
+
+    Print the names and source locations of unused functions within the
+    user program.
+
 **-s, --set <config param>[=<value>]**
 
     Overrides the default value of a configuration parameter in the code.
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
+
+**--[no-]permit-unhandled-module-errors**
+
+    Normally, the compiler ensures that all errors are handled for code
+    inside of a module declaration (unless the module overrides that
+    behavior). This flag overrides this default, so that the compiler
+    will compile code in a module that does not handle its errors. If any
+    error comes up during execution, it will cause the program to halt.
 
 **--[no-]task-tracking**
 

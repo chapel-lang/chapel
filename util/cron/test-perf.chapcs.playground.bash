@@ -22,11 +22,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of jemalloc 5
+# Test performance of a licm bug fix
 GITHUB_USER=ronawho
-GITHUB_BRANCH=upgrade-jemalloc-5.0
-SHORT_NAME=jemalloc-5
-START_DATE=09/12/17
+GITHUB_BRANCH=licm-2
+SHORT_NAME=licm-2
+START_DATE=09/14/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

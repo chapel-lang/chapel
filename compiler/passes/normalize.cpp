@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "initializerRules.h"
+#include "lowerTryExprs.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -72,6 +73,7 @@ static void normalizeReturns(FnSymbol* fn);
 static void callConstructor(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insertCallTemps(CallExpr* call);
+static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void normalizeTypeAlias(DefExpr* defExpr);
 static void normalizeArrayAlias(DefExpr* defExpr);
@@ -424,6 +426,18 @@ static void handleReduceAssign() {
   }
 }
 
+//
+// handle reduce specs of shadow vars
+//
+static void insertCallTempsForRiSpecs(BaseAST* base) {
+  std::vector<ForallStmt*> forallStmts;
+  collectForallStmts(base, forallStmts);
+  for_vector(ForallStmt, fs, forallStmts)
+    for_shadow_vars(svar, temp, fs)
+      if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr()))
+        insertCallTempsWithStmt(specCall, fs);
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -437,6 +451,13 @@ static void normalizeTheProgram() {
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 static void normalize(BaseAST* base) {
+
+  //
+  // Phase 0
+  //
+  lowerTryExprs(base);
+
+
   //
   // Phase 1
   //
@@ -508,6 +529,8 @@ static void normalize(BaseAST* base) {
     insertCallTemps(call);
   }
 
+  insertCallTempsForRiSpecs(base);
+
   for_vector(CallExpr, call, calls2) {
     callConstructor(call);
   }
@@ -555,6 +578,9 @@ static void checkUseBeforeDefs() {
             if (prev == NULL || prev->symbol() != gModuleToken) {
               USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
             }
+
+          } else if (isShadowVarSymbol(sym)) {
+            // ShadowVarSymbols are always defined.
 
           } else if (isLcnSymbol(sym) == true) {
             if (sym->defPoint->parentExpr != rootModule->block) {
@@ -1165,21 +1191,17 @@ static void callConstructor(CallExpr* call) {
 // That would be incorrect because this is a special syntax for reduce intent.
 //
 static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent) {
-  SymExpr* retval = NULL;
-
-  if (parent != NULL && parent->isPrimitive(PRIM_MOVE) == true) {
+  if (parent && parent->isPrimitive(PRIM_MOVE)) {
     SymExpr* destSE      = toSymExpr(parent->get(1));
     Symbol*  dest        = destSE->symbol();
     SymExpr* riSpecMaybe = dest->firstSymExpr();
 
-    if (ForallIntent* fi = toForallIntent(riSpecMaybe->parentExpr)) {
-      if (riSpecMaybe == fi->reduceExpr()) {
-        retval = riSpecMaybe;
-      }
-    }
+    if (ShadowVarSymbol* svar = toShadowVarSymbol(riSpecMaybe->parentSymbol))
+      if (riSpecMaybe == svar->reduceOpExpr())
+        return riSpecMaybe;
   }
 
-  return retval;
+  return NULL;
 }
 
 //
@@ -1271,11 +1293,14 @@ static bool  moveMakesTypeAlias(CallExpr* call);
 static Type* typeForNewNonGenericRecord(CallExpr* call);
 
 static void insertCallTemps(CallExpr* call) {
-  if (shouldInsertCallTemps(call) == true) {
+  if (shouldInsertCallTemps(call))
+    insertCallTempsWithStmt(call, call->getStmtExpr());
+}
+
+static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     SET_LINENO(call);
 
     CallExpr*  parentCall = toCallExpr(call->parentExpr);
-    Expr*      stmt       = call->getStmtExpr();
     VarSymbol* tmp        = newTemp("call_tmp");
 
     // Add FLAG_EXPR_TEMP unless this tmp is being used
@@ -1343,7 +1368,6 @@ static void insertCallTemps(CallExpr* call) {
 
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
     }
-  }
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {

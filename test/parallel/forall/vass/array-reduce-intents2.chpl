@@ -11,7 +11,8 @@ var dataM: [dataDom] int = [i in 1..n] i % b + 1;
 var dataB: [dataDom] int = 1..n;
 
 type HistM = [1..b] int;
-var histoM, histoP: HistM;
+var histoM: HistM = 1;
+var histoP: HistM = 0;
 
 proc main {
 

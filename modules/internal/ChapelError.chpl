@@ -53,6 +53,12 @@ module ChapelError {
     }
   }
 
+  class NilThrownError : Error {
+    proc message() {
+      return "thrown error was nil";
+    }
+  }
+
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors
@@ -246,14 +252,19 @@ module ChapelError {
 
     return ret;
   }
-
   pragma "no doc"
   pragma "insert line file info"
-  proc chpl_save_line_in_error(err: Error) {
+  proc chpl_fix_thrown_error(err: Error): Error {
+    var fixErr: Error = err;
+    if fixErr == nil then
+      fixErr = new NilThrownError();
+
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
-    err.thrownLine = line;
-    err.thrownFileId = fileId;
+    fixErr.thrownLine = line;
+    fixErr.thrownFileId = fileId;
+
+    return fixErr;
   }
   pragma "no doc"
   proc chpl_delete_error(err: Error) {
@@ -269,8 +280,6 @@ module ChapelError {
                                          __primitive("_get_user_file"));
     const myFileS = myFileC:string;
     const myLine = __primitive("_get_user_line");
-
-
 
     const thrownFileC:c_string = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);

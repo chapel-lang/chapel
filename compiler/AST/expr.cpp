@@ -819,7 +819,8 @@ CallExpr::CallExpr(BaseAST* base,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false)
+  square(false),
+  tryTag(TRY_TAG_NONE)
 {
   if (Symbol* b = toSymbol(base)) {
     baseExpr = new SymExpr(b);
@@ -853,7 +854,9 @@ CallExpr::CallExpr(PrimitiveOp* prim,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false) {
+  square(false),
+  tryTag(TRY_TAG_NONE)
+{
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
@@ -877,7 +880,9 @@ CallExpr::CallExpr(PrimitiveTag prim,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false) {
+  square(false),
+  tryTag(TRY_TAG_NONE)
+{
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
@@ -902,7 +907,9 @@ CallExpr::CallExpr(const char* name,
   argList(),
   partialTag(false),
   methodTag(false),
-  square(false) {
+  square(false),
+  tryTag(TRY_TAG_NONE)
+{
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
@@ -1065,6 +1072,7 @@ CallExpr* CallExpr::copyInner(SymbolMap* map) {
   _this->partialTag = partialTag;
   _this->methodTag  = methodTag;
   _this->square     = square;
+  _this->tryTag     = tryTag;
 
   return _this;
 }
@@ -1188,6 +1196,30 @@ void CallExpr::setResolvedFunction(FnSymbol* fn) {
   } else {
     INT_ASSERT(false);
   }
+}
+
+// This function returns the resolved function, if it's totally resolved,
+// or some resolved virtual function (probably a virtual parent that
+// won't actually called at runtime) if it's a virtual method call.
+// This function is useful for transformations on calls that work
+// depending on the called function's signature (since the virtual
+// parent and children will have the same signature).
+FnSymbol* CallExpr::resolvedOrVirtualFunction() const {
+  // The common case of a user-level call to a resolved function
+  FnSymbol* fn = this->resolvedFunction();
+
+  // Also handle the PRIMOP for a virtual method call
+  if (fn == NULL)
+  {
+    if (this->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true)
+    {
+      SymExpr* arg1 = toSymExpr(this->get(1));
+
+      fn = toFnSymbol(arg1->symbol());
+    }
+  }
+
+  return fn;
 }
 
 FnSymbol* CallExpr::theFnSymbol() const {

@@ -339,7 +339,7 @@ void AstDump::visitForallIntents(ForallIntents* clause) {
   for (int i = 0; i < clause->numVars(); i++) {
     if (i > 0) write(false, ",", true);
     if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
-    write(tfiTagDescrString(clause->fIntents[i]));
+    write(forallIntentTagDescription(clause->fIntents[i]));
     clause->fiVars[i]->accept(this);
   }
   write(false, ")", true);

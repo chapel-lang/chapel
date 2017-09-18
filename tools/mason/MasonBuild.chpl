@@ -23,7 +23,7 @@ use Spawn;
 use FileSystem;
 use MasonUtils;
 use MasonHelp;
-
+use MasonUpdate;
 
 
 proc masonBuild(args) {
@@ -47,10 +47,19 @@ proc masonBuild(args) {
       } 
     }
   }
-  UpdateLock();
+  UpdateLock(args);
   BuildProgram(release, show, compopts);
 }
 
+private proc checkChplVersion(lockFile : Toml) {
+  const root = lockFile["root"];
+  const (success, low, hi) = verifyChapelVersion(root);
+
+  if success == false {
+    writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
+    exit(1);
+  }
+}
 
 proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
@@ -66,15 +75,21 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     //Install dependencies into .mason/src
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
+    checkChplVersion(lockFile);
     var sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
+
+    // Checks if dependencies exist and retrieves them for compilation
+    if lockFile.pathExists('root.compopts') {
+      const cmpFlags = lockFile["root"]["compopts"].s;
+      compopts.push_back(cmpFlags);
+    }
 
     // Compile Program
     if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
     else writeln("Build Failed");
-
     // Close memory
      delete lockFile;
      toParse.close();
@@ -114,9 +129,10 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
   if isFile(pathToProj) {
     var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts);
     if release then command += " --fast";
+    if sourceList.numElements > 0 then command += " --main-module " + project;
 
-    for dep in sourceList {
-      var depSrc = ' -M '+ depPath + dep(2) + '/src';
+    for (_, name, version) in sourceList {
+      var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
       command += depSrc;
     }
 
@@ -145,14 +161,14 @@ proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
 /* Generates a list of tuples that holds the git repo
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: Toml) {
-  var sourceList: [1..0] (string, string);
+  var sourceList: [1..0] (string, string, string);
   for (name, package) in zip(lockFile.D, lockFile.A) {
     if package.tag == fieldToml {
       if name == "root" then continue;
       else {
         var version = lockFile[name]["version"].s;
         var source = lockFile[name]["source"].s;
-        sourceList.push_back((source, name+'-'+version));
+        sourceList.push_back((source, name, version));
       }
     }
   }
@@ -161,17 +177,17 @@ proc genSourceList(lockFile: Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceList: [?d] 2*string, show) {
+proc getSrcCode(sourceList: [?d] 3*string, show) {
   var destination = MASON_HOME +'/.mason/src/';
-  forall source in sourceList {
-    if !depExists(source(2)) {
-      var version = source(2).split('-');
-      writeln("Downloading dependency: " + source(2));
-      var getDependency = "git clone -qn "+source(1)+' '+destination+source(2)+'/';
-      var checkout = "git -C "+ destination+source(2) + " checkout -q v"+version(2);
+  forall (srcURL, name, version) in sourceList {
+    const nameVers = name + "-" + version;
+    if !depExists(nameVers) {
+      writeln("Downloading dependency: " + nameVers);
+      var getDependency = "git clone -qn "+ srcURL + ' ' + destination + nameVers+'/';
+      var checkout = "git -C "+ destination + nameVers + " checkout -q v" + version;
       if show {
-	getDependency = "git clone -n "+source(1)+' '+destination+source(2)+'/';
-	checkout = "git -C "+ destination+source(2) + " checkout v"+version(2);
+	getDependency = "git clone -n " + srcURL + ' ' + destination + nameVers + '/';
+	checkout = "git -C "+ destination + nameVers + " checkout v" + version;
       }
       runCommand(getDependency);
       runCommand(checkout);

@@ -323,15 +323,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
   // The common case of a user-level call to a resolved function
-  FnSymbol* calledFn = node->resolvedFunction();
-
-  // Also handle the PRIMOP for a virtual method call
-  if (calledFn == NULL) {
-    if (node->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-        SymExpr* arg1 = toSymExpr(node->get(1));
-        calledFn = toFnSymbol(arg1->symbol());
-    }
-  }
+  FnSymbol* calledFn = node->resolvedOrVirtualFunction();
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
@@ -341,7 +333,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
       BlockStmt* errorPolicy = new BlockStmt();
       Expr*      insert      = node->getStmtExpr();
 
-      if (insideTry) {
+      if (insideTry && node->tryTag != TRY_TAG_IN_TRYBANG) {
         TryInfo info = tryStack.top();
         errorVar = info.errorVar;
 
@@ -353,7 +345,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL)
+        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
           errorPolicy->insertAtTail(haltExpr(errorVar, false));
@@ -382,13 +374,17 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
-    throwBlock->insertAtTail(new CallExpr(gSaveLineInErrorFn,
-                                          castToError(thrownError)));
+    VarSymbol* fixedError  = newTemp("fixed_error", dtError);
+    CallExpr*  fixError    = new CallExpr(gChplFixThrownError,
+                                          castToError(thrownError));
+
+    throwBlock->insertAtTail(new DefExpr(fixedError));
+    throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
 
     if (insideTry) {
-      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(thrownError));
+      throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
     } else if (outError != NULL) {
-      throwBlock->insertAtTail(setOutGotoEpilogue(thrownError));
+      throwBlock->insertAtTail(setOutGotoEpilogue(fixedError));
     } else {
       INT_FATAL(node, "cannot throw in a non-throwing function");
     }
@@ -672,7 +668,7 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
     markImplicitThrows(calledFn, visited, reasons);
 
     if (calledFn->throwsError()) {
-      if (insideTry) {
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
         // OK
       } else {
 
@@ -786,14 +782,30 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
     if (calledFn->throwsError()) {
-      if (insideTry) {
-        // OK
+
+      bool inThrowingFunction = false;
+      if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+        inThrowingFunction = parentFn->throwsError();
+      }
+
+      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
+
+        // OK, in a try { } or marked with try!
+
+      } else if(node->tryTag == TRY_TAG_IN_TRY) {
+        if (!inThrowingFunction) {
+          USR_FATAL_CONT(node, "call to throwing function %s "
+                               "is in a try but not handled",
+                               calledFn->name);
+          USR_PRINT(calledFn, "throwing function %s defined here",
+                              calledFn->name);
+          printReason(node, reasons);
+        }
+
+        // Otherwise, OK, a try in a throwing function
+
       } else {
         if (shouldEnforceStrict(node)) {
-          bool inThrowingFunction = false;
-          if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-            inThrowingFunction = parentFn->throwsError();
-          }
           if (mode == ERROR_MODE_STRICT) {
             USR_FATAL_CONT(node, "call to throwing function %s "
                                  "without try or try! (strict mode)",
@@ -911,7 +923,9 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
     // No mode was chosen explicitly, find the default.
 
     ModuleSymbol* mod = fn->getModule();
-    if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
+        fPermitUnhandledModuleErrors ||
+        mod->hasFlag(FLAG_PROTOTYPE_MODULE))
       mode = ERROR_MODE_FATAL;
     else
       mode = ERROR_MODE_RELAXED;

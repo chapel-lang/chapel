@@ -1,3 +1,0 @@
-bug: Failing to report that a field has been used too early in an
-initializer; in fact as a default value for a formal for an init
-method

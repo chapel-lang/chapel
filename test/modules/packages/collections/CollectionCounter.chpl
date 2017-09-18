@@ -51,8 +51,11 @@ var barrier = new Barrier(here.maxTaskPar * numLocales);
 coforall loc in Locales do on loc {
   var perLocaleActual : atomic int;
   const _c = c;
+
   coforall tid in 0..#here.maxTaskPar {
     barrier.barrier();
+    // BUG: Moving this declaration above the loop results in an incorrect
+    // compiler warning: 'A while loop with a constant condition'
     var (hasElem, elt) : (bool, int) = (true, 0);
     var perTaskActual : int;
     while hasElem {

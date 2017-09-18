@@ -11,7 +11,14 @@ proc showBits(name: string, arg: int) {
 
 proc main {
 
-  var xSum, xProd, xMax, xMin, bAnd, bOr, bXor, xUser: int;
+  var xSum = 0,
+      xProd = 1,
+      xMax = min(int),
+      xMin = max(int),
+      bAnd = -1,
+      bOr  = 0,
+      bXor = 0,
+      xUser = 0;
 
   forall a in A with (+ reduce xSum, * reduce xProd,
                       max reduce xMax, min reduce xMin,
@@ -37,7 +44,7 @@ proc main {
   showBits("^ reduce:  ", bXor);
   writeln("user reduce: ", xUser);
 
-  var lAnd, lOr: bool;
+  var lAnd = true, lOr = false;
 
   forall (b1,b2) in zip(B1,B2) with (&& reduce lAnd, || reduce lOr) {
     lAnd reduce= b1;

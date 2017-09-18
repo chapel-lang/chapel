@@ -2615,7 +2615,7 @@ module ChapelArray {
     inline proc resizeAllocRange(r2: range, factor=arrayAsVecGrowthFactor,
                                  param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
-      const r = this._value.dataAllocRange;
+      const ref r = this._value.dataAllocRange;
       const lo = r.low,
             hi = r.high,
             size = r.size;
@@ -3080,7 +3080,7 @@ module ChapelArray {
     // true everywhere
     //
     if isArrayType(this.eltType) {
-      var ret: bool;
+      var ret = true;
       forall (thisArr, thatArr) in zip(this, that) with (&& reduce ret) do
         ret &&= thisArr.equals(thatArr);
       return ret;

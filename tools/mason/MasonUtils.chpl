@@ -18,9 +18,11 @@
  */
 
 
+
 /* A helper file of utilities for Mason */
 use Spawn;
 use FileSystem;
+
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -29,6 +31,7 @@ proc getEnv(name: string): string {
   var value = getenv(cname);
   return value:string;
 }
+
 
 
 /* Uses the Spawn module to create a subprocess */
@@ -85,3 +88,89 @@ proc MASON_HOME: string {
   }
   else return masonHome;
 }
+
+record VersionInfo {
+  var major = -1, minor = -1, bug = 0;
+
+  proc str() {
+    return major + "." + minor + "." + bug;
+  }
+
+  proc cmp(other:VersionInfo) {
+    const A = (major, minor, bug);
+    const B = (other.major, other.minor, other.bug);
+    for i in 1..3 {
+      if A(i) > B(i) then return 1;
+      else if A(i) < B(i) then return -1;
+    }
+    return 0;
+  }
+}
+
+proc >=(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) >= 0;
+}
+proc <=(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) <= 0;
+}
+proc ==(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) == 0;
+}
+
+
+private var chplVersionInfo = (-1, -1, -1, false);
+/*
+   Returns a tuple containing information about the `chpl --version`:
+   (major, minor, bugFix, isMaster)
+*/
+proc getChapelVersionInfo() {
+  use Regexp;
+
+  if chplVersionInfo(1) == -1 {
+    try {
+      var ret : (int, int, int, bool);
+
+      var process = spawn(["chpl", "--version"], stdout=PIPE);
+      process.wait();
+
+      var output : string;
+      for line in process.stdout.lines() {
+        output += line;
+      }
+
+      const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
+      var master  = compile(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+      var release = compile(semverPattern);
+
+      var semver, sha : string;
+      if master.search(output, semver, sha) {
+        ret(4) = true;
+      } else if release.search(output, semver) {
+        ret(4) = false;
+      } else {
+        throw new Error("Failed to match output of 'chpl --version':\n" + output);
+      }
+
+      const split = semver.split(".");
+      for param i in 1..3 do ret(i) = split(i):int;
+
+      chplVersionInfo = ret;
+    } catch e : Error {
+      writeln("Error while getting Chapel version:");
+      writeln(e.message());
+      exit(1);
+    }
+  }
+
+  return chplVersionInfo;
+}
+
+private var chplVersion = "";
+proc getChapelVersionStr() {
+  if chplVersion == "" {
+    const version = getChapelVersionInfo();
+    chplVersion = version(1) + "." + version(2) + "." + version(3);
+  }
+  return chplVersion;
+}
+

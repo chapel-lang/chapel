@@ -172,14 +172,6 @@ tags
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple.comm-gasnet.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc_all.good
-/test/distributions/robust/arithmetic/performance/multilocale/assign.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignSlice.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduce.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceSlice.good
 
 /test/domains/shannon/OUTPUT
 
@@ -376,7 +368,6 @@ tags
 /test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.start_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
-/test/studies/ssca2/performance/SSCA2_kernels.chpl
 /test/studies/ssca2/rachels/SSCA2_main.RMAT.good
 /test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
 /test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good

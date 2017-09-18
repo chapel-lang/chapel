@@ -121,11 +121,16 @@ Miscellaneous Options:
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
-      --[no-]print-callgraph          Print a representation of the callgraph
-                                      for the program
-      --[no-]print-callstack-on-error print the Chapel call stack leading to
-                                      each error or warning
+      --[no-]print-callgraph          [Don't] print a representation of the
+                                      callgraph for the program
+      --[no-]print-callstack-on-error [Don't] print the Chapel call stack
+                                      leading to each error or warning
+      --[no-]print-unused-functions   [Don't] print the name and location of
+                                      unused functions
   -s, --set <name>[=<value>]          Set config param value
+      --[no-]permit-unhandled-module-errors
+                                      Permit unhandled errors in explicit
+                                      modules; such errors halt at runtime
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions

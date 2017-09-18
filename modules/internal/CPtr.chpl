@@ -79,6 +79,22 @@ module CPtr {
     inline proc deref() ref {
       return __primitive("array_get", this, 0);
     }
+    /* Print this pointer */
+    inline proc writeThis(ch) {
+      (this:c_void_ptr).writeThis(ch);
+    }
+  }
+
+  pragma "no doc"
+  inline proc c_void_ptr.writeThis(ch) {
+    if this == c_nil {
+      ch <~> "(nil)";
+    } else {
+      var err:syserr = ENOERR;
+      ch.writef(error=err, "0x%xu", this:c_uintptr);
+      if err then
+        ch.setError(err);
+    }
   }
 
   pragma "no doc"
@@ -125,7 +141,12 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:object {
     return __primitive("cast", t, x);
   }
-
+  pragma "no doc"
+  inline proc _cast(type t, x)
+  where (t:c_intptr || t:c_uintptr || t:int(64) || t:uint(64)) &&
+        (x.type:c_void_ptr || x.type:c_ptr) {
+    return __primitive("cast", t, x);
+  }
 
   pragma "compiler generated"
   pragma "last resort"
@@ -351,9 +372,10 @@ module CPtr {
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
 
-    :arg data: the c_ptr to memory that was allocated
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
-  inline proc c_free(data: c_ptr) {
+  inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
 

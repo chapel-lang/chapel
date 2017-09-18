@@ -4,7 +4,6 @@ use DistributedBag;
 
 
 // Here we test the capabilities of the utility methods, 'addBulk' and 'removeBulk'.
-// Note: For Deque, we must disable LICM via `--no-loop-invariant-code-motion`.
 config param isBoundedDeque = false;
 config param isDeque = false;
 config param isBag = false;

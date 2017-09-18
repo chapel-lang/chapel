@@ -30,16 +30,16 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 bdir=$(CHPL_BIN_DIR)
 link=$(bdir)/mason
 
-TOML=$(CHPL_HOME)/test/modules/packages/Toml/
 REGISTRY=https://github.com/chapel-lang/mason-registry
 
 registry = $(MASON_HOME)/.mason/registry/
 
+MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonUtils.chpl mason.chpl
 
 all: mason
 
 
-mason:	
+mason: $(MASON_SOURCES)
 	@if [ $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_regexp.py) != re2 ]; then \
         echo "CHPL_REGEXP=re2 is required to build mason"; \
         exit 1;\
@@ -52,7 +52,7 @@ endif
 	@echo "Registry - $(registry)"
 	@git -C $(MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
-	@chpl mason.chpl -M $(TOML)
+	@chpl mason.chpl
 
 install: mason
 ifneq ($(wildcard $(link)),)
@@ -66,7 +66,7 @@ endif
 
 update:
 	@echo "Re-building Mason..."
-	@chpl mason.chpl -M $(TOML)
+	@chpl mason.chpl
 
 clean:
 	@echo "Removing Mason..."

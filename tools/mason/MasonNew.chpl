@@ -97,8 +97,12 @@ proc addGitIgnore(name: string) {
 
 
 proc makeBasicToml(name: string) {
-  const baseToml = '\n[brick]\nname = "' + name +
-    '"\nversion = "0.1.0"\n\n[dependencies]\n';
+  const baseToml = '\n[brick]\n' +
+                     'name = "' + name + '"\n' +
+                     'version = "0.1.0"\n' +
+                     'chplVersion = "' + getChapelVersionStr() + '"\n' +
+                     '\n' +
+                     '[dependencies]\n';
   var tomlFile = open(name+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);

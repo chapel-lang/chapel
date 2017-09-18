@@ -1,0 +1,10 @@
+
+[brick]
+name = "ivrsChooses"
+version = "0.1.0"
+chplVersion = "1.16"
+
+[dependencies]
+usesBad = "0.1.0"
+# should choose the common package from here
+usesGood = "0.1.0"

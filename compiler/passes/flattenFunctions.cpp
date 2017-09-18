@@ -220,8 +220,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
           arg->addFlag(FLAG_ARG_THIS);
-      if (sym->hasFlag(FLAG_REF_TO_CONST))
-          arg->addFlag(FLAG_REF_TO_CONST);
+      if (sym->hasFlag(FLAG_REF_TO_IMMUTABLE))
+          arg->addFlag(FLAG_REF_TO_IMMUTABLE);
       if (sym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
           arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
 

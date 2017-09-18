@@ -544,7 +544,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
             }
             //if we have a function call, assume any "classes" fields are changed
             if(CallExpr* callExpr = toCallExpr(symExpr->parentExpr)) {
-              if(callExpr->isResolved()) {
+              if(callExpr->isResolved() || callExpr->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
                 addDefOrUse(localDefMap, symExpr->symbol(), symExpr);
                 Type* type = symExpr->symbol()->type->symbol->type;
                 if(AggregateType* curClass = toAggregateType(type)) {

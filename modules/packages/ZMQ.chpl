@@ -259,6 +259,9 @@ References
 */
 module ZMQ {
 
+  // TODOs:
+  //  use error handling instead of halting on an error
+
   require "zmq.h", "-lzmq";
 
   use Reflection;
@@ -768,7 +771,7 @@ module ZMQ {
                                    copy.length:size_t, c_ptrTo(free_helper),
                                    c_nil)) {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+          try! halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
         }
 
         // Send the message
@@ -778,7 +781,7 @@ module ZMQ {
             chpl_task_yield();
           else {
             var errmsg = zmq_strerror(errno):string;
-            halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+            try! halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
           }
         }
       }
@@ -796,7 +799,7 @@ module ZMQ {
             chpl_task_yield();
           else {
             var errmsg = zmq_strerror(errno):string;
-            halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
+            try! halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
           }
         }
       }
@@ -847,7 +850,7 @@ module ZMQ {
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init(msg)) {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+          try! halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
         }
 
         // Receive the message
@@ -857,7 +860,7 @@ module ZMQ {
             chpl_task_yield();
           else {
             var errmsg = zmq_strerror(errno):string;
-            halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+            try! halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
           }
         }
 
@@ -869,7 +872,7 @@ module ZMQ {
                              owned=true, needToCopy=true);
         if (0 != zmq_msg_close(msg)) {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+          try! halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
         }
 
         // Return the string to the calling locale
@@ -891,7 +894,7 @@ module ZMQ {
             chpl_task_yield();
           else {
             var errmsg = zmq_strerror(errno):string;
-            halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+            try! halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
           }
         }
         ret = data;

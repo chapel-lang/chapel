@@ -227,6 +227,7 @@ static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
+static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
@@ -3853,8 +3854,6 @@ static void testArgMapping(FnSymbol*                    fn1,
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  isConstValWillNotChange(Symbol* sym);
-
 static void  captureTaskIntentValues(int        argNum,
                                      ArgSymbol* formal,
                                      Expr*      actual,
@@ -3947,7 +3946,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // records and strings are (incorrectly) captured at the point
       // when the task function/arg bundle is created.
       if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
-          isConstValWillNotChange(varActual)        == false &&
+          varActual->isConstValWillNotChange()      == false &&
           (concreteIntent(formal->intent, formal->type->getValType())
            & INTENT_FLAG_IN)) {
         // skip dummy_locale_arg: chpl_localeID_t
@@ -3968,25 +3967,6 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
     // gatherCandidates() would not instantiate it, for some reason.
     taskFn->removeFlag(FLAG_GENERIC);
   }
-}
-
-//
-// Allow invoking isConstValWillNotChange() even on formals
-// with blank and 'const' intents.
-//
-static bool isConstValWillNotChange(Symbol* sym) {
-  bool retval = false;
-
-  if (ArgSymbol* arg = toArgSymbol(sym)) {
-    IntentTag cInt = concreteIntent(arg->intent, arg->type->getValType());
-
-    retval = cInt == INTENT_CONST_IN;
-
-  } else {
-    retval = sym->isConstValWillNotChange();
-  }
-
-  return retval;
 }
 
 //
@@ -7450,6 +7430,9 @@ void resolve() {
     printCallGraph();
   }
 
+  if (fPrintUnusedFns || fPrintUnusedInternalFns)
+    printUnusedFunctions();
+
   pruneResolvedTree();
 
   freeCache(ordersCache);
@@ -8114,7 +8097,7 @@ static void insertReturnTemps() {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
-      if (FnSymbol* fn = call->resolvedFunction()) {
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
         if (fn->retType != dtVoid) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
@@ -8248,6 +8231,69 @@ static void cleanupAfterRemoves() {
   }
 }
 
+
+static void printUnusedFunctions() {
+/* Defining the macro PRINT_UNUSED_FNS_TO_FILE will cause
+   --print-unused-internal-functions to print the unused functions to a file
+   named 'execFilename.unused'. Then paratest can be run to print all unused
+   functions across the test suite into files to determine what functions
+   are not used by any tests.
+
+   The macro EXIT_AFTER_PRINTING_UNUSED_FNS can also be defined to cause the
+   compiler to immediately exit after printing unused functions for faster
+   checking.
+*/
+#ifdef PRINT_UNUSED_FNS_TO_FILE
+  char fname[FILENAME_MAX+1];
+  snprintf(fname, FILENAME_MAX, "%s.%s", executableFilename, "unused");
+  FILE* outFile = fopen(fname, "w");
+#else
+  FILE* outFile = stdout;
+#endif
+  // map from generic functions to instantiated versions
+  // a generic function is 'used' if it is instantiated.
+  std::map<FnSymbol*, std::vector<FnSymbol*> > instantiations;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (FnSymbol* instantiatedFrom = fn->instantiatedFrom) {
+      while (instantiatedFrom->instantiatedFrom != NULL) {
+        instantiatedFrom = instantiatedFrom->instantiatedFrom;
+      }
+      instantiations[instantiatedFrom].push_back(fn);
+    }
+  }
+
+  bool first = true;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+      if (!fn->isResolved() || fn->retTag == RET_PARAM) {
+        if (!fn->instantiatedFrom) {
+          if (instantiations.count(fn) == 0 || instantiations[fn].size() == 0) {
+            if (fPrintUnusedInternalFns ||
+                fn->defPoint->getModule()->modTag == MOD_USER) {
+              if (first) {
+                first = false;
+                fprintf(outFile, "The following functions are unused:\n");
+              }
+              fprintf(outFile, "  %s:%d: %s\n",
+                      fn->defPoint->fname(), fn->defPoint->linenum(), fn->name);
+            }
+          }
+        }
+      }
+    }
+  }
+
+#ifdef PRINT_UNUSED_FNS_TO_FILE
+  fclose(outFile);
+#ifdef EXIT_AFTER_PRINTING_UNUSED_FNS
+  clean_exit(0);
+#endif
+#endif
+}
 
 //
 // Print a representation of the call graph of the program.

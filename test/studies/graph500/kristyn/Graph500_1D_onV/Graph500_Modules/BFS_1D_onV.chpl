@@ -81,6 +81,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
       }
 
 
+      delete rcLocal(Active_Level);
       rcLocal(Active_Level) = rcLocal(Next_Level);
       rcLocal(Next_Level) = new Level_Set (Vertex_List);
 
@@ -88,10 +89,13 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
       Active_Remaining[here.id] = rcLocal(Active_Level).Members.numIndices:bool;
 
+      }
     }
+
+  coforall loc in Locales do on loc {
+    delete rcLocal(Active_Level);
+    delete rcLocal(Next_Level);
   }
-
-
 }
 
 
