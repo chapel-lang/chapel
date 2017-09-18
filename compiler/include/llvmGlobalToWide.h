@@ -119,7 +119,7 @@ struct GlobalPointerInfo {
 #define GLOBAL_FN_WIDE_TO_GLOBAL ".gf.w2g."
 
 typedef llvm::DenseMap<llvm::Type*, GlobalPointerInfo> globalTypes_t;
-typedef llvm::SmallPtrSet<llvm::Function*, 32> specialFunctions_t;
+typedef std::vector<llvm::TrackingVH<llvm::Function> > specialFunctions_t;
 typedef llvm::TrackingVH<llvm::Constant> runtime_fn_t;
 
 struct GlobalToWideInfo {
@@ -127,12 +127,10 @@ struct GlobalToWideInfo {
   unsigned wideSpace;
 
   // this optimization currently assumes wide pointers are
-  // stored in a 128-bit struct representation.
-
-  // for struct wide pointers:
-  std::vector<unsigned> wideLocaleGEP; // how to extractvalue the locale?
-  std::vector<unsigned> wideNodeGEP;   // which extractvalue the node?
-  std::vector<unsigned> wideAddrGEP;   // which extractvalue the addr?
+  // stored in a 128-bit struct representation that contains
+  //  locale-id
+  //      node
+  //  addr
 
   llvm::Type* localeIdType;
   llvm::Type* nodeIdType;
@@ -161,7 +159,6 @@ struct GlobalToWideInfo {
 
   GlobalToWideInfo()
     : globalSpace(0), wideSpace(0),
-      wideLocaleGEP(), wideNodeGEP(), wideAddrGEP(),
       localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
 };
 

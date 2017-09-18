@@ -1952,11 +1952,6 @@ void setupForGlobalToWide(void) {
   GenInfo* ginfo = gGenInfo;
   GlobalToWideInfo* info = &ginfo->globalToWideInfo;
 
-  info->wideLocaleGEP.push_back(0);
-  info->wideNodeGEP.push_back(0);
-  info->wideNodeGEP.push_back(0);
-  info->wideAddrGEP.push_back(1);
-
   info->localeIdType = ginfo->lvt->getType("chpl_localeID_t");
   assert(info->localeIdType);
   info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
