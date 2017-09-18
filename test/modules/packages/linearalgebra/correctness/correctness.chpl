@@ -485,10 +485,15 @@ config const correctness = true;
 
   var   Dom: sparse subdomain(parentDom) dmapped CS(),
         Dom2: sparse subdomain(parentDom2) dmapped CS(),
-        IDom: sparse subdomain (parentDom) dmapped CS();
+        IDom: sparse subdomain (parentDom) dmapped CS(),
+        tDom: sparse subdomain (parentDom2) dmapped CS(),
+        tDomT: sparse subdomain (parentDom2) dmapped CS();
+
 
   // Identity sparse domain
   IDom += [(0,0), (1,1), (2,2)];
+  tDom += [(0,0), (1,0), (2,0), (3,0)];
+  tDomT += [(0,0), (0,1), (0,2), (0,3)];
 
 
   /* Rows */
@@ -580,14 +585,25 @@ config const correctness = true;
   /* dot - matrix-scalar */
   {
     var A: [IDom] real = 1;
-    var B: [IDom] real = dot(A, 2);
-    var C: [IDom] real = dot(2, A);
+    var B = dot(A, 2);
+    var C = dot(2, A);
     assertEqual(A.domain, B.domain, "dot(A, 2)");
     assertEqual(A.domain, C.domain, "dot(2, A)");
     assertEqual(B, C, "matrix-scalar");
     var A2: A.type = 2*A;
     assertEqual(A2, B, "dot(A, 2)");
     assertEqual(A2, C, "dot(2, A)");
+  }
+
+  /* transpose */
+  {
+    var A: [tDom] int = 1;
+    var B = transpose(A);
+
+    assertEqual(B.domain, tDomT, "transpose(A)");
+    for i in A.domain.dim(1) {
+      assertEqual(A[i,0], B[0, i], "transpose(A) values");
+    }
   }
 
 }
