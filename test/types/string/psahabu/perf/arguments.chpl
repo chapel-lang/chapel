@@ -11,35 +11,35 @@ test();
 // passing
 proc testPassing():Timer {
   var tPassing: Timer;
-  if timing then tPassing.start();
+  tPassing.start();
   for i in 1..n {
     acc += receive(pass);
   }
-  if timing then tPassing.stop();
+  tPassing.stop();
   return tPassing;
 }
 
 // returning
 proc testReturning():Timer {
   var tReturning: Timer;
-  if timing then tReturning.start();
+  tReturning.start();
   var keepAlive: int;
   for i in 1..n {
     var s = send(i);
     keepAlive += s.len;
   }
-  if timing then tReturning.stop();
+  tReturning.stop();
   return tReturning;
 }
 proc testReturningItoa():Timer {
   var tReturning: Timer;
-  if timing then tReturning.start();
+  tReturning.start();
   var keepAlive: int;
   for i in 1..(n/10) {
     var s = send_itoa(i);
     keepAlive += s.len;
   }
-  if timing then tReturning.stop();
+  tReturning.stop();
   return tReturning;
 }
 
