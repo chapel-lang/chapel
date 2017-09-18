@@ -1684,6 +1684,7 @@ static void reissueCompilerWarning(const char* str, int offset) {
         !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
+  gdbShouldBreakHere();
   USR_WARN(from, "%s", str);
 }
 
@@ -1961,7 +1962,9 @@ static void collectVisibleMethodsNamed(Type*                   t,
     for (size_t i = maxChildMethods; i < methods.size(); i++) {
       bool remove = false;
       for (size_t j = 0; j < maxChildMethods; j++) {
-        if (signatureMatch(methods[i], methods[j])) {
+        if (methods[i] != NULL &&
+            methods[j] != NULL &&
+            signatureMatch(methods[i], methods[j])) {
           remove = true;
           break;
         }
@@ -1981,19 +1984,31 @@ static void collectVisibleMethodsNamed(Type*                   t,
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
 static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
 
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
-  FnSymbol*      retval = NULL;
+  Expr*          retval = NULL;
 
   if (at == NULL || at->defaultInitializer == NULL) {
-    retval = resolveUninsertedCall(chpl_gen_main->body, call);
+    retval = chpl_gen_main->body;
 
   } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
-    retval = resolveUninsertedCall(point, call);
+    retval = point;
 
   } else {
-    retval = resolveUninsertedCall(at->symbol->defPoint, call);
+    retval = at->symbol->defPoint;
   }
+
+  return retval;
+}
+
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+  FnSymbol*      retval = NULL;
+
+  Expr* where = getInsertPointForTypeFunction(type);
+  if (BlockStmt* stmt = toBlockStmt(where))
+    retval = resolveUninsertedCall(stmt, call);
+  else
+    retval = resolveUninsertedCall(where, call);
 
   return retval;
 }
@@ -2757,7 +2772,7 @@ static void findVisibleFunctionsAndCandidates(
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
 
-  // First, try finding candidates without delegation
+  // First, try finding candidates without forwarding
   if (fn != NULL) {
     visibleFns.add(fn);
 
@@ -2769,7 +2784,7 @@ static void findVisibleFunctionsAndCandidates(
 
   findVisibleCandidates(info, visibleFns, candidates);
 
-  // If no candidates were found and it's a method, try delegating
+  // If no candidates were found and it's a method, try forwarding
   if (candidates.n             == 0 &&
       call->numActuals()       >= 1 &&
       call->get(1)->typeInfo() == dtMethodToken) {
@@ -2983,6 +2998,22 @@ static bool populateForwardingMethods(CallInfo& info) {
     // Make sure methodName is a blessed string
     methodName = astr(methodName);
 
+    // Populate delegate->scratchFn now
+    if (delegate->scratchFn == NULL) {
+      FnSymbol* scratch = new FnSymbol("delegate_scratch_fn");
+      scratch->addFlag(FLAG_COMPILER_GENERATED);
+
+      Expr* where = getInsertPointForTypeFunction(at);
+      if (BlockStmt* block = toBlockStmt(where))
+        block->insertAtHead(new DefExpr(scratch));
+      else
+        where->insertBefore(new DefExpr(scratch));
+
+      normalize(scratch);
+
+      delegate->scratchFn = scratch;
+    }
+
     // There are 2 ways that more methods can be added to
     // delegate->type during resolution:
     //   1) delegate->type itself use a 'delegate'
@@ -3003,6 +3034,11 @@ static bool populateForwardingMethods(CallInfo& info) {
 
       int        i        = 0;
 
+      // The test call should have the same parentheses-less/partial
+      // properties as the call we are working with.
+      test->methodTag = forCall->methodTag;
+      test->partialTag = forCall->partialTag;
+
       for_actuals(actual, forCall) {
         if (i > 1) { // skip method token, object
           test->insertAtTail(actual->copy());
@@ -3014,11 +3050,9 @@ static bool populateForwardingMethods(CallInfo& info) {
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(test);
 
-      forCall->getStmtExpr()->insertAfter(block);
+      delegate->scratchFn->insertAtHead(block);
 
       tryResolveCall(test);
-
-      block->remove();
     }
 
     // Now, forward all methods named 'methodName' as 'calledName'.
@@ -3076,6 +3110,11 @@ static bool populateForwardingMethods(CallInfo& info) {
 
       // Never give an error when returning 'void' from a forwarding fn
       fn->removeFlag(FLAG_VOID_NO_RETURN_VALUE);
+
+      // Also, don't consider it an iterator, since instead it is a
+      // function returning an iterator.
+      //  (e.g. proc these() return _value.these(); )
+      fn->removeFlag(FLAG_ITERATOR_FN);
 
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_INLINE);
@@ -6595,6 +6634,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     if (call->isPrimitive(PRIM_ERROR) == true) {
       USR_FATAL(from, "%s", str);
     } else {
+      gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
     }
 
