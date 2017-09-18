@@ -328,7 +328,7 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
       a vector to this function will return that vector unchanged
 
 */
-proc transpose(A: [?Dom] ?eltType) where Dom.rank == 2 {
+proc transpose(A: [?Dom] ?eltType) where Dom: domain(2) {
   if Dom.shape(1) == 1 then
     return reshape(A, transpose(Dom));
   else if Dom.shape(2) == 1 then
@@ -1060,6 +1060,7 @@ module Sparse {
     return Y;
   }
 
+
   /* Matrix-matrix multiplication
 
     Implementation derived from:
@@ -1088,12 +1089,12 @@ module Sparse {
     for i in A.domain.dim(1) {
       const colRange = A.IR(i)..(A.IR(i+1)-1);
       for k in colRange {
-        if A.JC(k) == 0 then continue; // questionable..
+        if A.JC(k) == 0 then continue;
         const jRange = B.IR(A.JC(k))..(B.IR(A.JC(k)+1)-1);
         for j in jRange {
           const value = A.NUM(k) * B.NUM(j),
                 pos = B.JC(j);
-          if pos == 0 then continue; // questionable..
+          if pos == 0 then continue;
           spa.scatter(value, pos);
         }
       }
@@ -1139,7 +1140,6 @@ module Sparse {
       }
     }
 
-    // TODO: Only pass in slice by reference?
     proc gather(ref C: [], i) {
       const nzcur = C.IR[i];
       var nzi = 0;
@@ -1153,12 +1153,35 @@ module Sparse {
     }
   }
 
-  proc _array.dot(A) where isCSArr(A) {
+  proc _array.dot(A: []) where isCSArr(A) {
     return dot(this, A);
   }
 
-  proc transpose(A) where isCSArr(A) {
-    // TODO
+  /* Transpose CSR domain */
+  proc transpose(D: domain) where isCSDom(D) {
+    var indices: [1..0] 2*D.idxType;
+    for i in D.dim(1) {
+      for j in D.dimIter(2, i) {
+        indices.push_back((j, i));
+      }
+    }
+
+    var Dom: sparse subdomain(D._value.parentDom) dmapped CS();
+    Dom += indices;
+    return Dom;
+  }
+
+  /* Transpose CSR array */
+  proc transpose(A: [?Adom] ?eltType) where isCSArr(A) {
+    var Dom = transpose(Adom);
+    var B: [Dom] eltType;
+
+    forall i in Adom.dim(1) {
+      for j in Adom.dimIter(2, i) {
+        B[j, i] = A[i, j];
+      }
+    }
+    return B;
   }
 
   proc _array.plus(A) where isCSArr(this) && isCSArr(A) {
