@@ -12,23 +12,22 @@ class UserReduceOp: ReduceScanOp {
 
   proc identity         return 0: eltType;
   proc accumulate(elm)  { value = value + elm; }
+  proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
   proc clone()          return new UserReduceOp(eltType=eltType);
 }
 
-proc check(test:string, expected: int, ri: int, re: int) {
-  if ri != expected then
-    writeln(test, ":  expected ", expected, "  reduce intent produced ", ri);
-  if re != expected then
-    writeln(test, ":  expected ", expected, "  reduce expr produced ", re);
-  numErrors += (ri != expected) + (re != expected);
+proc check(test:string, expected: int, actual: int) {
+  if actual != expected then
+    writeln(test, ":  expected ", expected, ",  computed ", actual);
+  numErrors += (actual != expected);
 }
 
 proc main {
   writeln("n = ", n);
 
-  var sumUsr1, sumUsr2: int;
+  var sumUsr1 = 35, sumUsr2 = 36, sumUsr3 = 37;
   const userReduceInstance = new UserReduceOp(eltType=int);
 
   forall arrElm in ARR with (userReduceInstance reduce sumUsr1,
@@ -40,11 +39,21 @@ proc main {
 
   writeln("forall finished");
 
-  check("sumUsr1", n*(n+1)/2, sumUsr1, UserReduceOp reduce ARR);
-  check("sumUsr2", n*(n+1)/2, sumUsr2, UserReduceOp reduce ARR);
+  testFormals(sumUsr3, new UserReduceOp(eltType=int));
+
+  check("sumUsr1", 35 + n*(n+1)/2, sumUsr1);
+  check("sumUsr2", 36 + n*(n+1)/2, sumUsr2);
+  check("sumUsr3", 37 + n*(n+1)/2, sumUsr3);
+  check("UserReduceOp reduce ARR", n*(n+1)/2, UserReduceOp reduce ARR);
 
   if numErrors then
     writeln("NUMERRORS: ", numErrors);
   else
     writeln("success");
+}
+
+proc testFormals(ref sumUsr3: int, userOp: UserReduceOp(int)) {
+  forall arrElm in ARR with (userOp reduce sumUsr3) {
+    sumUsr3 reduce= arrElm;
+  }
 }
