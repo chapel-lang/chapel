@@ -174,3 +174,12 @@ proc getChapelVersionStr() {
   return chplVersion;
 }
 
+proc gitC(newDir, command) {
+  const oldDir = here.cwd();
+  here.chdir(newDir);
+
+  runCommand(command);
+
+  here.chdir(oldDir);
+}
+

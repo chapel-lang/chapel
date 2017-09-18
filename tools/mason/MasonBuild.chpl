@@ -178,19 +178,20 @@ proc genSourceList(lockFile: Toml) {
 /* Clones the git repository of each dependency into
    the src code dependency pool */
 proc getSrcCode(sourceList: [?d] 3*string, show) {
-  var destination = MASON_HOME +'/.mason/src/';
+  var baseDir = MASON_HOME +'/.mason/src/';
   forall (srcURL, name, version) in sourceList {
     const nameVers = name + "-" + version;
+    const destination = baseDir + nameVers;
     if !depExists(nameVers) {
       writeln("Downloading dependency: " + nameVers);
-      var getDependency = "git clone -qn "+ srcURL + ' ' + destination + nameVers+'/';
-      var checkout = "git -C "+ destination + nameVers + " checkout -q v" + version;
+      var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+      var checkout = "git checkout -q v" + version;
       if show {
-	getDependency = "git clone -n " + srcURL + ' ' + destination + nameVers + '/';
-	checkout = "git -C "+ destination + nameVers + " checkout v" + version;
+	getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+	checkout = "git checkout v" + version;
       }
       runCommand(getDependency);
-      runCommand(checkout);
+      gitC(destination, checkout);
     }
   }
 }
