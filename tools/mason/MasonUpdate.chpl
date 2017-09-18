@@ -105,8 +105,8 @@ proc updateRegistry(tf: string) {
   }
   // Registry has moved or does not exist
   else {
-    mkdir(masonHome + '/.mason');
-    mkdir(masonHome + '/.mason/src');
+    mkdir(masonHome + '/.mason', parents=true);
+    mkdir(masonHome + '/.mason/src', parents=true);
     const localRegistry = getRegistryDir();
     mkdir(localRegistry, parents=true);
     const registry = "https://github.com/chapel-lang/mason-registry";

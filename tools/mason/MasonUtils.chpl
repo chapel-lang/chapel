@@ -75,18 +75,18 @@ proc depExists(dependency: string) {
 
 proc MASON_HOME: string {
   // possible locations
-  var masonHome = getEnv("MASON_HOME");
-  var home = getEnv('HOME');
-  if masonHome == '' {
-    if isDir(home + '/.mason') then
-      return home;
-    else {
-      writeln("Mason could not find MASON_HOME");
-      writeln("Consider setting MASON_HOME in your .bashrc");
-      halt();
-    }
+  const envHome   = getEnv("MASON_HOME");
+  const home      = getEnv('HOME');
+  const masonHome = if envHome != "" then envHome else home;
+
+  const dotMason = masonHome + "/.mason";
+
+  if isDir(dotMason) == false {
+    writeln(dotMason + " not found, creating...");
+    mkdir(dotMason);
   }
-  else return masonHome;
+
+  return masonHome;
 }
 
 record VersionInfo {
