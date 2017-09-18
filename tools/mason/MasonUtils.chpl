@@ -83,7 +83,7 @@ proc MASON_HOME: string {
 
   if isDir(dotMason) == false {
     writeln(dotMason + " not found, creating...");
-    mkdir(dotMason);
+    mkdir(dotMason, parents=true);
   }
 
   return masonHome;
