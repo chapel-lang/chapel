@@ -27,8 +27,8 @@ The Initializer Method
 ----------------------
 
 An initializer is a method on a class or record named "init".  It is invoked
-by the `new` operator, where the type name and initializer arguments are
-preceded with the `new` keyword.
+by the ``new`` operator, where the type name and initializer arguments are
+preceded with the ``new`` keyword.
 
 If the program declares a type initializer method, it is a user-defined
 initializer.  If the program declares no initializers or constructors for a
@@ -61,16 +61,16 @@ is assumed to be entirely composed of Phase 2 statements.  Otherwise, any
 code prior to the phase division indicator is considered to be in Phase 1, and
 any code following it is considered to be in Phase 2.
 
-Note that aside from `try!` statements without a `catch` block, error handling
-constructs are not allowed in initializers.  An initializer cannot be declared
-as `throws`.  See `Interaction With Error Handling`_.
+Note that aside from ``try!`` statements without a ``catch`` block, error
+handling constructs are not allowed in initializers.  An initializer cannot be
+declared as ``throws``.  See `Interaction With Error Handling`_.
 
 Phase 1
 +++++++
 
 The code residing in Phase 1 must follow a set of strong requirements.
 
-Other methods on the `this` instance cannot be called.  The `this` instance
+Other methods on the ``this`` instance cannot be called.  The ``this`` instance
 may not be passed to another function.
 
 Fields must be initialized in declaration order; however, fields can be omitted.
@@ -118,13 +118,13 @@ of prior fields.  However, later fields may not be referenced.
 
 Parent fields may not be accessed or initialized during Phase 1.
 
-`const` fields may be initialized during Phase 1.  Local variables may
-be created and used.  Functions that are not methods on the `this` instance
-may be called, so long as `this` is not provided as an argument.
+``const`` fields may be initialized during Phase 1.  Local variables may
+be created and used.  Functions that are not methods on the ``this`` instance
+may be called, so long as ``this`` is not provided as an argument.
 
 Loops and parallel statements are allowed during Phase 1, but field
-initialization within them is forbidden.  `on` statements whose bodies extend
-into Phase 2 are not allowed, but more limited `on` statements are acceptable.
+initialization within them is forbidden.  ``on`` statements whose bodies extend
+into Phase 2 are not allowed, but more limited ``on`` statements are acceptable.
 
 When Phase 1 of the initializer body has completed and the phase division
 indicator has been processed, it can safely be assumed that all fields are in
@@ -160,11 +160,11 @@ indicator is allowed.  It is forbidden to have both calls, or multiple of
 either, in a single control flow path.  It is forbidden to enclose the phase
 division indicator in a parallel statement, on statement, or a loop statement.
 If the phase division indicator is enclosed by a conditional, it must be a
-`param` conditional.
+``param`` conditional.
 
 If no phase division indicator is provided, an argument-less first form call
 will be inserted at the beginning of the body.  The
-`Compiler Generated Initializer`_ will also include an argument-less first form
+`Compiler Generated Initializers`_ will also include an argument-less first form
 call after completing the initialization of its fields.  If the parent type has
 defined an initializer that this call cannot resolve to, attempts to initialize
 the child with the compiler generated initializer will result in an error.
@@ -176,11 +176,11 @@ Phase 2
 Code in Phase 2 is functionally similar to other methods on the type, and less
 restrictive than code in Phase 1.  Modifications to the fields are considered
 assignment rather than initialization.  Other methods may be called on the
-`this` instance, and the `this` instance may be passed as an argument to another
-function.  Parent fields may be accessed.
+``this`` instance, and the ``this`` instance may be passed as an argument to
+another function.  Parent fields may be accessed.
 
-As in other methods, code in Phase 2 may not redefine `const`, `param`, and
-`type` fields.
+As in other methods, code in Phase 2 may not redefine ``const``, ``param``, and
+``type`` fields.
 
 
 Copy Initializers
@@ -228,14 +228,17 @@ Remaining Work
 With the 1.16.0 release, support for initializers is mostly stable with a few
 bugs and some unimplemented features remaining.  It is recommended for
 developers writing new classes and records to write initializers when possible.
-Please report any bugs encountered using the guidance described
-[here](http://chapel.cray.com/docs/master/usingchapel/bugs.html)
+Please report any bugs encountered using the guidance described at the `bugs`_
+page.
+
+.. _bugs:
+   http://chapel.cray.com/docs/master/usingchapel/bugs.html
 
 Compiler Generated Initializers
 +++++++++++++++++++++++++++++++
 
 Prototypical support of compiler generated initializers has been added.  With
-the 1.16.0 release and the developer-oriented flag `--force-initializers`,
+the 1.16.0 release and the developer-oriented flag ``--force-initializers``,
 user-defined classes will attempt to generate default initializers instead of
 default constructors.  User-defined records, and records and classes defined in
 the internal, standard, or package modules will not yet generate default
@@ -249,28 +252,33 @@ Interaction With Error Handling
 +++++++++++++++++++++++++++++++
 
 Due to time constraints, the 1.16.0 release went out with very limited support
-for error handling constructs: an initializer cannot be declared as `throws`,
-and only `try!` statements without `catch` blocks are allowed in the body.
+for error handling constructs: an initializer cannot be declared as ``throws``,
+and only ``try!`` statements without ``catch`` blocks are allowed in the body.
 
-In later releases, we hope to support `throw`, and `try` and `try!` statements
-with `catch` blocks during Phase 2, allowing initializers to be declared as
-`throws`.  It may be possible to allow these constructs in Phase 1, though for
-simplicity's sake they will likely still be banned around field initialization
-statements and forbidden from crossing the Phase 1/Phase 2 divide.
+In later releases, we hope to support ``throw``, and ``try`` and ``try!``
+statements with ``catch`` blocks during Phase 2, allowing initializers to be
+declared as ``throws``.  It may be possible to allow these constructs in Phase
+1, though for simplicity's sake they will likely still be banned around field
+initialization statements and forbidden from crossing the Phase 1/Phase 2
+divide.
 
-In the world where initializers can `throw`, we will only allow child classes
-to `throw` if the parent initializer `throws` (though there may be complications
-with chains of initializers, such as an initializer that calls another
-initializer on the type, which calls a parent initializer that `throws`, etc.).
+In the world where initializers can ``throw``, we will only allow child classes
+to ``throw`` if the parent initializer ``throws`` (though there may be
+complications with chains of initializers, such as an initializer that calls
+another initializer on the type, which calls a parent initializer that
+``throws``, etc.).
 
 
 Noinit
 ++++++
 
-Variable initialization when provided the `noinit` keyword in place of an
+Variable initialization when provided the ``noinit`` keyword in place of an
 initial value for a class or record should generate a call to an initializer
-that has defined what `noinit` means for that type.  More details on the
-direction for this support can be found [here] (https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst#noinit)
+that has defined what ``noinit`` means for that type.  More details on the
+direction for this support can be found in the `noinit section`_ of CHIP 10.
+
+.. _noinit section:
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst#noinit
 
 Bugs
 ++++
