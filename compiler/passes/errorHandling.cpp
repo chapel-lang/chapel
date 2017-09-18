@@ -390,6 +390,27 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     throwBlock->insertAtTail(new DefExpr(fixedError));
     throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
 
+    if (!catchesStack.empty()) {
+      Expr*      parent      = throwBlock;
+      CatchStmt* parentCatch = NULL;
+      while (parentCatch == NULL) {
+        parent      = parent->parentExpr;
+        parentCatch = toCatchStmt(parent);
+      }
+
+      if (DefExpr* catchFilter = parentCatch->expr()) {
+        VarSymbol* handledError = toVarSymbol(catchFilter->sym);
+
+        VarSymbol* throwingHandledVar = newTemp("throwingHandledError", dtBool);
+        CallExpr*  throwingHandled    = new CallExpr(PRIM_EQUAL, thrownError, handledError);
+
+        throwBlock->insertAtTail(new DefExpr(throwingHandledVar));
+        throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, throwingHandledVar, throwingHandled));
+        throwBlock->insertAtTail(new CondStmt(new SymExpr(throwingHandledVar),
+                                              new CallExpr(PRIM_MOVE, handledError, gNil)));
+      }
+    }
+
     if (insideTry) {
       throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
     } else if (outError != NULL) {
