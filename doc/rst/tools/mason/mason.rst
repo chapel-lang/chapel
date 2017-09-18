@@ -20,12 +20,9 @@ In ``$CHPL_HOME`` run the following:
    make mason
 
 
-This will create the hidden ``.mason/`` directory in ``MASON_HOME``, which
-defaults to your ``$HOME`` if unset. It builds the mason binary so that the 
-command line interface can be used. The mason registry is also downloaded from
-github so that a user can start to rely on mason to specify project dependencies.
-This installs mason in the same place as the chapel compiler (``chpl``)
-so that mason can be used anywhere in the user's file system.
+It builds the mason binary so that the command line interface can be used.
+This installs mason in the same place as the chapel compiler (``chpl``) so that
+mason can be used anywhere in the user's file system.
 
 
 To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
@@ -35,8 +32,7 @@ To remove mason, change directory to ``$CHPL_HOME/tools/mason`` and run:
    make clean
 
       
-To remove mason and the mason-registry change directory to ``$CHPL_HOME/tools/mason``
-and run:
+To remove mason change directory to ``$CHPL_HOME/tools/mason`` and run:
 
 .. code-block:: sh
 
@@ -182,6 +178,9 @@ Mason-Registry
 The initial mason registry is a GitHub repository containing a list of versioned manifest files.
 
 `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
+
+The registry will be downloaded to ``$MASON_HOME/registry`` by ``mason update``
+if a registry at that location does not already exist.
 
 The registry consists of the following hierarchy:
 
