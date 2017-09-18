@@ -1982,13 +1982,6 @@ static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 
     } else {
       INT_ASSERT(isLcnSymbol(riSym)); // what else can a globalOp be??
-      if (isArgSymbol(riSym))
-        // This could be confused with a tiMark. Need to handle it.
-        // In the "new" world, that should be a non-issue. Furthermore,
-        // riSpec could legitimately be an ArgSymbol.
-        // So todo: only assert that it is not one of tiMarks;
-        // verify it works properly on ArgSymbols.
-        INT_FATAL(fs, "not implemented");
 
       insertAndResolveInitialAccumulate(fs, NULL, riSym, fiVarSym);
 
