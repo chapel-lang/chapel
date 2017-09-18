@@ -19,6 +19,9 @@
 # Makefile.exe
 #
 
+# Clear this variable, otherwise CHPL_MAKE_ALL_VARS will be ignored
+CHPL_MAKE_SETTINGS_NO_NEWLINES=
+
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 all: $(TMPBINNAME)
