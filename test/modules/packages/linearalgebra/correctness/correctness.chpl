@@ -473,6 +473,125 @@ config const correctness = true;
   assertFalse(isSquare(Rect), "isSquare(Rect)");
 }
 
+//
+// LinearAlgebra.Sparse
+//
+
+{
+  use LinearAlgebra.Sparse;
+
+  const parentDom = {0..#3, 0..#3},
+        parentDom2 = {0..#4, 0..#6};
+
+  var   Dom: sparse subdomain(parentDom) dmapped CS(),
+        Dom2: sparse subdomain(parentDom2) dmapped CS(),
+        IDom: sparse subdomain (parentDom) dmapped CS();
+
+  // Identity sparse domain
+  IDom += [(0,0), (1,1), (2,2)];
+
+
+  /* Rows */
+  {
+    var D = CSRDomain(3);
+    assertEqual(D, Dom, "CSRDomain(3)");
+  }
+
+  /* Dimensions */
+  {
+    var D = CSRDomain(3, 3);
+    assertEqual(D, Dom, "CSRDomain(3, 3)");
+  }
+
+  /* Range */
+  {
+    var D = CSRDomain(0..#3);
+    assertEqual(D, Dom, "CSRDomain(0..#3)");
+  }
+
+  /* Ranges */
+  {
+    var D = CSRDomain(0..#4, 0..#6);
+    assertEqual(D, Dom2, "CSRDomain(0..#4, 0..#6)");
+  }
+
+  /* Domain - CSR */
+  {
+    var D = CSRDomain(Dom);
+    assertEqual(D, Dom, "CSRDomain(Dom)");
+  }
+
+  /* Domain - Dense */
+  {
+    var D = CSRDomain(parentDom);
+    assertEqual(D, Dom, "CSRDomain(parentDom)");
+  }
+
+  /* Array - Dense -> CSR */
+  {
+    var I = eye(3,3);
+    var A = CSRMatrix(I);
+    assertEqual(A.domain, IDom, "CSRMatrix(I)");
+  }
+
+  /* Array - CSR -> CSR */
+  {
+    var A: [Dom] real;
+    var M = CSRMatrix(A);
+    assertEqual(M.domain, Dom, "CSRDomain(A)");
+  }
+
+  /* Array - CSR real -> CSR int */
+  {
+    var A: [Dom] real;
+    var M = CSRMatrix(A, eltType=int);
+    assertEqual(M.domain, Dom, "CSRMatrix(A)");
+    assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
+  }
+
+  // TODO: more interesting cases for dot..
+
+  /* dot - matrix-matrix */
+  {
+    var A: [Dom] real;
+    var I: [IDom] real;
+    var AI = dot(A, I);
+    assertEqual(AI, A, "dot(A, I)");
+  }
+
+  /* dot - matrix-vector */
+  {
+    var A: [IDom] real = 1;
+    var v: [0..#3] real = 2;
+    var Av = dot(A, v);
+    var A2 = 2*A;
+    assertEqual(Av, A2);
+  }
+
+  /* dot - vector-matrix */
+  {
+    var A: [IDom] real = 1;
+    var v: [0..#3] real = 2;
+    var Av = dot(v, A);
+    var A2 = 2*A;
+    assertEqual(Av, A2);
+  }
+
+  /* dot - matrix-scalar */
+  {
+    var A: [IDom] real = 1;
+    var B: [IDom] real = dot(A, 2);
+    var C: [IDom] real = dot(2, A);
+    assertEqual(A.domain, B.domain, "dot(A, 2)");
+    assertEqual(A.domain, C.domain, "dot(2, A)");
+    assertEqual(B, C, "matrix-scalar");
+    var A2: A.type = 2*A;
+    assertEqual(A2, B, "dot(A, 2)");
+    assertEqual(A2, C, "dot(2, A)");
+  }
+
+}
+
 
 //
 // Helpers
