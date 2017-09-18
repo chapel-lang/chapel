@@ -1866,8 +1866,53 @@ static void findOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
 // markOuterVarsWithIntentsNew() and helpers
 //
 
+//
+// Incorporate the initial value of the outer variable:
+//   globalOp.initialAccumulate(outerVar)
+// If this does not resolve, instead call:
+//   globalOp.accumulate(outerVar)
+//
+static void insertAndResolveInitialAccumulate(ForallStmt* fs, BlockStmt* hld,
+                                            Symbol* globalOp, Symbol* outerVar)
+{
+  CallExpr* initAccum = new CallExpr("initialAccumulate", gMethodToken,
+                                     globalOp, outerVar);
+  if (hld)
+    hld->insertAtTail(initAccum);
+  else
+    fs->insertBefore(initAccum);
+
+  FnSymbol* initAccumOutcome = tryResolveCall(initAccum);
+
+  if (initAccumOutcome) {
+    // Yes, use initialAccumulate().
+
+  } else {
+    // No, call accumulate() instead.
+    CallExpr* accum = new CallExpr("accumulate", gMethodToken,
+                                   globalOp, outerVar);
+    initAccum->replace(accum);
+    initAccum = accum;
+    initAccumOutcome = tryResolveCall(initAccum);
+
+    if (initAccumOutcome) {
+      // OK, will use accumulate();
+
+    } else {
+      // The user must provide at least one of the two.
+      USR_FATAL_CONT(initAccum, "the reduction operation of the reduce intent for the variable %s does not provide initialAccumulate() or accumulate() that accepts the initial value of this variable", outerVar->name);
+
+      // We can continue compilation meanwhile.
+      initAccum->remove();
+      return;
+    }
+  }
+
+  resolveFnForCall(initAccumOutcome, initAccum);
+}
+
 // Finalize the reduction:  outerVar = globalOp.generate()
-static void insertGenerateAfter(Expr* ref, Symbol* fiVarSym, Symbol* globalOp) {
+static void insertFinalGenerate(Expr* ref, Symbol* fiVarSym, Symbol* globalOp) {
   Expr* next = ref->next; // nicer ordering of the following insertions
   INT_ASSERT(next);
   VarSymbol* genTemp = newTemp("chpl_gentemp");
@@ -1907,10 +1952,12 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
   hld->insertAtTail("'move'(%S, 'new'(%S,%E))", globalOp, riTypeSym,
                     new NamedExpr("eltType", eltTypeArg));
+
   fs->insertAfter("chpl__delete(%S)", globalOp);
-  insertGenerateAfter(fs, fiVarSym, globalOp);
+  insertFinalGenerate(fs, fiVarSym, globalOp);
 
   resolveBlockStmt(hld);
+  insertAndResolveInitialAccumulate(fs, hld, globalOp, fiVarSym);
   hld->flattenAndRemove();
 
   // Todo: this replace() is somewhat expensive.
@@ -1934,13 +1981,20 @@ static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
       result = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, NULL);
 
     } else {
-      if (isArgSymbol(riSpec))
+      INT_ASSERT(isLcnSymbol(riSym)); // what else can a globalOp be??
+      if (isArgSymbol(riSym))
         // This could be confused with a tiMark. Need to handle it.
+        // In the "new" world, that should be a non-issue. Furthermore,
+        // riSpec could legitimately be an ArgSymbol.
+        // So todo: only assert that it is not one of tiMarks;
+        // verify it works properly on ArgSymbols.
         INT_FATAL(fs, "not implemented");
+
+      insertAndResolveInitialAccumulate(fs, NULL, riSym, fiVarSym);
 
       // The user will manage allocation and deallocation of 'riSym'.
       // So we only need to add a call generate().
-      insertGenerateAfter(fs, fiVarSym, riSym);
+      insertFinalGenerate(fs, fiVarSym, riSym);
       result = riSym;
     }
 

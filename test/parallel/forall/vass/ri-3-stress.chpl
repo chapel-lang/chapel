@@ -4,7 +4,8 @@ config var
   r = 30000,  // how many times to repeat
   t = 16,     // how many tasks to issue concurrently
   y = 6,      // how many times to yield from the follower
-  f = 5000;   // frequency of reports, 0 if none
+  f = 5000,   // frequency of reports, 0 if none
+  maxErrorsToReport = 25;
 
 var nErr = 0;
 
@@ -27,27 +28,30 @@ proc writeConfig(msg) {
 /////////// testing ///////////
 
 proc onetestSA(ri: int) {
-  var red = 5;
+  var red = 55;
   forall idx in myStandalone() with (+ reduce red) {
     red += idx;
   }
   const resultSA = red;
-  check(resultSA, sum(1..t), ri, "standalone");
+  check(resultSA, 55 + sum(1..t), ri, "standalone");
 }
 
 proc onetestLF(ri: int) {
-  var red = 5;
+  var red = 66;
   forall idx in myLeaderfollower() with (+ reduce red) {
     red += idx;
   }
   const resultLF = red;
-  check(resultLF, sum(1..t) * y + sum(1..y) * t, ri, "leader-follower");
+  check(resultLF, 66 + sum(1..t) * y + sum(1..y) * t, ri, "leader-follower");
 }
 
 proc sum(r) { const l = r.length; return l * (l+1) / 2; }
 
 proc check(actual, expected, ri, name) {
   if actual == expected then return; // OK!
+  if nErr >= maxErrorsToReport {
+    writeln("More than ", nErr, " errors, aborting");
+    exit(); }
   nErr += 1;
   writeln("ERROR: onetest(", ri, ", ", name, ")  expected ", expected,
           "  actual ", actual);

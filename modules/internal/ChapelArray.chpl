@@ -3074,7 +3074,7 @@ module ChapelArray {
     // true everywhere
     //
     if isArrayType(this.eltType) {
-      var ret: bool;
+      var ret = true;
       forall (thisArr, thatArr) in zip(this, that) with (&& reduce ret) do
         ret &&= thisArr.equals(thatArr);
       return ret;

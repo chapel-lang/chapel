@@ -69,42 +69,42 @@ proc writeConfig(msg) {
 /////////// testing - domains ///////////
 
 proc domain11test(ri: int) {
-  var red = 5;
+  var red = 11;
   forall (i,j) in D1 with (+ reduce red) {
     red += i + 2*j;
   }
   const result1d = red;
-  check(result1d, 3 * d * sum1(d), ri, "single domain");
+  check(result1d, 11 + 3 * d * sum1(d), ri, "single domain");
 }
 
 proc domain12test(ri: int) {
-  var red1 = 5, red2 = 6;
+  var red1 = 12, red2 = 13;
   forall (i,j) in D1 with (+ reduce red1, + reduce red2) {
     red1 += i;
     red2 += j;
   }
-  check(red1, d * sum1(d), ri, "single domain - red1");
-  check(red2, d * sum1(d), ri, "single domain - red2");
+  check(red1, 12 + d * sum1(d), ri, "single domain - red1");
+  check(red2, 13 + d * sum1(d), ri, "single domain - red2");
 }
 
 proc domain21test(ri: int) {
-  var red = 5;
+  var red = 14;
   forall ((i1,j1),(i2,j2)) in zip(D1,D2) with (+ reduce red) {
     red += i1*2 + j1*3 + i2*4 + j2*5;
   }
   const result1d = red;
-  check(result1d, 5 * d * sum1(d) + 9 * d * sum0(d),
+  check(result1d, 14 + 5 * d * sum1(d) + 9 * d * sum0(d),
         ri, "zippered domains");
 }
 
 proc domain22test(ri: int) {
-  var red1 = 5, red2 = 6;
+  var red1 = 15, red2 = 16;
   forall ((i1,j1),(i2,j2)) in zip(D1,D2) with (+ reduce red1, + reduce red2) {
     red1 += i1*2 + j1*3;
     red2 += i2*4 + j2*5;
   }
-  check(red1, 5 * d * sum1(d), ri, "zippered domains - red1");
-  check(red2, 9 * d * sum0(d), ri, "zippered domains - red2");
+  check(red1, 15 + 5 * d * sum1(d), ri, "zippered domains - red1");
+  check(red2, 16 + 9 * d * sum0(d), ri, "zippered domains - red2");
 }
 
 /////////// testing - arrays ///////////
@@ -117,31 +117,31 @@ proc initArrays() {
 }
 
 proc array1test(ri: int) {
-  var red = 5;
+  var red = 21;
   forall a1 in A1 with (+ reduce red) {
     red += a1;
   }
   const result1d = red;
-  check(result1d, 3 * d * sum1(d), ri, "single array");
+  check(result1d, 21 + 3 * d * sum1(d), ri, "single array");
 }
 
 proc array21test(ri: int) {
-  var red = 5.5;
+  var red = 22.5;
   forall (a1,a2) in zip(A1,A2) with (+ reduce red) {
     red += 2*a1 + 3*a2;
   }
   const result1d = red;
-  check(result1d, 18 * d * sum1(d), ri, "zippered arrays");
+  check(result1d, 22.5 + 18 * d * sum1(d), ri, "zippered arrays");
 }
 
 proc array22test(ri: int) {
-  var red1 = 5, red2 = 6.6;
+  var red1 = 23, red2 = 24.6;
   forall (a1,a2) in zip(A1,A2) with (+ reduce red1, + reduce red2) {
     red1 += a1;
     red2 += a2;
   }
-  check(red1, 3 * d * sum1(d), ri, "zippered arrays - red1");
-  check(red2, 4 * d * sum1(d), ri, "zippered arrays - red2");
+  check(red1, 23   + 3 * d * sum1(d), ri, "zippered arrays - red1");
+  check(red2, 24.6 + 4 * d * sum1(d), ri, "zippered arrays - red2");
 }
 
 /////////// checking ///////////
