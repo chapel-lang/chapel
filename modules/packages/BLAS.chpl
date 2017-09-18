@@ -2070,8 +2070,8 @@ module BLAS {
 
       :returns: Scalar value of dot product
   */
-  proc dot(X: [?xD]?eltType,  Y: [?yD] eltType, incY: c_int = 1, incX: c_int = 1):eltType
-  where xD: domain(1) && yD: domain(1) {
+  proc dot(X: [?xD]?eltType,  Y: [?yD] eltType, incY: c_int = 1, incX: c_int = 1) : eltType
+  where xD.rank == 1 && yD.rank == 1 {
 
     const N = xD.size: c_int;
 

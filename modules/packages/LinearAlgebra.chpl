@@ -869,13 +869,13 @@ Sparse Linear Algebra Interface
 -------------------------------
 
 ``LinearAlgebra.Sparse`` follows the same conventions and interface choices
- as the parent module, ``LinearAlgebra``, with few exceptions. These
- exceptions are detailed below.
+as the parent module, ``LinearAlgebra``, with few exceptions. These
+exceptions are detailed below.
 
 
 **Sparse Domains**
 
-In Chapel, implicit changes to the index set of a sparse array must be made
+In Chapel, changes to the index set of a sparse array must be made
 directly on the sparse domain. When working with sparse arrays that will
 require index modification, it is necessary to maintain access to their sparse
 domains as well. As a result of this, the sparse linear algebra interface
@@ -893,7 +893,7 @@ A common usage of this interface might look like this:
   // The above is equivalent to:
   // var A: [D] int;
 
-  // Add nonzero indices to the sparse domain along the diagonal
+  // Add indices to the sparse domain along the diagonal
   D += (0,0);
   D += (1,1);
   D += (2,2);
@@ -987,7 +987,11 @@ module Sparse {
 
   /* Return a CSR matrix with domain and values of ``A``
 
-    ``A`` can be a dense or sparse matrix.
+    If ``A`` is dense, only the indices holding nonzero elements are added
+    to the sparse matrix returned.
+
+    If ``A`` is sparse (CSR), the returned sparse matrix will be a copy of ``A``
+    casted to ``eltType``
    */
   proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 && isCSArr(A) {
     var M: [Dom] eltType = A: eltType;
@@ -1294,7 +1298,7 @@ module Sparse {
   /* Matrix division (solve) */
   pragma "no doc"
   proc _array.div(A) where isCSArr(this) && isCSArr(A) {
-    halt("Matrix division not yet supported for sparse matrices */");
+    compilerError("Matrix division not yet supported for sparse matrices */");
   }
 
   //
