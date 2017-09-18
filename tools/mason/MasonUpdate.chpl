@@ -99,20 +99,20 @@ proc updateRegistry(tf: string) {
   const masonHome = MASON_HOME;
   const registryHome = getRegistryDir();
   if isDir(registryHome) {
-    var pullRegistry = 'git -C ' + registryHome + '/ pull -q origin master';
+    var pullRegistry = 'git pull -q origin master';
     if tf == "Mason.toml" then writeln("Updating mason-registry");
-    runCommand(pullRegistry);
+    gitC(registryHome, pullRegistry);
   }
   // Registry has moved or does not exist
   else {
-    mkdir(masonHome + '/.mason');
-    mkdir(masonHome + '/.mason/src');
+    mkdir(masonHome + '/.mason', parents=true);
+    mkdir(masonHome + '/.mason/src', parents=true);
     const localRegistry = getRegistryDir();
     mkdir(localRegistry, parents=true);
     const registry = "https://github.com/chapel-lang/mason-registry";
-    const cloneRegistry = 'git -C ' + localRegistry + ' clone -q ' + registry + ' .';
+    const cloneRegistry = 'git clone -q ' + registry + ' .';
     writeln('Could not find Registry...cloning registry...');
-    runCommand(cloneRegistry);
+    gitC(localRegistry, cloneRegistry);
   }
 }
 

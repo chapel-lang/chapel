@@ -27,6 +27,8 @@ endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+unexport CHPL_MAKE_SETTINGS_NO_NEWLINES
+
 bdir=$(CHPL_BIN_DIR)
 link=$(bdir)/mason
 
@@ -44,15 +46,8 @@ mason: $(MASON_SOURCES)
         echo "CHPL_REGEXP=re2 is required to build mason"; \
         exit 1;\
 	fi;
-	@mkdir -p $(MASON_HOME)/.mason/src
-ifneq ($(wildcard $(registry)),)
-	@echo "Removing old registry..."
-	@rm -rf $(MASON_HOME)/.mason/registry
-endif
-	@echo "Registry - $(registry)"
-	@git -C $(MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
-	@chpl mason.chpl
+	@chplBinDir=$(bdir) ./buildMason
 
 install: mason
 ifneq ($(wildcard $(link)),)
@@ -66,7 +61,7 @@ endif
 
 update:
 	@echo "Re-building Mason..."
-	@chpl mason.chpl
+	@chplBinDir=$(bdir) ./buildMason
 
 clean:
 	@echo "Removing Mason..."
@@ -79,5 +74,3 @@ endif
 
 
 clobber: clean
-	@echo "Removing Registry..."
-	rm -rf $(MASON_HOME)/.mason/registry
