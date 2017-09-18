@@ -1,3 +1,6 @@
+// This test began life as a bug report
+// from a branch using forwarding for _array._value.
+
 class C {
   proc helper(x) {
     writeln("HI ", x.type:string);
