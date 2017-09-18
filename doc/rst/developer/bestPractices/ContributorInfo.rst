@@ -440,7 +440,7 @@ If you want to understand the changes that occurred upstream, see
 How to modify git history
 +++++++++++++++++++++++++
 
-The following commands are **may cause problems** if the changes they overwrite
+The following commands **may cause problems** if the changes they overwrite
 have been pulled by other repositories.
 
 Fixing a commit message:
@@ -449,11 +449,17 @@ Fixing a commit message:
 
     git commit --amend
 
-Un-do the last commit (leaving changed files in your working directory)
+Un-do the last commit (leaving changed files in your working directory):
 
 .. code-block:: bash
 
     git reset --soft HEAD~1
+
+Reapplying changes from the current branch onto an updated version of master:
+
+.. code-block:: bash
+
+    git rebase master
 
 Pushing such changes to your repository (again, **this may cause problems** if
 other repositories have pulled the changes):
