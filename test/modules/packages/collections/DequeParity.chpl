@@ -41,7 +41,7 @@ coforall loc in Locales do on loc {
 // half, expecting it to be even, then the other half expecting it to be odd...
 var (hasElem, elem) : (bool, int);
 forall 1 .. totalElems / 2 {
-   (hasElem, elem) = deque.popFront();
+  (hasElem, elem) = deque.popFront();
   assert(hasElem && elem % 2 == 0);
 }
 forall i in 1 .. totalElems / 2 {
