@@ -22,11 +22,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of a licm bug fix
-GITHUB_USER=ronawho
-GITHUB_BRANCH=licm-2
-SHORT_NAME=licm-2
-START_DATE=09/14/17
+# Test performance of making alignment fields 'void' for non-stridable ranges
+GITHUB_USER=bradcray
+GITHUB_BRANCH=range-void-align-fields
+SHORT_NAME=void-aligns
+START_DATE=09/06/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
