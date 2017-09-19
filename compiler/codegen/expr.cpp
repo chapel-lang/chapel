@@ -3418,7 +3418,13 @@ GenRet CallExpr::codegen() {
 #ifdef HAVE_LLVM
       // We might have to convert the return from the function
       // if clang did some structure-expanding.
-      if (this->typeInfo() != dtVoid) {
+
+      bool returnedValueUsed = false;
+      if (CallExpr* parentCall = toCallExpr(this->parentExpr))
+        if (parentCall->isPrimitive(PRIM_MOVE))
+          returnedValueUsed = true;
+
+      if (returnedValueUsed && this->typeInfo() != dtVoid) {
         GenRet ty = this->typeInfo();
 
         INT_ASSERT(ty.type);

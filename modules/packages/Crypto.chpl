@@ -1008,7 +1008,11 @@ module Crypto {
 
     extern proc OpenSSL_add_all_digests();
     extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
-    extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): c_int;
+
+    // EVP_MD_CTX_init is documented to have void return type
+    // but in some versions of OpenSSL it becomes a #define that returns int.
+    // For other versions, it actually returns void.
+    extern proc EVP_MD_CTX_init(ref ctx: EVP_MD_CTX): void;
     extern proc EVP_DigestInit_ex(ref ctx: EVP_MD_CTX, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
     extern proc EVP_DigestUpdate(ref ctx: EVP_MD_CTX, const d: c_void_ptr, cnt: size_t): c_int;
     extern proc EVP_DigestFinal_ex(ref ctx: EVP_MD_CTX, md: c_ptr(c_uchar), ref s: c_uint): c_int;
