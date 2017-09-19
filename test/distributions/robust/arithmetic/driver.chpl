@@ -18,8 +18,8 @@ const Space3 = {1..n3, 1..n3, 1..n3};
 const Space4 = {1..n4, 1..n4, 1..n4, 1..n4};
 const Space2D32 = {n5-o5:int(32)..n5, n5..n5+o5:int(32)};
 
-proc setupDistributions() {
-  if distType == DistType.default {
+proc setupDistributions(param DT : DistType) {
+  if DT == DistType.default {
     return (
             defaultDist,
             defaultDist,
@@ -28,7 +28,7 @@ proc setupDistributions() {
             defaultDist,
            );
   }
-  if distType == DistType.block {
+  if DT == DistType.block {
     return (
             new dmap(new Block(rank=1, boundingBox=Space1)),
             new dmap(new Block(rank=2, boundingBox=Space2)),
@@ -37,7 +37,7 @@ proc setupDistributions() {
             new dmap(new Block(rank=2, idxType=int(32), boundingBox=Space2D32))
            );
   }
-  if distType == DistType.cyclic {
+  if DT == DistType.cyclic {
     return (
             new dmap(new Cyclic(startIdx=0)),
             new dmap(new Cyclic(startIdx=(0,0))),
@@ -46,7 +46,7 @@ proc setupDistributions() {
             new dmap(new Cyclic(startIdx=(0:int(32), 0:int(32))))
            );
   }
-  if distType == DistType.blockcyclic {
+  if DT == DistType.blockcyclic {
     return (
             new dmap(new BlockCyclic(startIdx=(0,), blocksize=(3,))),
             new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
@@ -55,7 +55,7 @@ proc setupDistributions() {
             new dmap(new BlockCyclic(startIdx=(0:int(32),0:int(32)), blocksize=(2:int(32),3:int(32))))
            );
   }
-  if distType == DistType.replicated {
+  if DT == DistType.replicated {
     return (
             new dmap(new Replicated()),
             new dmap(new Replicated()),
@@ -64,7 +64,7 @@ proc setupDistributions() {
             new dmap(new Replicated())
            );
   }
-  if distType == DistType.stencil {
+  if DT == DistType.stencil {
     return (
             new dmap(new Stencil(rank=1, boundingBox=Space1)),
             new dmap(new Stencil(rank=2, boundingBox=Space2)),
@@ -73,10 +73,10 @@ proc setupDistributions() {
             new dmap(new Stencil(rank=2, idxType=int(32), boundingBox=Space2D32))
            );
   }
-  halt("unexpected 'distType': ", distType);
+  halt("unexpected 'distType': ", DT);
 }
 
-const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D32) = setupDistributions();
+const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D32) = setupDistributions(distType);
 
 //
 // creates a tuple of size 'rank' initialized with values 'x'
