@@ -87,7 +87,56 @@ module Random {
   }
 
   /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
-  param defaultRNG = RNG.PCG;
+  config param defaultRNG = RNG.PCG;
+
+  private
+  var globalRandomStream:
+    if defaultRNG == RNG.PCG then PCGRandom.RandomStream(eltType=real, parSafe=true)
+    else NPBRandom.NPBRandomStream(eltType=real, parSafe=true);
+
+  {
+    var seedVal: uint(64) = 0;
+    try {
+      var f = open("/dev/urandom", iomode.r);
+      var c = f.reader();
+      c.readbits(seedVal, 62);
+      c.close();
+      f.close();
+    } catch e: Error {
+      halt("Error initializing ");
+    }
+    seedVal = (seedVal << 1) | 1:uint(64);
+    globalRandomStream =
+      makeRandomStream(eltType=real, seed=seedVal.safeCast(int(64));
+  }
+
+  /*
+    Docs go here
+   */
+  proc getRandom(type eltType = globalRandomStream.eltType) {
+    if !isNumericType(eltType) then
+      compilerError("Random.getRandom() only supports numeric element types");
+    if defaultRNG == RNG.PCG then
+      return globalRandomStream.getNext(eltType);
+    else {
+      if eltType != globalRandomStream.eltType then
+        compilerError("Random.getRandom() only supports eltType == real");
+      return globalRandomStream.getNext();
+    }
+  }
+
+  /*
+    Docs go here
+   */
+  proc seedRandom(seed: int(64)) {
+    delete globalRandomStream;
+    globalRandomStream = makeRandomStream(eltType=real, seed=seed);
+  }
+
+  pragma "no doc"
+  proc deinit() {
+    delete globalRandomStream;
+  }
 
   // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the
   // :arg <type> <name>: form or else switching the order to
