@@ -139,8 +139,7 @@ module ArrayViewReindex {
       pragma "no auto destroy"
       const downarr = _newArray(downdom.dsiBuildArray(eltType));
       return new ArrayViewReindexArr(eltType  =eltType,
-      // TODO: Update once we start privatizing vvv
-                                        _DomPid = nullPid,
+                                        _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
