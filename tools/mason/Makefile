@@ -30,7 +30,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 unexport CHPL_MAKE_SETTINGS_NO_NEWLINES
 
 bdir=$(CHPL_BIN_DIR)
-link=$(bdir)/mason
+link=../../tools/mason/mason
+linkFile=$(bdir)/mason
 
 REGISTRY=https://github.com/chapel-lang/mason-registry
 
@@ -50,14 +51,14 @@ mason: $(MASON_SOURCES)
 	@chplBinDir=$(bdir) ./buildMason
 
 install: mason
-ifneq ($(wildcard $(link)),)
+ifneq ($(wildcard $(linkFile)),)
 	@echo "Removing old symbolic link..."
-	rm -f $(link)
+	rm -f $(linkFile)
 	@echo
 endif
 	@echo "Installing symbolic link..."
 	@mkdir -p $(bdir)
-	@ln -s $(shell pwd)/mason $(link)
+	cd $(CHPL_BIN_DIR) && ln -s $(link) mason
 
 update:
 	@echo "Re-building Mason..."
@@ -66,9 +67,9 @@ update:
 clean:
 	@echo "Removing Mason..."
 	rm -f $(shell pwd)/mason
-ifneq ($(wildcard $(link)),)
+ifneq ($(wildcard $(linkFile)),)
 	@echo "Removing old symbolic link..."
-	@rm -f $(link)
+	@rm -f $(linkFile)
 	@echo
 endif
 
