@@ -286,9 +286,11 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
 
     depList.push_back(new Toml(package));
 
-    var dt: domain(string);
-    var depTbl: [dt] Toml;
-    depTree[package] = depTbl;
+    if depTree.pathExists(package) == false {
+      var dt: domain(string);
+      var depTbl: [dt] Toml;
+      depTree[package] = depTbl;
+    }
     depTree[package]["name"] = package;
     depTree[package]["version"] = version;
     depTree[package]["chplVersion"] = chplVersion;
@@ -299,6 +301,7 @@ proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
+    delete dep;
     deps.remove(deps.domain.first);
   }
   if depList.domain.size > 0 then
