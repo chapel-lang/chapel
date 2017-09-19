@@ -1,0 +1,1 @@
+deinit-parenless-error.chpl:2: error: module deinit() functions must have parentheses

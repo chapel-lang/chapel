@@ -228,9 +228,13 @@ void normalize() {
                     "destructor name must match class/record name "
                     "or deinit()");
 
-        } else {
-          fn->name = astrDeinit;
         }
+
+        if (!notDeinit && fn->hasFlag(FLAG_NO_PARENS)) {
+          USR_FATAL_CONT(fn, "deinitializers must have parentheses");
+        }
+
+        fn->name = astrDeinit;
       }
 
     // make sure methods don't attempt to overload operators
@@ -337,6 +341,8 @@ static void handleModuleDeinitFn(ModuleSymbol* mod) {
   if (!deinitFn)
     // We could alternatively create an empty function here.
     return;
+  if (deinitFn->hasFlag(FLAG_NO_PARENS))
+    USR_FATAL_CONT(deinitFn, "module deinit() functions must have parentheses");
 
   deinitFn->name = astr("chpl__deinit_", mod->name);
   deinitFn->removeFlag(FLAG_DESTRUCTOR);
