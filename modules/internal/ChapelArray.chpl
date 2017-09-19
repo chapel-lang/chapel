@@ -2644,7 +2644,7 @@ module ChapelArray {
     pragma "no doc"
     /* Internal helper method to reallocate an array */
     inline proc reallocateArray(newRange: range, param direction=1,
-                         debugMsg="reallocateArray")
+                                debugMsg="reallocateArray")
     {
       on this._value {
         const check = if direction > 0 then newRange.high else newRange.low;

@@ -1077,6 +1077,8 @@ timeVectorArray:
     - Support arrays as args to array.{push_front,push_back,insert} (#7180)
   09/16/17:
     - Resolve timeVectorArray regressions (#7333)
+  09/19/17:
+    - Resolve push_back / pop_front regressions w/ inline (#7397)
 
 dynamic:
   02/28/17:
