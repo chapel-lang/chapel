@@ -2142,13 +2142,18 @@ inlineIterators() {
     if (ForLoop* forLoop = toForLoop(block)) {
       Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->symbol();
       FnSymbol* ifn = getTheIteratorFn(iterator);
-      if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-        // The Boolean return value from expandIteratorInline() is being
-        // ignored here, which means that forLoop might not have been replaced.
-        // However, all ForLoops that remain in the tree after the call to
-        // inlineIterators() are passed through expandForLoop() which *does*
-        // replace them.
-        expandIteratorInline(forLoop);
+
+      if (iterator->type->dispatchChildren.n == 0 ||
+         (iterator->type->dispatchChildren.n == 1 &&
+          iterator->type->dispatchChildren.v[0] == dtObject)) {
+        if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
+          // The Boolean return value from expandIteratorInline() is being
+          // ignored here, which means that forLoop might not have been replaced.
+          // However, all ForLoops that remain in the tree after the call to
+          // inlineIterators() are passed through expandForLoop() which *does*
+          // replace them.
+          expandIteratorInline(forLoop);
+        }
       }
     }
   }
