@@ -247,13 +247,14 @@ body.  It appears more visually simple to the type designer's eyes, though the
 implementation may need to be more complicated to accommodate this benefit
 (which is not necessarily an argument against it).  Local variables can be
 shared from Phase 1 to Phase 2, and ``param`` or compile-time const ``if``
-statements may be used to wrap across both phases, though loops and parallel
-statements are not allowed to encapsulate both phases.  However, since the call
-to the parent initializer serves as the division between the two phases, it
-would be easy for this statement to get lost amid a larger and more complex
-initializer body.  Additionally, because the phase split is not as extreme as in
-the second syntax, the type designer may be more confused or frustrated when
-code placed after the call is valid but identical code before it is not.
+statements may be used to wrap across both phases; though loops, on statements,
+and parallel statements are not allowed to encapsulate both phases.  However,
+since the call to the parent initializer serves as the division between the two
+phases, it would be easy for this statement to get lost amid a larger and more
+complex initializer body.  Additionally, because the phase split is not as
+extreme as in the second syntax, the type designer may be more confused or
+frustrated when code placed after the call is valid but identical code before it
+is not.
 
 In contrast, the second syntax denotes more obviously the divide between the two
 phases.  Different rules for the different portions of the initializer would
