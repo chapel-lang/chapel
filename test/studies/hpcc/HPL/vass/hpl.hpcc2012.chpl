@@ -397,13 +397,31 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
     else
       if origScalar(2) then (sliceDim1,)
       else (sliceDim1, sliceDim2);
-  /*
+
+  // This works but uses the '=>' operator...
+  pragma "no auto destroy"
+  var slice => locAdesc.myStorageArr[r1, r2];
+  pragma "no auto destroy"
+  var result: [(...reindexExpr)] => slice;
+  return result;
+
+  /* This rewrite avoiding the '=>' operator doesn't:
+  return locAdesc.myStorageArr[r1, r2].reindex({(...reindexExpr)});
+  */
+
+  /* Nor does this one:
   pragma "no auto destroy"
   ref slice = locAdesc.myStorageArr[r1, r2];
   return slice.reindex({(...reindexExpr)});
   */
 
-  return locAdesc.myStorageArr[r1, r2].reindex({(...reindexExpr)});
+  /* Nor this one
+  pragma "no auto destroy"
+  ref slice = locAdesc.myStorageArr[r1, r2];
+  pragma "no auto destroy"
+  ref reindex = slice.reindex({(...reindexExpr)});
+  return reindex;
+  */
 }
 
 /////////////////////////////////
