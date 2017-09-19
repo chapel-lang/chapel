@@ -1928,6 +1928,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
     case llvmStageNum::NONE:
     case llvmStageNum::BASIC:
     case llvmStageNum::FULL:
+    case llvmStageNum::EVERY:
     case llvmStageNum::LAST:
       return false;
   }
@@ -2080,6 +2081,18 @@ void makeBinaryLLVM(void) {
     if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
       printf("Adding IR dump extension at %i for %s\n", point, llvmPrintIrCName);
       PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+    }
+
+    if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
+      printf("Adding IR dump extensions for all phases\n");
+      for (int i = 0; i < llvmStageNum::LAST; i++) {
+        llvmPrintIrStageNum = (llvmStageNum::llvmStageNum_t) i;
+        if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point))
+          PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+      }
+
+      // Put the print-stage-num back
+      llvmPrintIrStageNum = llvmStageNum::EVERY;
     }
 
     addedGlobalExts = true;
@@ -2289,7 +2302,8 @@ void makeBinaryLLVM(void) {
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
 
 #ifdef HAVE_LLVM
-  if(llvmStageNum::FULL == llvmPrintIrStageNum && llvmPrintIrCName != NULL)
+  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum) && llvmPrintIrCName != NULL)
       printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
 #endif
 }
