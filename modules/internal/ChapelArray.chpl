@@ -2433,13 +2433,6 @@ module ChapelArray {
         if newDims(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
-      //
-      // TODO: Currently, the domain created to represent the
-      // rank-change domain is non-distributed.  Ultimately, we need
-      // to create a domain view class that supports a rank-change
-      // view on a higher-dimensional domain as in the original array
-      // view attempt.
-      //
       const thisDomClass = this._value.dom;
       const (dom, dompid) = (thisDomClass, thisDomClass.pid);
 
@@ -2447,10 +2440,6 @@ module ChapelArray {
       const updom = {(...newDims)};
 
 
-      /*
-      const redist = new ArrayViewReindexDist(downDistPid = thisDomClass.dist.pid,
-                                              downDistInst=thisDomClass.dist._instance,
-      */
       const redist = new ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
