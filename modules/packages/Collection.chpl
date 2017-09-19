@@ -50,12 +50,6 @@
       fact with the fact that ``break`` ing out of a serial iterator will result in resource leakage, where destructors
       are not called, hence Collections using some RAII-based resource cleanup will end up leaking and potentially leaving
       the Collection in an undefined state. This has been documented under issue `#6912 <https://github.com/chapel-lang/chapel/issues/6912>`_ .
-  2.  There are issues with :proc:`remove`, of which the cause is currently unknown, that triggers a compiler internal error, which requires
-      the user to declare the express type at callsite. A 'safe' way to use :proc:`remove` in a loop is documented below.
-
-      .. code-block:: chapel
-
-        var retval : (bool, eltType) = c.remove();
 
   Methods
   _______
