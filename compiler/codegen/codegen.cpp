@@ -2277,7 +2277,7 @@ GenInfo::GenInfo(
            Diags(NULL),
            Clang(NULL), clangTargetOptions(), clangLangOptions(),
            moduleName("root"), llvmContext(), Ctx(NULL),
-           targetData(NULL), cgBuilder(NULL), cgAction(NULL),
+           cgBuilder(NULL), cgAction(NULL),
            tbaaRootNode(NULL),
            targetLayout(), globalToWideInfo(),
            FPM_postgen(NULL)
@@ -2299,7 +2299,6 @@ GenInfo::GenInfo(
   // for everything and are deciding what calls to make.
   // these are set by setupClangContext from CCodeGenAction.
   Ctx = NULL;
-  targetData = NULL;
   cgBuilder = NULL;
 }
 #endif

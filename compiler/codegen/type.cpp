@@ -322,7 +322,7 @@ void AggregateType::codegenDef() {
         for_fields(field, this) {
           llvm::Type* fieldType = field->type->symbol->codegen().type;
           INT_ASSERT(fieldType);
-          uint64_t fieldSize = info->targetData->getTypeStoreSize(fieldType);
+          uint64_t fieldSize = info->module->getDataLayout().getTypeStoreSize(fieldType);
 
           if(fieldSize > largestSize) {
             largestType = fieldType;

@@ -223,7 +223,7 @@ static
 llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false)
 {
   GenInfo* info = gGenInfo;
-  return convertValueToType(info->builder, info->targetData, value, newType, isSigned, force);
+  return convertValueToType(info->builder, info->module->getDataLayout(), value, newType, isSigned, force);
 }
 
 static
@@ -2150,7 +2150,7 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     int8_type = llvm::Type::getInt8Ty(info->llvmContext);
     int8_ptr_type = int8_type->getPointerTo();
 
-    arg_size = getTypeSizeInBytes(info->targetData, t);
+    arg_size = getTypeSizeInBytes(info->module->getDataLayout(), t);
     assert(arg_size >= 0);
 
     // Allocate space on the stack...
@@ -2166,7 +2166,7 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
       }
       targetType = fnType->getParamType(outArgs.size());
       dst_ptr_type = targetType->getPointerTo();
-      cur_size = getTypeSizeInBytes(info->targetData, targetType);
+      cur_size = getTypeSizeInBytes(info->module->getDataLayout(), targetType);
 
       assert(cur_size > 0);
 
@@ -2184,7 +2184,7 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
       outArgs.push_back(cur);
 
       //printf("offset was %i\n", (int) offset);
-      offset = getTypeFieldNext(info->targetData, t, offset + cur_size - 1);
+      offset = getTypeFieldNext(info->module->getDataLayout(), t, offset + cur_size - 1);
       //printf("offset now %i\n", (int) offset);
     }
   } else {
@@ -2827,7 +2827,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( isTypeSizeSmallerThan(info->targetData, eltTy,
+      } else if( isTypeSizeSmallerThan(info->module->getDataLayout(), eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
       } else {

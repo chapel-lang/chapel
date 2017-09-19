@@ -224,20 +224,21 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     // Save the global address space we are using in info.
     info->globalToWideInfo.globalSpace = GLOBAL_PTR_SPACE;
     info->globalToWideInfo.wideSpace = WIDE_PTR_SPACE;
+    info->globalToWideInfo.globalPtrBits = GLOBAL_PTR_SIZE;
   }
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
   // wrong answer  because some i64s were stored at the wrong alignment).
   if( info->module ) info->module->setDataLayout(layout);
 
-  info->targetData =
-#if HAVE_LLVM_VER >= 39
-    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayout().getStringRepresentation());
-#elif HAVE_LLVM_VER >= 38
-    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getDataLayoutString());
-#else
-    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
-#endif
+  if( fLLVMWideOpt && ! info->parseOnly ) {
+    // Check that the data layout setting worked
+    const llvm::DataLayout& dl = info->module->getDataLayout();
+    llvm::Type* testTy = llvm::Type::getInt8PtrTy(info->module->getContext(),
+                                                  GLOBAL_PTR_SPACE);
+    INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
+  }
+
   if( ! info->parseOnly ) {
     info->cgBuilder = new CodeGen::CodeGenModule(*Ctx,
 #if HAVE_LLVM_VER >= 37
@@ -936,7 +937,6 @@ static void deleteClang(GenInfo* info){
     delete info->cgBuilder;
     info->cgBuilder = NULL;
   }
-  delete info->targetData;
   delete info->Clang;
   info->Clang = NULL;
   delete info->cgAction;
@@ -2136,7 +2136,7 @@ void makeBinaryLLVM(void) {
                     info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
 #if HAVE_LLVM_VER >= 39
-                    info->Ctx->getTargetInfo().getDataLayout(),
+                    info->module->getDataLayout(),
 #elif HAVE_LLVM_VER >= 38
                     info->Ctx->getTargetInfo().getDataLayoutString(),
 #else

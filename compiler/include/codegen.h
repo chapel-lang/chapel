@@ -118,8 +118,6 @@ struct GenInfo {
   llvm::LLVMContext llvmContext;
   clang::ASTContext *Ctx;
 
-  // After 3.3 this is llvm::DataLayout
-  LLVM_TARGET_DATA *targetData;
   clang::CodeGen::CodeGenModule *cgBuilder;
   CCodeGenAction *cgAction;
 
