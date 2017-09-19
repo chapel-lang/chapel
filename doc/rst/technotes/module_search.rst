@@ -38,7 +38,6 @@ loaded, the internal module path is searched first.  If a module is found there,
 it is marked as internal.  Otherwise, it is skipped.
 
 The user's modules are parsed next.  If a module named in a use statement is not
-found, the standard or package version is loaded instead if it exists.
-Otherwise, a file-not-found error will be issued.  If both a user version and a
-Chapel provided version of a module exists, the user is warned that the Chapel
-provided version is being overridden.
+found, the standard version is loaded instead if it exists.  Otherwise, a
+file-not-found error will be issued.  If both user and standard versions of a
+module exists, the user is warned that the standard version is being overridden.
