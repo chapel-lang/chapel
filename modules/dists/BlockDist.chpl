@@ -1574,11 +1574,11 @@ proc BlockArr.doiBulkTransferToDR(Barg, viewDom)
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferToDR()");
 
-  if this.rank == Barg.rank {
-    const Src = this;
-    const Dest = chpl__getActualArray(Barg);
-    const destView = chpl__getViewDom(Barg);
-    type el = Src.idxType;
+  const Src = this;
+  const Dest = chpl__getActualArray(Barg);
+  const destView = chpl__getViewDom(Barg);
+  type el = Src.idxType;
+  if this.rank == Dest.rank {
     coforall j in Src.dom.dist.targetLocDom do
       on Src.dom.dist.targetLocales(j)
       {
@@ -1614,10 +1614,10 @@ proc BlockArr.doiBulkTransferFromDR(Barg, viewDom)
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFromDR");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest    = this;
+  const srcView = chpl__getViewDom(Barg);
+  type el       = Dest.idxType;
+  if this.rank == srcView.rank {
     coforall j in Dest.dom.dist.targetLocDom do
       on Dest.dom.dist.targetLocales(j)
       {

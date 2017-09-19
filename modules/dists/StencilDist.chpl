@@ -1861,11 +1861,11 @@ proc StencilArr.doiBulkTransferFrom(Barg, viewDom)
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFrom()");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const Src = chpl__getActualArray(Barg);
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest = this;
+  const Src = chpl__getActualArray(Barg);
+  const srcView = chpl__getViewDom(Barg);
+  type el = Dest.idxType;
+  if this.rank == Src.rank {
     coforall i in Dest.dom.dist.targetLocDom do // for all locales
       on Dest.dom.dist.targetLocales(i)
       {
@@ -1890,7 +1890,7 @@ proc StencilArr.doiBulkTransferFrom(Barg, viewDom)
           if debugStencilDistBulkTransfer then
               writeln("B{",(...r1),"}.ToDR",regionDest);
 
-          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], Barg.domain[(...r1)]);
+          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], {(...r1)});
         }
       }
   }
@@ -1903,11 +1903,11 @@ proc StencilArr.doiBulkTransferToDR(Barg, viewDom)
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferToDR()");
 
-  if this.rank == Barg.rank {
-    const Src = this;
-    const Dest = chpl__getActualArray(Barg);
-    const destView = chpl__getViewDom(Barg);
-    type el = Src.idxType;
+  const Src = this;
+  const Dest = chpl__getActualArray(Barg);
+  const destView = chpl__getViewDom(Barg);
+  type el = Src.idxType;
+  if this.rank == Dest.rank {
     coforall j in Src.dom.dist.targetLocDom do
       on Src.dom.dist.targetLocales(j)
       {
@@ -1943,10 +1943,10 @@ proc StencilArr.doiBulkTransferFromDR(Barg, viewDom)
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromDR");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest = this;
+  const srcView = chpl__getViewDom(Barg);
+  type el = Dest.idxType;
+  if this.rank == srcView.rank {
     coforall j in Dest.dom.dist.targetLocDom do
       on Dest.dom.dist.targetLocales(j)
       {

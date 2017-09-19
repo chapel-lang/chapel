@@ -1039,11 +1039,11 @@ proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFrom()");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const Src = chpl__getActualArray(Barg);
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest = this;
+  const Src = chpl__getActualArray(Barg);
+  const srcView = chpl__getViewDom(Barg);
+  type el = Dest.idxType;
+  if this.rank == Src.rank {
     coforall i in Dest.dom.dist.targetLocDom do // for all locales
       on Dest.dom.dist.targetLocs(i)
       {
@@ -1069,7 +1069,7 @@ proc CyclicArr.doiBulkTransferFrom(Barg, viewDom)
           if debugCyclicDistBulkTransfer then
             writeln("B[",(...r1),"] ToDR A[",regionDest, "] ");
 
-          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], Barg.domain[(...r1)]);
+          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], {(...r1)});
         }
       }
   }
@@ -1082,11 +1082,11 @@ proc CyclicArr.doiBulkTransferToDR(Barg, viewDom)
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferToDR()");
 
-  if this.rank == Barg.rank {
-    const Src = this;
-    const Dest = chpl__getActualArray(Barg);
-    const destView = chpl__getViewDom(Barg);
-    type el = Src.idxType;
+  const Src = this;
+  const Dest = chpl__getActualArray(Barg);
+  const destView = chpl__getViewDom(Barg);
+  type el = Src.idxType;
+  if this.rank == Dest.rank {
     coforall j in Src.dom.dist.targetLocDom do // for all locales
       on Src.dom.dist.targetLocs(j)
       {
@@ -1126,11 +1126,11 @@ proc CyclicArr.doiBulkTransferFromDR(Barg, viewDom)
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFromDR()");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const Src = chpl__getActualArray(Barg);
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest = this;
+  const Src = chpl__getActualArray(Barg);
+  const srcView = chpl__getViewDom(Barg);
+  type el = Dest.idxType;
+  if this.rank == Src.rank {
     coforall j in Dest.dom.dist.targetLocDom do // for all locales
       on Dest.dom.dist.targetLocs(j)
       {
