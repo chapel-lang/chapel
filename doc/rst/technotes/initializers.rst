@@ -287,6 +287,7 @@ Bugs
   initializer in its original module
 - nested types when the outer type and/or the inner type defines an initializer
   and the outer type and/or the inner type is generic.
+- others
 
 Other TODOs
 +++++++++++
@@ -295,3 +296,5 @@ Other TODOs
 - Improve some slightly cryptic error messages
 - Ensure we *always* error when a method is called in Phase 1 (we only sometimes
   do today)
+- Extend on statement support to allow field initialization within its bounds
+  after getting larger team buy in.
